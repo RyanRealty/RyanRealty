@@ -10,14 +10,15 @@ import { CONTACT } from '@/lib/brand/contact'
  * KB footer — dual-audience close + full sitemap. Per-town inventory fine print
  * is live (from the towns prop). Contact/social/license static.
  */
-export function KbFooter({ towns }: { towns: KbTownItem[] }) {
+export function KbFooter({ towns, hideCta = false }: { towns: KbTownItem[]; hideCta?: boolean }) {
   const root = useRef<HTMLElement>(null)
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger)
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const ctx = gsap.context(() => {
-      if (reduce) return
+      // Skip the CTA entrance when the band is suppressed (e.g. /contact).
+      if (reduce || !root.current?.querySelector('.foot-cta')) return
       gsap.from('.foot-cta .display, .foot-cta .sub, .foot-cta .btn-row', {
         opacity: 0,
         y: 30,
@@ -37,6 +38,9 @@ export function KbFooter({ towns }: { towns: KbTownItem[] }) {
   return (
     <footer className="footer" ref={root}>
       <div className="wrap">
+        {/* The Let's-talk band is suppressible per page (hideCta) — on /contact
+            the visitor is already on the get-in-touch page (design-audit P3). */}
+        {hideCta ? null : (
         <div className="foot-cta">
           <h2 className="display">Let&rsquo;s<br />talk.</h2>
           <p className="sub">
@@ -44,7 +48,9 @@ export function KbFooter({ towns }: { towns: KbTownItem[] }) {
             comps and the number it trades for.
           </p>
           <div className="btn-row">
-            <a href="/sell" className="btn">
+            {/* "What's my home worth" lands on the valuation FORM, not the /sell
+                marketing page (design-audit P2 — the promise must match the page). */}
+            <a href="/sell/valuation" className="btn">
               What&rsquo;s my home worth <span className="arr">→</span>
             </a>
             <a href="/homes-for-sale" className="btn ghost">
@@ -52,6 +58,7 @@ export function KbFooter({ towns }: { towns: KbTownItem[] }) {
             </a>
           </div>
         </div>
+        )}
         <div className="foot-cols">
           <div className="foot-brand">
             <img className="logo-img" src="/images/brand/logo-white.png" alt="Ryan Realty" />
@@ -92,13 +99,13 @@ export function KbFooter({ towns }: { towns: KbTownItem[] }) {
           </nav>
           <nav className="foot-col" aria-label="Buyers">
             <h3>Buyers</h3>
-            <a href="/homes-for-sale">Search homes</a>
+            <a href="/homes-for-sale">Browse homes</a>
             <a href="/housing-market">The market</a>
             <a href="/team">The team</a>
           </nav>
           <nav className="foot-col" aria-label="Sellers">
             <h3>Sellers</h3>
-            <a href="/sell">What&rsquo;s my home worth</a>
+            <a href="/sell/valuation">What&rsquo;s my home worth</a>
             <a href="/sell">Sell your home</a>
             <a href="/housing-market">Market reports</a>
           </nav>

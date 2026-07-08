@@ -43,6 +43,10 @@ export interface KbTickerItem {
   price: number | null
   address: string
   town: string
+  /** Listing detail path. When set, the tape item renders as a link — real
+   *  prices + addresses styled as content must honor the tap they invite
+   *  (design-audit P3). */
+  href?: string
 }
 
 export interface KbFeaturedItem {

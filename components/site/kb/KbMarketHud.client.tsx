@@ -31,10 +31,19 @@ function Kpi({ val, lbl }: { val: string | null; lbl: string }) {
  * traced to a cached DAL source (§0). Reused on the homepage (region) and every
  * city page (city scope) via props — never forked.
  */
+/** "7:04 PM" in Pacific time, or null when the input is not a valid timestamp. */
+function pacificTime(iso: string | null | undefined): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toLocaleTimeString('en-US', { timeZone: 'America/Los_Angeles', hour: 'numeric', minute: '2-digit', hour12: true })
+}
+
 export function KbMarketHud({
   data,
   eyebrow = 'The market',
   chartScopeLabel,
+  asOf,
 }: {
   data: KbMarketData
   eyebrow?: string
@@ -45,16 +54,27 @@ export function KbMarketHud({
    * the city figure is never read as the community's. (§0 honesty.)
    */
   chartScopeLabel?: string
+  /**
+   * ISO timestamp of the data refresh (the pulse row's updated_at). When set, the
+   * desk chrome shows "Updated 7:04 PM" — the honest freshness stamp. Without it,
+   * a seconds-ticking wall clock next to "Live · MLS" read as a to-the-second data
+   * stamp over a 10-15 min cache (design-audit P3).
+   */
+  asOf?: string | null
 }) {
   const root = useRef<HTMLElement>(null)
-  const [now, setNow] = useState('--:--:--')
+  const updatedAt = pacificTime(asOf)
+  const [now, setNow] = useState('--:--')
 
   useEffect(() => {
-    const fmt = () => new Date().toLocaleTimeString('en-US', { timeZone: 'America/Los_Angeles', hour12: false })
+    if (updatedAt) return
+    // Fallback (no refresh stamp available): consumer-format wall time, no
+    // seconds, labeled Pacific so it cannot read as a data-freshness stamp.
+    const fmt = () => pacificTime(new Date().toISOString()) ?? '--:--'
     setNow(fmt())
-    const t = setInterval(() => setNow(fmt()), 1000)
+    const t = setInterval(() => setNow(fmt()), 30000)
     return () => clearInterval(t)
-  }, [])
+  }, [updatedAt])
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger)
@@ -121,7 +141,7 @@ export function KbMarketHud({
               <span className="dot" />
               <span className="txt">Live · MLS</span>
             </span>
-            <span className="mkt-clock mono-num">{now}</span>
+            <span className="mkt-clock mono-num">{updatedAt ? `Updated ${updatedAt}` : `${now} Pacific`}</span>
           </span>
         </div>
         <div className="sec-head">

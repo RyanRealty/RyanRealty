@@ -172,21 +172,24 @@ export default async function ListYourHomePage() {
               </div>
             </div>
 
-            {/* Right: oversized typographic volume anchor. Hard navy frame. */}
+            {/* Right: oversized typographic volume anchor. Hard navy frame.
+                Qualified with the window + sale count (design-audit P3) — all
+                three figures come from the same getBrokerageTrackRecord pull
+                (closed Ryan Realty listings; the brokerage opened in 2023). */}
             {trackRecord !== null && (
               <div className="shrink-0 border-[3px] border-[#102742] bg-[#102742] p-6 text-[#faf8f4] sm:p-8">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#faf8f4]/60">
-                  In Bend homes sold
+                  In Bend-area homes sold since 2023
                 </p>
                 <p
                   className="mt-3 font-display tabular-nums leading-none text-[#faf8f4]"
                   style={{ fontSize: 'clamp(4rem, 8vw, 7rem)' }}
-                  aria-label={`${fmtCompact(trackRecord.totalVolume)} in Bend homes sold`}
+                  aria-label={`${fmtCompact(trackRecord.totalVolume)} in Bend-area homes sold since 2023`}
                 >
                   {fmtCompact(trackRecord.totalVolume)}
                 </p>
                 <p className="mt-4 text-sm tabular-nums text-[#faf8f4]/70">
-                  Avg {fmtCompact(trackRecord.avgSalePrice)} per sale
+                  {trackRecord.homesSold} sales · avg {fmtCompact(trackRecord.avgSalePrice)} per sale
                 </p>
               </div>
             )}
@@ -226,10 +229,10 @@ export default async function ListYourHomePage() {
       </section>
 
       {/* SECTION 3: THE TEAM
-          Asymmetric editorial layout.
-          Matt primary (larger). Paul + Rebecca secondary.
+          Editorial layout: Matt leads by name size + role, portraits share one
+          rendered height and one text baseline (design-audit P3).
           Transparent PNGs floating on cream. No rectangular card frames.
-          No drop-shadow boxes. No centered three-equal-avatar grid. */}
+          No drop-shadow boxes. */}
       <section className="border-b-[3px] border-[#102742] bg-[#faf8f4] py-16 sm:py-20">
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <ScrollReveal>
@@ -244,16 +247,18 @@ export default async function ListYourHomePage() {
             </p>
           </ScrollReveal>
 
-          {/* Asymmetric: Matt large + primary, Paul + Rebecca secondary + offset */}
-          <div className="mt-12 flex flex-col gap-12 sm:flex-row sm:items-end sm:gap-8 lg:gap-14">
+          {/* Equal portrait heights + top-aligned columns so the three name rows
+              share one baseline (design-audit P3 — mismatched crops read as
+              broken, not as hierarchy; Matt leads via name size + role). */}
+          <div className="mt-12 flex flex-col gap-12 sm:flex-row sm:items-start sm:gap-8 lg:gap-14">
             {/* Primary broker: Matt */}
             <ScrollReveal className="flex flex-col sm:w-64" delayMs={0}>
-              <span className="relative block h-72 w-48 sm:h-80 sm:w-56">
+              <span className="relative block h-60 w-40 sm:h-72 sm:w-48">
                 <Image
                   src="/images/brokers/ryan-matt.png"
                   alt="Matt Ryan, Principal Broker"
                   fill
-                  sizes="(max-width: 640px) 192px, 224px"
+                  sizes="(max-width: 640px) 160px, 192px"
                   className="object-contain object-bottom"
                 />
               </span>
@@ -267,12 +272,12 @@ export default async function ListYourHomePage() {
             {/* Secondary brokers: Paul and Rebecca */}
             <div className="flex flex-row gap-8 sm:gap-6 lg:gap-10">
               <ScrollReveal className="flex flex-col" delayMs={75}>
-                <span className="relative block h-52 w-36 sm:h-60 sm:w-40">
+                <span className="relative block h-60 w-40 sm:h-72 sm:w-48">
                   <Image
                     src="/images/brokers/stevenson-paul.png"
                     alt="Paul Stevenson, Broker"
                     fill
-                    sizes="(max-width: 640px) 144px, 160px"
+                    sizes="(max-width: 640px) 160px, 192px"
                     className="object-contain object-bottom"
                   />
                 </span>
@@ -284,12 +289,12 @@ export default async function ListYourHomePage() {
               </ScrollReveal>
 
               <ScrollReveal className="flex flex-col" delayMs={150}>
-                <span className="relative block h-52 w-36 sm:h-60 sm:w-40">
+                <span className="relative block h-60 w-40 sm:h-72 sm:w-48">
                   <Image
                     src="/images/brokers/peterson-rebecca.png"
                     alt="Rebecca Peterson, Broker"
                     fill
-                    sizes="(max-width: 640px) 144px, 160px"
+                    sizes="(max-width: 640px) 160px, 192px"
                     className="object-contain object-bottom"
                   />
                 </span>
@@ -315,8 +320,10 @@ export default async function ListYourHomePage() {
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
                 Closed · Verified
               </p>
+              {/* "Bend area", not "Bend" — the set includes a Tumalo sale, and a
+                  'verified' section cannot contradict its own cards (design-audit P3). */}
               <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
-                Recently sold in Bend
+                Recently sold in the Bend area
               </h2>
               <p className="mt-3 text-base text-[#102742]/70">
                 Verified against MLS records. Homes we listed.
@@ -443,10 +450,13 @@ export default async function ListYourHomePage() {
                 <span className="text-lg leading-none text-[#102742]" aria-label="Five star rating">
                   {'★★★★★'}
                 </span>
-                <blockquote className="mt-3 max-w-3xl font-display text-xl uppercase leading-snug tracking-[-0.01em] text-[#102742] sm:text-2xl">
+                {/* Review bodies read in the body face at paragraph length —
+                    Amboqia is reserved for the heading + reviewer names
+                    (design-audit P2, display-vs-body rule). */}
+                <blockquote className="mt-3 max-w-3xl text-lg leading-relaxed text-[#102742]/75">
                   {'"'}{t.quote}{'"'}
                 </blockquote>
-                <figcaption className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-[#102742]/65">
+                <figcaption className="mt-4 font-display text-base uppercase leading-none tracking-[-0.01em] text-[#102742]">
                   {t.author}
                 </figcaption>
               </figure>

@@ -110,6 +110,9 @@ export default function ValuationForm() {
           {state.error}
         </p>
       )}
+      {/* Consent sits ABOVE the submit so a top-to-bottom fill sees the opt-in
+          before hitting the button (design-audit P2 — SMS is fail-closed). */}
+      <SmsConsentDisclosure />
       <Button
         type="submit"
         disabled={loading}
@@ -123,7 +126,6 @@ export default function ValuationForm() {
       <p className="text-center text-sm text-muted-foreground">
         A broker emails your written valuation within 24 hours, with the comps behind the number. No obligation.
       </p>
-      <SmsConsentDisclosure />
     </form>
   )
 }

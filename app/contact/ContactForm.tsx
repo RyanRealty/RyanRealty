@@ -177,6 +177,9 @@ export default function ContactForm({ defaultInquiryType, listingKey, intent, hi
         />
       </div>
       {state.error && <p className="text-sm text-destructive">{state.error}</p>}
+      {/* Consent sits ABOVE the submit so a top-to-bottom fill sees the opt-in
+          before hitting Send (design-audit P2 — SMS is fail-closed). */}
+      <SmsConsentDisclosure />
       <Button
         type="submit"
         disabled={loading}
@@ -184,7 +187,6 @@ export default function ContactForm({ defaultInquiryType, listingKey, intent, hi
       >
         {loading ? 'Sending…' : isTour ? 'Request a tour' : 'Send message'}
       </Button>
-      <SmsConsentDisclosure />
     </form>
   )
 }

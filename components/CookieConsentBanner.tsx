@@ -153,18 +153,23 @@ export default function CookieConsentBanner() {
       </DialogContent>
     </Dialog>
     {visible && (
-    <div role="dialog" aria-label="Cookie consent" className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card p-4 shadow-md sm:px-6">
+    /* role="region", not role="dialog": this is a persistent non-modal bar with
+       no focus move or trap, so announcing it as a dialog misled screen readers
+       (design-audit P3). Compact layout: one short line + one row of three
+       equal buttons, so the bar stops covering the hero's proof line and CTA
+       pair on mobile first paint (design-audit P2). */
+    <div role="region" aria-label="Cookie notice" className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card px-4 py-3 shadow-md sm:px-6">
       <div className="mx-auto max-w-3xl">
-        <p className="text-sm text-muted-foreground">
-          We use cookies to improve your experience and analyze site traffic.{' '}
-          <Link href="/privacy" className="font-medium text-foreground underline hover:no-underline">Privacy & cookies</Link>
-          {'. '}
+        <p className="text-xs text-muted-foreground sm:text-sm">
+          We use cookies to improve the site and measure traffic.{' '}
+          <Link href="/privacy" className="font-medium text-foreground underline hover:no-underline">Privacy and cookies</Link>
+          {' · '}
           <Link href="/privacy#donotsell" className="font-medium text-foreground underline hover:no-underline">Do Not Sell My Personal Information</Link>
         </p>
-        <div className="mt-3 flex flex-wrap gap-3">
-          <Button type="button" onClick={acceptAll} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Accept All</Button>
-          <Button type="button" onClick={() => setPrefsOpen(true)} className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">Manage Preferences</Button>
-          <Button type="button" onClick={essentialOnly} className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">Essential only</Button>
+        <div className="mt-2 grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-3">
+          <Button type="button" size="sm" onClick={acceptAll}>Accept all</Button>
+          <Button type="button" size="sm" variant="outline" onClick={essentialOnly}>Essential only</Button>
+          <Button type="button" size="sm" variant="outline" onClick={() => setPrefsOpen(true)}>Preferences</Button>
         </div>
       </div>
     </div>

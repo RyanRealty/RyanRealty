@@ -11,9 +11,11 @@
  *   - The default-inquiry derivation from ?inquiry / ?listingKey / ?intent.
  *   - The session + FUB page-view tracking side-effect.
  *   - ContactPage + BreadcrumbList + FAQPage JSON-LD (all three preserved).
- *   - The Office block: name, "Central Oregon", call-or-text tel link, service
- *     area sentence, and the "Meet the team" link.
- *   - The hero copy + both CTAs (Meet the Team / View Listings).
+ *   - The Office block: name, "Central Oregon", call-or-text tel link, email,
+ *     service area sentence, the visible response-time promise, the three
+ *     broker portraits, and the "Meet the team" link.
+ *   - The hero copy. (The floating Meet-the-team / View-listings CTA pair was
+ *     removed per design-audit P3 — it duplicated the office-card link.)
  *
  * Only the presentation changed — the page now wears the KB shell (KbNav,
  * KbHero, KbFooter, SmoothScrollProvider, KbSectionTracker) and the Amboqia
@@ -34,7 +36,7 @@ import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import { getListingTiles } from '@/lib/data'
 import { formatPrice } from '@/lib/format/money'
-import { listingsBrowsePath, listingTileHref } from '@/lib/slug'
+import { listingTileHref } from '@/lib/slug'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
 import { CONTACT } from '@/lib/brand/contact'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
@@ -129,8 +131,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
         ]}
       />
       <SmoothScrollProvider>
-        {/* Hero — CMS-overridable title + subtitle, in the KB Amboqia display.
-            The two CTAs (Meet the Team / View Listings) are preserved below. */}
+        {/* Hero — CMS-overridable title + subtitle, in the KB Amboqia display. */}
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
           eyebrow="Central Oregon · Talk to a broker"
@@ -144,27 +145,9 @@ export default async function ContactPage({ searchParams }: PageProps) {
           posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
         />
 
-        {/* CTA row preserved from the prior hero. */}
-        <section className="section" id="contact-cta" aria-label="Team and listings">
-          <div className="wrap">
-            <div className="flex flex-wrap items-center gap-3 py-2">
-              <Link
-                href="/team"
-                className="btn alt"
-                style={{ background: 'transparent', color: 'var(--navy)' }}
-              >
-                Meet the team <span className="arr">→</span>
-              </Link>
-              <Link
-                href={listingsBrowsePath()}
-                className="btn alt"
-                style={{ background: 'transparent', color: 'var(--navy)' }}
-              >
-                View listings <span className="arr">→</span>
-              </Link>
-            </div>
-          </div>
-        </section>
+        {/* The floating Meet-the-team / View-listings CTA pair above the form was
+            removed (design-audit P3) — it duplicated the office card's link and
+            diluted the one action that matters here, the form. */}
 
         {/* Form + Office — the prior two-column layout, restyled in KB. The form
             (interactive, with SMS consent) and the office details are preserved.
@@ -238,9 +221,40 @@ export default async function ContactPage({ searchParams }: PageProps) {
                     {CONTACT.phoneFub}
                   </a>
                 </div>
+                <div className="mt-4">
+                  <p className="mono-num text-xs uppercase tracking-wider" style={{ color: 'var(--navy-70)' }}>
+                    Email
+                  </p>
+                  <a
+                    href="mailto:matt@ryan-realty.com"
+                    className="text-base font-semibold hover:underline"
+                    style={{ color: 'var(--navy)' }}
+                  >
+                    matt@ryan-realty.com
+                  </a>
+                </div>
                 <p className="mt-6 text-sm leading-relaxed" style={{ color: 'var(--navy-70)' }}>
                   Serving Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and surrounding
                   communities across Central Oregon.
+                </p>
+                {/* The response promise used to live only in the invisible FAQPage
+                    JSON-LD — surfaced visibly per design-audit P2 (same approved copy). */}
+                <p className="mt-3 text-sm leading-relaxed" style={{ color: 'var(--navy-70)' }}>
+                  We aim to respond to all inquiries within one business day. For urgent needs,
+                  call us directly for the fastest response.
+                </p>
+                {/* The people who answer — transparent broker portraits float on the
+                    cream surface (never boxed, per the design-system composite rule). */}
+                <div className="mt-8 flex items-end gap-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/images/brokers/ryan-matt.png" alt="Matt Ryan, Principal Broker" className="h-28 w-auto" loading="lazy" />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/images/brokers/stevenson-paul.png" alt="Paul Stevenson, Broker" className="h-28 w-auto" loading="lazy" />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/images/brokers/peterson-rebecca.png" alt="Rebecca Peterson, Broker" className="h-28 w-auto" loading="lazy" />
+                </div>
+                <p className="mt-2 text-sm" style={{ color: 'var(--navy-70)' }}>
+                  Matt Ryan · Paul Stevenson · Rebecca Peterson
                 </p>
                 <div className="sec-cta">
                   <Link href="/team" className="btn alt">
@@ -252,7 +266,9 @@ export default async function ContactPage({ searchParams }: PageProps) {
           </div>
         </section>
 
-        <KbFooter towns={[]} />
+        {/* hideCta: the footer's "Let's talk" band asks the visitor to get in
+            touch — redundant on the contact page itself (design-audit P3). */}
+        <KbFooter towns={[]} hideCta />
       </SmoothScrollProvider>
     </main>
   )

@@ -59,6 +59,13 @@ Gate ratchet: poison-null `// poison-null-ok` marker on the restructured genuine
 | Addresses dropped the street suffix | streetSuffix pulled from listings.details jsonb in getListingDetail (cache v5); detail H1 + title join it; canonical comma added ("63177 Iner Loop, Bend, OR 97701") | title + H1 verified in browser; card-level suffix spun off as a task chip (needs listing_tile_mv column) |
 | The invisible-CTA bug class had no gate | New `ci:css-layers` gate (scripts/check-css-cascade-layers.mjs): un-layered bare-element link/button color rules fail CI; 11 intentional chrome rules baselined; wired into ci:gates | gate green; new offender simulation fails |
 
-## Phase E — P2/P3 register sweep — PENDING
+## Phase E — P2/P3 register sweep (2026-07-08) — IN PROGRESS
+
+Open P1s closed in this phase (each browser-verified): /cities + /communities overlay crumbs + compact-hero clearance (cream-strip nav collision), /buy mobile hero overflow (compact height now ≥760px only), community pages inventory-first (Tetherow first listing card at 1.3 viewports, was 10+), FAQ cost question, market HUD stat explainers, communities rail scroll-padding.
+
+**Triage of all 182 P2/P3 register items** against the remediated codebase (11 parallel verify agents, file:line evidence per verdict):
+- **31 fixed** by the phase A–D class fixes
+- **150 still open** (134 small, 16 medium) — being fixed by the parallel worktree fan-out; per-item outcomes recorded below when it lands
+- 1 item reclassified during triage (component capped reviews at 6 since June; the mobile-wall aspect stays open)
 
 ## Phase F — final review pass — PENDING

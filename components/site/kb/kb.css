@@ -223,6 +223,8 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .ticker-meta{font-size:.74rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;}
 .kb-root .ticker-meta .town{opacity:.6;}
 .kb-root .ticker-star{font-size:.7rem;opacity:.5;}
+/* Linked tape items (real listings) show a hover/focus affordance. */
+.kb-root a.ticker-item:hover .ticker-meta, .kb-root a.ticker-item:focus-visible .ticker-meta{text-decoration:underline;text-underline-offset:3px;}
 .kb-root .section{position:relative;}
 .kb-root .sec-head{
   display:flex;align-items:baseline;justify-content:space-between;gap:16px;
@@ -235,7 +237,18 @@ html.lenis, html.lenis body{height:auto;}
    The title's line-height:.92 + overflow:visible pushes its ascenders up, so a
    0-gap eyebrow collides with "PROPERTY DETAILS". Give the eyebrow clear air. */
 .kb-root .sec-head > div > .sec-index{display:block;margin-bottom:12px;}
-.kb-root .sec-title{font-size:clamp(1.9rem,5.4vw,3.6rem);line-height:.92;}
+/* text-wrap:balance — a wrapped display title splits evenly ("WORK / WITH US")
+   instead of orphaning a short last word ("WORK WITH / US") (design-audit P3).
+   Explicit <br/> titles are unaffected. */
+.kb-root .sec-title{font-size:clamp(1.9rem,5.4vw,3.6rem);line-height:.92;text-wrap:balance;}
+.kb-root .hero-h .ln{text-wrap:balance;}
+/* ≤760px: stack the eyebrow ABOVE the title. Side-by-side, a long single-word
+   title ("COMMUNITIES") clipped at the viewport edge and the eyebrow squeezed
+   into a two-line side column (design-audit P2). .section qualifier outranks
+   later same-specificity variants (.kb-reviews-head align-items:flex-end). */
+@media(max-width:760px){
+  .kb-root .section .sec-head{flex-direction:column;align-items:flex-start;gap:8px;}
+}
 .kb-root .region{background:var(--navy);color:var(--cream);padding-bottom:0;}
 .kb-root .region .sec-head{border-color:var(--cream-40);}
 .kb-root .region-grid{
@@ -294,6 +307,13 @@ html.lenis, html.lenis body{height:auto;}
   transition:opacity .55s ease;
 }
 .kb-root .town-fill::after{content:"";position:absolute;inset:0;background:rgba(16,39,66,.4);}
+/* Persistent touch affordance — the photo reveal is hover-gated, so phone rows
+   read as a static stats table with no signal they navigate (design-audit P2).
+   Hidden where hover exists (the hover reveal is the affordance there). */
+.kb-root .town-arr{display:none;}
+@media(hover:none){
+  .kb-root .town-arr{display:block;position:absolute;right:2px;top:50%;transform:translateY(-50%);z-index:2;font-size:1.4rem;line-height:1;opacity:.7;}
+}
 @media(hover:hover){.kb-root .town-row:hover .town-fill{opacity:1;}.kb-root .town-row:hover .town-name{transform:translateX(18px);color:var(--cream);}.kb-root .town-row:hover .town-stats{color:var(--cream);}}
 .kb-root .town-row.lit .town-fill{opacity:1;}
 .kb-root .town-row.lit .town-name{color:var(--cream);}
@@ -583,7 +603,10 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .mkt-end{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--navy);border:2px solid var(--cream);z-index:2;}
 .kb-root .mkt-callout{position:absolute;transform:translate(-112%,-50%);font-family:var(--font-sans),sans-serif;font-size:.74rem;font-weight:700;letter-spacing:.01em;color:var(--navy);background:var(--cream);padding:3px 9px;border-radius:3px;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.35);z-index:2;}
 .kb-root .foot-cols{display:grid;grid-template-columns:1fr 1fr;gap:30px 24px;padding:48px 0;border-top:1px solid rgba(250,248,244,.16);border-bottom:1px solid rgba(250,248,244,.16);}
-@media(min-width:760px){.kb-root .foot-cols{grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:30px;}}
+/* Six tracks for six children (brand + 5 nav cols) — at five, the Sellers column
+   wrapped to a second row under the brand block and read as an afterthought
+   (design-audit P3). */
+@media(min-width:760px){.kb-root .foot-cols{grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:30px;}}
 .kb-root .foot-brand{grid-column:1/-1;}
 @media(min-width:760px){.kb-root .foot-brand{grid-column:auto;}}
 .kb-root .foot-brand .logo-img{height:58px;margin-bottom:16px;}
@@ -1264,7 +1287,11 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .kb-rev-who b{font-weight:700;color:var(--navy);font-size:.86rem;}
 .kb-root .kb-rev-who span{font-size:.68rem;letter-spacing:.05em;text-transform:uppercase;color:var(--navy-70);}
 @media (min-width:781px) and (max-width:1100px){.kb-root .kb-reviews-grid{grid-template-columns:repeat(2,1fr);}}
-@media (max-width:780px){.kb-root .kb-reviews-grid{grid-template-columns:1fr;}}
+@media (max-width:780px){.kb-root .kb-reviews-grid{grid-template-columns:1fr;}
+/* Mobile caps the stack at 4 cards — six full quotes made a multi-viewport wall
+   that buried the sections below (design-audit P2). "Read all on Google"
+   carries the rest. */
+.kb-root .kb-rev-card:nth-child(n+5){display:none;}}
 
 /* Market chart — year-over-year overlay legend + month axis */
 .kb-root .mkt-legend-years{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:14px;}

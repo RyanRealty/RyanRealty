@@ -7,6 +7,7 @@ import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCa
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
+import { listingDetailPath } from '@/lib/slug'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
@@ -139,10 +140,18 @@ export default async function Home() {
     }))
   const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
 
+  // Each tape item links to its listing (design-audit: real prices + addresses
+  // styled as content must honor the tap they invite).
   const tickerItems: KbTickerItem[] = tiles.slice(0, 6).map((t) => ({
     price: t.listPrice,
     address: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
     town: t.city ?? '',
+    href: listingDetailPath(
+      t.listingKey,
+      { streetNumber: t.streetNumber, streetName: t.streetName, city: t.city, postalCode: t.postalCode },
+      { city: t.city, subdivision: t.subdivisionName },
+      { mlsNumber: t.listNumber },
+    ),
   }))
 
   // Featured homes — shared resolver classifies each home's MLS media into a
@@ -193,17 +202,20 @@ export default async function Home() {
           }}
           lead="across Central Oregon, from the Deschutes to Smith Rock. Real numbers, direct from the brokers who close deals here."
         />
-        <KbExploreTowns towns={towns} />
-        <KbCommunities communities={communityItems} />
-        <KbFeatured items={featuredItems} />
+        {/* Eyebrows carry distinct scent copy — the defaults echoed the display
+            title verbatim ("Explore"/"EXPLORE"), reading as template filler
+            (design-audit P3). */}
+        <KbExploreTowns towns={towns} eyebrow="The six towns" />
+        <KbCommunities communities={communityItems} eyebrow="Resort & master-planned" />
+        <KbFeatured items={featuredItems} eyebrow="On the market now" />
         {/* fitToFeatures frames the actual inventory — the REGION box in this
             wide container padded half the visible map out to the Willamette
             Valley with zero pins (design-audit). */}
         <KbListingMap geojson={mapGeo} totalActive={pulse?.activeCount ?? mapFeatures.length} fitToFeatures />
         <KbTicker items={tickerItems} />
-        <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
-        <KbTeam />
-        <KbMarketHud data={marketData} />
+        {/* KbSell (the one seller-conversion surface) sits ahead of the review
+            stack + team + market HUD — as section 10 of 11 it never surfaced in
+            a 10-viewport mobile scroll (design-audit P2). */}
         <KbSell
           data={{
             medianListPrice: pulse?.medianListPrice ?? null,
@@ -211,6 +223,9 @@ export default async function Home() {
             soldCount30d: pulse?.soldCount30d ?? null,
           }}
         />
+        <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
+        <KbTeam />
+        <KbMarketHud data={marketData} asOf={pulse?.updatedAt ?? null} />
         <KbFooter towns={towns} />
       </SmoothScrollProvider>
     </main>

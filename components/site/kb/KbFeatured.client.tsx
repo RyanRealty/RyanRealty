@@ -144,7 +144,7 @@ export function KbFeatured({ items, eyebrow = 'Featured homes' }: { items: KbFea
         </div>
         <div className="lst-foot">
           <a href="/homes-for-sale" className="btn alt">
-            All homes for sale <span className="arr">→</span>
+            Browse homes <span className="arr">→</span>
           </a>
         </div>
       </div>

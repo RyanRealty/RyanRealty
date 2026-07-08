@@ -2,7 +2,7 @@
   "route": "app/sell/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/sell/index.html",
   "competitiveTarget": "Beat generic 'list with us' pages: honest value props (real comps, local broker, no hand-offs), a live current-market line, and a single clear valuation CTA, with zero invented results or 'verifiable results' claims (D99).",
-  "note": "KB (kinetic-brutalist) conversion 2026-06-18 (Phase 9 convergence). Restyled in place: every section, DAL call, FAQ item, internal link, and the #marketing-plan anchor from the prior Wave 3 build are preserved. KbNav + KbFooter carry the chrome; HideChrome for the default SiteHeader/SiteFooter is a shared-component edit deferred to the orchestrator. KbHero replaces the legacy HeroBlock; MetadataBlock (BreadcrumbList + FAQPage JSON-LD) + KbBreadcrumb replace the legacy PageBreadcrumb; KbSectionTracker adds the page-contract tracking. The existing seller sections (SellValueProps, SellProcess, SellMarketingPlan, SellCommission, SellMarketContext, SellValuationCTA, LifestyleStrip, ContentSection 'How it works', CTABar, FAQBlock) render unchanged inside .kb-root with design-system tokens. The lead path is still the /lp/seller-home-value LP; this page embeds no form. Current-market line is live getMarketPulse(Bend), classified by canonical MoS thresholds.",
+  "note": "KB (kinetic-brutalist) conversion 2026-06-18 (Phase 9 convergence). Restyled in place: every section, DAL call, FAQ item, internal link, and the #marketing-plan anchor from the prior Wave 3 build are preserved. KbNav + KbFooter carry the chrome; HideChrome for the default SiteHeader/SiteFooter is a shared-component edit deferred to the orchestrator. KbHero replaces the legacy HeroBlock; MetadataBlock (BreadcrumbList + FAQPage JSON-LD) + KbBreadcrumb replace the legacy PageBreadcrumb; KbSectionTracker adds the page-contract tracking. The existing seller sections (SellValueProps, SellProcess, SellMarketingPlan, SellCommission, SellMarketContext, SellValuationCTA, LifestyleStrip, CTABar, FAQBlock) render inside .kb-root with design-system tokens. The ContentSection 'How it works' block was removed 2026-07 (design-audit P2): a word-for-word duplicate of SellProcess. The lead path is still the /lp/seller-home-value LP; this page embeds no form. Current-market line is live getMarketPulse(Bend), classified by canonical MoS thresholds.",
   "requiredComponents": [
     {
       "name": "KbNav",
@@ -62,11 +62,6 @@
     {
       "name": "SellValuationCTA",
       "section": "mid-page valuation CTA band — 'Tell us your address' -> /lp/seller-home-value, trust bullets, phone CTA",
-      "blocking": true
-    },
-    {
-      "name": "ContentSection",
-      "section": "'How it works' — four verified steps from valuation to close",
       "blocking": true
     },
     {

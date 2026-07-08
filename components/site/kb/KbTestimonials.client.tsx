@@ -12,7 +12,7 @@ const STAR_PATH =
   'M12 1.6 L15.09 8.01 L22.06 8.86 L16.95 13.62 L18.27 20.51 L12 17.12 L5.73 20.51 L7.05 13.62 L1.94 8.86 L8.91 8.01 Z'
 
 /**
- * KB Testimonials — compact "Recent reviews" card grid (matches the
+ * KB Testimonials — compact "In their words" review card grid (matches the
  * design_system ui_kits/team mockup). Up to six verified Google reviews render
  * as hard-edged cards, each with a five-star rating, the verbatim quote, and
  * attribution. This REPLACES the prior single oversized auto-cycling plate
@@ -51,9 +51,12 @@ export function KbTestimonials({ reviews }: { reviews: KbReview[] }) {
     <section className="section kb-reviews" id="reviews" ref={root} aria-label="Client reviews">
       <div className="wrap">
         <div className="sec-head kb-reviews-head">
+          {/* "Recent reviews" made a freshness claim the undated cards could not
+              back — the quotes are verbatim Google reviews, not a dated feed
+              (design-audit P3). */}
           <div>
-            <span className="sec-index">In their words</span>
-            <h2 className="sec-title display">Recent reviews</h2>
+            <span className="sec-index">Google reviews</span>
+            <h2 className="sec-title display">In their words</h2>
           </div>
           <a className="kb-reviews-all" href={GOOGLE_URL} target="_blank" rel="noopener">
             Read all on Google <span className="arr">→</span>

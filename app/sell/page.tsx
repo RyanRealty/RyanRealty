@@ -21,7 +21,8 @@
  * Section stack: KbNav · MetadataBlock (Service/Breadcrumb/FAQPage JSON-LD) ·
  *   KbBreadcrumb · KbHero · SellValueProps · SellProcess · SellMarketingPlan ·
  *   SellCommission · SellMarketContext · LifestyleStrip · SellValuationCTA ·
- *   ContentSection ("How it works") · CTABar · FAQBlock · KbFooter.
+ *   CTABar · FAQBlock · KbFooter. (The "How it works" ContentSection was
+ *   removed 2026-07 — a word-for-word duplicate of SellProcess, design-audit P2.)
  *
  * Parity contract: design_system/ryan-realty/ui_kits/sell/parity.json (KB set).
  */
@@ -32,7 +33,6 @@ import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { LifestyleStrip } from '@/components/site/LifestyleStrip'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { ContentSection } from '@/components/site/ContentSection'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { CTABar } from '@/components/site/CTABar'
 import { SellValueProps } from '@/components/site/sell/SellValueProps'
@@ -41,7 +41,6 @@ import { SellMarketingPlan } from '@/components/site/sell/SellMarketingPlan'
 import { SellCommission } from '@/components/site/sell/SellCommission'
 import { SellValuationCTA } from '@/components/site/sell/SellValuationCTA'
 import { SellMarketContext } from '@/components/site/sell/SellMarketContext'
-import { Body } from '@/components/site/primitives'
 import { CONTACT } from '@/lib/brand/contact'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
@@ -209,32 +208,10 @@ export default async function SellPage() {
           phoneHref={`tel:${CONTACT.phoneDirectTel}`}
         />
 
-        <ContentSection
-          eyebrow="How it works"
-          title="From first call to closing table."
-          tone="default"
-          divider
-          width="wide"
-        >
-          <div className="space-y-4">
-            <Body size="default" tone="muted">
-              <strong className="text-foreground font-semibold">Request a valuation.</strong>{' '}
-              Share your address and your timeline. We prepare the written CMA and email it within 24 hours.
-            </Body>
-            <Body size="default" tone="muted">
-              <strong className="text-foreground font-semibold">Review the numbers together.</strong>{' '}
-              We walk you through the comparable sales, the active competition, and an honest price range. You decide the list price from real data.
-            </Body>
-            <Body size="default" tone="muted">
-              <strong className="text-foreground font-semibold">List and market.</strong>{' '}
-              Professional photography within 48 hours of signing. MLS syndication, open-house cadence, and weekly written updates on showings and traffic.
-            </Body>
-            <Body size="default" tone="muted">
-              <strong className="text-foreground font-semibold">Close.</strong>{' '}
-              We review every offer, negotiate, manage the transaction through inspection and appraisal, and stay with you to the closing table. The same broker, start to finish.
-            </Body>
-          </div>
-        </ContentSection>
+        {/* The "How it works — From first call to closing table" ContentSection
+            was removed (design-audit P2): it restated SellProcess word for word
+            (CMA, 48-hour photos, weekly updates, same broker to close) and
+            stretched the page without adding a fact. */}
 
         <CTABar
           eyebrow="What is your home worth?"

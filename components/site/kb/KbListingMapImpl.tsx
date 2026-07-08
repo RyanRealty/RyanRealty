@@ -68,7 +68,9 @@ export function KbListingMapImpl({
   polygons,
   eyebrow = 'Central Oregon',
   title = 'Every home\nfor sale',
-  subtitle = 'Every active listing across the six cities, on the real terrain. Click any dot for the price, the beds, and the street.',
+  // Input-neutral verb: "click" mismatched phones, where the gesture is a tap
+  // (design-audit P3).
+  subtitle = 'Every active listing across the six cities, on the real terrain. Open any dot for the price, the beds, and the street.',
   centerLonLat,
 }: {
   geojson: KbMapGeo
@@ -251,7 +253,7 @@ export function KbListingMapImpl({
         </div>
         <div className="sec-cta">
           <a href="/homes-for-sale" className="btn">
-            Search every listing <span className="arr">→</span>
+            Browse homes <span className="arr">→</span>
           </a>
         </div>
       </div>

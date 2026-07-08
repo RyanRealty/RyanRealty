@@ -17,7 +17,9 @@ export function KbExploreTowns({
   eyebrow = 'Explore',
   title = 'Explore',
   sectionId = 'towns',
-  cta = { href: '/homes-for-sale', label: 'Search homes in every town' },
+  // "Browse homes" is the one verb pair for every /homes-for-sale CTA on a page
+  // (design-audit P3: six different labels read as six different destinations).
+  cta = { href: '/homes-for-sale', label: 'Browse homes' },
 }: {
   towns: KbTownItem[]
   eyebrow?: string
@@ -75,6 +77,10 @@ export function KbExploreTowns({
                   <span className="town-price mono-num">{kbMoneyFull(t.medianPrice)} median</span>
                 ) : null}
               </span>
+              {/* Persistent affordance for touch devices — the hover-only photo
+                  reveal left phone rows reading as a static stats table
+                  (design-audit P2). Shown via CSS on hover:none only. */}
+              <span className="town-arr" aria-hidden="true">→</span>
             </a>
           ))}
         </div>

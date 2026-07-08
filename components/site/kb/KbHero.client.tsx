@@ -81,7 +81,9 @@ export function KbHero({
   statless = false,
   countNoun,
   cta = { href: '/homes-for-sale', label: 'Browse' },
-  ctaSecondary = { href: '/sell/valuation', label: 'Sell' },
+  // Value framing, not a bare one-word "Sell" — the ghost button was the whole
+  // mobile seller path above the fold (design-audit P2).
+  ctaSecondary = { href: '/sell/valuation', label: 'Home worth?' },
 }: KbHeroProps) {
   const root = useRef<HTMLElement>(null)
   const router = useRouter()
@@ -173,7 +175,11 @@ export function KbHero({
         ) : null}
         <div className="hero-tag eyebrow"><span className="dot" /> {eyebrow}</div>
         <h1 className="hero-h display" aria-label={`${titleTop} ${titleBottom}`}>
-          <span className="reveal-mask" aria-hidden="true"><span className="ln reveal-inner">{titleTop}</span></span>
+          {/* Explicit space between the two inline-block reveal masks: when a
+              short two-word title fits on one line the words keep their gap
+              ("Contact Us", not "ContactUs"); at a line wrap the space
+              collapses, so long titles are unaffected (design-audit P2). */}
+          <span className="reveal-mask" aria-hidden="true"><span className="ln reveal-inner">{titleTop}</span></span>{' '}
           <span className="reveal-mask" aria-hidden="true"><span className="ln indent reveal-inner">{titleBottom}</span></span>
         </h1>
         {showSearch ? (

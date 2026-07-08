@@ -260,7 +260,7 @@ export default function SellerLPForm({
           disabled={pending}
           className="mt-3 h-16 w-full rounded-xl bg-warning text-lg font-semibold text-warning-foreground shadow-xl transition-colors hover:bg-warning/90 disabled:opacity-70"
         >
-          {pending ? 'Working…' : isListNow ? 'Start my home sale →' : 'Get my home value →'}
+          {pending ? 'Working…' : isListNow ? 'Book my free consultation →' : 'Get my home value →'}
         </Button>
       </form>
     )
@@ -276,8 +276,17 @@ export default function SellerLPForm({
         aria-labelledby={`${formId}-heading`}
         noValidate
       >
+        {/* list-now keeps ONE ask end-to-end: the page CTA says "Book a free
+            consultation", so the form heading + button say it too — no shift to
+            a valuation promise mid-funnel (design-audit P2). */}
         <h2 id={`${formId}-heading`} className="font-display text-xl font-semibold leading-snug text-primary">
-          {knownVisitor ? 'Welcome back. See what your home is worth.' : 'See what your home is worth'}
+          {isListNow
+            ? knownVisitor
+              ? 'Welcome back. Book your free consultation.'
+              : 'Book a free consultation'
+            : knownVisitor
+              ? 'Welcome back. See what your home is worth.'
+              : 'See what your home is worth'}
         </h2>
         <div className="mt-5">
           <Label htmlFor={`${formId}-seller-lp-address-card`} className="sr-only">
@@ -309,7 +318,7 @@ export default function SellerLPForm({
           disabled={pending}
           className="mt-5 h-14 w-full rounded-xl bg-primary text-lg font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-70"
         >
-          {pending ? 'Working…' : isListNow ? 'Start my home sale →' : 'Get my home value →'}
+          {pending ? 'Working…' : isListNow ? 'Book my free consultation →' : 'Get my home value →'}
         </Button>
       </form>
     )

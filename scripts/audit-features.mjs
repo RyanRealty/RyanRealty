@@ -109,8 +109,8 @@ async function main() {
   console.log('\n=== COOKIE CONSENT ===')
   const cookie = await context.newPage()
   await cookie.goto(`${BASE}/about`, { timeout: 30000, waitUntil: 'networkidle' })
-  log('Accept All button', await cookie.locator('button:has-text("Accept All")').first().isVisible().catch(() => false))
-  log('Manage Preferences', await cookie.locator('button:has-text("Manage Preferences")').first().isVisible().catch(() => false))
+  log('Accept all button', await cookie.locator('button:has-text("Accept all")').first().isVisible().catch(() => false))
+  log('Preferences', await cookie.locator('button:has-text("Preferences")').first().isVisible().catch(() => false))
   log('Essential only', await cookie.locator('button:has-text("Essential only")').first().isVisible().catch(() => false))
   await cookie.close()
 
