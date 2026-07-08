@@ -4,7 +4,8 @@ import { useEffect, useRef } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { kbMoneyFull, type KbTownItem } from './types'
-import { CONTACT } from '@/lib/brand/contact'
+import { CONTACT, BRAND, BROKERS } from '@/lib/brand/contact'
+import { LEGAL_LINKS } from '@/lib/site-nav'
 
 /**
  * KB footer — dual-audience close + full sitemap. Per-town inventory fine print
@@ -136,14 +137,22 @@ export function KbFooter({
           </nav>
         </div>
         <div className="foot-bottom">
-          <p>&copy; 2026 Ryan Realty · Principal Broker Matt Ryan · Licensed in Oregon · Equal Housing Opportunity</p>
+          <p>&copy; 2026 {BRAND.legalName} · Principal Broker Matt Ryan · Licensed in Oregon · Equal Housing Opportunity</p>
           {/* Legal links (design-audit P2): zero /privacy, /terms, /fair-housing
-              links existed anywhere in the KB footer. */}
+              links existed anywhere in the KB footer. Now reads from the SAME
+              LEGAL_LINKS the portal footer uses (was a hand-typed 4-link
+              subset missing DMCA, with "Terms of service" vs the portal's
+              "Terms of use" — two footers disagreeing on their own link
+              text, design-audit P2). */}
           <p className="foot-legal">
-            <a href="/privacy">Privacy policy</a>
-            <a href="/terms">Terms of service</a>
-            <a href="/fair-housing">Fair housing</a>
-            <a href="/accessibility">Accessibility</a>
+            {LEGAL_LINKS.map((link) => (
+              <a key={link.href} href={link.href}>{link.label}</a>
+            ))}
+          </p>
+          {/* MLS attribution — the portal footer carries this, the editorial
+              one didn't (design-audit P2, same finding). */}
+          <p className="foot-fine">
+            Listings data provided by Oregon Data Share and Morgan Data Shuttle. Information deemed reliable but not guaranteed. Principal Broker license <span className="tabular-nums">{BROKERS.matt.license}</span>.
           </p>
           {fine ? <p className="foot-fine">Active single-family by town: {fine}. Figures from the MLS.</p> : null}
         </div>

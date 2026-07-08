@@ -102,8 +102,15 @@ export default async function SiteHeader() {
           <CTAButton href="/lp/buyer-listing-alerts" tone="on-navy-ghost" size="md" className="hidden lg:inline-flex whitespace-nowrap">
             Get listing alerts
           </CTAButton>
+          {/* Label matches the KB nav/footer surfaces exactly (no trailing
+              "?" there) — design-audit P2 called out the same seller CTA
+              carrying different label text across the site. Destination
+              stays /lp/seller-home-value: it's the ad-funnel LP with its own
+              GA4/FUB attribution instrumentation (seller.ryan-realty.com
+              rewrites here, "Seller LP (gold)" lead-origin tracking) — not a
+              stray duplicate of /sell/valuation, so it isn't repointed. */}
           <CTAButton href="/lp/seller-home-value" tone="on-navy" size="md" className="hidden sm:inline-flex whitespace-nowrap">
-            What’s my home worth?
+            What’s my home worth
           </CTAButton>
           <MobileNav menu={MENU} navData={navData} />
         </div>

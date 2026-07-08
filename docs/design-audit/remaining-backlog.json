@@ -207,69 +207,6 @@
     "hint": "kb.css:931 mobile .art-title still 8vw (~31px at 390px) — long all-caps Amboqia card titles still run 5-6 lines on mobile. No clamp change shipped. Fi"
   },
   {
-    "index": 186,
-    "group": "consistency-sweep",
-    "page": "home / listing detail / all editorial pages (footer)",
-    "sev": "P2",
-    "effort": "small",
-    "issue": "The site ships two entirely different footers. The portal footer (search, login, 404) has the legal row — Privacy policy, Terms of use, Accessibility,",
-    "hint": "KbFooter.client.tsx still ends at '© 2026 Ryan Realty · Principal Broker Matt Ryan · Licensed in Oregon · Equal Housing Opportunity' (lines 106-109) —"
-  },
-  {
-    "index": 188,
-    "group": "consistency-sweep",
-    "page": "site-wide seller entry points (cross-page)",
-    "sev": "P2",
-    "effort": "small",
-    "issue": "The identical seller action carries four labels and three destinations depending on which chrome you're in: portal header 'What's my home worth?' → /l",
-    "hint": "Fragmentation persists across all three cited surfaces: SiteHeader.tsx:105-106 'What's my home worth?' → /lp/seller-home-value; KbNav.client.tsx:39 'W"
-  },
-  {
-    "index": 189,
-    "group": "consistency-sweep",
-    "page": "sell / blog / team / faq / about (cross-page hero template)",
-    "sev": "P2",
-    "effort": "small",
-    "issue": "Every editorial page reuses the identical hero block — full-bleed photo, giant Amboqia H1, the buyer search bar '3 bed under $800k in Bend with a shop",
-    "hint": "Partially fixed: /sell now passes showSearch={false} + valuation CTA (app/sell/page.tsx:167-168), and /sell/valuation + /contact were fixed in Phase B"
-  },
-  {
-    "index": 190,
-    "group": "consistency-sweep",
-    "page": "home vs search (mobile chrome)",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "The mobile menu control changes identity across the seam: editorial pages use a text button 'MENU +' top-right over the hero, while the portal search ",
-    "hint": "Still two affordances: editorial KbNav.client.tsx:130-131 renders a text button 'Menu +' while portal MobileNav.tsx uses a boxed Bars3Icon hamburger i"
-  },
-  {
-    "index": 191,
-    "group": "consistency-sweep",
-    "page": "/login",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "The sign-in card re-typesets the brand name as plain bold text 'Ryan Realty' directly beneath the header that already shows the real wordmark — duplic",
-    "hint": "app/login/page.tsx:29-31 still renders <Link href=\"/\" className=\"text-xl font-bold text-primary\">Ryan Realty</Link> — the brand name re-typeset as pla"
-  },
-  {
-    "index": 192,
-    "group": "consistency-sweep",
-    "page": "/not-found (404)",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "The 404 page's quick links ('Browse homes for sale', 'Market reports', 'Sell your home') are borderless white pills that match neither register's butt",
-    "hint": "Half stale, half open. The 'borderless white pills' premise is wrong: the quick links are already the portal's standard outline Buttons (NotFoundClien"
-  },
-  {
-    "index": 193,
-    "group": "consistency-sweep",
-    "page": "cities-bend / sell / listing detail (number formatting)",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "The same dollar values render in two formats across adjacent surfaces: Bend median is '$775,000' in the /sell hero but '$775K' in /cities/bend's BY TH",
-    "hint": "Both cited mismatches persist. /cities/[slug]/page.tsx:161 defines fmtK → '$775K' for the city facts table while the /sell hero uses kbMoneyFull → '$7"
-  },
-  {
     "index": 104,
     "group": "market-data",
     "page": "price-drops",

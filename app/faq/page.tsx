@@ -230,6 +230,7 @@ export default async function FAQPage() {
           lead="Honest answers to the questions Bend buyers and sellers ask us every week."
           videoSrc={null}
           posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          showSearch={false}
         />
 
         {/* CTA row preserved from the prior hero. */}

@@ -95,6 +95,9 @@ const CENTRAL_OREGON_CITY_SLUGS = new Set([
 const monthLabel = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }) : ''
 const fmtK = (n: number | null): string | null => (n != null ? `$${Math.round(n / 1000).toLocaleString()}K` : null)
+// Full-thousand format for facts tables (brand rule: $895,000 not $895K). fmtK
+// stays for the character-constrained meta description below.
+const fmtFull = (n: number | null): string | null => (n != null ? `$${(Math.round(n / 1000) * 1000).toLocaleString('en-US')}` : null)
 
 function openHouseWhen(eventDate: string, start: string | null, end: string | null): string {
   const day = new Date(eventDate + 'T12:00:00Z').toLocaleDateString('en-US', {
@@ -251,11 +254,11 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   )
   const aboutFacts: { label: string; value: string }[] = [
     { label: 'Active single-family', value: (activeCount ?? 0).toLocaleString('en-US') },
-    ...(medianListPrice != null ? [{ label: 'Median list', value: fmtK(medianListPrice) ?? '—' }] : []),
+    ...(medianListPrice != null ? [{ label: 'Median list', value: fmtFull(medianListPrice) ?? '—' }] : []),
     ...(medianDays != null
       ? [{ label: pulse?.medianDaysToPending != null ? 'Median to pending' : 'Median days on market', value: `${Math.round(medianDays)} days` }]
       : []),
-    ...(stats?.medianSalePrice != null ? [{ label: 'Median sold, 1 yr', value: fmtK(stats.medianSalePrice) ?? '—' }] : []),
+    ...(stats?.medianSalePrice != null ? [{ label: 'Median sold, 1 yr', value: fmtFull(stats.medianSalePrice) ?? '—' }] : []),
     { label: 'City', value: cityName },
   ]
 

@@ -166,7 +166,7 @@ async function fetchAllCityActiveSfr(cityName: string): Promise<Awaited<ReturnTy
 
 const monthLabel = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }) : ''
-const fmtK = (n: number | null): string | null => (n != null ? `$${Math.round(n / 1000).toLocaleString()}K` : null)
+const fmtFull = (n: number | null): string | null => (n != null ? `$${(Math.round(n / 1000) * 1000).toLocaleString('en-US')}` : null)
 
 function openHouseWhen(eventDate: string, start: string | null, end: string | null): string {
   const day = new Date(eventDate + 'T12:00:00Z').toLocaleDateString('en-US', {
@@ -438,9 +438,9 @@ export default async function CommunityDetailPage({ params }: Props) {
   }
   const aboutFacts: { label: string; value: string }[] = [
     { label: 'Active single-family', value: activeCount.toLocaleString('en-US') },
-    ...(medianListPrice != null ? [{ label: 'Median list', value: fmtK(medianListPrice) ?? '—' }] : []),
+    ...(medianListPrice != null ? [{ label: 'Median list', value: fmtFull(medianListPrice) ?? '—' }] : []),
     ...(medianDays != null ? [{ label: pulse?.medianDaysToPending != null ? 'Median to pending' : 'Median days on market', value: `${Math.round(medianDays)} days` }] : []),
-    ...(stats?.medianSalePrice != null ? [{ label: 'Median sold, 1 yr', value: fmtK(stats.medianSalePrice) ?? '—' }] : []),
+    ...(stats?.medianSalePrice != null ? [{ label: 'Median sold, 1 yr', value: fmtFull(stats.medianSalePrice) ?? '—' }] : []),
     ...(registryEntry?.hoa_annual_estimate ? [{ label: 'HOA estimate', value: `$${registryEntry.hoa_annual_estimate.toLocaleString('en-US')}/yr` }] : []),
     { label: 'City', value: cityName },
   ]

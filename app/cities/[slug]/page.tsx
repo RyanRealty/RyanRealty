@@ -158,7 +158,7 @@ const CENTRAL_OREGON_CITY_SLUGS = new Set([
 
 const monthLabel = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }) : ''
-const fmtK = (n: number | null): string | null => (n != null ? `$${Math.round(n / 1000).toLocaleString()}K` : null)
+const fmtFull = (n: number | null): string | null => (n != null ? `$${(Math.round(n / 1000) * 1000).toLocaleString('en-US')}` : null)
 
 function openHouseWhen(eventDate: string, start: string | null, end: string | null): string {
   const day = new Date(eventDate + 'T12:00:00Z').toLocaleDateString('en-US', {
@@ -271,7 +271,7 @@ export default async function CityDetailPage({ params }: Props) {
       }).slice(0, 2)
   const aboutFacts: { label: string; value: string }[] = [
     ...(quickFacts?.population ? [{ label: 'Population', value: quickFacts.population }] : []),
-    ...(pulse?.medianListPrice ? [{ label: 'Median list', value: fmtK(pulse.medianListPrice) ?? '—' }] : []),
+    ...(pulse?.medianListPrice ? [{ label: 'Median list', value: fmtFull(pulse.medianListPrice) ?? '—' }] : []),
     { label: 'Active single-family', value: activeCount.toLocaleString('en-US') },
     ...(pulse?.medianDaysToPending != null ? [{ label: 'Median to pending', value: `${Math.round(pulse.medianDaysToPending)} days` }] : []),
     ...(quickFacts?.elevation ? [{ label: 'Elevation', value: quickFacts.elevation }] : []),

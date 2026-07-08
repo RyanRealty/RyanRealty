@@ -173,6 +173,7 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
           videoSrc={null}
           posterSrc={CONTENT_HERO_IMAGES.reports}
           mediaCaption="Central Oregon · Old Mill District"
+          showSearch={false}
         />
 
         {/* Latest posts header + share */}
