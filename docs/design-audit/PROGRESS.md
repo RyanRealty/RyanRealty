@@ -19,7 +19,18 @@ Mission: complete every item in [README.md](README.md) (the 2026-07-07 full-site
 
 Ratchet cleanups the gate required in touched files: `no-scrollbar` utility on the chip track, ladder-compliant widths (`w-screen max-w-sm`, `w-44`, `max-w-sm`), play-overlay `<button>` → design-system `<Button>`.
 
-## Phase B — conversion opens — IN PROGRESS
+## Phase B — conversion opens (2026-07-08) ✅
+
+| Item | Fix | Verified |
+|---|---|---|
+| Listing sidebar never stuck | `.kb-root` `overflow-x: hidden` → `clip` (hidden made kb-root the sticky containing block) | sidebar pinned at 96px at 50% scroll; 0px horizontal overflow on 6 kb pages at 390px |
+| One CTA row for every intent | KbHero gains `cta`/`ctaSecondary` props (default unchanged). /sell: "What's my home worth" filled + Browse ghost, search bar off; /sell/valuation: "Get my home value" → form anchor; /contact: "Send a message" → form anchor | DOM: all three heroes render intent CTAs, zero buyer search bars |
+| /sell ask buried ~11 screens | Early CTA section after SellValueProps (y≈1777 on mobile) + LP-style sticky mobile bottom bar (valuation + call) | both render; sticky bar pinned to viewport bottom |
+| Tour CTA dumped buyers on a blank form | intent=tour on all three listing CTAs; /contact renders the property card (photo, address, price, beds/baths, link back); tour-time select; "Request a tour" submit; intent-aware success copy | E2E: listing → Schedule a tour → card "63177 Iner, Bend $742,000 · 3 bd · 2 ba" + tour field + tour submit |
+| Sign-in modal fired over the tour form | /contact + /sell/valuation added to SignInPrompt suppression (lead forms are never interrupted) | E2E re-run: no modal on the tour form |
+| Tumalo tile rendered a bare name | KbExploreTowns renders "0 Active" instead of hiding the ledger | /housing-market: "Tumalo 0 Active" |
+
+Ratchet cleanups: ContactForm labels → `text-primary`; sell sticky bar `tracking-widest`; PriceCtaStrip/TextMattCTA arbitrary text sizes → ladder (`text-4xl/lg/sm/xs`, `leading-relaxed/normal`); PriceCtaStrip registered in `.design-token-lint-ignore` for its two KB `.btn` controls (same exception class as components/site/kb/).
 
 ## Phase C — market-stat pipeline unification — PENDING
 

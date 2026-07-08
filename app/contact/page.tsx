@@ -32,7 +32,9 @@ import { getSession } from '@/app/actions/auth'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
-import { listingsBrowsePath } from '@/lib/slug'
+import { getListingTiles } from '@/lib/data'
+import { formatPrice } from '@/lib/format/money'
+import { listingsBrowsePath, listingTileHref } from '@/lib/slug'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
 import { CONTACT } from '@/lib/brand/contact'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
@@ -73,9 +75,15 @@ export default async function ContactPage({ searchParams }: PageProps) {
   const pageUrl = `${getCanonicalSiteUrl()}/contact`
   const pageTitle = 'Contact Us | Ryan Realty'
   trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
-  // Listing tour/question CTAs land here with ?listingKey= (and intent=question).
+  // Listing tour/question CTAs land here with ?listingKey= (+ intent=tour|question).
   // Default to a buyer/property inquiry and carry the listing through to FUB.
   const defaultInquiry = params.inquiry ?? (params.listingKey ? 'Buying' : undefined)
+  const intent = params.intent === 'tour' ? 'tour' as const : params.intent === 'question' ? 'question' as const : undefined
+  // Show the buyer WHICH home their tour/question is about (design-audit P1 —
+  // the hottest intent moment used to land on a blank generic form).
+  const listingTile = params.listingKey
+    ? (await getListingTiles({ listingKeys: [params.listingKey], status: 'all', limit: 1 }).catch(() => []))[0] ?? null
+    : null
   const contactTitle = pageContent?.title?.trim() || 'Contact Us'
   // Split the last word onto the hero's second display line ("Contact" / "Us").
   const contactTitleWords = contactTitle.split(/\s+/)
@@ -130,6 +138,8 @@ export default async function ContactPage({ searchParams }: PageProps) {
           titleBottom={contactTitleBottom}
           lead="Questions about buying, selling, or just exploring? Reach out and we will get back to you quickly."
           showSearch={false}
+          cta={{ href: '#contact-form', label: 'Send a message' }}
+          ctaSecondary={null}
           videoSrc={null}
           posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
         />
@@ -167,9 +177,44 @@ export default async function ContactPage({ searchParams }: PageProps) {
                 style={{ border: 'var(--edge) solid var(--navy)' }}
               >
                 <span className="sec-index" style={{ display: 'block', marginBottom: '14px' }}>
-                  Send a message
+                  {intent === 'tour' ? 'Schedule a tour' : intent === 'question' ? 'Ask about this home' : 'Send a message'}
                 </span>
-                <ContactForm defaultInquiryType={defaultInquiry} listingKey={params.listingKey} />
+                {listingTile ? (
+                  <Link
+                    href={listingTileHref(listingTile)}
+                    className="mb-5 flex items-center gap-4 p-3"
+                    style={{ border: '1px solid var(--navy-12)' }}
+                  >
+                    {listingTile.photoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={listingTile.photoUrl}
+                        alt={[listingTile.streetNumber, listingTile.streetName].filter(Boolean).join(' ')}
+                        className="h-16 w-24 shrink-0 object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="h-16 w-24 shrink-0" style={{ background: 'var(--navy)' }} aria-hidden />
+                    )}
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold" style={{ color: 'var(--navy)' }}>
+                        {[listingTile.streetNumber, listingTile.streetName].filter(Boolean).join(' ')}
+                        {listingTile.city ? `, ${listingTile.city}` : ''}
+                      </p>
+                      <p className="mono-num text-sm" style={{ color: 'var(--navy-70)' }}>
+                        {listingTile.listPrice != null ? formatPrice(listingTile.listPrice) : ''}
+                        {listingTile.beds != null ? ` · ${listingTile.beds} bd` : ''}
+                        {listingTile.baths != null ? ` · ${listingTile.baths} ba` : ''}
+                      </p>
+                    </div>
+                  </Link>
+                ) : null}
+                <ContactForm
+                  defaultInquiryType={defaultInquiry}
+                  listingKey={params.listingKey}
+                  intent={intent}
+                  hideListingNote={!!listingTile}
+                />
               </div>
               <div>
                 <span className="sec-index" style={{ display: 'block', marginBottom: '14px' }}>

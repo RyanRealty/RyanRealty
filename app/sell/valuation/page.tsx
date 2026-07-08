@@ -87,6 +87,8 @@ export default function SellValuationPage() {
           titleBottom="home worth?"
           lead="A custom valuation built from recent comparable sales and current market trends in your neighborhood, with the comps behind the number."
           showSearch={false}
+          cta={{ href: '#home_valuation', label: 'Get my home value' }}
+          ctaSecondary={null}
           videoSrc={null}
           posterSrc={VALUATION_HERO}
         />

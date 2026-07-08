@@ -50,7 +50,7 @@ export function TextMattCTA({
   primaryCta,
   className,
 }: Props) {
-  const tourHref = primaryCta?.href ?? `/contact?listingKey=${encodeURIComponent(listingKey)}`
+  const tourHref = primaryCta?.href ?? `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=tour`
   const tourLabel = primaryCta?.label ?? 'Schedule a tour'
   const phone = broker.phoneDirect ?? broker.phoneFub ?? null
 
@@ -69,7 +69,7 @@ export function TextMattCTA({
       <Stack gap="default">
         <Eyebrow>Talk to a broker</Eyebrow>
         <H3>{headline ?? 'Questions about this home?'}</H3>
-        <Body size="small" tone="muted" className="leading-[1.55]">
+        <Body size="small" tone="muted" className="leading-relaxed">
           {body ?? 'Tour requests usually get a same-day reply. No pressure, no obligation.'}
         </Body>
 
@@ -85,10 +85,10 @@ export function TextMattCTA({
           />
           <div className="min-w-0 flex flex-col gap-1.5">
             <div>
-              <div className="text-[16px] font-semibold leading-tight" style={{ color: 'var(--navy)' }}>
+              <div className="text-base font-semibold leading-tight" style={{ color: 'var(--navy)' }}>
                 {broker.fullName}
               </div>
-              <div className="text-[12px] leading-snug" style={{ color: 'var(--navy-70)' }}>
+              <div className="text-xs leading-snug" style={{ color: 'var(--navy-70)' }}>
                 {broker.title}
                 {broker.licenseNumber ? (
                   <>
@@ -101,7 +101,7 @@ export function TextMattCTA({
             {phone ? (
               <a
                 href={`tel:${digits(phone)}`}
-                className="flex items-center gap-2 text-[15px] font-semibold tabular-nums"
+                className="flex items-center gap-2 text-sm font-semibold tabular-nums"
                 style={{ color: 'var(--navy)' }}
               >
                 <PhoneIcon />
@@ -111,7 +111,7 @@ export function TextMattCTA({
             {broker.email ? (
               <a
                 href={`mailto:${broker.email}`}
-                className="flex items-center gap-2 text-[12.5px] break-all leading-snug"
+                className="flex items-center gap-2 text-xs break-all leading-snug"
                 style={{ color: 'var(--navy-70)' }}
               >
                 <MailIcon />
@@ -150,21 +150,21 @@ export function TextMattCTA({
               <span aria-hidden style={{ color: 'var(--navy)', letterSpacing: '0.04em', fontSize: '0.95rem' }}>
                 {'★'.repeat(Math.round(reviews!.averageRating))}
               </span>
-              <span className="text-[12px] font-semibold tabular-nums" style={{ color: 'var(--navy)' }}>
+              <span className="text-xs font-semibold tabular-nums" style={{ color: 'var(--navy)' }}>
                 {reviews!.averageRating.toFixed(1)}
               </span>
-              <span className="text-[12px]" style={{ color: 'var(--navy-70)' }}>
+              <span className="text-xs" style={{ color: 'var(--navy-70)' }}>
                 {reviews!.count} Google reviews
               </span>
             </div>
             {quote ? (
               <blockquote
-                className="mt-2 text-[12.5px] leading-[1.5]"
+                className="mt-2 text-xs leading-normal"
                 style={{ color: 'rgba(16,39,66,0.78)' }}
               >
                 {truncate(quote.text, 150)}
                 {quote.reviewerName ? (
-                  <cite className="mt-1 block not-italic text-[11px]" style={{ color: 'var(--navy-70)' }}>
+                  <cite className="mt-1 block not-italic text-xs" style={{ color: 'var(--navy-70)' }}>
                     {quote.reviewerName}
                   </cite>
                 ) : null}

@@ -117,7 +117,7 @@ export function PriceCtaStrip({
       : null
 
   const tourHref =
-    scheduleHref ?? `/contact?listingKey=${encodeURIComponent(listing.listingKey)}`
+    scheduleHref ?? `/contact?listingKey=${encodeURIComponent(listing.listingKey)}&intent=tour`
   const askHrefResolved =
     askHref ?? `/contact?listingKey=${encodeURIComponent(listing.listingKey)}&intent=question`
 
@@ -171,13 +171,13 @@ export function PriceCtaStrip({
     >
       <DisplayHeading
         as="h1"
-        className="text-[clamp(2.2rem,4vw,2.75rem)] leading-none tracking-[-0.02em]"
+        className="text-4xl leading-none tracking-tight"
         style={{ color: 'var(--navy)' }}
       >
         <Price value={headlinePrice} />
       </DisplayHeading>
       {street ? (
-        <div className="mt-1 text-[18px]" style={{ color: 'var(--navy)' }}>
+        <div className="mt-1 text-lg" style={{ color: 'var(--navy)' }}>
           {street}
         </div>
       ) : null}
@@ -188,7 +188,7 @@ export function PriceCtaStrip({
       ) : null}
 
       {drop ? (
-        <div className="mt-2 text-[13px]" style={{ color: 'rgba(16,39,66,0.72)' }}>
+        <div className="mt-2 text-sm" style={{ color: 'rgba(16,39,66,0.72)' }}>
           Down <Price value={drop} /> from original list price{' '}
           <span style={{ color: 'rgba(16,39,66,0.72)' }}>
             <Price value={listing.originalListPrice} className="line-through" />

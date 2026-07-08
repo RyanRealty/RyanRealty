@@ -280,6 +280,12 @@ app/components/admin/AdminMobileTabBar.tsx
 # class as the V3 hero search above. Each KB island is listed as added.
 components/site/kb/
 app/concept/kb/
+# Listing-detail price strip (2026-07-08): renders inside .kb-root and uses the
+# KB .btn chip chrome for Save/Share — wrapping those in the shadcn <Button>
+# would stack two competing chrome systems on one control. Same KB exception
+# class as components/site/kb/ above; scope is the two .btn buttons only (text
+# sizes were cleaned to the ladder in the design-audit remediation).
+components/site/listing-detail/PriceCtaStrip.tsx
 
 # Agent Activity area chart + KPI sparklines (CRM reporting, 2026-07-01): recharts SVG
 # linearGradient stopColor + Area stroke/fill/dot props require literal hex. Same

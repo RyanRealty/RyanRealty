@@ -37,7 +37,11 @@ html.lenis, html.lenis body{height:auto;}
   font-family:var(--font-sans),system-ui,sans-serif;
   font-weight:400;
   -webkit-font-smoothing:antialiased;
-  overflow-x:hidden;
+  /* clip, not hidden: `hidden` makes .kb-root a scroll container, which turns
+     it into the containing block for position:sticky and killed the listing
+     sidebar's lg:sticky (design-audit P1). `clip` clips identically but
+     leaves sticky positioning intact. */
+  overflow-x:clip;
   line-height:1.4;
 }
 .kb-root img{display:block;max-width:100%;}

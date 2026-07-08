@@ -56,6 +56,14 @@ type KbHeroProps = {
    * "60 homes for sale <lead>". Keeps the stat prefix honest (§0).
    */
   countNoun?: string
+  /**
+   * Per-page CTA intent (design-audit P1): the default Browse-primary/Sell-ghost
+   * pair steered sellers into buyer search on the seller money pages. Pass
+   * `cta` to set the filled primary; `ctaSecondary` for the ghost (or null to
+   * render the primary alone).
+   */
+  cta?: { href: string; label: string }
+  ctaSecondary?: { href: string; label: string } | null
 }
 
 export function KbHero({
@@ -72,6 +80,8 @@ export function KbHero({
   showSearch = true,
   statless = false,
   countNoun,
+  cta = { href: '/homes-for-sale', label: 'Browse' },
+  ctaSecondary = { href: '/sell/valuation', label: 'Sell' },
 }: KbHeroProps) {
   const root = useRef<HTMLElement>(null)
   const router = useRouter()
@@ -227,8 +237,8 @@ export function KbHero({
             )}
           </p>
           <div className="hero-cta-row">
-            <a href="/homes-for-sale" className="btn">Browse <span className="arr">→</span></a>
-            <a href="/sell/valuation" className="btn ghost">Sell</a>
+            <a href={cta.href} className="btn">{cta.label} <span className="arr">→</span></a>
+            {ctaSecondary ? <a href={ctaSecondary.href} className="btn ghost">{ctaSecondary.label}</a> : null}
           </div>
         </div>
       </div>

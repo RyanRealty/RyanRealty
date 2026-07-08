@@ -164,11 +164,30 @@ export default async function SellPage() {
           titleTop="Selling your home,"
           titleBottom="done honestly."
           lead="in Bend. The broker who prices your home is the broker who walks you to the finish line. Specific numbers from the data, no layered hand-offs."
+          showSearch={false}
+          cta={{ href: '/sell/valuation', label: "What's my home worth" }}
+          ctaSecondary={{ href: '/homes-for-sale', label: 'Browse' }}
           videoSrc={null}
           posterSrc={heroSrc ?? OLD_MILL_HERO}
         />
 
         <SellValueProps />
+
+        {/* Early ask (design-audit P1): the conversion modules used to sit ~11
+            mobile screens down — a seller who stops reading here still has a
+            path to the valuation. */}
+        <section className="section" id="sell-early-cta" aria-label="Get a home valuation">
+          <div className="wrap">
+            <div className="flex flex-wrap items-center gap-3 py-2">
+              <a href="/sell/valuation" className="btn alt">
+                {"What's my home worth"} <span className="arr">→</span>
+              </a>
+              <a href={`tel:${CONTACT.phoneDirectTel}`} className="btn alt" style={{ background: 'transparent', color: 'var(--navy)' }}>
+                Or call {CONTACT.phoneDirect}
+              </a>
+            </div>
+          </div>
+        </section>
 
         <SellProcess />
 
@@ -235,6 +254,28 @@ export default async function SellPage() {
 
         <KbFooter towns={[]} />
       </SmoothScrollProvider>
+
+      {/* Sticky mobile CTA bar (design-audit P1) — the ask reachable from every
+          scroll depth, same pattern as /lp/sell-your-home. Mobile only. */}
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t-2 px-3 py-3 sm:hidden" style={{ background: 'var(--cream)', borderColor: 'var(--navy)' }}>
+        <div className="flex items-center gap-2">
+          <a
+            href="/sell/valuation"
+            className="flex-1 px-4 py-3 text-center text-sm font-bold uppercase tracking-widest"
+            style={{ background: 'var(--navy)', color: 'var(--cream)' }}
+          >
+            {"What's my home worth"}
+          </a>
+          <a
+            href={`tel:${CONTACT.phoneDirectTel}`}
+            aria-label={`Call Ryan Realty at ${CONTACT.phoneDirect}`}
+            className="flex h-12 items-center justify-center px-3 text-sm font-bold"
+            style={{ border: '2px solid var(--navy)', color: 'var(--navy)' }}
+          >
+            Call
+          </a>
+        </div>
+      </div>
     </main>
   )
 }

@@ -24,9 +24,18 @@ const INQUIRY_OPTIONS = [
   { value: 'Relocation', label: 'Relocation' },
 ]
 
-export default function ContactForm({ defaultInquiryType, listingKey }: { defaultInquiryType?: string; listingKey?: string }) {
+const TOUR_TIME_OPTIONS = [
+  'As soon as possible',
+  'This weekend',
+  'A weekday evening',
+  'A weekday daytime',
+  'Flexible, broker suggests times',
+]
+
+export default function ContactForm({ defaultInquiryType, listingKey, intent, hideListingNote }: { defaultInquiryType?: string; listingKey?: string; intent?: 'tour' | 'question'; hideListingNote?: boolean }) {
   const [state, setState] = useState<{ error?: string; success?: boolean }>({})
   const [loading, setLoading] = useState(false)
+  const isTour = intent === 'tour'
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -38,6 +47,13 @@ export default function ContactForm({ defaultInquiryType, listingKey }: { defaul
     // Carry the listing the visitor was asking about (tour/question CTA), so the
     // broker knows which home and the lead is valued as a property inquiry.
     if (listingKey) formData.append('listingKey', listingKey)
+    // Tour intent: fold the preferred time into the message so the broker sees
+    // it in the lead body without any pipeline change.
+    const tourTime = formData.get('tourTime')
+    if (isTour && typeof tourTime === 'string' && tourTime) {
+      const msg = formData.get('message')
+      formData.set('message', `Tour request. Preferred time: ${tourTime}.${msg ? `\n${msg}` : ''}`)
+    }
     const result = await submitContactForm(formData)
     setLoading(false)
     setState(result)
@@ -58,15 +74,17 @@ export default function ContactForm({ defaultInquiryType, listingKey }: { defaul
         className="p-6"
         style={{ border: '3px solid var(--navy)', color: 'var(--navy)' }}
       >
-        <p className="font-display text-lg">Thanks for reaching out.</p>
-        <p className="mt-1 text-sm" style={{ color: 'var(--navy-70)' }}>We&apos;ll get back to you soon.</p>
+        <p className="font-display text-lg">{isTour ? 'Tour request received.' : 'Thanks for reaching out.'}</p>
+        <p className="mt-1 text-sm" style={{ color: 'var(--navy-70)' }}>
+          {isTour ? 'A broker will call or text to confirm a time within one business day.' : "We'll get back to you soon."}
+        </p>
       </div>
     )
   }
 
   return (
     <form onSubmit={handleSubmit} className="kb-tool-skin space-y-4">
-      {listingKey ? (
+      {listingKey && !hideListingNote ? (
         <p
           className="px-3 py-2 text-sm"
           style={{ border: '1px solid var(--navy-12)', color: 'var(--navy-70)' }}
@@ -75,7 +93,7 @@ export default function ContactForm({ defaultInquiryType, listingKey }: { defaul
         </p>
       ) : null}
       <div>
-        <Label htmlFor="contact-name" className="block text-sm font-medium text-[color:var(--navy)]">
+        <Label htmlFor="contact-name" className="block text-sm font-medium text-primary">
           Name
         </Label>
         <Input
@@ -87,7 +105,7 @@ export default function ContactForm({ defaultInquiryType, listingKey }: { defaul
         />
       </div>
       <div>
-        <Label htmlFor="contact-email" className="block text-sm font-medium text-[color:var(--navy)]">
+        <Label htmlFor="contact-email" className="block text-sm font-medium text-primary">
           Email <span className="text-destructive">*</span>
         </Label>
         <Input
@@ -100,7 +118,7 @@ export default function ContactForm({ defaultInquiryType, listingKey }: { defaul
         />
       </div>
       <div>
-        <Label htmlFor="contact-phone" className="block text-sm font-medium text-[color:var(--navy)]">
+        <Label htmlFor="contact-phone" className="block text-sm font-medium text-primary">
           Phone
         </Label>
         <Input
@@ -112,7 +130,7 @@ export default function ContactForm({ defaultInquiryType, listingKey }: { defaul
         />
       </div>
       <div>
-        <Label htmlFor="contact-inquiry" className="block text-sm font-medium text-[color:var(--navy)]">
+        <Label htmlFor="contact-inquiry" className="block text-sm font-medium text-primary">
           How can we help?
         </Label>
         <Select defaultValue={defaultInquiryType ?? 'General Inquiry'} name="inquiryType">
@@ -128,9 +146,28 @@ export default function ContactForm({ defaultInquiryType, listingKey }: { defaul
           </SelectContent>
         </Select>
       </div>
+      {isTour ? (
+        <div>
+          <Label htmlFor="contact-tour-time" className="block text-sm font-medium text-primary">
+            When would you like to see it?
+          </Label>
+          <Select defaultValue={TOUR_TIME_OPTIONS[0]} name="tourTime">
+            <SelectTrigger id="contact-tour-time" className="mt-1">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TOUR_TIME_OPTIONS.map((opt) => (
+                <SelectItem key={opt} value={opt}>
+                  {opt}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
       <div>
-        <Label htmlFor="contact-message" className="block text-sm font-medium text-[color:var(--navy)]">
-          Message
+        <Label htmlFor="contact-message" className="block text-sm font-medium text-primary">
+          {isTour ? 'Anything else? (optional)' : 'Message'}
         </Label>
         <Textarea
           id="contact-message"
@@ -145,7 +182,7 @@ export default function ContactForm({ defaultInquiryType, listingKey }: { defaul
         disabled={loading}
         className="w-full"
       >
-        {loading ? 'Sending…' : 'Send message'}
+        {loading ? 'Sending…' : isTour ? 'Request a tour' : 'Send message'}
       </Button>
       <SmsConsentDisclosure />
     </form>

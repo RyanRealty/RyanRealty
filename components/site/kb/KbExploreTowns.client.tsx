@@ -63,7 +63,9 @@ export function KbExploreTowns({
               {t.img ? <div className="town-fill" style={{ backgroundImage: `url('${t.img}')` }} /> : null}
               <span className="town-name">{t.name}</span>
               <span className="town-stats">
-                {t.activeCount > 0 ? (
+                {/* 0 renders as "0 Active" — hiding the ledger left a bare town
+                    name beside fully-populated rows (looked broken; design-audit). */}
+                {t.activeCount >= 0 ? (
                   <span className="town-count mono-num">
                     {t.activeCount.toLocaleString('en-US')}
                     <span className="lbl">Active</span>

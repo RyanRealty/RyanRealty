@@ -37,7 +37,7 @@ export default function ListingMobileContactBar({
   const phone = broker.phoneDirect ?? broker.phoneFub ?? null
   const tel = phone ? phone.replace(/[^\d]/g, '') : null
   const firstName = broker.fullName.split(/\s+/)[0]
-  const tourHref = `/contact?listingKey=${encodeURIComponent(listingKey)}`
+  const tourHref = `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=tour`
 
   return (
     <div className="listing-mobile-cta" data-shown={shown ? 'true' : 'false'} aria-hidden={!shown}>
