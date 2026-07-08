@@ -120,10 +120,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const listing = await getListingDetail(listingKey)
   if (!listing) notFound()
 
-  const street = [listing.streetNumber, listing.streetName].filter(Boolean).join(' ').trim()
+  const street = [listing.streetNumber, listing.streetName, listing.streetSuffix].filter(Boolean).join(' ').trim()
+  // Comma between street and city ("63177 Iner Loop, Bend, OR 97701") — the
+  // comma-less form matched no county/Zillow record (design-audit P1, trust).
   const addressFull = [street, listing.city ? `${listing.city}, OR` : '', listing.postalCode ?? '']
     .filter(Boolean)
-    .join(' ')
+    .join(', ')
+    .replace(/, OR,\s/, ', OR ')
     .trim()
   const description = listingShareSummary({
     price: listing.listPrice,
@@ -365,7 +368,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       }
     : reviews
 
-  const street = [listing.streetNumber, listing.streetName].filter(Boolean).join(' ').trim()
+  const street = [listing.streetNumber, listing.streetName, listing.streetSuffix].filter(Boolean).join(' ').trim()
   const cityHref = listing.citySlug ? `/cities/${listing.citySlug}` : null
 
   // Trail AFTER the Home root — ListingDetailShell renders it through the

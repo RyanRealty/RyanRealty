@@ -18,6 +18,19 @@ export default function SignupForm({ next }: Props) {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [needsConfirmation, setNeedsConfirmation] = useState(false)
+
+  if (needsConfirmation) {
+    return (
+      <div className="mt-6 rounded-xl border border-border bg-card p-6 text-center">
+        <p className="text-base font-semibold text-foreground">Check your email</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          We sent a confirmation link to <span className="font-medium text-foreground">{email.trim()}</span>.
+          Click it to activate your account, then sign in.
+        </p>
+      </div>
+    )
+  }
 
   async function handleOAuth(provider: 'google' | 'facebook') {
     setLoading(provider)
@@ -47,9 +60,16 @@ export default function SignupForm({ next }: Props) {
     })
     setLoading(null)
     if (result.ok) {
+      // No live session yet (email confirmation required, the hosted default):
+      // redirecting would land the user on the homepage signed-out with zero
+      // feedback (design-audit P1). Show the check-your-email state instead.
+      if (result.needsConfirmation) {
+        setNeedsConfirmation(true)
+        return
+      }
       router.refresh()
       if (result.next && result.next !== '/') window.location.href = result.next
-      else window.location.href = '/dashboard?welcome=1'
+      else window.location.href = '/account?welcome=1'
       return
     }
     setError(result.error)

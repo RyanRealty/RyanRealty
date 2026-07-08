@@ -32,7 +32,7 @@
     "app/lp/tetherow/page.tsx": 1716,
     "app/price-drops/page.tsx": 649,
     "app/reports/explore/ExploreClient.tsx": 919,
-    "app/search/[...slug]/page.tsx": 1037,
+    "app/search/[...slug]/page.tsx": 1041,
     "lib/cma-delivery.ts": 782,
     "lib/cma.ts": 839,
     "lib/data/crm/getEmailReporting.ts": 686,

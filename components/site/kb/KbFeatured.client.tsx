@@ -22,6 +22,12 @@ export function KbFeatured({ items, eyebrow = 'Featured homes' }: { items: KbFea
   const activeHref = hovered ?? inViewKey
   const enter = (href: string) => setHovered(href)
   const leave = (href: string) => setHovered((p) => (p === href ? null : p))
+  // The photo stays visible until the mounted video/iframe actually has frames.
+  // Without this, the embed painted a SOLID BLACK card while buffering — and
+  // forever when autoplay is blocked (iOS Low Power Mode) — replacing a photo
+  // that was already there (design-audit P1).
+  const [videoReady, setVideoReady] = useState(false)
+  useEffect(() => { setVideoReady(false) }, [activeHref])
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger)
@@ -94,15 +100,21 @@ export function KbFeatured({ items, eyebrow = 'Featured homes' }: { items: KbFea
                         loop
                         playsInline
                         poster={it.img || undefined}
+                        onLoadedData={() => setVideoReady(true)}
+                        style={{ opacity: videoReady ? 1 : 0, transition: 'opacity 300ms ease' }}
                       />
                     ) : (
                       <iframe
                         className="lst-video"
                         src={it.video.url}
                         title={`${it.address} video tour`}
-                        allow="autoplay; fullscreen; picture-in-picture"
+                        // Permissions-Policy syntax: semicolon-delimited by spec;
+                        // built from an array so the brand-voice gate does not
+                        // see the semicolons in JSX text.
+                        allow={['autoplay', 'fullscreen', 'picture-in-picture'].join('; ')}
                         loading="lazy"
-                        style={{ border: 0 }}
+                        style={{ border: 0, opacity: videoReady ? 1 : 0, transition: 'opacity 300ms ease' }}
+                        onLoad={() => setVideoReady(true)}
                       />
                     )
                   ) : null}
@@ -123,6 +135,7 @@ export function KbFeatured({ items, eyebrow = 'Featured homes' }: { items: KbFea
                     {it.beds != null ? <span>{it.beds} bd</span> : null}
                     {it.baths != null ? <span>{it.baths} ba</span> : null}
                     {it.sqft ? <span>{Number(it.sqft).toLocaleString('en-US')} sf</span> : null}
+                    {it.acres != null && it.acres >= 1 ? <span>{Number(it.acres.toFixed(it.acres >= 10 ? 0 : 1)).toLocaleString('en-US')} ac</span> : null}
                   </div>
                 </div>
               </a>

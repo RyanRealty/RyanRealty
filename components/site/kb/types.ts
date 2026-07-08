@@ -53,6 +53,9 @@ export interface KbFeaturedItem {
   beds: number | null
   baths: number | null
   sqft: number | null
+  /** Lot size in acres — rendered when acreage explains the price (a $11.9M
+   *  ranch showing only "3 bd · 3 ba · 2,268 sf" read like a price error). */
+  acres?: number | null
   img: string
   href: string
   /** Listing video tour, when the MLS feed has one — played as a muted

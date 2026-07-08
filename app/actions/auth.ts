@@ -118,7 +118,7 @@ export async function signUpWithEmailPassword(
   email: string,
   password: string,
   options?: { fullName?: string; next?: string; sourceUrl?: string }
-): Promise<{ ok: true; next?: string } | { ok: false; error: string }> {
+): Promise<{ ok: true; next?: string; needsConfirmation?: boolean } | { ok: false; error: string }> {
   const cookieStore = await cookies()
   if (options?.next) {
     const safeNext = safeRedirectPath(options.next)
@@ -146,6 +146,14 @@ export async function signUpWithEmailPassword(
     sourceUrl,
     message: 'Signed up (email)',
   }).catch(() => {})
+  // Supabase returns a user WITHOUT a session when email confirmation is
+  // required (the hosted default) and for the obfuscated existing-email
+  // response. The client used to treat every ok:true as a live session and
+  // hard-redirect — the new user landed on the homepage, signed out, with
+  // zero feedback (design-audit P1). Surface the state instead.
+  if (!data.session) {
+    return { ok: true, needsConfirmation: true }
+  }
   return { ok: true, next: safeRedirectPath(cookieStore.get(AUTH_NEXT_COOKIE)?.value) }
 }
 

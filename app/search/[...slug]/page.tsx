@@ -52,6 +52,7 @@ import {
 } from '../../actions/subdivision-descriptions'
 import SearchListingsToolbar from '../../../components/SearchListingsToolbar'
 import TrackSearchView from '../../../components/tracking/TrackSearchView'
+import { ResultsStamp } from '@/components/search/ResultsStamp.client'
 import { getSavedListingKeys } from '../../actions/saved-listings'
 import { getLikedListingKeys } from '../../actions/likes'
 import { getBuyingPreferences } from '../../actions/buying-preferences'
@@ -734,11 +735,14 @@ export default async function SearchPage({
 
       <Container className="py-8">
         {city && (
-          <TrackSearchView
-            city={city}
-            subdivision={decodedSubdivision ?? undefined}
-            resultsCount={totalCount}
-          />
+          <>
+            <ResultsStamp />
+            <TrackSearchView
+              city={city}
+              subdivision={decodedSubdivision ?? undefined}
+              resultsCount={totalCount}
+            />
+          </>
         )}
         {city && (
         <>

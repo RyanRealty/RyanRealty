@@ -45,6 +45,9 @@ const DETAIL_SELECT = [
   'TotalLivingAreaSqFt',
   'StreetNumber',
   'StreetName',
+  // Suffix (Loop/Rd/Ct) lives only in the raw feed payload — without it no
+  // address matches Zillow/county records (design-audit P1, trust).
+  'StreetSuffix:details->>StreetSuffix',
   'City',
   'State',
   'PostalCode',
@@ -142,6 +145,7 @@ type ListingRow = {
   TotalLivingAreaSqFt: number | null
   StreetNumber: string | null
   StreetName: string | null
+  StreetSuffix?: string | null
   City: string | null
   State: string | null
   PostalCode: string | null
@@ -263,6 +267,7 @@ function rowToDetail(row: ListingRow): ListingDetail {
     sqft: row.TotalLivingAreaSqFt,
     streetNumber: row.StreetNumber,
     streetName: row.StreetName,
+    streetSuffix: row.StreetSuffix ?? null,
     city: row.City,
     citySlug: slug(row.City),
     postalCode: row.PostalCode,
@@ -480,7 +485,7 @@ export const getListingDetail = async (listingKey: string): Promise<GetListingDe
     // cached null during a transient blip stay "Listing Not Found" until TTL.
     // v4 bump 2026-06-18 — media_suppressed gate nulls photoUrl (owner media-removal
     // requests); evicts entries cached before the suppression check existed.
-    ['listing-detail-v4', listingKey],
+    ['listing-detail-v5', listingKey],
     {
       revalidate: CACHE_WINDOWS.listingDetail,
       tags: [cacheTag.listings, cacheTag.listing(listingKey)],

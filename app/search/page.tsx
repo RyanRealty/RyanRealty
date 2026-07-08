@@ -39,6 +39,7 @@ import SearchResults from '@/components/search/SearchResults'
 import MapSearchView from '@/components/search/MapSearchView'
 import SearchMapClustered from '@/components/LazySearchMapClustered'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
+import { ResultsStamp } from '@/components/search/ResultsStamp.client'
 import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
 
 const DEFAULT_VIEW = 'split'
@@ -269,6 +270,7 @@ export default async function SearchPage({
       {/* P1-1: the search index was the only top-3 page with no breadcrumb at
           all (its child /homes-for-sale/<city> has one). Canonical chrome. */}
       <PageBreadcrumb trail={[{ label: 'Homes for sale' }]} />
+      <ResultsStamp />
       <TrackSearchView
         city={filters.city ?? undefined}
         subdivision={filters.subdivision ?? undefined}

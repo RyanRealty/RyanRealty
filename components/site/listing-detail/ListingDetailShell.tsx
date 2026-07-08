@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Container, Section } from '@/components/site/primitives'
 import type { BreadcrumbNavItem } from '@/components/site/BreadcrumbNav'
+import { BackToResults } from './BackToResults.client'
 import { BREADCRUMB_HOME } from '@/components/site/PageBreadcrumb'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { ListingDetail } from '@/lib/data/types/listing'
@@ -138,7 +139,12 @@ export function ListingDetailShell({
           invisible structured data, not the on-page nav strip. */}
       <Section padding="default">
         <Container className={cn('grid gap-10', sidebar ? 'lg:grid-cols-[1.6fr_360px]' : '', className)}>
-          <div className="min-w-0 flex flex-col gap-10">{main}</div>
+          <div className="min-w-0 flex flex-col gap-10">
+            {/* Referrer-gated: only shows when the buyer came from on-site
+                results, so direct landings keep the clean page. */}
+            <BackToResults />
+            {main}
+          </div>
           {sidebar ? (
             <aside className="lg:sticky lg:top-24 lg:self-start flex flex-col gap-6">
               {sidebar}

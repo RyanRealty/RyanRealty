@@ -49,6 +49,7 @@ export async function resolveFeaturedItems(tiles: ListingTile[], limit = 6): Pro
       beds: t.beds,
       baths: t.baths,
       sqft: t.sqft,
+      acres: t.lotSizeAcres ?? null,
       img: t.photoUrl ?? '',
       href: listingDetailPath(
         t.listingKey,

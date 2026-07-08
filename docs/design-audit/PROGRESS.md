@@ -47,7 +47,17 @@ The 788-vs-500 investigation: geo_snapshot_mv counted by the MLS City field and 
 
 Gate ratchet: poison-null `// poison-null-ok` marker on the restructured genuine-miss branch; hydration-safety marker on the submit-handler session read; file-size baseline refresh (+30 lines of real logic); market-stat alert classified internal in email-quality NON_SENDER.
 
-## Phase D — seam continuity, curation, media states, signup, addresses — PENDING
+## Phase D — seam continuity, curation, media states, signup, addresses (2026-07-08) ✅
+
+| Item | Fix | Verified |
+|---|---|---|
+| Featured cards painted black while video buffered | Photo stays visible until the video/iframe signals frames (onLoadedData/onLoad + opacity crossfade) | video mounts behind visible photo, fades in at opacity 1 |
+| Register seam dropped account affordances + changed nav vocabulary | KbNav inline: "Homes" label (portal-aligned) + "Account" link; overlay gains a "Your account" group (Saved homes / Sign in) | desktop inline + mobile overlay both render; first menu link still reachable |
+| No way back to results from a listing | ResultsStamp (sessionStorage, written by both results pages) + BackToResults link on listing detail — renders only for from-results arrivals, restores exact filters | E2E: direct landing clean; from-results shows link; click returns to /homes-for-sale?city=Bend&beds=3 |
+| Featured homes = six $5.9M–$11.9M cards for a $740K audience | curateFeaturedTiles: 2 luxury heroes + the home closest to each town's live median + fill, deduped by street/subdivision; grid sized to 9; acreage renders when ≥1 ac (the $11.75M ranch now shows "1,248 ac") | grid: $11.75M, $5.95M, $689K, $7.5M, $775K, $515K, $548K, $938K, $719K |
+| Signup silently dumped unconfirmed users on the homepage | signUpWithEmailPassword returns needsConfirmation when Supabase issues no session; SignupForm renders the check-your-email state; in-session signups go to /account | code-path + tsc (no live signup test — would create real hosted-auth users) |
+| Addresses dropped the street suffix | streetSuffix pulled from listings.details jsonb in getListingDetail (cache v5); detail H1 + title join it; canonical comma added ("63177 Iner Loop, Bend, OR 97701") | title + H1 verified in browser; card-level suffix spun off as a task chip (needs listing_tile_mv column) |
+| The invisible-CTA bug class had no gate | New `ci:css-layers` gate (scripts/check-css-cascade-layers.mjs): un-layered bare-element link/button color rules fail CI; 11 intentional chrome rules baselined; wired into ci:gates | gate green; new offender simulation fails |
 
 ## Phase E — P2/P3 register sweep — PENDING
 

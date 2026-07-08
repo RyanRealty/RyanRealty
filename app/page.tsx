@@ -6,6 +6,7 @@ import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
+import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
@@ -86,12 +87,11 @@ const monthLabel = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }) : ''
 
 export default async function Home() {
-  const [pulse, cities, communities, tiles, featured, mktStats, priceHist] = await Promise.all([
+  const [pulse, cities, communities, tiles, mktStats, priceHist] = await Promise.all([
     getRegionPulse().catch(() => null),
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
     getListingTiles({ status: 'active', propertyType: 'A', limit: 3000 }).catch(() => []),
-    getListingTiles({ status: 'active', propertyType: 'A', sort: 'price-desc', limit: 14 }).catch(() => []),
     getMarketStatsCacheRowForGeo({ geoSlug: 'central-oregon' }).catch(() => null),
     getPriceHistory('region', 'central-oregon', 'monthly', 60).catch(() => []),
   ])
@@ -147,7 +147,16 @@ export default async function Home() {
 
   // Featured homes — shared resolver classifies each home's MLS media into a
   // clean autoplay background video or a "Tour" badge (see resolve-featured-items).
-  const featuredItems: KbFeaturedItem[] = await resolveFeaturedItems(featured)
+  // Curated mix, not raw price-desc (design-audit): 2 luxury heroes + the home
+  // closest to each town's live median + fill, deduped by street/subdivision.
+  const featured = curateFeaturedTiles(
+    tiles,
+    towns.map((t) => ({ name: t.name, medianPrice: t.medianPrice })),
+    9,
+  )
+  // 9 cards (hero + pair + two rows of thirds) so the per-town mid-market
+  // picks survive the resolver's video-first ordering.
+  const featuredItems: KbFeaturedItem[] = await resolveFeaturedItems(featured, 9)
 
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
   const marketData: KbMarketData = {

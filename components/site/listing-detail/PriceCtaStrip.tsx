@@ -44,6 +44,7 @@ type Props = {
     | 'pricePerSqft'
     | 'streetNumber'
     | 'streetName'
+    | 'streetSuffix'
     | 'city'
     | 'postalCode'
     | 'subdivisionName'
@@ -97,7 +98,7 @@ export function PriceCtaStrip({
 
   const isClosed = listing.status === 'Closed'
   const headlinePrice = isClosed ? listing.closePrice : listing.listPrice
-  const street = [listing.streetNumber, listing.streetName].filter(Boolean).join(' ').trim()
+  const street = [listing.streetNumber, listing.streetName, listing.streetSuffix].filter(Boolean).join(' ').trim()
   const cityLine = [listing.city ? `${listing.city}, OR` : null, listing.postalCode]
     .filter(Boolean)
     .join(' ')

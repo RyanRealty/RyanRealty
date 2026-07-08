@@ -7,10 +7,16 @@ import { CONTACT } from '@/lib/brand/contact'
 // destinations; the overlay is a comprehensive grouped directory (every real
 // page is reachable). All REAL routes — no in-page anchors.
 const LINKS = [
-  { href: '/homes-for-sale', label: 'Search' },
+  // "Homes" (not "Search") — aligned with the portal chrome's primary nav so
+  // the vocabulary survives the editorial<->portal seam (design-audit P1).
+  { href: '/homes-for-sale', label: 'Homes' },
   { href: '/communities', label: 'Communities' },
   { href: '/cities', label: 'Cities' },
   { href: '/sell/valuation', label: 'Sell' },
+  // Account affordance carried across the seam: a signed-in buyer who saw
+  // saved-homes/alerts on the portal chrome no longer loses them on editorial
+  // pages. /account self-gates (signed-out lands on /login?next=/account).
+  { href: '/account', label: 'Account' },
 ]
 
 const MENU_GROUPS: { title: string; links: { href: string; label: string }[] }[] = [
@@ -61,6 +67,16 @@ const MENU_GROUPS: { title: string; links: { href: string; label: string }[] }[]
       { href: '/about', label: 'About' },
       { href: '/team', label: 'Our team' },
       { href: '/contact', label: 'Contact' },
+    ],
+  },
+  {
+    // The account system (saved homes, searches, alerts) was unreachable from
+    // this menu — the only sign-in affordance lived on the portal chrome
+    // (design-audit navigation finding).
+    title: 'Your account',
+    links: [
+      { href: '/account', label: 'Saved homes and searches' },
+      { href: '/login', label: 'Sign in' },
     ],
   },
 ]
