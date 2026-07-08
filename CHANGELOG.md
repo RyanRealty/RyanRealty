@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.18 (2026-07-08)
+
+### Bug Fixes
+- fix(content-trust): guides index photos + honest date signal, fix future-dated generated guides (#141, #151)
+
+---
+
+
 ## v1.751.17 (2026-07-08)
 
 ### Bug Fixes
