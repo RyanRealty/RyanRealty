@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.11 (2026-07-08)
+
+### Bug Fixes
+- fix(site): design-audit backlog batch 9 — geo-browse copy/chart items (4 items)
+
+---
+
+
 ## v1.751.10 (2026-07-08)
 
 ### Bug Fixes
