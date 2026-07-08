@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.10 (2026-07-08)
+
+### Bug Fixes
+- fix(site): design-audit backlog batch 8 — geo-browse data-accuracy items (3 items)
+
+---
+
+
 ## v1.751.9 (2026-07-08)
 
 ### Bug Fixes
