@@ -131,6 +131,13 @@ export default async function CitiesPage() {
       .filter((s) => s.active_count > 0 || s.median_list_price != null)
       .map((s) => [s.geo_slug.replace(/\s+/g, '-'), s]),
   )
+  // Unfiltered pulse, keyed the same way — Tumalo and Crooked River Ranch are
+  // unincorporated communities the refresh job explicitly tracks but that
+  // currently have zero live SFR inventory, so they never clear the >0 filter
+  // above AND have no geo_snapshot_mv row either (not a real MLS City value) —
+  // both vanished from the page entirely instead of rendering an honest "0
+  // active" card, same class of bug fixed elsewhere in this remediation (§0).
+  const rawPulseBySlug = new Map(citySnapshots.map((s) => [s.geo_slug.replace(/\s+/g, '-'), s]))
 
   // citySlug -> geo_snapshot_mv fallback (active count + median)
   const snapshotBySlug = new Map<string, { activeCount: number; medianPrice: number | null }>()
@@ -143,14 +150,18 @@ export default async function CitiesPage() {
 
   const cityNameBySlug = new Map(visibleCities.map((c) => [c.slug, c.name]))
 
-  // Featured editorial rows — only cities the index actually knows about
+  // Featured editorial rows — a slug qualifies if the city index, the
+  // geo_snapshot_mv fallback, OR the raw (unfiltered) pulse knows about it.
+  // Explicitly-tracked-but-zero-inventory communities (Tumalo, Crooked River
+  // Ranch) render an honest "0 active" card instead of vanishing from the
+  // page — the same honest-zero convention used site-wide (design-audit P2).
   const featured = FEATURED_CITY_SLUGS.filter(
-    (slug) => cityNameBySlug.has(slug) || snapshotBySlug.has(slug),
+    (slug) => cityNameBySlug.has(slug) || snapshotBySlug.has(slug) || rawPulseBySlug.has(slug),
   ).map((slug) => {
     const name =
       cityNameBySlug.get(slug) ??
       slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-    const pulse = pulseBySlug.get(slug) ?? null
+    const pulse = pulseBySlug.get(slug) ?? rawPulseBySlug.get(slug) ?? null
     const snap = snapshotBySlug.get(slug) ?? null
     const content = getCityContent(name)
     const sentence = content?.description
@@ -259,12 +270,15 @@ export default async function CitiesPage() {
                 <span className="stat-num mono-num">{fmtK(regionMedian) ?? '—'}</span>
                 <span className="stat-label">Median list price</span>
               </div>
-              {regionVerdict ? (
+              {/* The stat is the number; the verdict is a sub-line under it (was
+                  the verdict alone under "MONTHS OF SUPPLY" — a word where a
+                  number was promised, design-audit P2). */}
+              {regionPulse?.monthsOfSupply != null ? (
                 <div className="stat-cell">
-                  <span className="stat-num mono-num" style={{ fontSize: 'clamp(1.9rem,5vw,2.8rem)' }}>
-                    {regionVerdict}
+                  <span className="stat-num mono-num">
+                    {(Math.round(regionPulse.monthsOfSupply * 10) / 10).toFixed(1)} mo
                   </span>
-                  <span className="stat-label">Months of supply</span>
+                  <span className="stat-label">Months of supply{regionVerdict ? ` · ${regionVerdict}` : ''}</span>
                 </div>
               ) : null}
             </div>

@@ -258,7 +258,7 @@ export default async function CommunitiesPage() {
         <section className="section towns" id="resort-communities">
           <div className="wrap">
             <div className="sec-head">
-              <span className="sec-index">The fourteen</span>
+              <span className="sec-index">Resort communities</span>
               <h2 className="sec-title display">Resort &amp;<br />master-planned</h2>
             </div>
 
@@ -349,12 +349,15 @@ export default async function CommunitiesPage() {
 
                       {/* Links into the community */}
                       <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold">
+                        {/* First link is the editorial guide, not listings — the
+                            old label "{name} homes for sale" promised inventory
+                            and delivered a guide page (design-audit P2). */}
                         <a
                           href={`/communities/${r.slug}`}
                           className="underline-offset-4 hover:underline"
                           style={{ color: 'var(--navy)' }}
                         >
-                          {r.name} homes for sale
+                          {r.name} guide
                         </a>
                         <a
                           href={`/homes-for-sale/${r.citySlug}`}

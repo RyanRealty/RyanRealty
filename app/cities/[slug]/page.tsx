@@ -406,6 +406,15 @@ export default async function CityDetailPage({ params }: Props) {
     .filter((x): x is KbCommunityItem => x !== null)
     .sort((a, b) => (a.video ? 0 : 1) - (b.video ? 0 : 1) || b.activeCount - a.activeCount)
 
+  // Dedupe by NAME, not href: the carousel's hrefs are city-prefixed slugs
+  // from the general community index (/communities/bend-tetherow) while the
+  // ledger's are plain registry slugs (/communities/tetherow) for the SAME
+  // physical place, so an href-based Set never matched (design-audit P2).
+  const carouselNames = new Set(communityItems.map((c) => c.name.toLowerCase().trim()))
+  const golfCommunityItemsDeduped = golfCommunityItems.filter(
+    (t) => carouselNames.has(t.name.toLowerCase().trim()) === false,
+  )
+
   // Explore other cities — editorial index with VERIFIED thumbnails. (§D84, §D87)
   const otherCityItems: KbTownItem[] = allCitySnapshots
     .map((s) => ({ s, citySlug: s.geoKey.replace(/\s+/g, '-') }))
@@ -584,13 +593,19 @@ export default async function CityDetailPage({ params }: Props) {
           cta={{ href: `/homes-for-sale/${slug}`, label: `All ${cityName} homes` }}
         />
         <KbCommunities communities={communityItems} eyebrow={`${cityName} · Communities`} />
-        <KbExploreTowns
-          towns={golfCommunityItems}
-          eyebrow={`${cityName} · Communities`}
-          title="Golf and master-planned communities"
-          sectionId="communities-ledger"
-          cta={{ href: '/communities', label: 'Every community' }}
-        />
+        {/* Ledger dedupes against the carousel above it (design-audit P2: the
+            same 3-4 resorts rendered twice, once as a photo carousel and again
+            as a text ledger). Only communities without a carousel card (no
+            curated photo) land here. */}
+        {golfCommunityItemsDeduped.length > 0 ? (
+          <KbExploreTowns
+            towns={golfCommunityItemsDeduped}
+            eyebrow={`${cityName} · Communities`}
+            title="Golf and master-planned communities"
+            sectionId="communities-ledger"
+            cta={{ href: '/communities', label: 'Every community' }}
+          />
+        ) : null}
         <KbAreaGuideVideo videoUrl={areaGuideVideo} locationName={cityName} />
         <KbOpenHouses items={openHouseItems} eyebrow={`${cityName} · This week`} heading="Open houses" viewAllHref={`/open-houses/${slug}`} />
         <KbActivity items={activityItems} eyebrow={`Live · ${cityName}`} heading="Latest market activity" viewAllHref="/housing-market" viewAllLabel="Full market pulse" />

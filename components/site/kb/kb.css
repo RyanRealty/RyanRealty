@@ -708,7 +708,10 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .nm-ripple{fill:none;stroke:var(--cream);stroke-width:1.5;vector-effect:non-scaling-stroke;pointer-events:none;}
 .kb-root .neigh-tip{position:absolute;z-index:5;transform:translate(-50%,calc(-100% - 10px));background:var(--navy);border:1px solid var(--cream-40);border-radius:4px;padding:6px 10px;font-family:var(--font-sans),sans-serif;font-size:.72rem;color:var(--cream);white-space:nowrap;pointer-events:none;font-variant-numeric:tabular-nums;}
 .kb-root .neigh-tip b{font-weight:700;}
-.kb-root .neigh-legend{position:absolute;left:14px;bottom:12px;display:flex;gap:18px;font-family:var(--font-sans),sans-serif;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--cream-muted);}
+/* top:14px, not bottom — Google's required attribution + logo live at the
+   map's bottom-left, and the legend used to sit directly on top of them
+   (illegible pill + a Maps-attribution-policy risk; design-audit P2). */
+.kb-root .neigh-legend{position:absolute;left:14px;top:14px;display:flex;gap:18px;font-family:var(--font-sans),sans-serif;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--cream-muted);}
 .kb-root .neigh-legend b{color:var(--cream);font-variant-numeric:tabular-nums;}
 .kb-root .neigh-legend .nl-live{display:inline-flex;align-items:center;gap:6px;}
 .kb-root .neigh-legend .nl-live .dot{width:6px;height:6px;border-radius:50%;background:var(--cream);animation:mktBlink 1.4s ease-in-out infinite;}
@@ -735,7 +738,7 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .kb-pop-addr{font-size:.78rem;font-weight:600;margin-top:6px;letter-spacing:.01em;}
 .kb-root .kb-pop-addr .sub{display:block;font-weight:500;color:var(--cream-70);font-size:.7rem;margin-top:2px;}
 .kb-root .kb-pop-specs{margin-top:9px;font-size:.66rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--cream-70);display:flex;gap:12px;}
-@media(max-width:760px){.kb-root .wrap{padding:0 20px;}.kb-root .sec-title{font-size:9vw!important;line-height:.95;}.kb-root .hero-h{font-size:11vw!important;}.kb-root .stat-num{font-size:13vw!important;}.kb-root .town-row{grid-template-columns:1fr!important;gap:6px;padding:18px 0;}.kb-root .town-row .town-name{font-size:11vw!important;white-space:normal!important;overflow:visible!important;min-width:0;transform:none!important;}.kb-root .town-stats{text-align:left!important;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;}.kb-root .town-count{font-size:1.7rem!important;}.kb-root .town-count .lbl{display:inline!important;margin:0 0 0 6px;}.kb-root .town-price{margin-top:0!important;}.kb-root .comm-name{font-size:7.5vw!important;white-space:normal!important;}.kb-root .lst-price{font-size:8vw!important;}.kb-root .sell-h{font-size:11vw!important;}.kb-root .team-name{font-size:9vw!important;}.kb-root .foot-cta .display{font-size:13vw!important;}}
+@media(max-width:760px){.kb-root .wrap{padding:0 20px;}.kb-root .sec-title{font-size:9vw!important;line-height:.95;overflow-wrap:anywhere;}.kb-root .hero-h{font-size:11vw!important;}.kb-root .stat-num{font-size:13vw!important;}.kb-root .town-row{grid-template-columns:1fr!important;gap:6px;padding:18px 0;}.kb-root .town-row .town-name{font-size:11vw!important;white-space:normal!important;overflow:visible!important;min-width:0;transform:none!important;}.kb-root .town-stats{text-align:left!important;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;}.kb-root .town-count{font-size:1.7rem!important;}.kb-root .town-count .lbl{display:inline!important;margin:0 0 0 6px;}.kb-root .town-price{margin-top:0!important;}.kb-root .comm-name{font-size:7.5vw!important;white-space:normal!important;}.kb-root .lst-price{font-size:8vw!important;}.kb-root .sell-h{font-size:11vw!important;}.kb-root .team-name{font-size:9vw!important;}.kb-root .foot-cta .display{font-size:13vw!important;}}
 
 /* ===== KB city-page sections (breadcrumb, about, open houses, activity, articles) ===== */
 /* --- KbBreadcrumb --- */
