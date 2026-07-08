@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.1 (2026-07-08)
+
+### Bug Fixes
+- fix(site): design-audit Phase E wave 1 — home + sell-core polish (25 items)
+
+---
+
+
 ## v1.751.0 (2026-07-08)
 
 ### Features
