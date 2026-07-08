@@ -175,6 +175,13 @@ export function PriceCtaStrip({
         className="text-4xl leading-none tracking-tight"
         style={{ color: 'var(--navy)' }}
       >
+        {/* The page's only H1 was a bare dollar figure — a screen-reader
+            visitor navigating by headings heard a price with no property
+            name, and the whole h2 outline (Description, Property details...)
+            hung off a number (design-audit P2). The address renders visibly
+            right below in its own line; this just gives the heading itself
+            an accessible name. */}
+        {street ? <span className="sr-only">{[street, cityWithCommunity].filter(Boolean).join(', ')} </span> : null}
         <Price value={headlinePrice} />
       </DisplayHeading>
       {street ? (

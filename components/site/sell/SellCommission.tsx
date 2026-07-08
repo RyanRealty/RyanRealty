@@ -30,7 +30,7 @@ export function SellCommission() {
                 The 3% listing fee covers professional photography, the MLS listing, every piece of the marketing plan above, every showing, and full transaction management from contract to close. Nothing is billed on the side.
               </Body>
               <Body size="default" tone="muted" className="leading-[1.65]">
-                Buyer-agent compensation is a separate number, negotiated per offer under the current commission rules. We show you the exact ALTA breakdown, the buyer-agency agreement we use, and the realistic concession math for your price point before you sign.
+                Buyer-agent compensation is a separate number, negotiated per offer under the current commission rules. Before you sign, we show you the settlement statement that lists every dollar at closing, the buyer-agency agreement we use, and what a realistic buyer credit looks like at your price point.
               </Body>
               <Body size="default" tone="muted" className="leading-[1.65]">
                 We are not a high-pressure shop. If after reading the CMA you decide not to list, we do not follow up beyond two emails.
@@ -49,7 +49,7 @@ export function SellCommission() {
               },
               {
                 heading: 'Buyer-agent compensation, explained',
-                body: 'A separate number, negotiated per offer. We show you the exact ALTA breakdown and the buyer-agency agreement we use before you sign anything.',
+                body: 'A separate number, negotiated per offer. We show you the closing settlement statement and the buyer-agency agreement we use before you sign anything.',
               },
               {
                 heading: 'No contract to get the CMA',

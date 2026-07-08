@@ -69,7 +69,11 @@ type KbHeroProps = {
 export function KbHero({
   data,
   eyebrow = 'Central Oregon Real Estate',
-  titleTop = 'Welcome to the',
+  // "Welcome to the High Desert" was pure atmosphere — a first-time visitor
+  // learned nothing about the product until the small eyebrow line
+  // (design-audit P3). Only app/page.tsx uses this default; every other
+  // KbHero caller passes its own title.
+  titleTop = 'Find your home in the',
   titleBottom = 'High Desert',
   lead = 'across Central Oregon, from the Deschutes to Smith Rock.',
   videoSrc = '/videos/hero-optimized.mp4',

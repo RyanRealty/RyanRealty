@@ -89,6 +89,9 @@ const MENU_GROUPS: { title: string; links: { href: string; label: string }[] }[]
 export function KbNav({ solid = false }: { solid?: boolean } = {}) {
   const bar = useRef<HTMLElement>(null)
   const [open, setOpen] = useState(false)
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const closeBtnRef = useRef<HTMLButtonElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     // Solid mode: always-navy bar for hero-less surfaces (e.g. /search) that can't
@@ -103,10 +106,42 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
     return () => window.removeEventListener('scroll', onScroll)
   }, [solid])
 
+  // Focus management: opening the overlay left focus on the trigger button
+  // behind it, so Tab walked a keyboard user out of the (invisible) overlay
+  // into the page content underneath, and closing never returned focus to
+  // where the user was (design-audit P2, accessibility). Move focus into
+  // the overlay on open, trap Tab within it while open, restore focus to
+  // the trigger on close.
+  const hasOpenedRef = useRef(false)
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
+    // Skip the very first (mount) run — only move focus on an actual
+    // open/close transition, never steal it from the page on initial load.
+    if (open) {
+      hasOpenedRef.current = true
+      closeBtnRef.current?.focus()
+    } else if (hasOpenedRef.current) {
+      triggerRef.current?.focus()
+    }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key === 'Escape') {
+        setOpen(false)
+        return
+      }
+      if (e.key !== 'Tab' || !open) return
+      const focusable = overlayRef.current?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled])'
+      )
+      if (!focusable || focusable.length === 0) return
+      const first = focusable[0]!
+      const last = focusable[focusable.length - 1]!
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => {
@@ -127,17 +162,17 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
               {l.label}
             </a>
           ))}
-          <button className="menu-btn" onClick={() => setOpen(true)} aria-expanded={open} aria-controls="menu-overlay" aria-label="Open menu">
+          <button ref={triggerRef} className="menu-btn" onClick={() => setOpen(true)} aria-expanded={open} aria-controls="menu-overlay" aria-label="Open menu">
             Menu +
           </button>
         </nav>
       </header>
-      <div id="menu-overlay" className={`menu-overlay${open ? ' open' : ''}`} aria-hidden={!open}>
+      <div id="menu-overlay" ref={overlayRef} className={`menu-overlay${open ? ' open' : ''}`} aria-hidden={!open}>
         <div className="menu-top">
           <a href="/" aria-label="Ryan Realty home">
             <img className="logo-img" src="/images/brand/logo-horizontal-navy-transparent.png" alt="Ryan Realty" />
           </a>
-          <button className="menu-close" onClick={() => setOpen(false)}>
+          <button ref={closeBtnRef} className="menu-close" onClick={() => setOpen(false)}>
             Close ×
           </button>
         </div>

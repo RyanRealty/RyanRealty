@@ -45,24 +45,6 @@
     "hint": "Still present: components/NotFoundClient.tsx:129 placeholder is 'Search homes by city, neighborhood, or address' (confirmed on the live 404), which cl"
   },
   {
-    "index": 10,
-    "group": "home",
-    "page": "home",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "The editorial nav offers SEARCH, COMMUNITIES, CITIES, SELL — three of four items are buyer paths, and the COMMUNITIES vs CITIES split is MLS-insider t",
-    "hint": "KbNav.client.tsx:9-20 was touched (SEARCH renamed 'Homes', 'Account' added) but the top bar still reads Homes / Communities / Cities / Sell — the COMM"
-  },
-  {
-    "index": 22,
-    "group": "home",
-    "page": "home",
-    "sev": "P3",
-    "effort": "medium",
-    "issue": "In the Amboqia display face, the all-caps capital I has a numeral-like flag serif, so the hero headline scans as 'H1GH DESERT' at first glance — the s",
-    "hint": "No change: hero still 'High Desert' / section titles still contain I-words, and kb.css enables no stylistic alternate (only 'tnum' feature settings an"
-  },
-  {
     "index": 125,
     "group": "content-trust",
     "page": "guides",
@@ -333,24 +315,6 @@
     "hint": "Both cited mismatches persist. /cities/[slug]/page.tsx:161 defines fmtK → '$775K' for the city facts table while the /sell hero uses kbMoneyFull → '$7"
   },
   {
-    "index": 198,
-    "group": "a11y-states",
-    "page": "/homes-for-sale/bend/63177-iner-220223630",
-    "sev": "P2",
-    "effort": "small",
-    "issue": "The listing page's only H1 is the bare price — <h1><span class=\"tabular-nums\">$742,000</span></h1> — with the address in plain sibling divs. A screen-",
-    "hint": "Live-verified: curl of /homes-for-sale/bend/63177-iner-220223630 returns <h1><span class=\"tabular-nums\">$742,000</span></h1> with '63177 Iner Loop' in"
-  },
-  {
-    "index": 199,
-    "group": "a11y-states",
-    "page": "all editorial-register pages (/, /sell/valuation, /contact, listing detail)",
-    "sev": "P2",
-    "effort": "small",
-    "issue": "Opening the MENU + overlay does no focus management: focus stays on the trigger behind the full-screen overlay, Tab can walk out of the overlay into t",
-    "hint": "Unchanged. components/site/kb/KbNav.client.tsx:106-116 handles only Escape + body scroll lock; opening the overlay (button line 130, overlay line 135)"
-  },
-  {
     "index": 104,
     "group": "market-data",
     "page": "price-drops",
@@ -592,24 +556,6 @@
     "effort": "small",
     "issue": "The breadcrumb's middle crumb 'TOOLS' is a link that points at the current page (/tools/mortgage-calculator) — there is no /tools index route. Tapping",
     "hint": "app/tools/mortgage-calculator/page.tsx line 93 still renders the Tools crumb as href=\"/tools/mortgage-calculator\" (self-link) and no /tools index rout"
-  },
-  {
-    "index": 209,
-    "group": "copy-clarity",
-    "page": "/sell",
-    "sev": "P2",
-    "effort": "small",
-    "issue": "The fee section — where comprehension matters most — leans on unexplained industry jargon, twice: \"We show you the exact ALTA breakdown, the buyer-age",
-    "hint": "Still live in two places on /sell: 'We show you the exact ALTA breakdown... and the realistic concession math' at components/site/sell/SellCommission."
-  },
-  {
-    "index": 213,
-    "group": "copy-clarity",
-    "page": "/",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "The homepage H1 — the biggest words on the site — is \"Welcome to the High Desert\": pure atmosphere. A first-time visitor learns what the product is on",
-    "hint": "H1 is still 'Welcome to the High Desert' — KbHero.client.tsx:72-73 defaults (titleTop='Welcome to the', titleBottom='High Desert') and app/page.tsx pa"
   },
   {
     "index": 73,
