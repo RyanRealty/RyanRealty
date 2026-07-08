@@ -24,6 +24,9 @@ import { getSession } from '@/app/actions/auth'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { generateBreadcrumbSchema } from '@/lib/structured-data'
+import { getSurfaceImages, pickSurfaceImage } from '@/lib/data/media/getSurfaceImages'
+import { cityEntityKey } from '@/lib/slug'
+import { formatDate } from '@/lib/format/date'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
@@ -62,8 +65,9 @@ export const metadata: Metadata = {
 
 export default async function GuidesIndexPage() {
   // F12: fetch session + FUB identity in parallel with guides, then track page view
-  const [guides, session, fubPersonId] = await Promise.all([
+  const [guides, cardPhotoPool, session, fubPersonId] = await Promise.all([
     getPublishedGuides(12),
+    getSurfaceImages('card'),
     getSession(),
     getFubPersonIdFromCookie(),
   ])
@@ -156,6 +160,16 @@ export default async function GuidesIndexPage() {
               title: guide.title,
               href: `/guides/${guide.slug}`,
               excerpt: guide.meta_description || 'Read the full guide',
+              // design-audit #141: every card previously rendered a blank navy
+              // placeholder (no imageUrl was ever passed in). Same city-tagged
+              // photo pool + deterministic-seed pattern used on /communities.
+              imageUrl: pickSurfaceImage(cardPhotoPool, {
+                geoTags: guide.city ? [cityEntityKey(guide.city)] : [],
+                seed: guide.slug,
+              }),
+              // design-audit #151: cards had no date/update signal alongside
+              // excerpts that promise "current" data.
+              dateLabel: guide.updated_at ? formatDate(guide.updated_at) : null,
             }))
             return (
               <KbArticles

@@ -94,6 +94,14 @@ function buildGuideHtmlFromStats(city: string, stats: CityStatRow): string {
 
 function normalizeGuideRowFromStats(stats: CityStatRow): GuideRow {
   const city = slugToTitle(stats.geo_slug)
+  // published_at/updated_at must be when this HTML was actually generated, not
+  // stats.period_end — period_end is the reporting bucket's boundary (the
+  // LAST day of the in-progress month, e.g. 2026-07-31 while today is
+  // 2026-07-08), so using it here rendered future dates on the guide card's
+  // "updated" signal and in the Article JSON-LD dateModified (design-audit
+  // #151 follow-up: caught when the guides index started surfacing this
+  // field visibly for the first time).
+  const generatedAt = new Date().toISOString()
   return {
     id: `generated-${cityEntityKey(city)}`,
     slug: `${cityEntityKey(city)}-housing-market-guide`,
@@ -103,8 +111,8 @@ function normalizeGuideRowFromStats(stats: CityStatRow): GuideRow {
     category: 'Market Guides',
     city,
     status: 'published',
-    published_at: stats.period_end,
-    updated_at: stats.period_end ?? new Date().toISOString(),
+    published_at: generatedAt,
+    updated_at: generatedAt,
   }
 }
 
@@ -155,7 +163,10 @@ async function _getPublishedGuidesUncached(_limit: number): Promise<GuideRow[]> 
 
 export const getPublishedGuides = makeResilientCached(
   _getPublishedGuidesUncached,
-  ['published-guides-v1'],
+  // v2 (design-audit #151): generated-guide published_at/updated_at now come
+  // from generation time, not stats.period_end — evicts v1 rows carrying a
+  // future-dated (end-of-month) timestamp.
+  ['published-guides-v2'],
   { revalidate: CACHE_WINDOWS.blog, tags: ['guides'] },
   [],
 )
@@ -182,7 +193,8 @@ async function _getGuideBySlugUncached(slug: string): Promise<GuideRow | null> {
 
 export const getGuideBySlug = makeResilientCached(
   _getGuideBySlugUncached,
-  ['guide-by-slug-v1'],
+  // v2 — same fix as getPublishedGuides (generation-time dates, not period_end).
+  ['guide-by-slug-v2'],
   { revalidate: CACHE_WINDOWS.blog, tags: ['guides'] },
   null,
 )

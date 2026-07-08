@@ -9,51 +9,6 @@
     "hint": "Template unchanged at lib/data/guides/getGuides.ts:84-92 ('remains one of Central Oregon's most competitive markets' + same 4 generic sections). Live:"
   },
   {
-    "index": 126,
-    "group": "content-trust",
-    "page": "blog",
-    "sev": "P2",
-    "effort": "small",
-    "issue": "Every one of the 11 post cards says '1 MIN READ' because the index computes reading time from the ~30-word excerpt instead of the article, and it cont",
-    "hint": "app/blog/page.tsx:302 still estimateReadTime(post.excerpt); live index renders '1 min read' on all 11 grid cards while post pages compute from content"
-  },
-  {
-    "index": 127,
-    "group": "content-trust",
-    "page": "blog",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "The 'Popular posts' list at the bottom of the index is actually just the five most recent posts (the DAL orders by published_at desc), which are the s",
-    "hint": "lib/data/blog/getPopularBlogSlugs.ts still orders by published_at desc (no popularity signal) and app/blog/page.tsx:358 still labels the list 'Popular"
-  },
-  {
-    "index": 128,
-    "group": "content-trust",
-    "page": "blog",
-    "sev": "P2",
-    "effort": "small",
-    "issue": "11 of 12 posts carry no author anywhere — the grid cards show only a date, and their post pages render no byline and no 'About the author' box (verifi",
-    "hint": "Live blog index: 0 of 11 grid cards render an author span (only the featured market report shows Matt Ryan; other 'Matt Ryan' hits are org JSON-LD/foo"
-  },
-  {
-    "index": 129,
-    "group": "content-trust",
-    "page": "blog",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "Every card's CTA is the hard-coded 'READ THE GUIDE →', including on Local Housing News items and the June market report — a news story and a market re",
-    "hint": "Hard-coded 'Read the guide' still at app/blog/page.tsx:265 (featured) and :305 (grid cards), including on Local Housing News and market-report posts. "
-  },
-  {
-    "index": 130,
-    "group": "content-trust",
-    "page": "blog",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "Card dates render as bare numerics ('6/9/2026', '12/18/2025') while the post page and related-posts module spell them out ('June 9, 2026', 'APR 1, 202",
-    "hint": "Three date formats persist: index bare toLocaleDateString('en-US') (app/blog/page.tsx:260,299 — live shows '6/9/2026'), post page long form (app/blog/"
-  },
-  {
     "index": 131,
     "group": "content-trust",
     "page": "area-guides",
@@ -61,60 +16,6 @@
     "effort": "medium",
     "issue": "The community directory contains duplicates and misfiled entries a local will spot instantly: 'Crosswater' appears twice as two different links (/comm",
     "hint": "Live /area-guides communities ledger still renders Crosswater twice (/communities/bend-crosswater + /communities/sunriver-crosswater), Eagle Crest (24"
-  },
-  {
-    "index": 132,
-    "group": "content-trust",
-    "page": "area-guides",
-    "sev": "P2",
-    "effort": "medium",
-    "issue": "Pronghorn shows '5 Active / $180,000 median' — an implausible median for a gated luxury golf community where homes trade above $1M, almost certainly b",
-    "hint": "Live /area-guides still renders 'Pronghorn 5 Active $180,000 median' (row /communities/bend-pronghorn). Community median calc still mixes lots into sm"
-  },
-  {
-    "index": 136,
-    "group": "content-trust",
-    "page": "faq",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "Each category gets a viewport-scale display heading (NEIGHBORHOODS, SELLING, WORKING WITH US) followed by only 2-4 one-line collapsed questions, so th",
-    "hint": "app/faq/page.tsx:292-295 still renders a full sec-head display heading per category (eyebrow AND title both set to the category name), so 11 questions"
-  },
-  {
-    "index": 137,
-    "group": "content-trust",
-    "page": "reviews",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "Review cards in the same grid row stretch to the tallest neighbor, so short quotes sit in bordered boxes that are 50-70% empty space (e.g. the cason m",
-    "hint": "kb.css:1258 .kb-reviews-grid still display:grid repeat(3,1fr) with h-full cards (app/reviews/page.tsx:176) — short quotes still stretch to the tallest"
-  },
-  {
-    "index": 138,
-    "group": "content-trust",
-    "page": "faq",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "The hero on FAQ and Reviews carries the buyer listing-search bar ('3 bed under $800k in Bend with a shop') plus BROWSE/SELL buttons above content that",
-    "hint": "KbHero showSearch defaults true; /faq and /reviews pass no showSearch={false} (only sell, sell/valuation, contact, team/[slug] do). Live-confirmed: th"
-  },
-  {
-    "index": 139,
-    "group": "content-trust",
-    "page": "blog",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "One scroll presents two competing names for the same artifact: the hero H1 says 'REAL ESTATE BLOG' and the very next section heading says 'THE JOURNAL",
-    "hint": "Hero still 'Real Estate / Blog' (app/blog/page.tsx:170-171) and the next section heading still 'The Journal' (:184). Fix: rename the section heading ("
-  },
-  {
-    "index": 140,
-    "group": "content-trust",
-    "page": "blog",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "A lone unlabeled icon-only button (share glyph) floats below the category filter chips with no text, tooltip, or visual connection to anything — most ",
-    "hint": "app/blog/page.tsx:205-211 still renders ShareButton variant='compact' (icon-only per components/ShareButton.tsx) in the justify-between row with 12 wr"
   },
   {
     "index": 141,
@@ -126,60 +27,6 @@
     "hint": "app/guides/page.tsx:155-159 still maps guides to KbArticlePost without imageUrl; KbArticles.tsx:58-59 falls to .art-noimg (kb.css:902 — dark navy plat"
   },
   {
-    "index": 142,
-    "group": "content-trust",
-    "page": "blog-post",
-    "sev": "P2",
-    "effort": "small",
-    "issue": "The article's closing conversion links — 'request a valuation', 'browse current Bend listings', 'live Bend market dashboard' — render as bold navy tex",
-    "hint": "app/blog/[slug]/page.tsx:50-53 still sets --tw-prose-links to the same NAVY as body/bold, and kb.css:52 (.kb-root a{text-decoration:none}) strips the "
-  },
-  {
-    "index": 146,
-    "group": "content-trust",
-    "page": "blog-post",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "The 'About the author' box describes Matt Ryan — the owner and principal broker — with a hard-coded generic bio: 'Ryan Realty team member sharing loca",
-    "hint": "Hard-coded generic bio unchanged at app/blog/[slug]/page.tsx:319 ('Ryan Realty team member sharing local market insights and expertise...') for every "
-  },
-  {
-    "index": 147,
-    "group": "content-trust",
-    "page": "blog",
-    "sev": "P2",
-    "effort": "small",
-    "issue": "Twelve category chips stack vertically and consume a full viewport of scroll between 'The Journal' heading and the first post — a reader has to swipe ",
-    "hint": "Chip nav still flex flex-wrap (app/blog/page.tsx:189) with 12 chips (live-confirmed) — full-viewport vertical stack on mobile before any post. Fix: ov"
-  },
-  {
-    "index": 148,
-    "group": "content-trust",
-    "page": "faq",
-    "sev": "P2",
-    "effort": "small",
-    "issue": "The 'NEIGHBORHOODS' section heading is clipped mid-glyph at the right viewport edge ('NEIGHBORH...') because the sec-head is a side-by-side flex row (",
-    "hint": "kb.css unchanged: .sec-head still side-by-side flex (line 227) and the mobile 9vw sec-title override (line 710) has no stacking rule, so single-word d"
-  },
-  {
-    "index": 149,
-    "group": "content-trust",
-    "page": "blog",
-    "sev": "P2",
-    "effort": "small",
-    "issue": "The hero photo caption 'CENTRAL OREGON · OLD MILL DISTRICT' is absolutely positioned bottom-right of the hero and collides with the SELL CTA button on",
-    "hint": ".hero-caption still position:absolute right:14px bottom:14px z-index:3 with no mobile hide (kb.css:933), and /blog still passes mediaCaption='Central "
-  },
-  {
-    "index": 150,
-    "group": "content-trust",
-    "page": "blog-post",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "The post's tag chips (bend, market report, june 2026, housing market) are non-interactive <span>s styled identically to the blog index's clickable cat",
-    "hint": "Post tags still non-interactive <span>s styled like the clickable category chips (navy 1px border, same padding) at app/blog/[slug]/page.tsx:247-255. "
-  },
-  {
     "index": 151,
     "group": "content-trust",
     "page": "guides",
@@ -187,24 +34,6 @@
     "effort": "small",
     "issue": "Guide cards carry no date or 'updated' signal while their identical templated excerpts all promise 'current pricing, inventory, and pace of sale' — a ",
     "hint": "app/guides/page.tsx:155-159 still doesn't pass dateLabel (KbArticles supports it, renders as media strip); guide rows carry updated_at/period_end. Liv"
-  },
-  {
-    "index": 152,
-    "group": "content-trust",
-    "page": "blog",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "The April 1 news post's excerpt still reads 'Bend City Council meets today to consider...' — three months later the deictic 'today' makes the journal ",
-    "hint": "Live blog index still contains the deictic excerpt 'Bend City Council meets today to consider...' on the April 1 post. Content fix: edit the blog_post"
-  },
-  {
-    "index": 153,
-    "group": "content-trust",
-    "page": "blog",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "Card titles set in all-caps Amboqia at the mobile display size run five to six lines tall ('BEND CONSIDERS WILDFIRE-RESISTANT BUILDING STANDARDS COST ",
-    "hint": "kb.css:931 mobile .art-title still 8vw (~31px at 390px) — long all-caps Amboqia card titles still run 5-6 lines on mobile. No clamp change shipped. Fi"
   },
   {
     "index": 104,
