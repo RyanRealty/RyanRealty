@@ -81,7 +81,7 @@ export default function SignupForm({ next }: Props) {
         type="button"
         onClick={() => handleOAuth('google')}
         disabled={!!loading}
-        className="flex w-full items-center justify-center gap-3 rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-card py-2.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
       >
         <GoogleIcon className="size-5" />
         {loading === 'google' ? 'Redirecting…' : 'Continue with Google'}
@@ -114,7 +114,7 @@ export default function SignupForm({ next }: Props) {
             autoComplete="name"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className="mt-1 block w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground"
+            className="mt-1 block w-full rounded-lg border border-border bg-card px-3 py-2 text-foreground"
           />
         </div>
         <div>
@@ -127,7 +127,7 @@ export default function SignupForm({ next }: Props) {
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 block w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground"
+            className="mt-1 block w-full rounded-lg border border-border bg-card px-3 py-2 text-foreground"
           />
         </div>
         <div>
@@ -140,7 +140,7 @@ export default function SignupForm({ next }: Props) {
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 block w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground"
+            className="mt-1 block w-full rounded-lg border border-border bg-card px-3 py-2 text-foreground"
           />
           <p className="mt-0.5 text-xs text-muted-foreground">At least 6 characters</p>
         </div>
@@ -148,7 +148,7 @@ export default function SignupForm({ next }: Props) {
         <Button
           type="submit"
           disabled={!!loading}
-          className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-accent/90 disabled:opacity-50"
+          className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
         >
           {loading === 'email' ? 'Creating account…' : 'Create account'}
         </Button>

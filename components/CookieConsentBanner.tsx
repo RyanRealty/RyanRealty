@@ -158,7 +158,10 @@ export default function CookieConsentBanner() {
        (design-audit P3). Compact layout: one short line + one row of three
        equal buttons, so the bar stops covering the hero's proof line and CTA
        pair on mobile first paint (design-audit P2). */
-    <div role="region" aria-label="Cookie notice" className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card px-4 py-3 shadow-md sm:px-6">
+    /* z-90: above the listing-detail sticky mobile CTA bar (kb.css
+       .listing-mobile-cta, z-index 80) — the CTA used to slide up OVER the
+       banner's own Accept/Manage/Essential buttons (design-audit P2). */
+    <div role="region" aria-label="Cookie notice" className="fixed bottom-0 left-0 right-0 z-[90] border-t border-border bg-card px-4 py-3 shadow-md sm:px-6">
       <div className="mx-auto max-w-3xl">
         <p className="text-xs text-muted-foreground sm:text-sm">
           We use cookies to improve the site and measure traffic.{' '}

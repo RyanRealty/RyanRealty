@@ -42,6 +42,7 @@ const PAGE_SIZE = 12
 
 const CATEGORIES = [
   'All',
+  'Market Reports',
   'Market Updates',
   'Market Analysis',
   'Buying Guides',

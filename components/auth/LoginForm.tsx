@@ -50,11 +50,14 @@ export default function LoginForm({ next }: Props) {
 
   return (
     <div className="mt-6 space-y-4">
+      {/* Outline style, matching Facebook below — visually distinct from the
+          filled navy primary submit (design-audit P2: both read as the same
+          weighted action). */}
       <Button
         type="button"
         onClick={() => handleOAuth('google')}
         disabled={!!loading}
-        className="flex w-full items-center justify-center gap-3 rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-card py-2.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
       >
         <GoogleIcon className="size-5" />
         {loading === 'google' ? 'Redirecting…' : 'Continue with Google'}
@@ -87,7 +90,7 @@ export default function LoginForm({ next }: Props) {
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 block w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground"
+            className="mt-1 block w-full rounded-lg border border-border bg-card px-3 py-2 text-foreground"
           />
         </div>
         <div>
@@ -100,7 +103,7 @@ export default function LoginForm({ next }: Props) {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 block w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground"
+            className="mt-1 block w-full rounded-lg border border-border bg-card px-3 py-2 text-foreground"
           />
           <p className="mt-1 text-right">
             <Link href="/forgot-password" className="text-sm text-muted-foreground hover:text-muted-foreground">
@@ -112,7 +115,7 @@ export default function LoginForm({ next }: Props) {
         <Button
           type="submit"
           disabled={!!loading}
-          className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-accent/90 disabled:opacity-50"
+          className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
         >
           {loading === 'email' ? 'Signing in…' : 'Sign in'}
         </Button>

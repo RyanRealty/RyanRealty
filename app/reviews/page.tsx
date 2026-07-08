@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ExternalLinkHugeIcon } from '@/components/icons/HugeIcons'
 import { TESTIMONIALS, GOOGLE_REVIEWS_URL } from '@/lib/testimonials'
+import { formatDate } from '@/lib/format/date'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
@@ -137,7 +138,9 @@ export default function ReviewsPage() {
           posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
         />
 
-        {/* "View reviews on Google" — preserved from the prior hero CTA. */}
+        {/* "View reviews on Google" — preserved from the prior hero CTA. The
+            5.0/24-review aggregate previously lived only in JSON-LD (invisible
+            to a human reader) — surfaced here as the visible proof line. */}
         <section className="section" id="google-cta" aria-label="View reviews on Google">
           <div className="wrap">
             <div className="flex flex-wrap items-center gap-3 py-2">
@@ -150,6 +153,11 @@ export default function ReviewsPage() {
                 View reviews on Google
                 <ExternalLinkHugeIcon className="ml-1 h-5 w-5" />
               </a>
+              {TESTIMONIALS.length > 0 ? (
+                <span className="mono-num" style={{ color: 'var(--navy-70)', fontSize: '.92rem' }}>
+                  {RENDERED_STAR_RATING.toFixed(1)} · {TESTIMONIALS.length} Google reviews
+                </span>
+              ) : null}
             </div>
           </div>
         </section>
@@ -184,7 +192,9 @@ export default function ReviewsPage() {
                     <blockquote className="kb-rev-quote">&ldquo;{t.quote}&rdquo;</blockquote>
                     <figcaption className="kb-rev-who">
                       <b>{t.author}</b>
-                      <span>Verified {t.source} review</span>
+                      <span>
+                        Verified {t.source} review · {formatDate(t.date, { month: 'short', day: undefined, year: 'numeric' })}
+                      </span>
                     </figcaption>
                   </figure>
                 </li>

@@ -359,7 +359,10 @@ function VideoLayer({
       src={video.url}
       poster={video.posterUrl ?? posterUrl}
       muted
-      autoPlay
+      // A vestibular-disorder visitor had no way to stop this full-viewport
+      // autoplay loop (only Unmute/Mute exists) — reduced-motion loads paused
+      // on the poster frame instead (design-audit P2, accessibility).
+      autoPlay={typeof window === 'undefined' || !window.matchMedia('(prefers-reduced-motion: reduce)').matches}
       loop
       playsInline
       onClick={onTap}

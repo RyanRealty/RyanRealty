@@ -101,6 +101,18 @@ export function KbHero({
     return () => mq.removeEventListener('change', apply)
   }, [])
 
+  // prefers-reduced-motion previously gated only the GSAP text reveal, not the
+  // full-viewport autoplay/loop background video — a vestibular-disorder
+  // visitor had no way to stop it (design-audit P2, accessibility).
+  const [reduceMotion, setReduceMotion] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    setReduceMotion(mq.matches)
+    const apply = () => setReduceMotion(mq.matches)
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
+
   useEffect(() => {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const ctx = gsap.context(() => {
@@ -135,11 +147,12 @@ export function KbHero({
   }
 
   const median = kbMoneyFull(data.medianListPrice)
+  const showVideo = Boolean(videoSrc) && reduceMotion === false
 
   return (
     <section className="hero" id="top" ref={root}>
       <div className="hero-photo" data-parallax>
-        {videoSrc ? (
+        {showVideo ? (
           <video
             className="hero-video"
             autoPlay
@@ -149,7 +162,7 @@ export function KbHero({
             preload="auto"
             poster={posterSrc}
           >
-            <source src={videoSrc} type="video/mp4" />
+            <source src={videoSrc ?? undefined} type="video/mp4" />
           </video>
         ) : (
           // Fix 6: descriptive alt text (posterAlt from the page).

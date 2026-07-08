@@ -112,6 +112,14 @@ export function KbFooter({ towns, hideCta = false }: { towns: KbTownItem[]; hide
         </div>
         <div className="foot-bottom">
           <p>&copy; 2026 Ryan Realty · Principal Broker Matt Ryan · Licensed in Oregon · Equal Housing Opportunity</p>
+          {/* Legal links (design-audit P2): zero /privacy, /terms, /fair-housing
+              links existed anywhere in the KB footer. */}
+          <p className="foot-legal">
+            <a href="/privacy">Privacy policy</a>
+            <a href="/terms">Terms of service</a>
+            <a href="/fair-housing">Fair housing</a>
+            <a href="/accessibility">Accessibility</a>
+          </p>
           {fine ? <p className="foot-fine">Active single-family by town: {fine}. Figures from the MLS.</p> : null}
         </div>
       </div>
