@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.746.0 (2026-07-08)
+
+### Features
+- feat(admin): consolidate ~40 admin pages into broker workflows — unified alerts, criteria editors, delivery observability, help system, Phase 2 merges
+
+---
+
+
 ## v1.745.0 (2026-07-07)
 
 ### Features
