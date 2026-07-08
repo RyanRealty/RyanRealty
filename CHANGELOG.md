@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.751.17 (2026-07-08)
+
+### Bug Fixes
+- fix(content-trust): blog/faq/reviews audit batch — real read-time, honest labels, fixed layouts (#126-130,#136-140,#146-150,#152-153)
+- fix(inventory): classify raw MLS PropertyType codes, not just spelled-out strings (design-audit #132)
+
+---
+
+
 ## v1.751.16 (2026-07-08)
 
 ### Bug Fixes
