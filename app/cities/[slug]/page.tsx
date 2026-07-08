@@ -581,15 +581,19 @@ export default async function CityDetailPage({ params }: Props) {
         <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} />
         <KbFeatured items={featuredItems} eyebrow={`${cityName} · For sale`} />
         <KbTicker items={tickerItems} />
+        {/* totalActive/subtitle describe the PLOTTED set now, not the
+            polygon-clipped pulse count — mapTiles filters by the MLS City
+            field (rural addresses often carry "Bend"), so the two counts
+            legitimately differ and used to contradict each other (P2). */}
         <KbListingMap
           geojson={mapGeo}
-          totalActive={pulse?.activeCount ?? mapFeatures.length}
+          totalActive={mapFeatures.length}
           fitToFeatures
           showRegionMarkers={false}
           polygons={neighborhoodPolygons}
           eyebrow={cityName}
           title={`Homes in\n${cityName}`}
-          subtitle={`Every active single-family listing in ${cityName}, on the real terrain. Click any dot for the price, the beds, and the street.`}
+          subtitle={`Every active single-family listing with a ${cityName} address, on the real terrain. Click any dot for the price, the beds, and the street.`}
         />
         <KbExploreTowns
           towns={bendNeighborhoodItems}

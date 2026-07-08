@@ -450,15 +450,6 @@
     "hint": "app/tools/mortgage-calculator/page.tsx line 93 still renders the Tools crumb as href=\"/tools/mortgage-calculator\" (self-link) and no /tools index rout"
   },
   {
-    "index": 73,
-    "group": "geo-browse",
-    "page": "/cities/bend, /cities/bend/awbrey-butte, /communities/tetherow",
-    "sev": "P2",
-    "effort": "small",
-    "issue": "'The market, on record' paints lighter 'ghost' cells wherever a KPI is missing: Awbrey Butte shows a huge empty block beside the $1,150,000 headline p",
-    "hint": "Verified live (desktop, /cities/bend/awbrey-butte): .mkt-kpis renders 2 tiles into a 3-track grid (ghost cell) and .mkt-verdict-row renders 1 child in"
-  },
-  {
     "index": 76,
     "group": "geo-browse",
     "page": "/cities/bend/awbrey-butte and /communities/tetherow (chart also on /cities/bend)",
@@ -502,15 +493,6 @@
     "effort": "medium",
     "issue": "'Every community, A to Z' is a collapsed alphabet accordion ('# 5 communities', 'A 26 communities'...) — ~20 near-empty rows that only help someone wh",
     "hint": "CommunityIndexBrowser.tsx unchanged: search box + <details>-per-letter alphabet accordion only (lines 123-150); no city grouping, price bands, or coun"
-  },
-  {
-    "index": 93,
-    "group": "geo-browse",
-    "page": "cities-bend (/cities/bend)",
-    "sev": "P2",
-    "effort": "medium",
-    "issue": "The map section says 'Every active single-family listing in Bend' with a '500 ACTIVE LISTINGS' pill, but visible cluster markers sit near Redmond, Tum",
-    "hint": "Scope mismatch persists and is measurably larger: the map plots ~1,009 City-field features (1,023 Feature objects in the payload incl. ~14 polygons; g"
   },
   {
     "index": 99,

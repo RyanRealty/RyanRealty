@@ -17,7 +17,7 @@
     "app/admin/console/leads/[id]/page.tsx": 619,
     "app/api/meta/lead-webhook/route.ts": 919,
     "app/api/social/publish/route.ts": 783,
-    "app/cities/[slug]/page.tsx": 650,
+    "app/cities/[slug]/page.tsx": 654,
     "app/communities/[slug]/page.tsx": 942,
     "app/components/admin/AdminBrokerForm.tsx": 1339,
     "app/dashboard/marketing/page.tsx": 1170,
