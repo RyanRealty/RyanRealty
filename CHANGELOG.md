@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.750.1 (2026-07-08)
+
+### Bug Fixes
+- fix(site): design-audit open P1s — index-page chrome, /buy mobile hero, community inventory order
+
+---
+
+
 ## v1.750.0 (2026-07-08)
 
 ### Features
