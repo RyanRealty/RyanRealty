@@ -289,7 +289,17 @@ export function CommunityRichContent({
                       {t.details.map((d, j) => (
                         <div key={j} className="flex justify-between gap-4">
                           <dt className="text-muted-foreground">{d.label}</dt>
-                          <dd className="font-medium text-foreground text-right">{d.value}</dd>
+                          {/* Placeholder-with-no-next-step fix — see the
+                              matching change in KbResortOverview.tsx. */}
+                          {d.value === 'Confirmed at office' && content.membershipOfficePhone ? (
+                            <dd className="font-medium text-foreground text-right">
+                              <a href={`tel:${content.membershipOfficePhone.replace(/[^0-9+]/g, '')}`} className="underline underline-offset-2">
+                                Ask the club · {content.membershipOfficePhone}
+                              </a>
+                            </dd>
+                          ) : (
+                            <dd className="font-medium text-foreground text-right">{d.value}</dd>
+                          )}
                         </div>
                       ))}
                     </dl>

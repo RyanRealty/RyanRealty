@@ -513,42 +513,6 @@
     "hint": "Scope mismatch persists and is measurably larger: the map plots ~1,009 City-field features (1,023 Feature objects in the payload incl. ~14 polygons; g"
   },
   {
-    "index": 95,
-    "group": "geo-browse",
-    "page": "cities (/cities)",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "The 'Other Central Oregon cities' section heading is set in the same giant display register as the page H1 'Central Oregon Cities' — scrolling users h",
-    "hint": "Both halves persist: 'Other Central Oregon cities' still renders in the sec-title display register (app/cities/page.tsx:432), and Black Butte Ranch st"
-  },
-  {
-    "index": 96,
-    "group": "geo-browse",
-    "page": "community (/communities/tetherow)",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "Subdivision chips render raw truncated MLS SubdivisionName strings: 'Lodges at Bachelor V' (cut mid-word by the MLS field length) and the cryptic 'Tri",
-    "hint": "Verified live on /communities/tetherow: chips still render raw truncated MLS strings 'Lodges at Bachelor V' and 'Triple', with hrefs /subdivisions/lod"
-  },
-  {
-    "index": 97,
-    "group": "geo-browse",
-    "page": "community (/communities/tetherow)",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "The membership tables answer 'Initiation' and 'Monthly dues' with the label 'Confirmed at office' four times — it reads as a placeholder, gives no act",
-    "hint": "Verified live: 'Confirmed at office' still renders as the dd value for Initiation and Monthly dues in both Tetherow membership cards (4+ visible insta"
-  },
-  {
-    "index": 98,
-    "group": "geo-browse",
-    "page": "cities-bend (/cities/bend)",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "On the 5-year market chart the 'AS OF JUL' annotation renders twice — once floating beside the cutoff line and again inside the $810K tooltip box dire",
-    "hint": "Verified live on /cities/bend/awbrey-butte: both .kbmc-asof-label ('as of Jul', KbMarketChart.client.tsx:406-414) and .kbmc-endlabel-as ('as of Jul', "
-  },
-  {
     "index": 99,
     "group": "geo-browse",
     "page": "cities (/cities)",

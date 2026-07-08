@@ -6,6 +6,20 @@ import { slugify } from '@/lib/slug'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import type { AmenityBlogPost } from '@/lib/data'
 
+// The MLS SubdivisionName field is fixed-length and cuts some names off
+// mid-word ("Lodges at Bachelor V", "Triple") — they read as broken chips,
+// not intentionally short ones (design-audit P3). Display-only correction;
+// the raw MLS string still drives the /subdivisions/[slug] URL below since
+// that page filters listings by the exact subdivision_name value. Only
+// "Triple" is mapped — its full name is independently confirmed elsewhere
+// in data/resort-community-tetherow.json ("Triple Knot townhomes", "$8,244
+// in Triple Knot"); "Lodges at Bachelor V" has no verifiable full form in
+// any source this codebase has access to, so it stays unmapped rather than
+// guessed (CLAUDE.md §0 — never fabricate a value that can't be verified).
+const SUBDIVISION_ALIAS_DISPLAY: Record<string, string> = {
+  Triple: 'Triple Knot',
+}
+
 /**
  * KB Resort Overview — the rich, verified depth a resort/golf/master-planned
  * community page carries (overview prose + at-a-glance facts + drive times +
@@ -37,7 +51,10 @@ export function KbResortOverview({
 }) {
   if (!content) return null
   // Drop the resort's own name from the alias chips; show only the constituent
-  // subdivisions (a single-name community then shows none).
+  // subdivisions (a single-name community then shows none). Raw MLS strings —
+  // NOT display-corrected here, because slugify(a) below must match the same
+  // raw subdivision_name the destination /subdivisions/[slug] page filters
+  // listings by; only the visible TEXT gets the display-name correction.
   const aliasChips = aliases.filter((a) => a.toLowerCase().trim() !== name.toLowerCase().trim())
 
   const facts: { label: string; value: string }[] = [
@@ -107,7 +124,7 @@ export function KbResortOverview({
                 <div className="ov-alias-row">
                   {aliasChips.map((a) => (
                     <Link key={a} href={`/subdivisions/${slugify(a)}`} className="ov-alias ov-alias-link">
-                      {a}
+                      {SUBDIVISION_ALIAS_DISPLAY[a] ?? a}
                       <span className="ov-alias-arr" aria-hidden="true">›</span>
                     </Link>
                   ))}
@@ -252,7 +269,21 @@ export function KbResortOverview({
                       {t.details.map((d, j) => (
                         <div key={j} className="ov-fact">
                           <dt>{d.label}</dt>
-                          <dd className="mono-num">{d.value}</dd>
+                          {/* "Confirmed at office" read as a placeholder with
+                              no next step — the club's own phone (below the
+                              tier cards) answered it, but nothing pointed a
+                              reader there (design-audit P3). Link straight
+                              to it when the value is this unpublished-price
+                              placeholder and a number exists. */}
+                          {d.value === 'Confirmed at office' && content.membershipOfficePhone ? (
+                            <dd className="mono-num">
+                              <a href={`tel:${content.membershipOfficePhone.replace(/[^0-9+]/g, '')}`}>
+                                Ask the club · {content.membershipOfficePhone}
+                              </a>
+                            </dd>
+                          ) : (
+                            <dd className="mono-num">{d.value}</dd>
+                          )}
                         </div>
                       ))}
                     </dl>

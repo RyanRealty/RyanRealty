@@ -401,17 +401,6 @@ export function KbMarketChart({
               {formatValue(g.value)}
             </span>
           ))}
-          {/* "as of" divider label — anchors the current-year cutoff so the
-              shaded remainder reads as "rest of the year, not yet happened". */}
-          {geo.asOfMonth ? (
-            <span
-              className="kbmc-asof-label mono-num"
-              style={{ left: `${(geo.xOf(geo.asOfMonth) / W) * 100}%` }}
-              data-side={(geo.xOf(geo.asOfMonth) / W) * 100 > 82 ? 'left' : 'right'}
-            >
-              as of {MONTHS[geo.asOfMonth - 1]}
-            </span>
-          ) : null}
           {/* endpoint dot + value label on the NEWEST VISIBLE line only — older
               years would otherwise litter the right edge with disconnected dots. */}
           {(() => {

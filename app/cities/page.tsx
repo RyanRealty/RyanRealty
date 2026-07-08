@@ -442,9 +442,13 @@ export default async function CitiesPage() {
             style={{ background: 'rgba(16,39,66,0.04)' }}
           >
             <div className="wrap">
+              {/* Reworded off "Other Central Oregon cities" — at the shared
+                  .sec-title size it echoed the page H1 ("Central Oregon
+                  Cities") closely enough that a scrolling visitor read it as
+                  the page starting over (design-audit P3). */}
               <div className="sec-head">
                 <span className="sec-index">More areas</span>
-                <h2 className="sec-title display">Other Central<br />Oregon cities</h2>
+                <h2 className="sec-title display">Smaller towns<br />on the ledger</h2>
               </div>
 
               <div className="max-w-2xl pt-2" style={{ borderTop: '1px solid var(--navy-12)' }}>
