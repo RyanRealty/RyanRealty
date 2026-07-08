@@ -131,7 +131,12 @@ async function _getCommunitiesForIndexUncached(): Promise<CommunityForIndex[]> {
 
 export const getCommunitiesForIndex = unstable_cache(
   _getCommunitiesForIndexUncached,
-  ['communities-index-v2'],
+  // v3 (design-audit #132, §0): classifyInventoryPropertyType() previously
+  // never matched the raw single-letter PropertyType codes this fn's own
+  // isResidentialInventoryType() filter reads, so land parcels (D) silently
+  // counted as residential inventory — evicts every v2 entry, which is
+  // cached with the wrong active counts + medians (Pronghorn: $180,000).
+  ['communities-index-v3'],
   { revalidate: 1800, tags: ['communities-index'] }
 )
 

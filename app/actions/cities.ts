@@ -514,7 +514,11 @@ async function _getNeighborhoodBySlugUncached(
 
 export const getNeighborhoodBySlug = unstable_cache(
   _getNeighborhoodBySlugUncached,
-  ['neighborhood-by-slug-v1'],
+  // v2 (design-audit #132): isResidentialInventoryType() previously never
+  // matched listing_tile_mv's raw single-letter PropertyType codes, so land
+  // parcels (D) counted toward this fn's activeCount/medianPrice — evicts
+  // any v1 entry cached with the wrong numbers.
+  ['neighborhood-by-slug-v2'],
   { revalidate: 300, tags: ['neighborhood-detail'] }
 )
 

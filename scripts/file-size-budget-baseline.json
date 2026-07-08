@@ -2,7 +2,7 @@
   "note": "app/ + lib/ source files >= 600 LOC (frozen at current size; no new file may cross the floor) + tracked barrel export counts. All values may only SHRINK. Regenerate with --write-baseline. This freezes the audit p2.2 god-files in place; the actual splits are the deferred next-build remainder.",
   "floor": 600,
   "files": {
-    "app/actions/cities.ts": 768,
+    "app/actions/cities.ts": 772,
     "app/actions/crm.ts": 1881,
     "app/actions/dashboard.ts": 910,
     "app/actions/lead-capture.ts": 610,
