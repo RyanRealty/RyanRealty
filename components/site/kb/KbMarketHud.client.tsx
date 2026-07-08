@@ -5,14 +5,7 @@ import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { kbMoneyFull, type KbMarketData } from './types'
 import { KbMarketChart } from './KbMarketChart.client'
-
-/** Months-of-supply → market verdict (CLAUDE.md §0 thresholds: ≤4 seller, 4–6 balanced, ≥6 buyer). */
-function verdictOf(mos: number | null): { key: 'seller' | 'balanced' | 'buyer'; label: string } | null {
-  if (mos == null) return null
-  if (mos <= 4) return { key: 'seller', label: "Seller's market" }
-  if (mos >= 6) return { key: 'buyer', label: "Buyer's market" }
-  return { key: 'balanced', label: 'Balanced market' }
-}
+import { monthsOfSupplyVerdict as verdictOf, formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 
 function Kpi({ val, lbl }: { val: string | null; lbl: string }) {
   return (
@@ -128,7 +121,7 @@ export function KbMarketHud({
   if (data.saleToList != null) kpis.push({ val: `${data.saleToList.toFixed(1)}%`, lbl: 'Sale to list' })
   if (data.daysToPending != null) kpis.push({ val: `${Math.round(data.daysToPending)} days`, lbl: 'Median to pending' })
   else if (data.medianDom12mo != null) kpis.push({ val: `${Math.round(data.medianDom12mo)} days`, lbl: 'Median on market · 12 mo' })
-  if (data.monthsSupply != null) kpis.push({ val: `${data.monthsSupply.toFixed(1)} mo`, lbl: 'Months of supply' })
+  if (data.monthsSupply != null) kpis.push({ val: `${formatMonthsOfSupply(data.monthsSupply)} mo`, lbl: 'Months of supply' })
 
   return (
     <section className="section mkt" id="market-report" ref={root}>
@@ -159,7 +152,7 @@ export function KbMarketHud({
             <div className={`mkt-verdict v-${verdict.key}`}>
               <span className="mkt-verdict-stamp">{verdict.label}</span>
               {data.monthsSupply != null ? (
-                <span className="mkt-verdict-sub mono-num">{data.monthsSupply.toFixed(1)} months of supply</span>
+                <span className="mkt-verdict-sub mono-num">{formatMonthsOfSupply(data.monthsSupply)} months of supply</span>
               ) : null}
             </div>
           ) : null}

@@ -36,6 +36,7 @@ import { getAllCitySnapshots, getRegionPulse, getMarketPulseCitySnapshots } from
 import { getCityContent } from '@/lib/city-content'
 import { cityHero } from '@/lib/geo-images'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
@@ -276,7 +277,7 @@ export default async function CitiesPage() {
               {regionPulse?.monthsOfSupply != null ? (
                 <div className="stat-cell">
                   <span className="stat-num mono-num">
-                    {(Math.round(regionPulse.monthsOfSupply * 10) / 10).toFixed(1)} mo
+                    {formatMonthsOfSupply(regionPulse.monthsOfSupply)} mo
                   </span>
                   <span className="stat-label">Months of supply{regionVerdict ? ` · ${regionVerdict}` : ''}</span>
                 </div>

@@ -18,7 +18,23 @@ import type { ListingTile } from '@/lib/data'
  * with motion. Every figure stays live (§0); failure-safe per listing.
  */
 export async function resolveFeaturedItems(tiles: ListingTile[], limit = 6): Promise<KbFeaturedItem[]> {
-  const candidates = tiles.filter((t) => t.photoUrl).slice(0, 12)
+  // Dedupe by normalized street address + sanity-filter land-scale outliers
+  // BEFORE slicing to 12: a duplicate MLS entry for the same physical
+  // address (two ListNumbers, same street) or a raw satellite-parcel tile
+  // with sqft in the tens of thousands used to survive into the rail and
+  // lead it — price-desc sorting guarantees outliers rank first
+  // (design-audit P2, verified live: a $16.8M "O B Riley" address had two
+  // MLS entries and a 731,808 sqft land-scale tile).
+  const seenAddresses = new Set<string>()
+  const sanitized = tiles.filter((t) => {
+    if (!t.photoUrl) return false
+    if (t.sqft != null && t.sqft > 20_000) return false
+    const key = [t.streetNumber, t.streetName].filter(Boolean).join(' ').toLowerCase().trim()
+    if (key && seenAddresses.has(key)) return false
+    if (key) seenAddresses.add(key)
+    return true
+  })
+  const candidates = sanitized.slice(0, 12)
   const media = await Promise.all(
     candidates.map((t) =>
       getListingVideos(t.listingKey)

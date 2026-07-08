@@ -1,5 +1,6 @@
 import type { AreaMarket } from '@/lib/area-market'
 import { marketClass, marketClassLabel, money, marketSentence } from '@/lib/area-market'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 
 /**
  * The live city-market read for a content-engine detail page — the real-estate
@@ -33,7 +34,7 @@ export function AreaMarketBand({ market, citySlug }: { market: AreaMarket; cityS
           {market.monthsOfSupply != null ? (
             <div className="ev-market-stat">
               <span className="ev-market-lbl mono-lab">Months of supply</span>
-              <span className="ev-market-val display">{market.monthsOfSupply.toFixed(1)}</span>
+              <span className="ev-market-val display">{formatMonthsOfSupply(market.monthsOfSupply)}</span>
               {cls ? <span className="ev-market-sub">{marketClassLabel(cls)}</span> : null}
             </div>
           ) : null}

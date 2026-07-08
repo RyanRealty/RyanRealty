@@ -42,6 +42,7 @@ import { CITY_QUICK_FACTS } from '@/lib/cities'
 import bendNeighborhoodPolygons from '@/data/bend/bend-neighborhood-polygons.json'
 import { cityHero, GOLF_COMMUNITY_IMAGES } from '@/lib/geo-images'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
+import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { assignNeighborhoodPhotos } from '@/lib/kb/neighborhood-photos'
 import { resortActiveSfrCounts, resortLabelToSlug, cityResorts } from '@/lib/kb/resort-active-counts'
@@ -231,7 +232,10 @@ export default async function CityDetailPage({ params }: Props) {
     withTimeoutFallback(getActivityFeedWithFallbackMulti({ cities: [cityName], limit: 8 }), [], 3500, 'city:activity'),
     withTimeoutFallback(getCityMetadataByName(cityName), null, 3000, 'city:meta'),
     withTimeoutFallback(getCityListings(cityName, { status: 'active', sort: 'newest', limit: 1500 }), [], 4500, 'city:mapTiles'),
-    withTimeoutFallback(getCityListings(cityName, { status: 'active', sort: 'price-desc', limit: 14 }), [], 4500, 'city:featured'),
+    // Wide SFR pool for curateFeaturedTiles below — the old price-desc top-14
+    // pull had ONLY luxury outliers in it, so curation ran but had nothing
+    // mid-market to pick from (design-audit P2).
+    withTimeoutFallback(getCityListings(cityName, { status: 'active', sort: 'newest', propertyType: 'A', limit: 300 }), [], 4500, 'city:featured'),
     // Uncapped active SFR tiles for the city — the source for alias-aware resort
     // counts. mapTiles is capped at 1500 + all-types, which UNDERcounts resorts
     // (Widgi 28 vs true 48). This SFR-only, high-limit pull is exact. (§0)
@@ -278,8 +282,10 @@ export default async function CityDetailPage({ params }: Props) {
     ...(quickFacts?.county ? [{ label: 'County', value: `${quickFacts.county} County` }] : []),
   ]
 
-  // Featured + map + ticker (shared resolver).
-  const featuredItems: KbFeaturedItem[] = await resolveFeaturedItems(featuredTiles)
+  // Featured + map + ticker. Curated like the homepage rail (Phase D) so
+  // price-desc doesn't lead with pure luxury outliers (design-audit P2).
+  const cityMedians = pulse?.medianListPrice != null ? Array(4).fill({ name: cityName, medianPrice: pulse.medianListPrice }) : []
+  const featuredItems: KbFeaturedItem[] = await resolveFeaturedItems(curateFeaturedTiles(featuredTiles, cityMedians, 14))
   const mapFeatures = mapTiles
     .filter((t) => t.lat != null && t.lng != null)
     .map((t) => ({

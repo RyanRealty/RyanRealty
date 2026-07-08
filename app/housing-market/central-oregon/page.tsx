@@ -64,6 +64,7 @@ import { FAQBlock } from '@/components/site/FAQBlock'
 import { ContentSection } from '@/components/site/ContentSection'
 import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
 import { submitMarketPageInquiry } from '@/app/housing-market/actions'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import '@/components/site/kb/kb.css'
 
 export const revalidate = 300
@@ -286,11 +287,13 @@ export default async function CentralOregonRegionPage() {
     ledeParts.push('across Central Oregon.')
   }
   if (regionPulse?.monthsOfSupply != null) {
-    const mos = Math.round(regionPulse.monthsOfSupply * 10) / 10
+    // Classify the RAW value, not the rounded display value (design-audit
+    // P2, CLAUDE.md §0 — see app/housing-market/page.tsx for the same fix).
+    const raw = regionPulse.monthsOfSupply
     let verdict = 'balanced market'
-    if (mos <= 4) verdict = "seller's market"
-    else if (mos >= 6) verdict = "buyer's market"
-    ledeParts.push(`${mos} months of supply: ${verdict}.`)
+    if (raw <= 4) verdict = "seller's market"
+    else if (raw >= 6) verdict = "buyer's market"
+    ledeParts.push(`${formatMonthsOfSupply(raw)} months of supply: ${verdict}.`)
   }
   const lede =
     ledeParts.join(' ') ||

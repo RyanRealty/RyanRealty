@@ -486,15 +486,6 @@
     "hint": "KbAreaGuideVideo.tsx unchanged (16:9 frame, objectFit:contain, optional posterSrc) and all three callers (app/cities/[slug]/page.tsx:591, communities/"
   },
   {
-    "index": 81,
-    "group": "geo-browse",
-    "page": "/cities/bend",
-    "sev": "P2",
-    "effort": "medium",
-    "issue": "Bend's 'Featured homes' is six ultra-luxury outliers ($5.9M-$16.8M, including two raw-land satellite tiles) on a page whose own median is $775K. The t",
-    "hint": "Verified live: /cities/bend featured rail is $11.9M, $8.75M, $7.9M, $5.99M, 2×$16.8M — price-desc only. The curateFeaturedTiles mixer (lib/kb/curate-f"
-  },
-  {
     "index": 83,
     "group": "geo-browse",
     "page": "/cities/bend and /communities",
@@ -511,24 +502,6 @@
     "effort": "medium",
     "issue": "'Every community, A to Z' is a collapsed alphabet accordion ('# 5 communities', 'A 26 communities'...) — ~20 near-empty rows that only help someone wh",
     "hint": "CommunityIndexBrowser.tsx unchanged: search box + <details>-per-letter alphabet accordion only (lines 123-150); no city grouping, price bands, or coun"
-  },
-  {
-    "index": 88,
-    "group": "geo-browse",
-    "page": "cities-bend (/cities/bend)",
-    "sev": "P2",
-    "effort": "small",
-    "issue": "The Featured Homes rail shows the same property twice back-to-back (63672 O B Riley, $16,800,000 — two MLS entries for one address), and that 'home' r",
-    "hint": "Verified live: /cities/bend featured rail shows 63672 O B Riley at $16,800,000 twice back-to-back. resolveFeaturedItems (lib/kb/resolve-featured-items"
-  },
-  {
-    "index": 89,
-    "group": "geo-browse",
-    "page": "cities-bend (/cities/bend)",
-    "sev": "P2",
-    "effort": "small",
-    "issue": "The market banner says 'Balanced market · 4.0 MONTHS OF SUPPLY' while the page's own methodology text three screens later states 'four months or less ",
-    "hint": "No threshold-aware rounding shipped: KbMarketHud still displays raw mos via toFixed(1) (lines 111, 142) with verdictOf on the raw value. Today's data "
   },
   {
     "index": 93,

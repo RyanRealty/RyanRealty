@@ -87,6 +87,7 @@ import { KbArticles } from '@/components/site/kb/KbArticles'
 import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import '@/components/site/kb/kb.css'
 
 // Legacy wave-2 imports (subdivision scope — preserved intact)
@@ -497,11 +498,13 @@ export default async function HousingMarketGeoPage({ params }: Props) {
       ledeParts.push(`Median list price $${r.toLocaleString()}.`)
     }
     if (pulse?.monthsOfSupply != null) {
-      const mos = Math.round(pulse.monthsOfSupply * 10) / 10
+      // Classify the RAW value, not the rounded display value (design-audit
+      // P2, CLAUDE.md §0 — see app/housing-market/page.tsx for the same fix).
+      const raw = pulse.monthsOfSupply
       let verdict = 'balanced market'
-      if (mos <= 4) verdict = "seller's market"
-      else if (mos >= 6) verdict = "buyer's market"
-      ledeParts.push(`${mos} months of supply: ${verdict}.`)
+      if (raw <= 4) verdict = "seller's market"
+      else if (raw >= 6) verdict = "buyer's market"
+      ledeParts.push(`${formatMonthsOfSupply(raw)} months of supply: ${verdict}.`)
     }
     const lede =
       ledeParts.join(' ') ||
