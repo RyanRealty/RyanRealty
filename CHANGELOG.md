@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.24 (2026-07-09)
+
+### Maintenance
+- docs(design-audit): sync README + PROGRESS.md — backlog cleared to zero
+
+---
+
+
 ## v1.751.23 (2026-07-09)
 
 ### Bug Fixes
