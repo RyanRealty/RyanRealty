@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.28 (2026-07-09)
+
+### Maintenance
+- refactor(crm): purge dead FollowUpBoss integration, fix bugs it was masking
+
+---
+
+
 ## v1.751.27 (2026-07-09)
 
 ### Bug Fixes
