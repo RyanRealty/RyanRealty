@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.752.0 (2026-07-09)
+
+### Features
+- feat(crm): multi-attachment email/MMS, Gmail-matched signatures, HTML/text composer with byte-equal preview
+
+### Bug Fixes
+- fix(meta): use real email/phone from CRM for westside audience matching
+
+---
+
+
 ## v1.751.28 (2026-07-09)
 
 ### Maintenance
