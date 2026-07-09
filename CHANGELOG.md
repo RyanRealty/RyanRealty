@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.751.23 (2026-07-09)
+
+### Bug Fixes
+- fix(content-trust): clear the final 2 items -- design-audit backlog is now genuinely empty (#125, #131)
+- fix(company-tools): clear the final 6 items -- content-trust + market-data + company-tools all at zero (#154,#155,#156,#158,#169,#170)
+
+---
+
+
 ## v1.751.22 (2026-07-09)
 
 ### Bug Fixes
