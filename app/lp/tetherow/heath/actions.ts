@@ -1,10 +1,6 @@
 'use server'
 
 import {
-  addPersonTags,
-  createRealtimeTask,
-  findPersonByEmail,
-  assignPersonToUser,
   type FubEventPerson,
   sendEvent,
 } from '@/lib/followupboss'
@@ -12,6 +8,8 @@ import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { createNativeTask } from '@/lib/data/crm/ensureNativeLead'
+import { resolveLeadSource, resolvePaidAttributionTags } from '@/lib/crm/lead-source'
 import { cookies, headers } from 'next/headers'
 
 /**
@@ -30,8 +28,6 @@ import { cookies, headers } from 'next/headers'
  */
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-
-const FUB_USER_MATT = 1
 
 export type HeathCmaTimeline = 'ready-now' | 'next-3-6' | 'next-6-12' | 'exploring'
 
@@ -83,7 +79,6 @@ export async function submitHeathCmaForm(
   // Agent attribution: if the visitor came from a per-broker ad URL
   // (?agent=rebecca etc.) the cookie has been set by AgentAttributionBridge.
   const attribution = await readAttributedAgentServer()
-  const assignedUserId = attribution?.userId ?? FUB_USER_MATT
 
   const tags = [
     'seller-intent',
@@ -122,10 +117,14 @@ export async function submitHeathCmaForm(
       }
     } catch {}
 
-    // Send to FUB. Use sendEvent so a new lead is created if not already
-    // known; existing leads are deduped by email match.
-    await sendEvent({
-      source: 'ryan-realty.com',
+    // Send natively so a new lead is created if not already known; existing
+    // leads are deduped by email match. sendEvent() returns the native
+    // crm_people id directly — this is the correct id to use downstream, not
+    // the old findPersonByEmail() re-lookup (a dead FUB-API call since the
+    // 2026-06-24 decommission, which always returned null and meant this
+    // page's tag/assign/task block silently never ran). Fixed 2026-07-09.
+    const eventResult = await sendEvent({
+      source: resolveLeadSource(originUtmSource, 'cma-request'),
       type: 'Seller Inquiry',
       message: [
         `Heath at Tetherow CMA request`,
@@ -148,29 +147,26 @@ export async function submitHeathCmaForm(
         : undefined,
     })
 
-    // Re-look-up + tag + assign + open a task for the broker.
-    const existing = await findPersonByEmail(input.email.trim())
+    const existing = eventResult.ok && eventResult.personId ? { id: eventResult.personId } : null
     if (existing?.id) {
-      await addPersonTags(existing.id, tags)
-      await assignPersonToUser(existing.id, assignedUserId)
-      await createRealtimeTask({
+      await createNativeTask({
         personId: existing.id,
-        taskName: `Heath CMA: ${input.address}`,
-        taskType: 'Follow Up',
+        name: `Heath CMA: ${input.address}`,
+        type: 'Follow Up',
         dueInMinutes: 24 * 60,
+        assignedBroker: attribution?.broker,
       })
 
       // Canonical schema layer — adds audience:seller + source:cma-request +
-      // broker:slug and writes the marketing_assignments ledger row.
-      // Idempotent against the manual tags above; lets the canonical FUB
-      // automation rule pick this lead up the same way it picks up
-      // /lp/seller-home-value submissions.
+      // broker:slug, writes the marketing_assignments ledger row, and (fixed
+      // 2026-07-09) applies the paid-channel attribution tags too.
       await canonicallyTagLead({
         fubPersonId: existing.id,
         audience: 'seller',
         source: 'cma-request',
         tier: classification,
         address: input.address,
+        extraTags: resolvePaidAttributionTags({ utmSource: originUtmSource, utmCampaign: originUtmCampaign, utmContent: originUtmContent }),
       })
     }
 

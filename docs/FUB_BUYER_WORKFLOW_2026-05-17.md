@@ -1,5 +1,7 @@
 # Ryan Realty — Buyer Lead Workflow (Locked Spec)
 
+> **⚠️ SUPERSEDED (2026-07-08).** Same status as `docs/FUB_SELLER_WORKFLOW_2026-05-17.md` — the FUB-native execution model here (Action Plans, FUB automation rules) was replaced by the in-house CRM (`lib/crm/enroll.ts`, sends via Twilio + Gmail DWD) starting 2026-06-10; FUB API access was decommissioned 2026-06-24. Cadence research and template copy remain a valid reference. Live sequence: Supabase `crm_sequences` id 2 (Buyer Master) — currently 3 of the original steps, same T+5d cutoff gap as the seller sequence.
+
 **Status:** Locked 2026-05-17.
 **Mirrors:** `docs/FUB_SELLER_WORKFLOW_2026-05-17.md` — same architecture, different cadence + content.
 **Implementation:** Phase C of the round-2 optimization.

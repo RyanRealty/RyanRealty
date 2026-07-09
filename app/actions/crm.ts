@@ -554,6 +554,22 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   const scoped = await requirePersonInScope(personId, access.access)
   if (!scoped.ok) return scoped
 
+  // Optional attachment (<=10MB, same allowlist as MMS plus common doc types).
+  const attachmentFile = formData.get('attachment') as File | null
+  let emailAttachments: { filename: string; content: Buffer; mimeType: string }[] | undefined
+  if (attachmentFile && attachmentFile.size > 0) {
+    const MAX_EMAIL_ATTACHMENT_BYTES = 10 * 1024 * 1024
+    if (attachmentFile.size > MAX_EMAIL_ATTACHMENT_BYTES) {
+      return { ok: false, error: 'Email attachments must be under 10MB' }
+    }
+    const buf = Buffer.from(await attachmentFile.arrayBuffer())
+    emailAttachments = [{
+      filename: attachmentFile.name,
+      content: buf,
+      mimeType: attachmentFile.type || 'application/octet-stream',
+    }]
+  }
+
   const sb = createServiceClient()
   const { data: person } = await sb
     .from('crm_people')
@@ -584,6 +600,7 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
   const sent = await sendCrmEmail({
     fromMailbox: mailbox.email, to, subject: mergedSubject, bodyText: mergedBody, withSignature: true,
+    attachments: emailAttachments,
     // Instrument open/click like the sequence engine so the conversation
     // engagement panel ("Opened N×") works for manually-composed emails too.
     // label MUST equal the subject — the panel keys engagement on the email title.
@@ -887,6 +904,17 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   const scoped = await requirePersonInScope(personId, access.access)
   if (!scoped.ok) return scoped
 
+  // Optional MMS attachment (image/PDF, <=5MB). Uploaded once up front and
+  // reused across every recipient in this send (group + broadcast paths).
+  const attachment = formData.get('attachment') as File | null
+  let mediaUrls: string[] | undefined
+  if (attachment && attachment.size > 0) {
+    const { uploadMmsMedia } = await import('@/lib/crm/mms-media')
+    const uploaded = await uploadMmsMedia({ personId, file: attachment })
+    if (!uploaded.ok) return { ok: false, error: uploaded.error }
+    mediaUrls = [uploaded.signedUrl]
+  }
+
   // Group text: the broker can quick-add other people linked to the lead (e.g. a
   // spouse) in the composer. `recipientIds` is a comma-separated list of extra
   // crm_people ids; the same message goes to each and is logged on each timeline.
@@ -980,13 +1008,13 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
     // Send from the broker's OWN Twilio business line, else the A2P service.
     const fromNumber = await brokerTwilioNumber(slug)
     const sent = fromNumber
-      ? await sendSms({ from: fromNumber, to, body: mergedBody })
-      : await sendSmsViaMessagingService({ to, body: mergedBody })
+      ? await sendSms({ from: fromNumber, to, body: mergedBody, mediaUrls })
+      : await sendSmsViaMessagingService({ to, body: mergedBody, mediaUrls })
     if (!sent.ok) { lastError = sent.error; continue }
 
     await sb.from('crm_timeline').insert({
       person_id: rid, kind: 'sms_out', title: 'Text sent', body: mergedBody,
-      payload: { twilioSid: sent.sid, to },
+      payload: { twilioSid: sent.sid, to, hasMedia: Boolean(mediaUrls?.length) },
       broker: slug, source: 'app', dedupe_key: `twilio:${sent.sid}:p${rid}`,
     })
     sentCount++

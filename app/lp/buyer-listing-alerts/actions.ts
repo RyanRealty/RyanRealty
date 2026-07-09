@@ -4,12 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import {
   sendEvent,
-  addPersonTags,
-  createRealtimeTask,
   findPersonByEmail,
-  assignPersonToUser,
-  setPersonCustomFields,
-  postLeadOriginNote,
   type FubEventPerson,
 } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
@@ -17,7 +12,9 @@ import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { backfillSessionToFub } from '@/lib/visitor-backfill'
-import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
+import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
+import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
+import { resolveLeadSource, resolvePaidAttributionTags } from '@/lib/crm/lead-source'
 import { cookies, headers } from 'next/headers'
 
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -219,9 +216,9 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
     const eventResult = await sendEvent({
       type: 'Property Inquiry',
       person,
-      source,
+      source: resolveLeadSource(originUtmSource, source),
       sourceUrl: leadSourceUrl,
-      pageTitle: 'Buyer LP — Listing Alerts',
+      pageTitle: 'Buyer LP - Listing Alerts',
       message: `Buyer LP submission. Budget: ${budgetStr}. Areas: ${areasStr}. Beds min: ${bedsMin ?? 'unspecified'}. Timeline: ${timeline ?? 'unspecified'}. Tier: ${classification}. Assigned: ${assignment.broker}. ${notes ? `Notes: ${notes}` : ''}`,
       campaign: originUtmSource
         ? {
@@ -234,20 +231,24 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
     })
 
     if (!eventResult.ok) {
-      console.warn('[buyer-lp] FUB sendEvent failed:', eventResult.error)
+      console.warn('[buyer-lp] native capture failed:', eventResult.error)
     }
 
-    // ─── Resolve final FUB person id ───────────────────────────────────────
-    if (!fubPersonId && email) {
-      const newlyCreated = await findPersonByEmail(email)
-      if (newlyCreated?.id) fubPersonId = newlyCreated.id
+    // ─── Resolve the native CRM person id (post-FUB cutover) ───────────────
+    // sendEvent captures natively (crm_people) and returns the personId, this
+    // MUST run on the happy path. Previously fubPersonId was only resolved
+    // via a dead FUB-only findPersonByEmail call below, which always no-ops
+    // post-decommission, so every new buyer lead was silently skipping all
+    // enrichment (tags, custom fields, broker assignment, origin note,
+    // hot-lead task). Fixed 2026-07-09.
+    if (eventResult.ok && eventResult.personId) {
+      fubPersonId = eventResult.personId
     }
 
-    // ─── Native-capture fallback on a FUB push failure (CONTACT360 Phase 0.2)
-    // FUB down → record the buyer lead natively so it is NEVER lost (critical for
-    // the FollowUpBoss cutover — this LP previously had no fallback). Routes to
-    // the agent-attributed broker, not a hardcoded default. Happy path unchanged.
-    if (!eventResult.ok && !fubPersonId) {
+    // ─── Native-capture fallback (belt-and-suspenders) ─────────────────────
+    // If sendEvent still could not resolve a person id, record the buyer
+    // lead directly so it is NEVER lost. ensureNativeLead is idempotent.
+    if (!fubPersonId) {
       try {
         const native = await ensureNativeLead({
           name,
@@ -287,27 +288,50 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
       console.warn(`[buyer-lp] person ${fubPersonId} is compliance hard-stopped, skipping workflow enrollment`)
     }
 
-    // ─── Apply canonical tags + assign broker + write custom fields ────────
+    // ─── Native enrichment: tags + broker + custom fields + origin note ────
+    // Ported off the dead FUB-only path (addPersonTags/assignPersonToUser/
+    // setPersonCustomFields/postLeadOriginNote all no-op post-decommission)
+    // onto the same native enrichNativeLead() the other three LPs use.
     if (fubPersonId && !hardStopped) {
       const tags: string[] = [
         'audience:buyer',
         tierTag,
         'source:buyer-lp',
         `broker:${assignment.broker}`,
+        ...resolvePaidAttributionTags({ utmSource: originUtmSource, utmCampaign: originUtmCampaign, utmContent: originUtmContent }),
       ]
-      await addPersonTags(fubPersonId, tags)
-      await assignPersonToUser(fubPersonId, assignment.userId)
 
-      // Custom fields — buyer schema per FUB_BUYER_WORKFLOW_2026-05-17 §6
-      const customFields: Record<string, string | number | undefined> = {
-        customLeadTier: classification,
-        customBuyerMoveTimeline: timeline ?? 'unspecified',
+      const wantParts: string[] = []
+      if (budgetMin || budgetMax) wantParts.push(`Budget ${budgetStr}`)
+      if (searchAreasArr.length) wantParts.push(`Areas ${areasStr}`)
+      if (typeof bedsMin === 'number') wantParts.push(`Beds ${bedsMin}+`)
+      if (timeline) wantParts.push(`Timeline ${timeline}`)
+      const originContext: LeadOriginContext = {
+        source: 'buyer-lp',
+        sourceLabel: 'Buyer LP (Listing Alerts)',
+        landingPage: '/lp/buyer-listing-alerts',
+        audience: 'buyer',
+        tier: classification,
+        tierReason: timeline ? `timeline ${timeline}` : undefined,
+        want: wantParts.length ? wantParts.join(', ') : undefined,
+        assignedAgent: assignment.broker,
+        assignmentReason: assignment.reason,
       }
-      if (typeof budgetMin === 'number') customFields.customBuyerBudgetMin = budgetMin
-      if (typeof budgetMax === 'number') customFields.customBuyerBudgetMax = budgetMax
-      if (searchAreasArr.length) customFields.customBuyerSearchAreas = searchAreasArr.join(',')
-      if (typeof bedsMin === 'number') customFields.customBuyerBedsMin = bedsMin
-      await setPersonCustomFields(fubPersonId, customFields)
+
+      await enrichNativeLead({
+        personId: fubPersonId,
+        tags,
+        custom: {
+          leadTier: classification,
+          buyerMoveTimeline: timeline ?? 'unspecified',
+          ...(typeof budgetMin === 'number' ? { buyerBudgetMin: budgetMin } : {}),
+          ...(typeof budgetMax === 'number' ? { buyerBudgetMax: budgetMax } : {}),
+          ...(searchAreasArr.length ? { buyerSearchAreas: searchAreasArr.join(',') } : {}),
+          ...(typeof bedsMin === 'number' ? { buyerBedsMin: bedsMin } : {}),
+        },
+        assignedBroker: assignment.broker,
+        originNote: { title: 'Buyer LP lead', body: buildLeadOriginNote(originContext) },
+      })
 
       await recordBuyerAssignment({
         broker: assignment.broker,
@@ -321,37 +345,17 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
       void import('@/lib/crm/enroll')
         .then(({ autoEnrollByFubId }) => autoEnrollByFubId(fubPersonId, { smsConsent: submission.smsConsent }))
         .catch((e) => console.warn('[buyer-lp] instant auto-enroll failed:', e))
-
-      // ─── Lead origin note ──────────────────────────────────────────────────
-      // The prominent FUB timeline note telling the broker WHY this lead came in.
-      // No-op-safe: postLeadOriginNote guards the id, skips header-only notes,
-      // and swallows errors, so it never blocks lead creation.
-      const wantParts: string[] = []
-      if (budgetMin || budgetMax) wantParts.push(`Budget ${budgetStr}`)
-      if (searchAreasArr.length) wantParts.push(`Areas ${areasStr}`)
-      if (typeof bedsMin === 'number') wantParts.push(`Beds ${bedsMin}+`)
-      if (timeline) wantParts.push(`Timeline ${timeline}`)
-      await postLeadOriginNote(fubPersonId, {
-        source: 'buyer-lp',
-        sourceLabel: 'Buyer LP (Listing Alerts)',
-        landingPage: '/lp/buyer-listing-alerts',
-        audience: 'buyer',
-        tier: classification,
-        tierReason: timeline ? `timeline ${timeline}` : undefined,
-        want: wantParts.length ? wantParts.join(', ') : undefined,
-        assignedAgent: assignment.broker,
-        assignmentReason: assignment.reason,
-      })
     }
 
     // ─── 5-min realtime task for hot leads ─────────────────────────────────
     if (classification === 'hot' && fubPersonId) {
       const who = [firstName, lastName].filter(Boolean).join(' ') || email
-      void createRealtimeTask({
+      void createNativeTask({
         personId: fubPersonId,
-        taskName: `Hot buyer LP lead — call within 5 min: ${who} (${budgetStr}, ${areasStr})`,
-        taskType: 'Call',
+        name: `Hot buyer LP lead - call within 5 min: ${who} (${budgetStr}, ${areasStr})`,
+        type: 'Call',
         dueInMinutes: 5,
+        assignedBroker: assignment.broker,
       }).catch((e) => console.warn('[buyer-lp] realtime task error:', e))
     }
 

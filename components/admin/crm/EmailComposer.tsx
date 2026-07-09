@@ -14,7 +14,7 @@
  * email_events row. This is what enables per-template open/click reporting.
  */
 import { useMemo, useRef, useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Paperclip, X } from 'lucide-react'
 import { buildEmailPreviewDoc } from '@/lib/crm/email-body'
 import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { MergeFieldPicker, insertAtCursor } from '@/components/admin/crm/MergeFieldPicker'
@@ -47,6 +47,18 @@ export function EmailComposer(props: {
   const bodyRef = useRef<HTMLTextAreaElement>(null)
   const sendCloseRef = useRef<HTMLButtonElement>(null)
   const [tab, setTab] = useState<'preview' | 'edit'>(props.initialBody ? 'preview' : 'edit')
+
+  // Optional attachment (<=10MB, enforced server-side too — see
+  // app/actions/crm.ts sendCrmEmailAction).
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [attachment, setAttachment] = useState<File | null>(null)
+  function handleAttachmentChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setAttachment(e.target.files?.[0] ?? null)
+  }
+  function clearAttachment() {
+    setAttachment(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
 
   const previewDoc = useMemo(
     () => buildEmailPreviewDoc(body, props.signatureHtml),
@@ -81,14 +93,49 @@ export function EmailComposer(props: {
         </div>
       ) : null}
       <Input name="subject" placeholder="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
-      <div className="flex items-center gap-2">
-        <Button type="button" size="sm" variant={tab === 'preview' ? 'default' : 'ghost'} onClick={() => setTab('preview')}>
-          Preview, what sends
-        </Button>
-        <Button type="button" size="sm" variant={tab === 'edit' ? 'default' : 'ghost'} onClick={() => setTab('edit')}>
-          Edit
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Button type="button" size="sm" variant={tab === 'preview' ? 'default' : 'ghost'} onClick={() => setTab('preview')}>
+            Preview, what sends
+          </Button>
+          <Button type="button" size="sm" variant={tab === 'edit' ? 'default' : 'ghost'} onClick={() => setTab('edit')}>
+            Edit
+          </Button>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          name="attachment"
+          onChange={handleAttachmentChange}
+          className="hidden"
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => fileInputRef.current?.click()}
+          aria-label="Attach a file"
+          aria-pressed={Boolean(attachment)}
+          className={attachment ? 'h-8 w-8 shrink-0 rounded-full bg-muted text-foreground' : 'h-8 w-8 shrink-0 rounded-full'}
+        >
+          <Paperclip className="h-4 w-4" aria-hidden />
         </Button>
       </div>
+      {attachment ? (
+        <div className="flex items-center gap-2 rounded-full border border-input bg-muted/40 px-3 py-1 text-xs">
+          <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+          <span className="truncate">{attachment.name}</span>
+          <span className="shrink-0 text-muted-foreground">{Math.round(attachment.size / 1024)}KB</span>
+          <button
+            type="button"
+            onClick={clearAttachment}
+            aria-label="Remove attachment"
+            className="ml-1 shrink-0 text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        </div>
+      ) : null}
       {tab === 'edit' ? (
         <MergeFieldPicker channel="email" onInsert={handleInsertToken} className="pb-1" />
       ) : null}

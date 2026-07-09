@@ -20,8 +20,6 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import { addPersonTags, assignPersonToUser, setPersonCustomFields, postLeadOriginNote } from '@/lib/followupboss'
-import { getFubApiKey } from '@/lib/crm/fub-env'
 import { pickRoutedBroker } from '@/lib/crm/lead-routing'
 import { FUB_USER_ID_BY_BROKER } from '@/lib/crm/constants'
 import type { LeadOriginContext } from '@/lib/fub-lead-origin-note'
@@ -60,6 +58,8 @@ export type CanonicalLeadParams = {
    * want). No-op-safe — a missing/sparse context never blocks lead creation.
    */
   originContext?: LeadOriginContext
+  /** Extra tags unioned onto the canonical set (e.g. paid-channel attribution: channel:*, campaign:*, ad-content:*). */
+  extraTags?: string[]
 }
 
 type BrokerSlug = 'matt' | 'rebecca' | 'paul'
@@ -162,16 +162,29 @@ const HARD_STOP_TAGS = new Set([
   'test-delete-me',
 ])
 
+/**
+ * Native replacement for the old FUB-API-based check (2026-07-09). The FUB
+ * API was decommissioned 2026-06-24 — getFubApiKey() always returns
+ * undefined now, which made the old implementation silently fail open
+ * (return false / "not hard-stopped") for every person, every time. That
+ * didn't create a live send-time compliance gap (lib/crm/enroll.ts and
+ * lib/crm/suppressions.ts both independently re-check crm_suppressions /
+ * crm_people.tags before any actual send), but it did mean hard-stopped
+ * people were getting incorrectly tagged audience:seller/audience:buyer at
+ * LP intake — corrupting lead-source reporting. Reads crm_people.tags
+ * directly, same authoritative source as lib/crm/suppressions.ts.
+ */
 export async function isHardStopped(personId: number): Promise<boolean> {
   try {
-    const url = `https://api.followupboss.com/v1/people/${personId}?fields=id,tags`
-    const key = getFubApiKey()?.trim()
-    if (!key) return false
-    const auth = Buffer.from(`${key}:`).toString('base64')
-    const res = await fetch(url, { headers: { Authorization: `Basic ${auth}` }, cache: 'no-store' })
-    if (!res.ok) return false
-    const p = (await res.json()) as { tags?: string[] }
-    const lowerTags = (p.tags ?? []).map((t) => t.toLowerCase())
+    const sb = getServiceSupabase()
+    if (!sb) return false
+    const { data, error } = await sb
+      .from('crm_people')
+      .select('tags')
+      .eq('id', personId)
+      .maybeSingle()
+    if (error || !data) return false
+    const lowerTags = ((data.tags as string[] | undefined) ?? []).map((t) => t.toLowerCase())
     return lowerTags.some((t) => HARD_STOP_TAGS.has(t))
   } catch {
     return false  // fail-open: don't block enrollment on a network blip
@@ -220,11 +233,20 @@ export async function canonicallyTagLead(params: CanonicalLeadParams): Promise<{
     `${params.audience}:${tier}`,
     `source:${params.source}`,
     `broker:${broker}`,
+    ...(params.extraTags ?? []),
   ]
 
   try {
-    await addPersonTags(params.fubPersonId, tags)
-    await assignPersonToUser(params.fubPersonId, userId)
+    const { enrichNativeLead } = await import('@/lib/data/crm/ensureNativeLead')
+    const { buildLeadOriginNote } = await import('@/lib/fub-lead-origin-note')
+    await enrichNativeLead({
+      personId: params.fubPersonId,
+      tags,
+      assignedBroker: broker,
+      originNote: params.originContext
+        ? { title: 'Lead origin', body: buildLeadOriginNote(params.originContext) }
+        : undefined,
+    })
     await recordAssignment({
       audience: params.audience,
       broker,
@@ -233,12 +255,6 @@ export async function canonicallyTagLead(params: CanonicalLeadParams): Promise<{
       source: params.source,
       tier,
     })
-    // Post the "LEAD ORIGIN" timeline note (why this lead came in). No-op-safe:
-    // postLeadOriginNote guards a falsy id, skips a header-only note, and
-    // swallows its own errors, so this never throws or blocks lead creation.
-    if (params.originContext) {
-      await postLeadOriginNote(params.fubPersonId, params.originContext)
-    }
     // Auto-enroll the new lead in its workflow (no manual assignment — Matt
     // directive 2026-06-09). Fire-and-forget; the 15-min crm-auto-enroll cron
     // is the catch-all if this misses.

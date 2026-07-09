@@ -18,6 +18,7 @@ import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { sendSellerLeadAlertEmail } from '@/lib/seller-lead-alert'
 import { fireGa4Event, readGa4ClientIdFromCookies } from '@/lib/ga4-measurement-protocol'
+import { resolveLeadSource, resolvePaidAttributionTags } from '@/lib/crm/lead-source'
 import { cookies, headers } from 'next/headers'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -365,7 +366,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     const eventResult = await sendEvent({
       type: 'Seller Inquiry',
       person,
-      source,
+      source: resolveLeadSource(originUtmSource, source),
       sourceUrl: leadSourceUrl,
       pageTitle: 'Seller LP — Home Value',
       message: `Seller LP submission. Address: ${parsed.full}. Timeline: ${timeline ?? 'unspecified'}. Tier: ${classification}. Assigned: ${assignment.broker}.`,
@@ -464,15 +465,14 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       if (isListNowLp) {
         tags.push('seller:listing-intent')
       }
-      // Paid-channel attribution — a referer carrying utm_source=facebook means
-      // this visitor arrived from a Meta ad click, so the lead is filterable by
-      // paid channel + campaign in the CRM.
-      if (originUtmSource === 'facebook') {
-        tags.push('channel:fb-ads')
-        if (originUtmCampaign) {
-          tags.push(`campaign:${originUtmCampaign.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}`)
-        }
-      }
+      // Paid-channel attribution — channel:*, campaign:*, and ad-content:*
+      // (from utm_content, e.g. which specific ad creative) so leads are
+      // filterable down to the individual ad in the CRM.
+      tags.push(...resolvePaidAttributionTags({
+        utmSource: originUtmSource,
+        utmCampaign: originUtmCampaign,
+        utmContent: originUtmContent,
+      }))
 
       // 2. Custom fields → crm_people.custom jsonb.
       const custom: Record<string, string> = {

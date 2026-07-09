@@ -18,6 +18,7 @@ import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { sendSellerLeadAlertEmail } from '@/lib/seller-lead-alert'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { resolveLeadSource, resolvePaidAttributionTags } from '@/lib/crm/lead-source'
 import { cookies, headers } from 'next/headers'
 
 /**
@@ -182,7 +183,7 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
     const eventResult = await sendEvent({
       type: 'Seller Inquiry',
       person,
-      source,
+      source: resolveLeadSource(originUtmSource, source),
       sourceUrl: `${siteUrl}/lp/fsbo`,
       pageTitle: 'FSBO LP. Pricing report',
       message: `FSBO pricing-report request. Property: ${parsed.full}. Assigned: ${assignment.broker}.${notes ? ` Notes: ${notes}` : ''}`,
@@ -267,7 +268,10 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
       }
       await enrichNativeLead({
         personId: fubPersonId,
-        tags: ['audience:seller', 'seller:hot', 'source:fsbo-lp', 'intent:fsbo', `broker:${assignment.broker}`],
+        tags: [
+          'audience:seller', 'seller:hot', 'source:fsbo-lp', 'intent:fsbo', `broker:${assignment.broker}`,
+          ...resolvePaidAttributionTags({ utmSource: originUtmSource, utmCampaign: originUtmCampaign, utmContent: originUtmContent }),
+        ],
         custom: { leadTier: 'hot', sellerPropertyAddress: parsed.full },
         assignedBroker: assignment.broker,
         originNote: { title: 'FSBO LP lead', body: buildLeadOriginNote(originContext) },

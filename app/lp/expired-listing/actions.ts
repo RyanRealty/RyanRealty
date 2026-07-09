@@ -15,6 +15,7 @@ import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { backfillSessionToFub } from '@/lib/visitor-backfill'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
+import { resolveLeadSource, resolvePaidAttributionTags } from '@/lib/crm/lead-source'
 import { cookies, headers } from 'next/headers'
 
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -156,7 +157,7 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
     const eventResult = await sendEvent({
       type: 'Seller Inquiry',
       person,
-      source,
+      source: resolveLeadSource(originUtmSource, source),
       sourceUrl: `${siteUrl}/lp/expired-listing`,
       pageTitle: 'Expired Listing LP',
       message: `Expired listing audit request. ${address ? `Property: ${address}. ` : ''}Path: ${contactPath}. Assigned: ${assignment.broker}. ${notes ? `Notes: ${notes}` : ''}`,
@@ -229,6 +230,7 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
         'source:expired-lp',
         'intent:expired-listing',
         `broker:${assignment.broker}`,
+        ...resolvePaidAttributionTags({ utmSource: originUtmSource, utmCampaign: originUtmCampaign, utmContent: originUtmContent }),
       ]
       const originContext: LeadOriginContext = {
         source: 'expired-lp',

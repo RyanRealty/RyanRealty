@@ -9,7 +9,7 @@
  * in the body textarea.
  */
 import { useMemo, useRef, useState } from 'react'
-import { ArrowUp, Plus } from 'lucide-react'
+import { ArrowUp, Paperclip, Plus, X } from 'lucide-react'
 import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { MergeFieldPicker, insertAtCursor } from '@/components/admin/crm/MergeFieldPicker'
 import { Button } from '@/components/ui/button'
@@ -43,6 +43,19 @@ export function SmsComposer(props: {
   const bodyRef = useRef<HTMLTextAreaElement>(null)
   const { chars, segments } = segmentInfo(body)
   const unresolved = useMemo(() => findUnresolvedMergeTokens(body), [body])
+
+  // MMS attachment (image/PDF, <=5MB — enforced server-side too, see
+  // lib/crm/mms-media.ts). One attachment per send, applied to every
+  // recipient in a group text.
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [attachment, setAttachment] = useState<File | null>(null)
+  function handleAttachmentChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setAttachment(e.target.files?.[0] ?? null)
+  }
+  function clearAttachment() {
+    setAttachment(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
 
   const recipients = props.recipients ?? []
   const [showFields, setShowFields] = useState(false)
@@ -110,7 +123,23 @@ export function SmsComposer(props: {
         </p>
       ) : null}
 
-      {/* FUB chat input bar: + · message · round send arrow. */}
+      {attachment ? (
+        <div className="flex items-center gap-2 rounded-full border border-input bg-muted/40 px-3 py-1 text-xs">
+          <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+          <span className="truncate">{attachment.name}</span>
+          <span className="shrink-0 text-muted-foreground">{Math.round(attachment.size / 1024)}KB</span>
+          <button
+            type="button"
+            onClick={clearAttachment}
+            aria-label="Remove attachment"
+            className="ml-1 shrink-0 text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        </div>
+      ) : null}
+
+      {/* FUB chat input bar: + · paperclip · message · round send arrow. */}
       <div className="flex items-end gap-1.5 rounded-3xl border border-input bg-background py-1.5 pl-1.5 pr-1.5">
         <Button
           type="button"
@@ -122,6 +151,25 @@ export function SmsComposer(props: {
           className={cn('h-9 w-9 shrink-0 rounded-full', showFields && 'bg-muted text-foreground')}
         >
           <Plus className="h-5 w-5" aria-hidden />
+        </Button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          name="attachment"
+          accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
+          onChange={handleAttachmentChange}
+          className="hidden"
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => fileInputRef.current?.click()}
+          aria-label="Attach image or PDF"
+          aria-pressed={Boolean(attachment)}
+          className={cn('h-9 w-9 shrink-0 rounded-full', attachment && 'bg-muted text-foreground')}
+        >
+          <Paperclip className="h-5 w-5" aria-hidden />
         </Button>
         <Textarea
           ref={bodyRef}

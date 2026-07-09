@@ -271,8 +271,21 @@ async function postMessage(form: URLSearchParams): Promise<{ ok: true; sid: stri
   return { ok: true, sid: data.sid }
 }
 
-/** Send from a specific broker line (direct From number). */
-export async function sendSms(params: { from: string; to: string; body: string }): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
+/**
+ * MMS media attachment cap. Twilio allows up to 10 MediaUrl params per
+ * message; carriers also cap total payload size (~5MB), which we don't
+ * enforce here — the caller (Supabase Storage upload path) is responsible
+ * for keeping individual files carrier-reasonable (images/short PDFs).
+ */
+const MAX_MMS_MEDIA = 10
+
+function appendMediaUrls(form: URLSearchParams, mediaUrls?: string[]): void {
+  if (!mediaUrls || mediaUrls.length === 0) return
+  mediaUrls.slice(0, MAX_MMS_MEDIA).forEach((url, i) => form.set(`MediaUrl${i}`, url))
+}
+
+/** Send from a specific broker line (direct From number). Pass mediaUrls (public HTTPS URLs) to send as MMS. */
+export async function sendSms(params: { from: string; to: string; body: string; mediaUrls?: string[] }): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
   const to = toE164(params.to)
   if (!to) return { ok: false, error: 'Invalid phone number' }
   const a2p = await getA2pCampaignStatus()
@@ -280,12 +293,13 @@ export async function sendSms(params: { from: string; to: string; body: string }
     return { ok: false, error: formatTwilioSendError(30034, null, a2p) }
   }
   const form = new URLSearchParams({ From: params.from, To: to, Body: params.body })
+  appendMediaUrls(form, params.mediaUrls)
   const r = await postMessage(form)
   return r.ok ? r : { ok: false, error: r.error }
 }
 
-/** Preferred outbound path — uses the A2P-registered messaging service. */
-export async function sendSmsViaMessagingService(params: { to: string; body: string }): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
+/** Preferred outbound path — uses the A2P-registered messaging service. Pass mediaUrls (public HTTPS URLs) to send as MMS. */
+export async function sendSmsViaMessagingService(params: { to: string; body: string; mediaUrls?: string[] }): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
   const ms = process.env.TWILIO_MESSAGING_SERVICE_SID?.trim()
   if (!ms) return { ok: false, error: 'TWILIO_MESSAGING_SERVICE_SID not configured' }
   const to = toE164(params.to)
@@ -295,6 +309,7 @@ export async function sendSmsViaMessagingService(params: { to: string; body: str
     return { ok: false, error: formatTwilioSendError(30034, null, a2p) }
   }
   const form = new URLSearchParams({ MessagingServiceSid: ms, To: to, Body: params.body })
+  appendMediaUrls(form, params.mediaUrls)
   const r = await postMessage(form)
   return r.ok ? r : { ok: false, error: r.error }
 }

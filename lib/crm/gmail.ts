@@ -287,6 +287,18 @@ export async function syncMailboxWindow(params: {
 
 // ── send ───────────────────────────────────────────────────────────────────
 
+export interface CrmEmailAttachment {
+  filename: string
+  content: Buffer
+  /** e.g. 'application/pdf', 'image/jpeg' */
+  mimeType: string
+}
+
+/** Wrap a base64 string at 76 chars per line (RFC 2045), mirroring lib/gmail-draft.ts. */
+function wrap76(b64: string): string {
+  return b64.replace(/.{1,76}/g, '$&\r\n').trimEnd()
+}
+
 export async function sendCrmEmail(params: {
   fromMailbox: string
   to: string
@@ -299,6 +311,7 @@ export async function sendCrmEmail(params: {
   /** When set, instrument the HTML with an open pixel + click-tracked links so
    *  opens/clicks log to the comms chain. Omit for internal/broker emails. */
   track?: { personId: number; emailKey: string; label?: string }
+  attachments?: CrmEmailAttachment[]
 }): Promise<{ ok: true; gmailId: string; plainBody: string } | { ok: false; error: string }> {
   const gmail = getGmailFor(params.fromMailbox, SEND)
   if (!gmail) return { ok: false, error: 'service account not configured' }
@@ -322,38 +335,63 @@ export async function sendCrmEmail(params: {
     html = instrumentEmailHtml(html, params.track)
   }
 
-  let mime: string
+  const hasAttachments = !!params.attachments && params.attachments.length > 0
+  const headers = [
+    `From: ${params.fromMailbox}`,
+    `To: ${params.to}`,
+    `Subject: ${params.subject}`,
+    'MIME-Version: 1.0',
+  ]
+
+  let bodyBlock: string
+  let bodyContentType: string
   if (html) {
-    const boundary = `rr_${Date.now().toString(36)}`
-    mime = [
-      `From: ${params.fromMailbox}`,
-      `To: ${params.to}`,
-      `Subject: ${params.subject}`,
-      'MIME-Version: 1.0',
-      `Content-Type: multipart/alternative; boundary="${boundary}"`,
-      '',
-      `--${boundary}`,
+    const altBoundary = `rr_alt_${Date.now().toString(36)}`
+    bodyContentType = `multipart/alternative; boundary="${altBoundary}"`
+    bodyBlock = [
+      `--${altBoundary}`,
       'Content-Type: text/plain; charset=UTF-8',
       'Content-Transfer-Encoding: 7bit',
       '',
       plain,
-      `--${boundary}`,
+      `--${altBoundary}`,
       'Content-Type: text/html; charset=UTF-8',
       'Content-Transfer-Encoding: 7bit',
       '',
       html,
-      `--${boundary}--`,
+      `--${altBoundary}--`,
     ].join('\r\n')
   } else {
-    mime = [
-      `From: ${params.fromMailbox}`,
-      `To: ${params.to}`,
-      `Subject: ${params.subject}`,
-      'MIME-Version: 1.0',
-      'Content-Type: text/plain; charset=UTF-8',
+    bodyContentType = 'text/plain; charset=UTF-8'
+    bodyBlock = plain
+  }
+
+  let mime: string
+  if (!hasAttachments) {
+    mime = [...headers, `Content-Type: ${bodyContentType}`, '', bodyBlock].join('\r\n')
+  } else {
+    const mixedBoundary = `rr_mixed_${Date.now().toString(36)}`
+    const parts = [
+      ...headers,
+      `Content-Type: multipart/mixed; boundary="${mixedBoundary}"`,
       '',
-      plain,
-    ].join('\r\n')
+      `--${mixedBoundary}`,
+      `Content-Type: ${bodyContentType}`,
+      '',
+      bodyBlock,
+    ]
+    for (const a of params.attachments!) {
+      parts.push(
+        `--${mixedBoundary}`,
+        `Content-Type: ${a.mimeType}; name="${a.filename}"`,
+        'Content-Transfer-Encoding: base64',
+        `Content-Disposition: attachment; filename="${a.filename}"`,
+        '',
+        wrap76(a.content.toString('base64')),
+      )
+    }
+    parts.push(`--${mixedBoundary}--`)
+    mime = parts.join('\r\n')
   }
 
   const raw = Buffer.from(mime).toString('base64url')

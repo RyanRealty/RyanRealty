@@ -1,5 +1,7 @@
 # Ryan Realty — Seller Lead Workflow (Locked Spec)
 
+> **⚠️ SUPERSEDED (2026-07-08).** The FUB-native execution model this doc describes (FUB Action Plans, FUB automation rules sending email/SMS) was replaced by the in-house CRM starting 2026-06-10. FUB API access was fully decommissioned 2026-06-24 — `getFubApiKey()` in `lib/crm/fub-env.ts` is hardcoded to always return `undefined`. Enrollment now happens in-code via `lib/crm/enroll.ts`; sends go through Twilio (SMS) and Gmail DWD (email) directly, not FUB's action-plan engine. The **cadence research and template copy below remain a valid reference** (§3 evidence base, §8 templates), but any mention of "FUB action plan," "FUB automation rule," or "upload to FUB UI" describes a dead execution path. Current architecture: `docs/CRM_REPLACEMENT_BLUEPRINT.md` + `lib/crm/`. Live sequence definitions: Supabase `crm_sequences` table (id 1 = Seller Master). **Known gap found 2026-07-08:** the live Seller Master sequence only implements 4 of the 10 touches below (stops at T+5d) — see `docs/plans/CROSS_AGENT_HANDOFF.md` for the drafted fix awaiting approval.
+
 **Status:** Locked 2026-05-17 (Matt approved kebab-case tag schema, both-channel via FUB, cadence at agent discretion based on research)
 **Audit basis:** `docs/FUB_AUDIT_2026-05-17.md`
 **Implementation target:** Follow Up Boss `ryan-realty` account · 3 brokers · ~15 real seller leads / quarter

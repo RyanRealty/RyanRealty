@@ -4,7 +4,6 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { getMetaPageTokenTrimmed } from '@/lib/meta-env'
 import { createServiceClient } from '@/lib/supabase/service'
 import { fetchMyLeadsFromFubLive } from '@/lib/followupboss'
-import { getFubApiKey } from '@/lib/crm/fub-env'
 import { getGA4Summary } from './ga4-report'
 import {
   getAdminSyncCounts,
@@ -211,36 +210,68 @@ async function getFubPipelineSnapshot(
   supabase: SupabaseClient,
   startIso: string
 ): Promise<DashboardMarketingData['fubPipeline']> {
-  void supabase
   const { getMattBrokerRecord } = await import('@/lib/data')
   const mattBroker = await getMattBrokerRecord()
   const mattBrokerId = mattBroker?.id ?? null
-  const cacheQuery = await supabase
-    .from('fub_contacts_cache')
-    .select('id, broker_id, stage, tags, email, name')
-    .gte('synced_at', startIso)
+
+  // Primary source: in-house CRM (lib/crm/), which replaced FUB as the
+  // execution engine on 2026-06-10. FUB API access was decommissioned
+  // 2026-06-24 (getFubApiKey() always returns undefined — see
+  // lib/crm/fub-env.ts), so fub_contacts_cache stops receiving new syncs and
+  // ages out; crm_people is the live, current source of lead/pipeline data.
+  const crmQuery = await supabase
+    .from('crm_people')
+    .select('id, assigned_broker, stage, tags, emails, name')
+    .eq('deleted', false)
+    .in('assigned_broker', ['matt', 'matt-ryan'])
+    .or(`updated_at.gte.${startIso},last_activity_at.gte.${startIso}`)
     .limit(5000)
 
-  let contacts: FubContactSnapshot[] = (cacheQuery.data ?? []) as FubContactSnapshot[]
-  let usedLiveSource = false
-  if (cacheQuery.error || contacts.length === 0) {
-    const live = await fetchMyLeadsFromFubLive({
-      brokerSlug: mattBroker?.slug ?? 'matt-ryan',
-      brokerEmail: mattBroker?.email ?? null,
-      brokerId: mattBrokerId,
-    })
-    if (live.rows.length > 0) {
-      usedLiveSource = true
-      contacts = live.rows.map((row) => ({
-        id: row.fub_id,
-        broker_id: mattBrokerId,
-        stage: row.stage,
-        tags: row.tags,
-        email: row.email,
-        name: row.name,
-      }))
+  let contacts: FubContactSnapshot[] = (crmQuery.data ?? []).map((row) => ({
+    id: row.id,
+    broker_id: mattBrokerId,
+    stage: row.stage,
+    tags: row.tags,
+    email: Array.isArray(row.emails) && row.emails.length > 0 ? String(row.emails[0]) : null,
+    name: row.name,
+  })) as FubContactSnapshot[]
+  let usedLiveSource = true
+
+  // Legacy fallback: the old FUB cache/live-API path, kept only in case the
+  // CRM query errors or the crm_people table is briefly empty (e.g. a bad
+  // migration). Since getFubApiKey() is hardcoded to undefined post-cutover,
+  // fetchMyLeadsFromFubLive is a guaranteed no-op today — this branch is
+  // dead code until FUB is either fully retired or intentionally re-enabled.
+  if (crmQuery.error || contacts.length === 0) {
+    const cacheQuery = await supabase
+      .from('fub_contacts_cache')
+      .select('id, broker_id, stage, tags, email, name')
+      .gte('synced_at', startIso)
+      .limit(5000)
+
+    let fallbackContacts: FubContactSnapshot[] = (cacheQuery.data ?? []) as FubContactSnapshot[]
+    usedLiveSource = false
+    if (cacheQuery.error || fallbackContacts.length === 0) {
+      const live = await fetchMyLeadsFromFubLive({
+        brokerSlug: mattBroker?.slug ?? 'matt-ryan',
+        brokerEmail: mattBroker?.email ?? null,
+        brokerId: mattBrokerId,
+      })
+      if (live.rows.length > 0) {
+        usedLiveSource = true
+        fallbackContacts = live.rows.map((row) => ({
+          id: row.fub_id,
+          broker_id: mattBrokerId,
+          stage: row.stage,
+          tags: row.tags,
+          email: row.email,
+          name: row.name,
+        }))
+      }
     }
+    contacts = fallbackContacts
   }
+
   const myLeads =
     usedLiveSource || !mattBrokerId
       ? contacts
@@ -569,13 +600,16 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
     })
   }
 
-  if (getFubApiKey()?.trim()) score += 15
+  // FUB API access was decommissioned 2026-06-24 — the in-house CRM
+  // (crm_people, sourced by getFubPipelineSnapshot above) is the live
+  // pipeline/quality signal now, not a direct FUB API connection.
+  if (fubPipeline.myLeadsTotal > 0) score += 15
   else {
     reportItems.push({
       action: 'fix',
       priority: 'high',
-      title: 'Configure Follow Up Boss API key',
-      rationale: 'Without FUB connection, quality and downstream listing outcomes are not measurable.',
+      title: 'CRM pipeline data is empty',
+      rationale: 'No recent crm_people activity for Matt found, so quality and downstream listing outcomes are not measurable.',
     })
   }
 
@@ -783,11 +817,14 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
       valuationRateFromFacebookSellerVisits,
     },
     fub: {
-      configured: Boolean(getFubApiKey()?.trim()),
+      // FUB API access was decommissioned 2026-06-24 (lib/crm/fub-env.ts) —
+      // "configured" now means the in-house CRM pipeline (crm_people) has
+      // live data, not that a FUB API key is set.
+      configured: fubPipeline.myLeadsTotal > 0,
       contactsSynced30d,
       facebookContacts30d,
       facebookContactCaptureRate,
-      error: getFubApiKey()?.trim() ? null : 'FOLLOWUPBOSS_API_KEY is not configured',
+      error: fubPipeline.myLeadsTotal > 0 ? null : 'No recent crm_people activity found for Matt',
     },
     fubPipeline,
     reportCard: {
