@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.751.22 (2026-07-09)
+
+### Bug Fixes
+- fix(company-tools): team + tools pages batch (#157,#164,#165,#168,#171-173)
+
+### Maintenance
+- docs(design-audit): remove #157,#164,#165,#168,#171-173 from remaining-backlog.json
+
+---
+
+
 ## v1.751.21 (2026-07-09)
 
 ### Maintenance
