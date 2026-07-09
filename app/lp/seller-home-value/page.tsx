@@ -5,7 +5,7 @@ import ExitIntentPrompt from '@/components/landing/ExitIntentPrompt'
 import ScrollReveal from '@/components/landing/ScrollReveal'
 import { TrustStrip } from '@/components/landing/TrustStrip'
 import { ReviewStrip } from '@/components/landing/ReviewCard'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import {
   Accordion,
   AccordionContent,
@@ -96,7 +96,7 @@ export default async function SellerHomeValuePage({
 
   // Detect prior identification via the fub_cid cookie. Server-side check
   // so the visible UX adjusts before first paint.
-  const cookiePersonId = await getFubPersonIdFromCookie()
+  const cookiePersonId = await getPersonIdFromCookie()
   const knownVisitor = cookiePersonId != null && cookiePersonId > 0
 
   // Live local data — Bend market snapshot (market_pulse_live via the DAL) +

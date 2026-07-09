@@ -1,7 +1,7 @@
 'use server'
 
 import { getSession } from '@/app/actions/auth'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { findPersonByEmail, sendEvent, addPersonTags, type FubEventPerson } from '@/lib/followupboss'
 import { recordPartnerReferral } from '@/app/actions/partnership-revenue'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
@@ -74,7 +74,7 @@ function partnerSlugFromCampaign(source?: string): 'lender_referral' | 'relocati
 }
 
 export async function trackHomeValuationCta(campaign?: CampaignInput, sessionId?: string): Promise<void> {
-  const [session, fubPersonId] = await Promise.all([getSession(), getFubPersonIdFromCookie()])
+  const [session, fubPersonId] = await Promise.all([getSession(), getPersonIdFromCookie()])
   const email = session?.user?.email?.trim() ?? null
   let person: FubEventPerson | null = null
   let resolvedPersonId: number | null = fubPersonId ?? null

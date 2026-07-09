@@ -100,7 +100,6 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
   // only by URL (consolidation audit — orphan routes).
   if (isSuperuser) marketing.push(item('/admin/blog', 'Blog', 'file-text'))
   if (isSuperuser) marketing.push(item('/admin/email/campaigns', 'Email campaigns', 'mail'))
-  if (canBrokers) marketing.push(item('/admin/fub-attribution', 'FUB attribution', 'target'))
   if (canBrokers) marketing.push(item('/admin/broker-links', 'Ad links', 'megaphone'))
 
   // ── Content: site surfaces and media ──
@@ -182,7 +181,7 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
   ]
 
   const reportsItems = marketing.filter((i) =>
-    /\/admin\/(analytics|reports|operations\/optimization|visitors|fub-attribution)/.test(i.href),
+    /\/admin\/(analytics|reports|operations\/optimization|visitors)/.test(i.href),
   )
 
   const adminItems: AdminNavItem[] = [

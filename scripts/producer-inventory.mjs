@@ -78,7 +78,6 @@ export const PRODUCERS = {
 
   // ─── Section D — ops handlers (Node mjs, accept --live) ───────────────────
   'ops-meta-ads':                  { runner: 'node', script: 'scripts/ops/run-meta-ads.mjs', section: 'D', accepts: ['--live'] },
-  'ops-fub-crm':                   { runner: 'node', script: 'scripts/ops/run-fub-crm.mjs', section: 'D', accepts: ['--live'] },
   'ops-email-send':                { runner: 'node', script: 'scripts/ops/run-email-send.mjs', section: 'D', accepts: ['--live'] },
   'ops-reputation':                { runner: 'node', script: 'scripts/ops/run-reputation.mjs', section: 'D', accepts: ['--live'] },
   'ops-fb-marketplace':            { runner: 'node', script: 'scripts/ops/run-fb-marketplace.mjs', section: 'D', accepts: ['--live'] },

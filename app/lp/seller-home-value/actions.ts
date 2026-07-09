@@ -7,7 +7,7 @@ import {
   findPersonByEmail,
   type FubEventPerson,
 } from '@/lib/followupboss'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { saveAnonymousPartialAddress } from '@/lib/data'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
@@ -107,7 +107,7 @@ export async function saveSellerPartialLead(params: {
 
     // Cookie-identified visitor only for the partial native capture below.
     // Anonymous visitors already captured via the visitor_events row above.
-    const cookiePersonId = await getFubPersonIdFromCookie()
+    const cookiePersonId = await getPersonIdFromCookie()
     if (!cookiePersonId) return
 
     // Partial capture goes native (post-FUB cutover). sendEvent records the
@@ -305,7 +305,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       }
     }
     if (!fubPersonId) {
-      const cookiePersonId = await getFubPersonIdFromCookie()
+      const cookiePersonId = await getPersonIdFromCookie()
       if (cookiePersonId) {
         fubPersonId = cookiePersonId
         alreadyKnown = true

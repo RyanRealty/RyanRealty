@@ -7,7 +7,7 @@ import {
   findPersonByEmail,
   type FubEventPerson,
 } from '@/lib/followupboss'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { saveAnonymousPartialAddress } from '@/lib/data'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
@@ -140,7 +140,7 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
       alreadyKnown = true
     }
     if (!fubPersonId) {
-      const cookiePersonId = await getFubPersonIdFromCookie()
+      const cookiePersonId = await getPersonIdFromCookie()
       if (cookiePersonId) {
         fubPersonId = cookiePersonId
         alreadyKnown = true

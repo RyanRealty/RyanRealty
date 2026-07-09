@@ -5,7 +5,7 @@
  * KB (kinetic-brutalist) design — Phase 9 page-class migration. Restyled IN
  * PLACE. Every piece of content is preserved:
  *   - export const metadata (canonical + OG + Twitter, /housing-market/reports)
- *   - the page-view tracking trio (getSession + getFubPersonIdFromCookie +
+ *   - the page-view tracking trio (getSession + getPersonIdFromCookie +
  *     trackPageViewIfPossible) — unchanged
  *   - ReportsDataSection: getMarketReportData + getReportCities, the verified
  *     Dataset JSON-LD built ONLY from fetched metrics (CLAUDE.md §0 compliance),
@@ -27,7 +27,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { getSession } from '@/app/actions/auth'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { listMarketReports } from '@/lib/data'
 import { getSalesReportCardsData } from '../actions/market-reports'
@@ -209,7 +209,7 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
   // Light queries — don't block the page
   const [session, fubPersonId] = await Promise.all([
     getSession(),
-    getFubPersonIdFromCookie(),
+    getPersonIdFromCookie(),
   ])
   const pageUrl = `${siteUrl}/housing-market/reports`
   const pageTitle = 'Market Reports | Ryan Realty'

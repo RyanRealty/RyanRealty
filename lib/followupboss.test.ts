@@ -16,22 +16,22 @@ type NativeLeadInput = { name?: string | null; email?: string | null; phone?: st
 const ensureNativeLeadMock = vi.fn(async (_input: NativeLeadInput) => ({ personId: 1, created: true }))
 vi.mock('@/lib/data/crm/ensureNativeLead', () => ({ ensureNativeLead: ensureNativeLeadMock }))
 
-import { isPlaceholderFubEmail, sendEvent } from './followupboss'
+import { isPlaceholderLeadEmail, sendEvent } from './followupboss'
 
 // Lead-create path (audit p3.2). Placeholder emails (@placeholder.ryan-realty.com)
 // are synthetic stand-ins for leads with no real email. They must be recognized so
 // they are never treated as a real dedup key or a deliverable address.
-describe('isPlaceholderFubEmail', () => {
+describe('isPlaceholderLeadEmail', () => {
   it('matches the placeholder domain (case-insensitive, trimmed)', () => {
-    expect(isPlaceholderFubEmail('lead123@placeholder.ryan-realty.com')).toBe(true)
-    expect(isPlaceholderFubEmail('  X@PLACEHOLDER.Ryan-Realty.com  ')).toBe(true)
+    expect(isPlaceholderLeadEmail('lead123@placeholder.ryan-realty.com')).toBe(true)
+    expect(isPlaceholderLeadEmail('  X@PLACEHOLDER.Ryan-Realty.com  ')).toBe(true)
   })
   it('rejects real addresses and empty input', () => {
-    expect(isPlaceholderFubEmail('buyer@gmail.com')).toBe(false)
-    expect(isPlaceholderFubEmail('matt@ryan-realty.com')).toBe(false)
-    expect(isPlaceholderFubEmail('')).toBe(false)
-    expect(isPlaceholderFubEmail(null)).toBe(false)
-    expect(isPlaceholderFubEmail(undefined)).toBe(false)
+    expect(isPlaceholderLeadEmail('buyer@gmail.com')).toBe(false)
+    expect(isPlaceholderLeadEmail('matt@ryan-realty.com')).toBe(false)
+    expect(isPlaceholderLeadEmail('')).toBe(false)
+    expect(isPlaceholderLeadEmail(null)).toBe(false)
+    expect(isPlaceholderLeadEmail(undefined)).toBe(false)
   })
 })
 

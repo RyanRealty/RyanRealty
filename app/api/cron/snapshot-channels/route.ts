@@ -2,10 +2,12 @@
  * Phase 11.5 canonical consolidated snapshot handler.
  *
  * The autonomous pipeline brief calls this handler `snapshot-channels`. The
- * existing infrastructure runs 10 separate handlers (marketing-snapshot-ga4,
- * marketing-snapshot-gsc, marketing-snapshot-fub, marketing-snapshot-meta-ads,
- * marketing-snapshot-meta-page, marketing-snapshot-x, marketing-snapshot-linkedin,
- * marketing-snapshot-tiktok, marketing-snapshot-gbp, marketing-snapshot-youtube).
+ * existing infrastructure runs 9 separate handlers (marketing-snapshot-ga4,
+ * marketing-snapshot-gsc, marketing-snapshot-meta-ads, marketing-snapshot-meta-page,
+ * marketing-snapshot-x, marketing-snapshot-linkedin, marketing-snapshot-tiktok,
+ * marketing-snapshot-gbp, marketing-snapshot-youtube). marketing-snapshot-fub was
+ * removed 2026-07-09 (FUB decommissioned 2026-06-24; the route never existed in
+ * this codebase, so this platform silently 404'd on every run until now).
  *
  * This handler is the consolidated entry point. It fires every individual
  * snapshot in parallel against the same authenticated CRON_SECRET, collects
@@ -25,7 +27,6 @@ export const dynamic = 'force-dynamic'
 const PLATFORMS = [
   'ga4',
   'gsc',
-  'fub',
   'meta-ads',
   'meta-page',
   'x',

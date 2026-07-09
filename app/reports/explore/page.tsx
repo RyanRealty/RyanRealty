@@ -5,7 +5,7 @@
  * KB (kinetic-brutalist) design — Phase 9 page-class migration. Restyled IN
  * PLACE. Every piece of content is preserved:
  *   - export const metadata (canonical + OG + Twitter, /housing-market/explore)
- *   - the page-view tracking trio (getSession + getFubPersonIdFromCookie +
+ *   - the page-view tracking trio (getSession + getPersonIdFromCookie +
  *     trackPageViewIfPossible) — unchanged
  *   - all 11 searchParam-derived initial values + the YTD-preset detection
  *   - the Suspense-streamed <ExploreClient> with EVERY prop intact (the
@@ -22,7 +22,7 @@ import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import ExploreClient from './ExploreClient'
 import { getSession } from '@/app/actions/auth'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
@@ -70,7 +70,7 @@ export default async function ExplorePage({ searchParams }: Props) {
   const [params, session, fubPersonId] = await Promise.all([
     searchParams,
     getSession(),
-    getFubPersonIdFromCookie(),
+    getPersonIdFromCookie(),
   ])
   const city = typeof params?.city === 'string' ? params.city : ''
   const subdivision = typeof params?.subdivision === 'string' ? params.subdivision : ''

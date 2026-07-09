@@ -26,7 +26,7 @@ import HomeValuationCta from '@/components/HomeValuationCta'
 import CityClusterNav from '@/components/CityClusterNav'
 import { getGuideBySlug, getPublishedGuides } from '@/lib/data'
 import { getSession } from '@/app/actions/auth'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { generateBreadcrumbSchema, generateBlogSchema } from '@/lib/structured-data'
 import { cityEntityKey } from '@/lib/slug'
@@ -68,7 +68,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ sl
   const [guide, session, fubPersonId] = await Promise.all([
     getGuideBySlug(slug),
     getSession(),
-    getFubPersonIdFromCookie(),
+    getPersonIdFromCookie(),
   ])
   if (!guide) notFound()
   const related = (await getPublishedGuides(200))

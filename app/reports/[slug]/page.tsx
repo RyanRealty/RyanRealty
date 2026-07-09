@@ -23,7 +23,7 @@ import Image from 'next/image'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { getMarketReportBySlug, getReportImageUrl } from '@/lib/data'
 import ShareButton from '../../../components/ShareButton'
@@ -81,7 +81,7 @@ export default async function ReportPage({ params }: Props) {
   const [imageUrl, session, fubPersonId] = await Promise.all([
     getReportImageUrl(report.image_storage_path),
     getSession(),
-    getFubPersonIdFromCookie(),
+    getPersonIdFromCookie(),
   ])
   const pageTitle = `${report.title} | Ryan Realty`
   trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl: reportUrl, pageTitle })

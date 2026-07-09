@@ -6,23 +6,23 @@ import { useEffect, useRef } from 'react'
  * Bridges identified-visitor state into GA4 and Meta Pixel.
  *
  * On mount, fetches /api/identity/me. If the visitor is known (either via
- * the fub_cid cookie or a signed-in session), this component:
+ * the rr_pid cookie or a signed-in session), this component:
  *
  *   1. Sets GA4 `user_id` via gtag('config', GA4_ID, { user_id: <hash> })
- *      — unlocks GA4 User Explorer + cross-device User reports.
+ *      (unlocks GA4 User Explorer + cross-device User reports).
  *   2. Re-initializes Meta Pixel with advanced matching via
- *      fbq('init', PIXEL_ID, { em: <sha256> }) — strengthens Meta's
- *      person-stitch for ad attribution.
+ *      fbq('init', PIXEL_ID, { em: <sha256> }) (strengthens Meta's
+ *      person-stitch for ad attribution).
  *
  * Waits up to 3s for window.gtag / window.fbq to be loaded by the
  * <GoogleAnalytics /> and <MetaPixel /> components (both of which gate on
  * cookie consent). Ad-blockers are honored automatically: if either global
  * never appears, the bridge silently no-ops.
  *
- * Identity flips during a session — for example, an anonymous visitor
- * clicks a FUB email link mid-session and identifyFubFromEmailClick sets
- * fub_cid. The bridge listens for `fub-identified` window events so it
- * re-fetches /api/identity/me without a page reload and updates GA4 +
+ * Identity flips during a session, for example an anonymous visitor
+ * clicks an email-click link mid-session and identifyPersonFromEmailClick
+ * sets rr_pid. The bridge listens for `person-identified` window events so
+ * it re-fetches /api/identity/me without a page reload and updates GA4 +
  * Meta Pixel immediately.
  */
 
@@ -38,7 +38,7 @@ type IdentityPayload = {
   identified: boolean
   hashedUserId: string | null
   hashedEmail: string | null
-  fubPersonId: number | null
+  personId: number | null
 }
 
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim()
@@ -101,7 +101,7 @@ export default function AnalyticsIdentityBridge() {
       const payload = await fetchIdentity()
       if (cancelled || !payload) return
       // De-dupe: skip the apply step if the identity hasn't changed since
-      // the last fire (e.g. a second fub-identified event from another tab).
+      // the last fire (e.g. a second person-identified event from another tab).
       const sig = `${payload.hashedUserId ?? ''}|${payload.hashedEmail ?? ''}`
       if (sig === lastHashRef.current) return
       lastHashRef.current = sig
@@ -112,15 +112,15 @@ export default function AnalyticsIdentityBridge() {
     void syncOnce()
 
     // Re-sync when identity flips mid-session. Browser events fired by
-    // FubIdentityBridge + auth callbacks. Listening here keeps the bridge
+    // PersonIdentityBridge + auth callbacks. Listening here keeps the bridge
     // accurate without a page reload.
     const handler = () => { void syncOnce() }
-    window.addEventListener('fub-identified', handler)
+    window.addEventListener('person-identified', handler)
     window.addEventListener('auth-state-changed', handler)
 
     return () => {
       cancelled = true
-      window.removeEventListener('fub-identified', handler)
+      window.removeEventListener('person-identified', handler)
       window.removeEventListener('auth-state-changed', handler)
     }
   }, [])

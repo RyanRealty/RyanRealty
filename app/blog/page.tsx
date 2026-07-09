@@ -19,7 +19,7 @@ import Image from 'next/image'
 import { getPublishedBlogPosts, getPopularBlogSlugs } from '@/lib/data'
 import { getBlogCategories } from '@/app/actions/blog'
 import { getSession } from '@/app/actions/auth'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { shouldNoIndexBlogIndex } from '@/lib/seo-routing'
 import ShareButton from '@/components/ShareButton'
@@ -109,7 +109,7 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
     getPublishedBlogPosts({ category: category === 'All' ? null : category, limit: 12, offset }),
     getPopularBlogSlugs(5),
     getSession(),
-    getFubPersonIdFromCookie(),
+    getPersonIdFromCookie(),
   ])
   const pageUrl = `${siteUrl}/blog`
   const pageTitle = 'Blog | Ryan Realty'

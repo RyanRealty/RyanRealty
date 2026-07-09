@@ -27,7 +27,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { SALES_PERIODS, getDateRangeForPeriod, getPeriodLabel, type SalesPeriodSlug } from '@/lib/sales-report-periods'
 import { getMarketReportDataForLocation, type ReportListing } from '@/app/actions/market-reports'
@@ -117,7 +117,7 @@ export default async function SalesReportPage({ params }: PageProps) {
   const periodSlug = period as SalesPeriodSlug
   if (!cityName || !SALES_PERIODS.includes(periodSlug)) notFound()
 
-  const [session, fubPersonId] = await Promise.all([getSession(), getFubPersonIdFromCookie()])
+  const [session, fubPersonId] = await Promise.all([getSession(), getPersonIdFromCookie()])
   const pageUrl = `${siteUrl}/reports/sales/${encodeURIComponent(cityEntityKey(cityName))}/${periodSlug}`
   const periodLabel = getPeriodLabel(periodSlug)
   const pageTitle = `${cityName} — ${periodLabel} | Ryan Realty`

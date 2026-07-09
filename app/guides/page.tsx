@@ -21,7 +21,7 @@
 import type { Metadata } from 'next'
 import { getPublishedGuides } from '@/lib/data'
 import { getSession } from '@/app/actions/auth'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { generateBreadcrumbSchema } from '@/lib/structured-data'
 import { getSurfaceImages, pickSurfaceImage } from '@/lib/data/media/getSurfaceImages'
@@ -69,7 +69,7 @@ export default async function GuidesIndexPage() {
     getPublishedGuides(12),
     getSurfaceImages('card'),
     getSession(),
-    getFubPersonIdFromCookie(),
+    getPersonIdFromCookie(),
   ])
   trackPageViewIfPossible({
     sessionUser: session?.user ?? undefined,

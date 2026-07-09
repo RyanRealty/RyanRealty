@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import FubIdentityBridge from '@/components/FubIdentityBridge'
+import PersonIdentityBridge from '@/components/PersonIdentityBridge'
 import AgentAttributionBridge from '@/components/AgentAttributionBridge'
 import AnalyticsIdentityBridge from '@/components/AnalyticsIdentityBridge'
 
@@ -19,7 +19,7 @@ import AnalyticsIdentityBridge from '@/components/AnalyticsIdentityBridge'
 export function IdentityBridges() {
   return (
     <Suspense fallback={null}>
-      <FubIdentityBridge />
+      <PersonIdentityBridge />
       <AgentAttributionBridge />
       <AnalyticsIdentityBridge />
     </Suspense>

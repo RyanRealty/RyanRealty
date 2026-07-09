@@ -1,20 +1,24 @@
 /**
  * Seller-lead attribution cron.
  *
- * Daily. Reads FUB /v1/people for leads created in the last 24 hours with
- * seller-intent tags. For each lead, attempts to match back to a
- * content_performance row via utm_content, utm_campaign, or asset URL
- * alignment. Increments north_star_attributed_seller_leads on matches.
+ * Daily. Reads crm_people for seller-intent leads created in the lookback
+ * window and tagged channel:*-ads (a paid-social/search touch). For each,
+ * attempts to match back to a content_performance row via the campaign:* /
+ * ad-content:* tags. Increments north_star_attributed_seller_leads on matches.
  *
- * Attribution chain (in priority order):
- *   1. Lead's source_url contains a post_external_id from content_performance.
- *   2. Lead's utm_content matches an action_id in marketing_brain_actions.
- *   3. Lead's utm_campaign matches an action_type prefix pattern.
+ * Rewritten 2026-07-09 off the FUB /v1/people integration (decommissioned
+ * 2026-06-24) onto the native crm_people tag schema built the same day
+ * (lib/crm/lead-source.ts). The old version parsed utm_content/utm_campaign
+ * out of a FUB-stored sourceUrl query string; the new one reads the
+ * ad-content:* and campaign:* tags directly, which are more reliable (they're
+ * set by resolvePaidAttributionTags() at intake, not round-tripped through a
+ * URL). Dropped: the old "source_url contains post_external_id" match method
+ * (crm_people.source_url isn't populated by the native lead-create path yet
+ * — a separate gap, not required for this rewrite).
  *
- * Idempotency: uses ON CONFLICT DO UPDATE with a guard condition so
- * re-running for the same day does not double-count leads that were already
- * attributed in a prior run. The guard checks whether the lead's FUB ID has
- * already been recorded in content_performance.metadata_48h.attributed_lead_ids.
+ * Idempotency: re-running for the same day does not double-count. The guard
+ * checks whether the lead's crm_people id has already been recorded in
+ * content_performance.metrics_48h.attributed_lead_ids.
  *
  * Schedule: daily at 13:00 UTC / 06:00 Mountain (see vercel.json).
  * Auth: Authorization: Bearer $CRON_SECRET
@@ -27,29 +31,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getFubHeaders } from '@/lib/fub-snapshot'
 
 export const maxDuration = 120
 
-const FUB_BASE = 'https://api.followupboss.com/v1'
 const DEFAULT_LOOKBACK_HOURS = 24
 
 // Seller-intent tags. This cron attributes ALL seller leads (no nurture
 // exclusion), so it matches the canonical audience marker + every tier.
-//
-// CANONICAL schema (docs/FUB_SELLER_WORKFLOW_2026-05-17.md §4): the lead tagger
-// applies `audience:seller` to every seller plus `seller:<tier>`
-// (hot|warm|nurture, default nurture). Before 2026-06-06 this set held ONLY the
-// legacy strings below, so every canonically-tagged lead since 2026-05-17 was
-// filtered out and attributed_count was always 0. Both schemas are kept so
-// pre- and post-migration leads attribute.
+// Both the canonical schema and legacy pre-2026-05-17 strings are kept so
+// older leads still attribute.
 const SELLER_TAGS = new Set([
-  // Canonical (2026-05-17+)
   'audience:seller',
   'seller:hot',
   'seller:warm',
   'seller:nurture',
-  // Legacy (pre-2026-05-17)
   'hot-seller',
   'warm-seller',
   'seller',
@@ -59,45 +54,25 @@ const SELLER_TAGS = new Set([
   'seller-curious',
 ])
 
-interface FubPerson {
+interface CrmLead {
   id: number
-  created: string
-  tags?: string[]
-  sourceUrl?: string
-  utmContent?: string
-  utmCampaign?: string
-  utmSource?: string
-  utmMedium?: string
-  name?: string
+  created_at: string
+  tags: string[]
+  name: string | null
 }
 
 interface AttributionMatch {
-  fub_person_id: number
+  crm_person_id: number
   content_performance_id: string
   action_id: string
   platform: string
   match_method: string
 }
 
-/**
- * FUB's /v1/people API exposes `sourceUrl` but NOT `utmContent`/`utmCampaign`
- * as person fields (verified 2026-06-08, including ?fields=allFields). So the
- * utm params a published post carried (utm_content = the action_id) survive
- * only inside the stored sourceUrl. Recover them by parsing the query string.
- * The seller LP forwards the inbound utm_* into the FUB sourceUrl for exactly
- * this round-trip.
- */
-function utmFromSourceUrl(sourceUrl?: string): { content?: string; campaign?: string } {
-  if (!sourceUrl) return {}
-  try {
-    const u = new URL(sourceUrl)
-    return {
-      content: u.searchParams.get('utm_content') ?? undefined,
-      campaign: u.searchParams.get('utm_campaign') ?? undefined,
-    }
-  } catch {
-    return {}
-  }
+/** Extract the tag value after a `prefix:` — e.g. 'campaign:t2b-westbend' -> 't2b-westbend'. */
+function tagValue(tags: string[], prefix: string): string | undefined {
+  const t = tags.find((x) => x.startsWith(prefix))
+  return t ? t.slice(prefix.length) : undefined
 }
 
 export async function GET(request: NextRequest) {
@@ -114,73 +89,47 @@ export async function GET(request: NextRequest) {
 
   const startedAt = new Date().toISOString()
   const supabase = createServiceClient()
-
-  // Check whether FUB is configured.
-  const fubHeaders = getFubHeaders()
-  if (!fubHeaders) {
-    return NextResponse.json({
-      startedAt,
-      gap: 'FOLLOWUPBOSS_API_KEY not configured. No leads checked.',
-      unattributed_leads_today: 0,
-      attributed_count: 0,
-      matches: [],
-    })
-  }
-
-  // Fetch seller-intent leads created in the lookback window.
   const since = new Date(Date.now() - lookbackHours * 60 * 60 * 1000).toISOString()
 
-  let fubPeople: FubPerson[] = []
-  let fubGap: string | null = null
+  const { data: leadRows, error: leadErr } = await supabase
+    .from('crm_people')
+    .select('id, created_at, tags, name')
+    .eq('deleted', false)
+    .gte('created_at', since)
+    .contains('tags', ['audience:seller'])
+    .limit(500)
 
-  try {
-    const resp = await fetch(
-      `${FUB_BASE}/people?sort=-created&limit=100&created=${encodeURIComponent(since)}`,
-      { headers: fubHeaders as HeadersInit, signal: AbortSignal.timeout(20_000) }
-    )
-    if (!resp.ok) {
-      fubGap = `FUB API returned HTTP ${resp.status}`
-    } else {
-      const body = await resp.json() as { people?: FubPerson[] }
-      fubPeople = body.people ?? []
-    }
-  } catch (err) {
-    fubGap = err instanceof Error ? err.message : String(err)
+  if (leadErr) {
+    return NextResponse.json({ error: leadErr.message }, { status: 500 })
   }
 
-  // Filter to seller-intent leads only.
-  const sellerLeads = fubPeople.filter((p) =>
-    (p.tags ?? []).some((t) => SELLER_TAGS.has(t.toLowerCase().trim()))
+  const sellerLeads = ((leadRows ?? []) as CrmLead[]).filter((p) =>
+    (p.tags ?? []).some((t) => SELLER_TAGS.has(t.toLowerCase().trim()) || t.startsWith('channel:'))
   )
-
-  const unattributedCount = sellerLeads.length
 
   if (sellerLeads.length === 0 || dryRun) {
     return NextResponse.json({
       startedAt,
-      gap: fubGap,
       lookback_hours: lookbackHours,
       seller_leads_found: sellerLeads.length,
-      unattributed_leads_today: unattributedCount,
+      unattributed_leads_today: sellerLeads.length,
       attributed_count: 0,
       matches: [],
       dryRun,
       candidates: dryRun
         ? sellerLeads.map((p) => ({
-            fub_id: p.id,
+            crm_person_id: p.id,
             tags: p.tags,
-            source_url: p.sourceUrl,
-            utm_content: p.utmContent,
-            utm_campaign: p.utmCampaign,
+            campaign: tagValue(p.tags, 'campaign:'),
+            ad_content: tagValue(p.tags, 'ad-content:'),
           }))
         : undefined,
     })
   }
 
-  // Load recent content_performance rows to match against.
   const { data: perfRows, error: perfErr } = await supabase
     .from('content_performance')
-    .select('id, action_id, platform, post_external_id, posted_at, north_star_attributed_seller_leads, metrics_48h')
+    .select('id, action_id, platform, posted_at, north_star_attributed_seller_leads, metrics_48h')
     .gte('posted_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
     .order('posted_at', { ascending: false })
 
@@ -189,52 +138,33 @@ export async function GET(request: NextRequest) {
   }
 
   const perf = perfRows ?? []
-
-  // Build lookup maps for O(1) matching.
-  const byExternalId = new Map<string, typeof perf[0]>()
   const byActionId = new Map<string, typeof perf[0]>()
   for (const p of perf) {
-    if (p.post_external_id) byExternalId.set(p.post_external_id, p)
     if (p.action_id) byActionId.set(p.action_id, p)
   }
 
   const matches: AttributionMatch[] = []
-  const alreadyAttributed = new Set<string>() // fub_person_id:perf_id
+  const alreadyAttributed = new Set<string>()
 
   for (const lead of sellerLeads) {
+    const adContent = tagValue(lead.tags, 'ad-content:')
+    const campaign = tagValue(lead.tags, 'campaign:')
+
     let matchedPerf: typeof perf[0] | undefined
     let matchMethod = ''
 
-    // FUB returns sourceUrl but not utm* fields, so recover the utm params from
-    // the stored sourceUrl. (Keep lead.utm* as a defensive fallback in case a
-    // future FUB custom-field mapping ever surfaces them.)
-    const utm = utmFromSourceUrl(lead.sourceUrl)
-    const utmContent = lead.utmContent ?? utm.content
-    const utmCampaign = lead.utmCampaign ?? utm.campaign
-
-    // Method 1: source_url contains a post_external_id.
-    if (lead.sourceUrl) {
-      for (const [extId, row] of byExternalId.entries()) {
-        if (extId && lead.sourceUrl.includes(extId)) {
-          matchedPerf = row
-          matchMethod = 'source_url_contains_external_id'
-          break
-        }
-      }
+    // Method 1: ad-content:* tag (= utm_content = the action_id) matches directly.
+    if (adContent) {
+      matchedPerf = byActionId.get(adContent)
+      if (matchedPerf) matchMethod = 'ad_content_tag_action_id'
     }
 
-    // Method 2: utm_content (= the action_id) matches a content_performance row.
-    if (!matchedPerf && utmContent) {
-      matchedPerf = byActionId.get(utmContent)
-      if (matchedPerf) matchMethod = 'utm_content_action_id'
-    }
-
-    // Method 3: utm_campaign contains an action_id substring.
-    if (!matchedPerf && utmCampaign) {
+    // Method 2: campaign:* tag contains an action_id substring.
+    if (!matchedPerf && campaign) {
       for (const [actionId, row] of byActionId.entries()) {
-        if (utmCampaign.includes(actionId)) {
+        if (campaign.includes(actionId)) {
           matchedPerf = row
-          matchMethod = 'utm_campaign_action_id_substring'
+          matchMethod = 'campaign_tag_action_id_substring'
           break
         }
       }
@@ -245,7 +175,6 @@ export async function GET(request: NextRequest) {
     const dedupeKey = `${lead.id}:${matchedPerf.id}`
     if (alreadyAttributed.has(dedupeKey)) continue
 
-    // Guard: check whether this lead ID was already attributed to this perf row.
     const existingMeta48h = (matchedPerf.metrics_48h ?? {}) as Record<string, unknown>
     const alreadyAttributedIds = Array.isArray(existingMeta48h.attributed_lead_ids)
       ? (existingMeta48h.attributed_lead_ids as number[])
@@ -258,7 +187,6 @@ export async function GET(request: NextRequest) {
 
     alreadyAttributed.add(dedupeKey)
 
-    // Increment north_star_attributed_seller_leads and record the lead ID.
     const newLeadIds = [...alreadyAttributedIds, lead.id]
     const updatedMeta48h = { ...existingMeta48h, attributed_lead_ids: newLeadIds }
 
@@ -279,7 +207,7 @@ export async function GET(request: NextRequest) {
     }
 
     matches.push({
-      fub_person_id: lead.id,
+      crm_person_id: lead.id,
       content_performance_id: matchedPerf.id,
       action_id: matchedPerf.action_id,
       platform: matchedPerf.platform,
@@ -289,7 +217,6 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     startedAt,
-    gap: fubGap,
     lookback_hours: lookbackHours,
     seller_leads_found: sellerLeads.length,
     unattributed_leads_today: sellerLeads.length - matches.length,

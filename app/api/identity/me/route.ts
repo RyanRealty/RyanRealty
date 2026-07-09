@@ -1,13 +1,13 @@
 /**
  * GET /api/identity/me
  *
- * Returns the hashed identity tokens for the current visitor — used by
+ * Returns the hashed identity tokens for the current visitor. Used by
  * `<AnalyticsIdentityBridge />` to wire GA4 `user_id` and Meta Pixel
  * advanced matching once a visitor is known.
  *
  * Why a dedicated endpoint:
  *   The root layout is a Server Component that intentionally reads NO
- *   cookies (so the CDN can cache the static HTML — SITE_SPEC §45-47).
+ *   cookies (so the CDN can cache the static HTML, SITE_SPEC §45-47).
  *   GA4 user_id + Meta `em` therefore need a client-side fetch path. This
  *   endpoint encapsulates the hashing so no raw PII ever lands in the
  *   browser bundle.
@@ -15,17 +15,21 @@
  * Response shape:
  *   {
  *     identified:   boolean    // true if we know the visitor at all
- *     hashedUserId: string?    // stable GA4 user_id ("fub-<sha256>" or "em-<sha256>")
+ *     hashedUserId: string?    // stable GA4 user_id ("crm-<sha256>" or "em-<sha256>")
  *     hashedEmail:  string?    // sha256(normalized email) for Meta Pixel `em`
- *     fubPersonId:  number?    // FUB person id for client-side context
+ *     personId:     number?    // crm_people.id for client-side context
  *   }
  *
  * Identity resolution priority (most stable first):
- *   1. fub_cid cookie (FUB person id stamped via email-click or form submit)
+ *   1. rr_pid cookie (crm_people.id stamped via email-click or sign-in)
  *   2. signed-in session email (Google OAuth via Supabase)
  *   Returns identified=false if neither is present.
  *
- * Cache-Control: private, no-store — never cache at the edge.
+ * Cache-Control: private, no-store, never cache at the edge.
+ *
+ * Renamed from fub_cid/fubPersonId 2026-07-09 (FUB decommissioned
+ * 2026-06-24) to match app/actions/identity-bridge.ts and
+ * app/auth/callback/route.ts, which both now set the rr_pid cookie.
  */
 
 import { NextResponse } from 'next/server'
@@ -36,7 +40,7 @@ import { getSession } from '@/app/actions/auth'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const FUB_CID_COOKIE = 'fub_cid'
+const PERSON_ID_COOKIE = 'rr_pid'
 
 function sha256(input: string): string {
   return createHash('sha256').update(input).digest('hex')
@@ -45,19 +49,19 @@ function sha256(input: string): string {
 export async function GET(): Promise<NextResponse> {
   const [cookieStore, session] = await Promise.all([cookies(), getSession()])
 
-  const fubCidRaw = cookieStore.get(FUB_CID_COOKIE)?.value?.trim()
-  const fubPersonId = fubCidRaw ? parseInt(fubCidRaw, 10) : null
-  const fubIdValid = Number.isFinite(fubPersonId) && (fubPersonId ?? 0) > 0
+  const cookieRaw = cookieStore.get(PERSON_ID_COOKIE)?.value?.trim()
+  const personId = cookieRaw ? parseInt(cookieRaw, 10) : null
+  const personIdValid = Number.isFinite(personId) && (personId ?? 0) > 0
 
   const rawEmail = session?.user?.email?.trim().toLowerCase()
   const email = rawEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail) ? rawEmail : null
 
-  // GA4 user_id: prefer the cookie-stamped FUB person (works for unauthenticated
-  // visitors who clicked a FUB email; survives sign-out). Fall back to a hashed
-  // email when we only have a signed-in session.
+  // GA4 user_id: prefer the cookie-stamped person (works for unauthenticated
+  // visitors who clicked an email-click link; survives sign-out). Fall back
+  // to a hashed email when we only have a signed-in session.
   let hashedUserId: string | null = null
-  if (fubIdValid) {
-    hashedUserId = `fub-${sha256(String(fubPersonId))}`
+  if (personIdValid) {
+    hashedUserId = `crm-${sha256(String(personId))}`
   } else if (email) {
     hashedUserId = `em-${sha256(email)}`
   }
@@ -70,7 +74,7 @@ export async function GET(): Promise<NextResponse> {
       identified: hashedUserId !== null,
       hashedUserId,
       hashedEmail,
-      fubPersonId: fubIdValid ? fubPersonId : null,
+      personId: personIdValid ? personId : null,
     },
     {
       headers: {

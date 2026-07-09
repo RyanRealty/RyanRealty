@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { pushToFub } from '@/lib/fub'
-import { findPersonByEmail } from '@/lib/followupboss'
+import { sendEvent } from '@/lib/followupboss'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { listingDetailPath } from '@/lib/slug'
 
@@ -80,21 +79,20 @@ export async function POST(request: NextRequest) {
   const name = (user.user_metadata?.full_name ?? user.user_metadata?.name ?? '').toString().trim()
   const [firstName, ...rest] = name.split(/\s+/)
   const lastName = rest.join(' ') || undefined
-  await pushToFub('Open House RSVP', { email, firstName: firstName || undefined, lastName }, {
-    listingUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}${listingDetailPath(listingId)}`,
-    eventDate,
-    tags: ['open-house-rsvp'],
-  })
 
-  // An open-house RSVP is a clear BUYER-intent lead — tag it into the canonical
-  // buyer audience so it enters the buyer workflow + is counted in
-  // qualified_buyer_leads, instead of carrying only the bare open-house-rsvp tag.
-  // Best-effort, after the push; never blocks the RSVP response.
+  // An open-house RSVP is a clear BUYER-intent lead. Create/find them natively
+  // and tag into the canonical buyer audience so it enters the buyer workflow
+  // and is counted in qualified_buyer_leads. Best-effort; never blocks the RSVP response.
   if (email) {
     try {
-      const person = await findPersonByEmail(email)
-      if (person?.id) {
-        await canonicallyTagLead({ fubPersonId: person.id, audience: 'buyer', source: 'open-house-rsvp', tier: 'warm' })
+      const eventResult = await sendEvent({
+        type: 'Property Inquiry',
+        person: { emails: [{ value: email }], firstName: firstName || undefined, lastName },
+        source: 'open-house-rsvp',
+        message: `Open house RSVP. Listing: ${listingDetailPath(listingId)}. Event date: ${eventDate}.`,
+      })
+      if (eventResult.ok && eventResult.personId) {
+        await canonicallyTagLead({ fubPersonId: eventResult.personId, audience: 'buyer', source: 'open-house-rsvp', tier: 'warm' })
       }
     } catch (err) {
       console.warn('[open-house-rsvp] canonical tag failed (non-blocking):', err)

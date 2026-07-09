@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
-import { trackSignedInUser, findPersonByEmail } from '@/lib/followupboss'
+import { createServiceClient } from '@/lib/supabase/service'
+import { trackSignedInUser } from '@/lib/followupboss'
 import { stitchVisitorIdentity } from '@/lib/visitor-backfill'
 import { claimGuestSavedSearches } from '@/lib/data/savedSearches'
+import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
 import type { User } from '@supabase/supabase-js'
 import * as Sentry from '@sentry/nextjs'
 import { NextResponse } from 'next/server'
@@ -9,19 +11,23 @@ import { cookies, headers } from 'next/headers'
 import { safeRedirectPath } from '@/lib/auth/safeRedirect'
 
 const AUTH_NEXT_COOKIE = 'auth_next'
-const FUB_CID_COOKIE = 'fub_cid'
-const FUB_CID_MAX_AGE = 90 * 24 * 60 * 60 // 90 days — matches identifyFubFromEmailClick
+const PERSON_ID_COOKIE = 'rr_pid'
+const PERSON_ID_MAX_AGE = 90 * 24 * 60 * 60 // 90 days — matches app/actions/identity-bridge.ts
 
 /**
- * Stamp the durable fub_cid cookie on a freshly signed-in visitor by resolving
- * their FUB person from the sign-in email. This makes every FUTURE visit on this
- * browser attributable to the FUB contact (via getFubPersonIdFromCookie in the
- * visitor-tracking path) — which is what generates "Visited Website" activity in
- * FUB and lifts the visit-to-FUB bridge rate that was sitting at ~2%. Best-effort:
- * a brand-new contact not yet in FUB simply gets stamped on a later visit. Never
- * blocks or fails sign-in.
+ * Stamp the durable rr_pid cookie on a freshly signed-in visitor by resolving
+ * their crm_people record from the sign-in email. This makes every FUTURE
+ * visit on this browser attributable to that person (via getPersonIdFromCookie
+ * in the visitor-tracking path). Best-effort: a brand-new contact not yet in
+ * the CRM simply gets stamped on a later visit. Never blocks or fails sign-in.
+ *
+ * Fixed 2026-07-09: previously called findPersonByEmail(), which hits
+ * FollowUpBoss's API and has unconditionally returned null since the
+ * 2026-06-24 decommission — every sign-in on the entire site was silently
+ * failing to stamp this cookie. Replaced with the native personIdsByEmailCi()
+ * lookup used everywhere else in the CRM.
  */
-async function stampFubCidFromEmail(
+async function stampPersonIdFromEmail(
   res: NextResponse,
   email: string,
   rrVid: string | undefined,
@@ -31,22 +37,24 @@ async function stampFubCidFromEmail(
   const normalized = email.trim().toLowerCase()
   if (!normalized) return
   try {
-    const person = await findPersonByEmail(normalized)
-    if (person?.id) {
-      res.cookies.set(FUB_CID_COOKIE, String(person.id), {
+    const sb = createServiceClient()
+    const matchIds = await personIdsByEmailCi(sb, normalized).catch(() => [] as number[])
+    const personId = matchIds[0] ?? null
+    if (personId) {
+      res.cookies.set(PERSON_ID_COOKIE, String(personId), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: FUB_CID_MAX_AGE,
+        maxAge: PERSON_ID_MAX_AGE,
         path: '/',
       })
     }
-    // Phase 7 -> Phase 5: feed the login into the first-party identity graph so a
+    // Feed the login into the first-party identity graph so a
     // Google/Facebook/email sign-in stitches the durable rr_vid cookie to the
     // known person/email/auth-user (same graph a form submit writes). Best-effort.
     await stitchVisitorIdentity({
       rrVid,
-      fubPersonId: person?.id ?? null,
+      fubPersonId: personId,
       email: normalized,
       userId: userId ?? null,
       source,
@@ -143,7 +151,7 @@ export async function GET(request: Request) {
       const redirectUrl = safeNext.includes('?') ? `${base}${safeNext}&signed_up=1` : `${base}${safeNext}?signed_up=1`
       const res = NextResponse.redirect(redirectUrl)
       res.cookies.delete(AUTH_NEXT_COOKIE)
-      await stampFubCidFromEmail(res, data.user.email ?? '', rrVid, data.user.id, 'auth_oauth')
+      await stampPersonIdFromEmail(res, data.user.email ?? '', rrVid, data.user.id, 'auth_oauth')
       // Phase 7.3: pull this signer's guest email-keyed saved searches into the
       // account (verified-email gated, idempotent, never blocks sign-in).
       await claimGuestSearchesForUser(data.user)
@@ -169,7 +177,7 @@ export async function GET(request: Request) {
       const redirectUrl = safeNext.includes('?') ? `${base}${safeNext}&signed_up=1` : `${base}${safeNext}?signed_up=1`
       const res = NextResponse.redirect(redirectUrl)
       res.cookies.delete(AUTH_NEXT_COOKIE)
-      await stampFubCidFromEmail(res, data.user.email ?? '', rrVid, data.user.id, type === 'recovery' ? 'auth_recovery' : 'auth_email')
+      await stampPersonIdFromEmail(res, data.user.email ?? '', rrVid, data.user.id, type === 'recovery' ? 'auth_recovery' : 'auth_email')
       // Phase 7.3: pull this signer's guest email-keyed saved searches into the
       // account (verified-email gated, idempotent, never blocks sign-in).
       await claimGuestSearchesForUser(data.user)

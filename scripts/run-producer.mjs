@@ -62,7 +62,6 @@ const PRODUCERS = {
 
   // Section D — ops handlers (Node mjs, accept --live)
   'ops-meta-ads':         { runner: 'node', script: 'scripts/ops/run-meta-ads.mjs',      accepts: ['--live'] },
-  'ops-fub-crm':          { runner: 'node', script: 'scripts/ops/run-fub-crm.mjs',       accepts: ['--live'] },
   'ops-email-send':       { runner: 'node', script: 'scripts/ops/run-email-send.mjs',    accepts: ['--live'] },
   'ops-reputation':       { runner: 'node', script: 'scripts/ops/run-reputation.mjs',    accepts: ['--live'] },
   'ops-fb-marketplace':   { runner: 'node', script: 'scripts/ops/run-fb-marketplace.mjs', accepts: ['--live'] },
@@ -104,10 +103,6 @@ const ACTION_TO_PRODUCER = {
   'ops:meta_resume':       'ops-meta-ads',
   'ops:meta_audience':     'ops-meta-ads',
   'ops:meta_creative_swap':'ops-meta-ads',
-  'ops:fub_tag_fix':       'ops-fub-crm',
-  'ops:fub_sequence_change':'ops-fub-crm',
-  'ops:fub_task_create':   'ops-fub-crm',
-  'ops:fub_routing':       'ops-fub-crm',
   'ops:email_newsletter':  'ops-email-send',
   'ops:email_blast':       'ops-email-send',
   'ops:email_template_update': 'ops-email-send',

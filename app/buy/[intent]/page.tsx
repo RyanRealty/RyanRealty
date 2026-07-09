@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import LeadLandingPage from '@/components/landing/LeadLandingPage'
 import { getBuyLanding } from '@/lib/lead-landing-content'
 import { getSession } from '@/app/actions/auth'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -42,7 +42,7 @@ export default async function BuyLeadIntentPage({ params }: Props) {
   const config = getBuyLanding(intent)
   if (!config) notFound()
 
-  const [session, fubPersonId] = await Promise.all([getSession(), getFubPersonIdFromCookie()])
+  const [session, fubPersonId] = await Promise.all([getSession(), getPersonIdFromCookie()])
   trackPageViewIfPossible({
     sessionUser: session?.user ?? undefined,
     fubPersonId,

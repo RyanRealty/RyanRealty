@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import ScrollReveal from '@/components/landing/ScrollReveal'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import LandingPageTracker from '@/components/LandingPageTracker'
 import SellerLPForm from '@/app/lp/seller-home-value/SellerLPForm'
 import {
@@ -54,7 +54,7 @@ const FEATURED_REVIEWS = [
 ]
 
 export default async function ListYourHomePage() {
-  const cookiePersonId = await getFubPersonIdFromCookie()
+  const cookiePersonId = await getPersonIdFromCookie()
   const knownVisitor = cookiePersonId !== null && cookiePersonId > 0
 
   const [trackRecord, soldStories, aggregate] = await Promise.all([

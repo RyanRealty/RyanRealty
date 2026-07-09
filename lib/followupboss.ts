@@ -52,7 +52,13 @@ export type FubPerson = {
 
 const PLACEHOLDER_EMAIL_RE = /@placeholder\.ryan-realty\.com$/i
 
-export function isPlaceholderFubEmail(email: string | null | undefined): boolean {
+/**
+ * True when the email is one of our own synthetic placeholder addresses
+ * (@placeholder.ryan-realty.com), used as a stand-in for leads with no real
+ * email. Recognizing these keeps them out of dedup keys and deliverable
+ * address lists. Not FUB-specific despite the historical file location.
+ */
+export function isPlaceholderLeadEmail(email: string | null | undefined): boolean {
   if (!email?.trim()) return false
   return PLACEHOLDER_EMAIL_RE.test(email.trim())
 }
@@ -106,26 +112,6 @@ export async function findPersonByPhone(phone: string): Promise<FubPerson | null
 }
 
 /** Fetch a FUB person by id (emails, phones, tags for merge updates). */
-export async function getPersonById(personId: number): Promise<FubPerson | null> {
-  const auth = getAuth()
-  if (!auth) return null
-  if (!Number.isFinite(personId) || personId <= 0) return null
-  try {
-    const q = new URLSearchParams({
-      fields: 'id,firstName,lastName,name,emails,phones,tags',
-    })
-    const res = await fetch(`${FUB_BASE}/people/${personId}?${q}`, {
-      headers: fubHeaders(auth),
-      next: { revalidate: 0 },
-    })
-    if (!res.ok) return null
-    return (await res.json()) as FubPerson
-  } catch (err) {
-    console.error('[getPersonById] Network error:', err)
-    return null
-  }
-}
-
 export type UpdatePersonProfileParams = {
   personId: number
   firstName?: string
@@ -513,37 +499,9 @@ async function applyBrokerAttribution(params: {
   }
 }
 
-export type BrokerAttributionDiagnostic = {
-  brokerSlug: string
-  brokerEmail: string | null
-  mappedUserId: number | null
-  resolvedAssignedUserId: number | null
-  resolutionSource: 'env_map' | 'email_lookup' | 'none'
-  brokerEmailUsed: string | null
-  brokerTag: string
-}
-
 /**
  * Resolve how broker assignment would be applied in FUB for diagnostics in admin.
  */
-export async function diagnoseBrokerAttribution(params: {
-  brokerSlug: string
-  brokerEmail?: string | null
-}): Promise<BrokerAttributionDiagnostic> {
-  const slug = params.brokerSlug.trim().toLowerCase()
-  const email = params.brokerEmail?.trim() || null
-  const resolved = await resolveAssignedUserIdWithSource(slug, email ?? undefined)
-  return {
-    brokerSlug: slug,
-    brokerEmail: email,
-    mappedUserId: getMappedUserIdForSlug(slug),
-    resolvedAssignedUserId: resolved.id,
-    resolutionSource: resolved.source,
-    brokerEmailUsed: resolved.brokerEmailUsed,
-    brokerTag: `broker:${slug}`,
-  }
-}
-
 /**
  * Merge one or more tags onto an existing FUB person without removing existing
  * tags. Used by /api/fub/identify and /api/fub/track-page to attach intent

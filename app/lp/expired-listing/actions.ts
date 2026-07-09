@@ -7,7 +7,7 @@ import {
   findPersonByEmail,
   type FubEventPerson,
 } from '@/lib/followupboss'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { saveAnonymousPartialAddress } from '@/lib/data'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
@@ -117,7 +117,7 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
       }
     }
     if (!fubPersonId) {
-      const cookiePersonId = await getFubPersonIdFromCookie()
+      const cookiePersonId = await getPersonIdFromCookie()
       if (cookiePersonId) {
         fubPersonId = cookiePersonId
         alreadyKnown = true

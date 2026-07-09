@@ -19,7 +19,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getBlogPostBySlug, getRelatedBlogPosts } from '@/lib/data'
 import { getSession } from '@/app/actions/auth'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { generateBlogSchema, generateBreadcrumbSchema } from '@/lib/structured-data'
 import ShareButton from '@/components/ShareButton'
@@ -121,7 +121,7 @@ export default async function BlogPostPage({ params }: PageProps) {
   const [post, session, fubPersonId] = await Promise.all([
     getBlogPostBySlug(slug),
     getSession(),
-    getFubPersonIdFromCookie(),
+    getPersonIdFromCookie(),
   ])
   if (!post) notFound()
 

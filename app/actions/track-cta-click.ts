@@ -1,7 +1,7 @@
 'use server'
 
 import { getSession } from '@/app/actions/auth'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { findPersonByEmail, sendEvent, type FubEventPerson } from '@/lib/followupboss'
 
 export type TrackCtaClickParams = {
@@ -21,7 +21,7 @@ export async function trackCtaClickAction(params: TrackCtaClickParams): Promise<
   const destination = params.destination?.trim()
   if (!label || !destination) return
 
-  const [session, fubPersonId] = await Promise.all([getSession(), getFubPersonIdFromCookie()])
+  const [session, fubPersonId] = await Promise.all([getSession(), getPersonIdFromCookie()])
   const email = session?.user?.email?.trim() || null
 
   let person: FubEventPerson | null = null

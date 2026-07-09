@@ -31,7 +31,7 @@ import Link from 'next/link'
 import ContactForm from './ContactForm'
 import { getPageContent } from '@/app/actions/site-pages'
 import { getSession } from '@/app/actions/auth'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import { getListingTiles } from '@/lib/data'
@@ -72,7 +72,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
     searchParams,
     getPageContent('contact'),
     getSession(),
-    getFubPersonIdFromCookie(),
+    getPersonIdFromCookie(),
   ])
   const pageUrl = `${getCanonicalSiteUrl()}/contact`
   const pageTitle = 'Contact Us | Ryan Realty'
