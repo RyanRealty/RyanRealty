@@ -526,7 +526,7 @@ export default function PulseCard({
               'font-display leading-none text-background',
               'text-3xl sm:text-4xl'
             )}
-            style={{ fontFamily: 'var(--font-amboqia, ui-serif, Georgia, serif)' }}
+            style={{ fontFamily: 'var(--font-amboqia-safe, ui-serif, Georgia, serif)' }}
           >
             {formatPriceFull(headlinePrice) ?? 'Price TBD'}
           </p>

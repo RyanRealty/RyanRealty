@@ -229,7 +229,7 @@ export default function LeadLandingPage({ config }: Props) {
         .kb-root .lp-steps{list-style:none;margin-top:18px;border-top:1px solid var(--navy-12);}
         .kb-root .lp-step{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:baseline;padding:16px 0;border-bottom:1px solid var(--navy-12);}
         .kb-root .lp-step:last-child{border-bottom:0;}
-        .kb-root .lp-step-num{font-family:var(--font-amboqia),serif;font-size:clamp(1.6rem,3.4vw,2.2rem);line-height:.9;color:var(--navy);}
+        .kb-root .lp-step-num{font-family:var(--font-amboqia-safe),serif;font-size:clamp(1.6rem,3.4vw,2.2rem);line-height:.9;color:var(--navy);}
         .kb-root .lp-step-text{font-size:clamp(1rem,1.5vw,1.14rem);line-height:1.45;font-weight:500;color:var(--navy-70);}
         .kb-root .lp-col-form{position:sticky;top:96px;}
         @media(max-width:999px){.kb-root .lp-col-form{position:static;}}

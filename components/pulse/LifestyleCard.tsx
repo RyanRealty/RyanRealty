@@ -83,7 +83,7 @@ export default function LifestyleCard({ card, position }: Props) {
             <div className="min-w-0 flex-1">
               <h3
                 className="font-display text-3xl leading-[1.05] sm:text-4xl"
-                style={{ fontFamily: 'var(--font-amboqia, ui-serif, Georgia, serif)' }}
+                style={{ fontFamily: 'var(--font-amboqia-safe, ui-serif, Georgia, serif)' }}
               >
                 {card.headline}
               </h3>

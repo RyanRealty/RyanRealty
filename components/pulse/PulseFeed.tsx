@@ -434,7 +434,7 @@ export default function PulseFeed({
         <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
           <p
             className="font-display text-xl text-foreground"
-            style={{ fontFamily: 'var(--font-amboqia, ui-serif, Georgia, serif)' }}
+            style={{ fontFamily: 'var(--font-amboqia-safe, ui-serif, Georgia, serif)' }}
           >
             No matching activity yet
           </p>

@@ -118,7 +118,7 @@ function VacKpiCell({ label, sub, children }: { label: string; sub: string; chil
       </div>
       <div
         style={{
-          fontFamily: 'var(--font-amboqia, serif)',
+          fontFamily: 'var(--font-amboqia-safe, serif)',
           fontSize: 'clamp(1.2rem,2.5vw,1.7rem)',
           lineHeight: 1,
           color: 'var(--navy, #102742)',

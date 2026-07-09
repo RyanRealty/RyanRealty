@@ -40,7 +40,7 @@ const NAVY_12 = 'var(--navy-12)'
 const CREAM = 'var(--cream)'
 const EDGE_NAVY = 'var(--edge) solid var(--navy)'
 const PLATE = 'var(--navy)' // image-placeholder plate (on-palette navy token)
-const AMBOQIA = 'var(--font-amboqia),serif'
+const AMBOQIA = 'var(--font-amboqia-safe),serif'
 
 // Recolor the @tailwindcss/typography prose body to KB navy by setting the plugin's
 // own CSS variables. No arbitrary Tailwind, no <style>. The headings get the Amboqia

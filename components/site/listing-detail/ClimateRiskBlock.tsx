@@ -59,7 +59,7 @@ function RiskCell({ label, score }: { label: string; score: ClimateRiskScore | n
       </div>
       <div
         style={{
-          fontFamily: 'var(--font-amboqia, serif)',
+          fontFamily: 'var(--font-amboqia-safe, serif)',
           fontSize: 'clamp(1.4rem,3vw,2rem)',
           lineHeight: 1,
           color: scoreToneColor(score),

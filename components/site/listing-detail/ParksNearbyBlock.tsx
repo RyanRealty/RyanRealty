@@ -70,7 +70,7 @@ export function ParksNearbyBlock({ listing, className }: Props) {
           >
             <div
               style={{
-                fontFamily: 'var(--font-amboqia, serif)',
+                fontFamily: 'var(--font-amboqia-safe, serif)',
                 fontSize: 'clamp(1.1rem,2.2vw,1.45rem)',
                 lineHeight: 0.94,
                 color: 'var(--navy, #102742)',

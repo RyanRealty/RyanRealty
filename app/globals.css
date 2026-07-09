@@ -10,8 +10,32 @@
    app/layout.tsx as the --font-amboqia variable. Use the .font-display
    utility for hero H1s, section headings, pull quotes, and any other
    "stamped" display moment per the locked design system. */
+
+/* PROTOTYPE — not yet approved for production (2026-07-08). Amboqia
+   Boriango's own capital "I" glyph is drawn identical to the digit "1"
+   (confirmed via font-outline inspection: same diagonal top-flag serif),
+   so any all-caps or capitalized word containing "I" -- e.g. every
+   community page's "Inside {name}" header -- renders as "1nside" etc.
+   This subset face patches ONLY U+0049, built from Amboqia's own bottom-foot
+   curve data mirrored to the top (same stem weight/serif style, just
+   symmetric instead of flagged). unicode-range scopes it to that one
+   codepoint so it never touches any other glyph. Every consumer must read
+   --font-amboqia-safe (not --font-amboqia directly) to pick this up --
+   see the mechanical rename across kb.css/*.tsx call sites. */
+@font-face {
+  font-family: 'amboqia-i-patch';
+  src: url('/fonts/amboqia-i-patch.woff2') format('woff2');
+  unicode-range: U+0049;
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+:root {
+  --font-amboqia-safe: 'amboqia-i-patch', var(--font-amboqia), ui-serif, Georgia, "Times New Roman", serif;
+}
+
 .font-display {
-  font-family: var(--font-amboqia), ui-serif, Georgia, "Times New Roman", serif;
+  font-family: var(--font-amboqia-safe);
   font-feature-settings: "liga", "kern";
 }
 

@@ -223,7 +223,7 @@ export function ListingHero({ photos, videos, addressLine, price, beds, baths, s
             {price != null ? (
               <span
                 style={{
-                  fontFamily: 'var(--font-amboqia, serif)',
+                  fontFamily: 'var(--font-amboqia-safe, serif)',
                   fontSize: 'clamp(1.4rem,3.2vw,2.4rem)',
                   lineHeight: 1,
                   fontWeight: 400,

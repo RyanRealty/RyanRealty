@@ -185,7 +185,7 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
                 {ev.price ? (
                   <div
                     style={{
-                      fontFamily: 'var(--font-amboqia, serif)',
+                      fontFamily: 'var(--font-amboqia-safe, serif)',
                       fontSize: 'clamp(1rem,2vw,1.3rem)',
                       lineHeight: 1,
                       color: 'var(--navy, #102742)',

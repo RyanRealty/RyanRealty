@@ -225,7 +225,7 @@ export default function BrandCard({ card, position }: Props) {
               'font-display leading-[1.04]',
               isBrokerCard ? 'text-4xl sm:text-5xl' : 'text-3xl sm:text-4xl'
             )}
-            style={{ fontFamily: 'var(--font-amboqia, ui-serif, Georgia, serif)' }}
+            style={{ fontFamily: 'var(--font-amboqia-safe, ui-serif, Georgia, serif)' }}
           >
             {card.headline}
           </h3>

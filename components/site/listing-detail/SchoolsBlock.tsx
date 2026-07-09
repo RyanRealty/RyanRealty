@@ -94,7 +94,7 @@ function SchoolCard({
       </div>
       <div
         style={{
-          fontFamily: 'var(--font-amboqia, serif)',
+          fontFamily: 'var(--font-amboqia-safe, serif)',
           fontSize: 'clamp(1.1rem,2.2vw,1.55rem)',
           lineHeight: 0.92,
           color: name ? 'var(--navy, #102742)' : 'rgba(16,39,66,0.35)',

@@ -165,7 +165,7 @@ const cardBodyStyle: CSSProperties = {
 }
 const cardIdxStyle: CSSProperties = {
   display: 'block',
-  fontFamily: 'var(--font-amboqia),serif',
+  fontFamily: 'var(--font-amboqia-safe),serif',
   fontSize: '1.5rem',
   lineHeight: 1,
   color: 'var(--navy)',
@@ -187,7 +187,7 @@ const howBodyStyle: CSSProperties = {
   fontWeight: 500,
 }
 const faqQStyle: CSSProperties = {
-  fontFamily: 'var(--font-amboqia),serif',
+  fontFamily: 'var(--font-amboqia-safe),serif',
   fontSize: 'clamp(1.3rem,3vw,1.9rem)',
   lineHeight: 1.02,
   letterSpacing: '-0.01em',

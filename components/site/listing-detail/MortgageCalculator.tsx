@@ -185,7 +185,7 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className }: Pr
             </span>
             <span
               style={{
-                fontFamily: 'var(--font-amboqia, serif)',
+                fontFamily: 'var(--font-amboqia-safe, serif)',
                 fontSize: 'clamp(1.6rem,3.5vw,2.2rem)',
                 lineHeight: 1,
                 color: 'var(--cream)',

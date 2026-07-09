@@ -1051,7 +1051,7 @@ function PageStyles() {
         display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
       }
       .golf-sticky-nav__brand {
-        font-family: var(--font-amboqia), Georgia, serif;
+        font-family: var(--font-amboqia-safe), Georgia, serif;
         font-size: 17px; font-weight: 500; color: #102742;
         letter-spacing: -0.005em;
         margin-right: 6px;
@@ -1099,7 +1099,7 @@ function PageStyles() {
       .golf-hero__inner { position: relative; z-index: 2; max-width: 1100px; margin: 0 auto; }
       .golf-hero__eyebrow { font-size: 11px; letter-spacing: 0.16em; opacity: 0.7; font-weight: 600; margin-bottom: 14px; }
       .golf-hero__h1 {
-        font-family: var(--font-amboqia), Georgia, serif;
+        font-family: var(--font-amboqia-safe), Georgia, serif;
         font-size: clamp(40px, 6vw, 72px);
         font-weight: 500;
         line-height: 1.05;
@@ -1147,7 +1147,7 @@ function PageStyles() {
       .golf-eyebrow--cream { color: #faf8f4; opacity: 0.7; }
 
       .golf-h2 {
-        font-family: var(--font-amboqia), Georgia, serif;
+        font-family: var(--font-amboqia-safe), Georgia, serif;
         font-size: clamp(30px, 4vw, 44px);
         font-weight: 500;
         line-height: 1.12;
@@ -1172,7 +1172,7 @@ function PageStyles() {
       }
       .golf-rank-card:last-child { border-bottom: 1px solid rgba(250,248,244,0.14); }
       .golf-rank-num {
-        font-family: var(--font-amboqia), Georgia, serif;
+        font-family: var(--font-amboqia-safe), Georgia, serif;
         font-size: 56px; font-weight: 400; color: rgba(250,248,244,0.62); line-height: 1;
         font-variant-numeric: tabular-nums;
       }
@@ -1181,7 +1181,7 @@ function PageStyles() {
         width: 100%; max-width: 720px; aspect-ratio: 16 / 10; object-fit: cover;
         border-radius: 10px; margin-bottom: 6px; display: block;
       }
-      .golf-rank-name { font-family: var(--font-amboqia), Georgia, serif; font-size: 24px; font-weight: 500; margin: 0; color: #faf8f4; }
+      .golf-rank-name { font-family: var(--font-amboqia-safe), Georgia, serif; font-size: 24px; font-weight: 500; margin: 0; color: #faf8f4; }
       .golf-rank-meta { display: flex; flex-wrap: wrap; gap: 6px; font-size: 13px; opacity: 0.82; color: #faf8f4; align-items: center; }
       .golf-access-pill {
         display: inline-block; padding: 2px 9px; border-radius: 999px;
@@ -1206,7 +1206,7 @@ function PageStyles() {
         flex-shrink: 0; width: 64px; height: 64px; border-radius: 50%;
         background: #102742; color: #faf8f4;
         display: flex; align-items: center; justify-content: center;
-        font-family: var(--font-amboqia), Georgia, serif;
+        font-family: var(--font-amboqia-safe), Georgia, serif;
         font-size: 22px; font-weight: 500; letter-spacing: 0.02em;
         overflow: hidden; object-fit: cover;
       }
@@ -1215,7 +1215,7 @@ function PageStyles() {
         flex: 1; min-width: 0;
         display: flex; align-items: center; justify-content: space-between; gap: 12px;
       }
-      .golf-architect-name { font-family: var(--font-amboqia), Georgia, serif; font-size: 20px; font-weight: 500; margin: 0; color: #102742; line-height: 1.2; }
+      .golf-architect-name { font-family: var(--font-amboqia-safe), Georgia, serif; font-size: 20px; font-weight: 500; margin: 0; color: #102742; line-height: 1.2; }
       .golf-architect-link {
         display: inline-flex; align-items: center; justify-content: center;
         width: 28px; height: 28px; border-radius: 50%;
@@ -1255,7 +1255,7 @@ function PageStyles() {
         background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 12px; padding: 18px 20px;
         display: flex; flex-direction: column; gap: 6px; min-height: 200px;
       }
-      .golf-season-month { font-family: var(--font-amboqia), Georgia, serif; font-size: 22px; font-weight: 500; color: #102742; }
+      .golf-season-month { font-family: var(--font-amboqia-safe), Georgia, serif; font-size: 22px; font-weight: 500; color: #102742; }
       .golf-season-temps { font-size: 24px; font-weight: 500; color: #102742; font-variant-numeric: tabular-nums; }
       .golf-season-temp-low { font-size: 16px; color: rgba(16,39,66,0.55); font-weight: 400; margin-left: 4px; }
       .golf-season-status {
@@ -1288,7 +1288,7 @@ function PageStyles() {
       }
       .golf-live-name {
         position: absolute; left: 18px; right: 18px; bottom: 14px; margin: 0;
-        font-family: var(--font-amboqia), Georgia, serif;
+        font-family: var(--font-amboqia-safe), Georgia, serif;
         font-size: 24px; font-weight: 500; color: #faf8f4;
         text-shadow: 0 1px 12px rgba(0,0,0,0.45);
         line-height: 1.15;
@@ -1328,7 +1328,7 @@ function PageStyles() {
         border-radius: 10px;
         box-shadow: 0 1px 2px rgba(16,39,66,0.04);
       }
-      .golf-insider-hook { font-family: var(--font-amboqia), Georgia, serif; font-size: 19px; font-weight: 500; color: #102742; margin-bottom: 8px; line-height: 1.3; }
+      .golf-insider-hook { font-family: var(--font-amboqia-safe), Georgia, serif; font-size: 19px; font-weight: 500; color: #102742; margin-bottom: 8px; line-height: 1.3; }
       .golf-insider-body { font-size: 15px; line-height: 1.55; color: rgba(16,39,66,0.82); margin: 0 0 10px; }
       .golf-insider-source { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11.5px; color: rgba(16,39,66,0.55); letter-spacing: 0.03em; }
       .golf-insider-course { font-weight: 600; color: rgba(16,39,66,0.74); }
@@ -1357,7 +1357,7 @@ function PageStyles() {
         align-self: flex-start;
       }
       .golf-sb-tag--accent { background: rgba(250,248,244,0.18); color: #faf8f4; }
-      .golf-sb-title { font-family: var(--font-amboqia), Georgia, serif; font-size: 26px; font-weight: 500; margin: 0; line-height: 1.15; }
+      .golf-sb-title { font-family: var(--font-amboqia-safe), Georgia, serif; font-size: 26px; font-weight: 500; margin: 0; line-height: 1.15; }
       .golf-sb-math { display: flex; flex-direction: column; gap: 8px; font-size: 14.5px; }
       .golf-sb-line { display: flex; justify-content: space-between; gap: 12px; }
       .golf-sb-line span:last-child { font-variant-numeric: tabular-nums; font-weight: 600; }
@@ -1414,7 +1414,7 @@ function PageStyles() {
         opacity: 0.72;
       }
       .golf-live-featured-price {
-        font-family: var(--font-amboqia), Georgia, serif; font-size: 22px; font-weight: 500;
+        font-family: var(--font-amboqia-safe), Georgia, serif; font-size: 22px; font-weight: 500;
         color: #faf8f4; line-height: 1.05;
       }
       .golf-live-featured-meta {

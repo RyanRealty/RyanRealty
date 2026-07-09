@@ -72,7 +72,7 @@ export function TransparentCMASummary({ cma, className }: Props) {
             </div>
             <div
               style={{
-                fontFamily: 'var(--font-amboqia, serif)',
+                fontFamily: 'var(--font-amboqia-safe, serif)',
                 fontSize: 'clamp(1rem,2.2vw,1.4rem)',
                 lineHeight: 1,
                 fontVariantNumeric: 'tabular-nums',
@@ -92,7 +92,7 @@ export function TransparentCMASummary({ cma, className }: Props) {
             </div>
             <div
               style={{
-                fontFamily: 'var(--font-amboqia, serif)',
+                fontFamily: 'var(--font-amboqia-safe, serif)',
                 fontSize: 'clamp(1.1rem,2.5vw,1.6rem)',
                 lineHeight: 1,
                 fontVariantNumeric: 'tabular-nums',
@@ -112,7 +112,7 @@ export function TransparentCMASummary({ cma, className }: Props) {
             </div>
             <div
               style={{
-                fontFamily: 'var(--font-amboqia, serif)',
+                fontFamily: 'var(--font-amboqia-safe, serif)',
                 fontSize: 'clamp(1.1rem,2.5vw,1.6rem)',
                 lineHeight: 1,
                 fontVariantNumeric: 'tabular-nums',

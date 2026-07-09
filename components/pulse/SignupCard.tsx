@@ -76,7 +76,7 @@ export default function SignupCard({ onDismiss, triggeredBy }: Props) {
         <div className="p-6 text-center">
           <p
             className="font-display text-2xl"
-            style={{ fontFamily: 'var(--font-amboqia, ui-serif, Georgia, serif)' }}
+            style={{ fontFamily: 'var(--font-amboqia-safe, ui-serif, Georgia, serif)' }}
           >
             Got it. You will hear from us.
           </p>
@@ -96,7 +96,7 @@ export default function SignupCard({ onDismiss, triggeredBy }: Props) {
         </p>
         <p
           className="mt-2 font-display text-2xl leading-tight sm:text-3xl"
-          style={{ fontFamily: 'var(--font-amboqia, ui-serif, Georgia, serif)' }}
+          style={{ fontFamily: 'var(--font-amboqia-safe, ui-serif, Georgia, serif)' }}
         >
           Save your favorites. We will text you when similar homes hit the market.
         </p>
