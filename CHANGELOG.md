@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.20 (2026-07-09)
+
+### Bug Fixes
+- fix(market-data): clear the full 14-item market-data backlog (#104,#106,#107,#110,#111,#113,#115,#117-123)
+
+---
+
+
 ## v1.751.19 (2026-07-08)
 
 ### Maintenance
