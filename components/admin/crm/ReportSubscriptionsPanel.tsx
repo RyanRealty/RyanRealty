@@ -43,6 +43,8 @@ export type ReportSubscriptionsPanelProps = {
   } | null
   areaOptions: { slug: string; label: string }[]
   setAction: (fd: FormData) => Promise<void>
+  /** One-off immediate send of the selected areas to this contact (no cadence). */
+  sendNowAction?: (fd: FormData) => Promise<{ ok: true } | { ok: false; error: string }>
   className?: string
 }
 
@@ -50,12 +52,25 @@ export default function ReportSubscriptionsPanel({
   current,
   areaOptions,
   setAction,
+  sendNowAction,
   className,
 }: ReportSubscriptionsPanelProps) {
   const [isActive, setIsActive] = useState(current?.isActive ?? false)
   const [areas, setAreas] = useState<Set<string>>(() => new Set(current?.areas ?? []))
   const [frequency, setFrequency] = useState<ReportFrequency>(current?.frequency ?? 'monthly')
   const [pending, startTransition] = useTransition()
+  const [sendNote, setSendNote] = useState<{ ok: boolean; text: string } | null>(null)
+
+  function onSendNow() {
+    if (!sendNowAction) return
+    const fd = new FormData()
+    for (const slug of areas) fd.append('areas', slug)
+    setSendNote(null)
+    startTransition(async () => {
+      const r = await sendNowAction(fd)
+      setSendNote(r.ok ? { ok: true, text: 'Report sent.' } : { ok: false, text: r.error })
+    })
+  }
 
   function toggleArea(slug: string, next: boolean) {
     setAreas((prev) => {
@@ -155,9 +170,28 @@ export default function ReportSubscriptionsPanel({
             </Select>
           </div>
 
-          <Button type="submit" disabled={pending} className="min-h-11 w-full sm:w-auto">
-            {pending ? 'Saving' : 'Save report settings'}
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Button type="submit" disabled={pending} className="min-h-11 w-full sm:w-auto">
+              {pending ? 'Saving' : 'Save report settings'}
+            </Button>
+            {sendNowAction ? (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={pending || areas.size === 0}
+                onClick={onSendNow}
+                className="min-h-11 w-full sm:w-auto"
+                title={areas.size === 0 ? 'Pick at least one area first' : undefined}
+              >
+                Send report now
+              </Button>
+            ) : null}
+          </div>
+          {sendNote ? (
+            <p className={cn('text-sm', sendNote.ok ? 'text-success' : 'text-destructive')} role="status">
+              {sendNote.text}
+            </p>
+          ) : null}
         </form>
       </CardContent>
     </Card>

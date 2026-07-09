@@ -3,7 +3,7 @@
   "floor": 600,
   "files": {
     "app/actions/cities.ts": 772,
-    "app/actions/crm.ts": 1942,
+    "app/actions/crm.ts": 1966,
     "app/actions/dashboard.ts": 947,
     "app/actions/lead-capture.ts": 610,
     "app/actions/listing-detail.ts": 1238,
@@ -14,7 +14,7 @@
     "app/admin/(protected)/broker-dashboard/page.tsx": 660,
     "app/admin/(protected)/deals/page.tsx": 657,
     "app/admin/(protected)/reports/lead-flow/page.tsx": 642,
-    "app/admin/console/leads/[id]/page.tsx": 621,
+    "app/admin/console/leads/[id]/page.tsx": 645,
     "app/api/meta/lead-webhook/route.ts": 919,
     "app/api/social/publish/route.ts": 783,
     "app/cities/[slug]/page.tsx": 654,

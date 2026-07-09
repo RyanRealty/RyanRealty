@@ -312,7 +312,12 @@ function encodeHeaderValue(value: string): string {
 
 export async function sendCrmEmail(params: {
   fromMailbox: string
-  to: string
+  /** One address or the full To list (comma-joined into the header). */
+  to: string | string[]
+  /** Optional Cc list — visible to every recipient. */
+  cc?: string[]
+  /** Optional Bcc list — Gmail delivers to these and strips the header for others. */
+  bcc?: string[]
   subject: string
   bodyText: string
   bodyHtml?: string | null
@@ -349,10 +354,16 @@ export async function sendCrmEmail(params: {
     html = instrumentEmailHtml(html, params.track)
   }
 
+  const toList = Array.isArray(params.to) ? params.to : [params.to]
+  if (toList.length === 0) return { ok: false, error: 'No recipient' }
   const hasAttachments = !!params.attachments && params.attachments.length > 0
   const headers = [
     `From: ${params.fromMailbox}`,
-    `To: ${params.to}`,
+    `To: ${toList.join(', ')}`,
+    ...(params.cc?.length ? [`Cc: ${params.cc.join(', ')}`] : []),
+    // Gmail delivers to Bcc-header addresses and strips the header from what
+    // every recipient receives (same contract lib/gmail-draft.ts relies on).
+    ...(params.bcc?.length ? [`Bcc: ${params.bcc.join(', ')}`] : []),
     `Subject: ${encodeHeaderValue(params.subject)}`,
     'MIME-Version: 1.0',
   ]

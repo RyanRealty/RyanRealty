@@ -9,7 +9,7 @@
  * in the body textarea.
  */
 import { useMemo, useRef, useState } from 'react'
-import { ArrowUp, Plus } from 'lucide-react'
+import { ArrowUp } from 'lucide-react'
 import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { MergeFieldPicker, insertAtCursor } from '@/components/admin/crm/MergeFieldPicker'
 import {
@@ -21,7 +21,6 @@ import { MMS_ACCEPT_ATTR } from '@/lib/crm/attachment-limits'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
-import { cn } from '@/lib/utils'
 
 function segmentInfo(text: string): { chars: number; segments: number } {
   const gsm = /^[A-Za-z0-9 @£$¥èéùìòÇØøÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ!"#%&'()*+,\-./:;<=>?¡ÄÖÑܧ¿äöñüà\n\r^{}\\[~\]|€]*$/.test(text)
@@ -61,7 +60,6 @@ export function SmsComposer(props: {
   })
 
   const recipients = props.recipients ?? []
-  const [showFields, setShowFields] = useState(false)
   // The lead is always a recipient; extras (relationships) start off, tap to add.
   const [selectedExtra, setSelectedExtra] = useState<Set<number>>(new Set())
   function toggleExtra(id: number) {
@@ -117,9 +115,6 @@ export function SmsComposer(props: {
           <input type="hidden" name="recipientIds" value={extraIds} />
         </div>
       ) : null}
-      {/* Merge fields — tucked behind the + so the bar stays clean (FUB pattern). */}
-      {showFields ? <MergeFieldPicker channel="sms" onInsert={handleInsertToken} /> : null}
-
       {unresolved.length > 0 ? (
         <p className="px-1 text-xs font-medium text-warning">
           Unfilled merge fields, this contact has no value for: {unresolved.join(', ')}. Edit before sending.
@@ -128,19 +123,10 @@ export function SmsComposer(props: {
 
       <AttachmentChips items={attachments.items} onRemove={attachments.remove} />
 
-      {/* FUB chat input bar: + · paperclip · message · round send arrow. */}
+      {/* FUB chat input bar: insert-field · paperclip · message · round send arrow. */}
       <div className="flex items-end gap-1.5 rounded-3xl border border-input bg-background py-1.5 pl-1.5 pr-1.5">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={() => setShowFields((v) => !v)}
-          aria-label="Insert merge field"
-          aria-pressed={showFields}
-          className={cn('h-9 w-9 shrink-0 rounded-full', showFields && 'bg-muted text-foreground')}
-        >
-          <Plus className="h-5 w-5" aria-hidden />
-        </Button>
+        {/* Merge fields — dropdown behind the braces icon so the bar stays clean. */}
+        <MergeFieldPicker channel="sms" onInsert={handleInsertToken} iconOnly />
         <AttachmentControl
           attachments={attachments}
           accept={MMS_ACCEPT_ATTR}

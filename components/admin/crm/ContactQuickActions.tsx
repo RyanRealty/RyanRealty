@@ -50,6 +50,12 @@ export function ContactQuickActions(props: {
   reportSub: QuickReportSub | null
   reportAreas: QuickReportArea[]
   reportSetAction: (formData: FormData) => Promise<void>
+  /** One-off immediate market-report send (ReportSubscriptionsPanel "Send report now"). */
+  reportSendNowAction?: (formData: FormData) => Promise<Result>
+  /** The issue a one-off newsletter send delivers (subject shown before sending). */
+  latestNewsletter?: { subject: string; status: 'sent' | 'draft'; sentAt: string | null } | null
+  /** Send the latest newsletter issue to this contact right now. */
+  newsletterSendAction?: () => Promise<Result>
 }) {
   const [newsletterOn, setNewsletterOn] = useState(props.newsletterSubscribed)
   const [seqOn, setSeqOn] = useState<Record<number, boolean>>(() => Object.fromEntries(props.automations.map((s) => [s.id, s.enrolled])))
@@ -70,22 +76,70 @@ export function ContactQuickActions(props: {
     })
   }
 
+  const newsletterToggle = () =>
+    dispatch(
+      () => setNewsletterOn(!newsletterOn),
+      () => setNewsletterOn(newsletterOn),
+      () => setNewsletterSubscription({ personId: props.personId, subscribed: !newsletterOn }),
+    )
+
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
-        {/* Newsletter — instant subscribe/unsubscribe */}
-        <Chip
-          on={newsletterOn}
-          icon={<Mail className="h-4 w-4" aria-hidden />}
-          label="Newsletter"
-          onClick={() =>
-            dispatch(
-              () => setNewsletterOn(!newsletterOn),
-              () => setNewsletterOn(newsletterOn),
-              () => setNewsletterSubscription({ personId: props.personId, subscribed: !newsletterOn }),
-            )
-          }
-        />
+        {/* Newsletter — sheet: subscribe toggle + send the latest issue now */}
+        {props.newsletterSendAction ? (
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button type="button" variant={newsletterOn ? 'default' : 'outline'} size="sm" className="h-9 shrink-0 gap-1.5 rounded-full px-3.5 text-sm">
+                {newsletterOn ? <Check className="h-4 w-4" aria-hidden /> : <Mail className="h-4 w-4" aria-hidden />}
+                Newsletter
+              </Button>
+            </SheetTrigger>
+            <SheetContent aria-describedby={undefined} side="bottom" className="max-h-screen overflow-y-auto">
+              <SheetHeader><SheetTitle>Newsletter</SheetTitle></SheetHeader>
+              <div className="mt-2 space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">Subscribed</p>
+                    <p className="text-xs text-muted-foreground">{newsletterOn ? 'Receives the monthly newsletter' : 'Not receiving the newsletter'}</p>
+                  </div>
+                  <Switch checked={newsletterOn} disabled={pending} onCheckedChange={newsletterToggle} aria-label="Newsletter subscription" />
+                </div>
+                <div className="rounded-xl border border-border p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Send now</p>
+                  {props.latestNewsletter ? (
+                    <>
+                      <p className="mt-1 truncate text-sm text-foreground" title={props.latestNewsletter.subject}>
+                        {props.latestNewsletter.subject}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {props.latestNewsletter.status === 'sent' ? 'Latest sent issue' : 'Newest draft'}
+                      </p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={pending}
+                        className="mt-2"
+                        onClick={() => dispatch(() => {}, () => {}, props.newsletterSendAction!)}
+                      >
+                        Send this issue to the contact
+                      </Button>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-sm text-muted-foreground">No newsletter issue available yet.</p>
+                  )}
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        ) : (
+          <Chip
+            on={newsletterOn}
+            icon={<Mail className="h-4 w-4" aria-hidden />}
+            label="Newsletter"
+            onClick={newsletterToggle}
+          />
+        )}
 
         {/* Automations — sheet to enroll/unenroll */}
         <Sheet>
@@ -174,6 +228,7 @@ export function ContactQuickActions(props: {
                 current={props.reportSub}
                 areaOptions={props.reportAreas}
                 setAction={props.reportSetAction}
+                sendNowAction={props.reportSendNowAction}
               />
             </div>
           </SheetContent>

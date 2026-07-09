@@ -576,13 +576,27 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
     .eq('id', personId)
     .maybeSingle()
   if (!person) return { ok: false, error: 'Person not found' }
-  const to = (person.emails as Array<{ value?: string; isPrimary?: number | boolean }>)
+  const primaryEmail = (person.emails as Array<{ value?: string; isPrimary?: number | boolean }>)
     ?.sort((a, b) => Number(!!b.isPrimary) - Number(!!a.isPrimary))[0]?.value
-  if (!to) return { ok: false, error: 'No email address on file' }
 
+  // Suppression on the primary contact — fail closed before anything sends.
   const { isSuppressed } = await import('@/lib/crm/suppressions')
   const gate = await isSuppressed(personId, 'email')
   if (gate.suppressed) return { ok: false, error: `Blocked by suppression (${gate.reasons.join(', ')})` }
+
+  // Recipients: To/Cc/Bcc JSON fields (empty To → primary email) + the
+  // suppression sweep across every recipient that maps to a CRM contact.
+  const { resolveEmailRecipients } = await import('@/lib/crm/resolve-email-recipients')
+  const resolved = await resolveEmailRecipients({
+    sb, personId, primaryEmail,
+    fields: {
+      to: String(formData.get('to') ?? ''),
+      cc: String(formData.get('cc') ?? ''),
+      bcc: String(formData.get('bcc') ?? ''),
+    },
+  })
+  if (!resolved.ok) return resolved
+  const { toList, ccList, bccList, extraPersonIds } = resolved.recipients
 
   // Merge tokens like the SMS path does — a template body with %first% must
   // never reach a client literally. The context resolves agent/sender/company
@@ -598,7 +612,8 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   const actingSlug = actingSlugForLinks
   const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
   const sent = await sendCrmEmail({
-    fromMailbox: mailbox.email, to, subject: mergedSubject, bodyText: mergedBody, withSignature: true,
+    fromMailbox: mailbox.email, to: toList, cc: ccList, bcc: bccList,
+    subject: mergedSubject, bodyText: mergedBody, withSignature: true,
     attachments: emailAttachments, bodyFormat,
     // Instrument open/click like the sequence engine so the conversation
     // engagement panel ("Opened N×") works for manually-composed emails too.
@@ -616,17 +631,26 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   })
   if (!sent.ok) return { ok: false, error: sent.error }
 
-  await sb.from('crm_timeline').insert({
-    person_id: personId, kind: 'email_out', title: mergedSubject, body: sent.plainBody,
-    payload: {
-      gmailId: sent.gmailId, to, mailbox: mailbox.email,
-      // Storage-backed refs so the thread renders the sent files forever
-      // (served by /api/admin/crm/attachment).
-      ...(refs.items.length ? { attachments: refs.items } : {}),
-    },
-    broker: mailbox.slug, source: 'app', dedupe_key: `gmail:${sent.gmailId}:p${personId}`,
-  })
+  // Timeline: the primary contact always gets the row; every OTHER recipient
+  // that is a CRM contact (spouse on Cc, co-buyer on To) gets one too, so the
+  // send shows in each of their conversation threads.
+  const timelinePayload = {
+    gmailId: sent.gmailId, to: toList.length === 1 ? toList[0] : toList, mailbox: mailbox.email,
+    ...(ccList.length ? { cc: ccList } : {}),
+    ...(bccList.length ? { bcc: bccList } : {}),
+    // Storage-backed refs so the thread renders the sent files forever
+    // (served by /api/admin/crm/attachment).
+    ...(refs.items.length ? { attachments: refs.items } : {}),
+  }
+  await sb.from('crm_timeline').insert(
+    [personId, ...extraPersonIds].map((pid) => ({
+      person_id: pid, kind: 'email_out', title: mergedSubject, body: sent.plainBody,
+      payload: timelinePayload,
+      broker: mailbox.slug, source: 'app', dedupe_key: `gmail:${sent.gmailId}:p${pid}`,
+    })),
+  )
   revalidateCrm(personId)
+  extraPersonIds.forEach((pid) => revalidateCrm(pid))
   return { ok: true }
 }
 

@@ -1,20 +1,29 @@
 'use client'
 
 /**
- * MergeFieldPicker — click-to-insert merge-token chip palette.
+ * MergeFieldPicker — "Insert field" dropdown of merge tokens, grouped by
+ * category (contact / agent / property / …). Selecting an item calls
+ * onInsert(token) — the caller inserts at the cursor in whatever textarea it
+ * controls.
  *
- * Renders a flat row of chips grouped by token category (contact / property /
- * cma). Clicking a chip calls onInsert(token) — the caller is responsible for
- * inserting the token at the cursor position in whatever textarea it controls.
+ * Was a flat chip palette; converted to a dropdown 2026-07-09 (Matt directive:
+ * "the pills in the merge fields are dumb — put those in a drop down").
  *
  * Props:
  *   channel   — 'email' | 'sms' — CMA tokens are hidden for SMS (no link click)
  *   onInsert  — called with the raw token string, e.g. '%contact_first_name%'
  */
-import { useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { Braces, ChevronDown } from 'lucide-react'
 import { MERGE_TOKENS, type MergeToken } from '@/lib/crm/merge'
-import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
 const GROUP_LABEL: Record<MergeToken['group'], string> = {
@@ -45,10 +54,13 @@ export function MergeFieldPicker({
   channel,
   onInsert,
   className,
+  iconOnly = false,
 }: {
   channel: 'email' | 'sms'
   onInsert: (token: string) => void
   className?: string
+  /** Round icon trigger for tight chat bars (the SMS composer's + button). */
+  iconOnly?: boolean
 }) {
   // Hide CMA link tokens for SMS — they render as unclickable text in messages.
   const tokens = MERGE_TOKENS.filter((t) => channel === 'email' || t.group !== 'cma')
@@ -59,52 +71,49 @@ export function MergeFieldPicker({
     tokens: tokens.filter((t) => t.group === g),
   })).filter((g) => g.tokens.length > 0)
 
-  // P2-6 (2026-07-02 mobile audit): at <md the full chip palette pushed the
-  // message field below the fold, so it starts collapsed behind a disclosure
-  // row. md+ keeps the always-expanded desktop behavior (CSS-only — no
-  // hydration flash). The toggle itself only renders under md.
-  const [mobileExpanded, setMobileExpanded] = useState(false)
-
   return (
-    <div className={cn('space-y-1.5', className)}>
-      <button
-        type="button"
-        className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground md:hidden"
-        aria-expanded={mobileExpanded}
-        onClick={() => setMobileExpanded((v) => !v)}
-      >
-        Merge fields
-        <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', mobileExpanded && 'rotate-180')} aria-hidden />
-      </button>
-      <p className="hidden text-[11px] font-semibold uppercase tracking-wide text-muted-foreground md:block">
-        Merge fields. Click to insert at cursor.
-      </p>
-      <div className={cn('flex-wrap gap-x-4 gap-y-2', mobileExpanded ? 'flex' : 'hidden md:flex')}>
-        {groups.map(({ group, tokens: gtokens }) => (
-          <div key={group} className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        {iconOnly ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Insert merge field"
+            className={cn('h-9 w-9 shrink-0 rounded-full', className)}
+          >
+            <Braces className="h-5 w-5" aria-hidden />
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className={cn('h-8 gap-1.5 rounded-full px-3 text-xs', className)}
+          >
+            <Braces className="h-3.5 w-3.5" aria-hidden />
+            Insert field
+            <ChevronDown className="h-3 w-3" aria-hidden />
+          </Button>
+        )}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="max-h-80 w-64 overflow-y-auto">
+        {groups.map(({ group, tokens: gtokens }, i) => (
+          <div key={group}>
+            {i > 0 ? <DropdownMenuSeparator /> : null}
+            <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               {GROUP_LABEL[group]}
-            </span>
+            </DropdownMenuLabel>
             {gtokens.map((t) => (
-              <button
-                key={t.token}
-                type="button"
-                onClick={() => onInsert(t.token)}
-                className="inline-flex"
-                aria-label={`Insert ${t.label} merge field`}
-              >
-                <Badge
-                  variant="outline"
-                  className="cursor-pointer font-mono text-[11px] transition-colors hover:bg-primary hover:text-primary-foreground active:scale-95"
-                >
-                  {t.label}
-                </Badge>
-              </button>
+              <DropdownMenuItem key={t.token} onSelect={() => onInsert(t.token)} className="flex items-center justify-between gap-3">
+                <span className="text-sm">{t.label}</span>
+                <span className="font-mono text-[10px] text-muted-foreground">{t.token}</span>
+              </DropdownMenuItem>
             ))}
           </div>
         ))}
-      </div>
-    </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

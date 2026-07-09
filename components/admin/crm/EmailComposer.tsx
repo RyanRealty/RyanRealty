@@ -26,6 +26,7 @@ import { ChevronDown } from 'lucide-react'
 import { buildEmailPreviewDoc, looksLikeHtml, type EmailBodyFormat } from '@/lib/crm/email-body'
 import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { MergeFieldPicker, insertAtCursor } from '@/components/admin/crm/MergeFieldPicker'
+import { RecipientField, type RecipientOption } from '@/components/admin/crm/RecipientField'
 import {
   AttachmentChips,
   AttachmentControl,
@@ -57,6 +58,10 @@ export function EmailComposer(props: {
   toLabel?: string | null
   /** Contact this compose targets — required for attachments (upload scoping). */
   personId?: number
+  /** Known addresses for the To/Cc/Bcc pickers (contact's emails + linked people). */
+  recipientOptions?: RecipientOption[]
+  /** Prefill for the To row (the contact's primary email). */
+  initialTo?: string[]
 }) {
   const [subject, setSubject] = useState(props.initialSubject)
   const [body, setBody] = useState(props.initialBody)
@@ -71,6 +76,14 @@ export function EmailComposer(props: {
 
   // Attachments (multiple, uploaded client-direct — see ComposerAttachments).
   const attachments = useComposerAttachments({ personId: props.personId, channel: 'email' })
+
+  // Recipients — To/Cc/Bcc rows post JSON arrays; an empty To sends to the
+  // contact's primary email (the send action's fallback).
+  const [to, setTo] = useState<string[]>(props.initialTo ?? [])
+  const [cc, setCc] = useState<string[]>([])
+  const [bcc, setBcc] = useState<string[]>([])
+  const [showCc, setShowCc] = useState(false)
+  const [showBcc, setShowBcc] = useState(false)
 
   const previewDoc = useMemo(
     () => buildEmailPreviewDoc(body, props.signatureHtml, format),
@@ -99,12 +112,42 @@ export function EmailComposer(props: {
       {/* Hidden field carries the template key for email_events stamping. */}
       {props.tplKey ? <input type="hidden" name="tplKey" value={props.tplKey} /> : null}
       <input type="hidden" name="bodyFormat" value={format} />
-      {props.toLabel ? (
-        <div className="flex items-center gap-2 border-b border-border pb-2 text-sm">
-          <span className="text-muted-foreground">To</span>
-          <span className="truncate font-medium text-foreground">{props.toLabel}</span>
+      {/* Recipients — Gmail-style rows; Cc/Bcc reveal on demand. Empty To
+          falls back to the contact's primary email server-side. */}
+      <div className="space-y-1">
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <RecipientField
+              name="to"
+              label="To"
+              values={to}
+              onChange={setTo}
+              options={props.recipientOptions}
+              placeholder={props.toLabel ?? 'Recipient email'}
+            />
+          </div>
+          {!showCc || !showBcc ? (
+            <div className="mt-1.5 flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+              {!showCc ? (
+                <button type="button" onClick={() => setShowCc(true)} className="hover:text-foreground">Cc</button>
+              ) : null}
+              {!showBcc ? (
+                <button type="button" onClick={() => setShowBcc(true)} className="hover:text-foreground">Bcc</button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
-      ) : null}
+        {showCc ? (
+          <RecipientField name="cc" label="Cc" values={cc} onChange={setCc} options={props.recipientOptions} />
+        ) : (
+          <input type="hidden" name="cc" value={cc.length ? JSON.stringify(cc) : ''} />
+        )}
+        {showBcc ? (
+          <RecipientField name="bcc" label="Bcc" values={bcc} onChange={setBcc} options={props.recipientOptions} />
+        ) : (
+          <input type="hidden" name="bcc" value={bcc.length ? JSON.stringify(bcc) : ''} />
+        )}
+      </div>
       <Input name="subject" placeholder="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -116,6 +159,9 @@ export function EmailComposer(props: {
           </Button>
         </div>
         <div className="flex items-center gap-1">
+          {tab === 'edit' ? (
+            <MergeFieldPicker channel="email" onInsert={handleInsertToken} />
+          ) : null}
           {/* Text | HTML body-mode toggle. */}
           <div className="flex items-center overflow-hidden rounded-full border border-input text-xs">
             <button
@@ -143,9 +189,6 @@ export function EmailComposer(props: {
         </div>
       </div>
       <AttachmentChips items={attachments.items} onRemove={attachments.remove} />
-      {tab === 'edit' ? (
-        <MergeFieldPicker channel="email" onInsert={handleInsertToken} className="pb-1" />
-      ) : null}
       {/* The textarea stays mounted (hidden) so the form always posts `body`. */}
       <Textarea
         ref={bodyRef}
