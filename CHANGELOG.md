@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.26 (2026-07-09)
+
+### Bug Fixes
+- fix(brand): patch Amboqia Boriango's capital I glyph (renders as digit 1)
+
+---
+
+
 ## v1.751.25 (2026-07-09)
 
 ### Bug Fixes
