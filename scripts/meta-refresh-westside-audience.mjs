@@ -8,8 +8,17 @@
  * (person_id), so the audience reflects the CURRENT list rather than the
  * one-time manual CSV push from 2026-05-25.
  *
- * Match keys per Meta spec (FN, LN, CT, ST, ZIP) — same schema/normalization
- * as scripts/meta-upload-mls-audiences.mjs, for match-rate consistency.
+ * FIXED 2026-07-09: the first two pushes only sent name+city+state+zip
+ * (FN/LN/CT/ST/ZIP) for every record, even for the 57% of linked people who
+ * have a real email and/or phone on file in crm_people. Per Meta's own spec
+ * (see lib/meta/audienceHash.ts, the canonical hasher used by the daily
+ * "Ryan Realty CRM Leads" sync) name+location alone is a weak match key —
+ * that library deliberately DROPS name-only records because they "would
+ * only inflate the upload" without improving match rate. This rewrite
+ * pulls real email/phone from crm_people for every linked parcel and sends
+ * a combined 7-key schema (EMAIL, PHONE, FN, LN, CT, ST, ZIP) — Meta matches
+ * on whatever subset of keys is present per row, so adding the strong keys
+ * can only help, never hurt, the ~2,900-3,400 already-matched via name+zip.
  *
  * Compliance: excludes any linked crm_people row with a channel='all'
  * crm_suppressions row (TCPA hard-stop, litigator, DNC) or a realtor/
@@ -18,7 +27,7 @@
  * and are included as-is (they're raw public-record data, not CRM contacts).
  *
  * Privacy: all PII is hashed server-side before any network call. Meta
- * never receives plaintext names.
+ * never receives plaintext names, emails, or phones.
  *
  * Usage:
  *   node scripts/meta-refresh-westside-audience.mjs --dry-run   # counts only
@@ -43,8 +52,37 @@ if (!DRY_RUN && !META_TOKEN) {
   process.exit(1)
 }
 
-const sha256 = (s) => createHash('sha256').update(s).digest('hex')
-const normName = (v) => (v || '').trim().toLowerCase().replace(/[^a-z]/g, '')
+// ── Normalization, byte-identical to lib/meta/audienceHash.ts (the canonical
+// hasher). Duplicated here because scripts/*.mjs run as plain Node ESM and
+// can't import repo .ts modules directly. ──────────────────────────────────
+const sha256 = (s) => createHash('sha256').update(s, 'utf8').digest('hex')
+
+function normalizeEmail(raw) {
+  if (raw == null) return null
+  const v = String(raw).trim().toLowerCase()
+  if (!v || !/^[^@\s]+@[^@\s]+$/.test(v)) return null
+  return v
+}
+
+function normalizePhone(raw, defaultCountryCode = '1') {
+  if (raw == null) return null
+  let digits = String(raw).replace(/\D/g, '')
+  if (!digits) return null
+  if (digits.length === 10) digits = defaultCountryCode + digits
+  if (digits.length < 11) return null
+  return digits
+}
+
+function normalizeName(raw) {
+  if (raw == null) return null
+  const v = String(raw)
+    .trim()
+    .toLowerCase()
+    .replace(/[.,'’`\-_/\\]/g, '')
+    .replace(/\s+/g, '')
+  return v || null
+}
+
 const normCity = (v) => (v || '').trim().toLowerCase().replace(/[^a-z]/g, '')
 const normState = (v) => {
   const s = (v || '').trim().toLowerCase()
@@ -81,21 +119,24 @@ async function main() {
   const linkedPersonIds = [...new Set(allParcels.filter((p) => p.person_id).map((p) => p.person_id))]
   console.log(`  ${linkedPersonIds.length} parcels linked to a crm_people row`)
 
-  // Pull suppressions + tags for every linked person, in chunks (URL length safety).
+  // Pull suppressions + tags + emails/phones/names for every linked person,
+  // in chunks (URL length safety).
   const suppressedIds = new Set()
   const realtorIds = new Set()
+  const peopleById = new Map()
   const chunkSize = 200
   for (let i = 0; i < linkedPersonIds.length; i += chunkSize) {
     const chunk = linkedPersonIds.slice(i, i + chunkSize)
     const idsParam = chunk.join(',')
     const [suppressions, people] = await Promise.all([
       sbFetch(`crm_suppressions?select=person_id&channel=eq.all&person_id=in.(${idsParam})`),
-      sbFetch(`crm_people?select=id,tags&id=in.(${idsParam})`),
+      sbFetch(`crm_people?select=id,tags,emails,phones,first_name,last_name&id=in.(${idsParam})`),
     ])
     suppressions.forEach((r) => suppressedIds.add(r.person_id))
     people.forEach((p) => {
       const tags = (p.tags || []).map((t) => String(t).toLowerCase())
       if (tags.some((t) => REALTOR_TAG_KEYWORDS.some((kw) => t.includes(kw)))) realtorIds.add(p.id)
+      peopleById.set(p.id, p)
     })
   }
   console.log(`  excluding ${suppressedIds.size} hard-stopped + ${realtorIds.size} realtor-tagged linked people`)
@@ -108,13 +149,33 @@ async function main() {
   })
   console.log(`  ${eligible.length} eligible records after exclusions + missing-name filter`)
 
-  const records = eligible.map((p) => [
-    sha256(normName(p.owner1_first)),
-    sha256(normName(p.owner1_last)),
-    sha256(normCity(p.mail_city || 'Bend')),
-    sha256(normState(p.mail_state || 'OR')),
-    sha256(normZip(p.mail_zip || p.site_zip)),
-  ])
+  let withEmail = 0
+  let withPhone = 0
+  const records = eligible.map((p) => {
+    const person = p.person_id ? peopleById.get(p.person_id) : null
+
+    // Prefer the CRM's real contact + name data when linked; fall back to
+    // the parcel's own owner name (public-record data) when not.
+    const emailRaw = person?.emails?.[0]?.value ?? person?.emails?.[0] ?? null
+    const phoneRaw = person?.phones?.[0]?.value ?? person?.phones?.[0] ?? null
+    const email = normalizeEmail(emailRaw)
+    const phone = normalizePhone(phoneRaw)
+    const fn = normalizeName(person?.first_name || p.owner1_first)
+    const ln = normalizeName(person?.last_name || p.owner1_last)
+    if (email) withEmail += 1
+    if (phone) withPhone += 1
+
+    return [
+      email ? sha256(email) : '',
+      phone ? sha256(phone) : '',
+      fn ? sha256(fn) : '',
+      ln ? sha256(ln) : '',
+      sha256(normCity(p.mail_city || 'Bend')),
+      sha256(normState(p.mail_state || 'OR')),
+      sha256(normZip(p.mail_zip || p.site_zip)),
+    ]
+  })
+  console.log(`  ${withEmail} records carry a real email, ${withPhone} carry a real phone (in addition to name+location for all)`)
 
   if (DRY_RUN) {
     console.log(`\n[DRY RUN] Would push ${records.length} hashed records to audience ${AUDIENCE_ID}.`)
@@ -122,7 +183,7 @@ async function main() {
     return
   }
 
-  const schema = ['FN', 'LN', 'CT', 'ST', 'ZIP']
+  const schema = ['EMAIL', 'PHONE', 'FN', 'LN', 'CT', 'ST', 'ZIP']
   const batchSize = 5000
   let pushed = 0
   for (let i = 0; i < records.length; i += batchSize) {
