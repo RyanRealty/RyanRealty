@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.21 (2026-07-09)
+
+### Maintenance
+- docs(design-audit): sync PROGRESS.md + README banner to 17 remaining (was 31)
+
+---
+
+
 ## v1.751.20 (2026-07-09)
 
 ### Bug Fixes
