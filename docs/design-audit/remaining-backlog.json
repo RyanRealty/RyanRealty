@@ -45,15 +45,6 @@
     "hint": "Live /team shows 6 review cards and all 6 name Matt (grep of kb-rev-quote, 0 non-Matt). app/team/page.tsx line 112 maps getReviews(8) unfiltered with "
   },
   {
-    "index": 157,
-    "group": "company-tools",
-    "page": "/tools/mortgage-calculator",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "A buyer tool ends in a seller CTA: the closing guide paragraph pivots to 'start with a free home value report' and the only section CTA is 'GET YOUR H",
-    "hint": "app/tools/mortgage-calculator/page.tsx lines 175-184: guide copy still pivots to 'start with a free home value report' and the section's only CTA is '"
-  },
-  {
     "index": 158,
     "group": "company-tools",
     "page": "/about + /team (broker cards)",
@@ -61,33 +52,6 @@
     "effort": "medium",
     "issue": "Rebecca Peterson's headshot shows visible alpha-matting artifacts — white blobs and halo fringes in her hair on the right side — while Matt's and Paul",
     "hint": "peterson-rebecca.png unchanged since 2026-05-26 (md5 c1323670... identical in public/images/brokers/ and design_system assets, predates the audit); co"
-  },
-  {
-    "index": 164,
-    "group": "company-tools",
-    "page": "/team/matt-ryan",
-    "sev": "P2",
-    "effort": "small",
-    "issue": "The hero H1 renders the broker's name as one word: 'MATTRYAN'. KbHero emits titleTop and titleBottom as adjacent inline-block .reveal-mask spans with ",
-    "hint": "Live /team/matt-ryan HTML still emits the two reveal-mask spans adjacent with no whitespace (…>Matt</span></span><span class=\"reveal-mask\"…>Ryan…); kb"
-  },
-  {
-    "index": 165,
-    "group": "company-tools",
-    "page": "/team/matt-ryan",
-    "sev": "P2",
-    "effort": "small",
-    "issue": "In the 'By the numbers' ledger, the value 'Owner & Principal Broker' overlaps and partially covers its own 'TITLE' label on mobile — the row's grid is",
-    "hint": "kb.css line 778 unchanged: .about-fact{grid-template-columns:minmax(0,1fr) auto} with .about-fact-val locked to 1.7rem on ≤760px (line 782); live brok"
-  },
-  {
-    "index": 168,
-    "group": "company-tools",
-    "page": "/team/matt-ryan",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "Sold cards print raw MLS placeholder text: '64350 Old Bend Redmond Hwy — Sold Sep 2025 · Bend 97703 · N/A · Bend' and '54474 Huntington — ... · N/A · ",
-    "hint": "Live /team/matt-ryan still prints 'Sold Sep 2025 · Bend 97703 · N/A · Bend' — brokerageTileToFeatured (app/team/[slug]/page.tsx line 110) joins tile.S"
   },
   {
     "index": 169,
@@ -106,32 +70,5 @@
     "effort": "small",
     "issue": "Two different FAQ treatments exist on sibling pages: /buy sets multi-line questions in the Amboqia display face, where the capital I glyph reads as th",
     "hint": "app/buy/page.tsx lines 404-434 still render the FAQ as an inline <dl> with className=\"display\" (Amboqia) on multi-line <dt> questions at up to 1.55rem"
-  },
-  {
-    "index": 171,
-    "group": "company-tools",
-    "page": "/team/matt-ryan",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "The hero claims '14 homes closed across Central Oregon' but the track record grid directly below features 534 Crowson in Ashland 97520 — southern Oreg",
-    "hint": "heroLead template unchanged (app/team/[slug]/page.tsx lines 264-265) — live page claims '19 homes closed across Central Oregon' but the 19 closings (a"
-  },
-  {
-    "index": 172,
-    "group": "company-tools",
-    "page": "/tools/mortgage-calculator",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "Before reaching the calculator a mobile user scrolls past four stacked CTAs that do the same two things twice: hero BROWSE → + SELL, then immediately ",
-    "hint": "Live calc page still stacks hero Browse/Sell (default CTAs, lines 83-84 of KbHero) directly above the tool-cta row 'Browse listings' + 'Get a home val"
-  },
-  {
-    "index": 173,
-    "group": "company-tools",
-    "page": "/tools/mortgage-calculator",
-    "sev": "P3",
-    "effort": "small",
-    "issue": "The breadcrumb's middle crumb 'TOOLS' is a link that points at the current page (/tools/mortgage-calculator) — there is no /tools index route. Tapping",
-    "hint": "app/tools/mortgage-calculator/page.tsx line 93 still renders the Tools crumb as href=\"/tools/mortgage-calculator\" (self-link) and no /tools index rout"
   }
 ]
