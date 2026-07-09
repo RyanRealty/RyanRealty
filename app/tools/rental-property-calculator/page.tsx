@@ -125,7 +125,7 @@ export default async function RentalPropertyCalculatorPage({ searchParams }: Pro
       <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
-          { label: 'Tools', href: '/tools/mortgage-calculator' },
+          { label: 'Tools' },
           { label: 'Rental property calculator' },
         ]}
       />

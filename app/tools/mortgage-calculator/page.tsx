@@ -90,7 +90,7 @@ export default async function MortgageCalculatorPage({ searchParams }: Props) {
       <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
-          { label: 'Tools', href: '/tools/mortgage-calculator' },
+          { label: 'Tools' },
           { label: 'Mortgage calculator' },
         ]}
       />
@@ -108,24 +108,6 @@ export default async function MortgageCalculatorPage({ searchParams }: Props) {
           videoSrc={null}
           posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
         />
-
-        {/* CTA row preserved from the prior hero (Browse Listings · Get a Home Valuation) */}
-        <section className="section" id="tool-cta" aria-label="Browse and value">
-          <div className="wrap">
-            <div className="flex flex-wrap items-center gap-3 py-2">
-              <a href="/homes-for-sale" className="btn alt">
-                Browse listings <span className="arr">&rarr;</span>
-              </a>
-              <a
-                href="/sell/valuation"
-                className="btn alt"
-                style={{ background: 'transparent', color: 'var(--navy)' }}
-              >
-                Get a home valuation <span className="arr">&rarr;</span>
-              </a>
-            </div>
-          </div>
-        </section>
 
         {/* The calculator — interactive shadcn client component, logic untouched.
             Wrapped in a KB section + hard-edge cream card so it sits on the
@@ -174,13 +156,20 @@ export default async function MortgageCalculatorPage({ searchParams }: Props) {
                 premium, and any HOA dues not included here.
               </p>
               <p style={{ fontSize: 'clamp(1rem,1.5vw,1.15rem)', lineHeight: 1.6, marginBottom: 0 }}>
-                If you want to know what a specific home is worth before running the numbers, start with a
-                free home value report.
+                Once you land on a monthly payment that works, browse homes in that range. If you are
+                selling your current home to fund the purchase, get a value estimate on that property too.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3 mt-6">
-              <a href="/sell/valuation" className="btn alt">
-                Get your home&apos;s actual value <span className="arr">&rarr;</span>
+              <a href="/homes-for-sale" className="btn alt">
+                Browse homes in this range <span className="arr">&rarr;</span>
+              </a>
+              <a
+                href="/sell/valuation"
+                className="btn alt"
+                style={{ background: 'transparent', color: 'var(--navy)' }}
+              >
+                Get a home value estimate <span className="arr">&rarr;</span>
               </a>
             </div>
           </div>

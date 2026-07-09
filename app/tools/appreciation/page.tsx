@@ -70,7 +70,7 @@ export default function AppreciationToolPage() {
       <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
-          { label: 'Tools', href: '/tools/mortgage-calculator' },
+          { label: 'Tools' },
           { label: 'Home appreciation calculator' },
         ]}
       />

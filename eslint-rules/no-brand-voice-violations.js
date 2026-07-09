@@ -68,11 +68,19 @@ function isDataPlaceholder(text) {
   return text.trim() === '—'
 }
 
+// HTML/JSX entity references (&apos; &amp; &nbsp; &#39; &#x27; ...) end in a
+// structural semicolon that is markup syntax, not banned prose punctuation.
+// Strip them before the semicolon scan so "home&apos;s" doesn't false-positive
+// as a semicolon violation.
+const HTML_ENTITY_RE = /&(?:[a-zA-Z][a-zA-Z0-9]*|#[0-9]+|#x[0-9a-fA-F]+);/g
+
 function scanText(text, report, node) {
   if (typeof text !== 'string') return
   if (isDataPlaceholder(text)) return
+  const withoutEntities = text.replace(HTML_ENTITY_RE, '')
   for (const { char, label, advice } of PUNCTUATION) {
-    if (text.includes(char)) {
+    const haystack = char === ';' ? withoutEntities : text
+    if (haystack.includes(char)) {
       report({
         node,
         messageId: 'punctuation',

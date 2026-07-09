@@ -822,7 +822,13 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .about-fact:last-child{border-bottom:0;}
 .kb-root .about-fact-lbl{font-size:.7rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--navy-70);line-height:1.3;}
 .kb-root .about-fact-val{justify-self:end;text-align:right;font-family:var(--font-amboqia),serif;font-size:clamp(1.5rem,3.4vw,2.1rem);line-height:.95;letter-spacing:-.01em;color:var(--navy);}
-@media(max-width:760px){.kb-root .about-fact-val{font-size:1.7rem!important;}}
+/* design-audit #165: side-by-side grid (label minmax(0,1fr) / value auto) let
+   a long value ("Owner & Principal Broker") claim unbounded width and crush
+   the label column toward its 0 floor on mobile. Stack label above value. */
+@media(max-width:760px){
+  .kb-root .about-fact{grid-template-columns:1fr;gap:4px;}
+  .kb-root .about-fact-val{font-size:1.7rem!important;justify-self:start;text-align:left;}
+}
 /* --- KbOpenHouses --- */
 /* Open Houses chip accent. The .openhouses section, .oh-grid, .lst-badge.oh
    chip, and the whole .lst-card family already exist in kb.css (lines 305-355)

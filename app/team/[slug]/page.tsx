@@ -40,7 +40,7 @@ import { getBrokerageListingTiles, getReviews, getBrokerSales } from '@/lib/data
 import type { BrokerSaleTile } from '@/lib/data'
 import type { PriceDropTile } from '@/lib/data/listings/getPriceDropTiles'
 import { generateBreadcrumbSchema } from '@/lib/structured-data'
-import { listingTileHref } from '@/lib/slug'
+import { listingTileHref, displaySubdivision } from '@/lib/slug'
 import { normalizeAgentSlug, BROKER_EMAIL_BY_SLUG, type BrokerSlug } from '@/lib/agent-attribution'
 import { submitBrokerSellerLead } from '@/app/team/actions'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -107,7 +107,9 @@ function brokerageTileToFeatured(tile: PriceDropTile): KbFeaturedItem | null {
   if (!tile.ListingKey) return null
   const addressLine = [tile.StreetNumber, tile.StreetName, tile.StreetSuffix].filter(Boolean).join(' ') || 'Address unavailable'
   const cityParts = [tile.City, tile.PostalCode].filter(Boolean).join(' ')
-  const sub = [cityParts, tile.SubdivisionName].filter(Boolean).join(' · ')
+  // design-audit #168: raw MLS sentinel values ("N/A", "None") rendered
+  // verbatim as if they were a real subdivision name.
+  const sub = [cityParts, displaySubdivision(tile.SubdivisionName)].filter(Boolean).join(' · ')
   return {
     price: tile.ClosePrice ?? tile.ListPrice ?? null,
     address: addressLine,
@@ -207,7 +209,16 @@ export default async function TeamMemberPage({ params }: Props) {
 
   // This broker's own closings — both sides, newest first. Verified keys only
   // (list_agent_email + buyer_agent_mls_id); each price is the recorded close.
+  // design-audit #171: getBrokerSales has no geographic filter (list_agent_email
+  // / buyer_agent_mls_id are exact identifiers, unrelated to location), so an
+  // out-of-area referral closing (534 Crowson, Ashland OR 97520 — Jackson
+  // County, hundreds of miles south) rendered in the track record directly
+  // under a hero claiming "homes closed across Central Oregon." Every real
+  // Central Oregon city's zip starts with 977 (Bend/Redmond/Sisters/Sunriver/
+  // La Pine/Prineville/Madras/Terrebonne); a non-977 zip is out of the stated
+  // service area and excluded rather than silently contradicting the claim.
   const brokerSaleItems: KbFeaturedItem[] = brokerSales
+    .filter((t) => (t.PostalCode ?? '').trim().startsWith('977'))
     .map(brokerSaleToFeatured)
     .filter((c): c is KbFeaturedItem => c !== null)
   const closings = brokerSaleItems.length // true distinct count, both sides (<=24)
@@ -215,8 +226,10 @@ export default async function TeamMemberPage({ params }: Props) {
 
   // Brokerage recent sales — closed listings across Ryan Realty, newest first.
   // Shown as the track record for a broker who has no own closings yet.
+  // Same out-of-service-area exclusion as brokerSaleItems above (design-audit #171).
   const brokerageItems: KbFeaturedItem[] = brokerageTiles
     .filter((t) => t.ClosePrice != null && (t.CloseDate != null || /clos|sold/i.test(t.StandardStatus ?? '')))
+    .filter((t) => (t.PostalCode ?? '').trim().startsWith('977'))
     .sort((a, b) => new Date(b.CloseDate ?? 0).getTime() - new Date(a.CloseDate ?? 0).getTime())
     .map(brokerageTileToFeatured)
     .filter((c): c is KbFeaturedItem => c !== null)

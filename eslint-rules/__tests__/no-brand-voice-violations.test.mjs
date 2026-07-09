@@ -75,6 +75,14 @@ ruleTester.run('rr-brand-voice/no-violations', rule, {
       name: 'CSS inside a <style> child is not flagged (semicolons + custom props are code)',
       code: 'const x = () => <style>{`:root { --tw-cream: #faf8f4; } @keyframes pop { 0% { opacity: 0; } }`}</style>',
     },
+    {
+      name: 'HTML entity apostrophe in JSX text is not flagged as a semicolon (structural, not prose punctuation)',
+      code: `const x = () => <p>Get your home&apos;s value.</p>`,
+    },
+    {
+      name: 'numeric HTML entity is not flagged as a semicolon',
+      code: `const x = () => <p>Get your home&#39;s value.</p>`,
+    },
   ],
   invalid: [
     {
@@ -131,6 +139,11 @@ ruleTester.run('rr-brand-voice/no-violations', rule, {
     {
       name: 'em-dash that is NOT the sole text content is still flagged',
       code: `const x = () => <td>Value — 3 bedrooms</td>`,
+      errors: [{ messageId: 'punctuation' }],
+    },
+    {
+      name: 'a real semicolon next to an HTML entity is still flagged (entity-stripping does not blind the whole string)',
+      code: `const x = () => <p>Tom &amp; Jerry; a classic show.</p>`,
       errors: [{ messageId: 'punctuation' }],
     },
   ],
