@@ -99,7 +99,10 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ sl
 
   return (
     <main className="kb-root">
-      <KbNav />
+      {/* solid — guide detail pages have no dark hero; the transparent bar rendered
+          white links + a white wordmark on cream (invisible) at scroll 0. Same fix
+          as app/blog/[slug]/page.tsx. */}
+      <KbNav solid />
       <KbSectionTracker pageType="guides" />
       <script
         type="application/ld+json"
