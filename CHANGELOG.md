@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.753.0 (2026-07-09)
+
+### Features
+- feat(crm): full email/SMS sending — To/Cc/Bcc multi-recipient, merge-field dropdown, one-click CMA/newsletter/market-report sends
+
+---
+
+
 ## v1.752.0 (2026-07-09)
 
 ### Features
