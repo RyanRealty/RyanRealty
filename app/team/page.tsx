@@ -84,9 +84,17 @@ const TEAM_FAQ_ITEMS = [
 ] as const
 
 export default async function TeamPage() {
+  // design-audit #156: getReviews(8) alone pulled the 8 most recent reviews,
+  // which happened to be 100% Matt-named -- on a page presenting three
+  // brokers, that reads as if only one has real client relationships. The
+  // underlying pool is genuinely Matt-heavy (22 of 24 reviews name him, 1
+  // names Rebecca, 0 name Paul -- an honest reflection of who has closed the
+  // most transactions), so this can't be perfectly balanced. Pull the wider
+  // pool and prioritize the rare non-Matt-only reviews instead of just
+  // taking the top 8 by recency.
   const [brokers, reviews] = await Promise.all([
     getBrokers(),
-    getReviews(8),
+    getReviews(24),
   ])
 
   // Display order locked to Matt, Rebecca, Paul (Matt directive). Rank by first
@@ -108,8 +116,21 @@ export default async function TeamPage() {
       value: `OR ${b.licenseNumber}`,
     }))
 
+  // Prioritize the rare reviews that name a broker OTHER than Matt (even if
+  // Matt is also mentioned), then broker-neutral reviews, then Matt-only
+  // reviews last, so the shared team-wide testimonials section doesn't read
+  // as Matt-only (design-audit #156). Stable within each tier (keeps
+  // recency order from getReviews).
+  const namesMatt = (text: string) => /\bmatt(hew)?\b/i.test(text)
+  const namesOtherBroker = (text: string) => /\brebecca\b/i.test(text) || /\bpaul\b/i.test(text)
+  const sortedReviews = [
+    ...reviews.reviews.filter((r) => namesOtherBroker(r.text)),
+    ...reviews.reviews.filter((r) => !namesOtherBroker(r.text) && !namesMatt(r.text)),
+    ...reviews.reviews.filter((r) => !namesOtherBroker(r.text) && namesMatt(r.text)),
+  ]
+
   // Map the live reviews pool to KbReview shape for KbTestimonials.
-  const kbReviews: KbReview[] = reviews.reviews.map((r) => ({
+  const kbReviews: KbReview[] = sortedReviews.map((r) => ({
     quote: r.text,
     author: r.reviewerName ?? 'Verified Ryan Realty client',
   }))
@@ -172,8 +193,12 @@ export default async function TeamPage() {
           ]}
           facts={brokerFacts}
         />
-        <KbTestimonials reviews={testimonialsToShow} />
+        {/* design-audit #154: the roster (this page's whole reason for
+            existing) rendered AFTER the reviews section, buried below the
+            fold on a page titled "the team." Roster comes right after the
+            intro, reviews (social proof) follow it. */}
         <KbTeam />
+        <KbTestimonials reviews={testimonialsToShow} />
         <KbSell
           data={{
             medianListPrice: null,

@@ -407,11 +407,18 @@ export default async function BuyPage() {
                   key={item.question}
                   style={{ padding: 'clamp(20px,2.6vw,28px) 0', borderBottom: '1px solid var(--navy-12)' }}
                 >
+                  {/* design-audit #170: this used the Amboqia display face
+                      (className="display") for multi-line, mixed-case
+                      question text -- a capital "I" reads as a lowercase
+                      "l" in Amboqia at body scale. FAQBlock (used on /team
+                      and elsewhere) sets FAQ questions in bold Geist via
+                      the H3 primitive; matched that here. */}
                   <dt
-                    className="display"
+                    className="font-bold"
                     style={{
-                      fontSize: 'clamp(1.15rem,2.2vw,1.55rem)',
-                      lineHeight: 1.05,
+                      fontFamily: 'var(--font-sans), sans-serif',
+                      fontSize: 'clamp(1.05rem,1.8vw,1.3rem)',
+                      lineHeight: 1.3,
                       color: 'var(--navy)',
                       marginBottom: 10,
                     }}

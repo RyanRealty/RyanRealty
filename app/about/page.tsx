@@ -29,7 +29,9 @@
  *   Breadcrumb + FAQPage) + tracking (KbSectionTracker). Every figure live (§0).
  *
  * Section stack: KbNav · KbBreadcrumb · KbHero · KbAbout · KbExploreTowns ·
- *   KbTestimonials · KbTeam · KbArticles · KbSell · FAQBlock · KbFooter.
+ *   KbTestimonials · team-link (CTA to /team, design-audit #169 -- /team
+ *   already owns the full broker grid) · KbArticles · KbSell · FAQBlock ·
+ *   KbFooter.
  *
  * Parity contract: design_system/ryan-realty/ui_kits/about/parity.json (KB set).
  */
@@ -47,7 +49,6 @@ import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbAbout } from '@/components/site/kb/KbAbout'
 import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
 import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
-import { KbTeam } from '@/components/site/kb/KbTeam.client'
 import { KbArticles } from '@/components/site/kb/KbArticles'
 import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -278,7 +279,23 @@ export default async function AboutPage() {
 
         <KbTestimonials reviews={reviews} />
 
-        <KbTeam />
+        {/* design-audit #169: this used to render the full KbTeam grid,
+            identical to /team's own content (same 3 broker cards, same
+            "Work with X" links). /team already owns that job -- point here
+            instead of duplicating it. */}
+        <section className="section" id="team-link" aria-label="Meet the team">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">Who you work with</span>
+              <h2 className="sec-title display">Meet the team</h2>
+            </div>
+            <div className="sec-cta">
+              <a href="/team" className="btn alt">
+                Meet the full team <span className="arr">&rarr;</span>
+              </a>
+            </div>
+          </div>
+        </section>
 
         {articlePosts.length > 0 ? (
           <KbArticles

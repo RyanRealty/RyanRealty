@@ -2,7 +2,7 @@
   "route": "app/about/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/about/index.html",
   "competitiveTarget": "Beat generic national-brokerage profile pages by leading with verified facts, concrete origin story, real Google reviews, and direct-broker accountability — zero marketing-speak (CLAUDE.md Data Accuracy + brand voice).",
-  "note": "KB (kinetic-brutalist) conversion 2026-06-18 (Phase 9 convergence). KbNav + KbFooter carry chrome. HideChrome for default SiteHeader/SiteFooter is a shared-component edit — deferred to orchestrator. Reviews now wired from TESTIMONIALS (24 verified Google 5-star reviews). Voice: show, don't say — no stated virtues, no headcount/smallness, no overt category claims (VOICE.md Five Laws). Every verified fact: Ryan Realty LLC (OREA 201253677, founded June 2023), Matt PB OR #201206613, fire service + Red Erickson mentor from verified broker bio. Region pulse feeds KbSell live numbers. Hero uses getSurfaceImage central-oregon with Old Mill fallback. Restored 2026-06-18 (post-KB content-loss audit): the service-area city grid (now KbExploreTowns fed by getCitiesForIndex) and the verified-facts FAQ + FAQPage JSON-LD (now FAQBlock) that the KB conversion had dropped.",
+  "note": "KB (kinetic-brutalist) conversion 2026-06-18 (Phase 9 convergence). KbNav + KbFooter carry chrome. HideChrome for default SiteHeader/SiteFooter is a shared-component edit — deferred to orchestrator. Reviews now wired from TESTIMONIALS (24 verified Google 5-star reviews). Voice: show, don't say — no stated virtues, no headcount/smallness, no overt category claims (VOICE.md Five Laws). Every verified fact: Ryan Realty LLC (OREA 201253677, founded June 2023), Matt PB OR #201206613, fire service + Red Erickson mentor from verified broker bio. Region pulse feeds KbSell live numbers. Hero uses getSurfaceImage central-oregon with Old Mill fallback. Restored 2026-06-18 (post-KB content-loss audit): the service-area city grid (now KbExploreTowns fed by getCitiesForIndex) and the verified-facts FAQ + FAQPage JSON-LD (now FAQBlock) that the KB conversion had dropped. Superseded 2026-07-08 (design-audit #169): KbTeam (the full 3-broker grid) removed from requiredComponents — it duplicated /team's own content verbatim (same cards, same 'Work with X' links), and /team is the canonical roster page. Replaced with a 'Meet the team' CTA section linking to /team.",
   "requiredComponents": [
     {
       "name": "KbNav",
@@ -47,11 +47,6 @@
     {
       "name": "KbTestimonials",
       "section": "testimonials — 8 verified Google reviews from TESTIMONIALS (24 total, 5.0 avg, pulled 2026-06-13)",
-      "blocking": true
-    },
-    {
-      "name": "KbTeam",
-      "section": "team — three brokers with direct-broker accountability copy, links to /team/[slug]",
       "blocking": true
     },
     {
