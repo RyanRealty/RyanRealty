@@ -578,7 +578,7 @@ export default async function CityDetailPage({ params }: Props) {
         {/* Flow: lead with the MARKET (credibility) → the homes → a live price
             ticker → the map → drill-down (neighborhoods/communities) → this-week
             (open houses) → live activity → guides → explore out. */}
-        <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} />
+        <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} byTownKind="neighborhood" />
         <KbFeatured items={featuredItems} eyebrow={`${cityName} · For sale`} />
         <KbTicker items={tickerItems} />
         {/* totalActive/subtitle describe the PLOTTED set now, not the

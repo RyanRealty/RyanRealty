@@ -38,10 +38,18 @@ type BlogRow = {
 async function _getRecentBlogPostsUncached(options: {
   limit?: number
   cityName?: string
+  /**
+   * Skip the N newest posts before taking `limit`. Lets two sibling pages
+   * (e.g. /housing-market and /housing-market/central-oregon) each show a
+   * real, current "recent posts" rail without both landing on the literal
+   * same 3 posts (design-audit #110).
+   */
+  offset?: number
 } = {}): Promise<BlogPostCard[]> {
   const sb = supabaseAnon()
   if (!sb) return []
   const limit = options.limit ?? 3
+  const offset = options.offset ?? 0
 
   // Pull a small recent window, then prioritize city-title matches in Node.
   const { data, error } = await sb
@@ -75,10 +83,10 @@ async function _getRecentBlogPostsUncached(options: {
     // Stable partition: city-in-title posts first, recency preserved within.
     const inTitle = rows.filter((r) => r.title.toLowerCase().includes(city))
     const rest = rows.filter((r) => !r.title.toLowerCase().includes(city))
-    return [...inTitle, ...rest].slice(0, limit)
+    return [...inTitle, ...rest].slice(offset, offset + limit)
   }
 
-  return rows.slice(0, limit)
+  return rows.slice(offset, offset + limit)
 }
 
 export const getRecentBlogPosts = makeResilientCached(

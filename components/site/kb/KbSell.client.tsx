@@ -90,7 +90,7 @@ export function KbSell({ data, eyebrow = 'Sell with us' }: { data: KbSellData; e
             {data.soldCount30d != null ? (
               <div className="d">
                 <div className="n mono-num">{data.soldCount30d.toLocaleString('en-US')}</div>
-                <div className="l">Sold · 30 days</div>
+                <div className="l">Closed · 30 days</div>
               </div>
             ) : null}
           </div>

@@ -47,6 +47,7 @@ import {
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { buildYearSeries } from '@/lib/kb/year-series'
+import { getSurfaceImage } from '@/lib/data/media/getSurfaceImages'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import type { KbMarketData, KbTownItem } from '@/components/site/kb/types'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
@@ -119,8 +120,6 @@ function buildRegionNarrative(
   }
 
   const mos = pulse.monthsOfSupply
-  const active = pulse.activeCount
-  const median = pulse.medianListPrice
   const dom = pulse.medianDaysToPending
 
   let verdict = 'a balanced market'
@@ -129,38 +128,41 @@ function buildRegionNarrative(
     else if (mos >= 6) verdict = "a buyer's market"
   }
 
+  // design-audit #123: this block previously restated the exact same four
+  // numbers (active count, MoS, median, days-to-pending) as the hero sentence
+  // and the HUD's own KPI tiles above it, verbatim, a fourth time on the same
+  // scroll. Those figures are covered live in both places already, so this
+  // narrative now adds interpretation (what the verdict means to a buyer or
+  // seller) instead of parroting numbers a visitor already saw twice.
   const parts: string[] = []
 
-  if (active > 0) {
-    parts.push(
-      `Central Oregon currently has ${active.toLocaleString()} active single-family homes for sale across all cities.`,
-    )
-  }
-
   if (mos != null) {
-    const rounded = Math.round(mos * 10) / 10
-    parts.push(
-      `At ${rounded} months of supply, the region sits in ${verdict}. ` +
-        `A balanced market runs between 4 and 6 months. ` +
-        `Below 4 months benefits sellers, above 6 months benefits buyers.`,
-    )
+    parts.push(`Central Oregon is in ${verdict} right now.`)
+    if (verdict === "a seller's market") {
+      parts.push('Well-priced homes are moving fast and sellers have more room to hold their price.')
+    } else if (verdict === "a buyer's market") {
+      parts.push('Buyers have more inventory to choose from and more room to negotiate on price and terms.')
+    } else {
+      parts.push('Neither side has a strong structural edge. Pricing and presentation still decide the outcome.')
+    }
   }
 
-  if (median != null) {
-    const r = Math.round(median / 1000) * 1000
-    parts.push(`The region median list price stands at $${r.toLocaleString()}.`)
-  }
-
-  if (dom != null && dom > 0) {
+  // active count + median list price already appear in the hero sentence and
+  // the HUD KPI tiles — not repeated here (design-audit #123).
+  if (mos == null && dom != null && dom > 0) {
     parts.push(`Homes are going pending in a median of ${dom} days across the region.`)
   }
 
   const what = parts.join(' ')
 
+  // design-audit #119: this trace prints on the page for a human reader (not
+  // just JSON-LD), so it names what the data IS in plain terms rather than
+  // the raw table/column identifiers (market_pulse_live, property_type = A,
+  // geo_type = region) that used to render here. Same underlying facts.
   const method = refreshedAt
-    ? `Data source: market_pulse_live, single-family homes (property_type = A), ` +
-      `geo_type = region, geo_slug = central-oregon, refreshed ${new Date(refreshedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })}. ` +
-      `City comparison from market_pulse_live geo_type = city rows for the same property_type. ` +
+    ? `Source: live single-family listings for the Central Oregon region, ` +
+      `refreshed ${new Date(refreshedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })}. ` +
+      `City comparisons use the same live single-family data for each city. ` +
       `${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE} ` +
       `Source: Oregon Data Share via Ryan Realty.`
     : ''
@@ -207,11 +209,15 @@ export default async function CentralOregonRegionPage() {
   //                   property_type='A'. ONE call replaces legacy ~12-call fan-out.
   //   blogPosts     — blog_posts, status='published', newest first. Up to 3.
   // -------------------------------------------------------------------------
-  const [regionPulse, priceHistory, citySnapshots, blogPosts] = await Promise.all([
+  const [regionPulse, priceHistory, citySnapshots, blogPosts, heroPhoto] = await Promise.all([
     getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => null),
     getPriceHistory('region', 'central-oregon', 'monthly', 60).catch(() => []),
     getMarketPulseCitySnapshots(CITY_LABELS).catch(() => []),
-    getRecentBlogPosts({ limit: 3 }).catch(() => []),
+    // design-audit #110: offset:3 so this page's guide rail doesn't show the
+    // literal same 3 posts as the /housing-market hub's rail (offset:0).
+    getRecentBlogPosts({ limit: 3, offset: 3 }).catch(() => []),
+    // Distinct hero photo from the /housing-market hub — different seed.
+    getSurfaceImage('hero', { geoTags: ['central-oregon'], seed: 'housing-market-central-oregon-report' }).catch(() => null),
   ])
 
   // Drop the in-progress current month — partial-month spike is misleading.
@@ -410,6 +416,7 @@ export default async function CentralOregonRegionPage() {
           titleTop="Central Oregon"
           titleBottom="market report"
           lead={lede}
+          posterSrc={heroPhoto ?? undefined}
         />
 
         {/* Market HUD — region KbMarketData. §0: all figures from market_pulse_live

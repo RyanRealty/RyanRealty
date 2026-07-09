@@ -30,7 +30,7 @@ import Link from 'next/link'
 import { getPriceDrops } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
-import { listingDetailPath } from '@/lib/slug'
+import { listingDetailPath, displaySubdivision } from '@/lib/slug'
 import { CTABar } from '@/components/site/CTABar'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import ListingCard from '@/components/site/ListingCard'
@@ -126,7 +126,8 @@ function dropToCardData(drop: PriceDrop) {
   const cityParts: string[] = []
   if (drop.city) cityParts.push(`${drop.city}, OR`)
   if (drop.postalCode) cityParts.push(drop.postalCode)
-  if (drop.subdivisionName) cityParts.push(drop.subdivisionName)
+  const subdivisionLabel = displaySubdivision(drop.subdivisionName)
+  if (subdivisionLabel) cityParts.push(subdivisionLabel)
 
   const origRounded = drop.originalListPrice
     ? Math.round(drop.originalListPrice / 1000) * 1000
@@ -203,7 +204,7 @@ type NeighborhoodRow = {
 function buildNeighborhoodTable(drops: PriceDrop[]): NeighborhoodRow[] {
   const map = new Map<string, { prices: number[]; pcts: number[] }>()
   for (const d of drops) {
-    const name = d.boundaryNeighborhood ?? d.subdivisionName ?? d.city ?? 'Other'
+    const name = displaySubdivision(d.boundaryNeighborhood) ?? displaySubdivision(d.subdivisionName) ?? d.city ?? 'Other'
     if (!map.has(name)) map.set(name, { prices: [], pcts: [] })
     const row = map.get(name)!
     if (d.listPrice) row.prices.push(d.listPrice)
@@ -272,6 +273,16 @@ export default async function PriceDropsRegionPage() {
       : []
   const featuredItems: KbFeaturedItem[] = featuredDrops.map(dropToFeaturedItem)
 
+  // design-audit #111: the biggest-drop spotlight + poster grid already
+  // surface the top properties above this section — without exclusion the
+  // same listing (typically the single largest drop) repeated a third time
+  // in the full grid below.
+  const featuredKeys = new Set<string>([
+    ...(featured ? [featured.listingKey] : []),
+    ...featuredDrops.map((d) => d.listingKey),
+  ])
+  const remainingDrops = drops.filter((d) => !featuredKeys.has(d.listingKey))
+
   // Map geo: only drops with coordinates
   const mapFeatures = drops
     .filter((d) => d.lat != null && d.lng != null)
@@ -284,7 +295,7 @@ export default async function PriceDropsRegionPage() {
         ba: d.baths,
         sf: d.sqft,
         a: [d.streetNumber, d.streetName, d.streetSuffix].filter(Boolean).join(' '),
-        sub: d.subdivisionName ?? '',
+        sub: displaySubdivision(d.subdivisionName) ?? '',
         city: d.city ?? '',
         img: d.photoUrl ?? '',
       },
@@ -419,7 +430,7 @@ export default async function PriceDropsRegionPage() {
                   </p>
                   <p className="text-muted-foreground mt-1">
                     {featured.city ? `${featured.city}, OR` : ''}
-                    {featured.subdivisionName ? ` · ${featured.subdivisionName}` : ''}
+                    {displaySubdivision(featured.subdivisionName) ? ` · ${displaySubdivision(featured.subdivisionName)}` : ''}
                   </p>
                   <div className="flex flex-wrap gap-2 mt-3">
                     <Badge variant="outline" className="font-mono tabular-nums text-sm">
@@ -475,8 +486,10 @@ export default async function PriceDropsRegionPage() {
           />
         )}
 
-        {/* Full listing grid — all 48 drops via the existing ListingCard (parity) */}
-        {drops.length > 0 && (
+        {/* Full listing grid — remaining drops via the existing ListingCard
+            (parity). Excludes whatever already rendered in the poster grid +
+            spotlight above so the same property isn't shown a third time. */}
+        {remainingDrops.length > 0 && (
           <section className="section" id="all-drops" aria-label="All price reductions">
             <div className="wrap">
               <div className="sec-head">
@@ -486,7 +499,7 @@ export default async function PriceDropsRegionPage() {
                 </h2>
               </div>
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-6">
-                {drops.map((drop) => {
+                {remainingDrops.map((drop) => {
                   const card = dropToCardData(drop)
                   return <ListingCard key={card.listingKey} listing={card} />
                 })}
@@ -553,20 +566,25 @@ export default async function PriceDropsRegionPage() {
           </section>
         )}
 
-        {/* Weekly drop report — buyer lead capture (listing alerts) */}
-        <section className="section" id="weekly-report" aria-label="Weekly price-drop summary">
+        {/* Listing alerts — buyer lead capture. design-audit #106: this
+            section previously promised a curated "we pull the prior week's
+            reductions and send a plain-language summary" product that does
+            not exist — /lp/buyer-listing-alerts signs a buyer up for new
+            matching listings (weekly cadence available), not a price-drop
+            digest. Copy now describes what the signup actually delivers. */}
+        <section className="section" id="weekly-report" aria-label="Listing alerts">
           <div className="wrap">
             <div className="sec-head">
-              <span className="sec-index">Weekly drop report</span>
+              <span className="sec-index">Stay ahead of the market</span>
               <h2 className="sec-title display">
-                Get the weekly<br />price-drop summary
+                Get listing<br />alerts
               </h2>
             </div>
             <div className="max-w-xl mt-4">
               <p className="text-muted-foreground">
-                Every Monday we pull the prior week&rsquo;s reductions across Central Oregon and
-                send a plain-language summary. Which neighborhoods saw the most cuts, the biggest
-                drops, and what it means for buyers right now.
+                Save a search and choose a weekly cadence. We&rsquo;ll email you new homes
+                matching your criteria as they list. This page stays live for the current
+                week&rsquo;s price cuts.
               </p>
               <Link
                 href="/lp/buyer-listing-alerts"

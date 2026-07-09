@@ -37,6 +37,7 @@ export function KbMarketHud({
   eyebrow = 'The market',
   chartScopeLabel,
   asOf,
+  byTownKind = 'town',
 }: {
   data: KbMarketData
   eyebrow?: string
@@ -54,6 +55,14 @@ export function KbMarketHud({
    * stamp over a 10-15 min cache (design-audit P3).
    */
   asOf?: string | null
+  /**
+   * What each `data.byTown` row actually represents — explicit, not inferred.
+   * Default 'town' covers every caller EXCEPT a single city's own page, which
+   * feeds its internal districts (e.g. Bend's 13 neighborhoods) instead of
+   * sibling cities. A row-count heuristic (">6 rows = neighborhood") broke
+   * the moment a region page fed 7+ real cities (design-audit #115).
+   */
+  byTownKind?: 'town' | 'neighborhood'
 }) {
   const root = useRef<HTMLElement>(null)
   const updatedAt = pacificTime(asOf)
@@ -179,10 +188,19 @@ export function KbMarketHud({
         {chartPoints >= 2 ? (
           <div className="mkt-panel">
             <div className="mkt-phead">
+              {/* design-audit #113: "5-year overlay ... over the window" named
+                  neither what "overlay" means nor what the % compares against
+                  — worse, the two numbers come from different data windows
+                  (years = the chart's yearSeries, the % = a separate ~12-month
+                  trend series). Spelled out in plain terms + what it's versus. */}
               <span className="mono-lab">
                 ▸ Median sale · single-family{chartScopeLabel ? ` · ${chartScopeLabel}` : ''} ·{' '}
-                {years.length >= 2 ? `${years.length}-year overlay` : 'monthly'}
-                {yoy ? `  ${yoy.pct >= 0 ? '↑' : '↓'} ${Math.abs(yoy.pct).toFixed(1)}% over the window` : ''}
+                {years.length >= 2 ? `${years.length} years shown` : 'monthly'}
+                {yoy
+                  ? `  ${yoy.pct >= 0 ? '↑' : '↓'} ${Math.abs(yoy.pct).toFixed(1)}% vs. ${
+                      yoy.months >= 11 ? '1 year ago' : `${yoy.months} month${yoy.months === 1 ? '' : 's'} ago`
+                    }`
+                  : ''}
               </span>
               {kbMoneyFull(lastMedian) ? <span className="mkt-phead-now mono-num">{kbMoneyFull(lastMedian)}</span> : null}
             </div>
@@ -208,7 +226,7 @@ export function KbMarketHud({
         {data.byTown.length > 0 ? (
           <div className="mkt-panel">
             <div className="mkt-phead">
-              <span className="mono-lab">▸ Median {data.byTown.length > 6 ? 'list · by neighborhood' : 'list · by town'}</span>
+              <span className="mono-lab">▸ Median {byTownKind === 'neighborhood' ? 'list · by neighborhood' : 'list · by town'}</span>
             </div>
             <div className="mkt-bars">
               {data.byTown.map((t) => (
@@ -227,7 +245,10 @@ export function KbMarketHud({
         ) : null}
 
         <div className="sec-cta">
-          <a href="/housing-market" className="btn">
+          {/* design-audit #118: was hardcoded to /housing-market, the summary
+              hub this HUD is often embedded IN (self-referential on the
+              region page). /housing-market/reports is the actual full report. */}
+          <a href="/housing-market/reports" className="btn">
             See the full market report <span className="arr">→</span>
           </a>
         </div>

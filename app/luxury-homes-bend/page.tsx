@@ -112,7 +112,11 @@ export default async function LuxuryHomesBendPage() {
             High-end homes for sale in Bend
           </h2>
           <p className="mt-4 max-w-2xl text-base text-[#102742]/70">
-            A live look at the top of Bend's market, priced high to low. New homes in this range reach your inbox the morning they list.
+            A live look at the top of Bend's market, priced high to low. New homes in this range reach your inbox the morning they list.{' '}
+            <Link href="/lp/buyer-listing-alerts" className="font-semibold underline underline-offset-4">
+              Set up an alert
+            </Link>
+            .
           </p>
           {cards.length > 0 ? (
             <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">

@@ -42,7 +42,11 @@ const BASELINE_PATH = path.join(ROOT, "scripts/design-tokens-baseline.json");
 const DISALLOWED_CLASSES = /\b(card-base|btn-cta)\b/g;
 const DISALLOWED_COLOR_CLASSES =
   /\b(?:bg|text|border|from|to|via)-(?:white|black|gray|slate|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)(?:-\d{1,3})?(?:\/\d{1,3})?\b/g;
-const DISALLOWED_HEX = /#[0-9a-fA-F]{3,8}\b/g;
+// Negative lookbehind excludes "design-audit #132" / "audit #150" style code
+// comments referencing an issue number — a 3-digit decimal issue number is
+// indistinguishable from a 3-digit hex color to this regex otherwise, and
+// this comment convention is used throughout the design-audit remediation.
+const DISALLOWED_HEX = /(?<!audit )#[0-9a-fA-F]{3,8}\b/gi;
 const DISALLOWED_PRIMITIVES =
   /<(button|input|select|textarea|label|hr|table)(\s|>)/g;
 const DISALLOWED_STYLE_BACKUP_IMPORT =

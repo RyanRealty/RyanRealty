@@ -30,14 +30,18 @@ function ohMoney(n: number | null | undefined): string | null {
 }
 
 /**
- * Split a "Sat 11am-1pm" style label into its weekday token and the time
- * window so the stamp can set the day big and the window small underneath.
- * Falls back to the whole string in the day slot when there is no space.
+ * Split an "openHouseWhen()"-built label ("Sun, Jul 12 · 10am-12pm") into its
+ * weekday+date half and the time-window half, so the stamp can set the date
+ * big and the window small underneath. openHouseWhen() joins those two halves
+ * with ' · ' — split on that, not the first space (design-audit #122: the
+ * weekday's own trailing comma sits right after the first space, "Sun,
+ * Jul 12" -> a naive first-space split rendered a dangling "Sun," alone).
+ * Falls back to the whole string in the day slot when there is no ' · '.
  */
 function splitWhen(label: string): { day: string; time: string } {
-  const i = label.indexOf(' ')
+  const i = label.indexOf(' · ')
   if (i === -1) return { day: label, time: '' }
-  return { day: label.slice(0, i), time: label.slice(i + 1) }
+  return { day: label.slice(0, i), time: label.slice(i + 3) }
 }
 
 function ohSpecs(it: KbOpenHouseItem): string[] {

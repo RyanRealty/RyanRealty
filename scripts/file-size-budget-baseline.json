@@ -30,7 +30,7 @@
     "app/lp/seller-home-value/page.tsx": 683,
     "app/lp/tetherow/heath/page.tsx": 1100,
     "app/lp/tetherow/page.tsx": 1716,
-    "app/price-drops/page.tsx": 650,
+    "app/price-drops/page.tsx": 668,
     "app/reports/explore/ExploreClient.tsx": 919,
     "app/search/[...slug]/page.tsx": 1041,
     "lib/cma-delivery.ts": 782,

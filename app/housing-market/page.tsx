@@ -49,6 +49,7 @@ import {
   getMarketPulseCitySnapshots,
   getRecentBlogPosts,
 } from '@/lib/data'
+import { getSurfaceImage } from '@/lib/data/media/getSurfaceImages'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -135,10 +136,13 @@ export default async function HousingMarketHubPage() {
   //                   property_type='A'. ONE call replaces legacy per-city fan-out.
   //   blogPosts     — blog_posts, status='published', newest first. Up to 3.
   // -------------------------------------------------------------------------
-  const [regionPulse, citySnapshots, blogPosts] = await Promise.all([
+  const [regionPulse, citySnapshots, blogPosts, heroPhoto] = await Promise.all([
     getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => null),
     getMarketPulseCitySnapshots(CITY_LABELS).catch(() => []),
     getRecentBlogPosts({ limit: 3 }).catch(() => []),
+    // design-audit #110: distinct hero photo from /housing-market/central-oregon
+    // so the hub and the deep report don't look like the same page at a glance.
+    getSurfaceImage('hero', { geoTags: ['central-oregon'], seed: 'housing-market-hub' }).catch(() => null),
   ])
 
   // -------------------------------------------------------------------------
@@ -306,6 +310,7 @@ export default async function HousingMarketHubPage() {
           titleTop="Central Oregon"
           titleBottom="housing market"
           lead={lede}
+          posterSrc={heroPhoto ?? undefined}
         />
 
         {/* City tiles — per-city active counts from ONE getMarketPulseCitySnapshots
