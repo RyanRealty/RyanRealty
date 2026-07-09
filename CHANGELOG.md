@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.25 (2026-07-09)
+
+### Bug Fixes
+- fix(guides): solid header on guide detail pages (same bug as blog articles)
+
+---
+
+
 ## v1.751.24 (2026-07-09)
 
 ### Maintenance
