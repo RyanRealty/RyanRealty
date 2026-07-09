@@ -63,7 +63,8 @@ import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { resortActiveSfrCounts, cityResorts, resortTilesForSlug } from '@/lib/kb/resort-active-counts'
 import { getDistrictForCity } from '@/data/co-schools'
-import { listingTileHref, homesForSalePath } from '@/lib/slug'
+import { listingTileHref, homesForSalePath, slugify } from '@/lib/slug'
+import { getCanonicalCityForSubdivision } from '@/lib/data/communities/registry'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { CONTACT } from '@/lib/brand/contact'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
@@ -258,6 +259,19 @@ export default async function CommunityDetailPage({ params }: Props) {
     (r) => r.slug === slug || r.label.toLowerCase().trim() === community.subdivision.toLowerCase().trim(),
   )
   if (resortMatch && slug !== resortMatch.slug) redirect(`/communities/${resortMatch.slug}`)
+
+  // design-audit #131: some subdivisions have listings whose raw MLS City
+  // field disagrees with the community's verified registry city (e.g.
+  // hundreds of Crosswater listings say "Bend" though Crosswater is a
+  // Sunriver-area resort). A slug parsed from the wrong city ("bend-
+  // crosswater") still resolved to a "real" page with real (if partial)
+  // stats -- a second, silently-wrong URL for the same community that the
+  // ledger no longer links to but that could still be reached directly.
+  // Redirect it to the canonical city's slug.
+  const canonicalCity = getCanonicalCityForSubdivision(community.subdivision)
+  if (canonicalCity && canonicalCity.toLowerCase() !== cityName.toLowerCase()) {
+    redirect(`/communities/${slugify(canonicalCity)}-${slugify(community.subdivision)}`)
+  }
 
   // The resort registry entry is the source of truth for is_resort +
   // sub_neighborhoods + subdivision_aliases. Pure/synchronous (registry JSON).

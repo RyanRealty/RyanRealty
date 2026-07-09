@@ -13,6 +13,7 @@ import {
   getAllSubdivisionFlags,
 } from '@/lib/data'
 import { RESORT_ENTITY_KEYS, RESORT_LIST } from '@/lib/resort-communities'
+import { getCanonicalCityForSubdivision } from '@/lib/data/communities/registry'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { logAdminAction } from '@/app/actions/log-admin-action'
@@ -142,8 +143,33 @@ export async function listSubdivisionsWithFlags(): Promise<SubdivisionRow[]> {
     seen.add(entity_key)
     result.push({ entity_key, city, subdivision, is_resort: isResort(entity_key) })
   }
-  result.sort((a, b) => a.city.localeCompare(b.city) || a.subdivision.localeCompare(b.subdivision))
-  return result
+
+  // design-audit #131: three independent sources feed `result` above (live
+  // MV snapshots, the subdivision_flags table, the hardcoded RESORT_LIST),
+  // and any of them can carry a subdivision's MLS-mailing-address city
+  // instead of its real one (e.g. hundreds of Crosswater listings say
+  // "Bend" though Crosswater is a Sunriver-area resort — confirmed via
+  // geo_snapshot_mv carrying BOTH "bend:crosswater" and "sunriver:crosswater"
+  // as separate rows). Patching each source loop individually is fragile —
+  // normalize once here, after every source has contributed, so a stale
+  // entry from ANY of the three still collapses onto the community's one
+  // verified registry city.
+  const normalized = new Map<string, SubdivisionRow>()
+  for (const row of result) {
+    const canonicalCity = getCanonicalCityForSubdivision(row.subdivision)
+    const city = canonicalCity ?? row.city
+    const entity_key = subdivisionEntityKey(city, row.subdivision)
+    const existing = normalized.get(entity_key)
+    normalized.set(entity_key, {
+      entity_key,
+      city,
+      subdivision: row.subdivision,
+      is_resort: (existing?.is_resort ?? false) || row.is_resort,
+    })
+  }
+  return Array.from(normalized.values()).sort(
+    (a, b) => a.city.localeCompare(b.city) || a.subdivision.localeCompare(b.subdivision),
+  )
 }
 
 /**

@@ -77,3 +77,35 @@ export function getAllResortCommunities(): ResortCommunityEntry[] {
 export function getResortCommunitiesForCity(citySlug: string): ResortCommunityEntry[] {
   return communities.filter((c) => c.city_slug === citySlug)
 }
+
+// Built once at module load: every registered community's label + subdivision
+// aliases, lowercased, mapped to that community's verified canonical city.
+const canonicalCityByAlias: Map<string, string> = (() => {
+  const map = new Map<string, string>()
+  for (const entry of communities) {
+    map.set(entry.label.trim().toLowerCase(), entry.city)
+    for (const alias of entry.subdivision_aliases ?? []) {
+      map.set(alias.trim().toLowerCase(), entry.city)
+    }
+  }
+  return map
+})()
+
+/**
+ * The verified canonical city for a subdivision/community name, per the
+ * registry (data/resort-communities.json). Some subdivisions have listings
+ * whose raw MLS City field is inconsistent (mailing-address quirks common
+ * in unincorporated Central Oregon — e.g. hundreds of Crosswater listings
+ * say "Bend" even though Crosswater is a Sunriver-area resort). Any code
+ * that groups listings or index rows BY (city, subdivision) should resolve
+ * through this first so the same real community never splits into two
+ * entries under two different cities (design-audit #131).
+ *
+ * Returns null when the name isn't a registered community — callers should
+ * fall back to the listing's own raw City field in that case.
+ */
+export function getCanonicalCityForSubdivision(subdivisionName: string | null | undefined): string | null {
+  const key = subdivisionName?.trim().toLowerCase()
+  if (!key) return null
+  return canonicalCityByAlias.get(key) ?? null
+}

@@ -12,6 +12,7 @@ import { listSubdivisionsWithFlags } from '@/app/actions/subdivision-flags'
 import type { CommunityForIndex, CommunityDetail } from '@/lib/communities'
 import { entityKeyToSlug } from '@/lib/community-slug'
 import { isResidentialInventoryType } from '@/lib/inventory-filters'
+import { getCanonicalCityForSubdivision } from '@/lib/data/communities/registry'
 import { isCentralOregonCity } from '@/lib/central-oregon'
 import { COMMUNITY_LISTING_TILE_SELECT } from '@/lib/listing-tile-projections'
 import { getGeoSnapshot, getCommunityListings as getCommunityListingsDAL } from '@/lib/data'
@@ -81,9 +82,16 @@ async function _getCommunitiesForIndexUncached(): Promise<CommunityForIndex[]> {
   >()
   for (const row of listingRows) {
     if (!isResidentialInventoryType(row.PropertyType ?? null)) continue
-    const city = (row.City ?? '').toString().trim()
+    const rawCity = (row.City ?? '').toString().trim()
     const sub = (row.SubdivisionName ?? '').toString().trim()
-    if (!city || !sub) continue
+    if (!rawCity || !sub) continue
+    // design-audit #131: resolve through the registry so listings whose raw
+    // MLS City field disagrees with a known community's verified city (e.g.
+    // hundreds of Crosswater listings say "Bend" though Crosswater is a
+    // Sunriver-area resort) still aggregate under the ONE canonical entry —
+    // matching listSubdivisionsWithFlags()'s same override, or this index
+    // row would silently undercount that community's real inventory.
+    const city = getCanonicalCityForSubdivision(sub) ?? rawCity
     const key = subdivisionEntityKey(city, sub)
     const rec = byKey.get(key) ?? { city, subdivision: sub, prices: [] }
     const p = Number(row.ListPrice)
@@ -131,12 +139,15 @@ async function _getCommunitiesForIndexUncached(): Promise<CommunityForIndex[]> {
 
 export const getCommunitiesForIndex = unstable_cache(
   _getCommunitiesForIndexUncached,
-  // v3 (design-audit #132, §0): classifyInventoryPropertyType() previously
-  // never matched the raw single-letter PropertyType codes this fn's own
-  // isResidentialInventoryType() filter reads, so land parcels (D) silently
-  // counted as residential inventory — evicts every v2 entry, which is
-  // cached with the wrong active counts + medians (Pronghorn: $180,000).
-  ['communities-index-v3'],
+  // v5 (design-audit #131): v4's fix only patched the primary MV-snapshot
+  // loop in listSubdivisionsWithFlags() -- two OTHER sources feeding that
+  // same result (the subdivision_flags table's flag keys, and the
+  // hardcoded RESORT_LIST) still carried "bend:crosswater" independently
+  // and re-introduced the duplicate the v4 fix was supposed to remove.
+  // listSubdivisionsWithFlags() now normalizes ALL THREE sources' output
+  // through the canonical registry in one final pass — evicts v4, which is
+  // cached with the still-duplicated result.
+  ['communities-index-v5'],
   { revalidate: 1800, tags: ['communities-index'] }
 )
 

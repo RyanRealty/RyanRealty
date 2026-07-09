@@ -51,6 +51,16 @@ function slugToTitle(slug: string): string {
     .join(' ')
 }
 
+// design-audit #125: this used to fill four generic-advice sections ("What
+// buyers should do now," "What sellers should do now," "Neighborhood
+// planning checklist") with sentences that only ever changed the city name --
+// the exact same real-estate-101 advice for Bend, Redmond, or any of the
+// other 9 cities, presented as if it were locally-authored expertise. That's
+// a real content-honesty problem (VOICE.md Law 1: show it, don't say it --
+// this was SAYING "here's practical guidance for your city" while showing
+// nothing city-specific). No template rewrite can fake real local expertise,
+// so this generated fallback now only claims what it can actually deliver:
+// the live MLS numbers for that city, honestly labeled as a data snapshot.
 function buildGuideHtmlFromStats(city: string, stats: CityStatRow): string {
   // Round currency to the nearest $1,000 per brand voice.
   const median =
@@ -76,19 +86,18 @@ function buildGuideHtmlFromStats(city: string, stats: CityStatRow): string {
     dom != null ? `<li>Median days on market: ${dom}</li>` : '',
     soldCount != null ? `<li>Closed sales in period: ${soldCount}</li>` : '',
   ].filter(Boolean).join('')
-  const snapshot = snapshotRows
-    ? ['<h2>Market snapshot</h2>', `<ul>${snapshotRows}</ul>`]
-    : []
+
+  if (!snapshotRows) {
+    return `<p>Live single-family sale data for ${city} is being compiled. Check back shortly, or see the current listings directly.</p>`
+  }
 
   return [
-    `<p>${city} remains one of Central Oregon's most competitive markets. This guide is based on local listing and sold data from ${period} and is designed to help buyers and sellers make practical decisions.</p>`,
-    ...snapshot,
-    '<h2>What buyers should do now</h2>',
-    `<p>In ${city}, homes that are priced correctly still move quickly in the most active ranges. Buyers should lock financing early, track new inventory daily, and write offers that match current demand in the exact neighborhood they target.</p>`,
-    '<h2>What sellers should do now</h2>',
-    `<p>Sellers in ${city} should focus on launch quality and realistic pricing. Strong photography, clean presentation, and pre-listing prep continue to improve first-week momentum and reduce later price adjustments.</p>`,
-    '<h2>Neighborhood planning checklist</h2>',
-    `<p>Before deciding where to buy, compare commute patterns, lot sizes, HOA rules, and resale liquidity between neighborhoods. In ${city}, those differences can materially change both monthly costs and long-term flexibility.</p>`,
+    `<p>${city} single-family sales, ${period}. Pulled directly from the regional MLS, not an editorial estimate.</p>`,
+    '<h2>Market snapshot</h2>',
+    `<ul>${snapshotRows}</ul>`,
+    `<p>For neighborhood-level detail, current active listings, and a broker who can answer questions specific to ${city}, ` +
+      `<a href="/homes-for-sale/${cityEntityKey(city)}">browse ${city} homes for sale</a> or ` +
+      `<a href="/contact">talk to a broker</a>.</p>`,
   ].join('')
 }
 
@@ -105,8 +114,10 @@ function normalizeGuideRowFromStats(stats: CityStatRow): GuideRow {
   return {
     id: `generated-${cityEntityKey(city)}`,
     slug: `${cityEntityKey(city)}-housing-market-guide`,
-    title: `${city} Housing Market Guide`,
-    meta_description: `A practical guide for buying and selling in ${city}, grounded in current pricing, inventory, and pace of sale.`,
+    // Slug keeps "-housing-market-guide" for URL stability (existing links,
+    // sitemap, search index); title is honest about what this actually is.
+    title: `${city} Housing Market Snapshot`,
+    meta_description: `Live single-family market data for ${city}: median sale price, days on market, and closed sales, pulled directly from the regional MLS.`,
     content_html: buildGuideHtmlFromStats(city, stats),
     category: 'Market Guides',
     city,
@@ -163,10 +174,10 @@ async function _getPublishedGuidesUncached(_limit: number): Promise<GuideRow[]> 
 
 export const getPublishedGuides = makeResilientCached(
   _getPublishedGuidesUncached,
-  // v2 (design-audit #151): generated-guide published_at/updated_at now come
-  // from generation time, not stats.period_end — evicts v1 rows carrying a
-  // future-dated (end-of-month) timestamp.
-  ['published-guides-v2'],
+  // v3 (design-audit #125): generated-guide content dropped the generic
+  // "advice" boilerplate (identical across all 11 cities) for an honest
+  // live-data-only snapshot — evicts v2 rows carrying the old template.
+  ['published-guides-v3'],
   { revalidate: CACHE_WINDOWS.blog, tags: ['guides'] },
   [],
 )
@@ -193,8 +204,8 @@ async function _getGuideBySlugUncached(slug: string): Promise<GuideRow | null> {
 
 export const getGuideBySlug = makeResilientCached(
   _getGuideBySlugUncached,
-  // v2 — same fix as getPublishedGuides (generation-time dates, not period_end).
-  ['guide-by-slug-v2'],
+  // v3 — same fix as getPublishedGuides (honest live-data-only content).
+  ['guide-by-slug-v3'],
   { revalidate: CACHE_WINDOWS.blog, tags: ['guides'] },
   null,
 )
