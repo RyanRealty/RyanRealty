@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.751.27 (2026-07-09)
+
+### Bug Fixes
+- fix(crm): outbound MMS/email attachments, lead-source attribution, dead FUB-intake paths
+
+---
+
+
 ## v1.751.26 (2026-07-09)
 
 ### Bug Fixes
