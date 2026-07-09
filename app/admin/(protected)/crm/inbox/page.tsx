@@ -439,6 +439,7 @@ export default async function CrmInboxPage({
           emailAction={sendEmailForm.bind(null, openPane.personId)}
           smsAndCloseAction={sendSmsAndCloseForm.bind(null, openPane.personId)}
           emailAndCloseAction={sendEmailAndCloseForm.bind(null, openPane.personId)}
+          personId={openPane.personId}
           signatureHtml={openPane.signatureHtml}
           canText={openPane.canText}
           canEmail={openPane.canEmail}

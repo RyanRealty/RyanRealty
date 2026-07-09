@@ -64,7 +64,7 @@ describe('sendGroupMms — native group MMS shape', () => {
       body: 'hello group',
       friendlyName: 'Group · Test',
     })
-    expect(res).toEqual({ ok: true, conversationSid: 'CH1', messageSid: 'IM1' })
+    expect(res).toEqual({ ok: true, conversationSid: 'CH1', messageSid: 'IM1', chatServiceSid: null, media: [] })
 
     const partCalls = calls.filter((c) => c.url.includes('/Participants'))
     expect(partCalls).toHaveLength(3)
@@ -115,6 +115,52 @@ describe('sendGroupMms — native group MMS shape', () => {
     const res = await sendGroupMms({ projectedAddress: '+15417033095', participants: many, body: 'x' })
     expect(res.ok).toBe(false)
     if (!res.ok) expect(res.error).toContain('at most')
+  })
+
+  // Media (2026-07-09): before this, group sends silently DROPPED attachments —
+  // the caller uploaded media but sendGroupMms had no way to carry it.
+  it('uploads media to MCS (chat service from the conversation) and attaches MediaSid to the message', async () => {
+    const calls = mockTwilio([
+      { sid: 'CH1', chat_service_sid: 'IS_chat' }, // create conversation
+      { sid: 'MB1' }, // participant 1
+      { sid: 'MB2' }, // participant 2
+      { sid: 'MB3' }, // projected participant
+      { sid: 'ME' + 'a'.repeat(32) },              // MCS media upload
+      { sid: 'IM1' },                               // body message (with MediaSid)
+    ])
+    const res = await sendGroupMms({
+      projectedAddress: '5417033095',
+      participants: ['7143376028', '9093430531'],
+      body: 'photo attached',
+      media: [{ content: Buffer.from('fakebytes'), contentType: 'image/jpeg', filename: 'house.jpg' }],
+    })
+    expect(res).toEqual({
+      ok: true, conversationSid: 'CH1', messageSid: 'IM1', chatServiceSid: 'IS_chat',
+      media: [{ mediaSid: 'ME' + 'a'.repeat(32), contentType: 'image/jpeg' }],
+    })
+    const mcsCall = calls.find((c) => c.url.includes('mcs.us1.twilio.com'))
+    expect(mcsCall?.url).toBe('https://mcs.us1.twilio.com/v1/Services/IS_chat/Media')
+    const msgCall = calls.find((c) => c.url.includes('/Messages'))
+    expect(msgCall?.body?.get('MediaSid')).toBe('ME' + 'a'.repeat(32))
+    expect(msgCall?.body?.get('Body')).toBe('photo attached')
+  })
+
+  it('fails closed (and cleans up) when media is requested but the conversation has no chat service', async () => {
+    const calls = mockTwilio([
+      { sid: 'CH1' }, // create conversation — NO chat_service_sid
+      { sid: 'MB1' }, { sid: 'MB2' }, { sid: 'MB3' },
+      {},
+    ])
+    const res = await sendGroupMms({
+      projectedAddress: '+15417033095',
+      participants: ['7143376028', '9093430531'],
+      body: 'x',
+      media: [{ content: Buffer.from('y'), contentType: 'image/png' }],
+    })
+    expect(res.ok).toBe(false)
+    if (!res.ok) expect(res.error).toContain('chat service')
+    const del = calls.find((c) => c.method === 'DELETE')
+    expect(del?.url).toContain('/Conversations/CH1')
   })
 })
 

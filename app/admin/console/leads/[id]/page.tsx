@@ -474,6 +474,7 @@ export default async function ConsoleLeadPage({
                       initialBody={emailInitialBody}
                       signatureHtml={signature?.html ?? null}
                       sendAction={sendEmailForm.bind(null, person.id)}
+                      personId={person.id}
                       tplKey={tpl ?? null}
                       toLabel={person.name ? `${person.name} \u00b7 ${primaryEmail}` : primaryEmail}
                     />
@@ -492,6 +493,7 @@ export default async function ConsoleLeadPage({
                       sendAction={sendSmsForm.bind(null, person.id)}
                       recipients={smsRecipients}
                       primaryPersonId={person.id}
+                      personId={person.id}
                     />
                   </div>
                 ) : (

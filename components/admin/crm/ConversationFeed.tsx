@@ -13,6 +13,7 @@ import { Mail, MailOpen, MessageSquare, Phone, ShieldAlert, Voicemail } from 'lu
 import { Button } from '@/components/ui/button'
 import { blockCrmNumber } from '@/app/actions/crm-block'
 import { timelineEmailBody } from '@/lib/crm/email-body'
+import { StoredAttachmentStrip } from '@/components/admin/crm/StoredAttachments'
 import { formatDate, formatDateTime as fmtDateTimeFn } from '@/lib/format/date'
 
 export type ConversationEvent = {
@@ -206,6 +207,8 @@ export default function ConversationFeed({
                     })}
                   </div>
                 ) : null}
+                {/* Stored outbound attachments (sent email files + 1:1 MMS media). */}
+                <StoredAttachmentStrip payload={e.payload} align="start" />
                 {recordingSid ? (
                   <audio controls preload="none" src={`/api/admin/crm/recording/${recordingSid}`} className="h-8 w-full max-w-sm">
                     <track kind="captions" />

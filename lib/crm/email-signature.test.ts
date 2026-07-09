@@ -38,6 +38,40 @@ describe('buildSignature — generated (no custom signature)', () => {
   })
 })
 
+describe('buildSignature — Gmail-synced signature (2026-07-09)', () => {
+  const GMAIL_SIG = '<div dir="ltr"><b>Matt Ryan</b><br>Ryan Realty · 541.213.6706<br><img src="https://example.com/logo.png"></div>'
+
+  it('uses the Gmail signature HTML verbatim and outranks custom + generated', () => {
+    const sig = buildSignature(
+      broker({ gmailSignatureHtml: GMAIL_SIG, emailSignature: 'Custom fallback text' }),
+    )
+    expect(sig.html).toContain(GMAIL_SIG)
+    expect(sig.html).not.toContain('Custom fallback text')
+    // Generated identity block is replaced entirely.
+    expect(sig.html).not.toContain('Owner &amp; Principal Broker')
+    expect(sig.html).not.toContain('/images/brokers/ryan-matt.png')
+  })
+
+  it('ALWAYS appends the Oregon pamphlet compliance line (ORS 696.820)', () => {
+    const sig = buildSignature(broker({ gmailSignatureHtml: GMAIL_SIG }))
+    expect(sig.html).toContain(AGENCY_PAMPHLET_URL)
+    expect(sig.html).toContain('ORS 696.820')
+    expect(sig.plain).toContain(AGENCY_PAMPHLET_URL)
+  })
+
+  it('plain-text mirror strips the HTML', () => {
+    const sig = buildSignature(broker({ gmailSignatureHtml: GMAIL_SIG }))
+    expect(sig.plain).toContain('Matt Ryan')
+    expect(sig.plain).toContain('Ryan Realty · 541.213.6706')
+    expect(sig.plain).not.toContain('<b>')
+  })
+
+  it('blank/whitespace Gmail signature falls through to the custom signature', () => {
+    const sig = buildSignature(broker({ gmailSignatureHtml: '  \n ', emailSignature: 'Custom fallback text' }))
+    expect(sig.html).toContain('Custom fallback text')
+  })
+})
+
 describe('buildSignature — broker custom signature (P1-6)', () => {
   it('replaces the identity block with the saved text, newlines become <br>', () => {
     const sig = buildSignature(

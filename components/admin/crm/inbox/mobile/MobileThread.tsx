@@ -409,7 +409,7 @@ export default function MobileThread({
                   setSmsDraftV((v) => v + 1)
                 }}
               />
-              <SmsComposer key={smsDraftV} initialBody={smsDraft} sendAction={smsAction} />
+              <SmsComposer key={smsDraftV} initialBody={smsDraft} sendAction={smsAction} personId={personId} />
             </>
           ) : (
             <p className="rounded-xl border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
@@ -490,6 +490,7 @@ export default function MobileThread({
               initialBody=""
               signatureHtml={signatureHtml}
               sendAction={emailAction}
+              personId={personId}
             />
           </div>
         </SheetContent>

@@ -5,6 +5,7 @@
  * centered markers.
  */
 import { timelineEmailBody } from '@/lib/crm/email-body'
+import { StoredAttachmentStrip } from '@/components/admin/crm/StoredAttachments'
 
 export type ConversationEvent = {
   id: number
@@ -136,6 +137,8 @@ export default function ConversationThread({
                 </div>
               )
             })()}
+            {/* Stored outbound attachments (sent email files + 1:1 MMS media). */}
+            <StoredAttachmentStrip payload={e.payload} align={out ? 'end' : 'start'} />
             <div className="mt-0.5 text-xs text-muted-foreground">
               {out ? (e.broker ?? 'us') : personName} · {fmtTs(e.ts)}
             </div>

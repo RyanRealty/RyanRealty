@@ -62,12 +62,51 @@ export async function deleteConversation(sid: string): Promise<void> {
   }
 }
 
+export type GroupMmsMedia = {
+  content: Buffer
+  contentType: string
+  filename?: string
+}
+
 export type GroupMmsResult =
-  | { ok: true; conversationSid: string; messageSid: string }
+  | {
+      ok: true
+      conversationSid: string
+      messageSid: string
+      /** Chat service that owns the conversation's media (MCS) — stored on the
+       *  timeline payload so the admin media proxy can fetch it later. */
+      chatServiceSid: string | null
+      /** MCS media attached to the send, in message order. */
+      media: Array<{ mediaSid: string; contentType: string }>
+    }
   | { ok: false; error: string }
 
 /** Group MMS hard limit (Twilio): 10 total addresses incl. the projected line. */
 export const GROUP_MMS_MAX_ADDRESSES = 10
+
+/**
+ * Upload one media file to Twilio's Media Content Service (MCS) — the
+ * two-step Conversations media flow (docs: conversations-classic/
+ * media-support-conversations). Uploaded media is garbage-collected after
+ * 5 minutes unless attached to a message, so callers attach immediately.
+ */
+async function uploadConversationMedia(
+  chatServiceSid: string,
+  media: GroupMmsMedia,
+): Promise<{ ok: true; mediaSid: string } | { ok: false; error: string }> {
+  try {
+    const res = await fetch(`https://mcs.us1.twilio.com/v1/Services/${chatServiceSid}/Media`, {
+      method: 'POST',
+      headers: { Authorization: authHeader(), 'Content-Type': media.contentType },
+      body: new Uint8Array(media.content),
+    })
+    const data = (await res.json()) as { sid?: string; message?: string }
+    if (!res.ok || !data.sid) return { ok: false, error: data.message ?? `MCS upload failed (${res.status})` }
+    return { ok: true, mediaSid: data.sid }
+  } catch (e) {
+    return { ok: false, error: String(e) }
+  }
+}
 
 export async function sendGroupMms(params: {
   /** The broker's MMS-capable Twilio line — joins the group as its ProjectedAddress. */
@@ -76,6 +115,10 @@ export async function sendGroupMms(params: {
   participants: string[]
   body: string
   friendlyName?: string
+  /** Attachments (already size/type-validated by the caller). The first rides
+   *  the body message; extras go out as follow-up media-only messages —
+   *  Conversations REST attaches one MediaSid per message reliably. */
+  media?: GroupMmsMedia[]
 }): Promise<GroupMmsResult> {
   const projected = toE164(params.projectedAddress)
   const participants = [...new Set(params.participants.map(toE164).filter((p): p is string => Boolean(p)))]
@@ -90,15 +133,17 @@ export async function sendGroupMms(params: {
   }
 
   try {
-    // 1. Create the conversation.
+    // 1. Create the conversation. The response carries chat_service_sid — the
+    //    MCS service that owns any media we upload for this conversation.
     const convRes = await fetch(`${BASE}/Conversations`, {
       method: 'POST',
       headers: headers(),
       body: new URLSearchParams({ FriendlyName: params.friendlyName ?? 'Group text' }),
     })
-    const conv = (await convRes.json()) as { sid?: string; message?: string }
+    const conv = (await convRes.json()) as { sid?: string; chat_service_sid?: string; message?: string }
     if (!conv.sid) return { ok: false, error: conv.message ?? 'failed to create conversation' }
     const conversationSid = conv.sid
+    const chatServiceSid = conv.chat_service_sid ?? null
 
     // 2. Add every SMS member with Address ONLY (no ProxyAddress — that would
     //    silently downgrade the thread to per-person 1:1 proxy messaging).
@@ -128,12 +173,32 @@ export async function sendGroupMms(params: {
       return { ok: false, error: `projected address ${projected}: ${proj.message ?? 'failed to add'}` }
     }
 
-    // 4. Post the message authored by the projected address — Twilio fans it
-    //    out as a real carrier group MMS.
+    // 4. Upload media to MCS (attachments were silently DROPPED on group sends
+    //    before 2026-07-09 — the uploaded file never reached the message).
+    const mediaSids: Array<{ mediaSid: string; contentType: string }> = []
+    if (params.media?.length) {
+      if (!chatServiceSid) {
+        await deleteConversation(conversationSid)
+        return { ok: false, error: 'conversation has no chat service sid — cannot attach media' }
+      }
+      for (const m of params.media) {
+        const up = await uploadConversationMedia(chatServiceSid, m)
+        if (!up.ok) {
+          await deleteConversation(conversationSid)
+          return { ok: false, error: `media upload (${m.filename ?? m.contentType}): ${up.error}` }
+        }
+        mediaSids.push({ mediaSid: up.mediaSid, contentType: m.contentType })
+      }
+    }
+
+    // 5. Post the message authored by the projected address — Twilio fans it
+    //    out as a real carrier group MMS. First media rides the body message.
+    const first = new URLSearchParams({ Author: projected, Body: params.body })
+    if (mediaSids[0]) first.set('MediaSid', mediaSids[0].mediaSid)
     const msgRes = await fetch(`${BASE}/Conversations/${conversationSid}/Messages`, {
       method: 'POST',
       headers: headers(),
-      body: new URLSearchParams({ Author: projected, Body: params.body }),
+      body: first,
     })
     const msg = (await msgRes.json()) as { sid?: string; message?: string }
     if (!msg.sid) {
@@ -141,7 +206,25 @@ export async function sendGroupMms(params: {
       return { ok: false, error: msg.message ?? 'failed to send group message' }
     }
 
-    return { ok: true, conversationSid, messageSid: msg.sid }
+    // 6. Any remaining media go out as media-only follow-up messages (one
+    //    MediaSid per message — the reliably-documented REST contract).
+    for (const m of mediaSids.slice(1)) {
+      const extra = new URLSearchParams({ Author: projected, MediaSid: m.mediaSid })
+      const extraRes = await fetch(`${BASE}/Conversations/${conversationSid}/Messages`, {
+        method: 'POST',
+        headers: headers(),
+        body: extra,
+      })
+      const extraMsg = (await extraRes.json()) as { sid?: string; message?: string }
+      if (!extraMsg.sid) {
+        // The body message already went out — do NOT tear the group down.
+        // Report success with the media that did send.
+        console.warn('[twilio-conversations] follow-up media message failed:', extraMsg.message)
+        break
+      }
+    }
+
+    return { ok: true, conversationSid, messageSid: msg.sid, chatServiceSid, media: mediaSids }
   } catch (e) {
     return { ok: false, error: String(e) }
   }

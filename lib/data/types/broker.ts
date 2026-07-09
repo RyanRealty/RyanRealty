@@ -47,6 +47,13 @@ export type Broker = {
    *  buildSignature (the Oregon agency-pamphlet compliance line is always
    *  appended regardless). Null/blank → the generated signature. */
   emailSignature?: string | null
+  /** The broker's REAL Gmail signature (brokers.gmail_signature_html), synced
+   *  verbatim from Gmail sendAs settings by lib/crm/gmail-signature-sync.ts.
+   *  Highest-precedence signature source in buildSignature — CRM emails match
+   *  Gmail exactly when this is set. */
+  gmailSignatureHtml?: string | null
+  /** When the Gmail signature was last synced (brokers.gmail_signature_synced_at). */
+  gmailSignatureSyncedAt?: string | null
 
   // ── Enrichment from public.brokers (optional; null/empty when unset) ──
   /** Short positioning line under the name. */

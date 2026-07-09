@@ -80,3 +80,39 @@ export async function saveBrokerSettingsAction(
   bust(bid)
   return { ok: true }
 }
+
+export type GmailSignatureSyncActionResult =
+  | { ok: true; mailboxes: Array<{ mailbox: string; signatureChars: number }> }
+  | { ok: false; error: string }
+
+/**
+ * Pull the signed-in broker's REAL Gmail signature into brokers.gmail_signature_html
+ * so every CRM email matches Gmail exactly (superusers sync all three mailboxes).
+ * Also runs automatically every ~6h via the crm-gmail-sync cron.
+ */
+export async function syncGmailSignatureAction(): Promise<GmailSignatureSyncActionResult> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Not authenticated' }
+  if (access.role !== 'superuser' && access.role !== 'broker') {
+    return { ok: false, error: 'Not authorized' }
+  }
+
+  const { syncGmailSignatures } = await import('@/lib/crm/gmail-signature-sync')
+  const only = access.role === 'superuser' ? undefined : access.email
+  const results = await syncGmailSignatures(only)
+  if (results.length === 0) {
+    return { ok: false, error: 'Your login email does not match a CRM mailbox' }
+  }
+  const failed = results.filter((r) => !r.ok)
+  if (failed.length === results.length) {
+    return { ok: false, error: failed[0].error ?? 'Sync failed' }
+  }
+
+  revalidateTag('broker-settings', 'max')
+  revalidateTag(cacheTag.brokers, 'max')
+  revalidatePath('/admin/settings')
+  return {
+    ok: true,
+    mailboxes: results.filter((r) => r.ok).map((r) => ({ mailbox: r.mailbox, signatureChars: r.signatureChars })),
+  }
+}

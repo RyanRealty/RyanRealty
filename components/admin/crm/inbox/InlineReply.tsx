@@ -33,6 +33,7 @@ export default function InlineReply({
   emailAction,
   smsAndCloseAction,
   emailAndCloseAction,
+  personId,
   signatureHtml,
   canText,
   canEmail,
@@ -53,6 +54,8 @@ export default function InlineReply({
   emailAction: (formData: FormData) => Promise<void>
   smsAndCloseAction: (formData: FormData) => Promise<void>
   emailAndCloseAction: (formData: FormData) => Promise<void>
+  /** Contact the reply targets — enables composer attachments (upload scoping). */
+  personId?: number
   signatureHtml: string | null
   canText: boolean
   canEmail: boolean
@@ -259,6 +262,7 @@ export default function InlineReply({
             sendAction={smsAction}
             sendAndCloseAction={smsAndCloseAction}
             saveDraftAction={saveSmsDraftAction}
+            personId={personId}
           />
         ) : (
           <p className="rounded-xl border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
@@ -276,6 +280,7 @@ export default function InlineReply({
           sendAction={emailAction}
           sendAndCloseAction={emailAndCloseAction}
           saveDraftAction={saveEmailDraftAction}
+          personId={personId}
         />
       ) : null}
     </div>

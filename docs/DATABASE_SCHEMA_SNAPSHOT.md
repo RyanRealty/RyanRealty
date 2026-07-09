@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-07-08T15:24:53.498Z
+**Generated:** 2026-07-09T12:57:40.896Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -417,7 +417,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 23,167**
+### `market_stats_cache` · **rows ≈ 24,505**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -574,6 +574,8 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `notify_task_due` | boolean | no | true |
 | `email_signature` | text | yes |  |
 | `notify_sms` | boolean | no | false |
+| `gmail_signature_html` | text | yes |  |
+| `gmail_signature_synced_at` | timestamp with time zone | yes |  |
 
 ## App + analytics
 
@@ -669,7 +671,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 122**
+### `expired_listings` · **rows ≈ 123**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|

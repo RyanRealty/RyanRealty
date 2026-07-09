@@ -347,6 +347,7 @@ export default function MobileComposeSheet({
                   initialBody={emailTpl?.body ?? ''}
                   signatureHtml={signatureHtml}
                   toLabel={primary.name}
+                  personId={primary.id}
                   tplKey={emailTpl?.key ?? null}
                   sendAction={async (fd: FormData) => {
                     const res = await sendEmailAction(primary.id, fd)

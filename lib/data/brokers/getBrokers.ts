@@ -255,7 +255,8 @@ export const getBrokers = unstable_cache(
       .from('brokers')
       .select(
         'slug, display_name, title, email, phone, twilio_number, photo_url, license_number, bio, ' +
-          'email_signature, sort_order, is_active, tagline, specialties, designations, years_experience, ' +
+          'email_signature, gmail_signature_html, gmail_signature_synced_at, ' +
+          'sort_order, is_active, tagline, specialties, designations, years_experience, ' +
           'google_review_url, zillow_review_url, intro_video_url, ' +
           'social_instagram, social_facebook, social_linkedin, social_youtube, social_tiktok, social_x'
       )
@@ -289,6 +290,8 @@ export const getBrokers = unstable_cache(
         bio: (row.bio as string | null) ?? null,
         isPrincipal: /principal/i.test(title) || (row.sort_order as number) === 0,
         emailSignature: (row.email_signature as string | null) ?? null,
+        gmailSignatureHtml: (row.gmail_signature_html as string | null) ?? null,
+        gmailSignatureSyncedAt: (row.gmail_signature_synced_at as string | null) ?? null,
         tagline: (row.tagline as string | null) ?? null,
         specialties: Array.isArray(row.specialties) ? (row.specialties as string[]) : [],
         designations: Array.isArray(row.designations) ? (row.designations as string[]) : [],
@@ -310,10 +313,10 @@ export const getBrokers = unstable_cache(
       }
     })
   },
-  // v5: projection adds email_signature (P1-6 signature wiring, 2026-07-02) —
-  // key bump orphans v4 entries that lack the column.
-  // (v4: 2026-07-02 broker-number fix — see getBrokerBySlug.)
-  ['brokers-v5'],
+  // v6: projection adds gmail_signature_html + synced_at (Gmail signature
+  // sync, 2026-07-09) — key bump orphans v5 entries that lack the columns.
+  // (v5: email_signature, P1-6 signature wiring 2026-07-02.)
+  ['brokers-v6'],
   {
     revalidate: CACHE_WINDOWS.brokers,
     tags: [cacheTag.brokers],

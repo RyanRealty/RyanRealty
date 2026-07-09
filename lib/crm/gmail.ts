@@ -19,7 +19,7 @@ import { createHash } from 'node:crypto'
 import { google, type gmail_v1 } from 'googleapis'
 import { createServiceClient } from '@/lib/supabase/service'
 import { CRM_BROKER_BY_EMAIL, type CrmBrokerSlug } from '@/lib/crm/constants'
-import { composeOutboundHtml, prepareOutboundEmailBody } from '@/lib/crm/email-body'
+import { composeOutboundHtml, prepareOutboundEmailBody, type EmailBodyFormat } from '@/lib/crm/email-body'
 
 // System/notification senders that must never create timeline entries — their
 // mail is platform noise (FUB missed-call alerts, surveys, port updates), not
@@ -299,6 +299,17 @@ function wrap76(b64: string): string {
   return b64.replace(/.{1,76}/g, '$&\r\n').trimEnd()
 }
 
+/**
+ * RFC 2047 encoded-word for non-ASCII header values. A raw UTF-8 subject like
+ * "Re: 123 Main St — offer" mojibakes in every client (headers have no
+ * charset), verified live 2026-07-09: "—" arrived as "Ã¢Â€Â”".
+ */
+function encodeHeaderValue(value: string): string {
+  return /^[\x20-\x7e]*$/.test(value)
+    ? value
+    : `=?UTF-8?B?${Buffer.from(value, 'utf8').toString('base64')}?=`
+}
+
 export async function sendCrmEmail(params: {
   fromMailbox: string
   to: string
@@ -312,12 +323,15 @@ export async function sendCrmEmail(params: {
    *  opens/clicks log to the comms chain. Omit for internal/broker emails. */
   track?: { personId: number; emailKey: string; label?: string }
   attachments?: CrmEmailAttachment[]
+  /** Composer's explicit Text/HTML choice. Omit ('auto') everywhere else. */
+  bodyFormat?: EmailBodyFormat
 }): Promise<{ ok: true; gmailId: string; plainBody: string } | { ok: false; error: string }> {
   const gmail = getGmailFor(params.fromMailbox, SEND)
   if (!gmail) return { ok: false, error: 'service account not configured' }
 
   const source = params.bodyHtml?.trim() || params.bodyText
-  let { html, plain } = prepareOutboundEmailBody(source)
+  const bodyFormat: EmailBodyFormat = params.bodyHtml?.trim() ? 'html' : (params.bodyFormat ?? 'auto')
+  let { html, plain } = prepareOutboundEmailBody(source, bodyFormat)
 
   if (params.withSignature) {
     const { getSignatureForMailbox } = await import('@/lib/crm/email-signature')
@@ -325,7 +339,7 @@ export async function sendCrmEmail(params: {
     if (sig) {
       // Same composition as the composer preview (lib/crm/email-body.ts) —
       // plain-text bodies get wrapped so the HTML signature renders always.
-      html = composeOutboundHtml(source, sig.html)
+      html = composeOutboundHtml(source, sig.html, bodyFormat)
       plain = plain + '\n' + sig.plain
     }
   }
@@ -339,7 +353,7 @@ export async function sendCrmEmail(params: {
   const headers = [
     `From: ${params.fromMailbox}`,
     `To: ${params.to}`,
-    `Subject: ${params.subject}`,
+    `Subject: ${encodeHeaderValue(params.subject)}`,
     'MIME-Version: 1.0',
   ]
 
@@ -351,12 +365,12 @@ export async function sendCrmEmail(params: {
     bodyBlock = [
       `--${altBoundary}`,
       'Content-Type: text/plain; charset=UTF-8',
-      'Content-Transfer-Encoding: 7bit',
+      'Content-Transfer-Encoding: 8bit',
       '',
       plain,
       `--${altBoundary}`,
       'Content-Type: text/html; charset=UTF-8',
-      'Content-Transfer-Encoding: 7bit',
+      'Content-Transfer-Encoding: 8bit',
       '',
       html,
       `--${altBoundary}--`,

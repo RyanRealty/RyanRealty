@@ -100,13 +100,15 @@ if (meta) {
     /\/insights/.test(meta) && /fetchMetaPostMetrics/.test(meta))
 }
 
-// 5. Attribution must match on utm parsed from sourceUrl (FUB exposes sourceUrl but
-//    NOT utmContent), and the seller LP must forward the inbound utm into sourceUrl.
+// 5. Attribution must recover the utm_content → action_id linkage. Two accepted
+//    implementations: the legacy FUB path parsed it out of sourceUrl (FUB never
+//    exposed utmContent), and the CRM-native path (FUB purge 2026-07-09) matches
+//    the ad-content:* tag the LPs stamp at capture (lib/crm/lead-source.ts).
 const attr = read('app/api/cron/seller-lead-attribution/route.ts')
 check('seller-lead-attribution/route.ts is missing', attr !== null)
 if (attr) {
-  check('seller-lead-attribution must recover utm from sourceUrl (FUB has no utmContent field)',
-    /utmFromSourceUrl|searchParams\.get\(\s*['"]utm_content['"]\s*\)/.test(attr))
+  check('seller-lead-attribution must recover the utm_content linkage (sourceUrl parse or ad-content:* tag)',
+    /utmFromSourceUrl|searchParams\.get\(\s*['"]utm_content['"]\s*\)|ad-content:/.test(attr))
 }
 const lp = read('app/lp/seller-home-value/actions.ts')
 check('seller LP actions.ts is missing', lp !== null)
@@ -122,8 +124,8 @@ if (lp) {
 const battr = read('app/api/cron/buyer-lead-attribution/route.ts')
 check('buyer-lead-attribution/route.ts is missing', battr !== null)
 if (battr) {
-  check('buyer-lead-attribution must recover utm from sourceUrl (FUB has no utmContent field)',
-    /utmFromSourceUrl|searchParams\.get\(\s*['"]utm_content['"]\s*\)/.test(battr))
+  check('buyer-lead-attribution must recover the utm_content linkage (sourceUrl parse or ad-content:* tag)',
+    /utmFromSourceUrl|searchParams\.get\(\s*['"]utm_content['"]\s*\)|ad-content:/.test(battr))
   check('buyer-lead-attribution must increment north_star_attributed_buyer_leads',
     /north_star_attributed_buyer_leads/.test(battr))
 }

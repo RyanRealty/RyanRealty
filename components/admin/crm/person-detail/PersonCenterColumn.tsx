@@ -50,6 +50,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
+import { TimelineMediaStrip } from '@/components/admin/crm/StoredAttachments'
 import { partitionNotes } from '@/lib/crm/note-classify'
 import { addCrmNoteAction, startCrmCallAction } from '@/app/actions/crm'
 import { logCrmCallAction, quickFollowUpAction, toggleTimelineStarAction } from '@/app/actions/crm-person-detail'
@@ -233,6 +234,8 @@ function EventCard({ item }: { item: TimelineItem }) {
             {long ? <span className="mt-0.5 text-xs font-medium text-primary">{expanded ? 'Show less' : 'Show more'}</span> : null}
           </button>
         ) : null}
+        {/* MMS media + stored outbound attachments (sent email files / MMS). */}
+        <TimelineMediaStrip payload={item.payload} />
       </div>
     </div>
   )

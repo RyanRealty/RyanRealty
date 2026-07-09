@@ -90,7 +90,8 @@ const REQUIRED_KIT_PAGES = [
   // committed verify screenshot) — a STRICTER contract than the ConsoleSection
   // floor, so this is a hand-off, not a regression (same as the §07 lead detail).
   'app/admin/(protected)/forms/page.tsx',
-  'app/admin/(protected)/fub-attribution/page.tsx',
+  // app/admin/(protected)/fub-attribution/page.tsx — REMOVED 2026-07-09: page
+  // deleted in the FUB-decommission purge (ee341a97); entry retired with it.
 ]
 
 const KIT_IMPORT = /@\/components\/console\/ConsoleSection/

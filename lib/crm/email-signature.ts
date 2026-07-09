@@ -4,10 +4,15 @@
  * public.brokers row (via the getBrokers DAL) so a phone or license change
  * propagates without a code edit.
  *
- * A broker-authored custom signature (brokers.email_signature, saved from §9
- * My Settings on desktop + mobile) replaces the generated identity block when
- * present; blank/unset falls back to the generated one. Either way the Oregon
- * agency-pamphlet compliance line is appended (see below).
+ * Precedence (Matt directive 2026-07-09 — CRM signatures must MATCH Gmail):
+ *   1. Gmail-synced signature (brokers.gmail_signature_html, pulled verbatim
+ *      from the broker's Gmail sendAs settings by
+ *      lib/crm/gmail-signature-sync.ts) — used as-is, so what a client sees
+ *      from the CRM is byte-identical to what they see from Gmail.
+ *   2. Broker-authored custom signature (brokers.email_signature, §9 My
+ *      Settings) — plain text, replaces the generated identity block.
+ *   3. Generated identity block (name/title/license/contact from the row).
+ * Every variant appends the Oregon agency-pamphlet compliance line (below).
  *
  * Carries the Oregon Initial Agency Disclosure Pamphlet link — ORS 696.820 +
  * OAR 863-015-0215 require delivery at first contact, and email is an
@@ -21,6 +26,7 @@
  */
 import { getBrokers } from '@/lib/data'
 import type { Broker } from '@/lib/data/types/broker'
+import { htmlToPlainText } from '@/lib/crm/email-body'
 
 export const AGENCY_PAMPHLET_URL =
   'https://ryan-realty.com/docs/oregon-initial-agency-disclosure-pamphlet.pdf'
@@ -70,9 +76,30 @@ function buildCustomSignature(custom: string): BrokerSignature {
   return { html, plain }
 }
 
+/**
+ * Gmail-synced variant: the broker's real Gmail sendAs signature HTML is used
+ * VERBATIM (Gmail signatures are already email-client-safe inline-styled
+ * HTML), so CRM sends match Gmail sends exactly. The Oregon pamphlet
+ * compliance line is still appended — that guarantee survives every variant.
+ */
+function buildGmailSignature(gmailHtml: string): BrokerSignature {
+  const html = `<div style="margin-top:28px">${gmailHtml}${pamphletHtml()}</div>`
+  const plain = [
+    '',
+    '--',
+    htmlToPlainText(gmailHtml),
+    `Oregon Initial Agency Disclosure Pamphlet (ORS 696.820): ${AGENCY_PAMPHLET_URL}`,
+  ].join('\n')
+  return { html, plain }
+}
+
 export function buildSignature(broker: Broker): BrokerSignature {
-  // §9 My Settings custom signature wins when present (falls back to the
-  // generated identity block below when blank/unset).
+  // Gmail-synced signature wins outright — see precedence in the file header.
+  const gmailSig = (broker.gmailSignatureHtml ?? '').trim()
+  if (gmailSig) return buildGmailSignature(gmailSig)
+
+  // §9 My Settings custom signature next (falls back to the generated
+  // identity block below when blank/unset).
   const custom = (broker.emailSignature ?? '').trim()
   if (custom) return buildCustomSignature(custom)
 

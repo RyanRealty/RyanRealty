@@ -554,21 +554,20 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   const scoped = await requirePersonInScope(personId, access.access)
   if (!scoped.ok) return scoped
 
-  // Optional attachment (<=10MB, same allowlist as MMS plus common doc types).
-  const attachmentFile = formData.get('attachment') as File | null
-  let emailAttachments: { filename: string; content: Buffer; mimeType: string }[] | undefined
-  if (attachmentFile && attachmentFile.size > 0) {
-    const MAX_EMAIL_ATTACHMENT_BYTES = 10 * 1024 * 1024
-    if (attachmentFile.size > MAX_EMAIL_ATTACHMENT_BYTES) {
-      return { ok: false, error: 'Email attachments must be under 10MB' }
-    }
-    const buf = Buffer.from(await attachmentFile.arrayBuffer())
-    emailAttachments = [{
-      filename: attachmentFile.name,
-      content: buf,
-      mimeType: attachmentFile.type || 'application/octet-stream',
-    }]
-  }
+  // Composer's explicit Text/HTML choice ('auto' for legacy posts).
+  const bodyFormatRaw = String(formData.get('bodyFormat') ?? '')
+  const bodyFormat = bodyFormatRaw === 'text' || bodyFormatRaw === 'html' ? bodyFormatRaw : 'auto'
+
+  // Attachments arrive as crm-files storage paths (uploaded client-direct via
+  // createCrmAttachmentUploadAction). Path ownership + size caps re-validated
+  // here — the hidden field is client-editable.
+  const { parseAttachmentRefs } = await import('@/lib/crm/attachment-limits')
+  const refs = parseAttachmentRefs(String(formData.get('attachments') ?? ''), 'email', personId)
+  if (!refs.ok) return refs
+  const { loadEmailAttachments } = await import('@/lib/crm/attachments')
+  const loaded = await loadEmailAttachments(refs.items)
+  if (!loaded.ok) return loaded
+  const emailAttachments = loaded.attachments
 
   const sb = createServiceClient()
   const { data: person } = await sb
@@ -600,7 +599,7 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
   const sent = await sendCrmEmail({
     fromMailbox: mailbox.email, to, subject: mergedSubject, bodyText: mergedBody, withSignature: true,
-    attachments: emailAttachments,
+    attachments: emailAttachments, bodyFormat,
     // Instrument open/click like the sequence engine so the conversation
     // engagement panel ("Opened N×") works for manually-composed emails too.
     // label MUST equal the subject — the panel keys engagement on the email title.
@@ -619,7 +618,12 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
 
   await sb.from('crm_timeline').insert({
     person_id: personId, kind: 'email_out', title: mergedSubject, body: sent.plainBody,
-    payload: { gmailId: sent.gmailId, to, mailbox: mailbox.email },
+    payload: {
+      gmailId: sent.gmailId, to, mailbox: mailbox.email,
+      // Storage-backed refs so the thread renders the sent files forever
+      // (served by /api/admin/crm/attachment).
+      ...(refs.items.length ? { attachments: refs.items } : {}),
+    },
     broker: mailbox.slug, source: 'app', dedupe_key: `gmail:${sent.gmailId}:p${personId}`,
   })
   revalidateCrm(personId)
@@ -904,16 +908,23 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   const scoped = await requirePersonInScope(personId, access.access)
   if (!scoped.ok) return scoped
 
-  // Optional MMS attachment (image/PDF, <=5MB). Uploaded once up front and
-  // reused across every recipient in this send (group + broadcast paths).
-  const attachment = formData.get('attachment') as File | null
+  // MMS attachments arrive as crm-files storage paths (uploaded client-direct
+  // via createCrmAttachmentUploadAction — form POSTs cap at ~4.5MB on Vercel).
+  // Ownership + type/size caps re-validated here; signed URLs are minted fresh
+  // right before the send so Twilio's fetch window never expires mid-flight.
+  const { parseAttachmentRefs } = await import('@/lib/crm/attachment-limits')
+  const refs = parseAttachmentRefs(String(formData.get('attachments') ?? ''), 'mms', personId)
+  if (!refs.ok) return refs
   let mediaUrls: string[] | undefined
-  if (attachment && attachment.size > 0) {
-    const { uploadMmsMedia } = await import('@/lib/crm/mms-media')
-    const uploaded = await uploadMmsMedia({ personId, file: attachment })
-    if (!uploaded.ok) return { ok: false, error: uploaded.error }
-    mediaUrls = [uploaded.signedUrl]
+  if (refs.items.length) {
+    const { signAttachmentUrls } = await import('@/lib/crm/attachments')
+    const signed = await signAttachmentUrls(refs.items)
+    if (!signed.ok) return signed
+    mediaUrls = signed.urls
   }
+  // Timeline payload shape for stored outbound media (path-based entries —
+  // the thread serves them via /api/admin/crm/attachment).
+  const storedMedia = refs.items.map((r) => ({ path: r.path, name: r.name, contentType: r.contentType }))
 
   // Group text: the broker can quick-add other people linked to the lead (e.g. a
   // spouse) in the composer. `recipientIds` is a comma-separated list of extra
@@ -967,17 +978,34 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
         const groupCtx = await buildMergeContext({ person: primaryTarget.person, senderSlug: slug })
         const mergedBody = attributeSiteLinks(renderCrmMerge(body, primaryTarget.person, groupCtx), slug, primaryTarget.person.fub_legacy_id as number | null)
         const { sendGroupMms } = await import('@/lib/crm/twilio-conversations')
+        // Conversations media can't ride a URL — download the stored bytes and
+        // upload them to Twilio's MCS inside sendGroupMms. (Before 2026-07-09
+        // group sends silently DROPPED the attachment.)
+        const { loadGroupMedia } = await import('@/lib/crm/attachments')
+        const gm = await loadGroupMedia(refs.items)
+        if (!gm.ok) return gm
+        const groupMedia = gm.media
         const group = await sendGroupMms({
           projectedAddress: proxy,
           participants: members.map((m) => m.phone),
           body: mergedBody,
           friendlyName: `Group · ${primaryTarget.person.name ?? personId}`,
+          media: groupMedia,
         })
         if (group.ok) {
           for (const m of members) {
             await sb.from('crm_timeline').insert({
               person_id: m.rid, kind: 'sms_out', title: 'Group text sent', body: mergedBody,
-              payload: { conversationSid: group.conversationSid, messageSid: group.messageSid, groupTo: members.map((x) => x.phone) },
+              payload: {
+                conversationSid: group.conversationSid, messageSid: group.messageSid,
+                groupTo: members.map((x) => x.phone),
+                // sid + chatServiceSid + media let the existing IM media proxy
+                // (/api/admin/crm/mms/[messageSid]/[mediaSid]) render the sent
+                // attachments in the thread, same as inbound group media.
+                ...(group.media.length
+                  ? { sid: group.messageSid, chatServiceSid: group.chatServiceSid, media: group.media }
+                  : {}),
+              },
               broker: slug, source: 'app', dedupe_key: `twilio:${group.messageSid}:p${m.rid}`,
             })
           }
@@ -1014,7 +1042,12 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
 
     await sb.from('crm_timeline').insert({
       person_id: rid, kind: 'sms_out', title: 'Text sent', body: mergedBody,
-      payload: { twilioSid: sent.sid, to, hasMedia: Boolean(mediaUrls?.length) },
+      payload: {
+        twilioSid: sent.sid, to, hasMedia: Boolean(mediaUrls?.length),
+        // Storage-backed refs so the thread re-renders the sent media forever
+        // (the 15-min signed URLs above are only for Twilio's fetch).
+        ...(storedMedia.length ? { media: storedMedia } : {}),
+      },
       broker: slug, source: 'app', dedupe_key: `twilio:${sent.sid}:p${rid}`,
     })
     sentCount++

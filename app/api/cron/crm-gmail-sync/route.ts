@@ -8,7 +8,10 @@
  */
 
 import { NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { CRM_MAILBOXES, loadEmailPersonMap, syncMailboxWindow } from '@/lib/crm/gmail'
+import { syncGmailSignaturesIfStale } from '@/lib/crm/gmail-signature-sync'
+import { cacheTag } from '@/lib/data/cache/unstable-cache'
 import { createServiceClient } from '@/lib/supabase/service'
 
 export const runtime = 'nodejs'
@@ -41,6 +44,19 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: true, skipped: 'previous run still in progress' })
   }
 
+  // Gmail signature sync (Matt directive 2026-07-09: CRM signatures must match
+  // Gmail) — staleness-gated to ~every 6h; 3 cheap sendAs.list calls when it
+  // runs. Failures never block the mailbox sync below.
+  let signatureSync: Awaited<ReturnType<typeof syncGmailSignaturesIfStale>> | { ran: false; error: string }
+  try {
+    signatureSync = await syncGmailSignaturesIfStale(6)
+    if (signatureSync.ran && signatureSync.results?.some((r) => r.ok)) {
+      revalidateTag(cacheTag.brokers, 'max')
+    }
+  } catch (e) {
+    signatureSync = { ran: false, error: e instanceof Error ? e.message : String(e) }
+  }
+
   const emailMap = await loadEmailPersonMap()
   const results = []
   for (const mb of CRM_MAILBOXES) {
@@ -52,6 +68,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     ok: !anyError,
     results,
+    signatureSync,
     duration_ms: Date.now() - startMs,
   }, { status: anyError ? 500 : 200 })
 }
