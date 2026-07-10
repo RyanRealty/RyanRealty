@@ -1,0 +1,81 @@
+---
+name: creative-brain
+description: >
+  The Ryan Realty creative brain — the permanent, compounding knowledge system
+  for making engaging art (animation, video, visual pieces). Load BEFORE any
+  creative work: AI video, animations, ad creative, art pieces, brand films,
+  "make something cool". Matt's standing directive: Ryan Realty is a
+  brokerage / ART HOUSE — the coolest possible work, never derivative, built
+  on the processes of the masters and the science of feeling. Also load when
+  Matt says "creative brain", "art house", "make an animation", or critiques
+  work as derivative/slop.
+---
+
+# The Creative Brain
+
+Ryan Realty is a brokerage / **art house**. The product of this skill is work that makes someone stop, feel something, and watch again. Housing relevance is optional. Slop is fatal.
+
+**Matt's standing prompt (locked 2026-07-09, applies always):** *"Bring me one idea with a formal constraint, stolen from art history not AI feeds. Make five takes, kill four, show me only what you'd hang."*
+
+## The brain's anatomy — what to load when
+
+| Volume | Load when |
+|---|---|
+| [references/masters-processes.md](references/masters-processes.md) | Starting any new piece; work feels derivative. Hertzfeldt, Schwizgebel, McLaren, Švankmajer, Miyazaki + the 10 process laws |
+| [references/studio-pipeline.md](references/studio-pipeline.md) | Before production. The 9-stage pipeline and what each stage kills |
+| [references/ai-filmmakers.md](references/ai-filmmakers.md) | Before any AI generation session. Trillo, shy kids, AIFF winners + the 10 art-vs-slop rules |
+| [references/neuroaesthetics.md](references/neuroaesthetics.md) | Any palette/composition/grade/motion decision. The visual pleasure formula |
+| [references/emotion-mechanics.md](references/emotion-mechanics.md) | Choosing what the piece makes the viewer FEEL (decided first). The feel-good palette |
+| [references/marketing-psychology.md](references/marketing-psychology.md) | Deciding why/where a piece runs. How feeling builds brands |
+| [LESSONS.md](LESSONS.md) | ALWAYS — read before generating, append after learning |
+
+## The four laws (violate none)
+
+1. **AI video is only for what cannot be filmed.** Filmable → license or shoot. Check asset provenance first (we once animated frame 1 of a stock video).
+2. **Never derivative.** If a model would produce it unprompted, or a template effect exists for it (Cakeify/Squish/Ghibli-filter), it's the slop lane. Taste sources are Annecy, AIFF, art history, the masters — never "AI video trends."
+3. **The idea must survive one sentence** (Patrick Clair's test). Style masquerading as story dies at intake.
+4. **Feeling is chosen before anything else.** Know/feel/do (Giant Ant) — and FEEL outranks. Pick the target emotion from the feel-good palette, then engineer it.
+
+## The operating pipeline (our synthesis of all six volumes)
+
+**0. FEEL** — pick one target emotion (awe / chills / being-moved / satisfying / delight / humor). One per piece. The master pattern under all of them: **anticipation → violation-better-than-expected → resolution.** Structure the piece as one anticipation curve.
+
+**1. IDEA + CONSTRAINT** — one sentence, plus a hard formal constraint chosen BEFORE the story (one unbroken line, one continuous shot, one material, two colors, no cuts). The constraint is the idea engine (Night Boots: "the technique guided the writing"). Keep a fragment bank; assembly is the writing (Hertzfeldt).
+
+**2. LINEAGE** — name the non-AI artistic lineage the piece borrows from (Hopper, McLaren, Schwizgebel, Steinberg...). This is the anchor that breaks the model's default aesthetic (Trillo's method).
+
+**3. SOUND SPINE** — lock the temporal skeleton with sound FIRST (Schwizgebel gives his composer bpm per sequence; Hertzfeldt builds around found audio). Never "add audio in post."
+
+**4. STYLE FRAME — authored, iterated, gallery-grade.** We author frame 1 ourselves (code, SVG, composite, our own assets) — the model only ever gets to move what we made. Iterate the STILL until it would hang; a weak drawing animated is a weak film (One Line lesson). Apply the visual pleasure formula: instant legibility, colors of liked things, prospect-refuge if landscape, curves, peak-shifted grade. **No typography or exact numbers inside any frame a model will touch — type in post, always.**
+
+**5. TIMED BOARD** — write the seconds on the board (Ghibli e-konte). Schedule **ma** — the pauses ARE content. Place the anticipation cue as early as possible; the payoff lands on a NEW element entering (sound + image within 2 frames).
+
+**6. MOTION TEST** — prove the riskiest movement cheapest-first (Gondry's oranges on a sidewalk; Buck's pencil tests). For formal-constraint pieces, code animation (PIL/Remotion/SVG stroke-reveal) IS the art-house tool — exact path, exact timing, zero drift.
+
+**7. PRODUCTION — overgenerate, then curate like a documentarian.** Keep-rates of the masters: Trillo 10%, shy kids 0.3%. Multiple models per shot are multiple takes. Per-shot medium choice (code / i2v / t2v / hybrid / practical). Log style-drifts — some are gifts (the porcelain elk), but when the constraint IS the piece, drift = death.
+
+**8. EDIT** — authorship lives here. Cut to the sound spine word-by-word. Fight the model's rhythm: earned long takes read as authorship; 3-second cuts read as slop.
+
+**9. POST** — unified grade + added grain/texture across all shots (how disparate generations become one film), type and numbers composited in, break the default sheen on purpose.
+
+**10. JUDGE, SCREEN, LEDGER** — kill-rate before Matt sees anything: would it hang? Is frame 1 something a model would produce unprompted? Did the constraint survive? Surface survivors in a screening-room contact sheet with honest verdicts and rankings. Draft-first: nothing publishes without Matt's explicit approval. Then **append what was learned to LESSONS.md — a session that learned something and didn't write it down has failed** (McLaren wrote technical notes for 51 years).
+
+## The kill tests (run before showing anything)
+
+- **One-sentence test** — can't compress → don't know what it is → dead.
+- **The hang test** — would this survive on a gallery wall / in an Annecy shorts block, or only in a feed?
+- **The trope test** — is any part of this the FIRST thing a model produces for this kind of idea? (The whiteboard-hand rule.)
+- **The filmable test** — could a camera capture this? Then why are we generating it?
+- **The broken-detail test** — transportation dies on one incoherent detail; AI glitches kill absorption unless the glitch is the authored subject (Costa Verde's memory-logic).
+
+## Retention protocol — how this brain compounds
+
+1. **Every session appends lessons to [LESSONS.md](LESSONS.md)** the moment they surface. Dated, specific, with the failure or discovery named.
+2. **Every new research stream becomes a reference volume** in `references/` with sources — never a chat-only finding.
+3. **Skill and reference updates commit + push autonomously** (per `feedback_skill_authoring_autonomy` — knowledge infrastructure is not a gated deliverable; content still is).
+4. **Auto-memory carries the pointer** (`feedback_arthouse_animations.md` → this skill), so every future session finds the brain.
+5. **Recon before every batch:** what did Annecy/AIFF just reward? Polish depreciates monthly; ideas don't.
+
+## Compliance floor (when a piece ships as an ad)
+
+Brand voice rules and §0 data accuracy still bind anything public: any on-screen number carries a verification trace, AI-generated content gets Meta's "digitally created" flag + disclosure where it could read as real, Housing Special Ad Category when it promotes real-estate services, no fake or implied listings ever, draft-first commit-last always.

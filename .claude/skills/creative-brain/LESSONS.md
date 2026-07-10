@@ -1,0 +1,17 @@
+# LESSONS — the empirical ledger
+
+Append-only. Every creative session that learns something adds it here with a date. This is McLaren's 51 years of technical notes, for us. A lesson that lives only in chat history is a lesson we will pay for twice.
+
+## 2026-07-09 — Session 1 (the founding batch)
+
+1. **Models regress to the nearest training cliché of your idea.** "A line draws itself" → Veo produced a photorealistic hand holding a marker (the YouTube whiteboard-explainer trope) despite "invisible pen, no hands" in prompt AND negative prompt. Fix: never name trope-adjacent framings ("draws itself", "pen") — describe the phenomenon abstractly ("the line grows like a living thread"), or don't use a model at all.
+2. **Veo negative prompts are weak on nouns you also mention positively.** Saying "no hands" appears to have INDUCED the hand. Don't mention the thing you don't want; describe only what you want.
+3. **Never bake typography into a frame a model will animate.** Kling mutated the heritage lettering into gibberish ("PUECRAE · TILT"). Type goes in post, always. Same for any number that must be exact.
+4. **Kling 2.5 style-drift can be a gift.** Asked for flat navy-ink-on-cream morph; delivered a sculptural porcelain elk exhaling smoke in a misty forest — better than the brief. Log drifts; some are new directions. But when the constraint IS the piece (One Line), drift = death.
+5. **Hailuo 2.3 t2v is 16:9 only.** Portrait requires a first_frame_image anchor.
+6. **For absolute formal constraints, animate in code.** The one-line film's truest execution is parametric (PIL/Remotion stroke-reveal): exact path, exact timing, zero AI sheen. AI adds nothing to a constraint piece except drift. Code animation IS an art-house technique (McLaren's direct control, digitally).
+7. **I skipped the style-frame stage and paid for it.** One Line v1/v2 went straight from idea to production; the pine read as scribble and the far ridge as a stock chart. The studio pipeline exists for a reason: iterate the STILL until it's gallery-grade, then animate. A weak drawing animated is a weak film.
+8. **Check asset provenance before animating a photo.** hero-old-mill-master-4k.jpg is frame 1 of a stock VIDEO (iStock-1330945786) — animating it regenerated motion that already exists as licensable footage. Filmable = license/shoot, never generate.
+9. **Researching "AI video trends" produces derivative work by construction.** The trend lane (Cakeify/Squish/Melting/Ghibli-filter) is the slop lane. Taste sources: Annecy, AIFF, festival shorts, art history. Matt's exact words: "LOOK FOR TRUE ART HOUSES."
+10. **Replicate ops:** predictions POST can hang (use --max-time / urllib timeouts + retry on 429); prediction JSON contains control chars (parse with strict=False); heredoc temp files written in a timed-out Bash call may not persist — write files via Python, not heredocs, for critical steps.
+11. **Working stack verified 2026-07-09:** Veo 3.1 + 3.1 Fast (native audio, i2v, 1080p), Kling 2.5 Turbo Pro (i2v respects start_image aspect), Hailuo 2.3, Seedance 1 Pro (t2v aspect_ratio incl. 9:16, up to 1080p), Wan 2.5. Kling 3.0 NOT on Replicate yet. Sora discontinued 2026. Costs observed: Veo 3.1 Fast 8s/720p ≈ $1-2; full batch of 6 generations ≈ $10-15.

@@ -68,6 +68,8 @@ next-env.d.ts
 !.claude/skills/growth-loop/
 # ...and the local-seo loop skill — the GBP / map-pack / citations layer that complements growth-loop
 !.claude/skills/local-seo/
+# ...and the creative-brain — the permanent compounding creative knowledge system (6 research volumes + LESSONS ledger); tracked so it survives clones and compounds across sessions
+!.claude/skills/creative-brain/
 .claude/worktrees
 .claude/cache
 .claude/projects
