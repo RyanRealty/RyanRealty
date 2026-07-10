@@ -24,6 +24,8 @@ import { isValidCronAuth } from '@/lib/auth/cron-auth'
 import { getA2pCampaignStatus, getAccountType } from '@/lib/crm/twilio'
 import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
 import { evaluateHealthRules, type HealthSignals } from '@/lib/crm/health-rules'
+import { validateSegment, type CrmNode } from '@/lib/crm/segment-ast'
+import { buildCrmPeopleQuery } from '@/lib/data/crm/buildCrmPeopleQuery'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -37,6 +39,66 @@ const INBOUND_LOOKBACK_HOURS = 24
 const SEND_LOOKBACK_HOURS = 24
 /** Re-page cadence for a still-firing alarm (matches the cron interval x N). */
 const ALERT_COOLDOWN_MINUTES = 360
+
+/**
+ * Every EXACT geographic term in a segment: subdivision conditions still on the
+ * default eq operator, plus neighborhood slugs. These are the 593f5fe4-class
+ * inputs — a `subdivision contains` condition is the fixed form and is skipped.
+ */
+function exactGeoTerms(node: CrmNode): string[] {
+  // A group is the only node shape with `type`; conditions are bare records. A
+  // 'not' group NEGATES its child — a negated geo condition is not a positive
+  // audience term, so it contributes nothing.
+  if ('type' in node) return node.op === 'not' ? [] : node.nodes.flatMap(exactGeoTerms)
+  if (node.field === 'subdivision' && (node.op === undefined || node.op === 'eq')) return [node.value]
+  if (node.field === 'neighborhood') return [node.value]
+  return []
+}
+
+/**
+ * Live undercount signals for every saved view carrying an exact geographic
+ * condition. exactCount goes through the ONE compiler (buildCrmPeopleQuery,
+ * countOnly, unscoped) so it equals what the CRM UI shows; signalCount probes
+ * crm_people.subdivision with the same contains-ilike the compiler emits for
+ * the fixed form. Degrades to [] on any error so a read blip never blocks the
+ * other health rules.
+ */
+async function gatherGeoSmartLists(
+  sb: ReturnType<typeof createServiceClient>,
+): Promise<HealthSignals['geoSmartLists']> {
+  try {
+    const { data, error } = await sb.from('crm_saved_views').select('id,name,ast').limit(100)
+    if (error || !data) return []
+    const out: HealthSignals['geoSmartLists'] = []
+    for (const row of data) {
+      let terms: string[]
+      try {
+        terms = exactGeoTerms(validateSegment(row.ast))
+      } catch {
+        continue // a corrupt AST is getCrmSavedViews' problem, not this rule's
+      }
+      if (terms.length === 0) continue
+
+      const { query } = buildCrmPeopleQuery(sb, validateSegment(row.ast), null, { countOnly: true })
+      const exact = await query
+      let signalCount = 0
+      for (const term of terms) {
+        const probe = term.replace(/-/g, ' ').trim()
+        if (!probe) continue
+        const { count } = await sb
+          .from('crm_people')
+          .select('id', { count: 'exact', head: true })
+          .eq('deleted', false)
+          .ilike('subdivision', `%${probe}%`)
+        signalCount = Math.max(signalCount, count ?? 0)
+      }
+      out.push({ id: row.id, name: row.name, exactCount: exact.count ?? 0, signalCount })
+    }
+    return out
+  } catch {
+    return []
+  }
+}
 
 /** True when the wall-clock hour in Pacific is inside business hours. */
 function isBusinessHoursPacific(now: Date): boolean {
@@ -106,6 +168,8 @@ export async function GET(request: Request) {
   const twilioConfigured = Boolean(process.env.TWILIO_ACCOUNT_SID?.trim() && process.env.TWILIO_AUTH_TOKEN?.trim())
   const twilioReachable = twilioConfigured ? (await getAccountType()) !== null : null
 
+  const geoSmartLists = await gatherGeoSmartLists(sb)
+
   const signals: HealthSignals = {
     businessHours: isBusinessHoursPacific(now),
     hoursSinceLastInbound,
@@ -113,6 +177,7 @@ export async function GET(request: Request) {
     smsSendAttempts24h: smsOut24h.count ?? 0,
     newLeads24h: newLeads24h.count ?? 0,
     twilioReachable,
+    geoSmartLists,
   }
 
   const { alarms } = evaluateHealthRules(signals)

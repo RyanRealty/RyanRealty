@@ -77,6 +77,10 @@ for (const [id, path_, validate] of [
   ['cron.gmail-sync', '/api/cron/crm-gmail-sync?pages=1', (d) => d.ok === true],
   // Portal lead intake (FUB cutover): Zillow/Realtor lead emails → native leads.
   ['cron.portal-lead-intake', '/api/cron/crm-portal-lead-intake', (d) => d.ok === true],
+  // Geo resolver: fills neighborhood_slug/subdivision from parcel + listing +
+  // custom signals (2026-07-10 backfill). Invoking it live also re-closes any
+  // gap that opened since the nightly run.
+  ['cron.geo-resolve', '/api/cron/crm-geo-resolve', (d) => d.ok === true],
 ]) {
   await tryCheck(id, async () => {
     const res = await fetch(SITE + path_, { headers: CRON_AUTH, signal: AbortSignal.timeout(290000) });
@@ -110,6 +114,28 @@ await tryCheck('coverage.auto-enroll', async () => {
     if ((count ?? 0) === 0) uncovered++;
   }
   check('coverage.auto-enroll', uncovered === 0 ? 'PASS' : 'FAIL', `${uncovered} eligible new leads unenrolled`);
+});
+await tryCheck('coverage.geo-resolve', async () => {
+  // Resolvable-but-unresolved geo gap. The crm-geo-resolve cron (daily) applies
+  // crm_geo_backfill_candidates(); after the section-2 live invocation above,
+  // the residue should be ~0. A growing count means the cron died and new
+  // contacts are going geo-invisible again (the 2026-07-10 class).
+  const { data, error } = await sb.rpc('crm_geo_backfill_candidates');
+  if (error) throw new Error(error.message);
+  const n = (data ?? []).length;
+  check('coverage.geo-resolve', n < 50 ? 'PASS' : n < 200 ? 'WARN' : 'FAIL', `${n} resolvable contacts unresolved`);
+});
+await tryCheck('data.community-list-undercount', async () => {
+  // 593f5fe4-class guard: a community smart list whose exact geographic filter
+  // matches a fraction of its subdivision-contains signal. The health-check
+  // cron computes this through the ONE compiler (Rule 7, lib/crm/health-rules);
+  // reuse its result rather than re-implementing the count here.
+  const res = await fetch(SITE + '/api/cron/crm-health-check', { headers: CRON_AUTH, signal: AbortSignal.timeout(120000) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(`health-check ${res.status}`);
+  const bad = (data.alarms ?? []).filter((a) => String(a.key).startsWith('community-list-undercount'));
+  check('data.community-list-undercount', bad.length === 0 ? 'PASS' : 'FAIL',
+    bad.length === 0 ? `${(data.signals?.geoSmartLists ?? []).length} geo lists checked` : bad.map((a) => a.message).join(' | ').slice(0, 160));
 });
 await tryCheck('coverage.engine-stalls', async () => {
   const { count } = await sb

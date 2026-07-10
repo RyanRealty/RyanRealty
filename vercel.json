@@ -195,6 +195,10 @@
     {
       "path": "/api/cron/market-stat-consistency",
       "schedule": "40 14 * * *"
+    },
+    {
+      "path": "/api/cron/crm-geo-resolve",
+      "schedule": "10 9 * * *"
     }
   ]
 }

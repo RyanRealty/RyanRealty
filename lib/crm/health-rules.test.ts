@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   evaluateHealthRules,
   INBOUND_STALE_HOURS,
+  LIST_UNDERCOUNT_FACTOR,
+  LIST_UNDERCOUNT_SIGNAL_MIN,
   type HealthSignals,
 } from './health-rules'
 
@@ -16,6 +18,7 @@ function healthy(): HealthSignals {
     smsSendAttempts24h: 12,
     newLeads24h: 4,
     twilioReachable: true,
+    geoSmartLists: [],
   }
 }
 
@@ -124,6 +127,68 @@ describe('evaluateHealthRules', () => {
     })
   })
 
+  describe('rule: community smart list undercounting (Rule 7)', () => {
+    it('replays the Northwest Crossing incident: 26 exact vs 1,035 signal fires a warning', () => {
+      const alarm = evaluateHealthRules({
+        ...healthy(),
+        geoSmartLists: [{ id: 59, name: 'Northwest Crossing Homeowners', exactCount: 26, signalCount: 1035 }],
+      }).alarms.find((a) => a.key === 'community-list-undercount-59')
+      expect(alarm).toBeDefined()
+      expect(alarm?.severity).toBe('warning')
+      expect(alarm?.message).toContain('Northwest Crossing Homeowners')
+      expect(alarm?.message).toContain('1035')
+    })
+    it('does not fire for a healthy district list (large exact, no contains signal)', () => {
+      expect(
+        keys({
+          ...healthy(),
+          geoSmartLists: [{ id: 1, name: 'Summit West district', exactCount: 903, signalCount: 0 }],
+        }),
+      ).toEqual([])
+    })
+    it('does not fire when the signal is below the absolute minimum, even at a high ratio', () => {
+      expect(
+        keys({
+          ...healthy(),
+          geoSmartLists: [
+            { id: 2, name: 'Tiny pocket', exactCount: 1, signalCount: LIST_UNDERCOUNT_SIGNAL_MIN - 1 },
+          ],
+        }),
+      ).toEqual([])
+    })
+    it('does not fire when the list already captures most of the signal', () => {
+      expect(
+        keys({
+          ...healthy(),
+          geoSmartLists: [{ id: 3, name: 'West Hills', exactCount: 287, signalCount: 300 }],
+        }),
+      ).toEqual([])
+    })
+    it('fires for a zero-member list with a real signal (treats 0 exact as 1 for the ratio)', () => {
+      expect(
+        keys({
+          ...healthy(),
+          geoSmartLists: [
+            { id: 4, name: 'Empty list', exactCount: 0, signalCount: LIST_UNDERCOUNT_FACTOR * 3 },
+          ],
+        }),
+      ).toContain('community-list-undercount-4')
+    })
+    it('evaluates each list independently and keys alarms by list id', () => {
+      const result = evaluateHealthRules({
+        ...healthy(),
+        geoSmartLists: [
+          { id: 10, name: 'Bad', exactCount: 5, signalCount: 500 },
+          { id: 11, name: 'Fine', exactCount: 400, signalCount: 500 },
+          { id: 12, name: 'Also bad', exactCount: 2, signalCount: 60 },
+        ],
+      })
+      expect(new Set(result.alarms.map((a) => a.key))).toEqual(
+        new Set(['community-list-undercount-10', 'community-list-undercount-12']),
+      )
+    })
+  })
+
   describe('composition', () => {
     it('fires multiple independent alarms at once and only those', () => {
       const result = evaluateHealthRules({
@@ -133,6 +198,7 @@ describe('evaluateHealthRules', () => {
         smsSendAttempts24h: 3,
         newLeads24h: 0,
         twilioReachable: false,
+        geoSmartLists: [],
       })
       expect(new Set(result.alarms.map((a) => a.key))).toEqual(
         new Set([
@@ -151,6 +217,7 @@ describe('evaluateHealthRules', () => {
         smsSendAttempts24h: 3,
         newLeads24h: 0,
         twilioReachable: false,
+        geoSmartLists: [{ id: 9, name: 'Bad list', exactCount: 0, signalCount: 100 }],
       })
       for (const a of alarms) {
         expect(a.key.length).toBeGreaterThan(0)

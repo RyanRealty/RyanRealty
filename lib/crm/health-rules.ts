@@ -53,7 +53,22 @@ export interface HealthSignals {
    *  but the account call failed (rotated/invalid token → all inbound webhooks
    *  403 + all outbound blocked). null = creds not configured (skip the rule). */
   twilioReachable: boolean | null
+  /** Saved views carrying an exact geographic condition (subdivision eq /
+   *  neighborhood), annotated with live counts: `exactCount` = what the list
+   *  matches today; `signalCount` = what a subdivision-contains probe of the
+   *  same term matches. The route computes both through the one compiler /
+   *  the same ilike the compiler emits, so the numbers equal what the CRM UI
+   *  shows. Empty array = no geographic lists (rule skips). */
+  geoSmartLists: Array<{ id: number; name: string; exactCount: number; signalCount: number }>
 }
+
+/** A geographic list is "undercounting" when the contains-signal is at least
+ *  this many contacts AND at least this multiple of the list's own count.
+ *  Calibrated on the 593f5fe4 incident: "Northwest Crossing Homeowners"
+ *  matched 26 while the subdivision signal held 1,035 (~40×). A district
+ *  list (903 exact, ~0 signal) never trips. */
+export const LIST_UNDERCOUNT_SIGNAL_MIN = 25
+export const LIST_UNDERCOUNT_FACTOR = 10
 
 /** Inbound webhook is "stale" after this many hours of business-hours silence. */
 export const INBOUND_STALE_HOURS = 6
@@ -132,6 +147,28 @@ export function evaluateHealthRules(signals: HealthSignals): { alarms: HealthAla
       message:
         'Twilio is unreachable with the configured credentials. Every inbound call/text webhook will 403 and every outbound send is blocked. Check TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN (likely rotated).',
     })
+  }
+
+  // Rule 7: community smart list undercounting its geographic signal.
+  // The 593f5fe4 class: a list filters an exact canonical value (neighborhood
+  // slug or subdivision eq) for a master-planned community whose contacts
+  // actually carry dozens of MLS subdivision variants — the list quietly shows
+  // a fraction of the real audience and every send/audience built from it
+  // under-reaches. Fires while the mismatch persists so a badly-defined list
+  // is caught within one cron cycle of being created, not months later.
+  for (const list of signals.geoSmartLists) {
+    if (
+      list.signalCount >= LIST_UNDERCOUNT_SIGNAL_MIN &&
+      list.signalCount >= LIST_UNDERCOUNT_FACTOR * Math.max(list.exactCount, 1)
+    ) {
+      alarms.push({
+        key: `community-list-undercount-${list.id}`,
+        severity: 'warning',
+        message: `Smart list "${list.name}" matches ${list.exactCount} contact${
+          list.exactCount === 1 ? '' : 's'
+        } but its community's subdivision signal holds ${list.signalCount}. The filter likely uses an exact match where subdivision-contains is needed (see the Northwest Crossing fix, 593f5fe4).`,
+      })
+    }
   }
 
   return { alarms }
