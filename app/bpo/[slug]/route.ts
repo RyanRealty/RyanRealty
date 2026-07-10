@@ -43,7 +43,11 @@ export async function GET(request: Request, context: { params: Promise<{ slug: s
   // Rewrite build-time font URLs to the serving origin so CSP font-src 'self'
   // never blocks the brand display font (same fix as /cma/[slug]).
   const origin = new URL(request.url).origin
-  const html = base.replace(/https?:\/\/[^'")\s]+(\/fonts\/[^'")\s]+)/g, `${origin}$1`)
+  let html = base.replace(/https?:\/\/[^'")\s]+(\/fonts\/[^'")\s]+)/g, `${origin}$1`)
+  // Visitor tracking + email-click identity for raw-HTML documents (same
+  // injection as /cma/[slug]). See public/rr-doc-tracker.js.
+  const tracker = '<script src="/rr-doc-tracker.js" defer></script>'
+  html = html.includes('</body>') ? html.replace('</body>', `${tracker}</body>`) : html + tracker
 
   return new NextResponse(html, {
     status: 200,

@@ -42,10 +42,18 @@ export async function GET(
     // cross-origin and CSP font-src 'self' blocks it — rewrite font references
     // to the current origin so the brand display font always loads.
     const origin = new URL(request.url).origin
-    const html = row.html_content.replace(
+    let html = row.html_content.replace(
       /https?:\/\/[^'")\s]+(\/fonts\/[^'")\s]+)/g,
       `${origin}$1`,
     )
+    // Visitor tracking + email-click identity (?_pid= / ?_fuid=) for raw-HTML
+    // documents. The site's React trackers never run here, so without this
+    // script a CMA opened from a tracked email records the click but never
+    // creates or identifies a web session. See public/rr-doc-tracker.js.
+    const tracker = '<script src="/rr-doc-tracker.js" defer></script>'
+    html = html.includes('</body>')
+      ? html.replace('</body>', `${tracker}</body>`)
+      : html + tracker
     return new NextResponse(html, {
       status: 200,
       headers: {
