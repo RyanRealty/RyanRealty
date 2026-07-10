@@ -97,9 +97,14 @@ export async function findCmaSubjectByAddress(opts: {
     .ilike('StreetName', opts.streetNameIlike)
   if (opts.cityIlike?.trim()) q = q.ilike('City', opts.cityIlike.trim())
   if (opts.postalCode?.trim()) q = q.eq('PostalCode', opts.postalCode.trim())
+  // Order by real listing recency (OnMarketDate), NOT ModificationTimestamp: a
+  // bulk MLS re-sync bumps last-modified uniformly across a property's
+  // relistings, which would otherwise push an ancient listing to the top and
+  // truncate the true newest one out of the LIMIT window. resolveCmaSubject
+  // still runs its own recency sort; this keeps the newest inside the fetch.
   const { data, error } = await q
-    .order('ModificationTimestamp', { ascending: false })
-    .limit(10)
+    .order('OnMarketDate', { ascending: false, nullsFirst: false })
+    .limit(15)
   if (error) {
     console.error('[findCmaSubjectByAddress]', error.message)
     return []

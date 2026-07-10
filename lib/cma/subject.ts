@@ -129,8 +129,69 @@ export interface ResolveSubjectResult {
 }
 
 /**
- * Resolve the subject from MLS number or address parts. Returns null subject
- * with a trace explaining the miss (the build surfaces it to Matt).
+ * Real-world recency of a listing, for SUBJECT selection. Deliberately EXCLUDES
+ * ModificationTimestamp: a bulk MLS re-sync bumps it uniformly across every
+ * relisting of a property, which once made an ancient 1998 listing (1 photo,
+ * stale 97701 zip) outrank the true 2021 relisting (59 photos, correct 97703
+ * zip) simply because the re-sync touched it two hours later. Ranks a
+ * currently-on-market listing first, then the latest genuine listing-activity
+ * date, then the richest photo set — so a CMA always shows the most recent
+ * listing's photos and information for the subject (Matt directive 2026-07-10).
+ */
+function subjectRecencyKey(row: CmaListingRow): [number, number, number] {
+  const status = (str(row['StandardStatus']) ?? '').toLowerCase()
+  const onMarket = /(active|pending|coming)/.test(status) ? 1 : 0
+  const latest = ['OnMarketDate', 'ListDate', 'CloseDate', 'status_change_timestamp', 'pending_timestamp']
+    .reduce((max, key) => {
+      const v = row[key]
+      const t = v == null ? NaN : Date.parse(String(v))
+      return Number.isFinite(t) && t > max ? t : max
+    }, 0)
+  return [onMarket, latest, num(row['photos_count']) ?? 0]
+}
+
+/** Pick the single most recent listing of a property from a candidate set.
+ *  Exported for the regression test that locks "CMAs always use the most recent
+ *  listing" (Matt directive 2026-07-10). */
+export function pickMostRecentListing(rows: CmaListingRow[]): CmaListingRow {
+  return rows.slice().sort((a, b) => {
+    const ka = subjectRecencyKey(a)
+    const kb = subjectRecencyKey(b)
+    return kb[0] - ka[0] || kb[1] - ka[1] || kb[2] - ka[2]
+  })[0]!
+}
+
+/** Every listing for the same property as `row` (relistings differ in zip +
+ *  status + MLS number), so subject selection can always land on the newest. */
+async function listingsForProperty(row: CmaListingRow): Promise<CmaListingRow[]> {
+  const streetNo = str(row['StreetNumber'])
+  const streetName = str(row['StreetName'])
+  if (!streetNo || !streetName) return [row]
+  // No postal filter on purpose: a relisting can carry a re-split/corrected zip.
+  const rows = await findCmaSubjectByAddress({
+    streetNumber: streetNo,
+    streetNameIlike: `${streetName}%`,
+    cityIlike: str(row['City']),
+  })
+  if (rows.length === 0) return [row]
+  const anchorKey = str(row['ListingKey'])
+  return rows.some((r) => str(r['ListingKey']) === anchorKey) ? rows : [...rows, row]
+}
+
+function subjectTrace(entry: string, best: CmaListingRow, poolSize: number): string {
+  const when = fmtDate(str(best['OnMarketDate']) ?? str(best['ListDate']) ?? str(best['CloseDate']))
+  return (
+    `${entry} Subject uses the MOST RECENT listing of the property: MLS ${str(best['ListNumber']) ?? '—'}, ` +
+    `${(str(best['StandardStatus']) ?? '—').toLowerCase()}, ${when !== '—' ? `listed ${when}, ` : ''}` +
+    `${num(best['photos_count']) ?? 0} photo(s), zip ${str(best['PostalCode']) ?? '—'} ` +
+    `(chosen from ${poolSize} listing row(s) by real listing-activity date, not last-modified).`
+  )
+}
+
+/**
+ * Resolve the subject from MLS number or address parts. Always lands on the MOST
+ * RECENT listing of the property so the CMA carries current photos, specs, and
+ * zip. Returns null subject with a trace explaining the miss.
  */
 export async function resolveCmaSubject(opts: {
   mlsNumber?: string | null
@@ -138,13 +199,14 @@ export async function resolveCmaSubject(opts: {
   city?: string | null
   postalCode?: string | null
 }): Promise<ResolveSubjectResult> {
+  // Entry by MLS: resolve the anchor, then gather EVERY relisting of that
+  // property so an old MLS number still upgrades to the newest listing.
   if (opts.mlsNumber?.trim()) {
     const rows = await findCmaSubjectByMls(opts.mlsNumber.trim())
     if (rows.length > 0) {
-      return {
-        subject: rowToSubject(rows[0]!),
-        trace: `Subject resolved by MLS number ${opts.mlsNumber.trim()} (listings table, newest of ${rows.length} matching rows).`,
-      }
+      const pool = await listingsForProperty(rows[0]!)
+      const best = pickMostRecentListing(pool)
+      return { subject: rowToSubject(best), trace: subjectTrace(`Entered by MLS ${opts.mlsNumber.trim()}.`, best, pool.length) }
     }
   }
   const raw = opts.rawAddress?.trim()
@@ -161,12 +223,12 @@ export async function resolveCmaSubject(opts: {
   // Bend address (NW/SW ...) fails to resolve. The full name is still tried
   // first because ~600 rows DO carry a direction inside StreetName.
   const namePrefix = parsed.streetNameTokens.join(' ')
-  const candidates = [namePrefix]
+  const prefixes = [namePrefix]
   const firstToken = parsed.streetNameTokens[0]
   if (parsed.streetNameTokens.length > 1 && firstToken && DIRECTIONALS.has(firstToken)) {
-    candidates.push(parsed.streetNameTokens.slice(1).join(' '))
+    prefixes.push(parsed.streetNameTokens.slice(1).join(' '))
   }
-  for (const prefix of candidates) {
+  for (const prefix of prefixes) {
     // Two passes: city-scoped, then zip-only (city spellings drift in MLS data).
     let rows = await findCmaSubjectByAddress({
       streetNumber: parsed.streetNumber,
@@ -181,14 +243,19 @@ export async function resolveCmaSubject(opts: {
       })
     }
     if (rows.length > 0) {
+      const best = pickMostRecentListing(rows)
       return {
-        subject: rowToSubject(rows[0]!),
-        trace: `Subject resolved by address match: StreetNumber=${parsed.streetNumber}, StreetName ILIKE '${prefix}%'${parsed.city ? `, City ILIKE '${parsed.city}'` : ''}. Newest of ${rows.length} matching listings rows.`,
+        subject: rowToSubject(best),
+        trace: subjectTrace(
+          `Entered by address "${raw}" (StreetName ILIKE '${prefix}%').`,
+          best,
+          rows.length,
+        ),
       }
     }
   }
   return {
     subject: null,
-    trace: `No listings row matched StreetNumber=${parsed.streetNumber}, StreetName ILIKE '${candidates.map((c) => `${c}%`).join("' or '")}', city ${parsed.city ?? 'any'}, zip ${parsed.postalCode ?? 'any'}. The property may never have been MLS-listed.`,
+    trace: `No listings row matched StreetNumber=${parsed.streetNumber}, StreetName ILIKE '${prefixes.map((c) => `${c}%`).join("' or '")}', city ${parsed.city ?? 'any'}, zip ${parsed.postalCode ?? 'any'}. The property may never have been MLS-listed.`,
   }
 }

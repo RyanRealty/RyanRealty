@@ -186,21 +186,31 @@ Compute `slug` from the subject address (e.g. `cma-21042-robin`).  kebab-case, �
 - `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice enforcement (banned words apply to the CMA narrative)
 - This file (you are here)
 
-**Step 3.  Resolve subject from Supabase**
+**Step 3.  Resolve subject from Supabase — ALWAYS the MOST RECENT listing of the property**
+
+**HARD RULE (Matt directive 2026-07-10): a CMA must use the most recent listing's photos AND information for the subject.** A property is usually in `listings` MORE THAN ONCE (every list attempt is its own row, with its own MLS number, photos, specs, and sometimes a re-split/corrected zip). You must pick the newest one. Never trust `ModificationTimestamp` for "newest" — a bulk MLS re-sync stamps every relisting with the same near-identical last-modified time, so ordering by it once surfaced a 1998 listing (1 photo, stale 97701 zip) as the subject over the true 2021 relisting (59 photos, correct 97703 zip) on 1204 NW Iowa. Rank by real listing-activity date instead: currently-on-market first, then the latest of `OnMarketDate` / `ListDate` / `CloseDate` / `status_change_timestamp` / `pending_timestamp`, then the richest `photos_count`.
+
+The in-house builder does this for you: `resolveCmaSubject` (`lib/cma/subject.ts`) gathers every relisting of the property (no zip filter — zips drift across relistings) and calls `pickMostRecentListing`. Locked by `lib/cma/subject.test.ts`. If you resolve a subject in raw SQL for any reason, replicate the rule:
 
 ```sql
--- if subject_listing_key provided:
-SELECT * FROM listings WHERE "ListingKey" = '<key>';
+-- if subject_listing_key provided: resolve that row, then gather ALL relistings
+-- of the SAME property (street number + street name + city, NO zip filter) and
+-- pick the most recent — an old key must still upgrade to the newest listing.
 
--- else, query by address parts (PostalCode is indexed):
+-- by address parts:
 SET statement_timeout = '120s';
 SELECT * FROM listings
-WHERE "PostalCode" = '<zip>'
-  AND "StreetNumber" = '<num>'
-  AND "StreetName" ILIKE '<street>%';
+WHERE "StreetNumber" = '<num>'
+  AND "StreetName" ILIKE '<street>%'      -- Central Oregon MLS stores names WITHOUT the directional
+  AND "City" ILIKE '<city>'               -- do NOT filter PostalCode: relistings carry different zips
+ORDER BY GREATEST(
+  COALESCE("OnMarketDate", 'epoch'), COALESCE("ListDate", 'epoch'),
+  COALESCE("CloseDate", 'epoch'), COALESCE(status_change_timestamp, 'epoch')
+) DESC
+LIMIT 15;   -- then prefer an Active/Pending/Coming-Soon row, else this newest one
 ```
 
-Capture: `SubdivisionName`, `BedroomsTotal`, `BathroomsTotal`, `TotalLivingAreaSqFt`, `year_built`, `lot_size_acres`, `garage_spaces`, `Latitude`, `Longitude`, `PhotoURL`, `public_remarks`. If subject isn't in the MLS (e.g. never been listed), Matt provides the values directly in `payload.client_notes`. (Note: the listings agent fields are `list_agent_name` / `list_agent_email`, NOT `ListAgentEmail`.  the older field name in this skill was wrong.)
+Capture from the CHOSEN (newest) row: `SubdivisionName`, `BedroomsTotal`, `BathroomsTotal`, `TotalLivingAreaSqFt`, `year_built`, `lot_size_acres`, `garage_spaces`, `Latitude`, `Longitude`, `PhotoURL` (the newest listing's photo), `PostalCode` (the newest listing's zip), `public_remarks`. If subject isn't in the MLS at all (never listed), Matt provides the values directly in `payload.client_notes`. (Note: the listings agent fields are `list_agent_name` / `list_agent_email`, NOT `ListAgentEmail`.  the older field name in this skill was wrong.)
 
 **Step 3.5.  Verify zoning + land-use entitlements from the AUTHORITATIVE county record (never the MLS, never an inference)**
 
