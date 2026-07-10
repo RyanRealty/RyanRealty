@@ -19,6 +19,10 @@ Ryan Realty is a brokerage / **art house**. The product of this skill is work th
 
 ## The brain's anatomy — what to load when
 
+**Knowing is not applying. The two application instruments are mandatory:**
+- **[PLAYBOOK.md](PLAYBOOK.md)** — stage-by-stage pass/fail checks, each citing its science. Run at every stage; a failed check gets fixed or kills the piece there.
+- **[templates/piece-brief.md](templates/piece-brief.md)** — the engineering sheet copied to `out/<piece>/brief.md` and filled BEFORE production. Empty field = not ready. Worked example: [examples/everything-becomes-v2-brief.md](examples/everything-becomes-v2-brief.md).
+
 | Volume | Load when |
 |---|---|
 | [references/masters-processes.md](references/masters-processes.md) | Starting any new piece; work feels derivative. Hertzfeldt, Schwizgebel, McLaren, Švankmajer, Miyazaki + the 10 process laws |
