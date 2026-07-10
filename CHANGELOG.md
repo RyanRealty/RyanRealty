@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.760.1 (2026-07-10)
+
+### Bug Fixes
+- fix(email): lead-facing sends carry the assigned broker's identity, never a bare noreply@
+
+---
+
+
 ## v1.760.0 (2026-07-10)
 
 ### Features
