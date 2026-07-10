@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.759.0 (2026-07-10)
+
+### Features
+- feat(tracking): raw-HTML client documents join visitor tracking + email-click identity
+
+---
+
+
 ## v1.758.2 (2026-07-10)
 
 ### Bug Fixes
