@@ -102,16 +102,26 @@ async function bridgeIdentifiedPerson(
     },
   }).catch((e) => console.warn('[identity-bridge] GA4 event failed:', e))
 
-  // Stitch this browser's prior anonymous browsing history to the person.
-  // The email click is high-confidence identity (the link carried their id),
-  // so replaying their anonymous session is exactly the "put a name to the
-  // number" moment. No email here, the resolved id is the join key. Non-blocking.
+  // Stitch this browser's browsing history to the person. The email click is
+  // high-confidence identity (the link carried their id), so replaying their
+  // session is exactly the "put a name to the number" moment. No email here,
+  // the resolved id is the join key.
+  //
+  // Awaited (not void): in a serverless action a fire-and-forget promise can
+  // be frozen with the lambda and never complete. And the landing page fires
+  // the session-creating tracker POST and this identify concurrently on mount,
+  // so when the session row does not exist yet we wait one beat and retry —
+  // otherwise the very session the click created never stitches.
   if (sessionId && UUID_V4_RE.test(sessionId)) {
-    void backfillSessionToFub({
-      sessionId,
-      fubPersonId: id,
-      identifiedVia: via,
-    }).catch((e) => console.warn('[identity-bridge] session backfill failed (non-blocking):', e))
+    try {
+      const first = await backfillSessionToFub({ sessionId, fubPersonId: id, identifiedVia: via })
+      if (!first.sessionFound) {
+        await new Promise((r) => setTimeout(r, 2500))
+        await backfillSessionToFub({ sessionId, fubPersonId: id, identifiedVia: via })
+      }
+    } catch (e) {
+      console.warn('[identity-bridge] session backfill failed (non-blocking):', e)
+    }
   }
 
   return { ok: true }

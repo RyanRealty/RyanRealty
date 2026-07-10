@@ -17,7 +17,15 @@ import {
 const COOKIE_CONSENT_KEY = 'ryan_realty_cookie_consent'
 const CONSENT_EXPIRY_YEARS = 1
 
-type ConsentState = { analytics: boolean; marketing: boolean }
+export type ConsentState = { analytics: boolean; marketing: boolean }
+
+/** The stored consent choice, or null when the visitor has not answered the
+ *  banner yet. Callers that need to distinguish "no choice" (functional
+ *  essential tracking allowed) from an explicit decline use this instead of
+ *  the boolean getters. */
+export function getStoredConsent(): ConsentState | null {
+  return getConsent()
+}
 
 function getConsent(): ConsentState | null {
   if (typeof document === 'undefined') return null

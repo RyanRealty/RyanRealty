@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { trackVisit } from '@/app/actions/track-visit'
 import { trackReturnVisitAction } from '@/app/actions/track-return-visit'
-import { hasAnalyticsConsent, hasMarketingConsent, getOrCreateVisitId, autoGrantConsentForAdTraffic } from './CookieConsentBanner'
+import { hasAnalyticsConsent, getStoredConsent, getOrCreateVisitId, autoGrantConsentForAdTraffic } from './CookieConsentBanner'
 
 const FUB_LAST_VISIT_KEY = 'fub_last_visit'
 const RETURN_VISIT_MS = 24 * 60 * 60 * 1000
@@ -92,11 +92,18 @@ function categorizePage(pathname: string): string {
 
 function consentLevel(): 'all' | 'analytics' | 'essential' | 'declined' {
   if (typeof window === 'undefined') return 'declined'
-  const analytics = hasAnalyticsConsent()
-  const marketing = hasMarketingConsent()
-  if (analytics && marketing) return 'all'
-  if (analytics) return 'analytics'
-  if (analytics || marketing) return 'essential'
+  const stored = getStoredConsent()
+  // No banner answer yet -> 'essential': the track endpoint stores ONLY the
+  // minimal functional record (session_id + page URL; UTMs, geo, listing meta,
+  // referrer all stripped server-side). Treating "no choice" as declined made
+  // every visitor who ignored the banner invisible (2 sessions/day sitewide,
+  // and email-click leads never created the session their identity param was
+  // supposed to stitch — found in the 2026-07-10 E2E pass). An explicit
+  // decline is still declined, and the server also honors GPC opt-outs.
+  if (stored === null) return 'essential'
+  if (stored.analytics && stored.marketing) return 'all'
+  if (stored.analytics) return 'analytics'
+  if (stored.marketing) return 'essential'
   return 'declined'
 }
 
@@ -230,11 +237,24 @@ export default function VisitTracker({ userId, userEmail }: Props) {
     // auto-granted so THIS first page view + all on-site intent scoring fires.
     // Respects an explicit prior decision (essential/declined not overridden).
     autoGrantConsentForAdTraffic()
-    if (!hasAnalyticsConsent()) return
     // The public visitor pipeline never tracks internal admin pages.
-    if (pathname?.startsWith('/admin')) return
+    if (pathname?.startsWith('/admin') || !pathname) return
+    // Unified visitor_sessions / visitor_events pipeline — feeds the
+    // /admin/visitors/live + /admin/analytics/funnel-breakdown dashboards and
+    // the hot-lead scoring cron. Fires at EVERY non-declined consent level:
+    // with no banner answer the event goes out at 'essential' and the server
+    // stores the minimal record. Fired once per pathname (firedVisitorPath) so
+    // the userId resolution does not double-count the view.
+    if (consentLevel() !== 'declined' && firedVisitorPath.current !== pathname) {
+      firedVisitorPath.current = pathname
+      const det = detectListing(pathname)
+      fireVisitorEvent(pathname, det.isListing ? 'listing_view' : 'page_view', det.mls)
+    }
+    // Everything below (legacy visits table, GA-adjacent writes) stays behind
+    // explicit analytics consent.
+    if (!hasAnalyticsConsent()) return
     const visitId = getOrCreateVisitId()
-    if (!visitId || !pathname) return
+    if (!visitId) return
     // Legacy visits table (kept for backward-compat with existing reports) —
     // keyed by pathname+userId so a login re-associates the visit.
     const key = pathname + (userId ?? 'anon')
@@ -247,17 +267,6 @@ export default function VisitTracker({ userId, userEmail }: Props) {
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
         userId: userId ?? undefined,
       })
-    }
-    // New unified visitor_sessions / visitor_events tables — feeds the
-    // /admin/visitors/live + /admin/analytics/funnel-breakdown dashboards
-    // and the hot-lead scoring cron. Listing pages get the higher-weight
-    // event_type so the score reflects engagement intensity correctly. Fired
-    // once per pathname (see firedVisitorPath) so the userId resolution does not
-    // double-count the view.
-    if (firedVisitorPath.current !== pathname) {
-      firedVisitorPath.current = pathname
-      const det = detectListing(pathname)
-      fireVisitorEvent(pathname, det.isListing ? 'listing_view' : 'page_view', det.mls)
     }
   }, [pathname, userId])
 

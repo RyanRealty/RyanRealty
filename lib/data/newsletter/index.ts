@@ -1,5 +1,6 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/data/client'
+import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
 
 /**
  * DAL for the newsletter feature — public.newsletter_subscribers (the list) +
@@ -79,6 +80,17 @@ export async function subscribeToNewsletter(input: {
   if (!email || !email.includes('@')) return { ok: false, error: 'invalid_email' }
   const sb = createServiceClient()
 
+  // Resolve the CRM link when the caller did not pass one. A subscriber row
+  // without crm_person_id renders UN-instrumented newsletters (attributeOutbound
+  // skips the open pixel + click wrapper with no person to attribute to), so
+  // opens/clicks silently vanish — found live 2026-07-10 when a one-off to a
+  // known contact recorded zero engagement. Unambiguous email match only.
+  let crmPersonId = input.crmPersonId ?? null
+  if (crmPersonId == null) {
+    const matches = await personIdsByEmailCi(sb, email).catch(() => [] as number[])
+    if (matches.length === 1) crmPersonId = matches[0]!
+  }
+
   // Existing row (case-insensitive)?
   const { data: existing } = await sb.from(SUBS).select('id, status').ilike('email', email).maybeSingle()
   if (existing) {
@@ -89,7 +101,7 @@ export async function subscribeToNewsletter(input: {
         status: 'active',
         name: input.name ?? undefined,
         segment: input.segment ?? undefined,
-        crm_person_id: input.crmPersonId ?? undefined,
+        crm_person_id: crmPersonId ?? undefined,
         fub_person_id: input.fubPersonId ?? undefined,
         updated_at: new Date().toISOString(),
       })
@@ -103,7 +115,7 @@ export async function subscribeToNewsletter(input: {
     name: input.name ?? null,
     source: input.source,
     segment: input.segment ?? 'general',
-    crm_person_id: input.crmPersonId ?? null,
+    crm_person_id: crmPersonId,
     fub_person_id: input.fubPersonId ?? null,
   })
   if (error) { console.error('[subscribeToNewsletter:insert]', error.message); return { ok: false, error: 'persist_failed' } }
