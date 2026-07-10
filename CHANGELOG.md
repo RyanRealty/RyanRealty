@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.758.2 (2026-07-10)
+
+### Bug Fixes
+- fix(cma): months of supply now cites the canonical pulse figure, not a bespoke 365d pace
+
+---
+
+
 ## v1.758.1 (2026-07-10)
 
 ### Bug Fixes
