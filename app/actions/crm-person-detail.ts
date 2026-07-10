@@ -25,6 +25,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
+import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 
 export type PersonDetailResult = { ok: true } | { ok: false; error: string }
@@ -392,6 +393,41 @@ export async function addRelationshipContactAction(
     .map((p) => ({ value: String(p.value).replace(/\D/g, ''), label: p.label || 'Mobile', bad: Boolean(p.bad) }))
     .filter((p) => p.value.length >= 7)
   const emails = (draft.emails ?? []).map((e) => e.trim().toLowerCase()).filter((e) => /^\S+@\S+\.\S+$/.test(e))
+
+  // Dedupe before create: if an email on the draft already belongs to exactly
+  // one existing contact, LINK the relationship to that contact instead of
+  // minting a duplicate person (a spouse added from this modal is very often
+  // already in the book). An ambiguous match returns a clear error rather
+  // than guessing.
+  for (const email of emails) {
+    const matchIds = await personIdsByEmailCi(sb, email).catch(() => [] as number[])
+    const existing = matchIds.filter((id) => id !== personId)
+    if (existing.length === 1) {
+      const relatedId = existing[0]!
+      const relScope = await requirePersonInScope(relatedId, access)
+      if (!relScope.ok) return { ok: false, error: `A contact with ${email} exists but is outside your book.` }
+      const { error: relErr } = await sb.from('crm_relationships').insert([
+        { person_id: personId, related_person_id: relatedId, related_name: [first, last].filter(Boolean).join(' '), kind: relType },
+        { person_id: relatedId, related_person_id: personId, kind: relType },
+      ])
+      if (relErr) return { ok: false, error: relErr.message }
+      await sb.from('crm_timeline').insert({
+        person_id: personId,
+        kind: 'system',
+        title: `Relationship "${relType}" linked to existing contact ${[first, last].filter(Boolean).join(' ')}, matched by ${email} (by ${access.email})`,
+        source: 'app',
+        broker: access.brokerSlug ?? null,
+      })
+      revalidatePath(`${BASE}/${personId}`)
+      return { ok: true, relatedId }
+    }
+    if (existing.length > 1) {
+      return {
+        ok: false,
+        error: `${email} matches ${existing.length} existing contacts. Link the right one from the Relationships panel instead of creating a new contact.`,
+      }
+    }
+  }
 
   const { data: created, error: insErr } = await sb
     .from('crm_people')

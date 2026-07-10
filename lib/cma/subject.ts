@@ -21,6 +21,12 @@ const STREET_SUFFIXES = new Set([
   'pkwy', 'parkway', 'cir', 'circle', 'way', 'trail', 'trl', 'ter', 'terrace', 'loop',
 ])
 
+/** Leading directional tokens ("1204 NW Iowa" -> direction nw, name iowa). */
+const DIRECTIONALS = new Set([
+  'n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw',
+  'north', 'south', 'east', 'west', 'northeast', 'northwest', 'southeast', 'southwest',
+])
+
 export interface ParsedAddress {
   streetNumber: string
   streetNameTokens: string[]
@@ -149,28 +155,40 @@ export async function resolveCmaSubject(opts: {
   if (!parsed) {
     return { subject: null, trace: `Address "${raw}" could not be parsed into street number + name.` }
   }
+  // Name-prefix candidates. Central Oregon MLS stores StreetName WITHOUT the
+  // directional in ~99.9% of rows ("Iowa", not "NW Iowa"), so "1204 NW Iowa Ave"
+  // must fall back to the direction-stripped name — otherwise every westside
+  // Bend address (NW/SW ...) fails to resolve. The full name is still tried
+  // first because ~600 rows DO carry a direction inside StreetName.
   const namePrefix = parsed.streetNameTokens.join(' ')
-  // Two passes: city-scoped, then zip-only (city spellings drift in MLS data).
-  let rows = await findCmaSubjectByAddress({
-    streetNumber: parsed.streetNumber,
-    streetNameIlike: `${namePrefix}%`,
-    cityIlike: parsed.city,
-  })
-  if (rows.length === 0 && parsed.postalCode) {
-    rows = await findCmaSubjectByAddress({
-      streetNumber: parsed.streetNumber,
-      streetNameIlike: `${namePrefix}%`,
-      postalCode: parsed.postalCode,
-    })
+  const candidates = [namePrefix]
+  const firstToken = parsed.streetNameTokens[0]
+  if (parsed.streetNameTokens.length > 1 && firstToken && DIRECTIONALS.has(firstToken)) {
+    candidates.push(parsed.streetNameTokens.slice(1).join(' '))
   }
-  if (rows.length === 0) {
-    return {
-      subject: null,
-      trace: `No listings row matched StreetNumber=${parsed.streetNumber}, StreetName ILIKE '${namePrefix}%', city ${parsed.city ?? 'any'}, zip ${parsed.postalCode ?? 'any'}. The property may never have been MLS-listed.`,
+  for (const prefix of candidates) {
+    // Two passes: city-scoped, then zip-only (city spellings drift in MLS data).
+    let rows = await findCmaSubjectByAddress({
+      streetNumber: parsed.streetNumber,
+      streetNameIlike: `${prefix}%`,
+      cityIlike: parsed.city,
+    })
+    if (rows.length === 0 && parsed.postalCode) {
+      rows = await findCmaSubjectByAddress({
+        streetNumber: parsed.streetNumber,
+        streetNameIlike: `${prefix}%`,
+        postalCode: parsed.postalCode,
+      })
+    }
+    if (rows.length > 0) {
+      return {
+        subject: rowToSubject(rows[0]!),
+        trace: `Subject resolved by address match: StreetNumber=${parsed.streetNumber}, StreetName ILIKE '${prefix}%'${parsed.city ? `, City ILIKE '${parsed.city}'` : ''}. Newest of ${rows.length} matching listings rows.`,
+      }
     }
   }
   return {
-    subject: rowToSubject(rows[0]!),
-    trace: `Subject resolved by address match: StreetNumber=${parsed.streetNumber}, StreetName ILIKE '${namePrefix}%'${parsed.city ? `, City ILIKE '${parsed.city}'` : ''}. Newest of ${rows.length} matching listings rows.`,
+    subject: null,
+    trace: `No listings row matched StreetNumber=${parsed.streetNumber}, StreetName ILIKE '${candidates.map((c) => `${c}%`).join("' or '")}', city ${parsed.city ?? 'any'}, zip ${parsed.postalCode ?? 'any'}. The property may never have been MLS-listed.`,
   }
 }
