@@ -30,6 +30,7 @@
 import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { readOrThrow } from '@/lib/data/cache/resilient'
 import {
   getSchoolBySlug,
   citiesForSchool,
@@ -157,21 +158,23 @@ async function fetchSchoolHomes(school: CoSchool): Promise<SchoolHomeTile[]> {
   const cities = citiesForSchool(school)
   const column = LEVEL_COLUMN[school.level]
 
-  const { data, error } = await supabase
-    .from('listings')
-    .select(PROJECTION)
-    .in('StandardStatus', ACTIVE_STATUSES)
-    .eq('PropertyType', 'A')
-    .ilike(column, escapeIlike(school.name))
-    .in('City', cities)
-    .order('ListPrice', { ascending: false, nullsFirst: false })
-    .limit(MAX_HOMES)
-
-  if (error) {
-    // THROW (do not return []) so a transient error is never cached as
-    // "0 homes feed this school" for the full TTL. The next request retries.
-    throw new Error(`[getSchoolDetail] supabase error: ${error.message}`)
-  }
+  // readOrThrow retries the read up to 3 times, then THROWS (does not return
+  // []) so a transient error is never cached as "0 homes feed this school" for
+  // the full TTL. All 55 school pages pre-render at build (dynamicParams =
+  // false), so the retry matters: one 57014 statement timeout on this 590K-row
+  // scan must not surface as a thrown build error. The page wraps the call in
+  // .catch() as the final backstop.
+  const data = await readOrThrow(`getSchoolDetail(${school.slug})`, () =>
+    supabase
+      .from('listings')
+      .select(PROJECTION)
+      .in('StandardStatus', ACTIVE_STATUSES)
+      .eq('PropertyType', 'A')
+      .ilike(column, escapeIlike(school.name))
+      .in('City', cities)
+      .order('ListPrice', { ascending: false, nullsFirst: false })
+      .limit(MAX_HOMES),
+  )
 
   return (data ?? []).map((r) => rowToHome(r as unknown as RawRow))
 }

@@ -24,7 +24,7 @@ import {
   getGeoBoundaryMapData,
   type SchoolHomeTile,
 } from '@/lib/data'
-import { CO_SCHOOLS, slugifySchoolName, type SchoolLevel } from '@/data/co-schools'
+import { CO_SCHOOLS, getSchoolBySlug, slugifySchoolName, type SchoolLevel } from '@/data/co-schools'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
@@ -65,10 +65,12 @@ export function generateStaticParams(): Array<{ slug: string }> {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const detail = await getSchoolDetail(slug)
-  if (!detail) notFound()
+  // Registry-only — the metadata needs no live data, so it never touches the
+  // DB. That keeps a transient listings timeout from failing metadata
+  // generation (and shaves a query off every render).
+  const school = getSchoolBySlug(slug)
+  if (!school) notFound()
 
-  const { school } = detail
   const levelLabel = LEVEL_LABEL[school.level].toLowerCase()
   const desc = `${school.name} is a ${levelLabel} in ${school.city}, part of ${school.district}. See the homes for sale that feed this school from Ryan Realty, a local Central Oregon brokerage.`
 
@@ -87,10 +89,26 @@ function money(n: number | null): string {
 export default async function SchoolDetailPage({ params }: Props) {
   const { slug } = await params
 
-  const detail = await getSchoolDetail(slug)
-  if (!detail) notFound()
+  // The school's core content (name, district, verified academic stats) comes
+  // from the static registry; only the feeding homes need the DB. A transient
+  // listings timeout (Supabase 57014) must never fail the static build or 500
+  // the page — all 55 schools pre-render at next build (dynamicParams = false),
+  // so one uncaught throw here used to kill the whole deploy. Degrade to the
+  // school with zero homes (the grid has its own empty state) and let ISR retry
+  // on the next revalidate. getSchoolDetail returns null for an unknown slug
+  // and throws on a DB error; the registry lookup tells the two apart, so a
+  // real 404 still 404s while a transient timeout renders the school.
+  const detail = await getSchoolDetail(slug).catch(() => null)
+  const school = detail?.school ?? getSchoolBySlug(slug)
+  if (!school) notFound()
 
-  const { school, homes, stats, nearby } = detail
+  const homes = detail?.homes ?? []
+  const stats = detail?.stats ?? { count: 0, medianListPrice: null }
+  const nearby =
+    detail?.nearby ??
+    CO_SCHOOLS.filter(
+      (s) => s.slug !== school.slug && s.districtSlug === school.districtSlug && s.level === school.level,
+    )
 
   // Draw the school's own ATTENDANCE-AREA polygon (Deschutes County GIS, stored
   // in boundaries as geo_type='school') where one exists — that is the boundary
