@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.759.2 (2026-07-10)
+
+### Bug Fixes
+- fix(cma): subject always uses the MOST RECENT listing's photos + info, not the newest-modified row
+
+---
+
+
 ## v1.759.1 (2026-07-10)
 
 ### Bug Fixes
