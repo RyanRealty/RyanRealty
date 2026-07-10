@@ -383,7 +383,7 @@ function marketPage(a: RenderCmaArgs): PageDef | null {
   <h3 class="subhead">${esc(verdictLabel)}</h3>
   <p>${
     m.monthsOfSupply != null
-      ? `${esc(m.geoLabel)} is carrying ${dec(m.monthsOfSupply, 1)} months of supply (${int(m.activeCount)} active single-family listings against ${int(Math.round(m.soldCount365 / 12))} closed sales per month over the last year). The standard thresholds read 4 months or less as a seller's market, 4 to 6 as balanced, and 6 or more as a buyer's market.`
+      ? `${esc(m.geoLabel)} is carrying ${dec(m.monthsOfSupply, 1)} months of supply, with ${int(m.activeCount)} active single-family listings on the market right now against the pace of closed sales over the last six months. The standard thresholds read 4 months or less as a seller's market, 4 to 6 as balanced, and 6 or more as a buyer's market.`
       : 'Live inventory was unavailable at build time, so no supply verdict is stated.'
   }</p>
   <p>${

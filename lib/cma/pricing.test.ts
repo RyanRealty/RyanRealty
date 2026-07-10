@@ -74,6 +74,7 @@ const market: CmaMarketContext = {
   activeCount: 400,
   pendingCount: 100,
   monthsOfSupply: 4,
+  mosFormula: 'market_pulse_live.months_of_supply (canonical: active / (closed_last_6_months / 6))',
   marketVerdict: 'balanced',
   methodologyVersion: 'v3',
   computedAt: new Date().toISOString(),

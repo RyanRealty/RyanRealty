@@ -194,6 +194,8 @@ export type CmaMarketPulseRow = {
   active_count: number | null
   pending_count: number | null
   median_list_price: number | null
+  /** Canonical published MoS (active / (closed_6mo / 6)) — same figure the site shows. */
+  months_of_supply: number | null
   updated_at: string | null
 }
 
@@ -203,7 +205,7 @@ export async function getCmaMarketPulseRow(geoSlugs: string[]): Promise<CmaMarke
   if (!sb || geoSlugs.length === 0) return null
   const { data, error } = await sb
     .from('market_pulse_live')
-    .select('geo_slug, active_count, pending_count, median_list_price, updated_at')
+    .select('geo_slug, active_count, pending_count, median_list_price, months_of_supply, updated_at')
     .in('geo_slug', geoSlugs)
     .eq('geo_type', 'city')
     .eq('property_type', 'A')

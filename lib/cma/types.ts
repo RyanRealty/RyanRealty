@@ -82,6 +82,8 @@ export interface CmaMarketContext {
   activeCount: number | null
   pendingCount: number | null
   monthsOfSupply: number | null
+  /** Which formula/source produced monthsOfSupply (canonical pulse vs 365d fallback). */
+  mosFormula: string | null
   marketVerdict: 'seller' | 'balanced' | 'buyer' | null
   methodologyVersion: string | null
   computedAt: string | null

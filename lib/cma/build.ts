@@ -169,7 +169,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             sold_count_365: market.soldCount365,
             active_count: market.activeCount,
             months_of_supply: market.monthsOfSupply,
-            months_of_supply_formula: 'active_count / (sold_count_365 / 12)',
+            months_of_supply_formula: market.mosFormula,
             yoy_median_price_delta_pct: market.yoyMedianPriceDeltaPct,
           }
         : { source: 'none', note: 'No cache row for the subject city. No time adjustment applied.' },

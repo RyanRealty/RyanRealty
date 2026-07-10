@@ -3,9 +3,15 @@
  * the cache tables (never aggregated from raw listings; CLAUDE.md database
  * rules). market_stats_cache rolling_365d supplies the closed-sale trend and
  * the YoY rate that drives the per-comp time adjustment; market_pulse_live
- * supplies live active inventory for months of supply.
+ * supplies live active inventory AND the canonical months of supply.
  *
- * Months of supply = active_count / (sold_count_365 / 12).
+ * Months of supply comes FROM market_pulse_live.months_of_supply — the §0
+ * canonical figure (active / (closed_last_6_months / 6)) that every other
+ * Ryan Realty surface publishes. A CMA must never tell a client a different
+ * MoS/verdict than the website shows for the same city (found live 2026-07-10:
+ * a bespoke 365-day-pace derivation said 3.7/seller's while the site said
+ * 4.1/balanced). The 365-day derivation remains only as a fallback when the
+ * pulse row is missing, and the citation records which source was used.
  * Verdict thresholds (CLAUDE.md §0): <= 4 seller's, 4-6 balanced, >= 6 buyer's.
  */
 
@@ -35,9 +41,15 @@ export async function getCmaMarketContext(city: string): Promise<CmaMarketContex
 
   const sold365 = num(stats.sold_count) ?? 0
   const active = num(pulse?.active_count)
-  let monthsOfSupply: number | null = null
-  if (active != null && sold365 > 0) {
+  // Canonical MoS first (the published pulse figure), 365d-pace derivation only
+  // when the pulse row is missing it.
+  let monthsOfSupply = num(pulse?.months_of_supply)
+  let mosFormula = 'market_pulse_live.months_of_supply (canonical: active / (closed_last_6_months / 6))'
+  if (monthsOfSupply == null && active != null && sold365 > 0) {
     monthsOfSupply = +(active / (sold365 / 12)).toFixed(1)
+    mosFormula = 'fallback: active_count / (sold_count_365 / 12) — pulse row missing'
+  } else if (monthsOfSupply != null) {
+    monthsOfSupply = +monthsOfSupply.toFixed(1)
   }
   let verdict: CmaMarketContext['marketVerdict'] = null
   if (monthsOfSupply != null) {
@@ -58,6 +70,7 @@ export async function getCmaMarketContext(city: string): Promise<CmaMarketContex
     activeCount: active,
     pendingCount: num(pulse?.pending_count),
     monthsOfSupply,
+    mosFormula,
     marketVerdict: verdict,
     methodologyVersion: stats.methodology_version,
     computedAt: stats.computed_at,
