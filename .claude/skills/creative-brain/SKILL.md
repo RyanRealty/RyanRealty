@@ -31,6 +31,11 @@ Ryan Realty is a brokerage / **art house**. The product of this skill is work th
 | [references/neuroaesthetics.md](references/neuroaesthetics.md) | Any palette/composition/grade/motion decision. The visual pleasure formula |
 | [references/emotion-mechanics.md](references/emotion-mechanics.md) | Choosing what the piece makes the viewer FEEL (decided first). The feel-good palette |
 | [references/marketing-psychology.md](references/marketing-psychology.md) | Deciding why/where a piece runs. How feeling builds brands |
+| [references/sound-cognition.md](references/sound-cognition.md) | Designing the sound spine, scoring, VO, sonic branding. Groove, entrainment, synchresis |
+| [references/attention-editing.md](references/attention-editing.md) | Hooks, boards, cuts, pacing. Gist speed, face magnets, neurocinematics, 1/f rhythm |
+| [references/memory-endings.md](references/memory-endings.md) | Endings, arcs, brand placement. Peak-end vs primacy, story shapes, reveal order |
+| [references/character-attachment.md](references/character-attachment.md) | Whenever Jax or any character appears. Parasocial bonds, uncanny consistency, baby schema |
+| [references/transmission.md](references/transmission.md) | Distribution planning. The Watts law, loops, identity signaling, local cues |
 | [LESSONS.md](LESSONS.md) | ALWAYS — read before generating, append after learning |
 
 ## The four laws (violate none)

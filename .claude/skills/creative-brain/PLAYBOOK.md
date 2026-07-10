@@ -27,6 +27,10 @@ This is how the brain gets APPLIED, not just known. Every piece runs these check
 - [ ] Temporal skeleton locked with sound FIRST — a track, a VO, a rhythm map with bpm, or designed silence *(masters: Schwizgebel, McLaren)*
 - [ ] The sound is human/authored, not generated filler — sound carries the piece *(ai-filmmakers: rule 5)*
 - [ ] Melody, not rhythmic bed, if music (melody is the fame-driving feature) *(marketing-psychology: Listen Up!)*
+- [ ] Groove zone: ~110-120bpm, medium (not maximum) syncopation; the emotional cue is set in the first 1-2 seconds, BEFORE the visual subject is clear *(sound-cognition: Witek, Boltz)*
+- [ ] Every key reveal placed on a downbeat (entrainment aims attention at that exact frame); a half-second of near-silence before the biggest reveal *(sound-cognition: Large & Jones; startle)*
+- [ ] Sonic accents land on-or-slightly-before their visual hits, never late (>100ms lag reads as broken) *(sound-cognition: binding window)*
+- [ ] The brand sonic signature (2-4 notes, ~1.5s) sits in its fixed place, unchanged *(sound-cognition: Veritonic)*
 
 ## Stage 4 — STYLE FRAME (authored, iterated, gallery-grade)
 
@@ -45,6 +49,13 @@ This is how the brain gets APPLIED, not just known. Every piece runs these check
 - [ ] Ma scheduled — at least one breathing beat that advances nothing but lets tension build *(masters: Miyazaki)*
 - [ ] The anticipation curve drawn: earliest promise cue placed as early as possible; ONE clean peak; resolution lands on a NEW element entering (sound + image within ~2 frames) *(emotion-mechanics: Schultz, Salimpoor)*
 - [ ] A gap opened early (question/incompleteness) that the final beat snaps shut; for loops, the close re-opens it *(emotion-mechanics: Loewenstein, Zeigarnik)*
+- [ ] Beats are ~2-4s clean events (one location, one subject, one micro-goal); whatever must be REMEMBERED sits at an engineered event boundary *(attention-editing: Zacks, Pöppel)*
+- [ ] Pacing clustered 1/f (bursts of short beats, then a held one), never metronomic *(attention-editing: Cutting)*
+- [ ] Lulls placed at act breaks; the critical stat/brand reveal NEVER on a natural breakpoint (that's where the audience blinks) *(attention-editing: Nakano)*
+- [ ] The arc is turn-based — default man-in-a-hole (problem → turn → resolution); chain two dips for the high-engagement register *(memory-endings: Reagan/Vonnegut)*
+- [ ] Reveal ORDER chosen deliberately: outcome postponed = suspense; withheld backstory = curiosity; concealed-then-shown = surprise *(memory-endings: Brewer & Lichtenstein)*
+- [ ] An ownable brand cue exists in the first 2 seconds — for art pieces the WORLD is the cue (navy-cream, Jax, the style), not a logo *(memory-endings: primacy vs peak-end)*
+- [ ] The ending is the second-best moment with the brand-world present at the peak; never a flat logo card *(memory-endings: peak-end)*
 
 ## Stage 6 — MOTION TEST
 
@@ -61,6 +72,10 @@ This is how the brain gets APPLIED, not just known. Every piece runs these check
 
 - [ ] Cut to the sound spine, word-by-word / beat-by-beat *(ai-filmmakers: Trillo)*
 - [ ] The model's 3-second rhythm resisted — long takes earned where the piece wants them *(ai-filmmakers: rule 10)*
+- [ ] Hard cuts hidden behind action: cut on motion onsets with the attended subject continuous (match-action cuts are missed ~32% of the time) *(attention-editing: Smith)*
+- [ ] Important elements introduced with a motion ONSET, not a fade-over *(attention-editing: Franconeri)*
+- [ ] Forward push-ins reserved for hook and payoff, in short doses (vection) *(attention-editing)*
+- [ ] If the piece loops: the seam is invisible — last frame flows into first (completion + rewatch are the ranking currency) *(transmission: platform documents)*
 
 ## Stage 9 — POST
 
@@ -76,13 +91,29 @@ This is how the brain gets APPLIED, not just known. Every piece runs these check
 - [ ] Screening-room contact sheet with honest verdicts and rankings; Matt sees only defended work; nothing publishes without explicit approval
 - [ ] LESSONS.md appended — a session that learned and didn't write it down has failed
 
+## Character checks (whenever Jax or any character appears)
+
+- [ ] Model sheet locked: same face, proportions, navy, personality — drift is damage *(character-attachment: System1, Ehrenberg-Bass)*
+- [ ] Face forward, eyes large and clear, legible at favicon scale (faces fire in <200ms and stop the scroll) *(character-attachment: Wardle, FFA)*
+- [ ] Look, motion, and voice at ONE stylization level — cartoon look means cartoon motion and warm non-hyperreal voice *(character-attachment: uncanny consistency)*
+- [ ] Animated alive: weight, anticipation, squash-stretch (motion is felt in the viewer's body) *(character-attachment: Calvo-Merino)*
+- [ ] Shown competent and honest, not just cute (trust converts, attractiveness doesn't); direct address where possible *(character-attachment: Han meta-analysis)*
+- [ ] Baby schema dosed: bigger head/eyes than a real lab, still a capable companion *(character-attachment: Glocker)*
+
+## Transmission frame (planning distribution)
+
+- [ ] Portfolio thinking: judged on batting average over ~20 pieces, paid seed behind winners — no single-video virality promises, ever *(transmission: Watts)*
+- [ ] The sharer's sentence written: what does reposting this say about the person? ("I live somewhere this beautiful and I have taste") *(transmission: identity signaling)*
+- [ ] Anchored to a recurring local cue (first snow, float season, the marquee) so the landmark re-triggers the piece for months *(transmission: Berger & Schwartz)*
+- [ ] Place Explainer + local pride prioritized in the concept pool (~6× engagement class) *(transmission: NPR field experiment)*
+- [ ] Emotion register: awe / warm surprise. Anger and anxiety are effective and BANNED. Moral-outrage language never *(transmission: laws 4, 8)*
+- [ ] One true, §0-verified local fact considered per piece (practical value +30%, and it's underused by art brands)
+- [ ] One emotional register held for months — tone compounds at field strength, not per post
+
 ## Brand-growth frame (why we're doing this at all)
 
 - We are entertaining the ~95% not in market so we're the name in memory when they enter it *(marketing-psychology: 95:5)*
 - Judged on fame and feeling over years, never lead-attribution windows *(Binet & Field)*
 - Right-brain features checklist on every piece: character with agency, sense of place, unfolding story, implicit meaning, melody *(Orlando Wood's Lemon)*
 - Consistency compounds: same palette, same world, same character, same sonic identity, for years *(mere exposure/fluency)*
-
----
-
-*Slots reserved: sound-cognition laws, attention/editing laws, memory/endings laws, character laws, transmission laws — volumes in research 2026-07-09, integrated on landing.*
+- Epistemics: directions in this playbook are solid; magnitudes are weather. Distrust any guaranteed number, including ours *(transmission: law 11)*
