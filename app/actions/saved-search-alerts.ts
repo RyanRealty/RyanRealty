@@ -14,6 +14,7 @@ import {
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
+import { brokerSendIdentity } from '@/lib/email/broker-identity'
 import { recordEmailEvent } from '@/lib/crm/email-events'
 import { buildListingAlertEmail, type ListingAlertListing } from '@/lib/crm/listing-alert-email'
 import {
@@ -280,8 +281,13 @@ export async function runListingAlerts(options?: {
           await advanceCursor()
           continue
         }
+        // Named broker sender + monitored reply-to (lib/email/broker-identity):
+        // a reply to an alert must reach the assigned broker, never noreply@.
+        const identity = brokerSendIdentity(brokerSlug)
         const emailResult = await sendEmail({
           to: row.email,
+          from: identity.from,
+          replyTo: identity.replyTo,
           subject: built.subject,
           headers: {
             'List-Unsubscribe': `<${oneClickUrl}>`,

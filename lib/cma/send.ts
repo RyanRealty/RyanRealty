@@ -27,6 +27,7 @@ import {
 } from '@/lib/data'
 import { renderCmaPdfBuffer, CmaNotFoundError } from '@/lib/cma-pdf'
 import { wrapBrandedEmail, brandedTextFooter, escapeHtml, type ShellBroker } from '@/lib/email/shell'
+import { brokerSendIdentity } from '@/lib/email/broker-identity'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
 import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
@@ -229,8 +230,12 @@ export async function sendCmaToLead(slug: string): Promise<SendCmaToLeadResult> 
     console.error(`[sendCmaToLead] Gmail send from ${brokerMailbox} failed (${gmailRes.error ?? 'unknown'}); falling back to Resend`)
   }
   // The suppression gate above covers this fallback too — same function scope.
+  // Named broker from (never the bare noreply@ default) so the fallback rail
+  // matches the Gmail rail's identity — the lead sees the same sender either way.
+  const fallbackIdentity = brokerSendIdentity(ctx.brokerRow.email)
   const fallback = gmailRes.ok ? null : await sendEmail({
     to: ctx.clientEmail,
+    from: fallbackIdentity.from,
     subject: body.subject,
     html: trackedHtml,
     text: body.text,

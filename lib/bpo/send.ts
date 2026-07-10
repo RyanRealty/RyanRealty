@@ -18,6 +18,7 @@ import {
   logCmaTimelineEvent,
 } from '@/lib/data'
 import { getBpoAdminRowBySlug, updateBpoRowFieldsBySlug } from '@/lib/data/bpo/reads'
+import { brokerSendIdentity } from '@/lib/email/broker-identity'
 import { getContactSendTarget } from '@/lib/data/crm/getContactSendTarget'
 import { stripOfferStrategy } from '@/lib/bpo/render'
 import { htmlToPdfBuffer } from '@/lib/pdf/html-to-pdf'
@@ -189,10 +190,13 @@ export async function sendBpoToLead(opts: {
   if (!gmailRes.ok) {
     console.error(`[sendBpoToLead] Gmail send from ${brokerMailbox} failed (${gmailRes.error ?? 'unknown'}); falling back to Resend`)
   }
+  // Named broker from (never the bare noreply@ default) so the fallback rail
+  // matches the Gmail rail's identity — the lead sees the same sender either way.
   const fallback = gmailRes.ok
     ? null
     : await sendEmail({
         to: target.email,
+        from: brokerSendIdentity(crmBrokerSlug).from,
         subject: body.subject,
         html: trackedHtml,
         text: body.text,

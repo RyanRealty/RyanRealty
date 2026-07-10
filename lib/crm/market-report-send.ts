@@ -39,6 +39,7 @@ import { isSuppressed } from '@/lib/crm/suppressions'
 import { prepareDeliverableEmail } from '@/lib/email/prepare'
 import { buildUnsubscribeUrl } from '@/lib/email/unsubscribe-token'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
+import { brokerSendIdentity } from '@/lib/email/broker-identity'
 import { recordEmailEvent } from '@/lib/crm/email-events'
 import { sendEmail } from '@/lib/resend'
 import { renderMarketReportEmail } from '@/lib/crm/market-report-email'
@@ -163,8 +164,13 @@ export async function sendOneSubscriber(input: {
     label: input.subject,
   })
 
+  // Named broker sender + monitored reply-to (lib/email/broker-identity): a
+  // reply to a market report must reach the assigned broker, never noreply@.
+  const identity = brokerSendIdentity(input.brokerSlug)
   const res = await sendEmail({
     to: input.email,
+    from: identity.from,
+    replyTo: identity.replyTo,
     subject: prepared.subject,
     html: finalHtml,
     text: prepared.text,
