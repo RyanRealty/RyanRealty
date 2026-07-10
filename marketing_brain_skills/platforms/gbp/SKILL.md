@@ -1,9 +1,10 @@
 # GBP Platform Playbook.  Ryan Realty
 
 **Skill owner:** Marketing brain  
-**Last updated:** 2026-05-13  
+**Last updated:** 2026-07-09  
 **Source of truth for metrics:** `marketing_channel_daily` (channel='gbp', source='gbp_performance_api_v1')  
-**Voice canon:** `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` (Matt's 23 first-party review responses)
+**Voice canon:** `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` (Matt's 23 first-party review responses)  
+**Audit runbook:** `.claude/skills/local-seo/SKILL.md` (`/local-seo`) — the competitive local-pack audit loop (pack scoreboard, category/attribute matrix vs live Bend competitors, review velocity, citations/NAP sweep, photo pipeline, monthly measurement ledger). This file is the WHY; that file is the RUNBOOK.
 
 ---
 
