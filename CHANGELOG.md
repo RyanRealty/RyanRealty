@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.756.0 (2026-07-10)
+
+### Features
+- feat(creative-brain): law 6 the banknote principle + Ten Thousand Currents lessons
+- feat(creative-brain): THE REALITY LAW — AI never renders real-life things
+- feat(creative-brain): complete the 11-volume brain — transmission volume + full playbook integration
+- feat(creative-brain): character-attachment + memory-endings volumes
+- feat(creative-brain): attention-editing + sound-cognition volumes
+
+### Bug Fixes
+- fix(growth): correct blog evidence in content-moat backlog — 45 live posts, not 11
+
+### Maintenance
+- chore(creative-brain): log session halt lesson
+
+---
+
+
 ## v1.755.0 (2026-07-10)
 
 ### Features
