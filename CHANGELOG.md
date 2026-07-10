@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.755.0 (2026-07-10)
+
+### Features
+- feat(creative-brain): application instruments — PLAYBOOK, piece-brief template, worked example
+- feat(creative-brain): permanent compounding creative knowledge system
+- feat(seo): schools+parks in sitemap; content-moat backlog wired into growth-loop scoring
+
+---
+
+
 ## v1.754.0 (2026-07-10)
 
 ### Features
