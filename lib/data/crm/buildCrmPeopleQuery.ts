@@ -99,9 +99,19 @@ function conditionFragments(cond: CrmCondition): { joiner: 'and' | 'or'; fragmen
     case 'neighborhood':
       // filters the neighborhood_slug COLUMN (not a tag) — the canonical geo home.
       return { joiner: 'and', fragments: [`neighborhood_slug.eq.${pgrstValue(cond.value)}`] }
-    case 'subdivision':
-      // filters the subdivision COLUMN (exact MLS SubdivisionName, e.g. "West Hills").
+    case 'subdivision': {
+      // filters the subdivision COLUMN (MLS SubdivisionName). `contains` is what
+      // a master-planned-community list needs: one substring ("Northwest
+      // Crossing") catches all 60+ phase / sub-community variants that a single
+      // canonical slug misses.
+      if (cond.op === 'contains') {
+        return { joiner: 'and', fragments: [`subdivision.ilike.${pgrstLikePattern(cond.value)}`] }
+      }
+      if (cond.op === 'starts') {
+        return { joiner: 'and', fragments: [`subdivision.ilike.${pgrstValue(`${cond.value}%`)}`] }
+      }
       return { joiner: 'and', fragments: [`subdivision.eq.${pgrstValue(cond.value)}`] }
+    }
     case 'assigned_broker':
       return { joiner: 'and', fragments: [`assigned_broker.eq.${pgrstValue(cond.value)}`] }
     case 'tag':

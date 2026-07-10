@@ -48,6 +48,24 @@ describe('validateSegment', () => {
     ).toThrow(/requires a non-empty value/)
   })
 
+  it('accepts subdivision contains/starts operators and describes them', () => {
+    const contains: CrmSegment = {
+      type: 'group', op: 'and', nodes: [{ field: 'subdivision', op: 'contains', value: 'Northwest Crossing' }],
+    }
+    expect(() => validateSegment(contains)).not.toThrow()
+    expect(describeSegment(contains)).toBe('subdivision contains Northwest Crossing')
+
+    const starts: CrmSegment = {
+      type: 'group', op: 'and', nodes: [{ field: 'subdivision', op: 'starts', value: 'West Hills' }],
+    }
+    expect(() => validateSegment(starts)).not.toThrow()
+    expect(describeSegment(starts)).toBe('subdivision starts with West Hills')
+
+    expect(() =>
+      validateSegment({ type: 'group', op: 'and', nodes: [{ field: 'subdivision', op: 'bogus', value: 'x' }] }),
+    ).toThrow(/subdivision op must be/)
+  })
+
   it('throws when the root is not a group', () => {
     expect(() => validateSegment({ field: 'stage', value: 'Lead' })).toThrow(/root must be a group/)
     expect(() => validateSegment(null)).toThrow(/root must be a group/)

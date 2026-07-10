@@ -36,8 +36,18 @@ export type SourceCondition = { field: 'source'; value: string }
 /** Match against the crm_people.neighborhood_slug COLUMN (exact canonical slug). */
 export type NeighborhoodCondition = { field: 'neighborhood'; value: string }
 
-/** Match against the crm_people.subdivision COLUMN (exact MLS SubdivisionName, e.g. "West Hills"). */
-export type SubdivisionCondition = { field: 'subdivision'; value: string }
+/**
+ * Match against the crm_people.subdivision COLUMN (the MLS SubdivisionName).
+ *   - eq (default): exact match, e.g. "West Hills"
+ *   - contains: case-insensitive substring, e.g. "Northwest Crossing" catches
+ *     every phase/sub-community variant ("Northwest Crossing Phase 5",
+ *     "Cottages At Northwest Crossing", "Bungalows At Northwest Crossing
+ *     Condominium"). This is what a community smart list needs — the subdivision
+ *     column carries 60+ variants per master-planned community.
+ *   - starts: case-insensitive prefix, e.g. "West Hills" catches "West Hills
+ *     First Addition" but not "Cottages At West Hills".
+ */
+export type SubdivisionCondition = { field: 'subdivision'; op?: 'eq' | 'contains' | 'starts'; value: string }
 
 /** Match against crm_people.assigned_broker (a broker slug). */
 export type AssignedBrokerCondition = { field: 'assigned_broker'; value: string }
@@ -141,11 +151,19 @@ function validateCondition(cond: CrmCondition, path: string): void {
     case 'stage':
     case 'source':
     case 'neighborhood':
-    case 'subdivision':
     case 'assigned_broker':
     case 'q':
       if (!nonEmptyString(cond.value)) {
         throw new Error(`${path}: "${cond.field}" requires a non-empty value`)
+      }
+      return
+
+    case 'subdivision':
+      if (!nonEmptyString(cond.value)) {
+        throw new Error(`${path}: "subdivision" requires a non-empty value`)
+      }
+      if (cond.op !== undefined && cond.op !== 'eq' && cond.op !== 'contains' && cond.op !== 'starts') {
+        throw new Error(`${path}: subdivision op must be "eq", "contains", or "starts"`)
       }
       return
 
@@ -295,7 +313,11 @@ function describeCondition(cond: CrmCondition): string {
     case 'neighborhood':
       return `neighborhood is ${cond.value}`
     case 'subdivision':
-      return `subdivision is ${cond.value}`
+      return cond.op === 'contains'
+        ? `subdivision contains ${cond.value}`
+        : cond.op === 'starts'
+          ? `subdivision starts with ${cond.value}`
+          : `subdivision is ${cond.value}`
     case 'assigned_broker':
       return `broker is ${cond.value}`
     case 'tag':
