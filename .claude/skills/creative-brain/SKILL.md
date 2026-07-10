@@ -45,6 +45,7 @@ Ryan Realty is a brokerage / **art house**. The product of this skill is work th
 3. **Never derivative.** If a model would produce it unprompted, or a template effect exists for it (Cakeify/Squish/Ghibli-filter), it's the slop lane. Taste sources are Annecy, AIFF, art history, the masters — never "AI video trends."
 4. **The idea must survive one sentence** (Patrick Clair's test). Style masquerading as story dies at intake.
 5. **Feeling is chosen before anything else.** Know/feel/do (Giant Ant) — and FEEL outranks. Pick the target emotion from the feel-good palette, then engineer it.
+6. **Show complexity — the banknote principle** (Matt directive 2026-07-09: "we need to show complexity"). The work must be visibly virtuosic: gist-fluent at the macro (reads in 100ms), inexhaustible at the micro (thousands of authored elements rewarding every rewatch). Lineage: Doré, Dürer, banknote guilloché, Bruegel's wimmelbild, demoscene. Simple line art alone reads as low-effort; complexity is the visible proof of craft — but it must be ORGANIZED under one legible gestalt or it violates fluency. Density levers: flow fields, thousands-of-filaments, dense crosshatch that moves, crowds of tiny vignettes.
 
 ## The operating pipeline (our synthesis of all six volumes)
 
