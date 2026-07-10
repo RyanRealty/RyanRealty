@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.757.0 (2026-07-10)
+
+### Features
+- feat(crm): Broker Price Opinion feature + unified per-contact Send Center
+
+---
+
+
 ## v1.756.0 (2026-07-10)
 
 ### Features
