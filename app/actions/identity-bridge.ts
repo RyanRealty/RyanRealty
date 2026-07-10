@@ -26,6 +26,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
 import { getPersonIdByLegacyId } from '@/lib/data/crm/getPersonIdByLegacyId'
+import { personExistsById } from '@/lib/data/crm/personExistsById'
 
 const PERSON_ID_COOKIE = 'rr_pid'
 const COOKIE_MAX_AGE = 90 * 24 * 60 * 60 // 90 days
@@ -51,6 +52,34 @@ export async function identifyPersonFromEmailClick(
   const id = await getPersonIdByLegacyId(legacyId)
   if (!id) return { ok: false, error: 'No matching person found for legacy id' }
 
+  return bridgeIdentifiedPerson(id, sessionId, 'email_click_fuid')
+}
+
+/**
+ * The native-id counterpart — called when a user lands with ?_pid=<crm_people.id>
+ * (stamped by attributeSiteLinks on every post-cutover outbound email). Contacts
+ * created after the FUB decommission have no fub_legacy_id, so without this path
+ * their email clicks would track opens/clicks but never stitch the web session.
+ * The id is validated against crm_people (exists + not deleted) before anything
+ * is cookied — same trust model as the legacy param (possession of the emailed
+ * link IS the identification).
+ */
+export async function identifyPersonFromEmailClickNative(
+  personId: string,
+  sessionId?: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const id = parseInt(String(personId).trim(), 10)
+  if (!Number.isInteger(id) || id <= 0) return { ok: false, error: 'Invalid person id' }
+  if (!(await personExistsById(id))) return { ok: false, error: 'No matching person found' }
+  return bridgeIdentifiedPerson(id, sessionId, 'email_click_pid')
+}
+
+/** Shared tail of both email-click identify paths: cookie + GA4 + session backfill. */
+async function bridgeIdentifiedPerson(
+  id: number,
+  sessionId: string | undefined,
+  via: 'email_click_fuid' | 'email_click_pid',
+): Promise<{ ok: boolean; error?: string }> {
   const cookieStore = await cookies()
   cookieStore.set(PERSON_ID_COOKIE, String(id), {
     httpOnly: true,
@@ -81,7 +110,7 @@ export async function identifyPersonFromEmailClick(
     void backfillSessionToFub({
       sessionId,
       fubPersonId: id,
-      identifiedVia: 'email_click_fuid',
+      identifiedVia: via,
     }).catch((e) => console.warn('[identity-bridge] session backfill failed (non-blocking):', e))
   }
 

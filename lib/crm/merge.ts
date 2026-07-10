@@ -321,10 +321,12 @@ export function attributeSiteLinks(
   text: string,
   brokerSlug: string | null | undefined,
   fubPersonId?: number | null,
+  crmPersonId?: number | null,
 ): string {
   const slug = (brokerSlug ?? '').trim()
   const fuid = typeof fubPersonId === 'number' && Number.isInteger(fubPersonId) && fubPersonId > 0 ? String(fubPersonId) : ''
-  if (!slug && !fuid) return text
+  const pid = typeof crmPersonId === 'number' && Number.isInteger(crmPersonId) && crmPersonId > 0 ? String(crmPersonId) : ''
+  if (!slug && !fuid && !pid) return text
   return text.replace(/https:\/\/(?:www\.)?ryan-realty\.com[^\s"'<)\]]*/g, (url) => {
     if (url.includes('/admin')) return url
     let out = url
@@ -334,6 +336,11 @@ export function attributeSiteLinks(
     // FubIdentityBridge cookies this browser to the contact and backfills their
     // anonymous sessions. This is what turns "Anonymous · Portland" into a name.
     if (fuid && !/[?&]_fuid=/.test(out)) out += (out.includes('?') ? '&' : '?') + '_fuid=' + fuid
+    // Native identity — ?_pid=<crm_people.id> is the post-cutover counterpart:
+    // contacts created after the FUB decommission have no fub_legacy_id, so a
+    // send that only stamps _fuid can never stitch their web sessions.
+    // PersonIdentityBridge prefers _pid when both are present.
+    if (pid && !/[?&]_pid=/.test(out)) out += (out.includes('?') ? '&' : '?') + '_pid=' + pid
     return out
   })
 }

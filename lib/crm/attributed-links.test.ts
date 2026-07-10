@@ -65,12 +65,32 @@ describe('attributeOutbound', () => {
     expect(payload.u).toContain('https://ryan-realty.com/homes-for-sale')
   })
 
-  it('degrades to a fully untouched link when both brokerSlug and fubPersonId are missing', () => {
+  it('still stamps _pid when brokerSlug and fubPersonId are missing (native identity survives)', () => {
     const html = '<a href="https://ryan-realty.com/homes-for-sale">Browse</a>'
     const out = attributeOutbound(html, { ...OPTS, brokerSlug: '', fubPersonId: null })
     const tok = decodeURIComponent(out.match(/\/api\/track\/e\/click\?t=([^"]+)/)![1])
     const payload = JSON.parse(Buffer.from(tok.split('.')[0], 'base64url').toString())
-    expect(payload.u).toBe('https://ryan-realty.com/homes-for-sale')
+    expect(payload.u).not.toContain('agent=')
+    expect(payload.u).not.toContain('_fuid=')
+    expect(payload.u).toContain('_pid=4242')
+  })
+
+  it('stamps _pid=<crm person id> alongside _fuid so post-cutover contacts stitch sessions', () => {
+    const html = '<a href="https://ryan-realty.com/search">All</a>'
+    const out = attributeOutbound(html, OPTS)
+    const tok = decodeURIComponent(out.match(/\/api\/track\/e\/click\?t=([^"]+)/)![1])
+    const payload = JSON.parse(Buffer.from(tok.split('.')[0], 'base64url').toString())
+    expect(payload.u).toContain('_fuid=9001')
+    expect(payload.u).toContain('_pid=4242')
+  })
+
+  it('stamps _pid even for a contact with no fub_legacy_id (the post-cutover case)', () => {
+    const html = '<a href="https://ryan-realty.com/cma/deer-run">Report</a>'
+    const out = attributeOutbound(html, { ...OPTS, fubPersonId: null })
+    const tok = decodeURIComponent(out.match(/\/api\/track\/e\/click\?t=([^"]+)/)![1])
+    const payload = JSON.parse(Buffer.from(tok.split('.')[0], 'base64url').toString())
+    expect(payload.u).not.toContain('_fuid=')
+    expect(payload.u).toContain('_pid=4242')
   })
 
   it('skips tracking when personId is missing but still attributes the broker', () => {

@@ -35,6 +35,8 @@ import {
 import {
   rebuildCmaAction,
   approveCmaAction,
+  archiveCmaAction,
+  unarchiveCmaAction,
   deleteCmaAction,
   sendCmaToLeadAction,
 } from '@/app/actions/cma-admin'
@@ -69,6 +71,7 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   const isDraft = props.status === 'draft'
+  const isArchived = props.status === 'archived'
   const isSendable = (props.status === 'finalized' || props.status === 'delivered') && Boolean(clientEmail.trim())
 
   function rebuild() {
@@ -126,6 +129,17 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
       else {
         toast.success('CMA deleted.')
         router.push('/admin/cmas')
+      }
+    })
+  }
+
+  function toggleArchive() {
+    startTransition(async () => {
+      const { error } = isArchived ? await unarchiveCmaAction(props.slug) : await archiveCmaAction(props.slug)
+      if (error) toast.error(error)
+      else {
+        toast.success(isArchived ? 'CMA restored.' : 'CMA archived. It is hidden from send surfaces until restored.')
+        router.refresh()
       }
     })
   }
@@ -221,6 +235,10 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
       </div>
 
       <Separator />
+
+      <Button onClick={toggleArchive} variant="outline" className="w-full min-h-11" disabled={isPending}>
+        {isArchived ? 'Restore from archive' : 'Archive CMA'}
+      </Button>
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogTrigger asChild>

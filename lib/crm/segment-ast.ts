@@ -36,6 +36,9 @@ export type SourceCondition = { field: 'source'; value: string }
 /** Match against the crm_people.neighborhood_slug COLUMN (exact canonical slug). */
 export type NeighborhoodCondition = { field: 'neighborhood'; value: string }
 
+/** Match against the crm_people.subdivision COLUMN (exact MLS SubdivisionName, e.g. "West Hills"). */
+export type SubdivisionCondition = { field: 'subdivision'; value: string }
+
 /** Match against crm_people.assigned_broker (a broker slug). */
 export type AssignedBrokerCondition = { field: 'assigned_broker'; value: string }
 
@@ -74,6 +77,7 @@ export type CrmCondition =
   | TagCondition
   | SourceCondition
   | NeighborhoodCondition
+  | SubdivisionCondition
   | AssignedBrokerCondition
   | DateCondition
   | TextCondition
@@ -107,6 +111,7 @@ const CONDITION_FIELDS = new Set([
   'tag',
   'source',
   'neighborhood',
+  'subdivision',
   'assigned_broker',
   'created',
   'last_activity',
@@ -136,6 +141,7 @@ function validateCondition(cond: CrmCondition, path: string): void {
     case 'stage':
     case 'source':
     case 'neighborhood':
+    case 'subdivision':
     case 'assigned_broker':
     case 'q':
       if (!nonEmptyString(cond.value)) {
@@ -288,6 +294,8 @@ function describeCondition(cond: CrmCondition): string {
       return `source is ${cond.value}`
     case 'neighborhood':
       return `neighborhood is ${cond.value}`
+    case 'subdivision':
+      return `subdivision is ${cond.value}`
     case 'assigned_broker':
       return `broker is ${cond.value}`
     case 'tag':

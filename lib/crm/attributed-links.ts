@@ -69,14 +69,18 @@ export function attributeOutbound(html: string, opts: AttributeOutboundOptions):
   // pass is a no-op by design — return the body unchanged.
   if (html.includes('/api/track/e/')) return html
 
-  // 1) Broker attribution on the real destination links (idempotent on its own
-  //    for clean HTML: a link already carrying ?agent= is left untouched).
-  const attributed = attributeSiteLinks(html, opts.brokerSlug, opts.fubPersonId ?? null)
-
-  // 2) Open + click tracking — only when we have a recipient to attribute it to.
   const personId = typeof opts.personId === 'number' && Number.isInteger(opts.personId) && opts.personId > 0
     ? opts.personId
     : null
+
+  // 1) Broker attribution on the real destination links (idempotent on its own
+  //    for clean HTML: a link already carrying ?agent= is left untouched).
+  //    _fuid (legacy id) and _pid (native crm_people.id) both stamp here, so a
+  //    click stitches the web session even for post-cutover contacts that have
+  //    no fub_legacy_id.
+  const attributed = attributeSiteLinks(html, opts.brokerSlug, opts.fubPersonId ?? null, personId)
+
+  // 2) Open + click tracking — only when we have a recipient to attribute it to.
   if (personId === null) return attributed
 
   return instrumentEmailHtml(attributed, {
@@ -102,7 +106,8 @@ export function attributeUrl(
   url: string,
   brokerSlug: string,
   fubPersonId?: number | null,
+  crmPersonId?: number | null,
 ): string {
   if (typeof url !== 'string' || url.length === 0) return url
-  return attributeSiteLinks(url, brokerSlug, fubPersonId ?? null)
+  return attributeSiteLinks(url, brokerSlug, fubPersonId ?? null, crmPersonId ?? null)
 }

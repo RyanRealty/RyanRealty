@@ -67,7 +67,7 @@ export async function sendListingMatchesForContactAction(
     }
     const filters = normalizeSavedSearchFilters(raw)
     if (Object.keys(filters).length === 0) {
-      return { ok: false, error: 'Add at least one filter (city, price, or beds) so the search is not the whole MLS.' }
+      return { ok: false, error: 'Add at least one filter (city, subdivision, price, or beds) so the search is not the whole MLS.' }
     }
     const filtersHash = getSavedSearchHash(filters)
     const name = opts?.name?.trim() || getFilterNameFallback(filters)

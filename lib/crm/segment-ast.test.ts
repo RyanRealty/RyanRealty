@@ -35,6 +35,19 @@ describe('validateSegment', () => {
     expect(() => validateSegment(ast)).not.toThrow()
   })
 
+  it('accepts a subdivision condition and rejects an empty value', () => {
+    const ok: CrmSegment = {
+      type: 'group',
+      op: 'and',
+      nodes: [{ field: 'subdivision', value: 'West Hills' }],
+    }
+    expect(() => validateSegment(ok)).not.toThrow()
+    expect(describeSegment(ok)).toBe('subdivision is West Hills')
+    expect(() =>
+      validateSegment({ type: 'group', op: 'and', nodes: [{ field: 'subdivision', value: '' }] }),
+    ).toThrow(/requires a non-empty value/)
+  })
+
   it('throws when the root is not a group', () => {
     expect(() => validateSegment({ field: 'stage', value: 'Lead' })).toThrow(/root must be a group/)
     expect(() => validateSegment(null)).toThrow(/root must be a group/)

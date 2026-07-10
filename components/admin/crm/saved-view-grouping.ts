@@ -55,7 +55,7 @@ export function groupSavedViews(views: SavedViewItem[]): {
 const NEIGHBORHOOD_KEYWORDS = [
   'tetherow', 'sunriver', 'pronghorn', 'black butte', 'northwest crossing', 'vandevert',
   'awbrey', 'shevlin', 'tumalo', 'bend', 'redmond', 'sisters', 'la pine',
-  'neighborhood', 'area', 'community',
+  'neighborhood', 'area', 'community', 'subdivision', 'west hills',
 ]
 
 export type SystemCollection = {

@@ -99,6 +99,9 @@ function conditionFragments(cond: CrmCondition): { joiner: 'and' | 'or'; fragmen
     case 'neighborhood':
       // filters the neighborhood_slug COLUMN (not a tag) — the canonical geo home.
       return { joiner: 'and', fragments: [`neighborhood_slug.eq.${pgrstValue(cond.value)}`] }
+    case 'subdivision':
+      // filters the subdivision COLUMN (exact MLS SubdivisionName, e.g. "West Hills").
+      return { joiner: 'and', fragments: [`subdivision.eq.${pgrstValue(cond.value)}`] }
     case 'assigned_broker':
       return { joiner: 'and', fragments: [`assigned_broker.eq.${pgrstValue(cond.value)}`] }
     case 'tag':

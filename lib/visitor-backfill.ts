@@ -23,7 +23,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { trackPageView, trackListingView, addPersonNote } from '@/lib/followupboss'
 
-type IdentifiedVia = 'google' | 'facebook' | 'email_click_fuid' | 'form_submit' | 'magic_link'
+type IdentifiedVia = 'google' | 'facebook' | 'email_click_fuid' | 'email_click_pid' | 'form_submit' | 'magic_link'
 
 export type BackfillResult = {
   ok: boolean

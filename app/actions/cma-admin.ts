@@ -168,6 +168,50 @@ export async function approveCmaAction(slug: string): Promise<{ error: string | 
   }
 }
 
+/**
+ * Archive — reversible shelving. The CMA disappears from the working list and
+ * every send surface (getContactCmas / the Send Center filter on archived_at)
+ * but keeps its document, pricing, and comp set. Unarchive restores it.
+ */
+export async function archiveCmaAction(slug: string): Promise<{ error: string | null }> {
+  try {
+    if (!(await requireAdmin())) return { error: 'Unauthorized' }
+    const safeSlug = slug.trim().toLowerCase()
+    const row = await getCmaAdminRowBySlug(safeSlug)
+    if (!row) return { error: 'CMA not found' }
+    // status 'archived' drives the /admin/cmas facet; archived_at is the flag
+    // the per-contact reads (getContactCmas) filter on. Set both together.
+    const res = await updateCmaRowFieldsBySlug(safeSlug, {
+      status: 'archived',
+      archived_at: new Date().toISOString(),
+    })
+    if (!res.ok) return { error: res.error ?? 'Archive failed' }
+    refresh(safeSlug)
+    return { error: null }
+  } catch (e) {
+    console.error('[archiveCmaAction]', e)
+    return { error: 'Archive failed unexpectedly' }
+  }
+}
+
+export async function unarchiveCmaAction(slug: string): Promise<{ error: string | null }> {
+  try {
+    if (!(await requireAdmin())) return { error: 'Unauthorized' }
+    const safeSlug = slug.trim().toLowerCase()
+    const row = await getCmaAdminRowBySlug(safeSlug)
+    if (!row) return { error: 'CMA not found' }
+    // Restore the pre-archive status from the row's own lifecycle timestamps.
+    const status = row.delivered_at ? 'delivered' : row.finalized_at ? 'finalized' : 'draft'
+    const res = await updateCmaRowFieldsBySlug(safeSlug, { status, archived_at: null })
+    if (!res.ok) return { error: res.error ?? 'Unarchive failed' }
+    refresh(safeSlug)
+    return { error: null }
+  } catch (e) {
+    console.error('[unarchiveCmaAction]', e)
+    return { error: 'Unarchive failed unexpectedly' }
+  }
+}
+
 export async function deleteCmaAction(id: string): Promise<{ error: string | null }> {
   try {
     if (!(await requireAdmin())) return { error: 'Unauthorized' }

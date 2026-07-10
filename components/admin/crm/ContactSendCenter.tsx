@@ -69,6 +69,7 @@ export function ContactSendCenter(props: {
   const [subscribe, setSubscribe] = useState(false)
   // Listing alerts state
   const [city, setCity] = useState(props.defaultCity ?? '')
+  const [subdivision, setSubdivision] = useState('')
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
   const [minBeds, setMinBeds] = useState('')
@@ -122,6 +123,7 @@ export function ContactSendCenter(props: {
   function sendListings() {
     const filters: Record<string, unknown> = {}
     if (city.trim()) filters.city = city.trim()
+    if (subdivision.trim()) filters.subdivision = subdivision.trim()
     const mn = Number(minPrice.replace(/[^0-9]/g, ''))
     const mx = Number(maxPrice.replace(/[^0-9]/g, ''))
     const mb = Number(minBeds)
@@ -129,7 +131,7 @@ export function ContactSendCenter(props: {
     if (Number.isFinite(mx) && mx > 0) filters.maxPrice = mx
     if (Number.isFinite(mb) && mb > 0) filters.beds = mb
     if (Object.keys(filters).length === 0) {
-      toast.error('Add a city, price, or beds so the search is not the whole MLS.')
+      toast.error('Add a city, subdivision, price, or beds so the search is not the whole MLS.')
       return
     }
     run('Listing matches', () =>
@@ -267,9 +269,18 @@ export function ContactSendCenter(props: {
           {/* Listing alerts */}
           <TabsContent value="alerts" className="space-y-3 pt-3">
             <div className="grid grid-cols-2 gap-2">
-              <div className="col-span-2 space-y-1.5">
+              <div className="space-y-1.5">
                 <Label htmlFor="sc-city">City</Label>
                 <Input id="sc-city" placeholder="Bend" value={city} onChange={(e) => setCity(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="sc-subdivision">Subdivision</Label>
+                <Input
+                  id="sc-subdivision"
+                  placeholder="West Hills"
+                  value={subdivision}
+                  onChange={(e) => setSubdivision(e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="sc-min">Min price</Label>
