@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.758.1 (2026-07-10)
+
+### Bug Fixes
+- fix(crm): CMA subject resolves directional-prefix addresses + relationship modal dedupes by email
+
+---
+
+
 ## v1.758.0 (2026-07-10)
 
 ### Features
