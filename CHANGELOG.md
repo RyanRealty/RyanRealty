@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.759.1 (2026-07-10)
+
+### Bug Fixes
+- fix(tracking): three silent kill-switches on the visitor + engagement pipeline
+
+---
+
+
 ## v1.759.0 (2026-07-10)
 
 ### Features
