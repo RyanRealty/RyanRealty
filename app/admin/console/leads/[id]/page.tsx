@@ -12,7 +12,7 @@ import {
 import {
   addNoteForm, updateStageForm, addTagForm, removeTagForm, addTaskForm,
   assignBrokerForm, addContactPointForm, sendEmailForm, sendSmsForm,
-  startCmaForm, sendCmaForm, setReportSubsForm, assignSavedSearchForm,
+  startCmaForm, sendCmaForm, startBpoForm, setReportSubsForm, assignSavedSearchForm,
   deleteSavedSearchForm,
 } from './form-actions'
 // CRM record-card cutover (2026-06-24): home-driven next step, CMA-from-contact,
@@ -32,6 +32,7 @@ import { getOwnedHomeMatches, getListingAlertsForLead, getViewedListingsForLead,
 import { getOwnedHomeMedia } from '@/lib/crm/owned-home-media'
 import { getContactMemberships } from '@/lib/data/crm/getContactMemberships'
 import { ContactQuickActions } from '@/components/admin/crm/ContactQuickActions'
+import { ContactSendCenter } from '@/components/admin/crm/ContactSendCenter'
 import { getContactEmailEngagement } from '@/lib/data/crm/getContactEmailEngagement'
 import ContactEmailEngagement from '@/components/admin/crm/ContactEmailEngagement'
 import ContactDeliveryPanel from '@/components/admin/crm/ContactDeliveryPanel'
@@ -40,8 +41,10 @@ import ContactBehaviorPanel from '@/components/admin/crm/ContactBehaviorPanel'
 import { getContactRelationships } from '@/lib/data/crm/getContactRelationships'
 import { getRecipientOptionsForContact } from '@/lib/data/crm/getRecipientOptionsForContact'
 import { getContactCmas } from '@/lib/data/crm/getContactCmas'
+import { getContactBpos } from '@/lib/data/crm/getContactBpos'
 import { getLatestNewsletterIssue } from '@/lib/data/crm/getLatestNewsletterIssue'
 import { ContactCmaCard } from '@/components/admin/crm/ContactCmaCard'
+import { ContactBpoCard } from '@/components/admin/crm/ContactBpoCard'
 import { sendNewsletterToContactAction } from '@/app/actions/contact-newsletter'
 import { sendMarketReportNowAction } from '@/app/actions/crm-send-now'
 import { getContactListingAlerts } from '@/lib/data/crm/getContactListingAlerts'
@@ -149,7 +152,7 @@ export default async function ConsoleLeadPage({
   const personEmails = (person.emails ?? []).map((e) => e.value).filter((v): v is string => Boolean(v))
 
   // What they're shopping for — saved searches + the homes they're watching (live MLS) + newsletter status.
-  const [savedSearches, viewedListings, contactMemberships, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, fieldDefs, emailEngagementSummary, collaborators, actionPlanEnrollments, detailExtras, activeSequences, crmSources, recipientOptions, contactCmas, latestNewsletter] = await Promise.all([
+  const [savedSearches, viewedListings, contactMemberships, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, fieldDefs, emailEngagementSummary, collaborators, actionPlanEnrollments, detailExtras, activeSequences, crmSources, recipientOptions, contactCmas, contactBpos, latestNewsletter] = await Promise.all([
     getListingAlertsForLead({ crmPersonId: person.id, fubPersonId: person.fub_legacy_id, emails: personEmails }),
     getViewedListingsForLead(person.fub_legacy_id),
     getContactMemberships(person.id),
@@ -176,6 +179,7 @@ export default async function ConsoleLeadPage({
     getRecipientOptionsForContact(person.id),
     // One-click sends: this contact's CMAs + the newsletter issue a send delivers.
     getContactCmas({ crmPersonId: person.id, emails: personEmails }),
+    getContactBpos({ crmPersonId: person.id, emails: personEmails }),
     getLatestNewsletterIssue(),
   ])
 
@@ -542,9 +546,9 @@ export default async function ConsoleLeadPage({
                       homeFacts?.beds ? `${homeFacts.beds} bed` : null,
                       homeFacts?.baths ? `${homeFacts.baths} bath` : null,
                       homeFacts?.sqft ? `${Math.round(homeFacts.sqft).toLocaleString('en-US')} sqft` : null,
-                    ].filter(Boolean).join(' \u00b7 ') || null}
+                    ].filter(Boolean).join(' · ') || null}
                     mapsLink={homeMedia?.googleMapsLink ?? null}
-                    onMarket={homeActiveListing ? `${homeActiveListing.status}${usd(homeActiveListing.listPrice) ? ` \u00b7 ${usd(homeActiveListing.listPrice)}` : ''}` : null}
+                    onMarket={homeActiveListing ? `${homeActiveListing.status}${usd(homeActiveListing.listPrice) ? ` · ${usd(homeActiveListing.listPrice)}` : ''}` : null}
                     reviewDeliveryId={reviewableCma?.id ? String(reviewableCma.id) : null}
                     generateAction={startCmaForm.bind(null, person.id)}
                     sendAction={sendCmaForm.bind(null, person.id)}
@@ -555,10 +559,22 @@ export default async function ConsoleLeadPage({
                     <ContactCmaCard cmas={contactCmas} sendAction={sendCmaForm.bind(null, person.id)} />
                   </div>
                 ) : null}
+                <div className={nextStep.ownsHome && homeAddress ? 'mt-2.5' : undefined}>
+                  <ContactBpoCard bpos={contactBpos} generateAction={startBpoForm.bind(null, person.id)} />
+                </div>
               </>
             }
             websiteActivityNode={
               <div data-tour="person-website-activity" className="space-y-3">
+                <ContactSendCenter
+                  personId={person.id}
+                  emailSuppressed={full.suppressions.some((s) => s.channel === 'email' || s.channel === 'all')}
+                  bpos={contactBpos}
+                  cmas={contactCmas}
+                  reportAreas={reportAreas}
+                  subscribedAreas={reportSub?.areas ?? []}
+                  defaultCity={homeFacts?.city ?? null}
+                />
                 <ContactQuickActions
                   personId={person.id}
                   newsletterSubscribed={contactMemberships.newsletter.subscribed}

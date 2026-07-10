@@ -21,6 +21,7 @@ import {
 } from '@/app/actions/crm'
 import { adminAssignSavedSearchAction, adminDeleteSavedSearchAction } from '@/app/actions/newsletter'
 import { startCmaForContactAction, sendCmaForContactAction } from '@/app/actions/contact-cma'
+import { startBpoForContactAction } from '@/app/actions/contact-bpo'
 import { setReportSubscriptionAction } from '@/app/actions/crm-report-subscriptions'
 
 const BASE = '/admin/console/leads'
@@ -82,6 +83,14 @@ export async function sendCmaForm(personId: number, formData: FormData): Promise
     r.ok
       ? `${BASE}/${personId}?flash=${encodeURIComponent('CMA sent.')}`
       : `${BASE}/${personId}?error=${encodeURIComponent(`CMA not sent — ${r.error}`)}`,
+  )
+}
+export async function startBpoForm(personId: number): Promise<void> {
+  const r = await startBpoForContactAction(personId)
+  redirect(
+    r.ok
+      ? `${BASE}/${personId}?flash=${encodeURIComponent('Broker price opinion built. Review it below.')}`
+      : `${BASE}/${personId}?error=${encodeURIComponent(`Price opinion not started — ${r.error}`)}`,
   )
 }
 export async function setReportSubsForm(personId: number, formData: FormData): Promise<void> {

@@ -71,6 +71,7 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
   const listings: AdminNavItem[] = [item('/admin/listings', 'Listings', 'home')]
   if (isSuperuser) listings.push(item('/admin/expired-listings', 'Expired listings', 'clock'))
   if (canBrokers) listings.push(item('/admin/cmas', 'CMAs', 'file-search'))
+  if (canBrokers) listings.push(item('/admin/bpo', 'Price opinions', 'gauge'))
   // /admin/search was merged into the listings browser (consolidation 2026-07-07)
 
   // ── Marketing: performance + channels ──
@@ -171,6 +172,7 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
     ...has(marketing, '/admin/email/campaigns'),
     item('/admin/crm/subscriptions', 'Alerts & reports', 'mail'),
     ...has(listings, '/admin/cmas'),
+    ...has(listings, '/admin/bpo'),
     ...(isSuperuser ? [item('/admin/crm/settings', 'CRM settings', 'gauge')] : []),
   ]
 
@@ -185,7 +187,7 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
   )
 
   const adminItems: AdminNavItem[] = [
-    ...exclude(listings, ['/admin/cmas']), // Listings, Expired
+    ...exclude(listings, ['/admin/cmas', '/admin/bpo']), // Listings, Expired
     ...has(marketing, '/admin/approval-queue'),
     ...has(marketing, '/admin/blog'),
     ...has(marketing, '/admin/broker-links'),

@@ -65,6 +65,13 @@ const NON_SENDER = new Set([
   // line; a List-Unsubscribe header on requested 1:1 relationship content would
   // be misleading noise (same class as the appointment invite above).
   'lib/cma/send.ts',
+  // BPO delivery to a lead: identical class to lib/cma/send.ts — a broker clicks
+  // "Send" on ONE finalized price opinion for ONE contact, from the broker's own
+  // mailbox (Gmail DWD, Resend fallback), suppression-checked (fails closed),
+  // attributeOutbound-tracked, PDF attached, no list targeting. The branded shell
+  // carries the postal address + audience line; a List-Unsubscribe header on
+  // requested 1:1 relationship content is misleading noise.
+  'lib/bpo/send.ts',
   // Newsletter monthly-draft cron notification: an INTERNAL ops email to Matt's
   // own mailbox ("draft ready for review"). No contact/lead recipient, no list
   // targeting — CAN-SPAM footers would be misleading on a self-notification.

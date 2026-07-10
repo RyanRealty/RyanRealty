@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-07-09T14:09:41.202Z
+**Generated:** 2026-07-10T04:22:35.498Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -417,7 +417,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 24,505**
+### `market_stats_cache` · **rows ≈ 23,931**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -671,7 +671,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 123**
+### `expired_listings` · **rows ≈ 126**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -715,7 +715,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `owner_lookup_attempts` | integer | yes | 0 |
 | `last_owner_lookup_at` | timestamp with time zone | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 157**
+### `marketing_brain_actions` · **rows ≈ 158**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -1133,6 +1133,21 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `max_posts_per_day` | integer | no | 1 |
 | `updated_at` | timestamp with time zone | no | now() |
 
+### `bpo_comps`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `bpo_id` | uuid | no |  |
+| `comp_listing_key` | text | no |  |
+| `comp_order` | smallint | no |  |
+| `comp_address` | text | yes |  |
+| `sold_price` | integer | yes |  |
+| `sold_date` | date | yes |  |
+| `days_to_offer` | smallint | yes |  |
+| `dom_total` | smallint | yes |  |
+| `price_per_sqft` | numeric | yes |  |
+| `adjusted_price` | integer | yes |  |
+
 ### `broker_gcal_tokens`
 
 | Column | Type | Nullable | Default |
@@ -1160,6 +1175,52 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `external_id` | text | yes |  |
 | `metadata` | jsonb | yes | '{}'::jsonb |
 | `created_at` | timestamp with time zone | no | now() |
+
+### `broker_price_opinions`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `slug` | text | no |  |
+| `subject_address` | text | no |  |
+| `subject_listing_key` | text | yes |  |
+| `subject_subdivision` | text | yes |  |
+| `subject_city` | text | yes |  |
+| `subject_beds` | smallint | yes |  |
+| `subject_baths` | numeric | yes |  |
+| `subject_sqft` | integer | yes |  |
+| `subject_lot_acres` | numeric | yes |  |
+| `subject_year_built` | smallint | yes |  |
+| `subject_status` | text | yes |  |
+| `opinion_value` | integer | yes |  |
+| `value_low` | integer | yes |  |
+| `value_high` | integer | yes |  |
+| `confidence` | text | yes |  |
+| `comps_count` | smallint | yes |  |
+| `listing_history` | jsonb | yes |  |
+| `market_snapshot` | jsonb | yes |  |
+| `rationale` | text | yes |  |
+| `broker_id` | uuid | yes |  |
+| `broker_slug` | text | yes |  |
+| `person_id` | bigint | yes |  |
+| `requested_by` | text | yes |  |
+| `purpose` | text | yes |  |
+| `html_content` | text | yes |  |
+| `html_path` | text | no |  |
+| `preview_url` | text | yes |  |
+| `status` | text | no | 'draft'::text |
+| `generation_reason` | text | yes |  |
+| `citations` | jsonb | yes |  |
+| `build_summary` | jsonb | yes |  |
+| `build_error` | text | yes |  |
+| `price_override` | integer | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `built_at` | timestamp with time zone | yes |  |
+| `finalized_at` | timestamp with time zone | yes |  |
+| `archived_at` | timestamp with time zone | yes |  |
+| `offer_strategy` | jsonb | yes |  |
+| `last_sent_at` | timestamp with time zone | yes |  |
+| `sent_count` | integer | no | 0 |
 
 ### `broker_stats`
 

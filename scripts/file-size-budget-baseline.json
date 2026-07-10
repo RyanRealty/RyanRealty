@@ -14,7 +14,7 @@
     "app/admin/(protected)/broker-dashboard/page.tsx": 660,
     "app/admin/(protected)/deals/page.tsx": 657,
     "app/admin/(protected)/reports/lead-flow/page.tsx": 642,
-    "app/admin/console/leads/[id]/page.tsx": 645,
+    "app/admin/console/leads/[id]/page.tsx": 661,
     "app/api/meta/lead-webhook/route.ts": 919,
     "app/api/social/publish/route.ts": 783,
     "app/cities/[slug]/page.tsx": 654,
