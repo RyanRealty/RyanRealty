@@ -12,6 +12,8 @@ import { CO_EVENTS } from '@/data/co-events'
 import { CO_VENUES } from '@/data/co-venues'
 import { GOLF_COURSES } from '@/data/golf/courses'
 import { CO_TRAILS } from '@/data/co-trails'
+import { CO_SCHOOLS } from '@/data/co-schools'
+import { CO_PARKS } from '@/data/co-parks'
 
 // The ONLY slugs with a real /communities/[slug] page — the curated resort
 // registry (data/resort-communities.json). The old code emitted every row of
@@ -66,6 +68,8 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     { url: `${baseUrl}/central-oregon/events`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${baseUrl}/central-oregon/venues`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${baseUrl}/central-oregon/trails`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${baseUrl}/schools`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${baseUrl}/parks`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${baseUrl}/housing-market`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${baseUrl}/housing-market/central-oregon`, lastModified: now, changeFrequency: 'weekly', priority: 0.65 },
     { url: `${baseUrl}/open-houses`, lastModified: now, changeFrequency: 'daily', priority: 0.7 },
@@ -146,6 +150,25 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     staticPages.push({
       url: `${baseUrl}/central-oregon/trails/${trail.slug}`,
       lastModified: trail.lastVerified,
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    })
+  }
+  // School + park detail pages — registry-driven (data/co-schools.ts,
+  // data/co-parks.ts), same pattern as golf/trails. Neither registry carries a
+  // lastVerified date, so lastModified follows the GOLF_COURSES idiom.
+  for (const school of CO_SCHOOLS) {
+    staticPages.push({
+      url: `${baseUrl}/schools/${school.slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    })
+  }
+  for (const park of CO_PARKS) {
+    staticPages.push({
+      url: `${baseUrl}/parks/${park.slug}`,
+      lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.5,
     })

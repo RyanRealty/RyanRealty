@@ -44,6 +44,8 @@ Pull fresh — never from memory: GA4 (sessions, conversions, bounce by surface)
 ### 3. Prioritize
 `score = reach × gap-to-benchmark × confidence ÷ effort`, confidence = the learned win-rate for that change-class from `site_improvement_ledger`. Skip candidates in frozen families. ONE class wins the iteration.
 
+Content-moat candidates from `data/growth/content-moat-backlog.md` enter this same scoring alongside scoreboard-derived candidates (evidence stamps in that file expire after 30 days — re-verify before scoring on them). New content pieces are drafts → `marketing_brain_skills/produce/` action row → Matt approval, per the backlog's standing constraints.
+
 ### 4. Fix the class, never the instance
 Preflight contract applies (mockup + parity.json for surfaces, DAL for data, §0 trace for every stat). Resolve the root-cause cluster everywhere it occurs in one coordinated change.
 
