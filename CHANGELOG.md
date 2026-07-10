@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.759.3 (2026-07-10)
+
+### Bug Fixes
+- fix(crm): community smart lists match subdivision by contains, not an exact canonical slug
+
+---
+
+
 ## v1.759.2 (2026-07-10)
 
 ### Bug Fixes
