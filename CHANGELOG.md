@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.758.0 (2026-07-10)
+
+### Features
+- feat(crm): production-grade send + tracking gaps closed for E2E deliverable rail
+
+---
+
+
 ## v1.757.0 (2026-07-10)
 
 ### Features
