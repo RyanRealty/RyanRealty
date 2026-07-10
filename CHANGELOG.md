@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.754.0 (2026-07-10)
+
+### Features
+- feat(skills): /local-seo — competitive local-pack audit loop (GBP categories/attributes, review velocity, citations/NAP, photo pipeline)
+
+---
+
+
 ## v1.753.0 (2026-07-09)
 
 ### Features
