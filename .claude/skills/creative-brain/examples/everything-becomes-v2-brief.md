@@ -1,6 +1,8 @@
-# Piece Brief — Everything Becomes v2 (worked example)
+# Piece Brief — Everything Becomes v2 (worked example — KILLED)
 
-*This is the demonstration artifact: the brain applied end-to-end to a real piece. v1 was the ranked-1 clip from batch 001 (2026-07-09) — a Kling style-drift gift: porcelain elk exhaling living smoke in a misty pine forest. v2 designs the finished 30s piece around it.*
+**KILLED 2026-07-09 at doctrine level by the Reality Law:** this piece renders real-life items (elk, forest) photoreally via AI — the definition of slop per Matt's directive, regardless of craft quality. Kept as a tombstone: the brief machinery below is still the correct METHOD (every stage demonstrated), applied to the wrong WORLD. The concept survives only if rebuilt inside an authored stylized world (e.g. the navy-ink engraving universe: an etched elk whose ink-smoke becomes the etched world). See LESSONS.md #11.
+
+*Original brief follows for method reference.*
 
 ## Idea
 - **One sentence:** A porcelain elk breathes the world into being — everything it exhales becomes the next living thing, until its last breath becomes the elk itself.
