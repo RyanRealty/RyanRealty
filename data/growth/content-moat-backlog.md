@@ -6,7 +6,18 @@ candidates). Companion to the local-pack layer (`.claude/skills/local-seo/SKILL.
 
 **Evidence base (all pulled live 2026-07-09):**
 
-- ryan-realty.com/blog — 11 published posts total, newest 2026-06-09 (fetched 2026-07-09).
+- ryan-realty.com/blog — 45 live posts across 4 pages (CORRECTED 2026-07-09: the first
+  audit misread page 1 as the total). The real gap is cadence collapse: 3–6 posts/month
+  Jun–Dec 2025, then 2026 YTD = 6 posts (Jan 3, Feb 1, Mar 0, Apr 1, May 0, Jun 1, Jul 0)
+  — verified against `blog_posts` grouped by month, 2026-07-09.
+- `blog_posts` status audit (2026-07-09): 45 `published` · 33 `archived_stats_unverified`
+  (bulk-archived 2026-04-01 in the §0 stats purge — recoverable by re-verifying every
+  figure) · 1 `pending_pilot_review` stuck since 2026-04-01.
+- Publishing machinery built but never wired (2026-07-09): migration
+  `20260401120000_blog_scheduled_publishing.sql` added `scheduled_at` +
+  `blog_settings` (`auto_publish_enabled=false`), but no cron or runtime code reads
+  either — zero scheduled posts, and the 2026-06-09 producer freeze means content only
+  ships when produced in-session via produce/.
 - bendpremierrealestate.com/blog archives — 70 posts 2026 YTD, 103 in 2025, 110 in 2024
   (~8–10/month), newest published 2026-07-09 (fetched 2026-07-09).
 - ryan-realty.com/guides — 11 published guides, ALL auto-generated per-city market
@@ -35,8 +46,9 @@ Five Laws, fair-housing-clean geography language (describe the place, never the 
 
 ### 1. Monthly dated market-update post pack (highest confidence, lowest effort)
 - **Gap:** competitors rank for "bend housing market update <month year>" with hand-written
-  monthly posts; our newest blog post is a month old. Dated posts are the ranking unit for
-  this query class — the live /housing-market and /pulse surfaces don't capture it.
+  monthly posts; our 2026 cadence is 6 posts YTD (three zero months) vs Bend Premier's 70.
+  Dated posts are the ranking unit for this query class — the live /housing-market and
+  /pulse surfaces don't capture it.
 - **Our unfair asset:** `market_pulse_live` + `market_stats_cache` + the monthly market
   report orchestrator already produce §0-verified figures with traces. Competitors
   hand-copy stats; ours are machine-verified.
@@ -46,6 +58,14 @@ Five Laws, fair-housing-clean geography language (describe the place, never the 
   can't follow).
 - **Target queries:** "bend oregon housing market update", "bend real estate market
   <month year>", per-city variants.
+
+### 1b. Re-verify and restore the 33 archived posts (written content already paid for)
+- **Gap:** 33 finished posts sit in `archived_stats_unverified` since the 2026-04-01 §0
+  purge. The prose exists; only the figures failed verification.
+- **Shape:** per post — re-pull every stat live with a trace, rewrite or cut figures that
+  can't verify, restore to `published` with an updated `published_at`; kill posts whose
+  premise died. Each restoration is a Matt-approved draft (§0 + voice re-check), batched
+  ~5 per review round.
 
 ### 2. Relocation hub — own "moving to Bend" (highest reach)
 - **Gap:** the entire query class belongs to competitors; several run whole domains on it.
