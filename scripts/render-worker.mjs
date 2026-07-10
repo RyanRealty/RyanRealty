@@ -43,7 +43,7 @@
  * ENV: reads .env.local for NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.
  */
 
-import { spawnSync } from 'node:child_process'
+import { spawnSync, execFileSync } from 'node:child_process'
 import { readFileSync, existsSync, writeFileSync, mkdirSync, statSync, readdirSync, rmSync } from 'node:fs'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -145,12 +145,49 @@ async function logFailure(actionId, producerSlug, phase, message) {
   })
 }
 
+/**
+ * Notify Matt the moment a render lands as a draft. iMessage from this Mac's
+ * Messages app (text-only — attachments fail silently, see memory). Never throws:
+ * a notification failure must not block or unwind the ready flip.
+ */
+function notifyMattReady(row, relArtifact) {
+  try {
+    const to = env.TWILIO_FORWARD_MATT || '+15412136706'
+    const reason = row.generation_reason || ''
+    const m = reason.match(/requested a [^]*? for (.+)$/i)
+    const subject = m ? m[1].trim() : row.target || row.action_type || 'a deliverable'
+    const site = 'https://ryan-realty.com'
+    const draftUrl = relArtifact.startsWith('public/')
+      ? `${site}/${relArtifact.slice('public/'.length)}`
+      : null
+    const kind = (row.action_type || 'content').replace(/^content:/, '')
+    const lines = [
+      `Draft ready: ${kind} for ${subject}.`,
+      draftUrl ? `Preview: ${draftUrl}` : null,
+      `Approve: ${site}/admin/approval-queue`,
+    ].filter(Boolean)
+    const body = lines.join('\n')
+    const script = `
+      on run {targetPhone, msgBody}
+        tell application "Messages"
+          set targetService to 1st account whose service type = iMessage
+          set targetBuddy to participant targetPhone of targetService
+          send msgBody to targetBuddy
+        end tell
+      end run`
+    execFileSync('osascript', ['-e', script, to, body], { timeout: 30000 })
+    console.log(`  ✓ notified Matt (iMessage → ${to})`)
+  } catch (e) {
+    console.warn(`  ! notify failed (non-blocking): ${e.message}`)
+  }
+}
+
 // ── core ───────────────────────────────────────────────────────────────────────
 
 async function fetchDeferredRows() {
   let q = supabase
     .from('marketing_brain_actions')
-    .select('id, action_type, assigned_producer, payload, executor_response, status')
+    .select('id, action_type, assigned_producer, payload, executor_response, status, generation_reason, target')
     .eq('status', 'in_production')
     .eq('executor_response->>deferred_to_local_render', 'true')
     .order('executed_at', { ascending: true, nullsFirst: false })
@@ -158,7 +195,7 @@ async function fetchDeferredRows() {
   if (ONLY_ID) {
     q = supabase
       .from('marketing_brain_actions')
-      .select('id, action_type, assigned_producer, payload, executor_response, status')
+      .select('id, action_type, assigned_producer, payload, executor_response, status, generation_reason, target')
       .eq('id', ONLY_ID)
   }
   const { data, error } = await q
@@ -277,6 +314,7 @@ async function processRow(row) {
   }
 
   console.log(`  ✓ ${row.id} → ready (awaiting Matt approval; draft-first §0.5)`)
+  notifyMattReady(row, relArtifact)
   return { id: row.id, ok: true, artifact: relArtifact }
 }
 

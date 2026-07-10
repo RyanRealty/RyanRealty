@@ -52,7 +52,7 @@ export default function FsboLPForm({ heroVariant = false, formId = 'fsbo-form' }
       return
     }
     // Partial-lead capture fires non-blocking before the step change.
-    void saveFsboPartialAddress({ address: v, sessionId: readRrSessionId() })
+    void saveFsboPartialAddress({ address: v, sessionId: readRrSessionId() }) // hydration-safe (event-handler body, not render)
     setStep('contact')
   }
 
@@ -76,7 +76,7 @@ export default function FsboLPForm({ heroVariant = false, formId = 'fsbo-form' }
         email: trimmedEmail,
         phone: phone.trim(),
         notes: notes.trim(),
-        sessionId: readRrSessionId(),
+        sessionId: readRrSessionId(), // hydration-safe (event-handler body, not render)
       })
       if (!result.success) {
         setError(result.error)
