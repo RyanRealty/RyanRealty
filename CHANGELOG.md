@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.760.0 (2026-07-10)
+
+### Features
+- feat(crm): geo resolver reads every signal we hold + guardrail for undercounting community lists
+
+### Bug Fixes
+- fix(schools): a transient DB timeout can no longer fail the deploy + gate the whole prerender class
+
+### Maintenance
+- chore: carry forward prior-session working-tree changes (FSBO LP annotations, homepage v7 status, render-worker draft-ready iMessage)
+
+---
+
+
 ## v1.759.3 (2026-07-10)
 
 ### Bug Fixes
