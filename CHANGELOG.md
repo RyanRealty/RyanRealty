@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.762.3 (2026-07-11)
+
+### Maintenance
+- test(mapper): assert sparkToListingRow never persists confidential keys to details
+
+---
+
+
 ## v1.762.2 (2026-07-11)
 
 ### Bug Fixes
