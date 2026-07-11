@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.760.2 (2026-07-11)
+
+### Bug Fixes
+- fix(audit): close all confirmed adversarial-audit findings across BPO, CMA, saved searches, newsletters, market reports
+
+---
+
+
 ## v1.760.1 (2026-07-10)
 
 ### Bug Fixes
