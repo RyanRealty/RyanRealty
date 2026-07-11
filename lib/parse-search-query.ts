@@ -232,6 +232,11 @@ export function parseSearchQuery(raw: string): ParsedSearch {
   const state: WorkState = { work: q.toLowerCase() }
   const multiValues = new Map<string, string[]>()
 
+  // "55+" has no trailing word boundary after '+', so the phrase matcher can
+  // never fire on it — rewrite to the word form the registry synonym matches
+  // (attack finding 2026-07-11).
+  state.work = state.work.replace(/\b55\s*\+/g, '55 plus')
+
   // Pass 1 — registry phrases, longest first, consuming matched spans. Runs
   // before number normalization so 'one level' / 'two story' stay phrases.
   for (const { re, action } of MATCHERS) {
@@ -257,6 +262,19 @@ export function parseSearchQuery(raw: string): ParsedSearch {
   }
 
   // Pass 2 — spoken numbers become digits ("three bed" -> "3 bed").
+  const MULT = (u: string) => (u === 'million' ? 1_000_000 : u === 'hundred' ? 100 : 1_000)
+  // "between X and Y <unit>" — the unit trails Y but governs BOTH bounds, so
+  // scale them together BEFORE the generic pass collapses only Y ("between 1
+  // and 2 million" would otherwise leave "1" bare -> $1,000; attack finding
+  // 2026-07-11).
+  state.work = state.work.replace(
+    /\bbetween\s+(\d+(?:\.\d+)?)\s+and\s+(\d+(?:\.\d+)?)[\s-]+(million|thousand|hundred|grand)\b/g,
+    (_m, lo: string, hi: string, unit: string) => {
+      const l = Number(lo), h = Number(hi)
+      if (!Number.isFinite(l) || !Number.isFinite(h)) return _m
+      return `between ${Math.round(l * MULT(unit))} and ${Math.round(h * MULT(unit))}`
+    }
+  )
   // Digit + multiplier word collapses FIRST ("1.5 million" -> "1500000");
   // otherwise the word-number pass rewrites the bare multiplier on its own and
   // the money grammar reads "1.5" as $1,500 (review finding 2026-07-11).
@@ -265,8 +283,7 @@ export function parseSearchQuery(raw: string): ParsedSearch {
     (_m, num: string, unit: string) => {
       const n = Number(num)
       if (!Number.isFinite(n)) return _m
-      const mult = unit === 'million' ? 1_000_000 : unit === 'hundred' ? 100 : 1_000
-      return String(Math.round(n * mult))
+      return String(Math.round(n * MULT(unit)))
     }
   )
   // "a million" / "half a million" have no leading digit.
@@ -286,15 +303,19 @@ export function parseSearchQuery(raw: string): ParsedSearch {
   take(state, /(\d+)\s*\+?\s*car\s*garage/, (m) => {
     out.garageMin = m[1]
   })
-  take(
-    state,
-    /(?:(under|below|less than|up to|over|above|more than|at least)\s+)?([\d,]+)\s*\+?\s*(?:square\s*(?:feet|foot|ft)|sq\.?\s*ft\.?|sqft)\b/,
-    (m) => {
-      const v = String(parseInt(m[2].replace(/,/g, ''), 10))
-      if (m[1] && /^(under|below|less than|up to)$/.test(m[1])) out.maxSqFt = v
-      else out.minSqFt = v
-    },
-  )
+  // Loop so BOTH bounds get consumed ("over 2000 sqft under 3000 sqft"); a
+  // single take() would leave "under 3000 sqft" for the price pass to misread
+  // as $3,000,000 (attack finding 2026-07-11).
+  {
+    const sqftRe = /(?:(under|below|less than|up to|over|above|more than|at least)\s+)?([\d,]+)\s*\+?\s*(?:square\s*(?:feet|foot|ft)|sq\.?\s*ft\.?|sqft)\b/
+    for (let i = 0; i < 2 && sqftRe.test(state.work); i++) {
+      take(state, sqftRe, (m) => {
+        const v = String(parseInt(m[2].replace(/,/g, ''), 10))
+        if (m[1] && /^(under|below|less than|up to)$/.test(m[1])) out.maxSqFt = v
+        else out.minSqFt = v
+      })
+    }
+  }
   take(
     state,
     /(?:(under|below|less than|up to|over|above|more than|at least)\s+)?(\d+(?:\.\d+)?)\s*\+?\s*acres?\b/,
@@ -347,7 +368,10 @@ export function parseSearchQuery(raw: string): ParsedSearch {
     state,
     new RegExp(`\\bbetween\\s+\\$?\\s*([\\d,.]+)\\s*${MONEY_UNIT}?\\s+and\\s+\\$?\\s*([\\d,.]+)\\s*${MONEY_UNIT}?\\b`),
     (m) => {
-      const lo = parseMoney(m[1], m[2])
+      // "between 1 and 2 million" — the low bound has no unit; inherit the
+      // high bound's so it is not read as $1,000 (attack finding 2026-07-11).
+      const loUnit = m[2] || m[4]
+      const lo = parseMoney(m[1], loUnit)
       const hi = parseMoney(m[3], m[4])
       if (lo) out.minPrice = String(lo)
       if (hi) out.maxPrice = String(hi)
@@ -380,6 +404,20 @@ export function parseSearchQuery(raw: string): ParsedSearch {
     if (matched) {
       out.city = name
       break
+    }
+  }
+
+  // Inverted ranges make a search match nothing forever ("over 500k under
+  // 400k"). Drop the smaller-than-floor ceiling rather than emit a dead
+  // search (attack finding 2026-07-11).
+  const rangePairs: [string, string][] = [
+    ['minPrice', 'maxPrice'], ['beds', 'maxBeds'], ['baths', 'maxBaths'],
+    ['minSqFt', 'maxSqFt'], ['lotAcresMin', 'lotAcresMax'],
+    ['yearBuiltMin', 'yearBuiltMax'],
+  ]
+  for (const [lo, hi] of rangePairs) {
+    if (out[lo] != null && out[hi] != null && Number(out[lo]) > Number(out[hi])) {
+      delete out[hi]
     }
   }
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeSavedSearchFilters, getSavedSearchHash, savedFiltersToAdvanced } from './search-filters'
+import { normalizeSavedSearchFilters, getSavedSearchHash, savedFiltersToAdvanced, hasNarrowingFilter } from './search-filters'
 
 // Saved-search alert dedup hinges on normalize + hash: two saves that mean the
 // same thing must produce the same hash (else duplicate alerts), and a real
@@ -95,5 +95,20 @@ describe('registry-driven filter keys', () => {
     expect(adv.daysOnMarket).toBe(7)
     expect(adv.monthlyPaymentMax).toBe(3000)
     expect(adv.schoolDistrict).toBe('Bend-La Pine')
+  })
+})
+
+describe('hasNarrowingFilter (attack 2026-07-11)', () => {
+  it('view/sort/poly/status-only searches are NOT narrowing (blocks whole-feed alerts)', () => {
+    expect(hasNarrowingFilter({ view: 'list' })).toBe(false)
+    expect(hasNarrowingFilter({ sort: 'price_asc' })).toBe(false)
+    expect(hasNarrowingFilter({ poly: '44.05,-121.3;44.06,-121.31;44.05,-121.32' })).toBe(false)
+    expect(hasNarrowingFilter({ statusFilter: 'active', includeClosed: '1' as unknown as boolean })).toBe(false)
+  })
+  it('a real filter is narrowing', () => {
+    expect(hasNarrowingFilter({ city: 'Bend' })).toBe(true)
+    expect(hasNarrowingFilter({ maxPrice: 500000 })).toBe(true)
+    expect(hasNarrowingFilter({ viewTypes: ['Panoramic'] })).toBe(true)
+    expect(hasNarrowingFilter({ poly: 'x', city: 'Bend' })).toBe(true)
   })
 })

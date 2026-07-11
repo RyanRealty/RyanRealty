@@ -208,3 +208,29 @@ describe('spoken money multipliers (review 2026-07-11)', () => {
     expect(searchHrefForQuery('sold homes in bend')).toContain('status=Sold')
   })
 })
+
+describe('attack-hardening (2026-07-11)', () => {
+  it('"between 1 and 2 million" is $1M..$2M, not $1,000', () => {
+    const p = parseSearchQuery('between 1 and 2 million in bend')
+    expect(p.minPrice).toBe('1000000')
+    expect(p.maxPrice).toBe('2000000')
+  })
+  it('"over 2000 sqft under 3000 sqft" sets sqft bounds, not a price', () => {
+    const p = parseSearchQuery('over 2000 sqft under 3000 sqft')
+    expect(p.minSqFt).toBe('2000')
+    expect(p.maxSqFt).toBe('3000')
+    expect(p.maxPrice).toBeUndefined()
+  })
+  it('"55+ community" maps to seniorCommunity', () => {
+    expect(parseSearchQuery('55+ community in redmond').seniorCommunity).toBe('1')
+  })
+  it('inverted price range drops the contradictory ceiling', () => {
+    const p = parseSearchQuery('over 500k under 400k')
+    expect(p.minPrice).toBe('500000')
+    expect(p.maxPrice).toBeUndefined()
+  })
+  it('"near a c" does not force a Central Air cooling filter', () => {
+    const p = parseSearchQuery('home near a c store in bend')
+    expect(p.coolingTypes).toBeUndefined()
+  })
+})

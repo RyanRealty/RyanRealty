@@ -685,9 +685,37 @@ async function fetchSearchListingsAll(
  * Cached entry point — the one search function for on-market listings across
  * every registry filter, bbox, sort, and pagination. Exact count included.
  */
+/**
+ * Stable cache key: raw Google-Maps bbox floats (15 sig figs) never repeat
+ * across pans, so every viewport move was a cache miss + cold count:'exact'
+ * query. Round bbox to ~4 decimals (~11m — finer than any listing needs) and
+ * sort array filters so equivalent searches share one entry (attack finding
+ * 2026-07-11).
+ */
+function stableCacheKey(parsed: Record<string, unknown>): string {
+  const norm: Record<string, unknown> = {}
+  for (const k of Object.keys(parsed).sort()) {
+    const v = parsed[k]
+    if (k === 'bbox' && v && typeof v === 'object') {
+      const b = v as Record<string, number>
+      norm.bbox = {
+        west: Math.round(b.west * 1e4) / 1e4,
+        south: Math.round(b.south * 1e4) / 1e4,
+        east: Math.round(b.east * 1e4) / 1e4,
+        north: Math.round(b.north * 1e4) / 1e4,
+      }
+    } else if (Array.isArray(v)) {
+      norm[k] = [...v].sort()
+    } else {
+      norm[k] = v
+    }
+  }
+  return JSON.stringify(norm)
+}
+
 export const searchListingsAll = (filter: SearchListingsAllFilter): Promise<SearchListingsAllResult> => {
   const parsed = FilterSchema.parse(filter)
-  const cacheKey = JSON.stringify(parsed)
+  const cacheKey = stableCacheKey(parsed)
   return makeResilientCached(
     () => fetchSearchListingsAll(parsed),
     ['search-listings-all-v1', cacheKey],
@@ -724,7 +752,7 @@ export const searchListingsAllCount = (filter: SearchListingsAllFilter): Promise
   void _limit
   void _offset
   void _sort
-  const cacheKey = JSON.stringify(countScope)
+  const cacheKey = stableCacheKey(countScope as unknown as Record<string, unknown>)
   return makeResilientCached(
     () => fetchSearchListingsAllCount(parsed),
     ['search-listings-all-count-v1', cacheKey],

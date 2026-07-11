@@ -246,7 +246,7 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     category: 'community_hoa',
     kind: 'boolean',
     mv: 'senior_community_yn',
-    voice: ['55 plus', 'senior community', 'age restricted'],
+    voice: ['55 plus', '55+', '55 and older', 'senior community', 'age restricted', 'active adult'],
   },
   {
     key: 'noHoa',
@@ -498,7 +498,7 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     mv: 'cooling_types',
     options: ['Central Air', 'Heat Pump', 'Ductless', 'Zoned', 'ENERGY STAR Qualified Equipment', 'Wall/Window Unit(s)', 'Whole House Fan'],
     voiceValues: {
-      'Central Air': ['air conditioning', 'central air', 'a c'],
+      'Central Air': ['air conditioning', 'central air'],
       Ductless: ['ductless', 'mini split'],
     },
   },

@@ -5,7 +5,7 @@ import { sendEmail } from '@/lib/resend'
 import { getCachedSearchListings } from '@/app/actions/search-cache'
 import type { ListingTileRow } from '@/app/actions/listings'
 import { listingDetailPath } from '@/lib/slug'
-import { buildSearchUrlFromFilters, getFiltersSummary, normalizeSavedSearchFilters } from '@/lib/search-filters'
+import { buildSearchUrlFromFilters, getFiltersSummary, hasNarrowingFilter, normalizeSavedSearchFilters } from '@/lib/search-filters'
 import {
   getActiveListingAlertsDue,
   markListingAlertNotified,
@@ -214,7 +214,7 @@ export async function runListingAlerts(options?: {
       // Empty-filter guard: a saved search whose normalized filters are empty
       // would match the whole feed and email every active listing. Skip + advance
       // (never blast) and log loudly so the bad row is visible.
-      if (Object.keys(normalizeSavedSearchFilters(filters)).length === 0) {
+      if (!hasNarrowingFilter(filters)) {
         console.error('[runListingAlerts] skipping alert with empty filters', { searchId: row.id })
         await advanceCursor()
         continue

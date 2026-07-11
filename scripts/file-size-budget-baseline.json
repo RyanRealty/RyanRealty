@@ -38,7 +38,7 @@
     "lib/data/crm/getEmailReporting.ts": 686,
     "lib/data/crm/getLeadSourcesReport.ts": 609,
     "lib/data/index.ts": 717,
-    "lib/data/listings/searchListingsAll.ts": 735,
+    "lib/data/listings/searchListingsAll.ts": 763,
     "lib/data/sync/syncWrites.ts": 1123,
     "lib/expired-owner-lookup.ts": 689,
     "lib/followupboss.ts": 1557,

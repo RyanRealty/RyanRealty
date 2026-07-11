@@ -3,6 +3,7 @@
 import { headers } from 'next/headers'
 import { getAuthLimiter } from '@/lib/rate-limit'
 import {
+  hasNarrowingFilter,
   normalizeSavedSearchFilters,
   getSavedSearchHash,
   getFiltersSummary,
@@ -76,7 +77,10 @@ export async function submitSearchAlertSignup(input: {
   }
   const normalized = normalizeSavedSearchFilters(cappedFilters)
   // Never sign someone up for "every home". Require at least one real filter.
-  if (Object.keys(normalized).length === 0) {
+  // Guard on NARROWING power, not key count: a save made only of
+  // view/sort/poly/status would otherwise become a whole-feed alert
+  // (attack finding 2026-07-11).
+  if (!hasNarrowingFilter(normalized)) {
     return { ok: false, error: 'Add a filter (like a city or price) so we know what to alert you about.' }
   }
   const filtersHash = getSavedSearchHash(normalized)

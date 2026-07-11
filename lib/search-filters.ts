@@ -408,3 +408,34 @@ export function toCacheListingKeys(listingRows: Array<{ ListingKey?: string | nu
   }
   return keys
 }
+
+
+/**
+ * Keys that do NOT narrow the result set: presentation (view, sort), a drawn
+ * polygon the alert path cannot match server-side (poly), and status/scope
+ * toggles that alone still match the whole feed. A saved search made of ONLY
+ * these matches every active home — the empty-filter guard must treat it as
+ * empty so it can never become a whole-feed alert (attack finding 2026-07-11).
+ */
+const NON_NARROWING_KEYS = new Set([
+  'view', 'sort', 'poly', 'statusFilter', 'includeClosed',
+])
+
+/**
+ * True when the normalized filters carry at least one predicate that actually
+ * narrows inventory (a place, price, beds, an amenity, keywords, …). Use this,
+ * NOT `Object.keys(...).length`, to gate alert creation and sending.
+ */
+export function hasNarrowingFilter(input: SavedSearchFilters): boolean {
+  const normalized = normalizeSavedSearchFilters(input)
+  return Object.keys(normalized).some((k) => {
+    if (NON_NARROWING_KEYS.has(k)) return false
+    const v = normalized[k]
+    if (v == null) return false
+    if (Array.isArray(v)) return v.length > 0
+    if (typeof v === 'string') return v.trim() !== ''
+    if (typeof v === 'boolean') return v === true
+    return true
+  })
+}
+
