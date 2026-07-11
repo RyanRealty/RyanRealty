@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.762.1 (2026-07-11)
+
+### Bug Fixes
+- fix(search): harden against adversarial-attack findings (parser, alerts, cache, refresh RPC)
+
+---
+
+
 ## v1.762.0 (2026-07-11)
 
 ### Features
