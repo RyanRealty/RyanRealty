@@ -42,7 +42,7 @@
     "lib/data/sync/syncWrites.ts": 1123,
     "lib/expired-owner-lookup.ts": 689,
     "lib/followupboss.ts": 1557,
-    "lib/listing-mapper.ts": 657,
+    "lib/listing-mapper.ts": 691,
     "lib/marketing-brain/audit-ads.ts": 689,
     "lib/marketing-brain/audit-crm.ts": 784,
     "lib/marketing-brain/audit-website.ts": 838,

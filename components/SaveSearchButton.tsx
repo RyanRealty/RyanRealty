@@ -162,6 +162,11 @@ export default function SaveSearchButton({ user }: Props) {
                 className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
                 autoFocus
               />
+              {searchParams?.get('poly') ? (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Alerts cover the area around your drawn boundary, not the exact shape.
+                </p>
+              ) : null}
               <div className="mt-3 flex items-start gap-2">
                 <Checkbox
                   id="save-search-public"
@@ -200,6 +205,11 @@ export default function SaveSearchButton({ user }: Props) {
               <p className="mt-1 text-xs text-muted-foreground">
                 Add your email and we will send new matches as they hit the market.
               </p>
+              {searchParams?.get('poly') ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Alerts cover the area around your drawn boundary, not the exact shape.
+                </p>
+              ) : null}
               {/* Honeypot: visually + a11y hidden, not tab-reachable. Bots fill it. */}
               <Input
                 type="text"

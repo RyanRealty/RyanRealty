@@ -11,6 +11,7 @@ import type { ListingTileRow } from '@/app/actions/listings'
 import type { MapListingRow } from '@/app/actions/listings'
 import { getPolygonBounds, isPointInPolygon, type MapPolygonPoint } from '@/lib/map-polygon'
 import { getSubdivisionMatchNames } from '@/lib/subdivision-aliases'
+import { getGeneralLimiter } from '@/lib/rate-limit'
 import { SEARCH_FIELDS } from '@/lib/search/field-registry'
 import { searchListingsAll, searchListingsAllCount, pickSearchFeatureFilters } from '@/lib/data'
 import type { ListingTile, SearchFeatureFilters, SearchListingsAllFilter } from '@/lib/data'
@@ -304,6 +305,24 @@ export async function getViewportSearch(
  * a plain Apply label instead of showing a wrong number.
  */
 export async function countSearchListings(params: Record<string, string>): Promise<number | null> {
+  // Public unauthenticated action -> each call is a count('exact') scan. Rate
+  // limit per IP so it cannot be spun for cheap DB-cost amplification (attack
+  // finding 2026-07-11). Over-limit returns null (the UI falls back to a plain
+  // Apply label), never an error.
+  try {
+    const limiter = getGeneralLimiter()
+    if (limiter) {
+      const { headers } = await import('next/headers')
+      const h = await headers()
+      const ip = (h.get('x-forwarded-for') ?? '').split(',')[0]?.trim() || 'unknown'
+      const { success } = await limiter.limit(`search-count:${ip}`)
+      if (!success) return null
+    }
+  } catch {
+    // Rate-limit backend unavailable — fail OPEN for the count (it is read-only
+    // and the DAL has its own cache), rather than blocking the feature.
+  }
+
   const status = params.statusFilter ?? params.status
   if (status === 'closed' || status === 'Sold' || status === 'all') return null
   if (params.neighborhoodSlug?.trim()) return null

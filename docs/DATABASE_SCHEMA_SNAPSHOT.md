@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-07-11T19:11:19.430Z
+**Generated:** 2026-07-11T21:06:24.637Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -59,7 +59,7 @@ One row per MLS-history event for a listing. snake_case columns; `listing_key` r
 | `sort_order` | integer | no | 0 |
 | `created_at` | timestamp with time zone | no | now() |
 
-### `listings` · **rows ≈ 592,926**
+### `listings` · **rows ≈ 594,379**
 
 Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case columns** — `"ListingKey"`, `"StreetNumber"`, `"StreetName"`, `"ListPrice"`, `"StandardStatus"`, `"Latitude"`, `"Longitude"`, etc. The `details` jsonb column carries the raw RETS payload. **Never aggregate from this table at request time** — use `listing_tile_mv` / `market_pulse_live` / `market_stats_cache`.
 
@@ -671,7 +671,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 134**
+### `expired_listings` · **rows ≈ 135**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -2514,6 +2514,14 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `quality_score` | numeric | no | 0 |
 | `created_at` | timestamp with time zone | no | now() |
 
+### `listing_private`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `listing_key` | text | no |  |
+| `private_data` | jsonb | no | '{}'::jsonb |
+| `updated_at` | timestamp with time zone | no | now() |
+
 ### `listing_search_mv`
 
 | Column | Type | Nullable | Default |
@@ -3240,6 +3248,13 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `is_hidden` | boolean | no | false |
 | `synced_at` | timestamp with time zone | no | now() |
 | `created_at` | timestamp with time zone | no | now() |
+
+### `rr_redact_state`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | integer | no | 1 |
+| `cursor` | text | no | ''::text |
 
 ### `saved_cities`
 

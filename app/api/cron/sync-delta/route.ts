@@ -6,7 +6,7 @@ import {
   type SparkListingHistoryItem,
 } from '@/lib/spark'
 import { syncAuxiliaryTablesForFinalization } from '@/app/api/admin/sync/_shared/listing-completeness'
-import { sparkToListingRow, sparkHistoryItemToRow as mapHistoryItem } from '@/lib/listing-mapper'
+import { sparkToListingRow, extractPrivateDetails, sparkHistoryItemToRow as mapHistoryItem } from '@/lib/listing-mapper'
 import { processNewExpiredListings } from '@/lib/expired-listing-processor'
 
 /**
@@ -226,6 +226,9 @@ export async function GET(request: Request) {
 
       // Process each listing
       const rowsToUpsert: Array<Record<string, unknown>> = []
+      // Confidential keys diverted out of the anon-readable details, written to
+      // the service-role-only listing_private table (attack finding 2026-07-11).
+      const privateRowsToUpsert: Array<{ listing_key: string; private_data: Record<string, unknown> }> = []
       const activityEvents: Array<{ listing_key: string; event_type: string; payload: Record<string, unknown> }> = []
       const priceHistoryRows: Array<{
         listing_key: string
@@ -268,6 +271,14 @@ export async function GET(request: Request) {
           if (v !== undefined) cleanRow[k] = v
         }
         rowsToUpsert.push(cleanRow)
+
+        // Divert the confidential keys (already stripped from cleanRow.details
+        // by the mapper) into listing_private.
+        const privateData = extractPrivateDetails(f as Record<string, unknown>)
+        const privKey = (f.ListingKey ?? f.ListNumber ?? '').toString()
+        if (privateData && privKey) {
+          privateRowsToUpsert.push({ listing_key: privKey, private_data: privateData })
+        }
 
         const listingKey = (f.ListingKey ?? f.ListNumber ?? '').toString()
         const newStatus = (f.StandardStatus ?? '').toString()
@@ -367,6 +378,22 @@ export async function GET(request: Request) {
         const result = await upsertListingRows(chunk)
         if (result.ok) totalUpserted += chunk.length
         else { upsertFailed = true; console.error('[sync-delta] upsert error:', result.error) }
+      }
+
+      // 1b. Divert confidential keys to listing_private (service-role client).
+      //     Best-effort: a private-write hiccup must not fail the whole sync,
+      //     and the details column is already clean regardless.
+      if (privateRowsToUpsert.length > 0) {
+        for (let i = 0; i < privateRowsToUpsert.length; i += UPSERT_CHUNK) {
+          const chunk = privateRowsToUpsert.slice(i, i + UPSERT_CHUNK).map((r) => ({
+            ...r,
+            updated_at: new Date().toISOString(),
+          }))
+          const { error } = await supabase
+            .from('listing_private')
+            .upsert(chunk, { onConflict: 'listing_key' })
+          if (error) console.error('[sync-delta] listing_private upsert error:', error.message)
+        }
       }
 
       // 2. Insert price_history records

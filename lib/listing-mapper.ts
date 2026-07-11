@@ -68,6 +68,37 @@ export function toBool(v: unknown): boolean | null {
 /** Safe text extraction. Returns null for masked, empty, or non-string values.
  *  Handles Spark JSON feature objects like {"Frame": true, "Concrete": true} → "Frame, Concrete"
  */
+/**
+ * Agent-only confidential MLS keys that must NEVER land in the anon-readable
+ * listings.details (attack finding 2026-07-11). Single source of truth mirrored
+ * by the SQL rr_private_keys() in migration 20260712000000. The sync mapper
+ * strips these from `details` (redactPublicDetails) and the sync route diverts
+ * them into the service-role-only listing_private table (extractPrivateDetails).
+ */
+export const PRIVATE_DETAIL_KEYS = [
+  'PrivateRemarks', 'PrivateOfficeRemarks', 'ShowingInstructions',
+  'ShowingContactName', 'ShowingContactPhone', 'ShowingPhoneNumber',
+  'OwnerName', 'OwnerPhone', 'OccupantName', 'OccupantPhone',
+  'ContingencyRemarks',
+] as const
+
+/** `details` with every confidential key removed — safe for the anon-readable column. */
+export function redactPublicDetails(fields: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...fields }
+  for (const k of PRIVATE_DETAIL_KEYS) delete out[k]
+  return out
+}
+
+/** The confidential keys pulled out for the service-role-only listing_private table; null when none present. */
+export function extractPrivateDetails(fields: Record<string, unknown>): Record<string, unknown> | null {
+  const priv: Record<string, unknown> = {}
+  for (const k of PRIVATE_DETAIL_KEYS) {
+    const v = fields[k]
+    if (v != null && !(typeof v === 'string' && (v.trim() === '' || /^\*+$/.test(v)))) priv[k] = v
+  }
+  return Object.keys(priv).length > 0 ? priv : null
+}
+
 export function toText(v: unknown): string | null {
   if (v == null) return null
   if (typeof v === 'string') {
@@ -493,8 +524,11 @@ export function sparkToListingRow(
     has_virtual_tour: hasVirtualTour,
     media_finalized: isClosed,
 
-    // --- FULL details (never the 3-key thin version) ---
-    details: fields as Record<string, unknown>,
+    // --- FULL details, MINUS the agent-only confidential keys (they divert to
+    //     the service-role-only listing_private table via the sync route). The
+    //     anon role reads details, so PrivateRemarks/ShowingInstructions/etc.
+    //     must never be persisted here (attack finding 2026-07-11). ---
+    details: redactPublicDetails(fields as Record<string, unknown>),
 
     // --- Tier 2: Property Basics ---
     property_sub_type: toText(pick(fields, 'PropertySubType')),
