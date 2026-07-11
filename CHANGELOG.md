@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.762.2 (2026-07-11)
+
+### Bug Fixes
+- fix(security): close the critical private-remarks leak + remaining attack findings
+
+---
+
+
 ## v1.762.1 (2026-07-11)
 
 ### Bug Fixes
