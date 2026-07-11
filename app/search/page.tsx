@@ -304,7 +304,7 @@ export default async function SearchPage({
       {/* top-[72px] docks below the sticky 72px SiteHeader — top-0 slid the
           filter row underneath it, hiding the controls on any scrolled state. */}
       <div className={cn('sticky top-[72px] z-20 w-full border-b border-border bg-card shadow-sm', isAppFrame && 'shrink-0')}>
-        <SearchFilters initialFilters={initialFiltersFromUrl} />
+        <SearchFilters initialFilters={initialFiltersFromUrl} signedIn={!!session?.user} />
       </div>
       {/* Guest listing-alert capture — shown only to anonymous visitors. */}
       <div className={isAppFrame ? 'shrink-0' : undefined}>

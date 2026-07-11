@@ -72,7 +72,12 @@ function shouldSendByFrequency(
   if (!search.last_notified_at) return true
   const last = new Date(search.last_notified_at)
   const elapsedMs = now.getTime() - last.getTime()
-  if (freq === 'instant') return elapsedMs >= 6 * 60 * 60 * 1000
+  // 'instant' rides the hourly cron (same cadence as expired-listing
+  // detection) with a ~55-min floor — a new match or a price drop into range
+  // reaches the subscriber within the hour, not the old 6-hour window (Matt
+  // directive 2026-07-11). The floor is just under 60 min so the hourly tick
+  // is never skipped by clock jitter.
+  if (freq === 'instant') return elapsedMs >= 55 * 60 * 1000
   if (freq === 'weekly') return elapsedMs >= 7 * 24 * 60 * 60 * 1000
   return elapsedMs >= 24 * 60 * 60 * 1000
 }
@@ -171,8 +176,8 @@ export async function runListingAlerts(options?: {
       // at the front of every run and starve the rest of the queue. Advancing
       // on an empty check is also semantically right: "checked through <now>,
       // nothing new" — the next check only looks for listings after this stamp.
-      const advanceCursor = async () => {
-        if (!dryRun) await markListingAlertNotified(row.id, now.toISOString())
+      const advanceCursor = async (seenKeys?: string[]) => {
+        if (!dryRun) await markListingAlertNotified(row.id, now.toISOString(), seenKeys)
         summary.skipped += 1
       }
 
@@ -215,33 +220,50 @@ export async function runListingAlerts(options?: {
         continue
       }
       const results = await getCachedSearchListings(filters, 1, 15)
+      const listingKeyOf = (l: ListingTileRow): string =>
+        String(l.ListNumber ?? l.ListingKey ?? '').trim()
+      const currentKeys = results.listings.map(listingKeyOf).filter(Boolean)
+      const seen = new Set((row.notified_listing_keys ?? []).filter(Boolean))
+      const mergedSeen = () => {
+        const merged = [...(row.notified_listing_keys ?? [])]
+        for (const k of currentKeys) if (!seen.has(k)) merged.push(k)
+        return merged
+      }
       if (!results.listings.length) {
-        await advanceCursor()
+        await advanceCursor(row.notified_listing_keys ? mergedSeen() : undefined)
         continue
       }
 
-      // Only email listings that are NEW since the last send so a standing search
-      // never re-sends the same homes. First send (no last_notified_at) includes
-      // the current top matches.
+      // "New" means NEWLY MATCHING THIS SEARCH, not newly listed: a home whose
+      // price drops into the subscriber's range, or comes back on market, has
+      // never been shown to them and must alert (Matt directive 2026-07-11).
+      // The seen-set diff delivers that; the results sort ('newest' =
+      // modified_at desc) bubbles any newly-changed listing into this window.
+      // Timestamp heuristic remains ONLY to seed rows created before the
+      // notified_listing_keys column existed: their first seen-set write
+      // happens below, and until then OnMarketDate/ModificationTimestamp
+      // gates re-sends the old way.
       const sinceMs = row.last_notified_at ? Date.parse(row.last_notified_at) : 0
-      const fresh = sinceMs
+      const hasSeenSet = row.notified_listing_keys != null && row.notified_listing_keys.length > 0
+      const fresh = hasSeenSet
         ? results.listings.filter((l) => {
-            // The fast (listing_tile_mv) path carries OnMarketDate. The advanced
-            // + keyword RPC paths do NOT return it, but DO return
-            // ModificationTimestamp (spread onto the row), which is a sound
-            // "new or materially changed since last send" proxy — so advanced
-            // searches keep alerting incrementally instead of stopping or
-            // re-blasting the whole set every run.
-            const stamp = l.OnMarketDate ?? l.ModificationTimestamp
-            const onMarket = stamp ? Date.parse(stamp) : NaN
-            // FAIL-SAFE: if neither timestamp is present/parseable, treat the
-            // listing as FRESH so the alert never goes permanently silent.
-            // Worst case is a rare duplicate card, never a dead search.
-            return !Number.isFinite(onMarket) || onMarket > sinceMs
+            const key = listingKeyOf(l)
+            // FAIL-SAFE: a row with no usable key counts as fresh so the
+            // alert never goes permanently silent on it.
+            return !key || !seen.has(key)
           })
-        : results.listings
+        : sinceMs
+          ? results.listings.filter((l) => {
+              const stamp = l.OnMarketDate ?? l.ModificationTimestamp
+              const onMarket = stamp ? Date.parse(stamp) : NaN
+              return !Number.isFinite(onMarket) || onMarket > sinceMs
+            })
+          : results.listings
       if (!fresh.length) {
-        await advanceCursor()
+        // Nothing new to say, but the seen set still absorbs the current
+        // matches so pre-column rows migrate onto the set-diff without a
+        // re-blast, and future price-history noise cannot resend old cards.
+        await advanceCursor(mergedSeen())
         continue
       }
 
@@ -340,7 +362,7 @@ export async function runListingAlerts(options?: {
             error: recErr instanceof Error ? recErr.message : String(recErr),
           })
         }
-        const marked = await markListingAlertNotified(row.id, now.toISOString())
+        const marked = await markListingAlertNotified(row.id, now.toISOString(), mergedSeen())
         if (!marked.ok) {
           // The email already went out. If we cannot stamp last_notified_at the
           // row stays due and would re-blast the SAME email next tick. We cannot

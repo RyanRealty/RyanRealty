@@ -37,12 +37,15 @@ export type ListingAlertRow = {
   source: string | null
   unsubscribe_token: string
   last_notified_at: string | null
+  /** Listing keys already emailed for this alert — the newly-matching diff
+   *  (price drops INTO range, back-on-market) compares against this set. */
+  notified_listing_keys: string[] | null
   created_at: string | null
   updated_at: string | null
 }
 
 const ROW_COLS =
-  'id, email, user_id, crm_person_id, fub_person_id, name, filters, filters_hash, notification_frequency, is_active, origin, assigned_by, source, unsubscribe_token, last_notified_at, created_at, updated_at'
+  'id, email, user_id, crm_person_id, fub_person_id, name, filters, filters_hash, notification_frequency, is_active, origin, assigned_by, source, unsubscribe_token, last_notified_at, notified_listing_keys, created_at, updated_at'
 
 /**
  * Resolve the crm_people.id for an alert row (fub legacy id link first, then
@@ -298,9 +301,17 @@ export async function deleteListingAlertById(id: string): Promise<{ ok: boolean 
 }
 
 /** Stamp last_notified_at after the cron sends (or decides to skip) an alert. */
-export async function markListingAlertNotified(id: string, isoTime: string): Promise<{ ok: boolean; error?: string }> {
+export async function markListingAlertNotified(
+  id: string,
+  isoTime: string,
+  notifiedKeys?: string[],
+): Promise<{ ok: boolean; error?: string }> {
   const supabase = createServiceClient()
-  const { error } = await supabase.from(TABLE).update({ last_notified_at: isoTime, updated_at: isoTime }).eq('id', id)
+  const update: Record<string, unknown> = { last_notified_at: isoTime, updated_at: isoTime }
+  // Newest-last, capped: the diff only needs recent memory, and the cap bounds
+  // row growth for standing searches that run for years.
+  if (notifiedKeys) update.notified_listing_keys = notifiedKeys.slice(-1000)
+  const { error } = await supabase.from(TABLE).update(update).eq('id', id)
   if (error) return { ok: false, error: error.message }
   return { ok: true }
 }

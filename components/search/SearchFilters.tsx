@@ -6,6 +6,7 @@ import { trackEvent } from '@/lib/tracking'
 import { getSearchSuggestions, type SearchSuggestionsResult } from '@/app/actions/listings'
 import { PROPERTY_TYPES } from '@/lib/property-type'
 import { parseSearchQuery } from '@/lib/parse-search-query'
+import SaveSearchButton from '@/components/SaveSearchButton'
 import AllFiltersSheet, {
   activeRegistryFilters,
   ParsedSearchNotice,
@@ -211,11 +212,13 @@ function FilterDropdown({
 
 type Props = {
   initialFilters: SearchFiltersInitial
+  /** Signed-in state — SaveSearchButton switches between account save and guest email capture. */
+  signedIn?: boolean
 }
 
 type OpenPanel = 'status' | 'price' | 'beds' | 'baths' | 'type' | null
 
-export default function SearchFilters({ initialFilters }: Props) {
+export default function SearchFilters({ initialFilters, signedIn = false }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -558,6 +561,11 @@ export default function SearchFilters({ initialFilters }: Props) {
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
+
+        {/* Save search — the whole alert backend existed with no entry point
+            on this surface (design-audit P1). Captures every live URL param,
+            registry filters included. */}
+        <SaveSearchButton user={signedIn} />
       </div>
 
       <Separator />

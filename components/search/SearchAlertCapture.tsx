@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
+import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registry'
 import type { FormEvent } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { BellAlertIcon, XMarkIcon } from '@heroicons/react/24/outline'
@@ -24,7 +25,7 @@ import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
  * alert captures the FULL search state, not a subset. Shared with
  * components/SaveSearchButton.tsx so the two capture paths can never drift.
  */
-export const SAVED_SEARCH_QUERY_KEYS = [
+const LEGACY_SAVED_SEARCH_KEYS = [
   'city',
   'subdivision',
   'minPrice',
@@ -63,10 +64,23 @@ export const SAVED_SEARCH_QUERY_KEYS = [
   'poly',
 ] as const
 
+/**
+ * Every URL param a saved search captures: the legacy set UNION the full field
+ * registry. Hard-coding only the legacy list silently dropped registry filters
+ * (viewTypes, shop, onWell, hoaMonthlyMax, …) at save time — a subscriber who
+ * saved "Awbrey Butte with panoramic views" was alerted for ALL of Awbrey
+ * Butte (2026-07-11 fix). Registry-derived so new fields are captured the day
+ * they ship.
+ */
+export const SAVED_SEARCH_QUERY_KEYS: readonly string[] = [
+  ...new Set<string>([...LEGACY_SAVED_SEARCH_KEYS, ...ALL_SEARCH_URL_PARAMS]),
+]
+
 /** The multi-value keys, sent as repeated params or comma-separated in one param. */
 export const SAVED_SEARCH_ARRAY_QUERY_KEYS: ReadonlySet<string> = new Set([
   'cities',
   'viewContainsAny',
+  ...SEARCH_FIELDS.filter((f) => f.kind === 'multi').map((f) => f.key),
 ])
 
 /** Read every multi-value entry for a key (repeated params + comma-separated). */
