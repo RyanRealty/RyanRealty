@@ -1,11 +1,19 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useTransition } from 'react'
 import { PROPERTY_TYPES } from '@/lib/property-type'
 import SaveSearchButton from '@/components/SaveSearchButton'
+import AllFiltersSheet, {
+  activeRegistryFilters,
+  ParsedSearchNotice,
+  RegistryFilterChip,
+  useParsedSearchConfirm,
+} from '@/components/search/AllFiltersSheet'
+import VoiceSearchButton from '@/components/VoiceSearchButton'
+import { parseSearchQuery, searchHrefForQuery } from '@/lib/parse-search-query'
 import { listingsBrowsePath } from '@/lib/slug'
 import { cn } from '@/lib/utils'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -15,7 +23,6 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { ScrollArea } from '@/components/ui/scroll-area'
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'For Sale' },
@@ -121,15 +128,15 @@ function hasMoreActive(params: SearchFilterBarProps): boolean {
   )
 }
 
-type OpenKey = 'status' | 'price' | 'bedsbaths' | 'hometype' | 'more' | null
+type OpenKey = 'status' | 'price' | 'bedsbaths' | 'hometype' | null
 
 export default function SearchFilterBar(props: SearchFilterBarProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
   const pathname = props.basePath ?? listingsBrowsePath()
   const [open, setOpen] = useState<OpenKey>(null)
-  const [garageMinValue, setGarageMinValue] = useState(props.garageMin ?? '__all__')
-  const [newListingsDaysValue, setNewListingsDaysValue] = useState(props.newListingsDays ?? '__all__')
+  const [moreSheetOpen, setMoreSheetOpen] = useState(false)
   const barRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -140,10 +147,47 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  useEffect(() => {
-    setGarageMinValue(props.garageMin ?? '__all__')
-    setNewListingsDaysValue(props.newListingsDays ?? '__all__')
-  }, [props.garageMin, props.newListingsDays])
+  // Every registry field active in the URL — powers the More badge + chip row.
+  const registryActive = activeRegistryFilters(searchParams)
+
+  // Parsed-search confirmation chips (voice transcripts)
+  const { chips: parsedChips, show: showParsedChips } = useParsedSearchConfirm()
+
+  // Merge registry param updates into the CURRENT query string, keeping this
+  // bar's apply semantics (page reset + transition + its own base path).
+  const applyRegistryUpdates = useCallback(
+    (updates: Record<string, string | undefined>) => {
+      const params = new URLSearchParams(searchParams?.toString() ?? '')
+      for (const [k, v] of Object.entries(updates)) {
+        if (v === undefined || v === '') params.delete(k)
+        else params.set(k, v)
+      }
+      params.set('page', '1')
+      setOpen(null)
+      startTransition(() => {
+        router.push(`${pathname}?${params.toString()}`)
+      })
+    },
+    [searchParams, pathname, router, startTransition]
+  )
+
+  const handleVoiceTranscript = useCallback(
+    (text: string) => {
+      const parsed = parseSearchQuery(text.trim())
+      if (Object.keys(parsed).length === 0) return
+      showParsedChips(parsed)
+      // This surface's geography lives in the PATH — a spoken city merged into
+      // the query string would be silently ignored (review finding 2026-07-11).
+      // A parsed city (or sold/pending intent, same path-scope problem) routes
+      // to the query-param search surface where every parsed key applies.
+      if (parsed.city || parsed.statusFilter) {
+        router.push(searchHrefForQuery(text.trim()))
+        return
+      }
+      applyRegistryUpdates(parsed)
+    },
+    [applyRegistryUpdates, showParsedChips, router]
+  )
 
   function buildParams(overrides: Record<string, string | undefined>): URLSearchParams {
     const p = {
@@ -211,6 +255,15 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
       )}
 
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        {/* Voice search — outside the scroll container so the confirm chips
+            are not clipped by overflow-x-auto */}
+        <div className="relative shrink-0 self-start sm:self-auto">
+          <VoiceSearchButton onTranscript={handleVoiceTranscript} />
+          <ParsedSearchNotice
+            chips={parsedChips}
+            className="absolute left-0 top-full z-50 mt-1 w-72 max-w-[80vw]"
+          />
+        </div>
         <div
           className={cn(
             'flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto overscroll-x-contain pb-0.5',
@@ -513,256 +566,23 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
         )}
       </div>
 
-      {/* More */}
+      {/* More — opens the registry-driven All-filters sheet */}
       <div className="relative shrink-0">
         <Button
           type="button"
-          variant={open === 'more' || hasMoreActive(props) ? 'secondary' : 'outline'}
+          variant={moreSheetOpen || hasMoreActive(props) || registryActive.length > 0 ? 'secondary' : 'outline'}
           size="sm"
-          onClick={() => setOpen(open === 'more' ? null : 'more')}
+          onClick={() => {
+            setOpen(null)
+            setMoreSheetOpen(true)
+          }}
           className="gap-1"
-          aria-expanded={open === 'more'}
+          aria-expanded={moreSheetOpen}
+          aria-haspopup="dialog"
         >
-          More
+          {registryActive.length > 0 ? `More (${registryActive.length})` : 'More'}
           <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5 opacity-70" aria-hidden />
         </Button>
-        {open === 'more' && (
-          <div
-            className={cn(
-              dropdownAnchor,
-              dropdownSurface,
-              'w-[min(calc(100vw-1.5rem),24rem)] sm:w-[28rem]'
-            )}
-          >
-            <ScrollArea className="max-h-[min(65vh,28rem)]">
-            <div className="p-4">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                const form = e.currentTarget
-                const data = new FormData(form)
-                const get = (n: string) => { const v = (data.get(n) as string)?.trim(); return (!v || v === '__all__') ? undefined : v }
-                const getCheck = (n: string) => form.querySelector<HTMLInputElement>(`input[name="${n}"]`)?.checked
-                apply(
-                  buildParams({
-                    minSqFt: get('minSqFt'),
-                    maxSqFt: get('maxSqFt'),
-                    maxBeds: get('maxBeds'),
-                    maxBaths: get('maxBaths'),
-                    yearBuiltMin: get('yearBuiltMin'),
-                    yearBuiltMax: get('yearBuiltMax'),
-                    lotAcresMin: get('lotAcresMin'),
-                    lotAcresMax: get('lotAcresMax'),
-                    postalCode: get('postalCode'),
-                    keywords: get('keywords'),
-                    garageMin: get('garageMin'),
-                    newListingsDays: get('newListingsDays'),
-                    hasOpenHouse: getCheck('hasOpenHouse') ? '1' : undefined,
-                    hasPool: getCheck('hasPool') ? '1' : undefined,
-                    hasView: getCheck('hasView') ? '1' : undefined,
-                    hasWaterfront: getCheck('hasWaterfront') ? '1' : undefined,
-                  })
-                )
-              }}
-              className="space-y-4"
-            >
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                More filters
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <Label className="flex flex-col gap-1">
-                  <span className="text-xs text-muted-foreground">Sq ft (min)</span>
-                  <Input
-                    type="number"
-                    name="minSqFt"
-                    placeholder="No min"
-                    min={0}
-                    step={100}
-                    defaultValue={props.minSqFt}
-                    className="rounded-lg border border-border px-3 py-2 text-sm"
-                  />
-                </Label>
-                <Label className="flex flex-col gap-1">
-                  <span className="text-xs text-muted-foreground">Sq ft (max)</span>
-                  <Input
-                    type="number"
-                    name="maxSqFt"
-                    placeholder="No max"
-                    min={0}
-                    step={100}
-                    defaultValue={props.maxSqFt}
-                    className="rounded-lg border border-border px-3 py-2 text-sm"
-                  />
-                </Label>
-                <Label className="flex flex-col gap-1">
-                  <span className="text-xs text-muted-foreground">Lot acres (min)</span>
-                  <Input
-                    type="number"
-                    name="lotAcresMin"
-                    placeholder="No min"
-                    min={0}
-                    step={0.1}
-                    defaultValue={props.lotAcresMin}
-                    className="rounded-lg border border-border px-3 py-2 text-sm"
-                  />
-                </Label>
-                <Label className="flex flex-col gap-1">
-                  <span className="text-xs text-muted-foreground">Lot acres (max)</span>
-                  <Input
-                    type="number"
-                    name="lotAcresMax"
-                    placeholder="No max"
-                    min={0}
-                    step={0.1}
-                    defaultValue={props.lotAcresMax}
-                    className="rounded-lg border border-border px-3 py-2 text-sm"
-                  />
-                </Label>
-                <Label className="flex flex-col gap-1">
-                  <span className="text-xs text-muted-foreground">Year built (min)</span>
-                  <Input
-                    type="number"
-                    name="yearBuiltMin"
-                    placeholder="No min"
-                    min={1800}
-                    max={2100}
-                    defaultValue={props.yearBuiltMin}
-                    className="rounded-lg border border-border px-3 py-2 text-sm"
-                  />
-                </Label>
-                <Label className="flex flex-col gap-1">
-                  <span className="text-xs text-muted-foreground">Year built (max)</span>
-                  <Input
-                    type="number"
-                    name="yearBuiltMax"
-                    placeholder="No max"
-                    min={1800}
-                    max={2100}
-                    defaultValue={props.yearBuiltMax}
-                    className="rounded-lg border border-border px-3 py-2 text-sm"
-                  />
-                </Label>
-                <Label className="flex flex-col gap-1 col-span-2">
-                  <span className="text-xs text-muted-foreground">Zip code</span>
-                  <Input
-                    type="text"
-                    name="postalCode"
-                    placeholder="e.g. 97702"
-                    maxLength={10}
-                    defaultValue={props.postalCode}
-                    className="rounded-lg border border-border px-3 py-2 text-sm"
-                  />
-                </Label>
-                <Label className="flex flex-col gap-1 col-span-2">
-                  <span className="text-xs text-muted-foreground">Keywords</span>
-                  <Input
-                    type="text"
-                    name="keywords"
-                    placeholder="e.g. mountain view, granite"
-                    defaultValue={props.keywords}
-                    className="rounded-lg border border-border px-3 py-2 text-sm"
-                  />
-                </Label>
-              </div>
-              <div className="space-y-2">
-                <Label className="flex flex-col gap-1">
-                  <span className="text-xs text-muted-foreground">Garage (min)</span>
-                  <Select value={garageMinValue} onValueChange={setGarageMinValue}>
-                    <SelectTrigger className="rounded-lg border border-border px-3 py-2 text-sm" aria-label="Minimum garage spaces">
-                      <SelectValue placeholder="Any" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__all__">Any</SelectItem>
-                      {[1, 2, 3, 4].map((n) => (
-                        <SelectItem key={n} value={String(n)}>{n}+</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <input type="hidden" name="garageMin" value={garageMinValue} readOnly />
-                </Label>
-                <Label className="flex flex-col gap-1">
-                  <span className="text-xs text-muted-foreground">New listings</span>
-                  <Select value={newListingsDaysValue} onValueChange={setNewListingsDaysValue}>
-                    <SelectTrigger className="rounded-lg border border-border px-3 py-2 text-sm" aria-label="New listings window">
-                      <SelectValue placeholder="Any" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__all__">Any</SelectItem>
-                      <SelectItem value="7">Last 7 days</SelectItem>
-                      <SelectItem value="14">Last 14 days</SelectItem>
-                      <SelectItem value="30">Last 30 days</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <input type="hidden" name="newListingsDays" value={newListingsDaysValue} readOnly />
-                </Label>
-              </div>
-              <Separator />
-              <div className="flex flex-wrap gap-4">
-                <Label className="flex cursor-pointer items-center gap-2">
-                  <Input
-                    type="checkbox"
-                    name="hasOpenHouse"
-                    defaultChecked={props.hasOpenHouse === '1'}
-                    className="h-4 w-4 rounded border-border text-accent-foreground"
-                  />
-                  <span className="text-sm text-muted-foreground">Open house</span>
-                </Label>
-                <Label className="flex cursor-pointer items-center gap-2">
-                  <Input
-                    type="checkbox"
-                    name="hasPool"
-                    defaultChecked={props.hasPool === '1'}
-                    className="h-4 w-4 rounded border-border text-accent-foreground"
-                  />
-                  <span className="text-sm text-muted-foreground">Pool</span>
-                </Label>
-                <Label className="flex cursor-pointer items-center gap-2">
-                  <Input
-                    type="checkbox"
-                    name="hasView"
-                    defaultChecked={props.hasView === '1'}
-                    className="h-4 w-4 rounded border-border text-accent-foreground"
-                  />
-                  <span className="text-sm text-muted-foreground">View</span>
-                </Label>
-                <Label className="flex cursor-pointer items-center gap-2">
-                  <Input
-                    type="checkbox"
-                    name="hasWaterfront"
-                    defaultChecked={props.hasWaterfront === '1'}
-                    className="h-4 w-4 rounded border-border text-accent-foreground"
-                  />
-                  <span className="text-sm text-muted-foreground">Waterfront</span>
-                </Label>
-              </div>
-              <Separator />
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-center sm:w-auto"
-                  onClick={() =>
-                    apply(
-                      new URLSearchParams({
-                        page: '1',
-                        ...(props.view ? { view: props.view } : {}),
-                        ...(props.perPage ? { perPage: props.perPage } : {}),
-                      })
-                    )
-                  }
-                >
-                  Reset all filters
-                </Button>
-                <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
-                  {isPending ? 'Applying…' : 'Apply'}
-                </Button>
-              </div>
-            </form>
-            </div>
-            </ScrollArea>
-          </div>
-        )}
       </div>
 
         </div>
@@ -791,6 +611,31 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
       <SaveSearchButton user={!!props.signedIn} />
         </div>
       </div>
+
+      {/* Active registry filters — removable chips so applied filters stay visible */}
+      {registryActive.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {registryActive.map(({ key, label, params }) => (
+            <RegistryFilterChip
+              key={key}
+              label={label}
+              onRemove={() => applyRegistryUpdates(Object.fromEntries(params.map((p) => [p, undefined])))}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* All filters — registry-driven sheet shared with /homes-for-sale.
+          Live count stays off here: the location scope (city/neighborhood)
+          lives in the path on these pages, so a query-only count would be a
+          wrong number. */}
+      <AllFiltersSheet
+        open={moreSheetOpen}
+        onOpenChange={setMoreSheetOpen}
+        onApply={applyRegistryUpdates}
+        closedScope={props.statusFilter === 'closed' || props.includeClosed === '1'}
+        enableCount={false}
+      />
     </div>
   )
 }

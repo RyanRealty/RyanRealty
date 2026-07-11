@@ -12,8 +12,10 @@ import {
   getCityListings as getCityListingsDAL,
   getNeighborhoodListings as getNeighborhoodListingsDAL,
   getGeoSnapshot,
+  searchListingsAll,
+  pickSearchFeatureFilters,
 } from '@/lib/data'
-import type { ListingTile } from '@/lib/data'
+import type { ListingTile, SearchFeatureFilters, SearchListingsAllFilter } from '@/lib/data'
 
 function getAnonSupabase(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -563,8 +565,13 @@ export type AdvancedSort =
   | 'year_newest'
   | 'year_oldest'
 
-/** Extended filters for advanced search (RPC). When any of these are set, use getListingsAdvanced. */
-export type AdvancedListingsFilters = Omit<ListingsFilters, 'sort'> & {
+/**
+ * Extended filters for advanced search. On-market scopes (active / pending /
+ * active_and_pending) serve every filter — including the full registry surface
+ * from SearchFeatureFilters — via searchListingsAll (listing_search_mv).
+ * Closed/'all'/off-market scopes keep the legacy fast-path/RPC routing.
+ */
+export type AdvancedListingsFilters = Omit<ListingsFilters, 'sort'> & SearchFeatureFilters & {
   /**
    * Canonical neighborhood boundary slug (boundaries.geo_slug,
    * geo_type='neighborhood'): Bend districts ('bend-river-west') and resort
@@ -585,13 +592,9 @@ export type AdvancedListingsFilters = Omit<ListingsFilters, 'sort'> & {
   /** active | active_and_pending | pending | closed | coming_soon | all | expired | withdrawn | canceled | off_market | active_or_offmarket */
   statusFilter?: string
   keywords?: string
-  hasOpenHouse?: boolean
+  // hasOpenHouse / hasPool / hasView / hasWaterfront / hasFireplace /
+  // hasGolfCourse now come from SearchFeatureFilters (same names, same types).
   garageMin?: number
-  hasPool?: boolean
-  hasView?: boolean
-  hasWaterfront?: boolean
-  hasFireplace?: boolean
-  hasGolfCourse?: boolean
   /** View type keyword (e.g. 'Mountain', 'Golf', 'Lake') — details.View ILIKE %viewContains% */
   viewContains?: string
   /** Match any of these cities (exact) — in addition to the single `city` param. */
@@ -604,6 +607,8 @@ export type AdvancedListingsFilters = Omit<ListingsFilters, 'sort'> & {
   excludeSoldSince?: boolean
   /** Listed in last N days */
   newListingsDays?: number
+  /** Days-on-market ceiling (dom <= X) — the registry dom range's legacy URL param. */
+  daysOnMarket?: number
   sort?: AdvancedSort
 }
 
@@ -933,6 +938,174 @@ export async function getListingsAdvanced(options: {
 
 const BASE_SORTS: ListingsFilters['sort'][] = ['newest', 'oldest', 'price_asc', 'price_desc']
 
+type OnMarketDalStatus = 'active' | 'active-and-pending' | 'pending-only'
+
+/**
+ * Resolve the effective status scope to a listing_search_mv status, or null
+ * when the scope needs the legacy paths (closed / all / off-market /
+ * coming_soon-only / expired / withdrawn / canceled).
+ */
+function resolveOnMarketStatus(options: {
+  statusFilter?: string
+  includeClosed?: boolean
+  includePending?: boolean
+}): OnMarketDalStatus | null {
+  if (options.includeClosed === true) return null
+  const sf = options.statusFilter?.trim() ?? ''
+  if (sf === '') return options.includePending === true ? 'active-and-pending' : 'active'
+  if (sf === 'active') return 'active'
+  if (sf === 'active_and_pending' || sf === 'active_pending') return 'active-and-pending'
+  if (sf === 'pending') return 'pending-only'
+  return null
+}
+
+/**
+ * Filters listing_search_mv cannot serve: boundary-slug matching runs through
+ * listing_boundary_xref_mv in the RPC, viewContains/viewContainsAny are legacy
+ * ILIKE semantics over details.View (superseded by the viewTypes registry
+ * multi but still emitted by SEO presets + saved searches), and the off-market
+ * fields only pair with off-market scopes anyway.
+ */
+function advancedNeedsLegacyPath(options: AdvancedListingsFilters): boolean {
+  return Boolean(
+    options.neighborhoodSlug?.trim() ||
+      options.viewContains?.trim() ||
+      (Array.isArray(options.viewContainsAny) && options.viewContainsAny.length > 0) ||
+      options.offMarketWithinDays != null ||
+      options.excludeSoldSince === true
+  )
+}
+
+/** Map an AdvancedListingsFilters bundle onto the searchListingsAll filter. */
+function advancedToSearchAllFilter(
+  options: {
+    city?: string
+    subdivision?: string
+    neighborhood?: string
+    limit?: number
+    offset?: number
+  } & AdvancedListingsFilters,
+  status: OnMarketDalStatus
+): SearchListingsAllFilter {
+  const limit = Math.min(options.limit ?? 100, 200)
+  const offset = options.offset ?? 0
+  const pt = options.propertyType?.trim()
+  const postal = options.postalCode?.trim()
+  return {
+    city: options.city?.trim() || undefined,
+    cities:
+      Array.isArray(options.cities) && options.cities.length > 0 ? options.cities : undefined,
+    postalCode: postal && /^\d{5}$/.test(postal) ? postal : undefined,
+    neighborhood: options.neighborhood?.trim() || undefined,
+    status,
+    sort: options.sort ?? 'newest',
+    limit,
+    offset,
+    priceMin: options.minPrice != null && options.minPrice > 0 ? options.minPrice : undefined,
+    priceMax: options.maxPrice != null && options.maxPrice > 0 ? options.maxPrice : undefined,
+    bedsMin: options.minBeds != null && options.minBeds > 0 ? options.minBeds : undefined,
+    bedsMax: options.maxBeds != null && options.maxBeds > 0 ? options.maxBeds : undefined,
+    bathsMin: options.minBaths != null && options.minBaths > 0 ? options.minBaths : undefined,
+    bathsMax: options.maxBaths != null && options.maxBaths > 0 ? options.maxBaths : undefined,
+    sqftMin: options.minSqFt != null && options.minSqFt > 0 ? options.minSqFt : undefined,
+    sqftMax: options.maxSqFt != null && options.maxSqFt > 0 ? options.maxSqFt : undefined,
+    // Clamp to the schema's plausible-year window so a junk URL value drops
+    // the filter instead of rejecting the whole query.
+    yearBuiltMin:
+      options.yearBuiltMin != null && options.yearBuiltMin >= 1700 && options.yearBuiltMin <= 2100
+        ? Math.floor(options.yearBuiltMin)
+        : undefined,
+    yearBuiltMax:
+      options.yearBuiltMax != null && options.yearBuiltMax >= 1700 && options.yearBuiltMax <= 2100
+        ? Math.floor(options.yearBuiltMax)
+        : undefined,
+    lotAcresMin:
+      options.lotAcresMin != null && options.lotAcresMin > 0 ? options.lotAcresMin : undefined,
+    lotAcresMax:
+      options.lotAcresMax != null && options.lotAcresMax > 0 ? options.lotAcresMax : undefined,
+    garageMin: options.garageMin != null && options.garageMin > 0 ? options.garageMin : undefined,
+    domMax: (() => {
+      // Both mean a dom ceiling: newListingsDays ("listed in last N days")
+      // and the registry dom range's daysOnMarket. Tightest wins.
+      const ceilings = [options.newListingsDays, options.daysOnMarket].filter(
+        (v): v is number => v != null && v > 0
+      )
+      return ceilings.length > 0 ? Math.min(...ceilings) : undefined
+    })(),
+    propertyType: pt && pt !== '' && pt !== 'all' ? pt : undefined,
+    propertySubType: options.propertySubType?.trim() || undefined,
+    keywords:
+      options.keywords?.trim() && options.keywords.trim().length >= 2
+        ? options.keywords.trim()
+        : undefined,
+    ...pickSearchFeatureFilters(options),
+  }
+}
+
+/** DAL ListingTile -> the MLS-cased row shape search surfaces render. */
+function tileToSearchRow(t: ListingTile): ListingTileRow {
+  return {
+    ListingKey: t.listingKey,
+    ListNumber: t.listNumber,
+    ListPrice: t.listPrice,
+    BedroomsTotal: t.beds,
+    BathroomsTotal: t.baths,
+    StreetNumber: t.streetNumber,
+    StreetName: t.streetName,
+    StreetSuffix: t.streetSuffix ?? null,
+    City: t.city,
+    State: 'OR',
+    PostalCode: t.postalCode,
+    SubdivisionName: t.subdivisionName,
+    PhotoURL: t.photoUrl,
+    Latitude: t.lat,
+    Longitude: t.lng,
+    StandardStatus: t.status,
+    TotalLivingAreaSqFt: t.sqft,
+    OnMarketDate: t.onMarketDate,
+    CloseDate: t.closeDate,
+  }
+}
+
+/**
+ * Serve an on-market search from listing_search_mv, mirroring the legacy fast
+ * path's subdivision handling: alias-name match first, then the
+ * boundary-neighborhood fallback for slugs like 'mountain-view' that are Bend
+ * neighborhoods rather than subdivision names.
+ */
+async function getOnMarketListingsViaSearchMv(
+  options: {
+    city?: string
+    subdivision?: string
+    neighborhood?: string
+    limit?: number
+    offset?: number
+  } & AdvancedListingsFilters,
+  status: OnMarketDalStatus
+): Promise<{ listings: ListingTileRow[]; totalCount: number }> {
+  const base = advancedToSearchAllFilter(options, status)
+  const sub = options.subdivision?.trim()
+  // Resolved-neighborhood pages (e.g. /homes-for-sale/bend/awbrey-butte) pass
+  // BOTH neighborhood and a same-named subdivision. The legacy fast path let
+  // the neighborhood branch win; ANDing both here hid every home whose
+  // SubdivisionName differs from the boundary tag (Awbrey Butte: 16 of 50
+  // rendered — review finding 2026-07-11). Neighborhood is the resolved
+  // geography, so the subdivision-name match only applies without one.
+  let result = await searchListingsAll(
+    sub && !options.neighborhood?.trim()
+      ? { ...base, subdivisions: getSubdivisionMatchNames(sub) }
+      : base
+  )
+  if (sub && !options.neighborhood?.trim() && result.totalCount === 0) {
+    const asNeighborhood = sub
+      .split('-')
+      .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+      .join(' ')
+    result = await searchListingsAll({ ...base, neighborhood: asNeighborhood })
+  }
+  return { listings: result.rows.map(tileToSearchRow), totalCount: result.totalCount }
+}
+
 /**
  * Get listings for browse/search. Uses advanced RPC when any advanced filter is set; otherwise uses fast flat-column query.
  */
@@ -944,6 +1117,48 @@ export async function getListingsWithAdvanced(options: {
   limit?: number
   offset?: number
 } & AdvancedListingsFilters = {}): Promise<{ listings: ListingTileRow[]; totalCount: number; degraded?: boolean }> {
+  // On-market scopes (active / active_and_pending / pending) serve EVERY
+  // filter — amenities, keywords, the full registry surface — from
+  // listing_search_mv in one indexed read + exact count. No RPC. Closed/'all'
+  // scopes below keep the legacy fast-path/RPC routing byte-identical.
+  const onMarketStatus = resolveOnMarketStatus(options)
+  if (onMarketStatus && !advancedNeedsLegacyPath(options)) {
+    const result = await getOnMarketListingsViaSearchMv(options, onMarketStatus)
+    // Fail loud (same guard as the legacy fast path): an UNFILTERED active
+    // city scope returning zero means listing_search_mv is empty/stale or the
+    // read failed. Signal degraded so the page serves stale instead of
+    // caching "no homes for sale in <city>".
+    const hasNarrowingFilter = Boolean(
+      options.subdivision?.trim() ||
+        options.neighborhood?.trim() ||
+        options.postalCode?.trim() ||
+        options.minPrice != null || options.maxPrice != null ||
+        options.minBeds != null || options.minBaths != null ||
+        options.maxBeds != null || options.maxBaths != null ||
+        options.minSqFt != null || options.maxSqFt != null ||
+        options.yearBuiltMin != null || options.yearBuiltMax != null ||
+        options.lotAcresMin != null || options.lotAcresMax != null ||
+        options.garageMin != null || options.newListingsDays != null ||
+        options.keywords?.trim() ||
+        options.propertySubType?.trim() ||
+        (options.propertyType && options.propertyType.trim() !== '' && options.propertyType.trim() !== 'all') ||
+        Object.keys(pickSearchFeatureFilters(options)).length > 0
+    )
+    if (
+      !hasNarrowingFilter &&
+      onMarketStatus !== 'pending-only' &&
+      !!options.city?.trim() &&
+      result.totalCount === 0
+    ) {
+      console.error(
+        '[getListingsWithAdvanced] unfiltered on-market city scope returned 0, degraded (listing_search_mv empty/stale or read failed)',
+        { city: options.city ?? null }
+      )
+      return { ...result, degraded: true }
+    }
+    return result
+  }
+
   const limit = options.limit ?? 100
   const offset = options.offset ?? 0
   // The slim-MV fast path serves any page whose last row fits inside one capped

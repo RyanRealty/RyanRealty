@@ -2,32 +2,29 @@
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useCallback, useState, useEffect, useRef } from 'react'
-import { cn } from '@/lib/utils'
 import { trackEvent } from '@/lib/tracking'
 import { getSearchSuggestions, type SearchSuggestionsResult } from '@/app/actions/listings'
 import { PROPERTY_TYPES } from '@/lib/property-type'
+import { parseSearchQuery } from '@/lib/parse-search-query'
+import AllFiltersSheet, {
+  activeRegistryFilters,
+  ParsedSearchNotice,
+  RegistryFilterChip,
+  useParsedSearchConfirm,
+} from '@/components/search/AllFiltersSheet'
+import VoiceSearchButton from '@/components/VoiceSearchButton'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from '@/components/ui/sheet'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   ArrowDown01Icon,
   FilterIcon,
-  Cancel01Icon,
 } from '@hugeicons/core-free-icons'
 
 export type SearchFiltersInitial = {
@@ -95,44 +92,6 @@ const PRICE_PRESETS = [
   { label: '$1.5M+', min: 1500000, max: undefined },
 ]
 
-const SQFT_OPTIONS = [
-  { value: '', label: 'Any' },
-  { value: '750', label: '750+' },
-  { value: '1000', label: '1,000+' },
-  { value: '1250', label: '1,250+' },
-  { value: '1500', label: '1,500+' },
-  { value: '2000', label: '2,000+' },
-  { value: '2500', label: '2,500+' },
-  { value: '3000', label: '3,000+' },
-  { value: '4000', label: '4,000+' },
-  { value: '5000', label: '5,000+' },
-]
-
-const LOT_OPTIONS = [
-  { value: '', label: 'Any' },
-  { value: '0.1', label: '0.1+ acres' },
-  { value: '0.25', label: '0.25+ acres' },
-  { value: '0.5', label: '0.5+ acres' },
-  { value: '1', label: '1+ acres' },
-  { value: '2', label: '2+ acres' },
-  { value: '5', label: '5+ acres' },
-  { value: '10', label: '10+ acres' },
-]
-
-const GARAGE_OPTIONS = [
-  { value: '', label: 'Any' },
-  { value: '1', label: '1+' },
-  { value: '2', label: '2+' },
-  { value: '3', label: '3+' },
-]
-
-const DOM_OPTIONS = [
-  { value: '', label: 'Any time' },
-  { value: '7', label: 'Under 7 days' },
-  { value: '30', label: 'Under 30 days' },
-  { value: '90', label: 'Under 90 days' },
-]
-
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest' },
   { value: 'price_asc', label: 'Price: low to high' },
@@ -190,28 +149,6 @@ function useDebounce<T>(value: T, ms: number): T {
     return () => clearTimeout(t)
   }, [value, ms])
   return debounced
-}
-
-// ---------------------------------------------------------------------------
-// Chip component
-// ---------------------------------------------------------------------------
-
-function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
-  return (
-    <Badge variant="secondary" className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium h-auto">
-      {label}
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        aria-label={`Remove filter: ${label}`}
-        onClick={onRemove}
-        className="ml-0.5 size-3.5 rounded-full p-0 text-muted-foreground hover:text-foreground hover:bg-transparent"
-      >
-        <HugeiconsIcon icon={Cancel01Icon} className="size-3" aria-hidden />
-      </Button>
-    </Badge>
-  )
 }
 
 // ---------------------------------------------------------------------------
@@ -307,58 +244,8 @@ export default function SearchFilters({ initialFilters }: Props) {
   const locationInputRef = useRef<HTMLInputElement>(null)
   const debouncedLocation = useDebounce(locationQuery, 300)
 
-  // More filters local state (controlled by Sheet form)
-  const [moreState, setMoreState] = useState({
-    minSqFt: initialFilters.minSqFt ?? '',
-    maxSqFt: initialFilters.maxSqFt ?? '',
-    lotAcresMin: initialFilters.lotAcresMin ?? '',
-    lotAcresMax: initialFilters.lotAcresMax ?? '',
-    yearBuiltMin: initialFilters.yearBuiltMin ?? '',
-    yearBuiltMax: initialFilters.yearBuiltMax ?? '',
-    garageMin: initialFilters.garageMin ?? '',
-    daysOnMarket: initialFilters.daysOnMarket ?? '',
-    hasPool: initialFilters.hasPool === '1',
-    hasView: initialFilters.hasView === '1',
-    hasWaterfront: initialFilters.hasWaterfront === '1',
-    hasFireplace: initialFilters.hasFireplace === '1',
-    hasGolfCourse: initialFilters.hasGolfCourse === '1',
-    keywords: initialFilters.keywords ?? '',
-  })
-
-  // Sync moreState when filters change from URL (e.g. chip removal)
-  useEffect(() => {
-    setMoreState({
-      minSqFt: initialFilters.minSqFt ?? '',
-      maxSqFt: initialFilters.maxSqFt ?? '',
-      lotAcresMin: initialFilters.lotAcresMin ?? '',
-      lotAcresMax: initialFilters.lotAcresMax ?? '',
-      yearBuiltMin: initialFilters.yearBuiltMin ?? '',
-      yearBuiltMax: initialFilters.yearBuiltMax ?? '',
-      garageMin: initialFilters.garageMin ?? '',
-      daysOnMarket: initialFilters.daysOnMarket ?? '',
-      hasPool: initialFilters.hasPool === '1',
-      hasView: initialFilters.hasView === '1',
-      hasWaterfront: initialFilters.hasWaterfront === '1',
-      hasFireplace: initialFilters.hasFireplace === '1',
-      hasGolfCourse: initialFilters.hasGolfCourse === '1',
-      keywords: initialFilters.keywords ?? '',
-    })
-  }, [
-    initialFilters.minSqFt,
-    initialFilters.maxSqFt,
-    initialFilters.lotAcresMin,
-    initialFilters.lotAcresMax,
-    initialFilters.yearBuiltMin,
-    initialFilters.yearBuiltMax,
-    initialFilters.garageMin,
-    initialFilters.daysOnMarket,
-    initialFilters.hasPool,
-    initialFilters.hasView,
-    initialFilters.hasWaterfront,
-    initialFilters.hasFireplace,
-    initialFilters.hasGolfCourse,
-    initialFilters.keywords,
-  ])
+  // Parsed-search confirmation chips (voice + typed natural-language queries)
+  const { chips: parsedChips, show: showParsedChips } = useParsedSearchConfirm()
 
   // Note: outside-click + Escape close are handled by the design-system Popover
   // (radix) for the filter dropdowns, so no manual document listener is needed.
@@ -450,47 +337,17 @@ export default function SearchFilters({ initialFilters }: Props) {
   const activeTypeLabel = typeLabel(initialFilters.propertyType)
   const activeStatusLabel = statusLabel(initialFilters.status)
 
-  const moreActiveFilters: { label: string; key: string | string[] }[] = []
-  if (initialFilters.minSqFt || initialFilters.maxSqFt) {
-    const lo = initialFilters.minSqFt ? `${Number(initialFilters.minSqFt).toLocaleString()}+` : ''
-    const hi = initialFilters.maxSqFt ? `up to ${Number(initialFilters.maxSqFt).toLocaleString()}` : ''
-    moreActiveFilters.push({ label: `${[lo, hi].filter(Boolean).join(' to ')} sq ft`, key: ['minSqFt', 'maxSqFt'] })
-  }
-  if (initialFilters.lotAcresMin) {
-    moreActiveFilters.push({ label: `${initialFilters.lotAcresMin}+ acres`, key: ['lotAcresMin', 'lotAcresMax'] })
-  }
-  if (initialFilters.yearBuiltMin || initialFilters.yearBuiltMax) {
-    const lo = initialFilters.yearBuiltMin ?? ''
-    const hi = initialFilters.yearBuiltMax ?? ''
-    moreActiveFilters.push({ label: `Built ${[lo, hi].filter(Boolean).join(' to ')}`, key: ['yearBuiltMin', 'yearBuiltMax'] })
-  }
-  if (initialFilters.garageMin) {
-    moreActiveFilters.push({ label: `${initialFilters.garageMin}+ garage`, key: 'garageMin' })
-  }
-  if (initialFilters.daysOnMarket) {
-    const o = DOM_OPTIONS.find((d) => d.value === initialFilters.daysOnMarket)
-    moreActiveFilters.push({ label: o?.label ?? `Under ${initialFilters.daysOnMarket} days`, key: 'daysOnMarket' })
-  }
-  if (initialFilters.hasPool === '1') moreActiveFilters.push({ label: 'Pool', key: 'hasPool' })
-  if (initialFilters.hasView === '1') moreActiveFilters.push({ label: 'View', key: 'hasView' })
-  if (initialFilters.hasWaterfront === '1') moreActiveFilters.push({ label: 'Waterfront', key: 'hasWaterfront' })
-  if (initialFilters.hasFireplace === '1') moreActiveFilters.push({ label: 'Fireplace', key: 'hasFireplace' })
-  if (initialFilters.hasGolfCourse === '1') moreActiveFilters.push({ label: 'Golf course', key: 'hasGolfCourse' })
-  if (initialFilters.keywords) moreActiveFilters.push({ label: `"${initialFilters.keywords}"`, key: 'keywords' })
+  // Every registry field active in the URL, rendered generically (label from
+  // the field registry). Covers price/beds/baths too, so the chip row needs no
+  // per-field special cases.
+  const registryActive = activeRegistryFilters(searchParams)
 
-  const hasAnyFilter = !!(
-    activePriceLabel ||
-    activeBedsLabel ||
-    activeBathsLabel ||
-    activeTypeLabel ||
-    activeStatusLabel ||
-    moreActiveFilters.length > 0
-  )
+  const hasAnyFilter = !!(activeTypeLabel || activeStatusLabel || registryActive.length > 0)
 
-  const moreFilterCount = moreActiveFilters.length
+  const moreFilterCount = registryActive.length
 
-  function removeChip(key: string | string[]) {
-    const keys = Array.isArray(key) ? key : [key]
+  function removeChip(params: string | string[]) {
+    const keys = Array.isArray(params) ? params : [params]
     const upd: Record<string, undefined> = {}
     for (const k of keys) upd[k] = undefined
     updateUrl(upd)
@@ -502,28 +359,28 @@ export default function SearchFilters({ initialFilters }: Props) {
   }
 
   // ---------------------------------------------------------------------------
-  // More-filters sheet apply
+  // Natural-language apply (voice transcript or Enter in the location input)
   // ---------------------------------------------------------------------------
 
-  function applyMoreFilters() {
-    updateUrl({
-      minSqFt: moreState.minSqFt || undefined,
-      maxSqFt: moreState.maxSqFt || undefined,
-      lotAcresMin: moreState.lotAcresMin || undefined,
-      lotAcresMax: moreState.lotAcresMax || undefined,
-      yearBuiltMin: moreState.yearBuiltMin || undefined,
-      yearBuiltMax: moreState.yearBuiltMax || undefined,
-      garageMin: moreState.garageMin || undefined,
-      daysOnMarket: moreState.daysOnMarket || undefined,
-      hasPool: moreState.hasPool ? '1' : undefined,
-      hasView: moreState.hasView ? '1' : undefined,
-      hasWaterfront: moreState.hasWaterfront ? '1' : undefined,
-      hasFireplace: moreState.hasFireplace ? '1' : undefined,
-      hasGolfCourse: moreState.hasGolfCourse ? '1' : undefined,
-      keywords: moreState.keywords || undefined,
-    })
-    setMoreSheetOpen(false)
-  }
+  const applyNaturalQuery = useCallback(
+    (raw: string) => {
+      const text = raw.trim()
+      if (!text) return
+      const parsed = parseSearchQuery(text)
+      if (Object.keys(parsed).length === 0) return
+      // The parser speaks statusFilter (closed/pending); this surface's status
+      // param speaks Active/Pending/Sold.
+      const { statusFilter, ...updates } = parsed as Record<string, string | undefined> & { statusFilter?: string }
+      if (statusFilter === 'closed') updates.status = 'Sold'
+      else if (statusFilter === 'pending') updates.status = 'Pending'
+      updateUrl(updates)
+      showParsedChips(parsed)
+      setLocationOpen(false)
+      setLocationQuery(parsed.city ?? '')
+      trackEvent('search', { search_term: text, ...(parsed.city ? { city: parsed.city } : {}) })
+    },
+    [updateUrl, showParsedChips]
+  )
 
   // Current location label for the input placeholder
   const locationPlaceholder =
@@ -556,9 +413,15 @@ export default function SearchFilters({ initialFilters }: Props) {
             onChange={(e) => setLocationQuery(e.target.value)}
             onFocus={() => setLocationOpen(true)}
             onBlur={() => setTimeout(() => setLocationOpen(false), 150)}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter') return
+              e.preventDefault()
+              applyNaturalQuery(locationQuery)
+            }}
             className="w-full rounded-xl"
             aria-label="Search by city, community, zip, or address"
           />
+          <ParsedSearchNotice chips={parsedChips} className="absolute left-0 right-0 top-full z-50 mt-1" />
           {locationOpen &&
             (suggestions.cities.length > 0 ||
               suggestions.subdivisions.length > 0 ||
@@ -648,6 +511,9 @@ export default function SearchFilters({ initialFilters }: Props) {
               </div>
             )}
         </div>
+
+        {/* Voice search — speaks the same registry the screen panel renders */}
+        <VoiceSearchButton onTranscript={applyNaturalQuery} className="shrink-0" />
 
         {/* Sort */}
         <Select
@@ -906,22 +772,13 @@ export default function SearchFilters({ initialFilters }: Props) {
       {hasAnyFilter && (
         <div className="hidden flex-wrap items-center gap-1.5 border-t border-border px-3 py-2 sm:flex sm:px-4">
           {activeStatusLabel && (
-            <FilterChip label={activeStatusLabel} onRemove={() => setFilter('status', undefined)} />
-          )}
-          {activePriceLabel && (
-            <FilterChip label={`Price: ${activePriceLabel}`} onRemove={() => updateUrl({ minPrice: undefined, maxPrice: undefined })} />
-          )}
-          {activeBedsLabel && (
-            <FilterChip label={activeBedsLabel} onRemove={() => setFilter('beds', undefined)} />
-          )}
-          {activeBathsLabel && (
-            <FilterChip label={activeBathsLabel} onRemove={() => setFilter('baths', undefined)} />
+            <RegistryFilterChip label={activeStatusLabel} onRemove={() => setFilter('status', undefined)} />
           )}
           {activeTypeLabel && (
-            <FilterChip label={activeTypeLabel} onRemove={() => setFilter('propertyType', undefined)} />
+            <RegistryFilterChip label={activeTypeLabel} onRemove={() => setFilter('propertyType', undefined)} />
           )}
-          {moreActiveFilters.map(({ label, key }) => (
-            <FilterChip key={Array.isArray(key) ? key[0] : key} label={label} onRemove={() => removeChip(key)} />
+          {registryActive.map(({ key, label, params }) => (
+            <RegistryFilterChip key={key} label={label} onRemove={() => removeChip(params)} />
           ))}
           <Button
             type="button"
@@ -935,235 +792,17 @@ export default function SearchFilters({ initialFilters }: Props) {
         </div>
       )}
 
-      {/* More Filters Sheet */}
-      <Sheet open={moreSheetOpen} onOpenChange={setMoreSheetOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-md">
-          <SheetHeader className="px-4 pt-4 pb-0">
-            <SheetTitle>More filters</SheetTitle>
-          </SheetHeader>
-
-          <ScrollArea className="flex-1 px-4 py-4">
-            <div className="flex flex-col gap-5">
-
-              {/* Square footage */}
-              <section>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Square footage</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground">Min sq ft</span>
-                    <Select
-                      value={moreState.minSqFt || ''}
-                      onValueChange={(v) => setMoreState((s) => ({ ...s, minSqFt: v }))}
-                    >
-                      <SelectTrigger className="tabular-nums" aria-label="Minimum square feet">
-                        <SelectValue placeholder="No min" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {SQFT_OPTIONS.map((o) => (
-                          <SelectItem key={o.value || 'any'} value={o.value}>{o.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Label>
-                  <Label className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground">Max sq ft</span>
-                    <Input
-                      type="number"
-                      placeholder="No max"
-                      min={0}
-                      step={100}
-                      value={moreState.maxSqFt}
-                      onChange={(e) => setMoreState((s) => ({ ...s, maxSqFt: e.target.value }))}
-                      className="tabular-nums"
-                    />
-                  </Label>
-                </div>
-              </section>
-
-              <Separator />
-
-              {/* Lot size */}
-              <section>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lot size</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground">Min lot (acres)</span>
-                    <Select
-                      value={moreState.lotAcresMin || ''}
-                      onValueChange={(v) => setMoreState((s) => ({ ...s, lotAcresMin: v }))}
-                    >
-                      <SelectTrigger className="tabular-nums" aria-label="Minimum lot size in acres">
-                        <SelectValue placeholder="No min" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {LOT_OPTIONS.map((o) => (
-                          <SelectItem key={o.value || 'any'} value={o.value}>{o.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Label>
-                  <Label className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground">Max lot (acres)</span>
-                    <Input
-                      type="number"
-                      placeholder="No max"
-                      min={0}
-                      step={0.1}
-                      value={moreState.lotAcresMax}
-                      onChange={(e) => setMoreState((s) => ({ ...s, lotAcresMax: e.target.value }))}
-                      className="tabular-nums"
-                    />
-                  </Label>
-                </div>
-              </section>
-
-              <Separator />
-
-              {/* Year built */}
-              <section>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Year built</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground">From year</span>
-                    <Input
-                      type="number"
-                      placeholder="e.g. 1990"
-                      min={1800}
-                      max={2100}
-                      value={moreState.yearBuiltMin}
-                      onChange={(e) => setMoreState((s) => ({ ...s, yearBuiltMin: e.target.value }))}
-                      className="tabular-nums"
-                    />
-                  </Label>
-                  <Label className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground">To year</span>
-                    <Input
-                      type="number"
-                      placeholder="e.g. 2024"
-                      min={1800}
-                      max={2100}
-                      value={moreState.yearBuiltMax}
-                      onChange={(e) => setMoreState((s) => ({ ...s, yearBuiltMax: e.target.value }))}
-                      className="tabular-nums"
-                    />
-                  </Label>
-                </div>
-              </section>
-
-              <Separator />
-
-              {/* Garage + days on market */}
-              <section>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Garage and listing age</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground">Garage spaces</span>
-                    <Select
-                      value={moreState.garageMin || ''}
-                      onValueChange={(v) => setMoreState((s) => ({ ...s, garageMin: v }))}
-                    >
-                      <SelectTrigger aria-label="Minimum garage spaces">
-                        <SelectValue placeholder="Any" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {GARAGE_OPTIONS.map((o) => (
-                          <SelectItem key={o.value || 'any'} value={o.value}>{o.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Label>
-                  <Label className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground">Days on market</span>
-                    <Select
-                      value={moreState.daysOnMarket || ''}
-                      onValueChange={(v) => setMoreState((s) => ({ ...s, daysOnMarket: v }))}
-                    >
-                      <SelectTrigger aria-label="Days on market">
-                        <SelectValue placeholder="Any time" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {DOM_OPTIONS.map((o) => (
-                          <SelectItem key={o.value || 'any'} value={o.value}>{o.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Label>
-                </div>
-              </section>
-
-              <Separator />
-
-              {/* Feature flags */}
-              <section>
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Features</p>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                  {(
-                    [
-                      { key: 'hasPool', label: 'Pool' },
-                      { key: 'hasView', label: 'View' },
-                      { key: 'hasWaterfront', label: 'Waterfront' },
-                      { key: 'hasFireplace', label: 'Fireplace' },
-                      { key: 'hasGolfCourse', label: 'Golf course' },
-                    ] as const
-                  ).map(({ key, label }) => (
-                    <Label key={key} className="flex cursor-pointer items-center gap-2">
-                      <Checkbox
-                        checked={moreState[key]}
-                        onCheckedChange={(v) =>
-                          setMoreState((s) => ({ ...s, [key]: v === true }))
-                        }
-                        aria-label={label}
-                      />
-                      <span className="text-sm text-foreground">{label}</span>
-                    </Label>
-                  ))}
-                </div>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  View, waterfront, fireplace, and golf course apply in list view.
-                </p>
-              </section>
-
-              <Separator />
-
-              {/* Keywords */}
-              <section>
-                <Label className="flex flex-col gap-1">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Keywords</span>
-                  <Input
-                    type="search"
-                    placeholder="e.g. mountain view, RV parking"
-                    value={moreState.keywords}
-                    onChange={(e) => setMoreState((s) => ({ ...s, keywords: e.target.value }))}
-                  />
-                  <span className="text-xs text-muted-foreground">List view searches the listing description. Split view matches address and area terms.</span>
-                </Label>
-              </section>
-
-            </div>
-          </ScrollArea>
-
-          <SheetFooter className="gap-2 px-4 pb-4">
-            <Button
-              type="button"
-              variant="ghost"
-              className="flex-1"
-              onClick={() => {
-                setMoreState({
-                  minSqFt: '', maxSqFt: '', lotAcresMin: '', lotAcresMax: '',
-                  yearBuiltMin: '', yearBuiltMax: '', garageMin: '', daysOnMarket: '',
-                  hasPool: false, hasView: false, hasWaterfront: false,
-                  hasFireplace: false, hasGolfCourse: false, keywords: '',
-                })
-              }}
-            >
-              Reset
-            </Button>
-            <Button type="button" className="flex-1" onClick={applyMoreFilters}>
-              Apply filters
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+      {/* All filters — registry-driven sheet shared with the SEO filter bar */}
+      <AllFiltersSheet
+        open={moreSheetOpen}
+        onOpenChange={setMoreSheetOpen}
+        onApply={updateUrl}
+        closedScope={initialFilters.status === 'Sold'}
+        contextDefaults={{
+          ...(initialFilters.city ? { city: initialFilters.city } : {}),
+          status: initialFilters.status ?? 'Active',
+        }}
+      />
     </div>
   )
 }

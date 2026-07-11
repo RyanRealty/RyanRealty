@@ -25,10 +25,12 @@ function isAuthorized(request: Request): boolean {
  * GET /api/cron/refresh-mvs
  *
  * Refreshes the DAL materialized views applied in migrations 20260522144509
- * (listing_tile_mv), 20260522144510 (geo_snapshot_mv), and 20260529020000
+ * (listing_tile_mv), 20260522144510 (geo_snapshot_mv), 20260529020000
  * (listing_boundary_xref_mv — the precomputed listing→boundary spatial join
- * behind every map's pins + homes-for-sale cards). All refreshed CONCURRENTLY
- * so user reads keep working during the refresh.
+ * behind every map's pins + homes-for-sale cards), and 20260711160000
+ * (listing_search_mv — the on-market search MV carrying every filterable
+ * field for voice + screen search). All refreshed CONCURRENTLY so user
+ * reads keep working during the refresh.
  *
  * Schedule: every 15 minutes via vercel.json.
  *
@@ -42,7 +44,8 @@ function isAuthorized(request: Request): boolean {
  *
  * Auth: Authorization: Bearer CRON_SECRET
  *
- * Returns: { ok, ran_at, listing_tile_mv: {...}, geo_snapshot_mv: {...}, duration_ms }
+ * Returns: { ok, ran_at, listing_tile_mv: {...}, geo_snapshot_mv: {...},
+ *   listing_boundary_xref_mv: {...}, listing_search_mv: {...}, duration_ms }
  */
 export async function GET(request: Request) {
   if (!isAuthorized(request)) {
@@ -106,7 +109,22 @@ export async function GET(request: Request) {
     error: xrefError?.message ?? xrefData?.error ?? null,
   }
 
-  const ok = tileResult.ok && geoResult.ok && xrefResult.ok
+  // listing_search_mv fourth — the on-market search MV behind
+  // searchListingsAll (every filterable field: feature arrays, schools,
+  // HOA, taxes, terms). ~9.8K rows, refreshes in seconds.
+  const searchStart = Date.now()
+  const { data: searchData, error: searchError } = await supabase.rpc(
+    'refresh_listing_search_mv',
+  )
+  const searchMs = Date.now() - searchStart
+  const searchResult = {
+    ok: !searchError && searchData?.ok !== false,
+    duration_ms: searchMs,
+    rpc_duration_ms: searchData?.duration_ms ?? null,
+    error: searchError?.message ?? searchData?.error ?? null,
+  }
+
+  const ok = tileResult.ok && geoResult.ok && xrefResult.ok && searchResult.ok
 
   return NextResponse.json(
     {
@@ -115,6 +133,7 @@ export async function GET(request: Request) {
       listing_tile_mv: tileResult,
       geo_snapshot_mv: geoResult,
       listing_boundary_xref_mv: xrefResult,
+      listing_search_mv: searchResult,
       duration_ms: Date.now() - startMs,
     },
     { status: ok ? 200 : 500 },

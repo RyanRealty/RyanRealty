@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-07-11T12:50:54.440Z
+**Generated:** 2026-07-11T15:28:32.208Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -417,7 +417,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 25,383**
+### `market_stats_cache` · **rows ≈ 25,402**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -715,7 +715,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `owner_lookup_attempts` | integer | yes | 0 |
 | `last_owner_lookup_at` | timestamp with time zone | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 168**
+### `marketing_brain_actions` · **rows ≈ 169**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -2512,6 +2512,108 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `tags` | ARRAY | no | '{}'::text[] |
 | `quality_score` | numeric | no | 0 |
 | `created_at` | timestamp with time zone | no | now() |
+
+### `listing_search_mv`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `listing_key` | text | yes |  |
+| `list_number` | text | yes |  |
+| `standard_status` | text | yes |  |
+| `list_price` | numeric | yes |  |
+| `close_price` | numeric | yes |  |
+| `close_date` | timestamp with time zone | yes |  |
+| `beds` | integer | yes |  |
+| `baths` | numeric | yes |  |
+| `sqft` | numeric | yes |  |
+| `street_number` | text | yes |  |
+| `street_name` | text | yes |  |
+| `street_suffix` | text | yes |  |
+| `city` | text | yes |  |
+| `city_lower` | text | yes |  |
+| `postal_code` | text | yes |  |
+| `subdivision_name` | text | yes |  |
+| `subdivision_lower` | text | yes |  |
+| `lat` | numeric | yes |  |
+| `lng` | numeric | yes |  |
+| `photo_url` | text | yes |  |
+| `property_type` | text | yes |  |
+| `property_sub_type` | text | yes |  |
+| `on_market_date` | timestamp with time zone | yes |  |
+| `modified_at` | timestamp with time zone | yes |  |
+| `price_per_sqft` | numeric(10,2) | yes |  |
+| `lot_size_acres` | numeric(12,4) | yes |  |
+| `year_built` | smallint | yes |  |
+| `garage_spaces` | smallint | yes |  |
+| `pool_yn` | boolean | yes |  |
+| `has_virtual_tour` | boolean | yes |  |
+| `dom` | integer | yes |  |
+| `price_drop_count` | smallint | yes |  |
+| `address_slug` | text | yes |  |
+| `boundary_city` | text | yes |  |
+| `boundary_neighborhood` | text | yes |  |
+| `boundary_subdivision` | text | yes |  |
+| `search_vector` | tsvector | yes |  |
+| `refreshed_at` | timestamp with time zone | yes |  |
+| `fireplace_yn` | boolean | yes |  |
+| `waterfront_yn` | boolean | yes |  |
+| `basement_yn` | boolean | yes |  |
+| `horse_yn` | boolean | yes |  |
+| `senior_community_yn` | boolean | yes |  |
+| `new_construction_yn` | boolean | yes |  |
+| `association_yn` | boolean | yes |  |
+| `hoa_monthly` | numeric(10,2) | yes |  |
+| `tax_annual_amount` | numeric(12,2) | yes |  |
+| `estimated_monthly_piti` | numeric(10,2) | yes |  |
+| `irrigation_water_rights_yn` | boolean | yes |  |
+| `county` | text | yes |  |
+| `elementary_school` | text | yes |  |
+| `middle_school` | text | yes |  |
+| `high_school` | text | yes |  |
+| `school_district` | text | yes |  |
+| `levels` | text | yes |  |
+| `baths_full` | smallint | yes |  |
+| `baths_half` | smallint | yes |  |
+| `public_remarks` | text | yes |  |
+| `has_open_house` | boolean | yes |  |
+| `price_reduced` | boolean | yes |  |
+| `appliances` | text[] | yes |  |
+| `flooring` | text[] | yes |  |
+| `heating_types` | text[] | yes |  |
+| `cooling_types` | text[] | yes |  |
+| `interior_features` | text[] | yes |  |
+| `exterior_features` | text[] | yes |  |
+| `window_features` | text[] | yes |  |
+| `laundry_features` | text[] | yes |  |
+| `security_features` | text[] | yes |  |
+| `parking_features` | text[] | yes |  |
+| `patio_porch_features` | text[] | yes |  |
+| `lot_features_arr` | text[] | yes |  |
+| `view_types` | text[] | yes |  |
+| `fireplace_types` | text[] | yes |  |
+| `basement_types` | text[] | yes |  |
+| `other_structures` | text[] | yes |  |
+| `structure_types` | text[] | yes |  |
+| `hoa_amenities` | text[] | yes |  |
+| `community_features` | text[] | yes |  |
+| `accessibility_features` | text[] | yes |  |
+| `waterfront_types` | text[] | yes |  |
+| `utilities` | text[] | yes |  |
+| `sewer_types` | text[] | yes |  |
+| `water_source` | text[] | yes |  |
+| `road_surface` | text[] | yes |  |
+| `roof_types` | text[] | yes |  |
+| `construction_materials_arr` | text[] | yes |  |
+| `foundation_types` | text[] | yes |  |
+| `architectural_styles` | text[] | yes |  |
+| `listing_terms` | text[] | yes |  |
+| `special_conditions` | text[] | yes |  |
+| `current_use` | text[] | yes |  |
+| `irrigation_source` | text[] | yes |  |
+| `common_walls` | text[] | yes |  |
+| `road_frontage` | text[] | yes |  |
+| `pool_features` | text[] | yes |  |
+| `direction_faces` | text | yes |  |
 
 ### `listing_shares`
 

@@ -3,7 +3,7 @@
 import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { GoogleMap, InfoWindow, MapContext, Polygon } from '@react-google-maps/api'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
-import { MarkerClusterer } from '@googlemaps/markerclusterer'
+import { MarkerClusterer, defaultOnClusterClickHandler } from '@googlemaps/markerclusterer'
 
 import { MAP_DEFAULT_CENTER } from '@/lib/map-constants'
 import { listingDetailPath } from '@/lib/slug'
@@ -676,10 +676,12 @@ export default function SearchMapClustered({
   const onMarkerClickRef = useRef(onMarkerClick)
   const onMarkerHoverRef = useRef(onMarkerHover)
   const savedSetRef = useRef(savedSet)
+  const drawingModeRef = useRef(drawingMode)
   useEffect(() => {
     onMarkerClickRef.current = onMarkerClick
     onMarkerHoverRef.current = onMarkerHover
     savedSetRef.current = savedSet
+    drawingModeRef.current = drawingMode
   })
 
   // Create the price-pill marker layer + clusterer when map and listings are
@@ -717,6 +719,13 @@ export default function SearchMapClustered({
       const pillEl = buildPricePillElement(label, { saved: isSaved })
       const title = `${label} — ${[l.StreetNumber, l.StreetName].filter(Boolean).join(' ') || 'View listing'}`
       const handleClick = () => {
+        // Draw mode: a tap near a pill is an outline vertex, not a listing
+        // open — use the pill's own coordinates so the point lands where the
+        // user aimed instead of zooming or opening the info window mid-draw.
+        if (drawingModeRef.current) {
+          setDrawingPoints((prev) => [...prev, { lat: l.Latitude, lng: l.Longitude }])
+          return
+        }
         setOpenInfo((prev) =>
           prev?.listingKey === listingKey
             ? null
@@ -766,6 +775,13 @@ export default function SearchMapClustered({
     clustererRef.current = new MarkerClusterer({
       map,
       markers: newMarkers as unknown as google.maps.Marker[],
+      // Draw mode: the default handler zooms into the cluster, which yanks the
+      // viewport mid-outline and strands the user's partial polygon across two
+      // zoom levels. Clusters go inert while drawing.
+      onClusterClick: (event, cluster, clusterMap) => {
+        if (drawingModeRef.current) return
+        defaultOnClusterClickHandler(event, cluster, clusterMap)
+      },
       renderer: {
         render: (cluster, _stats, map) => {
           const count = cluster.count
@@ -1053,6 +1069,14 @@ export default function SearchMapClustered({
               >
                 Cancel
               </Button>
+              <span
+                role="status"
+                className="pointer-events-none absolute left-0 top-full mt-2 w-max max-w-[280px] rounded-lg bg-primary/80 px-3 py-2 text-xs font-medium text-primary-foreground shadow-md"
+              >
+                {drawingPoints.length < 3
+                  ? `Click the map to outline an area. ${3 - drawingPoints.length} more point${3 - drawingPoints.length === 1 ? '' : 's'} to go.`
+                  : 'Keep adding points, or press Apply area.'}
+              </span>
             </>
           )}
           {!drawingMode && activePolygon && activePolygon.length >= 3 && (

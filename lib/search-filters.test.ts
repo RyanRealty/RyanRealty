@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeSavedSearchFilters, getSavedSearchHash } from './search-filters'
+import { normalizeSavedSearchFilters, getSavedSearchHash, savedFiltersToAdvanced } from './search-filters'
 
 // Saved-search alert dedup hinges on normalize + hash: two saves that mean the
 // same thing must produce the same hash (else duplicate alerts), and a real
@@ -40,5 +40,60 @@ describe('getSavedSearchHash (dedup contract)', () => {
   })
   it('returns the s_<hex> format', () => {
     expect(getSavedSearchHash({ city: 'Bend' })).toMatch(/^s_[0-9a-f]+$/)
+  })
+  it('hash is stable across the registry-key expansion (pinned pre-expansion values)', () => {
+    // Captured from the pre-registry implementation (2026-07-11). A change here
+    // means every saved-search row would re-alert — do not accept silently.
+    expect(getSavedSearchHash({ city: 'Bend', minPrice: 500000 })).toBe('s_a4b5b7a7')
+    expect(getSavedSearchHash({ city: 'Redmond', beds: 3, hasPool: 'true', statusFilter: 'active' })).toBe('s_f7245858')
+  })
+  it('CSV string and string[] hash identically for a registry multi', () => {
+    expect(getSavedSearchHash({ flooring: 'Hardwood,Tile' })).toBe(
+      getSavedSearchHash({ flooring: ['Hardwood', 'Tile'] }),
+    )
+    expect(getSavedSearchHash({ flooring: ['Hardwood'] })).not.toBe(
+      getSavedSearchHash({ flooring: ['Hardwood', 'Tile'] }),
+    )
+  })
+})
+
+describe('registry-driven filter keys', () => {
+  it('normalizes registry booleans, ranges, and multis', () => {
+    const out = normalizeSavedSearchFilters({
+      shop: '1',
+      hoaMonthlyMax: '150',
+      flooring: 'Hardwood,Tile',
+      county: ['Deschutes'],
+      elementarySchool: ' Pine Ridge ',
+    })
+    expect(out).toEqual({
+      shop: true,
+      hoaMonthlyMax: 150,
+      flooring: ['Hardwood', 'Tile'],
+      county: ['Deschutes'],
+      elementarySchool: 'Pine Ridge',
+    })
+  })
+  it('savedFiltersToAdvanced passes registry keys through to the advanced object', () => {
+    const adv = savedFiltersToAdvanced({
+      city: 'Bend',
+      shop: '1',
+      onWell: 'true',
+      flooring: 'Hardwood',
+      viewTypes: ['Cascade Mountains', 'River'],
+      hoaMonthlyMax: '150',
+      daysOnMarket: '7',
+      monthlyPaymentMax: 3000,
+      schoolDistrict: 'Bend-La Pine',
+    })
+    expect(adv.city).toBe('Bend')
+    expect(adv.shop).toBe(true)
+    expect(adv.onWell).toBe(true)
+    expect(adv.flooring).toEqual(['Hardwood'])
+    expect(adv.viewTypes).toEqual(['Cascade Mountains', 'River'])
+    expect(adv.hoaMonthlyMax).toBe(150)
+    expect(adv.daysOnMarket).toBe(7)
+    expect(adv.monthlyPaymentMax).toBe(3000)
+    expect(adv.schoolDistrict).toBe('Bend-La Pine')
   })
 })

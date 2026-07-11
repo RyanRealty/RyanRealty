@@ -1,12 +1,13 @@
 import type { AdvancedListingsFilters } from '@/app/actions/listings'
 import { homesForSalePath, listingsBrowsePath } from '@/lib/slug'
 import { hrefForNeighborhoodSlug, labelForNeighborhoodSlug } from '@/lib/neighborhood-areas'
+import { SEARCH_FIELDS, ALL_SEARCH_URL_PARAMS } from '@/lib/search/field-registry'
 
 export type SavedSearchFilters = Record<string, unknown>
 
 type Primitive = string | number | boolean
 
-const FILTER_KEYS = [
+const LEGACY_FILTER_KEYS = [
   'city',
   'subdivision',
   'neighborhoodSlug',
@@ -46,6 +47,36 @@ const FILTER_KEYS = [
   'poly',
 ] as const
 
+// Registry-driven param kinds (lib/search/field-registry.ts). Hash stability:
+// rows saved before these keys existed normalize identically — normalize only
+// emits keys present on the input.
+const REGISTRY_MULTI_KEYS = new Set(
+  SEARCH_FIELDS.filter((f) => f.kind === 'multi').map((f) => f.key),
+)
+const REGISTRY_BOOLEAN_KEYS = new Set(
+  SEARCH_FIELDS.filter((f) => f.kind === 'boolean').map((f) => f.key),
+)
+const REGISTRY_TEXT_KEYS = new Set(
+  SEARCH_FIELDS.filter((f) => f.kind === 'text').map((f) => f.key),
+)
+
+/** Legacy string[] keys — arrays only, never CSV (unchanged URL behavior). */
+const LEGACY_ARRAY_KEYS = new Set(['cities', 'viewContainsAny'])
+
+const LEGACY_STRING_KEYS = new Set([
+  'city', 'subdivision', 'neighborhoodSlug', 'postalCode', 'propertyType',
+  'propertySubType', 'statusFilter', 'keywords', 'viewContains', 'sort', 'view', 'poly',
+])
+
+const LEGACY_BOOLEAN_KEYS = new Set([
+  'includeClosed', 'hasOpenHouse', 'hasPool', 'hasView', 'hasWaterfront',
+  'hasFireplace', 'hasGolfCourse', 'excludeSoldSince',
+])
+
+const FILTER_KEYS: readonly string[] = Array.from(
+  new Set([...LEGACY_FILTER_KEYS, ...ALL_SEARCH_URL_PARAMS]),
+)
+
 function asTrimmedString(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined
   const next = value.trim()
@@ -71,6 +102,16 @@ function asBoolean(value: unknown): boolean | undefined {
   return undefined
 }
 
+/** Registry multis: accept string[] or the URL's CSV grammar, emit string[]. */
+function asStringArray(value: unknown): string[] | undefined {
+  const parts = Array.isArray(value)
+    ? value.map((v) => asTrimmedString(v)).filter((v): v is string => Boolean(v))
+    : typeof value === 'string'
+      ? value.split(',').map((v) => v.trim()).filter(Boolean)
+      : []
+  return parts.length > 0 ? parts : undefined
+}
+
 export function normalizeSavedSearchFilters(input: SavedSearchFilters): SavedSearchFilters {
   const out: SavedSearchFilters = {}
 
@@ -78,7 +119,7 @@ export function normalizeSavedSearchFilters(input: SavedSearchFilters): SavedSea
     const value = input[key]
     if (value == null) continue
 
-    if (key === 'cities' || key === 'viewContainsAny') {
+    if (LEGACY_ARRAY_KEYS.has(key)) {
       if (Array.isArray(value)) {
         const parsed = value.map((v) => asTrimmedString(v)).filter((v): v is string => Boolean(v))
         if (parsed.length > 0) out[key] = parsed
@@ -86,13 +127,19 @@ export function normalizeSavedSearchFilters(input: SavedSearchFilters): SavedSea
       continue
     }
 
-    if (key === 'city' || key === 'subdivision' || key === 'neighborhoodSlug' || key === 'postalCode' || key === 'propertyType' || key === 'propertySubType' || key === 'statusFilter' || key === 'keywords' || key === 'viewContains' || key === 'sort' || key === 'view' || key === 'poly') {
+    if (REGISTRY_MULTI_KEYS.has(key)) {
+      const parsed = asStringArray(value)
+      if (parsed) out[key] = parsed
+      continue
+    }
+
+    if (LEGACY_STRING_KEYS.has(key) || REGISTRY_TEXT_KEYS.has(key)) {
       const parsed = asTrimmedString(value)
       if (parsed) out[key] = parsed
       continue
     }
 
-    if (key === 'includeClosed' || key === 'hasOpenHouse' || key === 'hasPool' || key === 'hasView' || key === 'hasWaterfront' || key === 'hasFireplace' || key === 'hasGolfCourse' || key === 'excludeSoldSince') {
+    if (LEGACY_BOOLEAN_KEYS.has(key) || REGISTRY_BOOLEAN_KEYS.has(key)) {
       const parsed = asBoolean(value)
       if (parsed !== undefined) out[key] = parsed
       continue
@@ -150,6 +197,9 @@ export function savedFiltersToAdvanced(filters: SavedSearchFilters): AdvancedLis
     ? (sortRaw as AdvancedListingsFilters['sort'])
     : 'newest'
 
+  const bool = (key: string) => asBoolean(normalized[key])
+  const arr = (key: string) => asStringArray(normalized[key])
+
   return {
     city: asTrimmedString(normalized.city),
     subdivision: asTrimmedString(normalized.subdivision),
@@ -171,13 +221,13 @@ export function savedFiltersToAdvanced(filters: SavedSearchFilters): AdvancedLis
     propertySubType: asTrimmedString(normalized.propertySubType),
     statusFilter: validStatus,
     keywords: asTrimmedString(normalized.keywords),
-    hasOpenHouse: asBoolean(normalized.hasOpenHouse),
+    hasOpenHouse: bool('hasOpenHouse'),
     garageMin: asNumber(normalized.garageMin),
-    hasPool: asBoolean(normalized.hasPool),
-    hasView: asBoolean(normalized.hasView),
-    hasWaterfront: asBoolean(normalized.hasWaterfront),
-    hasFireplace: asBoolean(normalized.hasFireplace),
-    hasGolfCourse: asBoolean(normalized.hasGolfCourse),
+    hasPool: bool('hasPool'),
+    hasView: bool('hasView'),
+    hasWaterfront: bool('hasWaterfront'),
+    hasFireplace: bool('hasFireplace'),
+    hasGolfCourse: bool('hasGolfCourse'),
     viewContains: asTrimmedString(normalized.viewContains),
     cities: Array.isArray(normalized.cities) ? (normalized.cities as string[]) : undefined,
     viewContainsAny: Array.isArray(normalized.viewContainsAny) ? (normalized.viewContainsAny as string[]) : undefined,
@@ -186,6 +236,85 @@ export function savedFiltersToAdvanced(filters: SavedSearchFilters): AdvancedLis
     newListingsDays: asNumber(normalized.newListingsDays),
     sort: validSort,
     includeClosed: asBoolean(normalized.includeClosed),
+    // ── Registry-driven fields (lib/search/field-registry.ts) ───────────────
+    // Ranges (max-only URL params)
+    hoaMonthlyMax: asNumber(normalized.hoaMonthlyMax),
+    taxAnnualMax: asNumber(normalized.taxAnnualMax),
+    monthlyPaymentMax: asNumber(normalized.monthlyPaymentMax),
+    daysOnMarket: asNumber(normalized.daysOnMarket),
+    // Booleans
+    newConstruction: bool('newConstruction'),
+    basement: bool('basement'),
+    horseProperty: bool('horseProperty'),
+    seniorCommunity: bool('seniorCommunity'),
+    noHoa: bool('noHoa'),
+    irrigationRights: bool('irrigationRights'),
+    hasVirtualTour: bool('hasVirtualTour'),
+    priceReduced: bool('priceReduced'),
+    ownerWillCarry: bool('ownerWillCarry'),
+    strAllowed: bool('strAllowed'),
+    gatedCommunity: bool('gatedCommunity'),
+    guestHouse: bool('guestHouse'),
+    shop: bool('shop'),
+    rvParking: bool('rvParking'),
+    rvGarage: bool('rvGarage'),
+    evCharging: bool('evCharging'),
+    heatedGarage: bool('heatedGarage'),
+    singleLevel: bool('singleLevel'),
+    primaryOnMain: bool('primaryOnMain'),
+    inLawFloorplan: bool('inLawFloorplan'),
+    fencedYard: bool('fencedYard'),
+    onGolfCourse: bool('onGolfCourse'),
+    adjoinsPublicLand: bool('adjoinsPublicLand'),
+    onWell: bool('onWell'),
+    publicWater: bool('publicWater'),
+    onSeptic: bool('onSeptic'),
+    publicSewer: bool('publicSewer'),
+    // Multi-selects (canonical DB values)
+    appliances: arr('appliances'),
+    flooring: arr('flooring'),
+    heatingTypes: arr('heatingTypes'),
+    coolingTypes: arr('coolingTypes'),
+    interiorFeatures: arr('interiorFeatures'),
+    exteriorFeatures: arr('exteriorFeatures'),
+    windowFeatures: arr('windowFeatures'),
+    laundryFeatures: arr('laundryFeatures'),
+    securityFeatures: arr('securityFeatures'),
+    parkingFeatures: arr('parkingFeatures'),
+    patioPorch: arr('patioPorch'),
+    lotFeatures: arr('lotFeatures'),
+    viewTypes: arr('viewTypes'),
+    fireplaceTypes: arr('fireplaceTypes'),
+    basementTypes: arr('basementTypes'),
+    otherStructures: arr('otherStructures'),
+    structureTypes: arr('structureTypes'),
+    hoaAmenities: arr('hoaAmenities'),
+    communityFeatures: arr('communityFeatures'),
+    accessibilityFeatures: arr('accessibilityFeatures'),
+    waterfrontTypes: arr('waterfrontTypes'),
+    utilities: arr('utilities'),
+    sewerTypes: arr('sewerTypes'),
+    waterSource: arr('waterSource'),
+    roadSurface: arr('roadSurface'),
+    roofTypes: arr('roofTypes'),
+    constructionMaterials: arr('constructionMaterials'),
+    foundationTypes: arr('foundationTypes'),
+    architecturalStyles: arr('architecturalStyles'),
+    levelsOptions: arr('levelsOptions'),
+    listingTerms: arr('listingTerms'),
+    specialConditions: arr('specialConditions'),
+    currentUse: arr('currentUse'),
+    irrigationSource: arr('irrigationSource'),
+    commonWalls: arr('commonWalls'),
+    roadFrontage: arr('roadFrontage'),
+    poolFeatures: arr('poolFeatures'),
+    county: arr('county'),
+    directionFaces: arr('directionFaces'),
+    // School texts
+    elementarySchool: asTrimmedString(normalized.elementarySchool),
+    middleSchool: asTrimmedString(normalized.middleSchool),
+    highSchool: asTrimmedString(normalized.highSchool),
+    schoolDistrict: asTrimmedString(normalized.schoolDistrict),
   }
 }
 
@@ -207,6 +336,12 @@ export function buildSearchUrlFromFilters(filters: SavedSearchFilters): string {
     if (key === 'city' || key === 'subdivision' || key === 'neighborhoodSlug') continue
     if (typeof value === 'boolean') {
       if (value === true) params.set(key, key === 'includeClosed' ? '1' : '1')
+      continue
+    }
+    if (Array.isArray(value)) {
+      // Registry multis round-trip as the URL's CSV grammar. Legacy array
+      // keys (cities, viewContainsAny) keep their historical no-URL behavior.
+      if (REGISTRY_MULTI_KEYS.has(key) && value.length > 0) params.set(key, value.join(','))
       continue
     }
     if (typeof value === 'string' || typeof value === 'number') {

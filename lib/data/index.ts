@@ -93,6 +93,21 @@ export {
 } from '@/lib/data/listings/getListingTiles'
 export type { GetListingTilesFilter } from '@/lib/data/listings/getListingTiles'
 
+// Listings — full-registry on-market search over listing_search_mv
+// (CONTRACT-search-field-exposure, 2026-07-11). Every filter in
+// lib/search/field-registry.ts, bbox, sort, pagination, exact count.
+export {
+  searchListingsAll,
+  searchListingsAllCount,
+  pickSearchFeatureFilters,
+  SEARCH_FEATURE_FILTER_KEYS,
+} from '@/lib/data/listings/searchListingsAll'
+export type {
+  SearchListingsAllFilter,
+  SearchListingsAllResult,
+  SearchFeatureFilters,
+} from '@/lib/data/listings/searchListingsAll'
+
 // Listings — Central Oregon service-area guard (audit P0-3 2026-06-10).
 // ONE source of truth for the city allowlist that keeps the statewide MLS
 // feed off "Central Oregon" surfaces. Derived from lib/central-oregon.ts.

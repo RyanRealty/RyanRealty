@@ -10,6 +10,8 @@ import {
   getListingsWithAdvanced,
   type AdvancedSort,
 } from '../../actions/listings'
+import { coerceRegistryParams } from '@/lib/search/field-registry'
+import { pickSearchFeatureFilters } from '@/lib/data'
 import { getSession } from '../../actions/auth'
 import { getBannerUrl, getOrCreatePlaceBanner, getBannerSearchQuery } from '../../actions/banners'
 import { shareDescription, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '../../../lib/share-metadata'
@@ -289,6 +291,10 @@ export default async function SearchPage({
   const initialPolygon = decodeMapPolygon(sp.poly)
 
   const filterOptsBase = {
+    // Registry fields (fireplace, shop, well water, appliances, …) — without
+    // this spread the AllFiltersSheet/chips on this surface would claim filters
+    // the query ignores (review finding 2026-07-11).
+    ...pickSearchFeatureFilters(coerceRegistryParams(sp as Record<string, string | undefined>)),
     city: city || undefined,
     subdivision: decodedSubdivision,
     neighborhood,

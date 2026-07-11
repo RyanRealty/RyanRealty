@@ -6,10 +6,11 @@ import Link from 'next/link'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import type { ListingTileRow, MapBounds } from '@/app/actions/listings'
-import { getViewportSearch, type SearchFilters } from '@/app/actions/search'
+import { countSearchListings, getViewportSearch, type SearchFilters } from '@/app/actions/search'
 import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
 import type { ListingForMap } from '@/components/SearchMapClustered'
 import type { MapPolygonPoint } from '@/lib/map-polygon'
+import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registry'
 import { listingDetailPath } from '@/lib/slug'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -111,7 +112,41 @@ function toMapListing(l: ListingTileRow): ListingForMap {
 
 /** Convert the page's URL filter object into the server-action SearchFilters shape. */
 function toSearchFilters(f: SearchFiltersInitial): SearchFilters {
+  // Registry fields ride along as raw URL-param strings (the server page
+  // spreads every ALL_SEARCH_URL_PARAMS hit into the filters prop). Coerce
+  // them per the field registry so a pan/zoom refetch keeps every active
+  // filter — booleans `1` -> true, multi CSV -> string[], ranges -> numbers.
+  const raw = f as Record<string, string | undefined>
+  const registry: Record<string, unknown> = {}
+  for (const def of SEARCH_FIELDS) {
+    if (def.kind === 'boolean') {
+      if (raw[def.key] === '1') registry[def.key] = true
+    } else if (def.kind === 'multi') {
+      const value = raw[def.key]
+      if (value?.trim()) {
+        const values = value.split(',').map((v) => v.trim()).filter(Boolean)
+        if (values.length > 0) registry[def.key] = values
+      }
+    } else if (def.kind === 'text') {
+      if (def.key === 'keywords') continue // handled below with the base fields
+      const value = raw[def.key]?.trim()
+      if (value) registry[def.key] = value
+    } else {
+      if (def.key === 'dom') continue // rides the legacy daysOnMarket string below
+      const params = def.legacyParams
+        ? [def.legacyParams.min, def.legacyParams.max]
+        : [`${def.key}Min`, `${def.key}Max`]
+      for (const param of params) {
+        if (!param) continue
+        const value = raw[param]
+        if (value == null || value.trim() === '') continue
+        const parsed = Number(value)
+        if (Number.isFinite(parsed)) registry[param] = parsed
+      }
+    }
+  }
   return {
+    ...(registry as Partial<SearchFilters>),
     city: f.city || undefined,
     subdivision: f.subdivision || undefined,
     minPrice: f.minPrice ? Number(f.minPrice) : undefined,
@@ -194,17 +229,43 @@ export default function MapSearchView({
   const pathname = usePathname()
   // Zero results can come from tight filters, not just the map viewport — the
   // empty state names the likely cause and offers the same reset as "Clear all".
+  // Registry params (fireplace, shop, well water, …) count as narrowing too;
+  // enumerating them from the registry keeps this in step as fields are added.
   const hasNarrowingFilters = useMemo(() => {
-    const keys: (keyof typeof filters)[] = [
-      'minPrice', 'maxPrice', 'beds', 'baths', 'propertyType', 'minSqFt', 'maxSqFt',
-      'lotAcresMin', 'lotAcresMax', 'yearBuiltMin', 'yearBuiltMax', 'hasPool', 'hasView',
-      'hasWaterfront', 'hasFireplace', 'hasGolfCourse', 'garageMin', 'daysOnMarket', 'keywords',
-    ]
-    return keys.some((k) => {
-      const v = filters[k]
+    const narrowing = [...ALL_SEARCH_URL_PARAMS, 'propertyType', 'propertySubType']
+    return narrowing.some((k) => {
+      if (k === 'view' || k === 'sort' || k === 'page') return false
+      const v = (filters as Record<string, string | undefined>)[k]
       return typeof v === 'string' && v.trim() !== ''
     })
   }, [filters])
+
+  // When the viewport shows zero but the same filters match homes elsewhere,
+  // say so with the real number — a bare "0 homes" reads as "we have nothing"
+  // when the matches are simply outside the current map (rural listings around
+  // a city are the common case).
+  const [beyondViewportCount, setBeyondViewportCount] = useState<number | null>(null)
+  useEffect(() => {
+    if (totalCount !== 0 || !hasNarrowingFilters || polygon) {
+      setBeyondViewportCount(null)
+      return
+    }
+    let cancelled = false
+    const params: Record<string, string> = {}
+    for (const [k, v] of Object.entries(filters as Record<string, string | undefined>)) {
+      if (typeof v === 'string' && v.trim() !== '') params[k] = v
+    }
+    countSearchListings(params)
+      .then((n) => {
+        if (!cancelled) setBeyondViewportCount(n != null && n > 0 ? n : null)
+      })
+      .catch(() => {
+        if (!cancelled) setBeyondViewportCount(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [totalCount, hasNarrowingFilters, polygon, filtersSnapshot]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-seed from server props whenever the URL filters change (new SSR payload).
   useEffect(() => {
@@ -295,8 +356,16 @@ export default function MapSearchView({
       {listings.length === 0 ? (
         hasNarrowingFilters ? (
           <div className="p-8 text-center text-muted-foreground">
-            <p className="text-base font-medium text-foreground">No homes match your filters here.</p>
-            <p className="mt-1 text-sm">Loosen a filter, or zoom out to widen the search area.</p>
+            <p className="text-base font-medium text-foreground">
+              {beyondViewportCount != null
+                ? `${beyondViewportCount.toLocaleString('en-US')} matching home${beyondViewportCount === 1 ? ' is' : 's are'} outside this map view.`
+                : 'No homes match your filters here.'}
+            </p>
+            <p className="mt-1 text-sm">
+              {beyondViewportCount != null
+                ? 'Zoom out to see them, or loosen a filter.'
+                : 'Loosen a filter, or zoom out to widen the search area.'}
+            </p>
             <Button
               type="button"
               variant="outline"

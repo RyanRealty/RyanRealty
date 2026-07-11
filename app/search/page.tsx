@@ -3,6 +3,8 @@ import { getSearchListings, getSearchMapListings, getViewportSearch } from '@/ap
 import { getCityBoundary } from '@/app/actions/cities'
 import { getGeocodedListings } from '@/app/actions/geocode'
 import { getSession } from '@/app/actions/auth'
+import type { SearchFilters as SearchFiltersState } from '@/app/actions/search'
+import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registry'
 import { getSavedListingKeys } from '@/app/actions/saved-listings'
 import { getLikedListingKeys } from '@/app/actions/likes'
 import { getBoundaryGeoJSON } from '@/lib/data'
@@ -60,62 +62,62 @@ async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 4000
   ])
 }
 
+/**
+ * Every registry URL param (ALL_SEARCH_URL_PARAMS) is accepted alongside the
+ * page-owned params, so the type is an open string map rather than 80
+ * hand-written keys.
+ */
 type SearchParams = {
-  city?: string
-  subdivision?: string
-  minPrice?: string
-  maxPrice?: string
-  beds?: string
-  baths?: string
-  status?: string
-  sort?: string
   view?: string
   page?: string
-  minSqFt?: string
-  maxSqFt?: string
-  lotAcresMin?: string
-  lotAcresMax?: string
-  yearBuiltMin?: string
-  yearBuiltMax?: string
-  propertyType?: string
-  hasPool?: string
-  hasView?: string
-  hasWaterfront?: string
-  hasFireplace?: string
-  hasGolfCourse?: string
-  garageMin?: string
-  daysOnMarket?: string
-  keywords?: string
-  postalCode?: string
-}
+} & Record<string, string | undefined>
 
-function parseFilters(sp: SearchParams) {
-  return {
-    city: sp.city?.trim(),
-    subdivision: sp.subdivision?.trim(),
-    minPrice: sp.minPrice ? Number(sp.minPrice) : undefined,
-    maxPrice: sp.maxPrice ? Number(sp.maxPrice) : undefined,
-    beds: sp.beds ? Number(sp.beds) : undefined,
-    baths: sp.baths ? Number(sp.baths) : undefined,
+/**
+ * Parse the URL into the page-level SearchFilters. The registry drives the
+ * generic part — booleans (`key=1`), multis (CSV of canonical values), texts,
+ * and ranges (legacy param names like minPrice/maxPrice preserved) — so a new
+ * registry field is parseable here with zero page edits.
+ */
+function parseFilters(sp: SearchParams): SearchFiltersState {
+  const filters: SearchFiltersState = {
+    city: sp.city?.trim() || undefined,
+    subdivision: sp.subdivision?.trim() || undefined,
     status: sp.status?.trim() || 'Active',
     sort: sp.sort?.trim() || 'newest',
-    minSqFt: sp.minSqFt ? Number(sp.minSqFt) : undefined,
-    maxSqFt: sp.maxSqFt ? Number(sp.maxSqFt) : undefined,
-    lotAcresMin: sp.lotAcresMin != null ? Number(sp.lotAcresMin) : undefined,
-    lotAcresMax: sp.lotAcresMax != null ? Number(sp.lotAcresMax) : undefined,
-    yearBuiltMin: sp.yearBuiltMin ? Number(sp.yearBuiltMin) : undefined,
-    yearBuiltMax: sp.yearBuiltMax ? Number(sp.yearBuiltMax) : undefined,
-    propertyType: sp.propertyType?.trim(),
-    hasPool: sp.hasPool === '1',
-    hasView: sp.hasView === '1',
-    hasWaterfront: sp.hasWaterfront === '1',
-    hasFireplace: sp.hasFireplace === '1',
-    hasGolfCourse: sp.hasGolfCourse === '1',
-    garageMin: sp.garageMin != null ? Number(sp.garageMin) : undefined,
-    daysOnMarket: sp.daysOnMarket?.trim(),
-    keywords: sp.keywords?.trim(),
-    postalCode: sp.postalCode?.trim(),
+    propertyType: sp.propertyType?.trim() || undefined,
+propertySubType: sp.propertySubType?.trim() || undefined,
+    daysOnMarket: sp.daysOnMarket?.trim() || undefined,
+    postalCode: sp.postalCode?.trim() || undefined,
   }
+  const out = filters as Record<string, unknown>
+  for (const def of SEARCH_FIELDS) {
+    if (def.kind === 'boolean') {
+      if (sp[def.key] === '1') out[def.key] = true
+    } else if (def.kind === 'multi') {
+      const raw = sp[def.key]
+      if (raw?.trim()) {
+        const values = raw.split(',').map((v) => v.trim()).filter(Boolean)
+        if (values.length > 0) out[def.key] = values
+      }
+    } else if (def.kind === 'text') {
+      const value = sp[def.key]?.trim()
+      if (value) out[def.key] = value
+    } else {
+      // dom rides the legacy daysOnMarket string field set above.
+      if (def.key === 'dom') continue
+      const params = def.legacyParams
+        ? [def.legacyParams.min, def.legacyParams.max]
+        : [`${def.key}Min`, `${def.key}Max`]
+      for (const param of params) {
+        if (!param) continue
+        const raw = sp[param]
+        if (raw == null || raw.trim() === '') continue
+        const parsed = Number(raw)
+        if (Number.isFinite(parsed)) out[param] = parsed
+      }
+    }
+  }
+  return filters
 }
 
 function buildSearchTitle(filters: ReturnType<typeof parseFilters>): string {
@@ -234,7 +236,17 @@ export default async function SearchPage({
         ? `${filters.city} Oregon`
         : 'Bend Oregon'
 
+  // Registry passthrough: every field-registry URL param present rides along
+  // to the client filter bar / All-filters sheet as its raw string, so a new
+  // registry field reaches the UI with zero page edits.
+  const registryParamsFromUrl: Record<string, string> = {}
+  for (const param of ALL_SEARCH_URL_PARAMS) {
+    const value = sp[param]
+    if (value != null && value !== '') registryParamsFromUrl[param] = value
+  }
+
   const initialFiltersFromUrl = {
+    ...registryParamsFromUrl,
     city: sp.city ?? (view !== 'list' ? defaultCity : ''),
     subdivision: sp.subdivision ?? '',
     minPrice: sp.minPrice ?? '',
@@ -332,7 +344,18 @@ export default async function SearchPage({
                 initialPage={page}
                 filters={initialFiltersFromUrl}
                 view="list"
-                hasActiveFilters={!!(filters.minPrice != null || filters.maxPrice != null || filters.city || filters.subdivision || filters.beds != null || filters.baths != null || filters.status !== 'Active' || filters.minSqFt != null || filters.maxSqFt != null || filters.lotAcresMin != null || filters.lotAcresMax != null || filters.yearBuiltMin != null || filters.yearBuiltMax != null || filters.propertyType || filters.hasPool || filters.hasView || filters.hasWaterfront || filters.hasFireplace || filters.hasGolfCourse || filters.garageMin != null || filters.daysOnMarket || filters.keywords)}
+                hasActiveFilters={!!(
+                  filters.city ||
+                  filters.subdivision ||
+                  filters.status !== 'Active' ||
+                  filters.propertyType ||
+                  filters.postalCode ||
+                  filters.daysOnMarket ||
+                  ALL_SEARCH_URL_PARAMS.some((param) => {
+                    const value = sp[param]
+                    return value != null && value !== ''
+                  })
+                )}
               />
             )}
           </div>

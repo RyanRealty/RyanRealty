@@ -7,7 +7,7 @@
     "app/actions/dashboard.ts": 947,
     "app/actions/lead-capture.ts": 610,
     "app/actions/listing-detail.ts": 1238,
-    "app/actions/listings.ts": 2739,
+    "app/actions/listings.ts": 2954,
     "app/actions/sync-full-cron.ts": 654,
     "app/actions/sync-spark.ts": 1661,
     "app/actions/tc-envelopes.ts": 761,
@@ -32,12 +32,13 @@
     "app/lp/tetherow/page.tsx": 1716,
     "app/price-drops/page.tsx": 668,
     "app/reports/explore/ExploreClient.tsx": 919,
-    "app/search/[...slug]/page.tsx": 1041,
+    "app/search/[...slug]/page.tsx": 1047,
     "lib/cma-delivery.ts": 782,
     "lib/cma.ts": 839,
     "lib/data/crm/getEmailReporting.ts": 686,
     "lib/data/crm/getLeadSourcesReport.ts": 609,
-    "lib/data/index.ts": 700,
+    "lib/data/index.ts": 715,
+    "lib/data/listings/searchListingsAll.ts": 735,
     "lib/data/sync/syncWrites.ts": 1123,
     "lib/expired-owner-lookup.ts": 689,
     "lib/followupboss.ts": 1557,
@@ -51,10 +52,11 @@
     "lib/marketing-brain/measurement-loop.ts": 948,
     "lib/marketing-brain/platform-trends.ts": 857,
     "lib/meta-graph.ts": 1192,
+    "lib/search/field-registry.ts": 1082,
     "lib/spark.ts": 762,
     "lib/x.ts": 787
   },
   "barrels": {
-    "lib/data/index.ts": 161
+    "lib/data/index.ts": 163
   }
 }

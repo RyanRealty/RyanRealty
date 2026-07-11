@@ -1,5 +1,7 @@
 # Ryan Realty — Full-Site UI/UX Design Audit
 
+> **2026-07-11 addendum: [Search System Audit](search-audit-2026-07-11.md)** — ground-up review of the property-search experience (filters, save-search, boundary drawing, radius/POI search, counts, mailed alerts, mobile). 3 P0s found (More-filters crash — fixed in-session; RPC timeout rendering as a false "no homes match"; amenity filters silently ignored in the default view), save-search missing its front door, and a 6-step rebuild plan. Evidence in [`assets/search2/`](assets/search2/).
+
 **Date:** 2026-07-07 · **Auditor:** Claude (senior-design-lead lens, 19-agent audit + evidence verification) · **Build:** local `next dev` off `main` @ `62ba1c7a`
 
 **The question this audit answers:** can a normal Bend buyer or seller land on ryan-realty.com, understand what it is, trust it enough to hand over contact info, and finish the core action (find a home and ask about it / request a home valuation) without help — measured against the Zillow-class bar consumers arrive with. Not "does it look nice."
