@@ -42,18 +42,20 @@ export async function getCmaMarketContext(city: string): Promise<CmaMarketContex
   const sold365 = num(stats.sold_count) ?? 0
   const active = num(pulse?.active_count)
   // Canonical MoS first (the published pulse figure), 365d-pace derivation only
-  // when the pulse row is missing it.
-  let monthsOfSupply = num(pulse?.months_of_supply)
+  // when the pulse row is missing it. Keep the RAW (unrounded) value for the
+  // verdict classification — rounding before binning flips a true 4.04 into a
+  // seller's-market verdict (or 5.96 into a buyer's) that the number itself
+  // contradicts. Display the rounded figure; classify off the raw one.
+  let rawMonthsOfSupply = num(pulse?.months_of_supply)
   let mosFormula = 'market_pulse_live.months_of_supply (canonical: active / (closed_last_6_months / 6))'
-  if (monthsOfSupply == null && active != null && sold365 > 0) {
-    monthsOfSupply = +(active / (sold365 / 12)).toFixed(1)
+  if (rawMonthsOfSupply == null && active != null && sold365 > 0) {
+    rawMonthsOfSupply = active / (sold365 / 12)
     mosFormula = 'fallback: active_count / (sold_count_365 / 12) — pulse row missing'
-  } else if (monthsOfSupply != null) {
-    monthsOfSupply = +monthsOfSupply.toFixed(1)
   }
+  const monthsOfSupply = rawMonthsOfSupply != null ? +rawMonthsOfSupply.toFixed(1) : null
   let verdict: CmaMarketContext['marketVerdict'] = null
-  if (monthsOfSupply != null) {
-    verdict = monthsOfSupply <= 4 ? 'seller' : monthsOfSupply >= 6 ? 'buyer' : 'balanced'
+  if (rawMonthsOfSupply != null) {
+    verdict = rawMonthsOfSupply <= 4 ? 'seller' : rawMonthsOfSupply >= 6 ? 'buyer' : 'balanced'
   }
 
   return {

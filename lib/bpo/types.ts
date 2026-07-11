@@ -68,8 +68,9 @@ export interface BpoListingHistory {
   lastSalePrice: number | null
   lastSaleDate: string | null
   signals: BpoHistorySignal[]
-  /** Bounded [-0.10, 0.05] hint the opinion engine may apply to the comp
-   *  reconciliation when the active listing's own market evidence is strong. */
+  /** Bounded [-0.06, 0] downward hint the opinion engine may apply to the comp
+   *  reconciliation when the active listing's own market evidence is strong.
+   *  History can only pull the opinion toward or below the comps, never inflate. */
   listingPressureAdjustmentPct: number
   trace: string[]
 }

@@ -313,7 +313,21 @@ export async function runMarketReportSend(options: RunSendOptions = {}): Promise
     if (outcome.status === 'sent') {
       summary.sent += 1
       summary.outcomes.push(outcome)
-      await deps.stampSent(sub.subscriptionId, now)
+      // Cadence stamp. If THIS write fails after a successful send, isDue() has no
+      // fresh last_sent_at to gate on, so the next daily tick would re-send inside
+      // the cadence window (a double-send to a real client). stampSent fails soft
+      // (never throws), so its result must be checked here and logged loudly — the
+      // stamp is what makes the send idempotent across ticks. A durable idempotency
+      // backstop that survives a stamp-write outage needs a schema change (a unique
+      // sent-ledger key); see decisionsOrBlockers.
+      const stamp = await deps.stampSent(sub.subscriptionId, now)
+      if (!stamp.ok) {
+        console.error(
+          `[market-report-send] DOUBLE-SEND RISK: report sent to person ${sub.personId} ` +
+            `(subscription ${sub.subscriptionId}) but last_sent_at stamp FAILED (${stamp.error}); ` +
+            `the next cadence tick may re-send this contact.`,
+        )
+      }
     } else {
       recordSkip(outcome)
     }

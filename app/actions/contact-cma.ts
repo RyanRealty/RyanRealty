@@ -26,6 +26,7 @@
 import { revalidatePath } from 'next/cache'
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { getCmaAdminRowBySlug, findCrmPersonIdByEmail } from '@/lib/data'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import { buildCma } from '@/lib/cma/build'
 import { sendCmaToLead } from '@/lib/cma/send'
@@ -196,6 +197,25 @@ export async function sendCmaForContactAction(deliveryId: string): Promise<SendC
     // Canonical path: a cmas slug from the deterministic pipeline.
     if (!UUID_RE.test(id)) {
       const slug = id.toLowerCase()
+
+      // Scope gate (mirror the legacy UUID path): a CMA is addressable by a
+      // guessable slug, so a broker may only trigger a send for a CMA whose
+      // client is inside their scope. Resolve the CMA's own client to a CRM
+      // person and enforce ownership before sending. Recipient resolution stays
+      // inside sendCmaToLead (always the CMA's own client_email).
+      const cmaRow = await getCmaAdminRowBySlug(slug)
+      if (!cmaRow) return { ok: false, error: `CMA ${slug} not found` }
+      const cmaClientEmail = (cmaRow.client_email as string | null)?.trim().toLowerCase() || null
+      const cmaPersonId = cmaClientEmail ? await findCrmPersonIdByEmail(cmaClientEmail) : null
+      if (cmaPersonId) {
+        const scoped = await requirePersonInScope(cmaPersonId, access)
+        if (!scoped.ok) return { ok: false, error: scoped.error }
+      } else if (access.brokerSlug) {
+        // A scoped (non-principal) broker cannot send a CMA with no linked
+        // contact to check ownership against.
+        return { ok: false, error: 'Not authorized for this CMA' }
+      }
+
       const result = await sendCmaToLead(slug)
       if (!result.ok) {
         return {

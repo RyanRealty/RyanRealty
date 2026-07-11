@@ -39,6 +39,23 @@ export function stripOfferStrategy(html: string): string {
   return html.slice(0, start) + html.slice(end + OFFER_MARK_END.length)
 }
 
+/**
+ * Fail-closed guard for any client-safe serve or send. stripOfferStrategy is a
+ * best-effort marker strip that returns the FULL html when the markers are
+ * absent or truncated. This asserts the result no longer carries the internal
+ * offer strategy, so a missing marker throws (and the caller serves a safe
+ * error) instead of leaking the negotiation strategy to a client.
+ */
+export function assertClientSafe(html: string): void {
+  if (
+    html.includes(OFFER_MARK_START) ||
+    html.includes(OFFER_MARK_END) ||
+    /class="offer"/.test(html)
+  ) {
+    throw new Error('Client-safe strip failed: the internal offer strategy is still present')
+  }
+}
+
 export function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')

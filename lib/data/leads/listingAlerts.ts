@@ -77,6 +77,30 @@ async function resolveCrmPersonId(
   return null
 }
 
+/**
+ * True only when a row for (email, filters_hash) already exists AND was
+ * explicitly deactivated (is_active=false, a one-click unsubscribe). The upsert
+ * paths use this to avoid RESURRECTING a search the lead muted: re-saving or
+ * re-attaching the same search leaves it off (search stays saved, just not
+ * emailed) instead of forcing is_active=true on conflict. Unsubscribing ONE
+ * search never touches the lead's other searches. A NULL is_active (legacy) is
+ * treated as active, so only an explicit opt-out is honored.
+ */
+async function alertExplicitlyOptedOut(
+  supabase: ReturnType<typeof createServiceClient>,
+  email: string,
+  filtersHash: string,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from(TABLE)
+    .select('is_active')
+    .eq('email', email)
+    .eq('filters_hash', filtersHash)
+    .limit(1)
+    .maybeSingle()
+  return (data as { is_active: boolean | null } | null)?.is_active === false
+}
+
 export type ListingAlertInput = {
   email: string
   filters: Record<string, unknown>
@@ -99,6 +123,8 @@ export async function upsertListingAlert(input: ListingAlertInput): Promise<{ ok
     email,
     fubPersonId: input.fubPersonId,
   })
+  // Resurrection guard: an existing explicit opt-out stays muted on re-save.
+  const optedOut = await alertExplicitlyOptedOut(supabase, email, input.filtersHash)
   const { error } = await supabase.from(TABLE).upsert(
     {
       email,
@@ -110,7 +136,7 @@ export async function upsertListingAlert(input: ListingAlertInput): Promise<{ ok
       crm_person_id: crmPersonId,
       origin: 'user',
       source: input.userId ? 'user' : 'idx-registration',
-      is_active: true,
+      is_active: !optedOut,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'email,filters_hash' },
@@ -150,6 +176,9 @@ export async function createListingAlertForLead(input: {
   const crmPersonId = input.crmPersonId
     ?? await resolveCrmPersonId(supabase, { email, fubPersonId: input.fubPersonId })
 
+  // Resurrection guard: re-attaching a search the lead one-click-unsubscribed
+  // leaves it muted (is_active stays false) rather than forcing it back on.
+  const optedOut = await alertExplicitlyOptedOut(supabase, email, input.filtersHash)
   const { error } = await supabase.from(TABLE).upsert(
     {
       email,
@@ -162,7 +191,7 @@ export async function createListingAlertForLead(input: {
       assigned_by: input.assignedBy ?? null,
       source: input.origin === 'broker' ? 'broker-assigned' : 'system',
       notification_frequency: input.frequency ?? 'weekly',
-      is_active: true,
+      is_active: !optedOut,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'email,filters_hash' },

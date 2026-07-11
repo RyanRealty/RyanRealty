@@ -146,8 +146,8 @@ describe('buildAreaBlock', () => {
     })
     expect(block).not.toBeNull()
     expect(block!.activeListings).toBe(28)
-    expect(block!.monthsOfSupply).toBe(10.8) // 28 / (31/12)
-    expect(block!.marketVerdict).toBe('buyers') // derived from 10.8
+    expect(block!.monthsOfSupply).toBe(10.84) // 28 / (31/12), two-decimal precision (MR-1)
+    expect(block!.marketVerdict).toBe('buyers') // derived from raw 10.84
     expect(block!.source).toBe('market_stats_cache:rolling_365d')
     expect(block!.href).toBe('/communities/tetherow')
   })

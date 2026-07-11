@@ -98,6 +98,22 @@ async function leadOutOfScope(lead: { email?: string | null; fubLegacyId?: numbe
   return !isPersonInScope(slug, assignedBroker)
 }
 
+/**
+ * Broker-scope guard for the saved-search edit/delete paths, where the lead may
+ * be UNRESOLVABLE (getGuestAlertLead returns null when the alert's email / fub
+ * id no longer maps to a CRM person). A resolvable lead defers to leadOutOfScope.
+ * An unresolvable lead FAILS CLOSED for a restricted broker (default DENY, since
+ * ownership can't be verified), while owner/superuser and non-CRM admins pass.
+ */
+async function savedSearchLeadOutOfScope(
+  lead: { email?: string | null; fubLegacyId?: number | null } | null,
+): Promise<boolean> {
+  if (lead) return leadOutOfScope(lead)
+  const access = await getCrmAccess()
+  const slug = access ? scopeBroker(access) : null
+  return slug != null
+}
+
 // ── ADMIN: subscriber management + assignment ────────────────────────────────
 
 /** Manually add a subscriber by email (admin). */
@@ -207,11 +223,6 @@ export async function adminBulkEnrollNewsletterAction(input: {
 
 // ── ADMIN: saved-search assignment (broker-created, origin='broker') ──────────
 
-function stableHash(filters: Record<string, unknown>): string {
-  const sorted = Object.keys(filters).sort().map((k) => `${k}=${JSON.stringify(filters[k])}`).join('&')
-  return `broker:${sorted}`
-}
-
 /**
  * Assign ONE lead a broker-created saved search (origin='broker'). Filters are
  * normalized through the canonical model (lib/search-filters) and an EMPTY
@@ -242,11 +253,16 @@ export async function adminUpdateSavedSearchAction(formData: FormData): Promise<
   const id = String(formData.get('id') ?? '').trim()
   if (!id) return { ok: false, error: 'no_id' }
   const lead = await getGuestAlertLead(id)
-  if (lead && (await leadOutOfScope(lead))) return { ok: false, error: 'unauthorized' }
+  if (await savedSearchLeadOutOfScope(lead)) return { ok: false, error: 'unauthorized' }
   const name = String(formData.get('name') ?? 'Saved search').trim() || 'Saved search'
-  let filters: Record<string, unknown> = {}
-  try { filters = JSON.parse(String(formData.get('filters') ?? '{}')) } catch { filters = {} }
-  return updateListingAlert(id, { name, filters, filtersHash: stableHash(filters) })
+  let raw: Record<string, unknown> = {}
+  try { raw = JSON.parse(String(formData.get('filters') ?? '{}')) } catch { raw = {} }
+  // Normalize + hash through the canonical model so the (email, filters_hash)
+  // dedupe key matches every other write path. An empty filter set is refused,
+  // a search with no filters would email the whole MLS feed.
+  const filters = normalizeSavedSearchFilters(raw)
+  if (Object.keys(filters).length === 0) return { ok: false, error: 'no_filters' }
+  return updateListingAlert(id, { name, filters, filtersHash: getSavedSearchHash(filters) })
 }
 
 /** Remove a saved search by id. */
@@ -254,7 +270,7 @@ export async function adminDeleteSavedSearchAction(id: string): Promise<{ ok: bo
   const gate = await requireAdmin()
   if (!gate.ok) return { ok: false }
   const lead = await getGuestAlertLead(id)
-  if (lead && (await leadOutOfScope(lead))) return { ok: false }
+  if (await savedSearchLeadOutOfScope(lead)) return { ok: false }
   return deleteListingAlertById(id)
 }
 
@@ -262,8 +278,12 @@ export async function adminDeleteSavedSearchAction(id: string): Promise<{ ok: bo
 export async function adminBulkAssignSavedSearchAction(personIds: number[], name: string, filters: Record<string, unknown>): Promise<{ ok: boolean; assigned: number; skipped: number; error?: string }> {
   const gate = await requireAdmin()
   if (!gate.ok) return { ok: false, assigned: 0, skipped: 0, error: 'unauthorized' }
+  // Normalize + hash through the canonical model (same key as every other write
+  // path) and refuse an empty filter set, which would email the whole MLS feed.
+  const normalized = normalizeSavedSearchFilters(filters)
+  if (Object.keys(normalized).length === 0) return { ok: false, assigned: 0, skipped: 0, error: 'no_filters' }
+  const hash = getSavedSearchHash(normalized)
   const access = await getCrmAccess()
-  const hash = stableHash(filters)
   let assigned = 0
   let skipped = 0
   for (const pid of personIds.slice(0, 2000)) {
@@ -271,7 +291,7 @@ export async function adminBulkAssignSavedSearchAction(personIds: number[], name
     if (access && !(await requirePersonInScope(pid, access)).ok) { skipped++; continue }
     const contact = await getCrmPersonContact(pid)
     if (!contact) { skipped++; continue }
-    const r = await createListingAlertForLead({ email: contact.email, fubPersonId: null, name, filters, filtersHash: hash, origin: 'broker', assignedBy: gate.email, frequency: 'weekly' })
+    const r = await createListingAlertForLead({ email: contact.email, fubPersonId: null, name, filters: normalized, filtersHash: hash, origin: 'broker', assignedBy: gate.email, frequency: 'weekly' })
     if (r.ok) assigned++; else skipped++
   }
   return { ok: true, assigned, skipped }

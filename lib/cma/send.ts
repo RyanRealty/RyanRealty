@@ -256,7 +256,10 @@ export async function sendCmaToLead(slug: string): Promise<SendCmaToLeadResult> 
       title: body.subject,
       body: `CMA sent to ${ctx.clientEmail} for ${ctx.subjectAddress}.`,
       broker: crmBrokerSlug,
-      dedupeKey: `cma:sent:${slug}:${sentAt.slice(0, 10)}`,
+      // Unique per send (full ISO timestamp, not the send DATE) so a legitimate
+      // re-send is always logged as its own timeline row. A date-keyed dedupe
+      // silently swallowed the second same-day send, hiding a real delivery.
+      dedupeKey: `cma:sent:${slug}:${sentAt}`,
       payload: { slug, transport, mailbox: transport === 'gmail' ? brokerMailbox : null, gmailMessageId: gmailMessageId ?? null, resendId: resendId ?? null },
     })
   }

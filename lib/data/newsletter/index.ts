@@ -131,9 +131,50 @@ export async function unsubscribeNewsletterByToken(token: string): Promise<{ ok:
     .from(SUBS)
     .update({ status: 'unsubscribed', updated_at: new Date().toISOString() })
     .eq('unsubscribe_token', trimmed)
-    .select('id')
+    .select('id, email, crm_person_id')
   if (error) return { ok: false, matched: false }
-  return { ok: true, matched: (data?.length ?? 0) > 0 }
+  const row = (data ?? [])[0] as { id: string; email: string; crm_person_id: number | null } | undefined
+  if (!row) return { ok: true, matched: false }
+
+  // NL-M1: unsubscribing the newsletter opts the person out of marketing email
+  // GENERALLY (distinct from a single per-search alert). Flipping only the
+  // newsletter_subscribers row leaves other surfaces (CMA, market-report, one-off
+  // sends) that gate on the global suppression chokepoint unaware. Write the SAME
+  // durable global signal /api/email/unsubscribe writes, so isSuppressed /
+  // isSuppressedByEmail honor it everywhere. Best-effort: a suppression-write
+  // failure must never make the unsubscribe itself report failure (the status
+  // flip above is the load-bearing opt-out).
+  try {
+    const email = (row.email || '').trim().toLowerCase()
+    // Dynamic import mirrors how lib/crm/suppressions defers its own Meta side
+    // effect — keeps the crm/suppressions graph out of the @/lib/data barrel that
+    // the edge /api/og route pulls in.
+    const { addSuppression } = await import('@/lib/crm/suppressions')
+    if (row.crm_person_id != null) {
+      // Person-keyed (also enqueues Meta audience removal) + email value so an
+      // email-keyed check catches it too.
+      await addSuppression({
+        personId: row.crm_person_id,
+        channel: 'email',
+        reason: 'unsubscribe',
+        source: 'newsletter',
+        value: email || null,
+      })
+    } else if (email) {
+      // No linked CRM person — write an email-keyed suppression row directly
+      // (isSuppressedByEmail path 3). Raw table access is allowed inside lib/data.
+      await sb.from('crm_suppressions').insert({
+        channel: 'email',
+        reason: 'unsubscribe',
+        source: 'newsletter',
+        value: email,
+      })
+    }
+  } catch (e) {
+    console.warn('[unsubscribeNewsletterByToken] global-suppression write failed:', e instanceof Error ? e.message : String(e))
+  }
+
+  return { ok: true, matched: true }
 }
 
 /** Admin-toggle a subscriber's status (e.g. remove = unsubscribed, re-add = active). */
@@ -175,18 +216,48 @@ export async function newsletterSubscriberCounts(): Promise<{ active: number; un
   return { active: active ?? 0, unsubscribed: unsubscribed ?? 0, total: total ?? 0 }
 }
 
-/** Active recipients for a send, optionally filtered to a segment. Capped for safety. */
+/**
+ * Active recipients for a send, optionally filtered to a segment. PAGINATED over
+ * ALL active subscribers (NL-M2): the prior single-shot `.limit(5000)` silently
+ * dropped every active subscriber past the cap — a mass issue would under-send with
+ * no signal. We now page in 1,000-row ranges until the list is exhausted (this also
+ * defeats the PostgREST server-side max-rows ceiling, which a bare `.limit(5000)`
+ * can quietly truncate to). An explicit `limit` caller cap is still honored; when the
+ * hard ceiling is actually reached we log loudly rather than under-send in silence.
+ */
 export async function getActiveSubscribersForSend(args: { segment?: NewsletterSegment; limit?: number }): Promise<
   Array<Pick<NewsletterSubscriber, 'id' | 'email' | 'name' | 'crm_person_id' | 'unsubscribe_token'>>
 > {
   const sb = createServiceClient()
-  let query = sb.from(SUBS).select('id, email, name, crm_person_id, unsubscribe_token').eq('status', 'active')
-  // A targeted send filters to its segment — INCLUDING 'general'. Audience 'all'
-  // passes segment=undefined (everyone); only that reaches every subscriber. (Was
-  // leaking: 'general' previously skipped the filter and went to buyer/seller too.)
-  if (args.segment) query = query.eq('segment', args.segment)
-  const { data } = await query.limit(Math.min(10000, args.limit ?? 5000))
-  return (data ?? []) as Array<Pick<NewsletterSubscriber, 'id' | 'email' | 'name' | 'crm_person_id' | 'unsubscribe_token'>>
+  type Row = Pick<NewsletterSubscriber, 'id' | 'email' | 'name' | 'crm_person_id' | 'unsubscribe_token'>
+  const PAGE = 1000
+  // No caller cap = send to EVERYONE active. The default is a very high safety
+  // ceiling, not the old 5,000 silent truncation.
+  const hardCap = Math.max(1, args.limit ?? 200000)
+  const out: Row[] = []
+  for (let from = 0; from < hardCap; from += PAGE) {
+    const to = Math.min(from + PAGE, hardCap) - 1
+    let query = sb.from(SUBS).select('id, email, name, crm_person_id, unsubscribe_token').eq('status', 'active')
+    // A targeted send filters to its segment — INCLUDING 'general'. Audience 'all'
+    // passes segment=undefined (everyone); only that reaches every subscriber. (Was
+    // leaking: 'general' previously skipped the filter and went to buyer/seller too.)
+    if (args.segment) query = query.eq('segment', args.segment)
+    // Stable, gap-free pagination needs a deterministic order (created_at + id tiebreak).
+    const { data, error } = await query
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to)
+    if (error) throw new Error(`getActiveSubscribersForSend: ${error.message}`)
+    const rows = (data ?? []) as Row[]
+    out.push(...rows)
+    if (rows.length < PAGE) break // last page reached
+  }
+  if (out.length >= hardCap) {
+    console.error(
+      `[newsletter] getActiveSubscribersForSend hit the ${hardCap}-row ceiling — additional active subscribers were NOT loaded for this send. Raise the cap or split the audience so the issue does not under-send.`,
+    )
+  }
+  return out
 }
 
 /**

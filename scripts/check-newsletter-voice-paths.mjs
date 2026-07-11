@@ -58,13 +58,26 @@ export function runChecks({ bulkAction, oneClickAction }) {
       results.push({ id: `G-NL-4 voice-gate-called (${label})`, ok: false, detail: `${label} not found` })
       continue
     }
-    const ok = /checkNewsletterVoice\(/.test(src)
+    // A bare `checkNewsletterVoice(...)` mention is not enough — the RESULT must GATE
+    // the send. Assert the call is assigned to a variable AND that variable's failure
+    // (`if (!<var>.ok) return ...`) short-circuits before anything sends. A call whose
+    // return is ignored ships a banned word straight to a client inbox.
+    const assign = src.match(/(?:const|let|var)\s+(\w+)\s*=\s*checkNewsletterVoice\(/)
+    const called = Boolean(assign)
+    let blocks = false
+    if (assign) {
+      const v = assign[1]
+      blocks = new RegExp(`if\\s*\\(\\s*!\\s*${v}\\.ok\\s*\\)[\\s\\S]{0,120}?\\breturn\\b`).test(src)
+    }
+    const ok = called && blocks
     results.push({
       id: `G-NL-4 voice-gate-called (${label})`,
       ok,
       detail: ok
-        ? `${label} — calls checkNewsletterVoice(...) before sending`
-        : `${label} — expected a call to checkNewsletterVoice(...) (a send path that skips the brand-voice gate can ship a banned word or punctuation violation to a client inbox)`,
+        ? `${label} — checkNewsletterVoice(...) result gates the send (if (!<result>.ok) return)`
+        : !called
+          ? `${label} — expected the send to assign checkNewsletterVoice(...) to a result and act on it (a send path that skips the brand-voice gate can ship a banned word or punctuation violation to a client inbox)`
+          : `${label} — checkNewsletterVoice(...) is called but its result never blocks the send (missing an \`if (!<result>.ok) return\` guard); an ignored voice result ships a banned word to a client inbox`,
     })
   }
 

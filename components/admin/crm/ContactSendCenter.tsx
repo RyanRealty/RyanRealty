@@ -81,14 +81,30 @@ export function ContactSendCenter(props: {
     setAreas((prev) => (prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]))
   }
 
+  function resetTransient() {
+    setBpoFull(false)
+    setSubscribe(false)
+    setSubdivision('')
+    setMinPrice('')
+    setMaxPrice('')
+    setMinBeds('')
+  }
+
   function run(label: string, fn: () => Promise<{ ok: boolean; error?: string; message?: string }>) {
     startTransition(async () => {
-      const r = await fn()
-      if (r.ok) {
-        toast.success(r.message ?? `${label} sent.`)
-        setOpen(false)
-      } else {
-        toast.error(r.error ?? `${label} could not be sent.`)
+      try {
+        const r = await fn()
+        if (r.ok) {
+          toast.success(r.message ?? `${label} sent.`)
+          resetTransient()
+          setOpen(false)
+        } else {
+          toast.error(r.error ?? `${label} could not be sent.`)
+        }
+      } catch (e) {
+        // A thrown action must never fail silently and leave the dialog open,
+        // inviting a duplicate send. Surface it and keep the dialog open.
+        toast.error(e instanceof Error ? e.message : `${label} could not be sent.`)
       }
     })
   }
@@ -115,9 +131,13 @@ export function ContactSendCenter(props: {
       const r = await sendMarketReportNowAction(props.personId, fd)
       if (!r.ok) return { ok: false, error: r.error }
       if (subscribe) {
-        await setReportSubscriptionAction(props.personId, { areas, frequency: 'monthly', isActive: true })
+        const sub = await setReportSubscriptionAction(props.personId, { areas, frequency: 'monthly', isActive: true })
+        if (!sub.ok) {
+          return { ok: true, message: 'Market report sent, but the monthly subscription could not be set. Try the subscription again.' }
+        }
+        return { ok: true, message: 'Market report sent and monthly subscription set.' }
       }
-      return { ok: true, message: subscribe ? 'Market report sent and monthly subscription set.' : 'Market report sent.' }
+      return { ok: true, message: 'Market report sent.' }
     })
   }
   function sendListings() {

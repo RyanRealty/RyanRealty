@@ -51,6 +51,15 @@ function unsubUrl(token: string): string {
 }
 
 /**
+ * RFC 8058 one-click POST target (NL-H1). The List-Unsubscribe header points at the
+ * API route that processes the opt-out on POST, not the visible RSC page (which 405s
+ * the provider's one-click). The in-body footer link keeps using unsubUrl.
+ */
+function oneClickUnsubUrl(token: string): string {
+  return `${SITE_URL}/api/newsletter/unsubscribe?token=${encodeURIComponent(token)}`
+}
+
+/**
  * Resolve the "current" newsletter to send: the most recently sent letter, or
  * if none has been sent yet, the most recent draft that has a body. We send the
  * letter that represents the brand's latest message, never an empty shell.
@@ -174,7 +183,7 @@ export async function sendNewsletterToContactAction(personId: number): Promise<C
       subject: letter.subject,
       html,
       text,
-      headers: { 'List-Unsubscribe': `<${u}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+      headers: { 'List-Unsubscribe': `<${oneClickUnsubUrl(sub.unsubscribe_token as string)}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
     })
     // Per-recipient tracking row — recorded on FAILURE too (S-11), so a failed
     // one-click send still leaves an auditable attempt, exactly like the bulk path.

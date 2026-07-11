@@ -7,14 +7,19 @@
  * serves directly, so old links and new links both resolve through this one
  * URL shape.
  *
- * CMAs are unlisted client documents: noindex, no cache, but not auth-gated —
- * the lead the CMA was built for opens this link from their email, exactly
- * like the pre-existing /cmas/<slug>/cma.html files. The document itself
- * carries a meta charset tag, so the header stays bare text/html.
+ * CMAs are unlisted client documents: noindex, no cache. A public visitor with
+ * the link may open one ONLY once it is client-ready (status finalized or
+ * delivered) — the same states the send rail requires. Draft / building /
+ * archived documents carry unreviewed numbers and client PII, so they are
+ * served only to an authenticated admin (so the /admin review-page iframe can
+ * still preview a draft). Everyone else gets a 404. The document itself carries
+ * a meta charset tag, so the header stays bare text/html.
  */
 
 import { NextResponse } from 'next/server'
 import { getCmaHtmlBySlug } from '@/lib/data'
+import { getSession } from '@/app/actions/auth'
+import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 
 // Always render per-request (the handler reads the request URL and the DB row,
 // which opts the route out of static handling — revalidate 0 makes it explicit).
@@ -36,6 +41,20 @@ export async function GET(
   }
 
   if (row.html_content) {
+    // Publication gate: only client-ready CMAs are public. Draft / building /
+    // archived documents (unreviewed numbers + client PII) are admin-only, so
+    // the admin review-page iframe still previews them while a guessable slug
+    // never leaks one to the public.
+    const status = String(row.status ?? '')
+    const isPublicStatus = status === 'finalized' || status === 'delivered'
+    if (!isPublicStatus) {
+      const session = await getSession()
+      const role = await getAdminRoleForEmail(session?.user?.email ?? null)
+      const isAdmin = Boolean(role && role.role !== 'report_viewer')
+      if (!isAdmin) {
+        return NextResponse.json({ error: 'CMA not found' }, { status: 404 })
+      }
+    }
     // The stored document embeds absolute asset URLs from build time (the PDF
     // renderer needs them absolute). When the serving host differs from the
     // build-time host (dev, or a host migration), the font URL becomes

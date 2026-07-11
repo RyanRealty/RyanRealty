@@ -146,14 +146,18 @@ const CITY_SLUGS = new Set<string>([
 ])
 
 /**
- * Compute months of supply from an active count and a trailing-12-month close
- * count, per the canonical absorption formula. Pure — exported for unit tests.
+ * Raw (UNROUNDED) months of supply from an active count and a trailing-12-month
+ * close count, per the canonical absorption formula. Pure — exported for unit
+ * tests. This is the value the verdict must classify from: rounding to one
+ * decimal BEFORE classifying misbins a true 4.04 as a seller's market (4.0 <= 4)
+ * and a true 5.96 as a buyer's market (6.0 >= 6). The display figure rounds; the
+ * classification does not.
  *
  * Returns null when the inputs cannot produce a real figure (no active count,
  * no closes, or a zero close rate which would divide by zero). Never returns a
  * fabricated number to fill a gap.
  */
-export function computeMonthsOfSupply(
+export function rawMonthsOfSupply(
   activeCount: number | null | undefined,
   soldLast12mo: number | null | undefined,
 ): number | null {
@@ -164,8 +168,25 @@ export function computeMonthsOfSupply(
   if (closesPerMonth <= 0) return null
   const mos = activeCount / closesPerMonth
   if (!Number.isFinite(mos)) return null
+  return mos
+}
+
+/**
+ * Compute months of supply, rounded to one decimal — the precision every market
+ * surface renders. Pure — exported for unit tests. Wraps rawMonthsOfSupply so
+ * the display value and the classification value derive from the same figure.
+ *
+ * Returns null when the inputs cannot produce a real figure. Never returns a
+ * fabricated number to fill a gap.
+ */
+export function computeMonthsOfSupply(
+  activeCount: number | null | undefined,
+  soldLast12mo: number | null | undefined,
+): number | null {
+  const raw = rawMonthsOfSupply(activeCount, soldLast12mo)
+  if (raw == null) return null
   // One decimal — matches the precision every market surface renders.
-  return Math.round(mos * 10) / 10
+  return Math.round(raw * 10) / 10
 }
 
 /**
@@ -316,11 +337,16 @@ export function buildAreaBlock(args: {
   // base) else compute from the trailing-12mo absorption rate (resort
   // communities). For a city the live 6-month MoS therefore need not equal
   // activeListings / (soldLast12mo / 12) — see the module docstring "Two MoS
-  // bases" note. The verdict always derives from the final `monthsOfSupply`, so
-  // the verdict can never disagree with the number shown.
+  // bases" note. The verdict derives from the RAW (unrounded) figure while the
+  // number shown is rounded to one decimal, so a true 4.04 bins as balanced (not
+  // seller's) and a true 5.96 as balanced (not buyer's) — the pill can never
+  // contradict the underlying absorption rate.
   const liveMos = pulse ? toNum(pulse.monthsOfSupply) : null
-  const computedMos = computeMonthsOfSupply(activeListings, soldLast12mo)
-  const monthsOfSupply = liveMos != null ? Math.round(liveMos * 10) / 10 : computedMos
+  const rawMos = liveMos != null ? liveMos : rawMonthsOfSupply(activeListings, soldLast12mo)
+  // Keep two-decimal precision so the display can stay consistent with the
+  // raw-derived verdict at the 4.0 / 6.0 boundaries (formatMonths shows the
+  // extra decimal only in the narrow boundary band). Verdict is from rawMos.
+  const monthsOfSupply = rawMos != null ? Math.round(rawMos * 100) / 100 : null
 
   const source: MarketReportSource =
     liveMos != null || liveActive != null ? 'market_pulse_live' : 'market_stats_cache:rolling_365d'
@@ -333,7 +359,7 @@ export function buildAreaBlock(args: {
     activeListings,
     soldLast12mo,
     monthsOfSupply,
-    marketVerdict: classifyMarketVerdict(monthsOfSupply),
+    marketVerdict: classifyMarketVerdict(rawMos),
     domMedian,
     yoyPct,
     marketHealthLabel: detail.marketHealthLabel ?? null,

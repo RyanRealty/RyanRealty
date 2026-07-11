@@ -38,6 +38,8 @@ const ROOT = process.cwd()
 const PATHS = {
   sendQueue: join(ROOT, 'lib/newsletter/send-queue.ts'),
   contactNewsletter: join(ROOT, 'app/actions/contact-newsletter.ts'),
+  // The queue DAL: crash-recovery + finalize live here (NL-H2 double-send guard).
+  queue: join(ROOT, 'lib/data/newsletter/queue.ts'),
 }
 
 // Strip comments so a required token in a doc comment can't fake a pass (a gate
@@ -47,10 +49,25 @@ function safeRead(path) {
 }
 
 /**
+ * Slice out a single named function's body from comment-stripped source, so a check
+ * scopes to THAT function (e.g. requeueStaleClaims) and can't be faked by a matching
+ * token elsewhere in the file. Returns the text from the function's opening brace to
+ * the start of the next top-level `export ` (or end of file), or null if not found.
+ */
+function extractFunctionBody(src, name) {
+  if (src == null) return null
+  const start = src.search(new RegExp(`function\\s+${name}\\b`))
+  if (start < 0) return null
+  const rest = src.slice(start)
+  const nextExport = rest.slice(1).search(/\n(?:export\s+)?(?:async\s+)?function\s+\w+\b/)
+  return nextExport < 0 ? rest : rest.slice(0, nextExport + 1)
+}
+
+/**
  * Pure: run every check against already-read file contents. Returns an array
  * of { id, ok, detail } — one row per assertion, in check order.
  */
-export function runChecks({ sendQueue, contactNewsletter }) {
+export function runChecks({ sendQueue, contactNewsletter, queue }) {
   const results = []
 
   // G-NL-6a: drain re-checks suppression AND active status per recipient.
@@ -66,6 +83,52 @@ export function runChecks({ sendQueue, contactNewsletter }) {
       detail: ok
         ? "lib/newsletter/send-queue.ts — drain re-checks isSuppressedByEmail(...) and status !== 'active' per recipient"
         : `lib/newsletter/send-queue.ts — missing ${!hasSuppressionCheck ? 'isSuppressedByEmail(...) call' : ''}${!hasSuppressionCheck && !hasActiveCheck ? ' and ' : ''}${!hasActiveCheck ? "status !== 'active' check" : ''} (a recipient who unsubscribed/bounced after enrollment could still get mailed)`,
+    })
+  }
+
+  // G-NL-6c: crash-recovery keys on the CLAIM time, not the enqueue time (NL-H2).
+  // requeueStaleClaims must reset stuck 'sending' rows by comparing claimed_at (when
+  // the row was claimed) against the cutoff — NOT created_at (the row's enqueue time,
+  // which is always old, so EVERY unfinalized row requeued → the recipient double-sent).
+  if (queue == null) {
+    results.push({ id: 'G-NL-6 requeue-keys-claimed-at', ok: false, detail: 'lib/data/newsletter/queue.ts not found' })
+  } else {
+    const body = extractFunctionBody(queue, 'requeueStaleClaims')
+    const keysClaimedAt = body != null && /\.lt\(\s*['"]claimed_at['"]/.test(body)
+    const stillKeysCreatedAt = body != null && /\.lt\(\s*['"]created_at['"]/.test(body)
+    const ok = keysClaimedAt && !stillKeysCreatedAt
+    results.push({
+      id: 'G-NL-6 requeue-keys-claimed-at',
+      ok,
+      detail:
+        body == null
+          ? 'lib/data/newsletter/queue.ts — requeueStaleClaims(...) not found'
+          : ok
+            ? "lib/data/newsletter/queue.ts — requeueStaleClaims keys crash-recovery on .lt('claimed_at', cutoff)"
+            : `lib/data/newsletter/queue.ts — requeueStaleClaims must key on .lt('claimed_at', cutoff)${stillKeysCreatedAt ? " and must NOT key on .lt('created_at', ...) (enqueue time is always old → every stuck row requeues → double-send)" : ' (claimed_at filter missing)'}`,
+    })
+  }
+
+  // G-NL-6d: finalizeRecipient must CHECK its update error, not swallow it (NL-H2).
+  // A swallowed error leaves the row in 'sending'; the stale-claim recovery then
+  // requeues it and the recipient is emailed a second time. The finalize must
+  // destructure { error } and act on it (log + raise).
+  if (queue == null) {
+    results.push({ id: 'G-NL-6 finalize-checks-error', ok: false, detail: 'lib/data/newsletter/queue.ts not found' })
+  } else {
+    const body = extractFunctionBody(queue, 'finalizeRecipient')
+    const destructuresError = body != null && /const\s*\{\s*error\s*\}\s*=\s*await\s+sb/.test(body)
+    const actsOnError = body != null && /if\s*\(\s*error\s*\)/.test(body) && /(throw|console\.error)/.test(body)
+    const ok = destructuresError && actsOnError
+    results.push({
+      id: 'G-NL-6 finalize-checks-error',
+      ok,
+      detail:
+        body == null
+          ? 'lib/data/newsletter/queue.ts — finalizeRecipient(...) not found'
+          : ok
+            ? 'lib/data/newsletter/queue.ts — finalizeRecipient checks its update error and raises/logs on failure'
+            : `lib/data/newsletter/queue.ts — finalizeRecipient must ${!destructuresError ? 'destructure { error } from the update' : ''}${!destructuresError && !actsOnError ? ' and ' : ''}${!actsOnError ? 'guard on it (if (error) → throw/console.error)' : ''} (a swallowed finalize error strands the row in \'sending\' → double-send on requeue)`,
     })
   }
 
@@ -92,6 +155,7 @@ function loadInputs() {
   return {
     sendQueue: safeRead(PATHS.sendQueue),
     contactNewsletter: safeRead(PATHS.contactNewsletter),
+    queue: safeRead(PATHS.queue),
   }
 }
 

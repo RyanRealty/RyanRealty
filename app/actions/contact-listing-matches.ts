@@ -87,6 +87,10 @@ export async function sendListingMatchesForContactAction(
     })
     if (!attach.ok) return { ok: false, error: `Could not save the search: ${attach.error ?? 'unknown error'}` }
 
+    // Everything past this point can fail after the saved search is already
+    // created. A throw here must not read as "nothing happened" — tell the
+    // broker the search is set up and only the send failed.
+    try {
     const rows = await getListingAlertsForLead({ crmPersonId: personId, emails: [target.email] })
     const alertRow = rows.find((r) => r.filters_hash === filtersHash) ?? null
 
@@ -195,6 +199,12 @@ export async function sendListingMatchesForContactAction(
       ok: true,
       sentCount: listings.length,
       message: `Saved search "${name}" set up, and ${listings.length} current match${listings.length === 1 ? '' : 'es'} emailed to ${target.email}.`,
+    }
+    } catch (e) {
+      return {
+        ok: false,
+        error: `Saved search "${name}" set up, but sending the matches failed: ${e instanceof Error ? e.message : String(e)}`,
+      }
     }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Unexpected error sending listing matches' }

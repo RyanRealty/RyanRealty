@@ -144,7 +144,7 @@ function coverPage(a: RenderCmaArgs): PageDef {
   <div class="cover-label">${clientLine}</div>
   <h1 class="cover-title">${esc(a.subject.streetAddress)}</h1>
   <div class="cover-sub">${esc(a.subject.city)}, Oregon ${esc(a.subject.postalCode ?? '')}${a.subject.subdivision ? ` · ${esc(a.subject.subdivision)}` : ''}</div>
-  ${hero.src ? `<img class="hero-photo" src="${hero.src}" alt="${esc(a.subject.streetAddress)}" />` : '<div class="hero-photo"></div>'}
+  ${hero.src ? `<img class="hero-photo" src="${esc(hero.src)}" alt="${esc(a.subject.streetAddress)}" />` : '<div class="hero-photo"></div>'}
   <div class="hero-caption">${esc(hero.caption)}</div>
   ${subjectStatStrip(a.subject)}
   <div class="value-block">
@@ -221,7 +221,7 @@ function compCardsAndTablePage(a: RenderCmaArgs): PageDef {
       const ph = sparkPhotoAt(c.photoUrl, '640x480')
       return `
     <div class="comp-card">
-      ${ph ? `<img class="ph" src="${ph}" alt="${esc(c.address)}" />` : '<div class="ph-missing">No MLS photo on file</div>'}
+      ${ph ? `<img class="ph" src="${esc(ph)}" alt="${esc(c.address)}" />` : '<div class="ph-missing">No MLS photo on file</div>'}
       <div class="body">
         <div class="addr">${esc(c.address)}</div>
         <div class="stats">${int(c.beds)} bd · ${dec(c.baths, 0)} ba · ${int(c.sqft)} sf${c.lotAcres != null ? ` · ${dec(c.lotAcres, 2)} ac` : ''}${c.yearBuilt ? ` · ${c.yearBuilt}` : ''}</div>
@@ -334,7 +334,7 @@ function compFlyerPage(a: RenderCmaArgs, comp: CmaAdjustedComp, index: number): 
   <div class="flyer-badge">Closed ${monthYear(comp.closeDate)}${comp.daysToOffer != null ? ` · ${int(comp.daysToOffer)}d to offer` : ''}</div>
   <h1 class="flyer-title">${esc(comp.address)}</h1>
   <div class="flyer-sub">${esc(comp.city)}, Oregon${comp.subdivision ? ` · ${esc(comp.subdivision)}` : ''}${comp.mlsNumber ? ` · MLS ${esc(comp.mlsNumber)}` : ''}</div>
-  ${hero ? `<img class="flyer-hero" src="${hero}" alt="${esc(comp.address)}" />` : '<div class="flyer-hero"></div>'}
+  ${hero ? `<img class="flyer-hero" src="${esc(hero)}" alt="${esc(comp.address)}" />` : '<div class="flyer-hero"></div>'}
   <div class="flyer-stats">
     <div class="s"><div class="l">Beds</div><div class="v">${int(comp.beds)}</div></div>
     <div class="s"><div class="l">Baths</div><div class="v">${dec(comp.baths, 0)}</div></div>
@@ -383,7 +383,7 @@ function marketPage(a: RenderCmaArgs): PageDef | null {
   <h3 class="subhead">${esc(verdictLabel)}</h3>
   <p>${
     m.monthsOfSupply != null
-      ? `${esc(m.geoLabel)} is carrying ${dec(m.monthsOfSupply, 1)} months of supply, with ${int(m.activeCount)} active single-family listings on the market right now against the pace of closed sales over the last six months. The standard thresholds read 4 months or less as a seller's market, 4 to 6 as balanced, and 6 or more as a buyer's market.`
+      ? `${esc(m.geoLabel)} is carrying ${dec(m.monthsOfSupply, 1)} months of supply, with ${int(m.activeCount)} active single-family listings on the market right now against the recent pace of closed sales. The standard thresholds read 4 months or less as a seller's market, 4 to 6 as balanced, and 6 or more as a buyer's market.`
       : 'Live inventory was unavailable at build time, so no supply verdict is stated.'
   }</p>
   <p>${
@@ -476,7 +476,7 @@ function disclosurePage(a: RenderCmaArgs): PageDef {
   <p><strong>Licensee interest.</strong> Neither ${esc(b.displayName)} nor Ryan Realty holds any existing or contemplated interest in the subject property. Any such interest, should one arise, will be disclosed in writing.</p>
   <p><strong>Not an appraisal.</strong> This competitive market analysis is not intended as an appraisal. If an appraisal is desired, the services of a competent professional licensed appraiser should be obtained. Unless the preparing licensee is also licensed by the Oregon Appraiser Certification and Licensure Board, this report is not intended to meet the requirements set out in the Uniform Standards of Professional Appraisal Practice. Equal Housing Opportunity.</p>
   <div class="signature-page">
-    ${headshot ? `<img class="portrait" src="${headshot}" alt="${esc(b.displayName)}" />` : '<div></div>'}
+    ${headshot ? `<img class="portrait" src="${esc(headshot)}" alt="${esc(b.displayName)}" />` : '<div></div>'}
     <div class="sig-content">
       <div class="sig-name">${esc(b.displayName)}</div>
       <div class="sig-printed">${esc(b.displayName)}</div>

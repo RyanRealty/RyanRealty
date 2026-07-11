@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-07-10T12:03:15.621Z
+**Generated:** 2026-07-11T12:50:54.492Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -216,7 +216,7 @@ Companion files:
 
 **Tables:** `listings`, `market_stats_cache`, `market_pulse_live`, `brokers`
 
-**Selected columns:** `geo_type`, `geo_slug`, `geo_label`, `period_start`, `period_end`, `sold_count`, `median_sale_price`, `median_dom`, `median_ppsf`, `median_price_per_sqft_closed`, `avg_sale_to_list_ratio`, `yoy_median_price_delta_pct`, `end_of_period_inventory`, `methodology_version`, `computed_at`, `active_count`, `pending_count`, `median_list_price`, `updated_at`, `id`, `slug`, `display_name`, `title`, `license_number`, `email`, `phone`, `photo_url`
+**Selected columns:** `geo_type`, `geo_slug`, `geo_label`, `period_start`, `period_end`, `sold_count`, `median_sale_price`, `median_dom`, `median_ppsf`, `median_price_per_sqft_closed`, `avg_sale_to_list_ratio`, `yoy_median_price_delta_pct`, `end_of_period_inventory`, `methodology_version`, `computed_at`, `active_count`, `pending_count`, `median_list_price`, `months_of_supply`, `updated_at`, `id`, `slug`, `display_name`, `title`, `license_number`, `email`, `phone`, `photo_url`
 
 ---
 
@@ -1120,7 +1120,7 @@ Companion files:
 
 ### `lib/data/crm/getMarketReportData.ts`
 
-**Exports:** `computeMonthsOfSupply`, `classifyMarketVerdict`, `resolveAreaGeoType`, `monthLabel`, `buildTrendSummary`, `buildAreaBlock`, `getMarketReportData`
+**Exports:** `rawMonthsOfSupply`, `computeMonthsOfSupply`, `classifyMarketVerdict`, `resolveAreaGeoType`, `monthLabel`, `buildTrendSummary`, `buildAreaBlock`, `getMarketReportData`
 
 ---
 
@@ -1702,7 +1702,7 @@ Companion files:
 
 **Tables:** `crm_people`
 
-**Selected columns:** `id`
+**Selected columns:** `id`, `is_active`
 
 ---
 
@@ -2084,9 +2084,9 @@ Companion files:
 
 **Exports:** `subscribeToNewsletter`, `unsubscribeNewsletterByToken`, `setSubscriberStatus`, `listNewsletterSubscribers`, `newsletterSubscriberCounts`, `getActiveSubscribersForSend`, `setSubscriberStatusByEmail`, `markSubscribersSent`, `createNewsletterDraft`, `updateNewsletter`, `setNewsletterCitations`, `listNewsletters`, `getNewsletter`, `deleteNewsletterDraft`, `recordRecipientSend`, `recordNewsletterEvent`, `getNewsletterStats`, `getNewsletterRecipients`, `getNewsletterMembershipForLead`, `getCrmPersonContact`
 
-**Tables:** `crm_people`
+**Tables:** `crm_suppressions`, `crm_people`
 
-**Selected columns:** `id`, `status`, `email`, `name`, `crm_person_id`, `unsubscribe_token`, `open_count`, `click_count`, `clicked_links`, `first_opened_at`, `first_clicked_at`, `newsletter_id`, `last_opened_at`, `last_clicked_at`, `segment`, `emails`
+**Selected columns:** `id`, `status`, `email`, `crm_person_id`, `name`, `unsubscribe_token`, `open_count`, `click_count`, `clicked_links`, `first_opened_at`, `first_clicked_at`, `newsletter_id`, `last_opened_at`, `last_clicked_at`, `segment`, `emails`
 
 ---
 
@@ -2362,7 +2362,7 @@ Companion files:
 | `crm_sequence_folders` | `getCrmSequenceFolders()`, `getCrmAutomationsAdminList()` <br /> `lib/data/crm/getAutomationsAdmin.ts` |
 | `crm_sequences` | `getCrmSequenceFolders()`, `getCrmAutomationsAdminList()`, `getContactActionPlanProgress()`, `getContactMemberships()`, `setContactListingAlertsPaused()`, `getCrmSequenceForEdit()`, `CRM_TEMPLATES_ADMIN_TAG()`, `tallyTemplateUsage()`, `tallyTemplateUsedBy()`, `computeEmailMetrics()`, `computeTemplatePerf()`, `computeTextMetrics()`, `mapTemplateRow()`, `getCrmTemplatesAdmin()`, `groupEnrollmentStatus()`, `buildWorkflowAnalytics()`, `getWorkflowAnalytics()`, `stepEmailKey()`, `tallyStepEmailSends()`, `tallyCurrentStep()`, `buildStepAnalytics()`, `getWorkflowStepAnalytics()` <br /> `lib/data/crm/getAutomationsAdmin.ts` · `lib/data/crm/getContactActionPlanProgress.ts` · `lib/data/crm/getContactMemberships.ts` · `lib/data/crm/getCrmSequenceForEdit.ts` · `lib/data/crm/getCrmTemplatesAdmin.ts` · `lib/data/crm/getWorkflowAnalytics.ts` |
 | `crm_stages` | `getCrmStages()` <br /> `lib/data/crm/getCrmStages.ts` |
-| `crm_suppressions` | `AUDIENCE_EXCLUDED_TAG_PATTERNS()`, `isAudienceExcludedByTag()`, `getAudienceEligiblePeople()`, `CRM_SUPPRESSIONS_TAG()`, `COMPLIANCE_REASON_MARKERS()`, `isComplianceReason()`, `normalizeSuppressionChannel()`, `clampLimit()`, `clampOffset()`, `resolveSuppressionValue()`, `buildSuppressionRows()`, `getCrmSuppressions()`, `getPersonSuppressions()`, `getSuppressionCounts()`, `getSuppressionSignals()`, `GPC_SUPPRESSION_REASON()`, `GPC_SUPPRESSION_CHANNEL()`, `recordGpcSuppression()` <br /> `lib/data/crm/getAudienceEligiblePeople.ts` · `lib/data/crm/getCrmSuppressions.ts` · `lib/data/crm/getPersonSuppressions.ts` · `lib/data/crm/getSuppressionCounts.ts` · `lib/data/crm/getSuppressionSignals.ts` · `lib/data/crm/recordGpcSuppression.ts` |
+| `crm_suppressions` | `AUDIENCE_EXCLUDED_TAG_PATTERNS()`, `isAudienceExcludedByTag()`, `getAudienceEligiblePeople()`, `CRM_SUPPRESSIONS_TAG()`, `COMPLIANCE_REASON_MARKERS()`, `isComplianceReason()`, `normalizeSuppressionChannel()`, `clampLimit()`, `clampOffset()`, `resolveSuppressionValue()`, `buildSuppressionRows()`, `getCrmSuppressions()`, `getPersonSuppressions()`, `getSuppressionCounts()`, `getSuppressionSignals()`, `GPC_SUPPRESSION_REASON()`, `GPC_SUPPRESSION_CHANNEL()`, `recordGpcSuppression()`, `subscribeToNewsletter()`, `unsubscribeNewsletterByToken()`, `setSubscriberStatus()`, `listNewsletterSubscribers()`, `newsletterSubscriberCounts()`, `getActiveSubscribersForSend()`, `setSubscriberStatusByEmail()`, `markSubscribersSent()`, `createNewsletterDraft()`, `updateNewsletter()`, `setNewsletterCitations()`, `listNewsletters()`, `getNewsletter()`, `deleteNewsletterDraft()`, `recordRecipientSend()`, `recordNewsletterEvent()`, `getNewsletterStats()`, `getNewsletterRecipients()`, `getNewsletterMembershipForLead()`, `getCrmPersonContact()` <br /> `lib/data/crm/getAudienceEligiblePeople.ts` · `lib/data/crm/getCrmSuppressions.ts` · `lib/data/crm/getPersonSuppressions.ts` · `lib/data/crm/getSuppressionCounts.ts` · `lib/data/crm/getSuppressionSignals.ts` · `lib/data/crm/recordGpcSuppression.ts` · `lib/data/newsletter/index.ts` |
 | `crm_tags` | `CRM_TAGS_TAG()`, `tallyTagUsage()`, `getCrmTags()`, `TIMELINE_TAB_KINDS()`, `getPersonDetailExtras()` <br /> `lib/data/crm/getCrmTags.ts` · `lib/data/crm/getPersonDetailExtras.ts` |
 | `crm_task_types` | `taskQueueBounds()`, `classifyTaskView()`, `getTaskQueue()`, `CRM_TASK_TYPES_TAG()`, `getCrmTaskTypes()` <br /> `lib/data/crm/getTaskQueue.ts` |
 | `crm_tasks` | `decideNativeLeadAction()`, `nativeLeadName()`, `ensureNativeLead()`, `cleanTags()`, `enrichNativeLead()`, `createNativeTask()`, `resolveDateRange()`, `getAgentActivityReport()`, `CRM_APPOINTMENT_TYPES_TAG()`, `CRM_APPOINTMENT_OUTCOMES_TAG()`, `getAppointments()`, `getAppointmentsForPerson()`, `getCalendarExtras()`, `getCalendarContactOptions()`, `getPersonNamesByIds()`, `getAppointmentTypes()`, `getAppointmentOutcomes()`, `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `getLeadSourcesReport()`, `getOverviewReport()`, `taskQueueBounds()`, `classifyTaskView()`, `getTaskQueue()`, `CRM_TASK_TYPES_TAG()`, `getCrmTaskTypes()` <br /> `lib/data/crm/ensureNativeLead.ts` · `lib/data/crm/getAgentActivityReport.ts` · `lib/data/crm/getAppointments.ts` · `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getLeadSourcesReport.ts` · `lib/data/crm/getOverviewReport.ts` · `lib/data/crm/getTaskQueue.ts` |

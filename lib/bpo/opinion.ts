@@ -65,19 +65,29 @@ export function deriveOpinion(
   // proven it will trade even at its current ask. The opinion does not float
   // above an actively-marketed, unsold list price, no matter what the
   // size-adjusted comps imply on their own.
-  if (history.currentIsActive && history.currentListPrice && opinionValue > history.currentListPrice) {
+  // The ceiling only applies when the current list sits within or above the
+  // comp-supported floor. A list below the comp floor (or a nominal sub-$5,000
+  // ask) must never drag the opinion beneath what the comps support, and
+  // round5000 of a tiny list would otherwise collapse the value toward $0.
+  if (
+    history.currentIsActive &&
+    history.currentListPrice &&
+    opinionValue > history.currentListPrice &&
+    history.currentListPrice >= pricing.conservative
+  ) {
     const medianDom = market?.medianDom ?? null
     const stale =
       (history.currentDaysOnMarket != null && medianDom != null && history.currentDaysOnMarket >= medianDom) ||
       history.failedAttemptsCount >= 1
     if (stale) {
+      const ceilingValue = Math.max(round5000(history.currentListPrice), pricing.conservative)
       reasoning.push(
         `The home is listed today at ${usd(history.currentListPrice)} and has not sold` +
           `${history.currentDaysOnMarket != null ? ` in ${history.currentDaysOnMarket} days on market` : ''}` +
           `${history.failedAttemptsCount >= 1 ? `, after ${history.failedAttemptsCount} prior attempt${history.failedAttemptsCount > 1 ? 's' : ''} failed at higher prices` : ''}. ` +
-          `An opinion above a price the market has already had the chance to meet is not supportable, so the opinion holds at the current list rather than the ${usd(compAnchor)} the size-adjusted comps alone would imply.`,
+          `An opinion above a price the market has already had the chance to meet is not supportable, so the opinion holds at ${usd(ceilingValue)} rather than the ${usd(compAnchor)} the size-adjusted comps alone would imply, and never below the ${usd(pricing.conservative)} the comparable sales still support.`,
       )
-      opinionValue = round5000(history.currentListPrice)
+      opinionValue = ceilingValue
     }
   }
 
@@ -101,8 +111,21 @@ export function deriveOpinion(
   void ratioBase
 
   // Confidence carries the comp engine's read; a thin history adds no lift.
-  const confidence = pricing.confidence
-  const confidenceReason = pricing.confidenceReason
+  // When history pressure, the active-listing ceiling, or a broker override has
+  // moved the opinion meaningfully off the raw comp anchor, the number is no
+  // longer a clean read of the comps, so drop confidence one notch and say so.
+  let confidence = pricing.confidence
+  let confidenceReason = pricing.confidenceReason
+  const anchorDivergence = compAnchor > 0 ? Math.abs(opinionValue - compAnchor) / compAnchor : 0
+  if (anchorDivergence > 0.05) {
+    const downgrade: Record<BpoOpinion['confidence'], BpoOpinion['confidence']> = {
+      High: 'Moderate',
+      Moderate: 'Supportable',
+      Supportable: 'Supportable',
+    }
+    confidence = downgrade[confidence]
+    confidenceReason = `${confidenceReason} The opinion diverges ${(anchorDivergence * 100).toFixed(1)}% from the raw comparable reconciliation, so we hold it one notch lower on confidence.`
+  }
 
   const vsCurrentListPct =
     history.currentIsActive && history.currentListPrice

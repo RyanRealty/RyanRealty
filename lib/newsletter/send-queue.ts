@@ -62,6 +62,16 @@ function unsubUrl(token: string): string {
   return `${SITE_URL}/newsletter/unsubscribe?token=${encodeURIComponent(token)}`
 }
 
+/**
+ * RFC 8058 one-click POST target (NL-H1). The List-Unsubscribe header points here —
+ * the API route that actually processes the opt-out on POST — NOT at the visible RSC
+ * page (which has no POST handler and 405s the provider's one-click). The human-facing
+ * footer link keeps using unsubUrl (the confirm page).
+ */
+function oneClickUnsubUrl(token: string): string {
+  return `${SITE_URL}/api/newsletter/unsubscribe?token=${encodeURIComponent(token)}`
+}
+
 type BrokerIdentity = { slug: string; name: string; email: string | null; phone: string | null; title: string | null }
 
 /**
@@ -416,7 +426,7 @@ export async function drainNewsletter(newsletterId: string, sendStartedAt: strin
         subject: letter.subject,
         html: rendered.html,
         text: rendered.text,
-        headers: { 'List-Unsubscribe': `<${unsubUrl(token)}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+        headers: { 'List-Unsubscribe': `<${oneClickUnsubUrl(token)}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
       })
       await finalizeRecipient(c.id, res.error ? 'failed' : 'sent', res.id ?? null)
       if (res.error) report.failed++

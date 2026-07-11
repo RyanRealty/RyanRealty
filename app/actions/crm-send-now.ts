@@ -16,6 +16,7 @@ import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { requireCrmAccess, requirePersonInScope, type CrmActionResult } from '@/app/actions/crm'
 import { getMarketReportData } from '@/lib/data/crm/getMarketReportData'
+import { buildMarketReportAreas } from '@/lib/data/crm/getContactReportSubscriptions'
 import { renderMarketReportEmail } from '@/lib/crm/market-report-email'
 import { sendOneSubscriber } from '@/lib/crm/market-report-send'
 import { buildUnsubscribeUrl } from '@/lib/email/unsubscribe-token'
@@ -31,7 +32,30 @@ export async function sendMarketReportNowAction(
   const scoped = await requirePersonInScope(pid, access.access)
   if (!scoped.ok) return scoped
 
-  const areaSlugs = formData.getAll('areas').map((a) => String(a).trim()).filter(Boolean)
+  const rawSlugs = formData.getAll('areas').map((a) => String(a).trim()).filter(Boolean)
+  if (rawSlugs.length === 0) return { ok: false, error: 'Pick at least one area first' }
+
+  // Validate + de-dupe against the registry — the same valid-slug set
+  // setReportSubscriptionAction's sanitizeAreas uses. A bogus slug (stale UI or
+  // typo) would fail closed downstream (getMarketReportData omits it, yielding an
+  // empty report), so reject it up front with a clear message rather than
+  // silently sending nothing.
+  const validSlugs = new Set(buildMarketReportAreas().map((a) => a.slug))
+  const seen = new Set<string>()
+  const areaSlugs: string[] = []
+  const invalidSlugs: string[] = []
+  for (const slug of rawSlugs) {
+    if (!validSlugs.has(slug)) {
+      invalidSlugs.push(slug)
+      continue
+    }
+    if (seen.has(slug)) continue
+    seen.add(slug)
+    areaSlugs.push(slug)
+  }
+  if (invalidSlugs.length > 0) {
+    return { ok: false, error: `Unknown area${invalidSlugs.length > 1 ? 's' : ''}: ${invalidSlugs.join(', ')}` }
+  }
   if (areaSlugs.length === 0) return { ok: false, error: 'Pick at least one area first' }
 
   const sb = createServiceClient()

@@ -20,6 +20,9 @@ let people: PersonRow[] = []
 let stageRows: Array<{ key: string; label: string }> = []
 let stageReadError: string | null = null
 let peopleReadError: string | null = null
+// SS-3 resurrection pre-check: null = no prior opt-out (row is created active);
+// { is_active: false } simulates a search the lead unsubscribed (stays muted).
+let alertPreCheckRow: { is_active: boolean } | null = null
 
 const updates: Array<{ table: string; id: number; patch: Record<string, unknown> }> = []
 const inserts: Array<{ table: string; row: Record<string, unknown> }> = []
@@ -42,11 +45,24 @@ function makeSb() {
           return Promise.resolve({ data: [], error: null })
         }
         q.eq = () => {
-          if (table === 'crm_stages') {
-            if (stageReadError) return Promise.resolve({ data: null, error: { message: stageReadError } })
-            return Promise.resolve({ data: stageRows, error: null })
+          // Awaitable for single-eq reads (crm_stages), AND chainable for the
+          // listing_alerts resurrection pre-check
+          // (.select('is_active').eq(email).eq(filters_hash).maybeSingle()).
+          const settle = () => {
+            if (table === 'crm_stages') {
+              if (stageReadError) return { data: null, error: { message: stageReadError } }
+              return { data: stageRows, error: null }
+            }
+            return { data: [], error: null }
           }
-          return Promise.resolve({ data: [], error: null })
+          const preCheck = () => Promise.resolve({ data: alertPreCheckRow, error: null })
+          return {
+            // listing_alerts pre-check: .eq(email).eq(filters_hash).limit(1).maybeSingle()
+            eq: () => ({ limit: () => ({ maybeSingle: preCheck }), maybeSingle: preCheck }),
+            limit: () => ({ maybeSingle: preCheck }),
+            maybeSingle: preCheck,
+            then: (resolve: (v: unknown) => void) => resolve(settle()),
+          }
         }
         return q
       }
@@ -106,6 +122,7 @@ beforeEach(() => {
   stageRows = []
   stageReadError = null
   peopleReadError = null
+  alertPreCheckRow = null
   updates.length = 0
   inserts.length = 0
   upserts.length = 0

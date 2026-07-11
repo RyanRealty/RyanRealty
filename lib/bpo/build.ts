@@ -197,7 +197,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
             period: `${market.periodStart}..${market.periodEnd}`,
             methodology_version: market.methodologyVersion,
             months_of_supply: market.monthsOfSupply,
-            months_of_supply_formula: 'active_count / (sold_count_365 / 12)',
+            months_of_supply_formula: market.mosFormula,
             median_dom: market.medianDom,
             yoy_median_price_delta_pct: market.yoyMedianPriceDeltaPct,
           }
@@ -222,6 +222,8 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
         recommended_list: offer.recommendedList,
         expected_offer_low: offer.expectedOfferLow,
         expected_offer_high: offer.expectedOfferHigh,
+        // Drives expectedOfferLow in seller mode (offer.ts lowFactor).
+        sale_to_list_ratio: market?.saleToListRatio ?? null,
       },
       disclosure: 'Broker price opinion (ORS 696.010 / 696.290), not an appraisal (ORS ch. 674).',
     }

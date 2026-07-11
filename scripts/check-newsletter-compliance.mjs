@@ -48,7 +48,12 @@ const PATHS = {
   contactNewsletter: join(ROOT, 'app/actions/contact-newsletter.ts'),
   // Bulk enroll + bulk one-off live here; both must refuse to resurrect an opt-out.
   newsletterActions: join(ROOT, 'app/actions/newsletter.ts'),
+  // RFC 8058 one-click POST endpoint the List-Unsubscribe header must point at.
+  oneClickRoute: join(ROOT, 'app/api/newsletter/unsubscribe/route.ts'),
 }
+
+/** The path the List-Unsubscribe header must target (the real one-click POST route). */
+const ONE_CLICK_ROUTE_PATH = '/api/newsletter/unsubscribe'
 
 /** A real street-number-first address, e.g. "115 NW Oregon Ave". Placeholder/empty fails. */
 const STREET_NUMBER_RE = /\d+\s+\S/
@@ -64,7 +69,7 @@ function safeRead(path) {
  * Pure: run every check against already-read file contents. Returns an array
  * of { id, ok, detail } — one row per assertion, in check order.
  */
-export function runChecks({ prepare, shell, sendQueue, contactNewsletter, newsletterActions }) {
+export function runChecks({ prepare, shell, sendQueue, contactNewsletter, newsletterActions, oneClickRoute }) {
   const results = []
 
   // G-NL-1a: BROKERAGE_POSTAL_ADDRESS defined with a real street-number fallback.
@@ -109,7 +114,33 @@ export function runChecks({ prepare, shell, sendQueue, contactNewsletter, newsle
     })
   }
 
-  // G-NL-2: RFC 8058 headers on both newsletter send paths (bulk drain + one-click).
+  // G-NL-2a: a REAL one-click POST endpoint exists. The List-Unsubscribe header is
+  // useless if the URL it names has no POST handler — the provider's RFC 8058
+  // one-click POST hits a 405 and the opt-out silently never happens (NL-H1). Assert
+  // app/api/newsletter/unsubscribe/route.ts exports BOTH a POST (the one-click target)
+  // and a GET (the human redirect to the visible confirm page).
+  if (oneClickRoute == null) {
+    results.push({
+      id: 'G-NL-2 one-click-endpoint',
+      ok: false,
+      detail: `app/api/newsletter/unsubscribe/route.ts not found — the List-Unsubscribe header would point at a page with no POST handler (405s the provider one-click)`,
+    })
+  } else {
+    const hasPostHandler = /export\s+(?:async\s+)?function\s+POST\b/.test(oneClickRoute)
+    const hasGetHandler = /export\s+(?:async\s+)?function\s+GET\b/.test(oneClickRoute)
+    const ok = hasPostHandler && hasGetHandler
+    results.push({
+      id: 'G-NL-2 one-click-endpoint',
+      ok,
+      detail: ok
+        ? 'app/api/newsletter/unsubscribe/route.ts — exports a POST (one-click target) and GET (human redirect)'
+        : `app/api/newsletter/unsubscribe/route.ts — missing ${!hasPostHandler ? 'a POST handler' : ''}${!hasPostHandler && !hasGetHandler ? ' and ' : ''}${!hasGetHandler ? 'a GET handler' : ''} (RFC 8058 one-click POST needs a real 2xx endpoint)`,
+    })
+  }
+
+  // G-NL-2b: RFC 8058 headers on both send paths AND the header must POINT AT the
+  // real one-click POST endpoint (not the visible RSC page). Header strings alone
+  // aren't enough — before NL-H1 they existed but targeted a 405ing page.
   for (const [label, src] of [
     ['lib/newsletter/send-queue.ts', sendQueue],
     ['app/actions/contact-newsletter.ts', contactNewsletter],
@@ -120,13 +151,14 @@ export function runChecks({ prepare, shell, sendQueue, contactNewsletter, newsle
     }
     const hasListUnsub = /List-Unsubscribe/.test(src)
     const hasPost = /List-Unsubscribe-Post/.test(src)
-    const ok = hasListUnsub && hasPost
+    const pointsAtEndpoint = src.includes(ONE_CLICK_ROUTE_PATH)
+    const ok = hasListUnsub && hasPost && pointsAtEndpoint
     results.push({
       id: `G-NL-2 rfc8058 (${label})`,
       ok,
       detail: ok
-        ? `${label} — sets List-Unsubscribe + List-Unsubscribe-Post headers`
-        : `${label} — missing ${!hasListUnsub ? 'List-Unsubscribe' : ''}${!hasListUnsub && !hasPost ? ' and ' : ''}${!hasPost ? 'List-Unsubscribe-Post' : ''} header(s)`,
+        ? `${label} — sets List-Unsubscribe + List-Unsubscribe-Post headers pointing at ${ONE_CLICK_ROUTE_PATH}`
+        : `${label} — missing ${!hasListUnsub ? 'List-Unsubscribe' : ''}${!hasListUnsub && !hasPost ? ' and ' : ''}${!hasPost ? 'List-Unsubscribe-Post' : ''}${(!hasListUnsub || !hasPost) && !pointsAtEndpoint ? ' and ' : ''}${!pointsAtEndpoint ? `a List-Unsubscribe URL targeting ${ONE_CLICK_ROUTE_PATH} (the header must hit the real one-click POST route, not the RSC page)` : ''}`,
     })
   }
 
@@ -179,6 +211,7 @@ function loadInputs() {
     sendQueue: safeRead(PATHS.sendQueue),
     contactNewsletter: safeRead(PATHS.contactNewsletter),
     newsletterActions: safeRead(PATHS.newsletterActions),
+    oneClickRoute: safeRead(PATHS.oneClickRoute),
   }
 }
 

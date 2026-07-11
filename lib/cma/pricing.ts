@@ -26,6 +26,15 @@ import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject
 const MS_PER_MONTH = 30.44 * 86_400_000
 const SIZE_ADJ_FACTOR = 0.5
 const IMPROVEMENT_RECOVERY = 0.65
+// Safety rail on the linear time adjustment: a high YoY rate on an old comp
+// (e.g. +15% YoY x 24 months = +30% on one line) can single-handedly distort
+// the estimate. Cap each comp's market-conditions adjustment at 20% of its
+// own close price in either direction. Conservative and backward-compatible
+// (only clamps the extreme long-lever comps; the BPO engine shares this).
+const TIME_ADJ_CAP_FRACTION = 0.2
+
+/** Carries an internal cap flag alongside the public adjusted-comp shape. */
+type AdjustedCompInternal = CmaAdjustedComp & { _timeAdjCapped?: boolean }
 
 function round1000(n: number): number {
   return Math.round(n / 1000) * 1000
@@ -62,8 +71,11 @@ export function adjustComps(
   const now = Date.now()
   return comps.map((comp) => {
     const monthsSinceClose = Math.max(0, (now - new Date(comp.closeDate).getTime()) / MS_PER_MONTH)
-    const timeAdjustment =
+    const rawTimeAdjustment =
       yoyPct != null ? Math.round(comp.closePrice * (yoyPct / 100) * (monthsSinceClose / 12)) : 0
+    const timeAdjCap = Math.round(comp.closePrice * TIME_ADJ_CAP_FRACTION)
+    const timeAdjustment = Math.max(-timeAdjCap, Math.min(timeAdjCap, rawTimeAdjustment))
+    const timeAdjustmentCapped = timeAdjustment !== rawTimeAdjustment
     const timeAdjustedPrice = comp.closePrice + timeAdjustment
     const ppsfTimeAdjusted = timeAdjustedPrice / comp.sqft
     const sizeAdjustment =
@@ -71,7 +83,7 @@ export function adjustComps(
     const adjustedPrice = timeAdjustedPrice + sizeAdjustment
     const sizeProximity = subjectSqft > 0 ? 1 / (1 + Math.abs(subjectSqft - comp.sqft) / subjectSqft) : 1
     const recency = 1 / (1 + monthsSinceClose / 12)
-    return {
+    const out: AdjustedCompInternal = {
       ...comp,
       monthsSinceClose: +monthsSinceClose.toFixed(1),
       timeAdjustment,
@@ -80,7 +92,9 @@ export function adjustComps(
       sizeAdjustment,
       adjustedPrice,
       weight: +(sizeProximity * recency).toFixed(4),
+      _timeAdjCapped: timeAdjustmentCapped,
     }
+    return out
   })
 }
 
@@ -93,6 +107,18 @@ export function computePricing(
   const subjectSqft = subject.sqft ?? 0
   if (adjusted.length === 0 || subjectSqft <= 0) return null
   const notes: string[] = []
+
+  // Surface the time-adjustment safety rail in the audit trail: when a comp's
+  // market-conditions adjustment was clamped to 20% of its sale price, say so,
+  // so the capped figure in the citations blob is explained rather than silent.
+  const cappedCount = adjusted.filter((c) => (c as AdjustedCompInternal)._timeAdjCapped).length
+  if (cappedCount > 0) {
+    notes.push(
+      `${cappedCount} comp${cappedCount > 1 ? 's had their' : ' had its'} market-conditions (time) adjustment capped at ${Math.round(
+        TIME_ADJ_CAP_FRACTION * 100,
+      )}% of the sale price, so no single older sale can over-drive the estimate.`,
+    )
+  }
 
   // Method 1 — tiered $/sqft on time-adjusted comps.
   const ppsfSorted = adjusted.map((c) => c.ppsfTimeAdjusted).sort((a, b) => a - b)

@@ -5,7 +5,7 @@ import { sendEmail } from '@/lib/resend'
 import { getCachedSearchListings } from '@/app/actions/search-cache'
 import type { ListingTileRow } from '@/app/actions/listings'
 import { listingDetailPath } from '@/lib/slug'
-import { buildSearchUrlFromFilters, getFiltersSummary } from '@/lib/search-filters'
+import { buildSearchUrlFromFilters, getFiltersSummary, normalizeSavedSearchFilters } from '@/lib/search-filters'
 import {
   getActiveListingAlertsDue,
   markListingAlertNotified,
@@ -206,6 +206,14 @@ export async function runListingAlerts(options?: {
       // savedFiltersToAdvanced honors every key (amenities + ranges), so the match
       // is exactly the subscriber's search, not an over-broad subset.
       const filters = (row.filters ?? {}) as Record<string, unknown>
+      // Empty-filter guard: a saved search whose normalized filters are empty
+      // would match the whole feed and email every active listing. Skip + advance
+      // (never blast) and log loudly so the bad row is visible.
+      if (Object.keys(normalizeSavedSearchFilters(filters)).length === 0) {
+        console.error('[runListingAlerts] skipping alert with empty filters', { searchId: row.id })
+        await advanceCursor()
+        continue
+      }
       const results = await getCachedSearchListings(filters, 1, 15)
       if (!results.listings.length) {
         await advanceCursor()
@@ -218,8 +226,18 @@ export async function runListingAlerts(options?: {
       const sinceMs = row.last_notified_at ? Date.parse(row.last_notified_at) : 0
       const fresh = sinceMs
         ? results.listings.filter((l) => {
-            const onMarket = l.OnMarketDate ? Date.parse(l.OnMarketDate) : NaN
-            return Number.isFinite(onMarket) && onMarket > sinceMs
+            // The fast (listing_tile_mv) path carries OnMarketDate. The advanced
+            // + keyword RPC paths do NOT return it, but DO return
+            // ModificationTimestamp (spread onto the row), which is a sound
+            // "new or materially changed since last send" proxy — so advanced
+            // searches keep alerting incrementally instead of stopping or
+            // re-blasting the whole set every run.
+            const stamp = l.OnMarketDate ?? l.ModificationTimestamp
+            const onMarket = stamp ? Date.parse(stamp) : NaN
+            // FAIL-SAFE: if neither timestamp is present/parseable, treat the
+            // listing as FRESH so the alert never goes permanently silent.
+            // Worst case is a rare duplicate card, never a dead search.
+            return !Number.isFinite(onMarket) || onMarket > sinceMs
           })
         : results.listings
       if (!fresh.length) {
@@ -300,24 +318,40 @@ export async function runListingAlerts(options?: {
           summary.errors.push({ searchId: row.id, error: emailResult.error })
           continue
         }
-        // Measurement — mirror the market-report send path: one 'sent' row in
+        // Measurement, mirror of the market-report send path: one 'sent' row in
         // email_events per send, keyed on the SAME emailKey the tracker signs
         // into the open/click tokens so per-subscription engagement aggregates.
-        // Best-effort: a reporting-side failure must never undo a real send.
-        await recordEmailEvent({
-          messageId: emailResult.id ?? null,
-          recipientEmail: row.email,
-          personId: person.personId,
-          broker: brokerSlug,
-          sendType: 'alert',
-          event: 'sent',
-          emailKey,
-          subject: built.subject,
-        })
+        // Best-effort: a reporting-side failure (even a throw) must NEVER abort
+        // the notified stamp below, or the row stays due and re-sends every tick.
+        try {
+          await recordEmailEvent({
+            messageId: emailResult.id ?? null,
+            recipientEmail: row.email,
+            personId: person.personId,
+            broker: brokerSlug,
+            sendType: 'alert',
+            event: 'sent',
+            emailKey,
+            subject: built.subject,
+          })
+        } catch (recErr) {
+          console.error('[runListingAlerts] recordEmailEvent failed (send already went out)', {
+            searchId: row.id,
+            error: recErr instanceof Error ? recErr.message : String(recErr),
+          })
+        }
         const marked = await markListingAlertNotified(row.id, now.toISOString())
         if (!marked.ok) {
+          // The email already went out. If we cannot stamp last_notified_at the
+          // row stays due and would re-blast the SAME email next tick. We cannot
+          // repair the DB from here, but we log loudly, record the error, and
+          // still advance the in-run cursor (count the send below) so this run
+          // does not compound the duplicate risk.
+          console.error('[runListingAlerts] markListingAlertNotified failed AFTER a successful send (duplicate risk next run)', {
+            searchId: row.id,
+            error: marked.error ?? 'mark failed',
+          })
           summary.errors.push({ searchId: row.id, error: marked.error ?? 'mark failed' })
-          continue
         }
       }
 

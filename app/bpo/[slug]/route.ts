@@ -11,7 +11,7 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getBpoHtmlBySlug } from '@/lib/data/bpo/reads'
-import { stripOfferStrategy } from '@/lib/bpo/render'
+import { assertClientSafe, stripOfferStrategy } from '@/lib/bpo/render'
 
 export const revalidate = 0
 
@@ -31,14 +31,41 @@ export async function GET(request: Request, context: { params: Promise<{ slug: s
   }
 
   // Full (offer-strategy) view is admin-only. Everyone else gets client-safe.
+  // A non-final opinion (draft/building) is never client-shareable — only an
+  // authenticated admin may see it, same as the ?variant=full path.
+  const isFinal = String(row.status ?? '') === 'final'
   const wantFull = new URL(request.url).searchParams.get('variant') === 'full'
-  let allowFull = false
-  if (wantFull) {
+  let isAdmin = false
+  if (wantFull || !isFinal) {
     const session = await getSession()
     const role = await getAdminRoleForEmail(session?.user?.email ?? null)
-    allowFull = Boolean(role && role.role !== 'report_viewer')
+    isAdmin = Boolean(role && role.role !== 'report_viewer')
   }
-  const base = allowFull ? row.html_content : stripOfferStrategy(row.html_content)
+  if (!isFinal && !isAdmin) {
+    return NextResponse.json(
+      { error: 'This broker price opinion is not available.' },
+      { status: 404 },
+    )
+  }
+  const allowFull = wantFull && isAdmin
+
+  let base: string
+  if (allowFull) {
+    base = row.html_content
+  } else {
+    // Client-safe path fails closed: if the offer strategy cannot be stripped
+    // (missing or truncated marker), serve a safe error rather than the raw html.
+    const stripped = stripOfferStrategy(row.html_content)
+    try {
+      assertClientSafe(stripped)
+    } catch {
+      return NextResponse.json(
+        { error: 'This broker price opinion could not be prepared for sharing.' },
+        { status: 404 },
+      )
+    }
+    base = stripped
+  }
 
   // Rewrite build-time font URLs to the serving origin so CSP font-src 'self'
   // never blocks the brand display font (same fix as /cma/[slug]).

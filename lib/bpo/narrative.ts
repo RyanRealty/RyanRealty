@@ -36,12 +36,18 @@ export function buildBpoRationale(args: {
   // 2. What the listing history says.
   if (history.currentIsActive && history.currentListPrice) {
     if (history.failedAttemptsCount >= 1) {
+      // Only claim the record set the ceiling when the reconciliation actually
+      // moved the opinion below the raw comp anchor. If the opinion still rests
+      // on the comps, say so instead of overclaiming.
+      const ceilingGoverned = opinion.opinionValue < opinion.compAnchor
       paras.push(
         `The property is listed today at ${usd(history.currentListPrice)}` +
           `${history.currentDaysOnMarket != null ? ` and has been on market ${history.currentDaysOnMarket} days` : ''}. ` +
           `Before this listing it went to market ${history.failedAttemptsCount === 1 ? 'once' : `${history.failedAttemptsCount} times`} and came off without selling` +
           `${history.peakAskingPrice ? `, at asking prices as high as ${usd(history.peakAskingPrice)}` : ''}. ` +
-          `The market has already answered those prices. That record, not the current list, sets the ceiling on value.`,
+          (ceilingGoverned
+            ? `The market has already answered those prices. That record, not the current list, sets the ceiling on value.`
+            : `The market has already answered those prices, and the opinion rests on what the comparable sales support.`),
       )
     } else if (history.currentDaysOnMarket != null && history.currentDaysOnMarket <= 21) {
       paras.push(

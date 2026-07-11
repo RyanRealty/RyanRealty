@@ -311,7 +311,10 @@ export async function claimQueuedBatch(newsletterId: string, tier: number, limit
   if (ids.length === 0) return []
   const { data: claimed, error } = await sb
     .from(RECIPIENTS)
-    .update({ status: 'sending' })
+    // Stamp claimed_at NOW so requeueStaleClaims keys crash-recovery on the CLAIM
+    // time (not the row's enqueue time) — a freshly-claimed row is never mistaken
+    // for a crashed claim, so a normal in-flight send can't be re-claimed + double-sent (NL-H2).
+    .update({ status: 'sending', claimed_at: new Date().toISOString() })
     .in('id', ids)
     .eq('status', 'queued') // only claim rows still queued (loser of a race gets fewer)
     .select('id, subscriber_id, email, broker, tier')
@@ -326,7 +329,15 @@ export async function finalizeRecipient(
   resendMessageId: string | null,
 ): Promise<void> {
   const sb = createServiceClient()
-  await sb.from(RECIPIENTS).update({ status, resend_message_id: resendMessageId }).eq('id', recipientId)
+  const { error } = await sb.from(RECIPIENTS).update({ status, resend_message_id: resendMessageId }).eq('id', recipientId)
+  // NL-H2: a swallowed error here leaves the row stuck in 'sending'. After the stale
+  // window requeueStaleClaims resets it to 'queued' and the SAME recipient is claimed
+  // and emailed AGAIN. Surface the failure loudly and raise so the drain does not
+  // continue on a corrupt row-state (rather than silently double-sending later).
+  if (error) {
+    console.error(`[newsletter] finalizeRecipient(${recipientId} -> ${status}) failed: ${error.message}`)
+    throw new Error(`finalizeRecipient(${recipientId} -> ${status}): ${error.message}`)
+  }
 }
 
 /** Count remaining rows per status for a newsletter — drives finalize + stall detection. */
@@ -348,14 +359,18 @@ export async function recipientStatusCounts(newsletterId: string): Promise<Recor
 export async function requeueStaleClaims(newsletterId: string, staleMs: number): Promise<number> {
   const sb = createServiceClient()
   const cutoff = new Date(Date.now() - staleMs).toISOString()
-  // created_at is the row's insert time; a claimed row that never finalized and is
-  // older than the cutoff is a crashed claim. (Claims are short-lived in practice.)
+  // NL-H2: key on claimed_at (the moment the row was CLAIMED), NOT created_at (the
+  // enqueue time, which is always old). A row whose claim is older than the stale
+  // window never finalized → a crashed claim, safe to requeue. A row claimed just now
+  // (claimed_at = now) is a normal in-flight send and is NOT requeued, so it can't be
+  // re-claimed and double-sent. Legacy pre-migration 'sending' rows were backfilled
+  // (claimed_at = created_at) so they still recover.
   const { data } = await sb
     .from(RECIPIENTS)
     .update({ status: 'queued' })
     .eq('newsletter_id', newsletterId)
     .eq('status', 'sending')
-    .lt('created_at', cutoff)
+    .lt('claimed_at', cutoff)
     .select('id')
   return data?.length ?? 0
 }

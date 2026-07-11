@@ -124,10 +124,14 @@ export function formatMomPct(value: number | null | undefined, prevMonth: string
   return `${arrow} ${Math.abs(rounded).toFixed(1)}% vs ${prevMonth}`
 }
 
-/** Months of supply with one decimal + " months". Em-dash when null. */
+/** Months of supply + " months". One decimal, except within the narrow bands
+ *  around the 4.0 / 6.0 verdict thresholds, where a second decimal is shown so
+ *  the printed number can never appear to contradict the verdict pill (a true
+ *  4.04 shows "4.04 months" next to "balanced market", not "4.0 months"). */
 export function formatMonths(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return '—'
-  return `${value.toFixed(1)} months`
+  const nearThreshold = (value > 3.95 && value < 4.05) || (value > 5.95 && value < 6.05)
+  return `${value.toFixed(nearThreshold ? 2 : 1)} months`
 }
 
 /** Plain-language verdict phrase (sentence case, no hype). */

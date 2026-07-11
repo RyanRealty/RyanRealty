@@ -20,7 +20,7 @@ import {
 import { getBpoAdminRowBySlug, updateBpoRowFieldsBySlug } from '@/lib/data/bpo/reads'
 import { brokerSendIdentity } from '@/lib/email/broker-identity'
 import { getContactSendTarget } from '@/lib/data/crm/getContactSendTarget'
-import { stripOfferStrategy } from '@/lib/bpo/render'
+import { assertClientSafe, stripOfferStrategy } from '@/lib/bpo/render'
 import { htmlToPdfBuffer } from '@/lib/pdf/html-to-pdf'
 import { wrapBrandedEmail, brandedTextFooter, escapeHtml, type ShellBroker } from '@/lib/email/shell'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
@@ -104,11 +104,23 @@ export async function sendBpoToLead(opts: {
   includeOfferStrategy?: boolean
 }): Promise<SendBpoResult> {
   const slug = opts.slug.trim().toLowerCase()
+  if (!/^[a-z0-9-]{3,80}$/.test(slug)) {
+    return { ok: false, error: 'Invalid broker price opinion reference.' }
+  }
   const row = await getBpoAdminRowBySlug(slug)
   if (!row) return { ok: false, error: 'Broker price opinion not found' }
+  if (row.archived_at != null) {
+    return { ok: false, error: 'This opinion has been archived. Restore it before sending.' }
+  }
   const status = String(row.status ?? '')
   if (status !== 'final') {
     return { ok: false, error: `This opinion is not finalized yet (status ${status}). Finalize it before sending.` }
+  }
+  // Wrong-recipient guard: a BPO linked to one contact must never be sent to a
+  // different contact. An unlinked BPO (person_id null) may go to any contact.
+  const rowPersonId = (row.person_id as number | null) ?? null
+  if (rowPersonId != null && rowPersonId !== opts.personId) {
+    return { ok: false, error: 'This price opinion belongs to a different contact. Rebuild it for this contact before sending.' }
   }
   const fullHtml = row.html_content as string | null
   if (!fullHtml) return { ok: false, error: 'This opinion has no built document to send.' }
@@ -124,8 +136,22 @@ export async function sendBpoToLead(opts: {
     return { ok: false, error: `This contact has opted out of email (${sup.reasons.join(', ')}).` }
   }
 
-  // Client-safe unless the caller opts into the internal offer strategy.
-  const docHtml = opts.includeOfferStrategy ? fullHtml : stripOfferStrategy(fullHtml)
+  // The internal offer strategy may only ride along to the BPO's own contact.
+  // For anyone else (including an unlinked BPO) the send is forced client-safe
+  // even if the caller passed includeOfferStrategy.
+  const includeOffer = Boolean(opts.includeOfferStrategy) && rowPersonId != null && rowPersonId === opts.personId
+  let docHtml: string
+  if (includeOffer) {
+    docHtml = fullHtml
+  } else {
+    // Fail closed: if the offer strategy cannot be stripped, do not attach.
+    docHtml = stripOfferStrategy(fullHtml)
+    try {
+      assertClientSafe(docHtml)
+    } catch {
+      return { ok: false, error: 'The internal offer strategy could not be removed for a client-safe send. Nothing was sent.' }
+    }
+  }
   let pdf: Buffer
   try {
     pdf = await htmlToPdfBuffer(docHtml)
@@ -215,10 +241,10 @@ export async function sendBpoToLead(opts: {
   await logCmaTimelineEvent(opts.personId, {
     kind: 'email_out',
     title: body.subject,
-    body: `Broker price opinion sent to ${target.email} for ${(row.subject_address as string) ?? slug}${opts.includeOfferStrategy ? ' (with offer strategy)' : ''}.`,
+    body: `Broker price opinion sent to ${target.email} for ${(row.subject_address as string) ?? slug}${includeOffer ? ' (with offer strategy)' : ''}.`,
     broker: crmBrokerSlug,
     dedupeKey: `bpo:sent:${slug}:${sentAt.slice(0, 10)}`,
-    payload: { slug, transport, includeOfferStrategy: Boolean(opts.includeOfferStrategy) },
+    payload: { slug, transport, includeOfferStrategy: includeOffer },
   })
 
   return { ok: true, transport, mailbox: transport === 'gmail' ? brokerMailbox : null, personId }
