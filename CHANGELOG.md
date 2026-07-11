@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.762.0 (2026-07-11)
+
+### Features
+- feat(alerts): newly-matching detection (price drops into range) + hourly cadence + registry capture
+
+---
+
+
 ## v1.761.0 (2026-07-11)
 
 ### Features
