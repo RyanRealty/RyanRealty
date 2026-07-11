@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.761.0 (2026-07-11)
+
+### Features
+- feat(search): remarks search across public + private, private locked to admin by column grants
+- feat(search): expose every DB field as a filter through screen + voice, on one MV-backed engine
+
+---
+
+
 ## v1.760.2 (2026-07-11)
 
 ### Bug Fixes
