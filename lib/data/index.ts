@@ -534,6 +534,8 @@ export {
   getListingHistoryTableStatus as getListingHistoryTableStatusDAL,
 } from '@/lib/data/admin/syncCounts'
 export type { CountResult, TerminalBucket, ClosedFinalizedRow } from '@/lib/data/admin/syncCounts'
+export { searchAdminListingsRemarks } from '@/lib/data/admin/remarksSearch'
+export type { AdminRemarksSearchRow } from '@/lib/data/admin/remarksSearch'
 
 // Admin listing edit + photo CRUD
 export {

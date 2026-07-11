@@ -17,11 +17,12 @@ describe('buildListingHighlights', () => {
     expect(result.highlights.length).toBeLessThanOrEqual(5)
   })
 
-  it('falls back to PrivateRemarks when PublicRemarks is missing', () => {
+  it('never reads PrivateRemarks, even when PublicRemarks is missing', () => {
     const result = buildListingHighlights({
       PrivateRemarks: 'Private note. Another note.',
     })
-    expect(result.highlights).toHaveLength(2)
+    expect(result.highlights).toHaveLength(0)
+    expect(JSON.stringify(result)).not.toContain('Private note')
   })
 
   it('returns empty highlights when no remarks', () => {

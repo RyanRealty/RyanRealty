@@ -6,7 +6,10 @@ export function buildListingHighlights(fields: Record<string, unknown>): {
   highlights: string[]
   featureTags: string[]
 } {
-  const remarks = (fields.PublicRemarks ?? fields.PrivateRemarks ?? '') as string
+  // PublicRemarks ONLY — PrivateRemarks is agent-to-agent and must never
+  // feed a public surface (2026-07-11 directive; the old fallback was a
+  // leak waiting for a caller).
+  const remarks = (fields.PublicRemarks ?? '') as string
   const sentences = remarks
     ? remarks
         .trim()

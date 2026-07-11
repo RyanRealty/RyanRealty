@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
-import { getAdminListingsPage } from '@/app/actions/admin-listings'
+import { getAdminListingsPage, searchAdminRemarksPage } from '@/app/actions/admin-listings'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Home01Icon, SearchRemoveIcon } from '@hugeicons/core-free-icons'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic'
 
-type SearchParams = { page?: string; search?: string; status?: string }
+type SearchParams = { page?: string; search?: string; status?: string; remarks?: string }
 
 const STATUS_FILTERS = ['Active', 'Pending', 'Closed'] as const
 
@@ -77,11 +77,17 @@ export default async function AdminListingsPage({
 }: {
   searchParams: Promise<SearchParams>
 }) {
-  const { page, search, status } = await searchParams
+  const { page, search, status, remarks } = await searchParams
   const pageNum = Math.max(0, parseInt(String(page), 10) || 0)
   const pageSize = 50
   const activeStatus = status && status !== 'all' ? status : undefined
-  const { rows, total } = await getAdminListingsPage(pageNum, pageSize, search?.trim() || undefined, activeStatus)
+  // remarks=1: keyword search across public AND private remarks (on-market
+  // rows, admin-only service-role read path). Status facets do not apply —
+  // the remarks index covers on-market inventory.
+  const remarksMode = remarks === '1' && Boolean(search?.trim())
+  const { rows, total } = remarksMode
+    ? await searchAdminRemarksPage(search!.trim(), pageNum, pageSize)
+    : await getAdminListingsPage(pageNum, pageSize, search?.trim() || undefined, activeStatus)
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const rangeStart = total === 0 ? 0 : pageNum * pageSize + 1
   const rangeEnd = pageNum * pageSize + rows.length
@@ -157,6 +163,10 @@ export default async function AdminListingsPage({
                 className="h-11"
               />
             </div>
+            <label className="flex h-11 cursor-pointer items-center gap-2 rounded-md border border-border bg-card px-3 text-sm text-foreground">
+              <Input type="checkbox" name="remarks" value="1" defaultChecked={remarksMode} className="size-4" />
+              Search remarks (public + private)
+            </label>
             <Button type="submit" className="h-11">
               Search
             </Button>
@@ -167,6 +177,11 @@ export default async function AdminListingsPage({
             ) : null}
           </form>
 
+          {remarksMode ? (
+            <p className="text-xs text-muted-foreground">
+              Matching listing remarks, including private agent remarks. Private remarks stay on this admin surface and never render publicly. On-market listings only.
+            </p>
+          ) : null}
           <div className="flex flex-wrap items-center gap-2">
             <span className="w-16 text-xs font-medium text-muted-foreground">Status</span>
             <div className="flex flex-wrap gap-1.5">

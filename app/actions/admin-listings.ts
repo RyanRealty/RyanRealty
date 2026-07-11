@@ -69,3 +69,51 @@ export async function getAdminListingsPage(
   })) as unknown as AdminListingRow[]
   return { rows, total }
 }
+
+
+/**
+ * Admin-only remarks search: keyword match across PublicRemarks AND
+ * PrivateRemarks (on-market listings). private_remarks is readable only by the
+ * service role (column-level grant, migration 20260711190000), and this action
+ * refuses without a verified admin session — the public surfaces never gain a
+ * path to it.
+ */
+export async function searchAdminRemarksPage(
+  query: string,
+  page = 0,
+  pageSize = 50
+): Promise<{ rows: AdminListingRow[]; total: number; privateOnlyKeys: string[] }> {
+  const { getAdminContext } = await import('@/lib/auth/guards')
+  const ctx = await getAdminContext()
+  if (!ctx) return { rows: [], total: 0, privateOnlyKeys: [] }
+
+  const { searchAdminListingsRemarks } = await import('@/lib/data')
+  const { rows, totalCount } = await searchAdminListingsRemarks(query, {
+    limit: pageSize,
+    offset: page * pageSize,
+  })
+  const mapped = rows.map((r) => ({
+    ListingKey: r.listingKey,
+    ListNumber: r.listNumber,
+    ListPrice: r.listPrice,
+    BedroomsTotal: r.beds,
+    BathroomsTotal: r.baths,
+    StreetNumber: r.streetNumber,
+    StreetName: r.streetName,
+    City: r.city,
+    State: 'OR',
+    PostalCode: r.postalCode,
+    SubdivisionName: r.subdivisionName,
+    StandardStatus: r.status,
+    ModificationTimestamp: r.modifiedAt,
+    OnMarketDate: r.onMarketDate,
+    PhotoURL: r.photoUrl,
+  })) as unknown as AdminListingRow[]
+  return {
+    rows: mapped,
+    total: totalCount,
+    privateOnlyKeys: rows
+      .filter((r) => r.matchedIn.length === 1 && r.matchedIn[0] === 'private')
+      .map((r) => r.listingKey),
+  }
+}
