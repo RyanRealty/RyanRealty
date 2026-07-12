@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.767.1 (2026-07-12)
+
+### Bug Fixes
+- fix(admin/cmas): Needs-review badge renders in the desktop table too
+- fix(chrome): kill the double-nav — stable CSS-toggle chrome gate (no mount race)
+
+---
+
+
 ## v1.767.0 (2026-07-12)
 
 ### Features
