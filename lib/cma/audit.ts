@@ -31,6 +31,9 @@ export interface AuditFinding {
   severity: AuditSeverity
   claim: string
   evidence: string
+  /** When the defect is a specific priced comp, its listing key — makes the
+   *  finding machine-actionable (buildCma drops it and re-prices). */
+  compListingKey?: string | null
 }
 
 export interface CmaAudit {
@@ -67,6 +70,10 @@ const AUDIT_TOOL: Anthropic.Tool = {
             },
             claim: { type: 'string', description: 'One sentence: what is wrong.' },
             evidence: { type: 'string', description: 'The specific data shown here that proves it.' },
+            compListingKey: {
+              type: 'string',
+              description: 'REQUIRED when the defect is a specific priced comp: that comp\'s listing key exactly as shown (key=...). Omit for findings not tied to one comp.',
+            },
           },
           required: ['severity', 'claim', 'evidence'],
         },
@@ -116,7 +123,7 @@ export async function auditCma(args: {
     .map((c, i) => {
       const tier = judgment?.verdicts.find((v) => v.listingKey === c.listingKey)?.tier ?? 'n/a'
       return (
-        `${i + 1}. ${c.address} (subdivision: ${c.subdivision ?? 'none'}) · beds ${c.beds ?? 'unknown'} · baths ${c.baths ?? 'unknown'} · ` +
+        `${i + 1}. key=${c.listingKey} · ${c.address} (subdivision: ${c.subdivision ?? 'none'}) · beds ${c.beds ?? 'unknown'} · baths ${c.baths ?? 'unknown'} · ` +
         `living area ${c.sqft} sqft · year built ${c.yearBuilt ?? 'unknown'} · ` +
         `closed $${Math.round(c.closePrice).toLocaleString()} on ${c.closeDate} · ` +
         `machine-adjusted value $${Math.round(c.adjustedPrice).toLocaleString()} · reconciliation weight ${c.weight} · comparability tier ${tier}` +
@@ -150,10 +157,12 @@ export async function auditCma(args: {
     'CONTEXT — the subject failed to sell at its last list price. A recommendation at or above that price is not ' +
     'automatically wrong: if the adjusted comp values cluster at or above it, that IS the evidence, and the prior ' +
     'failure may reflect condition, presentation, or timing. Flag it only when the comps do not support it. ' +
-    'Judge only from the data given; never invent facts. severity=critical means the recommendation itself is ' +
-    'indefensible on comparability or data grounds; major means a specific comp, claim, or exclusion needs broker ' +
-    'correction; minor is polish. If the analysis survives your attack, verdict=pass and say so plainly — a clean ' +
-    'pass is a legitimate outcome. Report only through the record_audit tool.'
+    'Judge only from the data given; never invent facts. SEVERITY CALIBRATION — critical means NO reasonable broker ' +
+    'could defend the recommendation with this comp set; a recommendation that is debatable but sits inside the ' +
+    'adjusted comp cluster is NOT critical. major means a specific comp, claim, or exclusion needs broker correction ' +
+    '(set compListingKey when it is a comp); minor is polish. Most competent analyses should PASS or carry a small ' +
+    'number of major findings — reserve fail for a genuinely broken analysis. If the analysis survives your attack, ' +
+    'verdict=pass and say so plainly — a clean pass is a legitimate outcome. Report only through the record_audit tool.'
 
   const user =
     `SUBJECT:\n${subjectLine}\n\nMARKET: ${marketLine}\n\n` +
@@ -184,16 +193,18 @@ export async function auditCma(args: {
     const block = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use')
     if (!block) return null
     const out = block.input as {
-      findings?: Array<{ severity?: string; claim?: string; evidence?: string }>
+      findings?: Array<{ severity?: string; claim?: string; evidence?: string; compListingKey?: string }>
       verdict?: string
       summary?: string
     }
+    const validKeys = new Set(comps.map((c) => c.listingKey))
     const findings: AuditFinding[] = (out.findings ?? [])
       .filter((f) => f.claim)
       .map((f) => ({
         severity: (['critical', 'major', 'minor'].includes(f.severity ?? '') ? f.severity : 'major') as AuditSeverity,
         claim: f.claim!.trim(),
         evidence: (f.evidence ?? '').trim(),
+        compListingKey: f.compListingKey && validKeys.has(f.compListingKey) ? f.compListingKey : null,
       }))
     // Verdict discipline: the stated verdict may not be softer than the findings.
     let verdict = (['pass', 'review', 'fail'].includes(out.verdict ?? '') ? out.verdict : 'review') as AuditVerdict

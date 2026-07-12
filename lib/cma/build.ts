@@ -129,51 +129,82 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // the Method 3 reconciliation weights: strong = full weight, weak = half
     // (bracketing only). Excludes were dropped before the math above.
     const tierByKey = new Map(judgment?.verdicts.map((v) => [v.listingKey, v.tier]) ?? [])
-    const adjusted = adjustComps(subject, compsForPricing, market).map((c) => {
-      const tier = tierByKey.get(c.listingKey)
-      return tier === 'weak' ? { ...c, weight: +(c.weight * 0.5).toFixed(4) } : c
-    })
-    const pricing = computePricing(subject, adjusted, market, {
-      sellerImprovementsTotal: input.sellerImprovementsTotal ?? null,
-      priceOverride: input.priceOverride ?? null,
-    })
+    const priceSet = (set: typeof selection.comps) => {
+      const adj = adjustComps(subject, set, market).map((c) => {
+        const tier = tierByKey.get(c.listingKey)
+        return tier === 'weak' ? { ...c, weight: +(c.weight * 0.5).toFixed(4) } : c
+      })
+      const p = computePricing(subject, adj, market, {
+        sellerImprovementsTotal: input.sellerImprovementsTotal ?? null,
+        priceOverride: input.priceOverride ?? null,
+      })
+      // The comparability narrative renders with the pricing rationale — the
+      // seller sees WHY comps were kept, down-weighted, or excluded.
+      if (p && judgment) {
+        const excludedCount = selection.comps.length - set.length
+        const weakCount = adj.filter((c) => tierByKey.get(c.listingKey) === 'weak').length
+        p.notes.push(
+          `Comparable review: ${set.length} of ${selection.comps.length} candidate sales kept after a per-comp comparability review${
+            excludedCount ? `, ${excludedCount} excluded as a different market segment` : ''
+          }${weakCount ? `, ${weakCount} down-weighted to bracket the range` : ''}. ${judgment.narrative}`,
+        )
+      }
+      return { adj, p }
+    }
+    const excludedForAudit = () =>
+      judgment?.verdicts
+        .filter((v) => v.tier === 'exclude')
+        .map((v) => ({ listingKey: v.listingKey, reason: v.reason })) ?? []
+
+    let { adj: adjusted, p: pricing } = priceSet(compsForPricing)
     if (!pricing) {
       const err = 'Pricing could not be computed (subject sqft missing).'
       await recordBuildFailure(slug, err)
       return { ok: false, error: err, slug }
-    }
-    // The comparability narrative renders with the pricing rationale — the
-    // seller sees WHY comps were kept, down-weighted, or excluded.
-    if (judgment) {
-      const excludedCount = judgment.verdicts.filter((v) => v.tier === 'exclude').length
-      const weakCount = judgment.verdicts.filter((v) => v.tier === 'weak').length
-      pricing.notes.push(
-        `Comparable review: ${compsForPricing.length} of ${selection.comps.length} candidate sales kept after a per-comp comparability review${
-          excludedCount ? `, ${excludedCount} excluded as a different market segment` : ''
-        }${weakCount ? `, ${weakCount} down-weighted to bracket the range` : ''}. ${judgment.narrative}`,
-      )
     }
 
     // 4.4. Adversarial accuracy audit — an independent second pass whose only
     // job is to refute the finished analysis (Matt directive 2026-07-11:
     // every CMA must be adversarially audited). Builder and auditor share no
     // prompt. Anything but a clean pass forces broker review via the contract.
-    const audit = await auditCma({
-      subject,
-      comps: adjusted,
-      excluded:
-        judgment?.verdicts
-          .filter((v) => v.tier === 'exclude')
-          .map((v) => ({ listingKey: v.listingKey, reason: v.reason })) ?? [],
-      pricing,
-      judgment,
-      market,
-    })
+    let audit = await auditCma({ subject, comps: adjusted, excluded: excludedForAudit(), pricing, judgment, market })
+
+    // 4.45. Bounded self-repair: when the audit ties critical/major findings
+    // to SPECIFIC comps, drop those comps, re-price, and re-audit ONCE. The
+    // repaired analysis is what ships; both rounds are recorded. Never prunes
+    // below the comp floor, never loops more than once.
+    let firstRoundAudit: typeof audit = null
+    let repairedKeys: string[] = []
+    if (audit && audit.verdict !== 'pass') {
+      const flagged = [
+        ...new Set(
+          audit.findings
+            .filter((f) => (f.severity === 'critical' || f.severity === 'major') && f.compListingKey)
+            .map((f) => f.compListingKey!),
+        ),
+      ]
+      const remaining = compsForPricing.filter((c) => !flagged.includes(c.listingKey))
+      if (flagged.length > 0 && remaining.length >= MIN_COMPS) {
+        const repriced = priceSet(remaining)
+        if (repriced.p) {
+          firstRoundAudit = audit
+          repairedKeys = flagged
+          compsForPricing = remaining
+          adjusted = repriced.adj
+          pricing = repriced.p
+          selection.trace.push(
+            `Adversarial audit repair: ${flagged.length} comp(s) flagged by the independent audit were removed and the analysis re-priced on the ${remaining.length}-comp set, then re-audited.`,
+          )
+          audit = await auditCma({ subject, comps: adjusted, excluded: excludedForAudit(), pricing, judgment, market })
+        }
+      }
+    }
+
     pricing.notes.push(
       audit
         ? audit.verdict === 'pass'
-          ? 'Adversarial accuracy audit: an independent review pass attacked this analysis and found no material defect.'
-          : `Adversarial accuracy audit: ${audit.findings.length} finding(s) recorded for broker review before this analysis is released.`
+          ? `Adversarial accuracy audit: an independent review pass attacked this analysis${repairedKeys.length ? `, ${repairedKeys.length} comp(s) were removed on its findings and the analysis re-priced,` : ' and'} found no remaining material defect.`
+          : `Adversarial accuracy audit: ${audit.findings.length} finding(s) recorded for broker review before this analysis is released${repairedKeys.length ? ` (after a repair pass removed ${repairedKeys.length} comp(s))` : ''}.`
         : 'Adversarial accuracy audit unavailable for this build — broker review required before release.',
     )
 
@@ -259,6 +290,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             summary: audit.summary,
             findings: audit.findings,
             cost_usd: audit.costUsd,
+            repaired_comp_keys: repairedKeys.length ? repairedKeys : undefined,
+            first_round_verdict: firstRoundAudit?.verdict,
           }
         : { source: 'none', note: 'Audit unavailable — needs_review forced.' },
       comps: adjusted.map((c) => ({
@@ -342,6 +375,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             verdict: audit.verdict,
             summary: audit.summary,
             findings: audit.findings,
+            // Self-repair provenance: what the first audit flagged and what
+            // was removed before the re-priced, re-audited result above.
+            repaired_comp_keys: repairedKeys.length ? repairedKeys : undefined,
+            first_round: firstRoundAudit
+              ? {
+                  verdict: firstRoundAudit.verdict,
+                  summary: firstRoundAudit.summary,
+                  findings: firstRoundAudit.findings,
+                  cost_usd: firstRoundAudit.costUsd,
+                }
+              : undefined,
           }
         : {
             used_llm: false as const,
