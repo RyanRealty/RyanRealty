@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.776.3 (2026-07-12)
+
+### Bug Fixes
+- fix(admin/tracking): repoint every dashboard onto the native CRM as the single source of truth
+
+---
+
+
 ## v1.776.2 (2026-07-12)
 
 ### Bug Fixes
