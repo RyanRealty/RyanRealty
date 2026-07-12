@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.768.1 (2026-07-12)
+
+### Bug Fixes
+- fix(cma): calibrate the adversarial auditor to judgment-only scope
+- fix(chrome): scope the KB chrome-hide to #main-content (stale-Suspense soft-nav)
+
+---
+
+
 ## v1.768.0 (2026-07-12)
 
 ### Features
