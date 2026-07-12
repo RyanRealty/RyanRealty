@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.774.0 (2026-07-12)
+
+### Features
+- feat(admin): link Expired outreach in the admin nav (Listings group)
+
+---
+
+
 ## v1.773.2 (2026-07-12)
 
 ### Bug Fixes
