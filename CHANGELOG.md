@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.771.0 (2026-07-12)
+
+### Features
+- feat(search): elevate the search surface to the KB design register
+
+---
+
+
 ## v1.770.1 (2026-07-12)
 
 ### Maintenance
