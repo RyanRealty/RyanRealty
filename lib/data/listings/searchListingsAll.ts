@@ -505,21 +505,22 @@ function applySearchFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>
     if (value) query = query.ilike(col, value)
   }
 
-  // ── Keywords → public_remarks word-AND match ──────────────────────────────
-  // Each word must appear somewhere in the remarks (order-independent), the
-  // same contract as the legacy websearch_to_tsquery path — one literal
-  // phrase match silently failed multi-word queries like "shop mountain view"
-  // (review finding 2026-07-11). * and _ are PostgREST/SQL wildcards; strip
-  // them with the escapes.
+  // ── Keywords → address OR remarks, word-AND match ─────────────────────────
+  // Each word must match EITHER the address/area vector (search_vector: street,
+  // city, subdivision, zip) OR the public remarks. Remarks-only silently failed
+  // address searches — "61192 Tall Timber" typed in the box found nothing
+  // because the address is not in the remarks text (user report 2026-07-12).
+  // `,`/`(`/`)` break the PostgREST or() grammar, so drop them alongside the
+  // SQL/PostgREST wildcards.
   if (parsed.keywords) {
     const words = parsed.keywords
-      .replace(/[%_*\\]/g, ' ')
+      .replace(/[%_*\\(),]/g, ' ')
       .split(/\s+/)
       .map((w) => w.trim())
       .filter((w) => w.length >= 2)
       .slice(0, 6)
     for (const word of words) {
-      query = query.ilike('public_remarks', `%${word}%`)
+      query = query.or(`public_remarks.ilike.*${word}*,search_vector.plfts.${word}`)
     }
   }
 

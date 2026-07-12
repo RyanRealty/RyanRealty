@@ -234,3 +234,17 @@ describe('attack-hardening (2026-07-11)', () => {
     expect(p.coolingTypes).toBeUndefined()
   })
 })
+
+describe('address-shaped queries (user report 2026-07-12)', () => {
+  it('a house number + street name is an address, not filters', () => {
+    expect(parseSearchQuery('61192 tall timber')).toEqual({ keywords: '61192 tall timber' })
+    expect(parseSearchQuery('3450 mountain view drive')).toEqual({ keywords: '3450 mountain view drive' })
+    expect(parseSearchQuery('shop rd bend')).toEqual({ keywords: 'shop rd bend' })
+  })
+  it('does not misfire on real filter queries', () => {
+    expect(parseSearchQuery('12 acres in redmond').lotAcresMin).toBe('12')
+    expect(parseSearchQuery('3 bed under 800k').beds).toBe('3')
+    expect(parseSearchQuery('homes with a shop').shop).toBe('1')
+    expect(parseSearchQuery('panoramic views under 900k').viewTypes).toBe('Panoramic')
+  })
+})

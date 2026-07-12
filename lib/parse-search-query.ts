@@ -229,6 +229,24 @@ export function parseSearchQuery(raw: string): ParsedSearch {
   const out: ParsedSearch = {}
   if (!q) return out
 
+  // Address-shaped queries must NOT be decomposed into filters. "61192 Tall
+  // Timber" is an address, not a Timber land-use search; "3450 Mountain View
+  // Dr" is an address, not a View filter; "Shop Rd Bend" is a street, not a
+  // shop filter (user report 2026-07-12). Route the whole thing to a keyword /
+  // address match and skip every registry/amenity/city extraction.
+  //
+  //  - Leading house number (2-6 digits) followed by a NON-unit word (so
+  //    "3 bed" / "12 acres" stay filters, "61192 tall" is an address), OR
+  //  - a street-suffix token anywhere (unambiguous forms only, so ordinary
+  //    words like "way"/"st"/"dr" don't false-trigger).
+  const LEADING_HOUSE_NUMBER =
+    /^\d{2,6}\s+(?!bed|beds|bedroom|bedrooms|bd|br|bath|baths|ba|acre|acres|car|sq|sqft|square|story|stories|garage|percent|days?|k\b|m\b|million|thousand)[a-z]/i
+  const STREET_SUFFIX =
+    /\b(?:drive|road|lane|avenue|court|boulevard|loop|place|circle|terrace|parkway|trail|highway|rd|ln|ave|blvd|ct|cir|ter|hwy|pkwy|trl)\b/i
+  if (LEADING_HOUSE_NUMBER.test(q) || STREET_SUFFIX.test(q)) {
+    return { keywords: q }
+  }
+
   const state: WorkState = { work: q.toLowerCase() }
   const multiValues = new Map<string, string[]>()
 
