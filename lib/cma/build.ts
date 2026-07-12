@@ -23,6 +23,7 @@ import { selectComps, MIN_COMPS } from '@/lib/cma/comps'
 import { getCmaMarketContext } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { judgeComps } from '@/lib/cma/judge'
+import { evaluateAccuracyContract } from '@/lib/cma/contract'
 import { buildCmaMapDataUri } from '@/lib/cma/map'
 import { renderCmaHtml } from '@/lib/cma/render'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult } from '@/lib/cma/types'
@@ -112,8 +113,14 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       if (vetted.length >= MIN_COMPS) compsForPricing = vetted
     }
 
-    // 4. Adjustments + pricing (on the vetted comp set).
-    const adjusted = adjustComps(subject, compsForPricing, market)
+    // 4. Adjustments + pricing (on the vetted comp set). Judge verdicts feed
+    // the Method 3 reconciliation weights: strong = full weight, weak = half
+    // (bracketing only). Excludes were dropped before the math above.
+    const tierByKey = new Map(judgment?.verdicts.map((v) => [v.listingKey, v.tier]) ?? [])
+    const adjusted = adjustComps(subject, compsForPricing, market).map((c) => {
+      const tier = tierByKey.get(c.listingKey)
+      return tier === 'weak' ? { ...c, weight: +(c.weight * 0.5).toFixed(4) } : c
+    })
     const pricing = computePricing(subject, adjusted, market, {
       sellerImprovementsTotal: input.sellerImprovementsTotal ?? null,
       priceOverride: input.priceOverride ?? null,
@@ -122,6 +129,46 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       const err = 'Pricing could not be computed (subject sqft missing).'
       await recordBuildFailure(slug, err)
       return { ok: false, error: err, slug }
+    }
+    // The comparability narrative renders with the pricing rationale — the
+    // seller sees WHY comps were kept, down-weighted, or excluded.
+    if (judgment) {
+      const excludedCount = judgment.verdicts.filter((v) => v.tier === 'exclude').length
+      const weakCount = judgment.verdicts.filter((v) => v.tier === 'weak').length
+      pricing.notes.push(
+        `Comparable review: ${compsForPricing.length} of ${selection.comps.length} candidate sales kept after a per-comp comparability review${
+          excludedCount ? `, ${excludedCount} excluded as a different market segment` : ''
+        }${weakCount ? `, ${weakCount} down-weighted to bracket the range` : ''}. ${judgment.narrative}`,
+      )
+    }
+
+    // 4.5. Accuracy contract — the mechanical enforcement of the process.
+    // Hard violations kill the build; review violations force needs_review so
+    // an unvetted or non-converged CMA can never present as clean.
+    const contract = evaluateAccuracyContract({
+      comps: adjusted,
+      pricing,
+      judgment,
+      minComps: MIN_COMPS,
+      marketContextPresent: market != null,
+    })
+    if (!contract.pass) {
+      const failed = contract.checks
+        .filter((c) => c.severity === 'hard' && !c.pass)
+        .map((c) => `${c.id}: ${c.detail}`)
+        .join(' | ')
+      const err = `Accuracy contract failed: ${failed}`
+      await recordBuildFailure(slug, err)
+      return { ok: false, error: err, slug }
+    }
+    if (contract.forceReview && !pricing.needsReview) {
+      pricing.needsReview = true
+      pricing.reviewReason =
+        pricing.reviewReason ??
+        contract.checks
+          .filter((c) => c.severity === 'review' && !c.pass)
+          .map((c) => c.detail)
+          .join(' ')
     }
 
     // 5. Map (best effort — the report ships without it if the key is absent).
@@ -241,6 +288,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       // without digging into the pricing sub-object.
       needs_review: pricing.needsReview,
       review_reason: pricing.reviewReason,
+      // The full accuracy-contract evaluation — every check, pass or fail.
+      accuracy_contract: contract,
       pricing: {
         conservative: pricing.conservative,
         recommended: pricing.recommended,

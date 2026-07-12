@@ -46,7 +46,15 @@ function ppsf(c: CmaComp): number {
   return c.sqft > 0 ? Math.round(c.closePrice / c.sqft) : 0
 }
 
-/** Compact one-line comp description for the prompt. */
+/** Trimmed remarks excerpt — condition/renovation/quality clues without prompt bloat. */
+function remarksExcerpt(remarks: string | null | undefined, maxChars = 320): string | null {
+  const t = remarks?.replace(/\s+/g, ' ').trim()
+  if (!t) return null
+  return t.length > maxChars ? `${t.slice(0, maxChars)}…` : t
+}
+
+/** Full-feature comp description for the prompt — the judge must see EVERY
+ *  comparability dimension, not just size and price. */
 function describeComp(c: CmaComp): string {
   const parts = [
     `key=${c.listingKey}`,
@@ -54,14 +62,20 @@ function describeComp(c: CmaComp): string {
     c.subdivision ? `subdiv=${c.subdivision}` : null,
     `${c.beds ?? '?'}bd/${c.baths ?? '?'}ba`,
     `${c.sqft}sqft`,
-    c.lotAcres != null ? `${c.lotAcres}ac` : null,
+    c.lotAcres != null ? `${c.lotAcres}ac lot` : null,
     c.yearBuilt ? `built ${c.yearBuilt}` : null,
+    c.viewDescription ? `view: ${c.viewDescription}` : null,
+    c.taxAnnual != null ? `tax $${Math.round(c.taxAnnual).toLocaleString()}/yr` : null,
+    c.listPrice ? `listed $${Math.round(c.listPrice).toLocaleString()}` : null,
     `sold $${Math.round(c.closePrice).toLocaleString()}`,
     `$${ppsf(c)}/sqft`,
     `on ${c.closeDate}`,
+    c.daysToOffer != null ? `${c.daysToOffer} days to offer` : null,
     c.domTotal != null ? `${c.domTotal} DOM` : null,
   ].filter(Boolean)
-  return parts.join(' · ')
+  const line = parts.join(' · ')
+  const remarks = remarksExcerpt(c.publicRemarks)
+  return remarks ? `${line}\n   remarks: ${remarks}` : line
 }
 
 const JUDGE_TOOL: Anthropic.Tool = {
@@ -109,17 +123,23 @@ export async function judgeComps(
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey || comps.length === 0) return null
 
-  const subjectLine = [
+  const subjectParts = [
     `${subject.streetAddress}, ${subject.city}`,
     subject.subdivision ? `subdivision=${subject.subdivision}` : null,
     `${subject.beds ?? '?'}bd/${subject.baths ?? '?'}ba`,
     `${subject.sqft ?? '?'}sqft`,
-    subject.lotAcres != null ? `${subject.lotAcres}ac` : null,
+    subject.lotAcres != null ? `${subject.lotAcres}ac lot` : null,
     subject.yearBuilt ? `built ${subject.yearBuilt}` : null,
+    subject.garageSpaces != null ? `${subject.garageSpaces}-car garage` : null,
+    subject.viewDescription ? `view: ${subject.viewDescription}` : null,
+    subject.taxAnnual != null ? `tax $${Math.round(subject.taxAnnual).toLocaleString()}/yr` : null,
     subject.lastListPrice ? `last listed $${Math.round(subject.lastListPrice).toLocaleString()}` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ')
+  ].filter(Boolean)
+  const subjectRemarks = remarksExcerpt(subject.publicRemarks, 400)
+  const subjectLine =
+    subjectParts.join(' · ') +
+    (subjectRemarks ? `\n  remarks: ${subjectRemarks}` : '') +
+    (subject.listingHistoryLine ? `\n  listing history: ${subject.listingHistoryLine}` : '')
 
   const marketLine = market
     ? `Market: ${market.geoLabel}, ${market.marketVerdict}, ${market.monthsOfSupply} months supply, median $${market.medianPpsf ?? '?'}/sqft, ${market.yoyMedianPriceDeltaPct ?? '?'}% YoY.`
@@ -129,10 +149,16 @@ export async function judgeComps(
     'You are a licensed Oregon principal broker reviewing the comparable sales for a CMA. ' +
     'Your only job is comparability judgment: decide which of the candidate closed sales are genuinely comparable ' +
     'to the subject home, and which are a different quality tier, size class, or location and must be excluded or ' +
-    'down-weighted. A comp set that mixes, say, $218/sqft and $414/sqft homes is not one market — say so and exclude ' +
-    'the ones that do not belong, with a one-line reason each. Prefer excluding a genuinely non-comparable sale over ' +
-    'keeping it to hit a count. Keep at least 6 comps when 6 or more are genuinely comparable. Be honest about ' +
-    'confidence: honest uncertainty beats false precision. Do not invent facts about a comp beyond what is given. ' +
+    'down-weighted. Weigh EVERY dimension you are given, not just $/sqft: bed/bath count, year built and vintage, ' +
+    'lot size, view, garage, days on market, list-to-sold behavior, and above all the remarks — renovation and ' +
+    'condition language ("fully remodeled", "new roof", "needs TLC", "investor special", "as-is") explains price ' +
+    'differences and decides comparability. A comp set that mixes, say, $218/sqft and $414/sqft homes is not one ' +
+    'market — say so and exclude the ones that do not belong, citing the specific feature or remarks evidence in a ' +
+    'one-line reason each. tier=strong means directly comparable (full weight in the reconciliation); tier=weak means ' +
+    'usable with reservations (half weight — bracketing only); tier=exclude means a different market segment (dropped ' +
+    'before any math). Prefer excluding a genuinely non-comparable sale over keeping it to hit a count. Keep at least ' +
+    '6 comps when 6 or more are genuinely comparable. Be honest about confidence: honest uncertainty beats false ' +
+    'precision. Do not invent facts about a comp beyond what is given. ' +
     'Return your judgment only through the record_comp_judgment tool.'
 
   const user =
