@@ -306,10 +306,14 @@ export default async function SearchPage({
       <div className={cn('sticky top-[72px] z-20 w-full border-b border-border bg-card shadow-sm', isAppFrame && 'shrink-0')}>
         <SearchFilters initialFilters={initialFiltersFromUrl} signedIn={!!session?.user} />
       </div>
-      {/* Guest listing-alert capture — shown only to anonymous visitors. */}
-      <div className={isAppFrame ? 'shrink-0' : undefined}>
+      {/* Guest listing-alert capture — LIST view only. In the split/map
+          app-frame it is a sticky flex sibling that overlapped the filter bar
+          (its "Get alerts" button floated into the chip row), and it duplicates
+          the "Save this search" control + the header "Get listing alerts" CTA.
+          List view lays out in normal flow, where it docks cleanly. */}
+      {!isAppFrame && (
         <SearchAlertCapture signedIn={!!session?.user} defaultCity={effectiveFilters.city ?? ''} />
-      </div>
+      )}
       <div className={cn('w-full', isAppFrame && 'flex min-h-0 flex-1 flex-col')}>
         {view === 'map' && (
           <div className="map-search-shell w-full">
