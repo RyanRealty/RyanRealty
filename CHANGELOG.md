@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.774.3 (2026-07-12)
+
+### Bug Fixes
+- fix(cma/bpo): audit verdict v3 + methods-converged is info, not a gate
+
+---
+
+
 ## v1.774.2 (2026-07-12)
 
 ### Bug Fixes
