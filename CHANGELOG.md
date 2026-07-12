@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.763.0 (2026-07-12)
+
+### Features
+- feat(expired): resolve real human owners behind LLCs/trusts + persist skip-trace demographics
+
+---
+
+
 ## v1.762.3 (2026-07-11)
 
 ### Maintenance
