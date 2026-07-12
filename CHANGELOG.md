@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.763.1 (2026-07-12)
+
+### Bug Fixes
+- fix(search): address queries no longer decompose into filters + keyword search matches the address
+
+---
+
+
 ## v1.763.0 (2026-07-12)
 
 ### Features
