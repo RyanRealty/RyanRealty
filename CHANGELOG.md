@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.770.1 (2026-07-12)
+
+### Maintenance
+- docs: CMA/BPO accuracy pipeline round-4 progress (deterministic verdicts + BPO rollout + live E2E)
+
+---
+
+
 ## v1.770.0 (2026-07-12)
 
 ### Features
