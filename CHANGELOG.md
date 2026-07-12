@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.776.2 (2026-07-12)
+
+### Bug Fixes
+- fix(price-drops): bump cache key to v5 so the prev→current drop math takes effect
+
+---
+
+
 ## v1.776.1 (2026-07-12)
 
 ### Bug Fixes
