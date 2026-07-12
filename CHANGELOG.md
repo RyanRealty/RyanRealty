@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.768.0 (2026-07-12)
+
+### Features
+- feat(cma): adversarial accuracy audit on every build (Matt directive 2026-07-11)
+
+---
+
+
 ## v1.767.1 (2026-07-12)
 
 ### Bug Fixes
