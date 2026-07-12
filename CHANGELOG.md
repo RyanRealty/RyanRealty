@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.773.1 (2026-07-12)
+
+### Bug Fixes
+- fix(build): pure address-slug module — outreach DAL no longer drags node:crypto into the Turbopack graph
+
+---
+
+
 ## v1.773.0 (2026-07-12)
 
 ### Features
