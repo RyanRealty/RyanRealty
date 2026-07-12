@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.776.1 (2026-07-12)
+
+### Bug Fixes
+- fix(price-drops): a drop is prev→current, never the event's new_price (§0)
+
+---
+
+
 ## v1.776.0 (2026-07-12)
 
 ### Features
