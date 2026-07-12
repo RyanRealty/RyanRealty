@@ -26,6 +26,13 @@ import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject
 const MS_PER_MONTH = 30.44 * 86_400_000
 const SIZE_ADJ_FACTOR = 0.5
 const IMPROVEMENT_RECOVERY = 0.65
+// Comparable-heterogeneity guard: coefficient of variation of the comps'
+// adjusted $/sqft. Above this, the "comparables" span different quality or
+// location tiers and the reconciled figure needs broker judgment before a
+// client sees it (a coded stand-in for the judgment the retired LLM step
+// provided). Tuned so a tight subdivision cluster (CV ~3-8%) passes and a
+// mixed $218-414/sqft set (CV ~19%) flags.
+const DISPERSION_CV_LIMIT = 0.18
 // Safety rail on the linear time adjustment: a high YoY rate on an old comp
 // (e.g. +15% YoY x 24 months = +30% on one line) can single-handedly distort
 // the estimate. Cap each comp's market-conditions adjustment at 20% of its
@@ -193,6 +200,20 @@ export function computePricing(
 
   // Confidence per skill step 9: comp count, dispersion, recency, convergence.
   const medianCompAgeMonths = median(adjusted.map((c) => c.monthsSinceClose))
+
+  // Comparable-heterogeneity guard. The tiers below weigh count, recency and
+  // method convergence, but a set can converge on the math while mixing
+  // genuinely different homes ($218 vs $414 /sqft). Measure the spread of the
+  // adjusted $/sqft directly — a wide spread means the "comps" are not one
+  // market and the recommendation needs broker judgment.
+  const ppsfVals = adjusted.map((c) => c.ppsfTimeAdjusted).filter((v) => v > 0)
+  const ppsfMean = ppsfVals.reduce((a, b) => a + b, 0) / (ppsfVals.length || 1)
+  const ppsfSd = Math.sqrt(
+    ppsfVals.reduce((a, b) => a + (b - ppsfMean) ** 2, 0) / (ppsfVals.length || 1),
+  )
+  const compPpsfCv = ppsfMean > 0 ? +(ppsfSd / ppsfMean).toFixed(3) : 0
+  const highDispersion = compPpsfCv > DISPERSION_CV_LIMIT
+
   let confidence: CmaPricing['confidence'] = 'High'
   const reasons: string[] = []
   if (adjusted.length < 5) {
@@ -211,6 +232,22 @@ export function computePricing(
     confidence = 'Supportable'
     reasons.push('thin comp set')
   }
+
+  // The dispersion guard: floor confidence and flag for broker review.
+  let needsReview = false
+  let reviewReason: string | null = null
+  if (highDispersion) {
+    confidence = 'Supportable'
+    needsReview = true
+    const lo = Math.round(Math.min(...ppsfVals))
+    const hi = Math.round(Math.max(...ppsfVals))
+    reviewReason = `Comparable sales span a wide price-per-square-foot range ($${lo} to $${hi}/sqft, ${Math.round(
+      compPpsfCv * 100,
+    )}% variation). The set mixes different quality or location tiers, so a broker should confirm the comp selection before this goes to a client.`
+    reasons.push(`wide comp dispersion (${Math.round(compPpsfCv * 100)}%)`)
+    notes.push(reviewReason)
+  }
+
   const confidenceReason =
     reasons.length > 0
       ? `Capped by ${reasons.join(', ')}.`
@@ -231,6 +268,9 @@ export function computePricing(
     valueHigh: highEnd,
     confidence,
     confidenceReason,
+    needsReview,
+    reviewReason,
+    compPpsfCv,
     priceOverride,
     improvementsValueAdd,
     notes,

@@ -144,6 +144,32 @@ describe('computePricing', () => {
   it('returns null with no comps or no sqft', () => {
     expect(computePricing(subject({ sqft: null }), [], market)).toBeNull()
   })
+
+  it('does not flag a tight comp set for review', () => {
+    const adjusted = adjustComps(subject(), comps, market)
+    const pricing = computePricing(subject(), adjusted, market)
+    expect(pricing!.needsReview).toBe(false)
+    expect(pricing!.compPpsfCv).toBeLessThan(0.18)
+  })
+
+  it('flags a heterogeneous comp set for broker review and floors confidence', () => {
+    // Same sqft as the subject (so no size adjustment), null market (no time
+    // adjustment) — the only signal is the raw $/sqft spread: $230 to $412.
+    const wide = [
+      comp({ closePrice: 460000, sqft: 2000 }),
+      comp({ closePrice: 530000, sqft: 2000 }),
+      comp({ closePrice: 610000, sqft: 2000 }),
+      comp({ closePrice: 710000, sqft: 2000 }),
+      comp({ closePrice: 775000, sqft: 2000 }),
+      comp({ closePrice: 825000, sqft: 2000 }),
+    ]
+    const adjusted = adjustComps(subject({ sqft: 2000 }), wide, null)
+    const pricing = computePricing(subject({ sqft: 2000 }), adjusted, null)
+    expect(pricing!.needsReview).toBe(true)
+    expect(pricing!.confidence).toBe('Supportable')
+    expect(pricing!.reviewReason).toBeTruthy()
+    expect(pricing!.compPpsfCv).toBeGreaterThan(0.18)
+  })
 })
 
 describe('parseCmaAddress', () => {

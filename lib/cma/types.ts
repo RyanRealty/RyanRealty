@@ -105,6 +105,12 @@ export interface CmaPricing {
   valueHigh: number
   confidence: 'High' | 'Moderate' | 'Supportable'
   confidenceReason: string
+  /** True when the comp set is too heterogeneous to trust without broker review. */
+  needsReview: boolean
+  /** Human-readable why, when needsReview is true. */
+  reviewReason: string | null
+  /** Coefficient of variation of the comps' adjusted $/sqft (dispersion metric). */
+  compPpsfCv: number
   priceOverride: number | null
   improvementsValueAdd: number | null
   notes: string[]

@@ -860,7 +860,7 @@ export async function listCmasForAdmin(options: {
   const { data, count } = await sb
     .from('cmas')
     .select(
-      'id, slug, subject_address, subject_subdivision, subject_city, client_name, client_email, broker_slug, value_low, value_high, recommended_list, comps_count, status, generation_reason, created_at, finalized_at, delivered_at, built_at, build_error, html_path, price_override',
+      'id, slug, subject_address, subject_subdivision, subject_city, client_name, client_email, broker_slug, value_low, value_high, recommended_list, comps_count, status, generation_reason, created_at, finalized_at, delivered_at, built_at, build_error, html_path, price_override, build_summary',
       { count: 'exact' },
     )
     .order('created_at', { ascending: false })

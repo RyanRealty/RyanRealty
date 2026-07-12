@@ -66,6 +66,13 @@ interface CmaRow {
   built_at: string | null
   build_error: string | null
   html_path: string
+  build_summary: { needs_review?: boolean; review_reason?: string | null } | null
+}
+
+/** A CMA whose comp set was too heterogeneous for the builder to trust — the
+ *  broker must confirm comp selection before it goes to a client (§0). */
+function needsReview(cma: CmaRow): boolean {
+  return cma.build_summary?.needs_review === true
 }
 
 /** A CMA has an openable document when the builder stored HTML in the DB
@@ -280,9 +287,16 @@ async function CmasContent({ params }: { params: Record<string, string | undefin
                           <div className="truncate text-xs text-muted-foreground">{cma.subject_subdivision}</div>
                         ) : null}
                       </div>
-                      <Badge variant={statusVariant(cma.status)} className="shrink-0 capitalize">
-                        {cma.status}
-                      </Badge>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        <Badge variant={statusVariant(cma.status)} className="capitalize">
+                          {cma.status}
+                        </Badge>
+                        {needsReview(cma) ? (
+                          <Badge variant="destructive" title={cma.build_summary?.review_reason ?? undefined}>
+                            Needs review
+                          </Badge>
+                        ) : null}
+                      </div>
                     </div>
                     <div className="mt-3 flex items-baseline justify-between gap-2 text-sm">
                       <span className="text-muted-foreground">Rec. list</span>

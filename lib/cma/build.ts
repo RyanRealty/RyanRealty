@@ -195,12 +195,19 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       builder: CMA_BUILDER_VERSION,
       page_count: pageCount,
       comps_count: adjusted.length,
+      // Top-level so the admin queue + batch reports can filter flagged CMAs
+      // without digging into the pricing sub-object.
+      needs_review: pricing.needsReview,
+      review_reason: pricing.reviewReason,
       pricing: {
         conservative: pricing.conservative,
         recommended: pricing.recommended,
         high_end: pricing.highEnd,
         confidence: pricing.confidence,
         convergence_spread_pct: pricing.convergenceSpreadPct,
+        comp_ppsf_cv: pricing.compPpsfCv,
+        needs_review: pricing.needsReview,
+        review_reason: pricing.reviewReason,
         method1_mid: pricing.method1Mid,
         method2: pricing.method2,
         method3: pricing.method3,
