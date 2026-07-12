@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.769.0 (2026-07-12)
+
+### Features
+- feat(cma): audit findings are machine-actionable — bounded self-repair loop
+
+---
+
+
 ## v1.768.1 (2026-07-12)
 
 ### Bug Fixes
