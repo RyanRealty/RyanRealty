@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.774.2 (2026-07-12)
+
+### Bug Fixes
+- fix(cma/bpo): recalibrate audit verdict so needs_review is discriminating (v2)
+
+---
+
+
 ## v1.774.1 (2026-07-12)
 
 ### Bug Fixes
