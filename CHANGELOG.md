@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.766.0 (2026-07-12)
+
+### Features
+- feat(cma): full-feature comparability reasoning + enforced accuracy contract on every build
+
+---
+
+
 ## v1.765.0 (2026-07-12)
 
 ### Features
