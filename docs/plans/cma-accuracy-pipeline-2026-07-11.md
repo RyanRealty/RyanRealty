@@ -12,7 +12,7 @@
 
 ## Architecture (locked in SKILL.md §0)
 
-deterministic data/math (§0-safe) → LLM comparability judgment (full features) → verdict-weighted pricing → accuracy contract (hard-fail / force-review) → draft in /admin/cmas. Judge unavailable ⇒ needs_review forced; unvetted never presents as vetted.
+deterministic data/math (§0-safe) → LLM comparability judgment (full features) → verdict-weighted pricing → **adversarial accuracy audit (independent second pass, tries to refute; Matt directive 2026-07-11)** → accuracy contract (hard-fail / force-review; audit-ran + audit-clean are contract checks) → draft in /admin/cmas. Judge or auditor unavailable ⇒ needs_review forced; unvetted/unaudited never presents as vetted.
 
 ## Verification status
 

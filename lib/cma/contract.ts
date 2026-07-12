@@ -18,6 +18,7 @@
 
 import type { CmaAdjustedComp, CmaPricing } from '@/lib/cma/types'
 import type { CompJudgment } from '@/lib/cma/judge'
+import type { CmaAudit } from '@/lib/cma/audit'
 
 export const COMP_MAX_AGE_MONTHS = 24
 
@@ -40,10 +41,11 @@ export function evaluateAccuracyContract(args: {
   comps: CmaAdjustedComp[]
   pricing: CmaPricing
   judgment: CompJudgment | null
+  audit: CmaAudit | null
   minComps: number
   marketContextPresent: boolean
 }): AccuracyContract {
-  const { comps, pricing, judgment, minComps } = args
+  const { comps, pricing, judgment, audit, minComps } = args
   const checks: ContractCheck[] = []
   const now = Date.now()
   const maxAgeMs = COMP_MAX_AGE_MONTHS * 30.44 * 86_400_000
@@ -116,6 +118,27 @@ export function evaluateAccuracyContract(args: {
     severity: 'review',
     pass: !pricing.needsReview || !pricing.reviewReason?.includes('price-per-square-foot'),
     detail: pricing.needsReview ? (pricing.reviewReason ?? 'Dispersion flag raised.') : 'Comp set is one market tier.',
+  })
+  checks.push({
+    id: 'adversarial-audit-ran',
+    severity: 'review',
+    pass: audit != null,
+    detail: audit
+      ? `Adversarial accuracy audit ran (${audit.model}, $${audit.costUsd}): verdict ${audit.verdict}, ${audit.findings.length} finding(s).`
+      : 'Adversarial accuracy audit did NOT run (no key or call failed) — the analysis is unaudited; broker review required.',
+  })
+  checks.push({
+    id: 'adversarial-audit-clean',
+    severity: 'review',
+    pass: audit == null || audit.verdict === 'pass',
+    detail:
+      audit == null
+        ? 'n/a (no audit).'
+        : audit.verdict === 'pass'
+          ? `Audit verdict: pass. ${audit.summary}`
+          : `Audit verdict: ${audit.verdict}. ${audit.summary} Findings: ${audit.findings
+              .map((f) => `[${f.severity}] ${f.claim}`)
+              .join(' · ')}`,
   })
   checks.push({
     id: 'market-context-present',

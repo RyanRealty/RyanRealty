@@ -1,8 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { evaluateAccuracyContract } from '@/lib/cma/contract'
+import type { CmaAudit } from '@/lib/cma/audit'
 import type { CompJudgment } from '@/lib/cma/judge'
 import type { CmaComp, CmaSubject } from '@/lib/cma/types'
+
+function cleanAudit(overrides: Partial<CmaAudit> = {}): CmaAudit {
+  return {
+    verdict: 'pass',
+    findings: [],
+    summary: 'Analysis survives adversarial review.',
+    costUsd: 0.03,
+    model: 'claude-sonnet-4-5',
+    usedLlm: true,
+    ...overrides,
+  }
+}
 
 function subject(overrides: Partial<CmaSubject> = {}): CmaSubject {
   return {
@@ -91,6 +104,7 @@ describe('evaluateAccuracyContract', () => {
     const adjusted = adjustComps(subject(), comps, null)
     const pricing = computePricing(subject(), adjusted, null)!
     const contract = evaluateAccuracyContract({
+      audit: cleanAudit(),
       comps: adjusted,
       pricing,
       judgment: judgmentFor(comps),
@@ -107,6 +121,7 @@ describe('evaluateAccuracyContract', () => {
     const adjusted = adjustComps(subject(), comps, null)
     const pricing = computePricing(subject(), adjusted, null)!
     const contract = evaluateAccuracyContract({
+      audit: cleanAudit(),
       comps: adjusted,
       pricing,
       judgment: null,
@@ -124,6 +139,7 @@ describe('evaluateAccuracyContract', () => {
     const adjusted = adjustComps(subject(), comps, null)
     const pricing = computePricing(subject(), adjusted, null)!
     const contract = evaluateAccuracyContract({
+      audit: cleanAudit(),
       comps: adjusted,
       pricing,
       judgment: judgmentFor(comps),
@@ -139,6 +155,7 @@ describe('evaluateAccuracyContract', () => {
     const adjusted = adjustComps(subject(), comps, null)
     const pricing = computePricing(subject(), adjusted, null)!
     const contract = evaluateAccuracyContract({
+      audit: cleanAudit(),
       comps: adjusted,
       pricing,
       judgment: judgmentFor(comps),
@@ -161,6 +178,7 @@ describe('evaluateAccuracyContract', () => {
     const adjusted = adjustComps(subject(), wide, null)
     const pricing = computePricing(subject(), adjusted, null)!
     const contract = evaluateAccuracyContract({
+      audit: cleanAudit(),
       comps: adjusted,
       pricing,
       judgment: judgmentFor(wide),
@@ -170,5 +188,45 @@ describe('evaluateAccuracyContract', () => {
     expect(contract.pass).toBe(true)
     expect(contract.forceReview).toBe(true)
     expect(contract.checks.find((c) => c.id === 'dispersion-within-limit')!.pass).toBe(false)
+  })
+
+  it('forces review when the adversarial audit did not run', () => {
+    const comps = tightSet()
+    const adjusted = adjustComps(subject(), comps, null)
+    const pricing = computePricing(subject(), adjusted, null)!
+    const contract = evaluateAccuracyContract({
+      audit: null,
+      comps: adjusted,
+      pricing,
+      judgment: judgmentFor(comps),
+      minComps: 6,
+      marketContextPresent: true,
+    })
+    expect(contract.pass).toBe(true)
+    expect(contract.forceReview).toBe(true)
+    expect(contract.checks.find((c) => c.id === 'adversarial-audit-ran')!.pass).toBe(false)
+  })
+
+  it('forces review when the adversarial audit records findings', () => {
+    const comps = tightSet()
+    const adjusted = adjustComps(subject(), comps, null)
+    const pricing = computePricing(subject(), adjusted, null)!
+    const contract = evaluateAccuracyContract({
+      audit: cleanAudit({
+        verdict: 'review',
+        findings: [{ severity: 'major', claim: 'Comp 3 is a townhome', evidence: 'remarks say attached product' }],
+        summary: 'One comparability defect needs broker resolution.',
+      }),
+      comps: adjusted,
+      pricing,
+      judgment: judgmentFor(comps),
+      minComps: 6,
+      marketContextPresent: true,
+    })
+    expect(contract.pass).toBe(true)
+    expect(contract.forceReview).toBe(true)
+    const check = contract.checks.find((c) => c.id === 'adversarial-audit-clean')!
+    expect(check.pass).toBe(false)
+    expect(check.detail).toContain('Comp 3 is a townhome')
   })
 })

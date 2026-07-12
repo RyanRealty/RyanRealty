@@ -23,6 +23,7 @@ import { selectComps, MIN_COMPS } from '@/lib/cma/comps'
 import { getCmaMarketContext } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { judgeComps } from '@/lib/cma/judge'
+import { auditCma } from '@/lib/cma/audit'
 import { evaluateAccuracyContract } from '@/lib/cma/contract'
 import { buildCmaMapDataUri } from '@/lib/cma/map'
 import { renderCmaHtml } from '@/lib/cma/render'
@@ -153,6 +154,29 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       )
     }
 
+    // 4.4. Adversarial accuracy audit — an independent second pass whose only
+    // job is to refute the finished analysis (Matt directive 2026-07-11:
+    // every CMA must be adversarially audited). Builder and auditor share no
+    // prompt. Anything but a clean pass forces broker review via the contract.
+    const audit = await auditCma({
+      subject,
+      comps: adjusted,
+      excluded:
+        judgment?.verdicts
+          .filter((v) => v.tier === 'exclude')
+          .map((v) => ({ listingKey: v.listingKey, reason: v.reason })) ?? [],
+      pricing,
+      judgment,
+      market,
+    })
+    pricing.notes.push(
+      audit
+        ? audit.verdict === 'pass'
+          ? 'Adversarial accuracy audit: an independent review pass attacked this analysis and found no material defect.'
+          : `Adversarial accuracy audit: ${audit.findings.length} finding(s) recorded for broker review before this analysis is released.`
+        : 'Adversarial accuracy audit unavailable for this build — broker review required before release.',
+    )
+
     // 4.5. Accuracy contract — the mechanical enforcement of the process.
     // Hard violations kill the build; review violations force needs_review so
     // an unvetted or non-converged CMA can never present as clean.
@@ -160,6 +184,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       comps: adjusted,
       pricing,
       judgment,
+      audit,
       minComps: MIN_COMPS,
       marketContextPresent: market != null,
     })
@@ -227,6 +252,15 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             cost_usd: judgment.costUsd,
           }
         : { source: 'none', note: 'Priced on the full comp set (deterministic + dispersion guard).' },
+      adversarial_audit: audit
+        ? {
+            source: `Independent adversarial audit (${audit.model})`,
+            verdict: audit.verdict,
+            summary: audit.summary,
+            findings: audit.findings,
+            cost_usd: audit.costUsd,
+          }
+        : { source: 'none', note: 'Audit unavailable — needs_review forced.' },
       comps: adjusted.map((c) => ({
         listing_key: c.listingKey,
         mls_number: c.mlsNumber,
@@ -299,6 +333,20 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       // without digging into the pricing sub-object.
       needs_review: pricing.needsReview,
       review_reason: pricing.reviewReason,
+      // The adversarial audit (or a note that it was unavailable).
+      audit: audit
+        ? {
+            used_llm: true as const,
+            model: audit.model,
+            cost_usd: audit.costUsd,
+            verdict: audit.verdict,
+            summary: audit.summary,
+            findings: audit.findings,
+          }
+        : {
+            used_llm: false as const,
+            note: 'Adversarial audit unavailable (no key or call failed); needs_review forced via the contract.',
+          },
       // The full accuracy-contract evaluation — every check, pass or fail.
       accuracy_contract: contract,
       pricing: {
