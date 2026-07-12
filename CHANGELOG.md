@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.764.0 (2026-07-12)
+
+### Features
+- feat(cma): comp-dispersion guard flags heterogeneous comp sets for broker review
+
+### Bug Fixes
+- fix(search): remove the overlapping guest-alert strip from split/map view
+
+---
+
+
 ## v1.763.1 (2026-07-12)
 
 ### Bug Fixes
