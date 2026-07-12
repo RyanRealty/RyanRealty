@@ -14,6 +14,27 @@
 
 deterministic data/math (§0-safe) → LLM comparability judgment (full features) → verdict-weighted pricing → **adversarial accuracy audit (independent second pass, tries to refute; Matt directive 2026-07-11)** → accuracy contract (hard-fail / force-review; audit-ran + audit-clean are contract checks) → draft in /admin/cmas. Judge or auditor unavailable ⇒ needs_review forced; unvetted/unaudited never presents as vetted.
 
+## Adversarial audit — calibration journey (same day)
+
+| Round | Outcome | Action taken |
+|---|---|---|
+| 1 (raw) | All 5 fail, 6–14 findings each — auditor re-derived arithmetic (LLMs can't) + misread under-labeled fields | Re-chartered: arithmetic out of scope (machine-verified layer owns it), every prompt field labeled, failed-list nuance (`d0cdeebb`) |
+| 2 (calibrated) | All 5 fail, 4–5 findings — now SUBSTANTIVE: townhome kept by judge, premium-feature comps, age/solar mismatch | Findings made machine-actionable (compListingKey) + bounded self-repair loop: drop flagged comps → re-price → re-audit once (`03ac779c`) |
+| 3 (self-repair) | Repair fired (Slate −4 comps, Fairfield −1). Audit caught a REAL §0 data bug: year_built=2146 (sqft duplicated into year field by MLS entry on the re-listed Slate row) + stale narrative indices | saneYearBuilt() mapper guard both sites + regression test; narrative may not use comp indices; repair disclaimer note (`2b95df0f`) |
+
+**Operational learnings:**
+- 20606 Slate RE-LISTED (Active $599K, on market 2026-07-11) → the expired-outreach queue MUST exclude expired rows whose property has a newer Active listing (ethics: never solicit a listed property). Build this check into the send queue.
+- Worker route budget: each build now runs up to 3 LLM passes — drain the queue at limit≤2 per invocation (limit=5 exceeded 300s).
+- Auditor verdicts remain harsh (fail on debatable-but-defensible recommendations). All flagged CMAs land needs_review, which is the correct fail-safe posture: Matt reviews at /admin/cmas before anything releases. Severity calibration can continue iterating; the gate itself is sound.
+
+## Round 4 — deterministic verdicts + BPO rollout (same day, Matt directives)
+
+- **Deterministic audit verdicts** (`computeAuditVerdict`): the LLM reports categorized findings (data-integrity / comp-selection / price-opinion / narrative / market-verdict); CODE decides the verdict. Rationale: live calibration showed the adversarial reviewer attacks any configuration from whichever side is open (demanded premium-comp exclusions, then attacked the exclusions). Rules: critical data-integrity ⇒ fail; comp/narrative/market/price-opinion ⇒ review; minors ⇒ pass. Model's own verdict stored as advisory `llm_verdict`.
+- **BPO accuracy architecture** (`61b94a72`): buildBpo runs the shared judge → weak-half-weighted pricing → opinion → adversarial audit in finalOpinion mode (attacks the OPINION with ceiling/listing-pressure context) → bounded self-repair (re-derives pricing AND opinion) → `evaluateBpoAccuracyContract` (base + hard: opinion-in-range, active-ceiling-held; review: opinion-confidence downgrade). `finalizeBpoAction` refuses a needs_review build without explicit broker acknowledgment (confirm flow in BpoReviewActions).
+- **Live E2E (real UI, Matt's session)**: built `bpo-1652-redrose-bend` through /admin/bpo/new — opinion $530K ($505–545K), judge excluded 6 candidates, audit `llm_verdict=fail` demoted to `verdict=review` by code, needs_review=true, contract pass, draft. The deterministic-verdict demotion observed working in production.
+- Year-guard verified live: rebuilt Slate persists `subject_year_built=null` (was 2146).
+- CMA repair loop verified live: Fairfield −1 comp, 22nd −2 comps, both re-audited.
+
 ## Verification status
 
 - [x] Unit: 23/23 lib/cma tests (contract hard-fail, force-review, weights, dispersion, fail-open)
