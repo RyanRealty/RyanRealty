@@ -33,17 +33,17 @@
       { "figure": "steps[2] Scroll 50%+", "source": "GA4 Data API runReport", "dimensions": ["customEvent:lp_variant", "eventName"], "metrics": ["eventCount"], "filter": "eventName=scroll_depth" },
       { "figure": "steps[3] Form start", "source": "GA4 Data API runReport", "dimensions": ["eventName"], "metrics": ["eventCount"], "filter": "eventName=form_start" },
       { "figure": "steps[4] Form submit", "source": "GA4 Data API runReport", "dimensions": ["eventName"], "metrics": ["eventCount"], "filter": "eventName=generate_lead" },
-      { "figure": "steps[5] FUB person created", "source": "public.marketing_assignments", "filter": "created_at IN [range]", "aggregator": "COUNT(*)" },
+      { "figure": "steps[5] Lead captured (CRM)", "source": "public.crm_people via getLeadIntake", "filter": "created_at IN [range] AND deleted=false AND classifyLeadSource(source).attributable", "aggregator": "COUNT(*)" },
       { "figure": "steps[6] CMA delivered", "source": "public.cmas", "filter": "status IN (delivered, final, sent) AND created_at IN [range]", "aggregator": "COUNT(*)" },
       { "figure": "dropOffPct", "source": "derived", "formula": "1 - count[i] / count[i-1]" },
       { "figure": "availableVariants[]", "source": "GA4 Data API runReport", "dimensions": ["customEvent:lp_variant"], "filter": "lp_variant != '(not set)'", "distinct": true }
     ],
     "conversions": [
-      { "figure": "leadsBySource[]", "source": "GA4 Data API runReport", "dimensions": ["sessionSourceMedium"], "metrics": ["eventCount", "totalUsers"], "filter": "eventName IN LEAD_EVENT_NAMES" },
-      { "figure": "brokerSplit[]", "source": "public.marketing_assignments", "groupBy": "broker", "filter": "created_at IN [range]" },
-      { "figure": "classificationMix[]", "source": "public.marketing_assignments", "groupBy": "tier", "filter": "created_at IN [range]" },
-      { "figure": "timeSeries[]", "source": "public.marketing_channel_daily", "filter": "channel=ga4 AND scope=account AND metric IN (sessions, total_lead_events) AND date IN [range]" },
-      { "figure": "costPerLeadUsd", "source": "derived", "formula": "SUM(marketing_channel_daily.value WHERE channel=meta_ads AND metric=spend_usd) / SUM(GA4 generate_lead eventCount)" }
+      { "figure": "leadsBySource[]", "source": "public.crm_people via getLeadIntake", "groupBy": "source", "filter": "created_at IN [range] AND deleted=false AND attributable" },
+      { "figure": "brokerSplit[]", "source": "public.crm_people via getLeadIntake", "groupBy": "assigned_broker", "filter": "created_at IN [range] AND deleted=false AND attributable" },
+      { "figure": "classificationMix[]", "source": "public.crm_people via getLeadIntake", "groupBy": "classifyLeadSource(source).channel", "filter": "created_at IN [range] AND deleted=false AND attributable" },
+      { "figure": "timeSeries[]", "source": "public.crm_people (leads) + public.marketing_channel_daily (sessions)", "filter": "leads: crm_people created_at IN [range] AND attributable; sessions: channel=ga4 AND scope=account AND metric=sessions AND date IN [range]" },
+      { "figure": "costPerLeadUsd", "source": "derived", "formula": "SUM(marketing_channel_daily.value WHERE channel=meta_ads AND metric=spend_usd) / crm_people inbound lead count" }
     ]
   },
   "notes": [

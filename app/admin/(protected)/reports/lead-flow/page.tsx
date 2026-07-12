@@ -2,24 +2,24 @@
  * /admin/reports/lead-flow — end-to-end funnel report.
  *
  * Joins GA4 Data API (sessions, generate_lead events by lp_variant) with
- * Supabase (visits, marketing_assignments, valuation_requests, listing_inquiries,
+ * Supabase (visits, crm_people, valuation_requests, listing_inquiries,
  * cmas) to surface:
  *
- *   1. Hero metrics — 30-day sessions, total leads, assignment rate, CMAs out
- *   2. End-to-end funnel — visit → engaged → lead → broker assigned → CMA
+ *   1. Hero metrics — sessions, leads captured, CMAs out
+ *   2. End-to-end funnel — visit → engaged → lead → CMA
  *   3. Wiring health by surface — for every lead surface in the codebase, show
- *      whether sessions, GA4 events, and marketing_assignments are aligned.
+ *      whether sessions, GA4 events, and CRM leads are aligned.
  *      A "wired" surface fires all three. A "silent" surface has sessions but
- *      no events or assignments — almost always a wiring bug.
- *   4. Top sources of identified leads — marketing_assignments grouped by
- *      source, with broker split
- *   5. Daily lead-creation timeline — assignments per day across 30 days
+ *      no events or leads — almost always a wiring bug.
+ *   4. Leads by broker + channel, from the CRM
+ *   5. Daily lead-creation timeline — inbound CRM leads per day
  *
  * Data layer notes:
  *   - GA4 lp_variant custom dimension was registered 2026-05-18 and is the
  *     primary pivot for per-LP attribution.
- *   - marketing_assignments is the canonical broker-attribution ledger
- *     (see docs/FUB_SELLER_WORKFLOW_2026-05-17.md §6).
+ *   - crm_people is the system of record for leads since the FUB cutover
+ *     (2026-06-24). Lead counts come from getLeadIntake (inbound sources only).
+ *     The old marketing_assignments ledger is decommissioned.
  *   - listing_inquiries powers Path I (Schedule a showing / Ask a question
  *     from listing details).
  *   - When a surface shows 0 sessions in 30 days, "wiring gap" is suppressed
@@ -38,6 +38,7 @@ import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
 import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
 import { getGA4Summary, type GA4Summary } from '@/app/actions/ga4-report'
 import { countCmasInRange } from '@/lib/data/sync/syncWrites'
+import { getLeadIntake } from '@/lib/data'
 import { DateRangePicker } from '@/app/admin/(protected)/analytics/_components/DateRangePicker'
 import { resolveDateRange } from '@/app/admin/(protected)/analytics/_lib/queries'
 
@@ -90,7 +91,7 @@ type LeadSurface = {
   label: string
   /** GA4 lp_variant param value. Used to pivot the GA4 lpFunnels report. */
   lp_variant: string
-  /** marketing_assignments.source value written by the server action. */
+  /** crm_people.source value written by the server action for this surface. */
   assignment_source: string | null
   /** URL path used in visits table matching. */
   path_prefix: string
@@ -112,15 +113,6 @@ const LEAD_SURFACES: LeadSurface[] = [
 ]
 
 // ─── Data types ───────────────────────────────────────────────────────────
-
-type AssignmentRow = {
-  audience: 'seller' | 'buyer'
-  broker: 'matt' | 'rebecca' | 'paul'
-  source: string | null
-  tier: string | null
-  assigned_at: string
-  fub_person_id: number | null
-}
 
 type VisitsByPath = { path: string; visits: number; sessions: number }
 
@@ -201,20 +193,17 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
   // page respects the DAL-boundary rule. The other tables here are not in
   // the DAL-boundary banned list, so direct supabase.from() reads are
   // allowed for them today.
+  const nowIso = new Date().toISOString()
   const [
     ga4Result,
-    assignmentsRes,
+    intake,
     valuationReqRes,
     listingInquiriesRes,
     cmaCount,
     visitsRes,
   ] = await Promise.all([
     getGA4Summary(startDate, endDate),
-    supabase
-      .from('marketing_assignments')
-      .select('audience, broker, source, tier, assigned_at, fub_person_id')
-      .gte('assigned_at', cutoffIso)
-      .limit(5000),
+    getLeadIntake({ startIso: cutoffIso, endIso: nowIso }),
     supabase
       .from('valuation_requests')
       .select('id, created_at, email, source_url')
@@ -237,7 +226,6 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
   const ga4: GA4Summary | null = ga4Ok ? ga4Result.data : null
   const ga4Error = ga4Ok ? null : ga4Result.error
 
-  const assignments: AssignmentRow[] = (assignmentsRes.data ?? []) as AssignmentRow[]
   const valuationCount = valuationReqRes.data?.length ?? 0
   const listingInquiries = listingInquiriesRes.data ?? []
   const listingInquiryCount = listingInquiries.length
@@ -261,11 +249,11 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
     }
   }
 
-  // marketing_assignments tallies by source.
+  // CRM lead tallies by raw source (inbound/attributable only). Keyed by the
+  // same source strings the surfaces write (seller-lp, buyer-lp, expired-lp, …).
   const assignmentsBySource = new Map<string, number>()
-  for (const a of assignments) {
-    const src = a.source ?? 'unspecified'
-    assignmentsBySource.set(src, (assignmentsBySource.get(src) ?? 0) + 1)
+  for (const s of intake.bySource) {
+    assignmentsBySource.set(s.source, s.count)
   }
 
   // Sessions per surface = sum of visits whose path starts with the prefix.
@@ -285,24 +273,20 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
     return { surface, sessions, ga4_events, assignments: assignments_count, status }
   })
 
-  // Broker split of assignments.
+  // Broker split of inbound leads.
   const brokerSplit = new Map<string, number>()
-  for (const a of assignments) {
-    brokerSplit.set(a.broker, (brokerSplit.get(a.broker) ?? 0) + 1)
+  for (const b of intake.byBroker) brokerSplit.set(b.broker, b.count)
+
+  // Channel split (replaces the old FUB audience split — channel is what we can
+  // derive accurately from crm_people.source and it's more actionable).
+  const channelSplit = new Map<string, number>()
+  for (const c of intake.byChannel) {
+    if (c.attributable) channelSplit.set(c.label, c.count)
   }
 
-  // Audience split.
-  const audienceSplit = new Map<string, number>()
-  for (const a of assignments) {
-    audienceSplit.set(a.audience, (audienceSplit.get(a.audience) ?? 0) + 1)
-  }
-
-  // Daily timeline.
+  // Daily timeline of inbound leads.
   const dailyTally = new Map<string, number>()
-  for (const a of assignments) {
-    const day = a.assigned_at.slice(0, 10)
-    dailyTally.set(day, (dailyTally.get(day) ?? 0) + 1)
-  }
+  for (const d of intake.byDay) dailyTally.set(d.date, d.inbound)
   const dailySeries: DailySeries[] = []
   for (let i = lookbackDays - 1; i >= 0; i--) {
     const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
@@ -314,7 +298,7 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
   // Funnel stage counts (best-effort: each stage uses the most authoritative source).
   const ga4Sessions = ga4?.sessions ?? 0
   const ga4LeadEvents = ga4?.totalLeadEvents ?? 0
-  const totalAssignments = assignments.length
+  const totalAssignments = intake.inboundLeads
   const totalInquiries = valuationCount + listingInquiryCount  // form-level submits
   const conversionRate = ga4Sessions > 0 ? totalAssignments / ga4Sessions : 0
 
@@ -334,7 +318,7 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
         stats={[
           { label: `Sessions (${windowLabel})`, value: formatInt(ga4Sessions), caption: 'GA4, all sources' },
           { label: `Lead events (${windowLabel})`, value: formatInt(ga4LeadEvents), caption: 'GA4 generate_lead + siblings' },
-          { label: `Broker assignments (${windowLabel})`, value: formatInt(totalAssignments), caption: 'marketing_assignments rows' },
+          { label: `Leads captured (${windowLabel})`, value: formatInt(totalAssignments), caption: 'crm_people, inbound sources' },
           { label: `CMAs created (${windowLabel})`, value: formatInt(cmaCount), caption: 'cmas table inserts' },
         ]}
       />
@@ -353,7 +337,7 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
               { stage: 'Sessions', source: 'GA4', count: ga4Sessions, pct: '100%' },
               { stage: 'Form submits', source: 'valuation_requests + listing_inquiries', count: totalInquiries, pct: formatPct(totalInquiries, ga4Sessions) },
               { stage: 'Lead events fired', source: 'GA4 generate_lead', count: ga4LeadEvents, pct: formatPct(ga4LeadEvents, ga4Sessions) },
-              { stage: 'Broker assignments', source: 'marketing_assignments', count: totalAssignments, pct: formatPct(totalAssignments, ga4Sessions) },
+              { stage: 'Leads captured (CRM)', source: 'crm_people, inbound sources', count: totalAssignments, pct: formatPct(totalAssignments, ga4Sessions) },
               { stage: 'CMAs created', source: 'cmas', count: cmaCount, pct: formatPct(cmaCount, ga4Sessions) },
             ]}
             cap={8}
@@ -391,7 +375,7 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
         <CardHeader>
           <CardTitle>Wiring health by lead surface</CardTitle>
           <p className="text-xs text-muted-foreground">
-            For each lead-capture surface in the codebase: how much traffic reached it (30d sessions to the URL prefix), how many GA4 generate_lead events fired tagged with that lp_variant, and how many marketing_assignments rows landed with that source. A surface marked silent has traffic but no events or assignments — typically a wiring regression to investigate.
+            For each lead-capture surface in the codebase: how much traffic reached it (sessions to the URL prefix), how many GA4 generate_lead events fired tagged with that lp_variant, and how many CRM leads landed with that source. A surface marked silent has traffic but no events or leads — typically a wiring regression to investigate.
           </p>
         </CardHeader>
         <CardContent>
@@ -403,7 +387,7 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
               { key: 'surface', header: 'Surface', className: 'font-medium', cell: (row) => row.surface.label },
               { key: 'sessions', header: 'Sessions', className: 'text-right tabular-nums', cell: (row) => formatInt(row.sessions) },
               { key: 'events', header: 'GA4 events', className: 'text-right tabular-nums', cell: (row) => formatInt(row.ga4_events) },
-              { key: 'assignments', header: 'Assignments', className: 'text-right tabular-nums', cell: (row) => formatInt(row.assignments) },
+              { key: 'assignments', header: 'CRM leads', className: 'text-right tabular-nums', cell: (row) => formatInt(row.assignments) },
               { key: 'status', header: 'Status', cell: (row) => <Badge variant={statusBadgeVariant(row.status)}>{statusLabel(row.status)}</Badge> },
               { key: 'notes', header: 'Notes', className: 'text-xs text-muted-foreground', cell: (row) => row.surface.notes ?? '' },
             ]}
@@ -424,7 +408,7 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
                       <div className="tabular-nums text-foreground">{formatInt(row.ga4_events)}</div>
                     </div>
                     <div>
-                      <div className="uppercase tracking-wide">Assignments</div>
+                      <div className="uppercase tracking-wide">CRM leads</div>
                       <div className="tabular-nums text-foreground">{formatInt(row.assignments)}</div>
                     </div>
                   </div>
@@ -472,11 +456,11 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
         </Card>
       )}
 
-      {/* 5. Broker + audience split of assignments */}
+      {/* 5. Broker + channel split of inbound leads */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Assignments by broker ({windowLabel})</CardTitle>
+            <CardTitle>Leads by broker ({windowLabel})</CardTitle>
           </CardHeader>
           <CardContent>
             <TableWithMobileCards
@@ -496,34 +480,34 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
                   </CardContent>
                 </Card>
               )}
-              empty={<>No assignments in window.</>}
+              empty={<>No leads in window.</>}
             />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Assignments by audience ({windowLabel})</CardTitle>
+            <CardTitle>Leads by channel ({windowLabel})</CardTitle>
           </CardHeader>
           <CardContent>
             <TableWithMobileCards
-              rows={Array.from(audienceSplit.entries()).sort((a, b) => b[1] - a[1]).map(([audience, count]) => ({ audience, count }))}
+              rows={Array.from(channelSplit.entries()).sort((a, b) => b[1] - a[1]).map(([channel, count]) => ({ channel, count }))}
               cap={10}
-              getRowKey={(r) => r.audience}
+              getRowKey={(r) => r.channel}
               columns={[
-                { key: 'audience', header: 'Audience', className: 'whitespace-nowrap font-medium capitalize', cell: (r) => r.audience },
+                { key: 'channel', header: 'Channel', className: 'whitespace-nowrap font-medium', cell: (r) => r.channel },
                 { key: 'count', header: 'Count', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.count) },
                 { key: 'share', header: 'Share', className: 'whitespace-nowrap text-right tabular-nums text-muted-foreground', cell: (r) => formatPct(r.count, totalAssignments) },
               ]}
               renderCard={(r) => (
                 <Card>
                   <CardContent className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium capitalize text-foreground">{r.audience}</span>
+                    <span className="text-sm font-medium text-foreground">{r.channel}</span>
                     <span className="text-xs text-muted-foreground tabular-nums">{formatInt(r.count)} · {formatPct(r.count, totalAssignments)}</span>
                   </CardContent>
                 </Card>
               )}
-              empty={<>No assignments in window.</>}
+              empty={<>No leads in window.</>}
             />
           </CardContent>
         </Card>
@@ -532,7 +516,7 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
       {/* 6. Daily timeline */}
       <Card>
         <CardHeader>
-          <CardTitle>Daily assignments (last 14 days)</CardTitle>
+          <CardTitle>Daily leads (last 14 days)</CardTitle>
           <p className="text-xs text-muted-foreground">
             One row per day, most recent first. Bar length is proportional to the busiest day in the 30-day window.
           </p>
@@ -611,7 +595,7 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
           <strong className="text-foreground">Wiring helpers:</strong> <code className="rounded bg-muted px-1">lib/lead-tracking.ts</code> (fireLeadGenerated), <code className="rounded bg-muted px-1">lib/canonical-lead-tagger.ts</code> (canonicallyTagLead), <code className="rounded bg-muted px-1">lib/ga4-measurement-protocol.ts</code> (fireGa4Event).
         </p>
         <p>
-          <strong className="text-foreground">Methodology:</strong> Sessions counted from GA4 Data API for the property the service account has access to. Lead events filtered to <code className="rounded bg-muted px-1">generate_lead</code>, <code className="rounded bg-muted px-1">listing_inquiry</code>, <code className="rounded bg-muted px-1">home_valuation_cta_click</code>, plus the legacy event names (<code className="rounded bg-muted px-1">contact_agent</code>, <code className="rounded bg-muted px-1">valuation_requested</code>, etc.). Assignments come from <code className="rounded bg-muted px-1">marketing_assignments</code> filtered on <code className="rounded bg-muted px-1">assigned_at &gt;= {range.startDate}</code>.
+          <strong className="text-foreground">Methodology:</strong> Sessions counted from GA4 Data API for the property the service account has access to. Lead events filtered to <code className="rounded bg-muted px-1">generate_lead</code>, <code className="rounded bg-muted px-1">listing_inquiry</code>, <code className="rounded bg-muted px-1">home_valuation_cta_click</code>, plus the legacy event names (<code className="rounded bg-muted px-1">contact_agent</code>, <code className="rounded bg-muted px-1">valuation_requested</code>, etc.). Leads come from <code className="rounded bg-muted px-1">crm_people</code> (system of record) via <code className="rounded bg-muted px-1">getLeadIntake</code>, inbound sources only, created <code className="rounded bg-muted px-1">&gt;= {range.startDate}</code>.
         </p>
       </div>
     </div>
@@ -628,7 +612,7 @@ export default async function LeadFlowReportPage({ searchParams }: { searchParam
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold text-foreground">Lead-flow report</h1>
         <p className="text-sm text-muted-foreground">
-          End-to-end visibility from GA4 session to broker-assigned lead. Joins GA4 Data API with the Supabase canonical tables (marketing_assignments, valuation_requests, listing_inquiries, cmas). Use the wiring-health section to spot lead surfaces with traffic but no recorded leads.
+          End-to-end visibility from GA4 session to CRM-captured lead. Joins GA4 Data API with the Supabase system of record (crm_people via getLeadIntake, plus valuation_requests, listing_inquiries, cmas). Use the wiring-health section to spot lead surfaces with traffic but no recorded leads.
         </p>
         <DateRangePicker current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
       </header>

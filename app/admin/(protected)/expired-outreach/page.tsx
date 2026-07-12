@@ -13,6 +13,7 @@
 
 import Link from 'next/link'
 import { listExpiredOutreachQueue, type ExpiredOutreachRow } from '@/lib/data'
+import { formatPriceExact } from '@/lib/format/money'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -29,8 +30,7 @@ function maskPhone(p: string | null): string {
 }
 
 function fmtPrice(n: number | null): string {
-  if (n == null) return '—'
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
+  return formatPriceExact(n)
 }
 
 /** The exact template body (kept in crm_templates; duplicated here only for the

@@ -124,6 +124,17 @@ export type { OwnedHomeMatch } from '@/lib/data/crm/getOwnedHome'
 export { getViewedListingsForLead } from '@/lib/data/crm/getViewedListings'
 export type { ViewedListing } from '@/lib/data/crm/getViewedListings'
 
+// CRM — lead intake (single source of truth for dashboard lead counts)
+export { getLeadIntake } from '@/lib/data/crm/getLeadIntake'
+export type { LeadIntake, LeadIntakeInput, LeadIntakeChannel } from '@/lib/data/crm/getLeadIntake'
+export {
+  classifyLeadSource,
+  isAttributableLead,
+  CHANNEL_LABEL,
+  ATTRIBUTABLE_CHANNELS,
+} from '@/lib/data/crm/leadSourceTaxonomy'
+export type { LeadChannel, LeadSourceClass } from '@/lib/data/crm/leadSourceTaxonomy'
+
 // Listings — repeat-sales appreciation ("home as an asset over time")
 export { getRepeatSalesAppreciation } from '@/lib/data/listings/getRepeatSalesAppreciation'
 export type { RepeatSale, RepeatSalesResult } from '@/lib/data/listings/getRepeatSalesAppreciation'

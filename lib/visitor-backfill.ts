@@ -87,7 +87,14 @@ export async function stitchVisitorIdentity(params: {
       identified_at: new Date().toISOString(),
       identified_via: params.source,
     }
-    if (params.fubPersonId != null) sessionPatch.fub_person_id = params.fubPersonId
+    // Post-FUB-cutover (2026-06-24) the id resolved by every identify path IS
+    // the native crm_people.id. Write it to crm_person_id — the column the
+    // visitors dashboard now keys on. fub_person_id is kept in lockstep for
+    // legacy readers until they migrate.
+    if (params.fubPersonId != null) {
+      sessionPatch.fub_person_id = params.fubPersonId
+      sessionPatch.crm_person_id = params.fubPersonId
+    }
     if (params.email) sessionPatch.identified_email = params.email.toLowerCase()
     try {
       await supabase
@@ -217,7 +224,10 @@ export async function backfillSessionToFub(params: {
       .from('visitor_sessions')
       .update({
         identified_at: new Date().toISOString(),
+        // Native crm_people.id post-FUB-cutover; kept in both columns so the
+        // visitors dashboard (crm_person_id) and legacy readers agree.
         fub_person_id: params.fubPersonId,
+        crm_person_id: params.fubPersonId,
         identified_email: params.email?.toLowerCase() ?? null,
         identified_via: params.identifiedVia,
       })

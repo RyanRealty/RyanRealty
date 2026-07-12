@@ -42,6 +42,7 @@ type SessionDetail = {
   ip_city: string | null
   identified_at: string | null
   fub_person_id: number | null
+  crm_person_id: number | null
   identified_email: string | null
   identified_via: string | null
   engagement_score: number
@@ -195,8 +196,8 @@ export default async function VisitorSessionPage({
             {session.identified_at && (<>
               <div><dt className="text-xs text-muted-foreground">Identified at</dt><dd>{fmtDateTime(session.identified_at)}</dd></div>
               <div><dt className="text-xs text-muted-foreground">Identified via</dt><dd>{session.identified_via || '-'}</dd></div>
-              <div><dt className="text-xs text-muted-foreground">FUB person</dt><dd>{session.fub_person_id ? (
-                <a href={`https://app.followupboss.com/2/people/view/${session.fub_person_id}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{session.identified_email ?? `FUB #${session.fub_person_id}`}</a>
+              <div><dt className="text-xs text-muted-foreground">CRM contact</dt><dd>{(session.crm_person_id ?? session.fub_person_id) ? (
+                <a href={`/admin/crm/${session.crm_person_id ?? session.fub_person_id}`} className="text-primary hover:underline">{session.identified_email ?? `Contact #${session.crm_person_id ?? session.fub_person_id}`}</a>
               ) : '-'}</dd></div>
             </>)}
           </dl>

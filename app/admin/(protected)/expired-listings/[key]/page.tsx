@@ -10,6 +10,8 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getExpiredListingDetail } from '@/lib/data'
+import { formatPriceExact } from '@/lib/format/money'
+import { formatDate } from '@/lib/format/date'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,12 +19,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 export const dynamic = 'force-dynamic'
 
 function fmtPrice(n: number | null): string {
-  if (n == null) return '—'
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
+  return formatPriceExact(n)
 }
 function fmtDate(iso: string | null): string {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return formatDate(iso)
 }
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (

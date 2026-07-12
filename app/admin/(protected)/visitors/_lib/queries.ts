@@ -22,6 +22,7 @@ export type LiveSessionRow = {
   ip_city: string | null
   identified_at: string | null
   fub_person_id: number | null
+  crm_person_id: number | null
   identified_email: string | null
   identified_via: string | null
   engagement_score: number
@@ -73,7 +74,7 @@ export async function fetchLiveVisitors(filters: LiveVisitorFilters = {}): Promi
   let query = supabase
     .from('visitor_sessions')
     .select(
-      'session_id, source_domain, first_seen_at, last_seen_at, utm_source, utm_medium, utm_campaign, referrer, landing_page, ip_country, ip_region, ip_city, identified_at, fub_person_id, identified_email, identified_via, engagement_score, peak_score, intent_tags, hot_lead_fired_at, events_backfilled_count'
+      'session_id, source_domain, first_seen_at, last_seen_at, utm_source, utm_medium, utm_campaign, referrer, landing_page, ip_country, ip_region, ip_city, identified_at, fub_person_id, crm_person_id, identified_email, identified_via, engagement_score, peak_score, intent_tags, hot_lead_fired_at, events_backfilled_count'
     )
     .order('last_seen_at', { ascending: false })
     .limit(limit)

@@ -13,6 +13,15 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getGA4SummaryCached } from '@/lib/ga4-cache'
+import { getLeadIntake } from '@/lib/data'
+
+/** Range dates (YYYY-MM-DD) → inclusive ISO bounds for a crm_people query. */
+function rangeToIso(range: DateRange): { startIso: string; endIso: string } {
+  return {
+    startIso: `${range.startDate}T00:00:00Z`,
+    endIso: `${range.endDate}T23:59:59Z`,
+  }
+}
 
 export type DateRange = { startDate: string; endDate: string }
 
@@ -56,6 +65,8 @@ export type OverviewData = {
   totalUsers: number
   newUsers: number
   generateLeadCount: number
+  /** Real inbound leads captured in the CRM (system of record) over the range. */
+  crmLeadCount: number
   leadConversionRate: number
   averageSessionDurationSeconds: number
   engagementRate: number
@@ -68,6 +79,9 @@ export type OverviewData = {
 export async function fetchOverview(range: DateRange): Promise<OverviewData> {
   const summaryRes = await getGA4SummaryCached(range.startDate, range.endDate)
   const supabase = createServiceClient()
+  const { startIso, endIso } = rangeToIso(range)
+  const intake = await getLeadIntake({ startIso, endIso })
+  const crmLeadCount = intake.inboundLeads
 
   const { data: spendRows } = await supabase
     .from('marketing_channel_daily')
@@ -87,6 +101,7 @@ export async function fetchOverview(range: DateRange): Promise<OverviewData> {
       totalUsers: 0,
       newUsers: 0,
       generateLeadCount: 0,
+      crmLeadCount,
       leadConversionRate: 0,
       averageSessionDurationSeconds: 0,
       engagementRate: 0,
@@ -99,13 +114,15 @@ export async function fetchOverview(range: DateRange): Promise<OverviewData> {
 
   const d = summaryRes.data
   const generateLead = d.topLeadEvents.find((e) => e.eventName === 'generate_lead')?.eventCount ?? 0
-  const leadConversionRate = d.sessions > 0 ? generateLead / d.sessions : 0
+  // Conversion rate uses real CRM leads over GA4 sessions (accurate numerator).
+  const leadConversionRate = d.sessions > 0 ? crmLeadCount / d.sessions : 0
 
   return {
     sessions: d.sessions,
     totalUsers: d.totalUsers,
     newUsers: d.newUsers,
     generateLeadCount: generateLead,
+    crmLeadCount,
     leadConversionRate,
     averageSessionDurationSeconds: d.averageSessionDurationSeconds,
     engagementRate: d.engagementRate,
@@ -224,12 +241,11 @@ const FUNNEL_LABELS = [
   'Scroll 50%+ (scroll_depth)',
   'Form start (form_start)',
   'Form submit (generate_lead)',
-  'FUB person created',
+  'Lead captured (CRM)',
   'CMA delivered',
 ] as const
 
 export async function fetchFunnel(range: DateRange, lpVariant?: string): Promise<FunnelData> {
-  const supabase = createServiceClient()
   const summaryRes = await getGA4SummaryCached(range.startDate, range.endDate)
 
   // Variants list — derived from the lpFunnels rows.
@@ -270,20 +286,17 @@ export async function fetchFunnel(range: DateRange, lpVariant?: string): Promise
     }
   }
 
-  // FUB person creations + CMA deliveries — last 30 days from Supabase
-  const { count: fubPersonCount } = await supabase
-    .from('marketing_assignments')
-    .select('id', { count: 'exact', head: true })
-    .gte('created_at', `${range.startDate}T00:00:00Z`)
-    .lte('created_at', `${range.endDate}T23:59:59Z`)
+  // Leads captured (native CRM, system of record) + CMA deliveries in window.
+  const { startIso, endIso } = rangeToIso(range)
+  const intake = await getLeadIntake({ startIso, endIso })
+  const leadCaptured = intake.inboundLeads
 
   // CMA deliveries — cmas where status was set to delivered in the window
-  void supabase
   const { countCmasInRange } = await import('@/lib/data')
   const cmaDelivered = await countCmasInRange({
     statusIn: ['delivered', 'final', 'sent'],
-    fromIso: `${range.startDate}T00:00:00Z`,
-    toIso: `${range.endDate}T23:59:59Z`,
+    fromIso: startIso,
+    toIso: endIso,
   })
 
   const rawCounts = [
@@ -292,7 +305,7 @@ export async function fetchFunnel(range: DateRange, lpVariant?: string): Promise
     scrollCount,
     formStartCount,
     generateLeadCount,
-    fubPersonCount ?? 0,
+    leadCaptured,
     cmaDelivered ?? 0,
   ]
   const steps = rawCounts.map((count, i) => {
@@ -322,53 +335,56 @@ export type ConversionsData = {
 }
 
 export async function fetchConversions(range: DateRange): Promise<ConversionsData> {
-  const summaryRes = await getGA4SummaryCached(range.startDate, range.endDate)
   const supabase = createServiceClient()
+  const { startIso, endIso } = rangeToIso(range)
 
-  // Broker split (from marketing_assignments)
-  const { data: assignmentRows } = await supabase
-    .from('marketing_assignments')
-    .select('broker, tier, created_at')
-    .gte('created_at', `${range.startDate}T00:00:00Z`)
-    .lte('created_at', `${range.endDate}T23:59:59Z`)
+  // Leads, broker split, source mix, per-day — all from the native CRM (system
+  // of record). Attributable inbound only; prospecting/import lists excluded.
+  const intake = await getLeadIntake({ startIso, endIso })
 
-  const brokerMap = new Map<string, number>()
-  const classificationMap = new Map<string, number>()
-  if (Array.isArray(assignmentRows)) {
-    for (const r of assignmentRows as Array<{ broker: string | null; tier: string | null; created_at: string }>) {
-      const b = (r.broker || 'unassigned').toLowerCase()
-      brokerMap.set(b, (brokerMap.get(b) ?? 0) + 1)
-      const c = (r.tier || 'unknown').toLowerCase()
-      classificationMap.set(c, (classificationMap.get(c) ?? 0) + 1)
-    }
-  }
+  const brokerSplit = intake.byBroker.map((b) => ({ broker: b.broker, count: b.count }))
 
-  // Per-day time series — leads + sessions
-  let timeSeries: { date: string; leads: number; sessions: number }[] = []
+  // Channel mix replaces the old FUB "tier" classification — more meaningful and
+  // it actually populates (tier was never set on the native rows).
+  const classificationMix = intake.byChannel
+    .filter((c) => c.attributable)
+    .map((c) => ({ classification: c.label, count: c.count }))
+
+  const leadsBySource = intake.bySource.map((s) => ({
+    sourceMedium: s.source,
+    leadEvents: s.count,
+    users: s.count,
+  }))
+
+  // Per-day sessions from GA4 daily snapshots; per-day leads from CRM intake.
+  const leadsByDate = new Map(intake.byDay.map((d) => [d.date, d.inbound]))
   const { data: dailyRows } = await supabase
     .from('marketing_channel_daily')
     .select('date, scope, metric, value')
     .eq('channel', 'ga4')
-    .in('metric', ['sessions', 'total_lead_events'])
+    .eq('metric', 'sessions')
     .eq('scope', 'account')
     .gte('date', range.startDate)
     .lte('date', range.endDate)
     .order('date', { ascending: true })
 
+  const dateSet = new Set<string>([...leadsByDate.keys()])
+  const sessionsByDate = new Map<string, number>()
   if (Array.isArray(dailyRows)) {
-    const byDate = new Map<string, { sessions: number; leads: number }>()
-    for (const r of dailyRows as Array<{ date: string; metric: string; value: number }>) {
-      const entry = byDate.get(r.date) ?? { sessions: 0, leads: 0 }
-      if (r.metric === 'sessions') entry.sessions = Number(r.value) || 0
-      else if (r.metric === 'total_lead_events') entry.leads = Number(r.value) || 0
-      byDate.set(r.date, entry)
+    for (const r of dailyRows as Array<{ date: string; value: number }>) {
+      sessionsByDate.set(r.date, Number(r.value) || 0)
+      dateSet.add(r.date)
     }
-    timeSeries = Array.from(byDate.entries())
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([date, v]) => ({ date, leads: v.leads, sessions: v.sessions }))
   }
+  const timeSeries = Array.from(dateSet)
+    .sort((a, b) => a.localeCompare(b))
+    .map((date) => ({
+      date,
+      leads: leadsByDate.get(date) ?? 0,
+      sessions: sessionsByDate.get(date) ?? 0,
+    }))
 
-  // Cost per lead — Meta spend / total leads
+  // Cost per lead — Meta spend / real CRM leads captured.
   const { data: spendRows } = await supabase
     .from('marketing_channel_daily')
     .select('value')
@@ -379,17 +395,13 @@ export async function fetchConversions(range: DateRange): Promise<ConversionsDat
   const totalSpend = Array.isArray(spendRows)
     ? (spendRows as Array<{ value: number }>).reduce((sum, r) => sum + (Number(r.value) || 0), 0)
     : 0
-  const totalLeads = summaryRes.ok ? summaryRes.data.totalLeadEvents : 0
-  const costPerLeadUsd = totalSpend > 0 && totalLeads > 0 ? totalSpend / totalLeads : null
+  const costPerLeadUsd =
+    totalSpend > 0 && intake.inboundLeads > 0 ? totalSpend / intake.inboundLeads : null
 
   return {
-    leadsBySource: summaryRes.ok ? summaryRes.data.leadSources : [],
-    brokerSplit: Array.from(brokerMap.entries())
-      .map(([broker, count]) => ({ broker, count }))
-      .sort((a, b) => b.count - a.count),
-    classificationMix: Array.from(classificationMap.entries())
-      .map(([classification, count]) => ({ classification, count }))
-      .sort((a, b) => b.count - a.count),
+    leadsBySource,
+    brokerSplit,
+    classificationMix,
     timeSeries,
     costPerLeadUsd,
   }

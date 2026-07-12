@@ -11,8 +11,8 @@
  *
  * Data trace:
  *   - Overview / Acquisition / Behavior  → GA4 Data API (getGA4Summary)
- *   - Funnel                              → GA4 + public.marketing_assignments + public.cmas
- *   - Conversions                         → GA4 + public.marketing_assignments + public.marketing_channel_daily
+ *   - Funnel                              → GA4 + public.crm_people (getLeadIntake) + public.cmas
+ *   - Conversions                         → GA4 + public.crm_people (getLeadIntake) + public.marketing_channel_daily
  *
  * Per-figure citation lives in ./citations.json.
  */
@@ -140,7 +140,7 @@ async function OverviewTab({ range }: { range: { startDate: string; endDate: str
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Sessions" value={formatInt(d.sessions)} />
         <KpiCard label="Total users" value={formatInt(d.totalUsers)} hint={`${formatInt(d.newUsers)} new`} />
-        <KpiCard label="Leads (generate_lead)" value={formatInt(d.generateLeadCount)} hint={`${formatPct(d.leadConversionRate, 2)} of sessions`} />
+        <KpiCard label="Leads (CRM)" value={formatInt(d.crmLeadCount)} hint={`${formatPct(d.leadConversionRate, 2)} of sessions · ${formatInt(d.generateLeadCount)} form submits (GA4)`} />
         <KpiCard
           label="Paid spend"
           value={d.paidSpendUsd === null ? 'no data' : formatUsd(d.paidSpendUsd)}
@@ -431,7 +431,7 @@ async function FunnelTab({ range, lpVariant }: { range: { startDate: string; end
             })}
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
-            Steps 1 through 5 from GA4. Step 6 from public.marketing_assignments. Step 7 from public.cmas where status is delivered, final, or sent.
+            Steps 1 through 5 from GA4. Step 6 (leads captured) from public.crm_people, inbound sources only. Step 7 from public.cmas where status is delivered, final, or sent.
           </p>
         </CardContent>
       </Card>
@@ -449,11 +449,11 @@ async function ConversionsTab({ range }: { range: { startDate: string; endDate: 
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-3">
-        <KpiCard label="Total leads (FUB)" value={formatInt(d.brokerSplit.reduce((sum, b) => sum + b.count, 0))} hint="From public.marketing_assignments" />
+        <KpiCard label="Total leads (CRM)" value={formatInt(d.brokerSplit.reduce((sum, b) => sum + b.count, 0))} hint="Inbound leads captured in the CRM" />
         <KpiCard
           label="Cost per lead"
           value={d.costPerLeadUsd === null ? 'no data' : formatUsd(d.costPerLeadUsd)}
-          hint={d.costPerLeadUsd === null ? 'Meta spend not synced for this range' : 'Meta spend ÷ generate_lead events'}
+          hint={d.costPerLeadUsd === null ? 'Meta spend not synced for this range' : 'Meta spend ÷ CRM leads'}
         />
         <KpiCard
           label="Top broker"
@@ -511,11 +511,11 @@ async function ConversionsTab({ range }: { range: { startDate: string; endDate: 
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Classification mix</CardTitle>
+          <CardTitle className="text-base">Lead channel mix</CardTitle>
         </CardHeader>
         <CardContent>
           {d.classificationMix.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No classification data in this range.</p>
+            <p className="text-sm text-muted-foreground">No leads captured in this range.</p>
           ) : (
             <StackedBarMix data={d.classificationMix} />
           )}

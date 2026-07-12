@@ -175,14 +175,12 @@ async function VisitorTable({ filter }: { filter: 'all' | 'anonymous' | 'identif
                 </div>
               )}
               <div className="mt-2 text-xs">
-                {s.fub_person_id ? (
+                {s.crm_person_id ?? s.fub_person_id ? (
                   <a
-                    href={`https://app.followupboss.com/2/people/view/${s.fub_person_id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href={`/admin/crm/${s.crm_person_id ?? s.fub_person_id}`}
                     className="text-primary hover:underline"
                   >
-                    {s.identified_email ?? `FUB #${s.fub_person_id}`}
+                    {s.identified_email ?? `Contact #${s.crm_person_id ?? s.fub_person_id}`}
                   </a>
                 ) : (
                   <span className="text-muted-foreground">anonymous</span>
@@ -250,14 +248,12 @@ async function VisitorTable({ filter }: { filter: 'all' | 'anonymous' | 'identif
                 </TableCell>
                 <TableCell className="text-right text-sm tabular-nums">{s.event_count}</TableCell>
                 <TableCell className="text-xs">
-                  {s.fub_person_id ? (
+                  {s.crm_person_id ?? s.fub_person_id ? (
                     <a
-                      href={`https://app.followupboss.com/2/people/view/${s.fub_person_id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      href={`/admin/crm/${s.crm_person_id ?? s.fub_person_id}`}
                       className="text-primary hover:underline"
                     >
-                      {s.identified_email ?? `FUB #${s.fub_person_id}`}
+                      {s.identified_email ?? `Contact #${s.crm_person_id ?? s.fub_person_id}`}
                     </a>
                   ) : (
                     <span className="text-muted-foreground">anonymous</span>

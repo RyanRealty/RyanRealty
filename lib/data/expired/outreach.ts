@@ -159,6 +159,8 @@ export async function getExpiredListingDetail(listingKey: string): Promise<Expir
     .select(
       'listing_key, full_address, street_address, city, state, postal_code, subdivision, property_type, bedrooms, bathrooms, sqft, standard_status, list_price, original_list_price, days_on_market, cumulative_days_on_market, list_number, expired_at, status_change_timestamp, detected_at, list_agent_name, list_agent_email, list_office_name, owner_name, contact_phone, contact_email, contact_source, owner_lookup_status, enrichment_notes, alert_sent_at, outreach_sms_sent_at, outreach_crm_person_id, fub_person_id',
     )
+    // @canonical-key — expired_listings.listing_key is the MLS key we stored at
+    // detection time; a self-lookup against our own table, already canonical.
     .eq('listing_key', listingKey.trim())
     .maybeSingle()
   if (error || !r) {
