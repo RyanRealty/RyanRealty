@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.776.4 (2026-07-12)
+
+### Maintenance
+- chore(scripts): commit /sell rework screenshot helpers
+
+---
+
+
 ## v1.776.3 (2026-07-12)
 
 ### Bug Fixes
