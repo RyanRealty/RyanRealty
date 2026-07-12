@@ -714,3 +714,11 @@ export type { CalculatorDefaults } from '@/lib/data/config'
 
 // Cache helpers ----------------------------------------------------
 export { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+
+// Expired-listing manual outreach queue (Matt directive 2026-07-11).
+export {
+  listExpiredOutreachQueue,
+  getExpiredOutreachRow,
+  markExpiredOutreachSent,
+  type ExpiredOutreachRow,
+} from './expired/outreach'

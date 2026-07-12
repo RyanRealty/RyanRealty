@@ -370,21 +370,17 @@ export async function processNewExpiredListings(
         })
         stats.tasks_created++
 
-        // Auto-enroll directly by the native crm_people id (NOT autoEnrollByFubId,
-        // which resolves by fub_legacy_id and would miss a native lead). Fires the
-        // first email touch of Plan 71 Expired Recovery automatically. autoEnrollPerson
-        // is fail-closed on hard-stop + one-master-sequence-per-person. Compliance
-        // (DNC / litigator) is enforced by the sequence engine's suppression gate.
-        await autoEnrollPerson(crmPersonId)
-          .then((r) => {
-            if (r.enrolled) {
-              stats.plans_enrolled++
-              console.log(`[expired-listing-processor] auto-enrolled crm ${crmPersonId} → ${r.sequence}`)
-            } else {
-              console.log(`[expired-listing-processor] not enrolled crm ${crmPersonId}: ${r.reason}`)
-            }
-          })
-          .catch((e) => console.warn('[expired-listing-processor] auto-enroll failed:', e))
+        // PLAN 71 AUTO-ENROLL PAUSED (Matt directive 2026-07-11): expired
+        // outreach is manual approve-and-send at /admin/expired-outreach —
+        // nothing texts an expired owner without a broker's click. Tags,
+        // custom fields, the call task, the auto-CMA, and the Matt alert all
+        // still fire; only the automatic first-touch sequence is off. To
+        // restore the old behavior, re-add the autoEnrollPerson(crmPersonId)
+        // call here (import kept).
+        void autoEnrollPerson // import retained for the documented restore path
+        console.log(
+          `[expired-listing-processor] auto-enroll PAUSED for crm ${crmPersonId} — manual queue at /admin/expired-outreach (2026-07-11 directive)`,
+        )
 
         // Auto-CMA (Matt directive 2026-06-11): every detected expired listing
         // gets a CMA queued for the property, link attached to the opening
