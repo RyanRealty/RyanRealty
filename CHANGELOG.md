@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.765.0 (2026-07-12)
+
+### Features
+- feat(cma): LLM comparability judgment layer vets comps before the deterministic math
+
+---
+
+
 ## v1.764.0 (2026-07-12)
 
 ### Features
