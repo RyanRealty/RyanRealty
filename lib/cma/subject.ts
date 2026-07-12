@@ -109,7 +109,7 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
     baths: num(row['BathroomsTotal']),
     sqft: num(row['TotalLivingAreaSqFt']),
     lotAcres: num(row['lot_size_acres']),
-    yearBuilt: num(row['year_built']),
+    yearBuilt: saneYearBuilt(num(row['year_built'])),
     garageSpaces: num(row['garage_spaces']),
     photoUrl: str(row['PhotoURL']),
     publicRemarks: str(row['public_remarks']),
@@ -258,4 +258,16 @@ export async function resolveCmaSubject(opts: {
     subject: null,
     trace: `No listings row matched StreetNumber=${parsed.streetNumber}, StreetName ILIKE '${prefixes.map((c) => `${c}%`).join("' or '")}', city ${parsed.city ?? 'any'}, zip ${parsed.postalCode ?? 'any'}. The property may never have been MLS-listed.`,
   }
+}
+
+/**
+ * MLS data-entry guard: year_built sometimes carries a duplicated sqft value
+ * (live example 2026-07-11: a fresh listing shipped year_built=2146, its own
+ * square footage — caught by the adversarial CMA audit). Implausible years
+ * resolve to null so no report states an impossible fact.
+ */
+export function saneYearBuilt(y: number | null): number | null {
+  if (y == null) return null
+  const maxYear = new Date().getFullYear() + 2
+  return y >= 1850 && y <= maxYear ? y : null
 }

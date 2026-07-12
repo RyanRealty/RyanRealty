@@ -195,6 +195,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           selection.trace.push(
             `Adversarial audit repair: ${flagged.length} comp(s) flagged by the independent audit were removed and the analysis re-priced on the ${remaining.length}-comp set, then re-audited.`,
           )
+          pricing.notes.push(
+            `The comparability narrative reflects the initial review; ${flagged.length} comp(s) it references were subsequently removed on the independent audit's findings and the pricing recomputed on the remaining set.`,
+          )
           audit = await auditCma({ subject, comps: adjusted, excluded: excludedForAudit(), pricing, judgment, market })
         }
       }

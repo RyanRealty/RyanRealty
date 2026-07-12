@@ -104,7 +104,8 @@ const JUDGE_TOOL: Anthropic.Tool = {
       },
       narrative: {
         type: 'string',
-        description: '2-3 sentences a seller reads on the pricing page explaining the comp set and any exclusions. No hype, no adjectives, data-first.',
+        description:
+          '2-3 sentences a seller reads on the pricing page explaining the comp set and any exclusions. No hype, no adjectives, data-first. NEVER reference comps by their list number/index (numbering shifts after exclusions) — refer to comps by street name only, and quote only figures shown in this prompt.',
       },
     },
     required: ['verdicts', 'confidence', 'narrative'],

@@ -9,6 +9,7 @@
 import { selectCmaCompsPool } from '@/lib/data'
 import type { CmaListingRow } from '@/lib/data'
 import type { CmaComp, CmaSubject } from '@/lib/cma/types'
+import { saneYearBuilt } from '@/lib/cma/subject'
 
 export const MIN_COMPS = 3
 export const TARGET_COMPS = 6
@@ -50,7 +51,7 @@ function rowToComp(row: CmaListingRow, tier: string): CmaComp | null {
     baths: num(row['BathroomsTotal']),
     sqft,
     lotAcres: num(row['lot_size_acres']),
-    yearBuilt: num(row['year_built']),
+    yearBuilt: saneYearBuilt(num(row['year_built'])),
     photoUrl: str(row['PhotoURL']),
     publicRemarks: str(row['public_remarks']),
     viewDescription: str(row['view_description']),

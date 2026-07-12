@@ -101,3 +101,13 @@ describe('pickMostRecentListing', () => {
     expect(subject.baths).toBe(3)
   })
 })
+
+describe('saneYearBuilt', () => {
+  it('nulls the sqft-in-year-field MLS data-entry error (live 2026-07-11 case)', async () => {
+    const { saneYearBuilt } = await import('@/lib/cma/subject')
+    expect(saneYearBuilt(2146)).toBeNull()
+    expect(saneYearBuilt(1700)).toBeNull()
+    expect(saneYearBuilt(2022)).toBe(2022)
+    expect(saneYearBuilt(null)).toBeNull()
+  })
+})
