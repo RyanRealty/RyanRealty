@@ -19,6 +19,7 @@
  */
 
 import { usePathname } from "next/navigation"
+import { shouldHideDefaultChrome } from "@/lib/site/chrome-routes"
 
 export default function HideOnLP({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -43,74 +44,31 @@ export default function HideOnLP({ children }: { children: React.ReactNode }) {
  * HideOnLP (the site-wide JSON-LD, VisitTracker, auth bridges, skip-link) MUST
  * keep running on the homepage — it is the highest-traffic page — so those stay
  * on plain HideOnLP, which does NOT hide "/".
+ *
+ * The route predicate lives in @/lib/site/chrome-routes (pure, unit-tested).
+ *
+ * DO NOT toggle the header's MOUNT STATE (returning `null` vs `children`). That
+ * pattern raced during App Router soft-navigation and mid-deploy hydration skew
+ * and left a STALE duplicate <header> in the DOM — the "double nav" Matt reported
+ * 2026-07-11 (two identical navy SiteHeaders stacked on /homes-for-sale). The
+ * SiteHeader is an async server component whose HTML always ships in the RSC
+ * payload; unmounting it on hydration is exactly the add/remove that duplicates.
+ *
+ * Instead keep a STRUCTURALLY STABLE wrapper node that is never added or removed,
+ * and toggle visibility with CSS. `display: contents` when shown means the wrapper
+ * generates no box, so the child <header>'s `position: sticky` behaves exactly as
+ * if the wrapper weren't there; `display: none` when hidden removes it from the
+ * render tree without unmounting. React only flips one inline style on a stable
+ * node — it can never duplicate the element.
  */
-// KB design-system routes that render their OWN KbNav + KbFooter. The default
-// SiteHeader/SiteFooter must be suppressed for these or the page double-renders
-// chrome (two <header>/<footer> — Matt report 2026-06-18). Derived from the exact
-// set of app/**/page.tsx that contain `kb-root` (Phase 9 site-wide KB migration).
-// NOT-yet-KB siblings are deliberately ABSENT so they keep the default chrome:
-//   /search(+/[...slug]), /sell/[intent], /buy/[intent], /housing-market/explore,
-//   /housing-market/reports*, /listing/by-address|by-key, /reports/[slug]/[geoName],
-//   /team/[slug]/edit, and the internal/legal/auth surfaces.
-const KB_ROUTES: RegExp[] = [
-  /^\/about$/,
-  /^\/activity$/,
-  /^\/area-guides$/,
-  /^\/blog(\/[^/]+)?$/,
-  /^\/buy(\/[^/]+)?$/, // /buy + /buy/<intent> lead landing (KB)
-  /^\/cities(\/[^/]+(\/[^/]+)?)?$/, // /cities, /cities/<slug>, /cities/<slug>/<neighborhood>
-  /^\/communities(\/[^/]+)?$/, // /communities, /communities/<slug>
-  /^\/compare$/,
-  /^\/contact$/,
-  /^\/faq$/,
-  /^\/guides(\/[^/]+)?$/,
-  /^\/join$/,
-  /^\/listing\/[^/]+$/, // /listing/<key>; NOT /listing/by-address|by-key/* (2+ segments)
-  /^\/motivated-sellers(\/[^/]+)?$/,
-  /^\/open-houses(\/[^/]+)?$/,
-  /^\/our-homes$/,
-  /^\/parks(\/[^/]+)?$/,
-  /^\/price-drops(\/[^/]+)?$/,
-  /^\/pulse$/,
-  /^\/reports$/,
-  /^\/reports\/[^/]+$/, // /reports/<slug> + /reports/explore; NOT /reports/<slug>/<geoName> (2 segments)
-  /^\/reports\/sales\/[^/]+\/[^/]+$/,
-  /^\/resources$/,
-  /^\/reviews$/,
-  /^\/schools(\/[^/]+)?$/,
-  /^\/sell(\/[^/]+)?$/, // /sell + /sell/valuation + /sell/<intent> lead landing (KB)
-  /^\/subdivisions\/[^/]+$/,
-  /^\/team(\/[^/]+)?$/, // /team, /team/<slug>; NOT /team/<slug>/edit (2 segments)
-  /^\/tools\/[^/]+$/,
-  /^\/videos$/,
-  /^\/zip\/[^/]+$/,
-]
-
 export function HideChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  if (!pathname) return <>{children}</>
-  // Non-public surfaces that carry their own chrome (or none).
-  if (pathname === "/") return null
-  if (pathname.startsWith("/lp/")) return null
-  if (pathname === "/admin" || pathname.startsWith("/admin/")) return null
-  if (pathname.startsWith("/sign/")) return null
-  if (pathname.startsWith("/concept/")) return null
-  // Housing-market hub + region report + city reports + explore + reports archive
-  // (all KB). The only /housing-market surface that keeps default chrome is the
-  // legacy 2-segment /housing-market/<city>/<subdivision> report.
-  if (pathname === "/housing-market") return null
-  if (/^\/housing-market\/[^/]+$/.test(pathname)) return null // 1-segment: region, city reports, explore, reports
-  if (/^\/housing-market\/reports\/[^/]+$/.test(pathname)) return null // /housing-market/reports/<slug> detail
-  // Listing detail. The canonical browser URL is /homes-for-sale/<city>/<address>
-  // (or /homes-for-sale/listing/<key>), which rewrites to app/listing/* — the KB
-  // shell. Match the listing-detail slug shapes (last segment ends in a -<5+ digit
-  // MLS number> or contains ~, or the /listing/<key> form). Does NOT match the
-  // search URLs (/homes-for-sale, /homes-for-sale/<city>, …/<filters>).
-  if (/^\/homes-for-sale\/listing\/[^/]+$/.test(pathname)) return null
-  if (/^\/homes-for-sale\/.+(-\d{5,}|~[^/]*)\/?$/.test(pathname)) return null
-  // Every other KB design-system route.
-  if (KB_ROUTES.some((re) => re.test(pathname))) return null
-  return <>{children}</>
+  const hide = shouldHideDefaultChrome(pathname)
+  return (
+    <div data-chrome-gate style={{ display: hide ? "none" : "contents" }}>
+      {children}
+    </div>
+  )
 }
 
 /** Inverse: show only on /lp/* routes. */
