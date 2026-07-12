@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.769.1 (2026-07-12)
+
+### Bug Fixes
+- fix(cma): year-built sanity guard + narrative consistency (adversarial-audit catches)
+
+---
+
+
 ## v1.769.0 (2026-07-12)
 
 ### Features
