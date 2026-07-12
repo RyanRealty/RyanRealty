@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.770.0 (2026-07-12)
+
+### Features
+- feat(bpo): full accuracy architecture — judgment, adversarial audit, contract, finalize gate
+
+---
+
+
 ## v1.769.1 (2026-07-12)
 
 ### Bug Fixes
