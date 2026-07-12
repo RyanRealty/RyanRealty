@@ -38,26 +38,35 @@ describe('computeAuditVerdict (discriminating verdict, v2 2026-07-12)', () => {
   })
 
   // ── REVIEW: specific, actionable defects ──────────────────────────────────
-  it('major data-integrity or narrative forces review', () => {
+  it('a major data-integrity (a wrong fact) forces review', () => {
     expect(computeAuditVerdict([f('major', 'data-integrity')])).toBe('review')
-    expect(computeAuditVerdict([f('major', 'narrative')])).toBe('review')
   })
 
   it('critical market-verdict forces review', () => {
     expect(computeAuditVerdict([f('critical', 'market-verdict')])).toBe('review')
   })
 
-  it('a major comp-selection tied to a specific comp forces review', () => {
-    expect(computeAuditVerdict([f('major', 'comp-selection', 'K123')])).toBe('review')
+  it('a LONE comp-selection major is the auditor reflex — advisory, pass', () => {
+    expect(computeAuditVerdict([f('major', 'comp-selection', 'K123')])).toBe('pass')
+    expect(computeAuditVerdict([f('major', 'comp-selection')])).toBe('pass')
   })
 
-  it('two or more actionable defects cluster into a review', () => {
+  it('a lone narrative major (rewording) is advisory — pass', () => {
+    expect(computeAuditVerdict([f('major', 'narrative')])).toBe('pass')
+  })
+
+  it('TWO comp-selection majors are a comp-doubt cluster — review', () => {
     expect(computeAuditVerdict([f('major', 'comp-selection'), f('major', 'comp-selection')])).toBe('review')
   })
 
-  it('one keyless comp nitpick + only price gripes stays advisory', () => {
+  it('the auditor reflex set (1 comp-major + 1 narrative-major + price gripes) stays advisory', () => {
     expect(
-      computeAuditVerdict([f('major', 'comp-selection'), f('critical', 'price-opinion'), f('minor', 'market-verdict')]),
+      computeAuditVerdict([
+        f('major', 'comp-selection', 'K1'),
+        f('major', 'narrative'),
+        f('critical', 'price-opinion'),
+        f('minor', 'market-verdict'),
+      ]),
     ).toBe('pass')
   })
 })

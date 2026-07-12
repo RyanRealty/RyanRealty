@@ -23,8 +23,11 @@ import type { CmaAudit } from '@/lib/cma/audit'
 export const COMP_MAX_AGE_MONTHS = 24
 
 export interface ContractCheck {
+  /** hard = fail the build; review = force needs_review; info = recorded only,
+   *  never gates (the signal it carries is already surfaced elsewhere, e.g. the
+   *  confidence tier). */
   id: string
-  severity: 'hard' | 'review'
+  severity: 'hard' | 'review' | 'info'
   pass: boolean
   detail: string
 }
@@ -106,12 +109,18 @@ export function evaluateAccuracyContract(args: {
     detail: judgment ? `${judgment.verdicts.length} per-comp verdicts recorded.` : 'n/a (no judgment).',
   })
   checks.push({
+    // INFO, not a gate: a >5% method spread already lowers the displayed
+    // confidence tier (pricing.ts) and is disclosed on the pricing page. A
+    // Moderate/Supportable CMA is a normal, sendable outcome — the confidence
+    // field IS the signal, so this does not raise needs_review on its own.
+    // (Recalibration 2026-07-12: methods-converged fired on ~48% of a real
+    // expired-listing batch, drowning the flag.)
     id: 'methods-converged',
-    severity: 'review',
+    severity: 'info',
     pass: pricing.converged,
     detail: pricing.converged
       ? `Methods within ${pricing.convergenceSpreadPct}% (≤5% tolerance).`
-      : `Methods ${pricing.convergenceSpreadPct}% apart — Method 3 governs; broker review required.`,
+      : `Methods ${pricing.convergenceSpreadPct}% apart — Method 3 governs; confidence lowered to ${pricing.confidence} accordingly.`,
   })
   checks.push({
     id: 'dispersion-within-limit',
