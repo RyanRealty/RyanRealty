@@ -179,7 +179,12 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       const flagged = [
         ...new Set(
           audit.findings
-            .filter((f) => (f.severity === 'critical' || f.severity === 'major') && f.compListingKey)
+            .filter(
+              (f) =>
+                (f.severity === 'critical' || f.severity === 'major') &&
+                (f.category === 'comp-selection' || f.category === 'data-integrity') &&
+                f.compListingKey,
+            )
             .map((f) => f.compListingKey!),
         ),
       ]

@@ -126,13 +126,26 @@ export async function rebuildBpoAction(
 
 // ─── Finalize / delete ───────────────────────────────────────────────────────
 
-export async function finalizeBpoAction(slug: string): Promise<{ error: string | null }> {
+export async function finalizeBpoAction(
+  slug: string,
+  opts?: { acknowledgeReview?: boolean },
+): Promise<{ error: string | null; needsReviewAck?: boolean }> {
   try {
     if (!(await requireAdmin())) return { error: 'Unauthorized' }
     const safeSlug = slug.trim().toLowerCase()
     const row = await getBpoAdminRowBySlug(safeSlug)
     if (!row) return { error: 'Broker price opinion not found' }
     if (!row.html_content) return { error: 'This opinion has no built document yet. Build it before finalizing.' }
+    // Accuracy gate (Matt directive 2026-07-11): a build flagged needs_review
+    // (unvetted comps, disputed audit, non-converged methods) cannot finalize
+    // silently — the broker must explicitly acknowledge the recorded findings.
+    const summary = row.build_summary as { needs_review?: boolean; review_reason?: string | null } | null
+    if (summary?.needs_review && !opts?.acknowledgeReview) {
+      return {
+        error: `Flagged for broker review: ${summary.review_reason ?? 'accuracy findings recorded in the build summary'}`,
+        needsReviewAck: true,
+      }
+    }
     const res = await updateBpoRowFieldsBySlug(safeSlug, {
       status: 'final',
       finalized_at: new Date().toISOString(),

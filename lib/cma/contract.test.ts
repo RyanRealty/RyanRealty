@@ -8,6 +8,7 @@ import type { CmaComp, CmaSubject } from '@/lib/cma/types'
 function cleanAudit(overrides: Partial<CmaAudit> = {}): CmaAudit {
   return {
     verdict: 'pass',
+    llmVerdict: 'pass',
     findings: [],
     summary: 'Analysis survives adversarial review.',
     costUsd: 0.03,
@@ -214,7 +215,7 @@ describe('evaluateAccuracyContract', () => {
     const contract = evaluateAccuracyContract({
       audit: cleanAudit({
         verdict: 'review',
-        findings: [{ severity: 'major', claim: 'Comp 3 is a townhome', evidence: 'remarks say attached product' }],
+        findings: [{ severity: 'major', category: 'comp-selection', claim: 'Comp 3 is a townhome', evidence: 'remarks say attached product' }],
         summary: 'One comparability defect needs broker resolution.',
       }),
       comps: adjusted,

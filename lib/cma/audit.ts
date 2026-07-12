@@ -26,9 +26,17 @@ const OUTPUT_COST_PER_TOKEN = 0.000015
 
 export type AuditSeverity = 'critical' | 'major' | 'minor'
 export type AuditVerdict = 'pass' | 'review' | 'fail'
+export type AuditCategory =
+  | 'data-integrity' // an impossible or wrong FACT (bad year, wrong sqft, misquoted figure)
+  | 'comp-selection' // a kept comp that does not belong / an unsupported exclusion
+  | 'price-opinion' // the auditor disagrees with the recommendation level
+  | 'narrative' // prose claim not traceable to the data
+  | 'market-verdict' // MoS-threshold mismatch
+  | 'other'
 
 export interface AuditFinding {
   severity: AuditSeverity
+  category: AuditCategory
   claim: string
   evidence: string
   /** When the defect is a specific priced comp, its listing key — makes the
@@ -36,8 +44,37 @@ export interface AuditFinding {
   compListingKey?: string | null
 }
 
+/**
+ * Deterministic verdict over categorized findings — the LLM reports defects,
+ * CODE decides the verdict. Rationale (live calibration 2026-07-11): an
+ * adversarial reviewer attacks any configuration from whichever side is open
+ * (it demanded premium-comp exclusions, then attacked the exclusions), so its
+ * self-reported verdict inflates to fail on defensible analyses. Category
+ * rules instead: hard facts fail; comp defects and traceability need broker
+ * review; a pure price-level disagreement between two models is broker
+ * judgment, never an automatic fail.
+ */
+export function computeAuditVerdict(findings: AuditFinding[]): AuditVerdict {
+  const has = (cat: AuditCategory, sevs: AuditSeverity[]) =>
+    findings.some((f) => f.category === cat && sevs.includes(f.severity))
+  if (has('data-integrity', ['critical'])) return 'fail'
+  if (
+    has('data-integrity', ['major']) ||
+    has('comp-selection', ['critical', 'major']) ||
+    has('narrative', ['critical', 'major']) ||
+    has('market-verdict', ['critical', 'major']) ||
+    has('price-opinion', ['critical', 'major']) ||
+    has('other', ['critical', 'major'])
+  )
+    return 'review'
+  return 'pass'
+}
+
 export interface CmaAudit {
+  /** Deterministic verdict computed by computeAuditVerdict over the findings. */
   verdict: AuditVerdict
+  /** The model's own (advisory) verdict — recorded, never enforced. */
+  llmVerdict: AuditVerdict
   findings: AuditFinding[]
   summary: string
   costUsd: number
@@ -67,6 +104,12 @@ const AUDIT_TOOL: Anthropic.Tool = {
               type: 'string',
               enum: ['critical', 'major', 'minor'],
               description: 'critical = the recommendation is wrong or indefensible; major = a comp/claim/number needs broker correction; minor = polish.',
+            },
+            category: {
+              type: 'string',
+              enum: ['data-integrity', 'comp-selection', 'price-opinion', 'narrative', 'market-verdict', 'other'],
+              description:
+                'data-integrity = an impossible/wrong FACT in the report; comp-selection = a kept comp that does not belong or an unsupported exclusion; price-opinion = you disagree with the recommendation level; narrative = a prose claim that does not trace to the data; market-verdict = months-of-supply threshold mismatch.',
             },
             claim: { type: 'string', description: 'One sentence: what is wrong.' },
             evidence: { type: 'string', description: 'The specific data shown here that proves it.' },
@@ -103,10 +146,19 @@ export async function auditCma(args: {
   pricing: CmaPricing
   judgment: CompJudgment | null
   market: CmaMarketContext | null
+  /** BPO mode: the reconciled OPINION is the number under attack (not the CMA
+   *  recommended list), with its ceiling/listing-history reconciliation context. */
+  finalOpinion?: {
+    value: number
+    low: number
+    high: number
+    confidence: string
+    context: string
+  }
 }): Promise<CmaAudit | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return null
-  const { subject, comps, excluded, pricing, judgment, market } = args
+  const { subject, comps, excluded, pricing, judgment, market, finalOpinion } = args
 
   const subjectLine = [
     `${subject.streetAddress}, ${subject.city} (subdivision: ${subject.subdivision ?? 'none'})`,
@@ -171,8 +223,13 @@ export async function auditCma(args: {
     `PRICING: Method 1 (tiered $/sqft) mid $${pricing.method1Mid.toLocaleString()} · Method 2 (size baseline) ${
       pricing.method2 != null ? `$${pricing.method2.toLocaleString()}` : 'n/a'
     } · Method 3 (weighted reconciliation) $${pricing.method3.toLocaleString()} · spread ${pricing.convergenceSpreadPct}% · ` +
-    `RECOMMENDED $${pricing.recommended.toLocaleString()} (range $${pricing.conservative.toLocaleString()}–$${pricing.highEnd.toLocaleString()}) · ` +
-    `confidence ${pricing.confidence}.\n` +
+    (finalOpinion
+      ? `intermediate comp reconciliation $${pricing.recommended.toLocaleString()}.\n` +
+        `FINAL OPINION OF VALUE (the number under attack): $${finalOpinion.value.toLocaleString()} ` +
+        `(range $${finalOpinion.low.toLocaleString()}–$${finalOpinion.high.toLocaleString()}) · confidence ${finalOpinion.confidence}.\n` +
+        `OPINION RECONCILIATION CONTEXT: ${finalOpinion.context}\n`
+      : `RECOMMENDED $${pricing.recommended.toLocaleString()} (range $${pricing.conservative.toLocaleString()}–$${pricing.highEnd.toLocaleString()}) · ` +
+        `confidence ${pricing.confidence}.\n`) +
     `BUILDER'S COMPARABILITY NARRATIVE: ${judgment?.narrative ?? '(none — judgment did not run)'}\n\n` +
     'Attack this analysis. Record every defect with severity and evidence, then give your verdict.'
 
@@ -193,25 +250,28 @@ export async function auditCma(args: {
     const block = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use')
     if (!block) return null
     const out = block.input as {
-      findings?: Array<{ severity?: string; claim?: string; evidence?: string; compListingKey?: string }>
+      findings?: Array<{ severity?: string; category?: string; claim?: string; evidence?: string; compListingKey?: string }>
       verdict?: string
       summary?: string
     }
     const validKeys = new Set(comps.map((c) => c.listingKey))
+    const CATEGORIES: AuditCategory[] = ['data-integrity', 'comp-selection', 'price-opinion', 'narrative', 'market-verdict', 'other']
     const findings: AuditFinding[] = (out.findings ?? [])
       .filter((f) => f.claim)
       .map((f) => ({
         severity: (['critical', 'major', 'minor'].includes(f.severity ?? '') ? f.severity : 'major') as AuditSeverity,
+        category: (CATEGORIES.includes((f.category ?? '') as AuditCategory) ? f.category : 'other') as AuditCategory,
         claim: f.claim!.trim(),
         evidence: (f.evidence ?? '').trim(),
         compListingKey: f.compListingKey && validKeys.has(f.compListingKey) ? f.compListingKey : null,
       }))
-    // Verdict discipline: the stated verdict may not be softer than the findings.
-    let verdict = (['pass', 'review', 'fail'].includes(out.verdict ?? '') ? out.verdict : 'review') as AuditVerdict
-    if (findings.some((f) => f.severity === 'critical') && verdict === 'pass') verdict = 'fail'
-    else if (findings.some((f) => f.severity === 'major') && verdict === 'pass') verdict = 'review'
+    // The LLM reports defects; CODE decides the verdict (see computeAuditVerdict).
+    // The model's self-reported verdict is kept only as advisory context.
+    const verdict = computeAuditVerdict(findings)
+    const llmVerdict = (['pass', 'review', 'fail'].includes(out.verdict ?? '') ? out.verdict : 'review') as AuditVerdict
     return {
       verdict,
+      llmVerdict,
       findings,
       summary: (out.summary ?? '').trim(),
       costUsd,

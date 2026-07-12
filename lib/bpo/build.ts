@@ -28,6 +28,9 @@ import { resolveCmaSubject } from '@/lib/cma/subject'
 import { selectComps, MIN_COMPS } from '@/lib/cma/comps'
 import { getCmaMarketContext } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
+import { judgeComps } from '@/lib/cma/judge'
+import { auditCma } from '@/lib/cma/audit'
+import { evaluateBpoAccuracyContract } from '@/lib/bpo/contract'
 import { analyzeListingHistory } from '@/lib/bpo/history'
 import { deriveOpinion } from '@/lib/bpo/opinion'
 import { deriveOfferStrategy } from '@/lib/bpo/offer'
@@ -112,6 +115,24 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       return { ok: false, error: err, slug }
     }
 
+    // 2.5. LLM comparability judgment (shared with the CMA engine, fail-open).
+    // Vets every candidate comp on the full feature set before any math.
+    const judgment = await judgeComps(subject, selection.comps, market)
+    let compsForPricing = selection.comps
+    if (judgment) {
+      const keep = new Set(judgment.keptKeys)
+      const vetted = selection.comps.filter((c) => keep.has(c.listingKey))
+      if (vetted.length >= MIN_COMPS) compsForPricing = vetted
+      selection.trace.push(
+        compsForPricing.length === vetted.length
+          ? `Comparability judgment (${judgment.model}): kept ${vetted.length} of ${selection.comps.length} candidates, excluded ${judgment.verdicts.filter((v) => v.tier === 'exclude').length} as non-comparable, down-weighted ${judgment.verdicts.filter((v) => v.tier === 'weak').length}.`
+          : `Comparability judgment (${judgment.model}) would keep only ${vetted.length} comps — below the ${MIN_COMPS}-comp floor, so the full set was priced instead.`,
+      )
+    } else {
+      selection.trace.push('Comparability judgment unavailable — priced on the full selection; broker review required.')
+    }
+    const tierByKey = new Map(judgment?.verdicts.map((v) => [v.listingKey, v.tier]) ?? [])
+
     // 3. Listing history — all MLS cycles at the address.
     const split = splitStreet(subject.streetAddress)
     const cycleRows = split
@@ -124,21 +145,141 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       : []
     const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
 
-    // 4. Adjust comps + reconcile to the opinion.
-    const adjusted = adjustComps(subject, selection.comps, market)
-    const pricing = computePricing(subject, adjusted, market, { priceOverride: null })
-    if (!pricing) {
+    // 4. Adjust comps + reconcile to the opinion (weak-tier comps carry half
+    // weight in the reconciliation, matching the CMA engine).
+    const deriveAll = (set: typeof selection.comps) => {
+      const adj = adjustComps(subject, set, market).map((c) => {
+        const tier = tierByKey.get(c.listingKey)
+        return tier === 'weak' ? { ...c, weight: +(c.weight * 0.5).toFixed(4) } : c
+      })
+      const p = computePricing(subject, adj, market, { priceOverride: null })
+      if (!p) return null
+      const op = deriveOpinion(subject, p, market, history, { priceOverride: input.priceOverride ?? null })
+      return { adj, p, op }
+    }
+    let derived = deriveAll(compsForPricing)
+    if (!derived) {
       const err = 'Pricing could not be computed (subject sqft missing).'
       await recordFailure(slug, err)
       return { ok: false, error: err, slug }
     }
-    const opinion = deriveOpinion(subject, pricing, market, history, {
-      priceOverride: input.priceOverride ?? null,
+    let { adj: adjusted, p: pricing, op: opinion } = derived
+
+    // 4.4. Adversarial accuracy audit — independent second pass attacking the
+    // OPINION (Matt directive 2026-07-11: BPOs are adversarially audited like
+    // CMAs). Deterministic verdict over categorized findings.
+    const opinionContext = () =>
+      [
+        `Opinion = comp reconciliation anchored at $${opinion.compAnchor.toLocaleString()}`,
+        history.listingPressureAdjustmentPct
+          ? `listing-pressure adjustment ${(history.listingPressureAdjustmentPct * 100).toFixed(1)}% from ${history.failedAttemptsCount} failed attempt(s)`
+          : 'no listing-pressure adjustment',
+        history.currentIsActive && history.currentListPrice
+          ? `ACTIVE listing at $${history.currentListPrice.toLocaleString()} caps the opinion (ceiling rule)`
+          : 'no active listing ceiling',
+        opinion.priceOverride ? `broker price override $${opinion.priceOverride.toLocaleString()} applied` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    const runAudit = () =>
+      auditCma({
+        subject,
+        comps: adjusted,
+        excluded:
+          judgment?.verdicts.filter((v) => v.tier === 'exclude').map((v) => ({ listingKey: v.listingKey, reason: v.reason })) ?? [],
+        pricing,
+        judgment,
+        market,
+        finalOpinion: {
+          value: opinion.opinionValue,
+          low: opinion.valueLow,
+          high: opinion.valueHigh,
+          confidence: opinion.confidence,
+          context: opinionContext(),
+        },
+      })
+    let audit = await runAudit()
+
+    // 4.45. Bounded self-repair — comp-selection/data-integrity findings tied
+    // to specific comps: drop them, re-derive pricing AND opinion, re-audit once.
+    let firstRoundAudit: typeof audit = null
+    let repairedKeys: string[] = []
+    if (audit && audit.verdict !== 'pass') {
+      const flagged = [
+        ...new Set(
+          audit.findings
+            .filter(
+              (f) =>
+                (f.severity === 'critical' || f.severity === 'major') &&
+                (f.category === 'comp-selection' || f.category === 'data-integrity') &&
+                f.compListingKey,
+            )
+            .map((f) => f.compListingKey!),
+        ),
+      ]
+      const remaining = compsForPricing.filter((c) => !flagged.includes(c.listingKey))
+      if (flagged.length > 0 && remaining.length >= MIN_COMPS) {
+        const rederived = deriveAll(remaining)
+        if (rederived) {
+          firstRoundAudit = audit
+          repairedKeys = flagged
+          compsForPricing = remaining
+          ;({ adj: adjusted, p: pricing, op: opinion } = rederived)
+          selection.trace.push(
+            `Adversarial audit repair: ${flagged.length} comp(s) flagged by the independent audit were removed, the opinion re-derived on the ${remaining.length}-comp set, then re-audited.`,
+          )
+          audit = await runAudit()
+        }
+      }
+    }
+
+    // 4.5. Accuracy contract — hard violations kill the build; review
+    // violations force needs_review so an unvetted/disputed opinion can never
+    // present as clean.
+    const contract = evaluateBpoAccuracyContract({
+      comps: adjusted,
+      pricing,
+      judgment,
+      audit,
+      opinion,
+      history,
+      minComps: MIN_COMPS,
+      marketContextPresent: market != null,
     })
+    if (!contract.pass) {
+      const failed = contract.checks
+        .filter((c) => c.severity === 'hard' && !c.pass)
+        .map((c) => `${c.id}: ${c.detail}`)
+        .join(' | ')
+      const err = `Accuracy contract failed: ${failed}`
+      await recordFailure(slug, err)
+      return { ok: false, error: err, slug }
+    }
+    const needsReview = contract.forceReview || pricing.needsReview
+    const reviewReason = needsReview
+      ? (pricing.reviewReason ??
+        contract.checks
+          .filter((c) => c.severity === 'review' && !c.pass)
+          .map((c) => c.detail)
+          .join(' '))
+      : null
+
     const offer = deriveOfferStrategy(subject, opinion, market, history)
 
-    // 5. Rationale + render.
-    const rationale = buildBpoRationale({ subject, history, opinion, market, comps: adjusted })
+    // 5. Rationale + render (judgment narrative + audit stamp render inside
+    // the client-safe rationale block).
+    let rationale = buildBpoRationale({ subject, history, opinion, market, comps: adjusted })
+    if (judgment) {
+      rationale += ` Comparable review: ${compsForPricing.length} of ${selection.comps.length} candidate sales kept after a per-comp comparability review. ${judgment.narrative}`
+    }
+    if (repairedKeys.length) {
+      rationale += ` ${repairedKeys.length} comp(s) referenced by the initial review were subsequently removed on an independent audit's findings and the opinion re-derived.`
+    }
+    rationale += audit
+      ? audit.verdict === 'pass'
+        ? ' An independent adversarial review attacked this analysis and found no material defect.'
+        : ` An independent adversarial review recorded ${audit.findings.length} finding(s) for broker review before release.`
+      : ' Independent adversarial review was unavailable for this build. Broker review is required before release.'
     const { html, pageCount } = renderBpoHtml({
       subject,
       comps: adjusted,
@@ -178,6 +319,28 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
         trace: selection.trace,
         excluded_outliers: selection.excludedOutliers,
       },
+      comp_judgment: judgment
+        ? {
+            source: `LLM comparability judge (${judgment.model})`,
+            confidence: judgment.confidence,
+            narrative: judgment.narrative,
+            kept_keys: judgment.keptKeys,
+            excluded: judgment.verdicts.filter((v) => v.tier === 'exclude'),
+            cost_usd: judgment.costUsd,
+          }
+        : { source: 'none', note: 'Priced on the full comp set (deterministic + dispersion guard).' },
+      adversarial_audit: audit
+        ? {
+            source: `Independent adversarial audit (${audit.model})`,
+            verdict: audit.verdict,
+            llm_verdict: audit.llmVerdict,
+            summary: audit.summary,
+            findings: audit.findings,
+            cost_usd: audit.costUsd,
+            repaired_comp_keys: repairedKeys.length ? repairedKeys : undefined,
+            first_round_verdict: firstRoundAudit?.verdict,
+          }
+        : { source: 'none', note: 'Audit unavailable — needs_review forced.' },
       comps: adjusted.map((c) => ({
         listing_key: c.listingKey,
         address: c.address,
@@ -232,6 +395,36 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       builder: BPO_BUILDER_VERSION,
       page_count: pageCount,
       comps_count: adjusted.length,
+      needs_review: needsReview,
+      review_reason: reviewReason,
+      judgment: judgment
+        ? {
+            used_llm: true as const,
+            model: judgment.model,
+            cost_usd: judgment.costUsd,
+            confidence: judgment.confidence,
+            kept: judgment.keptKeys.length,
+            excluded: judgment.verdicts.filter((v) => v.tier === 'exclude').length,
+            narrative: judgment.narrative,
+            verdicts: judgment.verdicts,
+          }
+        : { used_llm: false as const, note: 'Comparability judge unavailable; priced on the full comp set.' },
+      audit: audit
+        ? {
+            used_llm: true as const,
+            model: audit.model,
+            cost_usd: audit.costUsd,
+            verdict: audit.verdict,
+            llm_verdict: audit.llmVerdict,
+            summary: audit.summary,
+            findings: audit.findings,
+            repaired_comp_keys: repairedKeys.length ? repairedKeys : undefined,
+            first_round: firstRoundAudit
+              ? { verdict: firstRoundAudit.verdict, summary: firstRoundAudit.summary, findings: firstRoundAudit.findings, cost_usd: firstRoundAudit.costUsd }
+              : undefined,
+          }
+        : { used_llm: false as const, note: 'Adversarial audit unavailable; needs_review forced via the contract.' },
+      accuracy_contract: contract,
       opinion: {
         opinion_value: opinion.opinionValue,
         value_low: opinion.valueLow,

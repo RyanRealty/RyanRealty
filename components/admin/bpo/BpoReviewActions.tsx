@@ -64,8 +64,23 @@ export function BpoReviewActions(props: {
 
   function finalize() {
     startTransition(async () => {
-      const { error } = await finalizeBpoAction(props.slug)
-      if (error) toast.error(error)
+      const res = await finalizeBpoAction(props.slug)
+      if (res.error && res.needsReviewAck) {
+        // Accuracy gate: the build carries review findings. Finalizing is the
+        // broker's call, but only with the findings explicitly acknowledged.
+        const ack = confirm(
+          `${res.error}\n\nReview the findings in the document and the build summary. Finalize anyway, acknowledging the recorded findings?`,
+        )
+        if (!ack) return
+        const retry = await finalizeBpoAction(props.slug, { acknowledgeReview: true })
+        if (retry.error) toast.error(retry.error)
+        else {
+          toast.success('Finalized with review findings acknowledged.')
+          router.refresh()
+        }
+        return
+      }
+      if (res.error) toast.error(res.error)
       else {
         toast.success('Finalized.')
         router.refresh()
