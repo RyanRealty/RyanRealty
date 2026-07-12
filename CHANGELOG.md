@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.774.1 (2026-07-12)
+
+### Bug Fixes
+- fix(price-drops): feature the biggest reductions by percent, not dollar amount
+
+---
+
+
 ## v1.774.0 (2026-07-12)
 
 ### Features
