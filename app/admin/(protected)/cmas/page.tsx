@@ -67,6 +67,9 @@ interface CmaRow {
   build_error: string | null
   html_path: string
   build_summary: { needs_review?: boolean; review_reason?: string | null } | null
+  /** Attached at load: the expired listing + CRM contact this CMA maps to. */
+  expired_listing_key?: string | null
+  crm_person_id?: number | null
 }
 
 /** A CMA whose comp set was too heterogeneous for the builder to trust — the
@@ -157,9 +160,18 @@ function pageWindow(current: number, total: number): number[] {
 }
 
 async function CmasContent({ params }: { params: Record<string, string | undefined> }) {
-  const { listCmasForAdmin } = await import('@/lib/data')
-  const { rows: rawRows, total } = await listCmasForAdmin({ limit: WINDOW, offset: 0 })
-  const allRows = rawRows as unknown as CmaRow[]
+  const { listCmasForAdmin, getCmaExpiredLinks } = await import('@/lib/data')
+  const [{ rows: rawRows, total }, expiredLinks] = await Promise.all([
+    listCmasForAdmin({ limit: WINDOW, offset: 0 }),
+    getCmaExpiredLinks(),
+  ])
+  // Attach the expired-listing + CRM-contact link for any CMA whose slug maps
+  // to an expired listing (Matt directive 2026-07-12: jump to the owner + the
+  // expired info from the CMA list).
+  const allRows = (rawRows as unknown as CmaRow[]).map((r) => {
+    const link = expiredLinks[r.slug]
+    return { ...r, expired_listing_key: link?.listingKey ?? null, crm_person_id: link?.crmPersonId ?? null }
+  })
 
   // Summary counts (across the full window, before status/search filtering).
   const counts = {
@@ -327,6 +339,22 @@ async function CmasContent({ params }: { params: Record<string, string | undefin
                         </Button>
                       ) : null}
                     </div>
+                    {cma.expired_listing_key || cma.crm_person_id ? (
+                      <div className="mt-2 flex gap-2">
+                        {cma.crm_person_id ? (
+                          <Button asChild size="sm" variant="ghost" className="h-9 flex-1">
+                            <Link href={`/admin/crm/${cma.crm_person_id}`}>Client record</Link>
+                          </Button>
+                        ) : null}
+                        {cma.expired_listing_key ? (
+                          <Button asChild size="sm" variant="ghost" className="h-9 flex-1">
+                            <Link href={`/admin/expired-listings/${encodeURIComponent(cma.expired_listing_key)}`}>
+                              Expired listing
+                            </Link>
+                          </Button>
+                        ) : null}
+                      </div>
+                    ) : null}
                     {cma.build_error ? (
                       <div className="mt-2 text-xs text-destructive">Build failed. Open Review for detail.</div>
                     ) : null}
@@ -360,7 +388,15 @@ async function CmasContent({ params }: { params: Record<string, string | undefin
                             <div className="text-xs text-muted-foreground">{cma.subject_subdivision}</div>
                           ) : null}
                         </TableCell>
-                        <TableCell className="text-sm">{cma.client_name ?? '—'}</TableCell>
+                        <TableCell className="text-sm">
+                          {cma.crm_person_id ? (
+                            <Link href={`/admin/crm/${cma.crm_person_id}`} className="text-primary underline-offset-2 hover:underline">
+                              {cma.client_name ?? 'Client record'}
+                            </Link>
+                          ) : (
+                            (cma.client_name ?? '—')
+                          )}
+                        </TableCell>
                         <TableCell className="text-sm">{cma.broker_slug ?? '—'}</TableCell>
                         <TableCell className="text-right tabular-nums">{formatPrice(cma.recommended_list)}</TableCell>
                         <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
@@ -383,6 +419,13 @@ async function CmasContent({ params }: { params: Record<string, string | undefin
                         <TableCell className="text-sm">{formatDate(cma.finalized_at)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            {cma.expired_listing_key ? (
+                              <Button asChild size="sm" variant="ghost">
+                                <Link href={`/admin/expired-listings/${encodeURIComponent(cma.expired_listing_key)}`}>
+                                  Expired
+                                </Link>
+                              </Button>
+                            ) : null}
                             <Button asChild size="sm">
                               <Link href={`/admin/cmas/${cma.slug}`}>Review</Link>
                             </Button>

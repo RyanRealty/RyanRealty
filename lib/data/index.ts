@@ -719,6 +719,9 @@ export { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 export {
   listExpiredOutreachQueue,
   getExpiredOutreachRow,
+  getExpiredListingDetail,
+  getCmaExpiredLinks,
   markExpiredOutreachSent,
   type ExpiredOutreachRow,
+  type ExpiredListingDetail,
 } from './expired/outreach'

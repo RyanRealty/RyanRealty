@@ -112,6 +112,150 @@ export async function getExpiredOutreachRow(listingKey: string): Promise<Expired
   return all.find((r) => r.listing_key === listingKey) ?? null
 }
 
+export interface ExpiredListingDetail {
+  listing_key: string
+  full_address: string
+  street_address: string | null
+  city: string | null
+  state: string | null
+  postal_code: string | null
+  subdivision: string | null
+  property_type: string | null
+  bedrooms: number | null
+  bathrooms: number | null
+  sqft: number | null
+  standard_status: string | null
+  list_price: number | null
+  original_list_price: number | null
+  days_on_market: number | null
+  cumulative_days_on_market: number | null
+  list_number: string | null
+  expired_at: string | null
+  status_change_timestamp: string | null
+  detected_at: string | null
+  list_agent_name: string | null
+  list_agent_email: string | null
+  list_office_name: string | null
+  owner_name: string | null
+  contact_phone: string | null
+  contact_email: string | null
+  contact_source: string | null
+  owner_lookup_status: string | null
+  enrichment_notes: string | null
+  alert_sent_at: string | null
+  outreach_sms_sent_at: string | null
+  /** Resolved CRM person for this owner (send-created, else detection-created). */
+  crm_person_id: number | null
+  hard_stop: boolean
+  relisted: boolean
+  cma_slug: string | null
+}
+
+/** Full expired-listing record for the admin detail page. */
+export async function getExpiredListingDetail(listingKey: string): Promise<ExpiredListingDetail | null> {
+  const sb = createServiceClient()
+  const { data: r, error } = await sb
+    .from('expired_listings')
+    .select(
+      'listing_key, full_address, street_address, city, state, postal_code, subdivision, property_type, bedrooms, bathrooms, sqft, standard_status, list_price, original_list_price, days_on_market, cumulative_days_on_market, list_number, expired_at, status_change_timestamp, detected_at, list_agent_name, list_agent_email, list_office_name, owner_name, contact_phone, contact_email, contact_source, owner_lookup_status, enrichment_notes, alert_sent_at, outreach_sms_sent_at, outreach_crm_person_id, fub_person_id',
+    )
+    .eq('listing_key', listingKey.trim())
+    .maybeSingle()
+  if (error || !r) {
+    if (error) console.error('[getExpiredListingDetail]', error.message)
+    return null
+  }
+  const { slugifyAddress } = await import('@/lib/cma/address-slug')
+  const slug = r.street_address ? slugifyAddress(String(r.street_address)) : null
+  const { data: cma } = slug
+    ? await sb.from('cmas').select('slug').eq('slug', slug).maybeSingle()
+    : { data: null }
+  // Re-list check for this one address.
+  let relisted = false
+  if (r.street_address) {
+    const num = String(r.street_address).split(' ')[0]
+    const namePrefix = String(r.street_address).slice(num.length + 1).split(' ')[0]?.toUpperCase() ?? ''
+    const { data: onMarket } = await sb
+      .from('listings')
+      .select('StreetName, City, status_change_timestamp')
+      .eq('StreetNumber', num)
+      .in('StandardStatus', ['Active', 'Pending', 'Coming Soon'])
+    relisted = (onMarket ?? []).some(
+      (l) =>
+        String(l.StreetName ?? '').toUpperCase().startsWith(namePrefix) &&
+        String(l.City ?? '').toUpperCase() === String(r.city ?? '').toUpperCase() &&
+        (r.status_change_timestamp == null || String(l.status_change_timestamp ?? '') > r.status_change_timestamp),
+    )
+  }
+  return {
+    listing_key: r.listing_key,
+    full_address: r.full_address,
+    street_address: r.street_address,
+    city: r.city,
+    state: r.state,
+    postal_code: r.postal_code,
+    subdivision: r.subdivision,
+    property_type: r.property_type,
+    bedrooms: r.bedrooms,
+    bathrooms: r.bathrooms != null ? Number(r.bathrooms) : null,
+    sqft: r.sqft,
+    standard_status: r.standard_status,
+    list_price: r.list_price != null ? Number(r.list_price) : null,
+    original_list_price: r.original_list_price != null ? Number(r.original_list_price) : null,
+    days_on_market: r.days_on_market,
+    cumulative_days_on_market: r.cumulative_days_on_market,
+    list_number: r.list_number,
+    expired_at: r.expired_at,
+    status_change_timestamp: r.status_change_timestamp,
+    detected_at: r.detected_at,
+    list_agent_name: r.list_agent_name,
+    list_agent_email: r.list_agent_email,
+    list_office_name: r.list_office_name,
+    owner_name: r.owner_name,
+    contact_phone: r.contact_phone,
+    contact_email: r.contact_email,
+    contact_source: r.contact_source,
+    owner_lookup_status: r.owner_lookup_status,
+    enrichment_notes: r.enrichment_notes,
+    alert_sent_at: r.alert_sent_at,
+    outreach_sms_sent_at: r.outreach_sms_sent_at,
+    crm_person_id: (r.outreach_crm_person_id as number | null) ?? (r.fub_person_id as number | null) ?? null,
+    hard_stop: /HARD STOP|LITIGATOR/i.test(String(r.enrichment_notes ?? '')),
+    relisted,
+    cma_slug: cma ? slug : null,
+  }
+}
+
+/** Per-CMA links for the admin CMA list: which expired listing + CRM person a
+ *  CMA maps to (by address slug). Returns a slug-keyed map. */
+export async function getCmaExpiredLinks(): Promise<
+  Record<string, { listingKey: string; crmPersonId: number | null; ownerName: string | null }>
+> {
+  const sb = createServiceClient()
+  const { data, error } = await sb
+    .from('expired_listings')
+    .select('listing_key, street_address, owner_name, outreach_crm_person_id, fub_person_id')
+    .not('street_address', 'is', null)
+  if (error) {
+    console.error('[getCmaExpiredLinks]', error.message)
+    return {}
+  }
+  const { slugifyAddress } = await import('@/lib/cma/address-slug')
+  const map: Record<string, { listingKey: string; crmPersonId: number | null; ownerName: string | null }> = {}
+  for (const r of data ?? []) {
+    const slug = slugifyAddress(String(r.street_address))
+    // First writer wins; expired rows are unique per address in practice.
+    if (!map[slug]) {
+      map[slug] = {
+        listingKey: r.listing_key,
+        crmPersonId: (r.outreach_crm_person_id as number | null) ?? (r.fub_person_id as number | null) ?? null,
+        ownerName: r.owner_name,
+      }
+    }
+  }
+  return map
+}
+
 /** Stamp a completed intro send. */
 export async function markExpiredOutreachSent(params: {
   listingKey: string

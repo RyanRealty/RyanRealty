@@ -124,6 +124,9 @@ export default async function ExpiredOutreachPage() {
                   <p className="line-clamp-2 text-xs text-muted-foreground">{previewBody(r.street_address)}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
+                  <Button asChild size="sm" variant="ghost" className="h-11">
+                    <Link href={`/admin/expired-listings/${encodeURIComponent(r.listing_key)}`}>Listing</Link>
+                  </Button>
                   {r.cma_slug ? (
                     <Button asChild size="sm" variant="outline" className="h-11">
                       <Link href={`/admin/cmas/${r.cma_slug}`}>CMA</Link>
@@ -164,7 +167,7 @@ export default async function ExpiredOutreachPage() {
                   {cmaChip(r)}
                   {r.outreach_crm_person_id ? (
                     <Button asChild size="sm" variant="outline" className="h-11">
-                      <Link href={`/admin/crm/people/${r.outreach_crm_person_id}`}>Contact</Link>
+                      <Link href={`/admin/crm/${r.outreach_crm_person_id}`}>Contact</Link>
                     </Button>
                   ) : null}
                 </div>
