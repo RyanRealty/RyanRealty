@@ -30,7 +30,7 @@ type ValueProp = {
 const VALUE_PROPS: ValueProp[] = [
   {
     title: 'Priced on real data',
-    body: 'We prepare a written CMA with three closed comps, three active comps, an honest list-price range, and the four levers that move it. You see every number we used.',
+    body: 'We prepare a written CMA with three closed comps, three active comps, the list-price range they support, and the four levers that move it. You see every number we used.',
     detail: 'No guesses. No adjectives.',
   },
   {

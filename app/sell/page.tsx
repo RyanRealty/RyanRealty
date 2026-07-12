@@ -28,7 +28,7 @@
  */
 
 import type { Metadata } from 'next'
-import { getMarketPulse, getSurfaceImage, getLifestyleImages } from '@/lib/data'
+import { getMarketPulse, getCityMarketDetail, getSurfaceImage, getLifestyleImages } from '@/lib/data'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { LifestyleStrip } from '@/components/site/LifestyleStrip'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -80,7 +80,7 @@ const FAQ_ITEMS = [
   {
     question: 'What does it cost to list with you?',
     answer:
-      'One plan at 3% of the sale price, with no add-on fees. That covers photography, the MLS listing, the full marketing plan, every showing, and transaction management through close. Buyer-agent compensation is a separate number, negotiated per offer under the current rules. Commission is negotiable and every listing agreement is its own conversation.',
+      'Three plans: Essential at 2.5%, Enhanced at 3%, and Elite at 3.5% of the sale price, with no add-on fees. Every plan lists on the MLS, includes professional photography, a 3D tour, every showing, and transaction management through close. The higher tiers add marketing reach: drone video, paid social, professional staging, and a pre-listing inspection. Buyer-agent compensation is a separate number, negotiated per offer under the current rules. Commission is negotiable and every listing agreement is its own conversation.',
   },
   {
     question: 'How do you decide on a list price?',
@@ -110,12 +110,18 @@ const FAQ_ITEMS = [
 ] as const
 
 export default async function SellPage() {
-  const [pulse, heroSrc, lifestyleImages] = await Promise.all([
+  const [pulse, marketDetail, heroSrc, lifestyleImages] = await Promise.all([
     withTimeoutFallback(
       getMarketPulse({ geoType: 'city', geoSlug: 'bend' }),
       null,
       3500,
       'sell:pulse',
+    ),
+    withTimeoutFallback(
+      getCityMarketDetail({ geoType: 'city', geoSlug: 'bend' }),
+      null,
+      3500,
+      'sell:market-detail',
     ),
     // Distinct approved hero so /sell does not reuse the homepage Old Mill banner.
     withTimeoutFallback(
@@ -161,11 +167,11 @@ export default async function SellPage() {
           }}
           eyebrow="Sell with Ryan Realty"
           titleTop="Selling your home,"
-          titleBottom="done honestly."
-          lead="in Bend. The broker who prices your home is the broker who walks you to the finish line. Specific numbers from the data, no layered hand-offs."
+          titleBottom="priced on the comps."
+          lead="in Bend. The broker who prices your home is the broker who lists it, shows it, and closes it. You see every comp behind the number."
           showSearch={false}
           cta={{ href: '/sell/valuation', label: "What's my home worth" }}
-          ctaSecondary={{ href: '/homes-for-sale', label: 'Browse' }}
+          ctaSecondary={{ href: '#marketing-plan', label: 'See the plans' }}
           videoSrc={null}
           posterSrc={heroSrc ?? OLD_MILL_HERO}
         />
@@ -181,6 +187,9 @@ export default async function SellPage() {
               <a href="/sell/valuation" className="btn alt">
                 {"What's my home worth"} <span className="arr">→</span>
               </a>
+              <a href="#marketing-plan" className="btn alt" style={{ background: 'transparent', color: 'var(--navy)' }}>
+                See the plans <span className="arr">→</span>
+              </a>
               <a href={`tel:${CONTACT.phoneDirectTel}`} className="btn alt" style={{ background: 'transparent', color: 'var(--navy)' }}>
                 Or call {CONTACT.phoneDirect}
               </a>
@@ -194,7 +203,7 @@ export default async function SellPage() {
 
         <SellCommission />
 
-        <SellMarketContext pulse={pulse} />
+        <SellMarketContext pulse={pulse} detail={marketDetail} />
 
         <LifestyleStrip
           images={lifestyleImages}
@@ -216,7 +225,7 @@ export default async function SellPage() {
         <CTABar
           eyebrow="What is your home worth?"
           title="Get a free home valuation."
-          body="A broker prepares a comparative market analysis with recent comparable sales and an honest price range. No cost, no obligation."
+          body="A broker prepares a comparative market analysis with recent comparable sales and the price range those comps support. No cost, no obligation."
           primary={{ href: '/lp/seller-home-value', label: 'Get a home valuation' }}
           secondary={{ href: '/contact?inquiry=Selling', label: 'Talk to a broker' }}
           tone="navy"

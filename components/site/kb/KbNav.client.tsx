@@ -12,7 +12,7 @@ const LINKS = [
   { href: '/homes-for-sale', label: 'Homes' },
   { href: '/communities', label: 'Communities' },
   { href: '/cities', label: 'Cities' },
-  { href: '/sell/valuation', label: 'Sell' },
+  { href: '/sell', label: 'Sell' },
   // Account affordance carried across the seam: a signed-in buyer who saw
   // saved-homes/alerts on the portal chrome no longer loses them on editorial
   // pages. /account self-gates (signed-out lands on /login?next=/account).

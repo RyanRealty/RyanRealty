@@ -28,7 +28,7 @@ type Props = {
 
 const TRUST_LINES = [
   'Written CMA within 24 hours of your request',
-  'Three closed comps, three active comps, and an honest price range',
+  'Three closed comps, three active comps, and the price range they support',
   'The person you talk to is the person who lists your home',
   'No high pressure. No follow-up beyond two emails if you pass.',
 ]

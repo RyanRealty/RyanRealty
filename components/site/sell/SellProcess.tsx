@@ -25,7 +25,7 @@ const STEPS: Step[] = [
   {
     n: '1',
     title: 'Free written CMA',
-    body: 'We prepare a one-page comparative market analysis and email it to you. Three closed comps, three active comps, an honest list-price range, and the four variables that move it. No cost. No contract required to get it.',
+    body: 'We prepare a one-page comparative market analysis and email it to you. Three closed comps, three active comps, the list-price range they support, and the four variables that move it. No cost. No contract required to get it.',
   },
   {
     n: '2',
