@@ -70,6 +70,7 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
   // ── Listings ──
   const listings: AdminNavItem[] = [item('/admin/listings', 'Listings', 'home')]
   if (isSuperuser) listings.push(item('/admin/expired-listings', 'Expired listings', 'clock'))
+  if (canBrokers) listings.push(item('/admin/expired-outreach', 'Expired outreach', 'user-plus'))
   if (canBrokers) listings.push(item('/admin/cmas', 'CMAs', 'file-search'))
   if (canBrokers) listings.push(item('/admin/bpo', 'Price opinions', 'gauge'))
   // /admin/search was merged into the listings browser (consolidation 2026-07-07)
