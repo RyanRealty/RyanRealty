@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.773.0 (2026-07-12)
+
+### Features
+- feat(expired): manual approve-and-send outreach queue at /admin/expired-outreach
+
+---
+
+
 ## v1.772.0 (2026-07-12)
 
 ### Features
