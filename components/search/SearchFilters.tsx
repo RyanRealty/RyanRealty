@@ -26,7 +26,9 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import {
   ArrowDown01Icon,
   FilterIcon,
+  Search01Icon,
 } from '@hugeicons/core-free-icons'
+import { cn } from '@/lib/utils'
 
 export type SearchFiltersInitial = {
   city?: string
@@ -186,10 +188,13 @@ function FilterDropdown({
       <PopoverTrigger asChild>
         <Button
           type="button"
-          variant={active || open ? 'secondary' : 'outline'}
+          variant={active ? 'default' : 'outline'}
           size="sm"
           aria-haspopup="dialog"
-          className="shrink-0 gap-1 whitespace-nowrap"
+          className={cn(
+            'shrink-0 gap-1 whitespace-nowrap rounded-full px-3.5 tabular-nums',
+            open && !active && 'ring-2 ring-primary/30',
+          )}
         >
           {label}
           <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5 opacity-60" aria-hidden />
@@ -404,26 +409,29 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
   return (
     <div className="flex flex-col gap-0">
       {/* Row 1: location + sort + view toggle */}
-      <div className="flex flex-wrap items-center gap-2 px-3 py-2.5 sm:px-4">
+      <div className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
         {/* Location search input — basis-full gives it its own line on phones
             (sort + view toggle squeezed it to ~60px, showing "Ben" of "Bend"). */}
         <div className="relative min-w-0 basis-full sm:basis-auto sm:flex-1 sm:max-w-sm">
-          <Input
-            ref={locationInputRef}
-            type="search"
-            placeholder={locationPlaceholder}
-            value={locationQuery}
-            onChange={(e) => setLocationQuery(e.target.value)}
-            onFocus={() => setLocationOpen(true)}
-            onBlur={() => setTimeout(() => setLocationOpen(false), 150)}
-            onKeyDown={(e) => {
-              if (e.key !== 'Enter') return
-              e.preventDefault()
-              applyNaturalQuery(locationQuery)
-            }}
-            className="w-full rounded-xl"
-            aria-label="Search by city, community, zip, or address"
-          />
+          <div className="flex min-w-0 items-center gap-2 rounded-lg bg-muted px-3.5 py-2 transition focus-within:ring-2 focus-within:ring-primary/30">
+            <HugeiconsIcon icon={Search01Icon} className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+            <Input
+              ref={locationInputRef}
+              type="search"
+              placeholder={locationPlaceholder}
+              value={locationQuery}
+              onChange={(e) => setLocationQuery(e.target.value)}
+              onFocus={() => setLocationOpen(true)}
+              onBlur={() => setTimeout(() => setLocationOpen(false), 150)}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return
+                e.preventDefault()
+                applyNaturalQuery(locationQuery)
+              }}
+              className="h-auto flex-1 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              aria-label="Search by city, community, zip, or address"
+            />
+          </div>
           <ParsedSearchNotice chips={parsedChips} className="absolute left-0 right-0 top-full z-50 mt-1" />
           {locationOpen &&
             (suggestions.cities.length > 0 ||
@@ -518,20 +526,23 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
         {/* Voice search — speaks the same registry the screen panel renders */}
         <VoiceSearchButton onTranscript={applyNaturalQuery} className="shrink-0" />
 
-        {/* Sort */}
-        <Select
-          value={initialFilters.sort ?? 'newest'}
-          onValueChange={(v) => setFilter('sort', v)}
-        >
-          <SelectTrigger className="h-8 w-44" aria-label="Sort results">
-            <SelectValue placeholder="Newest" />
-          </SelectTrigger>
-          <SelectContent>
-            {SORT_OPTIONS.map((o) => (
-              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Sort — pushed to the right edge with a quiet label (mockup results-count) */}
+        <div className="ml-auto flex items-center gap-2">
+          <span className="hidden text-xs text-muted-foreground sm:inline">Sort</span>
+          <Select
+            value={initialFilters.sort ?? 'newest'}
+            onValueChange={(v) => setFilter('sort', v)}
+          >
+            <SelectTrigger className="h-9 w-44" aria-label="Sort results">
+              <SelectValue placeholder="Newest" />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* View toggle (split / list / map) — desktop only. MapSearchView's
             own List/Map tab bar is the single mobile switcher; both showing
@@ -548,13 +559,13 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
           }}
           variant="outline"
           size="sm"
-          className="hidden lg:flex rounded-lg border border-border overflow-hidden"
+          className="hidden h-9 overflow-hidden rounded-lg border border-border lg:flex"
         >
           {(['split', 'list', 'map'] as const).map((v) => (
             <ToggleGroupItem
               key={v}
               value={v}
-              className="px-3 py-1.5 text-xs font-medium capitalize rounded-none border-0"
+              className="h-9 rounded-none border-0 px-3.5 text-sm font-medium capitalize"
               aria-label={`${v} view`}
             >
               {v}
@@ -760,10 +771,10 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
         {/* More Filters button */}
         <Button
           type="button"
-          variant={moreFilterCount > 0 ? 'secondary' : 'outline'}
+          variant={moreFilterCount > 0 ? 'default' : 'outline'}
           size="sm"
           onClick={() => setMoreSheetOpen(true)}
-          className="shrink-0 gap-1"
+          className="shrink-0 gap-1 rounded-full px-3.5 tabular-nums"
           aria-label="Open more filters"
         >
           <HugeiconsIcon icon={FilterIcon} className="size-3.5" aria-hidden />

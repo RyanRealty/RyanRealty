@@ -4,9 +4,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import type { ListingTileRow } from '@/app/actions/listings'
 import { getSearchListings } from '@/app/actions/search'
-import { listingDetailPath } from '@/lib/slug'
+import { listingDetailPath, displaySubdivision } from '@/lib/slug'
 import ListingCard from '@/components/site/ListingCard'
 import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
+import { Button } from '@/components/ui/button'
+import { Eyebrow, H3, Body } from '@/components/site/primitives'
 
 type Props = {
   initialListings: ListingTileRow[]
@@ -95,19 +97,15 @@ export default function SearchResults({
   return (
     <div className="w-full p-4 space-y-4">
       {showEmptyState ? (
-        <div className="rounded-lg border border-border bg-card p-8 text-center">
-          <p className="text-lg font-medium text-foreground">
-            No homes match your current filters.
-          </p>
-          <p className="mt-2 text-muted-foreground">
-            Try lowering the minimum price, changing beds/baths, or clear filters to see all Central Oregon listings.
-          </p>
-          <Link
-            href="/homes-for-sale"
-            className="mt-6 inline-block bg-accent px-6 py-3 font-semibold text-primary hover:bg-accent/90"
-          >
-            View all listings
-          </Link>
+        <div className="rounded-xl border border-border bg-card p-8 text-center">
+          <Eyebrow>No matches</Eyebrow>
+          <H3 className="mt-2">No homes match these filters</H3>
+          <Body className="mx-auto mt-2 max-w-md text-muted-foreground">
+            Try a wider price range or fewer beds, or view every Central Oregon listing.
+          </Body>
+          <Button asChild variant="outline" className="mt-6">
+            <Link href="/homes-for-sale">View all listings</Link>
+          </Button>
         </div>
       ) : (
         <>
@@ -126,7 +124,8 @@ export default function SearchResults({
           }, undefined, { mlsNumber: listing.ListNumber ?? null })
           const cityParts = [listing.City, listing.State].filter(Boolean).join(', ')
           const cityZip = [cityParts, listing.PostalCode].filter(Boolean).join(' ').trim()
-          const cityLine = listing.SubdivisionName ? `${cityZip} · ${listing.SubdivisionName}` : cityZip
+          const subdivision = displaySubdivision(listing.SubdivisionName)
+          const cityLine = subdivision ? `${cityZip} · ${subdivision}` : cityZip
           const addressLine =
             [listing.StreetNumber, listing.StreetName, listing.StreetSuffix].filter(Boolean).join(' ').trim() || cityParts || 'Listing'
           // Wrapper carries data-listing-key for the map<->list hover sync
@@ -135,6 +134,7 @@ export default function SearchResults({
           return (
             <div key={key} data-listing-key={key}>
               <ListingCard
+                showPricePerSqft
                 listing={{
                   listingKey: key,
                   href,
@@ -145,6 +145,10 @@ export default function SearchResults({
                   beds: listing.BedroomsTotal,
                   baths: listing.BathroomsTotal,
                   sqft: listing.TotalLivingAreaSqFt ?? null,
+                  pricePerSqft:
+                    listing.ListPrice && listing.TotalLivingAreaSqFt
+                      ? listing.ListPrice / listing.TotalLivingAreaSqFt
+                      : null,
                 }}
               />
             </div>

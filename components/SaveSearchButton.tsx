@@ -140,8 +140,10 @@ export default function SaveSearchButton({ user }: Props) {
     <div className="relative">
       <Button
         type="button"
+        variant="outline"
+        size="sm"
         onClick={() => setOpen((o) => !o)}
-        className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground shadow-sm hover:bg-muted"
+        className="shrink-0"
       >
         Save this search
       </Button>

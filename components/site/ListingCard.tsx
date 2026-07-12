@@ -25,6 +25,10 @@ export type ListingCardData = {
   beds: number | null
   baths: number | null
   sqft: number | null
+  /** Whole-dollar price per living sqft (list price / sqft). Rendered only when
+   *  the card opts in via `showPricePerSqft` — search results show it to match
+   *  the search mockup; other surfaces stay on the leaner bd/ba/sqft meta. */
+  pricePerSqft?: number | null
   badge?: { kind: ListingBadge; label: string }
   /** Scalar virtual-tour / video URL. When present and embeddable, the
    *  VideoListingCard plays it inline; otherwise the card links to detail. */
@@ -34,11 +38,22 @@ export type ListingCardData = {
 /** beds · baths · sqft, rendering only the values the listing actually has —
  *  no "— bd · — ba · — sqft" placeholder rows for land / estate parcels whose
  *  MLS record carries no living-area stats. Renders nothing when all are null. */
-function MetaRow({ beds, baths, sqft }: { beds: number | null; baths: number | null; sqft: number | null }) {
+function MetaRow({
+  beds,
+  baths,
+  sqft,
+  pricePerSqft,
+}: {
+  beds: number | null
+  baths: number | null
+  sqft: number | null
+  pricePerSqft?: number | null
+}) {
   const parts: string[] = []
   if (beds != null) parts.push(`${Math.round(beds).toLocaleString()} bd`)
   if (baths != null) parts.push(`${Math.round(baths).toLocaleString()} ba`)
   if (sqft != null) parts.push(`${Math.round(sqft).toLocaleString()} sqft`)
+  if (pricePerSqft != null && pricePerSqft > 0) parts.push(`$${Math.round(pricePerSqft).toLocaleString()}/sqft`)
   if (parts.length === 0) return null
   return (
     <div className="mt-2.5 text-xs text-muted-foreground tabular-nums flex flex-wrap gap-1.5 items-center">
@@ -70,7 +85,15 @@ function PlayGlyph() {
   )
 }
 
-export default function ListingCard({ listing }: { listing: ListingCardData }) {
+export default function ListingCard({
+  listing,
+  showPricePerSqft = false,
+}: {
+  listing: ListingCardData
+  /** Opt-in: append "$X/sqft" to the meta row (search results, per the search
+   *  mockup). Off by default so featured/homepage/other grids stay unchanged. */
+  showPricePerSqft?: boolean
+}) {
   return (
     <Link
       href={listing.href}
@@ -111,7 +134,12 @@ export default function ListingCard({ listing }: { listing: ListingCardData }) {
         </div>
         <div className="text-[13px] text-foreground mt-0.5">{listing.addressLine}</div>
         <div className="text-xs text-muted-foreground mt-px">{listing.cityLine}</div>
-        <MetaRow beds={listing.beds} baths={listing.baths} sqft={listing.sqft} />
+        <MetaRow
+          beds={listing.beds}
+          baths={listing.baths}
+          sqft={listing.sqft}
+          pricePerSqft={showPricePerSqft ? listing.pricePerSqft : null}
+        />
       </div>
     </Link>
   )

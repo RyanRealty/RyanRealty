@@ -62,15 +62,17 @@ export default function VoiceSearchButton({ onTranscript, className }: Props) {
     <div className={className}>
       <Button
         type="button"
+        variant="outline"
+        size="icon"
         onClick={startListening}
         disabled={listening}
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted disabled:opacity-70"
+        className="size-9 shrink-0 disabled:opacity-70"
         aria-label={listening ? 'Listening…' : 'Search by voice'}
       >
         {listening ? (
-          <span className="h-4 w-4 animate-pulse rounded-full bg-destructive/100" />
+          <span className="size-4 animate-pulse rounded-full bg-destructive" />
         ) : (
-          <HugeiconsIcon icon={Mic01Icon} className="h-5 w-5" />
+          <HugeiconsIcon icon={Mic01Icon} className="size-5" />
         )}
       </Button>
       {error && <p className="mt-1 text-xs text-destructive">{error}</p>}

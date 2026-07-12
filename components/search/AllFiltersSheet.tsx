@@ -126,7 +126,7 @@ export function activeRegistryFilters(source: ParamReader | null | undefined): A
 /** Removable active-filter chip, shared by both filter bars. */
 export function RegistryFilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <Badge variant="secondary" className="inline-flex h-auto items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium">
+    <Badge variant="default" className="inline-flex h-auto items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium tabular-nums">
       {label}
       <Button
         type="button"
@@ -134,7 +134,7 @@ export function RegistryFilterChip({ label, onRemove }: { label: string; onRemov
         size="icon"
         aria-label={`Remove filter: ${label}`}
         onClick={onRemove}
-        className="ml-0.5 size-3.5 rounded-full p-0 text-muted-foreground hover:bg-transparent hover:text-foreground"
+        className="ml-0.5 size-3.5 rounded-full p-0 text-primary-foreground/70 hover:bg-transparent hover:text-primary-foreground"
       >
         <HugeiconsIcon icon={Cancel01Icon} className="size-3" aria-hidden />
       </Button>

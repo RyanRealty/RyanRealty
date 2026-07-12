@@ -11,9 +11,10 @@ import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
 import type { ListingForMap } from '@/components/SearchMapClustered'
 import type { MapPolygonPoint } from '@/lib/map-polygon'
 import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registry'
-import { listingDetailPath } from '@/lib/slug'
+import { listingDetailPath, displaySubdivision } from '@/lib/slug'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Eyebrow, H3, Body } from '@/components/site/primitives'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
@@ -54,6 +55,42 @@ function formatCardAddress(l: ListingTileRow): string {
   return [[l.StreetNumber, l.StreetName, l.StreetSuffix].filter(Boolean).join(' ').trim(), l.City]
     .filter(Boolean)
     .join(', ')
+}
+
+/** Street line only (e.g. "2732 NW Ordway Ave") for the elevated result card —
+ *  the city/neighborhood sits on its own line below (matches ListingCard + the
+ *  search mockup .addr / .city split). */
+function cardStreet(l: ListingTileRow): string {
+  return [l.StreetNumber, l.StreetName, l.StreetSuffix].filter(Boolean).join(' ').trim() || (l.City ?? 'Listing')
+}
+
+/** "Bend, OR 97703 · Awbrey Butte" — city + state + zip, plus subdivision when
+ *  the row carries one. Oregon-scoped, so "OR" is a safe constant when State is
+ *  absent. Mirrors the list card's cityLine so both views read identically. */
+function cardCity(l: ListingTileRow): string {
+  const cityZip = [l.City ? `${l.City}, ${l.State ?? 'OR'}` : null, l.PostalCode].filter(Boolean).join(' ').trim()
+  const sub = displaySubdivision(l.SubdivisionName)
+  return sub ? `${cityZip} · ${sub}` : cityZip
+}
+
+/** Whole-dollar list price per living sqft, or null when either input is missing. */
+function cardPricePerSqft(l: ListingTileRow): number | null {
+  const sqft = rowSqft(l)
+  if (l.ListPrice == null || sqft == null || sqft <= 0) return null
+  return Math.round(l.ListPrice / sqft)
+}
+
+/** Editorial results-summary suffix per sort mode (mockup: "· sorted by newest").
+ *  Keys mirror SORT_OPTIONS in SearchFilters; unknown sorts render no suffix. */
+const SORT_SUFFIX: Record<string, string> = {
+  newest: 'sorted by newest',
+  oldest: 'sorted by oldest',
+  price_asc: 'price: low to high',
+  price_desc: 'price: high to low',
+  price_per_sqft_asc: 'price per sqft: low to high',
+  price_per_sqft_desc: 'price per sqft: high to low',
+  year_newest: 'newest built first',
+  year_oldest: 'oldest built first',
 }
 
 const NEW_LISTING_WINDOW_DAYS = 7
@@ -343,29 +380,32 @@ export default function MapSearchView({
   const savedSet = useMemo(() => new Set(savedListingKeys), [savedListingKeys])
 
   const countLabel = capped ? `${totalCount.toLocaleString()}+` : totalCount.toLocaleString()
-  const headerText = `${countLabel} home${totalCount === 1 ? '' : 's'} in this area`
+  const sortSuffix = SORT_SUFFIX[filters.sort ?? 'newest'] ?? null
 
   const listPanel = (
     <div ref={listContainerRef} className="flex-1 min-h-0 overflow-y-auto bg-muted">
-      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-4 py-3">
-        <p className="text-sm font-medium text-foreground" aria-live="polite">
-          {headerText}
+      <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-card px-4 py-3">
+        <p className="text-sm text-muted-foreground tabular-nums" aria-live="polite">
+          <span className="font-semibold text-foreground">{countLabel}</span>{' '}
+          {totalCount === 1 ? 'home' : 'homes'} in this area
+          {sortSuffix ? <span className="hidden sm:inline"> · {sortSuffix}</span> : null}
         </p>
-        {loading && <span className="text-xs text-muted-foreground">Updating…</span>}
+        {loading && <span className="shrink-0 text-xs text-muted-foreground">Updating…</span>}
       </div>
       {listings.length === 0 ? (
         hasNarrowingFilters ? (
-          <div className="p-8 text-center text-muted-foreground">
-            <p className="text-base font-medium text-foreground">
+          <div className="p-8 text-center">
+            <Eyebrow>{beyondViewportCount != null ? 'Outside this view' : 'No matches'}</Eyebrow>
+            <H3 className="mt-2">
               {beyondViewportCount != null
-                ? `${beyondViewportCount.toLocaleString('en-US')} matching home${beyondViewportCount === 1 ? ' is' : 's are'} outside this map view.`
-                : 'No homes match your filters here.'}
-            </p>
-            <p className="mt-1 text-sm">
+                ? `${beyondViewportCount.toLocaleString('en-US')} matching home${beyondViewportCount === 1 ? ' is' : 's are'} outside this map view`
+                : 'No homes match these filters here'}
+            </H3>
+            <Body className="mt-2 text-muted-foreground">
               {beyondViewportCount != null
                 ? 'Zoom out to see them, or loosen a filter.'
                 : 'Loosen a filter, or zoom out to widen the search area.'}
-            </p>
+            </Body>
             <Button
               type="button"
               variant="outline"
@@ -377,9 +417,10 @@ export default function MapSearchView({
             </Button>
           </div>
         ) : (
-          <div className="p-8 text-center text-muted-foreground">
-            <p className="text-base font-medium text-foreground">No homes in this part of the map.</p>
-            <p className="mt-1 text-sm">Zoom out or pan to a different area to see listings.</p>
+          <div className="p-8 text-center">
+            <Eyebrow>Empty view</Eyebrow>
+            <H3 className="mt-2">No homes in this part of the map</H3>
+            <Body className="mt-2 text-muted-foreground">Zoom out or pan to a different area to see listings.</Body>
           </div>
         )
       ) : (
@@ -395,6 +436,7 @@ export default function MapSearchView({
             )
             const isHovered = hoveredKey === key
             const sqft = rowSqft(l)
+            const ppsf = cardPricePerSqft(l)
             const badge = nowMs != null ? cardBadge(l, nowMs) : null
             return (
               // A <button> (SaveListingButton) can't legally nest inside an
@@ -406,8 +448,10 @@ export default function MapSearchView({
                 key={key}
                 data-listing-key={key}
                 className={cn(
-                  'group relative overflow-hidden rounded-lg bg-card shadow-sm transition-shadow',
-                  isHovered ? 'shadow-lg ring-2 ring-primary' : 'hover:shadow-md'
+                  'group relative overflow-hidden rounded-xl bg-card shadow-sm ring-1 transition',
+                  isHovered
+                    ? 'shadow-lg ring-2 ring-primary'
+                    : 'ring-foreground/10 hover:shadow-md hover:ring-primary/30'
                 )}
                 onMouseEnter={() => onListHover(key)}
                 onMouseLeave={() => onListHover(null)}
@@ -419,40 +463,54 @@ export default function MapSearchView({
                   onFocus={() => onListHover(key)}
                   onBlur={() => onListHover(null)}
                 />
-                <div className="relative aspect-[4/3] bg-border">
+                <div className="relative aspect-[4/3] bg-muted">
                   {l.PhotoURL ? (
                     <Image
                       src={l.PhotoURL}
                       alt={`${formatAddress(l)} property photo`}
                       fill
-                      className="pointer-events-none object-cover"
+                      className="pointer-events-none object-cover transition duration-300 group-hover:scale-[1.02]"
                       sizes="(max-width:1024px) 50vw, 25vw"
                     />
                   ) : (
-                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted to-muted-foreground/20 text-sm text-muted-foreground">
                       No photo
                     </div>
                   )}
-                  <div className="pointer-events-none absolute left-2 top-2 flex items-center gap-1.5">
-                    <span className="rounded bg-primary px-2 py-0.5 text-sm font-semibold text-primary-foreground tabular-nums">
-                      {formatPrice(l.ListPrice)}
-                    </span>
-                    {badge ? (
-                      <span className="rounded bg-card px-2 py-0.5 text-xs font-semibold text-foreground shadow-sm">
+                  {badge ? (
+                    <div className="pointer-events-none absolute left-2.5 top-2.5">
+                      <span className="rounded-full border border-border bg-card px-2.5 py-0.5 text-[11px] font-medium text-foreground shadow-sm">
                         {badge}
                       </span>
-                    ) : null}
-                  </div>
+                    </div>
+                  ) : null}
                   <div className="absolute right-2 top-2 z-10">
                     <SaveListingButton listingKey={key} saved={savedSet.has(key)} compact />
                   </div>
                 </div>
-                <div className="pointer-events-none p-3">
-                  <p className="truncate font-medium text-primary">{formatCardAddress(l)}</p>
-                  <p className="mt-0.5 text-sm text-muted-foreground tabular-nums">
-                    {l.BedroomsTotal ?? '—'} bd · {l.BathroomsTotal ?? '—'} ba
-                    {sqft != null && ` · ${sqft.toLocaleString()} sqft`}
-                  </p>
+                <div className="pointer-events-none px-4 pb-4 pt-3.5">
+                  <div className="text-[22px] font-bold tabular-nums tracking-[-0.01em] text-foreground">
+                    {formatPrice(l.ListPrice)}
+                  </div>
+                  <div className="mt-0.5 truncate text-[13px] text-foreground">{cardStreet(l)}</div>
+                  <div className="truncate text-xs text-muted-foreground">{cardCity(l)}</div>
+                  {(l.BedroomsTotal != null || l.BathroomsTotal != null || sqft != null) && (
+                    <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
+                      {[
+                        l.BedroomsTotal != null ? `${l.BedroomsTotal.toLocaleString()} bd` : null,
+                        l.BathroomsTotal != null ? `${l.BathroomsTotal.toLocaleString()} ba` : null,
+                        sqft != null ? `${sqft.toLocaleString()} sqft` : null,
+                        ppsf != null ? `$${ppsf.toLocaleString()}/sqft` : null,
+                      ]
+                        .filter(Boolean)
+                        .map((part, i) => (
+                          <span key={part} className="flex items-center gap-1.5">
+                            {i > 0 ? <span aria-hidden>·</span> : null}
+                            <span>{part}</span>
+                          </span>
+                        ))}
+                    </div>
+                  )}
                 </div>
               </article>
             )
