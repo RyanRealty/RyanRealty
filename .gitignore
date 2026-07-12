@@ -70,6 +70,11 @@ next-env.d.ts
 !.claude/skills/local-seo/
 # ...and the creative-brain — the permanent compounding creative knowledge system (6 research volumes + LESSONS ledger); tracked so it survives clones and compounds across sessions
 !.claude/skills/creative-brain/
+# ...and the four engineering-practice skills adapted from Matt Pocock's course-video-manager (2026-07-11) — tracked so they survive clones + are visible to Cursor
+!.claude/skills/domain-context/
+!.claude/skills/tdd/
+!.claude/skills/optimize-data-loading/
+!.claude/skills/document-external-api/
 .claude/worktrees
 .claude/cache
 .claude/projects

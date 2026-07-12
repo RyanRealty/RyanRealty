@@ -39,6 +39,10 @@ Then merge new paths into this file under the right heading.
 
 - `/Users/matthewryan/RyanRealty/.claude/skills/frontend-design/SKILL.md` *(building/reworking any web page, landing page, hero, or component — design taste + anti-AI-slop layer)*
 - `/Users/matthewryan/RyanRealty/.claude/skills/hallmark/SKILL.md` *(anti-slop design audits/redesigns + study a reference design; run `hallmark audit <path>` on existing pages)*
+- `/Users/matthewryan/RyanRealty/.claude/skills/domain-context/SKILL.md` *(author/maintain repo-root CONTEXT.md ubiquitous-language doc — canonical terms + avoid-lists + flagged ambiguities; adapted from Matt Pocock's course-video-manager 2026-07-11)*
+- `/Users/matthewryan/RyanRealty/.claude/skills/tdd/SKILL.md` *(red-green implementation tactics inside THE LOOP — DB-TDD for pure-core data logic, FRONTEND-TDD for reducer state; one failing test at a time)*
+- `/Users/matthewryan/RyanRealty/.claude/skills/optimize-data-loading/SKILL.md` *(slow page/DAL triage — kill redundant fetches, slim query variants, Promise.all independent calls)*
+- `/Users/matthewryan/RyanRealty/.claude/skills/document-external-api/SKILL.md` *(generate/refresh docs/<api>-api.md for FUB, SkySlope, Spark, Twilio etc. — verified quirks outrank vendor docs, cross-ref our consumers, flag drift)*
 - `/Users/matthewryan/RyanRealty/.cursor/skills/oregon-orea-principal-broker/SKILL.md`
 - `/Users/matthewryan/RyanRealty/.cursor/skills/oregon-real-estate-oref/SKILL.md`
 - `/Users/matthewryan/RyanRealty/.cursor/skills/professional-word-docx/SKILL.md`
