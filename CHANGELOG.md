@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.775.0 (2026-07-12)
+
+### Features
+- feat(admin): CMA list links to the client record + expired-listing detail
+
+---
+
+
 ## v1.774.3 (2026-07-12)
 
 ### Bug Fixes
