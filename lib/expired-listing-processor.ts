@@ -303,6 +303,31 @@ export async function processNewExpiredListings(
                 ? 'withdrawn'
                 : 'Expired'
 
+        // Skip-trace demographics -> namespaced custom fields on the contact
+        // (crm_people.custom jsonb, RLS service-role only — safe for PII).
+        // Store only present values and true flags to keep the record clean.
+        const demo = owner.demographics
+        const df = owner.flags
+        const demographicCustom: Record<string, string | number | boolean> = {}
+        if (demo) {
+          if (demo.age != null && demo.age !== '') demographicCustom.customAge = demo.age
+          if (demo.ageRange) demographicCustom.customAgeRange = demo.ageRange
+          if (demo.dob) demographicCustom.customDob = demo.dob
+          if (demo.gender) demographicCustom.customGender = demo.gender
+          if (demo.maritalStatus) demographicCustom.customMaritalStatus = demo.maritalStatus
+          if (demo.householdSize != null && demo.householdSize !== '') demographicCustom.customHouseholdSize = demo.householdSize
+          if (demo.presenceOfChildren != null && demo.presenceOfChildren !== '') demographicCustom.customPresenceOfChildren = demo.presenceOfChildren
+          if (demo.occupation) demographicCustom.customOccupation = demo.occupation
+          if (demo.income) demographicCustom.customIncome = demo.income
+          if (demo.netWorth) demographicCustom.customNetWorth = demo.netWorth
+        }
+        if (df) {
+          if (df.recentlyMoved) demographicCustom.customRecentlyMoved = true
+          if (df.recentlyDivorced) demographicCustom.customRecentlyDivorced = true
+          if (df.equityRich) demographicCustom.customEquityRich = true
+          if (df.vacant) demographicCustom.customVacant = true
+        }
+
         // Tags + custom + origin note in one native enrichment call. The
         // intent:expired-listing tag is what auto-enroll keys on for Plan 71.
         await enrichNativeLead({
@@ -317,6 +342,7 @@ export async function processNewExpiredListings(
             'owner-lookup:resolved',
             ...(owner.absentee ? ['owner:absentee'] : []),
             ...(owner.outOfState ? ['geo:out-of-state'] : []),
+            ...(df?.equityRich ? ['owner:equity-rich'] : []),
             ...(owner.complianceTags ?? []),
           ],
           custom: {
@@ -324,6 +350,7 @@ export async function processNewExpiredListings(
             customSellerPropertyAddress: fullAddress,
             customLeadTier: 'hot',
             customMoveTimeline: 'ready-now',
+            ...demographicCustom,
           },
           assignedBroker: 'matt',
           originNote: {

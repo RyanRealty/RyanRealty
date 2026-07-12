@@ -55,6 +55,10 @@ export type OwnerLookupResult = {
   absentee?: boolean
   /** Owner's mailing address is outside Oregon. */
   outOfState?: boolean
+  /** Skip-trace demographics (estimates) — persisted to the CRM contact's custom jsonb. */
+  demographics?: SkipTraceResult['demographics']
+  /** Skip-trace behavioral flags (recently moved/divorced, equity-rich, vacant). */
+  flags?: SkipTraceResult['flags']
 }
 
 const PLACEHOLDER_EMAIL_RE = /@placeholder\.ryan-realty\.com$/i
@@ -567,8 +571,10 @@ function buildCountyNotes(c: CountyOwner, trace: SkipTraceResult | null): string
   const mailing = [c.mailingStreet, c.mailingCity, c.mailingState, c.mailingZip]
     .filter(Boolean)
     .join(', ')
+  const humanBehindEntity = c.isEntity && trace?.person ? (trace.person.full || [trace.person.first, trace.person.last].filter(Boolean).join(' ')) : ''
   return [
     `Resolved via Deschutes County assessor records (taxlot ${c.taxlot ?? 'unknown'}, account ${c.accountId ?? 'unknown'}).`,
+    c.isEntity ? `Legal owner (entity): ${c.ownerRaw}.${humanBehindEntity ? ` Skip-trace resolved contact: ${humanBehindEntity}.` : ''}` : '',
     mailing ? `Mailing: ${mailing}.` : '',
     c.absentee ? 'ABSENTEE owner (mailing differs from property).' : 'Owner-occupied per mailing address.',
     c.outOfState ? 'OUT-OF-STATE owner.' : '',
@@ -600,9 +606,13 @@ export async function lookupOwnerForExpiredListing(params: {
     const resolved = await resolveOwnerContact(params.streetAddress, params.city, zip)
     if (resolved) {
       const c = resolved.county
+      // The skip-trace resolves the real human even behind an LLC / trust. Prefer
+      // that person for entity-owned records so we file an actual name, not "SOME LLC".
+      const p = resolved.trace?.person
+      const traceHuman = p ? p.full || [p.first, p.last].filter(Boolean).join(' ') || '' : ''
       const fullName = c.isEntity
-        ? c.ownerRaw
-        : [c.firstName, c.lastName].filter(Boolean).join(' ') || c.ownerRaw
+        ? traceHuman || c.ownerRaw
+        : [c.firstName, c.lastName].filter(Boolean).join(' ') || traceHuman || c.ownerRaw
       const mailing = [c.mailingStreet, c.mailingCity, c.mailingState, c.mailingZip]
         .filter(Boolean)
         .join(', ')
@@ -632,6 +642,8 @@ export async function lookupOwnerForExpiredListing(params: {
         complianceTags: resolved.complianceTags,
         absentee: c.absentee,
         outOfState: c.outOfState,
+        demographics: resolved.trace?.demographics ?? undefined,
+        flags: resolved.trace?.flags ?? undefined,
       }
       if (fubMatch?.fubPersonId) {
         result.fubPersonId = fubMatch.fubPersonId

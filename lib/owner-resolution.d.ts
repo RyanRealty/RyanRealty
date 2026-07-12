@@ -22,6 +22,28 @@ export type SkipTraceResult = {
   dncTcpa: boolean
   deceased: boolean
   hardStop: boolean
+  /** Real owner the skip-trace resolved — the human behind an LLC/trust when the county record is an entity. */
+  person: { first: string | null; last: string | null; full: string | null } | null
+  /** Skip-trace demographics (estimates). Null when the provider returned none. */
+  demographics: {
+    age: number | string | null
+    ageRange: string | null
+    dob: string | null
+    gender: string | null
+    maritalStatus: string | null
+    householdSize: number | string | null
+    presenceOfChildren: string | boolean | null
+    occupation: string | null
+    income: string | null
+    netWorth: string | null
+  } | null
+  /** Skip-trace behavioral flags. */
+  flags: {
+    recentlyMoved: boolean
+    recentlyDivorced: boolean
+    equityRich: boolean
+    vacant: boolean
+  }
 }
 
 export type ResolvedOwner = {
