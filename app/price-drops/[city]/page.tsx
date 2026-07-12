@@ -25,6 +25,7 @@
 
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import { unstable_noStore as noStore } from 'next/cache'
 import Link from 'next/link'
 import { getPriceDrops } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -217,6 +218,16 @@ export default async function PriceDropsCityPage({ params }: Props) {
     limit: 48,
     days: 7,
   }).catch(() => ({ drops: [], total: 0, fetchedAt: new Date().toISOString() }))
+
+  // Don't let ISR persist an empty render. An empty result is usually the
+  // resilient error fallback (cold DAL cache after a deploy + a transient fetch
+  // failure); caching it with `revalidate = 1800` would serve an empty page for
+  // 30 minutes even though the city has active drops (Matt report 2026-07-11).
+  // A genuinely-empty small city just re-renders dynamically instead of caching
+  // an empty page — a fine trade for never stranding a city that does have drops.
+  if (drops.length === 0) {
+    noStore()
+  }
 
   // Aggregate stats from real data
   const totalReduced = drops.reduce((sum, d) => sum + (d.lastDropAmount ?? 0), 0)

@@ -26,6 +26,7 @@
 // @no-parity -- parity contract at design_system/ryan-realty/ui_kits/price-drops/parity.json
 
 import type { Metadata } from 'next'
+import { unstable_noStore as noStore } from 'next/cache'
 import Link from 'next/link'
 import { getPriceDrops } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -242,6 +243,19 @@ export default async function PriceDropsRegionPage() {
   const { drops, total, fetchedAt } = await getPriceDrops({ limit: 48, days: 7 }).catch(
     () => ({ drops: [], total: 0, fetchedAt: new Date().toISOString() }),
   )
+
+  // A region-wide 7-day price-drops pull is effectively never empty (there are
+  // dozens every week). An empty result means getPriceDrops fell back to its
+  // resilient empty value — a cold DAL cache (the deploy pipeline resets caches
+  // often) plus a transient fetch failure. Do NOT let ISR persist this empty
+  // render: with `revalidate = 1800` it would serve "NO REDUCTIONS THIS WEEK"
+  // for 30 minutes even though ~60 homes actually dropped (Matt report
+  // 2026-07-11 — the page intermittently showed 0 drops). noStore() opts THIS
+  // render out of the full-route cache so the good cached page keeps serving and
+  // the next request re-fetches, instead of stranding everyone on the empty page.
+  if (drops.length === 0) {
+    noStore()
+  }
 
   // Aggregate stats from real data (zero hardcoded)
   const totalReduced = drops.reduce((sum, d) => sum + (d.lastDropAmount ?? 0), 0)
