@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.766.1 (2026-07-12)
+
+### Maintenance
+- docs(cma): lock the deterministic+judgment hybrid architecture into SKILL.md §0 + progress log
+
+---
+
+
 ## v1.766.0 (2026-07-12)
 
 ### Features
