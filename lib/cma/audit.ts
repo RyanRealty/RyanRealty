@@ -102,8 +102,8 @@ export async function auditCma(args: {
   const { subject, comps, excluded, pricing, judgment, market } = args
 
   const subjectLine = [
-    `${subject.streetAddress}, ${subject.city} (${subject.subdivision ?? 'no subdivision'})`,
-    `${subject.beds ?? '?'}bd/${subject.baths ?? '?'}ba · ${subject.sqft ?? '?'}sqft · ${subject.lotAcres ?? '?'}ac · built ${subject.yearBuilt ?? '?'}`,
+    `${subject.streetAddress}, ${subject.city} (subdivision: ${subject.subdivision ?? 'none'})`,
+    `beds ${subject.beds ?? 'unknown'} · baths ${subject.baths ?? 'unknown'} · living area ${subject.sqft ?? 'unknown'} sqft · lot ${subject.lotAcres ?? 'unknown'} acres · year built ${subject.yearBuilt ?? 'unknown'}`,
     subject.lastListPrice
       ? `FAILED LISTING at $${Math.round(subject.lastListPrice).toLocaleString()} (${subject.standardStatus ?? 'off market'})`
       : null,
@@ -116,9 +116,10 @@ export async function auditCma(args: {
     .map((c, i) => {
       const tier = judgment?.verdicts.find((v) => v.listingKey === c.listingKey)?.tier ?? 'n/a'
       return (
-        `${i + 1}. ${c.address} (${c.subdivision ?? '—'}) · ${c.beds ?? '?'}bd/${c.baths ?? '?'}ba · ${c.sqft}sqft · built ${c.yearBuilt ?? '?'} · ` +
-        `closed $${Math.round(c.closePrice).toLocaleString()} on ${c.closeDate} · time adj ${c.timeAdjustment >= 0 ? '+' : ''}$${c.timeAdjustment.toLocaleString()} · ` +
-        `size adj ${c.sizeAdjustment >= 0 ? '+' : ''}$${c.sizeAdjustment.toLocaleString()} · adjusted $${Math.round(c.adjustedPrice).toLocaleString()} · weight ${c.weight} · tier ${tier}` +
+        `${i + 1}. ${c.address} (subdivision: ${c.subdivision ?? 'none'}) · beds ${c.beds ?? 'unknown'} · baths ${c.baths ?? 'unknown'} · ` +
+        `living area ${c.sqft} sqft · year built ${c.yearBuilt ?? 'unknown'} · ` +
+        `closed $${Math.round(c.closePrice).toLocaleString()} on ${c.closeDate} · ` +
+        `machine-adjusted value $${Math.round(c.adjustedPrice).toLocaleString()} · reconciliation weight ${c.weight} · comparability tier ${tier}` +
         (remarks(c.publicRemarks) ? `\n   remarks: ${remarks(c.publicRemarks)}` : '')
       )
     })
@@ -134,17 +135,25 @@ export async function auditCma(args: {
 
   const system =
     'You are an independent licensed Oregon principal broker hired to ATTACK a Comparative Market Analysis before it ' +
-    'reaches a homeowner. You did not build it and you get no credit for approving it — your reputation rides on the ' +
-    'defects you catch. Try hard to refute the recommended list price. Hunt for: a kept comp that is not genuinely ' +
-    'comparable (different product type, quality tier, resort/premium location, condition per remarks); an excluded ' +
-    'comp whose exclusion reason is not supported; an adjustment or weight that is inconsistent with the stated method ' +
-    '(time adj = close price × YoY% × months/12 capped at 20%; size adj = sqft delta × adjusted $/sqft × 0.5; weight = ' +
-    'size proximity × recency, halved for weak-tier comps); a recommendation that sits outside what the adjusted comps ' +
-    'support; any narrative or verdict claim not traceable to the data shown here; and a market-verdict mismatch ' +
-    '(months of supply: ≤4 seller, 4–6 balanced, ≥6 buyer). The subject FAILED to sell at its last list price — if the ' +
-    'recommendation is at or above that price, demand comp evidence that justifies it. Judge only from the data given; ' +
-    'do not invent facts. If the analysis survives your attack, say so plainly — a clean pass is a legitimate outcome, ' +
-    'and manufacturing findings is as bad as missing them. Report only through the record_audit tool.'
+    'reaches a homeowner. You did not build it and you get no credit for approving it — your reputation rides on ' +
+    'catching REAL defects, and equally on not manufacturing fake ones. ' +
+    'SCOPE — judgment defects only. The arithmetic in this report (time adjustments, size adjustments, weights, the ' +
+    'three-method reconciliation) is computed and machine-verified by deterministic code; do NOT re-derive or dispute ' +
+    'arithmetic, rounding, or displayed precision — any arithmetic finding will be discarded. Attack instead: ' +
+    '(1) a kept comp that is not genuinely comparable — different product type (townhome vs detached), quality tier, ' +
+    'resort/premium location, acreage/estate class, or condition per the remarks; ' +
+    '(2) an excluded comp whose stated exclusion reason the data does not support; ' +
+    '(3) a recommendation the ADJUSTED comp values shown here do not support — too high or too low relative to where ' +
+    'the machine-adjusted values cluster; ' +
+    '(4) a narrative or confidence claim that does not trace to the data shown; ' +
+    '(5) a market-verdict mismatch (months of supply: 4 or less seller, 4-6 balanced, 6 or more buyer). ' +
+    'CONTEXT — the subject failed to sell at its last list price. A recommendation at or above that price is not ' +
+    'automatically wrong: if the adjusted comp values cluster at or above it, that IS the evidence, and the prior ' +
+    'failure may reflect condition, presentation, or timing. Flag it only when the comps do not support it. ' +
+    'Judge only from the data given; never invent facts. severity=critical means the recommendation itself is ' +
+    'indefensible on comparability or data grounds; major means a specific comp, claim, or exclusion needs broker ' +
+    'correction; minor is polish. If the analysis survives your attack, verdict=pass and say so plainly — a clean ' +
+    'pass is a legitimate outcome. Report only through the record_audit tool.'
 
   const user =
     `SUBJECT:\n${subjectLine}\n\nMARKET: ${marketLine}\n\n` +
