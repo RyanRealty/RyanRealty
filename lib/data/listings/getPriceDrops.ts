@@ -440,7 +440,9 @@ export const getPriceDrops = (
     // Oregon service area — evict entries holding out-of-area drops.
     // v4 (2026-07-08, design-audit P1): drops carry streetSuffix — evict
     // entries cached without it.
-    ['price-drops-v4', key],
+    // v5 (2026-07-12, §0): drop is prev→current price (recovered/relisted
+    // listings excluded) — evict entries holding the event-new_price math.
+    ['price-drops-v5', key],
     { revalidate: 1800, tags: [cacheTag.listings] },
     { drops: [], total: 0, fetchedAt: new Date().toISOString() },
   )()
@@ -463,7 +465,8 @@ export const getPriceDropDigest = (
   return makeResilientCached(
     () => fetchPriceDropDigest(cityOrRegion, days),
     // v4 (2026-07-08): same streetSuffix eviction as price-drops-v4.
-    ['price-drop-digest-v4', key],
+    // v5 (2026-07-12, §0): prev→current drop math — evict event-new_price entries.
+    ['price-drop-digest-v5', key],
     { revalidate: 3600, tags: [cacheTag.listings] },
     {
       count: 0,
