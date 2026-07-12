@@ -111,6 +111,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       // Never prune below the comp floor — if judgment would leave too few,
       // keep the full set (the dispersion guard still flags it).
       if (vetted.length >= MIN_COMPS) compsForPricing = vetted
+      // The judgment step must appear in the rendered verification trace —
+      // otherwise the trace says "N comps" while the report prices on fewer.
+      selection.trace.push(
+        compsForPricing.length === vetted.length
+          ? `Comparability judgment (${judgment.model}): kept ${vetted.length} of ${selection.comps.length} candidates, excluded ${judgment.verdicts.filter((v) => v.tier === 'exclude').length} as non-comparable, down-weighted ${judgment.verdicts.filter((v) => v.tier === 'weak').length}. Priced on the ${vetted.length}-comp vetted set.`
+          : `Comparability judgment (${judgment.model}) would keep only ${vetted.length} comps — below the ${MIN_COMPS}-comp floor, so the full ${selection.comps.length}-comp set was priced instead.`,
+      )
+    } else {
+      selection.trace.push(
+        'Comparability judgment unavailable for this build — priced on the full selection with the dispersion guard as backstop; broker review required.',
+      )
     }
 
     // 4. Adjustments + pricing (on the vetted comp set). Judge verdicts feed
