@@ -70,6 +70,24 @@ interface CmaRow {
   /** Attached at load: the expired listing + CRM contact this CMA maps to. */
   expired_listing_key?: string | null
   crm_person_id?: number | null
+  /** Their last (failed) list price — for the our-price-vs-their-price delta. */
+  expired_list_price?: number | null
+}
+
+/** "Was $635K · Ours $605K ↓ 4.7%" — recommended vs the price that failed to
+ *  sell. Only rendered for expired-origin CMAs that carry both numbers. */
+function PriceVsTheirs({ theirs, ours }: { theirs: number; ours: number }) {
+  const deltaPct = theirs > 0 ? ((ours - theirs) / theirs) * 100 : 0
+  const arrow = deltaPct > 0.05 ? '↑' : deltaPct < -0.05 ? '↓' : '→'
+  const tone = deltaPct < -0.05 ? 'text-success' : deltaPct > 0.05 ? 'text-warning' : 'text-muted-foreground'
+  return (
+    <span className="tabular-nums">
+      Was {formatPrice(theirs)} · Ours {formatPrice(ours)}{' '}
+      <span className={tone}>
+        {arrow} {Math.abs(deltaPct).toFixed(1)}%
+      </span>
+    </span>
+  )
 }
 
 /** A CMA whose comp set was too heterogeneous for the builder to trust — the
@@ -170,7 +188,12 @@ async function CmasContent({ params }: { params: Record<string, string | undefin
   // expired info from the CMA list).
   const allRows = (rawRows as unknown as CmaRow[]).map((r) => {
     const link = expiredLinks[r.slug]
-    return { ...r, expired_listing_key: link?.listingKey ?? null, crm_person_id: link?.crmPersonId ?? null }
+    return {
+      ...r,
+      expired_listing_key: link?.listingKey ?? null,
+      crm_person_id: link?.crmPersonId ?? null,
+      expired_list_price: link?.listPrice ?? null,
+    }
   })
 
   // Summary counts (across the full window, before status/search filtering).
@@ -320,6 +343,12 @@ async function CmasContent({ params }: { params: Record<string, string | undefin
                         {formatPrice(cma.value_low)} – {formatPrice(cma.value_high)}
                       </span>
                     </div>
+                    {cma.expired_list_price && cma.recommended_list ? (
+                      <div className="mt-1 flex items-baseline justify-between gap-2 text-xs">
+                        <span className="text-muted-foreground">Vs their price</span>
+                        <PriceVsTheirs theirs={cma.expired_list_price} ours={cma.recommended_list} />
+                      </div>
+                    ) : null}
                     <div className="mt-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
                       <span className="truncate">
                         {cma.client_name ?? '—'}
@@ -398,7 +427,14 @@ async function CmasContent({ params }: { params: Record<string, string | undefin
                           )}
                         </TableCell>
                         <TableCell className="text-sm">{cma.broker_slug ?? '—'}</TableCell>
-                        <TableCell className="text-right tabular-nums">{formatPrice(cma.recommended_list)}</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          <div>{formatPrice(cma.recommended_list)}</div>
+                          {cma.expired_list_price && cma.recommended_list ? (
+                            <div className="text-[11px] font-normal text-muted-foreground">
+                              <PriceVsTheirs theirs={cma.expired_list_price} ours={cma.recommended_list} />
+                            </div>
+                          ) : null}
+                        </TableCell>
                         <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
                           {formatPrice(cma.value_low)} – {formatPrice(cma.value_high)}
                         </TableCell>

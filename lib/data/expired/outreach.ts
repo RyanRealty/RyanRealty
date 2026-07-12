@@ -226,22 +226,30 @@ export async function getExpiredListingDetail(listingKey: string): Promise<Expir
   }
 }
 
+export interface CmaExpiredLink {
+  listingKey: string
+  crmPersonId: number | null
+  ownerName: string | null
+  /** Their last list price — the price that failed to sell. */
+  listPrice: number | null
+  standardStatus: string | null
+}
+
 /** Per-CMA links for the admin CMA list: which expired listing + CRM person a
- *  CMA maps to (by address slug). Returns a slug-keyed map. */
-export async function getCmaExpiredLinks(): Promise<
-  Record<string, { listingKey: string; crmPersonId: number | null; ownerName: string | null }>
-> {
+ *  CMA maps to (by address slug), plus the price they listed at (for the
+ *  our-price-vs-their-price comparison). Slug-keyed map. */
+export async function getCmaExpiredLinks(): Promise<Record<string, CmaExpiredLink>> {
   const sb = createServiceClient()
   const { data, error } = await sb
     .from('expired_listings')
-    .select('listing_key, street_address, owner_name, outreach_crm_person_id, fub_person_id')
+    .select('listing_key, street_address, owner_name, list_price, standard_status, outreach_crm_person_id, fub_person_id')
     .not('street_address', 'is', null)
   if (error) {
     console.error('[getCmaExpiredLinks]', error.message)
     return {}
   }
   const { slugifyAddress } = await import('@/lib/cma/address-slug')
-  const map: Record<string, { listingKey: string; crmPersonId: number | null; ownerName: string | null }> = {}
+  const map: Record<string, CmaExpiredLink> = {}
   for (const r of data ?? []) {
     const slug = slugifyAddress(String(r.street_address))
     // First writer wins; expired rows are unique per address in practice.
@@ -250,6 +258,8 @@ export async function getCmaExpiredLinks(): Promise<
         listingKey: r.listing_key,
         crmPersonId: (r.outreach_crm_person_id as number | null) ?? (r.fub_person_id as number | null) ?? null,
         ownerName: r.owner_name,
+        listPrice: r.list_price != null ? Number(r.list_price) : null,
+        standardStatus: r.standard_status,
       }
     }
   }
