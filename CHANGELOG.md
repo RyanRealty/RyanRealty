@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.776.0 (2026-07-12)
+
+### Features
+- feat(admin/cmas): show recommended vs their (failed) list price on expired CMAs
+
+---
+
+
 ## v1.775.0 (2026-07-12)
 
 ### Features
