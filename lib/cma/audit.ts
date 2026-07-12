@@ -46,27 +46,51 @@ export interface AuditFinding {
 
 /**
  * Deterministic verdict over categorized findings — the LLM reports defects,
- * CODE decides the verdict. Rationale (live calibration 2026-07-11): an
- * adversarial reviewer attacks any configuration from whichever side is open
- * (it demanded premium-comp exclusions, then attacked the exclusions), so its
- * self-reported verdict inflates to fail on defensible analyses. Category
- * rules instead: hard facts fail; comp defects and traceability need broker
- * review; a pure price-level disagreement between two models is broker
- * judgment, never an automatic fail.
+ * CODE decides the verdict.
+ *
+ * Calibration history:
+ *  - v1 (2026-07-11): the LLM's own verdict inflated to fail on defensible
+ *    analyses — an adversarial reviewer attacks any configuration from
+ *    whichever side is open. So code decides.
+ *  - v2 (2026-07-12): v1 still fired `review` on ~83% of a real batch, because
+ *    ANY single major finding forced it, and the auditor always finds one
+ *    (usually a price-level gripe). A flag that fires on 83% is not a signal.
+ *    v2 makes the flag DISCRIMINATING:
+ *      · price-opinion findings are ADVISORY — a price-level disagreement
+ *        between two models is broker judgment, never a gate (Matt's rule).
+ *      · a lone comp-selection nitpick with no specific comp key is advisory
+ *        (if it named a comp, self-repair would already have dropped it).
+ *      · market-verdict/other majors are advisory; only critical gates.
+ *    `review` now means a specific, actionable defect a broker must resolve;
+ *    `fail` means a hard factual error or a clearly non-comparable comp that
+ *    survived. Everything advisory is still RECORDED in findings and shown to
+ *    the broker — it just does not raise the flag.
  */
 export function computeAuditVerdict(findings: AuditFinding[]): AuditVerdict {
   const has = (cat: AuditCategory, sevs: AuditSeverity[]) =>
     findings.some((f) => f.category === cat && sevs.includes(f.severity))
-  if (has('data-integrity', ['critical'])) return 'fail'
-  if (
-    has('data-integrity', ['major']) ||
-    has('comp-selection', ['critical', 'major']) ||
-    has('narrative', ['critical', 'major']) ||
-    has('market-verdict', ['critical', 'major']) ||
-    has('price-opinion', ['critical', 'major']) ||
-    has('other', ['critical', 'major'])
-  )
-    return 'review'
+
+  // BLOCK (fail): a hard factual error, a clearly non-comparable comp that
+  // survived, or a false statement a client would read.
+  if (has('data-integrity', ['critical']) || has('comp-selection', ['critical']) || has('narrative', ['critical'])) {
+    return 'fail'
+  }
+
+  // REVIEW: specific, actionable defects a broker must resolve.
+  if (has('data-integrity', ['major'])) return 'review'
+  if (has('narrative', ['major'])) return 'review'
+  if (has('market-verdict', ['critical'])) return 'review'
+  // A major comp-selection finding tied to a SPECIFIC comp that survived the
+  // repair loop (couldn't be dropped without going under the comp floor).
+  if (findings.some((f) => f.category === 'comp-selection' && f.severity === 'major' && f.compListingKey)) return 'review'
+  // Two or more independent actionable defects cluster into a review.
+  const actionable = findings.filter(
+    (f) => ['data-integrity', 'comp-selection', 'narrative'].includes(f.category) && ['critical', 'major'].includes(f.severity),
+  ).length
+  if (actionable >= 2) return 'review'
+
+  // ADVISORY → pass: price-opinion disagreements, a lone keyless comp nitpick,
+  // market-verdict/other majors, and all minors. Recorded, not gated.
   return 'pass'
 }
 

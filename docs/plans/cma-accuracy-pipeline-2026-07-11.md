@@ -43,6 +43,21 @@ deterministic data/math (§0-safe) → LLM comparability judgment (full features
 - [ ] Browser: /admin/cmas badges + narrative visible in a rebuilt document
 - [ ] Final review pass
 
+## Re-list guard (MANDATORY in the outreach send queue — never solicit a listed property)
+
+Verified 2026-07-11: **22 of 135 expired rows (~16%) have re-listed** (Active/Pending with `status_change_timestamp` after the expired event). Texting any of them = soliciting another broker's active listing (NAR Art. 16 / OAR ethics exposure). The send queue MUST exclude via this join (same-address newer on-market listing):
+
+```sql
+-- exclude when EXISTS a newer on-market listing at the same address
+join listings l on l."StreetNumber" = split_part(e.street_address,' ',1)
+  and upper(l."StreetName") like upper(substring(e.street_address from position(' ' in e.street_address)+1))||'%'
+  and upper(l."City") = upper(e.city)
+  and l."StandardStatus" in ('Active','Pending','Coming Soon')
+  and l.status_change_timestamp > e.status_change_timestamp
+```
+
+Run at SEND time (not queue-build time) — a property can re-list between queueing and sending.
+
 ## Context for the wider expired-listing effort
 
 - SMS template saved: crm_templates id 116 `expired-first-touch-sell-v1` (%address%, no name)
