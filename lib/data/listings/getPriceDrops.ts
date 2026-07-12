@@ -133,7 +133,7 @@ export type GetPriceDropsResult = {
 
 // ─── activity_events row shape ────────────────────────────────────────────
 
-type ActivityEventRow = {
+export type ActivityEventRow = {
   id: string
   listing_key: string
   event_type: string
@@ -147,7 +147,9 @@ type ActivityEventRow = {
 
 // ─── Tile → PriceDrop mapper ──────────────────────────────────────────────
 
-function tileAndEventToDrop(
+// Exported for unit tests (was→now→% consistency lock, §0). Not part of the
+// public DAL surface — callers use getPriceDrops / getPriceDropDigest.
+export function tileAndEventToDrop(
   tile: ListingTile,
   event: ActivityEventRow,
   nowMs: number,
@@ -167,21 +169,21 @@ function tileAndEventToDrop(
 
   const payload = event.payload ?? {}
   const previousPrice = payload.previous_price ?? null
-  const newPriceFromEvent = payload.new_price ?? null
 
-  // Dollar drop: use event prices if available; otherwise skip (no fabrication)
-  const dropAmount =
-    previousPrice != null && newPriceFromEvent != null && previousPrice > newPriceFromEvent
-      ? previousPrice - newPriceFromEvent
-      : previousPrice != null && previousPrice > listPrice
-        ? previousPrice - listPrice
-        : null
+  // A listing is a CURRENT price drop only when its current list price is below
+  // the price before the change. Compute the drop from previousPrice → current
+  // listPrice so the displayed "was → now → %" are always self-consistent.
+  //
+  // The old logic took the % from the event's new_price, which diverged from the
+  // current price when a listing RECOVERED or was RELISTED: 18575 Century Drive
+  // showed "was $299K, -23.4%" while currently listed at $299,000 — the event
+  // dropped it to $229K, then it went back to $299K, so it is not currently
+  // reduced at all (Matt report 2026-07-12). An unverifiable / non-current drop
+  // does not ship (§0 data accuracy) — return null so it is excluded.
+  if (previousPrice == null || previousPrice <= listPrice) return null
 
-  // Percent drop (positive = cheaper)
-  const lastDropPct =
-    dropAmount != null && previousPrice != null && previousPrice > 0
-      ? (dropAmount / previousPrice) * 100
-      : null
+  const dropAmount = previousPrice - listPrice
+  const lastDropPct = (dropAmount / previousPrice) * 100
 
   // Total drop from original (same as last drop for one-event model)
   const totalDropPct = lastDropPct
