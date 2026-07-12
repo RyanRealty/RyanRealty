@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.772.0 (2026-07-12)
+
+### Features
+- feat(sell): conversion-first rebuild — the ask in the hero, service-first story, live proof
+
+---
+
+
 ## v1.771.0 (2026-07-12)
 
 ### Features
