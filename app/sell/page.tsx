@@ -1,34 +1,47 @@
 /**
- * Sell page (/sell) — KB (kinetic-brutalist) design, Phase 9 of the KB
- * convergence program (docs/KB_CONVERGENCE_ROADMAP.md). Restyled in place:
- * every section, DAL call, FAQ item, internal link, and the #marketing-plan
- * anchor from the prior Wave 3 build is preserved. KB shell (KbNav + KbFooter)
- * carries the chrome; the existing seller sections render inside .kb-root with
- * design-system tokens.
+ * Sell page (/sell) — KB (kinetic-brutalist) design, conversion-first rework
+ * 2026-07-11. The page is Ryan Realty's highest-intent lead surface, and the
+ * prior build was a brochure: the ask lived two clicks away (/sell/valuation →
+ * scroll past a second hero → form) and the page carried zero proof (no
+ * reviews, no sold homes, no track record). This rework:
  *
- * Composed from @/components/site/* blocks + @/lib/data DAL. No legacy
- * components/layout/* or components/broker/* or CMS getPageContent.
+ *   1. THE ASK IS IN THE HERO. The proven two-step seller form from
+ *      /lp/seller-home-value (Google Places autocomplete, partial-lead capture
+ *      on step 1, FUB workflow + broker assignment + CMA queue on submit)
+ *      renders inside KbHero via formSlot. pagePath='/sell' keeps FUB
+ *      sourceUrl attribution on this page.
+ *   2. THE PAGE LEADS WITH THE SERVICE (Matt 2026-07-11: selling a home is not
+ *      just the home's value). Order: how we sell (value props → process →
+ *      marketing plan → fee), THEN proof (SellProof live track record + sold
+ *      homes with verbatim paired reviews, KbTestimonials seller reviews).
+ *      The valuation form is the entry point, not the theme.
+ *   3. Every internal valuation CTA anchors to the on-page form (#get-value)
+ *      instead of navigating away.
  *
- * DATA ACCURACY (CLAUDE.md §0): the value props describe real capabilities
- * (live market data, a local licensed broker, a CMA with comparable sales,
- * one broker start-to-finish). NO invented results, "results you can verify"
- * claims, sale-percentages, or days-to-sell stats (D99). The current-market
- * line is live getMarketPulse data for Bend, classified by the canonical
- * months-of-supply thresholds. The lead path is the existing
- * /lp/seller-home-value LP, which captures the lead and triggers the FUB
- * seller workflow. This page has no form of its own.
+ * DATA ACCURACY (CLAUDE.md §0): all stats are live DAL values (getMarketPulse,
+ * getCityMarketDetail, getBrokerageTrackRecord, Sold Stories via
+ * listing_tile_mv) or they do not render. Reviews are verbatim Google reviews
+ * from lib/testimonials.ts. No invented results, sale percentages, or
+ * days-to-sell stats (D99). Pulse/detail timeouts run at 8s: with
+ * revalidate=300 the wait happens during background ISR revalidation, never on
+ * a user request — the prior 3.5s budget silently blanked the live numbers.
  *
- * Section stack: KbNav · MetadataBlock (Service/Breadcrumb/FAQPage JSON-LD) ·
- *   KbBreadcrumb · KbHero · SellValueProps · SellProcess · SellMarketingPlan ·
- *   SellCommission · SellMarketContext · LifestyleStrip · SellValuationCTA ·
- *   CTABar · FAQBlock · KbFooter. (The "How it works" ContentSection was
- *   removed 2026-07 — a word-for-word duplicate of SellProcess, design-audit P2.)
+ * Section stack: KbNav · MetadataBlock · KbBreadcrumb · KbHero(formSlot) ·
+ *   SellProof · KbTestimonials · SellValueProps · SellProcess ·
+ *   SellMarketingPlan · SellCommission · SellMarketContext · LifestyleStrip ·
+ *   SellValuationCTA · CTABar · FAQBlock · KbFooter.
  *
  * Parity contract: design_system/ryan-realty/ui_kits/sell/parity.json (KB set).
  */
 
 import type { Metadata } from 'next'
-import { getMarketPulse, getCityMarketDetail, getSurfaceImage, getLifestyleImages } from '@/lib/data'
+import {
+  getMarketPulse,
+  getCityMarketDetail,
+  getSurfaceImage,
+  getLifestyleImages,
+  getBrokerageTrackRecord,
+} from '@/lib/data'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { LifestyleStrip } from '@/components/site/LifestyleStrip'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -37,15 +50,20 @@ import { FAQBlock } from '@/components/site/FAQBlock'
 import { CTABar } from '@/components/site/CTABar'
 import { SellValueProps } from '@/components/site/sell/SellValueProps'
 import { SellProcess } from '@/components/site/sell/SellProcess'
+import { SellProof } from '@/components/site/sell/SellProof'
 import { SellMarketingPlan } from '@/components/site/sell/SellMarketingPlan'
 import { SellCommission } from '@/components/site/sell/SellCommission'
 import { SellValuationCTA } from '@/components/site/sell/SellValuationCTA'
 import { SellMarketContext } from '@/components/site/sell/SellMarketContext'
 import { CONTACT } from '@/lib/brand/contact'
+import { TESTIMONIALS } from '@/lib/testimonials'
+import { getSoldStories, getTestimonialAggregate } from '@/app/lp/seller-home-value/data'
+import SellerLPForm from '@/app/lp/seller-home-value/SellerLPForm'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
+import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import '@/components/site/kb/kb.css'
@@ -54,6 +72,8 @@ export const revalidate = 300
 
 const ROUTE_PATH = '/sell'
 const OLD_MILL_HERO = '/brand/hero/hero-old-mill-master-4k.jpg'
+/** On-page anchor of the hero form (SellerLPForm default formId). */
+const FORM_ANCHOR = '#get-value'
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
@@ -109,33 +129,57 @@ const FAQ_ITEMS = [
   },
 ] as const
 
+// Seller-side verified Google reviews for the "In their words" grid. Gary
+// Timms + Doug Millard are excluded here because their quotes render on the
+// SellProof sold cards above — one page never repeats a quote.
+const SELL_REVIEW_AUTHORS = [
+  'Audra Hedberg',
+  'Douglas Grant',
+  'Charise Millard',
+  'C Jenkins',
+  'Helen Luna Fess',
+  'SwankHQ',
+] as const
+const SELL_REVIEWS = TESTIMONIALS.filter((t) =>
+  (SELL_REVIEW_AUTHORS as readonly string[]).includes(t.author),
+).map((t) => ({ quote: t.quote, author: t.author }))
+
 export default async function SellPage() {
-  const [pulse, marketDetail, heroSrc, lifestyleImages] = await Promise.all([
-    withTimeoutFallback(
-      getMarketPulse({ geoType: 'city', geoSlug: 'bend' }),
-      null,
-      3500,
-      'sell:pulse',
-    ),
-    withTimeoutFallback(
-      getCityMarketDetail({ geoType: 'city', geoSlug: 'bend' }),
-      null,
-      3500,
-      'sell:market-detail',
-    ),
-    // Distinct approved hero so /sell does not reuse the homepage Old Mill banner.
-    withTimeoutFallback(
-      getSurfaceImage('hero', {
-        geoTags: ['central-oregon'],
-        seed: ROUTE_PATH,
-        fallback: OLD_MILL_HERO,
-      }),
-      OLD_MILL_HERO,
-      3500,
-      'sell:hero',
-    ),
-    withTimeoutFallback(getLifestyleImages(8), [], 3000, 'sell:lifestyle'),
-  ])
+  const [pulse, marketDetail, heroSrc, lifestyleImages, trackRecord, soldStories] =
+    await Promise.all([
+      withTimeoutFallback(
+        getMarketPulse({ geoType: 'city', geoSlug: 'bend' }),
+        null,
+        8000,
+        'sell:pulse',
+      ),
+      withTimeoutFallback(
+        getCityMarketDetail({ geoType: 'city', geoSlug: 'bend' }),
+        null,
+        8000,
+        'sell:market-detail',
+      ),
+      // Distinct approved hero so /sell does not reuse the homepage Old Mill banner.
+      withTimeoutFallback(
+        getSurfaceImage('hero', {
+          geoTags: ['central-oregon'],
+          seed: ROUTE_PATH,
+          fallback: OLD_MILL_HERO,
+        }),
+        OLD_MILL_HERO,
+        3500,
+        'sell:hero',
+      ),
+      withTimeoutFallback(getLifestyleImages(8), [], 3000, 'sell:lifestyle'),
+      withTimeoutFallback(getBrokerageTrackRecord(), null, 8000, 'sell:track-record'),
+      withTimeoutFallback(getSoldStories(), [], 8000, 'sell:sold-stories'),
+    ])
+
+  // Proof cards: list-side sold transactions only, highest value first (the
+  // stories pipeline is already price-descending). Max 3.
+  const soldProof = soldStories
+    .filter((s) => s.listing.badge === 'Sold' && s.side === 'list')
+    .slice(0, 3)
 
   return (
     <main className="kb-root">
@@ -166,42 +210,41 @@ export default async function SellPage() {
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
           }}
           eyebrow="Sell with Ryan Realty"
-          titleTop="Selling your home,"
-          titleBottom="priced on the comps."
-          lead="in Bend. The broker who prices your home is the broker who lists it, shows it, and closes it. You see every comp behind the number."
+          titleTop="This is how"
+          titleBottom="your home gets sold."
+          statless
+          lead="Professional photography, a 3D tour, the MLS and every national feed, and a written report every week it is listed. Start with the free valuation."
           showSearch={false}
-          cta={{ href: '/sell/valuation', label: "What's my home worth" }}
-          ctaSecondary={{ href: '#marketing-plan', label: 'See the plans' }}
+          formSlot={
+            <>
+              <SellerLPForm knownVisitor={false} heroVariant pagePath={ROUTE_PATH} />
+              <p className="hero-form-note">
+                Prefer to talk first? Call{' '}
+                <a href={`tel:${CONTACT.phoneDirectTel}`}>{CONTACT.phoneDirect}</a>.
+              </p>
+            </>
+          }
+          cta={null}
+          ctaSecondary={null}
           videoSrc={null}
           posterSrc={heroSrc ?? OLD_MILL_HERO}
         />
 
         <SellValueProps />
 
-        {/* Early ask (design-audit P1): the conversion modules used to sit ~11
-            mobile screens down — a seller who stops reading here still has a
-            path to the valuation. */}
-        <section className="section" id="sell-early-cta" aria-label="Get a home valuation">
-          <div className="wrap">
-            <div className="flex flex-wrap items-center gap-3 py-2">
-              <a href="/sell/valuation" className="btn alt">
-                {"What's my home worth"} <span className="arr">→</span>
-              </a>
-              <a href="#marketing-plan" className="btn alt" style={{ background: 'transparent', color: 'var(--navy)' }}>
-                See the plans <span className="arr">→</span>
-              </a>
-              <a href={`tel:${CONTACT.phoneDirectTel}`} className="btn alt" style={{ background: 'transparent', color: 'var(--navy)' }}>
-                Or call {CONTACT.phoneDirect}
-              </a>
-            </div>
-          </div>
-        </section>
-
         <SellProcess />
 
         <SellMarketingPlan />
 
         <SellCommission />
+
+        <SellProof
+          record={trackRecord}
+          reviewAggregate={getTestimonialAggregate()}
+          stories={soldProof}
+        />
+
+        <KbTestimonials reviews={SELL_REVIEWS} />
 
         <SellMarketContext pulse={pulse} detail={marketDetail} />
 
@@ -213,20 +256,15 @@ export default async function SellPage() {
         />
 
         <SellValuationCTA
-          valuationHref="/lp/seller-home-value"
+          valuationHref={FORM_ANCHOR}
           phoneHref={`tel:${CONTACT.phoneDirectTel}`}
         />
-
-        {/* The "How it works — From first call to closing table" ContentSection
-            was removed (design-audit P2): it restated SellProcess word for word
-            (CMA, 48-hour photos, weekly updates, same broker to close) and
-            stretched the page without adding a fact. */}
 
         <CTABar
           eyebrow="What is your home worth?"
           title="Get a free home valuation."
           body="A broker prepares a comparative market analysis with recent comparable sales and the price range those comps support. No cost, no obligation."
-          primary={{ href: '/lp/seller-home-value', label: 'Get a home valuation' }}
+          primary={{ href: FORM_ANCHOR, label: 'Get a home valuation' }}
           secondary={{ href: '/contact?inquiry=Selling', label: 'Talk to a broker' }}
           tone="navy"
         />
@@ -241,16 +279,16 @@ export default async function SellPage() {
         <KbFooter towns={[]} />
       </SmoothScrollProvider>
 
-      {/* Sticky mobile CTA bar (design-audit P1) — the ask reachable from every
-          scroll depth, same pattern as /lp/sell-your-home. Mobile only. */}
+      {/* Sticky mobile CTA bar — the ask reachable from every scroll depth,
+          anchored to the on-page hero form. Mobile only. */}
       <div className="fixed inset-x-0 bottom-0 z-50 border-t-2 px-3 py-3 sm:hidden" style={{ background: 'var(--cream)', borderColor: 'var(--navy)' }}>
         <div className="flex items-center gap-2">
           <a
-            href="/sell/valuation"
+            href={FORM_ANCHOR}
             className="flex-1 px-4 py-3 text-center text-sm font-bold uppercase tracking-widest"
             style={{ background: 'var(--navy)', color: 'var(--cream)' }}
           >
-            {"What's my home worth"}
+            Get my home value
           </a>
           <a
             href={`tel:${CONTACT.phoneDirectTel}`}

@@ -1,27 +1,27 @@
 {
   "route": "app/sell/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/sell/index.html",
-  "competitiveTarget": "Beat generic 'list with us' pages: honest value props (real comps, local broker, no hand-offs), a live current-market line, and a single clear valuation CTA, with zero invented results or 'verifiable results' claims (D99).",
-  "note": "KB (kinetic-brutalist) conversion 2026-06-18 (Phase 9 convergence). Restyled in place: every section, DAL call, FAQ item, internal link, and the #marketing-plan anchor from the prior Wave 3 build are preserved. KbNav + KbFooter carry the chrome; HideChrome for the default SiteHeader/SiteFooter is a shared-component edit deferred to the orchestrator. KbHero replaces the legacy HeroBlock; MetadataBlock (BreadcrumbList + FAQPage JSON-LD) + KbBreadcrumb replace the legacy PageBreadcrumb; KbSectionTracker adds the page-contract tracking. The existing seller sections (SellValueProps, SellProcess, SellMarketingPlan, SellCommission, SellMarketContext, SellValuationCTA, LifestyleStrip, CTABar, FAQBlock) render inside .kb-root with design-system tokens. The ContentSection 'How it works' block was removed 2026-07 (design-audit P2): a word-for-word duplicate of SellProcess. The lead path is still the /lp/seller-home-value LP; this page embeds no form. Current-market line is live getMarketPulse(Bend), classified by canonical MoS thresholds.",
+  "competitiveTarget": "Beat generic 'list with us' pages: the ask (address-capture form) in the hero, proof directly after it (live MLS track record, real sold homes, verbatim Google reviews), honest value props, and every valuation CTA anchored to the on-page form, with zero invented results or 'verifiable results' claims (D99).",
+  "note": "Conversion-first rework 2026-07-11 on the KB (kinetic-brutalist) base. The proven /lp/seller-home-value two-step form (SellerLPForm: Places autocomplete, partial-lead capture, FUB workflow + broker assignment + CMA queue) now renders INSIDE KbHero via formSlot with pagePath='/sell' attribution \u2014 the page is no longer form-less. The page leads with the SERVICE story (Matt 2026-07-11: selling a home is not just the home's value): value props, process, marketing plan, and fee come first; SellProof (live getBrokerageTrackRecord ledger + Sold Stories cards with verbatim paired reviews) and KbTestimonials (seller-side verified Google reviews) follow as supporting proof. All internal valuation CTAs (SellValuationCTA, CTABar, sticky mobile bar) anchor to #get-value instead of navigating to the LP. Prior history: KB conversion 2026-06-18 (Phase 9); 'How it works' ContentSection removed 2026-07 (duplicate of SellProcess); early-CTA strip removed 2026-07-11 (superseded by the hero form). Current-market line is live getMarketPulse(Bend) at an 8s ISR-revalidation timeout (the prior 3.5s budget silently blanked the live numbers), classified by canonical MoS thresholds. HideChrome remains deferred to the orchestrator.",
   "requiredComponents": [
     {
       "name": "KbNav",
-      "section": "top nav — transparent over hero, flips to navy on scroll; full site directory overlay",
+      "section": "top nav \u2014 transparent over hero, flips to navy on scroll; full site directory overlay",
       "blocking": true
     },
     {
       "name": "KbSectionTracker",
-      "section": "tracking — section_view + scroll_depth events (page contract G52)",
+      "section": "tracking \u2014 section_view + scroll_depth events (page contract G52)",
       "blocking": true
     },
     {
       "name": "MetadataBlock",
-      "section": "JSON-LD — BreadcrumbList + FAQPage structured data",
+      "section": "JSON-LD \u2014 BreadcrumbList + FAQPage structured data",
       "blocking": true
     },
     {
       "name": "KbBreadcrumb",
-      "section": "breadcrumb strip — Home / Sell",
+      "section": "breadcrumb strip \u2014 Home / Sell",
       "blocking": true
     },
     {
@@ -31,64 +31,79 @@
     },
     {
       "name": "KbHero",
-      "section": "hero — 'Selling your home, done honestly.' H1 + valuation-focused lead + central-oregon photo; live pulse sub-row (active count, median, days to pending)",
+      "section": "hero \u2014 'This is how your home gets sold.' service-first H1 + the address-capture form in the hero (formSlot, KB-styled navy/cream) + phone note",
+      "blocking": true
+    },
+    {
+      "name": "SellerLPForm",
+      "section": "the ask \u2014 two-step seller form (Places autocomplete \u2192 contact/timeline), partial-lead capture, FUB seller workflow; pagePath='/sell' attribution; formId anchor #get-value",
+      "blocking": true
+    },
+    {
+      "name": "SellProof",
+      "section": "proof \u2014 live MLS track-record ledger (getBrokerageTrackRecord) + real sold homes with broker attribution and verbatim paired Google reviews",
+      "blocking": true
+    },
+    {
+      "name": "KbTestimonials",
+      "section": "verified Google reviews \u2014 seller-side 'In their words' grid; verbatim quotes, no repeats with SellProof cards",
       "blocking": true
     },
     {
       "name": "SellValueProps",
-      "section": "value props — three differentiation cards (priced on real data, one broker start to finish, marketed by someone who knows the market)",
+      "section": "value props \u2014 three differentiation cards (priced on real data, one broker start to finish, marketed by someone who knows the market)",
       "blocking": true
     },
     {
       "name": "SellProcess",
-      "section": "process — three concrete steps from valuation request to closing table",
+      "section": "process \u2014 three concrete steps from valuation request to closing table",
       "blocking": true
     },
     {
       "name": "SellMarketingPlan",
-      "section": "the marketing plan — 'What happens to your home, and when': three-phase deliverable schedule (process stated as fact + clocks) plus the two MOAT centerpieces (see-every-comp pricing, weekly written report). The /seller-plans legacy redirect deep-links here (#marketing-plan).",
+      "section": "the marketing plan \u2014 'What happens to your home, and when': three-phase deliverable schedule (process stated as fact + clocks) plus the two MOAT centerpieces (see-every-comp pricing, weekly written report). The /seller-plans legacy redirect deep-links here (#marketing-plan).",
       "blocking": true
     },
     {
       "name": "SellCommission",
-      "section": "the fee — 3% to list, no add-ons; buyer-agent compensation explained; no contract to get the CMA",
+      "section": "the fee \u2014 3% to list, no add-ons; buyer-agent compensation explained; no contract to get the CMA",
       "blocking": true
     },
     {
       "name": "SellMarketContext",
-      "section": "live Bend market context line — getMarketPulse, MoS classification, link to /housing-market; renders a factual non-numeric trust line when data is unavailable",
+      "section": "live Bend market context line \u2014 getMarketPulse, MoS classification, link to /housing-market; renders a factual non-numeric trust line when data is unavailable",
       "blocking": true
     },
     {
       "name": "SellValuationCTA",
-      "section": "mid-page valuation CTA band — 'Tell us your address' -> /lp/seller-home-value, trust bullets, phone CTA",
+      "section": "mid-page valuation CTA band \u2014 'Tell us your address' -> /lp/seller-home-value, trust bullets, phone CTA",
       "blocking": true
     },
     {
       "name": "CTABar",
-      "section": "valuation conversion band — 'Get a free home valuation' -> /lp/seller-home-value",
+      "section": "valuation conversion band \u2014 'Get a free home valuation' -> /lp/seller-home-value",
       "blocking": true
     },
     {
       "name": "FAQBlock",
-      "section": "seller FAQ — verified facts only (cost, pricing method, no hand-offs, service area) + FAQPage JSON-LD",
+      "section": "seller FAQ \u2014 verified facts only (cost, pricing method, no hand-offs, service area) + FAQPage JSON-LD",
       "blocking": true
     },
     {
       "name": "LifestyleStrip",
-      "section": "why buyers come here — approved active-lifestyle photo grid from getLifestyleImages; renders null when the pool is empty",
+      "section": "why buyers come here \u2014 approved active-lifestyle photo grid from getLifestyleImages; renders null when the pool is empty",
       "blocking": true
     },
     {
       "name": "KbFooter",
-      "section": "footer — dual-audience close, contact, sitemap, legal",
+      "section": "footer \u2014 dual-audience close, contact, sitemap, legal",
       "blocking": true
     }
   ],
   "deferredComponents": [
     {
       "name": "HideChrome",
-      "reason": "Shared-component edit needed to suppress the default SiteHeader/SiteFooter on the KB chrome pages. Deferred to orchestrator — KbNav + KbFooter already render the correct KB chrome."
+      "reason": "Shared-component edit needed to suppress the default SiteHeader/SiteFooter on the KB chrome pages. Deferred to orchestrator \u2014 KbNav + KbFooter already render the correct KB chrome."
     }
   ]
 }

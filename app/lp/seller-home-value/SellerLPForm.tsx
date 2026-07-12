@@ -48,6 +48,12 @@ export type SellerLPFormProps = {
    * so the document never carries duplicate ids.
    */
   formId?: string
+  /**
+   * Site path of the page hosting this form ('/sell'). Flows into the FUB
+   * sourceUrl so leads attribute to the page they converted on. Defaults to
+   * the seller LP path server-side when omitted.
+   */
+  pagePath?: string
 }
 
 type Step = 'address' | 'qualify' | 'success'
@@ -66,6 +72,7 @@ export default function SellerLPForm({
   heroVariant = false,
   variant = 'home-value',
   formId = 'get-value',
+  pagePath,
 }: SellerLPFormProps) {
   const isListNow = variant === 'list-now'
   const [step, setStep] = useState<Step>('address')
@@ -102,6 +109,7 @@ export default function SellerLPForm({
       address: v,
       sessionId: readRrSessionId(), // hydration-safe (event-handler body, not render)
       source: isListNow ? 'list-now-lp' : 'seller-lp',
+      pagePath,
     })
     // Known visitor with email already known: skip step 2 entirely.
     if (knownVisitor && (prefillEmail || email)) {
@@ -123,6 +131,7 @@ export default function SellerLPForm({
         timeline: (timeline || undefined) as SellerLPTimeline | undefined,
         sessionId: readRrSessionId(), // hydration-safe (event-handler body, not render)
         source: isListNow ? 'list-now-lp' : 'seller-lp',
+        pagePath,
         homeDetails: opts.skipQualify
           ? undefined
           : {

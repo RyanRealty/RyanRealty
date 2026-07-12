@@ -60,10 +60,17 @@ type KbHeroProps = {
    * Per-page CTA intent (design-audit P1): the default Browse-primary/Sell-ghost
    * pair steered sellers into buyer search on the seller money pages. Pass
    * `cta` to set the filled primary; `ctaSecondary` for the ghost (or null to
-   * render the primary alone).
+   * render the primary alone). Pass BOTH as null on form-hosting heroes — the
+   * form is the one ask, and a stray button pair under it reads bolted-on.
    */
-  cta?: { href: string; label: string }
+  cta?: { href: string; label: string } | null
   ctaSecondary?: { href: string; label: string } | null
+  /**
+   * Optional conversion form rendered inside the hero, between the H1 and the
+   * sub row (e.g. the seller address-capture form on /sell). The slot joins
+   * the hero load stagger. Pair with showSearch=false — one ask per hero.
+   */
+  formSlot?: React.ReactNode
 }
 
 export function KbHero({
@@ -88,6 +95,7 @@ export function KbHero({
   // Value framing, not a bare one-word "Sell" — the ghost button was the whole
   // mobile seller path above the fold (design-audit P2).
   ctaSecondary = { href: '/sell/valuation', label: 'Home worth?' },
+  formSlot,
 }: KbHeroProps) {
   const root = useRef<HTMLElement>(null)
   const router = useRouter()
@@ -135,7 +143,7 @@ export function KbHero({
       }
       gsap.set(lines, { yPercent: 115 })
       gsap.to(lines, { yPercent: 0, duration: 1.1, ease: 'power4.out', stagger: 0.085, delay: 0.15, onComplete: clearMaskClip })
-      gsap.from('.hero-tag, .hero-sub-row, .hero-search-wrap', {
+      gsap.from('.hero-tag, .hero-sub-row, .hero-search-wrap, .hero-form-wrap', {
         opacity: 0, y: 16, duration: 0.8, ease: 'power3.out', stagger: 0.08, delay: 0.5,
       })
     }, root)
@@ -154,7 +162,7 @@ export function KbHero({
   const showVideo = Boolean(videoSrc) && reduceMotion === false
 
   return (
-    <section className="hero" id="top" ref={root}>
+    <section className={formSlot ? 'hero has-form' : 'hero'} id="top" ref={root}>
       <div className="hero-photo" data-parallax>
         {showVideo ? (
           <video
@@ -226,6 +234,7 @@ export function KbHero({
           </form>
         </div>
         ) : null}
+        {formSlot ? <div className="hero-form-wrap">{formSlot}</div> : null}
         <div className="hero-sub-row">
           <p className="hero-sub">
             {statless ? (
@@ -259,10 +268,12 @@ export function KbHero({
               </>
             )}
           </p>
-          <div className="hero-cta-row">
-            <a href={cta.href} className="btn">{cta.label} <span className="arr">→</span></a>
-            {ctaSecondary ? <a href={ctaSecondary.href} className="btn ghost">{ctaSecondary.label}</a> : null}
-          </div>
+          {cta || ctaSecondary ? (
+            <div className="hero-cta-row">
+              {cta ? <a href={cta.href} className="btn">{cta.label} <span className="arr">→</span></a> : null}
+              {ctaSecondary ? <a href={ctaSecondary.href} className="btn ghost">{ctaSecondary.label}</a> : null}
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

@@ -1682,3 +1682,66 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .comm-str-text{font-size:.88rem;font-weight:500;line-height:1.55;color:var(--navy-70);max-width:64ch;}
 .kb-root .comm-str-text a{color:var(--navy);font-weight:700;text-decoration:underline;text-underline-offset:2px;text-decoration-thickness:1px;transition:opacity .18s;}
 .kb-root .comm-str-text a:hover{opacity:.65;}
+
+/* ─── Hero form slot (KbHero formSlot — /sell address capture) ─────────────
+   The conversion ask lives inside the hero: one address field + one button,
+   left-aligned with the H1. The slot joins the hero load stagger. */
+.kb-root .hero-form-wrap{margin:26px 0 4px;max-width:560px;}
+
+/* ─── Sell proof — track-record ledger + sold cards (/sell) ────────────────
+   Hard-edged KB ledger on cream: live MLS sold stats, then real sold homes
+   with broker attribution and verbatim Google pull quotes. No invented
+   numbers (§0): every cell renders live DAL data or not at all. */
+.kb-root .sp-ledger{display:grid;grid-template-columns:repeat(2,1fr);border:var(--edge) solid var(--navy);background:var(--cream);}
+@media(min-width:900px){.kb-root .sp-ledger{grid-template-columns:repeat(4,1fr);}}
+.kb-root .sp-cell{padding:22px 20px 20px;border-bottom:1px solid var(--navy-12);border-right:1px solid var(--navy-12);display:flex;flex-direction:column;min-width:0;}
+.kb-root .sp-cell:nth-child(2n){border-right:0;}
+@media(min-width:900px){.kb-root .sp-cell{border-bottom:0;padding:26px 26px 24px;}.kb-root .sp-cell:nth-child(2n){border-right:1px solid var(--navy-12);}.kb-root .sp-cell:last-child{border-right:0;}}
+.kb-root .sp-num{font-family:var(--font-amboqia-safe),serif;font-size:clamp(2.1rem,5.5vw,3.3rem);line-height:.9;letter-spacing:-.01em;font-variant-numeric:tabular-nums;}
+.kb-root .sp-label{margin-top:10px;font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--navy-70);}
+.kb-root .sp-foot{margin-top:12px;font-size:.8rem;font-weight:500;color:var(--navy-70);}
+.kb-root .sp-grid{display:grid;grid-template-columns:1fr;gap:0;margin-top:34px;border:var(--edge) solid var(--navy);}
+@media(min-width:900px){.kb-root .sp-grid{grid-template-columns:repeat(3,1fr);}}
+.kb-root .sp-card{display:flex;flex-direction:column;border-bottom:var(--edge) solid var(--navy);background:var(--cream);min-width:0;}
+.kb-root .sp-card:last-child{border-bottom:0;}
+@media(min-width:900px){.kb-root .sp-card{border-bottom:0;border-right:var(--edge) solid var(--navy);}.kb-root .sp-card:last-child{border-right:0;}}
+.kb-root .sp-photo{position:relative;aspect-ratio:4/3;overflow:hidden;background:var(--navy);}
+.kb-root .sp-photo img{width:100%;height:100%;object-fit:cover;display:block;}
+.kb-root .sp-badge{position:absolute;left:0;bottom:0;background:var(--navy);color:var(--cream);font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:8px 14px;font-variant-numeric:tabular-nums;}
+.kb-root .sp-meta{padding:18px 20px 20px;display:flex;flex-direction:column;gap:6px;flex:1;}
+.kb-root .sp-addr{font-weight:700;font-size:1.02rem;line-height:1.25;}
+.kb-root .sp-hood{font-size:.82rem;font-weight:500;color:var(--navy-70);}
+.kb-root .sp-quote{margin:10px 0 0;padding-top:12px;border-top:1px solid var(--navy-12);font-size:.9rem;line-height:1.5;color:var(--navy);}
+.kb-root .sp-quote cite{display:block;margin-top:8px;font-style:normal;font-size:.76rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--navy-70);}
+
+/* Form-hosting hero (.has-form): the H1 + form + sub-row stack is taller than
+   a plain hero, so (1) clear the fixed transparent nav with top padding and
+   let min-height grow past 100svh on short viewports instead of sliding the
+   H1 under the wordmark, and (2) cap the display size a step below the plain
+   hero so the whole ask stays composed. */
+.kb-root .hero.has-form .hero-inner{padding-top:clamp(96px,13vh,150px);}
+.kb-root .hero.has-form .hero-h{font-size:clamp(2.1rem,6.8vw,5.4rem);}
+
+/* KB skin for the hero address form (/sell). The shared SellerLPForm carries
+   the LP's own look (rounded-xl, amber warning button) — on a KB surface the
+   two-color system rules: cream field, navy button, 7px radius to match the
+   hero search, no drop shadows. Scoped to the address step (#get-value) so
+   the qualify/success cards keep their shadcn card styling. */
+.kb-root #get-value input{
+  height:60px;border-radius:7px;background:var(--cream);color:var(--navy);
+  border:2px solid var(--cream);box-shadow:none;font-size:1.02rem;padding:0 18px;
+}
+.kb-root #get-value input:focus{border-color:var(--navy);box-shadow:none;outline:0;}
+.kb-root #get-value input::placeholder{color:var(--navy-70);opacity:1;}
+.kb-root #get-value button[type="submit"]{
+  margin-top:10px;height:60px;border-radius:7px;box-shadow:none;
+  background:var(--navy);color:var(--cream);border:2px solid var(--cream);
+  font-weight:700;font-size:.82rem;letter-spacing:.14em;text-transform:uppercase;
+  transition:background .2s ease;
+}
+.kb-root #get-value button[type="submit"]:hover{background:var(--navy-90);}
+@layer base {
+  .kb-root .hero-form-note{margin:12px 2px 0;font-size:.88rem;font-weight:500;color:var(--cream-70);}
+  .kb-root .hero-form-note a{color:var(--cream);font-weight:700;text-decoration:underline;text-underline-offset:3px;font-variant-numeric:tabular-nums;}
+}
+.kb-root .hero.has-form .hero-inner{padding-bottom:44px;}

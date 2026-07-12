@@ -57,8 +57,15 @@ export type SellerLPSubmission = {
    * 'list-now-lp' — sell-your-home BOFU LP (high listing intent)
    */
   source?: 'seller-lp' | 'list-now-lp'
+  /** Hosting page path ('/sell') for FUB sourceUrl attribution. Defaults to the LP path. */
+  pagePath?: string
   /** Optional "About your home" details the seller can add to sharpen the CMA. */
   homeDetails?: SellerHomeDetails
+}
+
+/** Only accept a simple site-relative path for sourceUrl attribution. */
+function sanitizePagePath(p: string | undefined): string {
+  return p && /^\/[a-z0-9\-/]*$/i.test(p) ? p : '/lp/seller-home-value'
 }
 
 /** Optional seller-supplied home detail, all free-form strings from the form.
@@ -91,6 +98,8 @@ export async function saveSellerPartialLead(params: {
   address: string
   sessionId: string | undefined
   source: 'seller-lp' | 'list-now-lp'
+  /** See SellerLPSubmission.pagePath. */
+  pagePath?: string
 }): Promise<void> {
   try {
     const rawAddress = params.address?.trim() ?? ''
@@ -118,7 +127,7 @@ export async function saveSellerPartialLead(params: {
       type: 'Seller Inquiry',
       person: { id: cookiePersonId },
       source,
-      sourceUrl: `${siteUrl}/lp/seller-home-value`,
+      sourceUrl: `${siteUrl}${sanitizePagePath(params.pagePath)}`,
       pageTitle: 'Seller LP. Address step (partial)',
       message: `Partial lead: address entered, step 2 not yet completed. Address: ${rawAddress}. Source: ${params.source}.`,
     })
@@ -265,7 +274,8 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     // utm_content (= the action_id) out of sourceUrl and increments
     // content_performance.north_star_attributed_seller_leads. Without this the
     // north-star metric can never move off zero.
-    let leadSourceUrl = `${siteUrl}/lp/seller-home-value`
+    const leadPagePath = sanitizePagePath(submission.pagePath)
+    let leadSourceUrl = `${siteUrl}${leadPagePath}`
     // Hoisted so the lead-origin note (below) can reuse the same parsed UTMs
     // without re-reading the referer.
     let originUtmSource: string | undefined
@@ -286,7 +296,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
           if (v) passthrough.set(k, v)
         }
         const qs = passthrough.toString()
-        if (qs) leadSourceUrl = `${siteUrl}/lp/seller-home-value?${qs}`
+        if (qs) leadSourceUrl = `${siteUrl}${leadPagePath}?${qs}`
       }
     } catch {
       // malformed referer — fall back to the bare LP url

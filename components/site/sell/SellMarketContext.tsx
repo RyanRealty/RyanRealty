@@ -29,6 +29,7 @@
  */
 
 import type { MarketPulse, MarketDetail } from '@/lib/data'
+import { formatDate } from '@/lib/format/date'
 import {
   Body,
   Container,
@@ -54,7 +55,10 @@ function periodLabel(iso: string | null | undefined): string | null {
   if (!iso) return null
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+  // UTC on purpose: a '2026-07-01' period start must label "July 2026", not
+  // drift a calendar day west in Pacific time. day:undefined drops the helper's
+  // default day-of-month for a month-year label.
+  return formatDate(d, { month: 'long', day: undefined, year: 'numeric', timeZone: 'UTC' })
 }
 
 type Signal = {

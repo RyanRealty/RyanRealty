@@ -92,6 +92,7 @@ Everything in `docs/plans/` is registered here. A new file in that directory wit
 | `SITE_AUDIT_2026-06-03.md` | superseded (record) |
 | `master-plan.md`, `PRODUCT_SPEC_V2.md`, `INDEX_MASTER_DEAL_PIPELINE.md`, `USER_JOURNEYS.md`, `data-architecture-plan.md`, `continuous-improvement.md`, `phase-0-brief.md`, `phase-1-brief.md`, `phase-2-brief.md`, `phase-3-brief.md`, `phase-4-brief.md`, `phase-5-brief.md`, `phase-6-brief.md` | superseded by this canon (archive) |
 | `money-path-contract-plan-2026-06-04.md` | open input — feed into the loop's backlog |
+| `cma-accuracy-pipeline-2026-07-11.md` | record — CMA/BPO accuracy pipeline progress log (work in flight 2026-07-11) |
 | `../EXPERIENCE_SYSTEM.md` | **live canon** — six page archetypes, route map, shared module kit, engagement telemetry spec, never-regress mechanics. Orchestrator for the Wave 3 UX rebuild. |
 | `KB_SITE_CONVERSION_GOAL.md` | **live** — whole-site KB (kinetic-brutalist) conversion goal, wave plan, and progress log (Phase 9+). |
 | `PAGE_REVIEW_REDESIGN_RUNBOOK.md` | **live** — render-don't-read page-review + redesign runbook (six-phase per-page loop, brutalist QA rubric, market-chart honesty spec, per-page competitor bars). Active page-class backlog. |
