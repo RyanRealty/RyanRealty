@@ -1651,10 +1651,18 @@
 }
 
 /* KB pages render their own chrome (KbNav + the KB footer). The default
-   SiteHeader/SiteFooter ([data-default-chrome]) are wrapped in HideChrome, but
-   usePathname() is null during static prerender so they ship in the SSR HTML and
-   would flash a second, CONFLICTING menu on any page that has a .kb-root section
-   (homepage, migrated geo pages). Hide them via CSS — SSR-safe, no flash, works
-   on every current + future KB page. HideChrome still removes them from the DOM
-   after hydration. */
-body:has(.kb-root) [data-default-chrome] { display: none !important; }
+   SiteHeader/SiteFooter ([data-default-chrome]) are wrapped in HideChrome, which
+   keeps them as a stable, never-unmounted node (display:contents/none — see
+   components/layout/HideOnLP.tsx) so they can never duplicate across a soft-nav.
+   On the statically-prerendered homepage usePathname() is empty, so the gate
+   can't hide it there — this CSS is the reliable hide for any page with its own
+   .kb-root.
+
+   SCOPING (fix 2026-07-11): the selector must match ONLY a .kb-root inside the
+   CURRENT page's #main-content. React streaming leaves a stale duplicate
+   .kb-root under an out-of-tree Suspense boundary (#S:0) after a soft-nav from
+   the homepage; a bare `body:has(.kb-root)` matched that stale node and hid the
+   header on the DESTINATION page (e.g. search → 0 headers). Every page renders
+   its content inside #main-content, so `#main-content .kb-root` tracks the live
+   route and ignores the orphaned streaming copy. */
+body:has(#main-content .kb-root) [data-default-chrome] { display: none !important; }
