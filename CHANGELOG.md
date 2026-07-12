@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.773.2 (2026-07-12)
+
+### Bug Fixes
+- fix(price-drops): never cache an empty render — stop the intermittent "0 drops"
+
+---
+
+
 ## v1.773.1 (2026-07-12)
 
 ### Bug Fixes
