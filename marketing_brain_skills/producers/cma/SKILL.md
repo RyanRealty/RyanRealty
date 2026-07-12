@@ -57,6 +57,23 @@ Spark CDN supports `320×240`, `640×480`, `800×600`, `1024×768`, `1280×960`,
 
 ---
 
+## 0. Execution architecture — deterministic + judgment hybrid (LOCKED 2026-07-11, enforced in code)
+
+**Every CMA build runs through `lib/cma/build.ts` (`buildCma`). This is the only path — the retired LLM producer-runtime and the retired `scripts/build_cma_wrapper.py` are both dead (G47). The pipeline is a hybrid, and the process is enforced by code, not by this document:**
+
+1. **Deterministic data + math (§0-safe).** Subject resolution, tiered comp selection, market context from the cache tables, time/size adjustments, and the three-method pricing reconciliation are pure code (`lib/cma/{subject,comps,market,pricing}.ts`). No LLM touches a number.
+2. **LLM comparability judgment (`lib/cma/judge.ts`).** One Claude pass (Sonnet, ~$0.02–0.15 on `ANTHROPIC_API_KEY`, fail-open) reviews the FULL feature set of subject + every candidate comp — beds/baths, year built, lot, garage, view, tax, list-vs-sold, days-to-offer, DOM, and public-remarks condition/renovation language — and classifies each comp `strong` / `weak` / `exclude` with a per-comp reason plus a client-grade comparability narrative. This is the judgment layer the deterministic math cannot provide.
+3. **Verdicts change the math.** `exclude` comps are dropped before any pricing (never below the comp floor). `weak` comps carry half weight in the Method 3 reconciliation. The narrative renders with the pricing rationale. Verdicts, cost, and model are recorded in `build_summary.judgment` and `citations.comp_judgment`.
+4. **Accuracy contract (`lib/cma/contract.ts`) — the enforcement.** Every build evaluates a mechanical checklist recorded in `build_summary.accuracy_contract`:
+   - **Hard checks fail the build** (no clean draft persists): comp floor, per-comp data sanity (price, sqft, close date within 24 months), all three methods computed, conservative ≤ recommended ≤ high-end, dispersion CV computed.
+   - **Review checks force `needs_review`** (build proceeds, broker must confirm before a client sees it): LLM judgment ran, per-comp verdict coverage, methods converged within 5%, comp $/sqft dispersion within 18% CV, market context present.
+5. **Dispersion guard backstop.** When the judge is unavailable (no key/credits), pricing falls back to the full comp set and the CV guard + the contract's `llm-judgment-ran` check force `needs_review` — an unvetted CMA can never present as vetted.
+6. **Draft-first, always.** Output lands as `status='draft'` in `public.cmas`, reviewed at `/admin/cmas` (flagged rows show a "Needs review" badge). Nothing is ever auto-sent.
+
+**Rule for agents:** do not bypass `buildCma`, do not hand-compute pricing, and do not weaken a contract check without Matt's explicit sign-off recorded in the commit message. If a new accuracy failure mode is found, the fix is a new contract check (gates not prose).
+
+---
+
 ## 1. Scope
 
 ### In scope
