@@ -368,9 +368,16 @@ async function CmasContent({ params }: { params: Record<string, string | undefin
                         </TableCell>
                         <TableCell className="text-right tabular-nums">{cma.comps_count ?? '—'}</TableCell>
                         <TableCell>
-                          <Badge variant={statusVariant(cma.status)} className="capitalize">
-                            {cma.status}
-                          </Badge>
+                          <div className="flex flex-col items-start gap-1">
+                            <Badge variant={statusVariant(cma.status)} className="capitalize">
+                              {cma.status}
+                            </Badge>
+                            {needsReview(cma) ? (
+                              <Badge variant="destructive" title={cma.build_summary?.review_reason ?? undefined}>
+                                Needs review
+                              </Badge>
+                            ) : null}
+                          </div>
                         </TableCell>
                         <TableCell className="text-sm">{formatDate(cma.created_at)}</TableCell>
                         <TableCell className="text-sm">{formatDate(cma.finalized_at)}</TableCell>
