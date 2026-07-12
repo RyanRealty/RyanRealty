@@ -277,12 +277,15 @@ export default async function PriceDropsRegionPage() {
       ? [...drops].sort((a, b) => (b.lastDropAmount ?? 0) - (a.lastDropAmount ?? 0))[0]
       : null
 
-  // Featured: top-6 biggest dollar drops for the KB poster grid
+  // Featured grid: top-6 by the BIGGEST reduction (percentage), not dollar
+  // amount. Sorting by dollars featured only pricey homes with modest markdowns,
+  // so "Featured" read as small cuts (Matt 2026-07-12). The single "LARGEST PRICE
+  // CUT" callout above stays dollar-based on purpose (most money off).
   const featuredDrops =
     drops.length > 0
       ? [...drops]
-          .sort((a, b) => (b.lastDropAmount ?? 0) - (a.lastDropAmount ?? 0))
           .filter((d) => d.photoUrl)
+          .sort((a, b) => (b.lastDropPct ?? 0) - (a.lastDropPct ?? 0))
           .slice(0, 6)
       : []
   const featuredItems: KbFeaturedItem[] = featuredDrops.map(dropToFeaturedItem)

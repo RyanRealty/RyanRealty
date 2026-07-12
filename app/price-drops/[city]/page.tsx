@@ -243,12 +243,15 @@ export default async function PriceDropsCityPage({ params }: Props) {
         ? (dropPcts[mid - 1] + dropPcts[mid]) / 2
         : dropPcts[mid]
 
-  // Featured: top-6 biggest dollar drops with photos
+  // Featured: top-6 by the BIGGEST reduction (percentage), not biggest dollar
+  // amount. Sorting by dollars featured only pricey homes with modest markdowns
+  // (a $3.7M home off 3% beat a $400k home off 25%), so "Featured" read as small
+  // cuts. A price-drops page showcases the biggest markdowns (Matt 2026-07-12).
   const featuredDrops =
     drops.length > 0
       ? [...drops]
-          .sort((a, b) => (b.lastDropAmount ?? 0) - (a.lastDropAmount ?? 0))
           .filter((d) => d.photoUrl)
+          .sort((a, b) => (b.lastDropPct ?? 0) - (a.lastDropPct ?? 0))
           .slice(0, 6)
       : []
   const featuredItems: KbFeaturedItem[] = featuredDrops.map(dropToFeaturedItem)
