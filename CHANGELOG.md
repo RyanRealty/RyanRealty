@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.767.0 (2026-07-12)
+
+### Features
+- feat(skills): add four engineering-practice skills adapted from mattpocock/course-video-manager
+- feat(sell): productized seller plans, live pricing insight, interactive plan explorer
+
+### Bug Fixes
+- fix(cma): judgment step appears in the rendered verification trace
+
+---
+
+
 ## v1.766.1 (2026-07-12)
 
 ### Maintenance
