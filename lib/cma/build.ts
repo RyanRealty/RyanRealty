@@ -22,6 +22,7 @@ import { resolveCmaSubject } from '@/lib/cma/subject'
 import { selectComps, MIN_COMPS } from '@/lib/cma/comps'
 import { getCmaMarketContext } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
+import { judgeComps } from '@/lib/cma/judge'
 import { buildCmaMapDataUri } from '@/lib/cma/map'
 import { renderCmaHtml } from '@/lib/cma/render'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult } from '@/lib/cma/types'
@@ -96,8 +97,23 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       return { ok: false, error: err, slug }
     }
 
-    // 4. Adjustments + pricing.
-    const adjusted = adjustComps(subject, selection.comps, market)
+    // 3.5. LLM comparability judgment (fail-open). The deterministic engine
+    // does §0-safe math on whatever the query returns; this vets which comps
+    // are genuinely comparable and drops the different-tier sales before the
+    // math runs. Falls back to the full set + the dispersion guard when the
+    // key is absent or the call fails — never blocks a build.
+    const judgment = await judgeComps(subject, selection.comps, market)
+    let compsForPricing = selection.comps
+    if (judgment) {
+      const keep = new Set(judgment.keptKeys)
+      const vetted = selection.comps.filter((c) => keep.has(c.listingKey))
+      // Never prune below the comp floor — if judgment would leave too few,
+      // keep the full set (the dispersion guard still flags it).
+      if (vetted.length >= MIN_COMPS) compsForPricing = vetted
+    }
+
+    // 4. Adjustments + pricing (on the vetted comp set).
+    const adjusted = adjustComps(subject, compsForPricing, market)
     const pricing = computePricing(subject, adjusted, market, {
       sellerImprovementsTotal: input.sellerImprovementsTotal ?? null,
       priceOverride: input.priceOverride ?? null,
@@ -143,6 +159,16 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         trace: selection.trace,
         excluded_outliers: selection.excludedOutliers,
       },
+      comp_judgment: judgment
+        ? {
+            source: `LLM comparability judge (${judgment.model})`,
+            confidence: judgment.confidence,
+            narrative: judgment.narrative,
+            kept_keys: judgment.keptKeys,
+            excluded: judgment.verdicts.filter((v) => v.tier === 'exclude'),
+            cost_usd: judgment.costUsd,
+          }
+        : { source: 'none', note: 'Priced on the full comp set (deterministic + dispersion guard).' },
       comps: adjusted.map((c) => ({
         listing_key: c.listingKey,
         mls_number: c.mlsNumber,
@@ -195,6 +221,22 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       builder: CMA_BUILDER_VERSION,
       page_count: pageCount,
       comps_count: adjusted.length,
+      // The LLM comparability judgment (or a note that it was unavailable).
+      judgment: judgment
+        ? {
+            used_llm: true as const,
+            model: judgment.model,
+            cost_usd: judgment.costUsd,
+            confidence: judgment.confidence,
+            kept: judgment.keptKeys.length,
+            excluded: judgment.verdicts.filter((v) => v.tier === 'exclude').length,
+            narrative: judgment.narrative,
+            verdicts: judgment.verdicts,
+          }
+        : {
+            used_llm: false as const,
+            note: 'LLM comparability judge unavailable (no key or call failed); priced on the full comp set with the dispersion guard as backstop.',
+          },
       // Top-level so the admin queue + batch reports can filter flagged CMAs
       // without digging into the pricing sub-object.
       needs_review: pricing.needsReview,

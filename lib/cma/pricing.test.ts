@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
+import { judgeComps } from '@/lib/cma/judge'
 import { parseCmaAddress } from '@/lib/cma/subject'
 import type { CmaComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
 
@@ -169,6 +170,23 @@ describe('computePricing', () => {
     expect(pricing!.confidence).toBe('Supportable')
     expect(pricing!.reviewReason).toBeTruthy()
     expect(pricing!.compPpsfCv).toBeGreaterThan(0.18)
+  })
+})
+
+describe('judgeComps (fail-open contract)', () => {
+  it('returns null when ANTHROPIC_API_KEY is absent, so a build never blocks', async () => {
+    const prev = process.env.ANTHROPIC_API_KEY
+    delete process.env.ANTHROPIC_API_KEY
+    try {
+      const result = await judgeComps(subject(), [comp(), comp(), comp()], market)
+      expect(result).toBeNull()
+    } finally {
+      if (prev !== undefined) process.env.ANTHROPIC_API_KEY = prev
+    }
+  })
+
+  it('returns null with an empty comp set', async () => {
+    expect(await judgeComps(subject(), [], market)).toBeNull()
   })
 })
 
