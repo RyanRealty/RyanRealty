@@ -78,7 +78,7 @@ export async function listExpiredOutreachQueue(): Promise<ExpiredOutreachRow[]> 
   // CMA join by the shared address slug.
   const { data: cmas } = await sb.from('cmas').select('slug, status, recommended_list, build_summary')
 
-  const { slugifyAddress } = await import('@/lib/cma-request')
+  const { slugifyAddress } = await import('@/lib/cma/address-slug')
   return rows.map((r) => {
     const slug = slugifyAddress(String(r.street_address))
     const cma = (cmas ?? []).find((c) => c.slug === slug) ?? null

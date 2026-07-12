@@ -73,22 +73,12 @@ export type CreateCmaRequestResult =
   | { ok: true; cmaId: string; actionId: string; slug: string }
   | { ok: false; error: string }
 
-/**
- * Slugify an address into `cma-<short-form>`, max 40 chars, kebab-case.
- * Stable for the same address — used as the public `public.cmas.slug`.
- */
-export function slugifyAddress(address: string): string {
-  const base = address
-    .toLowerCase()
-    .replace(/[,]/g, ' ')
-    .replace(/\b(road|rd|street|st|avenue|ave|drive|dr|lane|ln|court|ct|place|pl|boulevard|blvd|highway|hwy|parkway|pkwy|circle|cir|trail|trl|terrace|ter|way|loop)\b/gi, '')
-    .replace(/\b(oregon|or|bend|97701|97702|97703|97703|97707|97712|97739|97759|97760|97741)\b/g, ' ')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .replace(/-+/g, '-')
-  const slug = `cma-${base}`
-  return slug.length > 40 ? slug.slice(0, 40).replace(/-+$/g, '') : slug
-}
+// Canonical implementation moved to the dependency-free lib/cma/address-slug.ts
+// (this module pulls GA4/node:crypto, which lighter import graphs must avoid).
+// Re-exported here so every existing `import { slugifyAddress } from '@/lib/cma-request'`
+// keeps working unchanged.
+import { slugifyAddress } from '@/lib/cma/address-slug'
+export { slugifyAddress }
 
 /** Resolve the broker who should sign the CMA (matt-ryan default). */
 async function resolveBrokerSlug(fubPersonId: number | null): Promise<{
