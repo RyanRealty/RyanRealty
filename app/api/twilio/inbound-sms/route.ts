@@ -11,7 +11,8 @@
 
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { DEFAULT_DESK_BROKER, brokerForTwilioNumber, verifiedTwilioParams } from '@/lib/crm/twilio'
+import { DEFAULT_DESK_BROKER, brokerForTwilioNumber, verifiedTwilioParams, brokerTwilioNumber, forwardCellForBroker, normalizeTo10, sendSms } from '@/lib/crm/twilio'
+import { getBrokerTelephony } from '@/lib/data/crm/getBrokerTelephony'
 import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
 import { markConversationUnreadOnInbound } from '@/app/actions/crm-inbox'
 import { addSuppression, removeSuppression } from '@/lib/crm/suppressions'
@@ -46,6 +47,30 @@ function twiml(message?: string): NextResponse {
   return new NextResponse(body, { status: 200, headers: { 'Content-Type': 'text/xml' } })
 }
 
+/**
+ * Is this inbound number one of our brokers' own forward cells? When we forward
+ * an inbound client text to a broker's cell (below), the thread is the broker's
+ * business line — so if the broker taps reply in their phone's Messages app,
+ * that reply lands back HERE as an inbound from their cell. Guard it: a broker's
+ * own cell must never be turned into a "lead" or re-forwarded. (True phone-native
+ * two-way reply is the Conversations build on the roadmap; until then the forward
+ * body directs the broker to reply in the app, which sends from the business line.)
+ */
+async function isBrokerForwardCell(phone: string): Promise<boolean> {
+  const ten = normalizeTo10(phone)
+  if (!ten) return false
+  try {
+    const tel = await getBrokerTelephony()
+    for (const e of Object.values(tel.bySlug)) {
+      if (e?.forwardToCell && normalizeTo10(e.forwardToCell) === ten) return true
+    }
+  } catch { /* fall through to env */ }
+  for (const v of [process.env.TWILIO_FORWARD_MATT, process.env.TWILIO_FORWARD_REBECCA, process.env.TWILIO_FORWARD_PAUL]) {
+    if (v && normalizeTo10(v) === ten) return true
+  }
+  return false
+}
+
 export async function POST(request: Request) {
   const verified = await verifiedTwilioParams(request)
   if (!verified.ok) return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
@@ -56,6 +81,12 @@ export async function POST(request: Request) {
   // alert, empty 200 so Twilio doesn't retry).
   const { isNumberBlocked } = await import('@/lib/data/crm/getBlockedNumber')
   if (await isNumberBlocked(from)) return twiml()
+  // Reply-loop guard: a text FROM a broker's own forward cell is that broker
+  // replying (or testing) in the forwarded phone thread — never a lead, never a
+  // re-forward. Drop it silently so it can't create a self-lead. (Real client
+  // replies come from the broker via the CRM composer, which sends from the
+  // business line.)
+  if (await isBrokerForwardCell(from)) return twiml()
   const to = params.To ?? ''
   const body = (params.Body ?? '').trim()
   const sid = params.MessageSid ?? `unknown-${Date.now()}`
@@ -157,6 +188,25 @@ export async function POST(request: Request) {
       subject: `New text from ${match.name ?? from}`,
       bodyText: `${body}\n\nFrom ${from} to ${to}\nOpen the contact: https://ryan-realty.com/admin/crm/${match.personId}`,
     })
+
+    // Real-time forward to the assigned broker's cell — parity with the inbound
+    // VOICE call-forward, which already rings the cell (the reason a client's
+    // CALL reaches the broker's phone but their TEXT did not). Sends FROM the
+    // broker's own A2P-verified business line so the phone thread is the business
+    // number, and deep-links to the CRM thread where a reply also sends from the
+    // business line. Auto-replies (STOP/HELP/START) are handled above and never
+    // forwarded. Fire-and-forget so a Twilio hiccup never delays the 200 to the
+    // webhook (Twilio would otherwise retry the whole inbound).
+    if (!HELP_WORDS.has(firstToken) && !STOP_WORDS.has(firstToken) && !START_WORDS.has(firstToken)) {
+      const [brokerCell, brokerLine] = await Promise.all([
+        forwardCellForBroker(alertBroker),
+        brokerTwilioNumber(alertBroker),
+      ])
+      if (brokerCell && brokerLine && normalizeTo10(brokerCell) !== normalizeTo10(from)) {
+        const fwd = `Text from ${match.name ?? from} (${from}):\n${displayBody.slice(0, 400)}\n\nReply in the app (sends from your business line): ryan-realty.com/admin/crm/${match.personId}`
+        void sendSms({ from: brokerLine, to: brokerCell, body: fwd })
+      }
+    }
   }
 
   return twiml()
