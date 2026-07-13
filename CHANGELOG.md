@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.776.7 (2026-07-13)
+
+### Bug Fixes
+- fix(site): design-audit batch B2 — live-feed scope, luxury rental, area-guide, open-houses empty
+- fix(listing): design-audit batch B — media, similar-homes rail, hero fallback, not-found
+
+---
+
+
 ## v1.776.6 (2026-07-13)
 
 ### Bug Fixes
