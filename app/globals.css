@@ -426,7 +426,10 @@
    shared .map-search-shell class is untouched everywhere else it's used
    (app/search/[...slug]/page.tsx renders it as a standalone top-level
    shell with no .search-app-frame ancestor). */
-.search-app-frame { height: calc(100dvh - 72px); display: flex; flex-direction: column; overflow: hidden; }
+/* design-audit NAV-1: the search index now renders the fixed 64px KbNav (solid)
+   instead of the in-flow 72px SiteHeader. Push the viewport-fit app-frame below
+   the fixed bar (margin-top) and size it to the remaining height. */
+.search-app-frame { height: calc(100dvh - 64px); margin-top: 64px; display: flex; flex-direction: column; overflow: hidden; }
 .search-app-frame .map-search-shell { height: auto; flex: 1 1 auto; min-height: 320px; }
 .map-search-rail { width: 420px; min-width: 360px; max-width: 480px; }
 /* Map marker InfoWindow photo card width. */

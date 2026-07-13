@@ -3,21 +3,25 @@ import { shouldHideDefaultChrome, KB_ROUTES } from "./chrome-routes"
 
 /**
  * These lock the "double nav" contract (Matt reports 2026-06-18, 2026-07-11):
- *  - Search URLs (/homes-for-sale + city/filter variants) KEEP the default
- *    chrome — they must return false so exactly one SiteHeader renders.
+ *  - The search INDEX (/homes-for-sale, exact) HIDES the default chrome — it now
+ *    renders KbNav (solid) as the single site nav (design-audit NAV-1). It must
+ *    render KbNav, or this route would have ZERO headers.
+ *  - The /homes-for-sale/<city> search-form pages still KEEP the default chrome
+ *    (not yet migrated) — they must return false so exactly one SiteHeader renders.
  *  - KB routes + LP/admin/sign/concept + homepage HIDE the default chrome.
- * A regression that flips /homes-for-sale to `true` (hidden) would strip the
- * only header; flipping a KB route to `false` would double-render chrome.
+ * A regression that flips a city-form route to `true` while it still renders
+ * SiteHeader would strip its only header; flipping a KB route to `false` doubles.
  */
 describe("shouldHideDefaultChrome", () => {
-  it("KEEPS default chrome on the search surface (exactly one SiteHeader)", () => {
+  it("HIDES chrome on the search INDEX (KbNav) but KEEPS it on city-form pages", () => {
+    // Index → KbNav (own chrome) → hidden
+    expect(shouldHideDefaultChrome("/homes-for-sale")).toBe(true)
+    // City/filter search-form pages (still SiteHeader) → default chrome kept
     for (const path of [
-      "/homes-for-sale",
       "/homes-for-sale/bend",
       "/homes-for-sale/bend/awbrey-butte",
-      "/homes-for-sale?currentUse=Timber&keywords=61192+tall", // Matt's screenshot URL (path only in practice)
+      "/homes-for-sale/bend/awbrey-butte?minPrice=500000", // query stripped in practice
     ]) {
-      // usePathname never carries the query string, but guard the bare path too.
       const bare = path.split("?")[0]
       expect(shouldHideDefaultChrome(bare), bare).toBe(false)
     }

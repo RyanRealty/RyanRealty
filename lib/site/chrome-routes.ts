@@ -80,6 +80,12 @@ export function shouldHideDefaultChrome(pathname: string | null | undefined): bo
   // search URLs (/homes-for-sale, /homes-for-sale/<city>, …/<filters>).
   if (/^\/homes-for-sale\/listing\/[^/]+$/.test(pathname)) return true
   if (/^\/homes-for-sale\/.+(-\d{5,}|~[^/]*)\/?$/.test(pathname)) return true
+  // design-audit NAV-1: the search INDEX (/homes-for-sale, exact) now renders
+  // KbNav (solid) as the single site nav, so suppress the default SiteHeader/
+  // SiteFooter on it — the buyer funnel (home -> Homes -> listing) is one nav.
+  // The /homes-for-sale/<city> search-form pages keep default chrome for now
+  // (they carry their own hero/toolbar variants — migrated in a follow-up).
+  if (pathname === "/homes-for-sale") return true
   // Every other KB design-system route.
   if (KB_ROUTES.some((re) => re.test(pathname))) return true
   return false

@@ -11,6 +11,12 @@ import { getBoundaryGeoJSON } from '@/lib/data'
 import { BEND_DEFAULT_BOUNDS } from '@/lib/map-constants'
 import { slugify } from '@/lib/slug'
 import { cn } from '@/lib/utils'
+// design-audit NAV-1: the search index renders KbNav (solid) as the single site
+// nav so the buyer funnel (home -> Homes -> listing) shares one chrome. The
+// default SiteHeader is suppressed on /homes-for-sale via lib/site/chrome-routes.
+import { KbNav } from '@/components/site/kb/KbNav.client'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import '@/components/site/kb/kb.css'
 
 /** Compute a [west,south,east,north] bbox from a GeoJSON Polygon/MultiPolygon. */
 function bboxFromGeometry(
@@ -287,7 +293,13 @@ export default async function SearchPage({
   const isAppFrame = view === 'map' || view === 'split'
 
   return (
-    <div className={cn('w-full bg-muted', isAppFrame ? 'search-app-frame' : 'min-h-screen')}>
+    <div className={cn('w-full bg-muted', isAppFrame ? 'search-app-frame' : 'min-h-screen pt-16')}>
+      {/* Nav-only .kb-root wrapper: KbNav is position:fixed (0 flow height) and
+          the search UI stays its SIBLING, so the .kb-root reset never bleeds
+          onto the shadcn map/filter surface (design-audit NAV-1). */}
+      <div className="kb-root">
+        <KbNav solid />
+      </div>
       <SplitViewBodyLock active={isAppFrame} />
       <h1 className="sr-only">{h1Text}</h1>
       {/* P1-1: the search index was the only top-3 page with no breadcrumb at
@@ -301,9 +313,9 @@ export default async function SearchPage({
         subdivision={filters.subdivision ?? undefined}
         resultsCount={resultsCount}
       />
-      {/* top-[72px] docks below the sticky 72px SiteHeader — top-0 slid the
-          filter row underneath it, hiding the controls on any scrolled state. */}
-      <div className={cn('sticky top-[72px] z-20 w-full border-b border-border bg-card shadow-sm', isAppFrame && 'shrink-0')}>
+      {/* top-16 docks the filter row below the fixed 64px KbNav (design-audit
+          NAV-1); top-0 would slide it under the bar on any scrolled state. */}
+      <div className={cn('sticky top-16 z-20 w-full border-b border-border bg-card shadow-sm', isAppFrame && 'shrink-0')}>
         <SearchFilters initialFilters={initialFiltersFromUrl} signedIn={!!session?.user} />
       </div>
       {/* Guest listing-alert capture — LIST view only. In the split/map
@@ -365,6 +377,14 @@ export default async function SearchPage({
           </div>
         )}
       </div>
+      {/* design-audit NAV-1: the app-frame (map/split) is viewport-fit and shows
+          no footer; the scrolling LIST view keeps a footer so the MLS reciprocity
+          attribution + legal links survive the SiteFooter suppression. */}
+      {isAppFrame ? null : (
+        <div className="kb-root">
+          <KbFooter towns={[]} />
+        </div>
+      )}
     </div>
   )
 }
