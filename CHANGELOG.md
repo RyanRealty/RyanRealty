@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.777.0 (2026-07-13)
+
+### Features
+- feat(crm): mobile Comms tab gets a bottom-pinned texting composer + alert deep-links to the thread
+
+---
+
+
 ## v1.776.16 (2026-07-13)
 
 ### Bug Fixes
