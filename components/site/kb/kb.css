@@ -132,7 +132,11 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .hero-portrait img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block;}
 .kb-root .hero-tag{
   display:flex;align-items:center;gap:10px;
-  color:var(--cream-70);margin-bottom:14px;
+  /* design-audit: eyebrow was cream-70 with no shadow — dropped below readable
+     contrast over the bright areas of the hero photo. Full cream + a soft navy
+     shadow keeps it legible over any photo while staying a light kicker. */
+  color:var(--cream);margin-bottom:14px;
+  text-shadow:0 1px 10px rgba(16,39,66,.55);
 }
 .kb-root .hero-tag .dot{width:7px;height:7px;border-radius:50%;background:var(--cream);}
 .kb-root .hero-h{

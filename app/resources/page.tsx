@@ -176,13 +176,14 @@ export default function ResourcesPage() {
           </div>
         </section>
 
-        {/* AdSense slot — consent-gated, renders null without marketing consent.
-            Preserved untouched. */}
-        <section className="section" id="resource-ad" aria-label="Sponsored">
-          <div className="wrap">
-            <AdUnit slot="1001003003" format="horizontal" />
-          </div>
-        </section>
+        {/* AdSense slot — consent-gated AND self-collapsing (design-audit STA-2):
+            AdUnit renders nothing when there's no consent or no ad inventory, and
+            without the `.section` padding an absent ad leaves zero dead space, so
+            the old empty "Sponsored" box on this first-party hub is gone. When an
+            ad does serve it carries its own vertical margin. */}
+        <div className="wrap">
+          <AdUnit slot="1001003003" format="horizontal" className="my-10" />
+        </div>
 
         {/* Home valuation CTA — preserved untouched (carries LP/UTM attribution). */}
         <section className="section" id="resource-valuation" aria-label="What is your home worth">

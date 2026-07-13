@@ -267,7 +267,7 @@ export default function SellerLPForm({
         <Button
           type="submit"
           disabled={pending}
-          className="mt-3 h-16 w-full rounded-xl bg-warning text-lg font-semibold text-warning-foreground shadow-xl transition-colors hover:bg-warning/90 disabled:opacity-70"
+          className="mt-3 h-16 w-full rounded-xl bg-primary text-lg font-semibold text-primary-foreground shadow-xl transition-colors hover:bg-primary/90 disabled:opacity-70"
         >
           {pending ? 'Working…' : isListNow ? 'Book my free consultation →' : 'Get my home value →'}
         </Button>
@@ -554,7 +554,7 @@ export default function SellerLPForm({
       <Button
         type="submit"
         disabled={pending}
-        className="mt-6 h-14 w-full rounded-xl bg-warning text-lg font-semibold text-warning-foreground transition-colors hover:bg-warning/90 disabled:opacity-70"
+        className="mt-6 h-14 w-full rounded-xl bg-primary text-lg font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-70"
       >
         {pending ? 'Sending…' : isListNow ? 'Book my consultation →' : 'Send my home value →'}
       </Button>

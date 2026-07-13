@@ -279,9 +279,14 @@ export default async function TeamMemberPage({ params }: Props) {
     : `${firstName} lists and sells homes across Bend, Redmond, Sisters, Sunriver, and Prineville.`
 
   // Track-record items — own sales when available, brokerage record otherwise.
+  // design-audit CMP-3: only tiles with a real MLS photo fill the grid. A photoless
+  // tile renders as an empty navy void (KbFeatured fallback), so 3 of 9 read as broken.
+  // Six good tiles beat nine with three holes. The true `closings` count above is the
+  // full record and is unaffected — this is display-only.
+  const withPhoto = (items: KbFeaturedItem[]) => items.filter((it) => Boolean(it.img))
   const featuredItems: KbFeaturedItem[] = hasOwnSales
-    ? brokerSaleItems.slice(0, 9)
-    : brokerageItems
+    ? withPhoto(brokerSaleItems).slice(0, 9)
+    : withPhoto(brokerageItems)
   const featuredEyebrow = hasOwnSales
     ? `${firstName} · Track record`
     : 'Ryan Realty · Track record'

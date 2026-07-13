@@ -93,8 +93,13 @@ function firstSentence(text: string): string {
   return (m ? m[0] : text).trim()
 }
 
-function fmtK(n: number | null | undefined): string | null {
-  return n != null ? `$${Math.round(n / 1000).toLocaleString()}K` : null
+function fmtMedian(n: number | null | undefined): string | null {
+  // design-audit CMP-5: full rounded-to-thousand format ($742,000), matching
+  // kbMoneyFull used on home/market — not the abbreviated $742K that made the
+  // same regional median read three different ways across the site.
+  return n != null && Number.isFinite(n)
+    ? `$${(Math.round(n / 1000) * 1000).toLocaleString('en-US')}`
+    : null
 }
 
 function verdictFromMos(mos: number | null): string | null {
@@ -268,7 +273,7 @@ export default async function CitiesPage() {
                 <span className="stat-label">Active homes</span>
               </div>
               <div className="stat-cell">
-                <span className="stat-num mono-num">{fmtK(regionMedian) ?? '—'}</span>
+                <span className="stat-num mono-num">{fmtMedian(regionMedian) ?? '—'}</span>
                 <span className="stat-label">Median list price</span>
               </div>
               {/* The stat is the number; the verdict is a sub-line under it (was
@@ -370,7 +375,7 @@ export default async function CitiesPage() {
                         </div>
                         <div>
                           <p className="display mono-num" style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}>
-                            {fmtK(city.medianListPrice) ?? '—'}
+                            {fmtMedian(city.medianListPrice) ?? '—'}
                           </p>
                           <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
                             Median list
