@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.776.5 (2026-07-13)
+
+### Maintenance
+- chore: remove verified dead code (24 files, 99 exports, ~3.9k lines)
+
+---
+
+
 ## v1.776.4 (2026-07-12)
 
 ### Maintenance
