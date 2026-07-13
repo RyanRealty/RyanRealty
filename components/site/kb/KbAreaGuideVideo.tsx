@@ -33,13 +33,21 @@ export function KbAreaGuideVideo({
           <span className="eyebrow sec-index">▸ Area guide</span>
           <h2 className="sec-title display">Watch {locationName}</h2>
         </div>
+        {/* design-audit CMP-4: the navy frame now hugs the video (sized to the
+            clip's aspect + capped + centered) instead of a small player floating
+            in a large empty navy band. The video fills the frame, so the native
+            control bar sits on the media, not in a void. */}
         <div
           style={{
             border: '3px solid var(--navy)',
             background: 'var(--navy)',
             marginTop: 'clamp(18px,2.4vw,28px)',
-            display: 'flex',
-            justifyContent: 'center',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            overflow: 'hidden',
+            ...(wide
+              ? { width: '100%', maxWidth: 1120, aspectRatio: '16 / 9' }
+              : { width: 'auto', maxWidth: 'min(100%, 420px)', maxHeight: '82vh', aspectRatio: '9 / 16' }),
           }}
         >
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
@@ -49,11 +57,7 @@ export function KbAreaGuideVideo({
             playsInline
             poster={posterSrc ?? undefined}
             aria-label={`${locationName} area guide video`}
-            style={
-              wide
-                ? { width: '100%', maxHeight: '70vh', aspectRatio: '16 / 9', display: 'block' }
-                : { height: '70vh', maxWidth: '100%', aspectRatio: '9 / 16', display: 'block' }
-            }
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
           >
             <source src={videoUrl} type="video/mp4" />
           </video>

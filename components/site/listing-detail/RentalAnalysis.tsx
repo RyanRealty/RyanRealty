@@ -35,6 +35,13 @@ export function RentalAnalysis({ listing }: { listing: ListingDetail }) {
   const price = listing.listPrice ?? 0
   if (!price || price <= 0) return null
   if (!isRentalEligible(listing.propertyType)) return null
+  // design-audit: a HUD apartment Fair Market Rent applied to a multi-million
+  // estate produces an absurd headline cash flow (e.g. -$63,117/mo on an $11.9M
+  // home) that dents data credibility on the tier where buyers scrutinize numbers
+  // most. Above this threshold a property is virtually never evaluated as a
+  // HUD-rent rental, so suppress the module rather than seed a wrong number.
+  const LUXURY_RENTAL_SUPPRESS = 2_000_000
+  if (price > LUXURY_RENTAL_SUPPRESS) return null
 
   const taxes =
     listing.taxAnnualAmount && listing.taxAnnualAmount > 0

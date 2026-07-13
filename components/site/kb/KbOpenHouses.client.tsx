@@ -124,7 +124,35 @@ export function KbOpenHouses({
     return () => ctx.revert()
   }, [])
 
-  if (items.length === 0) return null
+  // design-audit STA-1: an empty calendar used to render null, so the page jumped
+  // straight from "Open houses in Central Oregon" to a seller pitch — a silent
+  // void on a page that promised open houses. Keep the section shell + an honest
+  // "none scheduled" state with a clear way forward.
+  if (items.length === 0) {
+    return (
+      <section className="section openhouses" id="open-houses" ref={root}>
+        <div className="wrap">
+          <div className="sec-head">
+            <span className="sec-index">{eyebrow}</span>
+            <h2 className="sec-title display">{heading}</h2>
+          </div>
+          <p style={{ marginTop: 16, fontSize: '1.05rem', lineHeight: 1.6, opacity: 0.8, maxWidth: 560 }}>
+            No open houses are scheduled in Central Oregon right now. New ones post through the week.
+          </p>
+          <div style={{ marginTop: 22, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+            {viewAllHref ? (
+              <a href={viewAllHref} className="btn">
+                {viewAllLabel} <span className="arr">→</span>
+              </a>
+            ) : null}
+            <a href="/lp/buyer-listing-alerts" className="btn alt">
+              Get notified of new open houses <span className="arr">→</span>
+            </a>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   const safeIndex = Math.min(activeIndex, items.length - 1)
   const lead = items[safeIndex]

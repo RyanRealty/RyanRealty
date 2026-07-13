@@ -197,7 +197,14 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
           eyebrow="Central Oregon · Open houses"
           titleTop="Open houses in"
           titleBottom="Central Oregon"
-          lead="across Central Oregon this week."
+          // design-audit STA-1: with a count the hero reads "N open houses across
+          // Central Oregon this week." At zero the count prefix drops, so the lead
+          // must stand alone as a complete sentence, not the bare fragment.
+          lead={
+            openHouseCount
+              ? 'across Central Oregon this week.'
+              : 'No open houses are posted across Central Oregon this week yet. Here is everything for sale right now.'
+          }
           videoSrc={null}
           posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
         />

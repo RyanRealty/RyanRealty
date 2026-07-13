@@ -871,7 +871,10 @@ export default async function CommunityDetailPage({ params }: Props) {
         />
         <KbActivity
           items={activityItems}
-          eyebrow={`Live · ${community.name}`}
+          // design-audit TRU-1: the feed is fetched city-wide (cities:[cityName]),
+          // so a "Live · Tetherow" label over Bend/Petrosa listings was untrue.
+          // Label the real scope — the city — not the community.
+          eyebrow={`Live · ${cityName}`}
           heading="Latest market activity"
           viewAllHref="/housing-market"
           viewAllLabel="Full market pulse"
