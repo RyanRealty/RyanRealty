@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.777.1 (2026-07-13)
+
+### Bug Fixes
+- fix(crm): alert deep-link must target /admin/console/leads/{id}, not /admin/crm/{id}
+
+---
+
+
 ## v1.777.0 (2026-07-13)
 
 ### Features
