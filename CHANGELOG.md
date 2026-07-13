@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.776.15 (2026-07-13)
+
+### Bug Fixes
+- fix(cma): recover comp photos from Spark when PhotoURL is null (blank comp flyers)
+- fix(crm): forward inbound client texts to the broker's cell in real time
+
+---
+
+
 ## v1.776.14 (2026-07-13)
 
 ### Bug Fixes
