@@ -295,7 +295,10 @@ export default async function FAQPage() {
                     category name, a full viewport-scale heading for as few as
                     2 questions. Eyebrow now carries real information instead. */}
                 <span className="sec-index">{g.items.length} question{g.items.length === 1 ? '' : 's'}</span>
-                <h2 className="sec-title display">{g.cat}</h2>
+                {/* design-audit: the full 3.6rem .sec-title pushed right by the
+                    flex space-between overpowered a 2-4 question group. Scale the
+                    per-category header down so it introduces, not dominates. */}
+                <h2 className="sec-title display" style={{ fontSize: 'clamp(1.5rem,3.4vw,2.3rem)' }}>{g.cat}</h2>
               </div>
               <div className="pt-2">
                 <FaqAccordion items={g.items} />
