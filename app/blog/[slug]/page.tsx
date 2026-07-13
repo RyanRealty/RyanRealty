@@ -188,6 +188,9 @@ export default async function BlogPostPage({ params }: PageProps) {
                   {post.title}
                 </h1>
                 <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2" style={metaRow}>
+                  {/* design-audit TRU-3: an article with no author_name showed no
+                      byline at all (zero attribution on an expertise piece). Fall
+                      back to the brokerage byline so every article is attributed. */}
                   {post.author_name ? (
                     post.author_slug ? (
                       <Link href={`/team/${post.author_slug}`} className="transition-colors hover:underline">
@@ -196,7 +199,11 @@ export default async function BlogPostPage({ params }: PageProps) {
                     ) : (
                       <span>{post.author_name}</span>
                     )
-                  ) : null}
+                  ) : (
+                    <Link href="/about" className="transition-colors hover:underline">
+                      Ryan Realty
+                    </Link>
+                  )}
                   {post.published_at ? (
                     <time dateTime={post.published_at}>
                       {new Date(post.published_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -231,7 +238,9 @@ export default async function BlogPostPage({ params }: PageProps) {
 
               {articleBody ? (
                 <div
-                  className="prose prose-neutral mt-8 max-w-none"
+                  // design-audit TRU-3: max-w-none let body text run ~100+ chars
+                  // per line (too wide to read comfortably). Cap the measure.
+                  className="prose prose-neutral mt-8 max-w-[72ch]"
                   style={proseVars}
                   dangerouslySetInnerHTML={{ __html: articleBody }}
                 />

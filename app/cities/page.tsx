@@ -361,7 +361,11 @@ export default async function CitiesPage() {
                         </p>
                       ) : null}
 
-                      {/* Live stat band — tabular numerals, honest em-dash empties */}
+                      {/* Live stat band — tabular numerals, honest em-dash empties.
+                          design-audit STA-5: a featured city with zero inventory
+                          showed "— Active / — Median" (two bare dashes, reading as
+                          broken). Show a single honest state when there is no data. */}
+                      {(city.activeCount != null && city.activeCount > 0) || city.medianListPrice != null ? (
                       <div className="mt-6 flex flex-wrap items-baseline gap-x-9 gap-y-4">
                         <div>
                           <p className="display mono-num" style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}>
@@ -413,6 +417,15 @@ export default async function CitiesPage() {
                           </span>
                         ) : null}
                       </div>
+                      ) : (
+                        <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '24px' }}>
+                          No active listings right now.{' '}
+                          <a href={`/cities/${city.slug}`} style={{ color: 'var(--navy)', textDecoration: 'underline' }}>
+                            See the market
+                          </a>
+                          .
+                        </p>
+                      )}
 
                       {/* Links into the city */}
                       <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold">
