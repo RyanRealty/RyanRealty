@@ -2,6 +2,18 @@
 
 ## v1.776.14 (2026-07-13)
 
+### Bug Fixes
+- fix(crm): show labeled placeholder for FUB-imported redacted texts + recovery backfill
+
+### Maintenance
+- chore: update changelog
+- docs(design-audit): finalize remediation log — P0 closed, register status
+
+---
+
+
+## v1.776.14 (2026-07-13)
+
 ### Maintenance
 - docs(design-audit): finalize remediation log — P0 closed, register status
 
