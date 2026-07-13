@@ -433,6 +433,17 @@ export function cmaStylesheet(siteUrl: string): string {
     display: block;
     margin-bottom: 9px;
   }
+  .flyer-hero.is-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 0 24px;
+  }
   .flyer-stats {
     display: grid;
     grid-template-columns: repeat(6, 1fr);

@@ -23,6 +23,7 @@ import { selectComps, MIN_COMPS } from '@/lib/cma/comps'
 import { getCmaMarketContext } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { judgeComps } from '@/lib/cma/judge'
+import { hydratePhotoUrls } from '@/lib/cma/photos'
 import { auditCma } from '@/lib/cma/audit'
 import { evaluateAccuracyContract } from '@/lib/cma/contract'
 import { buildCmaMapDataUri } from '@/lib/cma/map'
@@ -98,6 +99,15 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       await recordBuildFailure(slug, err)
       return { ok: false, error: err, slug }
     }
+
+    // 3.1. Recover photos for the subject + any comp whose cached PhotoURL is
+    // null (older backfilled closed comps have no cover photo cached even
+    // though Spark holds the full set). Fetched live from Spark; fail-open so
+    // a genuinely photoless listing just gets the render placeholder.
+    await Promise.all([
+      hydratePhotoUrls([subject]),
+      hydratePhotoUrls(selection.comps),
+    ])
 
     // 3.5. LLM comparability judgment (fail-open). The deterministic engine
     // does §0-safe math on whatever the query returns; this vets which comps

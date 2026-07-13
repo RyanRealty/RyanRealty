@@ -334,7 +334,7 @@ function compFlyerPage(a: RenderCmaArgs, comp: CmaAdjustedComp, index: number): 
   <div class="flyer-badge">Closed ${monthYear(comp.closeDate)}${comp.daysToOffer != null ? ` · ${int(comp.daysToOffer)}d to offer` : ''}</div>
   <h1 class="flyer-title">${esc(comp.address)}</h1>
   <div class="flyer-sub">${esc(comp.city)}, Oregon${comp.subdivision ? ` · ${esc(comp.subdivision)}` : ''}${comp.mlsNumber ? ` · MLS ${esc(comp.mlsNumber)}` : ''}</div>
-  ${hero ? `<img class="flyer-hero" src="${esc(hero)}" alt="${esc(comp.address)}" />` : '<div class="flyer-hero"></div>'}
+  ${hero ? `<img class="flyer-hero" src="${esc(hero)}" alt="${esc(comp.address)}" />` : '<div class="flyer-hero is-empty">Photo not retained on the closed listing</div>'}
   <div class="flyer-stats">
     <div class="s"><div class="l">Beds</div><div class="v">${int(comp.beds)}</div></div>
     <div class="s"><div class="l">Baths</div><div class="v">${dec(comp.baths, 0)}</div></div>
