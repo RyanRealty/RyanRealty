@@ -186,9 +186,11 @@ export async function POST(request: Request) {
       fromMailbox: mailbox.email,
       to: mailbox.email,
       subject: `New text from ${match.name ?? from}`,
-      // #comms opens straight to the conversation thread (mobile + desktop read
-      // the hash), where the composer sends from the business line.
-      bodyText: `${body}\n\nFrom ${from} to ${to}\nOpen the conversation: https://ryan-realty.com/admin/crm/${match.personId}#comms`,
+      // Link the CANONICAL command-center URL, not /admin/crm/{id}: that route
+      // 307-redirects to /admin/console/leads/{id} and the redirect DROPS the
+      // #comms fragment (verified 2026-07-13), so the tab never opens. Linking
+      // direct keeps the hash → the mobile Comms tab opens on the thread.
+      bodyText: `${body}\n\nFrom ${from} to ${to}\nOpen the conversation: https://ryan-realty.com/admin/console/leads/${match.personId}#comms`,
     })
 
     // Real-time forward to the assigned broker's cell — parity with the inbound
@@ -205,7 +207,7 @@ export async function POST(request: Request) {
         brokerTwilioNumber(alertBroker),
       ])
       if (brokerCell && brokerLine && normalizeTo10(brokerCell) !== normalizeTo10(from)) {
-        const fwd = `Text from ${match.name ?? from} (${from}):\n${displayBody.slice(0, 400)}\n\nReply (sends from your business line): ryan-realty.com/admin/crm/${match.personId}#comms`
+        const fwd = `Text from ${match.name ?? from} (${from}):\n${displayBody.slice(0, 400)}\n\nReply (sends from your business line): ryan-realty.com/admin/console/leads/${match.personId}#comms`
         void sendSms({ from: brokerLine, to: brokerCell, body: fwd })
       }
     }
