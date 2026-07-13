@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.776.6 (2026-07-13)
+
+### Bug Fixes
+- fix(site): design-audit batch A — contrast, voids, currency, LP CTA, ad box
+
+### Maintenance
+- docs(design-audit): 2026-07-12 full-site UI/UX audit + capture tooling
+
+---
+
+
 ## v1.776.5 (2026-07-13)
 
 ### Maintenance
