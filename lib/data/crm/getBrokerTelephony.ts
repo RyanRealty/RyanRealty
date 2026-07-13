@@ -49,9 +49,11 @@ export const getBrokerTelephony = unstable_cache(
     }
     return out
   },
-  // v2: cache-key bump on the 2026-07-02 primary-number fix (Matt →
-  // +15417033095, Paul → +15415023436) so the deploy orphans stale entries
-  // instead of serving the temp/wrong lines for up to the 1d TTL.
-  ['crm-broker-telephony-v2'],
+  // v3: cache-key bump on the 2026-07-13 notify_sms flip (Matt → true, so
+  // new-lead broker-alert SMS pings start on deploy, not after the 1d TTL).
+  // v2 was the 2026-07-02 primary-number fix (Matt → +15417033095, Paul →
+  // +15415023436) so the deploy orphans stale entries instead of serving the
+  // temp/wrong lines for up to the 1d TTL.
+  ['crm-broker-telephony-v3'],
   { revalidate: CACHE_WINDOWS.brokers, tags: [cacheTag.brokers] }
 )
