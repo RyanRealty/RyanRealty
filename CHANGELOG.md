@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.776.14 (2026-07-13)
+
+### Maintenance
+- docs(design-audit): finalize remediation log — P0 closed, register status
+
+---
+
+
 ## v1.776.13 (2026-07-13)
 
 ### Bug Fixes
