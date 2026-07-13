@@ -102,6 +102,9 @@ export interface MobileLeadDetailProps {
       (P2-4 closure: the "Add Appointment or Task" row has a real
       appointment branch). */
   appointments: MobileApptData
+  /** iMessage-style SMS composer for the Comms tab (pinned bottom). Built in
+      page.tsx so it shares the exact send action + recipients as desktop. */
+  smsComposer: React.ReactNode
   addNoteAction: (formData: FormData) => Promise<void>
   addTaskAction: (formData: FormData) => Promise<void>
   createAppointmentAction: (formData: FormData) => Promise<{ ok: boolean; error?: string; id?: number }>
@@ -129,6 +132,7 @@ export function MobileLeadDetail({
   viewedListings,
   pickers,
   appointments,
+  smsComposer,
   addNoteAction,
   addTaskAction,
   createAppointmentAction,
@@ -295,6 +299,7 @@ export function MobileLeadDetail({
           items={conversation.items}
           nextCursor={conversation.nextCursor}
           engagement={emailEngagement}
+          composer={smsComposer}
         />
       }
       homesTab={<MobileHomesTab listings={viewedListings} />}

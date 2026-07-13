@@ -373,6 +373,27 @@ export default async function ConsoleLeadPage({
       }
     })
 
+  /* Mobile Comms-tab composer — same send action + recipients as the desktop
+     center column, so a reply from the phone goes out from the business line
+     (never a personal cell). Pinned to the bottom of the Comms tab. */
+  const mobileSmsComposer = primaryPhone ? (
+    twilioStatus.canSend ? (
+      <SmsComposer
+        initialBody={smsInitialBody}
+        sendAction={sendSmsForm.bind(null, person.id)}
+        recipients={smsRecipients}
+        primaryPersonId={person.id}
+        personId={person.id}
+      />
+    ) : (
+      <p className="px-1 py-2 text-center text-[13px] text-muted-foreground">
+        Texting is paused — A2P status is {twilioStatus.a2p ?? 'unknown'}.
+      </p>
+    )
+  ) : (
+    <p className="px-1 py-2 text-center text-[13px] text-muted-foreground">No phone number on file.</p>
+  )
+
   /* ── §25 Mobile Contact Detail — mapping + assembly in ./mobile-detail.tsx.
      Renders at < md; standalone under ?view=mobile (the 390px verification
      affordance — the automation browser can't shrink below 768px). */
@@ -388,6 +409,7 @@ export default async function ConsoleLeadPage({
       relationships={relationships}
       collaborators={collaborators}
       viewedListings={viewedListings}
+      smsComposer={mobileSmsComposer}
       pickers={{
         sources: crmSources,
         ponds: detailExtras.pondOptions,

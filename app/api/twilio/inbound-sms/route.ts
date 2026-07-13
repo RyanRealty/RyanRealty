@@ -186,7 +186,9 @@ export async function POST(request: Request) {
       fromMailbox: mailbox.email,
       to: mailbox.email,
       subject: `New text from ${match.name ?? from}`,
-      bodyText: `${body}\n\nFrom ${from} to ${to}\nOpen the contact: https://ryan-realty.com/admin/crm/${match.personId}`,
+      // #comms opens straight to the conversation thread (mobile + desktop read
+      // the hash), where the composer sends from the business line.
+      bodyText: `${body}\n\nFrom ${from} to ${to}\nOpen the conversation: https://ryan-realty.com/admin/crm/${match.personId}#comms`,
     })
 
     // Real-time forward to the assigned broker's cell — parity with the inbound
@@ -203,7 +205,7 @@ export async function POST(request: Request) {
         brokerTwilioNumber(alertBroker),
       ])
       if (brokerCell && brokerLine && normalizeTo10(brokerCell) !== normalizeTo10(from)) {
-        const fwd = `Text from ${match.name ?? from} (${from}):\n${displayBody.slice(0, 400)}\n\nReply in the app (sends from your business line): ryan-realty.com/admin/crm/${match.personId}`
+        const fwd = `Text from ${match.name ?? from} (${from}):\n${displayBody.slice(0, 400)}\n\nReply (sends from your business line): ryan-realty.com/admin/crm/${match.personId}#comms`
         void sendSms({ from: brokerLine, to: brokerCell, body: fwd })
       }
     }

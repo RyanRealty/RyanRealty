@@ -25,6 +25,10 @@ export interface MobileCommsTabProps {
   items: ConversationMessage[]
   nextCursor: string | null
   engagement: Record<string, EmailEngagement>
+  /** iMessage-style composer, pinned to the bottom of the tab so a broker who
+   *  deep-links here (#comms) from a new-text alert can reply from their phone
+   *  without hunting for a control. Sends from the business line. */
+  composer?: React.ReactNode
 }
 
 export function MobileCommsTab({
@@ -33,28 +37,42 @@ export function MobileCommsTab({
   items,
   nextCursor,
   engagement,
+  composer,
 }: MobileCommsTabProps) {
-  if (items.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center px-8 py-20 text-center">
-        <p className="text-[16px] font-medium text-muted-foreground">No messages yet</p>
-        <p className="mt-1 text-[14px] text-muted-foreground">
-          Emails, texts, and calls show up here.
-        </p>
-      </div>
-    )
-  }
-
   return (
-    <div className="pb-24">
-      {/* §25.6.1: bg-secondary content area; ConversationFeed renders the rows on bg-card */}
-      <ConversationFeed
-        events={items}
-        initialCursor={nextCursor}
-        personId={personId}
-        engagement={engagement}
-        personName={personName}
-      />
+    // Fill the viewport below the header + tab strip (~8.5rem) so the composer
+    // sticks to the bottom like a messaging app, with the thread scrolling above.
+    <div className="flex min-h-[calc(100dvh-8.5rem)] flex-col">
+      <div className="flex-1">
+        {items.length === 0 ? (
+          <div className="flex flex-col items-center justify-center px-8 py-20 text-center">
+            <p className="text-[16px] font-medium text-muted-foreground">No messages yet</p>
+            <p className="mt-1 text-[14px] text-muted-foreground">
+              Start the conversation below. Emails, texts, and calls show up here.
+            </p>
+          </div>
+        ) : (
+          // §25.6.1: bg-secondary content area; ConversationFeed renders on bg-card
+          <div className="pb-3">
+            <ConversationFeed
+              events={items}
+              initialCursor={nextCursor}
+              personId={personId}
+              engagement={engagement}
+              personName={personName}
+            />
+          </div>
+        )}
+      </div>
+
+      {composer ? (
+        <div
+          className="sticky bottom-0 z-20 border-t border-border bg-card px-3 pt-2"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)' }}
+        >
+          {composer}
+        </div>
+      ) : null}
     </div>
   )
 }
