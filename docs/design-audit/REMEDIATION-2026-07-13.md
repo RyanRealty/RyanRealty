@@ -35,9 +35,11 @@ Legend: ⬜ todo · �254 in progress · ✅ done+verified+committed · ⏭️ 
 - 🔬 **NAV-1/2/3/6/7/9 (part 2): full component unification — SCOPED, NOT SHIPPED (deliberate).** Fully collapsing to ONE nav means either (a) migrating the SEARCH app-frame onto KbNav, which is high-regression (KbNav is `position:fixed` vs SiteHeader `sticky top-[72px]` that the search app-frame height math depends on; `.kb-root` reset would bleed onto the shadcn map/filter UI; `body.overflow` lock contention with SplitViewBodyLock) AND lossy (KbNav's static overlay drops the live price-drop card + market band the search mega-menu shows); or (b) restructuring SiteHeader's mega-menu taxonomy/casing, which risks the funnel's most-used page. Given the blast radius, this warrants its own focused, fully-regression-tested pass — the exact landmines + file list are mapped in the session log. Remaining visible seam after part 1: primary link words (Homes/Communities/Cities/Sell vs Homes/Sell/Market/Guides/About) + casing on the search page only.
 
 ## Batch D — imagery + content polish
-- ⬜ CMP-2 hero photo variety across blog/about/market/utility
-- ⬜ TRU-5 community photos misrepresenting place
-- ⬜ remaining P2/P3 per-page nits (buy CTA, faq headers, mortgage tool framing, reviews mobile cap, login provider parity, etc.)
+- ✅ CNV-5 (buy): funnel-entry hero had 5 identical ghost buttons — "Search homes" now filled/primary, rest ghost. VERIFIED.
+- ✅ login provider parity: Facebook button was `text-muted-foreground` (read as disabled) vs Google `text-foreground` — equalized. VERIFIED same computed color.
+- ⬜ CMP-2 hero photo variety across blog/about/market/utility (needs per-page imagery assignment — asset/content decision)
+- ⬜ TRU-5 community photos misrepresenting place (needs verified local photography)
+- ⬜ TRU-3 blog byline + body measure; TRU-2 city-bend NEW badges; STA-5 zero-inventory cards; CNV-1 mobile search map switcher; faq headers; mortgage tool framing; reviews mobile cap — remaining P2/P3 (see README register)
 
 ## Final review pass
 - ⬜ one dedicated end-to-end review over every changed surface

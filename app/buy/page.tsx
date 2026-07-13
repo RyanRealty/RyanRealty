@@ -229,8 +229,11 @@ export default async function BuyPage() {
               </p>
             </div>
             <nav className="flex flex-wrap gap-2.5 mt-5" aria-label="Buyer quick links">
-              {HERO_CHIPS.map((c) => (
-                <a key={c.href} className="btn ghost" href={c.href} style={{ padding: '11px 16px', fontSize: '.7rem' }}>
+              {/* design-audit CNV-5: the funnel entry had five identical ghost
+                  buttons and no clear primary. "Search homes" is the primary
+                  buyer action — render it filled, the rest ghost. */}
+              {HERO_CHIPS.map((c, i) => (
+                <a key={c.href} className={i === 0 ? 'btn' : 'btn ghost'} href={c.href} style={{ padding: '11px 16px', fontSize: '.7rem' }}>
                   {c.label}
                 </a>
               ))}

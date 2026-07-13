@@ -67,7 +67,7 @@ export default function LoginForm({ next }: Props) {
         type="button"
         onClick={() => handleOAuth('facebook')}
         disabled={!!loading}
-        className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-card py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-card py-2.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
       >
         <FacebookIcon className="size-5" />
         {loading === 'facebook' ? 'Redirecting…' : 'Continue with Facebook'}
