@@ -9,7 +9,7 @@
  * recordings (features FUB's collapsed rows don't carry, surfaced on demand).
  */
 import { useState, useTransition } from 'react'
-import { Mail, MailOpen, MessageSquare, Phone, ShieldAlert, Voicemail } from 'lucide-react'
+import { EyeOff, Mail, MailOpen, MessageSquare, Phone, ShieldAlert, Voicemail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { blockCrmNumber } from '@/app/actions/crm-block'
 import { timelineEmailBody } from '@/lib/crm/email-body'
@@ -135,6 +135,10 @@ export default function ConversationFeed({
       {items.map((e) => {
         const { Icon, title, participant } = rowMeta(e, personName)
         const preview = (e.body ? timelineEmailBody(e.body) : '') || ''
+        // Legacy Follow Up Boss messages imported with content redacted
+        // (payload.contentHidden === true, body null) — show a labeled
+        // placeholder rather than a blank row.
+        const contentHidden = !preview && e.payload?.contentHidden === true
         const expanded = openId === e.id
         const out = e.kind.endsWith('_out')
         const isEmail = e.kind.startsWith('email')
@@ -175,6 +179,11 @@ export default function ConversationFeed({
                 {preview ? (
                   <div className={expanded ? 'mt-0.5 whitespace-pre-wrap break-words text-sm text-muted-foreground' : 'mt-0.5 line-clamp-2 text-sm text-muted-foreground'}>
                     {preview}
+                  </div>
+                ) : contentHidden ? (
+                  <div className="mt-0.5 inline-flex items-center gap-1 text-xs italic text-muted-foreground">
+                    <EyeOff className="h-3 w-3" aria-hidden />
+                    Content not synced from Follow Up Boss
                   </div>
                 ) : null}
                 {opened ? (

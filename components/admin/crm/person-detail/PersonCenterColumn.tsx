@@ -36,6 +36,7 @@ import {
   CircleAlert,
   ChevronDown,
   ChevronRight,
+  EyeOff,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -171,6 +172,10 @@ function EventCard({ item }: { item: TimelineItem }) {
   const isLeadOrigin = item.kind === 'lead_created'
   const preview = (item.body ?? '').trim()
   const long = preview.length > 220
+  // Legacy Follow Up Boss texts/emails came in with their content redacted at
+  // import (payload.contentHidden === true, body null). Show a labeled
+  // placeholder instead of a confusingly blank card.
+  const contentHidden = !preview && (item.payload as { contentHidden?: unknown } | null)?.contentHidden === true
 
   function toggleStar() {
     const next = !starred
@@ -233,6 +238,11 @@ function EventCard({ item }: { item: TimelineItem }) {
             <p className={cn('whitespace-pre-wrap break-words text-sm text-muted-foreground [overflow-wrap:anywhere]', !expanded && 'line-clamp-2')}>{preview}</p>
             {long ? <span className="mt-0.5 text-xs font-medium text-primary">{expanded ? 'Show less' : 'Show more'}</span> : null}
           </button>
+        ) : contentHidden ? (
+          <p className="mt-1 inline-flex items-center gap-1 text-xs italic text-muted-foreground">
+            <EyeOff className="h-3 w-3" aria-hidden />
+            Content not synced from Follow Up Boss
+          </p>
         ) : null}
         {/* MMS media + stored outbound attachments (sent email files / MMS). */}
         <TimelineMediaStrip payload={item.payload} />
