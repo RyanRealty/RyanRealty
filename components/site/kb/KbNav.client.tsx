@@ -13,10 +13,10 @@ const LINKS = [
   { href: '/communities', label: 'Communities' },
   { href: '/cities', label: 'Cities' },
   { href: '/sell', label: 'Sell' },
-  // Account affordance carried across the seam: a signed-in buyer who saw
-  // saved-homes/alerts on the portal chrome no longer loses them on editorial
-  // pages. /account self-gates (signed-out lands on /login?next=/account).
-  { href: '/account', label: 'Account' },
+  // design-audit NAV-4: "Account" as a top-level marketing tab read oddly and
+  // clashed with the search chrome's "Sign in". The auth entry now lives in the
+  // topbar CTA cluster (Sign in) + the overlay's "Your account" group, matching
+  // the search header so the affordance is identical across the seam.
 ]
 
 const MENU_GROUPS: { title: string; links: { href: string; label: string }[] }[] = [
@@ -162,6 +162,15 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
               {l.label}
             </a>
           ))}
+          {/* design-audit NAV-4/NAV-5/CNV-5: persistent conversion + auth CTAs in
+              the topbar (matching the search chrome), so the seller money action
+              and sign-in are one tap from every KB page, not buried in the menu. */}
+          <a className="nav-signin" href="/login">
+            Sign in
+          </a>
+          <a className="nav-cta" href="/sell/valuation">
+            What’s my home worth
+          </a>
           <button ref={triggerRef} className="menu-btn" onClick={() => setOpen(true)} aria-expanded={open} aria-controls="menu-overlay" aria-label="Open menu">
             Menu +
           </button>
@@ -188,6 +197,14 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
             </div>
           ))}
         </nav>
+        <div className="menu-cta-row">
+          <a className="nav-cta" href="/sell/valuation" onClick={() => setOpen(false)}>
+            What’s my home worth
+          </a>
+          <a className="nav-signin overlay" href="/login" onClick={() => setOpen(false)}>
+            Sign in
+          </a>
+        </div>
         <div className="menu-foot">
           <span>Bend · Oregon</span>
           <a href={`tel:${CONTACT.phoneDirectTel}`}>{CONTACT.phoneDirect}</a>

@@ -99,6 +99,32 @@ html.lenis, html.lenis body{height:auto;}
   font-size:.92rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
   color:#fff;background:none;border:0;cursor:pointer;font-family:inherit;text-shadow:0 1px 6px rgba(0,0,0,.45);
 }
+/* design-audit NAV-4/NAV-5/CNV-5: persistent topbar CTAs (parity with the search
+   chrome). Primary = cream fill on navy; Sign in = ghost. Hidden on small topbars
+   (the overlay CTA row carries them on mobile). */
+.kb-root .topbar a.nav-cta{
+  display:none;align-items:center;background:var(--cream);color:var(--navy);text-shadow:none;
+  padding:9px 16px;font-size:.8rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  white-space:nowrap;transition:background .2s ease;
+}
+.kb-root .topbar a.nav-cta:hover{background:rgba(250,248,244,.86);}
+.kb-root .topbar a.nav-signin{
+  display:none;padding:8px 14px;font-size:.8rem;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:#fff;border:1.5px solid rgba(255,255,255,.55);white-space:nowrap;
+}
+.kb-root .topbar.scrolled a.nav-signin{border-color:var(--cream-40);}
+@media(min-width:880px){.kb-root .topbar a.nav-cta{display:inline-flex;}}
+@media(min-width:1040px){.kb-root .topbar a.nav-signin{display:inline-flex;}}
+/* Overlay CTA row — both CTAs on navy, always shown (covers the mobile topbar). */
+.kb-root .menu-cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px;}
+.kb-root .menu-cta-row a.nav-cta{
+  display:inline-flex;align-items:center;background:var(--cream);color:var(--navy);
+  padding:12px 20px;font-size:.85rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+}
+.kb-root .menu-cta-row a.nav-signin{
+  display:inline-flex;align-items:center;padding:11px 18px;font-size:.85rem;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--cream);border:1.5px solid var(--cream-40);
+}
 .kb-root .hero{
   position:relative;
   min-height:100svh;
