@@ -166,3 +166,9 @@ listing_video_v4/out/
 listing_video_v4/public/then-now/
 listing_video_v4/public/trend/
 scratch/
+
+# Design-audit raw capture panels — regenerable via scripts/_design-audit-capture.mjs; too heavy to track (316MB).
+docs/design-audit/assets/*-desktop-*.png
+docs/design-audit/assets/*-mobile-*.png
+docs/design-audit/assets/state-*.png
+docs/design-audit/assets/fix-*.png

@@ -1,0 +1,719 @@
+{
+  "assetsDir": "docs/design-audit/assets",
+  "pages": [
+    {
+      "name": "home",
+      "route": "/",
+      "role": "first-impression / homepage",
+      "desktopPanels": [
+        "home-desktop-01.png",
+        "home-desktop-02.png",
+        "home-desktop-03.png",
+        "home-desktop-04.png",
+        "home-desktop-05.png",
+        "home-desktop-06.png",
+        "home-desktop-07.png",
+        "home-desktop-08.png",
+        "home-desktop-09.png",
+        "home-desktop-10.png",
+        "home-desktop-11.png",
+        "home-desktop-12.png",
+        "home-desktop-13.png",
+        "home-desktop-14.png"
+      ],
+      "mobilePanels": [
+        "home-mobile-01.png",
+        "home-mobile-02.png",
+        "home-mobile-03.png",
+        "home-mobile-04.png",
+        "home-mobile-05.png",
+        "home-mobile-06.png",
+        "home-mobile-07.png",
+        "home-mobile-08.png",
+        "home-mobile-09.png",
+        "home-mobile-10.png",
+        "home-mobile-11.png",
+        "home-mobile-12.png",
+        "home-mobile-13.png",
+        "home-mobile-14.png",
+        "home-mobile-15.png",
+        "home-mobile-16.png",
+        "home-mobile-17.png",
+        "home-mobile-18.png"
+      ]
+    },
+    {
+      "name": "search",
+      "route": "/homes-for-sale",
+      "role": "core discovery / search results",
+      "desktopPanels": [
+        "search-desktop-01.png",
+        "search-desktop-02.png",
+        "search-desktop-03.png"
+      ],
+      "mobilePanels": [
+        "search-mobile-01.png",
+        "search-mobile-02.png",
+        "search-mobile-03.png",
+        "search-mobile-04.png"
+      ]
+    },
+    {
+      "name": "listing-detail",
+      "route": "/listing/20260328234720220317000000",
+      "role": "core action / listing detail (mid $550k)",
+      "desktopPanels": [
+        "listing-detail-desktop-01.png",
+        "listing-detail-desktop-02.png",
+        "listing-detail-desktop-03.png",
+        "listing-detail-desktop-04.png",
+        "listing-detail-desktop-05.png",
+        "listing-detail-desktop-06.png",
+        "listing-detail-desktop-07.png",
+        "listing-detail-desktop-08.png",
+        "listing-detail-desktop-09.png",
+        "listing-detail-desktop-10.png",
+        "listing-detail-desktop-11.png",
+        "listing-detail-desktop-12.png",
+        "listing-detail-desktop-13.png",
+        "listing-detail-desktop-14.png"
+      ],
+      "mobilePanels": [
+        "listing-detail-mobile-01.png",
+        "listing-detail-mobile-02.png",
+        "listing-detail-mobile-03.png",
+        "listing-detail-mobile-04.png",
+        "listing-detail-mobile-05.png",
+        "listing-detail-mobile-06.png",
+        "listing-detail-mobile-07.png",
+        "listing-detail-mobile-08.png",
+        "listing-detail-mobile-09.png",
+        "listing-detail-mobile-10.png",
+        "listing-detail-mobile-11.png",
+        "listing-detail-mobile-12.png",
+        "listing-detail-mobile-13.png",
+        "listing-detail-mobile-14.png",
+        "listing-detail-mobile-15.png",
+        "listing-detail-mobile-16.png",
+        "listing-detail-mobile-17.png",
+        "listing-detail-mobile-18.png"
+      ]
+    },
+    {
+      "name": "listing-luxury",
+      "route": "/listing/20250715233741474954000000",
+      "role": "listing detail (luxury $11.9M)",
+      "desktopPanels": [
+        "listing-luxury-desktop-01.png",
+        "listing-luxury-desktop-02.png",
+        "listing-luxury-desktop-03.png",
+        "listing-luxury-desktop-04.png",
+        "listing-luxury-desktop-05.png",
+        "listing-luxury-desktop-06.png",
+        "listing-luxury-desktop-07.png",
+        "listing-luxury-desktop-08.png",
+        "listing-luxury-desktop-09.png",
+        "listing-luxury-desktop-10.png",
+        "listing-luxury-desktop-11.png",
+        "listing-luxury-desktop-12.png",
+        "listing-luxury-desktop-13.png",
+        "listing-luxury-desktop-14.png"
+      ],
+      "mobilePanels": []
+    },
+    {
+      "name": "sell",
+      "route": "/sell",
+      "role": "seller funnel entry",
+      "desktopPanels": [
+        "sell-desktop-01.png",
+        "sell-desktop-02.png",
+        "sell-desktop-03.png",
+        "sell-desktop-04.png",
+        "sell-desktop-05.png",
+        "sell-desktop-06.png",
+        "sell-desktop-07.png",
+        "sell-desktop-08.png",
+        "sell-desktop-09.png",
+        "sell-desktop-10.png",
+        "sell-desktop-11.png",
+        "sell-desktop-12.png",
+        "sell-desktop-13.png",
+        "sell-desktop-14.png"
+      ],
+      "mobilePanels": [
+        "sell-mobile-01.png",
+        "sell-mobile-02.png",
+        "sell-mobile-03.png",
+        "sell-mobile-04.png",
+        "sell-mobile-05.png",
+        "sell-mobile-06.png",
+        "sell-mobile-07.png",
+        "sell-mobile-08.png",
+        "sell-mobile-09.png",
+        "sell-mobile-10.png",
+        "sell-mobile-11.png",
+        "sell-mobile-12.png",
+        "sell-mobile-13.png",
+        "sell-mobile-14.png",
+        "sell-mobile-15.png",
+        "sell-mobile-16.png",
+        "sell-mobile-17.png",
+        "sell-mobile-18.png"
+      ]
+    },
+    {
+      "name": "sell-valuation",
+      "route": "/sell/valuation",
+      "role": "seller conversion / valuation",
+      "desktopPanels": [
+        "sell-valuation-desktop-01.png",
+        "sell-valuation-desktop-02.png",
+        "sell-valuation-desktop-03.png",
+        "sell-valuation-desktop-04.png",
+        "sell-valuation-desktop-05.png"
+      ],
+      "mobilePanels": [
+        "sell-valuation-mobile-01.png",
+        "sell-valuation-mobile-02.png",
+        "sell-valuation-mobile-03.png",
+        "sell-valuation-mobile-04.png",
+        "sell-valuation-mobile-05.png",
+        "sell-valuation-mobile-06.png"
+      ]
+    },
+    {
+      "name": "lp-seller-home-value",
+      "route": "/lp/seller-home-value",
+      "role": "paid LP / seller value",
+      "desktopPanels": [
+        "lp-seller-home-value-desktop-01.png",
+        "lp-seller-home-value-desktop-02.png",
+        "lp-seller-home-value-desktop-03.png",
+        "lp-seller-home-value-desktop-04.png",
+        "lp-seller-home-value-desktop-05.png",
+        "lp-seller-home-value-desktop-06.png",
+        "lp-seller-home-value-desktop-07.png"
+      ],
+      "mobilePanels": [
+        "lp-seller-home-value-mobile-01.png",
+        "lp-seller-home-value-mobile-02.png",
+        "lp-seller-home-value-mobile-03.png",
+        "lp-seller-home-value-mobile-04.png",
+        "lp-seller-home-value-mobile-05.png",
+        "lp-seller-home-value-mobile-06.png",
+        "lp-seller-home-value-mobile-07.png",
+        "lp-seller-home-value-mobile-08.png",
+        "lp-seller-home-value-mobile-09.png",
+        "lp-seller-home-value-mobile-10.png"
+      ]
+    },
+    {
+      "name": "about",
+      "route": "/about",
+      "role": "trust / about",
+      "desktopPanels": [
+        "about-desktop-01.png",
+        "about-desktop-02.png",
+        "about-desktop-03.png",
+        "about-desktop-04.png",
+        "about-desktop-05.png",
+        "about-desktop-06.png",
+        "about-desktop-07.png",
+        "about-desktop-08.png",
+        "about-desktop-09.png"
+      ],
+      "mobilePanels": [
+        "about-mobile-01.png",
+        "about-mobile-02.png",
+        "about-mobile-03.png",
+        "about-mobile-04.png",
+        "about-mobile-05.png",
+        "about-mobile-06.png",
+        "about-mobile-07.png",
+        "about-mobile-08.png",
+        "about-mobile-09.png",
+        "about-mobile-10.png",
+        "about-mobile-11.png",
+        "about-mobile-12.png",
+        "about-mobile-13.png"
+      ]
+    },
+    {
+      "name": "team",
+      "route": "/team",
+      "role": "trust / team",
+      "desktopPanels": [
+        "team-desktop-01.png",
+        "team-desktop-02.png",
+        "team-desktop-03.png",
+        "team-desktop-04.png",
+        "team-desktop-05.png",
+        "team-desktop-06.png",
+        "team-desktop-07.png",
+        "team-desktop-08.png"
+      ],
+      "mobilePanels": [
+        "team-mobile-01.png",
+        "team-mobile-02.png",
+        "team-mobile-03.png",
+        "team-mobile-04.png",
+        "team-mobile-05.png",
+        "team-mobile-06.png",
+        "team-mobile-07.png",
+        "team-mobile-08.png",
+        "team-mobile-09.png",
+        "team-mobile-10.png",
+        "team-mobile-11.png",
+        "team-mobile-12.png"
+      ]
+    },
+    {
+      "name": "team-member",
+      "route": "/team/matthew-ryan",
+      "role": "trust / broker profile",
+      "desktopPanels": [
+        "team-member-desktop-01.png",
+        "team-member-desktop-02.png",
+        "team-member-desktop-03.png",
+        "team-member-desktop-04.png",
+        "team-member-desktop-05.png",
+        "team-member-desktop-06.png",
+        "team-member-desktop-07.png",
+        "team-member-desktop-08.png",
+        "team-member-desktop-09.png",
+        "team-member-desktop-10.png"
+      ],
+      "mobilePanels": []
+    },
+    {
+      "name": "contact",
+      "route": "/contact",
+      "role": "conversion / contact",
+      "desktopPanels": [
+        "contact-desktop-01.png",
+        "contact-desktop-02.png",
+        "contact-desktop-03.png"
+      ],
+      "mobilePanels": [
+        "contact-mobile-01.png",
+        "contact-mobile-02.png",
+        "contact-mobile-03.png",
+        "contact-mobile-04.png",
+        "contact-mobile-05.png"
+      ]
+    },
+    {
+      "name": "cities",
+      "route": "/cities",
+      "role": "discovery / cities hub",
+      "desktopPanels": [
+        "cities-desktop-01.png",
+        "cities-desktop-02.png",
+        "cities-desktop-03.png",
+        "cities-desktop-04.png",
+        "cities-desktop-05.png",
+        "cities-desktop-06.png",
+        "cities-desktop-07.png",
+        "cities-desktop-08.png",
+        "cities-desktop-09.png",
+        "cities-desktop-10.png",
+        "cities-desktop-11.png"
+      ],
+      "mobilePanels": [
+        "cities-mobile-01.png",
+        "cities-mobile-02.png",
+        "cities-mobile-03.png",
+        "cities-mobile-04.png",
+        "cities-mobile-05.png",
+        "cities-mobile-06.png",
+        "cities-mobile-07.png",
+        "cities-mobile-08.png",
+        "cities-mobile-09.png",
+        "cities-mobile-10.png",
+        "cities-mobile-11.png",
+        "cities-mobile-12.png",
+        "cities-mobile-13.png",
+        "cities-mobile-14.png",
+        "cities-mobile-15.png"
+      ]
+    },
+    {
+      "name": "city-bend",
+      "route": "/cities/bend",
+      "role": "discovery / city detail (Bend)",
+      "desktopPanels": [
+        "city-bend-desktop-01.png",
+        "city-bend-desktop-02.png",
+        "city-bend-desktop-03.png",
+        "city-bend-desktop-04.png",
+        "city-bend-desktop-05.png",
+        "city-bend-desktop-06.png",
+        "city-bend-desktop-07.png",
+        "city-bend-desktop-08.png",
+        "city-bend-desktop-09.png",
+        "city-bend-desktop-10.png",
+        "city-bend-desktop-11.png",
+        "city-bend-desktop-12.png",
+        "city-bend-desktop-13.png",
+        "city-bend-desktop-14.png"
+      ],
+      "mobilePanels": [
+        "city-bend-mobile-01.png",
+        "city-bend-mobile-02.png",
+        "city-bend-mobile-03.png",
+        "city-bend-mobile-04.png",
+        "city-bend-mobile-05.png",
+        "city-bend-mobile-06.png",
+        "city-bend-mobile-07.png",
+        "city-bend-mobile-08.png",
+        "city-bend-mobile-09.png",
+        "city-bend-mobile-10.png",
+        "city-bend-mobile-11.png",
+        "city-bend-mobile-12.png",
+        "city-bend-mobile-13.png",
+        "city-bend-mobile-14.png",
+        "city-bend-mobile-15.png",
+        "city-bend-mobile-16.png",
+        "city-bend-mobile-17.png",
+        "city-bend-mobile-18.png"
+      ]
+    },
+    {
+      "name": "communities",
+      "route": "/communities",
+      "role": "discovery / communities hub",
+      "desktopPanels": [
+        "communities-desktop-01.png",
+        "communities-desktop-02.png",
+        "communities-desktop-03.png",
+        "communities-desktop-04.png",
+        "communities-desktop-05.png",
+        "communities-desktop-06.png",
+        "communities-desktop-07.png",
+        "communities-desktop-08.png",
+        "communities-desktop-09.png",
+        "communities-desktop-10.png",
+        "communities-desktop-11.png",
+        "communities-desktop-12.png",
+        "communities-desktop-13.png",
+        "communities-desktop-14.png"
+      ],
+      "mobilePanels": [
+        "communities-mobile-01.png",
+        "communities-mobile-02.png",
+        "communities-mobile-03.png",
+        "communities-mobile-04.png",
+        "communities-mobile-05.png",
+        "communities-mobile-06.png",
+        "communities-mobile-07.png",
+        "communities-mobile-08.png",
+        "communities-mobile-09.png",
+        "communities-mobile-10.png",
+        "communities-mobile-11.png",
+        "communities-mobile-12.png",
+        "communities-mobile-13.png",
+        "communities-mobile-14.png",
+        "communities-mobile-15.png",
+        "communities-mobile-16.png",
+        "communities-mobile-17.png",
+        "communities-mobile-18.png"
+      ]
+    },
+    {
+      "name": "community-tetherow",
+      "route": "/communities/tetherow",
+      "role": "discovery / community detail",
+      "desktopPanels": [
+        "community-tetherow-desktop-01.png",
+        "community-tetherow-desktop-02.png",
+        "community-tetherow-desktop-03.png",
+        "community-tetherow-desktop-04.png",
+        "community-tetherow-desktop-05.png",
+        "community-tetherow-desktop-06.png",
+        "community-tetherow-desktop-07.png",
+        "community-tetherow-desktop-08.png",
+        "community-tetherow-desktop-09.png",
+        "community-tetherow-desktop-10.png",
+        "community-tetherow-desktop-11.png",
+        "community-tetherow-desktop-12.png",
+        "community-tetherow-desktop-13.png",
+        "community-tetherow-desktop-14.png"
+      ],
+      "mobilePanels": [
+        "community-tetherow-mobile-01.png",
+        "community-tetherow-mobile-02.png",
+        "community-tetherow-mobile-03.png",
+        "community-tetherow-mobile-04.png",
+        "community-tetherow-mobile-05.png",
+        "community-tetherow-mobile-06.png",
+        "community-tetherow-mobile-07.png",
+        "community-tetherow-mobile-08.png",
+        "community-tetherow-mobile-09.png",
+        "community-tetherow-mobile-10.png",
+        "community-tetherow-mobile-11.png",
+        "community-tetherow-mobile-12.png",
+        "community-tetherow-mobile-13.png",
+        "community-tetherow-mobile-14.png",
+        "community-tetherow-mobile-15.png",
+        "community-tetherow-mobile-16.png",
+        "community-tetherow-mobile-17.png",
+        "community-tetherow-mobile-18.png"
+      ]
+    },
+    {
+      "name": "housing-market",
+      "route": "/housing-market",
+      "role": "authority / market hub",
+      "desktopPanels": [
+        "housing-market-desktop-01.png",
+        "housing-market-desktop-02.png",
+        "housing-market-desktop-03.png",
+        "housing-market-desktop-04.png",
+        "housing-market-desktop-05.png",
+        "housing-market-desktop-06.png",
+        "housing-market-desktop-07.png",
+        "housing-market-desktop-08.png",
+        "housing-market-desktop-09.png"
+      ],
+      "mobilePanels": [
+        "housing-market-mobile-01.png",
+        "housing-market-mobile-02.png",
+        "housing-market-mobile-03.png",
+        "housing-market-mobile-04.png",
+        "housing-market-mobile-05.png",
+        "housing-market-mobile-06.png",
+        "housing-market-mobile-07.png",
+        "housing-market-mobile-08.png",
+        "housing-market-mobile-09.png",
+        "housing-market-mobile-10.png",
+        "housing-market-mobile-11.png",
+        "housing-market-mobile-12.png"
+      ]
+    },
+    {
+      "name": "market-report",
+      "route": "/housing-market/central-oregon",
+      "role": "authority / market report",
+      "desktopPanels": [
+        "market-report-desktop-01.png",
+        "market-report-desktop-02.png",
+        "market-report-desktop-03.png",
+        "market-report-desktop-04.png",
+        "market-report-desktop-05.png",
+        "market-report-desktop-06.png",
+        "market-report-desktop-07.png",
+        "market-report-desktop-08.png",
+        "market-report-desktop-09.png",
+        "market-report-desktop-10.png",
+        "market-report-desktop-11.png"
+      ],
+      "mobilePanels": []
+    },
+    {
+      "name": "reviews",
+      "route": "/reviews",
+      "role": "trust / reviews",
+      "desktopPanels": [
+        "reviews-desktop-01.png",
+        "reviews-desktop-02.png",
+        "reviews-desktop-03.png",
+        "reviews-desktop-04.png",
+        "reviews-desktop-05.png",
+        "reviews-desktop-06.png",
+        "reviews-desktop-07.png"
+      ],
+      "mobilePanels": [
+        "reviews-mobile-01.png",
+        "reviews-mobile-02.png",
+        "reviews-mobile-03.png",
+        "reviews-mobile-04.png",
+        "reviews-mobile-05.png",
+        "reviews-mobile-06.png",
+        "reviews-mobile-07.png",
+        "reviews-mobile-08.png",
+        "reviews-mobile-09.png",
+        "reviews-mobile-10.png",
+        "reviews-mobile-11.png",
+        "reviews-mobile-12.png",
+        "reviews-mobile-13.png",
+        "reviews-mobile-14.png",
+        "reviews-mobile-15.png"
+      ]
+    },
+    {
+      "name": "blog",
+      "route": "/blog",
+      "role": "content / blog index",
+      "desktopPanels": [
+        "blog-desktop-01.png",
+        "blog-desktop-02.png",
+        "blog-desktop-03.png",
+        "blog-desktop-04.png",
+        "blog-desktop-05.png",
+        "blog-desktop-06.png",
+        "blog-desktop-07.png",
+        "blog-desktop-08.png"
+      ],
+      "mobilePanels": [
+        "blog-mobile-01.png",
+        "blog-mobile-02.png",
+        "blog-mobile-03.png",
+        "blog-mobile-04.png",
+        "blog-mobile-05.png",
+        "blog-mobile-06.png",
+        "blog-mobile-07.png",
+        "blog-mobile-08.png",
+        "blog-mobile-09.png",
+        "blog-mobile-10.png",
+        "blog-mobile-11.png",
+        "blog-mobile-12.png",
+        "blog-mobile-13.png"
+      ]
+    },
+    {
+      "name": "blog-post",
+      "route": "/blog/understanding-home-appraisals",
+      "role": "content / article",
+      "desktopPanels": [
+        "blog-post-desktop-01.png",
+        "blog-post-desktop-02.png",
+        "blog-post-desktop-03.png",
+        "blog-post-desktop-04.png",
+        "blog-post-desktop-05.png",
+        "blog-post-desktop-06.png",
+        "blog-post-desktop-07.png",
+        "blog-post-desktop-08.png",
+        "blog-post-desktop-09.png",
+        "blog-post-desktop-10.png"
+      ],
+      "mobilePanels": []
+    },
+    {
+      "name": "buy",
+      "route": "/buy",
+      "role": "buyer funnel entry",
+      "desktopPanels": [
+        "buy-desktop-01.png",
+        "buy-desktop-02.png",
+        "buy-desktop-03.png",
+        "buy-desktop-04.png",
+        "buy-desktop-05.png",
+        "buy-desktop-06.png",
+        "buy-desktop-07.png"
+      ],
+      "mobilePanels": []
+    },
+    {
+      "name": "luxury-homes-bend",
+      "route": "/luxury-homes-bend",
+      "role": "SEO landing / luxury",
+      "desktopPanels": [
+        "luxury-homes-bend-desktop-01.png",
+        "luxury-homes-bend-desktop-02.png",
+        "luxury-homes-bend-desktop-03.png",
+        "luxury-homes-bend-desktop-04.png",
+        "luxury-homes-bend-desktop-05.png"
+      ],
+      "mobilePanels": []
+    },
+    {
+      "name": "faq",
+      "route": "/faq",
+      "role": "support / faq",
+      "desktopPanels": [
+        "faq-desktop-01.png",
+        "faq-desktop-02.png",
+        "faq-desktop-03.png",
+        "faq-desktop-04.png",
+        "faq-desktop-05.png"
+      ],
+      "mobilePanels": []
+    },
+    {
+      "name": "resources",
+      "route": "/resources",
+      "role": "support / resources",
+      "desktopPanels": [
+        "resources-desktop-01.png",
+        "resources-desktop-02.png",
+        "resources-desktop-03.png",
+        "resources-desktop-04.png"
+      ],
+      "mobilePanels": []
+    },
+    {
+      "name": "open-houses",
+      "route": "/open-houses",
+      "role": "discovery / open houses",
+      "desktopPanels": [
+        "open-houses-desktop-01.png",
+        "open-houses-desktop-02.png",
+        "open-houses-desktop-03.png",
+        "open-houses-desktop-04.png"
+      ],
+      "mobilePanels": []
+    },
+    {
+      "name": "tools-mortgage",
+      "route": "/tools/mortgage-calculator",
+      "role": "tool / mortgage calc",
+      "desktopPanels": [
+        "tools-mortgage-desktop-01.png",
+        "tools-mortgage-desktop-02.png",
+        "tools-mortgage-desktop-03.png",
+        "tools-mortgage-desktop-04.png",
+        "tools-mortgage-desktop-05.png"
+      ],
+      "mobilePanels": []
+    },
+    {
+      "name": "login",
+      "route": "/login",
+      "role": "account / login",
+      "desktopPanels": [
+        "login-desktop-01.png",
+        "login-desktop-02.png",
+        "login-desktop-03.png"
+      ],
+      "mobilePanels": []
+    },
+    {
+      "name": "signup",
+      "route": "/signup",
+      "role": "account / signup",
+      "desktopPanels": [
+        "signup-desktop-01.png",
+        "signup-desktop-02.png",
+        "signup-desktop-03.png"
+      ],
+      "mobilePanels": []
+    }
+  ],
+  "states": [
+    {
+      "name": "state-404-desktop"
+    },
+    {
+      "name": "state-listing-notfound-desktop"
+    },
+    {
+      "name": "state-search-empty-desktop"
+    },
+    {
+      "name": "state-search-empty2-desktop"
+    },
+    {
+      "name": "state-nav-megamenu-desktop"
+    },
+    {
+      "name": "state-nav-siteheader-desktop"
+    },
+    {
+      "name": "state-nav-drawer-home-mobile"
+    },
+    {
+      "name": "state-nav-drawer-site-mobile"
+    }
+  ]
+}

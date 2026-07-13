@@ -1,0 +1,50 @@
+[
+  {
+    "name": "state-404-desktop",
+    "path": "/this-page-does-not-exist-xyz-9k2",
+    "status": 404,
+    "ok": true
+  },
+  {
+    "name": "state-listing-notfound-desktop",
+    "path": "/listing/00000000000000000000000000",
+    "status": 200,
+    "ok": true
+  },
+  {
+    "name": "state-search-empty-desktop",
+    "path": "/homes-for-sale?priceMin=90000000",
+    "status": 200,
+    "ok": true
+  },
+  {
+    "name": "state-search-empty2-desktop",
+    "path": "/homes-for-sale/bend/luxury?priceMin=99000000",
+    "status": 200,
+    "ok": true
+  },
+  {
+    "name": "state-nav-megamenu-desktop",
+    "path": "/",
+    "status": 200,
+    "ok": true
+  },
+  {
+    "name": "state-nav-siteheader-desktop",
+    "path": "/homes-for-sale",
+    "status": 200,
+    "ok": true
+  },
+  {
+    "name": "state-nav-drawer-home-mobile",
+    "path": "/",
+    "status": 200,
+    "ok": true
+  },
+  {
+    "name": "state-nav-drawer-site-mobile",
+    "path": "/homes-for-sale",
+    "status": 200,
+    "ok": true
+  }
+]

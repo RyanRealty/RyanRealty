@@ -1,0 +1,890 @@
+[
+  {
+    "name": "home",
+    "path": "/",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 11310,
+    "panels": [
+      "home-desktop-01.png",
+      "home-desktop-02.png",
+      "home-desktop-03.png",
+      "home-desktop-04.png",
+      "home-desktop-05.png",
+      "home-desktop-06.png",
+      "home-desktop-07.png",
+      "home-desktop-08.png",
+      "home-desktop-09.png",
+      "home-desktop-10.png",
+      "home-desktop-11.png",
+      "home-desktop-12.png",
+      "home-desktop-13.png",
+      "home-desktop-14.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "home",
+    "path": "/",
+    "vp": "mobile",
+    "status": 200,
+    "docHeight": 13877,
+    "panels": [
+      "home-mobile-01.png",
+      "home-mobile-02.png",
+      "home-mobile-03.png",
+      "home-mobile-04.png",
+      "home-mobile-05.png",
+      "home-mobile-06.png",
+      "home-mobile-07.png",
+      "home-mobile-08.png",
+      "home-mobile-09.png",
+      "home-mobile-10.png",
+      "home-mobile-11.png",
+      "home-mobile-12.png",
+      "home-mobile-13.png",
+      "home-mobile-14.png",
+      "home-mobile-15.png",
+      "home-mobile-16.png",
+      "home-mobile-17.png",
+      "home-mobile-18.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "search",
+    "path": "/homes-for-sale",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 1690,
+    "panels": [
+      "search-desktop-01.png",
+      "search-desktop-02.png",
+      "search-desktop-03.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "search",
+    "path": "/homes-for-sale",
+    "vp": "mobile",
+    "status": 200,
+    "docHeight": 2854,
+    "panels": [
+      "search-mobile-01.png",
+      "search-mobile-02.png",
+      "search-mobile-03.png",
+      "search-mobile-04.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "listing-detail",
+    "path": "/listing/20260328234720220317000000",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 11631,
+    "panels": [
+      "listing-detail-desktop-01.png",
+      "listing-detail-desktop-02.png",
+      "listing-detail-desktop-03.png",
+      "listing-detail-desktop-04.png",
+      "listing-detail-desktop-05.png",
+      "listing-detail-desktop-06.png",
+      "listing-detail-desktop-07.png",
+      "listing-detail-desktop-08.png",
+      "listing-detail-desktop-09.png",
+      "listing-detail-desktop-10.png",
+      "listing-detail-desktop-11.png",
+      "listing-detail-desktop-12.png",
+      "listing-detail-desktop-13.png",
+      "listing-detail-desktop-14.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "listing-detail",
+    "path": "/listing/20260328234720220317000000",
+    "vp": "mobile",
+    "status": 200,
+    "docHeight": 14623,
+    "panels": [
+      "listing-detail-mobile-01.png",
+      "listing-detail-mobile-02.png",
+      "listing-detail-mobile-03.png",
+      "listing-detail-mobile-04.png",
+      "listing-detail-mobile-05.png",
+      "listing-detail-mobile-06.png",
+      "listing-detail-mobile-07.png",
+      "listing-detail-mobile-08.png",
+      "listing-detail-mobile-09.png",
+      "listing-detail-mobile-10.png",
+      "listing-detail-mobile-11.png",
+      "listing-detail-mobile-12.png",
+      "listing-detail-mobile-13.png",
+      "listing-detail-mobile-14.png",
+      "listing-detail-mobile-15.png",
+      "listing-detail-mobile-16.png",
+      "listing-detail-mobile-17.png",
+      "listing-detail-mobile-18.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "listing-luxury",
+    "path": "/listing/20250715233741474954000000",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 12537,
+    "panels": [
+      "listing-luxury-desktop-01.png",
+      "listing-luxury-desktop-02.png",
+      "listing-luxury-desktop-03.png",
+      "listing-luxury-desktop-04.png",
+      "listing-luxury-desktop-05.png",
+      "listing-luxury-desktop-06.png",
+      "listing-luxury-desktop-07.png",
+      "listing-luxury-desktop-08.png",
+      "listing-luxury-desktop-09.png",
+      "listing-luxury-desktop-10.png",
+      "listing-luxury-desktop-11.png",
+      "listing-luxury-desktop-12.png",
+      "listing-luxury-desktop-13.png",
+      "listing-luxury-desktop-14.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "sell",
+    "path": "/sell",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 12571,
+    "panels": [
+      "sell-desktop-01.png",
+      "sell-desktop-02.png",
+      "sell-desktop-03.png",
+      "sell-desktop-04.png",
+      "sell-desktop-05.png",
+      "sell-desktop-06.png",
+      "sell-desktop-07.png",
+      "sell-desktop-08.png",
+      "sell-desktop-09.png",
+      "sell-desktop-10.png",
+      "sell-desktop-11.png",
+      "sell-desktop-12.png",
+      "sell-desktop-13.png",
+      "sell-desktop-14.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "sell",
+    "path": "/sell",
+    "vp": "mobile",
+    "status": 200,
+    "docHeight": 21245,
+    "panels": [
+      "sell-mobile-01.png",
+      "sell-mobile-02.png",
+      "sell-mobile-03.png",
+      "sell-mobile-04.png",
+      "sell-mobile-05.png",
+      "sell-mobile-06.png",
+      "sell-mobile-07.png",
+      "sell-mobile-08.png",
+      "sell-mobile-09.png",
+      "sell-mobile-10.png",
+      "sell-mobile-11.png",
+      "sell-mobile-12.png",
+      "sell-mobile-13.png",
+      "sell-mobile-14.png",
+      "sell-mobile-15.png",
+      "sell-mobile-16.png",
+      "sell-mobile-17.png",
+      "sell-mobile-18.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "sell-valuation",
+    "path": "/sell/valuation",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 3264,
+    "panels": [
+      "sell-valuation-desktop-01.png",
+      "sell-valuation-desktop-02.png",
+      "sell-valuation-desktop-03.png",
+      "sell-valuation-desktop-04.png",
+      "sell-valuation-desktop-05.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "sell-valuation",
+    "path": "/sell/valuation",
+    "vp": "mobile",
+    "status": 200,
+    "docHeight": 4342,
+    "panels": [
+      "sell-valuation-mobile-01.png",
+      "sell-valuation-mobile-02.png",
+      "sell-valuation-mobile-03.png",
+      "sell-valuation-mobile-04.png",
+      "sell-valuation-mobile-05.png",
+      "sell-valuation-mobile-06.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "lp-seller-home-value",
+    "path": "/lp/seller-home-value",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 5127,
+    "panels": [
+      "lp-seller-home-value-desktop-01.png",
+      "lp-seller-home-value-desktop-02.png",
+      "lp-seller-home-value-desktop-03.png",
+      "lp-seller-home-value-desktop-04.png",
+      "lp-seller-home-value-desktop-05.png",
+      "lp-seller-home-value-desktop-06.png",
+      "lp-seller-home-value-desktop-07.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "lp-seller-home-value",
+    "path": "/lp/seller-home-value",
+    "vp": "mobile",
+    "status": 200,
+    "docHeight": 7064,
+    "panels": [
+      "lp-seller-home-value-mobile-01.png",
+      "lp-seller-home-value-mobile-02.png",
+      "lp-seller-home-value-mobile-03.png",
+      "lp-seller-home-value-mobile-04.png",
+      "lp-seller-home-value-mobile-05.png",
+      "lp-seller-home-value-mobile-06.png",
+      "lp-seller-home-value-mobile-07.png",
+      "lp-seller-home-value-mobile-08.png",
+      "lp-seller-home-value-mobile-09.png",
+      "lp-seller-home-value-mobile-10.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "about",
+    "path": "/about",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 7285,
+    "panels": [
+      "about-desktop-01.png",
+      "about-desktop-02.png",
+      "about-desktop-03.png",
+      "about-desktop-04.png",
+      "about-desktop-05.png",
+      "about-desktop-06.png",
+      "about-desktop-07.png",
+      "about-desktop-08.png",
+      "about-desktop-09.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "about",
+    "path": "/about",
+    "vp": "mobile",
+    "status": 200,
+    "docHeight": 9808,
+    "panels": [
+      "about-mobile-01.png",
+      "about-mobile-02.png",
+      "about-mobile-03.png",
+      "about-mobile-04.png",
+      "about-mobile-05.png",
+      "about-mobile-06.png",
+      "about-mobile-07.png",
+      "about-mobile-08.png",
+      "about-mobile-09.png",
+      "about-mobile-10.png",
+      "about-mobile-11.png",
+      "about-mobile-12.png",
+      "about-mobile-13.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "team",
+    "path": "/team",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 5768,
+    "panels": [
+      "team-desktop-01.png",
+      "team-desktop-02.png",
+      "team-desktop-03.png",
+      "team-desktop-04.png",
+      "team-desktop-05.png",
+      "team-desktop-06.png",
+      "team-desktop-07.png",
+      "team-desktop-08.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "team",
+    "path": "/team",
+    "vp": "mobile",
+    "status": 200,
+    "docHeight": 8364,
+    "panels": [
+      "team-mobile-01.png",
+      "team-mobile-02.png",
+      "team-mobile-03.png",
+      "team-mobile-04.png",
+      "team-mobile-05.png",
+      "team-mobile-06.png",
+      "team-mobile-07.png",
+      "team-mobile-08.png",
+      "team-mobile-09.png",
+      "team-mobile-10.png",
+      "team-mobile-11.png",
+      "team-mobile-12.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "team-member",
+    "path": "/team/matthew-ryan",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 7595,
+    "panels": [
+      "team-member-desktop-01.png",
+      "team-member-desktop-02.png",
+      "team-member-desktop-03.png",
+      "team-member-desktop-04.png",
+      "team-member-desktop-05.png",
+      "team-member-desktop-06.png",
+      "team-member-desktop-07.png",
+      "team-member-desktop-08.png",
+      "team-member-desktop-09.png",
+      "team-member-desktop-10.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "contact",
+    "path": "/contact",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 2039,
+    "panels": [
+      "contact-desktop-01.png",
+      "contact-desktop-02.png",
+      "contact-desktop-03.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "contact",
+    "path": "/contact",
+    "vp": "mobile",
+    "status": 200,
+    "docHeight": 3331,
+    "panels": [
+      "contact-mobile-01.png",
+      "contact-mobile-02.png",
+      "contact-mobile-03.png",
+      "contact-mobile-04.png",
+      "contact-mobile-05.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "cities",
+    "path": "/cities",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 8691,
+    "panels": [
+      "cities-desktop-01.png",
+      "cities-desktop-02.png",
+      "cities-desktop-03.png",
+      "cities-desktop-04.png",
+      "cities-desktop-05.png",
+      "cities-desktop-06.png",
+      "cities-desktop-07.png",
+      "cities-desktop-08.png",
+      "cities-desktop-09.png",
+      "cities-desktop-10.png",
+      "cities-desktop-11.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "cities",
+    "path": "/cities",
+    "vp": "mobile",
+    "status": 200,
+    "docHeight": 10889,
+    "panels": [
+      "cities-mobile-01.png",
+      "cities-mobile-02.png",
+      "cities-mobile-03.png",
+      "cities-mobile-04.png",
+      "cities-mobile-05.png",
+      "cities-mobile-06.png",
+      "cities-mobile-07.png",
+      "cities-mobile-08.png",
+      "cities-mobile-09.png",
+      "cities-mobile-10.png",
+      "cities-mobile-11.png",
+      "cities-mobile-12.png",
+      "cities-mobile-13.png",
+      "cities-mobile-14.png",
+      "cities-mobile-15.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "city-bend",
+    "path": "/cities/bend",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 19622,
+    "panels": [
+      "city-bend-desktop-01.png",
+      "city-bend-desktop-02.png",
+      "city-bend-desktop-03.png",
+      "city-bend-desktop-04.png",
+      "city-bend-desktop-05.png",
+      "city-bend-desktop-06.png",
+      "city-bend-desktop-07.png",
+      "city-bend-desktop-08.png",
+      "city-bend-desktop-09.png",
+      "city-bend-desktop-10.png",
+      "city-bend-desktop-11.png",
+      "city-bend-desktop-12.png",
+      "city-bend-desktop-13.png",
+      "city-bend-desktop-14.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "city-bend",
+    "path": "/cities/bend",
+    "vp": "mobile",
+    "status": 200,
+    "docHeight": 21545,
+    "panels": [
+      "city-bend-mobile-01.png",
+      "city-bend-mobile-02.png",
+      "city-bend-mobile-03.png",
+      "city-bend-mobile-04.png",
+      "city-bend-mobile-05.png",
+      "city-bend-mobile-06.png",
+      "city-bend-mobile-07.png",
+      "city-bend-mobile-08.png",
+      "city-bend-mobile-09.png",
+      "city-bend-mobile-10.png",
+      "city-bend-mobile-11.png",
+      "city-bend-mobile-12.png",
+      "city-bend-mobile-13.png",
+      "city-bend-mobile-14.png",
+      "city-bend-mobile-15.png",
+      "city-bend-mobile-16.png",
+      "city-bend-mobile-17.png",
+      "city-bend-mobile-18.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "communities",
+    "path": "/communities",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 13251,
+    "panels": [
+      "communities-desktop-01.png",
+      "communities-desktop-02.png",
+      "communities-desktop-03.png",
+      "communities-desktop-04.png",
+      "communities-desktop-05.png",
+      "communities-desktop-06.png",
+      "communities-desktop-07.png",
+      "communities-desktop-08.png",
+      "communities-desktop-09.png",
+      "communities-desktop-10.png",
+      "communities-desktop-11.png",
+      "communities-desktop-12.png",
+      "communities-desktop-13.png",
+      "communities-desktop-14.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "communities",
+    "path": "/communities",
+    "vp": "mobile",
+    "status": 200,
+    "docHeight": 15434,
+    "panels": [
+      "communities-mobile-01.png",
+      "communities-mobile-02.png",
+      "communities-mobile-03.png",
+      "communities-mobile-04.png",
+      "communities-mobile-05.png",
+      "communities-mobile-06.png",
+      "communities-mobile-07.png",
+      "communities-mobile-08.png",
+      "communities-mobile-09.png",
+      "communities-mobile-10.png",
+      "communities-mobile-11.png",
+      "communities-mobile-12.png",
+      "communities-mobile-13.png",
+      "communities-mobile-14.png",
+      "communities-mobile-15.png",
+      "communities-mobile-16.png",
+      "communities-mobile-17.png",
+      "communities-mobile-18.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "community-tetherow",
+    "path": "/communities/tetherow",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 20813,
+    "panels": [
+      "community-tetherow-desktop-01.png",
+      "community-tetherow-desktop-02.png",
+      "community-tetherow-desktop-03.png",
+      "community-tetherow-desktop-04.png",
+      "community-tetherow-desktop-05.png",
+      "community-tetherow-desktop-06.png",
+      "community-tetherow-desktop-07.png",
+      "community-tetherow-desktop-08.png",
+      "community-tetherow-desktop-09.png",
+      "community-tetherow-desktop-10.png",
+      "community-tetherow-desktop-11.png",
+      "community-tetherow-desktop-12.png",
+      "community-tetherow-desktop-13.png",
+      "community-tetherow-desktop-14.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "community-tetherow",
+    "path": "/communities/tetherow",
+    "vp": "mobile",
+    "status": 200,
+    "docHeight": 27993,
+    "panels": [
+      "community-tetherow-mobile-01.png",
+      "community-tetherow-mobile-02.png",
+      "community-tetherow-mobile-03.png",
+      "community-tetherow-mobile-04.png",
+      "community-tetherow-mobile-05.png",
+      "community-tetherow-mobile-06.png",
+      "community-tetherow-mobile-07.png",
+      "community-tetherow-mobile-08.png",
+      "community-tetherow-mobile-09.png",
+      "community-tetherow-mobile-10.png",
+      "community-tetherow-mobile-11.png",
+      "community-tetherow-mobile-12.png",
+      "community-tetherow-mobile-13.png",
+      "community-tetherow-mobile-14.png",
+      "community-tetherow-mobile-15.png",
+      "community-tetherow-mobile-16.png",
+      "community-tetherow-mobile-17.png",
+      "community-tetherow-mobile-18.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "housing-market",
+    "path": "/housing-market",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 6665,
+    "panels": [
+      "housing-market-desktop-01.png",
+      "housing-market-desktop-02.png",
+      "housing-market-desktop-03.png",
+      "housing-market-desktop-04.png",
+      "housing-market-desktop-05.png",
+      "housing-market-desktop-06.png",
+      "housing-market-desktop-07.png",
+      "housing-market-desktop-08.png",
+      "housing-market-desktop-09.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "housing-market",
+    "path": "/housing-market",
+    "vp": "mobile",
+    "status": 200,
+    "docHeight": 8696,
+    "panels": [
+      "housing-market-mobile-01.png",
+      "housing-market-mobile-02.png",
+      "housing-market-mobile-03.png",
+      "housing-market-mobile-04.png",
+      "housing-market-mobile-05.png",
+      "housing-market-mobile-06.png",
+      "housing-market-mobile-07.png",
+      "housing-market-mobile-08.png",
+      "housing-market-mobile-09.png",
+      "housing-market-mobile-10.png",
+      "housing-market-mobile-11.png",
+      "housing-market-mobile-12.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "market-report",
+    "path": "/housing-market/central-oregon",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 8252,
+    "panels": [
+      "market-report-desktop-01.png",
+      "market-report-desktop-02.png",
+      "market-report-desktop-03.png",
+      "market-report-desktop-04.png",
+      "market-report-desktop-05.png",
+      "market-report-desktop-06.png",
+      "market-report-desktop-07.png",
+      "market-report-desktop-08.png",
+      "market-report-desktop-09.png",
+      "market-report-desktop-10.png",
+      "market-report-desktop-11.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "reviews",
+    "path": "/reviews",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 5473,
+    "panels": [
+      "reviews-desktop-01.png",
+      "reviews-desktop-02.png",
+      "reviews-desktop-03.png",
+      "reviews-desktop-04.png",
+      "reviews-desktop-05.png",
+      "reviews-desktop-06.png",
+      "reviews-desktop-07.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "reviews",
+    "path": "/reviews",
+    "vp": "mobile",
+    "status": 200,
+    "docHeight": 11224,
+    "panels": [
+      "reviews-mobile-01.png",
+      "reviews-mobile-02.png",
+      "reviews-mobile-03.png",
+      "reviews-mobile-04.png",
+      "reviews-mobile-05.png",
+      "reviews-mobile-06.png",
+      "reviews-mobile-07.png",
+      "reviews-mobile-08.png",
+      "reviews-mobile-09.png",
+      "reviews-mobile-10.png",
+      "reviews-mobile-11.png",
+      "reviews-mobile-12.png",
+      "reviews-mobile-13.png",
+      "reviews-mobile-14.png",
+      "reviews-mobile-15.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "blog",
+    "path": "/blog",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 5986,
+    "panels": [
+      "blog-desktop-01.png",
+      "blog-desktop-02.png",
+      "blog-desktop-03.png",
+      "blog-desktop-04.png",
+      "blog-desktop-05.png",
+      "blog-desktop-06.png",
+      "blog-desktop-07.png",
+      "blog-desktop-08.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "blog",
+    "path": "/blog",
+    "vp": "mobile",
+    "status": 200,
+    "docHeight": 9542,
+    "panels": [
+      "blog-mobile-01.png",
+      "blog-mobile-02.png",
+      "blog-mobile-03.png",
+      "blog-mobile-04.png",
+      "blog-mobile-05.png",
+      "blog-mobile-06.png",
+      "blog-mobile-07.png",
+      "blog-mobile-08.png",
+      "blog-mobile-09.png",
+      "blog-mobile-10.png",
+      "blog-mobile-11.png",
+      "blog-mobile-12.png",
+      "blog-mobile-13.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "blog-post",
+    "path": "/blog/understanding-home-appraisals",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 7408,
+    "panels": [
+      "blog-post-desktop-01.png",
+      "blog-post-desktop-02.png",
+      "blog-post-desktop-03.png",
+      "blog-post-desktop-04.png",
+      "blog-post-desktop-05.png",
+      "blog-post-desktop-06.png",
+      "blog-post-desktop-07.png",
+      "blog-post-desktop-08.png",
+      "blog-post-desktop-09.png",
+      "blog-post-desktop-10.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "buy",
+    "path": "/buy",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 5259,
+    "panels": [
+      "buy-desktop-01.png",
+      "buy-desktop-02.png",
+      "buy-desktop-03.png",
+      "buy-desktop-04.png",
+      "buy-desktop-05.png",
+      "buy-desktop-06.png",
+      "buy-desktop-07.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "luxury-homes-bend",
+    "path": "/luxury-homes-bend",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 3920,
+    "panels": [
+      "luxury-homes-bend-desktop-01.png",
+      "luxury-homes-bend-desktop-02.png",
+      "luxury-homes-bend-desktop-03.png",
+      "luxury-homes-bend-desktop-04.png",
+      "luxury-homes-bend-desktop-05.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "faq",
+    "path": "/faq",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 3703,
+    "panels": [
+      "faq-desktop-01.png",
+      "faq-desktop-02.png",
+      "faq-desktop-03.png",
+      "faq-desktop-04.png",
+      "faq-desktop-05.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "resources",
+    "path": "/resources",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 2882,
+    "panels": [
+      "resources-desktop-01.png",
+      "resources-desktop-02.png",
+      "resources-desktop-03.png",
+      "resources-desktop-04.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "open-houses",
+    "path": "/open-houses",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 2804,
+    "panels": [
+      "open-houses-desktop-01.png",
+      "open-houses-desktop-02.png",
+      "open-houses-desktop-03.png",
+      "open-houses-desktop-04.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "tools-mortgage",
+    "path": "/tools/mortgage-calculator",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 3424,
+    "panels": [
+      "tools-mortgage-desktop-01.png",
+      "tools-mortgage-desktop-02.png",
+      "tools-mortgage-desktop-03.png",
+      "tools-mortgage-desktop-04.png",
+      "tools-mortgage-desktop-05.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "login",
+    "path": "/login",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 1690,
+    "panels": [
+      "login-desktop-01.png",
+      "login-desktop-02.png",
+      "login-desktop-03.png"
+    ],
+    "ok": true
+  },
+  {
+    "name": "signup",
+    "path": "/signup",
+    "vp": "desktop",
+    "status": 200,
+    "docHeight": 1690,
+    "panels": [
+      "signup-desktop-01.png",
+      "signup-desktop-02.png",
+      "signup-desktop-03.png"
+    ],
+    "ok": true
+  }
+]
