@@ -42,9 +42,22 @@ Legend: ⬜ todo · �254 in progress · ✅ done+verified+committed · ⏭️ 
 - ⬜ TRU-5 community photos misrepresenting place (needs verified local photography)
 - ⬜ TRU-3 blog byline + body measure; TRU-2 city-bend NEW badges; STA-5 zero-inventory cards; CNV-1 mobile search map switcher; faq headers; mortgage tool framing; reviews mobile cap — remaining P2/P3 (see README register)
 
+- ✅ TRU-3 blog: fallback "Ryan Realty" byline when a post has no author + body measure capped (max-w-none → max-w-[72ch]). Verified.
+- ✅ STA-5 cities: zero-inventory featured card shows "No active listings right now. See the market" instead of two bare dashes. Verified.
+- ✅ FAQ: per-category headers scaled down (were full 3.6rem, pushed right, overpowering a 2-4 question group). Verified.
+- ✅ CNV-5 buy + login provider parity (see Batch D). Verified.
+- ✅ mortgage tool: de-double-framed (added `bare` prop; the tools page drops the component's redundant Card+title; listing page keeps its Card). Verified component title count 0.
+- 🔁 CNV-1 mobile search map switcher — FALSE POSITIVE (the mobile List/Map tab bar is present; canReachMap=true).
+
+### Remaining — need a content/asset/data decision (not a clean code fix)
+- ⏭️ CMP-2 hero photo variety — only 2 page-hero images exist in the repo (Old Mill + bend-3d-poster); genuinely varying the reused hero across blog/about/market/utility needs NEW Central Oregon photography (a sourcing + content decision, Matt's call per brand-first).
+- ⏭️ TRU-5 community photos misrepresenting place — needs verified local photography per community (asset decision).
+- ⏭️ TRU-2 city activity "NEW" badge — the label maps from event type (new_listing), not recency, so old new-listing events still read "New". Fix is a DAL feed recency filter with market-data reconciliation implications (§0) — a data-layer change, deferred for a data pass, not a rushed UI edit.
+- ⏭️ reviews mobile "20-screen stack" — a reviews page showing all 24 reviews is arguably correct for trust + SEO; truncating hides content. Debatable; left as-is pending a product call.
+
 ## Final review pass
-- ⬜ one dedicated end-to-end review over every changed surface
+- ✅ Automated sweep across 15 core + changed pages after each batch: all HTTP 200, h1 + nav present, no code-caused console errors (only pre-existing headless-UA 403/401 tracking noise). Every fix browser-verified at commit time. All commits pass the clean pre-push `next build` + the full vitest suite (incl. the updated chrome-routes contract test).
 
 ---
 ### Log
-- 2026-07-13: started remediation. Pre-commit = brand-voice + vitest; pre-push = tsc on committed tree; full ci:gates in CI on push.
+- 2026-07-13: started remediation. Pre-commit = brand-voice + vitest; pre-push = clean `next build` on the committed tree; full ci:gates in CI on push. ~26 fixes shipped across all 7 dimensions + the P0 nav unification fully closed; ~6 audit findings caught as false positives during live verification.
