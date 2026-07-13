@@ -17,6 +17,10 @@ import { getBannerUrl, getOrCreatePlaceBanner, getBannerSearchQuery } from '../.
 import { shareDescription, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '../../../lib/share-metadata'
 import { getBestListingHeroForGeography } from '../../actions/photo-classification'
 import SaveSearchButton from '../../../components/SaveSearchButton'
+// design-audit NAV-1: KbNav comes from app/search/layout.tsx; these scrolling
+// branches render a KbFooter so MLS reciprocity + legal survive the SiteFooter
+// suppression on /homes-for-sale/** (lib/site/chrome-routes.ts).
+import { KbFooter } from '../../../components/site/kb/KbFooter.client'
 import { SearchAlertCapture } from '../../../components/search/SearchAlertCapture'
 import { getCityContent, getSubdivisionBlurb } from '../../../lib/city-content'
 import { cityEntityKey, subdivisionEntityKey, getSubdivisionDisplayName, homesForSalePath, listingDetailPath, listingsBrowsePath, listingTileHref } from '../../../lib/slug'
@@ -397,14 +401,20 @@ export default async function SearchPage({
     const communities = cityCommunities.length ? cityCommunities : GOLF_COMMUNITIES
     const allHomesHref = `${homesForSalePath(city)}/on-golf-course?all=1`
     return (
-      <GolfLanding
-        city={city}
-        heroImage={heroImage}
-        communities={communities}
-        homes={homes}
-        totalHomes={0}
-        allHomesHref={allHomesHref}
-      />
+      <>
+        <GolfLanding
+          city={city}
+          heroImage={heroImage}
+          communities={communities}
+          homes={homes}
+          totalHomes={0}
+          allHomesHref={allHomesHref}
+        />
+        {/* design-audit NAV-1: KbFooter replaces the suppressed SiteFooter. */}
+        <div className="kb-root">
+          <KbFooter towns={[]} />
+        </div>
+      </>
     )
   }
 
@@ -557,8 +567,11 @@ export default async function SearchPage({
       const q = params.toString()
       return q ? `${searchPagePath}?${q}` : searchPagePath
     })()
+    // design-audit NAV-1: clear the 64px fixed KbNav and size the app-frame to
+    // the remaining viewport (overrides the shared .map-search-shell 100vh-120px
+    // which assumed the in-flow 72px SiteHeader).
     return (
-      <main className="flex flex-col map-search-shell overflow-hidden">
+      <main className="flex flex-col map-search-shell overflow-hidden" style={{ marginTop: 64, height: 'calc(100vh - 64px)' }}>
         <div className="shrink-0 border-b border-primary/20 bg-primary">
           <Container className="flex items-center justify-between gap-3 py-3">
             {searchBreadcrumbItems.length > 1 ? (
@@ -721,7 +734,7 @@ export default async function SearchPage({
   }).toString()}`
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background pt-16">
       {searchBreadcrumbItems.length > 1 && (
         <div className="border-b border-primary/20 bg-primary"><Container className="py-3"><BreadcrumbNav tone="on-navy" items={searchBreadcrumbItems} includeJsonLd={false} /></Container></div>
       )}
@@ -1041,6 +1054,9 @@ export default async function SearchPage({
         </section>
       )}
       </Container>
+      <div className="kb-root">
+        <KbFooter towns={[]} />
+      </div>
     </main>
   )
 }

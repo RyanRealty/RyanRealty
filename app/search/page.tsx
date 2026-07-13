@@ -11,10 +11,9 @@ import { getBoundaryGeoJSON } from '@/lib/data'
 import { BEND_DEFAULT_BOUNDS } from '@/lib/map-constants'
 import { slugify } from '@/lib/slug'
 import { cn } from '@/lib/utils'
-// design-audit NAV-1: the search index renders KbNav (solid) as the single site
-// nav so the buyer funnel (home -> Homes -> listing) shares one chrome. The
-// default SiteHeader is suppressed on /homes-for-sale via lib/site/chrome-routes.
-import { KbNav } from '@/components/site/kb/KbNav.client'
+// design-audit NAV-1: KbNav (the single search nav) comes from app/search/layout.tsx.
+// The list view still renders a KbFooter so MLS reciprocity + legal survive the
+// SiteFooter suppression on /homes-for-sale/** (lib/site/chrome-routes.ts).
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import '@/components/site/kb/kb.css'
 
@@ -294,12 +293,8 @@ export default async function SearchPage({
 
   return (
     <div className={cn('w-full bg-muted', isAppFrame ? 'search-app-frame' : 'min-h-screen pt-16')}>
-      {/* Nav-only .kb-root wrapper: KbNav is position:fixed (0 flow height) and
-          the search UI stays its SIBLING, so the .kb-root reset never bleeds
-          onto the shadcn map/filter surface (design-audit NAV-1). */}
-      <div className="kb-root">
-        <KbNav solid />
-      </div>
+      {/* KbNav (the single search nav) is rendered by app/search/layout.tsx so it
+          is uniform across the index + city-form pages (design-audit NAV-1). */}
       <SplitViewBodyLock active={isAppFrame} />
       <h1 className="sr-only">{h1Text}</h1>
       {/* P1-1: the search index was the only top-3 page with no breadcrumb at
