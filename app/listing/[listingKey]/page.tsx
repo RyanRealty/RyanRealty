@@ -268,9 +268,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const [nearbyTilesRaw, history, photos, videos, brokers, listingAgent, marketPulse, marketStats, openHouses, reviews] =
     await Promise.all([
-      // price-desc + widen-on-thin-scope, see lib/kb/fetch-nearby-tiles.ts.
+      // price-proximity + widen-on-thin-scope, see lib/kb/fetch-nearby-tiles.ts.
       withTimeoutFallback(
-        fetchNearbyTiles(nearbyScope, listing.listingKey, listing.listNumber),
+        fetchNearbyTiles(nearbyScope, listing.listingKey, listing.listNumber, listing.listPrice),
         [],
         4000,
         'listing:nearby',

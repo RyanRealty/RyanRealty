@@ -384,7 +384,9 @@ html.lenis, html.lenis body{height:auto;}
   position:relative;display:block;overflow:hidden;
   border:var(--edge) solid var(--navy);background:#0b1c30;color:var(--cream);
 }
-.kb-root .lst-media{position:relative;overflow:hidden;}
+/* design-audit STA-3: navy base so a slow/failed photo or a buffering tour never
+   flashes a black rectangle — the brand-navy shows through instead. */
+.kb-root .lst-media{position:relative;overflow:hidden;background:var(--navy);}
 .kb-root .lst-grid .lst-card:nth-child(1) .lst-media{aspect-ratio:16/9;}
 .kb-root .lst-media{aspect-ratio:4/3;}
 .kb-root .lst-img{

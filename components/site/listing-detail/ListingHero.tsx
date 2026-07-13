@@ -382,30 +382,7 @@ function VideoLayer({
   onTap: () => void
 }) {
   if (video.embedType === 'iframe') {
-    return (
-      <iframe
-        src={getAutoplayEmbedUrl(video)}
-        title={`Listing video for ${altBase}`}
-        allow={[
-          'accelerometer',
-          'autoplay',
-          'clipboard-write',
-          'encrypted-media',
-          'gyroscope',
-          'picture-in-picture',
-          'fullscreen',
-        ].join('; ')}
-        allowFullScreen
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          border: 0,
-          objectFit: 'cover',
-        }}
-      />
-    )
+    return <IframeHeroLayer video={video} posterUrl={posterUrl} altBase={altBase} />
   }
   return (
     <video
@@ -430,6 +407,48 @@ function VideoLayer({
         cursor: 'pointer',
       }}
     />
+  )
+}
+
+// ─── Iframe hero (Vimeo/YouTube background embed) with poster fallback ─────────
+// design-audit STA-6: a full-bleed third-party embed with no fallback surfaced
+// the host's own error page (e.g. a network-filtered "connection not secure"
+// page) as the entire hero. The poster photo now sits behind the iframe as a
+// base layer, and an embed load error hides the iframe so the photo shows.
+function IframeHeroLayer({
+  video,
+  posterUrl,
+  altBase,
+}: {
+  video: VideoEmbed
+  posterUrl?: string
+  altBase: string
+}) {
+  const [failed, setFailed] = useState(false)
+  const baseStyle: React.CSSProperties = {
+    position: 'absolute',
+    inset: 0,
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+  }
+  return (
+    <>
+      {posterUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={posterUrl} alt={altBase} style={{ ...baseStyle, objectPosition: 'center 38%' }} />
+      ) : null}
+      {failed ? null : (
+        <iframe
+          src={getAutoplayEmbedUrl(video)}
+          title={`Listing video for ${altBase}`}
+          allow={['accelerometer', 'autoplay', 'clipboard-write', 'encrypted-media', 'gyroscope', 'picture-in-picture', 'fullscreen'].join('; ')}
+          allowFullScreen
+          onError={() => setFailed(true)}
+          style={{ ...baseStyle, border: 0 }}
+        />
+      )}
+    </>
   )
 }
 

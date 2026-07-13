@@ -28,6 +28,11 @@ export function KbFeatured({ items, eyebrow = 'Featured homes' }: { items: KbFea
   // that was already there (design-audit P1).
   const [videoReady, setVideoReady] = useState(false)
   useEffect(() => { setVideoReady(false) }, [activeHref])
+  // design-audit STA-3: a broken MLS photo URL rendered a black/broken frame on
+  // the featured lead card. Track img load failures and fall back to the same
+  // brand-navy block used for photoless tiles.
+  const [imgErrors, setImgErrors] = useState<Set<string>>(new Set())
+  const markImgError = (href: string) => setImgErrors((s) => (s.has(href) ? s : new Set(s).add(href)))
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger)
@@ -83,11 +88,17 @@ export function KbFeatured({ items, eyebrow = 'Featured homes' }: { items: KbFea
                 onBlur={() => leave(it.href)}
               >
                 <div className="lst-media">
-                  {it.img ? (
-                    <img className="lst-img" src={it.img} alt={it.address} loading="lazy" />
+                  {it.img && !imgErrors.has(it.href) ? (
+                    <img
+                      className="lst-img"
+                      src={it.img}
+                      alt={it.address}
+                      loading="lazy"
+                      onError={() => markImgError(it.href)}
+                    />
                   ) : (
-                    // No MLS photo: brand-navy block instead of an empty <img src="">
-                    // (which re-requests the page and renders a broken frame).
+                    // No MLS photo (or the photo URL failed to load): brand-navy block
+                    // instead of an empty/broken <img> that renders a black frame.
                     <div className="lst-img" style={{ background: 'var(--navy)' }} aria-hidden="true" />
                   )}
                   {playing && it.video ? (

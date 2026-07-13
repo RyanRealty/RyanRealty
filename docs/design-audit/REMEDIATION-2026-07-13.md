@@ -17,13 +17,12 @@ Legend: ⬜ todo · �254 in progress · ✅ done+verified+committed · ⏭️ 
 - ⬜ NAV-4 auth label consistency (→ Batch C nav work)
 
 ## Batch B — component-class fixes (fix once, many pages benefit)
-- ⬜ STA-3 media renders black while buffering → keep poster until `canplay` (`KbFeatured`)
-- ⬜ CMP-3/team voids share the same fallback fix
-- ⬜ CNV-7 nearby/featured rail price-proximity re-rank (`fetch-nearby-tiles`)
+- ✅ STA-3 media-black: `KbFeatured` img `onError` → navy fallback + `.lst-media` navy base so no black frame ever flashes; verified (navy bg, 0 broken frames)
+- ✅ CNV-7 nearby/featured rail price-proximity re-rank (`fetch-nearby-tiles` band + proximity sort; caller passes `listing.listPrice`) — VERIFIED: $550K listing now shows $520K–$665K, no more $4M–$12M
+- ✅ STA-6 listing hero embed fallback: `ListingHero` → `IframeHeroLayer` renders poster base + iframe `onError` hides embed; verified hero renders, no console errors
+- ✅ STA-4 listing not-found chrome: new `app/listing/[listingKey]/not-found.tsx` with `<KbNav solid />` + "This home may no longer be on the market" + recovery; VERIFIED nav+logo+links render
+- 🔁 CNV-2 broker "viewport mismatch" — RE-DIAGNOSED as a false framing. Desktop card + mobile bar both consume the SAME `broker` state (`ListingBrokerCTA` line 116), so they always match within a render. The audit's Paul-vs-Matt came from `resolveListingAgent`'s 3s `withTimeoutFallback` returning the listing agent when fast and the default (Matt) when slow — across two separate cookieless captures. Real (smaller) issue = agent-resolution timeout variance, not viewport parity. Recommend: raise/cursor-cache the resolve, not a UI change. Not "fixed" — documented.
 - ⬜ CMP-4 area-guide video branded chrome (`KbAreaGuideVideo`)
-- ⬜ STA-4 listing not-found chrome (`app/listing/[listingKey]/not-found.tsx`)
-- ⬜ STA-6 listing hero embed `onError → photos[0]` (`ListingHero`)
-- ⬜ CNV-2 listing broker viewport mismatch (desktop vs mobile bar)
 - ⬜ STA-1 `/open-houses` empty-state + zero-count copy
 - ⬜ STA-5 zero-inventory cards (cities/communities) collapse/real state
 - ⬜ TRU-1 communities `/[slug]` Live feed scope (city-wide → community or relabel)
