@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.776.10 (2026-07-13)
+
+### Bug Fixes
+- fix(nav): design-audit P0 part 2 — migrate the search INDEX onto KbNav
+
+---
+
+
 ## v1.776.9 (2026-07-13)
 
 ### Bug Fixes
