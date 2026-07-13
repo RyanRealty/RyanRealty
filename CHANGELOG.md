@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.776.9 (2026-07-13)
+
+### Bug Fixes
+- fix(site): design-audit batch D — buy primary CTA + login provider parity
+
+---
+
+
 ## v1.776.8 (2026-07-13)
 
 ### Bug Fixes
