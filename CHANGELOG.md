@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.776.11 (2026-07-13)
+
+### Bug Fixes
+- fix(faq): design-audit — scale down per-category headers
+- fix(site): design-audit — blog byline/measure + cities zero-inventory state
+
+---
+
+
 ## v1.776.10 (2026-07-13)
 
 ### Bug Fixes
