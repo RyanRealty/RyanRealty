@@ -25,6 +25,10 @@ type Props = {
   initialPropertyTaxYear?: number
   /** Annual homeowners insurance estimate (dollars). Sourced from app_config insurance_rate_pct × default home price. */
   initialInsuranceYear?: number
+  /** design-audit: on the /tools page the KB section already provides the card +
+   *  "Mortgage calculator" title, so the component's own Card/header double-framed
+   *  it. `bare` drops the component's frame + title; the listing page keeps it. */
+  bare?: boolean
 }
 
 export default function MortgageCalculator({
@@ -34,6 +38,7 @@ export default function MortgageCalculator({
   initialLoanTermYears,
   initialPropertyTaxYear,
   initialInsuranceYear,
+  bare = false,
 }: Props) {
   const [homePrice, setHomePrice] = useState(
     initialHomePrice && initialHomePrice > 0 ? initialHomePrice : 500000
@@ -87,11 +92,13 @@ export default function MortgageCalculator({
     }, [homePrice, downPaymentPct, interestRate, loanTermYears, propertyTaxYear, insuranceYear])
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Mortgage calculator</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-8">
+    <Card className={bare ? 'border-0 bg-transparent shadow-none' : undefined}>
+      {bare ? null : (
+        <CardHeader>
+          <CardTitle>Mortgage calculator</CardTitle>
+        </CardHeader>
+      )}
+      <CardContent className={bare ? 'space-y-8 p-0' : 'space-y-8'}>
         <div className="grid gap-6 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="home-price">Home price</Label>

@@ -129,6 +129,7 @@ export default async function MortgageCalculatorPage({ searchParams }: Props) {
                 initialLoanTermYears={initialTerm}
                 initialPropertyTaxYear={defaultPropertyTaxYear}
                 initialInsuranceYear={defaultInsuranceYear}
+                bare
               />
             </div>
           </div>
