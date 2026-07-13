@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.776.8 (2026-07-13)
+
+### Bug Fixes
+- fix(nav): design-audit P0 part 1 — KbNav carries search-chrome CTA/auth parity
+
+---
+
+
 ## v1.776.7 (2026-07-13)
 
 ### Bug Fixes
