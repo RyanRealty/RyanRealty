@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.776.12 (2026-07-13)
+
+### Bug Fixes
+- fix(nav): design-audit P0 COMPLETE — migrate all /homes-for-sale/<city> pages onto KbNav
+
+---
+
+
 ## v1.776.11 (2026-07-13)
 
 ### Bug Fixes
