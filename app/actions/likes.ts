@@ -63,14 +63,3 @@ export async function toggleLikeListing(listingKey: string): Promise<{ liked: bo
   const { error } = await likeListing(listingKey)
   return { liked: true, error }
 }
-
-/** Public like count for a listing (anon/authenticated can read). */
-export async function getLikeCount(listingKey: string): Promise<number> {
-  const supabase = await createClient()
-  const { count, error } = await supabase
-    .from('likes')
-    .select('*', { count: 'exact', head: true })
-    .eq('listing_key', listingKey.trim())
-  if (error) return 0
-  return count ?? 0
-}

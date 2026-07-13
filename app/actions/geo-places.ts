@@ -127,17 +127,6 @@ export async function updateGeoPlace(
 }
 
 /**
- * Get a single geo place by id.
- */
-export async function getGeoPlace(id: string): Promise<GeoPlaceRow | null> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !key?.trim()) return null
-  const { data } = await createClient(url, key).from('geo_places').select('id, type, parent_id, name, slug, metadata, created_at, updated_at').eq('id', id).maybeSingle()
-  return data as GeoPlaceRow | null
-}
-
-/**
  * Ensure geo_places has country (US), state (Oregon), and cities from listings. Call from admin or cron.
  * Returns count of cities ensured. Does not remove or change existing rows.
  */

@@ -1134,13 +1134,6 @@ function isTerminalRowInScope(
   return true
 }
 
-function formatDbError(error: unknown): string {
-  if (!error || typeof error !== 'object') return String(error ?? '')
-  const e = error as { message?: string; details?: string; hint?: string; code?: string }
-  const text = [e.message, e.details, e.hint, e.code].filter(Boolean).join(' | ').trim()
-  return text || 'Unknown database error'
-}
-
 /**
  * Backfill listing_history from Spark API. Fetches history for each listing and upserts into Supabase.
  * Run after listing sync so CMAs and reports can use list date, price changes, last sale without calling the API.

@@ -101,12 +101,3 @@ export function getDealPipeline(name: string | null | undefined): DealPipeline |
   if (!name) return undefined
   return DEAL_PIPELINES.find((p) => p.name === name)
 }
-
-/**
- * True when `stageName` is a real stage of `pipelineName`. Used by the restage
- * action to reject a drag target that isn't a column the pipeline renders.
- */
-export function isKnownStage(pipelineName: string | null | undefined, stageName: string): boolean {
-  const p = getDealPipeline(pipelineName)
-  return !!p && p.stages.some((s) => s.name === stageName)
-}

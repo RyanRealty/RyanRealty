@@ -91,27 +91,3 @@ export async function deleteSourceRuleAction(formData: FormData): Promise<CrmAss
   bust()
   return { ok: true }
 }
-
-/** Reorder by_source rules. orderedIds (JSON array) becomes a dense 0..n-1 position run. */
-export async function reorderSourceRulesAction(formData: FormData): Promise<CrmAssignmentResult> {
-  const gate = await requireOwner()
-  if (!gate.ok) return gate
-  let orderedIds: number[]
-  try {
-    const parsed = JSON.parse(String(formData.get('orderedIds') ?? '[]')) as unknown
-    if (!Array.isArray(parsed)) return { ok: false, error: 'Invalid order' }
-    orderedIds = parsed.map((v) => Number(v)).filter((n) => Number.isFinite(n) && n > 0)
-  } catch {
-    return { ok: false, error: 'Invalid order' }
-  }
-  const sb = createServiceClient()
-  for (let i = 0; i < orderedIds.length; i++) {
-    const { error } = await sb
-      .from('crm_assignment_rules')
-      .update({ position: i, updated_at: new Date().toISOString() })
-      .eq('id', orderedIds[i])
-    if (error) return { ok: false, error: error.message }
-  }
-  bust()
-  return { ok: true }
-}

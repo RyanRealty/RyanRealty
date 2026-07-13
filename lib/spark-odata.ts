@@ -233,31 +233,6 @@ export async function fetchListings(params: FetchListingsParams): Promise<FetchL
   }
 }
 
-/**
- * Fetch a single listing by ListingKey with ALL fields (including non-IDX).
- * No $select so response includes ClosePrice, CloseDate, OriginalListPrice, etc.
- */
-export async function fetchSingleListing(listingKey: string): Promise<SparkListing | null> {
-  const key = encodeURIComponent(listingKey)
-  const url = `${BASE}${PROPERTY_PATH}(${key})?$expand=Media`
-  try {
-    const res = await fetchWithRetry(url, { method: 'GET' })
-    if (res.status === 404) return null
-    if (!res.ok) {
-      const text = await res.text()
-      Sentry.captureException(new Error(`Spark single listing ${res.status}: ${text.slice(0, 300)}`), {
-        extra: { listingKey },
-      })
-      throw new Error(`Spark API error ${res.status}: ${text.slice(0, 300)}`)
-    }
-    const data = (await res.json()) as SparkListing
-    return data
-  } catch (e) {
-    Sentry.captureException(e, { extra: { listingKey } })
-    throw e
-  }
-}
-
 /** Default $select for initial sync: all 121 IDX fields from Appendix A (comma-separated). */
 export const SPARK_SELECT_FIELDS =
   'ListingKey,ListingId,StandardStatus,MlsStatus,ListPrice,ClosePrice,OriginalListPrice,DaysOnMarket,CumulativeDaysOnMarket,BedsTotal,BathsFull,BathsHalf,BathroomsTotalInteger,LivingArea,LotSizeAcres,LotSizeSquareFeet,YearBuilt,SubdivisionName,PublicRemarks,UnparsedAddress,City,StateOrProvince,PostalCode,StreetNumber,StreetName,StreetSuffix,Latitude,Longitude,ModificationTimestamp,StatusChangeTimestamp,PriceChangeTimestamp,ListingContractDate,OnMarketDate,CloseDate,ListAgentName,ListAgentMlsId,ListAgentStateLicense,ListAgentEmail,ListOfficeName,ListOfficeMlsId,PhotosCount,VirtualTourURLUnbranded,VOWAutomatedValuationDisplayYN,ElementarySchool,MiddleOrJuniorSchool,HighSchool,PropertyType,PropertySubType,Levels,GarageSpaces,NewConstructionYN,SeniorCommunityYN,AssociationYN,AssociationFee,AssociationFeeFrequency,TaxAmount,View,WaterFrontYN,WaterSource,Sewer,FireplaceYN,FireplaceFeatures,PoolFeatures'

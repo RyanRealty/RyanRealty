@@ -233,11 +233,3 @@ export async function reorderCrmAutomationRulesAction(orderedIds: number[]): Pro
   bust()
   return { ok: true }
 }
-
-/** Read passthrough so the automations settings page lists rules from one import. */
-export async function listCrmAutomationRulesAction() {
-  const access = await getCrmAccess()
-  if (!access) return []
-  const { getCrmAutomationRules } = await import('@/lib/data/crm/getCrmAutomationRules')
-  return getCrmAutomationRules()
-}

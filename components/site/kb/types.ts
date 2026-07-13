@@ -99,13 +99,6 @@ export interface KbMarketData {
   yearSeries?: { year: number; points: { m: number; value: number }[] }[]
 }
 
-/** Formats a price to the nearest thousand: 740123 -> "$740,000". */
-export function kbMoney(n: number | null | undefined): string | null {
-  if (n == null || !Number.isFinite(n)) return null
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
-  return `$${Math.round(n / 1000)}K`
-}
-
 /** Full currency to the nearest thousand: 740123 -> "$740,000". */
 export function kbMoneyFull(n: number | null | undefined): string | null {
   if (n == null || !Number.isFinite(n)) return null

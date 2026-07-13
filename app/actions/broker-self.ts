@@ -4,7 +4,6 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { revalidatePath } from 'next/cache'
-import { getListingTiles } from '@/lib/data'
 
 type BrokerSelfRow = {
   id: string
@@ -70,54 +69,6 @@ export async function updateCurrentBrokerProfile(input: {
   revalidatePath(`/team/${broker.slug}`)
   revalidatePath(`/team/${broker.slug}/edit`)
   return { ok: true }
-}
-
-export async function getCurrentBrokerDashboard() {
-  const broker = await getCurrentBrokerRecord()
-  if (!broker) return null
-  const { getListingKeysForBrokerByLicense, getListingKeysForBrokerByEmail } = await import('@/lib/data')
-  let listingKeys: string[] = []
-  if (broker.license_number?.trim()) {
-    listingKeys = await getListingKeysForBrokerByLicense(broker.license_number)
-  } else if (broker.email?.trim()) {
-    listingKeys = await getListingKeysForBrokerByEmail(broker.email)
-  } else {
-    return { broker, activeListings: 0, sold24m: 0, soldVolume24m: 0, viewCount: 0, saveCount: 0, likeCount: 0 }
-  }
-  if (listingKeys.length === 0) {
-    return { broker, activeListings: 0, sold24m: 0, soldVolume24m: 0, viewCount: 0, saveCount: 0, likeCount: 0 }
-  }
-
-  // DAL: count broker's active listings + last-24mo sold/volume.
-  const activeTiles = await getListingTiles({
-    listingKeys: listingKeys.slice(0, 1000),
-    status: 'active',
-    limit: 500,
-  })
-  const activeListings = activeTiles.length
-
-  const since = new Date()
-  since.setMonth(since.getMonth() - 24)
-  const sinceIso = since.toISOString().slice(0, 10)
-  const soldTiles = await getListingTiles({
-    listingKeys: listingKeys.slice(0, 1000),
-    status: 'closed',
-    sort: 'close-newest',
-    limit: 500,
-  })
-  const soldFiltered = soldTiles.filter(
-    (t) => t.closeDate != null && t.closeDate >= sinceIso,
-  )
-  const sold24m = soldFiltered.length
-  const soldVolume24m = soldFiltered.reduce(
-    (sum, t) => sum + Number(t.closePrice ?? 0),
-    0,
-  )
-
-  const { sumEngagementForListingKeys } = await import('@/lib/data')
-  const { viewCount, saveCount, likeCount } = await sumEngagementForListingKeys(listingKeys.slice(0, 1000))
-
-  return { broker, activeListings, sold24m, soldVolume24m, viewCount, saveCount, likeCount }
 }
 
 export async function requireBrokerSelfServiceSlug(slug: string): Promise<void> {

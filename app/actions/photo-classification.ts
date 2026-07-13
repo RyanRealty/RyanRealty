@@ -1,8 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
-import { classifyListingPhoto, type PhotoTag } from '../../lib/photo-classification'
-import type { SparkPhoto } from '../../lib/spark'
+import type { PhotoTag } from '../../lib/photo-classification'
 import { getCityListings, getCommunityListings } from '@/lib/data'
 
 const HERO_PREFERRED_TAGS: PhotoTag[] = [
@@ -13,87 +12,6 @@ const HERO_PREFERRED_TAGS: PhotoTag[] = [
   'view_forest',
   'pool_outdoor_living',
 ]
-
-export type RunClassificationResult = {
-  success: boolean
-  message: string
-  listingKey?: string
-  photosProcessed?: number
-  photosClassified?: number
-  error?: string
-}
-
-/**
- * Get photo URL from Spark photo object (prefer 1600 then 800 then 640).
- */
-function photoToUrl(p: SparkPhoto): string | null {
-  const url = p.Uri1600 ?? p.Uri800 ?? p.Uri640 ?? p.Uri1024 ?? p.Uri1280 ?? p.UriLarge ?? null
-  return url?.trim() || null
-}
-
-/**
- * Run photo classification for one listing: read details.Photos, call Vision API per photo, upsert listing_photo_classifications.
- * If OPENAI_API_KEY is not set, skips classification and returns success with photosProcessed 0.
- */
-export async function runClassificationForListing(listingKey: string): Promise<RunClassificationResult> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!supabaseUrl?.trim() || !serviceKey?.trim()) {
-    return { success: false, message: 'Supabase not configured.', error: 'Missing env' }
-  }
-
-  if (!/^[a-zA-Z0-9._-]+$/.test(listingKey)) {
-    return { success: false, message: 'Invalid listing key.', listingKey, error: 'Invalid key' }
-  }
-  const supabase = createClient(supabaseUrl, serviceKey)
-  void supabase
-  const { getListingRawRowByKey } = await import('@/lib/data')
-  const row = await getListingRawRowByKey(listingKey)
-  if (!row) {
-    return {
-      success: false,
-      message: 'Listing not found.',
-      listingKey,
-      error: 'Not found',
-    }
-  }
-
-  const key = (row as { ListingKey?: string | null; ListNumber?: string | null }).ListingKey
-    ?? (row as { ListNumber?: string | null }).ListNumber
-    ?? listingKey
-  const details = (row as { details?: { Photos?: SparkPhoto[] } }).details
-  const photos = details?.Photos ?? []
-  if (photos.length === 0) {
-    return { success: true, message: 'No photos to classify.', listingKey: key, photosProcessed: 0, photosClassified: 0 }
-  }
-
-  let classified = 0
-  for (let i = 0; i < photos.length; i++) {
-    const url = photoToUrl(photos[i])
-    if (!url) continue
-    const result = await classifyListingPhoto(url)
-    if (!result) continue
-    const { error: upsertError } = await supabase.from('listing_photo_classifications').upsert(
-      {
-        listing_key: key,
-        photo_index: i,
-        photo_url: url,
-        tags: result.tags,
-        quality_score: result.qualityScore,
-      },
-      { onConflict: 'listing_key,photo_index' }
-    )
-    if (!upsertError) classified++
-  }
-
-  return {
-    success: true,
-    message: `Classified ${classified} of ${photos.length} photos.`,
-    listingKey: key,
-    photosProcessed: photos.length,
-    photosClassified: classified,
-  }
-}
 
 export type BestListingHeroResult = { url: string; attribution?: string } | null
 

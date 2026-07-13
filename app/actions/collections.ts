@@ -203,26 +203,6 @@ export async function getUserCollections(): Promise<{ data: Collection[]; error:
   }
 }
 
-/**
- * Get a collection by its share token (public access — no auth required).
- */
-export async function getCollectionByShareToken(shareToken: string): Promise<{ data: Collection | null; error: string | null }> {
-  try {
-    const supabase = await createClient()
-    const { data, error } = await supabase
-      .from('listing_collections')
-      .select('id, name, description, share_token, user_id, listing_keys, created_at, updated_at')
-      .eq('share_token', shareToken)
-      .single()
-
-    if (error) return { data: null, error: error.message }
-    return { data: data as Collection, error: null }
-  } catch (err) {
-    console.error('[getCollectionByShareToken]', err)
-    return { data: null, error: 'Failed to load collection' }
-  }
-}
-
 function generateShareToken(): string {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
   let result = ''

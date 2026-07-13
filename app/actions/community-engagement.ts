@@ -2,7 +2,6 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js'
-import { unstable_cache } from 'next/cache'
 
 /** Community metrics table (not yet in generated Supabase types). Use for insert/update/select. */
 function communityMetrics(supabase: SupabaseClient) {
@@ -58,18 +57,6 @@ export async function getCommunityEngagementBatch(
     }
   }
   return result
-}
-
-const _getCommunityEngagementBatchCached = unstable_cache(
-  async (entityKeys: string[]) => getCommunityEngagementBatch(entityKeys),
-  ['community-engagement-batch-v1'],
-  { revalidate: 120, tags: ['community-engagement-metrics'] }
-)
-
-export async function getCommunityEngagementBatchCached(
-  entityKeys: string[]
-): Promise<Record<string, CommunityEngagementCounts>> {
-  return _getCommunityEngagementBatchCached(entityKeys)
 }
 
 export async function getLikedCommunityKeys(): Promise<string[]> {
@@ -173,33 +160,6 @@ export async function toggleCommunityLike(
     .update({ like_count: cur + 1, updated_at: new Date().toISOString() })
     .eq('entity_key', key)
   return { liked: true, error: null }
-}
-
-export async function incrementCommunityView(entityKey: string): Promise<void> {
-  const key = entityKey.trim().toLowerCase()
-  if (!key || !key.includes(':')) return
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !serviceKey?.trim()) return
-  const supabase = createSupabaseClient(url, serviceKey)
-  const { data } = await communityMetrics(supabase).select('view_count').eq('entity_key', key).maybeSingle()
-  if (data) {
-    await communityMetrics(supabase)
-      .update({
-        view_count: (data as { view_count: number }).view_count + 1,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('entity_key', key)
-  } else {
-    await communityMetrics(supabase).insert({
-      entity_key: key,
-      view_count: 1,
-      like_count: 0,
-      save_count: 0,
-      share_count: 0,
-      updated_at: new Date().toISOString(),
-    })
-  }
 }
 
 export async function incrementCommunityShare(entityKey: string): Promise<void> {

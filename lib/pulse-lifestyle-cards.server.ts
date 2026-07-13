@@ -128,10 +128,3 @@ export const _BACKLOG: Array<{ id: string; reason: string }> = [
   { id: 'first-friday', reason: 'Need a real downtown gallery night shot' },
   { id: 'mortgage-rates', reason: 'Text-only card needs a thoughtful design' },
 ]
-
-export function pickLifestyleCard(index: number): LifestyleCard | null {
-  const list = LIFESTYLE_CARDS
-  if (list.length === 0) return null
-  const safe = ((index % list.length) + list.length) % list.length
-  return list[safe]
-}

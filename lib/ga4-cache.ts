@@ -86,13 +86,3 @@ export const getGA4DemographicsCached = cache(async (startDate: string, endDate:
   if (fresh.ok) await writeCache(cacheKey, fresh, DEFAULT_TTL_SECONDS)
   return fresh
 })
-
-/** Bust both caches for a date range (e.g. after a manual refresh button). */
-export async function bustGA4Cache(startDate: string, endDate: string): Promise<void> {
-  const supabase = getSupabase()
-  if (!supabase) return
-  await supabase
-    .from('ga4_query_cache')
-    .delete()
-    .in('cache_key', [`summary:${startDate}:${endDate}`, `demographics:${startDate}:${endDate}`])
-}

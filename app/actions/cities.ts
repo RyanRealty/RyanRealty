@@ -396,60 +396,6 @@ export async function getNeighborhoodsInCity(cityName: string): Promise<
   return out
 }
 
-/** Price history for city (reporting_cache; fallback from closed listings by month when cache has fewer than 2 points). */
-export async function getCityPriceHistory(cityName: string): Promise<{ month: string; medianPrice: number; soldCount?: number }[]> {
-  void supabase
-  const { getReportingCacheMonthlyRows } = await import('@/lib/data')
-  const data = await getReportingCacheMonthlyRows({
-    geoType: 'city',
-    geoNameIlike: cityName,
-    limit: 12,
-  })
-  const rows = (data ?? []) as { period_start?: string; metrics?: { median_price?: number; sold_count?: number } }[]
-  const fromCache = rows
-    .filter((r) => r.metrics?.median_price != null)
-    .map((r) => ({
-      month: r.period_start ?? '',
-      medianPrice: r.metrics!.median_price!,
-      soldCount: Number(r.metrics?.sold_count ?? 0),
-    }))
-  if (fromCache.length >= 2) return fromCache
-  const twelveMonthsAgo = new Date()
-  twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
-  const cutoff = twelveMonthsAgo.toISOString().slice(0, 7)
-  // DAL: read closed tiles via listing_tile_mv. Last-12mo filter is
-  // post-fetch because the DAL doesn't have a close_date range filter
-  // today. Sort by close-newest + limit 2000 matches the prior shape.
-  const closedTiles = await getCityListingsDAL(cityName, {
-    status: 'closed',
-    sort: 'close-newest',
-    limit: 500,
-  })
-  const closed = closedTiles
-    .filter((t) => t.closeDate != null && t.closeDate.slice(0, 7) >= cutoff)
-    .map((t) => ({ ListPrice: t.listPrice, CloseDate: t.closeDate }))
-  const byMonth = new Map<string, number[]>()
-  const byMonthCount = new Map<string, number>()
-  for (const r of closed as { ListPrice?: number | null; CloseDate?: string | null }[]) {
-    const p = Number(r.ListPrice)
-    const d = r.CloseDate?.slice(0, 7)
-    if (!d || !Number.isFinite(p) || p <= 0) continue
-    const arr = byMonth.get(d) ?? []
-    arr.push(p)
-    byMonth.set(d, arr)
-    byMonthCount.set(d, (byMonthCount.get(d) ?? 0) + 1)
-  }
-  const fallback = Array.from(byMonth.entries())
-    .map(([month, prices]) => {
-      prices.sort((a, b) => a - b)
-      const mid = Math.floor(prices.length / 2)
-      const medianPrice = prices.length % 2 ? prices[mid]! : Math.round((prices[mid - 1]! + prices[mid]!) / 2)
-      return { month, medianPrice, soldCount: byMonthCount.get(month) ?? 0 }
-    })
-    .sort((a, b) => a.month.localeCompare(b.month))
-  return fallback.length >= 2 ? fallback : fromCache
-}
-
 /** Neighborhood detail for detail page: resolve by city slug + neighborhood slug. */
 export type NeighborhoodDetail = {
   id: string

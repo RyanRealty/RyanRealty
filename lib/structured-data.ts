@@ -69,25 +69,6 @@ export function generateListingSchema(
   }
 }
 
-export function generateCommunitySchema(community: { name: string; slug: string; description?: string | null }): Record<string, unknown> {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'Place',
-    name: community.name,
-    url: `${SITE_URL}/communities/${encodeURIComponent(community.slug)}`,
-    description: community.description ?? undefined,
-  }
-}
-
-export function generateCitySchema(city: { name: string; slug: string }): Record<string, unknown> {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'City',
-    name: city.name,
-    url: `${SITE_URL}/cities/${encodeURIComponent(city.slug)}`,
-  }
-}
-
 export function generateBrokerSchema(broker: {
   display_name: string
   slug: string
@@ -176,22 +157,3 @@ export function generateFAQSchema(faqs: FAQItem[]): Record<string, unknown> {
   }
 }
 
-export function generateEventSchema(openHouse: {
-  event_date: string
-  start_time?: string | null
-  end_time?: string | null
-  address?: string | null
-  listing_url?: string
-}): Record<string, unknown> {
-  const start = `${openHouse.event_date}T${(openHouse.start_time ?? '09:00').toString().slice(0, 5)}:00`
-  const end = `${openHouse.event_date}T${(openHouse.end_time ?? '12:00').toString().slice(0, 5)}:00`
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'Event',
-    name: 'Open House',
-    startDate: start,
-    endDate: end,
-    location: openHouse.address ? { '@type': 'Place', address: openHouse.address } : undefined,
-    url: openHouse.listing_url ?? undefined,
-  }
-}

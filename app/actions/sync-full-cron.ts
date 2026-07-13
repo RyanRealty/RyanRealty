@@ -508,24 +508,6 @@ export type DeltaCheckpointRow = {
   metadata: { listingsCreated?: string[]; listingsUpdated?: string[]; listingsClosed?: string[] } | null
 }
 
-/** Recent delta sync runs (Inngest 2-min) for the sync run log. */
-export async function getDeltaSyncLog(limit = 50): Promise<DeltaCheckpointRow[]> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!supabaseUrl?.trim() || !serviceKey?.trim()) return []
-  const supabase = createClient(supabaseUrl, serviceKey)
-  const { data, error } = await supabase
-    .from('sync_checkpoints')
-    .select('id, completed_at, total_count, processed_count, metadata')
-    .eq('sync_type', 'delta')
-    .eq('status', 'completed')
-    .not('completed_at', 'is', null)
-    .order('completed_at', { ascending: false })
-    .limit(limit)
-  if (error) return []
-  return (data ?? []) as DeltaCheckpointRow[]
-}
-
 /** For the sync page: cursor (with run-in-progress) and last completed sync. */
 export async function getSyncStatus(): Promise<SyncStatus> {
   const [cursor, history, lastDeltaAt] = await Promise.all([
@@ -553,23 +535,6 @@ export async function getSyncStatus(): Promise<SyncStatus> {
 /** Run a single sync chunk. Used by the admin UI so it can show live progress and respect Pause/Stop between chunks. */
 export async function runOneSyncChunk(): Promise<RunOneChunkResult> {
   return runOneFullSyncChunk()
-}
-
-/** Run full sync from current cursor (resume or start fresh) until phase is idle. Long-running; used by cron/API. UI uses runOneSyncChunk in a loop for live progress. */
-export async function runSmartSync(): Promise<{ ok: boolean; message: string; error?: string }> {
-  let chunkCount = 0
-  const maxChunks = 5000
-  while (chunkCount < maxChunks) {
-    const result = await runOneFullSyncChunk()
-    chunkCount++
-    if (!result.ok) {
-      return { ok: false, message: result.message ?? 'Sync failed', error: result.error }
-    }
-    if (result.done) {
-      return { ok: true, message: result.message ?? (result.paused ? 'Paused.' : 'Sync complete.') }
-    }
-  }
-  return { ok: true, message: `Stopped after ${maxChunks} chunks. Check sync status.` }
 }
 
 /** Start refresh active & pending (chunked). Sets phase to refresh_active_pending; UI then runs runOneSyncChunk in a loop until done. Same Stop/Pause as full sync. */
@@ -636,18 +601,4 @@ export async function runDeltaSyncSince(sinceIso: string): Promise<{ ok: boolean
     return { ok: false, message: result.message ?? 'Delta sync failed', error: result.error }
   }
   return { ok: true, message: result.message ?? 'Done.' }
-}
-
-/** Enable or disable the sync cron job. When disabled, GET /api/cron/sync-full returns without running. */
-export async function setCronEnabled(enabled: boolean): Promise<{ ok: boolean; error?: string }> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!supabaseUrl?.trim() || !serviceKey?.trim()) return { ok: false, error: 'Supabase not configured' }
-  const supabase = createClient(supabaseUrl, serviceKey)
-  const { error } = await supabase.from('sync_cursor').update({
-    cron_enabled: enabled,
-    updated_at: new Date().toISOString(),
-  }).eq('id', CURSOR_ID)
-  if (error) return { ok: false, error: error.message }
-  return { ok: true }
 }

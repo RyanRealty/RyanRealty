@@ -3,24 +3,6 @@
  */
 
 /**
- * Read _fbp and _fbc cookies set by Meta Pixel.
- */
-export function getPixelCookies(): { fbp?: string; fbc?: string } {
-  if (typeof document === 'undefined') return {}
-
-  const cookies: Record<string, string> = {}
-  document.cookie.split(';').forEach((pair) => {
-    const [key, val] = pair.split('=').map((s) => s.trim())
-    if (key) cookies[key] = val
-  })
-
-  return {
-    fbp: cookies._fbp,
-    fbc: cookies._fbc,
-  }
-}
-
-/**
  * Generate a UUID v4 event ID for deduplication.
  */
 export function generateEventId(): string {

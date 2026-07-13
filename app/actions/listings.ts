@@ -1723,15 +1723,6 @@ export async function getTotalListingsRows(): Promise<number> {
   return getTotalListingCount()
 }
 
-/**
- * Total rows in listing_history table. For admin/sync stats.
- */
-export async function getListingHistoryCount(): Promise<number> {
-  const { getListingHistoryRowCount } = await import('@/lib/data')
-  const res = await getListingHistoryRowCount()
-  return res.count
-}
-
 export type AdminSyncCounts = {
   activeCount: number
   totalListings: number
@@ -1762,22 +1753,6 @@ export type AdminSyncCounts = {
   historyError?: string
   /** Set when the main listings count query fails. */
   listingsCountError?: string
-}
-
-async function countExactWithRetry(
-  run: () => Promise<{ count: number | null; error: { message?: string } | null }>,
-  attempts = 3
-): Promise<{ count: number; error?: string }> {
-  let lastError: string | undefined
-  for (let i = 0; i < attempts; i++) {
-    const { count, error } = await run()
-    if (!error) return { count: count ?? 0 }
-    lastError = (error.message ?? '').trim() || 'Unknown count query error'
-    if (i < attempts - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 150 * (i + 1)))
-    }
-  }
-  return { count: 0, error: lastError }
 }
 
 /**
@@ -1841,7 +1816,6 @@ export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
     })(),
     (async () => {
       void ACTIVE_OR_PENDING_OR
-      void countExactWithRetry
       const { getActiveNeedingHistoryCount } = await import('@/lib/data')
       return getActiveNeedingHistoryCount()
     })(),
@@ -1978,19 +1952,6 @@ export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
     historyError,
     listingsCountError,
   }
-}
-
-export type ClosedFinalizedListingRow = {
-  listing_key: string
-  city: string | null
-  list_price: number | null
-  standard_status: string | null
-}
-
-/** Closed listings with full listing data and history finalized (for admin sync page). */
-export async function getClosedFinalizedListings(limit = 50): Promise<ClosedFinalizedListingRow[]> {
-  const { getClosedFinalizedListingRows } = await import('@/lib/data')
-  return getClosedFinalizedListingRows(limit)
 }
 
 /**
@@ -2173,49 +2134,6 @@ export type CityStatusCounts = {
   other: number
 }
 
-/**
- * Status counts for a city (and optional subdivision). Same logic as sync page breakdown so numbers match.
- * Uses get_city_status_counts RPC when available (service role); otherwise fallback with anon + limit 10000.
- */
-export async function getCityStatusCounts(options: {
-  city: string
-  subdivision?: string | null
-}): Promise<CityStatusCounts> {
-  if (!options.city?.trim()) return { active: 0, pending: 0, closed: 0, other: 0 }
-  const supabaseService = getServiceSupabase()
-  if (supabaseService) {
-    const { data, error } = await supabaseService.rpc('get_city_status_counts', {
-      p_city: options.city.trim(),
-      p_subdivision: options.subdivision?.trim() || null,
-    })
-    if (!error && data != null) {
-      const raw = data as { active?: number; pending?: number; closed?: number; other?: number }
-      return {
-        active: Number(raw.active) ?? 0,
-        pending: Number(raw.pending) ?? 0,
-        closed: Number(raw.closed) ?? 0,
-        other: Number(raw.other) ?? 0,
-      }
-    }
-  }
-  // DAL: city + optional subdivision counts via listing_tile_mv across 4 status buckets.
-  void ACTIVE_STATUS_OR
-  const cityFilter = options.city.trim()
-  const subFilter = options.subdivision?.trim() || undefined
-  const { getListingTiles } = await import('@/lib/data')
-  const [activeTiles, pendingTiles, closedTiles, totalTiles] = await Promise.all([
-    getListingTiles({ city: cityFilter, subdivision: subFilter, status: 'active', limit: 5000 }),
-    getListingTiles({ city: cityFilter, subdivision: subFilter, status: 'pending-only', limit: 5000 }),
-    getListingTiles({ city: cityFilter, subdivision: subFilter, status: 'closed', limit: 5000 }),
-    getListingTiles({ city: cityFilter, subdivision: subFilter, status: 'all', limit: 5000 }),
-  ])
-  const active = activeTiles.length
-  const pending = pendingTiles.length
-  const closed = closedTiles.length
-  const other = Math.max(0, totalTiles.length - active - pending - closed)
-  return { active, pending, closed, other }
-}
-
 export type CityMarketStats = {
   count: number
   avgPrice: number | null
@@ -2371,38 +2289,6 @@ export async function getCommunityCentroid(
   const lat = valid.reduce((a, t) => a + Number(t.lat), 0) / valid.length
   const lng = valid.reduce((a, t) => a + Number(t.lng), 0) / valid.length
   return { lat, lng }
-}
-
-export type NearbyCommunity = { subdivisionName: string; count: number; distanceKm: number }
-
-/**
- * Other communities in the same city, sorted by distance from the given community's centroid. Returns up to 3.
- */
-export async function getNearbyCommunities(
-  city: string,
-  subdivisionName: string
-): Promise<NearbyCommunity[]> {
-  if (isNaSubdivision(subdivisionName)) return []
-  const centroid = await getCommunityCentroid(city, subdivisionName)
-  const all = await getSubdivisionsInCity(city)
-  const others = all.filter((s) => s.subdivisionName.trim() !== subdivisionName.trim())
-  if (others.length === 0 || !centroid) return others.slice(0, 3).map((s) => ({ ...s, distanceKm: 0 }))
-
-  const withCentroid = await Promise.all(
-    others.map(async (s) => {
-      const c = await getCommunityCentroid(city, s.subdivisionName)
-      return { ...s, centroid: c }
-    })
-  )
-  const withDist = withCentroid
-    .filter((s) => s.centroid != null)
-    .map((s) => {
-      const c = s.centroid!
-      const d = haversineKm(centroid.lat, centroid.lng, c.lat, c.lng)
-      return { subdivisionName: s.subdivisionName, count: s.count, distanceKm: d }
-    })
-  withDist.sort((a, b) => a.distanceKm - b.distanceKm)
-  return withDist.slice(0, 3)
 }
 
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -2689,25 +2575,6 @@ function tileToListingTileRow(t: ListingTile): ListingTileRow {
   }
 }
 
-/**
- * Get adjacent listing key from Supabase (prev/next by ModificationTimestamp).
- */
-export async function getAdjacentListingKeyFromSupabase(
-  modificationTimestamp: string,
-  direction: 'next' | 'prev'
-): Promise<string | null> {
-  if (!modificationTimestamp) return null
-  // DAL: adjacency via listing_tile_mv modified_at ordering.
-  // 'next' = older row (lt + DESC) per legacy semantics; 'prev' = newer row (gt + ASC).
-  const { getListingTiles } = await import('@/lib/data')
-  const tiles = await getListingTiles(
-    direction === 'next'
-      ? { modifiedBefore: modificationTimestamp, sort: 'newest', status: 'all', limit: 1 }
-      : { modifiedAfter: modificationTimestamp, sort: 'oldest', status: 'all', limit: 1 }
-  )
-  return tiles[0]?.listingKey ?? null
-}
-
 export type AdjacentListingThumb = {
   ListingKey: string
   ListNumber?: string | null
@@ -2721,132 +2588,6 @@ export type AdjacentListingThumb = {
   PostalCode?: string | null
 }
 
-/**
- * Get prev and next listings with thumbnail fields (PhotoURL, ListPrice, address) for the bar below the hero.
- */
-export async function getAdjacentListingsFromSupabase(modificationTimestamp: string): Promise<{
-  prev: AdjacentListingThumb | null
-  next: AdjacentListingThumb | null
-}> {
-  if (!modificationTimestamp) return { prev: null, next: null }
-  const { getListingTiles } = await import('@/lib/data')
-  const [prevTiles, nextTiles] = await Promise.all([
-    getListingTiles({ modifiedBefore: modificationTimestamp, sort: 'newest', status: 'all', limit: 1 }),
-    getListingTiles({ modifiedAfter: modificationTimestamp, sort: 'oldest', status: 'all', limit: 1 }),
-  ])
-  const toThumb = (t: ListingTile | undefined): AdjacentListingThumb | null =>
-    t
-      ? {
-          ListingKey: t.listingKey,
-          ListNumber: t.listNumber,
-          PhotoURL: t.photoUrl,
-          ListPrice: t.listPrice,
-          StreetNumber: t.streetNumber,
-          StreetName: t.streetName,
-          StreetSuffix: t.streetSuffix ?? null,
-          City: t.city,
-          State: 'OR',
-          PostalCode: t.postalCode,
-        }
-      : null
-  return { prev: toThumb(prevTiles[0]), next: toThumb(nextTiles[0]) }
-}
-
-/**
- * Get a slice of adjacent listings (before + after current by ModificationTimestamp) for the listing nav slider.
- * Returns up to limitBefore before and limitAfter after the current timestamp.
- */
-export async function getAdjacentListingsSliceFromSupabase(
-  modificationTimestamp: string,
-  limitBefore = 4,
-  limitAfter = 4
-): Promise<{ prevList: AdjacentListingThumb[]; nextList: AdjacentListingThumb[] }> {
-  if (!modificationTimestamp) return { prevList: [], nextList: [] }
-  const { getListingTiles } = await import('@/lib/data')
-  const [prevTiles, nextTiles] = await Promise.all([
-    getListingTiles({
-      modifiedBefore: modificationTimestamp,
-      sort: 'newest',
-      status: 'all',
-      limit: Math.min(Math.max(limitBefore, 1), 50),
-    }),
-    getListingTiles({
-      modifiedAfter: modificationTimestamp,
-      sort: 'oldest',
-      status: 'all',
-      limit: Math.min(Math.max(limitAfter, 1), 50),
-    }),
-  ])
-  const toThumb = (t: ListingTile): AdjacentListingThumb => ({
-    ListingKey: t.listingKey,
-    ListNumber: t.listNumber,
-    PhotoURL: t.photoUrl,
-    ListPrice: t.listPrice,
-    StreetNumber: t.streetNumber,
-    StreetName: t.streetName,
-    StreetSuffix: t.streetSuffix ?? null,
-    City: t.city,
-    State: 'OR',
-    PostalCode: t.postalCode,
-  })
-  return { prevList: prevTiles.map(toThumb), nextList: nextTiles.map(toThumb) }
-}
-
-/**
- * Get a slice of listings in the same subdivision (before + after current by ModificationTimestamp).
- * Used on listing detail so the "All listings" strip shows only listings in that subdivision.
- * Filters to active status in JS so we can combine city + subdivision in one .or() safely.
- */
-export async function getListingsSliceInSubdivision(
-  city: string,
-  subdivisionName: string,
-  modificationTimestamp: string,
-  limitBefore = 12,
-  limitAfter = 12
-): Promise<{ prevList: AdjacentListingThumb[]; nextList: AdjacentListingThumb[] }> {
-  const cityTrim = (city ?? '').trim()
-  const subTrim = (subdivisionName ?? '').trim()
-  const supabase = getAnonSupabase()
-  if (!modificationTimestamp || !cityTrim || !subTrim) return { prevList: [], nextList: [] }
-  void supabase
-  const subNames = getSubdivisionMatchNames(subTrim)
-  const canonicalSub = subNames[0] ?? subTrim
-  const { getListingTiles } = await import('@/lib/data')
-  const [prevTiles, nextTiles] = await Promise.all([
-    getListingTiles({
-      city: cityTrim,
-      subdivision: canonicalSub,
-      modifiedBefore: modificationTimestamp,
-      status: 'active',
-      sort: 'newest',
-      limit: limitBefore * 2,
-    }),
-    getListingTiles({
-      city: cityTrim,
-      subdivision: canonicalSub,
-      modifiedAfter: modificationTimestamp,
-      status: 'active',
-      sort: 'oldest',
-      limit: limitAfter * 2,
-    }),
-  ])
-  const toThumb = (t: ListingTile): AdjacentListingThumb => ({
-    ListingKey: t.listingKey,
-    ListNumber: t.listNumber,
-    PhotoURL: t.photoUrl,
-    ListPrice: t.listPrice,
-    StreetNumber: t.streetNumber,
-    StreetName: t.streetName,
-    StreetSuffix: t.streetSuffix ?? null,
-    City: t.city,
-    State: 'OR',
-    PostalCode: t.postalCode,
-  })
-  const prevList = prevTiles.map(toThumb).slice(0, limitBefore)
-  const nextList = nextTiles.map(toThumb).slice(0, limitAfter)
-  return { prevList, nextList }
-}
-
 export type ListingHistoryRow = {
   id?: string
   listing_key: string
@@ -2857,45 +2598,6 @@ export type ListingHistoryRow = {
   price_change: number | null
   raw: Record<string, unknown> | null
   created_at?: string
-}
-
-/**
- * Return one listing key from the database (for admin sync test default).
- * Uses service role. Order by ListNumber asc so we get a stable default.
- */
-export async function getFirstListingKey(): Promise<string | null> {
-  void getServiceSupabase
-  const { getAnyListingKey } = await import('@/lib/data')
-  const row = await getAnyListingKey()
-  const key = row?.ListingKey ?? row?.ListNumber
-  return key != null ? String(key).trim() : null
-}
-
-/**
- * Return the most recently modified listing key from Supabase (for /listings/template redirect when Spark API key is not set).
- */
-export async function getMostRecentListingKeyFromSupabase(): Promise<string | null> {
-  void getAnonSupabase
-  const { getListingTiles } = await import('@/lib/data')
-  const tiles = await getListingTiles({ status: 'all', sort: 'newest', limit: 1 })
-  const tile = tiles[0]
-  const key = tile?.listNumber ?? tile?.listingKey ?? null
-  return key != null ? String(key).trim() : null
-}
-
-/**
- * Get listing history from Supabase (for detail page and reports).
- * Ordered by event_date desc (most recent first). Use for CMAs, list date, price changes, last sale.
- */
-export async function getListingHistory(listingKey: string): Promise<ListingHistoryRow[]> {
-  void getAnonSupabase
-  const key = String(listingKey ?? '').trim()
-  if (!key) return []
-  // DAL: full event history reversed via getListingDetailHistory (ASC by
-  // event_date in the DAL); reverse in-memory for the legacy DESC order.
-  const { getListingDetailHistory } = await import('@/lib/data')
-  const rows = await getListingDetailHistory(key)
-  return [...rows].reverse() as unknown as ListingHistoryRow[]
 }
 
 /** Listing keys that have a price-change event in the last N days (for "Price reduced" badges). */

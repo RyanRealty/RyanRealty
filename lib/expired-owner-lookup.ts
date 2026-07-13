@@ -32,7 +32,6 @@ import type { CountyOwner, SkipTraceResult } from './owner-resolution.d.ts'
 import { getFubApiKey } from './crm/fub-env'
 
 const APIFY_BASE = 'https://api.apify.com/v2'
-const APIFY_DIAL_ACTOR_ID = 'apify/web-scraper'  // generic scraper; can be replaced with a custom actor
 
 export type OwnerLookupResult = {
   status: 'matched-fub' | 'matched-dial' | 'matched-apollo' | 'pending'
@@ -141,127 +140,6 @@ export async function fubAddressMatch(streetAddress: string, city: string): Prom
   }
 
   return null
-}
-
-/**
- * Strategy 2: Apify-driven Deschutes County DIAL lookup.
- *
- * DIAL (Deschutes Information Access Lookup) is the county's public-record
- * property search at https://dial.deschutes.org. We hit it via an Apify
- * actor that does an address search + scrapes the resulting owner record.
- *
- * Returns null if the city isn't in Deschutes County (Bend, Redmond, Sisters,
- * Sunriver, Tumalo, La Pine) — Crook (Prineville) and Jefferson (Madras)
- * counties have separate public-record systems and would need separate
- * actors. v1 of this helper only covers Deschutes.
- *
- * The Apify actor identifier defaults to a generic scraper; replace
- * APIFY_DIAL_ACTOR_ID at the top with a custom actor once we build one.
- */
-const DESCHUTES_CITIES = new Set(['Bend', 'Redmond', 'Sisters', 'Sunriver', 'Tumalo', 'La Pine'])
-
-export async function deschutesDialLookup(
-  streetAddress: string,
-  city: string,
-): Promise<OwnerLookupResult | null> {
-  const apifyToken = process.env.APIFY_API_TOKEN?.trim()
-  if (!apifyToken) {
-    console.warn('[deschutes-dial] APIFY_API_TOKEN missing — DIAL lookup unavailable')
-    return null
-  }
-  if (!DESCHUTES_CITIES.has(city)) {
-    return null  // out-of-county; need a different scraper
-  }
-
-  // Build the search URL on DIAL. The address-search endpoint accepts a
-  // free-text query and returns matching parcels. We use Apify's web-scraper
-  // actor with a pageFunction that submits the form and extracts:
-  //   - Owner Name (from "Owner" row in the property summary table)
-  //   - Tax Mailing Address (often different from the property address
-  //     when the owner is absentee)
-  //
-  // The actor input below is the standard "URL list + pageFunction" shape
-  // that the apify/web-scraper actor accepts.
-  const dialSearchUrl = `https://dial.deschutes.org/Real/SearchResults?address=${encodeURIComponent(streetAddress + ' ' + city)}`
-  const pageFunction = `
-    async function pageFunction(context) {
-      const { request, log, page } = context;
-      await page.waitForSelector('table', { timeout: 15000 }).catch(() => null);
-      // DIAL displays a results table; first match is typically the right one.
-      const firstResultLink = await page.$('table a[href*="Property?"]');
-      if (!firstResultLink) {
-        return { error: 'no-results', url: request.url };
-      }
-      await Promise.all([
-        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }),
-        firstResultLink.click(),
-      ]);
-      const data = await page.evaluate(() => {
-        const txt = (sel) => {
-          const el = document.querySelector(sel);
-          return el ? el.textContent.trim().replace(/\\s+/g, ' ') : null;
-        };
-        const findRowValue = (label) => {
-          const rows = Array.from(document.querySelectorAll('tr'));
-          for (const row of rows) {
-            const cells = row.querySelectorAll('td, th');
-            if (cells.length >= 2 && cells[0].textContent && cells[0].textContent.trim().toLowerCase().startsWith(label.toLowerCase())) {
-              return cells[1].textContent.trim().replace(/\\s+/g, ' ');
-            }
-          }
-          return null;
-        };
-        return {
-          ownerName: findRowValue('Owner') || findRowValue('Owner Name'),
-          ownerMailing: findRowValue('Mailing Address') || findRowValue('Tax Mailing Address'),
-          parcel: findRowValue('Tax Account') || findRowValue('Parcel'),
-          propertyAddress: findRowValue('Situs Address') || findRowValue('Property Address'),
-        };
-      });
-      return data;
-    }
-  `
-
-  try {
-    const runRes = await fetch(
-      `${APIFY_BASE}/acts/${encodeURIComponent(APIFY_DIAL_ACTOR_ID)}/run-sync-get-dataset-items?token=${apifyToken}&timeout=60`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          startUrls: [{ url: dialSearchUrl }],
-          pageFunction,
-          maxRequestsPerCrawl: 1,
-          maxConcurrency: 1,
-          waitUntil: ['domcontentloaded'],
-        }),
-      },
-    )
-    if (!runRes.ok) {
-      console.warn('[deschutes-dial] Apify run failed:', runRes.status)
-      return null
-    }
-    const items = (await runRes.json()) as Array<{
-      ownerName?: string
-      ownerMailing?: string
-      parcel?: string
-      error?: string
-    }>
-    const item = items?.[0]
-    if (!item || item.error || !item.ownerName) {
-      return null
-    }
-    return {
-      status: 'matched-dial',
-      ownerName: item.ownerName,
-      ownerMailingAddress: item.ownerMailing,
-      source: `deschutes-dial${item.parcel ? `:${item.parcel}` : ''}`,
-      notes: `Resolved via Deschutes DIAL public records. Parcel ${item.parcel ?? 'unknown'}. Mailing: ${item.ownerMailing ?? 'unknown'}.`,
-    }
-  } catch (err) {
-    console.warn('[deschutes-dial] lookup error:', err)
-    return null
-  }
 }
 
 /**

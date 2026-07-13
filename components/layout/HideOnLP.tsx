@@ -71,13 +71,6 @@ export function HideChrome({ children }: { children: React.ReactNode }) {
   )
 }
 
-/** Inverse: show only on /lp/* routes. */
-export function OnLPOnly({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
-  if (!pathname?.startsWith("/lp/")) return null
-  return <>{children}</>
-}
-
 /**
  * Hide on /admin only (unlike HideOnLP, children still render on /lp/*).
  * Used to keep the analytics/pixel/ads stack off admin: broker usage was

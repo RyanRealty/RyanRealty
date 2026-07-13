@@ -13,7 +13,6 @@ import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { buildCma } from '@/lib/cma/build'
-import { runCmaBuildWorker } from '@/lib/cma/worker'
 import { sendCmaToLead } from '@/lib/cma/send'
 import { resolveCmaSubject } from '@/lib/cma/subject'
 import { slugifyAddress } from '@/lib/cma-request'
@@ -243,25 +242,5 @@ export async function sendCmaToLeadAction(
   } catch (e) {
     console.error('[sendCmaToLeadAction]', e)
     return { data: null, error: 'Send failed unexpectedly' }
-  }
-}
-
-// ─── Queue drain (admin button — same code path as the cron) ────────────────
-
-export async function runCmaQueueAction(
-  limit: number,
-): Promise<{ data: { built: number; failed: number; killed: number; scanned: number } | null; error: string | null }> {
-  try {
-    if (!(await requireAdmin())) return { data: null, error: 'Unauthorized' }
-    const capped = Math.min(Math.max(Math.round(limit) || 1, 1), 5)
-    const result = await runCmaBuildWorker(capped)
-    refresh()
-    return {
-      data: { built: result.built, failed: result.failed, killed: result.killed, scanned: result.scanned },
-      error: null,
-    }
-  } catch (e) {
-    console.error('[runCmaQueueAction]', e)
-    return { data: null, error: 'Queue run failed unexpectedly' }
   }
 }

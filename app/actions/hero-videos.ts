@@ -22,33 +22,6 @@ const DEFAULT_VIDEO_PROMPT =
   'Cinematic 10-second aerial drone flyover of Central Oregon: high desert, Cascade Mountains, clear daylight. Landscape-focused, beautiful. No text, no people. Realistic.'
 
 /**
- * Get public URL for a **city** hero video. Communities (subdivisions) reuse the city video — only city videos are stored.
- */
-export async function getHeroVideoUrl(
-  entityType: 'city' | 'subdivision',
-  entityKey: string
-): Promise<string | null> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) return null
-
-  const supabase = createClient(url, anonKey)
-  const cityKey = entityType === 'subdivision' ? entityKey.split(':')[0] ?? entityKey : entityKey
-  const { data, error } = await supabase
-    .from('hero_videos')
-    .select('storage_path')
-    .eq('entity_type', 'city')
-    .eq('entity_key', cityKey)
-    .maybeSingle()
-
-  if (error) return null
-  const path = (data as { storage_path?: string } | null)?.storage_path
-  if (!path) return null
-
-  return `${url}/storage/v1/object/public/${BUCKET}/${path}`
-}
-
-/**
  * Generate hero video for a **city** only. Landscape-focused, city-specific prompt. Communities reuse the city video.
  */
 export async function generateHeroVideoForPage(params: {

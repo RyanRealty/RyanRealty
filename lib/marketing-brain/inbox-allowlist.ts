@@ -79,10 +79,3 @@ export function isSenderAllowed(senderEmail: string): AllowlistDecision {
   }
 }
 
-/**
- * Test-only helper that bypasses the on-disk cache so unit tests can
- * mutate the file without restarting the process.
- */
-export function _resetAllowlistCache(): void {
-  _cached = null
-}

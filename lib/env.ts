@@ -131,11 +131,3 @@ export function assertRuntimeEnv(): void {
     )
   }
 }
-
-export function logOptionalEnv(): void {
-  if (process.env.NODE_ENV !== 'development') return
-  const notSet = optional.filter((key) => !getEnv(key))
-  if (notSet.length > 0) {
-    console.warn('[env] Optional vars not set:', notSet.join(', '))
-  }
-}

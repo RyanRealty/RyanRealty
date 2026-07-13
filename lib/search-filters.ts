@@ -400,16 +400,6 @@ export function getFilterNameFallback(filters: SavedSearchFilters): string {
   return 'Popular search'
 }
 
-export function toCacheListingKeys(listingRows: Array<{ ListingKey?: string | null; ListNumber?: string | null }>): string[] {
-  const keys: string[] = []
-  for (const row of listingRows) {
-    const key = (row.ListNumber ?? row.ListingKey ?? '').toString().trim()
-    if (key) keys.push(key)
-  }
-  return keys
-}
-
-
 /**
  * Keys that do NOT narrow the result set: presentation (view, sort), a drawn
  * polygon the alert path cannot match server-side (poly), and status/scope

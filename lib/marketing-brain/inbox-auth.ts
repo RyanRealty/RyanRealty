@@ -89,13 +89,3 @@ export async function getReadAuth(): Promise<AuthStatus> {
 export async function getSendAuth(): Promise<AuthStatus> {
   return tryAuthorize(buildJwt([GMAIL_SEND_SCOPE]))
 }
-
-/**
- * Combined auth — read + send in one client. Cheaper to call once when
- * both scopes are needed (poll → parse → reply in the same invocation).
- *
- * Returns ok=false if either scope is missing from the DWD allowlist.
- */
-export async function getReadSendAuth(): Promise<AuthStatus> {
-  return tryAuthorize(buildJwt([GMAIL_READ_SCOPE, GMAIL_SEND_SCOPE]))
-}

@@ -34,29 +34,6 @@ export async function recordPartnerReferral(input: {
   return { ok: true }
 }
 
-export async function recordRevenueEvent(input: {
-  revenueType: 'adsense' | 'partner_referral' | 'sponsorship' | 'membership' | 'other'
-  pageCluster: string
-  amount: number
-  eventDate?: string
-  sourceLabel?: string | null
-  referenceId?: string | null
-}) {
-  const supabase = serviceSupabase()
-  if (!supabase) return { ok: false, error: 'Supabase service not configured' }
-
-  const { error } = await supabase.from('revenue_events').insert({
-    revenue_type: input.revenueType,
-    page_cluster: input.pageCluster || 'unknown',
-    amount: input.amount,
-    event_date: input.eventDate ?? new Date().toISOString().slice(0, 10),
-    source_label: input.sourceLabel ?? null,
-    reference_id: input.referenceId ?? null,
-  })
-  if (error) return { ok: false, error: error.message }
-  return { ok: true }
-}
-
 export type RevenueDashboardData = {
   revenueLast30d: number
   partnerPipelineValue: number

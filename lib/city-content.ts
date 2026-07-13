@@ -167,28 +167,3 @@ export function buildDataDrivenCityAbout(input: CityDataDrivenInput): string[] {
   }
   return paras
 }
-
-/** Build 1–2 paragraphs for neighborhood about when description is missing or short. */
-export function buildDataDrivenNeighborhoodAbout(input: {
-  neighborhoodName: string
-  cityName: string
-  activeCount: number
-  medianPrice: number | null
-}): string[] {
-  const { neighborhoodName, cityName, activeCount, medianPrice } = input
-  const paras: string[] = []
-  const priceStr =
-    medianPrice != null && Number.isFinite(medianPrice)
-      ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(medianPrice)
-      : null
-  paras.push(
-    `${neighborhoodName} is a neighborhood in ${cityName}, Oregon. It offers residents a mix of housing styles and proximity to schools, services, and Central Oregon recreation. Browse the listings below for current homes for sale in the area.`
-  )
-  if (activeCount > 0 || priceStr) {
-    const parts: string[] = []
-    if (activeCount > 0) parts.push(`${activeCount} active listing${activeCount === 1 ? '' : 's'}`)
-    if (priceStr) parts.push(`median list price ${priceStr}`)
-    paras.push(`The current market in ${neighborhoodName} includes ${parts.join(', ')}. For more area overview and city-wide stats, see the ${cityName} city page.`)
-  }
-  return paras
-}

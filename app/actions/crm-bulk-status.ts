@@ -19,7 +19,6 @@
 import { getCrmAccess } from '@/app/actions/crm'
 import {
   getCrmBulkJob,
-  getRecentCrmBulkJobs,
   type CrmBulkJobView,
 } from '@/lib/data/crm/getCrmBulkJob'
 
@@ -30,15 +29,4 @@ export async function fetchBulkJobStatus(jobId: number): Promise<CrmBulkJobView 
   const id = Number(jobId)
   if (!Number.isFinite(id) || id <= 0) return null
   return getCrmBulkJob(id)
-}
-
-/**
- * Recent bulk runs for the jobs list. A restricted broker sees only their own
- * runs (scoped by actor email); a superuser sees every broker's runs.
- */
-export async function fetchRecentBulkJobs(): Promise<CrmBulkJobView[]> {
-  const access = await getCrmAccess()
-  if (!access) return []
-  const actorEmail = access.role === 'superuser' ? undefined : access.email
-  return getRecentCrmBulkJobs(actorEmail)
 }

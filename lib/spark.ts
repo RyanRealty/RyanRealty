@@ -621,56 +621,6 @@ export async function fetchSparkHistoricalListings(
   }
 }
 
-/**
- * Get the ListingKey of the most recently listed listing (for template start).
- * Uses OnMarketDate so Spark returns full historical range; ModificationTimestamp can restrict data.
- */
-export async function getMostRecentListingKey(): Promise<string | null> {
-  const accessToken = process.env.SPARK_API_KEY
-  if (!accessToken?.trim()) return null
-  const response = await fetchSparkListingsPage(accessToken, {
-    page: 1,
-    limit: 1,
-    orderby: '-OnMarketDate',
-  })
-  const key = response.D?.Results?.[0]?.StandardFields?.ListingKey ?? response.D?.Results?.[0]?.Id
-  return key ?? null
-}
-
-/**
- * Get the adjacent listing key (next = older by OnMarketDate, prev = newer).
- * Uses OnMarketDate for filter and orderby so Spark returns full historical data.
- * Pass the listing's OnMarketDate (or ListDate or ModificationTimestamp as fallback) for the date value.
- */
-export async function getAdjacentListingKey(
-  _currentKey: string,
-  /** Listing's OnMarketDate (preferred), ListDate, or ModificationTimestamp for ordering. */
-  orderByDate: string,
-  direction: 'next' | 'prev'
-): Promise<string | null> {
-  const accessToken = process.env.SPARK_API_KEY
-  if (!accessToken?.trim() || !orderByDate) return null
-  // SparkQL: use Datetime literal without quotes per Spark docs (Character uses quotes)
-  const ts = orderByDate.trim().replace(/^'|'$/g, '')
-  const filter =
-    direction === 'next'
-      ? `OnMarketDate Lt ${ts}`
-      : `OnMarketDate Gt ${ts}`
-  const orderby = direction === 'next' ? '-OnMarketDate' : '+OnMarketDate'
-  try {
-    const response = await fetchSparkListingsPage(accessToken, {
-      page: 1,
-      limit: 1,
-      filter,
-      orderby,
-    })
-    const key = response.D?.Results?.[0]?.StandardFields?.ListingKey ?? response.D?.Results?.[0]?.Id
-    return key ?? null
-  } catch {
-    return null
-  }
-}
-
 /** Spark sometimes returns "********" for masked values; ensure we never send that to numeric/timestamp columns. */
 function toNum(v: unknown): number | null {
   if (v == null) return null

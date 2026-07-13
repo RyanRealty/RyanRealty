@@ -121,12 +121,6 @@ export function findAssetById(id: string): LibraryAsset | null {
   return APPROVED.find((a) => a.id === id || a.id.startsWith(id)) ?? null
 }
 
-/** Convenience: returns the first matching photo's public_url or null. */
-export function findPhotoUrl(query: AssetQuery): string | null {
-  const matches = searchAssets({ ...query, type: 'photo', servable: true })
-  return matches[0]?.public_url ?? null
-}
-
 /** Build a photo credit string when the asset has an outside creator. */
 export function buildCreditLine(asset: LibraryAsset | null): string | null {
   if (!asset?.creator) return null

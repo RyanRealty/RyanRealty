@@ -150,25 +150,3 @@ export default function GeoSlider({
     </section>
   )
 }
-
-/**
- * Same dimensions as TilesSliderItem for consistent card size across geo sliders.
- */
-export function GeoSliderItem({
-  children,
-  className = '',
-  style,
-}: {
-  children: ReactNode
-  className?: string
-  style?: React.CSSProperties
-}) {
-  return (
-    <div
-      className={`shrink-0 scroll-snap-align-start w-[85vw] min-w-[260px] max-w-[320px] sm:w-[50vw] sm:min-w-[280px] sm:max-w-[360px] lg:w-[33.333vw] lg:min-w-[300px] lg:max-w-[420px] ${className}`}
-      style={style}
-    >
-      {children}
-    </div>
-  )
-}

@@ -50,12 +50,6 @@ function formatPriceShort(value: number | null | undefined): string | null {
   return `$${Math.round(value).toLocaleString('en-US')}`
 }
 
-function formatLikeCount(value: number): string {
-  if (value >= 10_000) return `${(value / 1_000).toFixed(0)}K`
-  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`
-  return String(value)
-}
-
 function relativeTime(iso: string | null | undefined): string {
   if (!iso) return ''
   const then = new Date(iso).getTime()

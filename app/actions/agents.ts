@@ -201,70 +201,6 @@ function tileToHomeTileRow(tile: ListingTile): HomeTileRow {
   }
 }
 
-/** Broker's active listings (limit). Reads from listing_tile_mv via DAL. */
-export async function getAgentActiveListings(
-  licenseNumber: string | null,
-  limit: number,
-  brokerEmail?: string | null
-): Promise<HomeTileRow[]> {
-  const keys = await getListingKeysForBroker(licenseNumber, brokerEmail)
-  if (keys.length === 0) return []
-  const tiles = await getListingTiles({
-    listingKeys: keys.slice(0, 5000),
-    status: 'active',
-    sort: 'newest',
-    limit,
-  })
-  return tiles.map(tileToHomeTileRow)
-}
-
-/** Broker's sold listings (last 24 months, limit). Reads from DAL. */
-export async function getAgentSoldListings(
-  licenseNumber: string | null,
-  limit: number,
-  brokerEmail?: string | null
-): Promise<(HomeTileRow & { ClosePrice?: number | null; CloseDate?: string | null })[]> {
-  const keys = await getListingKeysForBroker(licenseNumber, brokerEmail)
-  if (keys.length === 0) return []
-  const twentyFourMoAgo = new Date()
-  twentyFourMoAgo.setMonth(twentyFourMoAgo.getMonth() - 24)
-  const since = twentyFourMoAgo.toISOString().slice(0, 10)
-  // DAL: fetch closed tiles by key, then filter to last-24mo close window
-  // post-fetch (DAL doesn't expose a close_date range filter today).
-  const tiles = await getListingTiles({
-    listingKeys: keys.slice(0, 5000),
-    status: 'closed',
-    sort: 'close-newest',
-    limit: limit * 3,
-  })
-  const sinceTs = since
-  return tiles
-    .filter((t) => t.closeDate != null && t.closeDate >= sinceTs)
-    .slice(0, limit)
-    .map((t) => ({
-      ...tileToHomeTileRow(t),
-      ClosePrice: t.closePrice,
-      CloseDate: t.closeDate,
-    }))
-}
-
-/** Broker's pending/under-contract listings (limit). Reads from DAL. */
-export async function getAgentPendingListings(
-  licenseNumber: string | null,
-  limit: number,
-  brokerEmail?: string | null
-): Promise<HomeTileRow[]> {
-  const keys = await getListingKeysForBroker(licenseNumber, brokerEmail)
-  if (keys.length === 0) return []
-  const tiles = await getListingTiles({
-    listingKeys: keys.slice(0, 5000),
-    status: 'pending-only',
-    sort: 'newest',
-    limit,
-  })
-  return tiles.map(tileToHomeTileRow)
-}
-
 /** Performance stats from sold listings: avg sale price, avg DOM (typed DaysOnMarket when present, else CloseDate minus on-market). */
 async function getAgentPerformanceStats(
   licenseNumber: string | null,
@@ -317,16 +253,6 @@ export async function getAgentReviews(brokerId: string, limit: number): Promise<
     .order('id', { ascending: false })
     .limit(limit)
   return (data ?? []) as ReviewRow[]
-}
-
-/** Broker gallery images (page_images where page_type='broker', page_id=brokerId). */
-export async function getBrokerGalleryImages(brokerId: string): Promise<{ id: string; image_url: string }[]> {
-  const { data } = await supabase()
-    .from('page_images')
-    .select('id, image_url')
-    .eq('page_type', 'broker')
-    .eq('page_id', brokerId)
-  return (data ?? []) as { id: string; image_url: string }[]
 }
 
 export type SubmitBrokerInquiryParams = {

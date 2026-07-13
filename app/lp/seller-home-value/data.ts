@@ -5,7 +5,7 @@
  */
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getMarketPulseRowForGeo, getPriceHistory } from '@/lib/data'
+import { getMarketPulseRowForGeo } from '@/lib/data'
 import { TESTIMONIALS, type Testimonial } from '@/lib/testimonials'
 
 export type BendMarketSnapshot = {
@@ -27,19 +27,6 @@ export type BendMarketSnapshot = {
   marketHealthLabel: string | null
   /** ISO timestamp the pulse row was last refreshed. */
   updatedAt: string | null
-}
-
-/** A single real monthly median-sale-price point for the trend chart. */
-export type PriceTrendPoint = { iso: string; median: number }
-
-export type BendPriceTrend = {
-  /** Oldest → newest, trailing complete months only (current partial month dropped). */
-  points: PriceTrendPoint[]
-  /** Most recent complete month. */
-  latest: { iso: string; value: number } | null
-  /** Year-over-year change vs the same month one year prior, as a signed percent.
-   *  Null when the prior-year point is not in the series. */
-  yoyPct: number | null
 }
 
 /** Coerce a Supabase numeric-as-string (or number) to a finite number or null. */
@@ -428,58 +415,6 @@ export async function getBendMarketSnapshot(): Promise<BendMarketSnapshot | null
   }
 }
 
-/**
- * Real Bend median-sale-price trend for the LP market chart.
- *
- * Source: market_stats_cache (monthly), via getPriceHistory — the same
- * cache backing the city pages and market reports. Never invented.
- *
- * Data-accuracy guards (CLAUDE.md §0):
- *  - Drops the in-progress current calendar month (incomplete sales skew
- *    the median high on a tiny sample).
- *  - Returns the trailing 13 complete months so the YoY endpoints align
- *    with the first and last plotted points.
- *  - YoY compares the latest complete month to the same month one year
- *    prior; null when that point is missing.
- */
-export async function getBendPriceTrend(): Promise<BendPriceTrend> {
-  try {
-    const hist = await getPriceHistory('city', 'bend', 'monthly', 24)
-    let pts: PriceTrendPoint[] = hist
-      .filter((p) => typeof p.medianSalePrice === 'number' && (p.medianSalePrice as number) > 0)
-      .map((p) => ({ iso: p.periodStart, median: p.medianSalePrice as number }))
-
-    // Drop the in-progress current calendar month (Pacific time).
-    const curYm = new Date()
-      .toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit' })
-      .slice(0, 7)
-    while (pts.length > 0 && pts[pts.length - 1]!.iso.slice(0, 7) === curYm) {
-      pts = pts.slice(0, -1)
-    }
-
-    // Trailing 13 complete months → first vs last span exactly one year.
-    pts = pts.slice(-13)
-
-    const last = pts.length > 0 ? pts[pts.length - 1]! : null
-    const latest = last ? { iso: last.iso, value: last.median } : null
-
-    let yoyPct: number | null = null
-    if (latest) {
-      const priorYear = String(Number(latest.iso.slice(0, 4)) - 1)
-      const month = latest.iso.slice(5, 7)
-      const prior = pts.find((p) => p.iso.slice(0, 4) === priorYear && p.iso.slice(5, 7) === month)
-      if (prior && prior.median > 0) {
-        yoyPct = ((latest.value - prior.median) / prior.median) * 100
-      }
-    }
-
-    return { points: pts, latest, yoyPct }
-  } catch (e) {
-    console.warn('[seller-lp/data] getBendPriceTrend failed:', e)
-    return { points: [], latest: null, yoyPct: null }
-  }
-}
-
 // ─── Social proof: Sold Stories ───────────────────────────────────────────
 //
 // "Sold Stories" pairs each Ryan Realty listing with a matching real Google
@@ -658,14 +593,4 @@ export async function getSoldStories(): Promise<SoldStory[]> {
  *  Defensible: comes from a single source-of-truth file. */
 export function getTestimonialAggregate(): { count: number; rating: '5.0' } {
   return { count: TESTIMONIALS.length, rating: '5.0' }
-}
-
-// ─── Compat shim: keep getSellerTestimonials() for any consumer outside the
-//     seller LP. Returns the same reviews in the same order, minus the
-//     headshot/broker join. Safe to delete once nothing else imports it. ────
-export function getSellerTestimonials(): SellerTestimonial[] {
-  return STORY_PAIRINGS.map((p) => {
-    const t = TESTIMONIALS.find((x) => x.author === p.reviewer)
-    return t ? toSellerTestimonial(t) : null
-  }).filter((x): x is SellerTestimonial => x !== null)
 }

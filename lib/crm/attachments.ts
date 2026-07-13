@@ -87,11 +87,6 @@ export async function signAttachmentReadUrl(path: string, ttlSeconds = 300): Pro
   return data.signedUrl
 }
 
-/** Timeline payload shape for stored outbound attachments. */
-export function attachmentPayload(refs: CrmAttachmentRef[]): Array<{ path: string; name: string; contentType: string; sizeBytes: number }> {
-  return refs.map((r) => ({ path: r.path, name: r.name, contentType: r.contentType, sizeBytes: r.sizeBytes }))
-}
-
 /** Download stored refs into the Gmail MIME attachment shape. */
 export async function loadEmailAttachments(
   refs: CrmAttachmentRef[],

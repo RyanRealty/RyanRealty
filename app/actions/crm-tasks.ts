@@ -287,24 +287,6 @@ export async function renameCrmTaskTypeAction(formData: FormData): Promise<Confi
   return res
 }
 
-export async function reorderCrmTaskTypesAction(orderedIds: number[]): Promise<ConfigResult> {
-  if (!Array.isArray(orderedIds) || orderedIds.some((n) => !Number.isFinite(n))) {
-    return { ok: false, error: 'Bad order' }
-  }
-  const res = await TASK_TYPES.reorder(orderedIds)
-  if (res.ok) bustTaskTypeCache()
-  return res
-}
-
-export async function setCrmTaskTypeActiveAction(formData: FormData): Promise<ConfigResult> {
-  const id = Number(formData.get('id'))
-  const isActive = String(formData.get('isActive') ?? '') === '1'
-  if (!id) return { ok: false, error: 'Task type required' }
-  const res = await TASK_TYPES.setActive(id, isActive)
-  if (res.ok) bustTaskTypeCache()
-  return res
-}
-
 /**
  * Delete a task type. Protected types (Follow Up) are refused by the factory.
  * crm_tasks.type is a free text value (not an FK), so existing tasks of a deleted

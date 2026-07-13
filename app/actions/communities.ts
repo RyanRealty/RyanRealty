@@ -231,27 +231,6 @@ export const getCommunityBySlug = unstable_cache(
   { revalidate: 300, tags: ['community-detail'] }
 )
 
-/**
- * Lightweight lookup: given a subdivision name, return its neighborhood and city slug.
- * Used by listing detail page to build the full breadcrumb hierarchy.
- * Returns null if the subdivision has no community record or no neighborhood.
- */
-export async function getSubdivisionNeighborhood(subdivisionName: string): Promise<{
-  neighborhoodName: string
-  neighborhoodSlug: string
-  citySlug: string
-} | null> {
-  void supabase
-  const { getCommunityNeighborhoodCityBySlug } = await import('@/lib/data')
-  const row = await getCommunityNeighborhoodCityBySlug(subdivisionName)
-  if (!row?.neighborhoods?.name || !row?.neighborhoods?.slug) return null
-  return {
-    neighborhoodName: row.neighborhoods.name,
-    neighborhoodSlug: row.neighborhoods.slug,
-    citySlug: row.cities?.slug ?? '',
-  }
-}
-
 const PENDING_OR =
   'StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%,StandardStatus.ilike.%Contingent%'
 

@@ -116,11 +116,6 @@ export const ALL_TOPICS: TopicMeta[] = TOPICS_DATA.topics
 /** Just the ids — useful for Set membership checks. */
 export const ALL_TOPIC_IDS: Topic[] = ALL_TOPICS.map((t) => t.id)
 
-/** Lookup metadata by id. Returns undefined if id is not a known topic. */
-export function getTopicMeta(id: string): TopicMeta | undefined {
-  return ALL_TOPICS.find((t) => t.id === id)
-}
-
 /** Type guard: is this string a valid Topic id? */
 export function isTopic(value: string): value is Topic {
   return ALL_TOPIC_IDS.includes(value as Topic)

@@ -38,10 +38,6 @@ function write(set: Set<string>) {
   }
 }
 
-export function getLikedKeys(): Set<string> {
-  return read()
-}
-
 export function isLiked(key: string): boolean {
   if (!key) return false
   return read().has(key)

@@ -69,10 +69,3 @@ export async function updatePageContent(
   revalidatePath('/')
   return { ok: true }
 }
-
-/** List all site page keys (for admin). */
-export async function listSitePageKeys(): Promise<string[]> {
-  const supabase = await createClient()
-  const { data } = await supabase.from('site_pages').select('key').order('key')
-  return (data ?? []).map((r: { key: string }) => r.key)
-}

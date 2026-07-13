@@ -32,24 +32,6 @@ const AERIAL_STYLE =
   'Aerial or satellite-style photograph, realistic, high resolution. Show only natural terrain, vegetation, and landscape as it actually appears in the region. Clear daylight. No text, no people, no logos, no made-up buildings or landmarks.'
 
 /**
- * Build the exact prompt for a city banner (e.g. Bend, Redmond, Prineville).
- * Uses factual geography and asks for an aerial/satellite view so the image is accurate.
- */
-export function cityBannerPrompt(placeName: string): string {
-  const geo = getGeoHint(placeName)
-  return `Aerial view of ${placeName}, Oregon. Real geography: ${geo}. ${AERIAL_STYLE}`
-}
-
-/**
- * Build the exact prompt for a subdivision/neighborhood banner.
- * Same aerial style; subject is the area in context of its city and regional geography.
- */
-export function subdivisionBannerPrompt(placeName: string, cityName: string): string {
-  const geo = getGeoHint(cityName)
-  return `Aerial view of ${placeName} area, ${cityName}, Oregon. Real geography: ${geo}. ${AERIAL_STYLE}`
-}
-
-/**
  * Build the Unsplash search query for a banner (pretty landscapes).
  * - Cities: scenic landscape of that city.
  * - Resort/planned communities: imagery of that specific community.

@@ -316,17 +316,6 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
   // Bar shows only when there is something to act on. Placed AFTER all hooks.
   if (!hasIds && !hasMatching) return null
 
-  const runPreflight = (kind: BulkKind) => {
-    setPreflightLoading(true)
-    setPreflight(null)
-    startTransition(async () => {
-      const res = await bulkPreflightCount(buildSelection(), kind)
-      setPreflightLoading(false)
-      if (!res.ok) { setError(res.error); return }
-      setPreflight({ total: res.total, skip: res.suppressedEstimate })
-    })
-  }
-
   // Switch scope while a dialog is open re-runs the preflight for the new scope.
   const switchScope = (next: 'ids' | 'matching') => {
     setScope(next)

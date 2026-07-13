@@ -13,7 +13,3 @@ const FALLBACK_DINING =
 export function getSectionImageAttractions(): string {
   return process.env.NEXT_PUBLIC_SECTION_IMAGE_ATTRACTIONS?.trim() || FALLBACK_ATTRACTIONS
 }
-
-export function getSectionImageDining(): string {
-  return process.env.NEXT_PUBLIC_SECTION_IMAGE_DINING?.trim() || FALLBACK_DINING
-}

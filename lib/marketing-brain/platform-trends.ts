@@ -12,7 +12,6 @@
  *   SUPABASE_SERVICE_ROLE_KEY
  */
 
-import { createClient } from '@supabase/supabase-js'
 import { getApifyToken, runApifyActor } from './competitor-recon'
 
 // ---------------------------------------------------------------------------
@@ -711,119 +710,6 @@ export async function gatherPlatformTrends(asOfDate: string): Promise<PlatformTr
     fetched_at: new Date().toISOString(),
     errors: allErrors,
   }
-}
-
-// ---------------------------------------------------------------------------
-// Supabase write helpers
-// ---------------------------------------------------------------------------
-
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) throw new Error('Supabase service-role credentials not configured')
-  return createClient(url, key)
-}
-
-/**
- * Write a skipped-run record to marketing_decisions when APIFY_API_TOKEN is
- * absent. This keeps the decision log consistent and surfaces the gap in the
- * dashboard.
- */
-export async function recordTrendCheckSkipped(asOfDate: string, reason: string): Promise<void> {
-  const supabase = getSupabase()
-  await supabase.from('marketing_decisions').insert({
-    decided_at: new Date().toISOString(),
-    decision_type: 'trend_check_skipped',
-    decision_summary: `Platform trend check skipped on ${asOfDate}: ${reason}`,
-    reviewer: 'marketing_brain_cron',
-    final_decision: 'skipped',
-  })
-}
-
-/**
- * Persist a PlatformTrendsReport to competitor_intel, one row per signal.
- *
- * Row taxonomy for platform-trends rows:
- *   source: 'algorithm_intel' | 'industry_signal'
- *   competitor: platform name (e.g. 'tiktok', 'instagram', 'meta')
- *   data_type: 'algorithm_signal' | 'format_trend' | 'audio_trend' | 'hashtag_trend'
- *   data: the full typed object
- */
-export async function persistTrendsReport(
-  report: PlatformTrendsReport,
-  asOfDate: string,
-): Promise<number> {
-  const supabase = getSupabase()
-
-  type IntelRow = {
-    observation_date: string
-    competitor: string
-    source: string
-    data_type: string
-    data: Record<string, unknown>
-    url?: string
-    apify_run_id?: string
-  }
-
-  const rows: IntelRow[] = []
-
-  for (const signal of report.algorithm_signals) {
-    rows.push({
-      observation_date: asOfDate,
-      competitor: signal.platform,
-      source: 'algorithm_intel',
-      data_type: 'algorithm_signal',
-      data: signal as unknown as Record<string, unknown>,
-      url: signal.source_url,
-    })
-  }
-
-  for (const trend of report.format_trends) {
-    rows.push({
-      observation_date: asOfDate,
-      competitor: trend.platform,
-      source: 'industry_signal',
-      data_type: 'format_trend',
-      data: trend as unknown as Record<string, unknown>,
-      url: trend.source_url,
-    })
-  }
-
-  for (const audio of report.audio_trends) {
-    rows.push({
-      observation_date: asOfDate,
-      competitor: audio.platform,
-      source: 'industry_signal',
-      data_type: 'audio_trend',
-      data: audio as unknown as Record<string, unknown>,
-      url: audio.source_url,
-    })
-  }
-
-  for (const ht of report.hashtag_trends) {
-    rows.push({
-      observation_date: asOfDate,
-      competitor: ht.platform,
-      source: 'industry_signal',
-      data_type: 'hashtag_trend',
-      data: ht as unknown as Record<string, unknown>,
-      url: ht.source_url,
-    })
-  }
-
-  if (rows.length === 0) return 0
-
-  const BATCH = 500
-  let total = 0
-  for (let i = 0; i < rows.length; i += BATCH) {
-    const chunk = rows.slice(i, i + BATCH)
-    const { error } = await supabase.from('competitor_intel').insert(chunk)
-    if (error) {
-      throw new Error(`persistTrendsReport batch ${i}: ${error.message}`)
-    }
-    total += chunk.length
-  }
-  return total
 }
 
 // ---------------------------------------------------------------------------

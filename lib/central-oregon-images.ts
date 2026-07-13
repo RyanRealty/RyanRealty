@@ -61,13 +61,3 @@ export function getCityHeroImage(citySlug: string): string {
   const slug = citySlug.toLowerCase().replace(/\s+/g, '-')
   return CITY_HERO_IMAGES[slug] ?? DEFAULT_CITY_HERO
 }
-
-/**
- * Get a rotating lifestyle image for variety across the site.
- * Uses the page name as a seed for consistent but varied selection.
- */
-export function getLifestyleImage(seed: string): string {
-  const images = Object.values(LIFESTYLE_IMAGES)
-  const hash = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-  return images[hash % images.length]!
-}

@@ -3,14 +3,13 @@
 import { unstable_cache } from 'next/cache'
 import {
   getEngagementCountsBatch as _getEngagementCountsBatch,
-  getEngagementForListing as _getEngagementForListing,
   incrementListingShareCount as _incrementListingShareCount,
   incrementListingSaveCount as _incrementListingSaveCount,
   decrementListingSaveCount as _decrementListingSaveCount,
   incrementListingLikeCount as _incrementListingLikeCount,
   decrementListingLikeCount as _decrementListingLikeCount,
 } from '@/lib/data'
-import type { EngagementCounts, ListingDetailEngagement } from '@/app/actions/engagement-types'
+import type { EngagementCounts } from '@/app/actions/engagement-types'
 
 /**
  * Batch-fetch engagement counts for a set of listing keys.
@@ -32,15 +31,6 @@ export async function getEngagementCountsBatchCached(
   listingKeys: string[]
 ): Promise<Record<string, EngagementCounts>> {
   return _getEngagementCountsBatchCached(listingKeys)
-}
-
-/**
- * Fetch engagement counts for a single listing detail page.
- */
-export async function getEngagementForListingDetail(
-  listingKey: string
-): Promise<ListingDetailEngagement> {
-  return _getEngagementForListing(listingKey)
 }
 
 /** Increment share_count for a listing (call when user shares). */

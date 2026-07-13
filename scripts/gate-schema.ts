@@ -184,29 +184,6 @@ export interface GateArtifacts {
   formatSkillVersion?: string
 }
 
-/** Build a GateArtifacts object from a passing GateJson for the publish route. */
-export function toGateArtifacts(gate: GateJson): GateArtifacts {
-  if (!gate.gatePassed) {
-    throw new Error('Cannot build GateArtifacts from a non-passing gate.json')
-  }
-  if (!gate.postflightPath) {
-    throw new Error('Cannot build GateArtifacts: postflightPath is null — postflight has not run')
-  }
-  if (!gate.humanApprovedAt) {
-    throw new Error('Cannot build GateArtifacts: humanApprovedAt is null — Matt has not approved')
-  }
-  return {
-    scorecardPath: gate.scorecardPath,
-    citationsPath: gate.citationsPath,
-    qaReportPath: gate.qaReportPath,
-    postflightPath: gate.postflightPath,
-    manifestoPath: gate.manifestoPath,
-    humanApprovedAt: gate.humanApprovedAt,
-    formatSkillName: gate.formatSkillName,
-    formatSkillVersion: gate.formatSkillVersion,
-  }
-}
-
 // ---------------------------------------------------------------------------
 // I/O helpers
 // ---------------------------------------------------------------------------
@@ -346,49 +323,4 @@ export function isGatePassing(gate: GateJson): { ok: true } | { ok: false; reaso
   return { ok: true }
 }
 
-/**
- * Assert the gate is passing — throws a detailed Error if not.
- * Convenience wrapper for publish-time checks.
- */
-export function assertGatePassing(gate: GateJson): void {
-  const result = isGatePassing(gate)
-  if (!result.ok) {
-    throw new Error(`Gate check failed: ${result.reason}`)
-  }
-}
 
-/**
- * Check whether the gate is approved and the approval is still within the 7-day window.
- * The publish skill calls this before invoking /api/social/publish.
- */
-export function isGateApproved(gate: GateJson): { ok: true } | { ok: false; reason: string } {
-  if (!gate.approvedByMatt) {
-    return { ok: false, reason: 'Matt has not approved this asset. Wait for explicit approval before publishing.' }
-  }
-  if (!gate.approvedAt || !gate.humanApprovedAt) {
-    return { ok: false, reason: 'approvedAt or humanApprovedAt is null despite approvedByMatt=true — gate.json is malformed' }
-  }
-  const approvedMs = new Date(gate.humanApprovedAt).getTime()
-  if (Number.isNaN(approvedMs)) {
-    return { ok: false, reason: `humanApprovedAt "${gate.humanApprovedAt}" is not a valid ISO 8601 timestamp` }
-  }
-  const ageMs = Date.now() - approvedMs
-  if (ageMs > 7 * 24 * 60 * 60 * 1000) {
-    const days = Math.floor(ageMs / (24 * 60 * 60 * 1000))
-    return {
-      ok: false,
-      reason: `Approval is ${days} days old (max 7). Re-run qa_pass and obtain fresh Matt approval.`,
-    }
-  }
-  return { ok: true }
-}
-
-/**
- * Produce a human-readable one-line summary for the Draft-ready notification.
- */
-export function gateStatusLine(gate: GateJson): string {
-  const result = isGatePassing(gate)
-  const status = result.ok ? 'PASS' : 'FAIL'
-  const approval = gate.approvedByMatt ? 'APPROVED' : 'PENDING_APPROVAL'
-  return `[gate:${status}] [approval:${approval}] format=${gate.format} score=${gate.scorecardTotal}/${gate.formatMinimum} cycles=${gate.iterationCyclesUsed} fails=${gate.hardRefuseConditionsFailed.length}`
-}

@@ -115,11 +115,6 @@ export function isSignableRole(role: string | null | undefined): boolean {
   return !!role && role !== 'cc'
 }
 
-/** Which field types a recipient actually fills (everything but nothing — all are fillable). */
-export function fieldNeedsValue(type: SignFieldType): boolean {
-  return SIGN_FIELD_TYPES.includes(type)
-}
-
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export function isValidEmail(email: string | null | undefined): boolean {
   return !!email && EMAIL_RE.test(email.trim())

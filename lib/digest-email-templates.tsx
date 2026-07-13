@@ -17,24 +17,6 @@ import { EMAIL_FONT_STACK } from '@/lib/email/brand'
 // Daily new-leads digest
 // ---------------------------------------------------------------------------
 
-export type DailyLead = {
-  fubPersonId: number
-  name: string
-  email: string | null
-  phone: string | null
-  source: string | null
-  audience: 'seller' | 'buyer' | 'unknown'
-  lastActivityIso: string | null
-  addressLine: string | null
-  fubUrl: string
-}
-
-export type DailyDigestEmailProps = {
-  brokerFirstName: string
-  asOfDate: string // YYYY-MM-DD
-  leads: DailyLead[]
-}
-
 function formatDateLong(isoDate: string): string {
   const d = new Date(`${isoDate}T00:00:00`)
   return d.toLocaleDateString('en-US', {
@@ -43,20 +25,6 @@ function formatDateLong(isoDate: string): string {
     day: 'numeric',
     year: 'numeric',
   })
-}
-
-function relativeTime(iso: string | null): string {
-  if (!iso) return 'No activity yet'
-  const then = new Date(iso).getTime()
-  if (!Number.isFinite(then)) return 'No activity yet'
-  const diff = Date.now() - then
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'Just now'
-  if (mins < 60) return `${mins} minutes ago`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours} hours ago`
-  const days = Math.floor(hours / 24)
-  return `${days} days ago`
 }
 
 function brandHeader(): React.ReactElement {
@@ -79,98 +47,6 @@ function brandFooter(): React.ReactElement {
         541.703.3095. ryan-realty.com.
       </Text>
     </Section>
-  )
-}
-
-export function DailyDigestEmail({ brokerFirstName, asOfDate, leads }: DailyDigestEmailProps): React.ReactElement {
-  const sellerCount = leads.filter((l) => l.audience === 'seller').length
-  const buyerCount = leads.filter((l) => l.audience === 'buyer').length
-  const totalLeads = leads.length
-
-  let summarySentence: string
-  if (totalLeads === 0) {
-    summarySentence = 'No new leads in the last 24 hours.'
-  } else if (totalLeads === 1) {
-    const audience = leads[0].audience === 'unknown' ? 'unclassified' : leads[0].audience
-    summarySentence = `You got 1 new lead. Audience: ${audience}.`
-  } else {
-    const parts: string[] = []
-    if (sellerCount > 0) parts.push(`${sellerCount} ${sellerCount === 1 ? 'is a seller' : 'are sellers'}`)
-    if (buyerCount > 0) parts.push(`${buyerCount} ${buyerCount === 1 ? 'is a buyer' : 'are buyers'}`)
-    const unknown = totalLeads - sellerCount - buyerCount
-    if (unknown > 0) parts.push(`${unknown} unclassified`)
-    summarySentence = `You got ${totalLeads} new leads. ${parts.join(', ')}.`
-  }
-
-  return (
-    <Html>
-      <Head />
-      <Body style={{ fontFamily: EMAIL_FONT_STACK, backgroundColor: '#faf8f4', margin: 0, padding: 0 }}>
-        <Container style={{ maxWidth: 640, margin: '0 auto' }}>
-          {brandHeader()}
-          <Section style={{ backgroundColor: '#ffffff', padding: 24 }}>
-            <Heading as="h1" style={{ fontSize: 20, color: '#102742', margin: '0 0 8px 0', fontWeight: 600 }}>
-              Your new leads today
-            </Heading>
-            <Text style={{ fontSize: 13, color: '#6b7280', margin: '0 0 16px 0' }}>
-              {formatDateLong(asOfDate)}
-            </Text>
-            <Text style={{ fontSize: 15, color: '#102742', margin: '0 0 24px 0', lineHeight: 1.5 }}>
-              Hi {brokerFirstName}. {summarySentence}
-            </Text>
-            {totalLeads === 0 ? (
-              <Text style={{ fontSize: 14, color: '#4b5563', margin: 0 }}>
-                Nothing new in the last 24 hours. We will email you again tomorrow morning.
-              </Text>
-            ) : (
-              <>
-                <Hr style={{ borderColor: '#e5e7eb', margin: '0 0 16px 0' }} />
-                {leads.map((lead) => (
-                  <Section key={lead.fubPersonId} style={{ marginBottom: 18, paddingBottom: 18, borderBottom: '1px solid #f1f5f9' }}>
-                    <Text style={{ fontSize: 15, fontWeight: 600, color: '#102742', margin: '0 0 4px 0' }}>
-                      {lead.name}
-                    </Text>
-                    {lead.email ? (
-                      <Text style={{ fontSize: 13, color: '#475569', margin: '0 0 2px 0' }}>
-                        {lead.email}
-                      </Text>
-                    ) : null}
-                    {lead.phone ? (
-                      <Text style={{ fontSize: 13, color: '#475569', margin: '0 0 2px 0' }}>
-                        {lead.phone}
-                      </Text>
-                    ) : null}
-                    {lead.addressLine ? (
-                      <Text style={{ fontSize: 13, color: '#475569', margin: '0 0 2px 0' }}>
-                        Address: {lead.addressLine}
-                      </Text>
-                    ) : null}
-                    <Text style={{ fontSize: 13, color: '#475569', margin: '0 0 2px 0' }}>
-                      Source: {lead.source ?? 'Unknown'}. Audience: {lead.audience}.
-                    </Text>
-                    <Text style={{ fontSize: 12, color: '#6b7280', margin: '0 0 8px 0' }}>
-                      Last activity: {relativeTime(lead.lastActivityIso)}
-                    </Text>
-                    <Link
-                      href={lead.fubUrl}
-                      style={{
-                        fontSize: 13,
-                        color: '#102742',
-                        fontWeight: 500,
-                        textDecoration: 'underline',
-                      }}
-                    >
-                      Open in Follow Up Boss
-                    </Link>
-                  </Section>
-                ))}
-              </>
-            )}
-            {brandFooter()}
-          </Section>
-        </Container>
-      </Body>
-    </Html>
   )
 }
 

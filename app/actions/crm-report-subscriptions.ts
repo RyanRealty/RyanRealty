@@ -29,7 +29,6 @@ import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import {
-  getContactReportSubscription,
   normalizeReportFrequency,
   buildMarketReportAreas,
   type ReportFrequency,
@@ -118,55 +117,4 @@ export async function setReportSubscriptionAction(
 
   revalidateContact(id)
   return { ok: true, message: isActive ? 'Market reports updated' : 'Market reports turned off' }
-}
-
-/**
- * Flip a contact's market-report subscription on or off, keeping the existing
- * areas + cadence. Turning ON requires at least one area already chosen; if none
- * exist yet, the broker is asked to pick areas first (the full setter does that).
- * A brand-new contact (no row yet) cannot be toggled ON to an empty subscription.
- */
-export async function toggleReportSubscriptionAction(
-  personId: number,
-  isActive: boolean,
-): Promise<CrmReportSubscriptionResult> {
-  const access = await getCrmAccess()
-  if (!access) return { ok: false, error: 'Unauthorized' }
-  const id = Number(personId)
-  if (!Number.isFinite(id) || id <= 0) return { ok: false, error: 'A contact is required' }
-  const scoped = await requirePersonInScope(id, access)
-  if (!scoped.ok) return scoped
-
-  const existing = await getContactReportSubscription(id)
-  const next = isActive === true
-
-  if (next && (!existing || existing.areas.length === 0)) {
-    return { ok: false, error: 'Pick at least one area to turn market reports on' }
-  }
-
-  const sb = createServiceClient()
-  const { error } = await sb
-    .from('crm_report_subscriptions')
-    .upsert(
-      {
-        person_id: id,
-        areas: existing?.areas ?? [],
-        frequency: existing?.frequency ?? 'monthly',
-        is_active: next,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'person_id' },
-    )
-  if (error) return { ok: false, error: error.message }
-
-  await sb.from('crm_timeline').insert({
-    person_id: id,
-    kind: 'system',
-    title: `Market reports ${next ? 'turned on' : 'turned off'} by ${access.email}`,
-    source: 'app',
-    broker: access.brokerSlug,
-  })
-
-  revalidateContact(id)
-  return { ok: true, message: next ? 'Market reports turned on' : 'Market reports turned off' }
 }

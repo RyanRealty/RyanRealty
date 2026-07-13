@@ -62,13 +62,6 @@ export type CreateCmaRequestInput = {
   notifyLead?: boolean
 }
 
-/** Public URL where the finished CMA is served once it is built.
- *  /cma/[slug] serves DB-stored documents and redirects legacy file-based
- *  CMAs to their static public/cmas/ path. */
-export function cmaPublicUrl(slug: string): string {
-  return `${SITE_URL}/cma/${slug}`
-}
-
 export type CreateCmaRequestResult =
   | { ok: true; cmaId: string; actionId: string; slug: string }
   | { ok: false; error: string }

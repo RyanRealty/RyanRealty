@@ -65,27 +65,6 @@ export async function getBannerUrl(
 }
 
 /**
- * Get attribution for a stored banner (when source is unsplash/pexels). Null for AI-generated.
- */
-export async function getBannerAttribution(
-  entityType: 'city' | 'subdivision',
-  entityKey: string
-): Promise<string | null> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) return null
-  const supabase = createClient(url, anonKey)
-  const { data } = await supabase
-    .from('banner_images')
-    .select('attribution')
-    .eq('entity_type', entityType)
-    .eq('entity_key', entityKey)
-    .maybeSingle()
-  const att = (data as { attribution?: string | null } | null)?.attribution
-  return att?.trim() ?? null
-}
-
-/**
  * Get banner URL and attribution if one already exists in storage.
  * Never fetches or generates images during page render — returns null if no banner stored.
  * Use the admin "Generate Banners" UI or generateAllMissingBanners() to populate banners.
