@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.779.2 (2026-07-14)
+
+### Maintenance
+- chore(crm): remove temporary FUB text-thread ingestion endpoint
+
+---
+
+
 ## v1.779.1 (2026-07-14)
 
 ### Maintenance
