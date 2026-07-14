@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.777.3 (2026-07-14)
+
+### Bug Fixes
+- fix(data): backfill honors Spark 429 rate limit (retry + backoff, concurrency 3)
+
+---
+
+
 ## v1.777.2 (2026-07-14)
 
 ### Bug Fixes
