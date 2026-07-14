@@ -148,12 +148,6 @@ for (const fub of targets) {
         const { data: ins, error } = await sb.from('crm_people').insert(personRow).select('id').single();
         if (error) { console.warn(`  ! create ${relName}: ${error.message}`); continue; }
         relatedId = ins.id;
-        if (relPhone10) {
-          // reroute the merged number: it is currently a contact_point under the
-          // PRIMARY, so drop that and key it to the related person instead.
-          await sb.from('crm_contact_points').delete().eq('kind', 'phone').eq('value', relPhone10).eq('person_id', mainId);
-          await sb.from('crm_contact_points').insert({ person_id: relatedId, kind: 'phone', value: relPhone10, is_primary: true });
-        }
       }
       created++;
     }
@@ -164,6 +158,21 @@ for (const fub of targets) {
       // reciprocal (skip if already present)
       const { data: back } = await sb.from('crm_relationships').select('id').eq('person_id', relatedId).eq('related_person_id', mainId).limit(1);
       if (!back?.[0]) await sb.from('crm_relationships').insert({ person_id: relatedId, related_person_id: mainId, related_name: person.name, kind: recipKind(rel.type) });
+      // Reroute BOTH the phone AND email contact_points to the related person.
+      // The merged value is keyed under the PRIMARY (routing inbound texts/emails
+      // to the wrong person); drop the primary's and ensure the related person
+      // owns it. Covers CREATE and LINK (a linked contact already had its own, so
+      // insert only when missing). Email match is case-insensitive.
+      if (relPhone10) {
+        await sb.from('crm_contact_points').delete().eq('kind', 'phone').eq('value', relPhone10).eq('person_id', mainId);
+        const { data: hp } = await sb.from('crm_contact_points').select('id').eq('kind', 'phone').eq('value', relPhone10).eq('person_id', relatedId).limit(1);
+        if (!hp?.[0]) await sb.from('crm_contact_points').insert({ person_id: relatedId, kind: 'phone', value: relPhone10, is_primary: true });
+      }
+      if (relEmail) {
+        await sb.from('crm_contact_points').delete().eq('kind', 'email').ilike('value', relEmail).eq('person_id', mainId);
+        const { data: he } = await sb.from('crm_contact_points').select('id').eq('kind', 'email').ilike('value', relEmail).eq('person_id', relatedId).limit(1);
+        if (!he?.[0]) await sb.from('crm_contact_points').insert({ person_id: relatedId, kind: 'email', value: relEmail, is_primary: true });
+      }
       // strip the related person's phone/email off the primary
       const newPhones = mainPhones.filter((p) => !(relPhone10 && ten(p.value) === relPhone10));
       const newEmails = mainEmails.filter((e) => !(relEmail && String(e.value || '').toLowerCase() === relEmail));
