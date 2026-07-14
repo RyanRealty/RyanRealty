@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.780.0 (2026-07-14)
+
+### Features
+- feat(crm): split FUB-merged spouse/relationship contacts into linked records
+
+---
+
+
 ## v1.779.2 (2026-07-14)
 
 ### Maintenance
