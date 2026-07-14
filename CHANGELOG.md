@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.785.0 (2026-07-14)
+
+### Features
+- feat(expired): full MLS listing + complete price history on the review page
+
+---
+
+
 ## v1.784.0 (2026-07-14)
 
 ### Features
