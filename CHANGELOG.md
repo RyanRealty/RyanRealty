@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.777.2 (2026-07-14)
+
+### Bug Fixes
+- fix(data): backfill listings.PhotoURL from Spark — the SOURCE fix for missing cover photos
+
+---
+
+
 ## v1.777.1 (2026-07-13)
 
 ### Bug Fixes
