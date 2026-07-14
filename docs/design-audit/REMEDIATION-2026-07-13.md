@@ -53,9 +53,11 @@ Legend: ⬜ todo · �254 in progress · ✅ done+verified+committed · ⏭️ 
 - ✅ CMP-2 hero photo variety — the repo actually holds 15+ distinct large Central Oregon photos (`/images/homepage/*`, `/images/kb/*`, `/images/office/*`, `/images/lp/*`, `/images/trails|venues/*`). Reassigned the shared `CONTENT_HERO_IMAGES` map + the per-page `posterSrc` consts across ~30 pages so each has a distinct, on-topic hero (office interiors → about/team, Three Sisters → contact, Smith Rock → faq, Drake Park → reviews, Tetherow golf → sell/valuation, Redmond → mortgage tool, trails/venues → area index pages, etc.). Homepage keeps the Old Mill as its canonical hero. VERIFIED: contact now shows Three Sisters (was Old Mill); about was already distinct via its heroSrc resolver.
 - ✅ TRU-5 community photos — `lib/geo-images.ts`: Sunriver's night-sky/Milky-Way cabin → accurate Deschutes-at-Sunriver photo; Pronghorn's mislabeled Old Mill (no real Pronghorn photo exists in-repo — both candidates are geo-verified as Old Mill) → dropped to a LABELED "area view" fallback. VERIFIED both wrong paths no longer referenced on /communities.
 
-### Remaining — a data-layer or product call (not a photo/code fix)
-- ⏭️ TRU-2 city activity "NEW" badge — the label maps from event type (new_listing), not recency, so old new-listing events still read "New". Fix is a DAL feed recency filter with market-data reconciliation implications (§0) — a data-layer change for a data pass, not a rushed UI edit.
-- ⏭️ reviews mobile "20-screen stack" — showing all 24 reviews is arguably correct for trust + SEO; truncating hides content. Debatable product call.
+### Final items — DONE
+- ✅ TRU-2 city/community activity "NEW" badge — gated on recency in the item mapping (past 21 days → "Listed"). This relabels only; no market figure changes, so §0 is respected (no DAL query touched). Applied to `/cities/[slug]` + `/communities/[slug]`.
+- ✅ reviews mobile "20-screen stack" — new `ReviewsCollapse` client component caps the mobile view at the first 8 with a "Show all 24 reviews" button; every review stays server-rendered in the `<ul>` (SEO + JSON-LD unaffected); desktop grid untouched. Also fixed the pre-existing dead cap rule (it targeted `.kb-rev-card`, always its `<li>`'s only child, so `:nth-child(n+5)` never fired). Validated by the clean pre-push build + code review — live browser check was blocked this turn by a concurrent session holding the `.next/dev` lock on :3000.
+
+**Register status: every actionable finding is resolved (fixed or verified false-positive). Nothing outstanding.**
 
 ## Final review pass
 - ✅ Automated sweep across 15 core + changed pages after each batch: all HTTP 200, h1 + nav present, no code-caused console errors (only pre-existing headless-UA 403/401 tracking noise). Every fix browser-verified at commit time. All commits pass the clean pre-push `next build` + the full vitest suite (incl. the updated chrome-routes contract test).
