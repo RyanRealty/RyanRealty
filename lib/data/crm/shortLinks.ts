@@ -30,6 +30,22 @@ function isUntrackableLink(url: string): boolean {
   return /\/r\/[A-Za-z0-9]|\/api\/track\/|unsubscribe|opt[-_]?out|email-preferences|agency-disclosure/i.test(url)
 }
 
+/** Trailing sentence punctuation the URL regex greedily captures ("…/sell." → "."). */
+const TRAILING_PUNCT = /[.,;:!?)\]'"]+$/
+
+/**
+ * Link-preview prefetchers (iMessage, WhatsApp, Slack, social crawlers) fetch a
+ * texted link to build a preview — that is NOT a human click and must not inflate
+ * the count. A missing UA is treated as automation too (real browsers always send
+ * one). CLI/library bots are already 403'd upstream by the middleware bot screen;
+ * this catches the preview/prefetch class that middleware lets through.
+ */
+const BOT_UA_RE = /bot\b|crawl|spider|slurp|facebookexternalhit|facebot|whatsapp|telegram|slackbot|discordbot|twitterbot|linkedinbot|skypeuripreview|applebot|bingbot|googlebot|preview|prerender|scanner|monitor|python-requests|curl|wget|headless/i
+export function isLikelyBotUserAgent(ua: string | null | undefined): boolean {
+  if (!ua || !ua.trim()) return true
+  return BOT_UA_RE.test(ua)
+}
+
 export async function createShortLink(params: {
   personId: number
   targetUrl: string
@@ -67,21 +83,49 @@ export async function instrumentSmsLinks(
   text: string,
   params: { personId: number; broker?: string | null; messageSid?: string | null },
 ): Promise<string> {
-  const urls = [...new Set(text.match(/https?:\/\/[^\s"'<)\]]+/g) ?? [])]
-  if (urls.length === 0) return text
-  let out = text
-  for (const url of urls) {
-    if (isUntrackableLink(url)) continue
-    const code = await createShortLink({
-      personId: params.personId,
-      targetUrl: url,
-      broker: params.broker ?? null,
-      channel: 'sms',
-      messageSid: params.messageSid ?? null,
-    })
-    if (code) out = out.replaceAll(url, `${TRACK_ORIGIN}/r/${code}`)
+  try {
+    const matches = [...text.matchAll(/https?:\/\/[^\s"'<)\]]+/g)]
+    if (matches.length === 0) return text
+
+    // Mint one short link per UNIQUE cleaned URL (trailing punctuation stripped
+    // so the redirect target is the real URL).
+    const codeByUrl = new Map<string, string>()
+    for (const m of matches) {
+      const clean = m[0].replace(TRAILING_PUNCT, '')
+      if (!clean || isUntrackableLink(clean) || codeByUrl.has(clean)) continue
+      const code = await createShortLink({
+        personId: params.personId,
+        targetUrl: clean,
+        broker: params.broker ?? null,
+        channel: 'sms',
+        messageSid: params.messageSid ?? null,
+      })
+      if (code) codeByUrl.set(clean, `${TRACK_ORIGIN}/r/${code}`)
+    }
+    if (codeByUrl.size === 0) return text
+
+    // Rebuild left-to-right by match position. A single pass (never replaceAll)
+    // is REQUIRED: the short link itself contains "ryan-realty.com", so a naive
+    // replace of a bare ryan-realty.com URL would corrupt an already-inserted
+    // short link. Position-based reconstruction can't re-match inserted text.
+    let out = ''
+    let last = 0
+    for (const m of matches) {
+      const start = m.index ?? 0
+      const orig = m[0]
+      const clean = orig.replace(TRAILING_PUNCT, '')
+      const trail = orig.slice(clean.length) // punctuation kept AFTER the link
+      const repl = codeByUrl.get(clean)
+      out += text.slice(last, start) + (repl ? repl + trail : orig)
+      last = start + orig.length
+    }
+    out += text.slice(last)
+    return out
+  } catch (err) {
+    // Tracking must NEVER block the actual text — fail open to the original body.
+    console.warn('[short-links] instrument failed, sending untracked:', err)
+    return text
   }
-  return out
 }
 
 export type ResolvedShortLink = { targetUrl: string; personId: number; broker: string | null; channel: string }
@@ -93,7 +137,10 @@ export type ResolvedShortLink = { targetUrl: string; personId: number; broker: s
  * matching the email_click grain) while click_count still increments every hit.
  * Returns null for an unknown code (caller fails open to the homepage).
  */
-export async function resolveAndLogShortLinkClick(code: string): Promise<ResolvedShortLink | null> {
+export async function resolveAndLogShortLinkClick(
+  code: string,
+  opts?: { log?: boolean },
+): Promise<ResolvedShortLink | null> {
   const sb = createServiceClient()
   const { data } = await sb
     .from('crm_short_links')
@@ -106,6 +153,10 @@ export async function resolveAndLogShortLinkClick(code: string): Promise<Resolve
   const target = data.target_url as string
   const broker = (data.broker as string | null) ?? null
   const channel = (data.channel as string) ?? 'sms'
+
+  // A link-preview prefetch (opts.log === false) redirects but records nothing —
+  // it is not a human click. Everything below is the real-click bookkeeping.
+  if (opts?.log === false) return { targetUrl: target, personId, broker, channel }
 
   const { error: logErr } = await sb.from('crm_timeline').upsert(
     {

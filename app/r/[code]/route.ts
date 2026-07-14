@@ -8,20 +8,23 @@
  * homepage on any unknown/invalid code so a mistyped link never dead-ends.
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { resolveAndLogShortLinkClick } from '@/lib/data/crm/shortLinks'
+import { resolveAndLogShortLinkClick, isLikelyBotUserAgent } from '@/lib/data/crm/shortLinks'
 
 export const runtime = 'nodejs'
 export const revalidate = 0
 
 const HOME = 'https://ryan-realty.com'
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ code: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
   const clean = (code ?? '').replace(/[^A-Za-z0-9]/g, '').slice(0, 16)
+  // Redirect ALWAYS; only RECORD the click for a real human. A link-preview
+  // prefetch (iMessage/WhatsApp/social) must not inflate the count.
+  const log = !isLikelyBotUserAgent(req.headers.get('user-agent'))
   let target = HOME
   if (clean) {
     try {
-      const resolved = await resolveAndLogShortLinkClick(clean)
+      const resolved = await resolveAndLogShortLinkClick(clean, { log })
       if (resolved?.targetUrl && /^https?:\/\//i.test(resolved.targetUrl)) target = resolved.targetUrl
     } catch (err) {
       console.warn('[r/code] resolve error:', err)
