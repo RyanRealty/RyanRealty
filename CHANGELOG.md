@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.781.0 (2026-07-14)
+
+### Features
+- feat(cma): restore authoritative site data (zoning/well/septic) — gated + audited
+
+---
+
+
 ## v1.780.0 (2026-07-14)
 
 ### Features
