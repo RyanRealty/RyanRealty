@@ -30,6 +30,7 @@ import { getCmaMarketContext } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { judgeComps } from '@/lib/cma/judge'
 import { auditCma } from '@/lib/cma/audit'
+import { resolveCmaSiteData } from '@/lib/cma/county'
 import { evaluateBpoAccuracyContract } from '@/lib/bpo/contract'
 import { analyzeListingHistory } from '@/lib/bpo/history'
 import { deriveOpinion } from '@/lib/bpo/opinion'
@@ -105,9 +106,10 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
     const subject = resolved.subject
 
     // 2. Comps + market context in parallel (shared CMA engine).
-    const [selection, market] = await Promise.all([
+    const [selection, market, site] = await Promise.all([
       selectComps(subject),
       getCmaMarketContext(subject.city),
+      resolveCmaSiteData(subject),
     ])
     if (selection.comps.length < MIN_COMPS) {
       const err = `Only ${selection.comps.length} qualifying closed comps found (minimum ${MIN_COMPS}). ${selection.trace.join(' ')}`
@@ -190,6 +192,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
         pricing,
         judgment,
         market,
+        site,
         finalOpinion: {
           value: opinion.opinionValue,
           low: opinion.valueLow,
@@ -243,6 +246,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       audit,
       opinion,
       history,
+      site,
       minComps: MIN_COMPS,
       marketContextPresent: market != null,
     })
@@ -291,6 +295,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       rationale,
       purpose: input.purpose ?? null,
       generatedAtIso,
+      site,
     })
 
     // 6. Citations — one entry per figure class (CLAUDE.md section 0).
@@ -388,6 +393,29 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
         // Drives expectedOfferLow in seller mode (offer.ts lowFactor).
         sale_to_list_ratio: market?.saleToListRatio ?? null,
       },
+      site: {
+        tax_account: site.taxAccount,
+        taxlot: site.taxlot,
+        trs: site.trs,
+        acreage: site.acreage,
+        zone: site.zone,
+        overlays: site.zoneOverlays,
+        wildfire_hazard: site.wildfireHazard,
+        flood: site.flood,
+        water_source: site.water.source,
+        well_log: site.water.wellLog,
+        irrigation_district: site.water.irrigationDistrict,
+        septic: site.septic,
+        permits: site.permits,
+        entitlement: site.entitlement,
+        hunting: site.hunting,
+        is_municipal: site.isMunicipal,
+        constraints: site.constraints,
+        field_confirm: site.fieldConfirm,
+        resolved: site.resolved,
+        notes: site.notes,
+        sources: site.citations,
+      },
       disclosure: 'Broker price opinion (ORS 696.010 / 696.290), not an appraisal (ORS ch. 674).',
     }
 
@@ -397,6 +425,24 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       comps_count: adjusted.length,
       needs_review: needsReview,
       review_reason: reviewReason,
+      // Authoritative site facts for the admin summary (full trace in citations.site).
+      site: {
+        zone: site.zone,
+        overlays: site.zoneOverlays,
+        acreage: site.acreage,
+        water_source: site.water.source,
+        irrigation_district: site.water.irrigationDistrict,
+        septic: site.septic.status,
+        permit_count: site.permits.length,
+        flood_zone: site.flood.zone,
+        in_sfha: site.flood.inSFHA,
+        wildfire_hazard: site.wildfireHazard,
+        entitlement_conditional: site.entitlement?.conditional ?? false,
+        hunting_eligible: site.hunting != null,
+        constraint_count: site.constraints.length,
+        is_municipal: site.isMunicipal,
+        resolved: site.resolved,
+      },
       judgment: judgment
         ? {
             used_llm: true as const,

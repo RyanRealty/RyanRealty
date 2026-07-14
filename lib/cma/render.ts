@@ -41,32 +41,80 @@ export interface RenderCmaArgs {
   site?: CmaSiteData | null
 }
 
-/** Zoning / water / septic block from the authoritative records (SKILL §3.5/§3.6).
- *  Renders only what was resolved; unresolved facts read "confirm at listing". */
-function siteBlock(site: CmaSiteData | null | undefined): string {
+/**
+ * Comprehensive property & site intelligence from the authoritative county /
+ * state / federal records (SKILL §3.5/§3.6/§7b/§7c). Zoning + overlays, water,
+ * septic + permit history, flood, wildfire, entitlement, buildability
+ * constraints, hunting/LOP, and field-confirm caveats. Renders only what was
+ * resolved; unresolved facts read "confirm at listing". Shared verbatim by the
+ * CMA (subject page) and the BPO. Every consumer imports THIS — one source.
+ */
+export function propertyIntelligenceBlock(site: CmaSiteData | null | undefined): string {
   if (!site || (!site.zone && site.water.source === 'unknown' && site.septic.status === 'unknown')) return ''
   const rows: string[] = []
-  if (site.zone) rows.push(`<li><strong>Zoning:</strong> ${escapeHtml(site.zone)}${site.zoneOverlays.length ? ` (${site.zoneOverlays.map(escapeHtml).join(', ')})` : ''}${/\b(EFU|EFUTRB|F1|F2)\b/i.test(site.zone) ? ' — dwelling requires a verified entitlement; confirm before relying on buildability' : ''}</li>`)
+
+  // Zoning + overlays + entitlement.
+  if (site.zone) {
+    const overlays = site.overlays?.length ? ` · overlays: ${site.overlays.map((o) => escapeHtml(o.code)).join(', ')}` : ''
+    rows.push(`<li><strong>Zoning:</strong> ${escapeHtml(site.zone)}${overlays}${site.entitlement?.conditional ? '. Resource zone, so a dwelling requires a verified entitlement (confirm before relying on buildability)' : ''}</li>`)
+  }
+  if (site.acreage != null) rows.push(`<li><strong>Parcel:</strong> ${site.acreage} acres${site.taxlot ? ` · taxlot ${escapeHtml(site.taxlot)}` : ''}${site.trs ? ` · ${escapeHtml(site.trs)}` : ''}</li>`)
+
+  // Water.
   const water =
     site.water.source === 'well'
-      ? `Private well${site.water.wellLog?.completedDepthFt ? ` (area well logs ~${site.water.wellLog.completedDepthFt} ft; confirm the subject's OWRD log at listing)` : ' (confirm the subject\'s OWRD well log at listing)'}`
+      ? `Private well${site.water.wellLog?.completedDepthFt ? ` (nearest area log about ${site.water.wellLog.completedDepthFt} ft, ${escapeHtml(site.water.wellLog.completedDate ?? 'date n/a')}. Confirm the subject's OWRD log)` : ' (confirm the subject\'s OWRD well log at listing)'}`
       : site.water.source === 'municipal'
         ? 'City water'
         : null
   if (water) rows.push(`<li><strong>Water:</strong> ${water}</li>`)
+  if (site.water.irrigationDistrict) rows.push(`<li><strong>Irrigation district:</strong> ${escapeHtml(site.water.irrigationDistrict)} (district boundary is not a certificated water right.  confirm rights with the district + OWRD)</li>`)
+
+  // Septic + permit history.
   const septic =
     site.septic.status === 'installed'
       ? `Onsite septic system${site.septic.permit ? ` (permit ${escapeHtml(site.septic.permit)})` : ' of record'}`
       : site.septic.status === 'site-evaluation-only'
-        ? 'Site evaluation only — no installed system of record (buyer installs)'
+        ? 'Site evaluation only.  no installed system of record (buyer installs)'
         : site.septic.status === 'municipal-sewer'
           ? 'City sewer'
-          : null
+          : site.septic.status === 'none-found'
+            ? 'No onsite-wastewater permit on the county record (buyer installs)'
+            : null
   if (septic) rows.push(`<li><strong>Sewer/septic:</strong> ${septic}</li>`)
+  if (site.permits?.length) rows.push(`<li><strong>Permits of record:</strong> ${site.permits.length} on file (${site.permits.slice(0, 6).map((p) => escapeHtml(p.type)).filter((v, i, a) => a.indexOf(v) === i).join(', ')})</li>`)
+
+  // Flood + wildfire.
+  if (site.flood?.zone) rows.push(`<li><strong>FEMA flood:</strong> zone ${escapeHtml(site.flood.zone)}${site.flood.inSFHA === true ? ' (Special Flood Hazard Area.  flood insurance required)' : site.flood.inSFHA === false ? ' (not a Special Flood Hazard Area)' : ''}</li>`)
   if (site.wildfireHazard) rows.push('<li><strong>Wildfire hazard zone:</strong> yes (defensible-space + build standards apply)</li>')
+  if (site.publicLand) rows.push('<li><strong>Public land:</strong> parcel intersects a public-lands layer.  confirm ownership/boundary</li>')
+
   if (rows.length === 0) return ''
-  return `<h3 class="subhead">Site &amp; utilities (county / state records)</h3><ul class="note-list">${rows.join('')}</ul>`
+  let html = `<h3 class="subhead">Property &amp; site intelligence (county / state / FEMA records)</h3><ul class="note-list">${rows.join('')}</ul>`
+
+  // Buildability constraints (positives + limits, plainly stated).
+  if (site.constraints?.length) {
+    html += `<h3 class="subhead">Buildability &amp; constraints</h3><ul class="note-list">${site.constraints.map((c) => `<li>${escapeHtml(c)}</li>`).join('')}</ul>`
+  }
+
+  // Hunting / recreation (qualifying acreage only).
+  if (site.hunting) {
+    html += `<h3 class="subhead">Hunting, recreation &amp; landowner tags</h3><ul class="note-list">` +
+      `<li><strong>Game unit:</strong> ${escapeHtml(site.hunting.gameUnit)}</li>` +
+      `<li><strong>Landowner preference:</strong> ${escapeHtml(site.hunting.lop)}</li>` +
+      (site.hunting.noShootingDistrict != null ? `<li><strong>No Shooting District:</strong> ${site.hunting.noShootingDistrict ? 'yes (discharge restricted)' : 'no'}</li>` : '') +
+      `</ul>`
+  }
+
+  // Field-confirm caveats (facts a machine source can no longer serve).
+  if (site.fieldConfirm?.length) {
+    html += `<h3 class="subhead">Confirm at listing</h3><ul class="note-list">${site.fieldConfirm.map((c) => `<li>${escapeHtml(c)}</li>`).join('')}</ul>`
+  }
+  return html
 }
+
+/** Back-compat alias.  the subject page calls this name. */
+const siteBlock = propertyIntelligenceBlock
 
 export function escapeHtml(s: string): string {
   return s

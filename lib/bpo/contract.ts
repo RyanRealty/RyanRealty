@@ -17,6 +17,7 @@ import { evaluateAccuracyContract, type AccuracyContract, type ContractCheck } f
 import type { CmaAdjustedComp, CmaPricing } from '@/lib/cma/types'
 import type { CompJudgment } from '@/lib/cma/judge'
 import type { CmaAudit } from '@/lib/cma/audit'
+import type { CmaSiteData } from '@/lib/cma/county'
 import type { BpoListingHistory, BpoOpinion } from '@/lib/bpo/types'
 
 export function evaluateBpoAccuracyContract(args: {
@@ -26,6 +27,7 @@ export function evaluateBpoAccuracyContract(args: {
   audit: CmaAudit | null
   opinion: BpoOpinion
   history: BpoListingHistory
+  site?: CmaSiteData | null
   minComps: number
   marketContextPresent: boolean
 }): AccuracyContract {

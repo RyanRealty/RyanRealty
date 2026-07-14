@@ -233,7 +233,7 @@ export async function auditCma(args: {
     'the machine-adjusted values cluster; ' +
     '(4) a narrative or confidence claim that does not trace to the data shown; ' +
     '(5) a market-verdict mismatch (months of supply: 4 or less seller, 4-6 balanced, 6 or more buyer). ' +
-    '(6) a SITE claim contradicting the authoritative records: a buildability assertion on EFU/EFUTRB or other restrictive zoning without a verified current entitlement (category=data-integrity, critical); a stated water source or septic system not supported by the SITE line; or a zoning/utility fact the report asserts that the records did not resolve. ' +
+    '(6) a SITE claim contradicting the authoritative records: a buildability assertion on EFU/EFUTRB or other restrictive zoning without a verified current entitlement (category=data-integrity, critical); a stated water source or septic system not supported by the SITE line; a flood, wildfire, overlay-setback, or hunting/LOP claim not supported by the SITE line; irrigation-DISTRICT membership presented as a certificated water RIGHT; or any zoning/utility/buildability fact the report asserts that the records did not resolve. ' +
     'CONTEXT — the subject failed to sell at its last list price. A recommendation at or above that price is not ' +
     'automatically wrong: if the adjusted comp values cluster at or above it, that IS the evidence, and the prior ' +
     'failure may reflect condition, presentation, or timing. Flag it only when the comps do not support it. ' +
@@ -246,10 +246,15 @@ export async function auditCma(args: {
 
   const siteLine = site
     ? `Zoning ${site.zone ?? 'UNRESOLVED'}${site.zoneOverlays.length ? ` (overlays ${site.zoneOverlays.join(', ')})` : ''}. ` +
-      `Water: ${site.water.source}${site.water.wellLog ? ` (nearest domestic well ${site.water.wellLog.completedDepthFt ?? '?'}ft)` : ''}. ` +
-      `Septic: ${site.septic.status}${site.septic.permit ? ` (${site.septic.permit})` : ''}. ` +
-      `${site.isMunicipal ? 'Municipal water/sewer.' : 'Non-municipal.'}${site.resolved ? '' : ' SITE FACTS NOT FULLY RESOLVED FROM RECORDS.'}`
-    : 'No authoritative site data (zoning/water/septic) was resolved.'
+      `${site.acreage != null ? `Parcel ${site.acreage}ac. ` : ''}${site.trs ? `${site.trs}. ` : ''}` +
+      `Water: ${site.water.source}${site.water.wellLog ? ` (nearest domestic well ${site.water.wellLog.completedDepthFt ?? '?'}ft)` : ''}${site.water.irrigationDistrict ? ` [${site.water.irrigationDistrict}]` : ''}. ` +
+      `Septic: ${site.septic.status}${site.septic.permit ? ` (${site.septic.permit})` : ''}${site.permits.length ? ` (${site.permits.length} permits of record)` : ''}. ` +
+      `${site.flood.zone ? `FEMA flood ${site.flood.zone}${site.flood.inSFHA ? ' (SFHA)' : ''}. ` : ''}${site.wildfireHazard ? 'Wildfire hazard zone. ' : ''}` +
+      `${site.entitlement?.conditional ? 'Dwelling requires a verified entitlement (NOT by-right). ' : ''}` +
+      `${site.hunting ? `Hunting/LOP: ${site.hunting.lop}. ` : ''}` +
+      `${site.isMunicipal ? 'Municipal water/sewer.' : 'Non-municipal.'}${site.resolved ? '' : ' SITE FACTS NOT FULLY RESOLVED FROM RECORDS.'}` +
+      `${site.constraints.length ? ` Constraints: ${site.constraints.join(' | ')}` : ''}`
+    : 'No authoritative site data was resolved.'
 
   const user =
     `SUBJECT:\n${subjectLine}\n\nMARKET: ${marketLine}\n\nSITE (authoritative county/state records): ${siteLine}\n\n` +

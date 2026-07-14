@@ -21,6 +21,8 @@ import type {
   BpoOfferStrategy,
   CmaSubject,
 } from '@/lib/bpo/types'
+import type { CmaSiteData } from '@/lib/cma/county'
+import { propertyIntelligenceBlock } from '@/lib/cma/render'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const usd = formatPriceExact
@@ -98,6 +100,7 @@ export interface RenderBpoArgs {
   rationale: string
   purpose: string | null
   generatedAtIso: string
+  site?: CmaSiteData | null
 }
 
 function stylesheet(): string {
@@ -149,6 +152,13 @@ function stylesheet(): string {
 
   h2.sec { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
     margin: 20px 0 8px; }
+  h3.subhead { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--navy);
+    font-weight: 600; margin: 14px 0 6px; break-after: avoid; }
+  ul.note-list { list-style: none; padding: 0; margin: 6px 0 0; }
+  ul.note-list li { font-size: 11.5px; line-height: 1.5; padding: 5px 0 5px 15px; position: relative;
+    border-bottom: 1px solid var(--line); break-inside: avoid; }
+  ul.note-list li::before { content: '·'; position: absolute; left: 3px; top: 4px; color: var(--navy); font-weight: 700; }
+  ul.note-list li strong { font-weight: 600; }
   table { width: 100%; border-collapse: collapse; font-size: 11px; }
   th, td { text-align: right; padding: 6px 7px; border-bottom: 1px solid var(--line); white-space: nowrap; }
   th:first-child, td:first-child { text-align: left; white-space: normal; }
@@ -280,7 +290,8 @@ function signalsList(history: BpoListingHistory): string {
 }
 
 export function renderBpoHtml(args: RenderBpoArgs): { html: string; pageCount: number } {
-  const { subject, comps, market, history, opinion, offer, broker, rationale, purpose, generatedAtIso } = args
+  const { subject, comps, market, history, opinion, offer, broker, rationale, purpose, generatedAtIso, site } = args
+  const intelligence = propertyIntelligenceBlock(site)
   const addr = `${subject.streetAddress}, ${subject.city}, ${subject.state} ${subject.postalCode ?? ''}`.trim()
   const vsList =
     opinion.vsCurrentListPct != null
@@ -333,6 +344,8 @@ export function renderBpoHtml(args: RenderBpoArgs): { html: string; pageCount: n
       <tbody>${historyRows(history)}</tbody>
     </table>
     ${signalsList(history)}
+
+    ${intelligence ? `<div class="rule"></div>${intelligence}` : ''}
   </div>
 
   <div class="page">
