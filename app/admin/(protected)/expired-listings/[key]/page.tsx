@@ -81,10 +81,106 @@ export default async function ExpiredListingDetailPage({ params }: { params: Pro
         )}
       </div>
 
+      {r.listing ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Full listing</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-[220px_1fr]">
+              {r.listing.photo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={r.listing.photo_url}
+                  alt={r.full_address}
+                  className="h-40 w-full rounded-lg border border-border object-cover sm:w-[220px]"
+                />
+              ) : (
+                <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-border text-xs text-muted-foreground sm:w-[220px]">
+                  no photo on the closed listing
+                </div>
+              )}
+              <div className="divide-y divide-border">
+                <Row label="Beds / baths" value={`${r.listing.beds ?? '—'} bd · ${r.listing.baths ?? '—'} ba`} />
+                <Row label="Living area" value={r.listing.sqft ? `${r.listing.sqft.toLocaleString()} sqft` : '—'} />
+                <Row label="Year built" value={r.listing.year_built ?? '—'} />
+                <Row label="Lot" value={r.listing.lot_acres != null ? `${r.listing.lot_acres} acres` : '—'} />
+                <Row label="Garage" value={r.listing.garage_spaces != null ? `${r.listing.garage_spaces} spaces` : '—'} />
+                <Row label="View" value={r.listing.view_description ?? '—'} />
+                <Row
+                  label="Type"
+                  value={[r.listing.property_type, r.listing.property_sub_type].filter(Boolean).join(' · ') || '—'}
+                />
+                {r.listing.photos_count ? <Row label="Photos on file" value={r.listing.photos_count} /> : null}
+              </div>
+            </div>
+            {r.listing.public_remarks ? (
+              <div>
+                <div className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  MLS remarks
+                </div>
+                <p className="whitespace-pre-line text-sm leading-relaxed text-foreground">
+                  {r.listing.public_remarks}
+                </p>
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {r.price_cycles.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Price history · {r.price_cycles.length} MLS {r.price_cycles.length === 1 ? 'attempt' : 'attempts'}</CardTitle>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <th className="py-2 pr-3 font-medium">Listed</th>
+                  <th className="py-2 pr-3 font-medium">Status</th>
+                  <th className="py-2 pr-3 text-right font-medium">Original</th>
+                  <th className="py-2 pr-3 text-right font-medium">Final ask</th>
+                  <th className="py-2 pr-3 text-right font-medium">Sold</th>
+                  <th className="py-2 pr-3 text-right font-medium">DOM</th>
+                  <th className="py-2 pr-3 text-right font-medium">Cuts</th>
+                  <th className="py-2 font-medium">Off market</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {r.price_cycles.map((c) => {
+                  const cut =
+                    c.original_list_price && c.final_list_price && c.original_list_price > c.final_list_price
+                      ? c.original_list_price - c.final_list_price
+                      : null
+                  return (
+                    <tr key={c.listing_key} className="align-baseline">
+                      <td className="py-2 pr-3 whitespace-nowrap">{fmtDate(c.list_date)}</td>
+                      <td className="py-2 pr-3 capitalize">{c.status?.toLowerCase() ?? '—'}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums">{fmtPrice(c.original_list_price)}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums">{fmtPrice(c.final_list_price)}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums">{c.close_price ? fmtPrice(c.close_price) : '—'}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums">{c.days_on_market ?? '—'}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums">
+                        {c.price_drop_count ? `${c.price_drop_count}${cut ? ` (${fmtPrice(cut)})` : ''}` : '—'}
+                      </td>
+                      <td className="py-2 whitespace-nowrap">{fmtDate(c.off_market_date)}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+            <p className="mt-3 text-xs text-muted-foreground">
+              One row per MLS listing attempt at this address, newest first. Source: Oregon Data Share MLS.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Listing history</CardTitle>
+            <CardTitle>Summary</CardTitle>
           </CardHeader>
           <CardContent className="divide-y divide-border">
             <Row label="Last list price" value={fmtPrice(r.list_price)} />

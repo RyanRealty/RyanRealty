@@ -13,6 +13,7 @@ import 'server-only'
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { getBpoListingCyclesByAddress } from '@/lib/data/bpo/reads'
 
 export interface ExpiredOutreachRow {
   listing_key: string
@@ -149,6 +150,44 @@ export interface ExpiredListingDetail {
   hard_stop: boolean
   relisted: boolean
   cma_slug: string | null
+  /** Full MLS listing (photos, remarks, property detail) for the review view. */
+  listing: ExpiredFullListing | null
+  /** Every MLS listing attempt at the address, newest first — the price history. */
+  price_cycles: ExpiredPriceCycle[]
+}
+
+/** The full MLS listing row for the expired-review "full listing" card. */
+export interface ExpiredFullListing {
+  listing_key: string
+  photo_url: string | null
+  photos_count: number | null
+  public_remarks: string | null
+  beds: number | null
+  baths: number | null
+  sqft: number | null
+  year_built: number | null
+  lot_acres: number | null
+  garage_spaces: number | null
+  view_description: string | null
+  property_type: string | null
+  property_sub_type: string | null
+}
+
+/** One MLS listing attempt at the address (a price-history row). */
+export interface ExpiredPriceCycle {
+  listing_key: string
+  list_number: string | null
+  status: string | null
+  original_list_price: number | null
+  final_list_price: number | null
+  close_price: number | null
+  list_date: string | null
+  off_market_date: string | null
+  days_on_market: number | null
+  price_drop_count: number | null
+  total_price_change_amt: number | null
+  list_agent_name: string | null
+  list_office_name: string | null
 }
 
 /** Full expired-listing record for the admin detail page. */
@@ -189,6 +228,63 @@ export async function getExpiredListingDetail(listingKey: string): Promise<Expir
         (r.status_change_timestamp == null || String(l.status_change_timestamp ?? '') > r.status_change_timestamp),
     )
   }
+  // Full MLS listing (photos, remarks, property detail) for the review card.
+  const { data: fullRow } = await sb
+    .from('listings')
+    .select(
+      'ListingKey, PhotoURL, photos_count, public_remarks, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, year_built, lot_size_acres, garage_spaces, view_description, PropertyType, property_sub_type',
+    )
+    .eq('ListingKey', r.listing_key)
+    .maybeSingle()
+  const listing: ExpiredFullListing | null = fullRow
+    ? {
+        listing_key: r.listing_key,
+        photo_url: (fullRow.PhotoURL as string | null) ?? null,
+        photos_count: (fullRow.photos_count as number | null) ?? null,
+        public_remarks: (fullRow.public_remarks as string | null) ?? null,
+        beds: (fullRow.BedroomsTotal as number | null) ?? null,
+        baths: fullRow.BathroomsTotal != null ? Number(fullRow.BathroomsTotal) : null,
+        sqft: fullRow.TotalLivingAreaSqFt != null ? Number(fullRow.TotalLivingAreaSqFt) : null,
+        year_built: (fullRow.year_built as number | null) ?? null,
+        lot_acres: fullRow.lot_size_acres != null ? Number(fullRow.lot_size_acres) : null,
+        garage_spaces: (fullRow.garage_spaces as number | null) ?? null,
+        view_description: (fullRow.view_description as string | null) ?? null,
+        property_type: (fullRow.PropertyType as string | null) ?? null,
+        property_sub_type: (fullRow.property_sub_type as string | null) ?? null,
+      }
+    : null
+
+  // Full price history — every MLS listing attempt at the address (reuses the
+  // BPO cycle reader). Newest first; each row is one attempt (a price story).
+  let price_cycles: ExpiredPriceCycle[] = []
+  if (r.street_address) {
+    const num = String(r.street_address).split(' ')[0]
+    const namePrefix = String(r.street_address).slice(num.length + 1).trim()
+    if (num && namePrefix) {
+      const rows = await getBpoListingCyclesByAddress({
+        streetNumber: num,
+        streetNameIlike: `${namePrefix}%`,
+        cityIlike: r.city ?? null,
+        postalCode: r.postal_code ?? null,
+      })
+      price_cycles = rows.map((c) => ({
+        listing_key: String(c.ListingKey ?? ''),
+        list_number: c.ListNumber != null ? String(c.ListNumber) : null,
+        status: (c.StandardStatus as string | null) ?? null,
+        original_list_price: c.OriginalListPrice != null ? Number(c.OriginalListPrice) : null,
+        final_list_price: c.ListPrice != null ? Number(c.ListPrice) : null,
+        close_price: c.ClosePrice != null ? Number(c.ClosePrice) : null,
+        list_date: (c.ListDate as string | null) ?? (c.OnMarketDate as string | null) ?? null,
+        off_market_date: (c.off_market_date as string | null) ?? null,
+        days_on_market: c.DaysOnMarket != null ? Number(c.DaysOnMarket) : null,
+        price_drop_count: c.price_drop_count != null ? Number(c.price_drop_count) : null,
+        total_price_change_amt: c.total_price_change_amt != null ? Number(c.total_price_change_amt) : null,
+        list_agent_name: (c.ListAgentName as string | null) ?? null,
+        list_office_name: (c.ListOfficeName as string | null) ?? null,
+      }))
+    }
+  }
+
   return {
     listing_key: r.listing_key,
     full_address: r.full_address,
@@ -225,6 +321,8 @@ export async function getExpiredListingDetail(listingKey: string): Promise<Expir
     hard_stop: /HARD STOP|LITIGATOR/i.test(String(r.enrichment_notes ?? '')),
     relisted,
     cma_slug: cma ? slug : null,
+    listing,
+    price_cycles,
   }
 }
 
