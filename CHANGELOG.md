@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.778.1 (2026-07-14)
+
+### Bug Fixes
+- fix(crm): harden SMS click tracking (adversarial audit)
+
+---
+
+
 ## v1.778.0 (2026-07-14)
 
 ### Features
