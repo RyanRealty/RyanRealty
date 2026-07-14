@@ -31,7 +31,15 @@ function segmentInfo(text: string): { chars: number; segments: number } {
   return { chars, segments: chars <= single ? 1 : Math.ceil(chars / multi) }
 }
 
-export type SmsRecipient = { personId: number; name: string; phone: string; relation: string }
+/** A group-text recipient. personId 0 = a raw thread number with no contact
+ *  record (still included so a group reply drops nobody). defaultOn pre-selects
+ *  it (group-thread participants come pre-checked; relationships start off). */
+export type SmsRecipient = { personId: number; name: string; phone: string; relation: string; defaultOn?: boolean }
+
+/** Stable per-recipient key: contact id when we have one, else the phone. */
+function recipKey(r: SmsRecipient): string {
+  return r.personId > 0 ? `p${r.personId}` : `ph${r.phone}`
+}
 
 export function SmsComposer(props: {
   initialBody: string
@@ -60,17 +68,24 @@ export function SmsComposer(props: {
   })
 
   const recipients = props.recipients ?? []
-  // The lead is always a recipient; extras (relationships) start off, tap to add.
-  const [selectedExtra, setSelectedExtra] = useState<Set<number>>(new Set())
-  function toggleExtra(id: number) {
+  // The lead is always a recipient. Group-thread participants (defaultOn) start
+  // CHECKED so a reply auto-includes everyone; relationships start off (tap to add).
+  // Keyed by recipKey so raw numbers (personId 0) don't all collide on 0.
+  const [selectedExtra, setSelectedExtra] = useState<Set<string>>(
+    () => new Set(recipients.filter((r) => r.defaultOn && r.personId !== props.primaryPersonId).map(recipKey)),
+  )
+  function toggleExtra(key: string) {
     setSelectedExtra((prev) => {
       const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
       return next
     })
   }
-  const extraIds = [...selectedExtra].join(',')
+  // Selected split into contact ids vs raw phone numbers for the send action.
+  const selectedRecips = recipients.filter((r) => r.personId !== props.primaryPersonId && selectedExtra.has(recipKey(r)))
+  const extraIds = selectedRecips.filter((r) => r.personId > 0).map((r) => r.personId).join(',')
+  const extraPhones = selectedRecips.filter((r) => r.personId === 0).map((r) => r.phone).join(',')
 
   function handleInsertToken(token: string) {
     const el = bodyRef.current
@@ -96,15 +111,16 @@ export function SmsComposer(props: {
           <span className="mr-0.5 text-xs font-medium text-muted-foreground">To</span>
           {recipients.map((r) => {
             const isPrimary = r.personId === props.primaryPersonId
-            const on = isPrimary || selectedExtra.has(r.personId)
+            const key = recipKey(r)
+            const on = isPrimary || selectedExtra.has(key)
             return (
               <Button
-                key={r.personId}
+                key={key}
                 type="button"
                 size="sm"
                 variant={on ? 'default' : 'outline'}
                 disabled={isPrimary}
-                onClick={() => toggleExtra(r.personId)}
+                onClick={() => toggleExtra(key)}
                 className="h-7 rounded-full px-3 text-xs disabled:opacity-100"
                 title={r.phone}
               >
@@ -113,6 +129,10 @@ export function SmsComposer(props: {
             )
           })}
           <input type="hidden" name="recipientIds" value={extraIds} />
+          <input type="hidden" name="recipientPhones" value={extraPhones} />
+          {selectedRecips.length > 0 ? (
+            <span className="basis-full text-[11px] text-muted-foreground">Replies to {selectedRecips.length + 1} people</span>
+          ) : null}
         </div>
       ) : null}
       {unresolved.length > 0 ? (

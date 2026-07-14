@@ -107,8 +107,12 @@ for (const fub of targets) {
   const { data: pe } = await sb.from('crm_people').select('id, name, assigned_broker, phones, emails').eq('fub_legacy_id', fub).limit(1);
   const person = pe?.[0]; if (!person) { continue; }
   const mainId = person.id;
-  const mainPhones = Array.isArray(person.phones) ? person.phones : [];
-  const mainEmails = Array.isArray(person.emails) ? person.emails : [];
+  // NOTE: `let` (not const) — a contact can have MULTIPLE relationships (e.g.
+  // Patrick → Tanya + Leisha). Each split strips that related person's phone/email
+  // off the primary; the removals MUST accumulate across relationships or the
+  // last write resurrects an earlier relationship's number. So reassign after each.
+  let mainPhones = Array.isArray(person.phones) ? person.phones : [];
+  let mainEmails = Array.isArray(person.emails) ? person.emails : [];
 
   const { data: relRows } = await sb.from('crm_relationships').select('id, related_person_id, related_name, kind').eq('person_id', mainId);
 
@@ -164,6 +168,7 @@ for (const fub of targets) {
       const newPhones = mainPhones.filter((p) => !(relPhone10 && ten(p.value) === relPhone10));
       const newEmails = mainEmails.filter((e) => !(relEmail && String(e.value || '').toLowerCase() === relEmail));
       await sb.from('crm_people').update({ phones: newPhones, emails: newEmails }).eq('id', mainId);
+      mainPhones = newPhones; mainEmails = newEmails; // accumulate for this contact's next relationship
     }
     linked++; if (phoneOnMain || emailOnMain) cleaned++;
     actions.push(plan);

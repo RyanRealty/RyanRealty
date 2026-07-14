@@ -55,6 +55,7 @@ import { addCrmCollaboratorAction, removeCrmCollaboratorAction } from '@/app/act
 import { EmailComposer } from '@/components/admin/crm/EmailComposer'
 import { SmsComposer } from '@/components/admin/crm/SmsComposer'
 import { getLeadSmsRecipients } from '@/lib/data/crm/getLeadSmsRecipients'
+import { getGroupReplyParticipants } from '@/lib/data/crm/getGroupReplyParticipants'
 import { TemplatePickerNav } from '@/components/admin/crm/TemplatePickerNav'
 import { getContactConversation } from '@/lib/data/crm/getContactConversation'
 import ViewedHomeCard from '@/components/admin/crm/ViewedHomeCard'
@@ -197,13 +198,27 @@ export default async function ConsoleLeadPage({
   const conversation = await getContactConversation(person.id, { limit: 50 })
 
   // Group-text recipients: the lead + every linked person (spouse, …) with a
-  // phone, so the SMS composer can quick-add them without typing.
-  const smsRecipients = await getLeadSmsRecipients(
-    person.id,
-    relationships
-      .filter((r) => r.relatedPersonId !== null)
-      .map((r) => ({ relatedPersonId: r.relatedPersonId as number, label: r.label })),
-  )
+  // phone (relationships start off), MERGED with everyone this contact shares a
+  // group text with (reconstructed from the stored thread members — pre-checked
+  // so a reply auto-includes them). Raw thread numbers with no contact come
+  // through as personId 0 so nobody is dropped.
+  const [relRecipients, groupParticipants] = await Promise.all([
+    getLeadSmsRecipients(
+      person.id,
+      relationships
+        .filter((r) => r.relatedPersonId !== null)
+        .map((r) => ({ relatedPersonId: r.relatedPersonId as number, label: r.label })),
+    ),
+    getGroupReplyParticipants(person.id),
+  ])
+  const smsRecipients: Array<{ personId: number; name: string; phone: string; relation: string; defaultOn?: boolean }> =
+    relRecipients.map((r) => ({ ...r, defaultOn: false }))
+  for (const g of groupParticipants) {
+    const pid = g.personId ?? 0
+    const existing = pid > 0 ? smsRecipients.find((m) => m.personId === pid) : smsRecipients.find((m) => m.personId === 0 && m.phone === g.phone)
+    if (existing) { existing.defaultOn = true; continue }
+    smsRecipients.push({ personId: pid, name: g.name, phone: g.phone, relation: pid > 0 ? 'Group' : 'Group', defaultOn: true })
+  }
 
   // A CMA queued and awaiting broker review (status 'ready') → NextStepCard shows
   // "Review & Send CMA" instead of "Send CMA". Only when the home-driven next step

@@ -801,23 +801,31 @@ export type RecentLead = {
 export async function getRecentNewLeads(limit = 12): Promise<RecentLead[]> {
   const access = await getCrmAccess()
   if (!access) return []
+  const { isAttributableLead } = await import('@/lib/data/crm/leadSourceTaxonomy')
   const sb = createServiceClient()
+  // Fetch a generous recent batch, then keep only GENUINE inbound leads
+  // (web/portal/phone/social/referral). Ordering by created_at desc is dominated
+  // by the Farm/Import bulk lists (~22k rows), so we over-fetch and filter with
+  // the shared taxonomy instead of showing imports as "new leads".
   let q = sb
     .from('crm_people')
     .select('id,name,stage,source,picture_url,created_at,assigned_broker')
     .eq('deleted', false)
     .order('created_at', { ascending: false })
-    .limit(limit)
+    .limit(Math.max(limit * 12, 150))
   if (access.brokerSlug) q = q.eq('assigned_broker', access.brokerSlug)
   const { data } = await q
-  return (data ?? []).map((r) => ({
-    id: r.id as number,
-    name: (r.name ?? null) as string | null,
-    stage: (r.stage ?? 'Lead') as string,
-    source: (r.source ?? null) as string | null,
-    pictureUrl: (r.picture_url ?? null) as string | null,
-    createdAt: r.created_at as string,
-  }))
+  return (data ?? [])
+    .filter((r) => isAttributableLead((r.source ?? null) as string | null))
+    .slice(0, limit)
+    .map((r) => ({
+      id: r.id as number,
+      name: (r.name ?? null) as string | null,
+      stage: (r.stage ?? 'Lead') as string,
+      source: (r.source ?? null) as string | null,
+      pictureUrl: (r.picture_url ?? null) as string | null,
+      createdAt: r.created_at as string,
+    }))
 }
 
 export type CrmConversationRow = {
@@ -956,6 +964,12 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   const extraIds = String(formData.get('recipientIds') ?? '')
     .split(',').map((s) => Number(s.trim())).filter((n) => Number.isFinite(n) && n > 0 && n !== personId)
   const recipientIds = [personId, ...Array.from(new Set(extraIds))]
+  // Group-reply RAW participants: thread member numbers with no contact record
+  // (Matt's rule — a group reply drops nobody). Normalized to E.164 after the
+  // twilio import below; a raw number has no contact so it cannot carry a STOP
+  // opt-out (opt-outs are always recorded against a resolved contact).
+  const rawPhoneInput = String(formData.get('recipientPhones') ?? '')
+    .split(',').map((s) => s.trim()).filter(Boolean)
 
   // TCPA quiet hours: one time-based check for the whole send. Block 9pm–8am
   // Pacific unless the broker explicitly overrides (a deliberate manual reply).
@@ -970,11 +984,31 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   const { isSuppressed } = await import('@/lib/crm/suppressions')
   const { renderCrmMerge, attributeSiteLinks } = await import('@/lib/crm/merge')
   const { buildMergeContext } = await import('@/lib/crm/merge-context')
-  const { sendSms, sendSmsViaMessagingService, brokerTwilioNumber } = await import('@/lib/crm/twilio')
+  const { sendSms, sendSmsViaMessagingService, brokerTwilioNumber, toE164, lookupPersonByPhone } = await import('@/lib/crm/twilio')
   const { instrumentSmsLinks } = await import('@/lib/data/crm/shortLinks')
 
   let sentCount = 0
   let lastError: string | null = null
+
+  // Normalize raw group-reply numbers → E.164, drop any that actually resolve to
+  // a contact (those go through the personId path with full suppression) or that
+  // a contact HAS opted out of. What remains are true no-contact numbers.
+  const rawPhones: string[] = []
+  {
+    const seen = new Set<string>()
+    for (const raw of rawPhoneInput) {
+      const e164 = toE164(raw)
+      if (!e164 || seen.has(e164)) continue
+      seen.add(e164)
+      const hit = await lookupPersonByPhone(e164)
+      if (hit) {
+        // it IS a contact — suppression-check and route via the id path instead
+        if (!(await isSuppressed(hit.personId, 'sms')).suppressed && !recipientIds.includes(hit.personId)) recipientIds.push(hit.personId)
+        continue
+      }
+      rawPhones.push(e164)
+    }
+  }
 
   // Native group MMS: 2+ recipients → ONE real carrier group thread (everyone
   // sees everyone's number and messages) via Twilio Conversations, with the
@@ -982,12 +1016,12 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   // Conversations webhook (app/api/twilio/conversations-events). Falls through
   // to the per-recipient broadcast below if the group can't be formed (a member
   // out of scope / suppressed / no phone, no broker line, or Twilio rejects).
-  if (recipientIds.length >= 2) {
+  if (recipientIds.length + rawPhones.length >= 2) {
     const primaryTarget = await getSendTarget(personId)
     const slug = access.access.brokerSlug ?? (primaryTarget?.person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
     const proxy = await brokerTwilioNumber(slug)
     if (proxy && primaryTarget) {
-      const members: Array<{ rid: number; phone: string }> = []
+      const members: Array<{ rid: number | null; phone: string }> = []
       let blocked = false
       for (const rid of recipientIds) {
         if (rid !== personId) {
@@ -999,6 +1033,9 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
         if ((await isSuppressed(rid, 'sms')).suppressed) { blocked = true; break }
         members.push({ rid, phone: t.phone })
       }
+      // Raw thread participants (no contact record) join the carrier group directly;
+      // no per-person timeline (there is no contact to log against).
+      for (const e164 of rawPhones) members.push({ rid: null, phone: e164 })
       if (!blocked && members.length >= 2) {
         const groupCtx = await buildMergeContext({ person: primaryTarget.person, senderSlug: slug })
         const mergedBody = attributeSiteLinks(renderCrmMerge(body, primaryTarget.person, groupCtx), slug, primaryTarget.person.fub_legacy_id as number | null)
@@ -1019,6 +1056,7 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
         })
         if (group.ok) {
           for (const m of members) {
+            if (m.rid === null) continue // raw number: in the carrier group, no timeline to log
             await sb.from('crm_timeline').insert({
               person_id: m.rid, kind: 'sms_out', title: 'Group text sent', body: mergedBody,
               payload: {
@@ -1034,7 +1072,7 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
               broker: slug, source: 'app', dedupe_key: `twilio:${group.messageSid}:p${m.rid}`,
             })
           }
-          members.forEach((m) => revalidateCrm(m.rid))
+          members.forEach((m) => { if (m.rid !== null) revalidateCrm(m.rid) })
           return { ok: true }
         }
         console.warn('[crm] group MMS failed, falling back to broadcast:', group.error)
@@ -1080,6 +1118,20 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
       broker: slug, source: 'app', dedupe_key: `twilio:${sent.sid}:p${rid}`,
     })
     sentCount++
+  }
+
+  // Raw group-reply participants (no contact) reached here only if the carrier
+  // group couldn't form — text them individually so the group reply drops nobody.
+  if (rawPhones.length > 0) {
+    const rawSlug = access.access.brokerSlug ?? 'matt'
+    const rawFrom = await brokerTwilioNumber(rawSlug)
+    for (const e164 of rawPhones) {
+      const sent = rawFrom
+        ? await sendSms({ from: rawFrom, to: e164, body, mediaUrls })
+        : await sendSmsViaMessagingService({ to: e164, body, mediaUrls })
+      if (sent.ok) sentCount++
+      else lastError = sent.error
+    }
   }
 
   if (sentCount === 0) return { ok: false, error: lastError ?? 'No recipient could be texted' }
