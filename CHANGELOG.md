@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.782.0 (2026-07-14)
+
+### Features
+- feat(crm): group-text replies reconstruct + auto-include all thread participants
+
+---
+
+
 ## v1.781.1 (2026-07-14)
 
 ### Bug Fixes
