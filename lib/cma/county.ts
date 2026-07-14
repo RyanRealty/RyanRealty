@@ -40,6 +40,9 @@ const ARCGIS_TAXLOT = `${MAPS}/LandFD/MapServer/2`
 const ARCGIS_PUBLIC_LAND = `${MAPS}/LandFD/MapServer/1`
 const FEMA_NFHL_FLOOD = 'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28'
 const OWRD_WELLS = 'https://arcgis.wrd.state.or.us/arcgis/rest/services/dynamic/wl_well_logs_qry_WGS84/MapServer/0'
+// OWRD Water Rights Information System — "Places of Use" polygons (the mapped
+// water right of record). Layer 1 of the non-municipal water-rights service.
+const OWRD_POU = 'https://arcgis.wrd.state.or.us/arcgis/rest/services/dynamic/wr_qry_nomuni_WGS84/MapServer/1'
 const DIAL_PERMITS = (account: string) => `https://dial.deschutes.org/Real/Permits/${encodeURIComponent(account)}`
 
 // Overlay zones — each its own LandFD layer. Presence = the overlay applies.
@@ -88,6 +91,33 @@ export interface CmaOverlay {
   effect: string
 }
 
+/**
+ * A single OWRD water right of record whose Place-of-Use polygon intersects the
+ * parcel. This is the right AS MAPPED — not proof it is currently valid, in good
+ * standing, or appurtenant to this exact tax lot. Every consumer must caveat it.
+ */
+export interface CmaWaterRight {
+  /** Water source: surface water, groundwater, or storage. */
+  source: 'surface' | 'ground' | 'storage' | 'other'
+  /** Use type verbatim from WRIS (IRRIGATION, DOMESTIC, STOCK, etc.). */
+  use: string
+  /** Priority date (older = more senior). Null when WRIS carries no date. */
+  priorityDate: string | null
+  /** Mapped acreage for the right (irrigation rights carry acres; domestic do not). */
+  acres: number | null
+  /** Supplemental = a backup source for the SAME lands, not additional acreage. */
+  supplemental: boolean
+  /** Best available identifier (certificate > decree > transfer > permit > application > claim). */
+  identifier: string | null
+  /** Stage of the right, from which the identifier came. Perfected = certificate/decree/transfer. */
+  stage: 'certificate' | 'decree' | 'transfer' | 'permit' | 'application' | 'claim' | 'unknown'
+  /** Right holder of record (often the irrigation district or a city, not the parcel owner). */
+  holder: string | null
+  /** Who holds it: a private right is appurtenant to the land; a municipal/district
+   *  right is the SUPPLIER's own right whose service area merely covers the parcel. */
+  holderType: 'municipal' | 'district' | 'private' | 'unknown'
+}
+
 export interface CmaSiteData {
   taxAccount: string | null
   taxlot: string | null
@@ -102,7 +132,25 @@ export interface CmaSiteData {
   wildfireHazard: boolean | null
   /** FEMA flood: zone code (X = minimal) + Special Flood Hazard Area flag. */
   flood: { zone: string | null; inSFHA: boolean | null }
-  water: { source: WaterSource; wellLog: CmaWellLog | null; irrigationDistrict: string | null }
+  water: {
+    source: WaterSource
+    wellLog: CmaWellLog | null
+    irrigationDistrict: string | null
+    /** Mapped OWRD SUPPLY water rights of record intersecting the parcel (instream /
+     *  non-consumptive rights are filtered out). Caveated, never validated. */
+    rights: CmaWaterRight[]
+    /** Largest single PERFECTED, PRIMARY, PRIVATE-or-district irrigation right's mapped
+     *  acres (never a sum, never an inchoate/permit/application right). */
+    mappedIrrigationAcres: number | null
+    /** The priority date of the SAME right that mappedIrrigationAcres came from. */
+    primaryIrrigationPriorityDate: string | null
+    /** Any private (non-supplier) supply right appurtenant to the parcel. */
+    hasPrivateAppurtenant: boolean
+    /** The OWRD query actually completed (distinguishes failure from a dry parcel). */
+    rightsQueryOk: boolean
+    /** True when the query used the full parcel polygon (complete); false = point fallback (partial). */
+    rightsUsedPolygon: boolean
+  }
   septic: { status: SepticStatus; permit: string | null }
   /** Finaled/active permits of record (building/electrical/plumbing/onsite/land-use). */
   permits: CmaPermitRecord[]
@@ -189,6 +237,108 @@ async function owrdWellNear(lng: number, lat: number): Promise<CmaWellLog | null
   }
 }
 
+/** Taxlot feature (attributes + polygon geometry) at a point. Null on miss/error. */
+async function taxlotAt(lng: number, lat: number): Promise<{ attrs: Record<string, unknown>; geometry: unknown } | null> {
+  try {
+    const params = new URLSearchParams({
+      geometry: `${lng},${lat}`,
+      geometryType: 'esriGeometryPoint',
+      inSR: '4326',
+      spatialRel: 'esriSpatialRelIntersects',
+      outFields: 'TAXLOT,TOWNSHIP,RANGE,SECTION',
+      returnGeometry: 'true',
+      outSR: '4326',
+      f: 'json',
+    })
+    const res = await fetch(`${ARCGIS_TAXLOT}/query?${params}`, { signal: AbortSignal.timeout(15000) })
+    if (!res.ok) return null
+    const data = await res.json()
+    const feat = data?.features?.[0]
+    if (!feat) return null
+    return { attrs: feat.attributes ?? {}, geometry: feat.geometry ?? null }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * OWRD water rights whose mapped Place-of-Use intersects the parcel. Queries by
+ * the PARCEL POLYGON (not the address point) because irrigation is a field that
+ * usually sits off the structure. Falls back to a point query when the polygon
+ * is unavailable. Returns the mapped rights of record ONLY — never asserts the
+ * rights are currently valid, in good standing, or appurtenant to this tax lot.
+ */
+// Instream / non-consumptive public rights (fish, wildlife, recreation, etc.)
+// are NOT a parcel water supply — their place-of-use is the stream reach itself,
+// so a riverfront lot intersects them. Filter them out of the supply picture.
+const NON_SUPPLY_USE_RE = /INSTREAM|FISH|WILDLIFE|AQUATIC|RIPARIAN|RECREATION|AESTHETIC|SCENIC|POLLUTION ABATEMENT|FLOW AUGMENTATION|ANADROMOUS|FISHERY|HABITAT|MITIGATION/i
+
+function classifyHolder(holder: string | null): CmaWaterRight['holderType'] {
+  if (!holder) return 'unknown'
+  if (/IRRIGATION DISTRICT|\bDISTRICT\b|\bID\b/i.test(holder)) return 'district'
+  if (/CITY OF|TOWN OF|PUBLIC WORKS|MUNICIPAL|COUNTY OF|STATE OF|\bDEPARTMENT\b|WATER (CO|COMPANY|AUTHORITY|SYSTEM)/i.test(holder)) return 'municipal'
+  return 'private'
+}
+
+// Throws on transport error (so the caller can tell a failed query from a dry
+// parcel). Returns ALL mapped SUPPLY rights; the caller sorts + caps for display.
+async function owrdWaterRights(parcelGeometry: unknown, lng: number, lat: number): Promise<CmaWaterRight[]> {
+  const body = new URLSearchParams({
+    geometryType: parcelGeometry ? 'esriGeometryPolygon' : 'esriGeometryPoint',
+    geometry: parcelGeometry ? JSON.stringify(parcelGeometry) : `${lng},${lat}`,
+    inSR: '4326',
+    spatialRel: 'esriSpatialRelIntersects',
+    outFields: 'wr_type,use_code_description,priority_date,cert_nbr,permit_nbr,app_nbr,claim_nbr,decree_title,transfer_nbr,supplemental,wris_acres,name_company,name_last',
+    // Deterministic order so any later display cap keeps the largest, most senior
+    // rights (not OWRD's arbitrary feature order).
+    orderByFields: 'wris_acres DESC, priority_date ASC',
+    returnGeometry: 'false',
+    f: 'json',
+  })
+  const res = await fetch(`${OWRD_POU}/query`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+    signal: AbortSignal.timeout(15000),
+  })
+  if (!res.ok) throw new Error(`OWRD WR ${res.status}`)
+  const data = await res.json()
+  if (data?.error) throw new Error(`OWRD WR ${JSON.stringify(data.error).slice(0, 120)}`)
+  const feats: Array<{ attributes?: Record<string, unknown> }> = Array.isArray(data?.features) ? data.features : []
+  const seen = new Set<string>()
+  const rights: CmaWaterRight[] = []
+  const clean = (v: unknown): string => String(v ?? '').replace(/[;]+/g, ',').replace(/\s+/g, ' ').trim()
+  for (const f of feats) {
+    const a = f.attributes ?? {}
+    const use = String(a.use_code_description ?? '').trim()
+    if (!use) continue
+    if (NON_SUPPLY_USE_RE.test(use)) continue // instream / non-consumptive — not a parcel supply
+    const wrType = String(a.wr_type ?? '').trim().toUpperCase()
+    const source: CmaWaterRight['source'] =
+      wrType === 'SW' ? 'surface' : wrType === 'GW' ? 'ground' : wrType === 'ST' ? 'storage' : 'other'
+    const epoch = num(a.priority_date)
+    const priorityDate = epoch ? new Date(epoch).toISOString().slice(0, 10) : null
+    // Identifier by lifecycle stage: certificate/decree/transfer are perfected;
+    // permit/application/claim are inchoate (not yet a perfected right of record).
+    let identifier: string | null = null
+    let stage: CmaWaterRight['stage'] = 'unknown'
+    if (num(a.cert_nbr)) { identifier = `Cert ${a.cert_nbr}`; stage = 'certificate' }
+    else if (clean(a.decree_title)) { identifier = clean(a.decree_title); stage = 'decree' }
+    else if (clean(a.transfer_nbr)) { identifier = `Transfer ${clean(a.transfer_nbr)}`; stage = 'transfer' }
+    else if (num(a.permit_nbr)) { identifier = `Permit ${a.permit_nbr}`; stage = 'permit' }
+    else if (num(a.app_nbr)) { identifier = `Application ${a.app_nbr}`; stage = 'application' }
+    else if (num(a.claim_nbr)) { identifier = `Claim ${a.claim_nbr}`; stage = 'claim' }
+    const supplemental = num(a.supplemental) === 1
+    const holder = clean(a.name_company) || clean(a.name_last) || null
+    const key = `${use}|${priorityDate ?? ''}|${identifier ?? ''}|${supplemental}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    rights.push({ source, use, priorityDate, acres: num(a.wris_acres), supplemental, identifier, stage, holder, holderType: classifyHolder(holder) })
+    if (rights.length >= 40) break // safety bound; stats computed over this full set
+  }
+  return rights
+}
+
 /** DIAL permits page → onsite septic status + a permit-history digest. */
 async function dialPermits(account: string): Promise<{ status: SepticStatus; permit: string | null; permits: CmaPermitRecord[] }> {
   try {
@@ -246,7 +396,7 @@ export async function resolveCmaSiteData(subject: CmaSubject): Promise<CmaSiteDa
     overlays: [],
     wildfireHazard: null,
     flood: { zone: null, inSFHA: null },
-    water: { source: 'unknown', wellLog: null, irrigationDistrict: null },
+    water: { source: 'unknown', wellLog: null, irrigationDistrict: null, rights: [], mappedIrrigationAcres: null, primaryIrrigationPriorityDate: null, hasPrivateAppurtenant: false, rightsQueryOk: false, rightsUsedPolygon: false },
     septic: { status: 'unknown', permit: null },
     permits: [],
     entitlement: null,
@@ -268,7 +418,7 @@ export async function resolveCmaSiteData(subject: CmaSubject): Promise<CmaSiteDa
     return site
   }
 
-  // Tax account + taxlot (for DIAL permits) — reuse the county owner resolver.
+  // Tax account (for DIAL permits) — reuse the county owner resolver.
   try {
     const { deschutesCountyOwner } = await import('@/lib/owner-resolution.mjs')
     const county = await deschutesCountyOwner(subject.streetAddress, subject.city)
@@ -278,22 +428,28 @@ export async function resolveCmaSiteData(subject: CmaSubject): Promise<CmaSiteDa
     }
   } catch { /* fail-open */ }
 
-  // One parallel wave of authoritative point queries.
+  // Taxlot polygon first — its geometry drives the parcel-level water-rights
+  // query (irrigation is a field, usually off the address point, so a point
+  // query would miss it). Also yields the authoritative taxlot id + TRS.
+  const taxlot = await taxlotAt(lng, lat)
+  const parcelGeometry = taxlot?.geometry ?? null
+
+  // One parallel wave of authoritative queries.
   const [
-    zoneRes, fireRes, taxlotRes, publicRes, floodRes, irrigRes, noShootRes, ugbRes, wellRes,
+    zoneRes, fireRes, publicRes, floodRes, irrigRes, noShootRes, ugbRes, wellRes, waterRightsRes,
     ...overlayRes
   ] = await Promise.allSettled([
     // Base zone. Layer /3 fields: OBJECTID, ZONE_TYPE, COMMUNITY_TYPE, ZONE,
     // ORDINANCE. There is NO OVERLAY field here (overlays are separate layers).
     arcgisPointQuery(ARCGIS_ZONING, lng, lat, 'ZONE,ZONE_TYPE,COMMUNITY_TYPE,ORDINANCE'),
     arcgisPointQuery(ARCGIS_WILDFIRE, lng, lat, 'HAZARD'),
-    arcgisPointQuery(ARCGIS_TAXLOT, lng, lat, 'TAXLOT,TOWNSHIP,RANGE,SECTION'),
     arcgisIntersects(ARCGIS_PUBLIC_LAND, lng, lat),
     arcgisPointQuery(FEMA_NFHL_FLOOD, lng, lat, 'FLD_ZONE,ZONE_SUBTY,SFHA_TF'),
     arcgisPointQuery(BND_IRRIGATION, lng, lat, 'NAME'),
     arcgisIntersects(BND_NO_SHOOTING, lng, lat),
     arcgisIntersects(BND_UGB, lng, lat),
     owrdWellNear(lng, lat),
+    owrdWaterRights(parcelGeometry, lng, lat),
     ...OVERLAY_LAYERS.map((o) => arcgisIntersects(`${MAPS}/LandFD/MapServer/${o.layer}`, lng, lat)),
   ])
 
@@ -331,9 +487,9 @@ export async function resolveCmaSiteData(subject: CmaSubject): Promise<CmaSiteDa
     site.wildfireHazard = /^y/i.test(String(fireRes.value.HAZARD ?? ''))
   }
 
-  // ── Taxlot + Township/Range/Section ──────────────────────────────────────
-  if (taxlotRes.status === 'fulfilled' && taxlotRes.value) {
-    const t = taxlotRes.value
+  // ── Taxlot + Township/Range/Section (from the pre-fetched polygon) ────────
+  if (taxlot) {
+    const t = taxlot.attrs
     if (!site.taxlot && t.TAXLOT) site.taxlot = String(t.TAXLOT)
     const tw = t.TOWNSHIP, rg = t.RANGE, sc = t.SECTION
     if (tw && rg && sc) site.trs = `T${tw}S R${rg}E Sec ${sc}`
@@ -357,6 +513,39 @@ export async function resolveCmaSiteData(subject: CmaSubject): Promise<CmaSiteDa
   if (irrigRes.status === 'fulfilled' && irrigRes.value?.NAME) {
     site.water.irrigationDistrict = String(irrigRes.value.NAME).trim()
     site.citations.push({ what: `Irrigation district: ${site.water.irrigationDistrict}`, source: 'Deschutes County GIS (BoundaryFD)', url: BND_IRRIGATION })
+  }
+
+  // ── OWRD water rights (mapped Places of Use intersecting the parcel) ──────
+  // Distinguish a completed query from a failed one, and polygon (complete) from
+  // a point fallback (partial) — an affirmative "no water right" must never come
+  // from a network failure or a less-complete point query.
+  site.water.rightsQueryOk = waterRightsRes.status === 'fulfilled'
+  site.water.rightsUsedPolygon = parcelGeometry != null
+  if (waterRightsRes.status === 'fulfilled' && waterRightsRes.value.length > 0) {
+    const rights = [...waterRightsRes.value].sort((a, b) => (b.acres ?? 0) - (a.acres ?? 0))
+    // Value driver = the largest single PERFECTED, PRIMARY irrigation right's
+    // mapped acres. NEVER sum (supplemental backs the same land, overlaps double-
+    // count) and NEVER count inchoate permit/application/claim acreage as a
+    // perfected right of record. Compute over the FULL set before any display cap.
+    const PERFECTED = new Set(['certificate', 'decree', 'transfer'])
+    const primaryIrrigation = rights
+      .filter((r) => /IRRIGATION/i.test(r.use) && !r.supplemental && r.acres != null && PERFECTED.has(r.stage))
+      .sort((a, b) => (b.acres as number) - (a.acres as number))
+    const topIrr = primaryIrrigation[0] ?? null
+    site.water.mappedIrrigationAcres = topIrr?.acres ?? null
+    site.water.primaryIrrigationPriorityDate = topIrr?.priorityDate ?? null
+    site.water.hasPrivateAppurtenant = rights.some((r) => r.holderType === 'private')
+    site.water.rights = rights.slice(0, 12) // display list; stats already computed above
+    site.citations.push({ what: `${rights.length} mapped OWRD supply water right(s) of record`, source: 'Oregon OWRD Water Rights (Places of Use)', url: OWRD_POU })
+    // Caveat, tuned to whether the parcel carries a PRIVATE appurtenant right or
+    // only a supplier's (city/district) service-area right.
+    if (site.water.hasPrivateAppurtenant) {
+      site.fieldConfirm.push('OWRD maps a water right of record whose place-of-use covers this parcel. A mapped place-of-use is the right as recorded, not proof it is currently valid, in good standing, or appurtenant to this exact tax lot, and the mapped acreage can extend beyond the parcel boundary. Confirm the certificate, the appurtenant acreage on this lot, and current standing (rights forfeit after 5 consecutive years of non-use) with OWRD and the deed.')
+    } else {
+      site.fieldConfirm.push('The only OWRD water rights mapping onto this parcel are held by a public supplier (a city or an irrigation district), not the landowner. That is the supplier\'s own right, whose service area covers the parcel, not a private water right appurtenant to the lot. Confirm any private or district-delivered right and the certificated acreage with the supplier and OWRD.')
+    }
+  } else if (!site.water.rightsQueryOk) {
+    site.fieldConfirm.push('The OWRD water-rights lookup did not complete for this parcel. Confirm any water rights or irrigation shares directly with OWRD and the irrigation district before relying on them.')
   }
 
   // ── UGB ──────────────────────────────────────────────────────────────────
@@ -389,8 +578,20 @@ export async function resolveCmaSiteData(subject: CmaSubject): Promise<CmaSiteDa
     }
     // Rural facts the county can no longer serve by machine — confirm at listing.
     site.fieldConfirm.push('Steep slope (over 25%), wetland inventory, and any irrigation-canal easement crossing the parcel. The county retired those map services, so confirm these from the survey or a site visit.')
-    if (!site.water.irrigationDistrict) site.fieldConfirm.push('Certificated water rights and irrigation shares. Confirm with the irrigation district and OWRD.')
-    else site.fieldConfirm.push(`Irrigation district is ${site.water.irrigationDistrict}, but district boundary ≠ certificated water right. Confirm the parcel's actual irrigated acreage + rights with the district and OWRD.`)
+    // Water-rights caveat when the OWRD map showed NO right (the rights-present
+    // and query-failed caveats already fired in the water-rights block above).
+    // Only assert dryness when the query actually completed; soften when it fell
+    // back to a point (which the code's own comment says misses field irrigation).
+    if (site.water.rights.length === 0 && site.water.rightsQueryOk) {
+      const completeness = site.water.rightsUsedPolygon
+        ? 'no OWRD water-right place-of-use maps onto it'
+        : 'the parcel boundary was unavailable, so only a point-level OWRD check ran and found no water right at that point (a field right elsewhere on the parcel could be missed)'
+      if (site.water.irrigationDistrict) {
+        site.fieldConfirm.push(`The parcel sits inside ${site.water.irrigationDistrict}, but ${completeness}. District boundary is not a water right. The irrigated acreage may sit elsewhere on the parcel, or the parcel may be dry within the district. Confirm the appurtenant right and certificated acreage with the district and OWRD.`)
+      } else {
+        site.fieldConfirm.push(`For this parcel, ${completeness}. Confirm any water rights or irrigation shares with the district and OWRD.`)
+      }
+    }
   } else if (urbanZone && site.water.source !== 'well') {
     site.isMunicipal = true
     site.water.source = 'municipal'

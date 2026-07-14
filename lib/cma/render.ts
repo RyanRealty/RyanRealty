@@ -68,14 +68,48 @@ export function propertyIntelligenceBlock(site: CmaSiteData | null | undefined):
         ? 'City water'
         : null
   if (water) rows.push(`<li><strong>Water:</strong> ${water}</li>`)
-  if (site.water.irrigationDistrict) rows.push(`<li><strong>Irrigation district:</strong> ${escapeHtml(site.water.irrigationDistrict)} (district boundary is not a certificated water right.  confirm rights with the district + OWRD)</li>`)
+  if (site.water.irrigationDistrict) rows.push(`<li><strong>Irrigation district:</strong> ${escapeHtml(site.water.irrigationDistrict)} (district boundary is not a water right. Confirm the appurtenant right with the district and OWRD)</li>`)
+
+  // OWRD water rights of record (mapped Places of Use intersecting the parcel).
+  if (site.water.rights.length > 0) {
+    const srcLabel = (s: string) => (s === 'surface' ? 'surface water' : s === 'ground' ? 'groundwater' : s === 'storage' ? 'stored water' : 'water')
+    const rightLines = site.water.rights
+      .slice(0, 8)
+      .map((r) => {
+        const inchoate = r.stage === 'permit' || r.stage === 'application' || r.stage === 'claim'
+        const bits = [
+          `${escapeHtml(r.use.toLowerCase())} (${srcLabel(r.source)})`,
+          r.acres != null ? `${r.acres} ac` : null,
+          r.priorityDate ? `priority ${escapeHtml(r.priorityDate)}` : null,
+          r.supplemental ? 'supplemental' : null,
+          inchoate ? 'not yet perfected' : null,
+          r.identifier ? escapeHtml(r.identifier) : null,
+          r.holder ? `held by ${escapeHtml(r.holder)}${r.holderType === 'municipal' ? ' (city/municipal supplier)' : r.holderType === 'district' ? ' (irrigation district)' : ''}` : null,
+        ].filter(Boolean)
+        return `<li>${bits.join(' · ')}</li>`
+      })
+      .join('')
+    const irr = site.water.mappedIrrigationAcres
+    let lead: string
+    if (!site.water.hasPrivateAppurtenant) {
+      // Only supplier-held (city / irrigation-district) rights map here — the
+      // parcel is within a supplier's service area, not the holder of a private
+      // appurtenant right. Do NOT present it as "a water right on this parcel".
+      lead = 'The water rights that map onto this parcel are held by a public supplier (a city or an irrigation district), whose service area covers the parcel. This is the supplier\'s own right of record, not a private water right appurtenant to the lot. Confirm any district-delivered right and its certificated acreage with the supplier and OWRD.'
+    } else if (irr != null) {
+      lead = `OWRD maps a water right of record whose place-of-use covers this parcel, including ${irr} acres of mapped irrigation${site.water.primaryIrrigationPriorityDate ? ` (mapped priority ${escapeHtml(site.water.primaryIrrigationPriorityDate)})` : ''}. This is the right as recorded, not proof of current validity, appurtenance to this lot, or that the mapped acreage falls entirely within the parcel. Confirm with OWRD and the deed.`
+    } else {
+      lead = 'OWRD maps a water right of record whose place-of-use covers this parcel. This is the right as recorded, not proof of current validity or appurtenance to this lot. Confirm with OWRD and the deed.'
+    }
+    rows.push(`<li><strong>Water rights (OWRD):</strong> ${lead}<ul class="note-list" style="margin-top:4px">${rightLines}</ul></li>`)
+  }
 
   // Septic + permit history.
   const septic =
     site.septic.status === 'installed'
       ? `Onsite septic system${site.septic.permit ? ` (permit ${escapeHtml(site.septic.permit)})` : ' of record'}`
       : site.septic.status === 'site-evaluation-only'
-        ? 'Site evaluation only.  no installed system of record (buyer installs)'
+        ? 'Site evaluation only. No installed system of record (buyer installs)'
         : site.septic.status === 'municipal-sewer'
           ? 'City sewer'
           : site.septic.status === 'none-found'
@@ -85,9 +119,9 @@ export function propertyIntelligenceBlock(site: CmaSiteData | null | undefined):
   if (site.permits?.length) rows.push(`<li><strong>Permits of record:</strong> ${site.permits.length} on file (${site.permits.slice(0, 6).map((p) => escapeHtml(p.type)).filter((v, i, a) => a.indexOf(v) === i).join(', ')})</li>`)
 
   // Flood + wildfire.
-  if (site.flood?.zone) rows.push(`<li><strong>FEMA flood:</strong> zone ${escapeHtml(site.flood.zone)}${site.flood.inSFHA === true ? ' (Special Flood Hazard Area.  flood insurance required)' : site.flood.inSFHA === false ? ' (not a Special Flood Hazard Area)' : ''}</li>`)
+  if (site.flood?.zone) rows.push(`<li><strong>FEMA flood:</strong> zone ${escapeHtml(site.flood.zone)}${site.flood.inSFHA === true ? ' (Special Flood Hazard Area. Flood insurance required)' : site.flood.inSFHA === false ? ' (not a Special Flood Hazard Area)' : ''}</li>`)
   if (site.wildfireHazard) rows.push('<li><strong>Wildfire hazard zone:</strong> yes (defensible-space + build standards apply)</li>')
-  if (site.publicLand) rows.push('<li><strong>Public land:</strong> parcel intersects a public-lands layer.  confirm ownership/boundary</li>')
+  if (site.publicLand) rows.push('<li><strong>Public land:</strong> parcel intersects a public-lands layer. Confirm ownership/boundary</li>')
 
   if (rows.length === 0) return ''
   let html = `<h3 class="subhead">Property &amp; site intelligence (county / state / FEMA records)</h3><ul class="note-list">${rows.join('')}</ul>`
