@@ -207,7 +207,7 @@ export function MobileLeadDetail({
   // Punch #5 Activity tab — the same kinds the desktop center column's
   // Activity filter shows (web_event/stage_change/system/lead_created/task),
   // incl. the visitor-events merge getCrmPersonFull already performs.
-  const ACTIVITY_KINDS = new Set(['web_event', 'stage_change', 'system', 'lead_created', 'task'])
+  const ACTIVITY_KINDS = new Set(['web_event', 'stage_change', 'system', 'lead_created', 'task', 'sms_click'])
   const activityRows: MobileActivityRow[] = full.timeline
     .filter((t) => ACTIVITY_KINDS.has(t.kind))
     .map((t) => {

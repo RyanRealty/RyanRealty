@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-07-12T15:02:10.567Z
+**Generated:** 2026-07-14T03:00:21.874Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -417,7 +417,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 25,846**
+### `market_stats_cache` · **rows ≈ 26,283**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -593,7 +593,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 132**
+### `cmas` · **rows ≈ 134**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -671,7 +671,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 135**
+### `expired_listings` · **rows ≈ 137**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -718,7 +718,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_crm_person_id` | bigint | yes |  |
 | `outreach_sms_sid` | text | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 322**
+### `marketing_brain_actions` · **rows ≈ 465**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -1986,6 +1986,21 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `triggers` | jsonb | no | '[]'::jsonb |
 | `folder_id` | bigint | yes |  |
 | `created_by` | text | yes |  |
+
+### `crm_short_links`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `code` | text | no |  |
+| `person_id` | bigint | no |  |
+| `target_url` | text | no |  |
+| `broker` | text | yes |  |
+| `channel` | text | no | 'sms'::text |
+| `message_sid` | text | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `click_count` | integer | no | 0 |
+| `first_click_at` | timestamp with time zone | yes |  |
+| `last_click_at` | timestamp with time zone | yes |  |
 
 ### `crm_stages`
 

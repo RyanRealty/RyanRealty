@@ -43,6 +43,9 @@ type KindMeta = { category: ActivityCategory; direction: 'in' | 'out' | null; la
 const KIND_MAP: Record<string, KindMeta> = {
   sms_in: { category: 'message', direction: 'in', label: 'Text received' },
   sms_out: { category: 'message', direction: 'out', label: 'Text sent' },
+  // Outbound-SMS click tracking (lib/data/crm/shortLinks): a client tapped a
+  // link we texted — a hot engagement signal, shown in activity not the thread.
+  sms_click: { category: 'message', direction: 'in', label: 'Text link clicked' },
   email_out: { category: 'email', direction: 'out', label: 'Email sent' },
   // email_in was missing — inbound FUB/Gmail emails fell through to 'other' and
   // mis-rendered as "Email in". Classify it as an inbound email. (no-drop-off fix)

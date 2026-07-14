@@ -355,7 +355,7 @@ export default async function ConsoleLeadPage({
   }
 
   const timelineItems: TimelineItem[] = full.timeline
-    .filter((t) => t.kind !== 'email_open' && t.kind !== 'email_click')
+    .filter((t) => t.kind !== 'email_open' && t.kind !== 'email_click' && t.kind !== 'sms_click')
     .map((t) => {
       const eng = emailEngagement[(t.title ?? '').trim()]
       return {

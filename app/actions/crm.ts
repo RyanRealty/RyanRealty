@@ -971,6 +971,7 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   const { renderCrmMerge, attributeSiteLinks } = await import('@/lib/crm/merge')
   const { buildMergeContext } = await import('@/lib/crm/merge-context')
   const { sendSms, sendSmsViaMessagingService, brokerTwilioNumber } = await import('@/lib/crm/twilio')
+  const { instrumentSmsLinks } = await import('@/lib/data/crm/shortLinks')
 
   let sentCount = 0
   let lastError: string | null = null
@@ -1059,9 +1060,13 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
     const mergedBody = attributeSiteLinks(renderCrmMerge(body, person, smsCtx), slug, person.fub_legacy_id as number | null)
     // Send from the broker's OWN Twilio business line, else the A2P service.
     const fromNumber = await brokerTwilioNumber(slug)
+    // Click tracking: rewrite links to short /r/<code> trackers (a click logs an
+    // sms_click engagement event). The timeline row below keeps the readable
+    // mergedBody with the real links, so the broker's thread stays legible.
+    const trackedBody = await instrumentSmsLinks(mergedBody, { personId: rid, broker: slug })
     const sent = fromNumber
-      ? await sendSms({ from: fromNumber, to, body: mergedBody, mediaUrls })
-      : await sendSmsViaMessagingService({ to, body: mergedBody, mediaUrls })
+      ? await sendSms({ from: fromNumber, to, body: trackedBody, mediaUrls })
+      : await sendSmsViaMessagingService({ to, body: trackedBody, mediaUrls })
     if (!sent.ok) { lastError = sent.error; continue }
 
     await sb.from('crm_timeline').insert({
