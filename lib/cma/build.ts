@@ -40,6 +40,7 @@ import {
   BUYER_BROKER_ASSUMPTION_PCT,
   type ExpiredAuditData,
 } from '@/lib/cma/expired-audit'
+import { resolveDevelopmentOpportunities } from '@/lib/cma/development'
 import { buildCmaMapDataUri } from '@/lib/cma/map'
 import { renderCmaHtml } from '@/lib/cma/render'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult } from '@/lib/cma/types'
@@ -304,6 +305,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       }
     }
 
+    // 4.8. Development potential — pure function over the verified zone +
+    // acreage (no new fetches). Every item carries its code citation; the
+    // section always renders with the disclaimer + agency directory.
+    const development = resolveDevelopmentOpportunities(site, subject)
+
     // 5. Map (best effort — the report ships without it if the key is absent).
     const map = await buildCmaMapDataUri(subject, adjusted)
 
@@ -323,6 +329,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       sellerImprovementsText: input.sellerImprovementsText ?? null,
       site,
       expiredAudit,
+      development,
     })
 
     // 7. Citations — one entry per figure class (CLAUDE.md §0).
@@ -439,6 +446,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         sources: site.citations,
       },
       ors_disclosure: 'OAR 863-015-0190 elements included on the final page',
+      ...(development
+        ? {
+            development_opportunities: {
+              jurisdiction: development.jurisdiction,
+              zone: development.zone,
+              regs_verified_as_of: development.verifiedAsOf,
+              items: development.items,
+              source: 'Zone-keyed registry in lib/cma/development.ts; every rule verified against its primary code source 2026-07-14 (58-fact adversarial verification pass)',
+            },
+          }
+        : {}),
       ...(expiredAudit
         ? {
             expired_audit: {

@@ -31,6 +31,7 @@ import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { judgeComps } from '@/lib/cma/judge'
 import { auditCma } from '@/lib/cma/audit'
 import { resolveCmaSiteData } from '@/lib/cma/county'
+import { resolveDevelopmentOpportunities } from '@/lib/cma/development'
 import { evaluateBpoAccuracyContract } from '@/lib/bpo/contract'
 import { analyzeListingHistory } from '@/lib/bpo/history'
 import { deriveOpinion } from '@/lib/bpo/opinion'
@@ -284,6 +285,11 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
         ? ' An independent adversarial review attacked this analysis and found no material defect.'
         : ` An independent adversarial review recorded ${audit.findings.length} finding(s) for broker review before release.`
       : ' Independent adversarial review was unavailable for this build. Broker review is required before release.'
+    // Development potential — pure function over the verified zone + acreage.
+    // A buyer cares about the upside (ADU, second unit, division) as much as a
+    // seller does; the same verified registry serves both.
+    const development = resolveDevelopmentOpportunities(site, subject)
+
     const { html, pageCount } = renderBpoHtml({
       subject,
       comps: adjusted,
@@ -296,6 +302,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       purpose: input.purpose ?? null,
       generatedAtIso,
       site,
+      development,
     })
 
     // 6. Citations — one entry per figure class (CLAUDE.md section 0).

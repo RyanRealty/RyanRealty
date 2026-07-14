@@ -23,6 +23,7 @@ import type {
 } from '@/lib/cma/types'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
+import type { DevelopmentOpportunities } from '@/lib/cma/development'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -42,6 +43,49 @@ export interface RenderCmaArgs {
   site?: CmaSiteData | null
   /** Present = render as an EXPIRED AUDIT (failure analysis + services + net sheet). */
   expiredAudit?: ExpiredAuditData | null
+  /** Zone-keyed development read (subdivide / ADU / second dwelling / middle housing / STR). */
+  development?: DevelopmentOpportunities | null
+}
+
+// ── Development potential (shared by CMA page + BPO inline block) ────────────
+
+const DEV_VERDICT_LABELS: Record<string, string> = {
+  yes: 'Allowed',
+  conditional: 'Conditional',
+  unlikely: 'Unlikely',
+  no: 'Not available',
+  confirm: 'Worth exploring',
+}
+
+/** The development items themselves (no disclaimer/resources — see below). */
+export function developmentItemsBlock(dev: DevelopmentOpportunities | null | undefined): string {
+  if (!dev || dev.items.length === 0) return ''
+  const items = dev.items
+    .map(
+      (it) => `
+  <h3 class="subhead">${escapeHtml(it.topic)} · ${escapeHtml(DEV_VERDICT_LABELS[it.verdict] ?? it.verdict)}</h3>
+  <p><strong>${escapeHtml(it.headline)}</strong></p>
+  <p class="small">${escapeHtml(it.detail)}</p>
+  <p class="small" style="opacity:0.75;">Source: ${escapeHtml(it.citation)} · <a href="${escapeHtml(it.url)}">${escapeHtml(it.url.replace(/^https?:\/\//, '').split('/')[0] ?? it.url)}</a></p>`,
+    )
+    .join('')
+  return `
+  <p>Zoning of record: <strong>${escapeHtml(dev.zone)}</strong> · ${escapeHtml(dev.jurisdiction)}. Each answer below is a preliminary read of the code in effect ${escapeHtml(dev.verifiedAsOf)}, with the section we relied on cited. None of it is a land-use decision.</p>
+  ${items}`
+}
+
+/** The disclaimer + hyperlinked verify-it-yourself agency directory. */
+export function developmentResourcesBlock(dev: DevelopmentOpportunities | null | undefined): string {
+  if (!dev) return ''
+  const rows = dev.resources
+    .map(
+      (r) => `<li><strong><a href="${escapeHtml(r.url)}">${escapeHtml(r.name)}</a></strong>${r.phone ? ` · ${escapeHtml(r.phone)}` : ''}<div class="small" style="margin-top:1px;">${escapeHtml(r.role)}</div></li>`,
+    )
+    .join('')
+  return `
+  <p>${escapeHtml(dev.disclaimer)}</p>
+  <h3 class="subhead">Who to call, and where</h3>
+  <ul class="note-list">${rows}</ul>`
 }
 
 /**
@@ -578,6 +622,26 @@ function rationalePage(a: RenderCmaArgs): PageDef {
   }
 }
 
+function developmentPage(a: RenderCmaArgs): PageDef | null {
+  const body = developmentItemsBlock(a.development)
+  if (!body) return null
+  return {
+    meta: `${esc(a.subject.streetAddress)} · Development Potential`,
+    body: `
+  <h2 class="section">Development Potential</h2>${body}`,
+  }
+}
+
+function developmentResourcesPage(a: RenderCmaArgs): PageDef | null {
+  const body = developmentResourcesBlock(a.development)
+  if (!body) return null
+  return {
+    meta: `${esc(a.subject.streetAddress)} · Verify It Yourself`,
+    body: `
+  <h2 class="section">Verify It Yourself</h2>${body}`,
+  }
+}
+
 // ── EXPIRED AUDIT pages (doc_type='expired-audit' only) ─────────────────────
 // Voice per voice_guidelines §4.7 + the expired-listing-lp SKILL: the data
 // tells the story. No editorializing, no blame on the prior agent, no
@@ -719,6 +783,12 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   if (market) pages.push(market)
   pages.push(pricingPage(a))
   pages.push(rationalePage(a))
+  // Development potential (subdivide / ADU / second dwelling / middle housing /
+  // STR) + the verify-it-yourself disclaimer and agency directory.
+  const dev = developmentPage(a)
+  if (dev) pages.push(dev)
+  const devResources = developmentResourcesPage(a)
+  if (devResources) pages.push(devResources)
   // EXPIRED AUDIT variant: failure analysis → services standard → net sheet.
   const audit = expiredAuditPage(a)
   if (audit) pages.push(audit)
