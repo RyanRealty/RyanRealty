@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.782.2 (2026-07-14)
+
+### Bug Fixes
+- fix(crm): relationship split reroutes email contact-points too, not just phones
+
+---
+
+
 ## v1.782.1 (2026-07-14)
 
 ### Maintenance
