@@ -254,7 +254,7 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
           titleBottom="reports"
           lead="Real-time market data by city. Add or remove cities and change the time range. Default: last 7 days."
           videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/lp/hero-mountain.jpg"
         />
 
         {/* CTA row preserved from the prior hero. */}

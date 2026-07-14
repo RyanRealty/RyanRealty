@@ -106,7 +106,7 @@ export default async function MortgageCalculatorPage({ searchParams }: Props) {
           lead="Adjust home price, down payment, interest rate, and loan term to plan your purchase and estimate your monthly payment."
           showSearch={false}
           videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/kb/redmond-downtown-aerial.jpg"
         />
 
         {/* The calculator — interactive shadcn client component, logic untouched.

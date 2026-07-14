@@ -20,7 +20,7 @@ export const revalidate = 900
 /** Luxury floor for Bend, stated transparently on the page. Bend's median list is
  *  roughly $800k, so $1.5M is the clear high-end segment. */
 const LUX_MIN = 1_500_000
-const OLD_MILL_HERO = '/images/hero/hero-old-mill-master-4k.jpg'
+const OLD_MILL_HERO = '/images/homepage/tetherow-golf-aerial.jpg'
 
 // High-end Bend-area communities with dedicated pages (resort registry slugs).
 const LUX_COMMUNITIES = [

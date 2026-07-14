@@ -59,7 +59,7 @@ import type { KbReview, KbTownItem } from '@/components/site/kb/types'
 import '@/components/site/kb/kb.css'
 
 const ROUTE_PATH = '/about'
-const OLD_MILL_HERO = '/images/hero/hero-old-mill-master-4k.jpg'
+const OLD_MILL_HERO = '/images/office/ryan-realty-bend-office-interior-01.jpg'
 
 // Service-area ledger — the Central Oregon cities we cover, with live active
 // counts + median from getCitiesForIndex (geo_snapshot_mv, §0). Reuses the
@@ -109,7 +109,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description:
       'Ryan Realty markets Central Oregon homes with cinematic video, 3D tours, and data-backed pricing. Based in Bend, Oregon, founded June 2023. The broker you call is the one who closes your sale.',
     path: ROUTE_PATH,
-    ogImage: '/images/hero/hero-old-mill-master-4k.jpg',
+    ogImage: '/images/office/ryan-realty-bend-office-interior-01.jpg',
     keywords: [
       'Ryan Realty',
       'Bend Oregon real estate',

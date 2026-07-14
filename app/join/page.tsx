@@ -52,7 +52,7 @@ export const metadata = pageMetadata({
   description:
     'Bring your listings to a Bend brokerage that markets every one of them: a listing film, a 3D walkthrough, live-data pricing, and a written report every week. You keep your client from first call to closing.',
   path: '/join',
-  ogImage: '/brand/hero/hero-old-mill-master-4k.jpg',
+  ogImage: '/images/office/ryan-realty-bend-office-interior-01.jpg',
   keywords: [
     'real estate broker jobs Bend Oregon',
     'join brokerage Central Oregon',
@@ -61,7 +61,7 @@ export const metadata = pageMetadata({
   ],
 })
 
-const OLD_MILL_HERO = '/brand/hero/hero-old-mill-master-4k.jpg'
+const OLD_MILL_HERO = '/images/office/ryan-realty-bend-office-interior-01.jpg'
 
 const LISTING_SUPPORT = [
   {

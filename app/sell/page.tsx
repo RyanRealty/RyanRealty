@@ -71,7 +71,7 @@ import '@/components/site/kb/kb.css'
 export const revalidate = 300
 
 const ROUTE_PATH = '/sell'
-const OLD_MILL_HERO = '/brand/hero/hero-old-mill-master-4k.jpg'
+const OLD_MILL_HERO = '/images/homepage/tetherow-golf-aerial.jpg'
 /** On-page anchor of the hero form (SellerLPForm default formId). */
 const FORM_ANCHOR = '#get-value'
 
@@ -81,7 +81,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description:
       'List your Central Oregon home with Ryan Realty. Pricing from live market data, professional marketing, and one broker from valuation to close. Request a free home valuation.',
     path: ROUTE_PATH,
-    ogImage: '/brand/hero/hero-old-mill-master-4k.jpg',
+    ogImage: '/images/homepage/tetherow-golf-aerial.jpg',
     keywords: [
       'sell home Bend Oregon',
       'Central Oregon home valuation',

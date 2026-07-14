@@ -255,7 +255,7 @@ export default async function VideosPage({
           titleBottom="on video"
           lead={lede}
           videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/lp/hero-pond.jpg"
         />
 
         {/* City filter chips — KB pills. The active city is the solid navy pill;

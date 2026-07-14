@@ -142,7 +142,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
           cta={{ href: '#contact-form', label: 'Send a message' }}
           ctaSecondary={null}
           videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/kb/three-sisters-sunrise.jpg"
         />
 
         {/* The floating Meet-the-team / View-listings CTA pair above the form was

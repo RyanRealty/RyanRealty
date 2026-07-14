@@ -47,7 +47,7 @@ export const metadata: Metadata = pageMetadata({
   description:
     'Work directly with a Ryan Realty broker in Bend, Oregon. Cinematic video, 3D tours, and data-backed pricing on every Central Oregon listing, from first call to closing.',
   path: '/team',
-  ogImage: '/brand/hero/hero-old-mill-master-4k.jpg',
+  ogImage: '/images/office/ryan-realty-bend-office-interior-02.jpg',
   keywords: [
     'Ryan Realty team',
     'Bend Oregon real estate brokers',
@@ -182,7 +182,7 @@ export default async function TeamPage() {
           lead="No hand-offs, no transaction desk, no junior agent learning on your deal."
           showSearch={false}
           videoSrc={null}
-          posterSrc="/brand/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/office/ryan-realty-bend-office-interior-02.jpg"
         />
         <KbAbout
           eyebrow="The team"

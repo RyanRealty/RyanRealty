@@ -125,7 +125,7 @@ export default async function AreaGuidesPage() {
           titleBottom="Central Oregon"
           lead="From Bend and Redmond to Sisters, Sunriver, and beyond. Explore neighborhoods, market trends, and homes for sale in every corner of the region we call home."
           videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/trails/green-lakes.jpg"
         />
 
         {/* CTA row preserved from the prior hero. */}

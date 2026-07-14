@@ -380,7 +380,7 @@ export default async function TeamMemberPage({ params }: Props) {
             : ''}
           lead={heroLead}
           videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/office/ryan-realty-bend-office-interior-02.jpg"
           portraitSrc={headshotSrc}
           showSearch={false}
         />

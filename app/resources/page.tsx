@@ -121,7 +121,7 @@ export default function ResourcesPage() {
           titleBottom="resources"
           lead="Tools, market data, and guides to help you make confident decisions in Central Oregon real estate."
           videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/kb/redmond-downtown-aerial.jpg"
         />
 
         {/* CTA row preserved from the prior hero. */}

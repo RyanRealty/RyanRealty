@@ -194,7 +194,7 @@ export default async function MotivatedSellersPage() {
           titleBottom="Sellers"
           lead="Active homes with documented price cuts or seller-signaled motivation. Sorted by most motivated, updated hourly from the regional MLS."
           videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/homepage/tetherow-golf-aerial.jpg"
         />
 
         {/* How motivation is identified — transparency + keyword relevance.

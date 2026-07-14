@@ -389,7 +389,7 @@ export default async function PriceDropsRegionPage() {
           countNoun="price drops"
           lead="across Central Oregon in the last 7 days."
           videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/kb/sunriver-deschutes-river.jpg"
         />
 
         {/* By-city chips — filter nav */}

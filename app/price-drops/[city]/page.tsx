@@ -347,7 +347,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
           countNoun="price drops"
           lead={`in ${cityName} in the last 7 days, from the regional MLS.`}
           videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/kb/sunriver-deschutes-river.jpg"
         />
 
         {/* Live aggregate glance — the three figures the page surfaces (count,

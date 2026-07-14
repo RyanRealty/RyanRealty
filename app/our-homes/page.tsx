@@ -121,7 +121,7 @@ export default async function OurHomesPage() {
           titleBottom="by Ryan Realty"
           lead="across Bend, Redmond, Sisters, Sunriver, and Central Oregon. Professional presentation, targeted outreach, and one broker accountable from listing to closing."
           videoSrc={null}
-          posterSrc="/brand/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/homepage/bend-drake-park-aerial.jpg"
         />
 
         {/* CTA row preserved from the prior hero chips. */}

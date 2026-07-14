@@ -169,7 +169,7 @@ export default async function PulsePage() {
           titleBottom="Oregon pulse"
           lead="Every new listing, every sold home, every price drop. Live from the MLS, in order. Pick the cities you care about and scroll."
           videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/homepage/smith-rock-terrebonne.jpg"
         />
 
         {/* Region snapshot — every stat the prior PulseHero showed, preserved in

@@ -140,7 +140,7 @@ export default async function RentalPropertyCalculatorPage({ searchParams }: Pro
           titleBottom="Calculator"
           lead="Adjust price, financing, rent, and expenses to see monthly cash flow, cap rate, cash-on-cash return, and how equity builds over time."
           videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/lp/hero-pond.jpg"
         />
 
         {/* CTA row preserved from the prior hero (Browse Homes for Sale · Talk to an Agent) */}

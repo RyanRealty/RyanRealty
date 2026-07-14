@@ -229,7 +229,7 @@ export default async function FAQPage() {
           titleBottom="questions"
           lead="Honest answers to the questions Bend buyers and sellers ask us every week."
           videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/homepage/smith-rock-terrebonne.jpg"
           showSearch={false}
         />
 

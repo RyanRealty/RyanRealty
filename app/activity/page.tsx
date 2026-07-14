@@ -145,7 +145,7 @@ export default async function ActivityPage() {
           titleBottom="Activity"
           lead="New listings, price changes, pending sales, and closed updates across Central Oregon."
           videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/homepage/bend-drake-park-aerial.jpg"
         />
 
         {/* CTA row preserved from the prior hero (View All Listings · Search on Map). */}

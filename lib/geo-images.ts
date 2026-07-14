@@ -106,13 +106,19 @@ const COMMUNITY_DEDICATED_IMAGES: Record<string, string> = {
  */
 export const GOLF_COMMUNITY_IMAGES: Record<string, string> = {
   tetherow: '/lp/central-oregon-golf/img/tetherow-hero.jpg',
-  pronghorn: '/lp/central-oregon-golf/img/pronghorn-01.jpg',
+  // design-audit TRU-5: pronghorn-01.jpg is actually the Old Mill District (both
+  // the public file and the asset-library "Pronghorn - 01" are geo-verified as
+  // Old Mill, not Pronghorn). With no accurate Pronghorn photo in-repo, drop the
+  // entry so the resolver falls through to a LABELED "area view" fallback rather
+  // than presenting Bend's Old Mill as if it were the Pronghorn resort.
   'awbrey-glen': '/lp/central-oregon-golf/img/awbrey-glen-01.jpg',
   'widgi-creek': '/lp/central-oregon-golf/img/widgi-creek-01.jpg',
   crosswater: '/lp/central-oregon-golf/img/crosswater-01.jpg',
   'eagle-crest': '/lp/central-oregon-golf/img/eagle-crest-01.jpg',
   'brasada-ranch': '/lp/central-oregon-golf/img/brasada-01.jpg',
-  sunriver: '/lp/central-oregon-golf/img/sunriver-river.jpg',
+  // design-audit TRU-5: sunriver-river.jpg is a night-sky/Milky-Way cabin shot,
+  // not Sunriver. Use the accurate Deschutes-at-Sunriver photo.
+  sunriver: '/images/kb/sunriver-deschutes-river.jpg',
 }
 
 // ---------------------------------------------------------------------------

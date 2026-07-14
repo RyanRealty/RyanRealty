@@ -30,7 +30,7 @@ import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import '@/components/site/kb/kb.css'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-const VALUATION_HERO = '/images/hero/hero-old-mill-master-4k.jpg'
+const VALUATION_HERO = '/images/homepage/tetherow-golf-aerial.jpg'
 
 export const metadata: Metadata = {
   title: 'Home Valuation | Free Estimate',

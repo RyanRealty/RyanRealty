@@ -206,7 +206,7 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
               : 'No open houses are posted across Central Oregon this week yet. Here is everything for sale right now.'
           }
           videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/kb/sunriver-deschutes-river.jpg"
         />
         <KbOpenHouses
           items={openHouseItems}

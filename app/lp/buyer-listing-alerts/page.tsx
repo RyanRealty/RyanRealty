@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/images/hero/hero-old-mill-master-4k.jpg',
+        url: '/images/kb/three-sisters-sunrise.jpg',
         width: 1920,
         height: 1080,
         alt: 'Old Mill District, Bend, Oregon',
@@ -267,7 +267,7 @@ export default async function BuyerLPPage() {
       {/* ─── HERO — canonical Old Mill photo, navy scrim, 3-field form card ── */}
       <section id="alerts" className="relative isolate border-b-[3px] border-[#102742] scroll-mt-16">
         <Image
-          src="/images/hero/hero-old-mill-master-4k.jpg"
+          src="/images/kb/three-sisters-sunrise.jpg"
           alt=""
           fill
           priority

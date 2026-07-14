@@ -85,7 +85,7 @@ export default function AppreciationToolPage() {
           titleBottom="Calculator"
           lead="Model different annual appreciation rates to understand long-term equity growth and plan your investment."
           videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/kb/three-sisters-sunrise.jpg"
         />
 
         {/* CTA row preserved from the prior hero (Browse Listings · Mortgage Calculator) */}

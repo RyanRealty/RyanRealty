@@ -134,7 +134,7 @@ export default async function GuidesIndexPage() {
           titleBottom="Guides"
           lead="Local market explainers and step-by-step playbooks for buyers and sellers in Central Oregon."
           videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/homepage/sisters-downtown-three-peaks.jpg"
         />
 
         {/* CTA row preserved from the prior hero (Browse Listings · Area Guides) */}

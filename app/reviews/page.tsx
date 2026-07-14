@@ -135,7 +135,7 @@ export default function ReviewsPage() {
           titleBottom="clients say"
           lead="Real reviews from buyers and sellers across Central Oregon. Read what clients say about the process, the communication, and how deals came together."
           videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/homepage/bend-drake-park-aerial.jpg"
           showSearch={false}
         />
 

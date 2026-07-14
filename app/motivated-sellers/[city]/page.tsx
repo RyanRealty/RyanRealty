@@ -223,7 +223,7 @@ export default async function MotivatedSellersCityPage({ params }: Props) {
           titleBottom={cityName}
           lead={heroLead}
           videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/homepage/tetherow-golf-aerial.jpg"
         />
 
         {/* Intro — transparency + keyword content. Both paragraphs preserved. */}

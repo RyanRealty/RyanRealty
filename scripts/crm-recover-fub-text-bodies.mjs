@@ -48,7 +48,11 @@ for (const line of fs.readFileSync(path.join(ROOT, '.env.local'), 'utf8').split(
   if (i > 0 && !line.startsWith('#')) env[line.slice(0, i).trim()] = line.slice(i + 1).trim();
 }
 const FUB_KEY = (env.FOLLOW_UP_BOSS_API_KEY || env.FOLLOWUPBOSS_API_KEY || env.FUB_API_KEY || '').trim();
-const FUB_SYSTEM = (env.FOLLOWUPBOSS_SYSTEM || 'RyanRealty').trim();
+// X-System is OMITTED by default. The original import sent X-System: RyanRealty
+// (a registered system without content sharing) which is exactly what redacted
+// the bodies. A plain first-party account key with NO system header often
+// returns full content. Only send the header if explicitly configured.
+const FUB_SYSTEM = (env.FOLLOWUPBOSS_SYSTEM || '').trim();
 const FUB_SYSTEM_KEY = (env.FOLLOWUPBOSS_SYSTEM_KEY || '').trim();
 const FUB_BASE = 'https://api.followupboss.com/v1';
 
@@ -71,7 +75,7 @@ const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_
 const fubHeaders = {
   'Content-Type': 'application/json',
   Authorization: `Basic ${Buffer.from(`${FUB_KEY}:`).toString('base64')}`,
-  'X-System': FUB_SYSTEM,
+  ...(FUB_SYSTEM ? { 'X-System': FUB_SYSTEM } : {}),
   ...(FUB_SYSTEM_KEY ? { 'X-System-Key': FUB_SYSTEM_KEY } : {}),
 };
 

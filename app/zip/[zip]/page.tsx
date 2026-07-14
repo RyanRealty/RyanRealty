@@ -166,7 +166,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
       getSurfaceImage('hero', {
         geoTags: ['central-oregon'],
         seed: `zip-${zip}`,
-        fallback: '/images/hero/hero-old-mill-master-4k.jpg',
+        fallback: '/images/homepage/smith-rock-terrebonne.jpg',
       }),
       null as Awaited<ReturnType<typeof getSurfaceImage>>,
       3000,
@@ -346,10 +346,10 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   // Resolve hero image URL from getSurfaceImage return (string | SurfaceImage | null).
   const posterSrc =
     zipHeroRaw == null
-      ? '/images/hero/hero-old-mill-master-4k.jpg'
+      ? '/images/homepage/smith-rock-terrebonne.jpg'
       : typeof zipHeroRaw === 'string'
         ? zipHeroRaw
-        : (zipHeroRaw as { url?: string }).url ?? '/images/hero/hero-old-mill-master-4k.jpg'
+        : (zipHeroRaw as { url?: string }).url ?? '/images/homepage/smith-rock-terrebonne.jpg'
 
   return (
     <main className="kb-root">

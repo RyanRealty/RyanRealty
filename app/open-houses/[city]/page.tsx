@@ -217,7 +217,7 @@ export default async function OpenHousesCityPage({
           titleBottom={cityName}
           lead={`in ${cityName} this weekend. ${openHouseCount > 0 ? `${openHouseCount} open ${openHouseCount === 1 ? 'house' : 'houses'} on the calendar.` : ''}`}
           videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterSrc="/images/kb/sunriver-deschutes-river.jpg"
         />
         <KbOpenHouses
           items={openHouseItems}

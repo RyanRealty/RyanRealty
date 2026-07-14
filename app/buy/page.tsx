@@ -40,7 +40,7 @@ export const metadata = pageMetadata({
   description:
     'Search homes for sale across Bend, Redmond, Sisters, Sunriver, and surrounding communities. Live MLS data, and one broker from your first search to closing.',
   path: '/buy',
-  ogImage: '/brand/hero/hero-old-mill-master-4k.jpg',
+  ogImage: '/images/homepage/sisters-downtown-three-peaks.jpg',
   keywords: [
     'buy home Bend Oregon',
     'Central Oregon homes for sale',
@@ -83,7 +83,7 @@ const FAQ_ITEMS = [
   },
 ] as const
 
-const OLD_MILL_HERO = '/brand/hero/hero-old-mill-master-4k.jpg'
+const OLD_MILL_HERO = '/images/homepage/sisters-downtown-three-peaks.jpg'
 
 // Hero quick-links (preserved from the prior version — every destination kept).
 const HERO_CHIPS = [
