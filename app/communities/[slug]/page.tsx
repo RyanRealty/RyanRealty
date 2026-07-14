@@ -587,9 +587,13 @@ export default async function CommunityDetailPage({ params }: Props) {
   // ── LIVE ACTIVITY (per-row thumbnails, like the city page) ────────────────
   const activityItems = activity.slice(0, 8).map((a) => {
     const km = ACTIVITY_KIND[a.event_type] ?? { kind: a.event_type, label: a.event_type }
+    // design-audit TRU-2: only badge "New" when the listing is genuinely recent
+    // (past 21 days it is "Listed"). Relabels only — no market figure changes.
+    const daysOld = a.event_at ? (Date.now() - new Date(a.event_at).getTime()) / 86_400_000 : Infinity
+    const staleNew = km.label === 'New' && daysOld > 21
     return {
-      kind: km.kind,
-      label: km.label,
+      kind: staleNew ? 'listed' : km.kind,
+      label: staleNew ? 'Listed' : km.label,
       address: [a.StreetNumber, a.StreetName, a.StreetSuffix].filter(Boolean).join(' ') || 'Address on request',
       cityLine: [a.City, a.SubdivisionName].filter(Boolean).join(' · '),
       price: a.ListPrice ?? null,

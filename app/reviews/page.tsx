@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ExternalLinkHugeIcon } from '@/components/icons/HugeIcons'
 import { TESTIMONIALS, GOOGLE_REVIEWS_URL } from '@/lib/testimonials'
 import { formatDate } from '@/lib/format/date'
+import { ReviewsCollapse } from './ReviewsCollapse.client'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
@@ -179,7 +180,7 @@ export default function ReviewsPage() {
               </a>
             </div>
 
-            <ul className="kb-reviews-grid">
+            <ReviewsCollapse total={TESTIMONIALS.length}>
               {TESTIMONIALS.map((t) => (
                 <li key={t.author + t.quote.slice(0, 40)}>
                   <figure className="kb-rev-card h-full">
@@ -200,7 +201,7 @@ export default function ReviewsPage() {
                   </figure>
                 </li>
               ))}
-            </ul>
+            </ReviewsCollapse>
 
             <div className="sec-cta">
               <a

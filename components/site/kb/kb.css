@@ -1361,11 +1361,15 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .kb-rev-who b{font-weight:700;color:var(--navy);font-size:.86rem;}
 .kb-root .kb-rev-who span{font-size:.68rem;letter-spacing:.05em;text-transform:uppercase;color:var(--navy-70);}
 @media (min-width:781px) and (max-width:1100px){.kb-root .kb-reviews-grid{grid-template-columns:repeat(2,1fr);}}
+/* design-audit: "Show all" button hidden on desktop (multi-column grid needs no cap). */
+.kb-root .kb-reviews-more{display:none;}
 @media (max-width:780px){.kb-root .kb-reviews-grid{grid-template-columns:1fr;}
-/* Mobile caps the stack at 4 cards — six full quotes made a multi-viewport wall
-   that buried the sections below (design-audit P2). "Read all on Google"
-   carries the rest. */
-.kb-root .kb-rev-card:nth-child(n+5){display:none;}}
+/* design-audit: cap the mobile review stack past the 8th card while COLLAPSED —
+   the old rule targeted .kb-rev-card (always its <li>'s only child, so
+   :nth-child(n+5) never matched and 24 cards stacked into a ~20-screen wall).
+   All cards stay in the DOM (SEO + JSON-LD); "Show all N reviews" reveals them. */
+.kb-root .kb-reviews-collapsed > li:nth-child(n+9){display:none;}
+.kb-root .kb-reviews-more{display:inline-flex;align-items:center;gap:8px;margin-top:22px;font-family:var(--font-sans),sans-serif;font-size:.82rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);background:none;border:1.5px solid var(--navy);padding:12px 20px;cursor:pointer;}}
 
 /* Market chart — year-over-year overlay legend + month axis */
 .kb-root .mkt-legend-years{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:14px;}
