@@ -81,7 +81,11 @@ async function arcgisPointQuery(base: string, lng: number, lat: number, outField
 
 /** Nearest OWRD well log within a tight envelope around the parcel point. */
 async function owrdWellNear(lng: number, lat: number): Promise<CmaWellLog | null> {
-  const d = 0.0009 // ~100m envelope
+  // ~250m envelope: rural parcels are multi-acre and the well often sits well
+  // off the mapped address point. This proves the property is on private-well
+  // land; the specific log is area context to confirm with the seller's own
+  // OWRD log at listing (SKILL §3.6) — never presented as the subject's well.
+  const d = 0.00225
   const params = new URLSearchParams({
     geometry: JSON.stringify({ xmin: lng - d, ymin: lat - d, xmax: lng + d, ymax: lat + d, spatialReference: { wkid: 4326 } }),
     geometryType: 'esriGeometryEnvelope',
@@ -169,7 +173,10 @@ export async function resolveCmaSiteData(subject: CmaSubject): Promise<CmaSiteDa
 
   // Zoning + wildfire + well in parallel (all cheap, authoritative).
   const [zoneRes, fireRes, wellRes] = await Promise.allSettled([
-    arcgisPointQuery(ARCGIS_ZONING, lng, lat, 'ZONE_TYPE,ZONE,OVERLAY'),
+    // Layer /3 fields: OBJECTID, ZONE_TYPE, COMMUNITY_TYPE, ZONE, ORDINANCE.
+    // There is NO OVERLAY field here (overlays are separate layers) — requesting
+    // it makes ArcGIS reject the whole query.
+    arcgisPointQuery(ARCGIS_ZONING, lng, lat, 'ZONE,ZONE_TYPE,COMMUNITY_TYPE,ORDINANCE'),
     arcgisPointQuery(ARCGIS_WILDFIRE, lng, lat, 'HAZARD'),
     owrdWellNear(lng, lat),
   ])
