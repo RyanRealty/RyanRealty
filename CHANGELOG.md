@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.787.0 (2026-07-14)
+
+### Features
+- feat(cma,bpo): Development Potential section + verify-it-yourself directory
+
+---
+
+
 ## v1.786.0 (2026-07-14)
 
 ### Features
