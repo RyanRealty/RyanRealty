@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.778.2 (2026-07-14)
+
+### Bug Fixes
+- fix(site): design-audit TRU-2 + reviews mobile cap
+
+### Maintenance
+- docs(design-audit): TRU-2 + reviews cap done — register fully resolved
+
+---
+
+
 ## v1.778.1 (2026-07-14)
 
 ### Bug Fixes
