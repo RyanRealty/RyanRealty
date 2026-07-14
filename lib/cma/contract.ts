@@ -19,6 +19,11 @@
 import type { CmaAdjustedComp, CmaPricing } from '@/lib/cma/types'
 import type { CompJudgment } from '@/lib/cma/judge'
 import type { CmaAudit } from '@/lib/cma/audit'
+import type { CmaSiteData } from '@/lib/cma/county'
+
+// Restrictive/resource base zones where buildability is NOT automatic — a
+// dwelling needs a verified current entitlement (SKILL §3.5).
+const RESTRICTIVE_ZONE_RE = /\b(EFU|EFUTRB|F1|F2|SM)\b/i
 
 export const COMP_MAX_AGE_MONTHS = 24
 
@@ -45,10 +50,11 @@ export function evaluateAccuracyContract(args: {
   pricing: CmaPricing
   judgment: CompJudgment | null
   audit: CmaAudit | null
+  site?: CmaSiteData | null
   minComps: number
   marketContextPresent: boolean
 }): AccuracyContract {
-  const { comps, pricing, judgment, audit, minComps } = args
+  const { comps, pricing, judgment, audit, site, minComps } = args
   const checks: ContractCheck[] = []
   const now = Date.now()
   const maxAgeMs = COMP_MAX_AGE_MONTHS * 30.44 * 86_400_000
@@ -149,6 +155,34 @@ export function evaluateAccuracyContract(args: {
               .map((f) => `[${f.severity}] ${f.claim}`)
               .join(' · ')}`,
   })
+  // ── authoritative site-data gates (SKILL §3.5/§3.6, §0 GIS-authoritative) ──
+  // Non-municipal (rural/acreage) properties MUST carry verified zoning + water
+  // + septic; unresolved site facts on such a property force broker review
+  // rather than shipping a guess. Municipal properties state city water/sewer.
+  const nonMunicipal = site != null && !site.isMunicipal
+  checks.push({
+    id: 'site-data-resolved',
+    severity: 'review',
+    pass: site == null || site.isMunicipal || site.resolved,
+    detail:
+      site == null
+        ? 'No site-data resolver ran.'
+        : site.isMunicipal
+          ? `Municipal: zone ${site.zone ?? '—'}, city water/sewer.`
+          : site.resolved
+            ? `Zone ${site.zone ?? '—'}, water ${site.water.source}, septic ${site.septic.status}.`
+            : `Non-municipal property with unresolved site facts (zone ${site.zone ?? '?'}, water ${site.water.source}, septic ${site.septic.status}) — confirm zoning/well/septic from records or the seller before release.`,
+  })
+  checks.push({
+    id: 'restrictive-zoning-entitlement',
+    severity: 'review',
+    pass: !(site?.zone && RESTRICTIVE_ZONE_RE.test(site.zone)),
+    detail:
+      site?.zone && RESTRICTIVE_ZONE_RE.test(site.zone)
+        ? `Zone ${site.zone} is restrictive — buildability is not automatic and requires a verified current entitlement (CUP / lot-of-record / farm dwelling). Broker must confirm before any value rests on buildability.`
+        : 'Zoning does not restrict buildability, or is municipal.',
+  })
+  void nonMunicipal
   checks.push({
     id: 'market-context-present',
     severity: 'review',

@@ -24,6 +24,7 @@ import { getCmaMarketContext } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { judgeComps } from '@/lib/cma/judge'
 import { hydratePhotoUrls } from '@/lib/cma/photos'
+import { resolveCmaSiteData } from '@/lib/cma/county'
 import { auditCma } from '@/lib/cma/audit'
 import { evaluateAccuracyContract } from '@/lib/cma/contract'
 import { buildCmaMapDataUri } from '@/lib/cma/map'
@@ -89,10 +90,13 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     }
     const subject = resolved.subject
 
-    // 2 + 3. Comps and market context in parallel.
-    const [selection, market] = await Promise.all([
+    // 2 + 3. Comps, market context, and authoritative site data (zoning / well
+    // / septic from county + OWRD records — SKILL §3.5/§3.6) in parallel. Site
+    // resolution is fail-open and never throws.
+    const [selection, market, site] = await Promise.all([
       selectComps(subject),
       getCmaMarketContext(subject.city),
+      resolveCmaSiteData(subject),
     ])
     if (selection.comps.length < MIN_COMPS) {
       const err = `Only ${selection.comps.length} qualifying closed comps found (minimum ${MIN_COMPS}). ${selection.trace.join(' ')}`
@@ -177,7 +181,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // job is to refute the finished analysis (Matt directive 2026-07-11:
     // every CMA must be adversarially audited). Builder and auditor share no
     // prompt. Anything but a clean pass forces broker review via the contract.
-    let audit = await auditCma({ subject, comps: adjusted, excluded: excludedForAudit(), pricing, judgment, market })
+    let audit = await auditCma({ subject, comps: adjusted, excluded: excludedForAudit(), pricing, judgment, market, site })
 
     // 4.45. Bounded self-repair: when the audit ties critical/major findings
     // to SPECIFIC comps, drop those comps, re-price, and re-audit ONCE. The
@@ -213,7 +217,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           pricing.notes.push(
             `The comparability narrative reflects the initial review; ${flagged.length} comp(s) it references were subsequently removed on the independent audit's findings and the pricing recomputed on the remaining set.`,
           )
-          audit = await auditCma({ subject, comps: adjusted, excluded: excludedForAudit(), pricing, judgment, market })
+          audit = await auditCma({ subject, comps: adjusted, excluded: excludedForAudit(), pricing, judgment, market, site })
         }
       }
     }
@@ -234,6 +238,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       pricing,
       judgment,
       audit,
+      site,
       minComps: MIN_COMPS,
       marketContextPresent: market != null,
     })
@@ -273,6 +278,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       compTrace: selection.trace,
       excludedOutliers: selection.excludedOutliers,
       sellerImprovementsText: input.sellerImprovementsText ?? null,
+      site,
     })
 
     // 7. Citations — one entry per figure class (CLAUDE.md §0).
@@ -357,6 +363,20 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         improvement_recovery_rate: 0.65,
       },
       map: map ? { points: map.pointCount, source: 'Google Static Maps, MLS coordinates' } : null,
+      site: {
+        tax_account: site.taxAccount,
+        taxlot: site.taxlot,
+        zone: site.zone,
+        overlays: site.zoneOverlays,
+        wildfire_hazard: site.wildfireHazard,
+        water_source: site.water.source,
+        well_log: site.water.wellLog,
+        septic: site.septic,
+        is_municipal: site.isMunicipal,
+        resolved: site.resolved,
+        notes: site.notes,
+        sources: site.citations,
+      },
       ors_disclosure: 'OAR 863-015-0190 elements included on the final page',
     }
 
@@ -364,6 +384,14 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       builder: CMA_BUILDER_VERSION,
       page_count: pageCount,
       comps_count: adjusted.length,
+      // Authoritative site facts (zoning/water/septic) for the admin summary.
+      site: {
+        zone: site.zone,
+        water_source: site.water.source,
+        septic: site.septic.status,
+        is_municipal: site.isMunicipal,
+        resolved: site.resolved,
+      },
       // The LLM comparability judgment (or a note that it was unavailable).
       judgment: judgment
         ? {

@@ -21,6 +21,7 @@ import type {
   CmaPricing,
   CmaSubject,
 } from '@/lib/cma/types'
+import type { CmaSiteData } from '@/lib/cma/county'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -37,6 +38,34 @@ export interface RenderCmaArgs {
   compTrace: string[]
   excludedOutliers: Array<{ address: string; closePrice: number; ppsf: number; reason: string }>
   sellerImprovementsText?: string | null
+  site?: CmaSiteData | null
+}
+
+/** Zoning / water / septic block from the authoritative records (SKILL §3.5/§3.6).
+ *  Renders only what was resolved; unresolved facts read "confirm at listing". */
+function siteBlock(site: CmaSiteData | null | undefined): string {
+  if (!site || (!site.zone && site.water.source === 'unknown' && site.septic.status === 'unknown')) return ''
+  const rows: string[] = []
+  if (site.zone) rows.push(`<li><strong>Zoning:</strong> ${escapeHtml(site.zone)}${site.zoneOverlays.length ? ` (${site.zoneOverlays.map(escapeHtml).join(', ')})` : ''}${/\b(EFU|EFUTRB|F1|F2)\b/i.test(site.zone) ? ' — dwelling requires a verified entitlement; confirm before relying on buildability' : ''}</li>`)
+  const water =
+    site.water.source === 'well'
+      ? `Private well${site.water.wellLog?.completedDepthFt ? ` (area well logs ~${site.water.wellLog.completedDepthFt} ft; confirm the subject's OWRD log at listing)` : ' (confirm the subject\'s OWRD well log at listing)'}`
+      : site.water.source === 'municipal'
+        ? 'City water'
+        : null
+  if (water) rows.push(`<li><strong>Water:</strong> ${water}</li>`)
+  const septic =
+    site.septic.status === 'installed'
+      ? `Onsite septic system${site.septic.permit ? ` (permit ${escapeHtml(site.septic.permit)})` : ' of record'}`
+      : site.septic.status === 'site-evaluation-only'
+        ? 'Site evaluation only — no installed system of record (buyer installs)'
+        : site.septic.status === 'municipal-sewer'
+          ? 'City sewer'
+          : null
+  if (septic) rows.push(`<li><strong>Sewer/septic:</strong> ${septic}</li>`)
+  if (site.wildfireHazard) rows.push('<li><strong>Wildfire hazard zone:</strong> yes (defensible-space + build standards apply)</li>')
+  if (rows.length === 0) return ''
+  return `<h3 class="subhead">Site &amp; utilities (county / state records)</h3><ul class="note-list">${rows.join('')}</ul>`
 }
 
 export function escapeHtml(s: string): string {
@@ -180,6 +209,7 @@ function subjectPage(a: RenderCmaArgs): PageDef {
       <h3 class="subhead">Site and structure</h3>
       <ul class="note-list">${facts.map((f) => `<li>${f}</li>`).join('')}</ul>
       ${a.sellerImprovementsText ? `<h3 class="subhead">Seller-reported details</h3><p class="small">${esc(a.sellerImprovementsText)} (Seller-reported, confirm at listing.)</p>` : ''}
+      ${siteBlock(a.site)}
     </div>
     <div>
       <h3 class="subhead">How this analysis works</h3>

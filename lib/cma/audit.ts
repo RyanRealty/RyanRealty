@@ -19,6 +19,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CompJudgment } from '@/lib/cma/judge'
+import type { CmaSiteData } from '@/lib/cma/county'
 
 const MODEL = 'claude-sonnet-4-5'
 const INPUT_COST_PER_TOKEN = 0.000003
@@ -179,10 +180,12 @@ export async function auditCma(args: {
     confidence: string
     context: string
   }
+  /** Authoritative zoning/water/septic — so the auditor can refute buildability/utility claims. */
+  site?: CmaSiteData | null
 }): Promise<CmaAudit | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return null
-  const { subject, comps, excluded, pricing, judgment, market, finalOpinion } = args
+  const { subject, comps, excluded, pricing, judgment, market, finalOpinion, site } = args
 
   const subjectLine = [
     `${subject.streetAddress}, ${subject.city} (subdivision: ${subject.subdivision ?? 'none'})`,
@@ -230,6 +233,7 @@ export async function auditCma(args: {
     'the machine-adjusted values cluster; ' +
     '(4) a narrative or confidence claim that does not trace to the data shown; ' +
     '(5) a market-verdict mismatch (months of supply: 4 or less seller, 4-6 balanced, 6 or more buyer). ' +
+    '(6) a SITE claim contradicting the authoritative records: a buildability assertion on EFU/EFUTRB or other restrictive zoning without a verified current entitlement (category=data-integrity, critical); a stated water source or septic system not supported by the SITE line; or a zoning/utility fact the report asserts that the records did not resolve. ' +
     'CONTEXT — the subject failed to sell at its last list price. A recommendation at or above that price is not ' +
     'automatically wrong: if the adjusted comp values cluster at or above it, that IS the evidence, and the prior ' +
     'failure may reflect condition, presentation, or timing. Flag it only when the comps do not support it. ' +
@@ -240,8 +244,15 @@ export async function auditCma(args: {
     'number of major findings — reserve fail for a genuinely broken analysis. If the analysis survives your attack, ' +
     'verdict=pass and say so plainly — a clean pass is a legitimate outcome. Report only through the record_audit tool.'
 
+  const siteLine = site
+    ? `Zoning ${site.zone ?? 'UNRESOLVED'}${site.zoneOverlays.length ? ` (overlays ${site.zoneOverlays.join(', ')})` : ''}. ` +
+      `Water: ${site.water.source}${site.water.wellLog ? ` (nearest domestic well ${site.water.wellLog.completedDepthFt ?? '?'}ft)` : ''}. ` +
+      `Septic: ${site.septic.status}${site.septic.permit ? ` (${site.septic.permit})` : ''}. ` +
+      `${site.isMunicipal ? 'Municipal water/sewer.' : 'Non-municipal.'}${site.resolved ? '' : ' SITE FACTS NOT FULLY RESOLVED FROM RECORDS.'}`
+    : 'No authoritative site data (zoning/water/septic) was resolved.'
+
   const user =
-    `SUBJECT:\n${subjectLine}\n\nMARKET: ${marketLine}\n\n` +
+    `SUBJECT:\n${subjectLine}\n\nMARKET: ${marketLine}\n\nSITE (authoritative county/state records): ${siteLine}\n\n` +
     `PRICED COMP SET (${comps.length}) with the builder's adjustments, weights, and comparability tiers:\n${compLines}\n\n` +
     `EXCLUDED BY THE BUILDER (with its reasons):\n${excludedLines}\n\n` +
     `PRICING: Method 1 (tiered $/sqft) mid $${pricing.method1Mid.toLocaleString()} · Method 2 (size baseline) ${
