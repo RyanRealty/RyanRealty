@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.777.5 (2026-07-14)
+
+### Maintenance
+- docs(design-audit): photo work (CMP-2 hero variety + TRU-5 community photos) complete
+
+---
+
+
 ## v1.777.4 (2026-07-14)
 
 ### Bug Fixes
