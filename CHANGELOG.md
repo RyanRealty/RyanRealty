@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.778.0 (2026-07-14)
+
+### Features
+- feat(crm): outbound-SMS link click tracking + CRM click reporting
+
+---
+
+
 ## v1.777.5 (2026-07-14)
 
 ### Maintenance
