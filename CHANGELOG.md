@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.781.1 (2026-07-14)
+
+### Bug Fixes
+- fix(cma): zoning outFields + wider well envelope — site resolver was returning empty
+
+---
+
+
 ## v1.781.0 (2026-07-14)
 
 ### Features
