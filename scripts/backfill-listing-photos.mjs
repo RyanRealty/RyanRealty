@@ -23,8 +23,9 @@ const LIMIT = (() => {
   const i = process.argv.indexOf('--limit')
   return i >= 0 ? Number(process.argv[i + 1]) : Infinity
 })()
-const CONCURRENCY = 6
+const CONCURRENCY = 3
 const PAGE = 500
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 if (!SPARK_KEY) {
   console.error('SPARK_API_KEY not set')
@@ -37,18 +38,28 @@ function bestUri(p) {
 
 async function primaryPhotoUrl(listingKey) {
   const url = `${SPARK_BASE}/listings/${encodeURIComponent(listingKey)}?_expand=Photos`
-  const res = await fetch(url, {
-    headers: { Authorization: `${SPARK_SCHEME} ${SPARK_KEY}`, Accept: 'application/json' },
-    signal: AbortSignal.timeout(25000),
-  })
-  if (res.status === 404) return { url: null, gone: true }
-  if (!res.ok) throw new Error(`Spark ${res.status}`)
-  const data = await res.json()
-  const fields = data?.D?.Results?.[0]?.StandardFields ?? {}
-  const photos = Array.isArray(fields.Photos) ? fields.Photos : []
-  if (photos.length === 0) return { url: null, gone: true }
-  const primary = photos.find((p) => p.Primary) ?? photos[0]
-  return { url: bestUri(primary), gone: false }
+  // Retry with backoff on 429 (Spark rate limit) — respect Retry-After.
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const res = await fetch(url, {
+      headers: { Authorization: `${SPARK_SCHEME} ${SPARK_KEY}`, Accept: 'application/json' },
+      signal: AbortSignal.timeout(25000),
+    })
+    if (res.status === 429) {
+      const ra = Number(res.headers.get('retry-after'))
+      const waitMs = Number.isFinite(ra) && ra > 0 ? ra * 1000 : Math.min(30000, 1000 * 2 ** attempt)
+      await sleep(waitMs)
+      continue
+    }
+    if (res.status === 404) return { url: null, gone: true }
+    if (!res.ok) throw new Error(`Spark ${res.status}`)
+    const data = await res.json()
+    const fields = data?.D?.Results?.[0]?.StandardFields ?? {}
+    const photos = Array.isArray(fields.Photos) ? fields.Photos : []
+    if (photos.length === 0) return { url: null, gone: true }
+    const primary = photos.find((p) => p.Primary) ?? photos[0]
+    return { url: bestUri(primary), gone: false }
+  }
+  throw new Error('Spark 429 after retries')
 }
 
 async function mapPool(items, fn) {
