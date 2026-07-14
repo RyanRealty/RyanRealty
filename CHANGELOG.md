@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.783.0 (2026-07-14)
+
+### Features
+- feat(cma,bpo): comprehensive authoritative property intelligence
+
+---
+
+
 ## v1.782.2 (2026-07-14)
 
 ### Bug Fixes
