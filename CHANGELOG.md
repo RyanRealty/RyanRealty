@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.784.0 (2026-07-14)
+
+### Features
+- feat(cma,bpo): OWRD water rights + adversarial-audit hardening
+
+---
+
+
 ## v1.783.0 (2026-07-14)
 
 ### Features
