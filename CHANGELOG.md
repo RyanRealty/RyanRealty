@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.787.1 (2026-07-14)
+
+### Maintenance
+- docs(cma): document development-potential section + verify-it-yourself directory in SKILL §0
+
+---
+
+
 ## v1.787.0 (2026-07-14)
 
 ### Features
