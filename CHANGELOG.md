@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.779.0 (2026-07-14)
+
+### Features
+- feat(crm): recover FUB-imported text bodies from People export CSV
+
+---
+
+
 ## v1.778.2 (2026-07-14)
 
 ### Bug Fixes
