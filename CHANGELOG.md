@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.786.0 (2026-07-14)
+
+### Features
+- feat(cma): Expired Audit document type — one engine, three deliverables
+
+---
+
+
 ## v1.785.0 (2026-07-14)
 
 ### Features
