@@ -27,6 +27,19 @@ import { hydratePhotoUrls } from '@/lib/cma/photos'
 import { resolveCmaSiteData } from '@/lib/cma/county'
 import { auditCma } from '@/lib/cma/audit'
 import { evaluateAccuracyContract } from '@/lib/cma/contract'
+import { getBpoListingCyclesByAddress } from '@/lib/data/bpo/reads'
+import { getListingPhotosCount } from '@/lib/data/cma/builderReads'
+import { analyzeListingHistory } from '@/lib/bpo/history'
+import {
+  buildFailureFindings,
+  buildServicesList,
+  buildNetSheet,
+  feeLine,
+  EXPIRED_LISTING_FEE_PCT,
+  STANDARD_LISTING_FEE_PCT,
+  BUYER_BROKER_ASSUMPTION_PCT,
+  type ExpiredAuditData,
+} from '@/lib/cma/expired-audit'
 import { buildCmaMapDataUri } from '@/lib/cma/map'
 import { renderCmaHtml } from '@/lib/cma/render'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult } from '@/lib/cma/types'
@@ -261,6 +274,36 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           .join(' ')
     }
 
+    // 4.7. EXPIRED AUDIT variant (Matt directive 2026-07-14): same engine, the
+    // output adds a deterministic failure analysis (from the listing history +
+    // the numbers this build just verified), the services standard, and a net
+    // sheet at the 2.5% expired rate. All three layers derive from data already
+    // gated above — no new unverified facts enter the document here.
+    const docType: 'cma' | 'expired-audit' = input.docType === 'expired-audit' ? 'expired-audit' : 'cma'
+    let expiredAudit: ExpiredAuditData | null = null
+    if (docType === 'expired-audit') {
+      const tokens = subject.streetAddress.trim().split(/\s+/)
+      const streetNumber = tokens[0] && /^\d+$/.test(tokens[0]) ? tokens[0] : null
+      const namePrefix = streetNumber ? tokens.slice(1).join(' ') : null
+      const cycleRows =
+        streetNumber && namePrefix
+          ? await getBpoListingCyclesByAddress({
+              streetNumber,
+              streetNameIlike: `${namePrefix}%`,
+              cityIlike: subject.city || null,
+              postalCode: subject.postalCode,
+            })
+          : []
+      const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
+      const photosCount = subject.listingKey ? await getListingPhotosCount(subject.listingKey) : null
+      expiredAudit = {
+        findings: buildFailureFindings({ subject, pricing, market, history, photosCount }),
+        services: buildServicesList(),
+        netSheet: buildNetSheet(pricing),
+        feeLine: feeLine(),
+      }
+    }
+
     // 5. Map (best effort — the report ships without it if the key is absent).
     const map = await buildCmaMapDataUri(subject, adjusted)
 
@@ -279,6 +322,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       excludedOutliers: selection.excludedOutliers,
       sellerImprovementsText: input.sellerImprovementsText ?? null,
       site,
+      expiredAudit,
     })
 
     // 7. Citations — one entry per figure class (CLAUDE.md §0).
@@ -395,10 +439,26 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         sources: site.citations,
       },
       ors_disclosure: 'OAR 863-015-0190 elements included on the final page',
+      ...(expiredAudit
+        ? {
+            expired_audit: {
+              fee_facts: {
+                expired_listing_fee_pct: EXPIRED_LISTING_FEE_PCT,
+                standard_listing_fee_pct: STANDARD_LISTING_FEE_PCT,
+                buyer_broker_assumption_pct: BUYER_BROKER_ASSUMPTION_PCT,
+                source: 'Ryan Realty published rates (app/sell plans; expired rate per broker directive 2026-07-14)',
+              },
+              failure_findings: expiredAudit.findings,
+              net_sheet: expiredAudit.netSheet,
+              services_source: 'Mirrors the published Essential-plan claims on ryan-realty.com/sell',
+            },
+          }
+        : {}),
     }
 
     const buildSummary = {
       builder: CMA_BUILDER_VERSION,
+      doc_type: docType,
       page_count: pageCount,
       comps_count: adjusted.length,
       // Authoritative site facts for the admin summary (full trace in citations.site).
@@ -499,6 +559,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // one property, one slug, one CMA).
     const upsert = await upsertCmaRowBySlug({
       slug,
+      doc_type: docType,
       subject_address: `${subject.streetAddress}, ${subject.city}, OR ${subject.postalCode ?? ''}`.trim(),
       subject_listing_key: subject.listingKey,
       subject_subdivision: subject.subdivision,

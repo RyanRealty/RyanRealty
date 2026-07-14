@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-07-14T03:00:21.874Z
+**Generated:** 2026-07-14T22:33:55.948Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -417,7 +417,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 26,283**
+### `market_stats_cache` · **rows ≈ 26,672**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -593,7 +593,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 134**
+### `cmas` · **rows ≈ 137**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -633,6 +633,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `built_at` | timestamp with time zone | yes |  |
 | `build_error` | text | yes |  |
 | `price_override` | integer | yes |  |
+| `doc_type` | text | no | 'cma'::text |
 
 ### `content_performance` · **rows ≈ 6**
 
@@ -671,7 +672,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 137**
+### `expired_listings` · **rows ≈ 140**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -718,7 +719,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_crm_person_id` | bigint | yes |  |
 | `outreach_sms_sid` | text | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 465**
+### `marketing_brain_actions` · **rows ≈ 469**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|

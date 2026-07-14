@@ -59,6 +59,16 @@ Spark CDN supports `320×240`, `640×480`, `800×600`, `1024×768`, `1280×960`,
 
 ## 0. Execution architecture: deterministic + judgment hybrid (LOCKED 2026-07-11, enforced in code)
 
+**Three deliverables, one engine (Matt directive 2026-07-14).** The same pricing engine (comps → judge → adjustments → adversarial audit → contract → property intelligence) powers three tailored outputs:
+
+| Deliverable | Audience | Tailoring | Storage |
+|---|---|---|---|
+| **CMA** (`doc_type='cma'`) | Sellers | Standard pricing analysis | `public.cmas` |
+| **EXPIRED AUDIT** (`doc_type='expired-audit'`) | Expired-listing owners | + "What Happened" failure analysis (deterministic, from the listing history + verified numbers; NEVER blames the prior agent, voice per §4.7) + "What Every Listing Gets" services standard (mirrors the site's published Essential-plan claims) + "Estimated Seller Net Sheet" at the **2.5% expired rate, explicitly contrasted with the standard 3%** (`lib/cma/expired-audit.ts`; fee constants at the top). Third-party net-sheet lines are labeled estimates; the math is computed in code and traced in `citations.expired_audit`. | `public.cmas` |
+| **BPO** | Buyers / offer recommendations | Opinion + offer strategy + listing-history pressure | `public.broker_price_opinions` |
+
+Pass `docType: 'expired-audit'` to `buildCma` for expired-listing subjects. `rebuildCmaAction` preserves the row's `doc_type`.
+
 **Every CMA build runs through `lib/cma/build.ts` (`buildCma`). This is the only path. The retired LLM producer-runtime and the retired `scripts/build_cma_wrapper.py` are both dead (G47). The pipeline is a hybrid, and the process is enforced by code, not by this document:**
 
 1. **Deterministic data + math (§0-safe).** Subject resolution, tiered comp selection, market context from the cache tables, time/size adjustments, and the three-method pricing reconciliation are pure code (`lib/cma/{subject,comps,market,pricing}.ts`). No LLM touches a number.

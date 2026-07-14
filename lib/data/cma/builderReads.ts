@@ -112,6 +112,19 @@ export async function findCmaSubjectByAddress(opts: {
   return (data ?? []) as unknown as CmaListingRow[]
 }
 
+/** Photo count on the listing row (expired-audit presentation lens). */
+export async function getListingPhotosCount(listingKey: string): Promise<number | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data, error } = await sb
+    .from('listings')
+    .select('photos_count')
+    .eq('ListingKey', listingKey)
+    .maybeSingle()
+  if (error || !data) return null
+  return data.photos_count != null ? Number(data.photos_count) : null
+}
+
 /** Closed SFR comp pool for one selection tier. The builder composes tiers. */
 export async function selectCmaCompsPool(opts: {
   cityIlike: string

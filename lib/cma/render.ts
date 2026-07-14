@@ -22,6 +22,7 @@ import type {
   CmaSubject,
 } from '@/lib/cma/types'
 import type { CmaSiteData } from '@/lib/cma/county'
+import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -39,6 +40,8 @@ export interface RenderCmaArgs {
   excludedOutliers: Array<{ address: string; closePrice: number; ppsf: number; reason: string }>
   sellerImprovementsText?: string | null
   site?: CmaSiteData | null
+  /** Present = render as an EXPIRED AUDIT (failure analysis + services + net sheet). */
+  expiredAudit?: ExpiredAuditData | null
 }
 
 /**
@@ -248,9 +251,10 @@ function subjectStatStrip(subject: CmaSubject): string {
 function coverPage(a: RenderCmaArgs): PageDef {
   const hero = heroForSubject(a.subject)
   const p = a.pricing
-  const clientLine = a.client.name ? `Prepared for ${esc(a.client.name)}` : 'Comparative Market Analysis'
+  const docLabel = a.expiredAudit ? 'Listing Audit & Market Analysis' : 'Comparative Market Analysis'
+  const clientLine = a.client.name ? `Prepared for ${esc(a.client.name)}` : docLabel
   return {
-    meta: `Comparative Market Analysis · ${dateLong(a.generatedAtIso)}`,
+    meta: `${docLabel} · ${dateLong(a.generatedAtIso)}`,
     body: `
   <div class="cover-label">${clientLine}</div>
   <h1 class="cover-title">${esc(a.subject.streetAddress)}</h1>
@@ -574,6 +578,104 @@ function rationalePage(a: RenderCmaArgs): PageDef {
   }
 }
 
+// ── EXPIRED AUDIT pages (doc_type='expired-audit' only) ─────────────────────
+// Voice per voice_guidelines §4.7 + the expired-listing-lp SKILL: the data
+// tells the story. No editorializing, no blame on the prior agent, no
+// "most agents do X" framing. Every number here was verified by the engine.
+
+const LENS_LABELS: Record<string, string> = {
+  pricing: 'Price vs the comparable sales',
+  'time-on-market': 'Time on market',
+  'price-cuts': 'The price path',
+  attempts: 'Listing attempts',
+  presentation: 'Presentation',
+}
+
+function expiredAuditPage(a: RenderCmaArgs): PageDef | null {
+  const ea = a.expiredAudit
+  if (!ea || ea.findings.length === 0) return null
+  const blocks = ea.findings
+    .map(
+      (f) => `
+  <h3 class="subhead">${esc(LENS_LABELS[f.lens] ?? f.lens)}</h3>
+  <p>${esc(f.fact)}</p>
+  <p class="small">${esc(f.meaning)}</p>`,
+    )
+    .join('')
+  return {
+    meta: `${esc(a.subject.streetAddress)} · What Happened`,
+    body: `
+  <h2 class="section">What Happened</h2>
+  <p>Your home came off the market without selling. Before anything else, you deserve a straight answer about why. Everything below comes from the MLS record and the verified comparable sales in this report. No opinions, no spin.</p>
+  ${blocks}`,
+  }
+}
+
+function servicesPage(a: RenderCmaArgs): PageDef | null {
+  const ea = a.expiredAudit
+  if (!ea) return null
+  return {
+    meta: `${esc(a.subject.streetAddress)} · The Relist`,
+    body: `
+  <h2 class="section">What Every Listing Gets</h2>
+  <p>If you decide to try again, this is the standard. Every item below is on every Ryan Realty listing agreement, not a premium tier.</p>
+  <ul class="note-list">${ea.services.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>
+  <h3 class="subhead">The fee</h3>
+  <p>${esc(ea.feeLine)}</p>`,
+  }
+}
+
+function netSheetPage(a: RenderCmaArgs): PageDef | null {
+  const ea = a.expiredAudit
+  if (!ea) return null
+  const ns = ea.netSheet
+  const rows = ns.lines
+    .map(
+      (l) => `
+      <tr>
+        <td>${esc(l.label)}${l.note ? `<div class="small" style="margin-top:2px;">${esc(l.note)}</div>` : ''}</td>
+        <td style="text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums;">${
+          l.amount === 0 ? '$0' : l.amount != null ? `(${usd(Math.abs(l.amount))})` : '—'
+        }</td>
+      </tr>`,
+    )
+    .join('')
+  return {
+    meta: `${esc(a.subject.streetAddress)} · Estimated Seller Net Sheet`,
+    body: `
+  <h2 class="section">Estimated Seller Net Sheet</h2>
+  <p>What a sale at the recommended list price of ${usd(ns.salePrice)} would put in your pocket before your mortgage payoff, at the expired-listing rate.</p>
+  <table class="comps" style="margin-top:10px;">
+    <thead><tr><th style="text-align:left;">Line</th><th style="text-align:right;">Amount</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Sale price (recommended list)</strong></td><td style="text-align:right; font-variant-numeric:tabular-nums;"><strong>${usd(ns.salePrice)}</strong></td></tr>
+      ${rows}
+      <tr><td><strong>Estimated costs of sale</strong></td><td style="text-align:right; font-variant-numeric:tabular-nums;"><strong>(${usd(ns.totalCosts)})</strong></td></tr>
+      <tr><td><strong>Estimated net before mortgage payoff</strong></td><td style="text-align:right; font-variant-numeric:tabular-nums;"><strong>${usd(ns.estimatedNet)}</strong></td></tr>
+    </tbody>
+  </table>
+  <div class="tier-grid" style="margin-top:14px;">
+    <div class="tier">
+      <div class="t-lbl">At conservative ${usd(a.pricing.conservative)}</div>
+      <div class="t-val">${usd(ns.netConservative)}</div>
+      <div class="t-note">Same cost structure at the bottom of the supported range.</div>
+    </div>
+    <div class="tier featured">
+      <div class="t-lbl">At recommended ${usd(ns.salePrice)}</div>
+      <div class="t-val">${usd(ns.estimatedNet)}</div>
+      <div class="t-note">Estimated net before payoff.</div>
+    </div>
+    <div class="tier">
+      <div class="t-lbl">At high end ${usd(a.pricing.highEnd)}</div>
+      <div class="t-val">${usd(ns.netHighEnd)}</div>
+      <div class="t-note">Same cost structure at the top of the supported range.</div>
+    </div>
+  </div>
+  <h3 class="subhead" style="margin-top:14px;">Assumptions</h3>
+  <ul class="note-list">${ns.assumptions.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>`,
+  }
+}
+
 function disclosurePage(a: RenderCmaArgs): PageDef {
   const b = a.broker
   const headshot = b.photoUrl ? (b.photoUrl.startsWith('http') ? b.photoUrl : `${SITE_URL}${b.photoUrl}`) : null
@@ -617,6 +719,13 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   if (market) pages.push(market)
   pages.push(pricingPage(a))
   pages.push(rationalePage(a))
+  // EXPIRED AUDIT variant: failure analysis → services standard → net sheet.
+  const audit = expiredAuditPage(a)
+  if (audit) pages.push(audit)
+  const services = servicesPage(a)
+  if (services) pages.push(services)
+  const netSheet = netSheetPage(a)
+  if (netSheet) pages.push(netSheet)
   pages.push(disclosurePage(a))
 
   const brokerPhone = a.broker.phone ?? '541.213.6706'
@@ -626,7 +735,7 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
 <head>
 <meta charset="UTF-8" />
 <meta name="robots" content="noindex,nofollow" />
-<title>CMA · ${esc(a.subject.streetAddress)} · ${esc(a.subject.city)}, OR ${esc(a.subject.postalCode ?? '')}</title>
+<title>${a.expiredAudit ? 'Listing Audit' : 'CMA'} · ${esc(a.subject.streetAddress)} · ${esc(a.subject.city)}, OR ${esc(a.subject.postalCode ?? '')}</title>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
 <style>${cmaStylesheet(SITE_URL)}</style>
 </head>

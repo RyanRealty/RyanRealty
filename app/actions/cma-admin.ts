@@ -132,6 +132,8 @@ export async function rebuildCmaAction(
       brokerSlug: input.brokerSlug?.trim() || (row.broker_slug as string | null),
       priceOverride,
       requestSource: 'admin-rebuild',
+      // Preserve the document type — a rebuild of an expired audit stays an audit.
+      docType: (row.doc_type as string | null) === 'expired-audit' ? 'expired-audit' : 'cma',
     })
     if (!result.ok) return { data: null, error: result.error ?? 'Rebuild failed' }
     // A rebuild returns the CMA to draft for a fresh review before any send.

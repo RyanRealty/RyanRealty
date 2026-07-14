@@ -151,6 +151,9 @@ export interface CmaBuildInput {
   /** Broker-adjusted recommended list price (rebuild path). */
   priceOverride?: number | null
   requestSource?: string | null
+  /** cma = standard seller CMA; expired-audit = expired-listing audit (failure
+   *  analysis + services + 2.5% net sheet). Same engine, tailored output. */
+  docType?: 'cma' | 'expired-audit'
 }
 
 export interface CmaBuildResult {

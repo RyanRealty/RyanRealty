@@ -199,11 +199,20 @@ export async function judgeComps(
     const confidence = (['High', 'Moderate', 'Supportable'].includes(out.confidence ?? '')
       ? out.confidence
       : 'Moderate') as CompJudgment['confidence']
+    // Brand-voice sanitize: the model can emit em/en-dashes and semicolons,
+    // which are banned in client prose. Numeric ranges become "to"; other
+    // dashes become commas; semicolons become periods.
+    const sanitize = (s: string): string =>
+      s
+        .replace(/(\d)\s*[—–]\s*(\$?\d)/g, '$1 to $2')
+        .replace(/\s*[—–]\s*/g, ', ')
+        .replace(/;\s*/g, '. ')
+        .trim()
     return {
-      verdicts,
+      verdicts: verdicts.map((v) => ({ ...v, reason: sanitize(v.reason) })),
       keptKeys,
       confidence,
-      narrative: (out.narrative ?? '').trim(),
+      narrative: sanitize((out.narrative ?? '').trim()),
       costUsd,
       model: MODEL,
       usedLlm: true,
