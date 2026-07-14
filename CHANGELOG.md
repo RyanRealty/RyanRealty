@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.782.1 (2026-07-14)
+
+### Maintenance
+- docs(cma): document authoritative site-data step (zoning/well/septic) in SKILL §0
+
+---
+
+
 ## v1.782.0 (2026-07-14)
 
 ### Features
