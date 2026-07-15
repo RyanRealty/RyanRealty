@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.789.0 (2026-07-15)
+
+### Features
+- feat(cma,bpo): short-term rental eligibility in the development section (Bend, verified)
+
+---
+
+
 ## v1.788.0 (2026-07-15)
 
 ### Features
