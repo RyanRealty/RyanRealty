@@ -227,6 +227,31 @@ function bendItems(zone: string, lotSqft: number | null, acres: number | null): 
     })
   }
 
+  // Short-term rental — verified against BDC 3.6.500 (Ord. NS-2541, 2025) and
+  // BC Ch. 7.16 on 2026-07-14. Two facts matter most for value: the 500-foot
+  // Type II separation (address-level availability) and permit voiding on sale.
+  const BEND_STR_BUFFER_ZONES = new Set(['RL', 'RS', 'RM', 'RM-10', 'RH', 'MR'])
+  const BEND_STR_COMMERCIAL = new Set(['CL', 'CG', 'CC', 'CB', 'CN', 'ME', 'MU', 'MN'])
+  if (BEND_STR_BUFFER_ZONES.has(z)) {
+    items.push({
+      topic: 'Short-term rental',
+      verdict: 'conditional',
+      headline: 'Hosted rentals are obtainable. A whole-house permit depends on the neighbors.',
+      detail: 'Bend STRs take two authorizations, a land use permit and an annual operating license. An owner-occupied (hosted) rental of up to two rooms is processed administratively and is exempt from the separation rule. A whole-house (Type II) permit in this zone requires 500 feet of radial separation from any property holding a Type II permit or application, so availability at this address depends on nearby permits. Check the city STR map before counting on it. And a permit does not transfer: on sale it voids, and the buyer applies fresh under the rules in effect, including the separation test.',
+      citation: 'Bend Development Code 3.6.500(C)(5), (E), (F); Bend Code Ch. 7.16',
+      url: 'https://bend.municipal.codes/BDC/3.6.500',
+    })
+  } else if (BEND_STR_COMMERCIAL.has(z)) {
+    items.push({
+      topic: 'Short-term rental',
+      verdict: 'yes',
+      headline: 'Allowed administratively, exempt from the separation rule.',
+      detail: 'In Bend\'s commercial and mixed-use zones an STR is processed as a Type I administrative application and is expressly exempt from the 500-foot concentration limit. Whole-dwelling rental is allowed with no annual day cap. The land use permit and the annual operating license are both still required, and a permit voids on sale of the property.',
+      citation: 'Bend Development Code 3.6.500(C)(1), (E), (F); Bend Code Ch. 7.16',
+      url: 'https://bend.municipal.codes/BDC/3.6.500',
+    })
+  }
+
   // Middle housing / second dwelling (BDC Table 2.1.200, 3.8.900).
   if (['RL', 'RS', 'RM-10', 'RM', 'RH'].includes(z)) {
     items.push({
