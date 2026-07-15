@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.794.0 (2026-07-15)
+
+### Features
+- feat(crm): surface Twilio SMS delivery status on the person timeline
+
+---
+
+
 ## v1.793.2 (2026-07-15)
 
 ### Maintenance
