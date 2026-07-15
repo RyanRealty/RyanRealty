@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.788.0 (2026-07-15)
+
+### Features
+- feat(expireds): Expireds Dashboard — audits, sends, and engagement in one table
+
+---
+
+
 ## v1.787.2 (2026-07-15)
 
 ### Bug Fixes
