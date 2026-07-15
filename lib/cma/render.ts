@@ -670,7 +670,7 @@ function expiredAuditPage(a: RenderCmaArgs): PageDef | null {
     meta: `${esc(a.subject.streetAddress)} · What Happened`,
     body: `
   <h2 class="section">What Happened</h2>
-  <p>Your home came off the market without selling. Before anything else, you deserve a straight answer about why. Everything below comes from the MLS record and the verified comparable sales in this report. No opinions, no spin.</p>
+  <p>Your home came off the market without selling. Before anything else, you deserve a straight answer about why. The numbers below come straight from the MLS record and the verified comparable sales in this report. Under each one is what we read from it.</p>
   ${blocks}`,
   }
 }
@@ -719,21 +719,29 @@ function netSheetPage(a: RenderCmaArgs): PageDef | null {
     </tbody>
   </table>
   <div class="tier-grid" style="margin-top:14px;">
-    <div class="tier">
+    ${
+      a.pricing.conservative !== ns.salePrice
+        ? `<div class="tier">
       <div class="t-lbl">At conservative ${usd(a.pricing.conservative)}</div>
       <div class="t-val">${usd(ns.netConservative)}</div>
       <div class="t-note">Same cost structure at the bottom of the supported range.</div>
-    </div>
+    </div>`
+        : ''
+    }
     <div class="tier featured">
       <div class="t-lbl">At recommended ${usd(ns.salePrice)}</div>
       <div class="t-val">${usd(ns.estimatedNet)}</div>
       <div class="t-note">Estimated net before payoff.</div>
     </div>
-    <div class="tier">
+    ${
+      a.pricing.highEnd !== ns.salePrice
+        ? `<div class="tier">
       <div class="t-lbl">At high end ${usd(a.pricing.highEnd)}</div>
       <div class="t-val">${usd(ns.netHighEnd)}</div>
       <div class="t-note">Same cost structure at the top of the supported range.</div>
-    </div>
+    </div>`
+        : ''
+    }
   </div>
   <h3 class="subhead" style="margin-top:14px;">Assumptions</h3>
   <ul class="note-list">${ns.assumptions.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>`,

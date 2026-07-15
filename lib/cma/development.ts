@@ -118,19 +118,29 @@ export function buildResourceDirectory(site: CmaSiteData | null): DevResource[] 
 
 /** The disclaimer Matt directed: we research what we can; the reader verifies. */
 export const DEV_DISCLAIMER =
-  `We research each of these questions against the county and city code in effect when this report was prepared (verified ${REGS_VERIFIED_DATE}), and every rule cites the code section we relied on. Codes change, parcels have particulars a code table cannot see, and none of this is a land-use decision or an entitlement. It is ultimately your responsibility to verify anything you plan to rely on with the offices below before you act on it. We are glad to help you make those calls.`
+  `We research each of these questions against the county and city code as of ${REGS_VERIFIED_DATE}, the date these rules were last verified against their primary sources, and every rule cites the code section we relied on. Codes change, parcels have particulars a code table cannot see, and none of this is a land-use decision or an entitlement. It is ultimately your responsibility to verify anything you plan to rely on with the offices below before you act on it. We are glad to help you make those calls.`
 
 // ── Jurisdiction resolution ──────────────────────────────────────────────────
 function resolveJurisdiction(site: CmaSiteData, subject: CmaSubject): DevelopmentOpportunities['jurisdiction'] {
   const city = (subject.city ?? '').trim().toLowerCase()
-  // Bend/Redmond CITY zones only apply inside city limits — the resolver's
-  // municipal/UGB determination gates this, not the postal city (rural Bend
-  // addresses carry "Bend" with county zoning).
-  if (site.isMunicipal || site.insideUGB === true) {
+  // City code applies only to ANNEXED land (site.isMunicipal). A parcel inside
+  // the UGB but unincorporated is governed by COUNTY code until annexation
+  // (Deschutes Title 19 is literally the "Bend Urban Growth Boundary Zoning
+  // Ordinance"), so insideUGB alone must never route to the city branch —
+  // adversarial-audit finding 2026-07-14.
+  if (site.isMunicipal) {
     if (city === 'redmond') return 'City of Redmond'
     if (city === 'bend') return 'City of Bend'
   }
   return 'Deschutes County (unincorporated)'
+}
+
+/** Normalize a GIS zone string to the registry vocabulary. The county layer
+ *  returns e.g. "SR2-1/2" for SR-2½ — alias it (audit finding 2026-07-14). */
+function canonicalZone(zone: string): string {
+  const z = zone.toUpperCase().replace(/\s+/g, '')
+  if (z === 'SR2-1/2' || z === 'SR21/2' || z === 'SR2.5' || z === 'SR-2.5') return 'SR2.5'
+  return z.replace(/-/g, '') === 'RM10' ? 'RM-10' : z
 }
 
 const usd0 = (n: number) => n.toLocaleString()
@@ -139,9 +149,13 @@ const usd0 = (n: number) => n.toLocaleString()
 /* Every rule string below traces to a fact verified against its primary source
  * on 2026-07-14. Do not edit a rule without re-verifying against the source. */
 
-function bendItems(zone: string, lotSqft: number | null): DevItem[] {
+// Bend residential districts (BDC Chapter 2.1 title: "Residential Districts
+// (UAR, RL, RS, RM-10, RM, RH)"; Table 2.1.200 lists ADUs 'P' in all six).
+const BEND_RESIDENTIAL = new Set(['UAR', 'RL', 'RS', 'RM-10', 'RM', 'RH'])
+
+function bendItems(zone: string, lotSqft: number | null, acres: number | null): DevItem[] {
   const items: DevItem[] = []
-  const z = zone.toUpperCase()
+  const z = canonicalZone(zone)
 
   // Minimum single-unit lot areas + density (BDC Table 2.1.500 / 2.1.600).
   const minLot: Record<string, number | null> = { RS: 4000, 'RM-10': 4000, RL: 10000, RM: 2500, RH: null }
@@ -152,13 +166,20 @@ function bendItems(zone: string, lotSqft: number | null): DevItem[] {
     RM: '7.3 to 21.7 units per gross acre',
     RH: '21.7 units per gross acre minimum, no maximum',
   }
+  // Max density (units per gross acre) — caps the division arithmetic so the
+  // headline never prints a count Table 2.1.600 forbids (audit finding).
+  const maxDensity: Record<string, number | null> = { RL: 4.0, RS: 7.3, 'RM-10': 10.0, RM: 21.7, RH: null }
 
   if (z === 'UAR') {
+    const couldFit = acres != null ? Math.floor(acres / 10) : 0
     items.push({
       topic: 'Subdivide or partition',
-      verdict: 'no',
-      headline: 'Not until the land urbanizes.',
-      detail: 'Urban Area Reserve requires a 10-acre minimum lot for a single-unit dwelling. UAR holds land for future urbanization, so a standard division into urban-size lots is not available under the current zone.',
+      verdict: couldFit >= 2 ? 'conditional' : 'no',
+      headline:
+        couldFit >= 2
+          ? `The acreage clears the 10-acre minimum for ${couldFit} lots. UAR holds land for future urbanization, so a planning conversation decides the rest.`
+          : 'Not until the land urbanizes.',
+      detail: `Urban Area Reserve requires a 10-acre minimum lot for a single-unit dwelling.${acres != null ? ` This parcel is ${acres} acres.` : ''} UAR holds land for future urbanization, so a standard division into urban-size lots is not available under the current zone.`,
       citation: 'Bend Development Code Table 2.1.500',
       url: 'https://bend.municipal.codes/BDC/2.1.500',
     })
@@ -174,31 +195,37 @@ function bendItems(zone: string, lotSqft: number | null): DevItem[] {
         url: 'https://bend.municipal.codes/BDC/2.1.500',
       })
     } else if (lotSqft != null) {
-      const couldFit = Math.floor(lotSqft / min)
+      const byLot = Math.floor(lotSqft / min)
+      const maxD = maxDensity[z]
+      const byDensity = maxD != null && acres != null ? Math.floor(acres * maxD) : byLot
+      const couldFit = Math.min(byLot, byDensity)
       const verdict: DevVerdict = couldFit >= 2 ? 'conditional' : 'no'
       items.push({
         topic: 'Subdivide or partition',
         verdict,
         headline:
           couldFit >= 2
-            ? `The arithmetic supports up to ${couldFit} lots. Density and infrastructure decide the real number.`
+            ? `The arithmetic supports up to ${couldFit} lots. Access and infrastructure decide the real number.`
             : 'The parcel is below the size needed to create a second lot.',
-        detail: `${z} requires a ${usd0(min)} sqft minimum lot for a single-unit dwelling, with density of ${density[z]}. This parcel is ${usd0(Math.round(lotSqft))} sqft. ${couldFit >= 2 ? `Straight division math allows up to ${couldFit} conforming lots, but the density range, street access, utilities, and any overlays govern what a land division actually yields. Townhome divisions can go smaller (1,500 sqft average per unit).` : 'Two conforming lots do not fit at the code minimum.'}`,
+        detail: `${z} requires a ${usd0(min)} sqft minimum lot for a single-unit dwelling, with density of ${density[z]}. This parcel is ${usd0(Math.round(lotSqft))} sqft. ${couldFit >= 2 ? `Division math allows up to ${couldFit} conforming lots inside both the lot minimum and the density ceiling, but street access, utilities, and any overlays govern what a land division actually yields. Townhome divisions can go smaller (1,500 sqft average per unit).` : 'Two conforming lots do not fit at the code minimum.'}`,
         citation: 'Bend Development Code Table 2.1.500 (lot areas) and Table 2.1.600 (density)',
         url: 'https://bend.municipal.codes/BDC/2.1.500',
       })
     }
   }
 
-  // ADU — every residential district (BDC 3.6.200(B), Table 2.1.200).
-  items.push({
-    topic: 'ADU',
-    verdict: 'yes',
-    headline: 'Allowed. Up to two ADUs per lot.',
-    detail: 'ADUs are a permitted use in every Bend residential district on a lot with a single-unit dwelling. The first ADU is capped at 800 sqft of floor area and a second at 500 sqft. Bend imposes no owner-occupancy requirement and no ADU parking minimum. A second ADU that exceeds the zone density triggers a sewer-capacity analysis, and ADUs are not permitted on lots created by a middle-housing land division or in a cottage development.',
-    citation: 'Bend Development Code 3.6.200(B) and Table 2.1.200; ORS 197A.425',
-    url: 'https://bend.municipal.codes/BDC/3.6.200',
-  })
+  // ADU — the six residential districts only (Table 2.1.200 covers residential
+  // districts; a commercial-zone parcel gets no parcel-level "Allowed" claim).
+  if (BEND_RESIDENTIAL.has(z)) {
+    items.push({
+      topic: 'ADU',
+      verdict: 'yes',
+      headline: 'Allowed. Up to two ADUs per lot.',
+      detail: 'ADUs are a permitted use in every Bend residential district on a lot with a single-unit dwelling. The first ADU is capped at 800 sqft of floor area and a second at 500 sqft. Bend imposes no owner-occupancy requirement and no ADU parking minimum. A second ADU that exceeds the zone density triggers a sewer-capacity analysis, and ADUs are not permitted on lots created by a middle-housing land division or in a cottage development.',
+      citation: 'Bend Development Code 3.6.200(B) and Table 2.1.200; ORS 197A.425',
+      url: 'https://bend.municipal.codes/BDC/3.6.200',
+    })
+  }
 
   // Middle housing / second dwelling (BDC Table 2.1.200, 3.8.900).
   if (['RL', 'RS', 'RM-10', 'RM', 'RH'].includes(z)) {
@@ -224,10 +251,15 @@ function bendItems(zone: string, lotSqft: number | null): DevItem[] {
 
 function redmondItems(zone: string, lotSqft: number | null): DevItem[] {
   const items: DevItem[] = []
-  const z = zone.toUpperCase().replace(/\s/g, '')
+  const z = canonicalZone(zone)
   const minLot: Record<string, number> = { 'R-1': 9000, R1: 9000, 'R-2': 9000, R2: 9000, 'R-3': 7500, R3: 7500, 'R-3A': 7500, R3A: 7500, 'R-4': 5500, R4: 5500, 'R-5': 5500, R5: 5500 }
 
-  if (z in minLot && lotSqft != null) {
+  // Residential zones only — a commercial/industrial Redmond parcel gets no
+  // parcel-level residential claims (audit finding 2026-07-14). Empty items →
+  // the section is omitted for that parcel.
+  if (!(z in minLot)) return items
+
+  if (lotSqft != null) {
     const min = minLot[z]!
     const couldFit = Math.floor(lotSqft / min)
     items.push({
@@ -237,7 +269,7 @@ function redmondItems(zone: string, lotSqft: number | null): DevItem[] {
         couldFit >= 2
           ? `The arithmetic supports up to ${couldFit} lots. Access and utilities decide the real number.`
           : 'The parcel is below the size needed to create a second lot.',
-      detail: `${zone} requires a ${usd0(min)} sqft minimum lot. This parcel is ${usd0(Math.round(lotSqft))} sqft. ${couldFit >= 2 ? 'A partition creates up to three parcels in a calendar year and a subdivision four or more; middle-housing land divisions can create smaller unit lots.' : 'Two conforming lots do not fit at the code minimum.'}`,
+      detail: `${zone} requires a ${usd0(min)} sqft minimum lot. This parcel is ${usd0(Math.round(lotSqft))} sqft. ${couldFit >= 2 ? 'A partition creates up to three parcels in a calendar year and a subdivision four or more. Middle-housing land divisions can create smaller unit lots.' : 'Two conforming lots do not fit at the code minimum.'}`,
       citation: 'Redmond Development Code Ch. 8, Sec. 8.140 Table B; Sec. 8.2235; Sec. 8.2680',
       url: 'https://library.municode.com/or/redmond/codes/code_of_ordinances?nodeId=CH8DERE_ARTIZOST_REUSZO_S8.140TABMIST',
     })
@@ -271,27 +303,40 @@ function redmondItems(zone: string, lotSqft: number | null): DevItem[] {
 
 function countyItems(zone: string, acres: number | null, overlays: string[]): DevItem[] {
   const items: DevItem[] = []
-  const z = zone.toUpperCase()
+  // Canonical + dash-stripped forms so real GIS strings ("SR2-1/2", "RR-10")
+  // hit the registry keys (audit finding 2026-07-14).
+  const z = canonicalZone(zone)
+  const zKey = z === 'SR2.5' ? 'SR2.5' : z.replace(/-/g, '')
   const isEfu = /^EFU/.test(z)
-  const isForest = z === 'F1' || z === 'F2' || z === 'F-1' || z === 'F-2'
+  const isForest = zKey === 'F1' || zKey === 'F2'
   const waFloor = overlays.includes('WA')
 
-  // Subdivide.
+  // Subdivide. EFU and forest divisions are acreage-gated at 80 acres per new
+  // parcel — a 160+ acre tract CAN divide, so the verdict follows the math
+  // (audit finding 2026-07-14: never hard-code 'no' the statute contradicts).
   if (isEfu) {
+    const couldFit = acres != null ? Math.floor(acres / 80) : 0
     items.push({
       topic: 'Subdivide or partition',
-      verdict: 'no',
-      headline: 'New farm parcels take 80 acres.',
-      detail: `Oregon law sets the minimum new parcel in an Exclusive Farm Use zone at 80 acres (non-rangeland). Deschutes County's EFU subzones set their own minimums on top of that${acres != null ? `; this parcel is ${acres} acres` : ''}. A division below the minimum is not available outside narrow statutory exceptions.`,
+      verdict: couldFit >= 2 ? 'conditional' : 'no',
+      headline:
+        couldFit >= 2
+          ? `The acreage clears the 80-acre state minimum for ${couldFit} parcels. Subzone minimums and farm-use tests decide the rest.`
+          : 'New farm parcels take 80 acres.',
+      detail: `Oregon law sets the minimum new parcel in an Exclusive Farm Use zone at 80 acres (non-rangeland). Deschutes County's EFU subzones set their own minimums on top of that, and some exceed 80 acres.${acres != null ? ` This parcel is ${acres} acres.` : ''} A division below the minimum is not available outside narrow statutory exceptions.`,
       citation: 'ORS 215.780(1); Deschutes County Code 18.16.065',
       url: 'https://oregon.public.law/statutes/ors_215.780',
     })
   } else if (isForest) {
+    const couldFit = acres != null ? Math.floor(acres / 80) : 0
     items.push({
       topic: 'Subdivide or partition',
-      verdict: 'no',
-      headline: 'Forest-zone parcels take 80 acres.',
-      detail: `The minimum lot area in the F-1 and F-2 forest zones is 80 acres${acres != null ? `; this parcel is ${acres} acres` : ''}.`,
+      verdict: couldFit >= 2 ? 'conditional' : 'no',
+      headline:
+        couldFit >= 2
+          ? `The acreage clears the 80-acre minimum for ${couldFit} parcels. A county land-use application decides the rest.`
+          : 'Forest-zone parcels take 80 acres.',
+      detail: `The minimum lot area in the F-1 and F-2 forest zones is 80 acres.${acres != null ? ` This parcel is ${acres} acres.` : ''}`,
       citation: 'Deschutes County Code 18.36.090 (F-1) / 18.40.090 (F-2)',
       url: 'https://deschutescounty.municipalcodeonline.com/book/print?type=ordinances&name=CHAPTER_18.36_FOREST_USE_ZONE%3B_F-1',
     })
@@ -302,8 +347,7 @@ function countyItems(zone: string, acres: number | null, overlays: string[]): De
       UAR10: { min: 10, cite: 'Deschutes County Code 19.12.050', url: 'https://deschutescounty.municipalcodeonline.com' },
       'SR2.5': { min: 2.5, cite: 'Deschutes County Code Title 19, Ch. 19.20', url: 'https://deschutescounty.municipalcodeonline.com' },
     }
-    const key = z.replace('-', '')
-    const m = mins[key] ?? mins[z]
+    const m = mins[zKey] ?? mins[z]
     if (m && acres != null) {
       const effMin = waFloor ? Math.max(m.min, 40) : m.min
       const couldFit = Math.floor(acres / effMin)
@@ -348,15 +392,19 @@ function countyItems(zone: string, acres: number | null, overlays: string[]): De
       citation: 'Deschutes County Code 18.36.050 (F-1) / 18.40.050 (F-2)',
       url: 'https://deschutescounty.municipalcodeonline.com/book/print?type=ordinances&name=CHAPTER_18.36_FOREST_USE_ZONE%3B_F-1',
     })
-  } else if (['MUA10', 'RR10', 'UAR10', 'SR2.5'].includes(z.replace('-', ''))) {
-    const acreOk = acres == null || acres >= 2
+  } else if (['MUA10', 'RR10', 'UAR10', 'SR2.5'].includes(zKey)) {
+    // acres unknown = confirm, never an affirmative eligibility claim.
+    const verdict: DevVerdict = acres == null ? 'confirm' : acres >= 2 ? 'conditional' : 'unlikely'
     items.push({
       topic: 'ADU',
-      verdict: acreOk ? 'conditional' : 'unlikely',
-      headline: acreOk
-        ? 'A rural ADU is allowed here, with real conditions.'
-        : 'The parcel is under the 2-acre rural-ADU minimum.',
-      detail: `Deschutes County allows one rural ADU outright in ${zone} on a lot of at least 2 acres (5 in some wildfire-mapped areas) that already has a single-family dwelling. The conditions have teeth: sewer or DEQ septic approval before application, wildfire-hardening and defensible-space standards, a size cap, and NO vacation occupancy: a rural ADU cannot be used as a short-term rental.${acres != null ? ` This parcel is ${acres} acres.` : ''}`,
+      verdict,
+      headline:
+        verdict === 'confirm'
+          ? 'A rural ADU may be available. Confirm the parcel is at least 2 acres.'
+          : verdict === 'conditional'
+            ? 'A rural ADU is allowed here, with real conditions.'
+            : 'The parcel is under the 2-acre rural-ADU minimum.',
+      detail: `Deschutes County allows one rural ADU outright in ${zone} on a lot of at least 2 acres (5 in some wildfire-mapped areas) that already has a single-family dwelling. The conditions have teeth: sewer or DEQ septic approval before application, wildfire-hardening and defensible-space standards, a size cap, and no vacation occupancy. A rural ADU cannot be used as a short-term rental.${acres != null ? ` This parcel is ${acres} acres.` : ''}`,
       citation: 'Deschutes County Code 18.116.355; ORS 215.495 (SB 391)',
       url: 'https://deschutescounty.municipalcodeonline.com',
     })
@@ -387,7 +435,7 @@ export function resolveDevelopmentOpportunities(
   const lotSqft = acres != null ? acres * SQFT_PER_ACRE : null
 
   let items: DevItem[]
-  if (jurisdiction === 'City of Bend') items = bendItems(site.zone, lotSqft)
+  if (jurisdiction === 'City of Bend') items = bendItems(site.zone, lotSqft, acres)
   else if (jurisdiction === 'City of Redmond') items = redmondItems(site.zone, lotSqft)
   else items = countyItems(site.zone, acres, site.zoneOverlays)
 

@@ -230,7 +230,7 @@ function historyRows(history: BpoListingHistory): string {
       const result = c.closePrice ? usd(c.closePrice) : OUTCOME_LABEL[c.outcome] ?? c.outcome
       const cuts = c.priceCutCount && c.priceCutCount > 0 ? String(c.priceCutCount) : '—'
       return `<tr class="${isCurrent ? 'current' : ''}">
-        <td>${fmtShort(c.listDate)}${isCurrent ? ' · now' : c.offMarketDate ? ` – ${fmtShort(c.offMarketDate)}` : ''}</td>
+        <td>${fmtShort(c.listDate)}${isCurrent ? ' · now' : c.offMarketDate ? ` to ${fmtShort(c.offMarketDate)}` : ''}</td>
         <td>${escapeHtml(OUTCOME_LABEL[c.outcome] ?? c.outcome)}</td>
         <td>${escapeHtml(list)}${escapeHtml(orig)}</td>
         <td>${escapeHtml(result)}</td>
@@ -322,7 +322,7 @@ export function renderBpoHtml(args: RenderBpoArgs): { html: string; pageCount: n
 <html lang="en"><head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex, nofollow" />
-<title>Broker Price Opinion — ${escapeHtml(subject.streetAddress)}</title>
+<title>Broker Price Opinion · ${escapeHtml(subject.streetAddress)}</title>
 <style>${stylesheet()}</style></head>
 <body>
   <div class="page">

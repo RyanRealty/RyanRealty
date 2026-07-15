@@ -86,64 +86,88 @@ export function buildFailureFindings(args: {
   const { subject, pricing, market, history, photosCount } = args
   const findings: ExpiredFailureFinding[] = []
 
-  // 1. Pricing — final ask vs the comp-supported range TODAY.
+  // 1. Pricing — the final ask measured against the range the comps support
+  // TODAY. Meanings speak to the RELIST in present tense: the market may have
+  // moved since the listing period, so past-tense causation is never asserted
+  // (adversarial-audit fairness finding 2026-07-14).
   const finalAsk = subject.lastListPrice
+  const askAboveRange = finalAsk != null && pricing.highEnd > 0 && finalAsk > pricing.highEnd
   if (finalAsk && pricing.highEnd > 0) {
-    if (finalAsk > pricing.highEnd) {
+    const yoy = market?.yoyMedianPriceDeltaPct
+    const marketMoveNote =
+      yoy != null && Math.abs(yoy) >= 2
+        ? ` ${market?.geoLabel ?? 'The market'} moved ${Math.abs(yoy).toFixed(1)}% ${yoy > 0 ? 'up' : 'down'} over the past year, so part of any gap reflects the market shifting after the listing period.`
+        : ''
+    if (askAboveRange) {
       const overPct = ((finalAsk - pricing.highEnd) / pricing.highEnd) * 100
       findings.push({
         lens: 'pricing',
-        fact: `The final asking price was ${usd(finalAsk)}. The comparable sales support ${usd(pricing.conservative)} to ${usd(pricing.highEnd)} today, which puts the last ask ${overPct.toFixed(1)}% above the top of the supported range.`,
-        meaning: 'Buyers cross-shop the same comparables. A price above what the closed sales support narrows the buyer pool and lengthens the sit.',
+        fact: `The final asking price was ${usd(finalAsk)}. The comparable sales support ${usd(pricing.conservative)} to ${usd(pricing.highEnd)} today, which puts that ask ${overPct.toFixed(1)}% above the top of the supported range.`,
+        meaning: `At that number today, the ask sits above what the closed sales support. Buyers cross-shop the same comparables, and a price above the supported range narrows the pool.${marketMoveNote}`,
       })
     } else if (finalAsk >= pricing.conservative) {
       findings.push({
         lens: 'pricing',
         fact: `The final asking price was ${usd(finalAsk)}, inside the ${usd(pricing.conservative)} to ${usd(pricing.highEnd)} range the comparable sales support today.`,
-        meaning: 'The last price was defensible. The evidence points away from price alone and toward exposure, presentation, or timing.',
+        meaning: `Measured against today's comparables, the last price is defensible.${marketMoveNote}`,
       })
     } else {
       findings.push({
         lens: 'pricing',
         fact: `The final asking price was ${usd(finalAsk)}, below the ${usd(pricing.conservative)} to ${usd(pricing.highEnd)} range the comparable sales support today.`,
-        meaning: 'The home came off the market priced under its supported value. A relist has room to capture the difference.',
+        meaning: `Measured against today's comparables, a relist has room above the last ask.${marketMoveNote}`,
       })
     }
   }
 
-  // 2. Time on market vs the market's median.
-  const dom = history.currentCycle?.daysOnMarket ?? null
+  // 2. Time on market. Use the FINAL CYCLE's own exposure (list to off-market),
+  // not CumulativeDaysOnMarket — the market median is a single-cycle measure,
+  // and a relisted property's cumulative count would compare mismatched units
+  // (adversarial-audit correctness finding 2026-07-14).
+  const cycle = history.currentCycle
+  const cycleDom = (() => {
+    if (cycle?.listDate && cycle?.offMarketDate) {
+      const d = Math.round((new Date(cycle.offMarketDate).getTime() - new Date(cycle.listDate).getTime()) / 86_400_000)
+      if (Number.isFinite(d) && d >= 0) return d
+    }
+    return cycle?.daysOnMarket ?? null
+  })()
   const medianDom = market?.medianDom ?? null
-  if (dom != null && medianDom != null && medianDom > 0) {
-    const ratio = dom / medianDom
+  if (cycleDom != null && medianDom != null && medianDom > 0) {
+    const ratio = cycleDom / medianDom
     findings.push({
       lens: 'time-on-market',
-      fact: `${dom} days on market against a ${Math.round(medianDom)}-day median for ${market?.geoLabel ?? 'the market'}.`,
+      fact: `${cycleDom} days on market for the final listing period, against a ${Math.round(medianDom)}-day median for ${market?.geoLabel ?? 'the market'}.`,
       meaning:
         ratio >= 2
-          ? 'A listing sitting at multiple times the median reads as stale to buyers and their agents, and stale listings invite low offers instead of strong ones.'
+          ? 'A listing sitting at multiple times the median reads as stale to buyers and their agents, and stale listings tend to draw lower offers.'
           : ratio >= 1.2
             ? 'Longer than typical, but not unrecoverable. A reset with correct pricing restarts the clock.'
-            : 'Time on market was in the normal band. The expiration is more about terms or timing than exposure.',
+            : 'Time on market was inside the normal band.',
     })
   }
 
-  // 3. Price-cut pattern.
-  const cycle = history.currentCycle
+  // 3. Price-cut pattern. The "chasing the market" reading applies only to a
+  // MATERIAL path (3%+ or multiple cuts); a modest single trim gets a neutral
+  // meaning, and the static-price observation only matters when the ask sat
+  // above the supported range (fairness finding 2026-07-14).
   if (cycle && cycle.originalListPrice && cycle.finalListPrice && cycle.originalListPrice > cycle.finalListPrice) {
     const cut = cycle.originalListPrice - cycle.finalListPrice
     const cutPct = (cut / cycle.originalListPrice) * 100
     const cuts = cycle.priceCutCount ?? 0
+    const material = cutPct >= 3 || cuts >= 2
     findings.push({
       lens: 'price-cuts',
       fact: `The ask moved from ${usd(cycle.originalListPrice)} to ${usd(cycle.finalListPrice)}, a ${usd(cut)} reduction (${cutPct.toFixed(1)}%)${cuts > 0 ? ` over ${cuts} cut${cuts === 1 ? '' : 's'}` : ''}.`,
-      meaning: 'Chasing the market down teaches buyers to wait. Starting at the supported number outperforms starting high and cutting.',
+      meaning: material
+        ? 'Chasing the market down teaches buyers to wait. Starting at the supported number outperforms starting high and cutting.'
+        : 'The path shows one modest adjustment during the listing period.',
     })
-  } else if (cycle && cycle.originalListPrice && cycle.originalListPrice === cycle.finalListPrice) {
+  } else if (cycle && cycle.originalListPrice && cycle.originalListPrice === cycle.finalListPrice && askAboveRange) {
     findings.push({
       lens: 'price-cuts',
       fact: `The asking price never moved from ${usd(cycle.originalListPrice)} across the full listing period.`,
-      meaning: 'A static price on a sitting listing sends no new signal to the market. Buyers saw the same number every week and kept scrolling.',
+      meaning: 'A static price on a sitting listing sends no new signal to the market.',
     })
   }
 
@@ -161,8 +185,10 @@ export function buildFailureFindings(args: {
   if (photosCount != null && photosCount > 0 && photosCount < 20) {
     findings.push({
       lens: 'presentation',
-      fact: `The listing carried ${photosCount} photos.`,
-      meaning: 'Serious Central Oregon listings typically run 30 to 50 images. A thin photo set gives buyers less reason to book a showing.',
+      // "MLS record shows" — media can be reduced after a listing terminates,
+      // so the fact claims only what the record proves today (audit finding).
+      fact: `The MLS record shows ${photosCount} photos on the listing.`,
+      meaning: 'A thin photo set gives buyers less reason to book a showing.',
     })
   }
   if (remarksLen > 0 && remarksLen < 400) {
@@ -209,7 +235,7 @@ export function buildNetSheet(pricing: CmaPricing): ExpiredNetSheet {
 
   const lines: ExpiredNetSheetLine[] = [
     {
-      label: `Listing fee at ${EXPIRED_LISTING_FEE_PCT}% (expired-listing rate. Our standard rate is ${STANDARD_LISTING_FEE_PCT}%)`,
+      label: `Listing fee at ${EXPIRED_LISTING_FEE_PCT}% (expired-listing rate. Our standard Enhanced plan runs ${STANDARD_LISTING_FEE_PCT}%)`,
       amount: -listingFee,
       isOurFee: true,
       note: `${EXPIRED_LISTING_FEE_PCT}% × ${usd(price)}. Commission is negotiable and every listing agreement is its own conversation.`,
@@ -263,7 +289,10 @@ export function buildNetSheet(pricing: CmaPricing): ExpiredNetSheet {
   }
 }
 
-/** One-line fee statement for the services page. */
+/** One-line fee statement for the services page. Like-for-like framing: the
+ *  site publishes plans at 2.5% to 3.5%, and most sellers choose the 3%
+ *  Enhanced plan — so the honest comparison names the plans rather than
+ *  presenting 2.5% as an expired-only concession (audit finding 2026-07-14). */
 export function feeLine(): string {
-  return `For expired listings we list at ${EXPIRED_LISTING_FEE_PCT}%, against our standard ${STANDARD_LISTING_FEE_PCT}%. Same standard, every service above included. Commission is negotiable and every listing agreement is its own conversation.`
+  return `For an expired listing we list at ${EXPIRED_LISTING_FEE_PCT}% of the sale price, where our standard Enhanced plan runs ${STANDARD_LISTING_FEE_PCT}%. Every service above is included at that rate. Commission is negotiable and every listing agreement is its own conversation.`
 }
