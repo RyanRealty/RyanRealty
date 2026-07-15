@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.793.1 (2026-07-15)
+
+### Bug Fixes
+- fix(leads): complete the FUB decommission — Meta lead-ads webhook was dropping every FB lead
+- fix(security): rate limiting works again — high-volume tiers off Upstash, analytics off
+
+### Maintenance
+- refactor(admin): one team surface; expired-listings index retired into /admin/expireds
+- refactor(admin): Lead Command Center lives at /admin/crm/[id] — console segment reduced to redirects
+- style(site): blog prose width + reviews button on design-system tokens — ratchet 328 → 326
+
+---
+
+
 ## v1.793.0 (2026-07-15)
 
 ### Features
