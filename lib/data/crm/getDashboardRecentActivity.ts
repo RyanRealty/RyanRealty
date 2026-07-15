@@ -30,6 +30,9 @@ export async function getDashboardRecentActivity(
   let q = sb
     .from('crm_people')
     .select('id,name,picture_url,stage,assigned_broker,last_activity_at')
+    // Merged/trashed contacts are soft-deleted with last_activity_at still set —
+    // the deleted=false baseline keeps them out (buildCrmPeopleQuery invariant).
+    .eq('deleted', false)
     .not('last_activity_at', 'is', null)
     .order('last_activity_at', { ascending: false })
     .limit(limit)
@@ -41,13 +44,28 @@ export async function getDashboardRecentActivity(
   const ids = people.map((p) => p.id as number)
 
   // Latest timeline event + primary contact points for the surfaced people only.
-  const [{ data: events }, { data: points }] = await Promise.all([
-    sb.from('crm_timeline').select('person_id,kind,title,ts').in('person_id', ids).order('ts', { ascending: false }),
+  // The latest event is one .limit(1) read per person (a dozen tiny indexed
+  // queries in one flight) — a single .in() read has no per-person limit, so a
+  // hyper-active contact's history can push another person's newest event past
+  // the PostgREST 1000-row response cap and mislabel them.
+  const [eventResults, { data: points }] = await Promise.all([
+    Promise.all(
+      ids.map((id) =>
+        sb
+          .from('crm_timeline')
+          .select('person_id,kind,title,ts')
+          .eq('person_id', id)
+          .order('ts', { ascending: false })
+          .limit(1),
+      ),
+    ),
     sb.from('crm_contact_points').select('person_id,kind,value,is_primary').in('person_id', ids),
   ])
 
   const lastEvent = new Map<number, { kind: string; title: string | null }>()
-  for (const e of events ?? []) {
+  for (const res of eventResults) {
+    const e = (res.data ?? [])[0]
+    if (!e) continue
     const pid = e.person_id as number
     if (!lastEvent.has(pid)) lastEvent.set(pid, { kind: String(e.kind), title: (e.title as string | null) ?? null })
   }

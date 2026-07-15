@@ -15,8 +15,10 @@ import { createServiceClient } from '@/lib/supabase/service'
  *
  * DAL boundary (G1): the raw .from() reads live here. Two reads, one cache entry:
  *   1. crm_tags — the taxonomy rows.
- *   2. crm_people.tags — every non-deleted person's tag array, tallied in JS into
- *      a key -> count map. (18K rows of a small text[] column; cached 5 min.)
+ *   2. crm_people.tags — every non-deleted person's tag array, read in 1000-row
+ *      .range() pages (PostgREST caps every response at 1000 rows — the
+ *      getCrmSources.ts convention), tallied in JS into a key -> count map.
+ *      (~20K rows of a small text[] column; cached 5 min.)
  *
  * Cached on the crm-tags tag (5-min window — usage drifts as people are tagged;
  * every mutation in app/actions/crm-tags.ts revalidates the tag on write).
@@ -81,17 +83,31 @@ export const getCrmTags = unstable_cache(
     }
 
     // Usage tally — one column read across non-deleted people, counted in JS.
-    // A people-read failure must NOT take down the taxonomy: fall back to zero.
+    // PostgREST caps every response at 1000 rows, so the ~20K-person table is
+    // paged with .range() until a short read (never rows.length on a single
+    // read — the getCrmSources.ts convention). Ordered by id so pages never
+    // overlap. A people-read failure must NOT take down the taxonomy: fall back
+    // to zero counts (a partial tally would ship wrong numbers silently).
     let counts = new Map<string, number>()
-    const { data: peopleRows, error: peopleErr } = await sb
-      .from('crm_people')
-      .select('tags')
-      .eq('deleted', false)
-    if (peopleErr) {
-      console.error('[getCrmTags] usage', peopleErr.message)
-    } else if (peopleRows) {
-      counts = tallyTagUsage((peopleRows as Array<{ tags: string[] | null }>).map((r) => r.tags))
+    const peopleTags: Array<string[] | null> = []
+    const PAGE = 1000
+    let usageReadOk = true
+    for (let fromRow = 0; fromRow < 100_000; fromRow += PAGE) {
+      const { data, error } = await sb
+        .from('crm_people')
+        .select('tags')
+        .eq('deleted', false)
+        .order('id', { ascending: true })
+        .range(fromRow, fromRow + PAGE - 1)
+      if (error) {
+        console.error('[getCrmTags] usage', error.message)
+        usageReadOk = false
+        break
+      }
+      for (const r of (data ?? []) as Array<{ tags: string[] | null }>) peopleTags.push(r.tags)
+      if (!data || data.length < PAGE) break
     }
+    if (usageReadOk) counts = tallyTagUsage(peopleTags)
 
     return (taxonomy as RawTaxonomyRow[]).map((r) => ({
       key: r.key,

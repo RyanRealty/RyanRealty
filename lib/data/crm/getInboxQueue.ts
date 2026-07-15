@@ -414,19 +414,6 @@ async function buildInboxWorkingSet(
 ): Promise<InboxConversation[]> {
   const sb = createServiceClient()
 
-  // Pull a generous window of recent messages with the joined contact, scoped to
-  // the broker. We group to one conversation per person in memory — the volume
-  // of recent inbound/outbound is small relative to the full timeline.
-  let q = sb
-    .from('crm_timeline')
-    .select('person_id,ts,kind,title,body,broker,payload,crm_people!inner(name,picture_url,assigned_broker,deleted)')
-    .in('kind', MESSAGE_KINDS as unknown as string[])
-    .order('ts', { ascending: false })
-    .limit(2000)
-  // brokerScope null = superuser, no filter.
-  if (brokerScope) q = q.eq('crm_people.assigned_broker', brokerScope)
-  const { data: msgRows } = await q
-
   type Joined = RawMessageRow & {
     crm_people:
       | { name: string | null; picture_url: string | null; assigned_broker: string | null; deleted: boolean }
@@ -434,9 +421,45 @@ async function buildInboxWorkingSet(
       | null
   }
 
+  // Pull a generous window of recent messages with the joined contact, scoped to
+  // the broker. PostgREST caps every response at 1000 rows regardless of
+  // .limit(), so the 2000-row window is read as .range() pages until a short
+  // read (newest-first, id as the tie-breaker so equal-ts rows never straddle a
+  // page boundary). We group to one conversation per person in memory — the
+  // volume of recent inbound/outbound is small relative to the full timeline.
+  const WINDOW = 2000
+  const PAGE = 1000
+  const fetchMessageWindow = async (): Promise<Joined[]> => {
+    const rows: Joined[] = []
+    for (let fromRow = 0; fromRow < WINDOW; fromRow += PAGE) {
+      let q = sb
+        .from('crm_timeline')
+        .select('person_id,ts,kind,title,body,broker,payload,crm_people!inner(name,picture_url,assigned_broker,deleted)')
+        .in('kind', MESSAGE_KINDS as unknown as string[])
+        .order('ts', { ascending: false })
+        .order('id', { ascending: false })
+        .range(fromRow, fromRow + PAGE - 1)
+      // brokerScope null = superuser, no filter.
+      if (brokerScope) q = q.eq('crm_people.assigned_broker', brokerScope)
+      const { data } = await q
+      rows.push(...((data ?? []) as unknown as Joined[]))
+      if (!data || data.length < PAGE) break
+    }
+    return rows
+  }
+
+  // Draft summaries owned by the acting broker fold into the queue: they set the
+  // hasDraft flag (Drafts-folder membership) and may introduce a conversation
+  // that carries a draft but has no timeline messages yet. The drafts read takes
+  // no input from the message window, so both run in one flight.
+  const [msgRows, draftsByPerson] = await Promise.all([
+    fetchMessageWindow(),
+    listDraftsByPerson(actingBroker),
+  ])
+
   // Group rows by person, preserving newest-first order.
   const byPerson = new Map<number, { person: { name: string | null; pictureUrl: string | null; assignedBroker: string | null }; rows: RawMessageRow[] }>()
-  for (const raw of (msgRows ?? []) as unknown as Joined[]) {
+  for (const raw of msgRows) {
     const p = Array.isArray(raw.crm_people) ? raw.crm_people[0] : raw.crm_people
     if (!p || p.deleted) continue
     const existing = byPerson.get(raw.person_id)
@@ -458,11 +481,6 @@ async function buildInboxWorkingSet(
       })
     }
   }
-
-  // Draft summaries owned by the acting broker fold into the queue: they set the
-  // hasDraft flag (Drafts-folder membership) and may introduce a conversation
-  // that carries a draft but has no timeline messages yet.
-  const draftsByPerson = await listDraftsByPerson(actingBroker)
 
   const timelinePersonIds = [...byPerson.keys()]
   const allPersonIds = Array.from(new Set([...timelinePersonIds, ...draftsByPerson.keys()]))

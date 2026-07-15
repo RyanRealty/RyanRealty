@@ -91,6 +91,34 @@ const EMPTY_TOTALS: CallsTotals = {
   talkTimeSec: 0, answerTimeSec: null,
 }
 
+// ── Paged reads ────────────────────────────────────────────────────────────────
+
+/**
+ * Drain a crm_timeline read past the PostgREST 1000-row response cap: fetch
+ * .range() pages until a short read (the getCrmSources.ts convention — a single
+ * unpaged read silently returns at most 1000 rows, so rows.length would report
+ * exactly 1,000 for any broker/window past the cap). `page` must apply a
+ * deterministic .order() so pages never overlap. Fails SOFT: on a page error the
+ * rows read so far are returned (the report degrades, never throws).
+ */
+async function fetchAllRows<T>(
+  label: string,
+  page: (fromRow: number, toRow: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+): Promise<T[]> {
+  const PAGE = 1000
+  const out: T[] = []
+  for (let fromRow = 0; fromRow < 100_000; fromRow += PAGE) {
+    const { data, error } = await page(fromRow, fromRow + PAGE - 1)
+    if (error) {
+      console.error(`[getCallsReport] ${label}`, error.message)
+      break
+    }
+    out.push(...((data ?? []) as T[]))
+    if (!data || data.length < PAGE) break
+  }
+  return out
+}
+
 // ── Core reader (uncached) ────────────────────────────────────────────────────
 
 async function readCallsReport(params: CallsParams): Promise<CallsResult> {
@@ -125,8 +153,9 @@ async function readCallsReport(params: CallsParams): Promise<CallsResult> {
 
   // 2. Per-broker parallel queries.
   //
-  //    For each broker, two raw-row queries (call volumes are low — ~10s–100s/month,
-  //    well within the Supabase default row cap). Raw rows are needed for:
+  //    For each broker, two paged raw-row reads (a long window — e.g. this_year —
+  //    can exceed the 1000-row response cap, so every read pages until a short
+  //    read and rows.length stays an exact count). Raw rows are needed for:
   //      a) talk-time SUM (payload.recordingDurationSec)
   //      b) conversations count (payload.recordingDurationSec > 0)
   //      c) distinct person_id sets
@@ -139,28 +168,34 @@ async function readCallsReport(params: CallsParams): Promise<CallsResult> {
       const slug = b.crm_slug
       return Promise.all([
         // a: inbound calls — person_id + payload for people count, talk time, conversations
-        sb.from('crm_timeline')
-          .select('person_id, payload')
-          .eq('broker', slug)
-          .eq('kind', 'call')
-          .gte('ts', start)
-          .lte('ts', end),
+        fetchAllRows<{ person_id: number; payload: Record<string, unknown> | null }>(`calls ${slug}`, (fromRow, toRow) =>
+          sb.from('crm_timeline')
+            .select('person_id, payload')
+            .eq('broker', slug)
+            .eq('kind', 'call')
+            .gte('ts', start)
+            .lte('ts', end)
+            .order('id', { ascending: true })
+            .range(fromRow, toRow),
+        ),
         // b: voicemails (missed calls) — person_id for people count
-        sb.from('crm_timeline')
-          .select('person_id')
-          .eq('broker', slug)
-          .eq('kind', 'voicemail')
-          .gte('ts', start)
-          .lte('ts', end),
+        fetchAllRows<{ person_id: number }>(`voicemails ${slug}`, (fromRow, toRow) =>
+          sb.from('crm_timeline')
+            .select('person_id')
+            .eq('broker', slug)
+            .eq('kind', 'voicemail')
+            .gte('ts', start)
+            .lte('ts', end)
+            .order('id', { ascending: true })
+            .range(fromRow, toRow),
+        ),
       ] as const)
     }),
   )
 
   // 3. Build per-broker rows
   const rows: CallsRow[] = scopedBrokers.map((b, i) => {
-    const [callsRes, voicemailsRes] = perBrokerGroup[i]
-    const callRows = (callsRes.data ?? []) as Array<{ person_id: number; payload: Record<string, unknown> | null }>
-    const vmRows = (voicemailsRes.data ?? []) as Array<{ person_id: number }>
+    const [callRows, vmRows] = perBrokerGroup[i]
 
     // Received (all inbound calls)
     const received = callRows.length
