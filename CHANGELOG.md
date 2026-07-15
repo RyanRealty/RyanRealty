@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.795.3 (2026-07-15)
+
+### Bug Fixes
+- fix(crm-mobile): keyboard-aware layout — composer docks above tab bar/keyboard, chrome gets out of the way
+
+---
+
+
 ## v1.795.2 (2026-07-15)
 
 ### Maintenance
