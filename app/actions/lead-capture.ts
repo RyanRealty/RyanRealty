@@ -2,7 +2,7 @@
 
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
-import { findPersonByEmail, sendEvent, addPersonTags, type FubEventPerson } from '@/lib/followupboss'
+import { sendEvent, type FubEventPerson } from '@/lib/followupboss'
 import { recordPartnerReferral } from '@/app/actions/partnership-revenue'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead, type LeadSource } from '@/lib/canonical-lead-tagger'
@@ -74,33 +74,17 @@ function partnerSlugFromCampaign(source?: string): 'lender_referral' | 'relocati
 }
 
 export async function trackHomeValuationCta(campaign?: CampaignInput, sessionId?: string): Promise<void> {
-  const [session, fubPersonId] = await Promise.all([getSession(), getPersonIdFromCookie()])
+  const [session, cookiePersonId] = await Promise.all([getSession(), getPersonIdFromCookie()])
   const email = session?.user?.email?.trim() ?? null
   let person: FubEventPerson | null = null
-  let resolvedPersonId: number | null = fubPersonId ?? null
   if (email) {
-    const existing = await findPersonByEmail(email)
-    person = existing ? { id: existing.id } : { emails: [{ value: email }] }
-    if (existing?.id) resolvedPersonId = existing.id
-  } else if (fubPersonId != null && fubPersonId > 0) {
-    person = { id: fubPersonId }
+    person = { emails: [{ value: email }] }
+  } else if (cookiePersonId != null && cookiePersonId > 0) {
+    person = { id: cookiePersonId }
   }
   if (!person) return
 
-  // Stitch the anonymous browsing session to this known person at the moment
-  // they click the valuation CTA. Requires a resolved FUB id + a valid session
-  // uuid. Non-blocking; this is what lets the dashboard match the visit to a
-  // name even when the lead never fills a separate form.
-  if (resolvedPersonId && sessionId && UUID_V4_RE.test(sessionId)) {
-    void backfillSessionToFub({
-      sessionId,
-      fubPersonId: resolvedPersonId,
-      email: email ?? undefined,
-      identifiedVia: 'form_submit',
-    }).catch((err) => console.warn('[home-valuation-cta] session stitch failed (non-blocking):', err))
-  }
-
-  await sendEvent({
+  const result = await sendEvent({
     type: 'Seller Inquiry',
     person,
     source: websiteSource(),
@@ -110,9 +94,27 @@ export async function trackHomeValuationCta(campaign?: CampaignInput, sessionId?
     campaign,
   })
 
-  // A home-valuation CTA fires a Seller Inquiry into FUB — tag it into the
-  // canonical seller audience (nurture tier; it's a mid-funnel click, not a full
-  // submit) so it enters the workflow + is measured instead of landing untagged.
+  // Native capture returns the crm_people id (null for anonymous no-email
+  // events); fall back to the identity-bridge cookie id for signed-out repeat
+  // visitors so enrichment + stitching still resolve.
+  const resolvedPersonId = (result.ok ? result.personId : null) ?? cookiePersonId ?? null
+
+  // Stitch the anonymous browsing session to this known person at the moment
+  // they click the valuation CTA. Requires a resolved person id + a valid
+  // session uuid. Non-blocking; this is what lets the dashboard match the
+  // visit to a name even when the lead never fills a separate form.
+  if (resolvedPersonId && sessionId && UUID_V4_RE.test(sessionId)) {
+    void backfillSessionToFub({
+      sessionId,
+      fubPersonId: resolvedPersonId,
+      email: email ?? undefined,
+      identifiedVia: 'form_submit',
+    }).catch((err) => console.warn('[home-valuation-cta] session stitch failed (non-blocking):', err))
+  }
+
+  // A home-valuation CTA is a Seller Inquiry — tag it into the canonical
+  // seller audience (nurture tier; it's a mid-funnel click, not a full submit)
+  // so it enters the workflow + is measured instead of landing untagged.
   if (resolvedPersonId) {
     await canonicallyTagLead({
       fubPersonId: resolvedPersonId,
@@ -137,7 +139,7 @@ export async function trackHomeValuationCta(campaign?: CampaignInput, sessionId?
     event_name: 'home_valuation_cta_click',
     lp_variant: 'home-valuation-cta',
     lead_type: 'cta_click',
-    fub_person_id: fubPersonId ?? null,
+    fub_person_id: resolvedPersonId,
     extra: {
       utm_source: campaign?.source,
       utm_medium: campaign?.medium,
@@ -150,7 +152,7 @@ export async function trackHomeValuationCta(campaign?: CampaignInput, sessionId?
     await recordPartnerReferral({
       partnerSlug,
       leadSource: 'home_valuation_cta',
-      leadIdentifier: email ?? (fubPersonId ? String(fubPersonId) : null),
+      leadIdentifier: email ?? (resolvedPersonId ? String(resolvedPersonId) : null),
       campaignSource: campaign?.source ?? null,
       campaignMedium: campaign?.medium ?? null,
       estimatedValue: partnerSlug === 'lender_referral' ? 300 : 2500,
@@ -173,8 +175,7 @@ export async function submitExitIntentLead(input: {
     return { ok: false, error: 'Invalid email' }
   }
 
-  const existing = await findPersonByEmail(email)
-  const person: FubEventPerson = existing ? { id: existing.id } : { emails: [{ value: email }] }
+  const person: FubEventPerson = { emails: [{ value: email }] }
 
   const result = await sendEvent({
     type: 'Registration',
@@ -195,36 +196,35 @@ export async function submitExitIntentLead(input: {
     value: 100,
   })
 
-  // Canonical tagging — fire-and-forget. Re-look-up the FUB person and apply
-  // the canonical schema so this lead shows up in marketing_assignments and
-  // the FUB automation rule can enroll them in the nurture workflow.
-  void (async () => {
-    try {
-      const reFound = await findPersonByEmail(email)
-      if (reFound?.id) {
-        await canonicallyTagLead({
-          fubPersonId: reFound.id,
-          audience: 'buyer',
-          source: 'unknown',
-          tier: 'nurture',
-        })
+  // Canonical tagging against the native person id sendEvent just returned —
+  // this is what lands the lead in marketing_assignments and triggers workflow
+  // auto-enroll. MUST be awaited: on Vercel serverless the lambda freezes the
+  // instant the handler returns, so a fire-and-forget here gets killed
+  // mid-flight. The try/catch keeps a tagging blip from failing the capture.
+  try {
+    if (result.ok && result.personId) {
+      await canonicallyTagLead({
+        fubPersonId: result.personId,
+        audience: 'buyer',
+        source: 'unknown',
+        tier: 'nurture',
+      })
 
-        // Stitch the anonymous browsing history to this person and mark the
-        // visitor_sessions row identified — what the Marketing ROI dashboard
-        // counts as "matched to a name".
-        if (input.sessionId && UUID_V4_RE.test(input.sessionId)) {
-          await backfillSessionToFub({
-            sessionId: input.sessionId,
-            fubPersonId: reFound.id,
-            email,
-            identifiedVia: 'form_submit',
-          })
-        }
+      // Stitch the anonymous browsing history to this person and mark the
+      // visitor_sessions row identified — what the Marketing ROI dashboard
+      // counts as "matched to a name".
+      if (input.sessionId && UUID_V4_RE.test(input.sessionId)) {
+        await backfillSessionToFub({
+          sessionId: input.sessionId,
+          fubPersonId: result.personId,
+          email,
+          identifiedVia: 'form_submit',
+        })
       }
-    } catch (err) {
-      console.warn('[exit-intent] canonical tagging / session stitch failed (non-blocking):', err)
     }
-  })()
+  } catch (err) {
+    console.warn('[exit-intent] canonical tagging / session stitch failed (non-blocking):', err)
+  }
 
   // GA4 Measurement Protocol mirror.
   await fireLeadGenerated({
@@ -281,10 +281,7 @@ export async function submitPageCTA(input: {
 
     let person: FubEventPerson
     if (email) {
-      const existing = await findPersonByEmail(email)
-      person = existing
-        ? { id: existing.id }
-        : { emails: [{ value: email }], ...(phone ? { phones: [{ value: phone }] } : {}) }
+      person = { emails: [{ value: email }], ...(phone ? { phones: [{ value: phone }] } : {}) }
     } else if (phone) {
       person = { phones: [{ value: phone }] }
     } else {
@@ -293,7 +290,7 @@ export async function submitPageCTA(input: {
 
     const eventType = input.leadType === 'seller' ? 'Seller Inquiry' : 'General Inquiry'
 
-    await sendEvent({
+    const result = await sendEvent({
       type: eventType,
       person,
       source: websiteSource(),
@@ -316,28 +313,26 @@ export async function submitPageCTA(input: {
       value,
     })
 
-    // Canonical tagging + ledger row.
-    void (async () => {
-      try {
-        if (!email) return
-        const found = await findPersonByEmail(email)
-        if (found?.id) {
-          const audience = input.leadType === 'seller' ? 'seller' : 'buyer'
-          const source: LeadSource = input.leadType === 'seller'
-            ? 'homepage-cta'
-            : input.leadType === 'newsletter'
-              ? 'blog-email'
-              : 'homepage-cta'
-          await canonicallyTagLead({
-            fubPersonId: found.id,
-            audience,
-            source,
-          })
-        }
-      } catch (err) {
-        console.warn('[page-cta] canonical tagging failed (non-blocking):', err)
+    // Canonical tagging + ledger row against the native person id sendEvent
+    // returned. Awaited (a void IIFE gets killed when the lambda freezes on
+    // return); the try/catch keeps a tagging blip from failing the capture.
+    try {
+      if (result.ok && result.personId) {
+        const audience = input.leadType === 'seller' ? 'seller' : 'buyer'
+        const source: LeadSource = input.leadType === 'seller'
+          ? 'homepage-cta'
+          : input.leadType === 'newsletter'
+            ? 'blog-email'
+            : 'homepage-cta'
+        await canonicallyTagLead({
+          fubPersonId: result.personId,
+          audience,
+          source,
+        })
       }
-    })()
+    } catch (err) {
+      console.warn('[page-cta] canonical tagging failed (non-blocking):', err)
+    }
 
     // GA4 Measurement Protocol mirror.
     await fireLeadGenerated({
@@ -392,15 +387,12 @@ export async function submitRentalLead(input: {
 
     let person: FubEventPerson
     if (email) {
-      const existing = await findPersonByEmail(email)
-      person = existing
-        ? { id: existing.id }
-        : {
-            emails: [{ value: email }],
-            ...(phone ? { phones: [{ value: phone }] } : {}),
-            ...(firstName ? { firstName } : {}),
-            ...(lastName ? { lastName } : {}),
-          }
+      person = {
+        emails: [{ value: email }],
+        ...(phone ? { phones: [{ value: phone }] } : {}),
+        ...(firstName ? { firstName } : {}),
+        ...(lastName ? { lastName } : {}),
+      }
     } else {
       person = {
         phones: [{ value: phone! }],
@@ -430,28 +422,27 @@ export async function submitRentalLead(input: {
     })
 
     // Canonical tags MUST be awaited on serverless (the lambda freezes on return).
+    // Runs against the native person id sendEvent returned; the context tags
+    // ride extraTags so enrichNativeLead unions them in one write.
     try {
-      if (email) {
-        const found = await findPersonByEmail(email)
-        if (found?.id) {
-          await canonicallyTagLead({
-            fubPersonId: found.id,
+      if (result.ok && result.personId) {
+        await canonicallyTagLead({
+          fubPersonId: result.personId,
+          audience: 'buyer',
+          source: 'contact-form',
+          tier: 'nurture',
+          extraTags: ['rental-calculator', 'investor'],
+          originContext: {
+            source: 'rental-calculator',
+            sourceLabel: 'Rental property calculator',
+            landingPage: pageUrl,
             audience: 'buyer',
-            source: 'contact-form',
             tier: 'nurture',
-            originContext: {
-              source: 'rental-calculator',
-              sourceLabel: 'Rental property calculator',
-              landingPage: pageUrl,
-              audience: 'buyer',
-              tier: 'nurture',
-              ...(input.propertyLabel || input.contextNote
-                ? { want: [input.propertyLabel, input.contextNote].filter(Boolean).join(' · ') }
-                : {}),
-            },
-          })
-          await addPersonTags(found.id, ['rental-calculator', 'investor'])
-        }
+            ...(input.propertyLabel || input.contextNote
+              ? { want: [input.propertyLabel, input.contextNote].filter(Boolean).join(' · ') }
+              : {}),
+          },
+        })
       }
     } catch (err) {
       console.warn('[rental-lead] canonical tagging failed (non-blocking):', err)
@@ -516,15 +507,12 @@ export async function submitTetherowLead(input: {
 
     let person: FubEventPerson
     if (email) {
-      const existing = await findPersonByEmail(email)
-      person = existing
-        ? { id: existing.id }
-        : {
-            emails: [{ value: email }],
-            ...(phone ? { phones: [{ value: phone }] } : {}),
-            ...(firstName ? { firstName } : {}),
-            ...(lastName ? { lastName } : {}),
-          }
+      person = {
+        emails: [{ value: email }],
+        ...(phone ? { phones: [{ value: phone }] } : {}),
+        ...(firstName ? { firstName } : {}),
+        ...(lastName ? { lastName } : {}),
+      }
     } else {
       person = {
         phones: [{ value: phone! }],
@@ -569,26 +557,23 @@ export async function submitTetherowLead(input: {
     // write before the function returns. The inner try/catch preserves the
     // original intent (a tagging blip never fails the capture itself).
     try {
-      if (email) {
-        const found = await findPersonByEmail(email)
-        if (found?.id) {
-          await canonicallyTagLead({
-            fubPersonId: found.id,
-            audience: isSeller ? 'seller' : 'buyer',
-            source: isSeller ? 'seller-lp' : 'buyer-lp',
-            tier: 'hot',
-            ...(isSeller && input.address ? { address: input.address, state: 'OR' } : {}),
-          })
-          // Keep the resort/campaign context tags, but DROP the legacy
-          // 'seller-intent'/'buyer-intent' strings (they never triggered the FUB
-          // workflow — canonicallyTagLead applies the real audience:* trigger).
-          const ctx = (input.contextTags ?? '')
-            .split(',')
-            .map((t) => t.trim())
-            .filter((t) => t && !/-intent$/.test(t))
-          ctx.push('resort:tetherow', 'lp:tetherow-landing-v1')
-          await addPersonTags(found.id, [...new Set(ctx)])
-        }
+      if (result.ok && result.personId) {
+        // Keep the resort/campaign context tags, but DROP the legacy
+        // 'seller-intent'/'buyer-intent' strings (they never triggered the
+        // workflow — canonicallyTagLead applies the real audience:* trigger).
+        const ctx = (input.contextTags ?? '')
+          .split(',')
+          .map((t) => t.trim())
+          .filter((t) => t && !/-intent$/.test(t))
+        ctx.push('resort:tetherow', 'lp:tetherow-landing-v1')
+        await canonicallyTagLead({
+          fubPersonId: result.personId,
+          audience: isSeller ? 'seller' : 'buyer',
+          source: isSeller ? 'seller-lp' : 'buyer-lp',
+          tier: 'hot',
+          extraTags: [...new Set(ctx)],
+          ...(isSeller && input.address ? { address: input.address, state: 'OR' } : {}),
+        })
       }
     } catch (err) {
       console.warn('[tetherow-lead] canonical tagging failed (non-blocking):', err)
