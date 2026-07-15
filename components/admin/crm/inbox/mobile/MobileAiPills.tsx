@@ -98,7 +98,7 @@ export default function MobileAiPills({
             value={customPrompt}
             onChange={(e) => setCustomPrompt(e.target.value)}
             placeholder="What should the text say?"
-            className="h-9 text-sm"
+            className="h-9 text-base md:text-sm"
           />
           <Button type="submit" size="sm" disabled={pending || !customPrompt.trim()}>
             Draft

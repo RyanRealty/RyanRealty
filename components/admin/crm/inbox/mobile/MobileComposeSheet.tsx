@@ -159,7 +159,7 @@ export default function MobileComposeSheet({
           type="button"
           aria-label="Compose new message"
           onClick={() => setOpen(true)}
-          className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg md:hidden"
+          className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg md:hidden [[data-kb-open]_&]:hidden"
           style={{ boxShadow: '0 4px 12px rgba(16,39,66,0.30)' }}
         >
           <Pencil className="h-6 w-6" aria-hidden />

@@ -163,7 +163,10 @@ export function SmsComposer(props: {
           placeholder="Text message · SMS"
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          className="max-h-32 min-h-9 flex-1 resize-none self-center border-0 bg-transparent px-1 py-1.5 text-sm shadow-none focus-visible:ring-0"
+          // text-base below md: iOS Safari auto-zooms the whole page when a
+          // focused input's font is under 16px — the 2026-07-15 mobile audit's
+          // "everything huge with the keyboard open" screenshot.
+          className="max-h-32 min-h-9 flex-1 resize-none self-center border-0 bg-transparent px-1 py-1.5 text-base shadow-none focus-visible:ring-0 md:text-sm"
         />
         <Button
           type="submit"

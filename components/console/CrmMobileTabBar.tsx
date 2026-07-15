@@ -64,12 +64,17 @@ export default function CrmMobileTabBar({ inboxUnread = 0 }: { inboxUnread?: num
   // at z-50 — those are modals, not routes.
 
   return (
+    // Slides away while the soft keyboard is up ([data-kb-open], set by
+    // KeyboardInsetSync) — there is no room for nav above a keyboard, and
+    // bottom-docked composers take its place (--crm-dock-offset).
     <nav
       aria-label="CRM quick navigation"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur transition-transform duration-200 supports-[backdrop-filter]:bg-background/80 lg:hidden [[data-kb-open]_&]:pointer-events-none [[data-kb-open]_&]:translate-y-full"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <ul className="grid grid-cols-5">
+      {/* h-14 is load-bearing: --crm-dock-offset (console-theme.css) assumes
+          the bar content is exactly 3.5rem tall. */}
+      <ul className="grid h-14 grid-cols-5">
         {TABS.map((t) => {
           const isActive = active === t.href
           const Icon = t.icon
@@ -80,7 +85,7 @@ export default function CrmMobileTabBar({ inboxUnread = 0 }: { inboxUnread?: num
                 href={t.href}
                 aria-current={isActive ? 'page' : undefined}
                 className={cn(
-                  'flex flex-col items-center gap-0.5 px-1 py-2 text-[10px] font-medium transition-colors',
+                  'flex h-full flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-medium transition-colors',
                   isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
                 )}
               >

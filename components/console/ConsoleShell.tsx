@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import ConsoleCommandPalette from '@/components/console/ConsoleCommandPalette'
 import ConsoleQuickAction from '@/components/console/ConsoleQuickAction'
 import CrmMobileTabBar from '@/components/console/CrmMobileTabBar'
+import KeyboardInsetSync from '@/components/console/KeyboardInsetSync'
 import ConsoleTopNav from '@/components/console/ConsoleTopNav'
 import TopBarScope from '@/components/console/TopBarScope'
 
@@ -110,6 +111,10 @@ export default function ConsoleShell({
 
       {/* FUB-style bottom tab bar — phones only (desktop rail covers nav at lg+) */}
       <CrmMobileTabBar inboxUnread={inboxUnread} />
+
+      {/* Soft-keyboard tracking (--kb-inset / [data-kb-open]) — the tab bar,
+          FABs, and bottom-docked composers all key off it. */}
+      <KeyboardInsetSync />
 
       {/* Mobile sheet */}
       <Sheet open={open} onOpenChange={setOpen}>

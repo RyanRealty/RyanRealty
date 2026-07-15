@@ -42,7 +42,14 @@ export function MobileCommsTab({
   return (
     // Fill the viewport below the header + tab strip (~8.5rem) so the composer
     // sticks to the bottom like a messaging app, with the thread scrolling above.
-    <div className="flex min-h-[calc(100dvh-8.5rem)] flex-col">
+    // The container's bottom padding reserves --crm-dock-offset (the fixed tab
+    // bar, or the soft-keyboard inset while typing — console-theme.css), so the
+    // sticky composer rests ON that line instead of underneath the z-30 tab bar
+    // (2026-07-15 mobile audit: send button was clipped behind the bar).
+    <div
+      className="flex min-h-[calc(100dvh-8.5rem)] flex-col"
+      style={{ paddingBottom: 'var(--crm-dock-offset, 0px)' }}
+    >
       <div className="flex-1">
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-8 py-20 text-center">
@@ -67,8 +74,8 @@ export function MobileCommsTab({
 
       {composer ? (
         <div
-          className="sticky bottom-0 z-20 border-t border-border bg-card px-3 pt-2"
-          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)' }}
+          className="sticky z-30 border-t border-border bg-card px-3 pb-2 pt-2"
+          style={{ bottom: 'var(--crm-dock-offset, 0px)' }}
         >
           {composer}
         </div>

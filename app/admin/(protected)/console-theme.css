@@ -16,6 +16,27 @@
  * automatically — they render neutral inside the console with no edits.
  */
 
+/*
+ * Mobile dock offset — the space bottom-docked CRM elements (the Comms SMS
+ * composer) must keep clear at the viewport bottom.
+ *
+ *   keyboard closed → the fixed tab bar (3.5rem, CrmMobileTabBar h-14) + the
+ *                     home-indicator safe area
+ *   keyboard open   → the keyboard overlap (--kb-inset, set by
+ *                     KeyboardInsetSync; the tab bar slides away)
+ *
+ * Fixes the 2026-07-15 mobile audit: the composer rendered UNDER the z-30 tab
+ * bar (sticky z-20 with no reserved space), and the keyboard shoved the whole
+ * stack mid-screen.
+ */
+:root {
+  --kb-inset: 0px;
+  --crm-dock-offset: calc(3.5rem + env(safe-area-inset-bottom));
+}
+:root[data-kb-open] {
+  --crm-dock-offset: var(--kb-inset);
+}
+
 .console-root {
   /* Surfaces — soft neutral page, white cards. */
   --background: oklch(0.985 0 0);

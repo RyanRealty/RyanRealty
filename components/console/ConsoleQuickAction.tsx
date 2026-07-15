@@ -144,7 +144,10 @@ export default function ConsoleQuickAction() {
           // Matt directive 2026-07-02 (punch list #1): the bottom tab bar now
           // renders on EVERY mobile route incl. pushed detail, so the FAB always
           // sits above it (bottom-20) below lg; lg+ has no tab bar (bottom-5).
-          'fixed bottom-20 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 lg:bottom-5',
+          // Hidden while the soft keyboard is up ([data-kb-open]) and while the
+          // mobile Comms tab's pinned composer owns the bottom edge
+          // ([data-crm-comms]) — 2026-07-15 audit: the "+" sat on the send row.
+          'fixed bottom-20 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 lg:bottom-5 [[data-crm-comms]_&]:hidden [[data-kb-open]_&]:hidden',
           // §29 single-FAB rule: hidden at < md on calendar/tasks (their own FAB).
           mobileSuppressed ? 'hidden md:flex' : 'flex',
         )}

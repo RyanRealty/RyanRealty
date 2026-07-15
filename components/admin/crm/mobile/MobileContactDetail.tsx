@@ -115,6 +115,23 @@ export function MobileContactDetail({
     strip.scrollTo({ left: Math.max(0, target), behavior: 'smooth' })
   }, [active])
 
+  // Phones only: flag the root while Comms is the active tab so the shell's
+  // floating controls ("+" quick action, "?" help — both bottom-20) hide
+  // instead of covering the pinned SMS composer (2026-07-15 mobile audit).
+  // This component stays MOUNTED at md+ (the wrapper is only CSS-hidden), so
+  // gate on the same breakpoint or the desktop FAB would vanish too.
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)')
+    const apply = () =>
+      document.documentElement.toggleAttribute('data-crm-comms', active === 'comms' && mq.matches)
+    apply()
+    mq.addEventListener('change', apply)
+    return () => {
+      mq.removeEventListener('change', apply)
+      document.documentElement.removeAttribute('data-crm-comms')
+    }
+  }, [active])
+
   // The shell FAB's lead actions deep-link via hash (#comms / #tasks /
   // #overview) — the desktop LeadTabs reads them, and so must this component,
   // or the FAB actions are dead at < md (punch #6, 2026-07-02).
@@ -147,7 +164,10 @@ export function MobileContactDetail({
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col">
+    // min-h-dvh, not min-h-screen: 100vh on iOS is the LARGEST viewport (URL
+    // bar collapsed), which over-stretches the page and pushes bottom-docked
+    // content below the visible edge when the bar is expanded.
+    <div className="relative flex min-h-dvh flex-col">
       {/* ── §25.3 Header — bg-primary continuous through tab strip ─────────── */}
       <div
         className="bg-primary text-primary-foreground"

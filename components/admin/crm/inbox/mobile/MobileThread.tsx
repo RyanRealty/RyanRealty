@@ -184,6 +184,20 @@ export default function MobileThread({
     }
   }, [mode])
 
+  // Phones: lock the page behind this overlay. With the document unable to
+  // scroll, iOS has nothing to pan when the soft keyboard opens, so the fixed
+  // overlay (and its composer) stays put. Gated on the md breakpoint because
+  // this component stays mounted (only CSS-hidden) on desktop, where locking
+  // body scroll would freeze the real page.
+  useEffect(() => {
+    if (!window.matchMedia('(max-width: 767px)').matches) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [])
+
   // Oldest-first for rendering; items arrive newest-first from the page.
   const ordered = useMemo(() => [...items].reverse(), [items])
   const emails = useMemo(() => ordered.filter((it) => it.category === 'email'), [ordered])
@@ -240,7 +254,14 @@ export default function MobileThread({
   )
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background md:hidden">
+    // Height tracks the soft keyboard (--kb-inset via KeyboardInsetSync): the
+    // overlay shrinks to the visible viewport so the composer rides the
+    // keyboard top instead of hiding behind it (fixed inset-0 spans the full
+    // LAYOUT viewport, which iOS keeps keyboard-height too tall).
+    <div
+      className="fixed inset-x-0 top-0 z-50 flex flex-col bg-background md:hidden"
+      style={{ height: 'calc(100dvh - var(--kb-inset, 0px))' }}
+    >
       {/* ── Navy header (pushed view — no tab bar behind) ─────────────────── */}
       <div className="flex h-14 shrink-0 items-center gap-1 bg-primary px-2">
         <Link href={backHref} aria-label="Back to inbox" className="flex h-11 w-11 items-center justify-center">
@@ -274,7 +295,7 @@ export default function MobileThread({
       ) : null}
 
       {/* ── Scrollable body ───────────────────────────────────────────────── */}
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {mode === 'email' ? (
           <div className="pb-8">
             {/* Subject block (AC-26E-02) */}
@@ -394,7 +415,10 @@ export default function MobileThread({
 
       {/* ── Compose panel (SMS mode) — AI pills + suppression-gated composer ── */}
       {mode === 'sms' ? (
-        <div className="shrink-0 rounded-t-xl border-t border-border bg-background px-3 pb-3 pt-2 shadow-[0_-1px_4px_rgba(0,0,0,0.08)]">
+        <div
+          className="shrink-0 rounded-t-xl border-t border-border bg-background px-3 pt-2 shadow-[0_-1px_4px_rgba(0,0,0,0.08)]"
+          style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+        >
           {sendError ? (
             <Alert variant="destructive" className="mb-2">
               <AlertDescription>{sendError}</AlertDescription>

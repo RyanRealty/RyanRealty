@@ -50,7 +50,9 @@ export default function HelpButton({
         onClick={() => setOpen(true)}
         aria-label="Help"
         title="Help"
-        className="fixed bottom-20 left-4 z-40 h-11 w-11 rounded-full shadow-md lg:bottom-5 lg:left-5"
+        // Hidden while the keyboard is up or the mobile Comms composer owns the
+        // bottom edge — it sat on top of the "To" recipient chips (2026-07-15).
+        className="fixed bottom-20 left-4 z-40 h-11 w-11 rounded-full shadow-md lg:bottom-5 lg:left-5 [[data-crm-comms]_&]:hidden [[data-kb-open]_&]:hidden"
       >
         <HelpCircle className="h-5 w-5" aria-hidden />
       </Button>
