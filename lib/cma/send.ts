@@ -97,12 +97,63 @@ async function resolveSendContext(
   }
 }
 
-function buildLeadBody(ctx: CmaSendContext): { html: string; text: string; subject: string } {
+/** Broker-composed override for the lead email (dashboard compose dialog).
+ *  The report button, PDF attachment, branded shell, and signature stay —
+ *  the override replaces the message paragraphs and optionally the subject. */
+export interface CmaSendOverride {
+  subject?: string | null
+  bodyText?: string | null
+}
+
+function buildLeadBody(ctx: CmaSendContext, override?: CmaSendOverride): { html: string; text: string; subject: string } {
   const firstName = (ctx.clientName ?? '').trim().split(/\s+/)[0] || 'there'
   const brokerFirst = ctx.brokerRow.displayName.split(/\s+/)[0]
   const viewUrl = `${SITE_URL}/cma/${ctx.slug}`
   const hasNumbers = ctx.recommendedList != null && ctx.valueLow != null && ctx.valueHigh != null
-  const subject = `Your home value analysis for ${ctx.subjectAddress}`
+  const subject = override?.subject?.trim() || `Your home value analysis for ${ctx.subjectAddress}`
+
+  if (override?.bodyText?.trim()) {
+    const raw = override.bodyText.trim()
+    const paras = raw
+      .split(/\n{2,}/)
+      .map((p) => `<p style="margin:0 0 16px 0;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`)
+      .join('')
+    const bodyHtml = `
+<div style="padding:32px 34px 8px;">
+  ${paras}
+  <p style="margin:0 0 24px 0;"><a href="${viewUrl}" style="display:inline-block;background:#102742;color:#faf8f4;font-size:13px;font-weight:700;letter-spacing:.08em;text-decoration:none;padding:14px 32px;">READ THE FULL REPORT &rarr;</a></p>
+  <p style="margin:0 0 8px 0;">${escapeHtml(brokerFirst)}<br/>Ryan Realty${ctx.brokerRow.phone ? `<br/>${escapeHtml(ctx.brokerRow.phone)}` : ''}</p>
+</div>`
+    const text = `${raw}
+
+Read the full report: ${viewUrl}
+
+${brokerFirst}
+Ryan Realty${ctx.brokerRow.phone ? `\n${ctx.brokerRow.phone}` : ''}${brandedTextFooter()}`
+    const shellBroker: ShellBroker = {
+      name: ctx.brokerRow.displayName,
+      firstName: brokerFirst,
+      title: ctx.brokerRow.title,
+      phone: ctx.brokerRow.phone,
+      email: ctx.brokerRow.email,
+      headshotUrl: ctx.brokerRow.photoUrl
+        ? ctx.brokerRow.photoUrl.startsWith('http')
+          ? ctx.brokerRow.photoUrl
+          : `${SITE_URL}${ctx.brokerRow.photoUrl}`
+        : `${SITE_URL}/images/brokers/ryan-matt.png`,
+      isOwner: ctx.brokerRow.slug === 'matthew-ryan',
+    }
+    const html = wrapBrandedEmail({
+      bodyHtml,
+      previewText: `Your market analysis for ${ctx.subjectAddress} is ready.`,
+      mastheadLine: 'HOME VALUE ANALYSIS',
+      heroUrl: null,
+      senderBroker: shellBroker,
+      unsubscribeUrl: null,
+      audienceLine: `You are receiving this because a market analysis was requested for ${ctx.subjectAddress}.`,
+    })
+    return { html, text, subject }
+  }
 
   const numbersHtml = hasNumbers
     ? `<p style="margin:0 0 16px 0;">The short version. Based on what has actually sold near you, your home lands in a range of <strong>${usd(ctx.valueLow)} to ${usd(ctx.valueHigh)}</strong>, and I would price it around <strong>${usd(ctx.recommendedList)}</strong>.</p>`
@@ -170,7 +221,76 @@ export interface SendCmaToLeadResult {
  * CRM send to the lead — from the signing broker's own mailbox (Gmail DWD),
  * with Resend as automatic fallback. Explicit-click only — never automatic.
  */
-export async function sendCmaToLead(slug: string): Promise<SendCmaToLeadResult> {
+/** The default compose message (the link, signature, and footer append at send). */
+function defaultComposeText(ctx: CmaSendContext): string {
+  const firstName = (ctx.clientName ?? '').trim().split(/\s+/)[0] || 'there'
+  const hasNumbers = ctx.recommendedList != null && ctx.valueLow != null && ctx.valueHigh != null
+  const numbers = hasNumbers
+    ? `\n\nThe short version. Based on what has actually sold near you, your home lands in a range of ${usd(ctx.valueLow)} to ${usd(ctx.valueHigh)}, and I would price it around ${usd(ctx.recommendedList)}.`
+    : ''
+  return `Hi ${firstName},
+
+I put together a full market analysis for ${ctx.subjectAddress}. The complete report is attached as a PDF, and you can also read it online.${numbers}
+
+The report walks through the comparable sales, the adjustments behind the number, and where the market sits right now. Happy to talk any of it through, no pressure.`
+}
+
+/**
+ * Compose-dialog prefill: the default subject + message text (sans footer) and
+ * the doc facts, so the broker edits from a working baseline. Read-only.
+ */
+export async function prepareCmaSendPreview(slug: string): Promise<
+  | { ok: true; subject: string; bodyText: string; docUrl: string; clientEmail: string | null; clientName: string | null; subjectAddress: string }
+  | { ok: false; error: string }
+> {
+  const { ctx, error } = await resolveSendContext(slug)
+  if (!ctx) {
+    // A draft is still previewable — the send itself finalizes first. Re-read
+    // without the status gate for prefill purposes only.
+    const row = await getCmaAdminRowBySlug(slug)
+    if (!row) return { ok: false, error: error ?? 'Document not found' }
+    const brokerRaw = await getCmaBrokerBySlugOrEmail({ slug: (row.broker_slug as string | null) ?? null })
+    const fakeCtx: CmaSendContext = {
+      slug,
+      subjectAddress: (row.subject_address as string) ?? slug,
+      clientName: (row.client_name as string | null) ?? null,
+      clientEmail: ((row.client_email as string | null) ?? '').trim().toLowerCase() || 'pending@placeholder',
+      brokerRow: {
+        slug: (brokerRaw?.slug as string) ?? 'matthew-ryan',
+        displayName: (brokerRaw?.display_name as string) ?? 'Matt Ryan',
+        title: (brokerRaw?.title as string) ?? 'Owner & Principal Broker',
+        email: (brokerRaw?.email as string | null) ?? 'matt@ryan-realty.com',
+        phone: (brokerRaw?.phone as string | null) ?? null,
+        photoUrl: (brokerRaw?.photo_url as string | null) ?? null,
+      },
+      valueLow: (row.value_low as number | null) ?? null,
+      valueHigh: (row.value_high as number | null) ?? null,
+      recommendedList: (row.recommended_list as number | null) ?? null,
+    }
+    const body = buildLeadBody(fakeCtx)
+    return {
+      ok: true,
+      subject: body.subject,
+      bodyText: defaultComposeText(fakeCtx),
+      docUrl: `${SITE_URL}/cma/${slug}`,
+      clientEmail: ((row.client_email as string | null) ?? '').trim().toLowerCase() || null,
+      clientName: (row.client_name as string | null) ?? null,
+      subjectAddress: (row.subject_address as string) ?? slug,
+    }
+  }
+  const body = buildLeadBody(ctx)
+  return {
+    ok: true,
+    subject: body.subject,
+    bodyText: defaultComposeText(ctx),
+    docUrl: `${SITE_URL}/cma/${ctx.slug}`,
+    clientEmail: ctx.clientEmail,
+    clientName: ctx.clientName,
+    subjectAddress: ctx.subjectAddress,
+  }
+}
+
+export async function sendCmaToLead(slug: string, override?: CmaSendOverride): Promise<SendCmaToLeadResult> {
   const { ctx, error } = await resolveSendContext(slug)
   if (!ctx) return { ok: false, error: error ?? 'CMA not sendable' }
 
@@ -196,7 +316,7 @@ export async function sendCmaToLead(slug: string): Promise<SendCmaToLeadResult> 
     return { ok: false, error: 'The rendered PDF exceeds the 25 MB attachment cap.' }
   }
 
-  const body = buildLeadBody(ctx)
+  const body = buildLeadBody(ctx, override)
   const crmBrokerSlug = CRM_BROKER_BY_EMAIL[(ctx.brokerRow.email ?? '').toLowerCase()] ?? 'matt'
   const trackedHtml = attributeOutbound(body.html, {
     brokerSlug: crmBrokerSlug,
