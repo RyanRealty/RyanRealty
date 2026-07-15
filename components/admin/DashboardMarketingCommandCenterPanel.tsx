@@ -26,7 +26,7 @@ export default function DashboardMarketingCommandCenterPanel({ data }: Props) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Unified Facebook, Google Analytics, and Follow Up Boss seller pipeline view for {data.windowLabel}.
+        Unified Facebook, Google Analytics, and CRM seller pipeline view for {data.windowLabel}.
       </p>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -79,17 +79,17 @@ export default function DashboardMarketingCommandCenterPanel({ data }: Props) {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Follow Up Boss</CardTitle>
+            <CardTitle className="text-sm">CRM contacts</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             {!data.fub.configured ? (
-              <p className="text-muted-foreground">{data.fub.error ?? 'Follow Up Boss is not configured yet.'}</p>
+              <p className="text-muted-foreground">{data.fub.error ?? 'No CRM contact data is available yet.'}</p>
             ) : (
               <>
-                <p className="text-foreground">Contacts synced: <strong>{data.fub.contactsSynced30d.toLocaleString()}</strong></p>
+                <p className="text-foreground">Contacts added to the CRM: <strong>{data.fub.contactsSynced30d.toLocaleString()}</strong></p>
                 <p className="text-foreground">Facebook sourced contacts: <strong>{data.fub.facebookContacts30d.toLocaleString()}</strong></p>
                 <p className="text-foreground">
-                  Facebook event to FUB capture rate:{' '}
+                  Facebook event to CRM contact rate:{' '}
                   <strong>
                     {data.fub.facebookContactCaptureRate === null
                       ? 'N/A'
@@ -129,7 +129,7 @@ export default function DashboardMarketingCommandCenterPanel({ data }: Props) {
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">My Leads Pipeline (FUB)</CardTitle>
+          <CardTitle className="text-sm">My Leads Pipeline (CRM)</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <p className="text-foreground">
@@ -234,8 +234,8 @@ export default function DashboardMarketingCommandCenterPanel({ data }: Props) {
           {data.automation.latestExecutionInsightId ? (
             <div className="space-y-2">
               <p className="text-foreground">
-                Latest FUB execution packet:{' '}
-                <strong>{data.automation.latestExecutionTitle ?? 'FUB outreach execution packet'}</strong>
+                Latest outreach execution packet:{' '}
+                <strong>{data.automation.latestExecutionTitle ?? 'Outreach execution packet'}</strong>
               </p>
               <p className="text-muted-foreground">
                 Generated:{' '}
@@ -246,7 +246,7 @@ export default function DashboardMarketingCommandCenterPanel({ data }: Props) {
                 {data.automation.latestExecutionMode ?? 'dry_run'}
               </p>
               <p className="text-muted-foreground">
-                Packets generated: {data.automation.latestExecutionGeneratedCount ?? 0} • Applied in FUB:{' '}
+                Packets generated: {data.automation.latestExecutionGeneratedCount ?? 0} • Applied:{' '}
                 {data.automation.latestExecutionAppliedCount ?? 0}
               </p>
               <p className="text-muted-foreground">
@@ -255,7 +255,7 @@ export default function DashboardMarketingCommandCenterPanel({ data }: Props) {
             </div>
           ) : (
             <p className="text-muted-foreground">
-              No FUB execution packet yet. Cron will generate one at `/api/cron/fub-outreach-execution` each Monday.
+              No outreach execution packet yet. Packets are stored in `agent_insights` when an execution run completes.
             </p>
           )}
         </CardContent>

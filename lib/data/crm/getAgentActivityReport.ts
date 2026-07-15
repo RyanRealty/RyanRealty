@@ -3,6 +3,7 @@ import { unstable_cache } from 'next/cache'
 import { createServiceClient } from '@/lib/data/client'
 import { fetchClosedDealsByBroker } from '@/lib/data/crm/agentActivityClosedDeals'
 import type { ClosedDealsRow } from '@/lib/data/crm/agentActivityClosedDeals'
+import { classifyLeadSource } from './leadSourceTaxonomy'
 
 export type { ClosedDealsRow } from '@/lib/data/crm/agentActivityClosedDeals'
 
@@ -23,7 +24,7 @@ export type AgentActivityRow = {
   brokerName: string
   /** Path to the broker's headshot image */
   avatarUrl: string | null
-  /** Leads created in the period currently assigned to this broker */
+  /** Genuine inbound leads created in the period currently assigned to this broker (classifyLeadSource attributable — Farm/Import/Sphere outreach rows excluded) */
   newLeads: number
   /** Approximation of Initially Assigned (no assignment history table yet) */
   initiallyAssignedLeads: number
@@ -238,6 +239,63 @@ function buildTimeSeries(
   return Array.from(points.values())
 }
 
+// ── Inbound lead events (taxonomy-filtered) ────────────────────────────────────
+
+/**
+ * Fetch the window's lead_created events with the owning contact's CURRENT
+ * source + assigned broker, then keep only genuine inbound leads
+ * (classifyLeadSource attributable — web/portal/phone/social/referral).
+ * Farm/Import/Sphere/Expired/FSBO outreach rows are lists we built, never
+ * leads — the lead_created trigger fires on EVERY crm_people insert, so a raw
+ * COUNT includes the ~14.5k Farm + Import + Sphere rows and overcounts by
+ * orders of magnitude versus the broker dashboard (see getLeadIntake and
+ * getOverviewReport for the shared canonical definition).
+ *
+ * Classification is keyword-based JS, so it cannot be pushed into PostgREST —
+ * we page the rows (1000-row server cap, stable order) and filter in app code,
+ * exactly like getOverviewReport's fetchInboundLeadEvents. The join returns
+ * assigned_broker so ONE paged fetch serves both the per-broker breakdown and
+ * the combined totals/sparklines.
+ */
+async function fetchInboundLeadEvents(
+  sb: ReturnType<typeof createServiceClient>,
+  brokerSlugs: string[],
+  rangeStart: string,
+  rangeEnd: string,
+): Promise<Array<{ ts: string; broker: string | null }>> {
+  type EventRow = {
+    ts: string
+    crm_people: { assigned_broker: string | null; source: string | null } | Array<{ assigned_broker: string | null; source: string | null }> | null
+  }
+  const inbound: Array<{ ts: string; broker: string | null }> = []
+  const PAGE = 1000
+  for (let from = 0; from < 200_000; from += PAGE) {
+    const { data, error } = await sb
+      .from('crm_timeline')
+      .select('ts, crm_people!inner(assigned_broker, source)')
+      .eq('kind', 'lead_created')
+      .in('crm_people.assigned_broker', brokerSlugs)
+      .gte('ts', rangeStart)
+      .lte('ts', rangeEnd)
+      .order('ts', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, from + PAGE - 1)
+    if (error) {
+      console.error('[getAgentActivityReport] lead_created page error', error.message)
+      break
+    }
+    const page = (data ?? []) as unknown as EventRow[]
+    for (const row of page) {
+      const person = Array.isArray(row.crm_people) ? row.crm_people[0] : row.crm_people
+      if (classifyLeadSource(person?.source ?? null).attributable) {
+        inbound.push({ ts: row.ts, broker: person?.assigned_broker ?? null })
+      }
+    }
+    if (page.length < PAGE) break
+  }
+  return inbound
+}
+
 // ── Core reader (uncached) ────────────────────────────────────────────────────
 
 async function readAgentActivity(params: AgentActivityParams): Promise<AgentActivityResult> {
@@ -283,14 +341,20 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
     }
   }
 
-  // 3. All queries run in maximum parallelism via four independent groups.
+  // 3. All queries run in maximum parallelism via five independent groups.
   //
-  //    Group A — 7 COUNT-only queries for the PREVIOUS period totals.
+  //    Leads    — inbound lead_created events, current + previous windows.
+  //               Paged rows classified via leadSourceTaxonomy: a raw COUNT
+  //               would include the bulk Farm/Import/Sphere outreach rows
+  //               (see fetchInboundLeadEvents). Serves the per-broker
+  //               breakdown, both totals, and both sparklines.
+  //
+  //    Group A — 6 COUNT-only activity queries for the PREVIOUS period totals.
   //              Uses { count: 'exact', head: true } so Supabase returns the real
   //              database COUNT(*) in the response header — never capped by max_rows.
   //
-  //    Group B — Per-broker COUNT-only queries for the CURRENT period.
-  //              Up to 3 brokers × 7 metrics = 21 queries, all run in parallel.
+  //    Group B — Per-broker COUNT-only activity queries for the CURRENT period.
+  //              Up to 3 brokers × 6 metrics = 18 queries, all run in parallel.
   //              Gives exact per-broker values for the breakdown table; totals
   //              are derived by summing across brokers.
   //
@@ -301,6 +365,8 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
   //    Group D — Raw-row queries for the PREVIOUS period time series (compare overlay).
   //
   const [
+    curInboundLeads,
+    prevInboundLeads,
     prevTotalsGroup,
     perBrokerGroup,
     curTsGroup,
@@ -308,14 +374,12 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
     closedDeals,
   ] = await Promise.all([
 
-    // ── Group A: Previous period totals (7 COUNT queries) ──────────────────
+    // ── Inbound lead events (taxonomy-filtered, paged) ──────────────────────
+    fetchInboundLeadEvents(sb, brokerSlugs, start, end),
+    fetchInboundLeadEvents(sb, brokerSlugs, prevStart, prevEnd),
+
+    // ── Group A: Previous period activity totals (6 COUNT queries) ──────────
     Promise.all([
-      // a0: new leads (previous) — genuine lead_created events, NOT crm_people.created_at
-      //     (crm_people.created_at reflects the bulk-import date, not real lead flow)
-      sb.from('crm_timeline').select('id, crm_people!inner(assigned_broker)', { count: 'exact', head: true })
-        .eq('kind', 'lead_created')
-        .in('crm_people.assigned_broker', brokerSlugs)
-        .gte('ts', prevStart).lte('ts', prevEnd),
       // a1: calls (previous)
       sb.from('crm_timeline').select('id', { count: 'exact', head: true })
         .in('broker', brokerSlugs).in('kind', CALL_KINDS).neq('source', 'sequence')
@@ -342,16 +406,13 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
         .gte('start_at', prevStart).lte('start_at', prevEnd),
     ] as const),
 
-    // ── Group B: Per-broker current period counts ──────────────────────────
+    // ── Group B: Per-broker current period activity counts ─────────────────
+    // (per-broker newLeads come from curInboundLeads above — the joined
+    //  assigned_broker is on every classified event row)
     Promise.all(
       scopedBrokers.map((b) => {
         const slug = b.crm_slug
         return Promise.all([
-          // b0: new leads — genuine lead_created events (ts in range, broker via join)
-          sb.from('crm_timeline').select('id, crm_people!inner(assigned_broker)', { count: 'exact', head: true })
-            .eq('kind', 'lead_created')
-            .eq('crm_people.assigned_broker', slug)
-            .gte('ts', start).lte('ts', end),
           // b1: calls
           sb.from('crm_timeline').select('id', { count: 'exact', head: true })
             .eq('broker', slug).in('kind', CALL_KINDS).neq('source', 'sequence')
@@ -381,12 +442,9 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
     ),
 
     // ── Group C: Current period raw rows for sparklines + chart ───────────
+    // (newLeads sparkline rows come from curInboundLeads above — already
+    //  paged + inbound-only)
     Promise.all([
-      // Genuine lead_created events for the newLeads sparkline (join needed for broker filter)
-      sb.from('crm_timeline').select('ts, crm_people!inner(assigned_broker)')
-        .eq('kind', 'lead_created')
-        .in('crm_people.assigned_broker', brokerSlugs)
-        .gte('ts', start).lte('ts', end),
       sb.from('crm_timeline').select('ts,kind,broker')
         .in('broker', brokerSlugs).in('kind', ALL_ACTIVITY_KINDS)
         .neq('source', 'sequence').gte('ts', start).lte('ts', end),
@@ -399,12 +457,8 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
     ] as const),
 
     // ── Group D: Previous period raw rows for compare overlay ─────────────
+    // (prev newLeads sparkline rows come from prevInboundLeads above)
     Promise.all([
-      // Genuine lead_created events for the previous-period newLeads sparkline
-      sb.from('crm_timeline').select('ts, crm_people!inner(assigned_broker)')
-        .eq('kind', 'lead_created')
-        .in('crm_people.assigned_broker', brokerSlugs)
-        .gte('ts', prevStart).lte('ts', prevEnd),
       sb.from('crm_timeline').select('ts,kind,broker')
         .in('broker', brokerSlugs).in('kind', ALL_ACTIVITY_KINDS)
         .neq('source', 'sequence').gte('ts', prevStart).lte('ts', prevEnd),
@@ -428,9 +482,9 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
     ),
   ])
 
-  // 4. Unpack previous-period totals (from count queries — exact values)
+  // 4. Unpack previous-period totals (activity from count queries — exact values;
+  //    newLeads from the paged, taxonomy-classified event rows)
   const [
-    { count: prevNewLeadsCount },
     { count: prevCallsCount },
     { count: prevEmailsCount },
     { count: prevTextsCount },
@@ -440,9 +494,9 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
   ] = prevTotalsGroup
 
   const previousTotals: AgentActivityTotals = {
-    newLeads: prevNewLeadsCount ?? 0,
-    initiallyAssignedLeads: prevNewLeadsCount ?? 0,
-    currentlyAssignedLeads: prevNewLeadsCount ?? 0,
+    newLeads: prevInboundLeads.length,
+    initiallyAssignedLeads: prevInboundLeads.length,
+    currentlyAssignedLeads: prevInboundLeads.length,
     calls: prevCallsCount ?? 0,
     emails: prevEmailsCount ?? 0,
     texts: prevTextsCount ?? 0,
@@ -452,10 +506,15 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
     appointments: prevApptsCount ?? 0,
   }
 
-  // 5. Build per-broker rows from count results (exact, not capped)
+  // 5. Build per-broker rows — activity from count results (exact, not capped);
+  //    newLeads from the classified inbound events, grouped by assigned broker.
+  const curInboundByBroker = new Map<string, number>()
+  for (const ev of curInboundLeads) {
+    if (ev.broker) curInboundByBroker.set(ev.broker, (curInboundByBroker.get(ev.broker) ?? 0) + 1)
+  }
+
   const rows: AgentActivityRow[] = scopedBrokers.map((b, i) => {
     const [
-      { count: newLeadsCnt },
       { count: callsCnt },
       { count: emailsCnt },
       { count: textsCnt },
@@ -464,7 +523,7 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
       { count: apptsCnt },
     ] = perBrokerGroup[i]
 
-    const newLeads = newLeadsCnt ?? 0
+    const newLeads = curInboundByBroker.get(b.crm_slug) ?? 0
     const apptsSet = apptsCnt ?? 0
 
     return {
@@ -501,23 +560,21 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
     { ...EMPTY_TOTALS },
   )
 
-  // 7. Build time series from raw rows (for sparkline shape and chart)
-  const [curLeadsRes, curTimelineRes, curTasksRes, curApptsRes] = curTsGroup
-  const [prevLeadsRes, prevTimelineRes, prevTasksRes, prevApptsRes] = prevTsGroup
+  // 7. Build time series from raw rows (for sparkline shape and chart).
+  //    Lead sparkline rows are the classified inbound events fetched above.
+  const [curTimelineRes, curTasksRes, curApptsRes] = curTsGroup
+  const [prevTimelineRes, prevTasksRes, prevApptsRes] = prevTsGroup
 
-  // lead_created timeline events — only `ts` needed for the sparkline
-  const curLeads = (curLeadsRes.data ?? []) as Array<{ ts: string }>
   const curTimeline = (curTimelineRes.data ?? []) as Array<{ ts: string; kind: string; broker: string | null }>
   const curTasks = (curTasksRes.data ?? []) as Array<{ completed_at: string | null; assigned_broker: string | null }>
   const curAppts = (curApptsRes.data ?? []) as Array<{ start_at: string; broker_slug: string | null }>
 
-  const prevLeads = (prevLeadsRes.data ?? []) as Array<{ ts: string }>
   const prevTimeline = (prevTimelineRes.data ?? []) as Array<{ ts: string; kind: string; broker: string | null }>
   const prevTasks = (prevTasksRes.data ?? []) as Array<{ completed_at: string | null; assigned_broker: string | null }>
   const prevAppts = (prevApptsRes.data ?? []) as Array<{ start_at: string; broker_slug: string | null }>
 
-  const timeSeries = buildTimeSeries(curTimeline, curLeads, curTasks, curAppts, start, end)
-  const prevTimeSeries = buildTimeSeries(prevTimeline, prevLeads, prevTasks, prevAppts, prevStart, prevEnd)
+  const timeSeries = buildTimeSeries(curTimeline, curInboundLeads, curTasks, curAppts, start, end)
+  const prevTimeSeries = buildTimeSeries(prevTimeline, prevInboundLeads, prevTasks, prevAppts, prevStart, prevEnd)
 
   return {
     rows,
@@ -543,7 +600,8 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
  *
  * Source tables:
  *   - crm_timeline (kind='lead_created' for new leads, filtered by ts; join to crm_people
- *                  for broker scoping — NOT crm_people.created_at, which is the bulk-import date)
+ *                  for broker scoping + source — NOT crm_people.created_at, which is the
+ *                  bulk-import date)
  *   - crm_timeline (calls/emails/texts/notes, filtered by ts + broker + kind)
  *   - crm_tasks (tasks completed, filtered by completed_at + assigned_broker)
  *   - crm_appointments (appointments, filtered by start_at + broker_slug)
@@ -551,12 +609,20 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
  *     "Show me → which team member has closed the most deals" view)
  *
  * Count approach (Defect 1 fix — 2026-07-01):
- *   All KPI aggregate totals and per-broker breakdown values use
+ *   All activity KPI aggregate totals and per-broker breakdown values use
  *   { count: 'exact', head: true } queries that return the real database
  *   COUNT(*) via the Content-Range response header.  This bypasses the
  *   Supabase max_rows limit (default 1000) that previously caused every
  *   count > 1000 to report exactly "1,000".  Raw-row queries are retained
  *   only for the sparkline / chart time-series shape.
+ *
+ * newLeads (taxonomy fix — 2026-07-14):
+ *   Paged lead_created events classified through leadSourceTaxonomy (inbound
+ *   sources only, matching getLeadIntake + getOverviewReport). The
+ *   lead_created trigger fires on every crm_people insert, so a raw COUNT
+ *   would include the bulk Farm/Import/Sphere/Expired/FSBO outreach rows and
+ *   overcount versus the broker dashboard. Pagination uses .range() with a
+ *   stable order until a short read — never a single 1000-capped read.
  *
  * V1 approximations (documented):
  *   - initiallyAssignedLeads = newLeads (no crm_lead_assignments history table yet)
@@ -571,7 +637,9 @@ export async function getAgentActivityReport(
   const cached = unstable_cache(
     () => readAgentActivity(params),
     [
-      'crm-agent-activity-v5',
+      // v6: newLeads switched from raw lead_created counts to the
+      // taxonomy-filtered inbound definition (2026-07-14).
+      'crm-agent-activity-v6',
       params.brokerSlug ?? 'all',
       params.datePreset,
       params.dateStart ?? 'none',

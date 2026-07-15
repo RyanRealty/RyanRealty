@@ -229,12 +229,30 @@ export async function runMarketReportSend(options: RunSendOptions = {}): Promise
     subscribers = await deps.fetchSubscribers(scanLimit)
   } catch (e) {
     // A read failure leaves an empty summary — the cron reports it, never 500s.
+    const detail = 'fetch-subscribers-failed: ' + (e instanceof Error ? e.message : String(e))
+    // Page Matt on the ops channel: a subscriber-fetch outage idles the whole
+    // cadence engine and the cron's JSON summary is not monitored by a human.
+    // queueBrokerHealthAlert is the correct path — there is no person to hang a
+    // person-scoped alert on, and crm_timeline's NOT NULL person_id FK rejects a
+    // placeholder id (the dead personId:0 pattern fixed in the portal-lead-intake
+    // cron). The stable per-subject key + default 6h cooldown dedupes repeat
+    // pages while the outage persists. Best-effort: an alert failure must never
+    // break the summary contract (this function never throws to the cron).
+    try {
+      const { queueBrokerHealthAlert } = await import('@/lib/crm/broker-alerts')
+      await queueBrokerHealthAlert({
+        key: 'market-report-send:fetch-subscribers-failed',
+        body: `Market report send could not read its subscriber list (${detail.slice(0, 200)}). No reports went out this run.`,
+      })
+    } catch {
+      // best-effort only
+    }
     summary.durationMs = Date.now() - startMs
     summary.outcomes.push({
       personId: 0,
       status: 'skipped',
       reason: 'send-error',
-      detail: 'fetch-subscribers-failed: ' + (e instanceof Error ? e.message : String(e)),
+      detail,
     })
     summary.skipped += 1
     summary.skippedByReason['send-error'] += 1

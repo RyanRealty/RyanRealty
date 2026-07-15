@@ -3,6 +3,7 @@ import { unstable_cache } from 'next/cache'
 import { createServiceClient } from '@/lib/data/client'
 import { resolveDateRange } from './getAgentActivityReport'
 import type { DatePreset } from './getAgentActivityReport'
+import { classifyLeadSource } from './leadSourceTaxonomy'
 
 // INFERRED REPORT — no direct FUB Speed to Lead screen frame exists in the captured
 // reference set. Definition is inferred from FUB's published help documentation:
@@ -13,6 +14,14 @@ import type { DatePreset } from './getAgentActivityReport'
 //   39,692 email_out · 2,122 sms_out · 64 call · 1 voicemail outbound events
 //   Ryan-Realty.com: median 34s · Farm: median ~78 days (bulk import + drip pattern)
 //   inbound-call: median 0s (the inbound call IS the lead event)
+//
+// Lead universe (taxonomy fix 2026-07-14): the lead_created trigger fires on
+// every crm_people insert, so the raw events include the bulk
+// Farm/Import/Sphere/Expired/FSBO outreach rows — lists we built, never leads
+// (the Farm "median ~78 days" above is that artifact). Each event's source is
+// classified via leadSourceTaxonomy and only attributable inbound leads
+// (web/portal/phone/social/referral) enter the report, matching getLeadIntake +
+// getOverviewReport — the org-wide "new leads" definition.
 
 export type { DatePreset }
 
@@ -32,7 +41,7 @@ export type SpeedToLeadRow = {
   sourceName: string
   /** Raw crm_people.source value (null = unspecified) */
   sourceKey: string | null
-  /** Leads created in the date window by this source */
+  /** Genuine inbound leads created in the date window by this source (leadSourceTaxonomy — outreach lists excluded) */
   totalLeads: number
   /** Leads that received at least one outbound contact after lead creation */
   contactedLeads: number
@@ -187,17 +196,24 @@ async function readSpeedToLead(params: SpeedToLeadParams): Promise<SpeedToLeadRe
 
   // Normalize: for each person, keep the EARLIEST lead_created event in the window.
   // A person can technically appear multiple times if re-queued.
+  // Taxonomy gate: only genuine inbound leads (classifyLeadSource attributable)
+  // enter the universe — Farm/Import/Sphere/Expired/FSBO outreach rows are lists
+  // we built, never leads. Classification is keyword-based JS, so it cannot be
+  // pushed into PostgREST; the filter runs here over the paged rows.
   const personLeadMap = new Map<number, { lead_ts: string; source: string | null }>()
 
   for (const ev of leadEvents) {
     const people = Array.isArray(ev.crm_people) ? ev.crm_people[0] : ev.crm_people
     const src = people?.source ?? null
+    if (!classifyLeadSource(src).attributable) continue
 
     const existing = personLeadMap.get(ev.person_id)
     if (!existing || ev.ts < existing.lead_ts) {
       personLeadMap.set(ev.person_id, { lead_ts: ev.ts, source: src })
     }
   }
+
+  if (personLeadMap.size === 0) return EMPTY
 
   const personIds = Array.from(personLeadMap.keys())
 
@@ -352,7 +368,10 @@ async function readSpeedToLead(params: SpeedToLeadParams): Promise<SpeedToLeadRe
  *
  * Metric → crm_* table mapping:
  *   totalLeads     → COUNT(DISTINCT person_id) from crm_timeline WHERE kind='lead_created'
- *                    AND ts IN [start,end], JOIN crm_people for source + broker scope.
+ *                    AND ts IN [start,end], JOIN crm_people for source + broker scope,
+ *                    classified via leadSourceTaxonomy — only attributable inbound
+ *                    sources count (Farm/Import/Sphere/Expired/FSBO outreach lists
+ *                    excluded, matching getLeadIntake + getOverviewReport).
  *                    Paginated with .range() — never rows.length (1000-row cap defect).
  *
  *   contactedLeads → subset of totalLeads WHERE at least one crm_timeline row exists
@@ -384,7 +403,9 @@ export async function getSpeedToLeadReport(
   const cached = unstable_cache(
     () => readSpeedToLead(params),
     [
-      'crm-speed-to-lead-v1',
+      // v2: lead universe switched from raw lead_created events to the
+      // taxonomy-filtered inbound definition (2026-07-14).
+      'crm-speed-to-lead-v2',
       params.brokerSlug ?? 'all',
       params.datePreset,
       params.dateStart ?? 'none',

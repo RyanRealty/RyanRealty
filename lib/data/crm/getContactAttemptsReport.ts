@@ -4,6 +4,7 @@ import { type SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/data/client'
 import { resolveDateRange } from './getAgentActivityReport'
 import type { DatePreset } from './getAgentActivityReport'
+import { classifyLeadSource } from './leadSourceTaxonomy'
 
 export type { DatePreset }
 
@@ -89,11 +90,21 @@ function resolvePreviousPeriod(
 
 /**
  * Paginate crm_timeline kind='lead_created' events in [start, end] for scoped
- * brokers. Returns Map<personId, source>.
+ * brokers. Returns Map<personId, source> for GENUINE INBOUND leads only.
  *
- * Pagination loop (PAGE_SIZE=1000) prevents the Supabase max_rows cap from
- * silently truncating counts. A monthly window at a 3-broker brokerage is
- * typically < 100 rows, but 'this_year' or new-lead bursts may approach 1000.
+ * The lead_created trigger fires on every crm_people insert, so the raw events
+ * include the bulk Farm/Import/Sphere/Expired/FSBO outreach rows — lists we
+ * built, never leads. Each row's source is classified through
+ * leadSourceTaxonomy and only attributable (web/portal/phone/social/referral)
+ * rows are kept, matching getLeadIntake + getOverviewReport (the org-wide
+ * "new leads" definition every dashboard shares). Classification is
+ * keyword-based JS, so it cannot be pushed into PostgREST — filter runs in app
+ * code after each page.
+ *
+ * Pagination loop (PAGE_SIZE=1000, stable order until a short read) prevents
+ * the Supabase max_rows cap from silently truncating counts. A monthly window
+ * at a 3-broker brokerage is typically < 100 rows, but 'this_year' or bulk
+ * inserts may exceed 1000 raw event rows.
  *
  * The crm_people!inner join scopes to `assigned_broker IN brokerSlugs` and
  * returns the person's source label in one round trip per page.
@@ -122,6 +133,10 @@ async function buildLeadSourceMap(
       .in('crm_people.assigned_broker', brokerSlugs)
       .gte('ts', start)
       .lte('ts', end)
+      // Stable order on the unique id: .range() without ORDER BY is
+      // nondeterministic between pages (rows can drop or double-count across
+      // page boundaries).
+      .order('id', { ascending: true })
       .range(offset, offset + PAGE_SIZE - 1)
 
     if (error) {
@@ -140,6 +155,8 @@ async function buildLeadSourceMap(
           ? (joined[0]?.source ?? null)
           : ((joined as { source: string | null }).source ?? null)
         : null
+      // Taxonomy gate — outreach-list / import / unknown rows are not leads.
+      if (!classifyLeadSource(source).attributable) continue
       personSourceMap.set(row.person_id, source)
     }
 
@@ -363,7 +380,10 @@ async function readContactAttempts(
  * Metric → crm_* table mapping:
  *
  *   leads         → crm_timeline (kind='lead_created', ts in [start,end])
- *                   JOIN crm_people (source + assigned_broker scope)
+ *                   JOIN crm_people (source + assigned_broker scope),
+ *                   classified via leadSourceTaxonomy — only attributable
+ *                   inbound sources count (Farm/Import/Sphere/Expired/FSBO
+ *                   outreach lists excluded, matching getLeadIntake).
  *                   COUNT(DISTINCT person_id) per source
  *
  *   totalAttempts → crm_timeline (kind IN call|voicemail|email_out|sms_out)
@@ -383,6 +403,9 @@ async function readContactAttempts(
  * cache entries.
  *
  * V1 known limitations:
+ *   - Leads are the taxonomy-filtered inbound set, so per-source rows only show
+ *     genuine inbound sources — outreach lists we built (Farm, Import, Sphere,
+ *     Expired, FSBO) never appear as "leads" here.
  *   - Outbound events are scoped by crm_timeline.broker (who sent the message),
  *     not by crm_people.assigned_broker. A broker contacting another broker's
  *     lead appears in the sender's scope, not the assignee's.
@@ -399,7 +422,9 @@ export async function getContactAttemptsReport(
   const cached = unstable_cache(
     () => readContactAttempts(params),
     [
-      'crm-contact-attempts-v1',
+      // v2: leads switched from raw lead_created counts to the
+      // taxonomy-filtered inbound definition (2026-07-14).
+      'crm-contact-attempts-v2',
       params.brokerSlug ?? 'all',
       params.datePreset,
       params.dateStart ?? 'none',
