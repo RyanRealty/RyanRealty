@@ -284,7 +284,17 @@ function appendMediaUrls(form: URLSearchParams, mediaUrls?: string[]): void {
   mediaUrls.slice(0, MAX_MMS_MEDIA).forEach((url, i) => form.set(`MediaUrl${i}`, url))
 }
 
-/** Send from a specific broker line (direct From number). Pass mediaUrls (public HTTPS URLs) to send as MMS. */
+/**
+ * Send from a specific broker line. Routes through the A2P messaging service
+ * WHILE pinning the broker's own From number: passing both MessagingServiceSid
+ * and a From that belongs to the service makes Twilio send from that exact
+ * number and still apply the service's carrier throughput queue + Smart Encoding
+ * (verified 2026-07-15 — a raw-From send skipped the queue and one AT&T text sat
+ * `queued` for a full hour before the carrier released it; through the service the
+ * same send delivered in seconds from the same number). Falls back to a raw-From
+ * send only when the messaging service isn't configured. Pass mediaUrls (public
+ * HTTPS URLs) to send as MMS.
+ */
 export async function sendSms(params: { from: string; to: string; body: string; mediaUrls?: string[] }): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
   const to = toE164(params.to)
   if (!to) return { ok: false, error: 'Invalid phone number' }
@@ -292,7 +302,12 @@ export async function sendSms(params: { from: string; to: string; body: string; 
   if (a2pBlocked(a2p)) {
     return { ok: false, error: formatTwilioSendError(30034, null, a2p) }
   }
-  const form = new URLSearchParams({ From: params.from, To: to, Body: params.body })
+  const ms = process.env.TWILIO_MESSAGING_SERVICE_SID?.trim()
+  const form = new URLSearchParams(
+    ms
+      ? { MessagingServiceSid: ms, From: params.from, To: to, Body: params.body }
+      : { From: params.from, To: to, Body: params.body },
+  )
   appendMediaUrls(form, params.mediaUrls)
   const r = await postMessage(form)
   return r.ok ? r : { ok: false, error: r.error }

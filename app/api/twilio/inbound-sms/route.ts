@@ -201,8 +201,15 @@ export async function POST(request: Request) {
     // broker's own A2P-verified business line so the phone thread is the business
     // number, and deep-links to the CRM thread where a reply also sends from the
     // business line. Auto-replies (STOP/HELP/START) are handled above and never
-    // forwarded. Fire-and-forget so a Twilio hiccup never delays the 200 to the
-    // webhook (Twilio would otherwise retry the whole inbound).
+    // forwarded.
+    //
+    // AWAITED, not fire-and-forget: on Vercel the function context is frozen the
+    // instant we return the TwiML, so a `void sendSms(...)` in flight gets killed
+    // and the forward only lands on Twilio's inbound RETRY minutes later (verified
+    // 2026-07-15 — a client reply logged to the CRM at 19:36 but did not reach the
+    // broker's phone until 19:48). Awaiting the single fast Twilio POST guarantees
+    // it completes; the try/catch keeps a forward failure from 500-ing the webhook
+    // (a non-2xx makes Twilio retry the whole inbound and double-log).
     if (!HELP_WORDS.has(firstToken) && !STOP_WORDS.has(firstToken) && !START_WORDS.has(firstToken)) {
       const [brokerCell, brokerLine] = await Promise.all([
         forwardCellForBroker(alertBroker),
@@ -210,7 +217,11 @@ export async function POST(request: Request) {
       ])
       if (brokerCell && brokerLine && normalizeTo10(brokerCell) !== normalizeTo10(from)) {
         const fwd = `Text from ${match.name ?? from} (${from}):\n${displayBody.slice(0, 400)}\n\nReply (sends from your business line): ryan-realty.com/admin/crm/${match.personId}#comms`
-        void sendSms({ from: brokerLine, to: brokerCell, body: fwd })
+        try {
+          await sendSms({ from: brokerLine, to: brokerCell, body: fwd })
+        } catch (err) {
+          console.error('inbound-sms: broker cell forward failed', err)
+        }
       }
     }
   }
