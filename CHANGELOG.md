@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.787.2 (2026-07-15)
+
+### Bug Fixes
+- fix(cma,bpo): 24 adversarial-audit findings on dev section + expired audit
+
+---
+
+
 ## v1.787.1 (2026-07-14)
 
 ### Maintenance
