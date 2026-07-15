@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.793.0 (2026-07-15)
+
+### Features
+- feat(gates): G48 row-cap gate — ban silent >1000-row single-shot reads; page all 34 offenders
+
+### Bug Fixes
+- fix(events): quilt show 2026 date passed — null confirmed dates, keep recurrence
+- fix(reporting): agent-activity, contact-attempts, speed-to-lead adopt the inbound taxonomy; de-FUB panel labels
+
+### Maintenance
+- style(admin): clear the admin/search design-token debt — ratchet drops 338 → 328
+
+---
+
+
 ## v1.792.2 (2026-07-15)
 
 ### Bug Fixes
