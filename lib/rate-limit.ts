@@ -35,7 +35,7 @@ export function getGeneralLimiter(): Ratelimit | null {
     redis: r,
     limiter: Ratelimit.slidingWindow(60, '60 s'),
     prefix: 'rl:general',
-    analytics: true,
+    analytics: false, // analytics doubles Upstash command spend (2026-07-15 quota fix)
   })
   return generalLimiter
 }
@@ -50,7 +50,7 @@ export function getStrictLimiter(): Ratelimit | null {
     redis: r,
     limiter: Ratelimit.slidingWindow(10, '60 s'),
     prefix: 'rl:strict',
-    analytics: true,
+    analytics: false, // analytics doubles Upstash command spend (2026-07-15 quota fix)
   })
   return strictLimiter
 }
@@ -65,7 +65,7 @@ export function getAuthLimiter(): Ratelimit | null {
     redis: r,
     limiter: Ratelimit.slidingWindow(5, '60 s'),
     prefix: 'rl:auth',
-    analytics: true,
+    analytics: false, // analytics doubles Upstash command spend (2026-07-15 quota fix)
   })
   return authLimiter
 }

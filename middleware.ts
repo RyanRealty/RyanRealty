@@ -31,6 +31,16 @@ import resortCommunitiesRegistry from '@/data/resort-communities.json'
  *   /api/open-houses/* → auth  (5 req/min)   — form spam protection
  *   /api/admin/sync/* → admin   (300 req/min) — high-frequency admin polling
  *   /api/*            → general (60 req/min)  — catch-all API protection
+ *
+ * Backend split (2026-07-15 — the Upstash free-tier quota was being exhausted
+ * mid-month, throwing on every check and leaving ALL rate limiting off via the
+ * fail-open path): the low-volume, high-value tiers (strict, auth) stay on
+ * Upstash where cross-instance accuracy matters for brute-force and cost
+ * abuse. The high-volume broad-net tiers (general — includes /api/auth/me
+ * fired on every page load — and admin polling) use an in-memory per-isolate
+ * window instead: zero Redis commands, and a strictly better net than the
+ * fail-open OFF state the quota exhaustion produced. Analytics is off — it
+ * roughly doubles command spend for a dashboard nobody reads.
  */
 
 // Build limiters at module scope (Edge runtime caches across invocations)
@@ -42,14 +52,48 @@ function buildLimiter(prefix: string, tokens: number, window: string): Ratelimit
     redis: new Redis({ url, token }),
     limiter: Ratelimit.slidingWindow(tokens, window as Parameters<typeof Ratelimit.slidingWindow>[1]),
     prefix: `rl:mw:${prefix}`,
-    analytics: true,
+    analytics: false,
   })
+}
+
+/**
+ * In-memory fixed-window limiter for the high-volume tiers. Per-isolate, so a
+ * flood spread across many edge isolates is under-counted — acceptable for a
+ * broad safety net (the tiers this covers are not abuse-cost targets). Bounded
+ * map with oldest-window eviction so a scan of unique IPs cannot grow memory.
+ */
+type MemLimitResult = { success: boolean; limit: number; remaining: number; reset: number }
+class MemoryWindowLimiter {
+  private hits = new Map<string, { count: number; windowStart: number }>()
+  constructor(private tokens: number, private windowMs: number, private maxKeys = 5000) {}
+  limit(id: string): MemLimitResult {
+    const now = Date.now()
+    const entry = this.hits.get(id)
+    if (!entry || now - entry.windowStart >= this.windowMs) {
+      if (this.hits.size >= this.maxKeys) {
+        // Evict expired windows first; if none expired, drop the oldest entry.
+        let evicted = false
+        for (const [k, v] of this.hits) {
+          if (now - v.windowStart >= this.windowMs) { this.hits.delete(k); evicted = true; break }
+        }
+        if (!evicted) { const first = this.hits.keys().next().value; if (first) this.hits.delete(first) }
+      }
+      this.hits.set(id, { count: 1, windowStart: now })
+      return { success: true, limit: this.tokens, remaining: this.tokens - 1, reset: now + this.windowMs }
+    }
+    entry.count += 1
+    const reset = entry.windowStart + this.windowMs
+    if (entry.count > this.tokens) {
+      return { success: false, limit: this.tokens, remaining: 0, reset }
+    }
+    return { success: true, limit: this.tokens, remaining: this.tokens - entry.count, reset }
+  }
 }
 
 const strict = buildLimiter('strict', 10, '60 s')
 const auth = buildLimiter('auth', 5, '60 s')
-const admin = buildLimiter('admin', 300, '60 s')
-const general = buildLimiter('general', 60, '60 s')
+const admin = new MemoryWindowLimiter(300, 60_000)
+const general = new MemoryWindowLimiter(60, 60_000)
 
 function getIp(request: NextRequest): string {
   return (
@@ -60,7 +104,7 @@ function getIp(request: NextRequest): string {
   )
 }
 
-function pickLimiter(pathname: string): Ratelimit | null {
+function pickLimiter(pathname: string): Ratelimit | MemoryWindowLimiter | null {
   if (pathname.startsWith('/api/ai/')) return strict
   if (pathname.startsWith('/api/pdf/')) return strict
   if (pathname.startsWith('/api/cma/')) return strict
@@ -72,7 +116,7 @@ function pickLimiter(pathname: string): Ratelimit | null {
   if (pathname === '/api/auth/me') return general
   if (pathname.startsWith('/api/auth/')) return auth
   if (pathname.startsWith('/api/open-houses/')) return auth
-  if (pathname.startsWith('/api/admin/sync/')) return admin ?? general
+  if (pathname.startsWith('/api/admin/sync/')) return admin
   if (pathname.startsWith('/api/')) return general
   return null
 }
@@ -437,7 +481,8 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     // request quota, limiter.limit() throws. A rate limiter must never take the
     // API offline — when its backend errors, allow the request through rather
     // than 500-ing every /api/* call. (Quota/outage is surfaced via logs.)
-    let limited: { success: boolean; limit: number; remaining: number; reset: number } | null = null
+    // The in-memory tiers are synchronous and never throw; await handles both.
+    let limited: MemLimitResult | null = null
     try {
       limited = await limiter.limit(ip)
     } catch (err) {
