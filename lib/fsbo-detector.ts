@@ -57,15 +57,56 @@ export const FSBO_SERVICE_AREA_CITIES = [
   'La Pine',
 ] as const
 
+/**
+ * Zillow FSBO search URL per city. The maxcopell~zillow-scraper actor (v0.0.74,
+ * verified 2026-07-14) REQUIRES `?searchQueryState=` URLs, and Zillow's search
+ * only resolves when the state carries the CANONICAL form: regionSelection
+ * (Zillow region id) + mapBounds + the long-form filterState keys
+ * (isForSaleByAgent/... — the short fsba/fsbo keys return "No results found").
+ * Region ids + bounds were captured live from zillow.com/<city>/fsbo/ pages'
+ * own queryState on 2026-07-14 (50 FSBOs live across the six cities that day).
+ */
+type ZillowRegion = { regionId: number; regionType: number; bounds: { west: number; east: number; south: number; north: number } }
+
+const ZILLOW_CITY_REGIONS: Record<(typeof FSBO_SERVICE_AREA_CITIES)[number], ZillowRegion> = {
+  Bend: { regionId: 50962, regionType: 6, bounds: { west: -121.804821, east: -120.778867, south: 43.72019, north: 44.294865 } },
+  Redmond: { regionId: 26716, regionType: 6, bounds: { west: -121.392816, east: -121.080932, south: 44.15881, north: 44.368748 } },
+  Sisters: { regionId: 50065, regionType: 6, bounds: { west: -122.056235, east: -121.323001, south: 44.115385, north: 44.720342 } },
+  Sunriver: { regionId: 7325, regionType: 8, bounds: { west: -121.464244, east: -121.412212, south: 43.834367, north: 43.925535 } },
+  Tumalo: { regionId: 207620, regionType: 8, bounds: { west: -121.366, east: -121.294, south: 44.1145, north: 44.1869 } },
+  'La Pine': { regionId: 18878, regionType: 6, bounds: { west: -121.777289, east: -121.137019, south: 43.422159, north: 43.894189 } },
+}
+
+function zillowFsboSearchUrl(citySlugPath: string, usersSearchTerm: string, region: ZillowRegion): string {
+  const sqs = {
+    usersSearchTerm,
+    mapBounds: region.bounds,
+    regionSelection: [{ regionId: region.regionId, regionType: region.regionType }],
+    filterState: {
+      sortSelection: { value: 'globalrelevanceex' },
+      isForSaleByAgent: { value: false },
+      isNewConstruction: { value: false },
+      isComingSoonStatus: { value: false },
+      isZillowPreview: { value: false },
+      isAuction: { value: false },
+      isForSaleForeclosure: { value: false },
+      // Keep in sync with FSBO_MIN_LIST_PRICE below (declared after this map
+      // builds — the code-side price filter remains the source of truth).
+      price: { min: 500_000 },
+    },
+    isListVisible: true,
+    isMapVisible: true,
+  }
+  return `https://www.zillow.com/${citySlugPath}/?searchQueryState=${encodeURIComponent(JSON.stringify(sqs))}`
+}
+
 const ZILLOW_CITY_URLS: Record<(typeof FSBO_SERVICE_AREA_CITIES)[number], string> = {
-  Bend: 'https://www.zillow.com/bend-or/fsbo/',
-  Redmond: 'https://www.zillow.com/redmond-or/fsbo/',
-  Sisters: 'https://www.zillow.com/sisters-or/fsbo/',
-  // Sunriver gets folded into Bend's FSBO query — small population, listings
-  // surface there. We tag city='Sunriver' by ZIP/address parse below.
-  Sunriver: 'https://www.zillow.com/sunriver-or/fsbo/',
-  Tumalo: 'https://www.zillow.com/tumalo-or/fsbo/',
-  'La Pine': 'https://www.zillow.com/la-pine-or/fsbo/',
+  Bend: zillowFsboSearchUrl('bend-or', 'Bend, OR', ZILLOW_CITY_REGIONS.Bend),
+  Redmond: zillowFsboSearchUrl('redmond-or', 'Redmond, OR', ZILLOW_CITY_REGIONS.Redmond),
+  Sisters: zillowFsboSearchUrl('sisters-or', 'Sisters, OR', ZILLOW_CITY_REGIONS.Sisters),
+  Sunriver: zillowFsboSearchUrl('sunriver-or', 'Sunriver, OR', ZILLOW_CITY_REGIONS.Sunriver),
+  Tumalo: zillowFsboSearchUrl('tumalo-or', 'Tumalo, OR', ZILLOW_CITY_REGIONS.Tumalo),
+  'La Pine': zillowFsboSearchUrl('la-pine-or', 'La Pine, OR', ZILLOW_CITY_REGIONS['La Pine']),
 }
 
 export const FSBO_MIN_LIST_PRICE = 500_000
