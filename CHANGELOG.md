@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.795.4 (2026-07-15)
+
+### Bug Fixes
+- fix(crm): stop beheading broker headshots — top-anchor every people-avatar crop
+
+---
+
+
 ## v1.795.3 (2026-07-15)
 
 ### Bug Fixes
