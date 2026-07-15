@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.792.0 (2026-07-15)
+
+### Features
+- feat(cma,bpo): STR eligibility for Redmond + Deschutes County + resorts (verified)
+
+---
+
+
 ## v1.791.0 (2026-07-15)
 
 ### Features
