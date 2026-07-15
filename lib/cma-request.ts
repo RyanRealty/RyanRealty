@@ -55,7 +55,7 @@ export type CreateCmaRequestInput = {
     condition?: string
   } | null
   /** Where the request came from. Default 'seller-lp'. */
-  requestSource?: 'seller-lp' | 'expired-listing-cron' | 'fsbo-lp'
+  requestSource?: 'seller-lp' | 'expired-listing-cron' | 'fsbo-lp' | 'fsbo-cron'
   /** Send the "we received your request" email to the lead. Default true.
    *  MUST be false for outbound-originated requests (expired) — the owner
    *  never asked us for anything. */
