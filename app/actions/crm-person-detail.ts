@@ -30,7 +30,7 @@ import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 
 export type PersonDetailResult = { ok: true } | { ok: false; error: string }
 
-const BASE = '/admin/console/leads'
+const BASE = '/admin/crm'
 
 const EDITABLE_FIELDS = ['price', 'timeframe', 'background', 'source', 'lender_name'] as const
 type EditableField = (typeof EDITABLE_FIELDS)[number]

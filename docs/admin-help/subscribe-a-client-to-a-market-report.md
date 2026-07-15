@@ -2,7 +2,7 @@
 title: Subscribe a client to a market report
 area: CRM
 routes:
-  - /admin/console/leads
+  - /admin/crm
   - /admin/crm/subscriptions
 summary: Send a client a recurring market report for the areas they care about.
 ---

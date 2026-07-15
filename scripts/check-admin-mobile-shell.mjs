@@ -13,18 +13,24 @@
  * AdminMobileNav chrome was retired from the layout (component files deleted
  * 2026-07-14 — dead code), and the three dashboards collapsed into
  * /admin/broker-dashboard (the admin home is now a thin redirect).
- * The gate now locks the CURRENT shell so it can't regress:
+ *
+ * Updated 2026-07-15 (route consolidation): the duplicated /admin/console
+ * layout was deleted — the Lead Command Center moved to /admin/crm/[id] inside
+ * (protected), and the console segment holds only thin redirect stubs. ONE
+ * admin layout remains; the gate asserts the duplicate never comes back.
+ * The gate locks the CURRENT shell so it can't regress:
  *   1. ConsoleShell hides the desktop rail below lg and ships a mobile Sheet +
  *      the shared AdminNavList (one nav source for rail and sheet).
- *   2+3. Both admin layouts (protected + console) render ConsoleShell from the
- *      single buildAdminNav source — the two can never drift.
+ *   2+3. The single admin layout (protected) renders ConsoleShell from the
+ *      single buildAdminNav source; no second admin layout may exist under
+ *      app/admin/console (that duplicate drifted once — brokerSlug was missing).
  *   4. HideOnLP suppresses public chrome on /admin routes (no double chrome).
  *   5. The admin home stays a thin redirect — it must NOT reintroduce a slow,
  *      uncached per-render data bundle on the landing route.
  *
  * Usage: node scripts/check-admin-mobile-shell.mjs
  */
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 
 const checks = [
   {
@@ -43,11 +49,6 @@ const checks = [
     why: 'protected admin layout must render ConsoleShell from the single buildAdminNav source',
   },
   {
-    file: 'app/admin/console/layout.tsx',
-    must: [/ConsoleShell/, /buildAdminNav/],
-    why: 'console layout must render ConsoleShell from the single buildAdminNav source',
-  },
-  {
     file: 'components/layout/HideOnLP.tsx',
     must: [/\/admin/],
     why: 'public site chrome must be suppressed on /admin routes',
@@ -60,6 +61,18 @@ const checks = [
 ]
 
 const fails = []
+
+// Route consolidation 2026-07-15: exactly ONE admin layout. The old
+// app/admin/console/layout.tsx was a full duplicate of the (protected) auth
+// chain that had already drifted (it dropped ConsoleShell's brokerSlug prop).
+// The console segment holds only thin redirect stubs — a reintroduced layout
+// there is the duplication coming back.
+if (existsSync('app/admin/console/layout.tsx')) {
+  fails.push(
+    'app/admin/console/layout.tsx: exists — the console segment is redirect stubs only; the single admin layout is app/admin/(protected)/layout.tsx',
+  )
+}
+
 for (const { file, must, why } of checks) {
   let src
   try {
@@ -79,4 +92,4 @@ if (fails.length) {
   for (const f of fails) console.error(`FAIL: ${f}`)
   process.exit(1)
 }
-console.log(`All ${checks.length} shell contracts hold (ConsoleShell responsive rail + mobile sheet, single nav source across both admin layouts, no public chrome on /admin, thin-redirect home).`)
+console.log(`All ${checks.length} shell contracts hold (ConsoleShell responsive rail + mobile sheet, one admin layout + one nav source, no duplicate console layout, no public chrome on /admin, thin-redirect home).`)

@@ -118,7 +118,7 @@ export async function sendListingMatchesForContactAction(
     })
 
     if (listings.length === 0) {
-      revalidatePath(`/admin/console/leads/${personId}`)
+      revalidatePath(`/admin/crm/${personId}`)
       revalidatePath(`/admin/crm/${personId}`)
       return {
         ok: true,
@@ -193,7 +193,7 @@ export async function sendListingMatchesForContactAction(
       payload: { filtersHash, count: listings.length },
     })
 
-    revalidatePath(`/admin/console/leads/${personId}`)
+    revalidatePath(`/admin/crm/${personId}`)
     revalidatePath(`/admin/crm/${personId}`)
     return {
       ok: true,

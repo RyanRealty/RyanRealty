@@ -84,7 +84,7 @@ export default function DashboardActivityFeed({
         <ul className="max-h-[321px] divide-y divide-border overflow-y-auto">
           {rows.map((r) => (
             <li key={`${r.personId}-${r.ts}`}>
-              <Link href={`/admin/console/leads/${r.personId}`} className="flex min-h-20 items-center gap-3 px-4 py-2 transition-colors hover:bg-muted/40">
+              <Link href={`/admin/crm/${r.personId}`} className="flex min-h-20 items-center gap-3 px-4 py-2 transition-colors hover:bg-muted/40">
                 <CrmAvatar name={r.name} src={r.pictureUrl} size={44} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[16px] font-semibold text-foreground">{r.name}</span>

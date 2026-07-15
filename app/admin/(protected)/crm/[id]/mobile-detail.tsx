@@ -1,5 +1,5 @@
 /**
- * §25 Mobile Contact Detail — data mapping + assembly for /admin/console/leads/[id].
+ * §25 Mobile Contact Detail — data mapping + assembly for /admin/crm/[id].
  *
  * Renders at < md (and standalone under ?view=mobile, the 390px verification
  * affordance — the automation browser can't shrink below 768px, so the forced

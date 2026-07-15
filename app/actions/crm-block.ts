@@ -34,7 +34,7 @@ export async function blockCrmNumber(phone: string, opts?: { reason?: string; no
     { onConflict: 'phone_last10' },
   )
   if (error) return { ok: false, error: error.message }
-  revalidatePath('/admin/console/leads', 'layout')
+  revalidatePath('/admin/crm', 'layout')
   return { ok: true, blocked: true }
 }
 
@@ -46,6 +46,6 @@ export async function unblockCrmNumber(phone: string): Promise<Result> {
   const sb = createServiceClient()
   const { error } = await sb.from('crm_blocked_numbers').delete().eq('phone_last10', n.ten)
   if (error) return { ok: false, error: error.message }
-  revalidatePath('/admin/console/leads', 'layout')
+  revalidatePath('/admin/crm', 'layout')
   return { ok: true, blocked: false }
 }

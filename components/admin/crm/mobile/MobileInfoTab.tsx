@@ -274,7 +274,7 @@ export function MobileInfoTab({
               const cls =
                 'flex min-h-[48px] items-center justify-between gap-3 border-b border-border px-4 py-2.5 last:border-0'
               return r.relatedPersonId != null ? (
-                <a key={r.id} href={`/admin/console/leads/${r.relatedPersonId}`} className={cls}>
+                <a key={r.id} href={`/admin/crm/${r.relatedPersonId}`} className={cls}>
                   {inner}
                 </a>
               ) : (

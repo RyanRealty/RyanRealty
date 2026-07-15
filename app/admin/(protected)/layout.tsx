@@ -1,4 +1,4 @@
-import '../console/console-theme.css'
+import './console-theme.css'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'

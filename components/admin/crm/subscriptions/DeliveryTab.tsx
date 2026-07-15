@@ -219,7 +219,7 @@ export default function DeliveryTab({ initial }: { initial: GlobalDeliverySummar
                       <TableCell className="max-w-56">
                         {row.personId ? (
                           <Link
-                            href={`/admin/console/leads/${row.personId}`}
+                            href={`/admin/crm/${row.personId}`}
                             className="block truncate text-sm text-foreground underline-offset-2 hover:underline"
                           >
                             {row.recipientEmail ?? 'View contact'}

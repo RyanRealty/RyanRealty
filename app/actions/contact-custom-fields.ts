@@ -101,7 +101,7 @@ export async function saveContactCustomFieldsAction(
     broker: access.brokerSlug,
   })
 
-  revalidatePath(`/admin/console/leads/${pid}`)
+  revalidatePath(`/admin/crm/${pid}`)
   revalidatePath('/admin/crm')
 
   return { ok: true, message: `Saved: ${changed.join(', ')}` }

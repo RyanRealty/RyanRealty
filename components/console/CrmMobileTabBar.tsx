@@ -29,12 +29,9 @@ type Tab = {
 const TABS: Tab[] = [
   { href: '/admin/broker-dashboard', label: 'Home', icon: Home },
   { href: '/admin/crm/inbox', label: 'Inbox', icon: Inbox },
-  {
-    href: '/admin/crm',
-    label: 'People',
-    icon: Users,
-    also: ['/admin/console/leads'],
-  },
+  // The lead detail lives at /admin/crm/[id] (route consolidation 2026-07-15),
+  // so the People prefix match covers it — no `also` entry needed.
+  { href: '/admin/crm', label: 'People', icon: Users },
   { href: '/admin/crm/deals', label: 'Deals', icon: Layers },
   { href: '/admin/crm/activity', label: 'Activity', icon: Activity },
 ]

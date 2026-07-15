@@ -11,7 +11,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import type { PersonDetailResult } from '@/app/actions/crm-person-detail'
 
-const BASE = '/admin/console/leads'
+const BASE = '/admin/crm'
 
 export async function addPersonFileLinkAction(
   personId: number,

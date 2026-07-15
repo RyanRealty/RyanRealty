@@ -61,7 +61,7 @@ const NO_OPENS_MIN_SENDS = 5
 const PER_KIND_CAP = 15
 
 function personHref(personId: number | null): string {
-  return personId ? `/admin/console/leads/${personId}` : SUBSCRIPTIONS_HUB
+  return personId ? `/admin/crm/${personId}` : SUBSCRIPTIONS_HUB
 }
 
 function cadenceDaysFor(frequency: string | null | undefined, fallback: number): number {

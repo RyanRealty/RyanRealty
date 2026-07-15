@@ -24,12 +24,15 @@ import { readFileSync } from 'node:fs'
 const SHIPPED = [
   {
     id: 'M1 contact detail — §25 layout wired at <md + ?view=mobile',
-    file: 'app/admin/console/leads/[id]/page.tsx',
+    // Route consolidation 2026-07-15: the Lead Command Center moved from
+    // app/admin/console/leads/[id]/ into (protected)/crm/[id]/ (same files,
+    // new segment) so the duplicated console layout could be deleted.
+    file: 'app/admin/(protected)/crm/[id]/page.tsx',
     must: [/MobileLeadDetail/, /view === 'mobile'/, /md:hidden/],
   },
   {
     id: 'M1 contact detail — tab components composed',
-    file: 'app/admin/console/leads/[id]/mobile-detail.tsx',
+    file: 'app/admin/(protected)/crm/[id]/mobile-detail.tsx',
     must: [/MobileInfoTab/, /MobileCommsTab/, /MobileHomesTab/, /MobileNotesTab/, /MobileCalendarTab/],
   },
   {

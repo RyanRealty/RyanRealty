@@ -2,7 +2,6 @@
 title: Set up a listing alert for a client
 area: CRM
 routes:
-  - /admin/console/leads
   - /admin/crm
   - /admin/crm/subscriptions
 summary: Put a client on automatic emails when new homes matching their criteria hit the market.

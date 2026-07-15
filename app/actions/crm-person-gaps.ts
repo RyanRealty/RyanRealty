@@ -28,7 +28,7 @@ import { mergePeopleCore } from '@/lib/crm/merge-people'
 
 export type CrmPersonGapResult = { ok: true } | { ok: false; error: string }
 
-const BASE = '/admin/console/leads'
+const BASE = '/admin/crm'
 
 // ---- Collaborators ----------------------------------------------------------
 

@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/command'
 
 const NAV = [
-  { label: 'Today', href: '/admin/console' },
+  { label: 'Today', href: '/admin/broker-dashboard' },
   { label: 'Leads', href: '/admin/crm' },
   { label: 'Inbox (brand admin)', href: '/admin/crm/inbox' },
   { label: 'Transactions (brand admin)', href: '/admin/deals' },
@@ -99,7 +99,7 @@ export default function ConsoleCommandPalette() {
                   <CommandSeparator />
                   <CommandGroup heading="Leads">
                     {hits.map((h) => (
-                      <CommandItem key={h.id} value={`lead-${h.id}`} onSelect={() => go(`/admin/console/leads/${h.id}`)}>
+                      <CommandItem key={h.id} value={`lead-${h.id}`} onSelect={() => go(`/admin/crm/${h.id}`)}>
                         <span className="flex w-full items-center justify-between gap-2">
                           <span className="truncate">{h.name}</span>
                           <span className="shrink-0 text-xs text-muted-foreground">{h.stage}</span>

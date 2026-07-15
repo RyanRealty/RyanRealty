@@ -20,7 +20,7 @@ title: Set up a listing alert for a client
 area: CRM
 routes:
   - /admin/crm/subscriptions
-  - /admin/console/leads
+  - /admin/crm
 summary: One sentence shown in lists and search results.
 ---
 
@@ -29,7 +29,7 @@ Body in markdown. Numbered steps, plain English, brand voice.
 
 - `title` — sentence case, task-oriented ("Do the thing", not "The thing page").
 - `area` — one of the admin nav groups: Dashboard, CRM, Deals, Reports, Admin.
-- `routes` — admin pathnames where the Help button should suggest this article. Prefix matching: `/admin/console/leads` matches every person page.
+- `routes` — admin pathnames where the Help button should suggest this article. Prefix matching: `/admin/crm` matches the people list and every person page (`/admin/crm/[id]`).
 - `summary` — one plain sentence, used by list, search, and the Help button.
 
 ## Voice rules

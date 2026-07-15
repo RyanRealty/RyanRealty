@@ -92,7 +92,7 @@ export async function startBpoForContactAction(personId: number): Promise<StartB
 
     if (!built.ok) return { ok: false, error: built.error ?? 'BPO build did not finish.' }
 
-    revalidatePath(`/admin/console/leads/${personId}`)
+    revalidatePath(`/admin/crm/${personId}`)
     revalidatePath(`/admin/crm/${personId}`)
     revalidatePath('/admin/bpo')
     return { ok: true, slug }
@@ -119,7 +119,7 @@ export async function sendBpoForContactAction(
     const result = await sendBpoToLead({ personId, slug: slug.trim(), includeOfferStrategy })
     if (!result.ok) return { ok: false, error: result.error ?? 'Send failed' }
 
-    revalidatePath(`/admin/console/leads/${personId}`)
+    revalidatePath(`/admin/crm/${personId}`)
     revalidatePath(`/admin/crm/${personId}`)
     return { ok: true, transport: result.transport ?? 'resend' }
   } catch (e) {

@@ -172,7 +172,7 @@ export async function startCmaForContactAction(personId: number): Promise<StartC
       return { ok: false, error: built.error ?? 'CMA build did not finish.' }
     }
 
-    revalidatePath(`/admin/console/leads/${personId}`)
+    revalidatePath(`/admin/crm/${personId}`)
     revalidatePath(`/admin/crm/${personId}`)
     revalidatePath('/admin/cmas')
     return { ok: true, deliveryId: slug }
@@ -226,7 +226,7 @@ export async function sendCmaForContactAction(deliveryId: string): Promise<SendC
         }
       }
       if (result.personId) {
-        revalidatePath(`/admin/console/leads/${result.personId}`)
+        revalidatePath(`/admin/crm/${result.personId}`)
         revalidatePath(`/admin/crm/${result.personId}`)
       }
       return { ok: true }
@@ -347,7 +347,7 @@ async function sendLegacyCmaDelivery(
       payload: { deliveryId: id, resendId: result.id ?? null, to: row.lead_email },
       dedupeKey: `cma:sent:${id}`,
     })
-    revalidatePath(`/admin/console/leads/${crmPersonId}`)
+    revalidatePath(`/admin/crm/${crmPersonId}`)
     revalidatePath(`/admin/crm/${crmPersonId}`)
   }
 

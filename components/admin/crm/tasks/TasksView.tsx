@@ -464,7 +464,7 @@ function TaskRow({
         <span className="flex items-center gap-1.5">
           {task.personId ? (
             <Link
-              href={`/admin/console/leads/${task.personId}`}
+              href={`/admin/crm/${task.personId}`}
               className="truncate text-sm font-medium text-primary hover:underline"
             >
               {task.personName ?? `Contact #${task.personId}`}
@@ -553,7 +553,7 @@ function TaskDetailCard({
           </Avatar>
           <div>
             {task.personId ? (
-              <Link href={`/admin/console/leads/${task.personId}`} className="text-sm font-semibold text-primary hover:underline">
+              <Link href={`/admin/crm/${task.personId}`} className="text-sm font-semibold text-primary hover:underline">
                 {task.personName ?? `Contact #${task.personId}`}
               </Link>
             ) : (

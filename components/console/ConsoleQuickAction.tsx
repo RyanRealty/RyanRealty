@@ -41,10 +41,10 @@ const GLOBAL: Item[] = [
 ]
 
 function leadIdFrom(pathname: string): number | null {
-  // Match both the console shell (/admin/console/leads/:id) and the CRM shell
-  // (/admin/crm/:id) so the FAB shows lead-scoped actions regardless of which
-  // route the broker arrived from (dashboard action-queue links use /admin/crm/:id).
-  const m = pathname.match(/^\/admin\/(?:console\/leads|crm)\/(\d+)$/)
+  // The lead command center lives at /admin/crm/:id (route consolidation
+  // 2026-07-15 — the old /admin/console/leads/:id is a redirect stub, so the
+  // client pathname never shows it).
+  const m = pathname.match(/^\/admin\/crm\/(\d+)$/)
   return m ? Number(m[1]) : null
 }
 

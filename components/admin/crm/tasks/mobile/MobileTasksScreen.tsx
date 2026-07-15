@@ -160,7 +160,7 @@ function MobileTaskRow({
 
         <div className="min-w-0 flex-1">
           {task.personId ? (
-            <Link href={`/admin/console/leads/${task.personId}`} className="block truncate text-[14px] font-medium text-primary">
+            <Link href={`/admin/crm/${task.personId}`} className="block truncate text-[14px] font-medium text-primary">
               {task.personName ?? 'Contact'}
             </Link>
           ) : (

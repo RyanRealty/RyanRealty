@@ -10,7 +10,7 @@ import { createServiceClient } from '@/lib/supabase/service'
  * original FollowUpBoss record a person migrated from, not a live FUB
  * integration, this is a plain native lookup.
  *
- * Exists for the /admin/people/[legacyId] -> /admin/console/leads/[id]
+ * Exists for the /admin/people/[legacyId] -> /admin/crm/[id]
  * redirect (admin consolidation 2026-07-07: the standalone people index merged
  * into the person page). Old links and bookmarks keep working through this
  * lookup.

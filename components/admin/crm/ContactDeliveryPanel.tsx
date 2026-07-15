@@ -1,6 +1,6 @@
 /**
  * ContactDeliveryPanel — one contact's email delivery story, for embedding on
- * the person page (app/admin/console/leads/[id]).
+ * the person page (app/admin/(protected)/crm/[id]).
  *
  * Server component. Two sections:
  *   1. "What they're subscribed to" — each active subscription with its

@@ -1,10 +1,10 @@
 'use server'
 
 /**
- * form-actions — the console lead page's server-action form wrappers, split
+ * form-actions — the lead command center's server-action form wrappers, split
  * out of page.tsx for the file-size budget (G file-size-budget: split, never
  * re-baseline). Byte-identical logic: each wrapper runs the gated CRM action
- * and returns to the console route with a flash/error param.
+ * and returns to the lead route with a flash/error param.
  */
 
 import { redirect } from 'next/navigation'
@@ -24,7 +24,7 @@ import { startCmaForContactAction, sendCmaForContactAction } from '@/app/actions
 import { startBpoForContactAction } from '@/app/actions/contact-bpo'
 import { setReportSubscriptionAction } from '@/app/actions/crm-report-subscriptions'
 
-const BASE = '/admin/console/leads'
+const BASE = '/admin/crm'
 
 export async function addNoteForm(personId: number, formData: FormData): Promise<void> {
   formData.set('personId', String(personId))

@@ -3,7 +3,7 @@ title: Create a CMA
 area: CRM
 routes:
   - /admin/cmas
-  - /admin/console/leads
+  - /admin/crm
 summary: Build a comparative market analysis for a property and send it to the client.
 ---
 

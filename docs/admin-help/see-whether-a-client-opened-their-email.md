@@ -2,7 +2,7 @@
 title: See whether a client opened their email
 area: CRM
 routes:
-  - /admin/console/leads
+  - /admin/crm
   - /admin/crm/subscriptions
 summary: Check opens and clicks for the emails a contact has received.
 ---
