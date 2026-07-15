@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.790.0 (2026-07-15)
+
+### Features
+- feat(fsbo): native pipeline + FSBO Dashboard — discover, skip-trace, CMA, contact, engagement
+
+---
+
+
 ## v1.789.0 (2026-07-15)
 
 ### Features
