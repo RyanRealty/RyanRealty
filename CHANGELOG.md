@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.795.0 (2026-07-15)
+
+### Features
+- feat(sell): situation-recognition + resource-first, low-pressure posture across /sell and the seller LP
+
+---
+
+
 ## v1.794.0 (2026-07-15)
 
 ### Features
