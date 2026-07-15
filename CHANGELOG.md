@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.793.2 (2026-07-15)
+
+### Maintenance
+- chore: remove the last FUB-era tracking stubs and the orphaned expired-listings actions
+
+---
+
+
 ## v1.793.1 (2026-07-15)
 
 ### Bug Fixes
