@@ -40,13 +40,24 @@ export async function autoEnrollPerson(personId: number): Promise<AutoEnrollResu
   const sb = createServiceClient()
   const { data: person } = await sb
     .from('crm_people')
-    .select('id,tags,created_at,fub_created_at,emails')
+    .select('id,tags,source,created_at,fub_created_at,emails')
     .eq('id', personId)
     .maybeSingle()
   if (!person) return { enrolled: false, reason: 'person not found' }
 
   const createdAt = (person.fub_created_at ?? person.created_at) as string
   if (createdAt < ENROLLMENT_EPOCH) return { enrolled: false, reason: 'pre-epoch contact (historical book)' }
+
+  // Outreach lists never auto-enroll: skip-traced expired/FSBO owners and
+  // Farm/Import/Sphere rows are lists WE built, and their intent:* tags map
+  // straight to the texting sequences — sends that are manual
+  // approve-and-send by design (expired-listing-processor deliberately
+  // dropped its autoEnrollPerson call for the same reason). Homeowners who
+  // submitted OUR forms carry inbound -lp sources and pass this check.
+  const { classifyLeadSource } = await import('@/lib/data/crm/leadSourceTaxonomy')
+  if (classifyLeadSource((person.source as string | null) ?? null).outreachList) {
+    return { enrolled: false, reason: 'outreach-list source (manual outreach only)' }
+  }
 
   const tags = (person.tags as string[]) ?? []
 

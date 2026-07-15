@@ -12,6 +12,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { autoEnrollPerson, ENROLLMENT_EPOCH, type AutoEnrollResult } from '@/lib/crm/enroll'
 import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
+import { classifyLeadSource } from '@/lib/data/crm/leadSourceTaxonomy'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -124,6 +125,21 @@ export async function GET(request: Request) {
   let alerted = 0
   const skipped: Record<string, number> = {}
   for (const p of rows) {
+    // OUTREACH LISTS NEVER AUTO-ENROLL OR ALERT. Skip-traced expired/FSBO
+    // owners and Farm/Import/Sphere rows are lists WE built — not inbound
+    // leads. Their intent:expired-listing / intent:fsbo tags map to the
+    // texting sequences (plans 71/72), and those sends are manual
+    // approve-and-send by design (docs in the expired/FSBO dashboards). The
+    // old fub_created_at-only window excluded these rows by accident; now
+    // that native rows are swept, the exclusion is explicit and principled:
+    // the same taxonomy line every lead KPI draws. Homeowners who submitted
+    // OUR forms (expired-lp / fsbo-lp sources) classify as inbound and still
+    // enroll.
+    if (classifyLeadSource(p.source as string | null).outreachList) {
+      skipped['outreach-list source (manual outreach only)'] =
+        (skipped['outreach-list source (manual outreach only)'] ?? 0) + 1
+      continue
+    }
     const skipEnroll = alreadyEnrolled.has(p.id)
     const skipAlert = alreadyAlerted.has(p.id)
     if (skipEnroll && skipAlert) {
