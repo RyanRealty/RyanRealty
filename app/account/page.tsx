@@ -279,7 +279,7 @@ export default async function AccountPage() {
             alt="Matt Ryan, principal broker"
             width={56}
             height={56}
-            className="h-14 w-14 shrink-0 rounded-full border border-border object-cover"
+            className="h-14 w-14 shrink-0 rounded-full border border-border object-cover object-top"
           />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-foreground">Matt Ryan</p>
