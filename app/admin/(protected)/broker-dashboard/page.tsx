@@ -123,7 +123,7 @@ export default async function BrokerCommandCenterPage({
   // FUB desktop dashboard data: the Recent Activity table rows + real KPI counts.
   const [activityRows, kpis] = await Promise.all([
     getDashboardRecentActivity(feedSlug, 12).catch(() => []),
-    getDashboardKpis(feedSlug, actionQueue.length).catch(() => ({ newLeads30d: 0, unactioned: actionQueue.length })),
+    getDashboardKpis(feedSlug, actionQueue.length).catch(() => ({ newLeads30d: 0, newLeads7d: 0, unactioned: actionQueue.length })),
   ])
 
   if (!data) {
@@ -211,8 +211,8 @@ export default async function BrokerCommandCenterPage({
         <div data-tour="dash-kpis" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {[
             {
-              label: 'New Leads', value: String(kpis.newLeads30d), sub: `${kpis.unactioned} unactioned`,
-              help: 'Contacts that first came in during the last 30 days, counted from when each lead was created. Imports and edits do not count.',
+              label: 'New Leads', value: String(kpis.newLeads30d), sub: `${kpis.newLeads7d} this week`,
+              help: 'Genuine inbound leads from the last 30 days — website, listing portals, phone, social, and referrals. Bulk imports and prospecting lists (Farm, Sphere, Import) are excluded, so this is real demand, not database size.',
             },
             {
               label: 'Needs Action', value: String(needsActionCount), sub: needsActionCount === 0 ? 'all caught up' : 'to act on',
@@ -223,7 +223,7 @@ export default async function BrokerCommandCenterPage({
               help: 'Your tasks due today or coming up. Overdue tasks are not counted here, they live on the Tasks page.',
             },
             {
-              label: 'Appts (30 days)', value: String(data.calendar.length), sub: 'scheduled',
+              label: 'Calendar (30d)', value: String(data.calendar.length), sub: 'items scheduled',
               help: 'Everything on your calendar for the next 30 days: appointments, closings, contract dates, task deadlines, and synced Google Calendar events.',
             },
             {

@@ -249,11 +249,17 @@ export async function getBrokerCommandCenterData(): Promise<BrokerCommandCenterD
     }
   })
 
-  // 3. Active clients (most in need of attention)
+  // 3. Active clients — people you are ACTIVELY working, stalest touch first so
+  //    the ones going cold surface for a reconnect. Scoped to stage 'Active
+  //    Client' (the CRM's designation for a real working relationship). The old
+  //    filter excluded only Closed/Lost/Archive — stages that do not exist here —
+  //    so it surfaced the ~20k Nurture/Farm database as "active clients". There
+  //    are ~12 genuine active clients; showing cold imports here was noise.
   const clientsQuery = sb()
     .from('crm_people')
     .select('id,name,stage,last_activity_at,assigned_broker,source,picture_url,tags')
-    .not('stage', 'in', '("Closed","Lost","Archive")')
+    .eq('deleted', false)
+    .eq('stage', 'Active Client')
     .order('last_activity_at', { ascending: true, nullsFirst: true })
     .limit(20)
 
