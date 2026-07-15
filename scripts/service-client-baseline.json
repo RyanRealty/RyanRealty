@@ -63,7 +63,6 @@
     "app/api/admin/expired-listing-lookup/route.ts",
     "app/api/admin/gbp/set-website-utm/route.ts",
     "app/api/admin/sync/backfill-health/route.ts",
-    "app/api/admin/sync/heartbeat/route.ts",
     "app/api/admin/sync/history-yield/route.ts",
     "app/api/admin/sync/live/route.ts",
     "app/api/admin/sync/status/route.ts",

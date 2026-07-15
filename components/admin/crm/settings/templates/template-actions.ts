@@ -6,7 +6,7 @@ import type { CrmTemplateAdmin } from '@/lib/data/crm/getCrmTemplatesAdmin'
 import type { CrmTemplateInput, CrmTemplateResult } from '@/lib/crm/templateValidation'
 import type { SendTestInput } from '@/app/actions/crm-template-test'
 import type { MergeContext } from '@/lib/crm/merge'
-import type { CustomFieldToken } from './MergeFieldInserter'
+import type { CustomFieldToken } from '@/components/admin/crm/MergeFieldInserter'
 
 export type TemplateRow = CrmTemplateAdmin
 

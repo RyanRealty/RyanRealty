@@ -5,13 +5,17 @@
  * crossed the hot threshold (default 100) and hot_lead_fired_at is still
  * NULL. For each match:
  *
- *   - IDENTIFIED session (fub_person_id present):
- *       1. Create a 5-minute FUB realtime call task on the person.
+ *   - IDENTIFIED session (resolves to a crm_people row via crm_person_id,
+ *     or fub_person_id → crm_people.fub_legacy_id for legacy sessions):
+ *       1. Create a 5-minute native call task on the person (crm_tasks via
+ *          createNativeTask — the in-house replacement for the dead FUB
+ *          createRealtimeTask, FUB decommissioned 2026-06-24).
  *       2. Send an alert email to MATT_ALERT_EMAIL with the journey
- *          summary (top pages, listings viewed, score, source).
+ *          summary (top pages, listings viewed, score, source) linking to
+ *          the native CRM person page (/admin/crm/<personId>).
  *       3. Set hot_lead_fired_at so we never fire twice for the same session.
  *
- *   - ANONYMOUS session (no fub_person_id):
+ *   - ANONYMOUS session (no CRM person):
  *       1. Send an alert email to MATT_ALERT_EMAIL labeled "anonymous hot
  *          visitor" with the journey summary + a remarketing audience hint.
  *       2. Set hot_lead_fired_at.
@@ -27,7 +31,8 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { createRealtimeTask } from '@/lib/followupboss'
+import { createNativeTask } from '@/lib/data/crm/ensureNativeLead'
+import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
 import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
 
 export const maxDuration = 60
@@ -57,6 +62,7 @@ type HotSession = {
   peak_score: number
   intent_tags: string[]
   fub_person_id: number | null
+  crm_person_id: number | null
   identified_email: string | null
   utm_source: string | null
   utm_medium: string | null
@@ -65,6 +71,8 @@ type HotSession = {
   ip_region: string | null
   ip_country: string | null
 }
+
+type NativePerson = { personId: number; assignedBroker: CrmBrokerSlug | null }
 
 type TopEvent = {
   session_id: string
@@ -82,7 +90,7 @@ async function fetchHotSessions(threshold: number): Promise<HotSession[]> {
   if (!supabase) return []
   const { data, error } = await supabase
     .from('visitor_sessions')
-    .select('session_id, source_domain, first_seen_at, last_seen_at, engagement_score, peak_score, intent_tags, fub_person_id, identified_email, utm_source, utm_medium, utm_campaign, ip_city, ip_region, ip_country')
+    .select('session_id, source_domain, first_seen_at, last_seen_at, engagement_score, peak_score, intent_tags, fub_person_id, crm_person_id, identified_email, utm_source, utm_medium, utm_campaign, ip_city, ip_region, ip_country')
     .gte('engagement_score', threshold)
     .is('hot_lead_fired_at', null)
     .order('engagement_score', { ascending: false })
@@ -94,21 +102,77 @@ async function fetchHotSessions(threshold: number): Promise<HotSession[]> {
   return (data ?? []) as HotSession[]
 }
 
+/** Most-recent events per session, bounded PER SESSION. A single global
+ *  `.in('session_id', ids)` query silently caps at PostgREST's 1000-row limit,
+ *  so busy sessions could show 0/partial events depending on global event_at
+ *  ordering — query each session with its own limit instead. */
+const EVENTS_PER_SESSION = 60
+
 async function fetchTopEventsForSessions(sessionIds: string[]): Promise<Map<string, TopEvent[]>> {
   const map = new Map<string, TopEvent[]>()
   if (sessionIds.length === 0) return map
   const supabase = getServiceSupabase()
   if (!supabase) return map
-  const { data, error } = await supabase
-    .from('visitor_events')
-    .select('session_id, event_type, page_url, page_category, listing_mls, listing_city, listing_price, event_at')
-    .in('session_id', sessionIds)
-    .order('event_at', { ascending: false })
-  if (error || !data) return map
-  for (const row of data as TopEvent[]) {
-    const list = map.get(row.session_id) ?? []
-    list.push(row)
-    map.set(row.session_id, list)
+  const results = await Promise.all(
+    sessionIds.map(async (id) => {
+      const { data, error } = await supabase
+        .from('visitor_events')
+        .select('session_id, event_type, page_url, page_category, listing_mls, listing_city, listing_price, event_at')
+        .eq('session_id', id)
+        .order('event_at', { ascending: false })
+        .limit(EVENTS_PER_SESSION)
+      return error ? [] : ((data ?? []) as TopEvent[])
+    }),
+  )
+  for (const events of results) {
+    if (events.length > 0) map.set(events[0].session_id, events)
+  }
+  return map
+}
+
+/**
+ * Resolve each hot session to its native crm_people row: prefer the session's
+ * crm_person_id; fall back to fub_person_id → crm_people.fub_legacy_id for
+ * sessions identified before the FUB cutover. Returns session_id → person.
+ */
+async function resolveNativePersons(sessions: HotSession[]): Promise<Map<string, NativePerson>> {
+  const map = new Map<string, NativePerson>()
+  const supabase = getServiceSupabase()
+  if (!supabase) return map
+
+  const coerceBroker = (slug: unknown): CrmBrokerSlug | null =>
+    typeof slug === 'string' && (CRM_BROKERS as readonly string[]).includes(slug) ? (slug as CrmBrokerSlug) : null
+
+  const crmIds = [...new Set(sessions.map((s) => s.crm_person_id).filter((n): n is number => Number.isFinite(n as number)))]
+  const fubIds = [
+    ...new Set(
+      sessions
+        .filter((s) => s.crm_person_id == null && s.fub_person_id != null)
+        .map((s) => s.fub_person_id as number),
+    ),
+  ]
+
+  const byId = new Map<number, NativePerson>()
+  const byFubId = new Map<number, NativePerson>()
+  if (crmIds.length > 0) {
+    const { data } = await supabase.from('crm_people').select('id, assigned_broker').in('id', crmIds)
+    for (const row of data ?? []) {
+      byId.set(Number(row.id), { personId: Number(row.id), assignedBroker: coerceBroker(row.assigned_broker) })
+    }
+  }
+  if (fubIds.length > 0) {
+    const { data } = await supabase.from('crm_people').select('id, assigned_broker, fub_legacy_id').in('fub_legacy_id', fubIds)
+    for (const row of data ?? []) {
+      if (row.fub_legacy_id == null) continue
+      byFubId.set(Number(row.fub_legacy_id), { personId: Number(row.id), assignedBroker: coerceBroker(row.assigned_broker) })
+    }
+  }
+
+  for (const s of sessions) {
+    const person =
+      (s.crm_person_id != null ? byId.get(s.crm_person_id) : undefined) ??
+      (s.fub_person_id != null ? byFubId.get(s.fub_person_id) : undefined)
+    if (person) map.set(s.session_id, person)
   }
   return map
 }
@@ -144,12 +208,10 @@ function summarizeJourney(events: TopEvent[]): { listings: string[]; pages: stri
   return { listings: listings.slice(0, 10), pages: pages.slice(0, 8), eventCount: events.length }
 }
 
-function buildAlertEmailHtml(session: HotSession, events: TopEvent[], summary: ReturnType<typeof summarizeJourney>): string {
-  const isIdentified = !!session.fub_person_id
+function buildAlertEmailHtml(session: HotSession, events: TopEvent[], summary: ReturnType<typeof summarizeJourney>, person: NativePerson | null): string {
+  const isIdentified = !!person
   const who = session.identified_email ?? `Anonymous visitor ${session.session_id.slice(0, 8)}`
-  const fubLink = isIdentified
-    ? `https://app.followupboss.com/2/people/view/${session.fub_person_id}`
-    : null
+  const crmLink = person ? `https://ryan-realty.com/admin/crm/${person.personId}` : null
   const minutesActive = Math.max(1, Math.round((new Date(session.last_seen_at).getTime() - new Date(session.first_seen_at).getTime()) / 60000))
   return `<!DOCTYPE html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.45;color:#102742;max-width:600px;margin:0 auto;padding:24px;">
 <h2 style="margin:0 0 8px;color:#102742;font-size:20px;">Hot ${isIdentified ? 'lead' : 'anonymous visitor'}: score ${session.engagement_score}</h2>
@@ -166,7 +228,7 @@ ${summary.listings.length ? `<p style="margin:0 0 4px;color:#666;font-weight:600
 
 ${summary.pages.length ? `<p style="margin:0 0 4px;color:#666;font-weight:600;">High-intent pages</p><ul style="margin:0 0 16px;padding-left:20px;">${summary.pages.map((p) => `<li>${p}</li>`).join('')}</ul>` : ''}
 
-${fubLink ? `<p style="margin:0 0 4px;"><a href="${fubLink}" style="color:#102742;font-weight:600;text-decoration:underline;">Open in FUB</a></p>` : '<p style="margin:0 0 4px;color:#777;font-style:italic;">Anonymous visitor — no FUB record yet. Add to remarketing audience or wait for sign-in.</p>'}
+${crmLink ? `<p style="margin:0 0 4px;"><a href="${crmLink}" style="color:#102742;font-weight:600;text-decoration:underline;">Open in CRM</a></p>` : '<p style="margin:0 0 4px;color:#777;font-style:italic;">Anonymous visitor — no CRM record yet. Add to remarketing audience or wait for sign-in.</p>'}
 
 <p style="margin:16px 0 0;font-size:12px;color:#999;">Fired by visitor-hot-lead-escalation cron · session ${session.session_id}</p>
 </body></html>`
@@ -220,39 +282,44 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, threshold, escalated: 0, message: 'no hot sessions' })
   }
 
-  const eventsBySession = await fetchTopEventsForSessions(sessions.map((s) => s.session_id))
+  const [eventsBySession, personBySession] = await Promise.all([
+    fetchTopEventsForSessions(sessions.map((s) => s.session_id)),
+    resolveNativePersons(sessions),
+  ])
   const firedSessionIds: string[] = []
-  let fubTasksCreated = 0
+  let tasksCreated = 0
   let emailsSent = 0
   const errors: string[] = []
 
   for (const session of sessions) {
     const events = eventsBySession.get(session.session_id) ?? []
     const summary = summarizeJourney(events)
-    const isIdentified = !!session.fub_person_id
+    const person = personBySession.get(session.session_id) ?? null
+    const isIdentified = !!person
 
-    // 1. FUB realtime call task for identified sessions
-    if (isIdentified && session.fub_person_id) {
-      const who = session.identified_email ?? `FUB #${session.fub_person_id}`
+    // 1. Native 5-minute call task for identified sessions (crm_tasks)
+    if (person) {
+      const who = session.identified_email ?? `Contact #${person.personId}`
       const intentLabel = session.intent_tags.includes('seller_intent') ? 'seller intent' :
                           session.intent_tags.includes('buyer_intent')  ? 'buyer intent' : 'high engagement'
       try {
-        const ok = await createRealtimeTask({
-          personId: session.fub_person_id,
-          taskName: `Hot ${intentLabel} lead, score ${session.engagement_score}: ${who}. Call within 5 min.`,
-          taskType: 'Call',
+        await createNativeTask({
+          personId: person.personId,
+          name: `Hot ${intentLabel} lead, score ${session.engagement_score}: ${who}. Call within 5 min.`,
+          type: 'Call',
           dueInMinutes: 5,
+          assignedBroker: person.assignedBroker ?? undefined,
         })
-        if (ok) fubTasksCreated += 1
+        tasksCreated += 1
       } catch (e) {
-        errors.push(`FUB task for ${session.session_id}: ${e instanceof Error ? e.message : String(e)}`)
+        errors.push(`CRM task for ${session.session_id}: ${e instanceof Error ? e.message : String(e)}`)
       }
     }
 
     // 2. Alert email to Matt for every hot session (identified or not)
     const subjectPrefix = isIdentified ? 'Hot lead' : 'Hot anonymous visitor'
     const subject = `${subjectPrefix} (score ${session.engagement_score}) — ${formatSource(session)} from ${formatGeo(session)}`
-    const html = buildAlertEmailHtml(session, events, summary)
+    const html = buildAlertEmailHtml(session, events, summary, person)
     const sent = await sendAlertEmail(html, subject)
     if (sent) emailsSent += 1
 
@@ -266,7 +333,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     threshold,
     escalated: firedSessionIds.length,
-    fubTasksCreated,
+    tasksCreated,
     emailsSent,
     errors,
     fetchedAt: new Date().toISOString(),

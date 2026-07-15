@@ -28,7 +28,8 @@ const item = (href: string, label: string, icon: AdminIconName): AdminNavItem =>
  * were missing entirely (Approvals, Hot leads, CMAs, Marketing approvals),
  * renamed the two colliding "Deals" surfaces (CRM pipeline vs transaction
  * coordination), and moved plumbing (Sync, Spark) out of Listings into System.
- * Consumed by AdminSidebar, AdminMobileNav, and AdminCommandPalette.
+ * Consumed by both admin layouts (protected + console) via ConsoleShell /
+ * ConsoleTopNav / AdminNavList.
  */
 export function buildAdminNav(role: AdminRoleType, brokerId: string | null): AdminNavSection[] {
   const isSuperuser = role === 'superuser'
@@ -70,7 +71,14 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
   // ── Listings ──
   const listings: AdminNavItem[] = [item('/admin/listings', 'Listings', 'home')]
   if (isSuperuser) listings.push(item('/admin/expired-listings', 'Expired listings', 'clock'))
+  // Restored to nav 2026-07-14: the consolidated Expireds + FSBOs dashboards
+  // (approve-and-send prospecting surfaces) were live pages reachable only by
+  // URL — same orphan-route defect the 2026-07-07 consolidation audit fixed
+  // for blog + email campaigns. Gate matches the pages' server actions
+  // (requireAdmin: any admin role except report_viewer).
+  if (canBrokers) listings.push(item('/admin/expireds', 'Expireds', 'clock'))
   if (canBrokers) listings.push(item('/admin/expired-outreach', 'Expired outreach', 'user-plus'))
+  if (canBrokers) listings.push(item('/admin/fsbos', 'FSBOs', 'home'))
   if (canBrokers) listings.push(item('/admin/cmas', 'CMAs', 'file-search'))
   if (canBrokers) listings.push(item('/admin/bpo', 'Price opinions', 'gauge'))
   // /admin/search was merged into the listings browser (consolidation 2026-07-07)

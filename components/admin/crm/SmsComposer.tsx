@@ -5,13 +5,13 @@
  * Merge tokens are resolved server-side before the initial body lands here,
  * so the bubble shows the final text with real values.
  *
- * MergeFieldPicker added: click a chip to insert the token at cursor position
- * in the body textarea.
+ * MergeFieldInserter: click a token in the dropdown to insert it at the cursor
+ * position in the body textarea.
  */
 import { useMemo, useRef, useState } from 'react'
 import { ArrowUp } from 'lucide-react'
 import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
-import { MergeFieldPicker, insertAtCursor } from '@/components/admin/crm/MergeFieldPicker'
+import { MergeFieldInserter, insertAtCursor, type CustomFieldToken } from '@/components/admin/crm/MergeFieldInserter'
 import {
   AttachmentChips,
   AttachmentControl,
@@ -54,6 +54,8 @@ export function SmsComposer(props: {
   /** Contact this compose targets — required for attachments (upload scoping).
    *  Falls back to primaryPersonId when unset. */
   personId?: number
+  /** Live crm_field_definitions → Custom Fields group in the merge-field dropdown. */
+  customFields?: CustomFieldToken[]
 }) {
   const [body, setBody] = useState(props.initialBody)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
@@ -146,7 +148,7 @@ export function SmsComposer(props: {
       {/* FUB chat input bar: insert-field · paperclip · message · round send arrow. */}
       <div className="flex items-end gap-1.5 rounded-3xl border border-input bg-background py-1.5 pl-1.5 pr-1.5">
         {/* Merge fields — dropdown behind the braces icon so the bar stays clean. */}
-        <MergeFieldPicker channel="sms" onInsert={handleInsertToken} iconOnly />
+        <MergeFieldInserter channel="sms" customFields={props.customFields} onInsert={handleInsertToken} iconOnly />
         <AttachmentControl
           attachments={attachments}
           accept={MMS_ACCEPT_ATTR}

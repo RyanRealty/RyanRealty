@@ -1,7 +1,13 @@
 'use client'
 
 /**
- * MergeFieldInserter — the §13.3 "Merge Fields ▾" dropdown.
+ * MergeFieldInserter — THE merge-token dropdown, shared by every surface that
+ * inserts merge fields (template modals + one-off composers).
+ *
+ * Consolidation 2026-07-14: this replaces the near-duplicate MergeFieldPicker
+ * (composers) + settings/templates/MergeFieldInserter (template editors),
+ * which had already drifted — composers could not insert custom-field tokens
+ * while template editors could. One component now serves both call sites.
  *
  * A design-system DropdownMenu grouping every token by catalog category
  * (Contact, Company, Agent, Lender, Sender, Property, Last Viewed, Lead
@@ -12,8 +18,16 @@
  *
  * SMS hides the CMA group (links are not clickable text in messages) — same
  * rule the legacy chip palette applied.
+ *
+ * Props:
+ *   channel      — 'email' | 'sms' — CMA tokens are hidden for SMS
+ *   customFields — live crm_field_definitions (key starts with 'custom');
+ *                  optional — surfaces without defs just omit the group
+ *   onInsert     — called with the raw token string, e.g. '%contact_first_name%'
+ *   iconOnly     — round braces-icon trigger for tight chat bars (the SMS
+ *                  composer's + button); default is the "Merge Fields" button
  */
-import { ChevronDown } from 'lucide-react'
+import { Braces, ChevronDown } from 'lucide-react'
 import { MERGE_TOKENS, type MergeToken } from '@/lib/crm/merge'
 import { Button } from '@/components/ui/button'
 import {
@@ -24,6 +38,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
 
 export type CustomFieldToken = { key: string; label: string }
 
@@ -58,12 +73,17 @@ export function MergeFieldInserter({
   customFields = [],
   onInsert,
   size = 'sm',
+  iconOnly = false,
+  className,
 }: {
   channel: 'email' | 'sms'
   /** Live crm_field_definitions (key starts with 'custom') → Custom Fields group. */
   customFields?: CustomFieldToken[]
   onInsert: (token: string) => void
   size?: 'sm' | 'default'
+  /** Round icon trigger for tight chat bars (the SMS composer's braces button). */
+  iconOnly?: boolean
+  className?: string
 }) {
   const tokens = MERGE_TOKENS.filter((t) => channel === 'email' || t.group !== 'cma')
   const lastViewed = tokens.filter((t) => t.token === '%last_viewed_address%')
@@ -78,10 +98,22 @@ export function MergeFieldInserter({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button type="button" variant="outline" size={size} className="gap-1">
-          Merge Fields
-          <ChevronDown className="h-3.5 w-3.5" />
-        </Button>
+        {iconOnly ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Insert merge field"
+            className={cn('h-9 w-9 shrink-0 rounded-full', className)}
+          >
+            <Braces className="h-5 w-5" aria-hidden />
+          </Button>
+        ) : (
+          <Button type="button" variant="outline" size={size} className={cn('gap-1', className)}>
+            Merge Fields
+            <ChevronDown className="h-3.5 w-3.5" />
+          </Button>
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="max-h-96 w-72 overflow-y-auto">
         {groups.map(({ group, label, tokens: gtokens }, i) => (
@@ -141,4 +173,17 @@ export function MergeFieldInserter({
       </DropdownMenuContent>
     </DropdownMenu>
   )
+}
+
+/**
+ * insertAtCursor — utility for inserting a token at the current cursor position
+ * in a textarea. Pass the textarea element and the token string.
+ * Returns the new full string value after insertion.
+ */
+export function insertAtCursor(el: HTMLTextAreaElement, token: string): string {
+  const start = el.selectionStart ?? el.value.length
+  const end = el.selectionEnd ?? el.value.length
+  const before = el.value.slice(0, start)
+  const after = el.value.slice(end)
+  return before + token + after
 }

@@ -40,10 +40,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { insertAtCursor } from '@/components/admin/crm/MergeFieldPicker'
+import { MergeFieldInserter, insertAtCursor } from '@/components/admin/crm/MergeFieldInserter'
 import { cn } from '@/lib/utils'
 import { EmojiPickerButton } from './EmojiPickerButton'
-import { MergeFieldInserter } from './MergeFieldInserter'
 import type { TemplateRow, TemplatesShared } from './template-actions'
 
 export function TextTemplateModal({

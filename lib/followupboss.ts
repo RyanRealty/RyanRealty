@@ -10,7 +10,6 @@ import {
   type LeadOriginContext,
 } from './fub-lead-origin-note'
 import {
-  mirrorEnrollmentToCrm,
   mirrorNoteToCrm,
   mirrorPersonFromFub,
   mirrorSiteEvent,
@@ -108,50 +107,6 @@ export async function findPersonByPhone(phone: string): Promise<FubPerson | null
   } catch (err) {
     console.error('[findPersonByPhone] Network error:', err)
     return null
-  }
-}
-
-/** Fetch a FUB person by id (emails, phones, tags for merge updates). */
-export type UpdatePersonProfileParams = {
-  personId: number
-  firstName?: string
-  lastName?: string
-  emails?: Array<{ value: string; type?: string; isPrimary?: number }>
-  phones?: Array<{ value: string; type?: string }>
-}
-
-/**
- * Merge name, email, and phone onto an existing FUB person. Replaces
- * placeholder emails when a real address is supplied. Mirrors CRM during
- * the parallel FUB run.
- */
-export async function updatePersonProfile(params: UpdatePersonProfileParams): Promise<boolean> {
-  const auth = getAuth()
-  if (!auth) return false
-  if (!Number.isFinite(params.personId) || params.personId <= 0) return false
-
-  const body: Record<string, unknown> = {}
-  if (params.firstName?.trim()) body.firstName = params.firstName.trim()
-  if (params.lastName !== undefined) body.lastName = params.lastName.trim()
-  if (params.emails?.length) body.emails = params.emails
-  if (params.phones?.length) body.phones = params.phones
-  if (Object.keys(body).length === 0) return false
-
-  try {
-    const res = await fetch(`${FUB_BASE}/people/${params.personId}`, {
-      method: 'PUT',
-      headers: fubHeaders(auth),
-      body: JSON.stringify(body),
-      next: { revalidate: 0 },
-    })
-    if (!res.ok) {
-      console.warn(`[updatePersonProfile] PUT failed: personId=${params.personId} status=${res.status}`)
-    }
-    if (res.ok) void mirrorPersonFromFub(params.personId)
-    return res.ok
-  } catch (err) {
-    console.error('[updatePersonProfile] Network error:', err)
-    return false
   }
 }
 
@@ -577,59 +532,6 @@ export async function replacePersonTags(personId: number, tags: string[]): Promi
  * person id, etc.) the failure is logged and swallowed — the parent event
  * was already posted.
  */
-/**
- * Apply (enroll) a FUB person in an Action Plan. The plan immediately begins
- * running its step sequence on this person — first step on day 0, second on
- * the plan's configured delay, etc.
- *
- * Used by the lead-detection crons (expired listings, FSBO listings, buyer
- * LP submissions) to auto-enroll the matched FUB person in the right plan
- * after person creation + tagging + custom field hydration. Removes the need
- * for the broker to manually "Apply Action Plan" via the FUB UI.
- *
- * FUB endpoint: POST /v1/actionPlansPeople with { personId, actionPlanId }.
- * Returns the created enrollment row on success ({ id, personId, actionPlanId,
- * status: 'Active', ... }).
- *
- * Idempotency: FUB may reject (HTTP 409 / 422) if the person is already
- * enrolled in the same plan. We treat that as a non-error; the function
- * returns true so the cron continues.
- */
-export async function applyActionPlan(personId: number, actionPlanId: number): Promise<boolean> {
-  const auth = getAuth()
-  if (!auth) return false
-  if (!Number.isFinite(personId) || personId <= 0) return false
-  if (!Number.isFinite(actionPlanId) || actionPlanId <= 0) return false
-  try {
-    const res = await fetch(`${FUB_BASE}/actionPlansPeople`, {
-      method: 'POST',
-      headers: fubHeaders(auth),
-      body: JSON.stringify({ personId, actionPlanId }),
-      next: { revalidate: 0 },
-    })
-    if (res.ok) {
-      void mirrorEnrollmentToCrm(personId, actionPlanId)
-      return true
-    }
-    // Treat "already enrolled" as success-equivalent.
-    if (res.status === 409 || res.status === 422) {
-      console.warn(
-        `[applyActionPlan] person ${personId} likely already enrolled in plan ${actionPlanId} (HTTP ${res.status})`,
-      )
-      return true
-    }
-    const text = await res.text().catch(() => '')
-    console.error(
-      `[applyActionPlan] HTTP ${res.status} enrolling person ${personId} in plan ${actionPlanId}:`,
-      text.slice(0, 200),
-    )
-    return false
-  } catch (err) {
-    console.error('[applyActionPlan] Network error:', err)
-    return false
-  }
-}
-
 export async function addPersonNote(
   personId: number,
   body: string,

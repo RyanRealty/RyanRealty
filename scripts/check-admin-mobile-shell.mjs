@@ -10,8 +10,9 @@
  *
  * Updated 2026-06-16: the whole admin migrated to the neutral ConsoleShell
  * (Matt directive "migrate all pages"); the brand AdminHeader/AdminSidebar/
- * AdminMobileNav were retired from the layout, and the three dashboards
- * collapsed into /admin/broker-dashboard (the admin home is now a thin redirect).
+ * AdminMobileNav chrome was retired from the layout (component files deleted
+ * 2026-07-14 — dead code), and the three dashboards collapsed into
+ * /admin/broker-dashboard (the admin home is now a thin redirect).
  * The gate now locks the CURRENT shell so it can't regress:
  *   1. ConsoleShell hides the desktop rail below lg and ships a mobile Sheet +
  *      the shared AdminNavList (one nav source for rail and sheet).

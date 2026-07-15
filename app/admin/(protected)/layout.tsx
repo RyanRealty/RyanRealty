@@ -16,9 +16,9 @@ import { getHelpArticleIndex } from '@/lib/admin-help'
  * inside the neutral ConsoleShell (the .console-root token scope re-skins the
  * shadcn components used across every page to a Linear/Notion neutral palette
  * via their semantic classes — no per-page change needed). The brand
- * AdminHeader/AdminSidebar/AdminMobileTabBar are retired from the layout (the
- * component files remain for the mobile-shell gate); the full role-based nav is
- * the same buildAdminNav source they used.
+ * AdminHeader/AdminSidebar/AdminMobileTabBar chrome was retired 2026-06-15 and
+ * the component files deleted 2026-07-14 (dead code); the full role-based nav
+ * is the same buildAdminNav source they used.
  *
  * Login + setup live outside this group so unauthenticated users reach them
  * without a redirect loop.

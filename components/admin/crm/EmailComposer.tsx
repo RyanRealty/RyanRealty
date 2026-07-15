@@ -25,7 +25,7 @@ import { useMemo, useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { buildEmailPreviewDoc, looksLikeHtml, type EmailBodyFormat } from '@/lib/crm/email-body'
 import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
-import { MergeFieldPicker, insertAtCursor } from '@/components/admin/crm/MergeFieldPicker'
+import { MergeFieldInserter, insertAtCursor, type CustomFieldToken } from '@/components/admin/crm/MergeFieldInserter'
 import { RecipientField, type RecipientOption } from '@/components/admin/crm/RecipientField'
 import {
   AttachmentChips,
@@ -62,6 +62,8 @@ export function EmailComposer(props: {
   recipientOptions?: RecipientOption[]
   /** Prefill for the To row (the contact's primary email). */
   initialTo?: string[]
+  /** Live crm_field_definitions → Custom Fields group in the merge-field dropdown. */
+  customFields?: CustomFieldToken[]
 }) {
   const [subject, setSubject] = useState(props.initialSubject)
   const [body, setBody] = useState(props.initialBody)
@@ -160,7 +162,7 @@ export function EmailComposer(props: {
         </div>
         <div className="flex items-center gap-1">
           {tab === 'edit' ? (
-            <MergeFieldPicker channel="email" onInsert={handleInsertToken} />
+            <MergeFieldInserter channel="email" customFields={props.customFields} onInsert={handleInsertToken} />
           ) : null}
           {/* Text | HTML body-mode toggle. */}
           <div className="flex items-center overflow-hidden rounded-full border border-input text-xs">
