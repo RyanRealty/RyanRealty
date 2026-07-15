@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -64,6 +64,21 @@ const TIMELINE_OPTIONS: { value: SellerLPTimeline; label: string; sub: string }[
   { value: 'exploring', label: 'Just curious', sub: 'Here for the number, not the sales pitch.' },
 ]
 
+// "What's bringing you to sell?" — the seller's situation. Optional and low
+// friction. Values match components/site/sell/SellerSituations.client.tsx so a
+// ?reason= handed off from /sell prefills the right one. Captured for tailored
+// follow-up, never used to pressure.
+const REASON_OPTIONS: { value: string; label: string }[] = [
+  { value: 'curious', label: 'Just curious what it is worth' },
+  { value: 'downsizing', label: 'Downsizing or retiring' },
+  { value: 'more-space', label: 'Need more space' },
+  { value: 'relocating', label: 'Relocating for work' },
+  { value: 'inherited', label: 'Inherited a home' },
+  { value: 'life-change', label: 'A life change' },
+  { value: 'sell-soon', label: 'Need to sell soon' },
+  { value: 'investment', label: 'Investment or second home' },
+]
+
 export default function SellerLPForm({
   knownVisitor,
   prefillName,
@@ -95,6 +110,19 @@ export default function SellerLPForm({
   const [improvements, setImprovements] = useState('')
   const [improvementsSpend, setImprovementsSpend] = useState('')
   const [condition, setCondition] = useState('')
+  const [reason, setReason] = useState('')
+
+  // Prefill the situation when a ?reason= is handed off from /sell. Read from
+  // window (not useSearchParams) so this form never forces a Suspense boundary
+  // on the pages that embed it. Effect body = client-only, hydration-safe.
+  useEffect(() => {
+    try {
+      const r = new URLSearchParams(window.location.search).get('reason')
+      if (r && REASON_OPTIONS.some((o) => o.value === r)) setReason(r)
+    } catch {
+      // no-op
+    }
+  }, [])
 
   function advanceFromAddress(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -129,6 +157,7 @@ export default function SellerLPForm({
         email: opts.skipQualify ? prefillEmail ?? email.trim() : email.trim(),
         phone: opts.skipQualify ? prefillPhone ?? phone.trim() : phone.trim(),
         timeline: (timeline || undefined) as SellerLPTimeline | undefined,
+        reason: reason || undefined,
         sessionId: readRrSessionId(), // hydration-safe (event-handler body, not render)
         source: isListNow ? 'list-now-lp' : 'seller-lp',
         pagePath,
@@ -219,6 +248,10 @@ export default function SellerLPForm({
         </p>
         <p className="mt-3 text-base text-foreground/75">
           Your report lands in your inbox within one business day.
+        </p>
+        <p className="mt-3 text-base text-foreground/75">
+          No obligation, and no pressure. We are here as a resource whenever you
+          are ready, whether that is this year or a few years out.
         </p>
         <p className="mt-3 text-base text-muted-foreground">
           Prefer to talk right now? Call Matt directly at{' '}
@@ -441,6 +474,32 @@ export default function SellerLPForm({
               </Label>
             ))}
           </RadioGroup>
+        </fieldset>
+
+        <fieldset className="mt-1 border-t border-border/60 pt-5">
+          <legend className="text-base font-medium text-foreground">
+            What is bringing you to sell?{' '}
+            <span className="text-sm font-normal text-muted-foreground">(optional)</span>
+          </legend>
+          <p className="mt-1 text-sm text-muted-foreground">
+            It helps us tailor what we send. No pressure, and just curious is a
+            fine answer.
+          </p>
+          <Select value={reason} onValueChange={setReason}>
+            <SelectTrigger
+              id="seller-lp-reason"
+              className="mt-3 h-12 rounded-xl border-2 border-border px-4 text-base focus:border-primary focus:ring-2 focus:ring-primary/20"
+            >
+              <SelectValue placeholder="Select what fits" />
+            </SelectTrigger>
+            <SelectContent>
+              {REASON_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </fieldset>
 
         {/* Optional "About your home" — collapsed by default so the core form stays short.

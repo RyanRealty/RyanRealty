@@ -46,6 +46,13 @@ export type SellerLPSubmission = {
   timeline?: SellerLPTimeline
   /** Optional motivation field if the form ever surfaces it. */
   motivation?: string
+  /**
+   * "What's bringing you to sell?" — the seller's situation, captured to tailor
+   * follow-up (never to pressure). One of the SellerSituations keys: curious,
+   * downsizing, more-space, relocating, inherited, life-change, sell-soon,
+   * investment. Optional.
+   */
+  reason?: string
   /** rr_session_id (uuid v4 from localStorage) so the now-known person can be
    *  stitched to their prior anonymous visitor_events and those events replayed
    *  into FUB. Validated server-side before use. */
@@ -457,6 +464,23 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     // straight to crm_people (tags union, custom jsonb, assigned_broker) and
     // crm_timeline (origin note) via the DAL.
     if (fubPersonId && !hardStopped) {
+      // Situation ("What's bringing you to sell?") — validated against the known
+      // SellerSituations keys before it ever becomes a tag, so a tampered
+      // ?reason= can never inject an arbitrary tag.
+      const REASON_LABELS: Record<string, string> = {
+        curious: 'just curious what it is worth',
+        downsizing: 'downsizing or retiring',
+        'more-space': 'needs more space',
+        relocating: 'relocating for work',
+        inherited: 'inherited a home',
+        'life-change': 'a life change',
+        'sell-soon': 'needs to sell soon',
+        investment: 'investment or second home',
+      }
+      const reasonKey =
+        submission.reason && REASON_LABELS[submission.reason] ? submission.reason : null
+      const reasonLabel = reasonKey ? REASON_LABELS[reasonKey] : null
+
       // 1. Canonical kebab-case namespaced tags. list-now-lp adds
       //    seller:listing-intent for high-intent BOFU leads.
       const tags: string[] = [
@@ -467,6 +491,9 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       ]
       if (isListNowLp) {
         tags.push('seller:listing-intent')
+      }
+      if (reasonKey) {
+        tags.push(`seller-reason:${reasonKey}`)
       }
       // Paid-channel attribution — channel:*, campaign:*, and ad-content:*
       // (from utm_content, e.g. which specific ad creative) so leads are
@@ -483,6 +510,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         leadTier: classification,
         isSellerCurious: classification === 'nurture' ? 'true' : 'false',
         sellerPropertyAddress: parsed.full,
+        ...(reasonLabel ? { sellerReason: reasonLabel } : {}),
       }
 
       // 3. Lead-origin note → crm_timeline. Tells the broker WHY this lead came
@@ -505,9 +533,11 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         audience: 'seller',
         tier: classification,
         tierReason: moveTimelineText ? `move timeline ${moveTimelineText}` : undefined,
-        want: moveTimelineText
-          ? `home valuation for ${parsed.full}, plans to sell ${moveTimelineText}`
-          : `home valuation for ${parsed.full}`,
+        want:
+          (moveTimelineText
+            ? `home valuation for ${parsed.full}, plans to sell ${moveTimelineText}`
+            : `home valuation for ${parsed.full}`) +
+          (reasonLabel ? `. Situation: ${reasonLabel}` : ''),
         assignedAgent: assignment.broker,
         assignmentReason:
           assignment.userId === FUB_USER_MATT ? 'default routing to Matt' : 'agent attribution cookie',

@@ -49,6 +49,7 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { CTABar } from '@/components/site/CTABar'
 import { SellValueProps } from '@/components/site/sell/SellValueProps'
+import { SellerSituations } from '@/components/site/sell/SellerSituations.client'
 import { SellProcess } from '@/components/site/sell/SellProcess'
 import { SellProof } from '@/components/site/sell/SellProof'
 import { SellMarketingPlan } from '@/components/site/sell/SellMarketingPlan'
@@ -231,6 +232,8 @@ export default async function SellPage() {
         />
 
         <SellValueProps />
+
+        <SellerSituations />
 
         <SellProcess />
 
