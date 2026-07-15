@@ -12,6 +12,7 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -194,12 +195,12 @@ async function fetchDashboardData() {
   // surface as "No data" in the grid, which is the right behavior. Avoids
   // scanning the full 33k+ row marketing_channel_daily table on every page
   // render.
-  const { data: freshnessRows } = await db
-    .from('marketing_channel_daily')
-    .select('channel, date')
-    .gte('date', daysAgo(30))
-    .order('date', { ascending: false })
-    .limit(5000)
+  // Paged reads (G48): PostgREST caps responses at 1,000 rows — the old bare
+  // .limit(N) reads silently truncated. Composite-PK order for stable paging.
+  const { rows: freshnessRows } = await fetchPagedRows<{ channel: string; date: string }>((from, to) =>
+    db.from('marketing_channel_daily').select('channel, date').gte('date', daysAgo(30))
+      .order('date', { ascending: false }).order('channel', { ascending: true })
+      .order('scope_id', { ascending: true }).order('metric', { ascending: true }).range(from, to), 5000)
 
   const channelLastDate: Map<string, string> = new Map()
   if (freshnessRows) {
@@ -252,21 +253,15 @@ async function fetchDashboardData() {
 
   // 4. Top metrics by absolute delta (15 rows). Scope='account' + date
   // window keeps this fast; explicit limit as a safety net.
-  const { data: metrics7 } = await db
-    .from('marketing_channel_daily')
-    .select('metric, channel, value')
-    .eq('scope', 'account')
-    .gte('date', d7)
-    .lte('date', today)
-    .limit(2000)
+  const { rows: metrics7 } = await fetchPagedRows<{ metric: string; channel: string; value: number }>((from, to) =>
+    db.from('marketing_channel_daily').select('metric, channel, value').eq('scope', 'account')
+      .gte('date', d7).lte('date', today).order('date', { ascending: true }).order('channel', { ascending: true })
+      .order('scope_id', { ascending: true }).order('metric', { ascending: true }).range(from, to), 2000)
 
-  const { data: metricsPrior } = await db
-    .from('marketing_channel_daily')
-    .select('metric, channel, value')
-    .eq('scope', 'account')
-    .gte('date', d14)
-    .lt('date', d7)
-    .limit(2000)
+  const { rows: metricsPrior } = await fetchPagedRows<{ metric: string; channel: string; value: number }>((from, to) =>
+    db.from('marketing_channel_daily').select('metric, channel, value').eq('scope', 'account')
+      .gte('date', d14).lt('date', d7).order('date', { ascending: true }).order('channel', { ascending: true })
+      .order('scope_id', { ascending: true }).order('metric', { ascending: true }).range(from, to), 2000)
 
   // Aggregate by (channel, metric)
   const agg7: Map<string, number> = new Map()
@@ -308,14 +303,13 @@ async function fetchDashboardData() {
 
   // 6. Content pipeline: brief counts by status. Bounded to the last 90
    // days — older rows are not actionable from this view.
-  const { data: briefRows } = await db
-    .from('content_briefs')
-    .select('status')
-    .gte('created_at', new Date(Date.now() - 90 * 86_400_000).toISOString())
-    .limit(2000)
+  const { rows: briefRows } = await fetchPagedRows<{ status: string }>((from, to) =>
+    db.from('content_briefs').select('status')
+      .gte('created_at', new Date(Date.now() - 90 * 86_400_000).toISOString())
+      .order('id', { ascending: true }).range(from, to), 2000)
 
   const statusCounts: Map<string, number> = new Map()
-  for (const r of briefRows ?? []) {
+  for (const r of briefRows) {
     statusCounts.set(r.status, (statusCounts.get(r.status) ?? 0) + 1)
   }
   const briefStatuses: BriefStatusCount[] = [
@@ -364,14 +358,13 @@ async function fetchDashboardData() {
   // Bounded to the last 60 days — the brain rarely cares about queue state
   // older than two cycles. Limit applied as a safety net in case row count
   // grows large.
-  const { data: actionRows } = await db
-    .from('marketing_brain_actions')
-    .select('action_type, status')
-    .gte('created_at', new Date(Date.now() - 60 * 86_400_000).toISOString())
-    .limit(2000)
+  const { rows: actionRows } = await fetchPagedRows<{ action_type: string | null; status: string }>((from, to) =>
+    db.from('marketing_brain_actions').select('action_type, status')
+      .gte('created_at', new Date(Date.now() - 60 * 86_400_000).toISOString())
+      .order('id', { ascending: true }).range(from, to), 2000)
 
   const categoryMap: Map<string, ActionCategoryRow> = new Map()
-  for (const r of actionRows ?? []) {
+  for (const r of actionRows) {
     const prefix = (r.action_type as string | null)?.split(':')[0] || 'legacy'
     const row = categoryMap.get(prefix) ?? {
       category: prefix, pending: 0, ready: 0, approved: 0, executed: 0, killed: 0,

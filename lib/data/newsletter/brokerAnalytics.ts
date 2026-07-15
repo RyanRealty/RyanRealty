@@ -1,5 +1,6 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/data/client'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 
 /**
  * Per-broker newsletter analytics DAL (spec §9.5 / Phase 8).
@@ -111,17 +112,24 @@ export async function getBrokerWarmList(brokerSlug: string, limit = 50): Promise
 
   const sb = createServiceClient()
 
-  const { data: clickRows } = await sb
-    .from(EVENTS)
-    .select('email, subscriber_id, occurred_at')
-    .eq('broker', slug)
-    .eq('event', 'click')
-    .order('occurred_at', { ascending: false })
-    .limit(2000)
-
   type ClickRow = { email: string; subscriber_id: string | null; occurred_at: string }
+  // Paged read (PostgREST caps single responses at 1,000 rows — the old
+  // .limit(2000) silently truncated there). Newest-first, id tiebreaker.
+  const { rows: clickRows } = await fetchPagedRows<ClickRow>(
+    (from, to) =>
+      sb
+        .from(EVENTS)
+        .select('email, subscriber_id, occurred_at')
+        .eq('broker', slug)
+        .eq('event', 'click')
+        .order('occurred_at', { ascending: false })
+        .order('id', { ascending: false })
+        .range(from, to),
+    2000,
+  )
+
   const byEmail = new Map<string, { subscriberId: string | null; clicks: number; lastAt: string }>()
-  for (const row of (clickRows ?? []) as ClickRow[]) {
+  for (const row of clickRows) {
     const email = (row.email ?? '').trim().toLowerCase()
     if (!email) continue
     const cur = byEmail.get(email)

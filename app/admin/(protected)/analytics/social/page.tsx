@@ -14,6 +14,7 @@
  */
 import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -99,13 +100,19 @@ async function HeadlineSummary() {
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString()
 
-  // Pull recent sessions; classify in JS.
-  const { data, error } = await supabase
-    .from('visitor_sessions')
-    .select('session_id, utm_source, last_seen_at, first_seen_at, identified_at, hot_lead_fired_at')
-    .gte('first_seen_at', sevenDaysAgo)
-    .limit(5000)
-  if (error || !data) {
+  // Pull recent sessions; classify in JS. Paged read — PostgREST caps single
+  // responses at 1,000 rows, so the old .limit(5000) silently truncated there.
+  const { rows: data, error } = await fetchPagedRows(
+    (from, to) =>
+      supabase
+        .from('visitor_sessions')
+        .select('session_id, utm_source, last_seen_at, first_seen_at, identified_at, hot_lead_fired_at')
+        .gte('first_seen_at', sevenDaysAgo)
+        .order('session_id', { ascending: true })
+        .range(from, to),
+    5000,
+  )
+  if (error) {
     return <Card><CardContent className="p-6 text-sm text-destructive">Could not load summary: {error?.message}</CardContent></Card>
   }
 
@@ -129,12 +136,17 @@ async function HeadlineSummary() {
 async function ChannelBreakdown() {
   const supabase = getServiceSupabase()
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-  const { data, error } = await supabase
-    .from('visitor_sessions')
-    .select('session_id, utm_source, utm_medium, utm_campaign, identified_at, hot_lead_fired_at, ip_city, engagement_score')
-    .gte('first_seen_at', sevenDaysAgo)
-    .limit(5000)
-  if (error || !data) {
+  const { rows: data, error } = await fetchPagedRows(
+    (from, to) =>
+      supabase
+        .from('visitor_sessions')
+        .select('session_id, utm_source, utm_medium, utm_campaign, identified_at, hot_lead_fired_at, ip_city, engagement_score')
+        .gte('first_seen_at', sevenDaysAgo)
+        .order('session_id', { ascending: true })
+        .range(from, to),
+    5000,
+  )
+  if (error) {
     return <Card><CardContent className="p-6 text-sm text-destructive">Could not load channel breakdown: {error?.message}</CardContent></Card>
   }
 

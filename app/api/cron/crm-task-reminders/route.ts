@@ -28,6 +28,7 @@
 
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { isValidCronAuth } from '@/lib/auth/cron-auth'
 import { queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import { taskQueueBounds } from '@/lib/data/crm/getTaskQueue'
@@ -59,15 +60,22 @@ export async function GET(request: Request) {
   // person to hang the dedupe row off. A task with no person_id can't be deduped
   // (crm_timeline.person_id is NOT NULL) so it is excluded from the alert (it
   // still shows in the queue UI).
-  const { data, error } = await sb
-    .from('crm_tasks')
-    .select('id,name,due_at,assigned_broker,person_id')
-    .is('completed_at', null)
-    .not('person_id', 'is', null)
-    .lte('due_at', bounds.endOfToday)
-    .gte('due_at', bounds.staleFloor)
-    .order('due_at', { ascending: true })
-    .limit(2000)
+  // Paged read (PostgREST caps single responses at 1,000 rows — the old
+  // .limit(2000) silently truncated there). Due-date order, id tiebreaker.
+  const { rows: data, error } = await fetchPagedRows<OpenTaskRow>(
+    (from, to) =>
+      sb
+        .from('crm_tasks')
+        .select('id,name,due_at,assigned_broker,person_id')
+        .is('completed_at', null)
+        .not('person_id', 'is', null)
+        .lte('due_at', bounds.endOfToday)
+        .gte('due_at', bounds.staleFloor)
+        .order('due_at', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, to),
+    2000,
+  )
 
   if (error) {
     console.error('[crm-task-reminders]', error.message)
@@ -77,7 +85,7 @@ export async function GET(request: Request) {
   // Group by assigned broker; an unassigned task routes to Matt (queueBrokerAlert
   // already falls back to matt when the broker has no alert phone configured).
   const byBroker = new Map<string, OpenTaskRow[]>()
-  for (const t of (data ?? []) as OpenTaskRow[]) {
+  for (const t of data) {
     const broker = t.assigned_broker ?? 'matt'
     const list = byBroker.get(broker) ?? []
     list.push(t)

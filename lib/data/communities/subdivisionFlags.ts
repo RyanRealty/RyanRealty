@@ -11,6 +11,7 @@
 
 import { supabaseAnon } from '@/lib/data/client'
 import { createServiceClient } from '@/lib/supabase/service'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 
 function adminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -119,13 +120,20 @@ export async function getCommunitiesWithCityNeighborhoodByNames(
 }>> {
   const sb = adminClient() ?? supabaseAnon()
   if (!sb || names.length === 0) return []
-  const { data } = await sb
-    .from('communities')
-    .select('name, cities(name), neighborhoods(name, slug)')
-    .in('name', names)
-    .not('neighborhood_id', 'is', null)
-    .limit(5000)
-  return (data ?? []) as Array<{
+  // Paged read — PostgREST caps single responses at 1,000 rows; the old
+  // .limit(5000) silently truncated there.
+  const { rows } = await fetchPagedRows(
+    (from, to) =>
+      sb
+        .from('communities')
+        .select('name, cities(name), neighborhoods(name, slug)')
+        .in('name', names)
+        .not('neighborhood_id', 'is', null)
+        .order('id', { ascending: true })
+        .range(from, to),
+    5000,
+  )
+  return rows as Array<{
     name?: string | null
     cities?: { name?: string | null } | { name?: string | null }[] | null
     neighborhoods?: { name?: string | null; slug?: string | null } | { name?: string | null; slug?: string | null }[] | null
@@ -155,11 +163,18 @@ export async function getCommunitiesForSitemapJoin(
 }>> {
   const sb = adminClient() ?? supabaseAnon()
   if (!sb) return []
-  const { data } = await sb
-    .from('communities')
-    .select('name, cities(name, slug), neighborhoods(slug)')
-    .limit(limit)
-  return (data ?? []) as Array<{
+  // Paged read up to `limit` — a bare .limit(5000) truncates at PostgREST's
+  // 1,000-row response cap, silently dropping sitemap entries.
+  const { rows } = await fetchPagedRows(
+    (from, to) =>
+      sb
+        .from('communities')
+        .select('name, cities(name, slug), neighborhoods(slug)')
+        .order('id', { ascending: true })
+        .range(from, to),
+    limit,
+  )
+  return rows as Array<{
     name?: string | null
     cities?: { name?: string | null; slug?: string | null } | null
     neighborhoods?: { slug?: string | null } | null
@@ -172,8 +187,11 @@ export async function getCommunitiesForSitemap(
 ): Promise<Array<{ slug: string }>> {
   const sb = adminClient() ?? supabaseAnon()
   if (!sb) return []
-  const { data } = await sb.from('communities').select('slug').limit(limit)
-  return ((data ?? []) as Array<{ slug?: string | null }>).filter((r): r is { slug: string } => typeof r.slug === 'string' && r.slug.trim().length > 0)
+  const { rows } = await fetchPagedRows<{ slug?: string | null }>(
+    (from, to) => sb.from('communities').select('slug').order('id', { ascending: true }).range(from, to),
+    limit,
+  )
+  return rows.filter((r): r is { slug: string } => typeof r.slug === 'string' && r.slug.trim().length > 0)
 }
 
 /** All communities in a neighborhood (lite projection for community-index aggregation). */

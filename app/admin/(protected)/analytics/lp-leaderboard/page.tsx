@@ -10,6 +10,7 @@
  */
 import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -71,19 +72,25 @@ async function LpLeaderboard({ range }: { range: { startDate: string; endDate: s
 
   // Pull sessions whose first-touch landing page is an LP (or hits one of
   // our LP slugs). We classify the variant from `landing_page` then aggregate
-  // in JS. Limit 10000 sessions is well above our actual volume.
-  const { data, error } = await supabase
-    .from('visitor_sessions')
-    .select('session_id, landing_page, utm_source, utm_medium, utm_campaign, identified_at, hot_lead_fired_at, engagement_score, ip_city')
-    .gte('first_seen_at', cutoff)
-    .lte('first_seen_at', until)
-    .limit(10000)
+  // in JS. Paged read up to 10,000 sessions — PostgREST caps single responses
+  // at 1,000 rows, so the old .limit(10000) silently truncated there.
+  const { rows: data, error } = await fetchPagedRows(
+    (from, to) =>
+      supabase
+        .from('visitor_sessions')
+        .select('session_id, landing_page, utm_source, utm_medium, utm_campaign, identified_at, hot_lead_fired_at, engagement_score, ip_city')
+        .gte('first_seen_at', cutoff)
+        .lte('first_seen_at', until)
+        .order('session_id', { ascending: true })
+        .range(from, to),
+    10000,
+  )
   if (error) {
     return <Card><CardContent className="p-6 text-sm text-destructive">Could not load sessions: {error.message}</CardContent></Card>
   }
 
   const byVariant = new Map<string, LpRow>()
-  for (const raw of data ?? []) {
+  for (const raw of data) {
     const row = raw as { landing_page: string | null; utm_source: string | null; identified_at: string | null; hot_lead_fired_at: string | null; engagement_score: number; ip_city: string | null }
     const variant = lpVariantFromPath(row.landing_page)
     if (!variant) continue

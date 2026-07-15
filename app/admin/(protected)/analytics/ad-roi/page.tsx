@@ -19,6 +19,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -125,19 +126,26 @@ async function AdRoi({ range }: { range: { startDate: string; endDate: string } 
       .select('date, value')
       .eq('channel', 'fub').eq('scope', 'account').eq('metric', 'qualified_seller_leads')
       .gte('date', sinceDate),
-    // Site sessions with their source + identity state.
-    supabase.from('visitor_sessions')
-      .select('first_seen_at, utm_source, utm_campaign, identified_at, fub_person_id, hot_lead_fired_at')
-      .gte('first_seen_at', sinceTs)
-      .lte('first_seen_at', `${range.endDate}T23:59:59.999Z`)
-      .limit(20000),
+    // Site sessions with their source + identity state. Paged read —
+    // PostgREST caps single responses at 1,000 rows, so the old .limit(20000)
+    // silently truncated there.
+    fetchPagedRows<SessionRow>(
+      (from, to) =>
+        supabase.from('visitor_sessions')
+          .select('first_seen_at, utm_source, utm_campaign, identified_at, fub_person_id, hot_lead_fired_at')
+          .gte('first_seen_at', sinceTs)
+          .lte('first_seen_at', `${range.endDate}T23:59:59.999Z`)
+          .order('session_id', { ascending: true })
+          .range(from, to),
+      20000,
+    ),
     // Facebook lead-form submissions captured (count only).
     supabase.from('processed_meta_leads')
       .select('leadgen_id', { count: 'exact', head: true }),
   ])
 
   const firstErr = [metaAcctRes, metaCampRes, googleAcctRes, fubNewRes, fubQualRes, sessionsRes]
-    .find((r) => r.error)
+    .find((r) => r.error) as { error: { message: string } | null } | undefined
   if (firstErr?.error) {
     return <Card><CardContent className="p-6 text-sm text-destructive">Data read failed: {firstErr.error.message}</CardContent></Card>
   }
@@ -189,7 +197,7 @@ async function AdRoi({ range }: { range: { startDate: string; endDate: string } 
   const qualifiedLeads = ((fubQualRes.data ?? []) as DailyValueRow[]).reduce((s, r) => s + (Number(r.value) || 0), 0)
 
   // ── Sessions by channel ──────────────────────────────────────────────────────
-  const sessions = (sessionsRes.data ?? []) as SessionRow[]
+  const sessions = sessionsRes.rows
   const sessionsCapped = sessions.length === 20000
   type ChannelAgg = { sessions: number; identified: number; hot: number }
   const byChannel = new Map<string, ChannelAgg>()

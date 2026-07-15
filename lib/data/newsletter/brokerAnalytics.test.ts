@@ -20,6 +20,9 @@ function makeQueryBuilder(result: unknown) {
   builder.in = vi.fn(() => builder)
   builder.order = vi.fn(() => builder)
   builder.limit = vi.fn(() => Promise.resolve(result))
+  // Paged reads (fetchPagedRows) terminate the chain with .range(from, to);
+  // returning fewer than a full page ends the loop after one call.
+  builder.range = vi.fn(() => Promise.resolve(result))
   // Some call chains resolve directly off the builder (head:true counts end
   // in .eq(...) with no further chain call) — make the builder itself
   // thenable so `await sb.from(...).select(...).eq(...).eq(...)` resolves.

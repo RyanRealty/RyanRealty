@@ -1,5 +1,6 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/data/client'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 
 /**
  * Newsletter send-queue DATA LAYER (spec §6 / §6.5). Raw table access lives here
@@ -84,19 +85,19 @@ export async function getEngagementSets(lookback = 2): Promise<{ engaged: Set<st
     .limit(lookback)
   const recentIds = (recent ?? []).map((r) => (r as { id: string }).id)
 
+  // Paged reads (G48): a single-shot read caps at 1,000 rows and mis-tiers big sends.
   const engaged = new Set<string>()
   if (recentIds.length > 0) {
-    const { data: ev } = await sb
-      .from(EVENTS)
-      .select('email, event')
-      .in('newsletter_id', recentIds)
-      .in('event', ['open', 'click'])
-    for (const row of ev ?? []) engaged.add(((row as { email: string }).email || '').toLowerCase())
+    const { rows } = await fetchPagedRows<{ email: string }>((from, to) =>
+      sb.from(EVENTS).select('email, event').in('newsletter_id', recentIds)
+        .in('event', ['open', 'click']).order('id', { ascending: true }).range(from, to))
+    for (const row of rows) engaged.add((row.email || '').toLowerCase())
   }
 
   const everSent = new Set<string>()
-  const { data: prior } = await sb.from(RECIPIENTS).select('email').limit(100000)
-  for (const row of prior ?? []) everSent.add(((row as { email: string }).email || '').toLowerCase())
+  const { rows: prior } = await fetchPagedRows<{ email: string }>((from, to) =>
+    sb.from(RECIPIENTS).select('email').order('id', { ascending: true }).range(from, to), 100000)
+  for (const row of prior) everSent.add((row.email || '').toLowerCase())
 
   return { engaged, everSent }
 }

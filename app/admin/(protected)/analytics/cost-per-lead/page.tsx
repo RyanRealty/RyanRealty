@@ -10,6 +10,7 @@
  */
 import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -78,12 +79,19 @@ async function CostPerLead({ range }: { range: { startDate: string; endDate: str
       .select('date, value')
       .eq('channel', 'fub').eq('scope', 'account').eq('metric', 'new_leads')
       .gte('date', cutoff),
-    // From visitor_sessions: identified-from-FB count per day
-    supabase.from('visitor_sessions')
-      .select('first_seen_at, utm_source, identified_at, hot_lead_fired_at')
-      .gte('first_seen_at', sinceTs)
-      .lte('first_seen_at', endTs)
-      .limit(20000),
+    // From visitor_sessions: identified-from-FB count per day. Paged read —
+    // PostgREST caps single responses at 1,000 rows, so the old .limit(20000)
+    // silently truncated there and undercounted sessions.
+    fetchPagedRows<{ first_seen_at: string; utm_source: string | null; identified_at: string | null; hot_lead_fired_at: string | null }>(
+      (from, to) =>
+        supabase.from('visitor_sessions')
+          .select('first_seen_at, utm_source, identified_at, hot_lead_fired_at')
+          .gte('first_seen_at', sinceTs)
+          .lte('first_seen_at', endTs)
+          .order('session_id', { ascending: true })
+          .range(from, to),
+      20000,
+    ),
     supabase.from('marketing_channel_daily')
       .select('date, value')
       .eq('channel', 'fub').eq('scope', 'account').eq('metric', 'deals_closed_won')
@@ -96,7 +104,7 @@ async function CostPerLead({ range }: { range: { startDate: string; endDate: str
 
   if (spendRes.error) return <Card><CardContent className="p-6 text-sm text-destructive">spend read failed: {spendRes.error.message}</CardContent></Card>
 
-  const sessionsCapped = (identifiedRes.data ?? []).length === 20000
+  const sessionsCapped = identifiedRes.rows.length === 20000
 
   // ─── Per-week roll-up: spend (Meta + Google), qualified leads, identified ────
   // metaSpend + googleSpend tracked separately so the table shows per-platform.
@@ -138,8 +146,7 @@ async function CostPerLead({ range }: { range: { startDate: string; endDate: str
   for (const r of (closedVolRes.data ?? []) as DailyRow[]) {
     bucket(isoWeekStart(r.date)).closedVolume += Number(r.value) || 0
   }
-  for (const raw of (identifiedRes.data ?? [])) {
-    const row = raw as { first_seen_at: string; utm_source: string | null; identified_at: string | null; hot_lead_fired_at: string | null }
+  for (const row of identifiedRes.rows) {
     const src = (row.utm_source || '').toLowerCase()
     const isFb = /(^|[\s_/-])(facebook|fb|instagram)([\s_/-]|$)/.test(src) || src === 'facebook' || src === 'instagram' || src === 'fb'
     if (!isFb) continue

@@ -2,6 +2,7 @@
 // Top queries, top pages, easy wins.
 import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -37,14 +38,27 @@ type Agg = { clicks: number; impressions: number; ctrSum: number; ctrN: number; 
 type Row = { key: string; clicks: number; impressions: number; ctr: number; position: number }
 
 async function aggBy(scope: 'campaign' | 'page', sinceDate: string, untilDate?: string): Promise<Row[]> {
-  const q = sup().from('marketing_channel_daily')
-    .select('scope_id, metric, value')
-    .eq('channel', 'gsc').eq('scope', scope)
-    .in('metric', ['clicks', 'impressions', 'ctr', 'position'])
-    .gte('date', sinceDate).limit(50000)
-  const { data } = await (untilDate ? q.lte('date', untilDate) : q)
+  const client = sup()
+  // Paged read — PostgREST caps single responses at 1,000 rows, so the old
+  // .limit(50000) silently truncated the GSC aggregate there. Ordered on the
+  // composite PK (date, channel/scope fixed, scope_id, metric) for stability.
+  const { rows: data } = await fetchPagedRows(
+    (from, to) => {
+      const q = client.from('marketing_channel_daily')
+        .select('scope_id, metric, value')
+        .eq('channel', 'gsc').eq('scope', scope)
+        .in('metric', ['clicks', 'impressions', 'ctr', 'position'])
+        .gte('date', sinceDate)
+      return (untilDate ? q.lte('date', untilDate) : q)
+        .order('date', { ascending: true })
+        .order('scope_id', { ascending: true })
+        .order('metric', { ascending: true })
+        .range(from, to)
+    },
+    50000,
+  )
   const m = new Map<string, Agg>()
-  for (const raw of (data ?? [])) {
+  for (const raw of data) {
     const r = raw as { scope_id: string; metric: string; value: number }
     const a = m.get(r.scope_id) ?? { clicks: 0, impressions: 0, ctrSum: 0, ctrN: 0, posSum: 0, posN: 0 }
     const v = Number(r.value) || 0

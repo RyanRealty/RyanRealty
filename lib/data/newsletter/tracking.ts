@@ -1,5 +1,6 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/data/client'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 
 /**
  * DAL reads for the pixel/click → newsletter ledger hook (spec §5/H1) and the
@@ -66,13 +67,21 @@ export async function getRecipientForPerson(
  */
 export async function countUnsubscribedRecipients(newsletterId: string): Promise<number> {
   const sb = createServiceClient()
-  const { data: recRows } = await sb
-    .from(RECIPIENTS)
-    .select('subscriber_id')
-    .eq('newsletter_id', newsletterId)
-    .not('subscriber_id', 'is', null)
-    .limit(20000)
-  const ids = [...new Set(((recRows ?? []) as Array<{ subscriber_id: string }>).map((r) => r.subscriber_id))]
+  // Paged read (PostgREST caps single responses at 1,000 rows — the old
+  // .limit(20000) silently truncated the recipient set past the first 1,000,
+  // undercounting unsubs on any large send).
+  const { rows: recRows } = await fetchPagedRows<{ subscriber_id: string }>(
+    (from, to) =>
+      sb
+        .from(RECIPIENTS)
+        .select('subscriber_id')
+        .eq('newsletter_id', newsletterId)
+        .not('subscriber_id', 'is', null)
+        .order('id', { ascending: true })
+        .range(from, to),
+    20000,
+  )
+  const ids = [...new Set(recRows.map((r) => r.subscriber_id))]
   if (ids.length === 0) return 0
 
   let total = 0

@@ -30,6 +30,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import { scopeBroker, isPersonInScope } from '@/lib/crm/scope'
 import {
@@ -140,19 +141,26 @@ export async function markAllReadAction(): Promise<InboxActionResult> {
   //    by default. Materialize an 'open' state row for those so "mark all read"
   //    actually clears the inbox. Resolve the set from recent inbound messages,
   //    broker-scoped, excluding any person that already has a state row.
-  let inboundQ = sb
-    .from('crm_timeline')
-    .select('person_id,crm_people!inner(assigned_broker,deleted)')
-    .in('kind', ['sms_in', 'email_in', 'call', 'voicemail'])
-    .order('ts', { ascending: false })
-    .limit(2000)
-  if (slug) inboundQ = inboundQ.eq('crm_people.assigned_broker', slug)
-  const { data: inboundRows } = await inboundQ
-
+  // Paged read (PostgREST caps single responses at 1,000 rows — the old
+  // .limit(2000) silently truncated there). Newest-first, id tiebreaker.
   type Joined = { person_id: number; crm_people: { assigned_broker: string | null; deleted: boolean } | Array<{ assigned_broker: string | null; deleted: boolean }> | null }
+  const { rows: inboundRows } = await fetchPagedRows<Joined>(
+    (from, to) => {
+      let inboundQ = sb
+        .from('crm_timeline')
+        .select('person_id,crm_people!inner(assigned_broker,deleted)')
+        .in('kind', ['sms_in', 'email_in', 'call', 'voicemail'])
+        .order('ts', { ascending: false })
+        .order('id', { ascending: false })
+      if (slug) inboundQ = inboundQ.eq('crm_people.assigned_broker', slug)
+      return inboundQ.range(from, to)
+    },
+    2000,
+  )
+
   const candidatePersonIds = new Set<number>()
   const ownerByPerson = new Map<number, string | null>()
-  for (const r of (inboundRows ?? []) as unknown as Joined[]) {
+  for (const r of inboundRows) {
     const p = Array.isArray(r.crm_people) ? r.crm_people[0] : r.crm_people
     if (!p || p.deleted) continue
     candidatePersonIds.add(r.person_id)

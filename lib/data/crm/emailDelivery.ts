@@ -1,5 +1,6 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import {
   recoverSendTypes,
   safeRate,
@@ -417,27 +418,37 @@ export async function getPersonDeliveryHistory(params: {
   if (!personId && !email) return { rows: [], totalSends: 0, unreadable: false }
 
   const sb = createServiceClient()
-  let query = sb
-    .from('email_events')
-    .select('message_id,recipient_email,person_id,broker,send_type,event,email_key,subject,occurred_at')
-  if (personId && email) {
-    // PostgREST or(): email is normalized lowercase at write time; strip chars
-    // that would break the filter string rather than pass them through.
-    const safe = email.replace(/[,()"\\]/g, '')
-    query = query.or(`person_id.eq.${personId},recipient_email.eq.${safe}`)
-  } else if (personId) {
-    query = query.eq('person_id', personId)
-  } else {
-    query = query.eq('recipient_email', email)
-  }
-  const { data, error } = await query.order('occurred_at', { ascending: false }).limit(2000)
+  // Paged read (PostgREST caps single responses at 1,000 rows — the old
+  // .limit(2000) silently truncated a chatty contact's history there).
+  const { rows: data, error } = await fetchPagedRows<RawEmailEventRow>(
+    (from, to) => {
+      let query = sb
+        .from('email_events')
+        .select('message_id,recipient_email,person_id,broker,send_type,event,email_key,subject,occurred_at')
+      if (personId && email) {
+        // PostgREST or(): email is normalized lowercase at write time; strip chars
+        // that would break the filter string rather than pass them through.
+        const safe = email.replace(/[,()"\\]/g, '')
+        query = query.or(`person_id.eq.${personId},recipient_email.eq.${safe}`)
+      } else if (personId) {
+        query = query.eq('person_id', personId)
+      } else {
+        query = query.eq('recipient_email', email)
+      }
+      return query
+        .order('occurred_at', { ascending: false })
+        .order('id', { ascending: false })
+        .range(from, to)
+    },
+    2000,
+  )
 
   if (error) {
     console.error('[getPersonDeliveryHistory]', error.message)
     return { rows: [], totalSends: 0, unreadable: true }
   }
 
-  const recovered = recoverSendTypes((data ?? []) as RawEmailEventRow[])
+  const recovered = recoverSendTypes(data)
   const rows = foldSendRows(recovered)
   return { rows: rows.slice(0, limit), totalSends: rows.length, unreadable: false }
 }

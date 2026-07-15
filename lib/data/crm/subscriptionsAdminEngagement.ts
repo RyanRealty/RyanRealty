@@ -1,5 +1,6 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 
 /**
  * Engagement rollups for the admin Subscriptions hub — split from
@@ -56,17 +57,24 @@ export async function getAlertEngagementByIds(
   const clean = [...new Set(ids.filter((id) => /^[0-9a-f-]{32,40}$/i.test(id)))]
   if (clean.length === 0) return out
   const sb = createServiceClient()
-  const { data, error } = await sb
-    .from('email_events')
-    .select('email_key, event, occurred_at')
-    .or(clean.map((id) => `email_key.like.listing-alert:${id}:%`).join(','))
-    .in('event', ['sent', 'open', 'click'])
-    .limit(10000)
+  // Paged read (PostgREST caps single responses at 1,000 rows — the old
+  // .limit(10000) silently truncated there, undercounting sends/opens/clicks).
+  const { rows: data, error } = await fetchPagedRows<EngagementEventRow>(
+    (from, to) =>
+      sb
+        .from('email_events')
+        .select('email_key, event, occurred_at')
+        .or(clean.map((id) => `email_key.like.listing-alert:${id}:%`).join(','))
+        .in('event', ['sent', 'open', 'click'])
+        .order('id', { ascending: true })
+        .range(from, to),
+    10000,
+  )
   if (error) {
     console.error('[getAlertEngagementByIds]', error.message)
     return out
   }
-  for (const e of (data ?? []) as EngagementEventRow[]) {
+  for (const e of data) {
     const rowId = (e.email_key ?? '').split(':')[1] ?? ''
     if (!rowId) continue
     const agg = out.get(rowId) ?? emptyEngagement()
@@ -87,18 +95,24 @@ export async function getReportEngagementByPersonIds(
   const clean = [...new Set(personIds.filter((n) => Number.isInteger(n) && n > 0))]
   if (clean.length === 0) return out
   const sb = createServiceClient()
-  const { data, error } = await sb
-    .from('email_events')
-    .select('person_id, event, occurred_at')
-    .eq('send_type', 'market-report')
-    .in('person_id', clean)
-    .in('event', ['sent', 'open', 'click'])
-    .limit(10000)
+  // Paged read — same 1,000-row response-cap rationale as getAlertEngagementByIds.
+  const { rows: data, error } = await fetchPagedRows<EngagementEventRow>(
+    (from, to) =>
+      sb
+        .from('email_events')
+        .select('person_id, event, occurred_at')
+        .eq('send_type', 'market-report')
+        .in('person_id', clean)
+        .in('event', ['sent', 'open', 'click'])
+        .order('id', { ascending: true })
+        .range(from, to),
+    10000,
+  )
   if (error) {
     console.error('[getReportEngagementByPersonIds]', error.message)
     return out
   }
-  for (const e of (data ?? []) as EngagementEventRow[]) {
+  for (const e of data) {
     const pid = e.person_id
     if (!pid) continue
     const agg = out.get(pid) ?? emptyEngagement()

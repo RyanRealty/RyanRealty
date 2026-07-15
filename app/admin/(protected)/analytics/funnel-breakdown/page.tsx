@@ -17,6 +17,7 @@
  */
 import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -279,11 +280,18 @@ async function FunnelContent({ range }: { range: { startDate: string; endDate: s
     (new Date(range.endDate).getTime() - new Date(range.startDate).getTime()) / (24 * 60 * 60 * 1000)
   ) + 1
 
-  const { data, error } = await supabase
-    .from('visitor_sessions')
-    .select('session_id, utm_source, utm_medium, utm_campaign, ip_city, engagement_score, peak_score, intent_tags, identified_at, fub_person_id, hot_lead_fired_at, source_domain')
-    .gte('first_seen_at', cutoff)
-    .limit(5000)
+  // Paged read — PostgREST caps single responses at 1,000 rows, so the old
+  // .limit(5000) silently truncated the funnel past the first 1,000 sessions.
+  const { rows: data, error } = await fetchPagedRows<SessionRow>(
+    (from, to) =>
+      supabase
+        .from('visitor_sessions')
+        .select('session_id, utm_source, utm_medium, utm_campaign, ip_city, engagement_score, peak_score, intent_tags, identified_at, fub_person_id, hot_lead_fired_at, source_domain')
+        .gte('first_seen_at', cutoff)
+        .order('session_id', { ascending: true })
+        .range(from, to),
+    5000,
+  )
 
   if (error) {
     return (
@@ -291,7 +299,7 @@ async function FunnelContent({ range }: { range: { startDate: string; endDate: s
     )
   }
 
-  const rows = (data ?? []) as SessionRow[]
+  const rows = data
   if (rows.length === 0) {
     return (
       <Card>

@@ -10,6 +10,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -312,14 +313,21 @@ async function SpendAlerts() {
 async function LpRebuildCard() {
   const supabase = getSupabase()
   const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-  const { data, error } = await supabase
-    .from('visitor_sessions')
-    .select('landing_page, identified_at')
-    .gte('first_seen_at', cutoff)
-    .limit(5000)
+  // Paged read — PostgREST caps single responses at 1,000 rows, so the old
+  // .limit(5000) silently truncated there.
+  const { rows: data, error } = await fetchPagedRows(
+    (from, to) =>
+      supabase
+        .from('visitor_sessions')
+        .select('landing_page, identified_at')
+        .gte('first_seen_at', cutoff)
+        .order('session_id', { ascending: true })
+        .range(from, to),
+    5000,
+  )
   if (error) return null
   const byLp = new Map<string, { visits: number; identified: number }>()
-  for (const raw of (data ?? [])) {
+  for (const raw of data) {
     const r = raw as { landing_page: string | null; identified_at: string | null }
     const variant = lpVariantFromPath(r.landing_page)
     if (!variant) continue

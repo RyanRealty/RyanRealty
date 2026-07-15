@@ -10,6 +10,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
 
 export const maxDuration = 60
@@ -75,11 +76,19 @@ export async function GET(request: NextRequest) {
   const yDate = yesterdayUtc.toISOString().slice(0, 10)
   const yLabel = yesterdayUtc.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles', weekday: 'short', month: 'short', day: 'numeric' })
 
-  const [{ data: ySess }, dSessCount, { data: ySpend }, { data: yQual }, { data: yEvents }] = await Promise.all([
-    supabase.from('visitor_sessions')
-      .select('session_id, utm_source, utm_medium, utm_campaign, ip_city, identified_at, hot_lead_fired_at, landing_page, engagement_score, first_seen_at')
-      .gte('first_seen_at', yStart).lt('first_seen_at', yEnd)
-      .limit(5000),
+  // The two big reads are paged — PostgREST caps single responses at 1,000
+  // rows, so the old .limit(5000)/.limit(50000) silently truncated there and
+  // undercounted the digest.
+  const [{ rows: ySess }, dSessCount, { data: ySpend }, { data: yQual }, { rows: yEvents }] = await Promise.all([
+    fetchPagedRows(
+      (from, to) =>
+        supabase.from('visitor_sessions')
+          .select('session_id, utm_source, utm_medium, utm_campaign, ip_city, identified_at, hot_lead_fired_at, landing_page, engagement_score, first_seen_at')
+          .gte('first_seen_at', yStart).lt('first_seen_at', yEnd)
+          .order('session_id', { ascending: true })
+          .range(from, to),
+      5000,
+    ),
     supabase.from('visitor_sessions')
       .select('session_id', { count: 'exact', head: true })
       .gte('first_seen_at', dayBeforeUtc.toISOString()).lt('first_seen_at', yStart),
@@ -89,13 +98,18 @@ export async function GET(request: NextRequest) {
     supabase.from('marketing_channel_daily')
       .select('value')
       .eq('channel', 'fub').eq('scope', 'account').eq('metric', 'qualified_seller_leads').eq('date', yDate),
-    supabase.from('visitor_events')
-      .select('page_category')
-      .gte('event_at', yStart).lt('event_at', yEnd)
-      .limit(50000),
+    fetchPagedRows(
+      (from, to) =>
+        supabase.from('visitor_events')
+          .select('page_category')
+          .gte('event_at', yStart).lt('event_at', yEnd)
+          .order('id', { ascending: true })
+          .range(from, to),
+      50000,
+    ),
   ])
 
-  const sessions = (ySess ?? []) as Array<{ utm_source: string | null; utm_medium: string | null; utm_campaign: string | null; ip_city: string | null; identified_at: string | null; hot_lead_fired_at: string | null; landing_page: string | null; engagement_score: number }>
+  const sessions = ySess as Array<{ utm_source: string | null; utm_medium: string | null; utm_campaign: string | null; ip_city: string | null; identified_at: string | null; hot_lead_fired_at: string | null; landing_page: string | null; engagement_score: number }>
   const yesterdayCount = sessions.length
   const dayBeforeCount = dSessCount.count ?? 0
   const identifiedCount = sessions.filter((s) => s.identified_at).length
@@ -127,7 +141,7 @@ export async function GET(request: NextRequest) {
   const topLps = Array.from(byLp.entries()).sort((a, b) => b[1].visits - a[1].visits).slice(0, 6)
 
   const eventsByCategory = new Map<string, number>()
-  for (const e of ((yEvents ?? []) as Array<{ page_category: string | null }>)) {
+  for (const e of (yEvents as Array<{ page_category: string | null }>)) {
     const c = e.page_category || 'other'
     eventsByCategory.set(c, (eventsByCategory.get(c) ?? 0) + 1)
   }

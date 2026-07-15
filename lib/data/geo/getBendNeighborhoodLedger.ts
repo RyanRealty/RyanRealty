@@ -22,6 +22,7 @@
 
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { supabaseAnon } from '@/lib/data/client'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { cacheTag } from '@/lib/data/cache/unstable-cache'
 
 /** Bend NA districts shown on the /cities/bend neighborhoods ledger (label =
@@ -68,17 +69,28 @@ async function _fetchBendNeighborhoodLedger(): Promise<NeighborhoodLedgerRow[]> 
   const sb = supabaseAnon()
   if (!sb) return []
 
-  const { data, error } = await sb
-    .from('listing_tile_mv')
-    .select('boundary_neighborhood, list_price')
-    .in('standard_status', ['Active', 'Coming Soon'])
-    .eq('property_type', 'A')
-    .eq('property_sub_type', 'Single Family Residence')
-    .in(
-      'boundary_neighborhood',
-      LEDGER_NEIGHBORHOODS.map((n) => n.label),
-    )
-    .limit(2000)
+  // Paged read (PostgREST caps single responses at 1,000 rows — a bare
+  // .limit(2000) silently truncated there once active inventory grew,
+  // undercounting neighborhoods and skewing medians).
+  const { rows: data, error } = await fetchPagedRows<{
+    boundary_neighborhood: string | null
+    list_price: number | null
+  }>(
+    (from, to) =>
+      sb
+        .from('listing_tile_mv')
+        .select('boundary_neighborhood, list_price')
+        .in('standard_status', ['Active', 'Coming Soon'])
+        .eq('property_type', 'A')
+        .eq('property_sub_type', 'Single Family Residence')
+        .in(
+          'boundary_neighborhood',
+          LEDGER_NEIGHBORHOODS.map((n) => n.label),
+        )
+        .order('listing_key', { ascending: true })
+        .range(from, to),
+    2000,
+  )
 
   if (error) {
     throw new Error(
@@ -87,10 +99,7 @@ async function _fetchBendNeighborhoodLedger(): Promise<NeighborhoodLedgerRow[]> 
   }
 
   const byLabel = new Map<string, number[]>()
-  for (const row of (data ?? []) as Array<{
-    boundary_neighborhood: string | null
-    list_price: number | null
-  }>) {
+  for (const row of data) {
     if (!row.boundary_neighborhood) continue
     const prices = byLabel.get(row.boundary_neighborhood) ?? []
     if (row.list_price != null && Number.isFinite(Number(row.list_price)) && Number(row.list_price) > 0) {

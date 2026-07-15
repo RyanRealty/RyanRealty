@@ -1,5 +1,6 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 
 /**
  * getPeopleListSignals — per-row signals for the §05 People list
@@ -44,13 +45,21 @@ export async function getPeopleListSignals(personIds: number[]): Promise<Map<num
       .in('crm_person_id', ids)
       .order('last_seen_at', { ascending: false })
       .limit(1000),
-    sb
-      .from('crm_timeline')
-      .select('person_id,kind,title,ts')
-      .in('person_id', ids)
-      .in('kind', LEAD_KINDS as unknown as string[])
-      .order('ts', { ascending: false })
-      .limit(2000),
+    // Paged read (PostgREST caps single responses at 1,000 rows — a bare
+    // .limit(2000) silently truncated there, dropping low-activity people's
+    // latest events behind chattier ones). Newest-first, id tiebreaker.
+    fetchPagedRows<{ person_id: number; kind: string; title: string | null; ts: string | null }>(
+      (from, to) =>
+        sb
+          .from('crm_timeline')
+          .select('person_id,kind,title,ts')
+          .in('person_id', ids)
+          .in('kind', LEAD_KINDS as unknown as string[])
+          .order('ts', { ascending: false })
+          .order('id', { ascending: false })
+          .range(from, to),
+      2000,
+    ),
   ])
 
   if (visits.error) console.error('[getPeopleListSignals] visits', visits.error.message)
@@ -61,7 +70,7 @@ export async function getPeopleListSignals(personIds: number[]): Promise<Map<num
   }
 
   if (events.error) console.error('[getPeopleListSignals] timeline', events.error.message)
-  for (const e of events.data ?? []) {
+  for (const e of events.rows) {
     const pid = Number(e.person_id)
     const sig = out.get(pid)
     if (sig && !sig.lastActivity && e.ts) {

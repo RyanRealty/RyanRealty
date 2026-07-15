@@ -8,6 +8,7 @@
  */
 import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
@@ -44,19 +45,26 @@ async function ListingLeaderboard({ range }: { range: { startDate: string; endDa
   const since = `${range.startDate}T00:00:00.000Z`
   const until = `${range.endDate}T23:59:59.999Z`
 
-  // Pull listing_view events for the selected range, then aggregate in JS
-  const { data: events, error } = await supabase
-    .from('visitor_events')
-    .select('session_id, listing_mls, listing_street, listing_city, listing_state, listing_price, page_url, event_at, source_domain')
-    .eq('event_type', 'listing_view')
-    .not('listing_mls', 'is', null)
-    .gte('event_at', since)
-    .lte('event_at', until)
-    .limit(50000)
+  // Pull listing_view events for the selected range, then aggregate in JS.
+  // Paged read — PostgREST caps single responses at 1,000 rows, so the old
+  // .limit(50000) silently truncated the leaderboard there.
+  const { rows: events, error } = await fetchPagedRows<{ session_id: string; listing_mls: string; listing_street: string | null; listing_city: string | null; listing_state: string | null; listing_price: number | null; page_url: string; event_at: string; source_domain: string }>(
+    (from, to) =>
+      supabase
+        .from('visitor_events')
+        .select('session_id, listing_mls, listing_street, listing_city, listing_state, listing_price, page_url, event_at, source_domain')
+        .eq('event_type', 'listing_view')
+        .not('listing_mls', 'is', null)
+        .gte('event_at', since)
+        .lte('event_at', until)
+        .order('id', { ascending: true })
+        .range(from, to),
+    50000,
+  )
   if (error) {
     return <Card><CardContent className="p-6 text-sm text-destructive">Could not load listing events: {error.message}</CardContent></Card>
   }
-  const evRows = (events ?? []) as Array<{ session_id: string; listing_mls: string; listing_street: string | null; listing_city: string | null; listing_state: string | null; listing_price: number | null; page_url: string; event_at: string; source_domain: string }>
+  const evRows = events
   const eventsCapped = evRows.length === 50000
   if (evRows.length === 0) {
     return (

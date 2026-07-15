@@ -7,6 +7,7 @@
  */
 
 import { supabaseAnon } from '@/lib/data/client'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
 
 export type ListingDetailPhotoRow = {
@@ -139,25 +140,37 @@ export async function getListingKeysForBrokerByLicense(license: string): Promise
   if (!sb || !license?.trim()) return []
   const digits = license.replace(/\D/g, '')
   if (!digits) return []
-  const { data } = await sb
-    .from('listing_agents')
-    .select('listing_key')
-    .in('agent_role', ['list', 'listing'])
-    .ilike('agent_license', `%${digits}%`)
-    .limit(5000)
-  return [...new Set((data ?? []).map((r: { listing_key?: string | null }) => (r.listing_key ?? '').trim()).filter(Boolean))]
+  // Paged read — PostgREST caps single responses at 1,000 rows, so the old
+  // .limit(5000) silently truncated a busy broker's listing set.
+  const { rows } = await fetchPagedRows<{ listing_key?: string | null }>(
+    (from, to) =>
+      sb
+        .from('listing_agents')
+        .select('listing_key')
+        .in('agent_role', ['list', 'listing'])
+        .ilike('agent_license', `%${digits}%`)
+        .order('id', { ascending: true })
+        .range(from, to),
+    5000,
+  )
+  return [...new Set(rows.map((r) => (r.listing_key ?? '').trim()).filter(Boolean))]
 }
 
 export async function getListingKeysForBrokerByEmail(email: string): Promise<string[]> {
   const sb = supabaseAnon()
   if (!sb || !email?.trim()) return []
-  const { data } = await sb
-    .from('listing_agents')
-    .select('listing_key')
-    .in('agent_role', ['list', 'listing'])
-    .ilike('agent_email', email.trim())
-    .limit(5000)
-  return [...new Set((data ?? []).map((r: { listing_key?: string | null }) => (r.listing_key ?? '').trim()).filter(Boolean))]
+  const { rows } = await fetchPagedRows<{ listing_key?: string | null }>(
+    (from, to) =>
+      sb
+        .from('listing_agents')
+        .select('listing_key')
+        .in('agent_role', ['list', 'listing'])
+        .ilike('agent_email', email.trim())
+        .order('id', { ascending: true })
+        .range(from, to),
+    5000,
+  )
+  return [...new Set(rows.map((r) => (r.listing_key ?? '').trim()).filter(Boolean))]
 }
 
 /**
@@ -176,18 +189,17 @@ export async function getListingKeysForBrokerByEmail(email: string): Promise<str
 export async function getListingKeysByListAgentEmail(email: string): Promise<string[]> {
   const sb = supabaseAnon()
   if (!sb || !email?.trim()) return []
-  const { data } = await sb
-    .from('listings')
-    .select('ListingKey')
-    .eq('list_agent_email', email.trim().toLowerCase())
-    .limit(5000)
-  return [
-    ...new Set(
-      (data ?? [])
-        .map((r: { ListingKey?: string | null }) => (r.ListingKey ?? '').trim())
-        .filter(Boolean),
-    ),
-  ]
+  const { rows } = await fetchPagedRows<{ ListingKey?: string | null }>(
+    (from, to) =>
+      sb
+        .from('listings')
+        .select('ListingKey')
+        .eq('list_agent_email', email.trim().toLowerCase())
+        .order('ListingKey', { ascending: true })
+        .range(from, to),
+    5000,
+  )
+  return [...new Set(rows.map((r) => (r.ListingKey ?? '').trim()).filter(Boolean))]
 }
 
 /** Listing agent rows (role in 'list' | 'listing'). */

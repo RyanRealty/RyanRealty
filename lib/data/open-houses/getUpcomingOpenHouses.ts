@@ -31,6 +31,7 @@
  */
 
 import { supabaseAnon } from '@/lib/data/client'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { SERVICE_AREA_CITIES_PROPER } from '@/lib/data/listings/service-area'
@@ -88,32 +89,37 @@ async function _getUpcomingOpenHousesUncached(options: {
   const from = options.dateFromIso > options.todayIso ? options.dateFromIso : options.todayIso
   const to = options.dateToIso
 
-  let query = sb
-    .from('listings')
-    .select('ListingKey, City, OpenHouses')
-    .eq('StandardStatus', 'Active')
-    // IDX compliance: exclude seller internet opt-outs + non-IDX listings.
-    .not('permit_internet_yn', 'is', false)
-    .not('idx_participant', 'is', false)
-    .not('OpenHouses', 'is', null)
-    .neq('OpenHouses', '[]')
-    // Exclude builder spec / model homes. They list "open houses" with
-    // standing daily hours, which floods the feed with new-construction
-    // inventory instead of real public open houses (Matt directive
-    // 2026-05-28). new_construction_yn IS NOT TRUE keeps resale + unflagged.
-    .not('new_construction_yn', 'is', true)
-    .limit(2000)
-  if (options.city?.trim()) query = query.eq('City', options.city.trim())
-  else query = query.in('City', SERVICE_AREA_CITIES)
-
-  const { data, error } = await query
+  // Paged read (PostgREST caps single responses at 1,000 rows — a bare
+  // .limit(2000) silently truncated there once inventory grew).
+  const { rows: data, error } = await fetchPagedRows<{ ListingKey?: string; OpenHouses?: OpenHouseJson[] }>(
+    (from, to) => {
+      let query = sb
+        .from('listings')
+        .select('ListingKey, City, OpenHouses')
+        .eq('StandardStatus', 'Active')
+        // IDX compliance: exclude seller internet opt-outs + non-IDX listings.
+        .not('permit_internet_yn', 'is', false)
+        .not('idx_participant', 'is', false)
+        .not('OpenHouses', 'is', null)
+        .neq('OpenHouses', '[]')
+        // Exclude builder spec / model homes. They list "open houses" with
+        // standing daily hours, which floods the feed with new-construction
+        // inventory instead of real public open houses (Matt directive
+        // 2026-05-28). new_construction_yn IS NOT TRUE keeps resale + unflagged.
+        .not('new_construction_yn', 'is', true)
+      if (options.city?.trim()) query = query.eq('City', options.city.trim())
+      else query = query.in('City', SERVICE_AREA_CITIES)
+      return query.order('ListingKey', { ascending: true }).range(from, to)
+    },
+    2000,
+  )
   // THROW on a transient DB error so makeResilientCached never caches the empty
   // result (poison-null: one pooler/timeout blip would otherwise blank the
   // "open houses this weekend" grid for the whole 15-min window). Genuine empty → [].
   if (error) throw new Error(`[getUpcomingOpenHouses] ${error.message ?? JSON.stringify(error)}`)
 
   const soonestByListing = new Map<string, UpcomingOpenHouseRow>()
-  for (const rec of (data ?? []) as Array<{ ListingKey?: string; OpenHouses?: OpenHouseJson[] }>) {
+  for (const rec of data) {
     const listingKey = rec.ListingKey
     const ohs = rec.OpenHouses
     if (!listingKey || !Array.isArray(ohs)) continue

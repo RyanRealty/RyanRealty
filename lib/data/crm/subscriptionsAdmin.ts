@@ -1,5 +1,6 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import {
   getAlertEngagementByIds,
   getReportEngagementByPersonIds,
@@ -264,17 +265,24 @@ export async function listReportSubscriptionsAdmin(
   let personIdFilter: number[] | null = null
   const q = (opts.q ?? '').trim().replace(/[,()"\\]/g, ' ').trim()
   if (q) {
-    const { data: matches, error: matchErr } = await sb
-      .from('crm_people')
-      .select('id')
-      .eq('deleted', false)
-      .or(`name.ilike.%${q}%,emails::text.ilike.%${q}%`)
-      .limit(2000)
+    // Paged read (PostgREST caps single responses at 1,000 rows — the old
+    // .limit(2000) silently truncated broad search matches there).
+    const { rows: matches, error: matchErr } = await fetchPagedRows<{ id: number }>(
+      (from, to) =>
+        sb
+          .from('crm_people')
+          .select('id')
+          .eq('deleted', false)
+          .or(`name.ilike.%${q}%,emails::text.ilike.%${q}%`)
+          .order('id', { ascending: true })
+          .range(from, to),
+      2000,
+    )
     if (matchErr) {
       console.error('[listReportSubscriptionsAdmin match]', matchErr.message)
       return { rows: [], total: 0 }
     }
-    personIdFilter = (matches ?? []).map((m) => m.id as number)
+    personIdFilter = matches.map((m) => m.id)
     if (personIdFilter.length === 0) return { rows: [], total: 0 }
   }
 

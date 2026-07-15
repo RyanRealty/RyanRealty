@@ -13,6 +13,7 @@
 import { unstable_cache } from 'next/cache'
 import { z } from 'zod'
 import { supabaseAnon } from '@/lib/data/client'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 
@@ -241,16 +242,22 @@ export const getAllCitySnapshots = makeResilientCached(
 async function _fetchAllCommunitySnapshots(): Promise<GeoSnapshot[]> {
   const supabase = supabaseAnon()
   if (!supabase) return []
-  const { data, error } = await supabase
-    .from('geo_snapshot_mv')
-    .select('*')
-    .eq('geo_type', 'community')
-    .gt('active_sfr_count', 0)
-    .order('geo_key', { ascending: true })
-    .limit(5000)
+  // Paged read — PostgREST caps single responses at 1,000 rows, so the old
+  // .limit(5000) silently dropped every community past the first 1,000.
+  // geo_key is unique within geo_type='community', so the order is stable.
+  const { rows, error } = await fetchPagedRows<GeoSnapshotMvRow>(
+    (from, to) =>
+      supabase
+        .from('geo_snapshot_mv')
+        .select('*')
+        .eq('geo_type', 'community')
+        .gt('active_sfr_count', 0)
+        .order('geo_key', { ascending: true })
+        .range(from, to),
+    5000,
+  )
   if (error) throw new Error(`[getAllCommunitySnapshots] ${error.message ?? JSON.stringify(error)}`)
-  if (!data) return []
-  return (data as GeoSnapshotMvRow[]).map(rowToSnapshot)
+  return rows.map(rowToSnapshot)
 }
 
 /**

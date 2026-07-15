@@ -13,6 +13,7 @@ import 'server-only'
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { slugifyAddress } from '@/lib/cma/address-slug'
 
 export interface ExpiredDashboardRow {
@@ -133,17 +134,25 @@ export async function listExpiredDashboardRows(): Promise<ExpiredDashboardRow[]>
   }
 
   // 5. Audit-document views (visitor_events, slug-keyed by page_url).
+  // Paged read (PostgREST caps single responses at 1,000 rows — the old
+  // .limit(5000) silently truncated view counts there). Newest-first with an
+  // id tiebreaker so pages walk a stable total order.
   const viewsBySlug = new Map<string, { count: number; last: string | null }>()
   {
-    const { data } = await sb
-      .from('visitor_events')
-      .select('page_url, event_at')
-      .eq('page_category', 'client-document')
-      .eq('event_type', 'page_view')
-      .like('page_url', '%/cma/%')
-      .order('event_at', { ascending: false })
-      .limit(5000)
-    for (const v of data ?? []) {
+    const { rows } = await fetchPagedRows<{ page_url: string | null; event_at: string | null }>(
+      (from, to) =>
+        sb
+          .from('visitor_events')
+          .select('page_url, event_at')
+          .eq('page_category', 'client-document')
+          .eq('event_type', 'page_view')
+          .like('page_url', '%/cma/%')
+          .order('event_at', { ascending: false })
+          .order('id', { ascending: false })
+          .range(from, to),
+      5000,
+    )
+    for (const v of rows) {
       const m = String(v.page_url ?? '').match(/\/cma\/([a-z0-9-]+)/)
       if (!m) continue
       const slug = m[1]!
