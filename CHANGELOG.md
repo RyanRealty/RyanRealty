@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.791.0 (2026-07-15)
+
+### Features
+- feat(dashboards): compose-and-send dialog — channel, template, or free-typed
+
+---
+
+
 ## v1.790.1 (2026-07-15)
 
 ### Bug Fixes
