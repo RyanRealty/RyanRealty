@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import { unstable_cache } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
@@ -77,24 +78,24 @@ export type BrokerCommandCenterData = {
     photoUrl: string | null
     email: string | null
   }
-  attention: {
-    tasksOverdue: number
-    tasksToday: number
-    activeDeals: number
-    docsNeedingSignoff: number
-    apptNext30Days: number
-  }
   activeDeals: CommandDeal[]
   tasksDue: CommandTask[]
+  /** Exact count of open tasks due later today — the limit-capped tasksDue
+   *  list undercounts once overdue + today exceed the fetch limit. */
+  tasksTodayCount: number
   activeClients: CommandClient[]
   calendar: CalendarItem[]
   gcalConnected: boolean
-  gcalEvents: GcalEvent[]
   myListings: MarketingListing[]
   isSuperuser: boolean
 }
 
-export async function getBrokerCommandCenterData(): Promise<BrokerCommandCenterData | null> {
+export async function getBrokerCommandCenterData(
+  /** Superuser scope toggle: 'everyone' (default) sees all brokers' books;
+   *  'me' narrows every section to the superuser's own book. Non-superusers
+   *  are always scoped to themselves regardless of this value. */
+  scope: 'everyone' | 'me' = 'everyone',
+): Promise<BrokerCommandCenterData | null> {
   const session = await getSession()
   const email = session?.user?.email?.trim()
   if (!email) return null
@@ -124,25 +125,43 @@ export async function getBrokerCommandCenterData(): Promise<BrokerCommandCenterD
   // matched zero rows, so Paul/Rebecca saw empty Tasks + Active clients.
   const crmSlug = email ? (CRM_BROKER_BY_EMAIL[email.toLowerCase()] ?? null) : null
 
-  // 1. Active TC deals (stage != closed)
-  const dealsQuery = sb()
-    .from('tc_deals')
-    .select('id,property_key,address,city,stage,stage_detail,broker_name,fub_person_ids,created_at,updated_at')
-    .neq('stage', 'closed')
-    .order('updated_at', { ascending: false })
-    .limit(20)
-
-  // If not superuser, filter to this broker's deals
+  // Effective scoping: non-superusers always see only their own book; a
+  // superuser sees everything unless they picked 'Just me' on the dashboard.
+  const scopeToSelf = !isSuperuser || scope === 'me'
   const brokerDisplayName = brokerRow?.display_name
-  if (!isSuperuser && brokerDisplayName) {
-    dealsQuery.eq('broker_name', brokerDisplayName)
-  }
 
-  const { data: dealsRaw } = await dealsQuery
+  // Time anchors, hoisted above the concurrent kickoff (tasks query + the
+  // tasksDue mapping + appointments window all read them).
+  // Stale floor: a task more than a month past due is almost never real — it is
+  // FUB import cruft (e.g. "add automation tag", due months ago). Hide it from
+  // the action pile so the dashboard surfaces only tasks a broker would
+  // actually act on today. Matt directive 2026-06-15.
+  const now = new Date()
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString()
+  const STALE_TASK_DAYS = 31
+  const staleFloor = new Date(now.getTime() - STALE_TASK_DAYS * 86_400_000).toISOString()
+  const apptFrom = now.toISOString().slice(0, 10)
+  const apptTo   = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
-  // For each deal, get the most recent cycle's dates and checklist stats
-  const activeDeals: CommandDeal[] = []
-  if (dealsRaw && dealsRaw.length > 0) {
+  // 1. Active TC deals (stage != closed) — the only chain with a true data
+  // dependency (deals → cycles + checklist), so it runs as one async unit
+  // inside the concurrent batch below.
+  const loadDeals = async (): Promise<CommandDeal[]> => {
+    const dealsQuery = sb()
+      .from('tc_deals')
+      .select('id,property_key,address,city,stage,stage_detail,broker_name,fub_person_ids,created_at,updated_at')
+      .neq('stage', 'closed')
+      .order('updated_at', { ascending: false })
+      .limit(20)
+
+    if (scopeToSelf && brokerDisplayName) {
+      dealsQuery.eq('broker_name', brokerDisplayName)
+    }
+
+    const { data: dealsRaw } = await dealsQuery
+    const activeDeals: CommandDeal[] = []
+    if (!dealsRaw || dealsRaw.length === 0) return activeDeals
+
     const dealIds = dealsRaw.map((d: Record<string, unknown>) => d.id as string)
 
     const [cyclesRes, checklistRes] = await Promise.all([
@@ -210,18 +229,10 @@ export async function getBrokerCommandCenterData(): Promise<BrokerCommandCenterD
       if (b.closingDate) return 1
       return a.address.localeCompare(b.address)
     })
+    return activeDeals
   }
 
-  // 2. Tasks due (overdue + today)
-  // Stale floor: a task more than a month past due is almost never real — it is
-  // FUB import cruft (e.g. "add automation tag", due months ago). Hide it from
-  // the action pile AND the overdue count so the dashboard surfaces only tasks a
-  // broker would actually act on today. Matt directive 2026-06-15.
-  const now = new Date()
-  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString()
-  const STALE_TASK_DAYS = 31
-  const staleFloor = new Date(now.getTime() - STALE_TASK_DAYS * 86_400_000).toISOString()
-
+  // 2. Tasks due (overdue + today) — capped list for the action pile.
   const tasksQuery = sb()
     .from('crm_tasks')
     .select('id,name,type,due_at,assigned_broker,person_id,crm_people(name)')
@@ -230,24 +241,17 @@ export async function getBrokerCommandCenterData(): Promise<BrokerCommandCenterD
     .gte('due_at', staleFloor)
     .order('due_at', { ascending: true })
     .limit(30)
+  if (scopeToSelf && crmSlug) tasksQuery.eq('assigned_broker', crmSlug)
 
-  if (!isSuperuser && crmSlug) {
-    tasksQuery.eq('assigned_broker', crmSlug)
-  }
-
-  const { data: tasksRaw } = await tasksQuery
-  const tasksDue: CommandTask[] = (tasksRaw ?? []).map((t: Record<string, unknown>) => {
-    const personRow = t.crm_people as { name: string | null } | null
-    return {
-      id: t.id as number,
-      name: t.name as string,
-      dueAt: t.due_at as string | null,
-      type: t.type as string | null,
-      personName: personRow?.name ?? null,
-      personId: t.person_id as number | null,
-      isOverdue: t.due_at ? new Date(t.due_at as string) < now : false,
-    }
-  })
+  // 2b. Exact due-later-today count for the KPI tile — the limit(30) list
+  // above undercounts once overdue + today together exceed the cap.
+  const tasksTodayCountQuery = sb()
+    .from('crm_tasks')
+    .select('id', { count: 'exact', head: true })
+    .is('completed_at', null)
+    .gte('due_at', now.toISOString())
+    .lte('due_at', todayEnd)
+  if (scopeToSelf && crmSlug) tasksTodayCountQuery.eq('assigned_broker', crmSlug)
 
   // 3. Active clients — people you are ACTIVELY working, stalest touch first so
   //    the ones going cold surface for a reconnect. Scoped to stage 'Active
@@ -262,13 +266,63 @@ export async function getBrokerCommandCenterData(): Promise<BrokerCommandCenterD
     .eq('stage', 'Active Client')
     .order('last_activity_at', { ascending: true, nullsFirst: true })
     .limit(20)
+  if (scopeToSelf && crmSlug) clientsQuery.eq('assigned_broker', crmSlug)
 
-  if (!isSuperuser && crmSlug) {
-    clientsQuery.eq('assigned_broker', crmSlug)
-  }
+  // 4. Google Calendar (DWD) — the only external-network call on this
+  // force-dynamic page, so it rides a short unstable_cache (5 min staleness is
+  // fine for a dashboard month-strip; the Calendar page itself stays live).
+  const loadGcal = broker.email
+    ? unstable_cache(
+        (brokerEmail: string) => getGcalEvents(brokerEmail),
+        ['broker-command-center-gcal'],
+        { revalidate: 300 },
+      )(broker.email).catch(() => ({ connected: false, events: [] as GcalEvent[] }))
+    : Promise.resolve({ connected: false, events: [] as GcalEvent[] })
 
-  const { data: clientsRaw } = await clientsQuery
-  const activeClients: CommandClient[] = (clientsRaw ?? []).map((c: Record<string, unknown>) => ({
+  // 5. Listings feed the superuser-only marketing launchpad — skip the read
+  // entirely for restricted brokers (the page never renders it for them).
+  const loadListings = isSuperuser && brokerRow?.email
+    ? sb()
+        .from('listings')
+        .select('"ListingKey","StreetNumber","StreetName","ListPrice","StandardStatus","PhotoURL"')
+        .eq('"ListAgentEmail"', brokerRow.email)
+        .in('"StandardStatus"', ['Active', 'Pending'])
+        .order('"ListPrice"', { ascending: false })
+        .limit(12)
+    : Promise.resolve({ data: [] as Record<string, unknown>[] })
+
+  // All seven branches are independent — one concurrent batch replaces what
+  // was a strictly sequential ~8-round-trip waterfall (the dominant latency
+  // source on the broker dashboard).
+  const [activeDeals, tasksRes, tasksTodayRes, clientsRes, crmAppointments, gcalRes, listingsRes] =
+    await Promise.all([
+      loadDeals(),
+      tasksQuery,
+      tasksTodayCountQuery,
+      clientsQuery,
+      getAppointments({
+        brokerScope: scopeToSelf ? (crmSlug ?? null) : null,
+        from: apptFrom,
+        to: apptTo,
+      }).catch(() => []),
+      loadGcal,
+      loadListings,
+    ])
+
+  const tasksDue: CommandTask[] = (tasksRes.data ?? []).map((t: Record<string, unknown>) => {
+    const personRow = t.crm_people as { name: string | null } | null
+    return {
+      id: t.id as number,
+      name: t.name as string,
+      dueAt: t.due_at as string | null,
+      type: t.type as string | null,
+      personName: personRow?.name ?? null,
+      personId: t.person_id as number | null,
+      isOverdue: t.due_at ? new Date(t.due_at as string) < now : false,
+    }
+  })
+
+  const activeClients: CommandClient[] = (clientsRes.data ?? []).map((c: Record<string, unknown>) => ({
     id: c.id as number,
     name: c.name as string | null,
     stage: c.stage as string,
@@ -279,19 +333,7 @@ export async function getBrokerCommandCenterData(): Promise<BrokerCommandCenterD
     tags: Array.isArray(c.tags) ? (c.tags as string[]) : [],
   }))
 
-  // 4a. CRM appointments (next 30 days from crm_appointments)
-  const apptFrom = now.toISOString().slice(0, 10)
-  const apptTo   = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-  const crmAppointments = await getAppointments({
-    brokerScope: isSuperuser ? null : (crmSlug ?? null),
-    from: apptFrom,
-    to: apptTo,
-  }).catch(() => [])
-
-  // 4. Google Calendar events (DWD — auto-connected via service account impersonation)
-  const { connected: gcalConnected, events: gcalEvents } = broker.email
-    ? await getGcalEvents(broker.email).catch(() => ({ connected: false, events: [] }))
-    : { connected: false, events: [] }
+  const { connected: gcalConnected, events: gcalEvents } = gcalRes
 
   // 5. Build calendar strip (TC dates + tasks + GCal events)
   const calendar: CalendarItem[] = []
@@ -357,28 +399,7 @@ export async function getBrokerCommandCenterData(): Promise<BrokerCommandCenterD
 
   calendar.sort((a, b) => a.date.localeCompare(b.date))
 
-  // 6. Attention counts
-  const overdueCount = tasksDue.filter((t) => t.isOverdue).length
-  const todayCount = tasksDue.filter((t) => !t.isOverdue).length
-
-  // Docs needing sign-off: tc_envelopes where status is 'sent' (awaiting signatures)
-  const { count: envelopeCount } = await sb()
-    .from('tc_envelopes')
-    .select('id', { count: 'exact', head: true })
-    .eq('status', 'sent')
-
-  // 7. My listings for marketing launchpad
-  const { data: listingRows } = brokerRow?.email
-    ? await sb()
-        .from('listings')
-        .select('"ListingKey","StreetNumber","StreetName","ListPrice","StandardStatus","PhotoURL"')
-        .eq('"ListAgentEmail"', brokerRow.email)
-        .in('"StandardStatus"', ['Active', 'Pending'])
-        .order('"ListPrice"', { ascending: false })
-        .limit(12)
-    : { data: [] }
-
-  const myListings: MarketingListing[] = (listingRows ?? []).map((r: Record<string, unknown>) => ({
+  const myListings: MarketingListing[] = ((listingsRes.data ?? []) as Record<string, unknown>[]).map((r) => ({
     listingKey: r.ListingKey as string,
     address: `${r.StreetNumber ?? ''} ${r.StreetName ?? ''}`.trim(),
     listPrice: r.ListPrice as number | null,
@@ -388,19 +409,12 @@ export async function getBrokerCommandCenterData(): Promise<BrokerCommandCenterD
 
   return {
     broker,
-    attention: {
-      tasksOverdue: overdueCount,
-      tasksToday: todayCount,
-      activeDeals: activeDeals.length,
-      docsNeedingSignoff: envelopeCount ?? 0,
-      apptNext30Days: crmAppointments.length,
-    },
     activeDeals,
     tasksDue,
+    tasksTodayCount: tasksTodayRes.count ?? tasksDue.filter((t) => !t.isOverdue).length,
     activeClients,
     calendar,
     gcalConnected,
-    gcalEvents,
     myListings,
     isSuperuser,
   }

@@ -22,12 +22,28 @@ export type DashboardKpis = {
   unactioned: number
 }
 
+/** Matches the 600s revalidate on getLeadIntake's unstable_cache. */
+const TEN_MIN_MS = 600_000
+
 export async function getDashboardKpis(brokerSlug: string | null, unactioned: number): Promise<DashboardKpis> {
-  const nowMs = new Date().getTime()
-  const iso = (ms: number) => new Date(ms).toISOString()
-  const [d30, d7] = await Promise.all([
-    getLeadIntake({ startIso: iso(nowMs - 30 * 86_400_000), endIso: iso(nowMs), brokerSlug }),
-    getLeadIntake({ startIso: iso(nowMs - 7 * 86_400_000), endIso: iso(nowMs), brokerSlug }),
-  ])
-  return { newLeads30d: d30.inboundLeads, newLeads7d: d7.inboundLeads, unactioned }
+  // Snap the window to 10-minute buckets: getLeadIntake's unstable_cache key
+  // includes the ISO bounds, so millisecond-precision now() gave every
+  // force-dynamic dashboard render a unique key and a guaranteed cache miss
+  // (a full crm_people re-pagination per render). Rounding the end bound UP
+  // is harmless — lte with a slightly-future bound still returns rows up to
+  // now, and 10 minutes is the staleness the cache already accepts.
+  const endMs = Math.ceil(Date.now() / TEN_MIN_MS) * TEN_MIN_MS
+  const startMs = endMs - 30 * 86_400_000
+  const intake = await getLeadIntake({
+    startIso: new Date(startMs).toISOString(),
+    endIso: new Date(endMs).toISOString(),
+    brokerSlug,
+  })
+  // The 7-day trend derives from the same read's per-day series (calendar-day
+  // granularity) instead of paying a second full crm_people pagination.
+  const weekFloor = new Date(endMs - 7 * 86_400_000).toISOString().slice(0, 10)
+  const newLeads7d = intake.byDay
+    .filter((d) => d.date >= weekFloor)
+    .reduce((sum, d) => sum + d.inbound, 0)
+  return { newLeads30d: intake.inboundLeads, newLeads7d, unactioned }
 }

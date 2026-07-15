@@ -101,12 +101,23 @@ async function confirmStepFromDashboard(enrollmentId: number, _formData: FormDat
 export default async function BrokerCommandCenterPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; days?: string; broker?: string }>
+  searchParams: Promise<{ tab?: string; broker?: string }>
 }) {
-  const feedAccess = await getCrmAccess()
-  const feedSlug = feedAccess?.brokerSlug ?? null
+  const [feedAccess, { tab: activeTab, broker: activeBroker }] = await Promise.all([
+    getCrmAccess(),
+    searchParams,
+  ])
+  const selectedBroker = activeBroker ?? 'everyone'
+  // Scope resolution for every feed + KPI on the page: a restricted broker is
+  // always pinned to their own book; the superuser's Everyone/Just-me toggle
+  // maps to null (all brokers) or their own slug. Before this, the toggle only
+  // styled itself — no data fetch consumed it.
+  const isSuper = feedAccess?.role === 'superuser'
+  const feedSlug = isSuper
+    ? (selectedBroker === 'me' ? feedAccess?.brokerSlug ?? null : null)
+    : feedAccess?.brokerSlug ?? null
   const [data, actionQueue, websiteRows, emailRows, recentLeads, deliverySummary] = await Promise.all([
-    getBrokerCommandCenterData(),
+    getBrokerCommandCenterData(selectedBroker === 'me' ? 'me' : 'everyone'),
     getBrokerActionQueue(),
     getRecentWebsiteVisitors(feedSlug, 12).catch(() => []),
     getRecentEmailPeople(feedSlug, 12).catch(() => []),
@@ -116,9 +127,6 @@ export default async function BrokerCommandCenterPage({
     // all-clear or nothing rather than crashing the dashboard.
     getGlobalDeliverySummary({ days: 30 }).catch(() => null),
   ])
-  const { tab: activeTab, days: activeDays, broker: activeBroker } = await searchParams
-  const selectedDays = activeDays ?? '30d'
-  const selectedBroker = activeBroker ?? 'everyone'
 
   // FUB desktop dashboard data: the Recent Activity table rows + real KPI counts.
   const [activityRows, kpis] = await Promise.all([
@@ -181,7 +189,7 @@ export default async function BrokerCommandCenterPage({
             {(['everyone', 'me'] as const).map((v) => (
               <Link
                 key={v}
-                href={`/admin/broker-dashboard?broker=${v}&days=${selectedDays}`}
+                href={`/admin/broker-dashboard?broker=${v}`}
                 className={cn(
                   'rounded-md px-2 py-1 text-xs font-medium transition-colors lg:px-2.5',
                   selectedBroker === v
@@ -219,11 +227,14 @@ export default async function BrokerCommandCenterPage({
               help: 'Automated follow-ups paused and waiting for your approval. Each one is a message ready to send from the list below.',
             },
             {
-              label: 'Tasks Due', value: String(upcomingTasks.length), sub: 'upcoming',
+              label: 'Tasks Due', value: String(data.tasksTodayCount), sub: 'upcoming',
               help: 'Your tasks due today or coming up. Overdue tasks are not counted here, they live on the Tasks page.',
             },
             {
-              label: 'Calendar (30d)', value: String(data.calendar.length), sub: 'items scheduled',
+              // Only today-forward items count — the calendar strip also holds
+              // recent-past contract dates and overdue task deadlines for the
+              // month view, and counting those contradicted the label.
+              label: 'Calendar (30d)', value: String(data.calendar.filter((c) => c.date >= todayIso).length), sub: 'items scheduled',
               help: 'Everything on your calendar for the next 30 days: appointments, closings, contract dates, task deadlines, and synced Google Calendar events.',
             },
             {
@@ -564,7 +575,7 @@ export default async function BrokerCommandCenterPage({
                   { label: 'Monthly market update newsletter', desc: `Send to your full ${data.activeClients.length} active clients with market stats + listings.`, href: '/admin/crm' },
                   { label: 'New listing announcement', desc: 'Alert your sphere when a new listing goes live.', href: '/admin/listings' },
                   { label: 'Just sold announcement', desc: 'Let your database know about a recent close.', href: '/admin/crm/deals' },
-                  { label: 'Buyer newsletter', desc: 'Rate update, inventory snapshot, and buyer tips.', href: '/admin/crm?stage=Active+Buyer' },
+                  { label: 'Buyer newsletter', desc: 'Rate update, inventory snapshot, and buyer tips.', href: '/admin/crm?tag=audience%3Abuyer' },
                 ].map((item) => (
                   <Link
                     key={item.label}
