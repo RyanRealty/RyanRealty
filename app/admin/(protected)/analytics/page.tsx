@@ -54,13 +54,36 @@ function normalizeParams(sp: SearchParams): Record<string, string | undefined> {
   return out
 }
 
+const TAB_DEFS = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'acquisition', label: 'Acquisition' },
+  { key: 'behavior', label: 'Behavior' },
+  { key: 'funnel', label: 'Funnel' },
+  { key: 'conversions', label: 'Conversions' },
+] as const
+
+type TabKey = (typeof TAB_DEFS)[number]['key']
+
 export default async function AnalyticsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const sp = normalizeParams(await searchParams)
   const range = resolveDateRange(sp)
-  const tab = sp.tab || 'overview'
+  const tab: TabKey = TAB_DEFS.some((t) => t.key === sp.tab) ? (sp.tab as TabKey) : 'overview'
   const lpVariant = sp.lpVariant || ''
   const rangeChoice = sp.range || '30d'
   const { cities } = await getReportCities()
+
+  // Tab links carry the current range/variant params so switching tabs keeps
+  // the selected window. Tabs navigate (server render) instead of toggling
+  // client-side because only the ACTIVE tab's server component renders now.
+  const tabHref = (t: TabKey) => {
+    const p = new URLSearchParams()
+    if (t !== 'overview') p.set('tab', t)
+    for (const k of ['range', 'startDate', 'endDate', 'lpVariant'] as const) {
+      if (sp[k]) p.set(k, String(sp[k]))
+    }
+    const qs = p.toString()
+    return qs ? `/admin/analytics?${qs}` : '/admin/analytics'
+  }
 
   return (
     <div className="space-y-6">
@@ -72,42 +95,34 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
         <DateRangePicker current={rangeChoice} currentStart={sp.startDate} currentEnd={sp.endDate} />
       </header>
 
-      <Tabs defaultValue={String(tab)}>
+      {/* Only the ACTIVE tab's server component renders. The old version
+          mounted all five async RSCs on every request, so the four hidden tabs
+          still executed their full GA4 + Supabase data paths (spend, daily
+          series, CMA counts, funnel variants) on each navigation — pure waste
+          on a force-dynamic page (audit 2026-07-14). Triggers are links that
+          set ?tab= and re-render on the server. */}
+      <Tabs value={tab}>
         <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="acquisition">Acquisition</TabsTrigger>
-          <TabsTrigger value="behavior">Behavior</TabsTrigger>
-          <TabsTrigger value="funnel">Funnel</TabsTrigger>
-          <TabsTrigger value="conversions">Conversions</TabsTrigger>
+          {TAB_DEFS.map((t) => (
+            <TabsTrigger key={t.key} value={t.key} asChild>
+              <Link href={tabHref(t.key)}>{t.label}</Link>
+            </TabsTrigger>
+          ))}
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4">
+        <TabsContent value={tab} className="space-y-4">
           <Suspense fallback={<DashboardSkeleton />}>
-            <OverviewTab range={range} />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="acquisition" className="space-y-4">
-          <Suspense fallback={<DashboardSkeleton />}>
-            <AcquisitionTab range={range} />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="behavior" className="space-y-4">
-          <Suspense fallback={<DashboardSkeleton />}>
-            <BehaviorTab range={range} />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="funnel" className="space-y-4">
-          <Suspense fallback={<DashboardSkeleton />}>
-            <FunnelTab range={range} lpVariant={lpVariant} />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="conversions" className="space-y-4">
-          <Suspense fallback={<DashboardSkeleton />}>
-            <ConversionsTab range={range} />
+            {tab === 'overview' ? (
+              <OverviewTab range={range} />
+            ) : tab === 'acquisition' ? (
+              <AcquisitionTab range={range} />
+            ) : tab === 'behavior' ? (
+              <BehaviorTab range={range} />
+            ) : tab === 'funnel' ? (
+              <FunnelTab range={range} lpVariant={lpVariant} />
+            ) : (
+              <ConversionsTab range={range} />
+            )}
           </Suspense>
         </TabsContent>
       </Tabs>

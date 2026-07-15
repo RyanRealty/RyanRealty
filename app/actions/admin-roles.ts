@@ -1,5 +1,6 @@
 'use server'
 
+import { cache } from 'react'
 import { createServiceClient } from '@/lib/supabase/service'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
@@ -33,11 +34,12 @@ export type AdminPlatformUserRow = {
   activities_count: number
 }
 
-/** Get admin role for an email. Returns role if in admin_roles; superuser if isSuperuserAdmin(email). */
-export async function getAdminRoleForEmail(email: string | null | undefined): Promise<{ role: AdminRoleType; brokerId: string | null } | null> {
-  if (!email || typeof email !== 'string') return null
-  const trimmed = email.trim().toLowerCase()
-  if (!trimmed) return null
+// Request-memoized resolver (React cache, keyed on the normalized email): hot
+// admin pages resolve the caller's role several times per render — the page
+// guard plus every self-scoping action it calls — and each un-memoized call is
+// an admin_roles round trip. Lives as a module-private const because Next
+// requires every export of a 'use server' file to be an async function.
+const resolveAdminRole = cache(async (trimmed: string): Promise<{ role: AdminRoleType; brokerId: string | null } | null> => {
   if (isSuperuserAdmin(trimmed)) return { role: 'superuser', brokerId: null }
   // Service-role read: admin_roles is RLS-locked, and the broker's own session
   // cannot see its row (this silently denied Rebecca + Paul until 2026-06-09).
@@ -50,6 +52,14 @@ export async function getAdminRoleForEmail(email: string | null | undefined): Pr
     .maybeSingle()
   if (!data) return null
   return { role: data.role as AdminRoleType, brokerId: data.broker_id ?? null }
+})
+
+/** Get admin role for an email. Returns role if in admin_roles; superuser if isSuperuserAdmin(email). */
+export async function getAdminRoleForEmail(email: string | null | undefined): Promise<{ role: AdminRoleType; brokerId: string | null } | null> {
+  if (!email || typeof email !== 'string') return null
+  const trimmed = email.trim().toLowerCase()
+  if (!trimmed) return null
+  return resolveAdminRole(trimmed)
 }
 
 /** List all admin users (admin_roles rows). Only superuser should call this. */
@@ -140,34 +150,49 @@ export async function listPlatformUsersForAdmin(): Promise<AdminPlatformUserRow[
     if (!data || data.users.length < 1000) break
   }
 
-  const [profilesRes, savedListingsRes, savedSearchesRes, activitiesRes] = await Promise.all([
+  // Per-user engagement counts with BOUNDED pagination. The old version ran one
+  // un-limited select('user_id') per table and counted rows in JS — PostgREST
+  // silently caps an un-ranged read at 1000 rows, so counts stopped accruing
+  // past the first 1000 (user_activities is an event log that outgrows that
+  // fast). Page explicitly like the auth.users loop above: keyset-free range
+  // pages ordered by the uuid PK (a deterministic order, so offset pages never
+  // duplicate or skip rows), stop at the page cap, only user-attributed rows.
+  const countRowsByUser = async (
+    table: 'saved_listings' | 'saved_searches' | 'user_activities',
+  ): Promise<Map<string, number>> => {
+    const map = new Map<string, number>()
+    const perPage = 1000
+    for (let page = 0; page < 20; page++) {
+      const { data, error } = await supabase
+        .from(table)
+        .select('user_id')
+        .not('user_id', 'is', null)
+        .order('id', { ascending: true })
+        .range(page * perPage, page * perPage + perPage - 1)
+      if (error) {
+        console.error(`[admin-roles] ${table} count query failed:`, error.message)
+        break
+      }
+      for (const row of (data ?? []) as Array<{ user_id: string | null }>) {
+        if (row.user_id) map.set(row.user_id, (map.get(row.user_id) ?? 0) + 1)
+      }
+      if (!data || data.length < perPage) break
+    }
+    return map
+  }
+
+  const [profilesRes, savedListingsMap, savedSearchesMap, activitiesMap] = await Promise.all([
     supabase.from('profiles').select('user_id, display_name, phone, updated_at'),
-    supabase.from('saved_listings').select('user_id'),
-    supabase.from('saved_searches').select('user_id'),
-    supabase.from('user_activities').select('user_id'),
+    countRowsByUser('saved_listings'),
+    countRowsByUser('saved_searches'),
+    countRowsByUser('user_activities'),
   ])
   if (profilesRes.error) console.error('[admin-roles] profiles query failed:', profilesRes.error.message)
-  if (savedListingsRes.error) console.error('[admin-roles] saved_listings query failed:', savedListingsRes.error.message)
-  if (savedSearchesRes.error) console.error('[admin-roles] saved_searches query failed:', savedSearchesRes.error.message)
-  if (activitiesRes.error) console.error('[admin-roles] user_activities query failed:', activitiesRes.error.message)
 
   const profileByUserId = new Map(
     ((profilesRes.data ?? []) as Array<{ user_id: string; display_name: string | null; phone: string | null; updated_at: string }>)
       .map((p) => [p.user_id, p])
   )
-
-  const countByUser = (rows: Array<{ user_id: string | null }> | null | undefined) => {
-    const map = new Map<string, number>()
-    for (const row of rows ?? []) {
-      if (!row.user_id) continue
-      map.set(row.user_id, (map.get(row.user_id) ?? 0) + 1)
-    }
-    return map
-  }
-
-  const savedListingsMap = countByUser(savedListingsRes.data as Array<{ user_id: string | null }>)
-  const savedSearchesMap = countByUser(savedSearchesRes.data as Array<{ user_id: string | null }>)
-  const activitiesMap = countByUser(activitiesRes.data as Array<{ user_id: string | null }>)
 
   const metaString = (meta: Record<string, unknown> | undefined, key: string): string | null => {
     const value = meta?.[key]

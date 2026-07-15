@@ -31,7 +31,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
-import { scopeBroker } from '@/lib/crm/scope'
+import { scopeBroker, isPersonInScope } from '@/lib/crm/scope'
 import {
   isValidConversationStatus,
   isAssignableBroker,
@@ -201,15 +201,29 @@ export async function bulkConversationStateAction(
   const ids = Array.from(new Set((personIds ?? []).map((n) => Number(n)).filter((n) => Number.isFinite(n) && n > 0)))
   if (ids.length === 0) return { ok: false, error: 'No conversations selected' }
 
-  // Scope-check each id; collect the in-scope set.
-  const inScope: number[] = []
-  for (const id of ids) {
-    const scoped = await requirePersonInScope(id, access)
-    if (scoped.ok) inScope.push(id)
+  const sb = createServiceClient()
+
+  // Scope-check the whole selection with ONE query (was requirePersonInScope
+  // per id — one crm_people round trip per selected conversation, sequential,
+  // so a 50-item multi-select cost 50 serial reads before the single upsert).
+  // Same policy as requirePersonInScope: a superuser (slug null) passes all;
+  // a restricted broker keeps only their own contacts (out-of-scope ids are
+  // skipped, not errored, so a partial selection still succeeds for the rest).
+  const slug = scopeBroker(access)
+  let inScope: number[]
+  if (!slug) {
+    inScope = ids
+  } else {
+    const { data: owned } = await sb
+      .from('crm_people')
+      .select('id,assigned_broker')
+      .in('id', ids)
+    inScope = ((owned ?? []) as Array<{ id: number; assigned_broker: string | null }>)
+      .filter((r) => isPersonInScope(slug, r.assigned_broker ?? null))
+      .map((r) => r.id)
   }
   if (inScope.length === 0) return { ok: false, error: 'Not authorized for the selected conversations' }
 
-  const sb = createServiceClient()
   const now = new Date().toISOString()
   const { error } = await sb
     .from('crm_conversation_state')

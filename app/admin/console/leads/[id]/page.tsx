@@ -135,25 +135,26 @@ export default async function ConsoleLeadPage({
   const personLike = person as unknown as import('@/lib/crm/merge').MergePersonLike & { assigned_broker?: string | null }
   const actingSlug = crmAccess?.brokerSlug ?? personLike.assigned_broker ?? 'matt'
   const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
-  const signature = await getSignatureForMailbox(mailbox.email)
 
   const activeTpl = tpl ? templates.find((t) => t.key === tpl) ?? null : null
   const activeSmsTpl = smsTpl ? smsTemplates.find((t) => t.key === smsTpl) ?? null : null
-  // Composer prefill renders with the SAME context the send path uses, so the
-  // broker sees exactly what will go out (agent/sender/company resolved).
-  const mergeCtx = (activeTpl || activeSmsTpl)
-    ? await buildMergeContext({ person: personLike, senderSlug: actingSlug })
-    : undefined
-  const emailInitialSubject = activeTpl?.subject ? renderCrmMerge(activeTpl.subject, personLike, mergeCtx) : ''
-  const emailInitialBody = activeTpl?.body ? renderCrmMerge(activeTpl.body, personLike, mergeCtx) : ''
-  const smsInitialBody = activeSmsTpl?.body ? renderCrmMerge(activeSmsTpl.body, personLike, mergeCtx) : ''
 
   const primaryEmail = full.contactPoints.find((c) => c.kind === 'email')?.value ?? null
   const primaryPhone = full.contactPoints.find((c) => c.kind === 'phone')?.value ?? null
   const personEmails = (person.emails ?? []).map((e) => e.value).filter((v): v is string => Boolean(v))
 
+  // Owned home coordinates resolve from batch-1 data (full.geo), so the
+  // media/matches lookups can join the big batch below instead of running as
+  // a late serial stage (audit 2026-07-14: this page paid four extra
+  // sequential round-trip stages per view — signature, appointments trio,
+  // conversation, home lookups — all keyed on data available right here).
+  const geo = full.geo as { city?: string; neighborhood?: string; subdivision?: string; formatted_address?: string; source_address?: string; latitude?: number; longitude?: number; owner_type?: string } | null
+  const homeLat = typeof geo?.latitude === 'number' ? geo.latitude : null
+  const homeLng = typeof geo?.longitude === 'number' ? geo.longitude : null
+  const homeAddress = geo?.formatted_address ?? geo?.source_address ?? null
+
   // What they're shopping for — saved searches + the homes they're watching (live MLS) + newsletter status.
-  const [savedSearches, viewedListings, contactMemberships, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, fieldDefs, emailEngagementSummary, collaborators, actionPlanEnrollments, detailExtras, activeSequences, crmSources, recipientOptions, contactCmas, contactBpos, latestNewsletter] = await Promise.all([
+  const [savedSearches, viewedListings, contactMemberships, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, fieldDefs, emailEngagementSummary, collaborators, actionPlanEnrollments, detailExtras, activeSequences, crmSources, recipientOptions, contactCmas, contactBpos, latestNewsletter, signature, mergeCtx, personAppointments, apptTypes, apptOutcomes, conversation, homeMedia, homeMatches] = await Promise.all([
     getListingAlertsForLead({ crmPersonId: person.id, fubPersonId: person.fub_legacy_id, emails: personEmails }),
     getViewedListingsForLead(person.fub_legacy_id),
     getContactMemberships(person.id),
@@ -182,20 +183,37 @@ export default async function ConsoleLeadPage({
     getContactCmas({ crmPersonId: person.id, emails: personEmails }),
     getContactBpos({ crmPersonId: person.id, emails: personEmails }),
     getLatestNewsletterIssue(),
-  ])
-
-  // §25.9 mobile Calendar tab (P2-4): the contact's appointments + the
-  // create-sheet vocabulary (types/outcomes).
-  const [personAppointments, apptTypes, apptOutcomes] = await Promise.all([
+    getSignatureForMailbox(mailbox.email),
+    // Composer prefill renders with the SAME context the send path uses, so the
+    // broker sees exactly what will go out (agent/sender/company resolved).
+    activeTpl || activeSmsTpl
+      ? buildMergeContext({ person: personLike, senderSlug: actingSlug })
+      : Promise.resolve(undefined),
+    // §25.9 mobile Calendar tab (P2-4): the contact's appointments + the
+    // create-sheet vocabulary (types/outcomes).
     getAppointmentsForPerson(person.id),
     getAppointmentTypes(),
     getAppointmentOutcomes(),
+    // Full Comms thread (every text + email + call), newest first, paginated —
+    // NOT capped to the latest 40 of the 100-row timeline (which hid old
+    // messages and group texts on long-running contacts).
+    getContactConversation(person.id, { limit: 50 }),
+    // Owned home media + MLS matches (only when the geo row carries coords).
+    homeLat !== null && homeLng !== null ? getOwnedHomeMedia(homeLat, homeLng) : Promise.resolve(null),
+    homeLat !== null && homeLng !== null
+      ? getOwnedHomeMatches(homeLat, homeLng, homeAddress)
+      : Promise.resolve([] as OwnedHomeMatch[]),
   ])
 
-  // Full Comms thread (every text + email + call), newest first, paginated —
-  // NOT capped to the latest 40 of the 100-row timeline (which hid old messages
-  // and group texts on long-running contacts).
-  const conversation = await getContactConversation(person.id, { limit: 50 })
+  const emailInitialSubject = activeTpl?.subject ? renderCrmMerge(activeTpl.subject, personLike, mergeCtx) : ''
+  const emailInitialBody = activeTpl?.body ? renderCrmMerge(activeTpl.body, personLike, mergeCtx) : ''
+  const smsInitialBody = activeSmsTpl?.body ? renderCrmMerge(activeSmsTpl.body, personLike, mergeCtx) : ''
+
+  // Custom-field merge tokens for the composers' "Merge Fields" dropdown —
+  // same catalog the template editors offer (consolidation 2026-07-14).
+  const composerCustomFields = fieldDefs
+    .filter((d) => d.key.startsWith('custom'))
+    .map((d) => ({ key: d.key, label: d.label }))
 
   // Group-text recipients: the lead + every linked person (spouse, …) with a
   // phone (relationships start off), MERGED with everyone this contact shares a
@@ -229,16 +247,7 @@ export default async function ConsoleLeadPage({
       ? ((full.cmaDeliveries ?? []).find((d) => String((d as { status?: string }).status ?? '') === 'ready') as { id?: string } | undefined)
       : undefined
 
-  // Owned home.
-  const geo = full.geo as { city?: string; neighborhood?: string; subdivision?: string; formatted_address?: string; source_address?: string; latitude?: number; longitude?: number; owner_type?: string } | null
-  const homeLat = typeof geo?.latitude === 'number' ? geo.latitude : null
-  const homeLng = typeof geo?.longitude === 'number' ? geo.longitude : null
-  const homeAddress = geo?.formatted_address ?? geo?.source_address ?? null
-  let homeMedia: Awaited<ReturnType<typeof getOwnedHomeMedia>> | null = null
-  let homeMatches: OwnedHomeMatch[] = []
-  if (homeLat !== null && homeLng !== null) {
-    ;[homeMedia, homeMatches] = await Promise.all([getOwnedHomeMedia(homeLat, homeLng), getOwnedHomeMatches(homeLat, homeLng, homeAddress)])
-  }
+  // Owned home (media + matches fetched in the big batch above).
   // Only trust a candidate whose street address actually matches the owner's —
   // proximity alone can land on a neighbor, so a near miss shows no photo / no
   // "on the market" alert rather than the wrong house.
@@ -399,6 +408,7 @@ export default async function ConsoleLeadPage({
         recipients={smsRecipients}
         primaryPersonId={person.id}
         personId={person.id}
+        customFields={composerCustomFields}
       />
     ) : (
       <p className="px-1 py-2 text-center text-[13px] text-muted-foreground">
@@ -531,6 +541,7 @@ export default async function ConsoleLeadPage({
                       toLabel={person.name ? `${person.name} \u00b7 ${primaryEmail}` : primaryEmail}
                       initialTo={primaryEmail ? [primaryEmail.toLowerCase()] : []}
                       recipientOptions={recipientOptions}
+                      customFields={composerCustomFields}
                     />
                   </div>
                 ) : (
@@ -548,6 +559,7 @@ export default async function ConsoleLeadPage({
                       recipients={smsRecipients}
                       primaryPersonId={person.id}
                       personId={person.id}
+                      customFields={composerCustomFields}
                     />
                   </div>
                 ) : (

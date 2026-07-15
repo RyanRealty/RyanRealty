@@ -106,20 +106,24 @@ export default async function CrmInboxPage({
   const openId = sp.c && Number.isFinite(Number(sp.c)) ? Number(sp.c) : null
   const nowMs = Date.now()
 
-  const [{ conversations, counts }, smsStatus, allTemplates] = await Promise.all([
+  // ── Mobile (§26/§27) shared data (slug/mailbox derive from access only) ────
+  const actingSlug0 = (actingBroker ?? 'matt') as CrmBrokerSlug
+  const actingMailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug0) ?? CRM_MAILBOXES[0]
+
+  // The signature fetch depends only on `access`, so it joins the first batch —
+  // it used to sit as its own serial await between this Promise.all and the
+  // open-pane work (audit 2026-07-14).
+  const [{ conversations, counts }, smsStatus, allTemplates, actingSignature] = await Promise.all([
     getInboxFolderQueue({ scopeKey, folder, view, brokerScope, actingBroker, limit: 100 }),
     getTwilioSmsStatus(),
     getCrmTemplatesAdmin(),
+    getSignatureForMailbox(actingMailbox.email),
   ])
   const rows: ThreadListRow[] = conversations.map((c) => ({
     ...c,
     tsLabel: relativeLabel(c.lastMessageAt, nowMs),
   }))
 
-  // ── Mobile (§26/§27) shared data ───────────────────────────────────────────
-  const actingSlug0 = (actingBroker ?? 'matt') as CrmBrokerSlug
-  const actingMailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug0) ?? CRM_MAILBOXES[0]
-  const actingSignature = await getSignatureForMailbox(actingMailbox.email)
   const { emailTemplates, smsTemplates } = splitComposeTemplates(allTemplates, actingSlug0)
   const mobileRows = buildMobileRows(conversations, scopeKey, folder, view, nowMs)
 
@@ -172,15 +176,18 @@ export default async function CrmInboxPage({
   } | null = null
 
   if (openId) {
-    const card = await getInboxContactCard(openId)
+    // All five reads depend only on openId — one batch. The contact card used
+    // to be awaited alone before the Promise.all, adding a full serial stage to
+    // every open-conversation load (audit 2026-07-14).
+    const sb = createServiceClient()
+    const [card, thread, target, stateRow, drafts] = await Promise.all([
+      getInboxContactCard(openId),
+      getConversationThreadFull(openId, 100),
+      getSendTarget(openId),
+      sb.from('crm_conversation_state').select('status,assigned_broker').eq('person_id', openId).maybeSingle(),
+      getDraftsForPerson(openId, actingBroker),
+    ])
     if (card) {
-      const sb = createServiceClient()
-      const [thread, target, stateRow, drafts] = await Promise.all([
-        getConversationThreadFull(openId, 100),
-        getSendTarget(openId),
-        sb.from('crm_conversation_state').select('status,assigned_broker').eq('person_id', openId).maybeSingle(),
-        getDraftsForPerson(openId, actingBroker),
-      ])
       const items: InboxThreadViewItem[] = thread.map((it) => ({ ...it, tsLabel: formatDateTime(it.ts) }))
       // §26 mobile thread — sanitized server-side in mobile-data.ts.
       const mobileItems: MobileThreadItem[] = buildMobileThreadItems(thread)
@@ -194,7 +201,11 @@ export default async function CrmInboxPage({
       const status: ConversationStatus = (stateRow.data?.status as ConversationStatus | undefined) ?? 'unread'
       const actingSlug = access.brokerSlug ?? card.assignedBroker ?? 'matt'
       const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
-      const signature = await getSignatureForMailbox(mailbox.email)
+      // Same mailbox as the batch-fetched signature in the normal case
+      // (access.brokerSlug set, or superuser + unassigned card → 'matt') — only
+      // re-fetch for the superuser-viewing-another-broker's-contact fallback.
+      const signature =
+        mailbox.email === actingMailbox.email ? actingSignature : await getSignatureForMailbox(mailbox.email)
       const messageItems = thread.filter((it) => it.category === 'message' || it.category === 'email' || it.category === 'call')
       const nonMessageItems = thread.filter((it) => !['message', 'email', 'call'].includes(it.category))
       openPane = {

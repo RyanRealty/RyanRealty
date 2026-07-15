@@ -1,5 +1,6 @@
 'use server'
 
+import { cache } from 'react'
 import { cookies, headers } from 'next/headers'
 import { safeRedirectPath } from '@/lib/auth/safeRedirect'
 import { createClient } from '@/lib/supabase/server'
@@ -42,7 +43,11 @@ function normalizeAvatarUrl(user: { user_metadata?: Record<string, unknown>; ide
   return null
 }
 
-export async function getSession(): Promise<{ user: AuthUser } | null> {
+// Request-memoized: hot admin pages resolve the session from several data
+// loaders in one render (page + actions + DAL guards), and each call was a
+// full GoTrue network round trip. React cache() dedupes within one request;
+// the exported symbol stays a plain async function as 'use server' requires.
+const resolveSession = cache(async (): Promise<{ user: AuthUser } | null> => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
@@ -55,6 +60,10 @@ export async function getSession(): Promise<{ user: AuthUser } | null> {
       user_metadata: user.user_metadata,
     },
   }
+})
+
+export async function getSession(): Promise<{ user: AuthUser } | null> {
+  return resolveSession()
 }
 
 /** Return path cookie: 10 min, httpOnly, so OAuth redirect brings user back to the page they signed in from. */

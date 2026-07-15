@@ -9,6 +9,7 @@
  * timeline rows. People without a FUB id (future native leads) write locally.
  */
 
+import { cache } from 'react'
 import { revalidatePath, unstable_cache } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getSession } from '@/app/actions/auth'
@@ -43,13 +44,23 @@ export type CrmAccess = {
   brokerSlug: CrmBrokerSlug | null
 }
 
-/** Resolve the caller's CRM access (role + own-broker slug). Null when not an admin. */
-export async function getCrmAccess(): Promise<CrmAccess | null> {
+// Request-memoized resolver: hot admin pages call getCrmAccess 3-5 times per
+// render (the page itself + every self-scoping action in its Promise.all), and
+// each un-memoized call is a serial supabase.auth.getUser() network hop plus an
+// admin_roles read. React cache() shares ONE resolution per request. It lives
+// as a module-private const because Next requires every export of a
+// 'use server' file to be an async function (cache() returns a plain wrapper).
+const resolveCrmAccess = cache(async (): Promise<CrmAccess | null> => {
   const session = await getSession()
   const email = session?.user?.email?.trim().toLowerCase() ?? null
   const role = await getAdminRoleForEmail(email)
   if (!role || !email) return null
   return { email, role: role.role, brokerSlug: CRM_BROKER_BY_EMAIL[email] ?? null }
+})
+
+/** Resolve the caller's CRM access (role + own-broker slug). Null when not an admin. */
+export async function getCrmAccess(): Promise<CrmAccess | null> {
+  return resolveCrmAccess()
 }
 
 export type CrmPersonRow = {
@@ -112,8 +123,9 @@ export async function requireCrmAccess(): Promise<{ ok: true; access: CrmAccess 
  * Shared write guard: refuse a mutation when the caller is a restricted broker
  * and the target contact is not assigned to them. A superuser (slug === null)
  * passes unconditionally. Mirrors completeCrmTaskAction's inline ownership check.
- * Exported so the membership + relationship mutations in sibling action files
- * (crm-membership.ts, crm-relationships.ts) reuse the one guard.
+ * Exported so mutations in sibling action files (crm-membership.ts) reuse
+ * the one guard. (crm-relationships.ts was deleted 2026-07-14 — dead code;
+ * its only consumer was the unreferenced RelationshipsPanel.)
  */
 export async function requirePersonInScope(
   personId: number,
@@ -256,115 +268,29 @@ export async function listCrmPeople(filters: CrmListFilters): Promise<{
 
 export type CrmOverview = {
   total: number
-  sellers: number
-  buyers: number
-  hardStops: number
-  openTasks: number
-  lastDeltaSync: string | null
 }
 
+/**
+ * Headline total for the People sidebar. Trimmed 2026-07-14 (audit): the old
+ * version also ran three tags-contains exact counts over the ~20k-row
+ * crm_people table plus open-tasks + last-sync reads, and its ONLY consumer
+ * (/admin/crm) used nothing but `total` — five of six queries were dead weight
+ * on every People-list load.
+ */
 export async function getCrmOverview(brokerSlug?: string | null): Promise<CrmOverview> {
   const sb = createServiceClient()
-  const head = { count: 'exact' as const, head: true }
-  // GAP-2: scope the headline KPI counts to the caller's own book when restricted.
-  // The page passes scopeBroker(access) — null (superuser) leaves them global.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const byBroker = (q: any): any => (brokerSlug ? q.eq('assigned_broker', brokerSlug) : q)
-  const [total, sellers, buyers, hardStops, openTasks, lastSync] = await Promise.all([
-    byBroker(sb.from('crm_people').select('id', head)),
-    byBroker(sb.from('crm_people').select('id', head).contains('tags', ['audience:seller'])),
-    byBroker(sb.from('crm_people').select('id', head).contains('tags', ['audience:buyer'])),
-    byBroker(sb.from('crm_people').select('id', head).contains('tags', ['compliance:hard-stop'])),
-    byBroker(sb.from('crm_tasks').select('id', head).is('completed_at', null)),
-    sb.from('crm_imports').select('finished_at').eq('status', 'done').order('id', { ascending: false }).limit(1).maybeSingle(),
-  ])
-  return {
-    total: total.count ?? 0,
-    sellers: sellers.count ?? 0,
-    buyers: buyers.count ?? 0,
-    hardStops: hardStops.count ?? 0,
-    openTasks: openTasks.count ?? 0,
-    lastDeltaSync: lastSync.data?.finished_at ?? null,
-  }
+  // GAP-2: scope the headline count to the caller's own book when restricted.
+  // The page passes scopeBroker(access) — null (superuser) leaves it global.
+  let q = sb.from('crm_people').select('id', { count: 'exact', head: true })
+  if (brokerSlug) q = q.eq('assigned_broker', brokerSlug)
+  const { count } = await q
+  return { total: count ?? 0 }
 }
 
-export type CrmHomeDashboard = {
-  funnel: Array<{ stage: string; count: number }>
-  attention: {
-    approvalsPending: number
-    tasksOverdue: number
-    tasksToday: number
-    inbound24h: number
-    hotLeads48h: number
-    newLeads7d: number
-  }
-  newest: Array<{
-    id: number
-    name: string | null
-    stage: string
-    source: string | null
-    picture_url: string | null
-    created_at: string | null
-    last_activity_at: string | null
-  }>
-}
-
-/** Broker-focused home dashboard: the lead funnel + what needs attention. */
-export async function getCrmHomeDashboard(broker?: string): Promise<CrmHomeDashboard> {
-  const sb = createServiceClient()
-  const head = { count: 'exact' as const, head: true }
-  // supabase's builder generics explode (TS2589) on a generic passthrough —
-  // keep the helper untyped; results are cast at the destructuring sites.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const withBroker = (q: any): any => (broker ? q.eq('assigned_broker', broker) : q)
-
-  const now = new Date()
-  const endOfToday = new Date(now)
-  endOfToday.setHours(23, 59, 59, 999)
-  const dayAgo = new Date(now.getTime() - 24 * 3600e3).toISOString()
-  const twoDaysAgo = new Date(now.getTime() - 48 * 3600e3).toISOString()
-  const weekAgo = new Date(now.getTime() - 7 * 24 * 3600e3).toISOString()
-  // A task >31 days overdue is FUB import cruft, not real work — exclude from the
-  // overdue count so it matches the filtered action pile (Matt 2026-06-15).
-  const staleTaskFloor = new Date(now.getTime() - 31 * 24 * 3600e3).toISOString()
-
-  const [stageCounts, approvals, overdue, today, inbound, hot, newLeads, newest] = await Promise.all([
-    Promise.all(
-      CRM_STAGES.map(async (stage) => {
-        const { count } = await withBroker(sb.from('crm_people').select('id', head).eq('stage', stage))
-        return { stage, count: count ?? 0 }
-      }),
-    ),
-    sb.from('crm_sequence_enrollments').select('id', head).eq('status', 'awaiting_broker'),
-    withBroker(sb.from('crm_tasks').select('id', head).is('completed_at', null).lt('due_at', now.toISOString()).gte('due_at', staleTaskFloor)),
-    withBroker(
-      sb.from('crm_tasks').select('id', head).is('completed_at', null)
-        .gte('due_at', now.toISOString()).lte('due_at', endOfToday.toISOString()),
-    ),
-    sb.from('crm_timeline').select('id', head).in('kind', ['sms_in', 'email_in', 'call', 'voicemail']).gte('ts', dayAgo),
-    sb.from('visitor_sessions').select('session_id', head).gte('hot_lead_fired_at', twoDaysAgo),
-    withBroker(sb.from('crm_people').select('id', head).gte('created_at', weekAgo)),
-    withBroker(
-      sb.from('crm_people')
-        .select('id,name,stage,source,picture_url,created_at,last_activity_at')
-        .order('created_at', { ascending: false })
-        .limit(8),
-    ),
-  ])
-
-  return {
-    funnel: stageCounts.filter((s) => s.count > 0),
-    attention: {
-      approvalsPending: approvals.count ?? 0,
-      tasksOverdue: overdue.count ?? 0,
-      tasksToday: today.count ?? 0,
-      inbound24h: inbound.count ?? 0,
-      hotLeads48h: hot.count ?? 0,
-      newLeads7d: newLeads.count ?? 0,
-    },
-    newest: (newest.data ?? []) as CrmHomeDashboard['newest'],
-  }
-}
+// getCrmHomeDashboard + CrmHomeDashboard removed 2026-07-14 (audit): zero
+// references anywhere in app/, components/, or lib/ — the broker dashboard
+// reads through app/actions/broker-command-center.ts instead. Removing the
+// unused export also removes the POST endpoint Next generates for it.
 
 export type CrmTimelineRow = {
   id: number
@@ -654,87 +580,18 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   return { ok: true }
 }
 
-export type CrmInboxRow = {
-  id: number
-  person_id: number
-  ts: string
-  kind: string
-  title: string | null
-  body: string | null
-  broker: string | null
-  person: { name: string | null; stage: string } | null
-}
-
-/** Latest inbound communications across all contacts (the unified inbox feed). */
-export async function listCrmInbox(limit = 100): Promise<CrmInboxRow[]> {
-  const sb = createServiceClient()
-  const { data } = await sb
-    .from('crm_timeline')
-    .select('id,person_id,ts,kind,title,body,broker,crm_people!inner(name,stage)')
-    .in('kind', ['email_in', 'sms_in', 'call', 'voicemail'])
-    .order('ts', { ascending: false })
-    .limit(limit)
-  return (data ?? []).map((r) => ({
-    id: r.id as number,
-    person_id: r.person_id as number,
-    ts: r.ts as string,
-    kind: r.kind as string,
-    title: (r.title ?? null) as string | null,
-    body: (r.body ?? null) as string | null,
-    broker: (r.broker ?? null) as string | null,
-    person: (r as unknown as { crm_people: { name: string | null; stage: string } }).crm_people ?? null,
-  }))
-}
-
-/**
- * Live count per stage for the People "Stages" segment (the leads-list stage
- * chips, docs/MOBILE_CRM_FUB_PARITY.md #3 — "Seller Prospect 7.5k"). Broker-
- * scoped like every other dashboard read. One head-count per stage, run in
- * parallel; no rows returned.
- */
-export async function getCrmStageCounts(brokerSlug?: string | null): Promise<Record<string, number>> {
-  const sb = createServiceClient()
-  const head = { count: 'exact' as const, head: true }
-  const entries = await Promise.all(
-    CRM_STAGES.map(async (stage) => {
-      let q = sb.from('crm_people').select('id', head).eq('deleted', false).eq('stage', stage)
-      if (brokerSlug) q = q.eq('assigned_broker', brokerSlug)
-      const { count } = await q
-      return [stage, count ?? 0] as const
-    }),
-  )
-  return Object.fromEntries(entries)
-}
-
-export type SavedViewCount = { id: number; name: string; description: string | null; count: number }
-
-/**
- * Saved views (the smart-list store, crm_saved_views) with a live count each —
- * the People "All Lists" segment (docs/MOBILE_CRM_FUB_PARITY.md #3, FUB: "All
- * Expireds 657"). Each view's own filter (stage or tagsAny) drives the count,
- * broker-scoped to match what opening the list will show. listCrmPeople already
- * applies a view by id, so a chip just links to ?view=<id>.
- */
-export async function getCrmSavedViewsWithCounts(brokerSlug?: string | null): Promise<SavedViewCount[]> {
-  const sb = createServiceClient()
-  const head = { count: 'exact' as const, head: true }
-  const { data: views } = await sb
-    .from('crm_saved_views')
-    .select('id,name,description,filter,position')
-    .order('position', { nullsFirst: false })
-    .order('id')
-  const list = (views ?? []) as Array<{ id: number; name: string; description: string | null; filter: { stage?: string; tagsAny?: string[] } | null }>
-  return Promise.all(
-    list.map(async (v) => {
-      let q = sb.from('crm_people').select('id', head).eq('deleted', false)
-      if (v.filter?.stage) q = q.eq('stage', v.filter.stage)
-      if (v.filter?.tagsAny?.length) q = q.overlaps('tags', v.filter.tagsAny)
-      if (brokerSlug) q = q.eq('assigned_broker', brokerSlug)
-      const { count } = await q
-      return { id: v.id, name: v.name, description: v.description, count: count ?? 0 }
-    }),
-  )
-}
+// listCrmInbox + CrmInboxRow removed 2026-07-14 (audit): superseded by the
+// crm-inbox.ts + lib/data/crm inbox machinery (getInboxFolderQueue et al) —
+// zero references anywhere in app/, components/, or lib/.
+//
+// getCrmStageCounts + getCrmSavedViewsWithCounts removed 2026-07-14 (audit):
+// duplicate dead implementations. The live stage counts come from the DAL
+// version (lib/data/crm/getCrmStageCounts.ts, which reads the crm_stages
+// config table + buildCrmPeopleQuery so counts match the list filters); this
+// action version fired 17 head-counts over the retired hardcoded CRM_STAGES
+// const and had zero importers. Saved-view counts come from
+// lib/data/crm/getCrmSavedViews.ts. Removing the unused exports also removes
+// the POST endpoints Next generates for them.
 
 export type ActivityPerson = { personId: number; name: string; pictureUrl: string | null; ts: string; label: string }
 
@@ -828,62 +685,10 @@ export async function getRecentNewLeads(limit = 12): Promise<RecentLead[]> {
     }))
 }
 
-export type CrmConversationRow = {
-  id: number
-  person_id: number
-  ts: string
-  kind: string
-  direction: 'in' | 'out'
-  title: string | null
-  body: string | null
-  broker: string | null
-  assignedBroker: string | null
-  person: { name: string | null; stage: string } | null
-}
-
-/**
- * Conversations across inbound AND outbound channels for the segmented inbox
- * (docs/MOBILE_CRM_FUB_PARITY.md #2 — Inbox / Assigned / Sent). The page splits
- * the rows by direction + assignment; counts are derived there. Closed + an
- * unread badge are intentionally absent — crm_timeline has no read/closed state
- * to back them honestly (would need a conversation-status column).
- */
-export async function listCrmConversations(perDirection = 80, brokerSlug?: string | null): Promise<CrmConversationRow[]> {
-  const sb = createServiceClient()
-  // Embed the person (name/stage/assigned_broker). person_id is NOT NULL with an
-  // FK, so an inner embed matches every row. Fetch inbound and outbound
-  // SEPARATELY: outbound (automated email) is high-volume, so a single
-  // time-ordered limit would starve the Inbox segment of recent inbound.
-  // GAP-4: when scoped, filter BOTH selects by the embedded owner so the Inbox +
-  // Sent tabs only show the caller's own contacts. The page passes scopeBroker.
-  const select = 'id,person_id,ts,kind,title,body,broker,crm_people!inner(name,stage,assigned_broker)'
-  const scoped = (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    q: any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ): any => (brokerSlug ? q.eq('crm_people.assigned_broker', brokerSlug) : q)
-  const [inbound, outbound] = await Promise.all([
-    scoped(sb.from('crm_timeline').select(select).in('kind', ['email_in', 'sms_in', 'call', 'voicemail'])).order('ts', { ascending: false }).limit(perDirection),
-    scoped(sb.from('crm_timeline').select(select).in('kind', ['email_out', 'sms_out'])).order('ts', { ascending: false }).limit(perDirection),
-  ])
-  const data = [...(inbound.data ?? []), ...(outbound.data ?? [])]
-  return data.map((r) => {
-    const p = (r as unknown as { crm_people: { name: string | null; stage: string; assigned_broker: string | null } | null }).crm_people ?? null
-    const kind = r.kind as string
-    return {
-      id: r.id as number,
-      person_id: r.person_id as number,
-      ts: r.ts as string,
-      kind,
-      direction: kind.endsWith('_out') ? ('out' as const) : ('in' as const),
-      title: (r.title ?? null) as string | null,
-      body: (r.body ?? null) as string | null,
-      broker: (r.broker ?? null) as string | null,
-      assignedBroker: p?.assigned_broker ?? null,
-      person: p ? { name: p.name, stage: p.stage } : null,
-    }
-  })
-}
+// listCrmConversations + CrmConversationRow removed 2026-07-14 (audit):
+// superseded by the lib/data/crm conversation machinery (getInboxFolderQueue /
+// getConversationThreadFull) — zero references anywhere in app/, components/,
+// or lib/.
 
 // listCrmDeals retired 2026-07-01 (deals-desktop rebuild): the board now reads
 // through lib/data/crm/listDealsBoard.ts (DAL — scope + §13 status/agent filters
@@ -1198,26 +1003,41 @@ export type CrmSequenceRow = {
   counts: { running: number; paused_reply: number; completed: number; stopped: number; suppressed: number }
 }
 
+/** The enrollment statuses the sequences board surfaces. Deliberately a
+ *  whitelist — the status check constraint carries more values (e.g.
+ *  'awaiting_broker', migration 20260612134500) that the counts type omits. */
+const SEQUENCE_COUNT_STATUSES = ['running', 'paused_reply', 'completed', 'stopped', 'suppressed'] as const
+
 export async function listCrmSequences(): Promise<CrmSequenceRow[]> {
   const sb = createServiceClient()
   const { data: seqs } = await sb
     .from('crm_sequences')
     .select('id,name,status,stop_on_reply,steps,fub_legacy_plan_id')
     .order('fub_legacy_plan_id', { ascending: true, nullsFirst: false })
-  const out: CrmSequenceRow[] = []
-  for (const s of seqs ?? []) {
-    const counts = { running: 0, paused_reply: 0, completed: 0, stopped: 0, suppressed: 0 }
-    const { data: rows } = await sb
-      .from('crm_sequence_enrollments')
-      .select('status')
-      .eq('sequence_id', s.id)
-    for (const r of rows ?? []) {
-      const k = r.status as keyof typeof counts
-      if (k in counts) counts[k]++
-    }
-    out.push({ ...(s as Omit<CrmSequenceRow, 'counts'>), counts })
-  }
-  return out
+  // One head-count per (sequence, status), ALL in a single parallel batch.
+  // The old version fetched every enrollment ROW per sequence sequentially and
+  // counted statuses in JS — an N+1 whose un-limited select PostgREST silently
+  // caps at 1000 rows, so any sequence past 1000 enrollments reported wrong
+  // counts. Head counts return no rows and are immune to the cap.
+  const head = { count: 'exact' as const, head: true }
+  return Promise.all(
+    ((seqs ?? []) as Array<Omit<CrmSequenceRow, 'counts'>>).map(async (s) => {
+      const perStatus = await Promise.all(
+        SEQUENCE_COUNT_STATUSES.map(async (status) => {
+          const { count } = await sb
+            .from('crm_sequence_enrollments')
+            .select('id', head)
+            .eq('sequence_id', s.id)
+            .eq('status', status)
+          return count ?? 0
+        }),
+      )
+      const counts = Object.fromEntries(
+        SEQUENCE_COUNT_STATUSES.map((status, i) => [status, perStatus[i]]),
+      ) as CrmSequenceRow['counts']
+      return { ...s, counts }
+    }),
+  )
 }
 
 /** Activate or pause a sequence. Paused sequences' enrollments hold in place. */
@@ -1634,35 +1454,60 @@ export async function getAwaitingApprovals(): Promise<AwaitingApproval[]> {
   if (!access) return []
   const sb = createServiceClient()
   // GAP-5: scope the read to the caller's own queued leads (the write is already
-  // guarded by setEnrollment). The query already inner-joins crm_people.
+  // guarded by setEnrollment). The query already inner-joins crm_people — the
+  // embeds carry the sequence STEPS and the full merge-field person so the
+  // first-touch preview renders from THIS result set. (The old version awaited
+  // renderFirstTouchPreview per row, which re-queried crm_sequences AND
+  // crm_people for every enrollment, strictly sequentially — up to 100 rows ×
+  // 2 redundant round trips per approvals-page load.)
   const slug = scopeBroker(access)
   let q = sb
     .from('crm_sequence_enrollments')
-    .select('id,person_id,sequence_id,created_at,crm_sequences!inner(id,name),crm_people!inner(id,name,source,assigned_broker,custom)')
+    .select('id,person_id,sequence_id,created_at,crm_sequences!inner(id,name,steps),crm_people!inner(id,first_name,last_name,name,stage,source,lender_name,emails,phones,addresses,assigned_broker,custom)')
     .eq('status', 'awaiting_broker')
     .order('created_at', { ascending: false })
     .limit(100)
   if (slug) q = q.eq('crm_people.assigned_broker', slug)
   const { data } = await q
-  const { renderFirstTouchPreview } = await import('@/lib/crm/enroll')
-  const out: AwaitingApproval[] = []
-  for (const row of data ?? []) {
-    const seq = row.crm_sequences as unknown as { id: number; name: string }
-    const person = row.crm_people as unknown as { id: number; name: string | null; source: string | null; assigned_broker: string | null; custom: Record<string, unknown> | null }
-    out.push({
-      enrollmentId: row.id as number,
-      personId: person.id,
-      personName: person.name,
-      assignedBroker: person.assigned_broker,
-      source: person.source,
-      sequenceId: seq.id,
-      sequenceName: seq.name,
-      enrolledAt: row.created_at as string,
-      preview: await renderFirstTouchPreview(seq.id, person.id),
-      cmaLink: (person.custom?.cmaLink as string | undefined) ?? null,
-    })
-  }
-  return out
+  const { renderCrmMerge } = await import('@/lib/crm/merge')
+  const { buildMergeContext } = await import('@/lib/crm/merge-context')
+  return Promise.all(
+    (data ?? []).map(async (row): Promise<AwaitingApproval> => {
+      const seq = row.crm_sequences as unknown as { id: number; name: string; steps: Array<{ channel?: string; body?: string }> | null }
+      const person = row.crm_people as unknown as {
+        id: number; name: string | null; source: string | null; assigned_broker: string | null; custom?: Record<string, unknown>
+      }
+      // Preview logic mirrors lib/crm/enroll.ts renderFirstTouchPreview exactly
+      // (step-0 message check, CMA-link placeholder, whitespace collapse) but
+      // renders from the joined data instead of re-querying per row.
+      // buildMergeContext reads only cached DAL functions, so per-row is cheap.
+      const step = (seq.steps ?? [])[0]
+      let preview: { channel: string; body: string } | null = null
+      if (step?.channel && ['sms', 'email'].includes(step.channel) && step.body) {
+        const hasCma = Boolean(person.custom?.cmaLink)
+        const raw = hasCma
+          ? step.body
+          : step.body.replace(/%cma_link%|\{\{cma_link\}\}/g, '[CMA link attaches when built]')
+        const mergeCtx = await buildMergeContext({ person, senderSlug: person.assigned_broker ?? null })
+        preview = {
+          channel: step.channel,
+          body: renderCrmMerge(raw, person, mergeCtx).replace(/ {2,}/g, ' ').trim(),
+        }
+      }
+      return {
+        enrollmentId: row.id as number,
+        personId: person.id,
+        personName: person.name,
+        assignedBroker: person.assigned_broker,
+        source: person.source,
+        sequenceId: seq.id,
+        sequenceName: seq.name,
+        enrolledAt: row.created_at as string,
+        preview,
+        cmaLink: (person.custom?.cmaLink as string | undefined) ?? null,
+      }
+    }),
+  )
 }
 
 async function setEnrollment(
@@ -1873,10 +1718,56 @@ export async function getBrokerActionQueue(): Promise<BrokerActionItem[]> {
     .limit(100)
   if (access.brokerSlug) q = q.eq('crm_people.assigned_broker', access.brokerSlug)
   const { data } = await q
+  const rows = data ?? []
   const { renderCrmMerge, referencesCmaLink, findUnresolvedMergeTokens } = await import('@/lib/crm/merge')
   const { buildMergeContext } = await import('@/lib/crm/merge-context')
+
+  // Batch the template lookups: ONE .in() query for every distinct templateKey
+  // across the fetched rows. The old version awaited resolveStepContent per
+  // enrollment, a sequential crm_templates round trip per row (N+1, up to 100)
+  // inside the broker-dashboard's first Promise.all, directly extending TTFB.
+  const stepFor = (r: (typeof rows)[number]): Record<string, unknown> | undefined => {
+    const seq = r.crm_sequences as unknown as { steps: Array<Record<string, unknown>> }
+    return (seq.steps ?? [])[r.step_index as number] as Record<string, unknown> | undefined
+  }
+  const templateKeys = [
+    ...new Set(
+      rows
+        .map((r) => {
+          const step = stepFor(r)
+          return step?.templateKey != null ? String(step.templateKey) : ''
+        })
+        .filter(Boolean),
+    ),
+  ]
+  const templateByKey = new Map<string, { subject: string | null; body: string | null }>()
+  if (templateKeys.length) {
+    const { data: tpls } = await sb.from('crm_templates').select('key,subject,body').in('key', templateKeys)
+    for (const t of tpls ?? []) {
+      templateByKey.set(String(t.key), {
+        subject: (t.subject ?? null) as string | null,
+        body: (t.body ?? null) as string | null,
+      })
+    }
+  }
+  // Same override semantics as resolveStepContent: a templateKey's stored
+  // subject/body replace the inline ones so the preview + every guard match
+  // what the engine sends. The remaining per-row await (buildMergeContext)
+  // reads only cached DAL functions, so the loop stays cheap.
+  const resolveFromBatch = (step: Record<string, unknown>): { subject: string | null; body: string } => {
+    let subject = step.subject != null ? String(step.subject) : null
+    let body = String(step.body ?? '')
+    const templateKey = step.templateKey != null ? String(step.templateKey) : ''
+    const tpl = templateKey ? templateByKey.get(templateKey) : undefined
+    if (tpl) {
+      if (tpl.subject != null) subject = tpl.subject
+      if (tpl.body != null) body = tpl.body
+    }
+    return { subject, body }
+  }
+
   const out: BrokerActionItem[] = []
-  for (const r of data ?? []) {
+  for (const r of rows) {
     const person = r.crm_people as unknown as {
       name?: string | null; first_name?: string | null; assigned_broker?: string | null
       custom?: Record<string, unknown>
@@ -1888,7 +1779,7 @@ export async function getBrokerActionQueue(): Promise<BrokerActionItem[]> {
     const channel = String(step.channel ?? 'step')
     const isMessage = channel === 'email' || channel === 'sms'
     // Resolve templateKey so the preview + every guard match what the engine sends.
-    const resolved = await resolveStepContent(sb, step)
+    const resolved = resolveFromBatch(step)
     const rawBody = resolved.body || String(step.taskName ?? '')
     const mergeCtx = await buildMergeContext({ person, senderSlug: person.assigned_broker ?? null })
     const preview = renderCrmMerge(rawBody, person, mergeCtx)
