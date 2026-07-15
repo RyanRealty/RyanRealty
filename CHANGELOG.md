@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.792.2 (2026-07-15)
+
+### Bug Fixes
+- fix(crm): outreach lists never auto-enroll — guard the sweep the COALESCE window just opened
+- fix(reporting): every 'new leads' KPI now uses the inbound taxonomy — imports are not leads
+- fix(crm): thirteen verified logic bugs across DAL readers and crons
+- fix(crm/dal): page every over-1000-row read — PostgREST's silent cap was corrupting displayed counts
+- fix(leads): LP enrichment runs against the native person id — canonical tagging was silently dead
+
+### Maintenance
+- chore(admin): remove 28 verified-dead files (~4,300 lines); native hot-lead escalation; FSBO+Expireds reachable
+- perf(crm): kill the N+1s and redundant auth round trips on the hot admin paths
+- perf(dashboard): collapse the broker-dashboard waterfall; wire the scope toggle; honest KPI tiles
+- chore(cron): remove dead seller-workflow-pause cron (FUB decommissioned)
+
+---
+
+
 ## v1.792.1 (2026-07-15)
 
 ### Bug Fixes
