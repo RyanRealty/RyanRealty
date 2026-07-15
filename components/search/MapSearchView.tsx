@@ -13,6 +13,7 @@ import type { MapPolygonPoint } from '@/lib/map-polygon'
 import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registry'
 import { listingDetailPath, displaySubdivision } from '@/lib/slug'
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Eyebrow, H3, Body } from '@/components/site/primitives'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -105,7 +106,7 @@ const NEW_LISTING_WINDOW_DAYS = 7
 // 'use client' component, and a clock read in the render body disagrees
 // between the server-rendered HTML and the client's first hydration pass,
 // which kills hydration for the whole tree (G37 hydration-safety gate, the
-// React #418 regression class). The server page computes `now` once and
+// React error 418 regression class). The server page computes `now` once and
 // passes it down as a prop instead.
 function cardBadge(l: ListingTileRow, nowMs: number): string | null {
   const status = l.StandardStatus?.trim()
@@ -439,8 +440,8 @@ export default function MapSearchView({
             const ppsf = cardPricePerSqft(l)
             const badge = nowMs != null ? cardBadge(l, nowMs) : null
             return (
-              // A <button> (SaveListingButton) can't legally nest inside an
-              // <a> — the card used to be one big Link wrapping everything.
+              // A button element (SaveListingButton) can't legally nest inside
+              // an anchor — the card used to be one big Link wrapping everything.
               // The Link is now a stretched absolute overlay UNDER the save
               // button (which sits above it in the DOM/z-index), so the
               // whole card is still one click target except the save corner.
@@ -479,9 +480,9 @@ export default function MapSearchView({
                   )}
                   {badge ? (
                     <div className="pointer-events-none absolute left-2.5 top-2.5">
-                      <span className="rounded-full border border-border bg-card px-2.5 py-0.5 text-[11px] font-medium text-foreground shadow-sm">
+                      <Badge variant="outline" className="bg-card px-2.5 shadow-sm">
                         {badge}
-                      </span>
+                      </Badge>
                     </div>
                   ) : null}
                   <div className="absolute right-2 top-2 z-10">
@@ -489,10 +490,10 @@ export default function MapSearchView({
                   </div>
                 </div>
                 <div className="pointer-events-none px-4 pb-4 pt-3.5">
-                  <div className="text-[22px] font-bold tabular-nums tracking-[-0.01em] text-foreground">
+                  <div className="text-2xl font-bold tabular-nums tracking-[-0.01em] text-foreground">
                     {formatPrice(l.ListPrice)}
                   </div>
-                  <div className="mt-0.5 truncate text-[13px] text-foreground">{cardStreet(l)}</div>
+                  <div className="mt-0.5 truncate text-sm text-foreground">{cardStreet(l)}</div>
                   <div className="truncate text-xs text-muted-foreground">{cardCity(l)}</div>
                   {(l.BedroomsTotal != null || l.BathroomsTotal != null || sqft != null) && (
                     <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground tabular-nums">

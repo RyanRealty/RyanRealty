@@ -11,9 +11,11 @@ import Link from 'next/link'
 import { listExpiredDashboardRows } from '@/lib/data/expired/dashboard'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
+import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ExpiredAuditActions } from '@/components/admin/expired/ExpiredAuditActions.client'
 
 export const dynamic = 'force-dynamic'
@@ -52,35 +54,35 @@ export default async function ExpiredsDashboardPage() {
       </div>
 
       <Card>
-        <CardContent className="overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="px-3 py-2.5 font-medium">Property</th>
-                <th className="px-3 py-2.5 font-medium">Owner</th>
-                <th className="px-3 py-2.5 text-right font-medium">Was asking</th>
-                <th className="px-3 py-2.5 font-medium">Audit</th>
-                <th className="px-3 py-2.5 font-medium">Contacted</th>
-                <th className="px-3 py-2.5 font-medium">Engagement</th>
-                <th className="px-3 py-2.5 text-right font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
+        <CardContent className="no-scrollbar overflow-x-auto p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="text-xs uppercase tracking-wide">
+                <TableHead className="h-auto px-3 py-2.5 text-muted-foreground">Property</TableHead>
+                <TableHead className="h-auto px-3 py-2.5 text-muted-foreground">Owner</TableHead>
+                <TableHead className="h-auto px-3 py-2.5 text-right text-muted-foreground">Was asking</TableHead>
+                <TableHead className="h-auto px-3 py-2.5 text-muted-foreground">Audit</TableHead>
+                <TableHead className="h-auto px-3 py-2.5 text-muted-foreground">Contacted</TableHead>
+                <TableHead className="h-auto px-3 py-2.5 text-muted-foreground">Engagement</TableHead>
+                <TableHead className="h-auto px-3 py-2.5 text-right text-muted-foreground">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {rows.map((r) => {
                 const isAuditDoc = r.audit_doc_type === 'expired-audit'
                 const anyEngagement = r.email_opens + r.email_clicks + r.sms_clicks + r.doc_views > 0
                 return (
-                  <tr key={r.listing_key} className="align-top">
-                    <td className="px-3 py-2.5">
+                  <TableRow key={r.listing_key}>
+                    <TableCell className="whitespace-normal px-3 py-2.5 align-top">
                       <Link href={`/admin/expired-listings/${encodeURIComponent(r.listing_key)}`} className="font-medium text-foreground underline-offset-2 hover:underline">
                         {r.street_address ?? r.full_address}
                       </Link>
                       <div className="mt-0.5 text-xs text-muted-foreground">
                         {r.city ?? ''} · off market {formatDate(r.expired_at)}
-                        {r.hard_stop ? <Badge variant="destructive" className="ml-1.5 px-1 py-0 text-[10px]">hard stop</Badge> : null}
+                        {r.hard_stop ? <Badge variant="destructive" className="ml-1.5 px-1 py-0">hard stop</Badge> : null}
                       </div>
-                    </td>
-                    <td className="px-3 py-2.5">
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-3 py-2.5 align-top">
                       <div className="text-foreground">{r.owner_name ?? 'unknown'}</div>
                       <div className="mt-0.5 text-xs text-muted-foreground">
                         {r.contact_phone ? 'phone' : null}
@@ -88,9 +90,9 @@ export default async function ExpiredsDashboardPage() {
                         {r.contact_email ? 'email' : null}
                         {!r.contact_phone && !r.contact_email ? 'no contact found' : null}
                       </div>
-                    </td>
-                    <td className="px-3 py-2.5 text-right tabular-nums">{formatPriceExact(r.list_price)}</td>
-                    <td className="px-3 py-2.5">
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-3 py-2.5 text-right align-top tabular-nums">{formatPriceExact(r.list_price)}</TableCell>
+                    <TableCell className="whitespace-normal px-3 py-2.5 align-top">
                       {r.audit_slug && isAuditDoc ? (
                         <>
                           <Link href={`/admin/cmas/${r.audit_slug}`} className="font-medium text-foreground underline-offset-2 hover:underline">
@@ -105,13 +107,13 @@ export default async function ExpiredsDashboardPage() {
                       ) : (
                         <span className="text-xs text-muted-foreground">none</span>
                       )}
-                    </td>
-                    <td className="px-3 py-2.5 text-xs text-muted-foreground">
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-3 py-2.5 align-top text-xs text-muted-foreground">
                       {r.email_sent_at ? <div>email {formatDate(r.email_sent_at)}</div> : null}
                       {r.sms_sent_at ? <div>text {formatDate(r.sms_sent_at)}</div> : null}
                       {!r.email_sent_at && !r.sms_sent_at ? 'not yet' : null}
-                    </td>
-                    <td className={`px-3 py-2.5 text-xs ${anyEngagement ? '' : 'text-muted-foreground'}`}>
+                    </TableCell>
+                    <TableCell className={cn('whitespace-normal px-3 py-2.5 align-top text-xs', anyEngagement ? '' : 'text-muted-foreground')}>
                       <div className="flex flex-wrap gap-x-2">
                         <Engagement n={r.email_opens} label="opens" />
                         <Engagement n={r.email_clicks} label="clicks" />
@@ -119,10 +121,10 @@ export default async function ExpiredsDashboardPage() {
                         <Engagement n={r.sms_clicks} label="taps" />
                       </div>
                       {r.last_engagement_at ? (
-                        <div className="mt-0.5 text-[11px] text-muted-foreground">last {formatDate(r.last_engagement_at)}</div>
+                        <div className="mt-0.5 text-xs text-muted-foreground">last {formatDate(r.last_engagement_at)}</div>
                       ) : null}
-                    </td>
-                    <td className="px-3 py-2.5 text-right">
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-3 py-2.5 text-right align-top">
                       <ExpiredAuditActions
                         listingKey={r.listing_key}
                         hasAudit={!!r.audit_slug}
@@ -132,12 +134,12 @@ export default async function ExpiredsDashboardPage() {
                         hardStop={r.hard_stop}
                         emailSentAt={r.email_sent_at}
                       />
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

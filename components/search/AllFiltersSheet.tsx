@@ -24,6 +24,7 @@ import { countSearchListings } from '@/app/actions/search'
 import { describeParsedSearch } from '@/lib/parse-search-query'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -169,14 +170,14 @@ export function ParsedSearchNotice({ chips, className }: { chips: string[] | nul
   return (
     <div aria-live="polite" className={className}>
       {chips && chips.length > 0 && (
-        <div className="flex max-w-full flex-wrap items-center gap-1 rounded-xl border border-border bg-card px-2.5 py-1.5 shadow-lg">
+        <Card className="max-w-full flex-row flex-wrap items-center gap-1 border border-border px-2.5 py-1.5 shadow-lg ring-0">
           <span className="text-xs text-muted-foreground">Searching</span>
           {chips.map((chip) => (
             <Badge key={chip} variant="secondary" className="text-xs font-normal">
               {chip}
             </Badge>
           ))}
-        </div>
+        </Card>
       )}
     </div>
   )

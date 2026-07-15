@@ -10,9 +10,11 @@ import Link from 'next/link'
 import { listFsboDashboardRows } from '@/lib/data/fsbo/dashboard'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
+import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { FsboActions } from '@/components/admin/fsbo/FsboActions.client'
 
 export const dynamic = 'force-dynamic'
@@ -60,36 +62,36 @@ export default async function FsboDashboardPage() {
         </Card>
       ) : (
         <Card>
-          <CardContent className="overflow-x-auto p-0">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="px-3 py-2.5 font-medium">Property</th>
-                  <th className="px-3 py-2.5 font-medium">Owner</th>
-                  <th className="px-3 py-2.5 text-right font-medium">Asking</th>
-                  <th className="px-3 py-2.5 font-medium">CMA</th>
-                  <th className="px-3 py-2.5 font-medium">Contacted</th>
-                  <th className="px-3 py-2.5 font-medium">Engagement</th>
-                  <th className="px-3 py-2.5 text-right font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
+          <CardContent className="no-scrollbar overflow-x-auto p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="text-xs uppercase tracking-wide">
+                  <TableHead className="h-auto px-3 py-2.5 text-muted-foreground">Property</TableHead>
+                  <TableHead className="h-auto px-3 py-2.5 text-muted-foreground">Owner</TableHead>
+                  <TableHead className="h-auto px-3 py-2.5 text-right text-muted-foreground">Asking</TableHead>
+                  <TableHead className="h-auto px-3 py-2.5 text-muted-foreground">CMA</TableHead>
+                  <TableHead className="h-auto px-3 py-2.5 text-muted-foreground">Contacted</TableHead>
+                  <TableHead className="h-auto px-3 py-2.5 text-muted-foreground">Engagement</TableHead>
+                  <TableHead className="h-auto px-3 py-2.5 text-right text-muted-foreground">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {rows.map((r) => {
                   const anyEngagement = r.email_opens + r.email_clicks + r.sms_clicks + r.doc_views > 0
                   return (
-                    <tr key={r.fsbo_url} className="align-top">
-                      <td className="px-3 py-2.5">
+                    <TableRow key={r.fsbo_url}>
+                      <TableCell className="whitespace-normal px-3 py-2.5 align-top">
                         <a href={r.fsbo_url} target="_blank" rel="noreferrer" className="font-medium text-foreground underline-offset-2 hover:underline">
                           {r.street_address ?? r.full_address ?? r.fsbo_url}
                         </a>
                         <div className="mt-0.5 text-xs text-muted-foreground">
                           {r.city ?? ''} · {r.fsbo_source ?? 'zillow'}
                           {r.days_listed != null ? ` · ${r.days_listed} days listed` : ''}
-                          {r.status === 'gone' ? <Badge variant="outline" className="ml-1.5 px-1 py-0 text-[10px]">off market</Badge> : null}
-                          {r.hard_stop ? <Badge variant="destructive" className="ml-1.5 px-1 py-0 text-[10px]">hard stop</Badge> : null}
+                          {r.status === 'gone' ? <Badge variant="outline" className="ml-1.5 px-1 py-0">off market</Badge> : null}
+                          {r.hard_stop ? <Badge variant="destructive" className="ml-1.5 px-1 py-0">hard stop</Badge> : null}
                         </div>
-                      </td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="whitespace-normal px-3 py-2.5 align-top">
                         <div className="text-foreground">{r.owner_name ?? 'unknown'}</div>
                         <div className="mt-0.5 text-xs text-muted-foreground">
                           {r.contact_phone ? 'phone' : null}
@@ -97,9 +99,9 @@ export default async function FsboDashboardPage() {
                           {r.contact_email ? 'email' : null}
                           {!r.contact_phone && !r.contact_email ? 'no contact found' : null}
                         </div>
-                      </td>
-                      <td className="px-3 py-2.5 text-right tabular-nums">{formatPriceExact(r.list_price)}</td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="whitespace-normal px-3 py-2.5 text-right align-top tabular-nums">{formatPriceExact(r.list_price)}</TableCell>
+                      <TableCell className="whitespace-normal px-3 py-2.5 align-top">
                         {r.cma_slug ? (
                           <>
                             <Link href={`/admin/cmas/${r.cma_slug}`} className="font-medium text-foreground underline-offset-2 hover:underline">
@@ -112,13 +114,13 @@ export default async function FsboDashboardPage() {
                         ) : (
                           <span className="text-xs text-muted-foreground">none</span>
                         )}
-                      </td>
-                      <td className="px-3 py-2.5 text-xs text-muted-foreground">
+                      </TableCell>
+                      <TableCell className="whitespace-normal px-3 py-2.5 align-top text-xs text-muted-foreground">
                         {r.cma_delivered_at ? <div>email {formatDate(r.cma_delivered_at)}</div> : null}
                         {r.sms_sent_at ? <div>text {formatDate(r.sms_sent_at)}</div> : null}
                         {!r.cma_delivered_at && !r.sms_sent_at ? 'not yet' : null}
-                      </td>
-                      <td className={`px-3 py-2.5 text-xs ${anyEngagement ? '' : 'text-muted-foreground'}`}>
+                      </TableCell>
+                      <TableCell className={cn('whitespace-normal px-3 py-2.5 align-top text-xs', anyEngagement ? '' : 'text-muted-foreground')}>
                         <div className="flex flex-wrap gap-x-2">
                           <Engagement n={r.email_opens} label="opens" />
                           <Engagement n={r.email_clicks} label="clicks" />
@@ -126,10 +128,10 @@ export default async function FsboDashboardPage() {
                           <Engagement n={r.sms_clicks} label="taps" />
                         </div>
                         {r.last_engagement_at ? (
-                          <div className="mt-0.5 text-[11px] text-muted-foreground">last {formatDate(r.last_engagement_at)}</div>
+                          <div className="mt-0.5 text-xs text-muted-foreground">last {formatDate(r.last_engagement_at)}</div>
                         ) : null}
-                      </td>
-                      <td className="px-3 py-2.5 text-right">
+                      </TableCell>
+                      <TableCell className="whitespace-normal px-3 py-2.5 text-right align-top">
                         <FsboActions
                           fsboUrl={r.fsbo_url}
                           hasCma={!!r.cma_slug}
@@ -140,12 +142,12 @@ export default async function FsboDashboardPage() {
                           smsSentAt={r.sms_sent_at}
                           emailSentAt={r.cma_delivered_at}
                         />
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   )
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       )}

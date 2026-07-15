@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   prepareDocSendAction,
   sendDocEmailAction,
@@ -145,20 +146,21 @@ export function SendDocDialog(props: {
 
             <div>
               <Label className="mb-1 block text-xs text-muted-foreground">Template</Label>
-              <select
-                className="h-9 w-full rounded-lg border border-border bg-background px-2 text-sm"
-                value={templateKey}
-                onChange={(e) => pickTemplate(e.target.value)}
-              >
-                {channel === 'email' ? <option value="__default__">Standard report email</option> : null}
-                {channel === 'sms' ? <option value="__default__">Write my own</option> : null}
-                {templates.map((t) => (
-                  <option key={t.key} value={t.key}>
-                    {t.name}
-                  </option>
-                ))}
-                {channel === 'email' ? <option value="__blank__">Write my own</option> : null}
-              </select>
+              <Select value={templateKey} onValueChange={pickTemplate}>
+                <SelectTrigger className="h-9 w-full" aria-label="Template">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {channel === 'email' ? <SelectItem value="__default__">Standard report email</SelectItem> : null}
+                  {channel === 'sms' ? <SelectItem value="__default__">Write my own</SelectItem> : null}
+                  {templates.map((t) => (
+                    <SelectItem key={t.key} value={t.key}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                  {channel === 'email' ? <SelectItem value="__blank__">Write my own</SelectItem> : null}
+                </SelectContent>
+              </Select>
             </div>
 
             {channel === 'email' ? (
@@ -173,7 +175,7 @@ export function SendDocDialog(props: {
                 Message{channel === 'sms' ? ` · ${smsLen} characters${smsLen > 320 ? ' (long for a first text)' : ''}` : ''}
               </Label>
               <Textarea rows={channel === 'email' ? 8 : 5} value={body} onChange={(e) => setBody(e.target.value)} />
-              <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+              <p className="mt-1 text-xs leading-snug text-muted-foreground">
                 {channel === 'email'
                   ? 'The report button, PDF attachment, and your signature append automatically.'
                   : `Link to the report: ${ctx.docUrl} (paste it in if you want it in the text — links are tap-tracked).`}
@@ -181,10 +183,10 @@ export function SendDocDialog(props: {
             </div>
 
             {ctx.needsReview ? (
-              <label className="flex items-start gap-2 text-xs text-foreground">
+              <Label className="items-start text-xs font-normal leading-normal text-foreground">
                 <Checkbox checked={ack} onCheckedChange={(v) => setAck(v === true)} className="mt-0.5" />
                 This document is flagged for review. I reviewed the flags and approve sending it.
-              </label>
+              </Label>
             ) : null}
 
             <div className="flex items-center justify-between gap-3">

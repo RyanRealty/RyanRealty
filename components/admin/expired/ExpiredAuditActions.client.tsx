@@ -45,7 +45,7 @@ export function ExpiredAuditActions(props: {
           <SendDocDialog kind="expired" id={listingKey} buttonLabel={emailSentAt ? 'Send again' : 'Send audit'} />
         ) : null}
       </div>
-      {msg ? <span className="max-w-[240px] text-right text-[11px] leading-tight text-muted-foreground">{msg}</span> : null}
+      {msg ? <span className="max-w-60 text-right text-xs leading-tight text-muted-foreground">{msg}</span> : null}
     </div>
   )
 }

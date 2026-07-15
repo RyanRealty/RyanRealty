@@ -44,7 +44,7 @@ export function FsboActions(props: {
           <SendDocDialog kind="fsbo" id={fsboUrl} buttonLabel={emailSentAt || smsSentAt ? 'Send again' : 'Send'} />
         )}
       </div>
-      {msg ? <span className="max-w-[240px] text-right text-[11px] leading-tight text-muted-foreground">{msg}</span> : null}
+      {msg ? <span className="max-w-60 text-right text-xs leading-tight text-muted-foreground">{msg}</span> : null}
     </div>
   )
 }

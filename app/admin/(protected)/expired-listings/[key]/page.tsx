@@ -15,6 +15,7 @@ import { formatDate } from '@/lib/format/date'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 export const dynamic = 'force-dynamic'
 
@@ -93,10 +94,10 @@ export default async function ExpiredListingDetailPage({ params }: { params: Pro
                 <img
                   src={r.listing.photo_url}
                   alt={r.full_address}
-                  className="h-40 w-full rounded-lg border border-border object-cover sm:w-[220px]"
+                  className="h-40 w-full rounded-lg border border-border object-cover"
                 />
               ) : (
-                <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-border text-xs text-muted-foreground sm:w-[220px]">
+                <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-border text-xs text-muted-foreground">
                   no photo on the closed listing
                 </div>
               )}
@@ -133,43 +134,43 @@ export default async function ExpiredListingDetailPage({ params }: { params: Pro
           <CardHeader>
             <CardTitle>Price history · {r.price_cycles.length} MLS {r.price_cycles.length === 1 ? 'attempt' : 'attempts'}</CardTitle>
           </CardHeader>
-          <CardContent className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="py-2 pr-3 font-medium">Listed</th>
-                  <th className="py-2 pr-3 font-medium">Status</th>
-                  <th className="py-2 pr-3 text-right font-medium">Original</th>
-                  <th className="py-2 pr-3 text-right font-medium">Final ask</th>
-                  <th className="py-2 pr-3 text-right font-medium">Sold</th>
-                  <th className="py-2 pr-3 text-right font-medium">DOM</th>
-                  <th className="py-2 pr-3 text-right font-medium">Cuts</th>
-                  <th className="py-2 font-medium">Off market</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
+          <CardContent className="no-scrollbar overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="text-xs uppercase tracking-wide">
+                  <TableHead className="h-auto px-0 py-2 pr-3 text-muted-foreground">Listed</TableHead>
+                  <TableHead className="h-auto px-0 py-2 pr-3 text-muted-foreground">Status</TableHead>
+                  <TableHead className="h-auto px-0 py-2 pr-3 text-right text-muted-foreground">Original</TableHead>
+                  <TableHead className="h-auto px-0 py-2 pr-3 text-right text-muted-foreground">Final ask</TableHead>
+                  <TableHead className="h-auto px-0 py-2 pr-3 text-right text-muted-foreground">Sold</TableHead>
+                  <TableHead className="h-auto px-0 py-2 pr-3 text-right text-muted-foreground">DOM</TableHead>
+                  <TableHead className="h-auto px-0 py-2 pr-3 text-right text-muted-foreground">Cuts</TableHead>
+                  <TableHead className="h-auto px-0 py-2 text-muted-foreground">Off market</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {r.price_cycles.map((c) => {
                   const cut =
                     c.original_list_price && c.final_list_price && c.original_list_price > c.final_list_price
                       ? c.original_list_price - c.final_list_price
                       : null
                   return (
-                    <tr key={c.listing_key} className="align-baseline">
-                      <td className="py-2 pr-3 whitespace-nowrap">{fmtDate(c.list_date)}</td>
-                      <td className="py-2 pr-3 capitalize">{c.status?.toLowerCase() ?? '—'}</td>
-                      <td className="py-2 pr-3 text-right tabular-nums">{fmtPrice(c.original_list_price)}</td>
-                      <td className="py-2 pr-3 text-right tabular-nums">{fmtPrice(c.final_list_price)}</td>
-                      <td className="py-2 pr-3 text-right tabular-nums">{c.close_price ? fmtPrice(c.close_price) : '—'}</td>
-                      <td className="py-2 pr-3 text-right tabular-nums">{c.days_on_market ?? '—'}</td>
-                      <td className="py-2 pr-3 text-right tabular-nums">
+                    <TableRow key={c.listing_key} className="align-baseline">
+                      <TableCell className="px-0 py-2 pr-3 align-baseline">{fmtDate(c.list_date)}</TableCell>
+                      <TableCell className="px-0 py-2 pr-3 align-baseline capitalize">{c.status?.toLowerCase() ?? '—'}</TableCell>
+                      <TableCell className="px-0 py-2 pr-3 text-right align-baseline tabular-nums">{fmtPrice(c.original_list_price)}</TableCell>
+                      <TableCell className="px-0 py-2 pr-3 text-right align-baseline tabular-nums">{fmtPrice(c.final_list_price)}</TableCell>
+                      <TableCell className="px-0 py-2 pr-3 text-right align-baseline tabular-nums">{c.close_price ? fmtPrice(c.close_price) : '—'}</TableCell>
+                      <TableCell className="px-0 py-2 pr-3 text-right align-baseline tabular-nums">{c.days_on_market ?? '—'}</TableCell>
+                      <TableCell className="px-0 py-2 pr-3 text-right align-baseline tabular-nums">
                         {c.price_drop_count ? `${c.price_drop_count}${cut ? ` (${fmtPrice(cut)})` : ''}` : '—'}
-                      </td>
-                      <td className="py-2 whitespace-nowrap">{fmtDate(c.off_market_date)}</td>
-                    </tr>
+                      </TableCell>
+                      <TableCell className="px-0 py-2 align-baseline">{fmtDate(c.off_market_date)}</TableCell>
+                    </TableRow>
                   )
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
             <p className="mt-3 text-xs text-muted-foreground">
               One row per MLS listing attempt at this address, newest first. Source: Oregon Data Share MLS.
             </p>
