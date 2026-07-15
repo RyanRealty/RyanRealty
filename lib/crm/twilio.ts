@@ -62,7 +62,7 @@ export function shouldEnforceTwilioSignature(): boolean {
 export async function verifiedTwilioParams(
   request: Request,
 ): Promise<{ ok: true; params: Record<string, string> } | { ok: false }> {
-  let params: Record<string, string> = {}
+  const params: Record<string, string> = {}
   try {
     const form = await request.formData()
     for (const [k, v] of form.entries()) params[k] = String(v)
@@ -349,4 +349,27 @@ export async function getAccountType(): Promise<'Trial' | 'Full' | null> {
   if (!res.ok) return null
   const data = (await res.json()) as { type?: string }
   return (data.type as 'Trial' | 'Full') ?? null
+}
+
+/**
+ * Live delivery status for a single outbound message SID. The StatusCallback
+ * webhook (/api/twilio/status) is the primary source of delivery state, but it
+ * can miss a callback (a message stuck in `queued` never fires a `sent`/`delivered`
+ * receipt, and an early `queued` callback can race the timeline-row insert). This
+ * lets the CRM reconcile a pending row against Twilio's source of truth on demand.
+ */
+export async function fetchTwilioMessageStatus(
+  sid: string,
+): Promise<{ ok: true; status: string; errorCode: number | null } | { ok: false; error: string }> {
+  const c = creds()
+  if (!c) return { ok: false, error: 'Twilio not configured' }
+  const clean = sid.trim()
+  if (!clean) return { ok: false, error: 'Missing message SID' }
+  const res = await fetch(`${API}/Accounts/${c.sid}/Messages/${encodeURIComponent(clean)}.json`, {
+    headers: { Authorization: authHeader(c) },
+    cache: 'no-store',
+  })
+  if (!res.ok) return { ok: false, error: `Twilio lookup failed (${res.status})` }
+  const data = (await res.json()) as { status?: string; error_code?: number | null }
+  return { ok: true, status: String(data.status ?? ''), errorCode: data.error_code ?? null }
 }

@@ -37,6 +37,11 @@ import {
   ChevronDown,
   ChevronRight,
   EyeOff,
+  Check,
+  CheckCheck,
+  Clock3,
+  TriangleAlert,
+  RefreshCw,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -54,7 +59,7 @@ import { cn } from '@/lib/utils'
 import { TimelineMediaStrip } from '@/components/admin/crm/StoredAttachments'
 import { partitionNotes } from '@/lib/crm/note-classify'
 import { addCrmNoteAction, startCrmCallAction } from '@/app/actions/crm'
-import { logCrmCallAction, quickFollowUpAction, toggleTimelineStarAction } from '@/app/actions/crm-person-detail'
+import { logCrmCallAction, quickFollowUpAction, toggleTimelineStarAction, refreshSmsDeliveryStatusAction } from '@/app/actions/crm-person-detail'
 
 export type TimelineItem = {
   id: number
@@ -160,6 +165,123 @@ function cardTimestamp(iso: string, now: Date | null): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(sameYear ? {} : { year: 'numeric' }), timeZone: 'America/Los_Angeles' })
 }
 
+// ── SMS delivery status (§9.4) ───────────────────────────────────────────────
+
+type SmsDelivery = {
+  state: string | null
+  errorCode: number | null
+  carrierFiltered: boolean
+  hasSid: boolean
+}
+
+/** Read the delivery fields the Twilio status webhook writes onto an sms_out payload. */
+function readSmsDelivery(payload: Record<string, unknown> | null): SmsDelivery {
+  const p = payload ?? {}
+  return {
+    state: typeof p.deliveryState === 'string' ? p.deliveryState : null,
+    errorCode: typeof p.errorCode === 'number' ? p.errorCode : null,
+    carrierFiltered: p.carrierFiltered === true,
+    hasSid: typeof p.twilioSid === 'string' && p.twilioSid.length > 0,
+  }
+}
+
+const DELIVERY_TERMINAL = new Set(['delivered', 'undelivered', 'failed'])
+
+/**
+ * Delivery-receipt badge for an outbound text. Renders the state the Twilio
+ * StatusCallback webhook recorded onto the row. When a text is still pending (no
+ * receipt yet, or stuck in `queued`), a refresh control reconciles it against
+ * Twilio's live status on demand — the message-stuck-in-queued case that has no
+ * webhook callback to rely on. Imported legacy texts (no Twilio SID) show nothing.
+ */
+function SmsDeliveryBadge({ item }: { item: TimelineItem }) {
+  const initial = readSmsDelivery(item.payload)
+  const [state, setState] = useState<string | null>(initial.state)
+  const [errorCode, setErrorCode] = useState<number | null>(initial.errorCode)
+  const [carrierFiltered, setCarrierFiltered] = useState<boolean>(initial.carrierFiltered)
+  const [pending, start] = useTransition()
+  const [err, setErr] = useState<string | null>(null)
+
+  // Legacy/imported texts have no delivery telemetry — don't imply one.
+  if (!initial.hasSid) return null
+
+  const terminal = state != null && DELIVERY_TERMINAL.has(state)
+  const isFailure = carrierFiltered || state === 'undelivered' || state === 'failed'
+
+  let label: string
+  let variant: 'delivered' | 'sent' | 'pending' | 'failed'
+  let Icon = Clock3
+  if (carrierFiltered) {
+    label = `Carrier blocked${errorCode ? ` (${errorCode})` : ''}`
+    variant = 'failed'
+    Icon = TriangleAlert
+  } else if (state === 'delivered') {
+    label = 'Delivered'
+    variant = 'delivered'
+    Icon = CheckCheck
+  } else if (state === 'undelivered' || state === 'failed') {
+    label = `${state === 'failed' ? 'Failed' : 'Undelivered'}${errorCode ? ` (${errorCode})` : ''}`
+    variant = 'failed'
+    Icon = TriangleAlert
+  } else if (state === 'sent') {
+    label = 'Sent'
+    variant = 'sent'
+    Icon = Check
+  } else if (state === 'queued' || state === 'sending') {
+    label = state === 'sending' ? 'Sending' : 'Queued'
+    variant = 'pending'
+    Icon = Clock3
+  } else {
+    // Has a Twilio SID but no recorded receipt yet — accepted, awaiting delivery.
+    label = 'Pending'
+    variant = 'pending'
+    Icon = Clock3
+  }
+
+  const styles: Record<typeof variant, string> = {
+    delivered: 'bg-success/15 text-success',
+    sent: 'bg-secondary text-foreground',
+    pending: 'bg-warning/15 text-warning',
+    failed: 'bg-destructive/15 text-destructive',
+  }
+
+  function refresh() {
+    setErr(null)
+    start(async () => {
+      const r = await refreshSmsDeliveryStatusAction(item.id)
+      if (r.ok) {
+        setState(r.state)
+        setErrorCode(r.errorCode)
+        setCarrierFiltered(r.carrierFiltered)
+      } else {
+        setErr(r.error)
+      }
+    })
+  }
+
+  return (
+    <span className="ml-2 inline-flex items-center gap-1 align-middle">
+      <Badge className={cn('gap-1 text-[10px]', styles[variant])} title={err ?? undefined}>
+        <Icon className={cn('h-3 w-3', pending && 'animate-spin')} aria-hidden />
+        {label}
+      </Badge>
+      {/* Reconcile the pending / non-terminal case against Twilio live. Terminal
+          delivered/undelivered/failed states are final — no refresh needed. */}
+      {!terminal || isFailure ? (
+        <button
+          type="button"
+          onClick={refresh}
+          disabled={pending}
+          aria-label="Refresh delivery status"
+          className="rounded p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-50"
+        >
+          <RefreshCw className={cn('h-3 w-3', pending && 'animate-spin')} />
+        </button>
+      ) : null}
+    </span>
+  )
+}
+
 // ── Timeline event card (§07b 7) ─────────────────────────────────────────────
 
 function EventCard({ item }: { item: TimelineItem }) {
@@ -210,6 +332,7 @@ function EventCard({ item }: { item: TimelineItem }) {
                 {item.clicks} clicks
               </Badge>
             ) : null}
+            {item.kind === 'sms_out' ? <SmsDeliveryBadge item={item} /> : null}
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <span className="text-xs tabular-nums text-muted-foreground">{cardTimestamp(item.ts, now)}</span>

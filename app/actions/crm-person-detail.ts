@@ -303,6 +303,67 @@ export async function toggleTimelineStarAction(
   return { ok: true }
 }
 
+// ---- SMS delivery-status reconcile (§9.4) -------------------------------------
+
+export type SmsDeliveryRefreshResult =
+  | { ok: true; state: string; errorCode: number | null; carrierFiltered: boolean }
+  | { ok: false; error: string }
+
+/**
+ * Pull the live delivery status for an sms_out row from Twilio and write it
+ * forward onto the row's payload. The StatusCallback webhook is the primary
+ * source, but a message stuck in `queued` never fires a delivery receipt (and an
+ * early `queued` callback can race the row insert), so a pending row can sit with
+ * no deliveryState. This reconciles it on demand from Twilio's source of truth,
+ * using the SAME forward-only classifier the webhook uses so a late-arriving
+ * callback and this refresh can never disagree or roll the state backward.
+ */
+export async function refreshSmsDeliveryStatusAction(timelineId: number): Promise<SmsDeliveryRefreshResult> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Unauthorized' }
+  const sb = createServiceClient()
+  const { data: row } = await sb
+    .from('crm_timeline')
+    .select('person_id,kind,payload')
+    .eq('id', timelineId)
+    .maybeSingle()
+  if (!row) return { ok: false, error: 'Timeline entry not found' }
+  if (row.kind !== 'sms_out') return { ok: false, error: 'Not an outbound text' }
+  const scope = await requirePersonInScope(row.person_id as number, access)
+  if (!scope.ok) return scope
+
+  const prev = (row.payload ?? {}) as Record<string, unknown>
+  const sid = typeof prev.twilioSid === 'string' ? prev.twilioSid : null
+  if (!sid) return { ok: false, error: 'No Twilio SID on this text (legacy/imported message)' }
+
+  const { fetchTwilioMessageStatus } = await import('@/lib/crm/twilio')
+  const { classifyTwilioStatus, isForwardStateTransition } = await import('@/lib/crm/sms-status')
+  const live = await fetchTwilioMessageStatus(sid)
+  if (!live.ok) return { ok: false, error: live.error }
+
+  const classified = classifyTwilioStatus(live.status, live.errorCode)
+  const prevState = (typeof prev.deliveryState === 'string' ? prev.deliveryState : null) as
+    | import('@/lib/crm/sms-status').SmsDeliveryState
+    | null
+  const advance = isForwardStateTransition(prevState, classified.state)
+  const nextPayload = {
+    ...prev,
+    deliveryState: advance ? classified.state : prevState ?? classified.state,
+    deliveryUpdatedAt: new Date().toISOString(),
+    errorCode: classified.errorCode ?? (typeof prev.errorCode === 'number' ? prev.errorCode : null),
+    carrierFiltered: classified.carrierFiltered || prev.carrierFiltered === true,
+  }
+  const { error } = await sb.from('crm_timeline').update({ payload: nextPayload }).eq('id', timelineId)
+  if (error) return { ok: false, error: error.message }
+  revalidatePath(`${BASE}/${row.person_id}`)
+  return {
+    ok: true,
+    state: nextPayload.deliveryState,
+    errorCode: nextPayload.errorCode,
+    carrierFiltered: nextPayload.carrierFiltered,
+  }
+}
+
 // ---- Manual call log (§7c.5) --------------------------------------------------
 
 const CALL_OUTCOMES = ['Spoke with lead', 'Left voicemail', 'No answer', 'Wrong number', 'Do not contact', 'Other']
