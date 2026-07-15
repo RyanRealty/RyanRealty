@@ -165,10 +165,6 @@
       "schedule": "35 9 * * *"
     },
     {
-      "path": "/api/cron/seller-workflow-pause",
-      "schedule": "*/15 * * * *"
-    },
-    {
       "path": "/api/cron/marketing-competitor-recon",
       "schedule": "0 10 * * 2"
     },

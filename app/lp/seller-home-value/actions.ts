@@ -247,11 +247,10 @@ async function recordSellerAssignment(params: {
  *  6. Fire Meta CAPI Lead $500 with shared event_id
  *  7. Create 5-min realtime task for hot leads
  *
- * Downstream: a FUB Automation Rule (configured in FUB UI) listens for the
- * `audience:seller` tag and enrolls the lead in the action plan
- * `Seller Lead — Master Workflow`. FUB's own engine fires all email + SMS
- * touches on schedule. Pause-on-reply is handled by the 15-min cron at
- * /api/cron/seller-workflow-pause.
+ * Downstream: canonicallyTagLead applies `audience:seller` and the native
+ * CRM auto-enrolls the lead in its seller sequence (FUB decommissioned
+ * 2026-06-24; the old FUB action-plan + pause-on-reply cron are gone —
+ * pause-on-reply now lives in the native sequence engine).
  */
 export async function submitSellerLPForm(submission: SellerLPSubmission): Promise<SellerLPResult> {
   try {
