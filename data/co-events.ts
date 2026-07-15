@@ -169,8 +169,9 @@ export const CO_EVENTS: CoEvent[] = [
     lat: 44.2909,
     lng: -121.5493,
     recurrence: 'Annually, the second Saturday of July',
-    nextConfirmedDate: '2026-07-11',
-    endDate: '2026-07-11',
+    // 2026 edition (July 11) has passed; 2027 date not yet confirmed on soqs.org.
+    nextConfirmedDate: null,
+    endDate: null,
     organizer: 'Sisters Outdoor Quilt Show',
     officialUrl: 'https://www.soqs.org/',
     lastVerified: '2026-07-03',
