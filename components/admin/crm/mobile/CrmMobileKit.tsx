@@ -44,7 +44,9 @@ export function CrmAvatar({
         alt=""
         style={dim}
         referrerPolicy="no-referrer"
-        className={cn('shrink-0 rounded-full object-cover', className)}
+        // object-top: portrait sources (2:3 broker headshots) center-crop to
+        // the torso without it. No effect on square/landscape photos.
+        className={cn('shrink-0 rounded-full object-cover object-top', className)}
       />
     )
   }

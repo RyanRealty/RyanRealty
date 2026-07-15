@@ -115,7 +115,7 @@ export default function AuthDropdown({ user }: Props) {
               alt=""
               width={32}
               height={32}
-              className="h-8 w-8 rounded-full object-cover"
+              className="h-8 w-8 rounded-full object-cover object-top"
             />
           ) : (
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-border text-xs font-semibold text-muted-foreground">

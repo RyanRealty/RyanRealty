@@ -96,7 +96,7 @@ export default function ConsoleShell({
           <ConsoleCommandPalette />
           {user.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.avatarUrl} alt="" title={brokerLabel} className="h-8 w-8 rounded-full object-cover" referrerPolicy="no-referrer" />
+            <img src={user.avatarUrl} alt="" title={brokerLabel} className="h-8 w-8 rounded-full object-cover object-top" referrerPolicy="no-referrer" />
           ) : (
             <span title={brokerLabel} className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground">{initials}</span>
           )}

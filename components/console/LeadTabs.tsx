@@ -140,7 +140,7 @@ export function LeadTabs({
           <div className="flex items-start gap-4 pb-3.5">
             {pictureUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={pictureUrl} alt="" className="aspect-square w-1/3 max-w-[150px] shrink-0 rounded-2xl object-cover ring-1 ring-primary-foreground/20" referrerPolicy="no-referrer" />
+              <img src={pictureUrl} alt="" className="aspect-square w-1/3 max-w-[150px] shrink-0 rounded-2xl object-cover object-top ring-1 ring-primary-foreground/20" referrerPolicy="no-referrer" />
             ) : (
               <span className="flex aspect-square w-1/3 max-w-[150px] shrink-0 items-center justify-center rounded-2xl bg-primary-foreground/15 text-4xl font-semibold text-primary-foreground">
                 {(name ?? '?').charAt(0).toUpperCase()}

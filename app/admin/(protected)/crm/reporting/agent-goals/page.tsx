@@ -53,7 +53,7 @@ function AgentCell({ row }: { row: AgentGoalsRow }) {
         <img
           src={row.avatarUrl}
           alt=""
-          className="h-7 w-7 shrink-0 rounded-full object-cover"
+          className="h-7 w-7 shrink-0 rounded-full object-cover object-top"
         />
       ) : (
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">

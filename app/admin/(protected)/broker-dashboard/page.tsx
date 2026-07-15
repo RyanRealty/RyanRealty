@@ -471,7 +471,7 @@ export default async function BrokerCommandCenterPage({
                           src={client.pictureUrl}
                           alt=""
                           referrerPolicy="no-referrer"
-                          className="h-8 w-8 shrink-0 rounded-full border border-border object-cover"
+                          className="h-8 w-8 shrink-0 rounded-full border border-border object-cover object-top"
                         />
                       ) : (
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">

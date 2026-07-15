@@ -33,7 +33,10 @@ function AvatarImage({
     <AvatarPrimitive.Image
       data-slot="avatar-image"
       className={cn(
-        "aspect-square size-full rounded-full object-cover",
+        // object-top: avatars hold people. Portrait sources (the 800×1200
+        // broker headshots) center-crop to the torso and behead the subject;
+        // top-anchoring keeps the face. No effect on square/landscape images.
+        "aspect-square size-full rounded-full object-cover object-top",
         className
       )}
       {...props}

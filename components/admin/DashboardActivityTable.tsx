@@ -75,7 +75,7 @@ export function DashboardActivityTable({ rows }: { rows: DashboardActivityRow[] 
                 <Link href={`/admin/crm/${r.personId}`} className="flex items-center gap-2.5">
                   {r.pictureUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={r.pictureUrl} alt="" referrerPolicy="no-referrer" className="h-8 w-8 shrink-0 rounded-full object-cover" />
+                    <img src={r.pictureUrl} alt="" referrerPolicy="no-referrer" className="h-8 w-8 shrink-0 rounded-full object-cover object-top" />
                   ) : (
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                       {name.charAt(0).toUpperCase()}
