@@ -4,6 +4,7 @@ import { getCrmAccess } from '@/app/actions/crm'
 import { createServiceClient } from '@/lib/supabase/service'
 import { setCanExportAction, setPauseLeadsAction } from '@/app/actions/admin-broker-permissions'
 import { SettingsSubpageShell } from '@/components/admin/crm/settings/SettingsSubpageShell'
+import { TeamRoleForm, RemoveAdminRoleButton } from '@/components/admin/crm/settings/TeamRoleManager'
 import {
   Table,
   TableBody,
@@ -23,8 +24,11 @@ export const dynamic = 'force-dynamic'
 /**
  * /admin/crm/settings/team — FUB-style team management table (§8.7).
  *
- * Shows every admin_roles row joined to the matching brokers row so the
- * superuser can see Name / Role / CRM Active / Routing / Can Export /
+ * THE single admin_roles surface (consolidation 2026-07-15): add or update
+ * access, change roles, remove access (ported from the retired role manager
+ * on /admin/users, reusing the same upsertAdminRole / removeAdminRole server
+ * actions), plus every admin_roles row joined to the matching brokers row so
+ * the superuser can see Name / Role / CRM Active / Routing / Can Export /
  * Pause Leads / Last Seen in one surface. The two toggles (can_export,
  * pause_leads) are flipped via superuser-only server actions.
  *
@@ -120,11 +124,16 @@ export default async function TeamSettingsPage() {
     return platform ? `${label} · ${platform}` : label
   }
 
+  const brokerOptions = (brokerRows ?? [])
+    .filter((b) => b.display_name)
+    .map((b) => ({ id: String(b.id), display_name: String(b.display_name) }))
+
   return (
     <SettingsSubpageShell
       title="Team"
-      description="All admin users and their CRM permissions. Toggle export access and lead-routing pause state. Edit identity fields (name, phone, Twilio number) via the broker profile."
+      description="All admin users, their roles, and their CRM permissions. Add or remove access, change roles, and toggle export and lead-routing pause. Edit identity fields (name, phone, Twilio number) via the broker profile."
     >
+      <TeamRoleForm brokers={brokerOptions} />
       <div className="no-scrollbar mt-4 rounded-xl border border-border bg-card overflow-x-auto">
         <Table>
           <TableHeader>
@@ -136,18 +145,14 @@ export default async function TeamSettingsPage() {
               <TableHead className="w-20 text-center text-xs md:text-sm">Export</TableHead>
               <TableHead className="w-20 text-center text-xs md:text-sm">Pause</TableHead>
               <TableHead className="hidden min-w-[130px] md:table-cell">Last seen</TableHead>
-              <TableHead className="w-16"></TableHead>
+              <TableHead className="w-28"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
-                  No admin users found. Add users at{' '}
-                  <Link href="/admin/users" className="underline">
-                    /admin/users
-                  </Link>
-                  .
+                  No admin users yet. Add an email and role above.
                 </TableCell>
               </TableRow>
             ) : (
@@ -221,15 +226,20 @@ export default async function TeamSettingsPage() {
                     {fmtLastSeen(row.lastSeenAt, row.lastSeenPlatform)}
                   </TableCell>
 
-                  {/* Edit link */}
+                  {/* Edit link + remove access */}
                   <TableCell>
-                    {row.brokerHref ? (
-                      <Link href={row.brokerHref}>
-                        <Button variant="ghost" size="sm" className="text-xs h-7">
-                          Edit
-                        </Button>
-                      </Link>
-                    ) : null}
+                    <div className="flex items-center justify-end gap-1">
+                      {row.brokerHref ? (
+                        <Link href={row.brokerHref}>
+                          <Button variant="ghost" size="sm" className="text-xs h-7">
+                            Edit
+                          </Button>
+                        </Link>
+                      ) : null}
+                      {row.role !== 'superuser' ? (
+                        <RemoveAdminRoleButton email={row.email} />
+                      ) : null}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

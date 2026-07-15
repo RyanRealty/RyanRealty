@@ -70,7 +70,9 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
 
   // ── Listings ──
   const listings: AdminNavItem[] = [item('/admin/listings', 'Listings', 'home')]
-  if (isSuperuser) listings.push(item('/admin/expired-listings', 'Expired listings', 'clock'))
+  // /admin/expired-listings index retired 2026-07-15 — it redirects to the
+  // consolidated /admin/expireds dashboard below. The per-listing review
+  // detail at /admin/expired-listings/[key] remains (linked from Expireds + CMAs).
   // Restored to nav 2026-07-14: the consolidated Expireds + FSBOs dashboards
   // (approve-and-send prospecting surfaces) were live pages reachable only by
   // URL — same orphan-route defect the 2026-07-07 consolidation audit fixed
@@ -145,7 +147,9 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
   // browser (CSV export panel at the bottom of /admin/listings).
   if (isSuperuser) {
     system.push(
-      item('/admin/users', 'Users', 'user-cog'),
+      // Role management moved to /admin/crm/settings/team (consolidation
+      // 2026-07-15) — /admin/users is now the site-signup viewer only.
+      item('/admin/users', 'Site users', 'users'),
       item('/admin/audit-log', 'Audit log', 'scroll-text'),
     )
   }

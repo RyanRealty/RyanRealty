@@ -170,7 +170,7 @@ export default async function CrmSettingsPage() {
         {
           href: '/admin/crm/settings/team',
           title: 'Team',
-          description: 'Per-broker permissions: export access, lead-routing pause, role, and last-seen activity.',
+          description: 'Admin access and roles, plus per-broker permissions: export access, lead-routing pause, and last-seen activity.',
           count: brokers.length,
           countLabel: brokers.length === 1 ? 'member' : 'members',
           icon: '◎',

@@ -127,6 +127,25 @@ const DEAD_FILES = [
       'Orphaned geo market-stats component — zero importers confirmed. Same ' +
       'reportsExploreYtdPath()/new Date() hydration risk as CityMarketStats.',
   },
+
+  // ----- Retired /admin/expired-listings index components (2026-07-15) -----
+  // The manual-research index at /admin/expired-listings was consolidated into
+  // the /admin/expireds dashboard (the index page now redirects there). These
+  // two components were used only by that index. The per-listing review detail
+  // at /admin/expired-listings/[key] remains and does not use them.
+  {
+    path: 'app/admin/(protected)/expired-listings/ExpiredListingsClient.tsx',
+    reason:
+      'Spark backfill buttons for the retired expired-listings index. Zero ' +
+      'importers confirmed after the index became a redirect to /admin/expireds.',
+  },
+  {
+    path: 'app/admin/(protected)/expired-listings/ExpiredListingRow.tsx',
+    reason:
+      'Card/table row + inline contact editor for the retired expired-listings ' +
+      'index. Zero importers confirmed after the index became a redirect to ' +
+      '/admin/expireds.',
+  },
 ]
 
 // ---------------------------------------------------------------------------

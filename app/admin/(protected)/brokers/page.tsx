@@ -27,13 +27,24 @@ export default async function AdminBrokersPage() {
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-foreground">Brokers</h1>
         {adminRole.role === 'superuser' && (
-          <Button asChild>
-            <Link href="/admin/brokers/new">Add broker</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline">
+              <Link href="/admin/crm/settings/team">Roles &amp; permissions</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/admin/brokers/new">Add broker</Link>
+            </Button>
+          </div>
         )}
       </div>
       <p className="mt-2 text-sm text-muted-foreground">
         Team members appear on the public <Link href="/team" className="text-success hover:underline">/team</Link> page. Required: display name, title, Oregon license number.
+        {adminRole.role === 'superuser' && (
+          <>
+            {' '}Admin access and CRM permissions are managed on the{' '}
+            <Link href="/admin/crm/settings/team" className="text-success hover:underline">team page</Link>.
+          </>
+        )}
       </p>
       {/* Broker cards — phones (one card per broker) */}
       <div className="mt-6 space-y-2 md:hidden">

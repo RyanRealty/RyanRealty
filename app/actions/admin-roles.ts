@@ -98,6 +98,7 @@ export async function upsertAdminRole(
   await logAdminAction({ adminEmail: actorEmail ?? '', role: actorRole, actionType: 'upsert', resourceType: 'admin_role', resourceId: trimmed, details: { role, broker_id: brokerId ?? null } })
   revalidatePath('/admin')
   revalidatePath('/admin/users')
+  revalidatePath('/admin/crm/settings/team')
   return { ok: true }
 }
 
@@ -116,6 +117,7 @@ export async function removeAdminRole(email: string): Promise<{ ok: true } | { o
   await logAdminAction({ adminEmail: actorEmail ?? '', role: actorRole, actionType: 'delete', resourceType: 'admin_role', resourceId: email.trim().toLowerCase() })
   revalidatePath('/admin')
   revalidatePath('/admin/users')
+  revalidatePath('/admin/crm/settings/team')
   return { ok: true }
 }
 
