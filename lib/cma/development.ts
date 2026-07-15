@@ -230,15 +230,15 @@ function bendItems(zone: string, lotSqft: number | null, acres: number | null): 
   // Short-term rental — verified against BDC 3.6.500 (Ord. NS-2541, 2025) and
   // BC Ch. 7.16 on 2026-07-14. Two facts matter most for value: the 500-foot
   // Type II separation (address-level availability) and permit voiding on sale.
-  const BEND_STR_BUFFER_ZONES = new Set(['RL', 'RS', 'RM', 'RM-10', 'RH', 'MR'])
+  const BEND_STR_BUFFER_ZONES = new Set(['SR2.5', 'RL', 'RS', 'RM', 'RM-10', 'RH', 'MR'])
   const BEND_STR_COMMERCIAL = new Set(['CL', 'CG', 'CC', 'CB', 'CN', 'ME', 'MU', 'MN'])
   if (BEND_STR_BUFFER_ZONES.has(z)) {
     items.push({
       topic: 'Short-term rental',
       verdict: 'conditional',
       headline: 'Hosted rentals are obtainable. A whole-house permit depends on the neighbors.',
-      detail: 'Bend STRs take two authorizations, a land use permit and an annual operating license. An owner-occupied (hosted) rental of up to two rooms is processed administratively and is exempt from the separation rule. A whole-house (Type II) permit in this zone requires 500 feet of radial separation from any property holding a Type II permit or application, so availability at this address depends on nearby permits. Check the city STR map before counting on it. And a permit does not transfer: on sale it voids, and the buyer applies fresh under the rules in effect, including the separation test.',
-      citation: 'Bend Development Code 3.6.500(C)(5), (E), (F); Bend Code Ch. 7.16',
+      detail: 'Bend STRs generally take two authorizations, a land use permit and an annual operating license. An owner-occupied (hosted) rental of up to two rooms is processed administratively and is exempt from the separation rule, as is an infrequent whole-house rental (under 30 days a year across no more than 4 rental periods). A regular whole-house (Type II) permit in this zone requires 500 feet of radial separation from any property holding a Type II permit or application, so availability at this address depends on nearby permits. Check the city STR map before counting on it. A permit does not transfer: on sale it voids, and the buyer applies fresh under the rules in effect, including the separation test. Mount Bachelor Village, Deschutes Landing, and Courtyards at Broken Top lots 1 to 8 and 21 to 32 are exempt from the land use permit and the buffer (the operating license still applies).',
+      citation: 'Bend Development Code 3.6.500(C), (E), (F); Bend Code Ch. 7.16',
       url: 'https://bend.municipal.codes/BDC/3.6.500',
     })
   } else if (BEND_STR_COMMERCIAL.has(z)) {
@@ -322,6 +322,17 @@ function redmondItems(zone: string, lotSqft: number | null): DevItem[] {
     detail: 'The practical second-dwelling paths in Redmond are an ADU under Sec. 8.325 or a duplex/middle-housing configuration under Table B, both subject to the development standards.',
     citation: 'Redmond Development Code Ch. 8, Sec. 8.325 and Sec. 8.140 Table B',
     url: 'https://library.municode.com/or/redmond/codes/code_of_ordinances?nodeId=CH8DERE_ARTIZOST_SUPR_S8.325ACDWUNGUHO',
+  })
+  // Short-term rental — verified against Redmond City Code Secs. 7.132-7.140
+  // on 2026-07-14. No separation rule, cap, or moratorium: where the zone and
+  // housing type allow it and the standards are met, a permit is obtainable.
+  items.push({
+    topic: 'Short-term rental',
+    verdict: 'conditional',
+    headline: 'Allowed in residential zones with a city permit. No separation rule or cap.',
+    detail: 'Redmond permits STRs in residential zones (and the Mixed Use Neighborhood and C2 zones) with a city STR permit, a business license, and the 9% lodging tax. Standards apply: one extra off-street parking space, occupancy caps, no signage. Housing type matters: no STR in a triplex, quadplex, cottage development, or multi-family complex. A duplex qualifies only when the other unit is owner-occupied or a long-term rental, and where a home and an ADU share a lot only one of the two may rent short-term. Unlike Bend there is no separation rule, cap, or waitlist, so a conforming property that meets the standards qualifies.',
+    citation: 'Redmond City Code Secs. 7.132 to 7.140 (STR permit, zones, standards); Secs. 7.100 to 7.130 (lodging tax)',
+    url: 'https://library.municode.com/or/redmond/codes/code_of_ordinances',
   })
   return items
 }
@@ -440,6 +451,29 @@ function countyItems(zone: string, acres: number | null, overlays: string[]): De
       detail: 'Beyond the rural ADU above, a separate pathway exists for lots of at least 2 acres holding a historic home (built between specific statutory dates). Manufactured-home secondary dwellings run as accessory uses in limited cases. Each is its own application.',
       citation: 'Deschutes County Code 18.116.350 and 18.116.355; ORS 215.501',
       url: 'https://deschutescounty.municipalcodeonline.com',
+    })
+  }
+
+  // Short-term rental — verified against DCC Ch. 4.08 (Ord. 2025-006, effective
+  // September 1, 2025) and DCC 18.113 on 2026-07-14. The county regulates STRs
+  // through tax registration, not land use — except the EFU/Forest prohibition.
+  if (isEfu || isForest) {
+    items.push({
+      topic: 'Short-term rental',
+      verdict: 'no',
+      headline: 'Not on farm or forest land.',
+      detail: 'Deschutes County prohibits short-term rentals on Exclusive Farm Use and Forest Use zoned land. The county code states it plainly: a short-term rental is not allowed in Forest Use Zones or Exclusive Farm Use Zones (effective September 1, 2025).',
+      citation: 'Deschutes County Code 4.08.071 (Ord. 2025-006, effective 2025-09-01)',
+      url: 'https://deschutescounty.municipalcodeonline.com/book?type=ordinances#name=CHAPTER_4.08_TRANSIENT_ROOM_TAX',
+    })
+  } else if (['MUA10', 'RR10', 'UAR10', 'SR2.5'].includes(zKey) || z === 'DR' || /^UAR/.test(z)) {
+    items.push({
+      topic: 'Short-term rental',
+      verdict: 'conditional',
+      headline: 'Allowed. The county requires tax registration, not a land-use permit.',
+      detail: 'Unincorporated Deschutes County imposes no STR land-use permit, density cap, separation rule, or waitlist in rural residential zones. A lawfully established dwelling may rent short-term after registering with the County Tax Office (within 15 days of starting, with a Certificate of Authority displayed in the unit) and collecting the 8% county room tax. Two carve-outs matter: STRs are prohibited on EFU and Forest land, and a property that adds a rural ADU gives up vacation-rental use of both units. Inside a destination resort (Sunriver, Black Butte Ranch, Caldera Springs, Eagle Crest, Juniper Preserve, Tetherow), nightly rental is a built-in resort use, with the resort association layer (rental registration, access fees, quiet hours) governing on top. Confirm any HOA or CC&R restrictions on the specific property.',
+      citation: 'Deschutes County Code 4.08.071, 4.08.090, 4.08.140 (Ord. 2025-006, effective 2025-09-01); DCC 18.113 (destination resorts); DCC 18.116.355 (rural-ADU vacation-rental prohibition)',
+      url: 'https://deschutescounty.municipalcodeonline.com/book?type=ordinances#name=CHAPTER_4.08_TRANSIENT_ROOM_TAX',
     })
   }
   return items
