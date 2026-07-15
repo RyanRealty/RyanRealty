@@ -100,11 +100,16 @@ export async function sendExpiredIntroAction(listingKey: string): Promise<Expire
       .maybeSingle()
     const ctx = await buildMergeContext({ person: undefined, senderSlug: 'matt' })
     ctx.property = { ...(ctx.property ?? {}), address: row.street_address }
-    const body = renderCrmMerge(String(tpl.body), (personRow ?? {}) as MergePersonLike, ctx)
-    const unresolved = findUnresolvedMergeTokens(body)
+    const merged = renderCrmMerge(String(tpl.body), (personRow ?? {}) as MergePersonLike, ctx)
+    const unresolved = findUnresolvedMergeTokens(merged)
     if (unresolved.length > 0) {
-      return { ok: false, error: `Unresolved merge tokens: ${unresolved.join(', ')} — send refused.` }
+      return { ok: false, error: `Send refused. Unresolved merge tokens: ${unresolved.join(', ')}.` }
     }
+    // Short-link every URL so clicks land in crm_timeline as sms_click. The
+    // dashboard's SMS-engagement column reads from there. Fail-open: on error
+    // the original body sends untracked.
+    const { instrumentSmsLinks } = await import('@/lib/data/crm/shortLinks')
+    const body = await instrumentSmsLinks(merged, { personId: lead.personId, broker: 'matt' }).catch(() => merged)
 
     // 8: send + log + stamp.
     const sent = await sendSmsViaMessagingService({ to, body })
