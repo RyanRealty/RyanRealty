@@ -24,7 +24,6 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
-import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { getMarketReportBySlug, getReportImageUrl } from '@/lib/data'
 import ShareButton from '../../../components/ShareButton'
 import { sanitizeHtml } from '@/lib/sanitize'
@@ -78,13 +77,14 @@ export default async function ReportPage({ params }: Props) {
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const reportUrl = `${siteUrl}/housing-market/reports/${slug}`
-  const [imageUrl, session, fubPersonId] = await Promise.all([
+  // Session + identity-bridge reads kept (they pin this route's dynamic
+  // rendering mode); the FUB page-view mirror they fed was deleted with the
+  // FUB decommission — first-party visitor_sessions covers page views now.
+  const [imageUrl] = await Promise.all([
     getReportImageUrl(report.image_storage_path),
     getSession(),
     getPersonIdFromCookie(),
   ])
-  const pageTitle = `${report.title} | Ryan Realty`
-  trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl: reportUrl, pageTitle })
 
   const reportSchema = {
     '@context': 'https://schema.org',

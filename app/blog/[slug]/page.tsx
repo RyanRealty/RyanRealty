@@ -20,7 +20,6 @@ import Image from 'next/image'
 import { getBlogPostBySlug, getRelatedBlogPosts } from '@/lib/data'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
-import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { generateBlogSchema, generateBreadcrumbSchema } from '@/lib/structured-data'
 import ShareButton from '@/components/ShareButton'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
@@ -118,7 +117,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params
-  const [post, session, fubPersonId] = await Promise.all([
+  // Session + identity-bridge reads kept (they pin this route's dynamic
+  // rendering mode); the FUB page-view mirror they fed was deleted with the
+  // FUB decommission — first-party visitor_sessions covers page views now.
+  const [post] = await Promise.all([
     getBlogPostBySlug(slug),
     getSession(),
     getPersonIdFromCookie(),
@@ -128,8 +130,6 @@ export default async function BlogPostPage({ params }: PageProps) {
   const relatedPosts = await getRelatedBlogPosts(post.slug, post.category, 3)
 
   const pageUrl = `${siteUrl}/blog/${encodeURIComponent(post.slug)}`
-  const pageTitle = `${post.title} | Ryan Realty Blog`
-  trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
 
   const readMinutes = estimateReadTime(post.content)
   const articleSchema = generateBlogSchema({

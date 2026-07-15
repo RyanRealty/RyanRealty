@@ -3,10 +3,10 @@
 /**
  * CRM server actions — reads + mutations for /admin/crm (blueprint §5).
  *
- * Dual-write rule during the parallel run: when a person has a fub_legacy_id,
- * mutations go to FUB FIRST and the mirror layer (lib/crm/mirror.ts) writes the
- * local copy — that keeps one source of merge semantics and avoids duplicate
- * timeline rows. People without a FUB id (future native leads) write locally.
+ * crm_people is the system of record (FUB decommissioned 2026-06-24). The old
+ * dual-write rule (fub_legacy_id people mutated FUB first, mirror wrote local)
+ * is gone — those FUB writes had been silent no-ops since the cutover and were
+ * deleted. Every mutation writes the native tables directly.
  */
 
 import { cache } from 'react'
@@ -14,13 +14,6 @@ import { revalidatePath, unstable_cache } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import {
-  addPersonTags,
-  assignPersonToUser,
-  completeFubTask,
-  replacePersonTags,
-  updatePersonAutomationState,
-} from '@/lib/followupboss'
 import { normalizeCrmPhone } from '@/lib/crm/mirror'
 import {
   CRM_STAGES,
@@ -1097,7 +1090,7 @@ export async function assignCrmBrokerAction(formData: FormData): Promise<CrmActi
   const sb = createServiceClient()
   const { data: person } = await sb
     .from('crm_people')
-    .select('id,fub_legacy_id,tags,assigned_broker')
+    .select('id,tags,assigned_broker')
     .eq('id', personId)
     .maybeSingle()
   if (!person) return { ok: false, error: 'Person not found' }
@@ -1121,10 +1114,6 @@ export async function assignCrmBrokerAction(formData: FormData): Promise<CrmActi
     source: 'app',
     broker: access.access.brokerSlug,
   })
-  if (person.fub_legacy_id) {
-    await assignPersonToUser(person.fub_legacy_id, FUB_USER_ID_BY_BROKER[brokerSlug])
-    await replacePersonTags(person.fub_legacy_id, newTags)
-  }
   revalidateCrm(personId)
   return { ok: true }
 }
@@ -1149,9 +1138,6 @@ export async function updateCrmStageAction(formData: FormData): Promise<CrmActio
     person_id: personId, kind: 'stage_change',
     title: `Stage: ${person.stage} → ${stage}`, source: 'app',
   })
-  if (person.fub_legacy_id) {
-    await updatePersonAutomationState({ personId: person.fub_legacy_id, stage })
-  }
   // Automation trigger dispatch: fire stage_changed so any crm_automation_rules
   // rows or sequence-level triggers that match this stage can enroll the person.
   // Non-blocking — a trigger failure must never abort the stage update.
@@ -1190,7 +1176,6 @@ export async function addCrmTagAction(formData: FormData): Promise<CrmActionResu
     tags: [...person.tags, tag], updated_at: new Date().toISOString(),
   }).eq('id', personId)
   if (error) return { ok: false, error: error.message }
-  if (person.fub_legacy_id) await addPersonTags(person.fub_legacy_id, [tag])
   revalidateCrm(personId)
   return { ok: true }
 }
@@ -1213,7 +1198,6 @@ export async function removeCrmTagAction(formData: FormData): Promise<CrmActionR
     tags: nextTags, updated_at: new Date().toISOString(),
   }).eq('id', personId)
   if (error) return { ok: false, error: error.message }
-  if (person.fub_legacy_id) await replacePersonTags(person.fub_legacy_id, nextTags)
   revalidateCrm(personId)
   return { ok: true }
 }
@@ -1343,9 +1327,10 @@ export async function listCrmOpenTasks(broker?: string): Promise<CrmOpenTask[]> 
 }
 
 /**
- * Manual contact creation. Routes through the FUB events API (sendEvent) so
- * dedupe-by-email/phone and the standard enrollment pipeline behave exactly
- * like a site lead, then mirrors the person locally and returns the CRM id.
+ * Manual contact creation. Routes through sendEvent (native capture via
+ * ensureNativeLead since the FUB decommission) so dedupe-by-email/phone and
+ * the standard enrollment pipeline behave exactly like a site lead, then
+ * resolves and returns the CRM id.
  */
 export async function createCrmContactAction(formData: FormData): Promise<CrmActionResult & { personId?: number }> {
   const access = await requireCrmAccess()
@@ -1375,14 +1360,14 @@ export async function createCrmContactAction(formData: FormData): Promise<CrmAct
     message: note || `Added manually in the CRM by ${access.access.email}`,
     brokerAttribution: { brokerSlug: broker },
   })
-  if (!sent.ok) return { ok: false, error: `FUB create failed: ${'error' in sent ? sent.error : sent.status}` }
+  if (!sent.ok) return { ok: false, error: `Lead create failed: ${'error' in sent ? sent.error : sent.status}` }
 
-  // Mirror into the local CRM and resolve the new local id.
+  // Resolve the native CRM id — sendEvent returns it directly post-cutover;
+  // the contact-point lookups below are the belt-and-suspenders fallback.
+  // (The old FUB mirrorPersonByEmail pull was a dead no-op and was deleted.)
   const sb = createServiceClient()
-  let personId: number | undefined
-  if (email) {
-    const { mirrorPersonByEmail } = await import('@/lib/crm/mirror')
-    await mirrorPersonByEmail(email)
+  let personId: number | undefined = sent.personId ?? undefined
+  if (!personId && email) {
     const { data: pt } = await sb
       .from('crm_contact_points')
       .select('person_id')
@@ -1416,7 +1401,7 @@ export async function completeCrmTaskAction(formData: FormData): Promise<CrmActi
   const personId = Number(formData.get('personId')) || undefined
   if (!taskId) return { ok: false, error: 'Task id required' }
   const sb = createServiceClient()
-  const { data: task } = await sb.from('crm_tasks').select('id,fub_legacy_id,assigned_broker').eq('id', taskId).maybeSingle()
+  const { data: task } = await sb.from('crm_tasks').select('id,assigned_broker').eq('id', taskId).maybeSingle()
   if (!task) return { ok: false, error: 'Task not found' }
   // Ownership: a non-superuser broker may only complete their own tasks.
   if (access.access.role !== 'superuser' && access.access.brokerSlug && (task.assigned_broker ?? null) !== access.access.brokerSlug) {
@@ -1426,7 +1411,6 @@ export async function completeCrmTaskAction(formData: FormData): Promise<CrmActi
     completed_at: new Date().toISOString(), updated_at: new Date().toISOString(),
   }).eq('id', taskId)
   if (error) return { ok: false, error: error.message }
-  if (task.fub_legacy_id) await completeFubTask(task.fub_legacy_id)
   revalidateCrm(personId)
   return { ok: true }
 }

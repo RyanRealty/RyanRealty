@@ -4,7 +4,7 @@ import { renderToBuffer } from '@react-pdf/renderer'
 import { getSession } from '@/app/actions/auth'
 import { getCachedCMA, computeCMA } from '@/lib/cma'
 import { CMAPdfDocument } from '@/lib/pdf/cma-pdf'
-import { sendEvent, findPersonByEmail } from '@/lib/followupboss'
+import { sendEvent } from '@/lib/followupboss'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { listingDetailPath } from '@/lib/slug'
@@ -83,7 +83,10 @@ export async function POST(request: Request) {
   type DocElement = Parameters<typeof renderToBuffer>[0]
   const buffer = await renderToBuffer(doc as DocElement)
 
-  // Fire-and-forget: FUB tracking must never block the PDF response
+  // Fire-and-forget: lead capture must never block the PDF response.
+  // sendEvent captures natively (ensureNativeLead) and returns the crm_people
+  // id, which gates the canonical tagging — the old post-send FUB
+  // findPersonByEmail re-lookup was a dead no-op and was deleted.
   const source = siteUrl.replace(/^https?:\/\//, '').toLowerCase() || 'ryan-realty.com'
   const leadEmail = session.user.email
   sendEvent({
@@ -97,16 +100,15 @@ export async function POST(request: Request) {
       url: `${siteUrl}${listingHref}`,
     },
   })
-    .then(async () => {
+    .then(async (result) => {
       // A CMA / value-report download is a high-intent SELLER signal — tag it into
       // the canonical audience workflow so it enters the seller pipeline + is
-      // measured, instead of landing in FUB untagged. Best-effort, after creation.
-      const person = await findPersonByEmail(leadEmail)
-      if (person?.id) {
-        await canonicallyTagLead({ fubPersonId: person.id, audience: 'seller', source: 'cma-request', tier: 'warm' })
+      // measured, instead of landing untagged. Best-effort, after creation.
+      if (result.ok && result.personId) {
+        await canonicallyTagLead({ fubPersonId: result.personId, audience: 'seller', source: 'cma-request', tier: 'warm' })
       }
     })
-    .catch((err) => console.error('[cma-pdf] FUB tracking failed:', err))
+    .catch((err) => console.error('[cma-pdf] lead tracking failed:', err))
 
   return new NextResponse(new Uint8Array(buffer), {
     status: 200,

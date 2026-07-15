@@ -26,10 +26,6 @@
 
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { getSession } from '@/app/actions/auth'
-import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
-import { trackPageViewIfPossible } from '@/lib/followupboss'
-import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
@@ -179,22 +175,9 @@ function faqJsonLd() {
 }
 
 export default async function FAQPage() {
-  try {
-    const [session, fubPersonId] = await Promise.all([
-      getSession().catch(() => null),
-      getPersonIdFromCookie().catch(() => null),
-    ])
-    const pageUrl = `${getCanonicalSiteUrl()}/faq`
-    const pageTitle = 'FAQ | Ryan Realty Bend'
-    trackPageViewIfPossible({
-      sessionUser: session?.user ?? undefined,
-      fubPersonId: fubPersonId ?? undefined,
-      pageUrl,
-      pageTitle,
-    })
-  } catch (err) {
-    console.error('[FAQPage]', err)
-  }
+  // FUB page-view mirror removed with the FUB decommission (2026-06-24) —
+  // first-party visitor_sessions covers page views. Route is force-dynamic, so
+  // dropping the session/cookie reads changes nothing about rendering mode.
 
   // Group for the table-of-contents
   const categories: FAQItem['category'][] = ['Neighborhoods', 'Buying', 'Selling', 'Working with us']

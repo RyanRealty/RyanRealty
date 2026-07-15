@@ -15,7 +15,6 @@ import { NextResponse } from 'next/server'
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendEmail } from '@/lib/resend'
-import { addPersonNote } from '@/lib/followupboss'
 import { verifyDeliveryToken } from '@/lib/cma-delivery-tokens'
 import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 
@@ -158,30 +157,9 @@ export async function POST(
     })
     .eq('id', id)
 
-  // FUB note (best-effort; don't fail the send if FUB hiccups).
-  const personId = row.fub_person_id as number | null
-  if (personId) {
-    const v = row.cma_estimated_value as number | null
-    const valueText =
-      typeof v === 'number' && v > 0
-        ? v.toLocaleString('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            maximumFractionDigits: 0,
-          })
-        : '—'
-    const noteBody = [
-      `Auto-CMA sent to ${row.lead_email}.`,
-      `Address: ${row.raw_address}`,
-      `Estimated value: ${valueText}`,
-      `Email subject: ${row.email_subject}`,
-      `Sent by: ${row.assigned_broker_name ?? 'Ryan Realty'}`,
-      `Delivery id: ${id}`,
-    ].join('\n')
-    void addPersonNote(personId, noteBody).catch((e) => {
-      console.warn('[cma-send] FUB note failed:', e)
-    })
-  }
+  // The old FUB timeline note here was a dead no-op after the 2026-06-24
+  // decommission and was deleted — the send is already durably recorded on the
+  // person via the unified email_events 'sent' row above (recordEmailEvent).
 
   return NextResponse.json({ ok: true, sent_at: sentAt, resend_id: result.id })
 }

@@ -1,6 +1,6 @@
 'use server'
 
-import { sendEvent, findPersonByEmail, type FubEventPerson } from '@/lib/followupboss'
+import { sendEvent, type FubEventPerson } from '@/lib/followupboss'
 import { sendContactNotification } from '@/lib/resend'
 import type { LeadLandingAudience } from '@/lib/lead-landing-content'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
@@ -157,36 +157,36 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
     }).catch((err) => console.error('[lead-landing] sendContactNotification failed:', err))
 
     // Canonical tagging + session stitch so dashboards see this lead alongside
-    // the gold-standard LP submissions. Fire-and-forget; failures never block
-    // the response.
-    void (async () => {
-      try {
-        const found = await findPersonByEmail(email)
-        if (found?.id) {
-          await canonicallyTagLead({
-            fubPersonId: found.id,
-            audience: input.audience === 'seller' ? 'seller' : 'buyer',
-            source: input.audience === 'seller' ? 'seller-lp' : 'buyer-lp',
-          })
+    // the gold-standard LP submissions. Gates on the native person id sendEvent
+    // returned (the old FUB findPersonByEmail re-lookup was a dead no-op
+    // post-decommission). MUST be awaited: on Vercel serverless the lambda
+    // freezes the instant the handler returns, so a fire-and-forget IIFE gets
+    // killed mid-flight. The try/catch keeps a blip from failing the capture.
+    try {
+      if (result.personId) {
+        await canonicallyTagLead({
+          fubPersonId: result.personId,
+          audience: input.audience === 'seller' ? 'seller' : 'buyer',
+          source: input.audience === 'seller' ? 'seller-lp' : 'buyer-lp',
+        })
 
-          // Stitch the anonymous browsing history to this FUB person and mark
-          // the visitor_sessions row identified. This is the join that ties a
-          // Facebook ad click (utm_source=facebook, stored on the session) to a
-          // real name — and what the Marketing ROI dashboard counts as
-          // "matched to a name". Mirrors the buyer LP gold standard.
-          if (input.sessionId && UUID_V4_RE.test(input.sessionId)) {
-            await backfillSessionToFub({
-              sessionId: input.sessionId,
-              fubPersonId: found.id,
-              email,
-              identifiedVia: 'form_submit',
-            })
-          }
+        // Stitch the anonymous browsing history to this CRM person and mark
+        // the visitor_sessions row identified. This is the join that ties a
+        // Facebook ad click (utm_source=facebook, stored on the session) to a
+        // real name — and what the Marketing ROI dashboard counts as
+        // "matched to a name". Mirrors the buyer LP gold standard.
+        if (input.sessionId && UUID_V4_RE.test(input.sessionId)) {
+          await backfillSessionToFub({
+            sessionId: input.sessionId,
+            fubPersonId: result.personId,
+            email,
+            identifiedVia: 'form_submit',
+          })
         }
-      } catch (err) {
-        console.warn('[lead-landing] canonical tagging / session stitch failed (non-blocking):', err)
       }
-    })()
+    } catch (err) {
+      console.warn('[lead-landing] canonical tagging / session stitch failed (non-blocking):', err)
+    }
 
     // GA4 Measurement Protocol mirror.
     await fireLeadGenerated({

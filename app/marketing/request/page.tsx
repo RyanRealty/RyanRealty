@@ -15,7 +15,6 @@ import RequestBuilder from './RequestBuilder'
 import { H1 } from '@/components/site/primitives'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
-import { trackPageViewIfPossible } from '@/lib/followupboss'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -27,13 +26,10 @@ export const metadata: Metadata = {
 }
 
 export default async function MarketingRequestPage() {
-  const [session, fubPersonId] = await Promise.all([getSession(), getPersonIdFromCookie()])
-  trackPageViewIfPossible({
-    sessionUser: session?.user ?? undefined,
-    fubPersonId,
-    pageUrl: `${siteUrl}/marketing/request`,
-    pageTitle: 'Marketing request | Ryan Realty',
-  })
+  // Session + identity-bridge reads kept (they pin this route's dynamic
+  // rendering mode); the FUB page-view mirror they fed was deleted with the
+  // FUB decommission — first-party visitor_sessions covers page views now.
+  await Promise.all([getSession(), getPersonIdFromCookie()])
 
   return (
     <main className="min-h-screen bg-background">

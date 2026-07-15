@@ -28,7 +28,6 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
-import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { SALES_PERIODS, getDateRangeForPeriod, getPeriodLabel, type SalesPeriodSlug } from '@/lib/sales-report-periods'
 import { getMarketReportDataForLocation, type ReportListing } from '@/app/actions/market-reports'
 import { getPropertyTypeLabel } from '@/lib/property-type-labels'
@@ -117,11 +116,11 @@ export default async function SalesReportPage({ params }: PageProps) {
   const periodSlug = period as SalesPeriodSlug
   if (!cityName || !SALES_PERIODS.includes(periodSlug)) notFound()
 
-  const [session, fubPersonId] = await Promise.all([getSession(), getPersonIdFromCookie()])
-  const pageUrl = `${siteUrl}/reports/sales/${encodeURIComponent(cityEntityKey(cityName))}/${periodSlug}`
+  // Session + identity-bridge reads kept (they pin this route's dynamic
+  // rendering mode); the FUB page-view mirror they fed was deleted with the
+  // FUB decommission — first-party visitor_sessions covers page views now.
+  await Promise.all([getSession(), getPersonIdFromCookie()])
   const periodLabel = getPeriodLabel(periodSlug)
-  const pageTitle = `${cityName} — ${periodLabel} | Ryan Realty`
-  trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
 
   const { start, end } = getDateRangeForPeriod(periodSlug)
   const { closed, pending } = await getMarketReportDataForLocation(cityName, start, end)

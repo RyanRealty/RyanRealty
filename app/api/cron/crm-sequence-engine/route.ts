@@ -26,7 +26,6 @@ import { referencesCmaLink, findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { isArchivedPlaceholder, isAuthorized, laHour, inSmsQuietHours, nextSendWindow, renderMerge, type Step } from './helpers'
 import { buildMergeContext } from '@/lib/crm/merge-context'
 import { sendSms, sendSmsViaMessagingService, brokerTwilioNumber, getA2pCampaignStatus } from '@/lib/crm/twilio'
-import { addPersonTags, replacePersonTags } from '@/lib/followupboss'
 import { isConditionNode, type AnyStepOrCondition } from '@/lib/crm/sequence-step-schema'
 import { resolveConditionPath } from '@/lib/crm/conditions-eval'
 import { manualEnrollPerson } from '@/lib/crm/enroll'
@@ -416,13 +415,11 @@ export async function GET(request: Request) {
           assigned_broker: person.assigned_broker, origin: 'sequence',
         })
       } else if (step.channel === 'tag') {
+        // Native-only tag write (the FUB dual-write for fub_legacy_id people
+        // was a dead no-op since the 2026-06-24 decommission and was deleted).
         const current = (person.tags as string[]) ?? []
         const next = [...new Set([...current.filter((t) => !(step.removeTags ?? []).includes(t)), ...(step.addTags ?? [])])]
         await sb.from('crm_people').update({ tags: next, updated_at: new Date().toISOString() }).eq('id', person.id)
-        if (person.fub_legacy_id) {
-          if (step.removeTags?.length) await replacePersonTags(person.fub_legacy_id, next)
-          else if (step.addTags?.length) await addPersonTags(person.fub_legacy_id, step.addTags)
-        }
 
       // ── v2 channels ────────────────────────────────────────────────────────
 

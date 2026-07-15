@@ -21,14 +21,11 @@ vi.mock('@/app/actions/admin-roles', () => ({
   getAdminRoleForEmail: () => Promise.resolve(role),
 }))
 
-// Pull-in-free stubs for the side-effect deps the module imports at top.
+// Pull-in-free stub for the (dynamically imported) native-capture shim —
+// post-decommission the module only exposes sendEvent + trackSignedInUser +
+// isPlaceholderLeadEmail; the actions under test never reach it.
 vi.mock('@/lib/followupboss', () => ({
-  addPersonNote: vi.fn(),
-  addPersonTags: vi.fn(),
-  assignPersonToUser: vi.fn(),
-  completeFubTask: vi.fn(),
-  replacePersonTags: vi.fn(),
-  updatePersonAutomationState: vi.fn(),
+  sendEvent: vi.fn(),
 }))
 vi.mock('@/lib/meta/qualifiedEvent', () => ({
   isQualifyingStage: () => false,

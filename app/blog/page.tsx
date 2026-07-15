@@ -20,7 +20,6 @@ import { getPublishedBlogPosts, getPopularBlogSlugs } from '@/lib/data'
 import { getBlogCategories } from '@/app/actions/blog'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
-import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { shouldNoIndexBlogIndex } from '@/lib/seo-routing'
 import ShareButton from '@/components/ShareButton'
 import { generateBreadcrumbSchema } from '@/lib/structured-data'
@@ -104,16 +103,16 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
   const category = params.category ?? 'All'
   const page = Math.max(1, parseInt(params.page ?? '1', 10))
   const offset = (page - 1) * 12
-  const [categories, { posts, total }, popularSlugs, session, fubPersonId] = await Promise.all([
+  // Session + identity-bridge reads kept (they pin this route's dynamic
+  // rendering mode); the FUB page-view mirror they fed was deleted with the
+  // FUB decommission — first-party visitor_sessions covers page views now.
+  const [categories, { posts, total }, popularSlugs] = await Promise.all([
     getBlogCategories(),
     getPublishedBlogPosts({ category: category === 'All' ? null : category, limit: 12, offset }),
     getPopularBlogSlugs(5),
     getSession(),
     getPersonIdFromCookie(),
   ])
-  const pageUrl = `${siteUrl}/blog`
-  const pageTitle = 'Blog | Ryan Realty'
-  trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
   const totalPages = Math.ceil(total / 12)
   const featured = posts[0]
   const gridPosts = page === 1 ? posts.slice(1) : posts

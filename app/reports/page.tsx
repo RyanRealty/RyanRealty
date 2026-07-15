@@ -28,7 +28,6 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
-import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { listMarketReports } from '@/lib/data'
 import { getSalesReportCardsData } from '../actions/market-reports'
 import { getEngagementCountsBatchCached } from '@/app/actions/engagement'
@@ -206,14 +205,13 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
   const params = await searchParams
   const { cities: selectedCities, rangeDays, periodStart, periodEnd } = parseReportsParams(params ?? null)
 
-  // Light queries — don't block the page
-  const [session, fubPersonId] = await Promise.all([
+  // Session + identity-bridge reads kept (they pin this route's dynamic
+  // rendering mode); the FUB page-view mirror they fed was deleted with the
+  // FUB decommission — first-party visitor_sessions covers page views now.
+  await Promise.all([
     getSession(),
     getPersonIdFromCookie(),
   ])
-  const pageUrl = `${siteUrl}/housing-market/reports`
-  const pageTitle = 'Market Reports | Ryan Realty'
-  trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
 
   return (
     <main className="kb-root">

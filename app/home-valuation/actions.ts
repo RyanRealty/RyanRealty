@@ -3,7 +3,7 @@
 import React from 'react'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
-import { sendEvent, findPersonByEmail } from '@/lib/followupboss'
+import { sendEvent } from '@/lib/followupboss'
 import { sendEmail } from '@/lib/resend'
 import { getCachedCMA, computeCMA } from '@/lib/cma'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -130,10 +130,12 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
         }
       : undefined,
   })
+  // Native CRM person id resolved by sendEvent (ensureNativeLead) — gates the
+  // canonical tagging below. Falls back to a direct ensureNativeLead when the
+  // capture errored, so a blip never loses the seller lead.
+  let capturedPersonId: number | null = fubRes.ok ? fubRes.personId : null
   if (!fubRes.ok) {
-    // FUB push failed — the request is in valuation_requests but NOT crm_people.
-    // Capture it natively too so a FUB outage/cutover never loses the seller lead.
-    console.warn('[valuation] FUB send failed:', fubRes.error)
+    console.warn('[valuation] capture failed:', fubRes.error)
     try {
       const native = await ensureNativeLead({
         name,
@@ -143,6 +145,7 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
         tags: ['audience:seller', 'source:home-valuation', 'fub-fallback'],
       })
       if (native.created || native.personId > 0) {
+        capturedPersonId = native.personId > 0 ? native.personId : null
         console.warn(
           `[valuation] native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
         )
@@ -152,27 +155,26 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
     }
   }
 
-  // Canonical tagging — apply audience:seller + source:home-valuation +
-  // broker:matt + write to marketing_assignments so this lead surfaces in
-  // the same dashboards as /lp/seller-home-value submissions. Fire-and-forget
-  // so a tagging failure never blocks lead capture.
-  void (async () => {
-    try {
-      const found = await findPersonByEmail(email)
-      if (found?.id) {
-        await canonicallyTagLead({
-          fubPersonId: found.id,
-          audience: 'seller',
-          source: 'cma-request',
-          tier: 'warm',
-          address: fullAddress,
-          state: state || undefined,
-        })
-      }
-    } catch (err) {
-      console.warn('[valuation] canonical tagging failed (non-blocking):', err)
+  // Canonical tagging — apply audience:seller + source:cma-request +
+  // broker routing + write to marketing_assignments so this lead surfaces in
+  // the same dashboards as /lp/seller-home-value submissions. Gates on the
+  // native person id sendEvent returned (the old FUB findPersonByEmail
+  // re-lookup was a dead no-op post-decommission). Awaited so the serverless
+  // freeze cannot drop it; the catch keeps a blip from blocking capture.
+  try {
+    if (capturedPersonId) {
+      await canonicallyTagLead({
+        fubPersonId: capturedPersonId,
+        audience: 'seller',
+        source: 'cma-request',
+        tier: 'warm',
+        address: fullAddress,
+        state: state || undefined,
+      })
     }
-  })()
+  } catch (err) {
+    console.warn('[valuation] canonical tagging failed (non-blocking):', err)
+  }
 
   if (ADMIN_EMAIL) {
     await sendEmail({

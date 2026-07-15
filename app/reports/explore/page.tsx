@@ -23,7 +23,6 @@ import { Suspense } from 'react'
 import ExploreClient from './ExploreClient'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
-import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
@@ -67,7 +66,10 @@ function parseNum(value: string | string[] | undefined): number | undefined {
 }
 
 export default async function ExplorePage({ searchParams }: Props) {
-  const [params, session, fubPersonId] = await Promise.all([
+  // Session + identity-bridge reads kept (they pin this route's dynamic
+  // rendering mode); the FUB page-view mirror they fed was deleted with the
+  // FUB decommission — first-party visitor_sessions covers page views now.
+  const [params] = await Promise.all([
     searchParams,
     getSession(),
     getPersonIdFromCookie(),
@@ -86,10 +88,6 @@ export default async function ExplorePage({ searchParams }: Props) {
   const ytdStart = `${now.getFullYear()}-01-01`
   const ytdEnd = now.toISOString().slice(0, 10)
   const initialPresetId = start && end && start === ytdStart && end === ytdEnd ? 'ytd' : undefined
-
-  const pageUrl = `${siteUrl}/housing-market/explore`
-  const pageTitle = 'Explore Market Data | Ryan Realty'
-  trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
 
   // JSON-LD: WebPage + BreadcrumbList.
   // This is a CollectionPage (interactive tool that aggregates market data).

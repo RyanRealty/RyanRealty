@@ -2,7 +2,7 @@
 
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
-import { findPersonByEmail, sendEvent, type FubEventPerson } from '@/lib/followupboss'
+import { sendEvent, type FubEventPerson } from '@/lib/followupboss'
 
 export type TrackCtaClickParams = {
   label: string
@@ -13,8 +13,11 @@ export type TrackCtaClickParams = {
 }
 
 /**
- * Track CTA clicks in Follow Up Boss when we can identify a contact
- * from signed-in email or identity-bridge cookie.
+ * Track CTA clicks against the native CRM when we can identify a contact
+ * from signed-in email or identity-bridge cookie. sendEvent captures via
+ * ensureNativeLead (FUB decommissioned 2026-06-24) — the dead FUB
+ * findPersonByEmail pre-lookup was removed; the person is built from the
+ * email directly and ensureNativeLead dedupes on it.
  */
 export async function trackCtaClickAction(params: TrackCtaClickParams): Promise<void> {
   const label = params.label?.trim()
@@ -26,8 +29,7 @@ export async function trackCtaClickAction(params: TrackCtaClickParams): Promise<
 
   let person: FubEventPerson | null = null
   if (email) {
-    const existing = await findPersonByEmail(email)
-    person = existing ? { id: existing.id } : { emails: [{ value: email }] }
+    person = { emails: [{ value: email }] }
   } else if (fubPersonId != null && fubPersonId > 0) {
     person = { id: fubPersonId }
   }

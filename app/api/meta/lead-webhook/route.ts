@@ -1,37 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
-import {
-  assignPersonToUser,
-  createRealtimeTask,
-  sendEvent,
-  findPersonByEmail,
-  findPersonByPhone,
-  setPersonCustomFields,
-  updatePersonAutomationState,
-} from '@/lib/followupboss'
+import { sendEvent } from '@/lib/followupboss'
 import { createCmaRequest } from '@/lib/cma-request'
-import { getFubApiKey } from '@/lib/crm/fub-env'
 import { getMetaPageToken } from '@/lib/meta-env'
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
 import { normalizeAgentSlug, brokerSlugFromText, FUB_USER_ID_BY_BROKER, type BrokerSlug } from '@/lib/agent-attribution'
-import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
+import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 
 export const runtime = 'nodejs'
 
 /**
  * POST /api/meta/lead-webhook
  *
- * Receives Facebook Lead Ads webhooks and creates/updates contacts in
- * Follow-Up Boss (FUB) for lead nurture.
+ * Receives Facebook Lead Ads webhooks and creates/updates contacts in the
+ * in-house CRM (crm_people) for lead nurture. FUB was decommissioned
+ * 2026-06-24 — the old FUB /events + /people push paths were dead no-ops (the
+ * missing key made getFubConfig throw, silently dropping every webhook lead
+ * before even the native fallback could run) and were replaced with the
+ * native capture chain: sendEvent (ensureNativeLead) → enrichNativeLead
+ * (tags + custom fields + origin note) → createNativeTask (hot leads).
  *
  * Meta sends a POST for each new lead. This handler:
  *   1. Verifies the X-Hub-Signature-256 HMAC against META_APP_SECRET.
  *   2. For each leadgen change in the payload:
  *      a. Fetches lead details from the Meta Graph API.
  *      b. Maps field_data to structured contact fields.
- *      c. Creates/updates the person in FUB via POST /v1/people.
- *      d. Adds a note with campaign context and lead intent.
+ *      c. Creates/updates the person in crm_people with canonical tags.
+ *      d. Writes an origin note with campaign context and lead intent.
  *   3. Returns 200 immediately (Meta requires < 20s response; errors are logged
  *      but not propagated to avoid Meta retry storms).
  *
@@ -43,8 +39,6 @@ export const runtime = 'nodejs'
  * Required env vars:
  *   META_APP_SECRET          — from Meta App Dashboard → App Settings → Basic
  *   META_PAGE_ACCESS_TOKEN   — long-lived page token (also META_PAGE_TOKEN)
- *   FUB_API_KEY              — FUB API key (also FOLLOWUPBOSS_API_KEY)
- *   FUB_PIPELINE_ID          — FUB pipeline ID for new leads (optional but recommended)
  *
  * Setup (one-time, in Meta App Dashboard):
  *   App Dashboard → Webhooks → Page → Subscribe to "leadgen" field.
@@ -59,13 +53,12 @@ export const runtime = 'nodejs'
 // ---------------------------------------------------------------------------
 
 const META_GRAPH_BASE = 'https://graph.facebook.com/v21.0'
-const FUB_BASE = 'https://api.followupboss.com/v1'
 
-// Default FUB user for inbound leads. Meta calls us server-to-server (no browser
-// cookie), so agent attribution can't be resolved in the webhook — route all
-// FB-form leads to Matt (userId 1), matching the "all leads to Matt" default
-// used by the LP paths (lib/canonical-lead-tagger, seller-home-value). Manual
-// reassignment in the FUB UI still works per-lead.
+// Default assigned-user ledger id for inbound leads. Meta calls us
+// server-to-server (no browser cookie), so ?agent= attribution can't be
+// resolved in the webhook — route all FB-form leads to Matt, matching the
+// "all leads to Matt" default used by the LP paths. Manual reassignment in
+// the CRM still works per-lead.
 const FUB_USER_MATT = 1
 
 function getMetaToken(): string {
@@ -89,13 +82,6 @@ function getSupabase() {
     return null
   }
   return createClient(url, key)
-}
-
-function getFubConfig(): { apiKey: string; pipelineId: string | null } {
-  const apiKey = (getFubApiKey() || '').trim()
-  if (!apiKey) throw new Error('FUB_API_KEY not configured')
-  const pipelineId = (process.env.FUB_PIPELINE_ID || '').trim() || null
-  return { apiKey, pipelineId }
 }
 
 // ---------------------------------------------------------------------------
@@ -388,32 +374,11 @@ function parseLeadFields(lead: MetaLeadDetail): ParsedLead {
 }
 
 // ---------------------------------------------------------------------------
-// Create/update person in FUB
+// Create/update person in the native CRM
 // ---------------------------------------------------------------------------
 
-function fubHeaders(apiKey: string): Record<string, string> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Authorization: `Basic ${Buffer.from(`${apiKey}:`).toString('base64')}`,
-  }
-  const system = (process.env.FOLLOWUPBOSS_SYSTEM || '').trim()
-  const systemKey = (process.env.FOLLOWUPBOSS_SYSTEM_KEY || '').trim()
-  if (system) headers['X-System'] = system
-  if (systemKey) headers['X-System-Key'] = systemKey
-  return headers
-}
-
-async function createFubContact(lead: ParsedLead): Promise<number | null> {
-  const { apiKey, pipelineId } = getFubConfig()
-
-  // ---------------------------------------------------------------------------
-  // Shared: compute source, tags, and intent values (identical for both paths)
-  // ---------------------------------------------------------------------------
-
-  const source = lead.campaignName
-    ? `Facebook Lead Ad — ${lead.campaignName}`
-    : 'Facebook Lead Ad — Market Report'
-
+/** Canonical tag set for an FB lead-ad capture (same schema the LP paths use). */
+function buildLeadTags(lead: ParsedLead, brokerSlug: BrokerSlug): string[] {
   const tags = ['FB Lead Ad']
   if (lead.audience === 'buyer') tags.push('audience:buyer')
   else if (lead.audience === 'seller') tags.push('audience:seller')
@@ -424,8 +389,7 @@ async function createFubContact(lead: ParsedLead): Promise<number | null> {
   else if (lead.buySellIntent === 'exploring') tags.push('Intent: Exploring')
 
   // Canonical kebab-case namespaced tier tags per
-  // docs/FUB_SELLER_WORKFLOW_2026-05-17.md §4. Replaces legacy hot-buyer /
-  // warm-seller / auto:seller-seq:new / nurture-only with canonical:
+  // docs/FUB_SELLER_WORKFLOW_2026-05-17.md §4:
   //   seller:hot, seller:warm, seller:nurture
   //   buyer:hot, buyer:warm, buyer:nurture
   if (lead.possibleRealtor) {
@@ -438,13 +402,24 @@ async function createFubContact(lead: ParsedLead): Promise<number | null> {
     tags.push(lead.audience === 'buyer' ? 'buyer:nurture' : 'seller:nurture')
   }
 
-  // Source attribution in canonical schema (in addition to FUB-native source
-  // field which carries the campaign name)
+  // Source attribution in canonical schema (in addition to the source field
+  // which carries the campaign name)
   tags.push(lead.audience === 'buyer' ? 'source:fb-ads-buyer' : 'source:fb-ads-seller')
+  tags.push(`broker:${brokerSlug}`)
+  return tags
+}
 
-  // ---------------------------------------------------------------------------
-  // PRIMARY PATH: POST /v1/events (fires action plans + speed-to-lead auto-text)
-  // ---------------------------------------------------------------------------
+/**
+ * Capture the FB lead in crm_people (sendEvent → ensureNativeLead, deduped
+ * email-first) and enrich it with the canonical tag set, the campaign custom
+ * fields, and the lead-origin note. Returns the native crm_people id, or null
+ * when no usable contact key existed (caller runs the ensureNativeLead
+ * fallback, which also records assignment ledger context).
+ */
+async function createLeadContact(lead: ParsedLead, brokerSlug: BrokerSlug): Promise<number | null> {
+  const source = lead.campaignName
+    ? `Facebook Lead Ad — ${lead.campaignName}`
+    : 'Facebook Lead Ad — Market Report'
 
   const eventType = lead.audience === 'seller' ? 'Seller Inquiry' : 'General Inquiry'
   const campaignAttribution = lead.campaignName
@@ -470,119 +445,29 @@ async function createFubContact(lead: ParsedLead): Promise<number | null> {
       ...(lead.lastName && { lastName: lead.lastName }),
       ...(lead.email && { emails: [{ value: lead.email }] }),
       ...(lead.phone && { phones: [{ value: lead.phone }] }),
-      tags,
     },
     message: messageParts.join(' | '),
     campaign: campaignAttribution,
+    brokerAttribution: { brokerSlug },
   })
 
-  if (eventResult.ok) {
-    // Resolve the personId created/matched by /events
-    let personId: number | null = null
-    if (lead.email) {
-      const found = await findPersonByEmail(lead.email)
-      if (found?.id) personId = found.id
-    }
-    if (!personId && lead.phone) {
-      const found = await findPersonByPhone(lead.phone)
-      if (found?.id) personId = found.id
-    }
-
-    if (personId) {
-      // Apply custom fields (/events cannot set these inline).
-      // Only pass keys that start with 'custom' — setPersonCustomFields enforces this.
-      const customFields: Record<string, string | null> = {}
-      if (lead.buySellIntent) customFields.customBuySellIntent = lead.buySellIntent
-      if (lead.campaignName) customFields.customFbCampaignName = lead.campaignName
-      if (Object.keys(customFields).length > 0) {
-        void setPersonCustomFields(personId, customFields)
-      }
-
-      // Set stage 'Lead' and pipeline (if configured) via updatePersonAutomationState.
-      // Pipeline is a non-standard field for this helper, so we set stage here and
-      // use updatePersonProfile for pipeline below if pipelineId is present.
-      await updatePersonAutomationState({ personId, stage: 'Lead' })
-
-      // Mirror the new/matched person into crm_people
-      const { mirrorPersonFromFub } = await import('@/lib/crm/mirror')
-      void mirrorPersonFromFub(personId)
-
-      return personId
-    }
-
-    // /events succeeded but we could not resolve a personId — fall through to
-    // the /people fallback so the lead is never lost.
+  if (!eventResult.ok) {
+    console.warn(`[lead-webhook] native capture failed: ${eventResult.error ?? eventResult.status ?? 'unknown'}`)
+    return null
+  }
+  if (!eventResult.personId) {
     console.warn(
-      '[lead-webhook] /events succeeded but personId could not be resolved ' +
-      `(email=${lead.email ?? 'none'}, phone=${lead.phone ?? 'none'}) — falling back to /people`,
+      `[lead-webhook] native capture resolved no person id (email=${lead.email ?? 'none'}, phone=${lead.phone ?? 'none'})`,
     )
-  } else {
-    console.warn(
-      `[lead-webhook] /events path failed (status=${eventResult.status ?? 'n/a'}, ` +
-      `error=${eventResult.error ?? 'unknown'}) — falling back to /people`,
-    )
-  }
-
-  // ---------------------------------------------------------------------------
-  // FALLBACK PATH: POST /v1/people (original path — preserved verbatim)
-  // ---------------------------------------------------------------------------
-
-  const body: Record<string, unknown> = {
-    source,
-    tags,
-    stage: 'Lead',
-    ...(lead.firstName && { firstName: lead.firstName }),
-    ...(lead.lastName && { lastName: lead.lastName }),
-    ...(lead.email && { emails: [{ value: lead.email, type: 'Primary' }] }),
-    ...(lead.phone && { phones: [{ value: lead.phone, type: 'Mobile' }] }),
-    // Custom fields
-    ...(lead.buySellIntent && { buySellIntent: lead.buySellIntent }),
-    ...(lead.campaignName && { campaign: lead.campaignName }),
-  }
-
-  if (pipelineId) {
-    body.pipeline = pipelineId
-  }
-
-  let res: Response
-  try {
-    res = await fetch(`${FUB_BASE}/people`, {
-      method: 'POST',
-      headers: fubHeaders(apiKey),
-      body: JSON.stringify(body),
-    })
-  } catch (err) {
-    console.error('[lead-webhook] FUB network error creating person:', err)
     return null
   }
+  const personId = eventResult.personId
 
-  let data: Record<string, unknown>
-  try {
-    data = await res.json() as Record<string, unknown>
-  } catch {
-    console.error(`[lead-webhook] FUB non-JSON response (HTTP ${res.status})`)
-    return null
-  }
-
-  if (!res.ok) {
-    const msg = (data.error as Record<string, string>)?.message || JSON.stringify(data)
-    console.error(`[lead-webhook] FUB createPerson failed (HTTP ${res.status}): ${msg}`)
-    return null
-  }
-
-  const personId = (data.id || (data.person as Record<string, unknown>)?.id) as number | undefined
-  if (personId) {
-    // Dual-write: mirror the new person into crm_people (parallel-run, blueprint §7)
-    const { mirrorPersonFromFub } = await import('@/lib/crm/mirror')
-    void mirrorPersonFromFub(personId)
-  }
-  return personId ?? null
-}
-
-async function addFubNote(personId: number, lead: ParsedLead): Promise<void> {
-  const { apiKey } = getFubConfig()
-
-  const lines = [
+  // Enrichment in one native write: the canonical tag set (sendEvent only
+  // stamps audience:/source: defaults), the campaign custom fields, and the
+  // lead-origin note (replaces the dead FUB setPersonCustomFields /
+  // updatePersonAutomationState / notes-POST chain).
+  const noteBody = [
     `Facebook Lead Ad capture`,
     `Lead ID: ${lead.leadId}`,
     `Captured: ${new Date(lead.createdTime).toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })} PT`,
@@ -591,21 +476,24 @@ async function addFubNote(personId: number, lead: ParsedLead): Promise<void> {
     lead.audience !== 'unknown' ? `Audience: ${lead.audience}` : null,
     lead.timelineAnswer ? `Timeline answer: ${lead.timelineAnswer}` : null,
     lead.intent ? `Classified intent: ${lead.intent}` : null,
-    lead.possibleRealtor ? `⚠ Possible realtor — auto-tagged for review` : null,
+    lead.possibleRealtor ? `Possible realtor — auto-tagged for review` : null,
     lead.buySellIntent ? `Buy/sell field: ${lead.buySellIntent}` : null,
     `---`,
     `Source: Facebook Lead Generation Ad`,
   ].filter(Boolean).join('\n')
 
-  try {
-    await fetch(`${FUB_BASE}/notes`, {
-      method: 'POST',
-      headers: fubHeaders(apiKey),
-      body: JSON.stringify({ personId, body: lines, isHtml: false }),
-    })
-  } catch (err) {
-    console.warn('[lead-webhook] FUB addNote error (non-fatal):', err)
-  }
+  await enrichNativeLead({
+    personId,
+    tags: buildLeadTags(lead, brokerSlug),
+    custom: {
+      ...(lead.buySellIntent ? { buySellIntent: lead.buySellIntent } : {}),
+      ...(lead.campaignName ? { fbCampaignName: lead.campaignName } : {}),
+    },
+    assignedBroker: brokerSlug,
+    originNote: { title: 'Facebook Lead Ad capture', body: noteBody },
+  })
+
+  return personId
 }
 
 // ---------------------------------------------------------------------------
@@ -657,17 +545,17 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
   const brokerFubUserId = FUB_USER_ID_BY_BROKER[brokerSlug] ?? FUB_USER_MATT
 
   if (!parsed.email && !parsed.phone) {
-    console.warn(`[lead-webhook] Lead ${leadId} has no email or phone — creating FUB contact anyway (name-only record)`)
+    console.warn(`[lead-webhook] Lead ${leadId} has no email or phone — capture will skip (no dedup key)`)
   }
 
-  // Create FUB contact
-  const personId = await createFubContact(parsed)
+  // Create/reuse the native CRM contact (deduped email-first).
+  const personId = await createLeadContact(parsed, brokerSlug)
   if (!personId) {
-    // FUB person creation failed — capture the lead natively so an FB-ad lead is
-    // NEVER orphaned on a FUB outage/cutover (was: silently dropped). Routes to
+    // Native capture could not resolve a person — run the direct
+    // ensureNativeLead fallback so an FB-ad lead is NEVER orphaned. Routes to
     // the per-broker slug, records the assignment ledger, then finishes (the
-    // FUB-dependent steps below can't run without a FUB person id).
-    console.error(`[lead-webhook] FUB person creation failed for lead ${leadId}; native fallback`)
+    // person-keyed steps below can't run without a person id).
+    console.error(`[lead-webhook] person creation failed for lead ${leadId}. Native fallback`)
     try {
       const native = await ensureNativeLead({
         name: [parsed.firstName, parsed.lastName].filter(Boolean).join(' ') || null,
@@ -701,13 +589,11 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
     return
   }
 
-  // Assign the person to a FUB user so the lead is not left unassigned/invisible
-  // (FB-form leads were landing with no owner). Meta calls us server-to-server
-  // with no browser cookie, so the ?agent= cookie isn't available — instead we
-  // route by the hidden `assigned_broker` form field (brokerSlug, default Matt),
-  // then record the assignment for the audit trail like the seller-LP path.
-  const assigned = await assignPersonToUser(personId, brokerFubUserId)
-  console.log(`[lead-webhook] Person ${personId} assigned to FUB user ${brokerFubUserId} (${brokerSlug}): ${assigned}`)
+  // Broker assignment already landed natively: sendEvent carried the
+  // brokerAttribution into ensureNativeLead and enrichNativeLead re-stamped
+  // assigned_broker (covers the reuse path). Record the assignment ledger row
+  // for the audit trail like the seller-LP path.
+  console.log(`[lead-webhook] Person ${personId} assigned to broker ${brokerSlug}`)
   if (supabase) {
     const { error: assignErr } = await supabase.from('marketing_assignments').insert({
       audience: parsed.audience === 'buyer' ? 'buyer' : 'seller',
@@ -720,8 +606,8 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
     if (assignErr) console.warn('[lead-webhook] marketing_assignments insert failed:', assignErr.message)
   }
 
-  // Add context note
-  await addFubNote(personId, parsed)
+  // (Context note already written natively by createLeadContact's
+  // enrichNativeLead originNote.)
 
   // Instant auto-enroll for buyer leads. The buyer LP enrolls inline, but FB
   // instant-form leads were only picked up by the 15-min catch-all cron, so the
@@ -778,17 +664,19 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
       .catch((e) => console.warn('[lead-webhook] geocode failed (non-blocking):', e))
   }
 
-  // Fire 5-min realtime task for hot leads (skip realtors)
+  // Fire 5-min native task for hot leads (skip realtors) — replaces the dead
+  // FUB createRealtimeTask with the crm_tasks equivalent the LP paths use.
   if (parsed.intent === 'hot' && !parsed.possibleRealtor) {
     const who = [parsed.firstName, parsed.lastName].filter(Boolean).join(' ') || parsed.email || 'unknown'
     const label = parsed.audience === 'buyer' ? 'Hot buyer' : 'Hot seller'
-    const taskOk = await createRealtimeTask({
+    await createNativeTask({
       personId,
-      taskName: `${label} lead — call within 5 min: ${who}`,
-      taskType: 'Call',
+      name: `${label} lead — call within 5 min: ${who}`,
+      type: 'Call',
       dueInMinutes: 5,
+      assignedBroker: brokerSlug,
     })
-    console.log(`[lead-webhook] Hot-lead 5-min task ${taskOk ? 'created' : 'NOT created'} for person ${personId}`)
+    console.log(`[lead-webhook] Hot-lead 5-min task created for person ${personId}`)
   }
 
   // GA4 Measurement Protocol mirror — fire generate_lead server-side.
@@ -811,7 +699,7 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
     },
   }).catch((e) => console.warn('[lead-webhook] GA4 event failed:', e))
 
-  console.log(`[lead-webhook] Lead ${leadId} → FUB person ${personId} (${parsed.email || 'no email'}) intent=${parsed.intent ?? 'n/a'} audience=${parsed.audience} realtor=${parsed.possibleRealtor}`)
+  console.log(`[lead-webhook] Lead ${leadId} → crm person ${personId} (${parsed.email || 'no email'}) intent=${parsed.intent ?? 'n/a'} audience=${parsed.audience} realtor=${parsed.possibleRealtor}`)
 
   // Mark dedup row complete with FUB person ID + classification context.
   if (supabase) {

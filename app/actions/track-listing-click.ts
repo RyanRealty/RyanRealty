@@ -1,12 +1,17 @@
 'use server'
 
-import { trackListingTileClick as sendFubTileClick } from '@/lib/followupboss'
-
 /**
- * Fire-and-forget: record listing tile click in Follow Up Boss (listing address, MLS ID,
- * timestamp, source page, and contact if available). Zero UI, zero blocking.
+ * Listing tile click tracking.
+ *
+ * The FUB "Viewed Property" mirror this action used to fire was a dead no-op
+ * after the FUB decommission (2026-06-24) and has been deleted. First-party
+ * tracking already covers tile clicks: the VisitorTracker snippet posts
+ * listing_view / cta_click events to /api/visitors/track (visitor_events),
+ * which is what the dashboards read. The action is kept as a stub so existing
+ * client callers (components/ListingTile.tsx) keep working; it can be removed
+ * together with its call sites in a follow-up.
  */
-export async function trackListingTileClick(params: {
+export async function trackListingTileClick(_params: {
   listingKey: string
   listingUrl: string
   sourcePage: string
@@ -22,9 +27,5 @@ export async function trackListingTileClick(params: {
     bathrooms?: number
   }
 }) {
-  try {
-    await sendFubTileClick(params)
-  } catch {
-    // Silent; do not block navigation or surface errors
-  }
+  // Intentionally empty — see module doc.
 }

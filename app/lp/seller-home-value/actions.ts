@@ -4,7 +4,6 @@ import { createClient } from '@supabase/supabase-js'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import {
   sendEvent,
-  findPersonByEmail,
   type FubEventPerson,
 } from '@/lib/followupboss'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
@@ -301,19 +300,14 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       // malformed referer — fall back to the bare LP url
     }
 
-    // ─── Resolve the FUB person ────────────────────────────────────────────
-    // Priority: explicit email match > cookie-identified person id > new email-only.
+    // ─── Resolve a pre-known person (identity-bridge cookie only) ──────────
+    // The old FUB findPersonByEmail pre-lookup was a dead no-op after the
+    // 2026-06-24 decommission and was deleted — sendEvent below resolves the
+    // native person by email (ensureNativeLead dedupes email-first).
     let fubPersonId: number | null = null
     let alreadyKnown = false
 
-    if (email) {
-      const existing = await findPersonByEmail(email)
-      if (existing?.id) {
-        fubPersonId = existing.id
-        alreadyKnown = true
-      }
-    }
-    if (!fubPersonId) {
+    {
       const cookiePersonId = await getPersonIdFromCookie()
       if (cookiePersonId) {
         fubPersonId = cookiePersonId

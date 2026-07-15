@@ -1,12 +1,16 @@
 'use server'
 
 import { cookies } from 'next/headers'
-import { trackSavedProperty as sendFubSavedProperty } from '@/lib/followupboss'
 import { fireGa4Event, readGa4ClientIdFromCookies } from '@/lib/ga4-measurement-protocol'
 
 /**
- * Fire-and-forget: record saved listing in Follow Up Boss. Call after a successful save.
+ * Fire-and-forget: record a saved listing. Call after a successful save.
  * Zero UI, zero blocking.
+ *
+ * The FUB "Saved Property" mirror this action used to fire was a dead no-op
+ * after the FUB decommission (2026-06-24) and has been deleted — the save
+ * itself is already durably recorded (saved listings table + visitor_events);
+ * only the GA4 server mirror remains here.
  */
 export async function trackSavedPropertyAction(params: {
   userEmail: string
@@ -23,12 +27,6 @@ export async function trackSavedPropertyAction(params: {
     bathrooms?: number
   }
 }) {
-  try {
-    await sendFubSavedProperty(params)
-  } catch {
-    // Silent
-  }
-
   // GA4 Measurement Protocol mirror — the client add_to_wishlist event is
   // ad-blocker-vulnerable; this server mirror makes saves a durable GA4
   // signal/audience, consistent with how lead events are server-mirrored.

@@ -20,9 +20,6 @@
 
 import type { Metadata } from 'next'
 import { getPublishedGuides } from '@/lib/data'
-import { getSession } from '@/app/actions/auth'
-import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
-import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { generateBreadcrumbSchema } from '@/lib/structured-data'
 import { getSurfaceImages, pickSurfaceImage } from '@/lib/data/media/getSurfaceImages'
 import { cityEntityKey } from '@/lib/slug'
@@ -64,19 +61,13 @@ export const metadata: Metadata = {
 }
 
 export default async function GuidesIndexPage() {
-  // F12: fetch session + FUB identity in parallel with guides, then track page view
-  const [guides, cardPhotoPool, session, fubPersonId] = await Promise.all([
+  // FUB page-view mirror removed with the FUB decommission (2026-06-24) —
+  // first-party visitor_sessions covers page views. Route is force-dynamic, so
+  // dropping the session/cookie reads changes nothing about rendering mode.
+  const [guides, cardPhotoPool] = await Promise.all([
     getPublishedGuides(12),
     getSurfaceImages('card'),
-    getSession(),
-    getPersonIdFromCookie(),
   ])
-  trackPageViewIfPossible({
-    sessionUser: session?.user ?? undefined,
-    fubPersonId,
-    pageUrl: `${siteUrl}/guides`,
-    pageTitle: 'Guides | Ryan Realty',
-  })
 
   const collectionJsonLd = {
     '@context': 'https://schema.org',

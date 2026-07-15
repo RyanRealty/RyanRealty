@@ -32,7 +32,6 @@ import ContactForm from './ContactForm'
 import { getPageContent } from '@/app/actions/site-pages'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
-import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import { getListingTiles } from '@/lib/data'
 import { formatPrice } from '@/lib/format/money'
@@ -68,15 +67,15 @@ export const metadata: Metadata = {
 }
 
 export default async function ContactPage({ searchParams }: PageProps) {
-  const [params, pageContent, session, fubPersonId] = await Promise.all([
+  // Session + identity-bridge reads kept (they pin this route's dynamic
+  // rendering mode); the FUB page-view mirror they fed was deleted with the
+  // FUB decommission — first-party visitor_sessions covers page views now.
+  const [params, pageContent] = await Promise.all([
     searchParams,
     getPageContent('contact'),
     getSession(),
     getPersonIdFromCookie(),
   ])
-  const pageUrl = `${getCanonicalSiteUrl()}/contact`
-  const pageTitle = 'Contact Us | Ryan Realty'
-  trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
   // Listing tour/question CTAs land here with ?listingKey= (+ intent=tour|question).
   // Default to a buyer/property inquiry and carry the listing through to FUB.
   const defaultInquiry = params.inquiry ?? (params.listingKey ? 'Buying' : undefined)

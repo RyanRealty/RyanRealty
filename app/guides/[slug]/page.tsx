@@ -27,7 +27,6 @@ import CityClusterNav from '@/components/CityClusterNav'
 import { getGuideBySlug, getPublishedGuides } from '@/lib/data'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
-import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { generateBreadcrumbSchema, generateBlogSchema } from '@/lib/structured-data'
 import { cityEntityKey } from '@/lib/slug'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
@@ -65,7 +64,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function GuideDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const [guide, session, fubPersonId] = await Promise.all([
+  // Session + identity-bridge reads kept (they pin this route's dynamic
+  // rendering mode); the FUB page-view mirror they fed was deleted with the
+  // FUB decommission — first-party visitor_sessions covers page views now.
+  const [guide] = await Promise.all([
     getGuideBySlug(slug),
     getSession(),
     getPersonIdFromCookie(),
@@ -76,14 +78,6 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ sl
     .slice(0, 4)
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-
-  // F12: track page view in FUB CRM, mirroring the pattern used in /blog/[slug]
-  trackPageViewIfPossible({
-    sessionUser: session?.user ?? undefined,
-    fubPersonId,
-    pageUrl: `${siteUrl}/guides/${encodeURIComponent(guide.slug)}`,
-    pageTitle: `${guide.title} | Ryan Realty Guides`,
-  })
 
   // Article JSON-LD built from live guide data — no fabricated fields.
   // generateBlogSchema emits BlogPosting which is a sub-type of Article; the

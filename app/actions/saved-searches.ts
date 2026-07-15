@@ -145,24 +145,48 @@ export async function createSavedSearch(
     if (error) console.error('[createSavedSearch] public mirror', error.message)
   }
 
-  // Mirror to FUB — saving a search is a top buyer-intent signal. Fire-and-forget
-  // so a FUB hiccup never blocks the save. The user is signed in here, so attach
-  // by their account email.
-  void (async () => {
-    try {
-      const { trackSavedPropertySearch } = await import('@/lib/followupboss')
-      const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-      await trackSavedPropertySearch({
-        user: { email },
-        searchName,
-        filtersSummary: getFiltersSummary(normalizedFilters),
-        searchUrl: `${base}${buildSearchUrlFromFilters(normalizedFilters)}`,
-        resultsCount: warm.totalCount ?? undefined,
+  // Saving a search is a top buyer-intent signal — capture it natively
+  // (sendEvent → ensureNativeLead) and canonically tag the buyer so the lead
+  // enters the buyer workflow. Replaces the dead FUB trackSavedPropertySearch
+  // wrapper (FUB decommissioned 2026-06-24). Awaited (a fire-and-forget IIFE
+  // gets killed when the serverless lambda freezes on return); the catch keeps
+  // a capture blip from ever blocking the save.
+  try {
+    const { sendEvent } = await import('@/lib/followupboss')
+    const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+    const searchUrl = `${base}${buildSearchUrlFromFilters(normalizedFilters)}`
+    const summary = getFiltersSummary(normalizedFilters)
+    const count = warm.totalCount != null ? ` (${warm.totalCount} matches)` : ''
+    const result = await sendEvent({
+      type: 'Saved Property Search',
+      person: { emails: [{ value: email }] },
+      source: base.replace(/^https?:\/\//, '').toLowerCase() || 'ryan-realty.com',
+      system: 'Ryan Realty Website',
+      sourceUrl: searchUrl,
+      message: `Saved search: ${searchName}${summary ? `, ${summary}` : ''}${count}`,
+    })
+    // Canonical buyer tagging on the native person id — the tagger's own
+    // compliance guard skips realtors / opt-outs.
+    if (result.ok && result.personId) {
+      const { canonicallyTagLead } = await import('@/lib/canonical-lead-tagger')
+      await canonicallyTagLead({
+        fubPersonId: result.personId,
+        audience: 'buyer',
+        source: 'idx-registration',
+        tier: 'warm',
+        originContext: {
+          source: 'saved-search',
+          sourceLabel: 'Saved property search',
+          landingPage: searchUrl,
+          audience: 'buyer',
+          tier: 'warm',
+          want: `Listing alerts for ${searchName}${summary ? `, ${summary}` : ''}`,
+        },
       })
-    } catch {
-      // non-blocking
     }
-  })()
+  } catch (err) {
+    console.warn('[createSavedSearch] native lead capture failed (non-blocking):', err)
+  }
 
   return { error: null }
 }

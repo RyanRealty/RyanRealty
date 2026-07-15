@@ -1,15 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-// The CRM mirror calls createServiceClient() -> Supabase. Stub it so the sendEvent
-// success path doesn't touch the network in tests.
-vi.mock('./crm/mirror', () => ({
-  mirrorSiteEvent: vi.fn(),
-  mirrorEnrollmentToCrm: vi.fn(),
-  mirrorNoteToCrm: vi.fn(),
-  mirrorPersonFromFub: vi.fn(),
-  mirrorTaskToCrm: vi.fn(),
-}))
-
 // FUB DECOMMISSIONED (2026-06-24): sendEvent now captures natively via
 // ensureNativeLead and never touches FollowUp Boss. Mock the native writer.
 type NativeLeadInput = { name?: string | null; email?: string | null; phone?: string | null; source: string; tags?: string[]; assignedBroker?: string }

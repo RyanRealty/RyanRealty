@@ -3,7 +3,7 @@
 import { after } from 'next/server'
 import { headers } from 'next/headers'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
-import { sendEvent, findPersonByEmail } from '@/lib/followupboss'
+import { sendEvent } from '@/lib/followupboss'
 import { sendContactNotification } from '@/lib/resend'
 import { canonicallyTagLead, type LeadAudience } from '@/lib/canonical-lead-tagger'
 import { backfillSessionToFub } from '@/lib/visitor-backfill'
@@ -99,9 +99,11 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
       : undefined,
   })
 
+  // Native CRM person id resolved by sendEvent (ensureNativeLead) — gates all
+  // downstream enrichment. Falls back to a direct ensureNativeLead when the
+  // capture errored, so a blip never loses the lead.
+  let capturedPersonId: number | null = res.ok ? res.personId : null
   if (!res.ok) {
-    // FUB push failed — capture the lead natively so a FUB outage/cutover never
-    // loses it, then proceed as success (the lead IS recorded, in crm_people).
     try {
       const native = await ensureNativeLead({
         name,
@@ -113,8 +115,9 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
       if (!native.created && native.personId === 0) {
         return { error: res.error ?? 'Failed to send' }
       }
+      capturedPersonId = native.personId > 0 ? native.personId : null
       console.warn(
-        `[contact] FUB push failed; native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
+        `[contact] capture failed. Native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
       )
     } catch (e) {
       console.warn('[contact] native fallback failed:', e)
@@ -132,11 +135,12 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
   // dropped contact leads into FUB unassigned + un-enrolled.
   after(async () => {
     try {
-      const found = await findPersonByEmail(email)
-      if (found?.id) {
+      // Enrichment gates on the native person id sendEvent returned (the old
+      // FUB findPersonByEmail re-lookup was a dead no-op post-decommission).
+      if (capturedPersonId) {
         const audience = inferAudience(inquiryType)
         await canonicallyTagLead({
-          fubPersonId: found.id,
+          fubPersonId: capturedPersonId,
           audience,
           source: 'contact-form',
           originContext: {
@@ -149,15 +153,15 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
         })
         // Instant CRM mirror + auto-enroll (kills the 30-min delta-cron lag).
         const { autoEnrollByFubId } = await import('@/lib/crm/enroll')
-        await autoEnrollByFubId(found.id, { smsConsent }).catch((e: unknown) =>
+        await autoEnrollByFubId(capturedPersonId, { smsConsent }).catch((e: unknown) =>
           console.warn('[contact-form] instant auto-enroll failed:', e),
         )
-        // Stitch this visitor's prior anonymous browsing history to the FUB
-        // person. Idempotent; only replays when a real session id came through.
+        // Stitch this visitor's prior anonymous browsing history to the CRM
+        // person. Idempotent; only runs when a real session id came through.
         if (sessionId && UUID_V4_RE.test(sessionId)) {
           await backfillSessionToFub({
             sessionId,
-            fubPersonId: found.id,
+            fubPersonId: capturedPersonId,
             email,
             identifiedVia: 'form_submit',
           })

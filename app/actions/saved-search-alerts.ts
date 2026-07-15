@@ -21,7 +21,6 @@ import {
   resolvePersonForTracking,
   linkAlertRowToPerson,
 } from '@/lib/data/crm/resolvePersonForTracking'
-import { findPersonByEmail } from '@/lib/followupboss'
 
 /**
  * The ONE listing-alert send engine, over the unified public.listing_alerts
@@ -181,13 +180,21 @@ export async function runListingAlerts(options?: {
         summary.skipped += 1
       }
 
-      // Compliance: skip anyone hard-stopped in FUB (do_not_email, unsubscribed,
-      // bounced, realtor). The subscriber opted in, but a later FUB opt-out
-      // wins. The row's fub_person_id is the strongest link; fall back to an
-      // email lookup so signed-in rows without the legacy id still get the
-      // check (this also resolves the ?_fuid stamp for click attribution).
-      const fubPersonId = row.fub_person_id ?? (await findPersonByEmail(row.email))?.id ?? null
-      if (fubPersonId && (await isHardStopped(fubPersonId))) {
+      // Open/click tracking + compliance identity, resolved ONCE up front: the
+      // row's crm_person_id when present, else a case-insensitive email match.
+      // Native replacement for the dead FUB findPersonByEmail fallback (FUB
+      // decommissioned 2026-06-24), so rows without a pre-linked id still get
+      // the hard-stop check below.
+      const person = await resolvePersonForTracking({
+        crmPersonId: row.crm_person_id,
+        email: row.email,
+      })
+
+      // Compliance: skip anyone hard-stopped (do_not_email, unsubscribed,
+      // bounced, realtor). The subscriber opted in, but a later opt-out wins.
+      // Prefer the native resolution; fall back to the row's legacy id.
+      const compliancePersonId = person.personId ?? row.fub_person_id ?? null
+      if (compliancePersonId && (await isHardStopped(compliancePersonId))) {
         await advanceCursor()
         continue
       }
@@ -267,13 +274,9 @@ export async function runListingAlerts(options?: {
         continue
       }
 
-      // Open/click tracking identity: the row's crm_person_id when present,
-      // else a case-insensitive email match with write-back (so the next send
-      // is pre-linked). Unresolved sends untracked (attribution only) by design.
-      const person = await resolvePersonForTracking({
-        crmPersonId: row.crm_person_id,
-        email: row.email,
-      })
+      // Write back an email-match resolution so the next send is pre-linked
+      // (person was resolved once, above, before the hard-stop check).
+      // Unresolved sends untracked (attribution only) by design.
       if (!dryRun && person.personId && person.resolvedBy === 'email') {
         await linkAlertRowToPerson(row.id, person.personId)
       }
@@ -308,7 +311,7 @@ export async function runListingAlerts(options?: {
       const finalHtml = attributeOutbound(built.html, {
         brokerSlug,
         personId: person.personId,
-        fubPersonId: person.fubPersonId ?? fubPersonId,
+        fubPersonId: person.fubPersonId ?? row.fub_person_id ?? null,
         emailKey,
         label: built.subject,
         broker: brokerSlug,

@@ -34,7 +34,6 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { trackPageView, trackListingView, trackPropertySearch } from '@/lib/followupboss'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { isGpcOptOut } from '@/lib/crm/gpc'
 import { recordGpcSuppression } from '@/lib/data/crm/recordGpcSuppression'
@@ -415,13 +414,13 @@ export async function POST(request: NextRequest) {
 
   const session = sessRow ?? null
 
-  // ─── Mirror identified-lead browsing into Follow Up Boss ────────────────
-  // FUB "website activity" is per-PERSON: it only shows what a KNOWN lead does.
-  // Once a session is identified (fub_person_id backfilled after a form submit),
-  // post the lead's page + property views to FUB so their browsing lands on the
-  // person timeline (the signal an agent acts on). Anonymous visitors are NEVER
-  // sent to FUB — that's GA4's job. Gated to analytics/all consent (skipped
-  // under essential) and bounded so the page load never waits on the FUB API.
+  // ─── Identified-lead live-visit alert ────────────────────────────────────
+  // Once a session is identified (fub_person_id backfilled after a form
+  // submit), fire the broker alert for the lead's browsing. The old FUB
+  // activity mirror (trackListingView / trackPropertySearch / trackPageView)
+  // was a dead no-op after the 2026-06-24 decommission and was deleted —
+  // first-party visitor_events already carries the per-person browsing the
+  // dashboards read. Gated to analytics/all consent (skipped under essential).
   const fubPersonId =
     !minimalOnly && session && typeof session.fub_person_id === 'number' ? session.fub_person_id : null
   if (fubPersonId && (eventType === 'listing_view' || eventType === 'page_view')) {
@@ -450,61 +449,6 @@ export async function POST(request: NextRequest) {
       console.warn('[visitors/track] return-visit alert failed:', err)
     }
   }
-  if (fubPersonId && (eventType === 'listing_view' || eventType === 'page_view' || eventType === 'search')) {
-    try {
-      if (eventType === 'listing_view' && listing) {
-        await withTimeoutFallback(
-          trackListingView({
-            fubPersonId,
-            listingUrl: pageUrl,
-            property: {
-              street: listing.street,
-              city: listing.city,
-              state: listing.state,
-              code: listing.postalCode,
-              mlsNumber: listing.mlsNumber,
-              price: listing.price,
-              bedrooms: listing.bedrooms,
-              bathrooms: listing.bathrooms,
-              area: listing.areaSqft,
-            },
-            campaign,
-          }),
-          undefined,
-          2500,
-          'fub:listing-view',
-        )
-      } else if (eventType === 'search') {
-        await withTimeoutFallback(
-          trackPropertySearch({
-            fubPersonId,
-            searchTerm: body.pageTitle?.slice(0, 200),
-            searchUrl: pageUrl,
-            campaign,
-          }),
-          undefined,
-          2500,
-          'fub:search',
-        )
-      } else {
-        await withTimeoutFallback(
-          trackPageView({
-            fubPersonId,
-            pageUrl,
-            pageTitle: body.pageTitle?.slice(0, 512),
-            campaign,
-            message: body.pageCategory ? `category=${body.pageCategory}` : undefined,
-          }),
-          undefined,
-          2500,
-          'fub:page-view',
-        )
-      }
-    } catch (e) {
-      console.warn('[visitors/track] FUB activity mirror failed:', e instanceof Error ? e.message : String(e))
-    }
-  }
-
   return NextResponse.json(
     {
       ok: true,

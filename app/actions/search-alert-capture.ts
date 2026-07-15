@@ -10,7 +10,9 @@ import {
   getFilterNameFallback,
   buildSearchUrlFromFilters,
 } from '@/lib/search-filters'
-import { trackSavedPropertySearch, findPersonByEmail, createRealtimeTask } from '@/lib/followupboss'
+import { sendEvent } from '@/lib/followupboss'
+import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
+import { createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { upsertListingAlert } from '@/lib/data/leads/listingAlerts'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 
@@ -19,10 +21,11 @@ import { fireLeadGenerated } from '@/lib/lead-tracking'
  *
  * Turns a not-signed-in /search visitor into a canonical buyer lead AND a
  * durable alert the cron can email (a listing_alerts row). This is a PUBLIC
- * server-action write into FUB + the DB, so it is the spam-hardened path the
- * repo previously lacked:
+ * server-action write into the CRM + the DB, so it is the spam-hardened path
+ * the repo previously lacked:
  *   1. honeypot   2. per-IP rate limit   3. email validation
- *   4. FUB dedup (findPersonByEmail)   5. compliance gate (inside canonicallyTagLead)
+ *   4. native dedup (ensureNativeLead, email-first)
+ *   5. compliance gate (inside canonicallyTagLead)
  */
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -89,29 +92,50 @@ export async function submitSearchAlertSignup(input: {
   const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const searchUrl = `${base}${buildSearchUrlFromFilters(normalized)}`
 
-  // 5. FUB buyer lead: canonical audience:buyer + buyer:warm + source:idx-registration.
-  //    trackSavedPropertySearch fires the event AND applies the tags (awaited
-  //    internally, with its built-in compliance hard-stop guard). Best-effort:
-  //    a FUB outage must never block the signup or the durable persistence.
+  // 5. Native buyer lead: sendEvent captures via ensureNativeLead (FUB
+  //    decommissioned 2026-06-24) and returns the crm_people id, which gates
+  //    the canonical audience:buyer + buyer:warm + source:idx-registration
+  //    tagging (compliance hard-stop guard lives inside canonicallyTagLead).
+  //    Best-effort: a capture blip must never block the signup or the durable
+  //    persistence.
   let fubPersonId: number | null = null
   try {
-    await trackSavedPropertySearch({ user: { email }, searchName: name, filtersSummary: summary, searchUrl })
-    const person = await findPersonByEmail(email)
-    fubPersonId = person?.id ?? null
-    // Notify the assigned broker in FUB so a signup is never missed. The lead is
-    // already created + tagged + assigned to the broker above; this adds a task
-    // with a near-immediate phone reminder. Auto-routes to the person's assigned
-    // user (the broker). Awaited so the serverless freeze cannot drop it.
+    const result = await sendEvent({
+      type: 'Saved Property Search',
+      person: { emails: [{ value: email }] },
+      source: base.replace(/^https?:\/\//, '').toLowerCase() || 'ryan-realty.com',
+      system: 'Ryan Realty Website',
+      sourceUrl: searchUrl,
+      message: `Saved search: ${name}${summary ? `, ${summary}` : ''}`,
+    })
+    fubPersonId = result.ok ? result.personId : null
     if (fubPersonId) {
-      await createRealtimeTask({
+      await canonicallyTagLead({
+        fubPersonId,
+        audience: 'buyer',
+        source: 'idx-registration',
+        tier: 'warm',
+        originContext: {
+          source: 'saved-search',
+          sourceLabel: 'Listing-alert signup',
+          landingPage: searchUrl,
+          audience: 'buyer',
+          tier: 'warm',
+          want: `Listing alerts for ${name}${summary ? `, ${summary}` : ''}`,
+        },
+      })
+      // Notify the assigned broker so a signup is never missed — a native
+      // crm_tasks row with a near-due reminder (replaces the dead FUB
+      // createRealtimeTask). Awaited so the serverless freeze cannot drop it.
+      await createNativeTask({
         personId: fubPersonId,
-        taskName: `New listing-alert signup: ${summary}`,
-        taskType: 'Follow Up',
+        name: `New listing-alert signup: ${summary}`,
+        type: 'Follow Up',
         dueInMinutes: 5,
       })
     }
   } catch {
-    // FUB best-effort. Never block the signup or the durable persistence.
+    // Best-effort. Never block the signup or the durable persistence.
   }
 
   // 6. Persist so the alert cron can email this guest when new homes match.
