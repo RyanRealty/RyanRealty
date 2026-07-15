@@ -16,7 +16,6 @@ import CardBadges from '@/components/ui/CardBadges'
 import { Button } from '@/components/ui/button'
 import { getCanonicalSiteUrl, listingShareText } from '@/lib/share-metadata'
 import { incrementListingShareCount } from '@/app/actions/engagement'
-import { trackListingTileClick } from '@/app/actions/track-listing-click'
 import { trackListingClick } from '@/lib/tracking'
 import { listingDetailPath, listingsBrowsePath } from '@/lib/slug'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -330,22 +329,6 @@ function ListingTile({
       price: price > 0 ? price : undefined,
       city: listing.City ?? undefined,
       mlsNumber: mlsDisplay ?? undefined,
-    })
-    trackListingTileClick({
-      listingKey: canonicalListingKey,
-      listingUrl: fullUrl,
-      sourcePage,
-      userEmail: userEmail ?? undefined,
-      fubPersonId: fubPersonId ?? undefined,
-      property: {
-        street: address || undefined,
-        city: listing.City ?? undefined,
-        state: listing.State ?? undefined,
-        mlsNumber: mlsDisplay ?? undefined,
-        price: price > 0 ? price : undefined,
-        bedrooms: listing.BedroomsTotal ?? undefined,
-        bathrooms: listing.BathroomsTotal ?? undefined,
-      },
     })
   }
 

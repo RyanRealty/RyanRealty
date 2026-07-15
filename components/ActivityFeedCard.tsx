@@ -5,7 +5,6 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { toggleSavedListing } from '../app/actions/saved-listings'
 import { BookmarkIcon } from '@/components/icons/ActionIcons'
-import { trackListingTileClick } from '../app/actions/track-listing-click'
 import { trackSavedPropertyAction } from '../app/actions/track-saved-property'
 import type { ActivityFeedItem } from '@/app/actions/activity-feed-shared'
 import { Button } from "@/components/ui/button"
@@ -69,27 +68,10 @@ export default function ActivityFeedCard({ item, saved = false, signedIn = false
     router.refresh()
   }
 
-  function handleClick() {
-    if (userEmail) {
-      trackListingTileClick({
-        userEmail,
-        listingKey: item.listing_key,
-        listingUrl: typeof window !== 'undefined' ? `${window.location.origin}${listingHref}` : listingHref,
-        sourcePage: typeof window !== 'undefined' ? window.location.href : '',
-        property: {
-          street: address || undefined,
-          city: item.City ?? undefined,
-          mlsNumber: item.listing_key,
-          price: item.ListPrice != null ? Number(item.ListPrice) : undefined,
-        },
-      }).catch(() => {})
-    }
-  }
 
   return (
     <Link
       href={listingHref}
-      onClick={handleClick}
       className="group relative block overflow-hidden rounded-xl bg-border shadow-md transition hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
     >
       {/* 4:5 on mobile; full-bleed image */}

@@ -3,11 +3,8 @@
 import { useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { trackVisit } from '@/app/actions/track-visit'
-import { trackReturnVisitAction } from '@/app/actions/track-return-visit'
 import { hasAnalyticsConsent, getStoredConsent, getOrCreateVisitId, autoGrantConsentForAdTraffic } from './CookieConsentBanner'
 
-const FUB_LAST_VISIT_KEY = 'fub_last_visit'
-const RETURN_VISIT_MS = 24 * 60 * 60 * 1000
 
 // localStorage key for the source-agnostic uuid that lets us stitch a visitor
 // across Ryan Realty surfaces (Vercel + WP). Matches the WP snippet config.
@@ -203,24 +200,10 @@ function fireVisitorEvent(pathname: string, eventType: 'page_view' | 'listing_vi
   } catch {}
 }
 
-function getFubLastVisit(): number | null {
-  if (typeof document === 'undefined') return null
-  const match = document.cookie.match(new RegExp(`(?:^|; )${FUB_LAST_VISIT_KEY}=([^;]+)`))
-  const val = match?.[1]
-  if (!val) return null
-  const n = parseInt(val, 10)
-  return Number.isFinite(n) ? n : null
-}
-
-function setFubLastVisit(): void {
-  if (typeof document === 'undefined') return
-  const maxAge = 30 * 24 * 60 * 60
-  document.cookie = `${FUB_LAST_VISIT_KEY}=${Date.now()}; path=/; max-age=${maxAge}; SameSite=Lax`
-}
 
 type Props = { userId?: string | null; userEmail?: string | null }
 
-export default function VisitTracker({ userId, userEmail }: Props) {
+export default function VisitTracker({ userId }: Props) {
   const pathname = usePathname()
   const tracked = useRef<string | null>(null)
   // Separate dedupe for the visitor_events write, keyed by pathname ONLY. The
@@ -229,7 +212,6 @@ export default function VisitTracker({ userId, userEmail }: Props) {
   // userId), so it must fire once per pathname or the null->id re-render would
   // double-count every page/property view for a logged-in visitor.
   const firedVisitorPath = useRef<string | null>(null)
-  const returnTracked = useRef(false)
 
   useEffect(() => {
     // Aggressive ad-traffic consent (Matt 2026-06-02): a visitor arriving from a
@@ -270,19 +252,6 @@ export default function VisitTracker({ userId, userEmail }: Props) {
     }
   }, [pathname, userId])
 
-  useEffect(() => {
-    if (!hasAnalyticsConsent() || !userEmail?.trim() || !pathname) return
-    const now = Date.now()
-    const last = getFubLastVisit()
-    const isReturn = last == null || now - last >= RETURN_VISIT_MS
-    setFubLastVisit()
-    if (isReturn && !returnTracked.current) {
-      returnTracked.current = true
-      const pageUrl = typeof window !== 'undefined' ? window.location.href : pathname
-      const pageTitle = typeof document !== 'undefined' ? document.title : undefined
-      trackReturnVisitAction({ userEmail: userEmail.trim(), pageUrl, pageTitle })
-    }
-  }, [pathname, userEmail])
 
   useEffect(() => {
     const onConsent = () => {
