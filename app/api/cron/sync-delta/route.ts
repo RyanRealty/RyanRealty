@@ -30,6 +30,14 @@ import { processNewExpiredListings } from '@/lib/expired-listing-processor'
  * Auth: Authorization: Bearer CRON_SECRET
  */
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+// Multi-minute work (up to MAX_PAGES Spark pages + per-listing history fetches +
+// photo fixes). Without this the route falls back to the project-default function
+// duration and can be killed mid-run silently — matching the cron-fleet
+// convention (e.g. crm-sequence-engine, refresh-mvs).
+export const maxDuration = 300
+
 // VirtualTours added 2026-06-08: the feed keeps 3D / Matterport / Zillow-3D
 // tours in a SEPARATE sub-resource from Videos. Without expanding it the sync
 // stored only VirtualToursCount (a scalar) and never the tour URLs, so ~700

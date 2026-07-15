@@ -23,17 +23,26 @@ export async function supabaseServer() {
   return await _createServerClient()
 }
 
+let _anonClient: SupabaseClient | null = null
+
 /**
  * Anon (public RLS) Supabase client — use for hot-path reads against
  * materialized views and tables with public RLS. Skips the auth cookie
  * roundtrip; slightly faster for reads that don't need user context.
  *
+ * Module-level singleton (same pattern as createServiceClient in
+ * lib/supabase/service.ts): the client is stateless — anon key, no session —
+ * so one instance is safe to share, and ~137 DAL call sites no longer build a
+ * fresh client (auth/postgrest/realtime sub-clients included) per call.
+ *
  * Returns null if env vars are missing so DAL functions can degrade
  * gracefully instead of throwing at build time.
  */
 export function supabaseAnon(): SupabaseClient | null {
+  if (_anonClient) return _anonClient
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url?.trim() || !anonKey?.trim()) return null
-  return _createSupabaseClient(url, anonKey)
+  _anonClient = _createSupabaseClient(url, anonKey)
+  return _anonClient
 }

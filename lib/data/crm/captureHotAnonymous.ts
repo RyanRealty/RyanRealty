@@ -6,6 +6,7 @@ import {
   type SustainedHotAnonymousSignals,
   type SustainedHotAnonymousThresholds,
 } from './isSustainedHotAnonymous'
+import { buildNativePersonRow } from './nativeCreate'
 import type { CrmBrokerSlug } from '@/lib/crm/constants'
 
 /**
@@ -19,9 +20,12 @@ import type { CrmBrokerSlug } from '@/lib/crm/constants'
  * visitor (an rr_vid), it reads the visitor's signals, runs the PURE
  * isSustainedHotAnonymous rule, and on a qualify:
  *
- *   1. Creates ONE native crm_people { source:'hot-anonymous', stage:'Lead' }
- *      lead (no email/phone yet — this is a behavior-only lead), tagged so it is
- *      queryable + remarketing-addressable, routed to the default broker.
+ *   1. Creates ONE native crm_people { source:'hot-anonymous', stage:'Nurture' }
+ *      lead via buildNativePersonRow — the canonical native-create chokepoint,
+ *      which stamps the streamline-v2 entry stage (the legacy 'Lead' stage was
+ *      retired/deactivated 2026-07-03) and the source tag. No email/phone yet —
+ *      this is a behavior-only lead, tagged so it is queryable +
+ *      remarketing-addressable, routed to the default broker.
  *   2. Stitches the rr_vid -> known-record link through the EXISTING identity-map
  *      write path (stitchVisitorIdentity), recording identify_source so the
  *      visitor is marked captured and the same upsert-on-rr_vid row is enriched.
@@ -175,26 +179,27 @@ export async function captureHotAnonymous(
 
   const sb = createServiceClient()
 
-  // Create the behavior-only native lead. No email/phone yet — this lead is
-  // identified by behavior + the rr_vid bridge, so it carries no crm_contact_points.
-  // The source tag makes it queryable; the rr_vid tag carries the bridge until
-  // the Phase 1.1 crm_person_id column materializes it as a real FK.
-  const tags = [
-    `source:${HOT_ANONYMOUS_SOURCE}`,
-    'audience:anonymous-hot',
-    `rr_vid:${vid}`,
-  ]
+  // Create the behavior-only native lead through the canonical builder so it
+  // satisfies the native-create contract (stage 'Nurture' — the streamline-v2
+  // entry stage; the legacy 'Lead' stage was retired 2026-07-03 and a 'Lead' row
+  // would be invisible to every active-stage surface). No email/phone yet — this
+  // lead is identified by behavior + the rr_vid bridge, so it carries no
+  // crm_contact_points. buildNativePersonRow stamps the source:<x> tag; the
+  // rr_vid tag carries the bridge until the Phase 1.1 crm_person_id column
+  // materializes it as a real FK.
+  const personRow = buildNativePersonRow({
+    name: `Anonymous shopper ${vid.slice(0, 8)}`,
+    first_name: null,
+    last_name: null,
+    source: HOT_ANONYMOUS_SOURCE,
+    assignedBroker: DEFAULT_BROKER,
+    tags: ['audience:anonymous-hot', `rr_vid:${vid}`],
+  })
   let crmPersonId: number
   try {
     const { data: created, error: createError } = await sb
       .from('crm_people')
-      .insert({
-        name: `Anonymous shopper ${vid.slice(0, 8)}`,
-        stage: 'Lead',
-        source: HOT_ANONYMOUS_SOURCE,
-        assigned_broker: DEFAULT_BROKER,
-        tags,
-      })
+      .insert(personRow)
       .select('id')
       .single()
     if (createError || !created) {

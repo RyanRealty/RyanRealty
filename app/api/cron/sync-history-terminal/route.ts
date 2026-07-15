@@ -2,6 +2,14 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { syncListingHistory } from '@/app/actions/sync-spark'
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+// Processes up to 200-listing terminal-history chunks per run — multi-minute
+// work. Matches the cron-fleet convention (crm-sequence-engine, refresh-mvs):
+// without it the project-default duration kills the run mid-chunk and loses
+// chunk accounting.
+export const maxDuration = 300
+
 const RUN_STALE_MS = 2 * 60 * 1000
 
 function isAuthorized(request: Request): boolean {

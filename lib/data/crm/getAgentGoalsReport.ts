@@ -1,5 +1,6 @@
 import 'server-only'
 import { unstable_cache } from 'next/cache'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/data/client'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -33,6 +34,42 @@ const BROKER_HEADSHOT: Record<string, string> = {
   matt: '/images/brokers/ryan-matt.png',
   rebecca: '/images/brokers/peterson-rebecca.png',
   paul: '/images/brokers/stevenson-paul.png',
+}
+
+// ── Dead-pipeline stage resolution ───────────────────────────────────────────
+
+/**
+ * Fallback exclusion list if crm_deal_stages is unreadable. Matches the seeded
+ * config (migration 20260701230000): 'Closed' in both pipelines, 'Lost' in
+ * Buyers, 'Lost / Terminated' in Sellers.
+ */
+const FALLBACK_DEAD_STAGES = ['Closed', 'Lost', 'Lost / Terminated']
+
+/**
+ * Stage names that mean a deal is NOT open pipeline: every is_closed_stage=true
+ * stage plus the lost stages. There is no is_lost flag in crm_deal_stages, so
+ * lost is matched by name (\blost\b — catches 'Lost' and 'Lost / Terminated').
+ * Resolved from the config table (the getMarketingUtmReport /
+ * agentActivityClosedDeals pattern) so a stage rename can't silently break the
+ * Upcoming Deals KPI again. Hardcoding ('Closed','Lost') was the prior defect:
+ * the Sellers pipeline's lost stage is 'Lost / Terminated', so every dead
+ * seller deal inflated the open-pipeline count.
+ */
+async function resolveDeadStageNames(sb: SupabaseClient): Promise<string[]> {
+  const { data, error } = await sb.from('crm_deal_stages').select('name,is_closed_stage')
+  if (error || !data || data.length === 0) {
+    if (error) console.error('[getAgentGoalsReport] deal stages error', error.message)
+    return FALLBACK_DEAD_STAGES
+  }
+  const dead = (data as Array<{ name: string; is_closed_stage: boolean }>)
+    .filter((s) => s.is_closed_stage || /\blost\b/i.test(s.name))
+    .map((s) => s.name)
+  return dead.length > 0 ? [...new Set(dead)] : FALLBACK_DEAD_STAGES
+}
+
+/** PostgREST .not('stage','in',...) list literal — names with reserved chars quoted. */
+function stageInList(names: string[]): string {
+  return `(${names.map((n) => `"${n.replace(/"/g, '""')}"`).join(',')})`
 }
 
 // ── Core reader (uncached) ────────────────────────────────────────────────────
@@ -71,6 +108,10 @@ async function readAgentGoals(params: {
     return { rows: [], year }
   }
 
+  // Stage names that end a deal (closed + lost), resolved from config — one
+  // read shared by every broker's Query B.
+  const deadStageList = stageInList(await resolveDeadStageNames(sb))
+
   // 2. Per-broker queries — all in parallel.
   //
   //    Query A: Closed deal COUNT for the year.
@@ -98,12 +139,14 @@ async function readAgentGoals(params: {
           .eq('stage', 'Closed')
           .gte('close_date', yearStart)
           .lte('close_date', yearEnd),
-        // B: upcoming / open pipeline deal count (all-time, no date filter)
+        // B: upcoming / open pipeline deal count (all-time, no date filter).
+        //    Excludes every closed + lost stage resolved from crm_deal_stages
+        //    (the Sellers pipeline's lost stage is 'Lost / Terminated').
         sb
           .from('crm_deals')
           .select('id', { count: 'exact', head: true })
           .eq('assigned_broker', slug)
-          .not('stage', 'in', '("Closed","Lost")'),
+          .not('stage', 'in', deadStageList),
         // C: commission_dollars for closed deals in the year (raw, for SUM)
         sb
           .from('crm_deals')
@@ -161,7 +204,10 @@ async function readAgentGoals(params: {
  * Metric → crm_* source mapping:
  *   Closed Deals       crm_deals  stage='Closed', close_date in year, assigned_broker=slug
  *                                 count:'exact' head query — exact, never capped
- *   Upcoming Deals     crm_deals  stage NOT IN ('Closed','Lost'), assigned_broker=slug
+ *   Upcoming Deals     crm_deals  stage NOT IN (closed + lost stages resolved from
+ *                                 crm_deal_stages: is_closed_stage=true plus every
+ *                                 \blost\b-named stage — 'Lost', 'Lost / Terminated'),
+ *                                 assigned_broker=slug
  *                                 count:'exact' head query — exact, never capped
  *   Commission Earned  crm_deals  stage='Closed', close_date in year, assigned_broker=slug
  *                                 raw commission_dollars rows summed in JS

@@ -161,7 +161,7 @@ describe('buildCrmPeopleQuery — AST translation', () => {
     expect(calls.find((c) => c.method === 'in')).toBeUndefined()
   })
 
-  it('expands a between date condition into two bounds', () => {
+  it('expands a between created condition into two COALESCE(fub_created_at, created_at) bounds', () => {
     const { sb, calls } = makeMockSb()
     const ast: CrmSegment = {
       type: 'group',
@@ -170,9 +170,42 @@ describe('buildCrmPeopleQuery — AST translation', () => {
     }
     buildCrmPeopleQuery(sb, ast, null)
     const ors = orCalls(calls)
-    const between = ors.find((s) => s.startsWith('and(fub_created_at.gte.'))
+    const between = ors.find((s) => s.startsWith('and(or(fub_created_at.gte.'))
     expect(between).toBeDefined()
+    // Lower + upper bound both present.
+    expect(between).toContain('fub_created_at.gte.')
     expect(between).toContain('fub_created_at.lt.')
+    // The native-lead arm: fub_created_at is NULL on every post-cutover row, so
+    // each bound falls back to created_at — otherwise created-date filters would
+    // silently exclude all native leads.
+    expect(between).toContain('and(fub_created_at.is.null,created_at.gte.')
+    expect(between).toContain('and(fub_created_at.is.null,created_at.lt.')
+  })
+
+  it('compiles a created after condition with the native-lead COALESCE fallback', () => {
+    const { sb, calls } = makeMockSb()
+    const ast: CrmSegment = {
+      type: 'group',
+      op: 'and',
+      nodes: [{ field: 'created', op: 'after', value: '2026-06-24' }],
+    }
+    buildCrmPeopleQuery(sb, ast, null)
+    const ors = orCalls(calls)
+    const after = ors.find((s) => s.startsWith('or(fub_created_at.gte.'))
+    expect(after).toBeDefined()
+    expect(after).toContain('and(fub_created_at.is.null,created_at.gte.')
+  })
+
+  it('keeps last_activity as a bare last_activity_at bound (no COALESCE)', () => {
+    const { sb, calls } = makeMockSb()
+    const ast: CrmSegment = {
+      type: 'group',
+      op: 'and',
+      nodes: [{ field: 'last_activity', op: 'before', value: '2026-06-01' }],
+    }
+    buildCrmPeopleQuery(sb, ast, null)
+    const ors = orCalls(calls)
+    expect(ors.find((s) => s.startsWith('last_activity_at.lt.'))).toBeDefined()
   })
 
   it('compiles a custom-field equality', () => {

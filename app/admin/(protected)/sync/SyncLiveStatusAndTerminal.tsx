@@ -117,7 +117,11 @@ export default function SyncLiveStatusAndTerminal({ initialCursor, initialTermin
   const [liveError, setLiveError] = useState<string | null>(null)
   const [yieldError, setYieldError] = useState<string | null>(null)
   const [controlBusy, setControlBusy] = useState(false)
-  const [fixedTotals] = useState(() => ({
+  // Totals seed from the server-rendered snapshot (the page passes zero
+  // placeholders) and are OVERWRITTEN by every live poll — the old setter-less
+  // useState froze the zeros forever, so the panel showed 'Terminal in DB: 0' and
+  // a green 'remaining 0' regardless of live data.
+  const [fixedTotals, setFixedTotals] = useState(() => ({
     closedTotalInDb: initialTerminal.closedTotalInDb,
     expiredTotalInDb: initialTerminal.expiredTotalInDb,
     withdrawnTotalInDb: initialTerminal.withdrawnTotalInDb,
@@ -141,6 +145,15 @@ export default function SyncLiveStatusAndTerminal({ initialCursor, initialTermin
         if (!cancelled) {
           setLivePayload(payload)
           if (payload.terminal) {
+            // Live totals win — the initialTerminal seed is an all-zero
+            // placeholder from the page.
+            setFixedTotals({
+              closedTotalInDb: payload.terminal.closedTotalInDb,
+              expiredTotalInDb: payload.terminal.expiredTotalInDb,
+              withdrawnTotalInDb: payload.terminal.withdrawnTotalInDb,
+              canceledTotalInDb: payload.terminal.canceledTotalInDb,
+              terminalTotalInDb: payload.terminal.terminalTotalInDb,
+            })
             setFinalizedCounts((prev) => ({
               closedFinalizedCount: Math.max(prev.closedFinalizedCount, payload.terminal.closedFinalizedCount),
               expiredFinalizedCount: Math.max(prev.expiredFinalizedCount, payload.terminal.expiredFinalizedCount),
@@ -455,7 +468,7 @@ export default function SyncLiveStatusAndTerminal({ initialCursor, initialTermin
           <div className="h-full bg-success transition-all" style={{ width: `${terminal.terminalFinalizedPct}%` }} aria-label="Terminal finalization progress" />
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          Totals are anchored for this session. Finalized and remaining update live.
+          Totals, finalized, and remaining update with each live poll.
         </p>
       </section>
     </>

@@ -77,9 +77,21 @@ function isoForCompare(v: string): string {
   return new Date(v).toISOString()
 }
 
-const DATE_COLUMN: Record<'created' | 'last_activity', string> = {
-  created: 'fub_created_at',
-  last_activity: 'last_activity_at',
+/**
+ * Origin-date bound with COALESCE(fub_created_at, created_at) semantics,
+ * expressed in PostgREST boolean-filter grammar (PostgREST has no COALESCE
+ * in filters):
+ *   or(fub_created_at.<op>.v, and(fub_created_at.is.null, created_at.<op>.v))
+ *
+ * Why: FUB-imported rows carry their TRUE origin date in fub_created_at (their
+ * created_at is the June-2026 mirror-import timestamp), while native rows
+ * (post-2026-06-24 cutover) leave fub_created_at NULL — their birth is
+ * created_at. A bare fub_created_at comparison silently excludes every native
+ * lead (NULL fails gte/lt); a bare created_at comparison corrupts the historical
+ * book. The COALESCE pair is the only reading that is right for both.
+ */
+function createdBound(op: 'lt' | 'gte', isoValue: string): string {
+  return `or(fub_created_at.${op}.${isoValue},and(fub_created_at.is.null,created_at.${op}.${isoValue}))`
 }
 
 /**
@@ -120,9 +132,22 @@ function conditionFragments(cond: CrmCondition): { joiner: 'and' | 'or'; fragmen
         joiner: 'and',
         fragments: [`${cond.op === 'not' ? 'not.' : ''}tags.cs.{${pgrstValue(cond.value)}}`],
       }
-    case 'created':
+    case 'created': {
+      // COALESCE(fub_created_at, created_at) — see createdBound(). Each bound is
+      // its own or(...) fragment; between ANDs the two bounds.
+      if (cond.op === 'before') return { joiner: 'and', fragments: [createdBound('lt', isoForCompare(cond.value))] }
+      if (cond.op === 'after') return { joiner: 'and', fragments: [createdBound('gte', isoForCompare(cond.value))] }
+      // between: inclusive lower, exclusive upper.
+      return {
+        joiner: 'and',
+        fragments: [
+          createdBound('gte', isoForCompare(cond.value)),
+          createdBound('lt', isoForCompare(cond.valueEnd as string)),
+        ],
+      }
+    }
     case 'last_activity': {
-      const col = DATE_COLUMN[cond.field]
+      const col = 'last_activity_at'
       if (cond.op === 'before') return { joiner: 'and', fragments: [`${col}.lt.${isoForCompare(cond.value)}`] }
       if (cond.op === 'after') return { joiner: 'and', fragments: [`${col}.gte.${isoForCompare(cond.value)}`] }
       // between: inclusive lower, exclusive upper.

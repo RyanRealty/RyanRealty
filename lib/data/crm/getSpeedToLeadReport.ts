@@ -166,6 +166,11 @@ async function readSpeedToLead(params: SpeedToLeadParams): Promise<SpeedToLeadRe
       .in('crm_people.assigned_broker', brokerSlugs)
       .gte('ts', start)
       .lte('ts', end)
+      // Stable order on the unique id: .range() without ORDER BY is
+      // nondeterministic between pages — Postgres may reorder rows, dropping or
+      // double-counting events across page boundaries (same hazard documented in
+      // buildCrmPeopleQuery's tie-breaker).
+      .order('id', { ascending: true })
       .range(offset, offset + PAGE_SIZE - 1)
 
     if (error) {
@@ -224,6 +229,8 @@ async function readSpeedToLead(params: SpeedToLeadParams): Promise<SpeedToLeadRe
           .in('kind', [...OUTBOUND_KINDS])
           .in('person_id', chunk)
           .gte('ts', start)
+          // Stable order — same page-boundary determinism requirement as Phase 1.
+          .order('id', { ascending: true })
           .range(chunkOffset, chunkOffset + PAGE_SIZE - 1)
 
         if (error) {

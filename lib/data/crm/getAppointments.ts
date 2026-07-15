@@ -289,10 +289,16 @@ export async function getCalendarExtras({
  */
 export async function getCalendarContactOptions(): Promise<Array<{ id: number; name: string | null }>> {
   const sb = createServiceClient()
+  // deleted=false is the soft-delete baseline every crm_people read must carry
+  // (buildCrmPeopleQuery invariant 2) — without it, merged/trashed duplicates
+  // that were soft-deleted WITHOUT a stage change appeared in the picker. The
+  // stage exclusion drops the dead people-stages; 'Lost' is a crm_deal_stages
+  // name, not a crm_people stage, so it never belonged here.
   const { data, error } = await sb
     .from('crm_people')
     .select('id,name')
-    .not('stage', 'in', '("Closed","Lost","Archive","Trash")')
+    .eq('deleted', false)
+    .not('stage', 'in', '("Closed","Archive","Trash")')
     .order('name', { ascending: true })
     .limit(500)
   if (error || !data) {

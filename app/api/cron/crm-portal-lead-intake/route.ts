@@ -18,7 +18,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { getGmailFor } from '@/lib/crm/gmail'
 import { parsePortalLead, type Portal } from '@/lib/crm/portal-lead-parser'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
-import { queueBrokerAlert } from '@/lib/crm/broker-alerts'
+import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -27,6 +27,13 @@ export const maxDuration = 300
 const MAILBOX = 'matt@ryan-realty.com'
 const READONLY = ['https://www.googleapis.com/auth/gmail.readonly']
 const SOURCE = 'portal-lead-intake'
+/**
+ * Page budget per run (50 messages/page = up to 500 messages). Gmail lists
+ * newest-first, so if the budget is ever exhausted the UNFETCHED messages are
+ * the OLDER ones — the cursor must NOT advance past them (see below) or they
+ * would be permanently skipped.
+ */
+const MAX_LIST_PAGES = 10
 // Broad Gmail filter; detectPortal() drops the consumer-marketing blasts.
 const QUERY =
   '(from:zillow.com OR from:zillowgroup.com OR from:realtor.com OR from:move.com OR from:leads.realtor.com) -in:spam -in:trash'
@@ -80,8 +87,27 @@ export async function GET(request: Request) {
   const errors: string[] = []
 
   try {
-    const list = await gmail.users.messages.list({ userId: 'me', q: `${QUERY} after:${afterSec}`, maxResults: 50 })
-    for (const ref of list.data.messages ?? []) {
+    // Drain the full window via nextPageToken (bounded by MAX_LIST_PAGES). The
+    // old single 50-message list + advance-to-newest cursor permanently skipped
+    // messages 51+ in a burst (first run's 2-day lookback, or after a Gmail-auth
+    // outage): Gmail lists newest-first, so everything beyond the first page was
+    // older than the new cursor and never seen again.
+    const refs: gmail_v1.Schema$Message[] = []
+    let pageToken: string | undefined
+    let pages = 0
+    do {
+      const list = await gmail.users.messages.list({
+        userId: 'me', q: `${QUERY} after:${afterSec}`, maxResults: 50, pageToken,
+      })
+      refs.push(...(list.data.messages ?? []))
+      pageToken = list.data.nextPageToken ?? undefined
+      pages++
+    } while (pageToken && pages < MAX_LIST_PAGES)
+    // Budget exhausted with more pages remaining -> the remaining (older)
+    // messages were not processed this run.
+    const truncated = Boolean(pageToken)
+
+    for (const ref of refs) {
       const full = await gmail.users.messages.get({ userId: 'me', id: ref.id!, format: 'full' })
       const internal = Number(full.data.internalDate ?? 0)
       if (internal > maxInternal) maxInternal = internal
@@ -97,10 +123,15 @@ export async function GET(request: Request) {
       const gmailId = full.data.id ?? ref.id!
 
       if (!lead.email && !lead.phone) {
-        // Safety net: can't anchor a lead — alert Matt with the raw subject so it's never silently lost.
+        // Safety net: can't anchor a lead — alert Matt with the raw subject so it's
+        // never silently lost. Uses the HEALTH alert path (not queueBrokerAlert):
+        // there is no crm_people row yet, and the person-scoped path's dedupe row
+        // has a NOT NULL FK on person_id — passing personId:0 failed the insert on
+        // EVERY call, so the old alert never fired even once. The per-gmailId key
+        // makes each unparsed message alert exactly once (within the cooldown).
         needsReview++
-        await queueBrokerAlert({
-          broker: 'matt', personId: 0, kind: 'portal-lead-unparsed',
+        await queueBrokerHealthAlert({
+          key: `portal-lead-unparsed:${gmailId}`,
           body: `Unparsed ${portal} lead in Gmail — review: "${subject.slice(0, 80)}"`,
         }).catch(() => {})
         continue
@@ -133,12 +164,19 @@ export async function GET(request: Request) {
       }
     }
 
+    // Cursor discipline: only advance past the window when it was fully drained.
+    // On a truncated run the unprocessed messages are OLDER than everything
+    // fetched (newest-first listing), so advancing to maxInternal would skip
+    // them forever — hold the cursor and let the next run re-list the window
+    // (reprocessing is idempotent: timeline notes dedupe on gmailId,
+    // ensureNativeLead reuses the contact, health alerts dedupe per key).
     await sb.from('crm_imports').update({
       finished_at: new Date().toISOString(), status: 'done',
-      counts: { processed, created, needsReview }, cursor: { after_ms: maxInternal },
+      counts: { processed, created, needsReview },
+      cursor: { after_ms: truncated ? afterMs : maxInternal },
     }).eq('id', imp?.id)
 
-    return NextResponse.json({ ok: true, processed, created, needsReview })
+    return NextResponse.json({ ok: true, processed, created, needsReview, truncated })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     errors.push(msg)

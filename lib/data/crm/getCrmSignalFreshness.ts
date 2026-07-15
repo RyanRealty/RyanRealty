@@ -42,37 +42,31 @@ const SIGNALS: ReadonlyArray<{ key: CrmSignalKey; label: string; kinds: Readonly
   { key: 'email_engagement', label: 'Email engagement', kinds: ['email_open', 'email_click'] },
 ]
 
-/** All kinds across all signals, flattened for one query. */
-const ALL_KINDS = SIGNALS.flatMap((s) => s.kinds)
-
 export async function getCrmSignalFreshness(): Promise<CrmSignalFreshness[]> {
   const sb = createServiceClient()
-  // One scan of the recent inbound rows, newest first. Cap is generous enough to
-  // include the freshest row of every watched kind even on a busy day, and avoids
-  // a per-kind round trip.
-  const { data, error } = await sb
-    .from('crm_timeline')
-    .select('kind,ts')
-    .in('kind', ALL_KINDS)
-    .order('ts', { ascending: false })
-    .limit(500)
+  // One tiny latest-row read PER signal group, in parallel (index-friendly:
+  // ORDER BY ts DESC LIMIT 1 over the group's kinds). A single shared
+  // recent-rows window failed here: email_open/email_click are batch-volume
+  // kinds, so one newsletter blast's thousands of engagement rows evicted every
+  // sms_in/call row from the window and the board falsely reported inbound
+  // texts/calls as never seen — a fake webhook-outage alarm.
+  const results = await Promise.all(
+    SIGNALS.map((s) =>
+      sb
+        .from('crm_timeline')
+        .select('ts')
+        .in('kind', [...s.kinds])
+        .order('ts', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ),
+  )
 
-  const latestByKind = new Map<string, string>()
-  if (!error && data) {
-    for (const row of data) {
-      const kind = String(row.kind ?? '')
-      const ts = row.ts ? String(row.ts) : null
-      // Rows arrive newest-first, so the first time we see a kind is its latest.
-      if (ts && !latestByKind.has(kind)) latestByKind.set(kind, ts)
-    }
-  }
-
-  return SIGNALS.map((s) => {
-    let latest: string | null = null
-    for (const kind of s.kinds) {
-      const ts = latestByKind.get(kind)
-      if (ts && (latest === null || ts > latest)) latest = ts
-    }
+  return SIGNALS.map((s, i) => {
+    const res = results[i]
+    // Fails SOFT (latest=null) so a cold/unreadable signal renders as a stale
+    // tile, not a crash.
+    const latest = !res.error && res.data?.ts ? String(res.data.ts) : null
     return { key: s.key, label: s.label, kinds: s.kinds, latest }
   })
 }

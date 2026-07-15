@@ -1,6 +1,7 @@
 import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
+import { zonedDateKey, zonedMinutes } from '@/lib/format/date'
 
 /**
  * getTaskQueue — the cross-contact task queue (Wave 7, Phase A read side).
@@ -68,11 +69,45 @@ const PAGE_LIMIT = 300
 const DAY_MS = 24 * 3600 * 1000
 
 /**
+ * The Tasks UI groups by Pacific calendar days (zonedDateKey in lib/format/date
+ * is hardwired to America/Los_Angeles), so the Today/Overdue/Upcoming boundaries
+ * MUST be Pacific midnights too. The old setHours() math used the server-local
+ * wall clock — UTC on Vercel — which misbucketed evening tasks (a task due 6 PM
+ * Pacific today is 01:00 UTC tomorrow → wrongly "upcoming").
+ */
+const TASK_QUEUE_TZ = 'America/Los_Angeles'
+
+/**
+ * The instant of midnight (00:00) in `timeZone` for the calendar day containing
+ * `now`. Built from the canonical zonedDateKey/zonedMinutes helpers so every
+ * Intl call stays inside lib/format (ci:date-format). The correction loop
+ * handles DST-transition days, where the naive walk-back by minutes-into-day
+ * can land up to an hour off zone-midnight.
+ */
+function zonedStartOfDay(now: Date, timeZone: string): Date {
+  const dayKey = zonedDateKey(now, timeZone)
+  // First approximation: walk back by the zone's minutes-into-day (plus the
+  // seconds/ms within the current minute, which are zone-independent).
+  let start = new Date(now.getTime() - zonedMinutes(now, timeZone) * 60_000 - (now.getTime() % 60_000))
+  for (let i = 0; i < 4; i++) {
+    const key = zonedDateKey(start, timeZone)
+    const mins = zonedMinutes(start, timeZone)
+    if (key === dayKey && mins === 0) break
+    // Landed in the previous zone day (spring-forward overshoot): move forward
+    // to that day's end; otherwise walk back the residual minutes.
+    start = key < dayKey
+      ? new Date(start.getTime() + (1440 - mins) * 60_000)
+      : new Date(start.getTime() - mins * 60_000)
+  }
+  return start
+}
+
+/**
  * The pure day-boundary helper. Given a reference instant, returns the ISO
  * bounds the four views need. Exported standalone so the view filtering is
- * unit-tested without a DB. Day boundaries are computed in UTC off the supplied
- * instant — the caller passes an instant that already represents "now" in their
- * intended zone, and the queue groups by the same calendar day the dashboard does.
+ * unit-tested without a DB. Day boundaries are the Pacific (America/Los_Angeles)
+ * calendar day containing the supplied instant — the same calendar day the
+ * Tasks/Calendar UI groups by via zonedDateKey — never the server-local day.
  */
 export function taskQueueBounds(now: Date): {
   startOfToday: string
@@ -81,10 +116,12 @@ export function taskQueueBounds(now: Date): {
   completedFloor: string
   nowIso: string
 } {
-  const startOfToday = new Date(now)
-  startOfToday.setHours(0, 0, 0, 0)
-  const endOfToday = new Date(now)
-  endOfToday.setHours(23, 59, 59, 999)
+  const startOfToday = zonedStartOfDay(now, TASK_QUEUE_TZ)
+  // End of today = start of the NEXT Pacific day minus 1 ms. Probing 26h ahead
+  // of midnight always lands inside the next calendar day even across DST
+  // (Pacific days run 23–25 hours).
+  const nextDayStart = zonedStartOfDay(new Date(startOfToday.getTime() + 26 * 3600_000), TASK_QUEUE_TZ)
+  const endOfToday = new Date(nextDayStart.getTime() - 1)
   return {
     startOfToday: startOfToday.toISOString(),
     endOfToday: endOfToday.toISOString(),
