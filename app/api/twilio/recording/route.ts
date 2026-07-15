@@ -70,6 +70,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, alreadyProcessed: true })
   }
 
+  // No matching call/voicemail row yet — the voice webhook's DB write raced or
+  // failed. Do NOT 200 (that permanently drops the voicemail + burns the STT
+  // spend on a transcript we'd throw away). Return 503 so Twilio redelivers the
+  // recording callback later, by which point the row exists. Guarded BEFORE the
+  // audio fetch/transcribe so a retry never double-charges ElevenLabs.
+  if (!row) {
+    console.error('[recording] no call/vm row for CallSid', callSid, '— asking Twilio to retry')
+    return NextResponse.json({ ok: false, error: 'row not ready' }, { status: 503 })
+  }
+
   // fetch audio (mp3) with account auth
   const sid = process.env.TWILIO_ACCOUNT_SID?.trim()
   const token = process.env.TWILIO_AUTH_TOKEN?.trim()
@@ -82,28 +92,33 @@ export async function POST(request: Request) {
     if (audioRes.ok) transcript = await transcribe(await audioRes.arrayBuffer())
   }
 
-  if (row) {
-    // Never null an existing body — only write the transcript when we have one.
-    const update: Record<string, unknown> = {
-      payload: {
-        ...(row.payload as Record<string, unknown>),
-        recordingSid,
-        recordingDurationSec: duration,
-        transcribed: !!transcript,
-      },
-    }
-    if (transcript) update.body = transcript
-    await sb.from('crm_timeline').update(update).eq('id', row.id)
+  // Never null an existing body — only write the transcript when we have one.
+  const update: Record<string, unknown> = {
+    payload: {
+      ...(row.payload as Record<string, unknown>),
+      recordingSid,
+      recordingDurationSec: duration,
+      transcribed: !!transcript,
+    },
+  }
+  if (transcript) update.body = transcript
+  await sb.from('crm_timeline').update(update).eq('id', row.id)
 
-    // alert the broker with the transcript
-    const mailbox = CRM_MAILBOXES.find((m) => m.slug === row.broker) ?? CRM_MAILBOXES[0]
-    const label = row.kind === 'voicemail' ? 'Voicemail' : 'Call recording'
-    void sendCrmEmail({
+  // Alert the broker with the transcript. AWAITED (not a bare `void`, which
+  // Vercel kills when it freezes the invocation on response — silently dropping
+  // the broker's voicemail notification). try/catch so a mail failure can't
+  // 500 the webhook and trigger a Twilio retry storm.
+  const mailbox = CRM_MAILBOXES.find((m) => m.slug === row.broker) ?? CRM_MAILBOXES[0]
+  const label = row.kind === 'voicemail' ? 'Voicemail' : 'Call recording'
+  try {
+    await sendCrmEmail({
       fromMailbox: mailbox.email,
       to: mailbox.email,
       subject: `${label} transcript (${duration}s)`,
       bodyText: `${transcript ?? '(no transcript available)'}\n\nListen: ${site}/api/admin/crm/recording/${recordingSid}\nContact: ${site}/admin/crm/${row.person_id}`,
     })
+  } catch (err) {
+    console.error('[recording] transcript email failed', err)
   }
 
   return NextResponse.json({ ok: true, transcribed: !!transcript })

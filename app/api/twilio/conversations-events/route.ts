@@ -198,12 +198,19 @@ export async function POST(request: Request) {
     origin: 'twilio',
   })
   const mailbox = CRM_MAILBOXES.find((m) => m.slug === alertBroker) ?? CRM_MAILBOXES[0]
-  void sendCrmEmail({
-    fromMailbox: mailbox.email,
-    to: mailbox.email,
-    subject: `New group text from ${match.name ?? author}`,
-    bodyText: `${displayBody}\n\nGroup: ${groupMembers.join(', ')}\nFrom ${toE164(author) ?? author}\nOpen the contact: https://ryan-realty.com/admin/crm/${match.personId}`,
-  })
+  // AWAITED: a bare void here is dropped when Vercel freezes the invocation on
+  // response, so the broker never gets the group-text alert. try/catch keeps a
+  // mail failure from 500-ing the webhook (which would make Twilio retry).
+  try {
+    await sendCrmEmail({
+      fromMailbox: mailbox.email,
+      to: mailbox.email,
+      subject: `New group text from ${match.name ?? author}`,
+      bodyText: `${displayBody}\n\nGroup: ${groupMembers.join(', ')}\nFrom ${toE164(author) ?? author}\nOpen the contact: https://ryan-realty.com/admin/crm/${match.personId}`,
+    })
+  } catch (err) {
+    console.error('[conversations-events] alert email failed', err)
+  }
 
   return ok()
 }

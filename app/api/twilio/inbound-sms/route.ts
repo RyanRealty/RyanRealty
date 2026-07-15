@@ -182,18 +182,25 @@ export async function POST(request: Request) {
       origin: 'twilio',
     })
     const mailbox = CRM_MAILBOXES.find((m) => m.slug === alertBroker) ?? CRM_MAILBOXES[0]
-    void sendCrmEmail({
-      fromMailbox: mailbox.email,
-      to: mailbox.email,
-      subject: `New text from ${match.name ?? from}`,
-      // Link the CANONICAL command-center URL — /admin/crm/{id} since the
-      // 2026-07-15 route consolidation (the old /admin/console/leads/{id} is
-      // now the redirect stub). Never link through a redirecting route: a 307
-      // DROPS the #comms fragment (verified 2026-07-13), so the tab never
-      // opens. Linking direct keeps the hash → the mobile Comms tab opens on
-      // the thread.
-      bodyText: `${body}\n\nFrom ${from} to ${to}\nOpen the conversation: https://ryan-realty.com/admin/crm/${match.personId}#comms`,
-    })
+    // AWAITED: a bare void is dropped when Vercel freezes the invocation on
+    // response, so the broker's new-text email alert silently never sends.
+    // try/catch keeps a mail failure from 500-ing the webhook (Twilio retry).
+    try {
+      await sendCrmEmail({
+        fromMailbox: mailbox.email,
+        to: mailbox.email,
+        subject: `New text from ${match.name ?? from}`,
+        // Link the CANONICAL command-center URL — /admin/crm/{id} since the
+        // 2026-07-15 route consolidation (the old /admin/console/leads/{id} is
+        // now the redirect stub). Never link through a redirecting route: a 307
+        // DROPS the #comms fragment (verified 2026-07-13), so the tab never
+        // opens. Linking direct keeps the hash → the mobile Comms tab opens on
+        // the thread.
+        bodyText: `${body}\n\nFrom ${from} to ${to}\nOpen the conversation: https://ryan-realty.com/admin/crm/${match.personId}#comms`,
+      })
+    } catch (err) {
+      console.error('[inbound-sms] alert email failed', err)
+    }
 
     // Real-time forward to the assigned broker's cell — parity with the inbound
     // VOICE call-forward, which already rings the cell (the reason a client's

@@ -75,7 +75,14 @@ export async function POST(request: Request) {
   //    CRM_AUTO_BLOCK_SPAM_CALLS=true.
   const stirVerstat = params.StirVerstat ?? null
   const spamSuspected = isStirSpamSuspected(stirVerstat)
-  if (await isNumberBlocked(from)) return rejectResponse()
+  // Fail OPEN: a DB error in the block lookup must never 500 the webhook — that
+  // would make a live caller hear a Twilio error instead of reaching a broker.
+  // A rare missed block is far cheaper than a dropped real call.
+  try {
+    if (await isNumberBlocked(from)) return rejectResponse()
+  } catch (e) {
+    console.error('[twilio/voice] block lookup failed (continuing to dial):', e)
+  }
   if (spamSuspected && process.env.CRM_AUTO_BLOCK_SPAM_CALLS === 'true') return rejectResponse()
 
   // 1. Who owns the DIALED line? (null = shared marketing line / unrecognized.)

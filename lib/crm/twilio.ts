@@ -255,18 +255,17 @@ async function postMessage(form: URLSearchParams): Promise<{ ok: true; sid: stri
     const a2p = await getA2pCampaignStatus()
     return { ok: false, error: formatTwilioSendError(data.error_code, data.message, a2p), errorCode: data.error_code }
   }
-  // Twilio accepts then marks undelivered when A2P blocks — poll once for 30034
+  // Synchronous reject (A2P block surfaces as undelivered/failed in the CREATE
+  // response itself). The prior code followed every accepted send with an extra
+  // GET Messages/{sid} to re-check — but an async SMS is `queued`/`accepted` at
+  // create and still is a millisecond later, so that GET caught nothing the
+  // create response didn't while doubling Twilio API calls on the hot path (~2x
+  // at sequence-engine scale). Terminal states after acceptance arrive on the
+  // StatusCallback webhook (/api/twilio/status); on-demand truth is one
+  // fetchTwilioMessageStatus() away. So trust the create response and stop here.
   if (data.status === 'undelivered' || data.status === 'failed') {
     const a2p = await getA2pCampaignStatus()
     return { ok: false, error: formatTwilioSendError(data.error_code, data.message, a2p), errorCode: data.error_code }
-  }
-  const detail = await fetch(`${API}/Accounts/${c.sid}/Messages/${data.sid}.json`, { headers: { Authorization: authHeader(c) } })
-  if (detail.ok) {
-    const msg = (await detail.json()) as { status?: string; error_code?: number; error_message?: string | null }
-    if (msg.status === 'undelivered' || msg.status === 'failed') {
-      const a2p = await getA2pCampaignStatus()
-      return { ok: false, error: formatTwilioSendError(msg.error_code, msg.error_message, a2p), errorCode: msg.error_code }
-    }
   }
   return { ok: true, sid: data.sid }
 }
