@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.795.2 (2026-07-15)
+
+### Maintenance
+- perf(twilio): harden webhooks + cut redundant API calls
+
+---
+
+
 ## v1.795.1 (2026-07-15)
 
 ### Bug Fixes
