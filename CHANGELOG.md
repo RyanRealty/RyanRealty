@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.792.1 (2026-07-15)
+
+### Bug Fixes
+- fix(build): exclude scratchpad/ from tsc + gitignore; pre-push build gets 8GB heap
+- fix(dashboard): New Leads KPI counts genuine inbound via getLeadIntake; active clients scoped to Active Client stage
+
+---
+
+
 ## v1.792.0 (2026-07-15)
 
 ### Features
