@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.796.0 (2026-07-15)
+
+### Features
+- feat(gates): G49 avatar-crop discipline — circular avatars must declare an object-position
+
+---
+
+
 ## v1.795.4 (2026-07-15)
 
 ### Bug Fixes
