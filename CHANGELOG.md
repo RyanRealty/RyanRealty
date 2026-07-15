@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.795.1 (2026-07-15)
+
+### Bug Fixes
+- fix(crm): route broker texts through the A2P messaging service; await inbound forward
+
+---
+
+
 ## v1.795.0 (2026-07-15)
 
 ### Features
