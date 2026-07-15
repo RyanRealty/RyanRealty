@@ -4,18 +4,21 @@
  * Schedule: 0 15 * * 1  (Monday 15:00 UTC = 08:00 PT during DST).
  *
  * Aggregates the prior 7 days:
- *   1. Count new leads by audience (seller, buyer, unknown) — from crm_people.
- *   2. Count new leads by source (top 10) — from crm_people.
- *   3. Compare smart-list counts week-over-week — FUB (no crm_* equivalent).
- *   4. Pull totals: conversations + active deals + pipeline value from crm_*,
- *      appointments from FUB (no crm_* equivalent).
- *   5. Compose one key insight (e.g. expired-listing detection cadence).
+ *   1. Count new leads by audience (seller, buyer, unknown) — from crm_people,
+ *      outreach-list rows (Farm/Import/Sphere/Expired/FSBO) partitioned out via
+ *      leadSourceTaxonomy so bulk prospecting batches never read as leads.
+ *   2. Count new leads by source (top 10) — same partitioned rows.
+ *   3. Pull totals: conversations + active deals + pipeline value from crm_*,
+ *      appointments from crm_appointments.
+ *   4. Compose one key insight (e.g. expired-listing detection cadence), plus
+ *      an outreach-adds note when a prospecting batch landed this week.
  *
- * Phase 10.4 repoint: new leads, deals, pipeline value, and conversation volume
- * now read our own crm_* tables via getWeeklyPipelineDigest. FLAG: smart-list
- * movement and appointment count are still FUB-sourced because neither maps to a
- * crm_* table (smart lists are a FUB construct; appointments are not modeled in
- * crm_*). The email/delivery mechanism is unchanged.
+ * Every figure traces to our own crm_* tables. The FUB smart-list and
+ * appointment fetches were deleted 2026-07-14: FUB API access was
+ * decommissioned 2026-06-24 (getFubApiKey() is hardcoded undefined — see
+ * lib/crm/fub-env.ts), so those calls could only ever return a fabricated
+ * zero/empty, which the data-accuracy mandate forbids. The smart-list section
+ * of the email now renders its honest empty state ("No smart list data.").
  *
  * Brand voice §4.7. Sentence case, no em-dashes, no banned cliches.
  * Auth: Bearer $CRON_SECRET.
@@ -32,30 +35,10 @@ import {
 } from '@/lib/digest-email-templates'
 import { getWeeklyPipelineDigest, summarizeWeeklyLeads } from '@/lib/data/crm/getBrokerDigest'
 import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
-import { getFubApiKey } from '@/lib/crm/fub-env'
 import { createClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
-
-const FUB_BASE = 'https://api.followupboss.com/v1'
-
-type FubAppointment = { id?: number; start?: string | null; status?: string | null }
-type FubSmartList = { id?: number; name?: string; total?: number }
-
-function fubHeaders(): HeadersInit {
-  const apiKey = (getFubApiKey() || '').trim()
-  if (!apiKey) throw new Error('FOLLOWUPBOSS_API_KEY not set')
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Authorization: `Basic ${Buffer.from(`${apiKey}:`).toString('base64')}`,
-  }
-  const system = (process.env.FOLLOWUPBOSS_SYSTEM || '').trim()
-  const systemKey = (process.env.FOLLOWUPBOSS_SYSTEM_KEY || '').trim()
-  if (system) headers['X-System'] = system
-  if (systemKey) headers['X-System-Key'] = systemKey
-  return headers
-}
 
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -64,92 +47,28 @@ function getServiceSupabase() {
   return createClient(url, key)
 }
 
-async function fetchSmartLists(): Promise<FubSmartList[]> {
+/**
+ * Appointments in the window from crm_appointments — the same source and
+ * person-linked filter getOverviewReport uses, so the digest agrees with
+ * /admin/crm/reporting. Exact database COUNT(*) via head:true.
+ */
+async function countAppointmentsThisWeek(
+  supabase: ReturnType<typeof getServiceSupabase>,
+  sinceIso: string,
+  untilIso: string,
+): Promise<number> {
+  if (!supabase) return 0
   try {
-    const res = await fetch(`${FUB_BASE}/smartLists?limit=100`, {
-      headers: fubHeaders(),
-      cache: 'no-store',
-    })
-    if (!res.ok) return []
-    const data = (await res.json().catch(() => null)) as { smartlists?: FubSmartList[]; smartLists?: FubSmartList[] } | null
-    return data?.smartlists ?? data?.smartLists ?? []
-  } catch {
-    return []
-  }
-}
-
-async function fetchAppointmentsThisWeek(sinceIso: string): Promise<number> {
-  try {
-    const q = new URLSearchParams({ createdAfter: sinceIso, limit: '100' })
-    const res = await fetch(`${FUB_BASE}/appointments?${q.toString()}`, {
-      headers: fubHeaders(),
-      cache: 'no-store',
-    })
-    if (!res.ok) return 0
-    const data = (await res.json().catch(() => null)) as { appointments?: FubAppointment[]; _metadata?: { total?: number } } | null
-    return data?._metadata?.total ?? (data?.appointments?.length ?? 0)
+    const { count, error } = await supabase
+      .from('crm_appointments')
+      .select('id', { count: 'exact', head: true })
+      .not('person_id', 'is', null)
+      .gte('start_at', sinceIso)
+      .lte('start_at', untilIso)
+    if (error) return 0
+    return count ?? 0
   } catch {
     return 0
-  }
-}
-
-type SmartListSnapshot = {
-  date: string
-  payload: Record<string, number>
-}
-
-async function loadPreviousSmartListSnapshot(supabase: ReturnType<typeof getServiceSupabase>): Promise<SmartListSnapshot | null> {
-  if (!supabase) return null
-  try {
-    const cutoff = new Date(Date.now() - 8 * 86400000).toISOString().slice(0, 10)
-    const { data } = await supabase
-      .from('marketing_channel_daily')
-      .select('date, metadata')
-      .eq('channel', 'fub')
-      .eq('metric', 'smart_list_snapshot')
-      .lte('date', cutoff)
-      .order('date', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    if (!data) return null
-    const md = (data as { date: string; metadata?: Record<string, unknown> }).metadata ?? {}
-    const payload: Record<string, number> = {}
-    for (const [k, v] of Object.entries(md)) {
-      if (typeof v === 'number') payload[k] = v
-    }
-    return { date: data.date, payload }
-  } catch {
-    return null
-  }
-}
-
-async function persistSmartListSnapshot(
-  supabase: ReturnType<typeof getServiceSupabase>,
-  asOfDate: string,
-  lists: FubSmartList[],
-): Promise<void> {
-  if (!supabase) return
-  const payload: Record<string, number> = {}
-  for (const sl of lists) {
-    if (sl.name && typeof sl.total === 'number') payload[sl.name] = sl.total
-  }
-  try {
-    await supabase.from('marketing_channel_daily').upsert(
-      {
-        date: asOfDate,
-        channel: 'fub',
-        scope: 'channel',
-        scope_id: 'smart_lists',
-        metric: 'smart_list_snapshot',
-        value: lists.length,
-        metadata: payload,
-        source: 'weekly-pipeline-digest',
-        fetched_at: new Date().toISOString(),
-      },
-      { onConflict: 'date,channel,scope,scope_id,metric' },
-    )
-  } catch {
-    // non-blocking
   }
 }
 
@@ -207,7 +126,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     : process.env.WEEKLY_DIGEST_EMAIL?.trim() || 'matt@ryan-realty.com'
 
   const now = new Date()
-  const asOfDate = now.toISOString().slice(0, 10)
   // Monday-of-this-week label
   const day = now.getUTCDay() // 0=Sun, 1=Mon
   const daysBackToMon = day === 0 ? 6 : day - 1
@@ -217,15 +135,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const supabase = getServiceSupabase()
 
-  // Pull data in parallel. Leads + deals + conversations come from our crm_*
-  // tables (getWeeklyPipelineDigest). Smart lists + appointments stay on FUB
-  // because neither maps to a crm_* table (FLAG in the header doc).
-  const [crm, smartLists, appointments, keyInsight, prevSnapshot] = await Promise.all([
+  // Pull data in parallel — every section reads our own crm_* tables. Leads
+  // (outreach-partitioned) + deals + conversations via getWeeklyPipelineDigest;
+  // appointments via crm_appointments.
+  const [crm, appointments, keyInsight] = await Promise.all([
     getWeeklyPipelineDigest({ weekStartIso: sinceIso }),
-    fetchSmartLists(),
-    fetchAppointmentsThisWeek(sinceIso),
+    countAppointmentsThisWeek(supabase, sinceIso, now.toISOString()),
     buildKeyInsight(supabase, sinceIso),
-    loadPreviousSmartListSnapshot(supabase),
   ])
 
   const leadSummary = summarizeWeeklyLeads(crm.newLeads)
@@ -235,25 +151,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const newLeadsByAudience: AudienceCount[] = leadSummary.byAudience
   const newLeadsBySource: SourceCount[] = leadSummary.bySource
 
-  // Smart list movement
-  const smartListMovement: SmartListMovement[] = smartLists
-    .filter((sl) => sl.name && typeof sl.total === 'number')
-    .map((sl) => {
-      const prev = prevSnapshot?.payload[sl.name!] ?? sl.total!
-      return {
-        name: sl.name!,
-        current: sl.total!,
-        previous: prev,
-        delta: sl.total! - prev,
-      }
-    })
-    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
-    .slice(0, 10)
+  // FUB smart lists are gone (decommissioned 2026-06-24); the email template
+  // renders "No smart list data." for an empty array — honest, not a zero-fill.
+  const smartListMovement: SmartListMovement[] = []
 
-  // Persist this week's snapshot for next week's comparison.
-  if (!dryRun && smartLists.length > 0) {
-    await persistSmartListSnapshot(supabase, asOfDate, smartLists)
-  }
+  // Surface outreach-list adds as a plain note so a Farm/expired/FSBO batch is
+  // visible without being counted as leads.
+  const outreachNote =
+    crm.outreachAdded > 0
+      ? ` ${crm.outreachAdded} ${crm.outreachAdded === 1 ? 'contact was' : 'contacts were'} added from outreach lists this week and ${crm.outreachAdded === 1 ? 'is' : 'are'} not counted as leads.`
+      : ''
 
   const subject = `Ryan Realty pipeline, week of ${weekOfDate}`
   const payload = {
@@ -267,7 +174,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       activeDeals: deals.count,
       pipelineValue: deals.value,
     },
-    keyInsight,
+    keyInsight: `${keyInsight}${outreachNote}`,
   }
 
   if (dryRun) {

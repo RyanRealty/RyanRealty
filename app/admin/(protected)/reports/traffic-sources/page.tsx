@@ -47,7 +47,12 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
-import { getGA4Summary, type GA4Summary } from '@/app/actions/ga4-report'
+// Cached GA4 wrapper (React request-dedup + 15-min Supabase ga4_query_cache
+// tier) — the raw getGA4Summary fires 9 GA4 runReport calls per request on
+// this force-dynamic page. Same signature and result shape; errors pass
+// through uncached so the ga4Ok/ga4Error banner keeps working.
+import { getGA4SummaryCached as getGA4Summary } from '@/lib/ga4-cache'
+import type { GA4Summary } from '@/app/actions/ga4-report'
 import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
 import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
 import { DateRangePicker } from '@/app/admin/(protected)/analytics/_components/DateRangePicker'
@@ -130,37 +135,65 @@ async function TrafficSourcesContent({ range }: { range: { startDate: string; en
   const untilIso = `${range.endDate}T23:59:59.999Z`
   const sinceDate = range.startDate
 
+  // Every count and tally on this page aggregates raw rows in JS, and
+  // PostgREST silently caps a single response at 1000 rows regardless of
+  // .limit() — a 30-day window already has ~2k visits / ~6k sessions, so the
+  // old .limit(50000)/.limit(20000) reads silently plateaued at 1000. Page
+  // with .range() until a short read (same pattern as getLeadIntake).
+  async function fetchAllRows<T>(
+    build: (from: number, to: number) => PromiseLike<{ data: unknown[] | null; error: { message: string } | null }>,
+  ): Promise<T[]> {
+    const rows: T[] = []
+    const PAGE = 1000
+    for (let from = 0; from < 200_000; from += PAGE) {
+      const { data, error } = await build(from, from + PAGE - 1)
+      if (error) break
+      const page = (data ?? []) as T[]
+      rows.push(...page)
+      if (page.length < PAGE) break
+    }
+    return rows
+  }
+
   // Parallel fetch: GA4 + visits + visitor_sessions + GBP totals.
-  const [ga4Result, visitsRes, sessionsRes, gbpRes] = await Promise.all([
+  const [ga4Result, visits, sessions, gbp] = await Promise.all([
     getGA4Summary(range.startDate, range.endDate),
-    supabase
-      .from('visits')
-      .select('path, referrer')
-      .gte('created_at', sinceIso)
-      .lte('created_at', untilIso)
-      .limit(50000),
-    supabase
-      .from('visitor_sessions')
-      .select('utm_source, utm_medium, utm_campaign, utm_content, referrer, landing_page, source_domain')
-      .gte('first_seen_at', sinceIso)
-      .lte('first_seen_at', untilIso)
-      .limit(20000),
-    supabase
-      .from('marketing_channel_daily')
-      .select('metric, value, date')
-      .eq('channel', 'gbp')
-      .eq('scope', 'account')
-      .gte('date', sinceDate)
-      .limit(5000),
+    fetchAllRows<VisitRow>((from, to) =>
+      supabase
+        .from('visits')
+        .select('path, referrer')
+        .gte('created_at', sinceIso)
+        .lte('created_at', untilIso)
+        .order('created_at', { ascending: true })
+        .range(from, to),
+    ),
+    fetchAllRows<SessionRow>((from, to) =>
+      supabase
+        .from('visitor_sessions')
+        .select('utm_source, utm_medium, utm_campaign, utm_content, referrer, landing_page, source_domain')
+        .gte('first_seen_at', sinceIso)
+        .lte('first_seen_at', untilIso)
+        .order('first_seen_at', { ascending: true })
+        .range(from, to),
+    ),
+    // GBP daily rows honor the selected end date too (a long custom range
+    // could also exceed the 1000-row cap, so this read pages as well).
+    fetchAllRows<GbpDaily>((from, to) =>
+      supabase
+        .from('marketing_channel_daily')
+        .select('metric, value, date')
+        .eq('channel', 'gbp')
+        .eq('scope', 'account')
+        .gte('date', sinceDate)
+        .lte('date', range.endDate)
+        .order('date', { ascending: true })
+        .range(from, to),
+    ),
   ])
 
   const ga4Ok = ga4Result.ok
   const ga4: GA4Summary | null = ga4Ok ? ga4Result.data : null
   const ga4Error = ga4Ok ? null : ga4Result.error
-
-  const visits = (visitsRes.data ?? []) as VisitRow[]
-  const sessions = (sessionsRes.data ?? []) as SessionRow[]
-  const gbp = (gbpRes.data ?? []) as GbpDaily[]
 
   // Hero numbers.
   const ga4Sessions = ga4?.sessions ?? 0

@@ -2,6 +2,7 @@ import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { createServiceClient } from '@/lib/data/client'
 import { resolveDateRange } from './getAgentActivityReport'
+import { classifyLeadSource } from './leadSourceTaxonomy'
 
 // Re-export for convenience (used by the page to pass datePreset type)
 export type { DatePreset } from './getAgentActivityReport'
@@ -23,7 +24,7 @@ export type OverviewParams = {
  *
  * | Metric         | Source table    | Filter                                          |
  * |----------------|-----------------|--------------------------------------------------|
- * | newLeads       | crm_timeline    | kind='lead_created', joined crm_people for broker|
+ * | newLeads       | crm_timeline    | kind='lead_created', joined crm_people for broker + source, INBOUND sources only (leadSourceTaxonomy) |
  * | calls          | crm_timeline    | kind IN ('call','voicemail'), broker column       |
  * | emails         | crm_timeline    | kind IN ('email_out','email_in'), broker column   |
  * | texts          | crm_timeline    | kind IN ('sms_out','sms_in'), broker column       |
@@ -31,8 +32,17 @@ export type OverviewParams = {
  * | tasksCompleted | crm_tasks       | completed_at in range, assigned_broker column     |
  * | appointments   | crm_appointments| start_at in range, broker_slug column             |
  *
- * All counts use { count: 'exact', head: true } — returns the real database
+ * Activity counts use { count: 'exact', head: true } — the real database
  * COUNT(*) via Content-Range header, bypassing the Supabase max_rows cap.
+ *
+ * newLeads is the exception: the lead_created trigger fires for EVERY
+ * crm_people insert (imports included), so a raw COUNT would include the
+ * ~14.5k Farm + Import + Sphere outreach rows — the exact overcount
+ * getDashboardKpis was rebuilt to exclude. Instead we page the events with
+ * the joined crm_people.source and count only rows whose source classifies
+ * as a genuine inbound lead via classifyLeadSource — the same taxonomy
+ * getLeadIntake (the org-wide "new leads" source of truth) applies, so this
+ * report agrees with /admin/broker-dashboard and /admin/analytics.
  */
 export type OverviewTotals = {
   newLeads: number
@@ -105,6 +115,58 @@ function resolvePreviousPeriod(
     prevStart: new Date(prevStartMs).toISOString(),
     prevEnd: new Date(prevEndMs).toISOString(),
   }
+}
+
+// ── Inbound lead events (taxonomy-filtered) ────────────────────────────────────
+
+/**
+ * Fetch the window's lead_created events with the owning contact's CURRENT
+ * source, then keep only genuine inbound leads (classifyLeadSource attributable
+ * — web/portal/phone/social/referral). Farm/Import/Sphere/Expired/FSBO outreach
+ * rows are lists we built, never leads (see getLeadIntake for the canonical
+ * definition every dashboard shares).
+ *
+ * Classification is keyword-based JS, so it cannot be pushed into PostgREST —
+ * we page the rows (1000-row server cap) and filter in app code, exactly like
+ * getLeadIntake does over crm_people.
+ */
+async function fetchInboundLeadEvents(
+  sb: ReturnType<typeof createServiceClient>,
+  brokerSlugs: string[],
+  start: string,
+  end: string,
+): Promise<Array<{ ts: string }>> {
+  type EventRow = {
+    ts: string
+    crm_people: { assigned_broker: string | null; source: string | null } | Array<{ assigned_broker: string | null; source: string | null }> | null
+  }
+  const inbound: Array<{ ts: string }> = []
+  const PAGE = 1000
+  for (let from = 0; from < 200_000; from += PAGE) {
+    const { data, error } = await sb
+      .from('crm_timeline')
+      .select('ts, crm_people!inner(assigned_broker, source)')
+      .eq('kind', 'lead_created')
+      .in('crm_people.assigned_broker', brokerSlugs)
+      .gte('ts', start)
+      .lte('ts', end)
+      .order('ts', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, from + PAGE - 1)
+    if (error) {
+      console.error('[getOverviewReport] lead_created page error', error.message)
+      break
+    }
+    const page = (data ?? []) as unknown as EventRow[]
+    for (const row of page) {
+      const person = Array.isArray(row.crm_people) ? row.crm_people[0] : row.crm_people
+      if (classifyLeadSource(person?.source ?? null).attributable) {
+        inbound.push({ ts: row.ts })
+      }
+    }
+    if (page.length < PAGE) break
+  }
+  return inbound
 }
 
 // ── Time series builder ────────────────────────────────────────────────────────
@@ -228,25 +290,22 @@ async function readOverviewReport(params: OverviewParams): Promise<OverviewResul
     }
   }
 
-  // 2. Three parallel query groups:
-  //    Group A — current period totals (7 × { count:'exact', head:true })
-  //    Group B — previous period totals (same 7 queries, prior window)
-  //    Group C — current period raw rows for sparkline time series
+  // 2. Four parallel query groups:
+  //    Leads    — inbound lead_created events, current + previous window
+  //               (paged rows classified via leadSourceTaxonomy — a raw COUNT
+  //               would include bulk-import rows; see fetchInboundLeadEvents)
+  //    Group A  — current period activity totals (6 × { count:'exact', head:true })
+  //    Group B  — previous period activity totals (same 6 queries, prior window)
+  //    Group C  — current period raw rows for sparkline time series
   //
   //  Groups A+B give exact database COUNT(*), bypassing the max_rows cap.
   //  Group C rows may be capped; they're used only for sparkline shape.
 
-  const [curGroup, prevGroup, tsGroup] = await Promise.all([
+  const [curLeadEvents, prevLeadEvents, curGroup, prevGroup, tsGroup] = await Promise.all([
+    fetchInboundLeadEvents(sb, brokerSlugs, start, end),
+    fetchInboundLeadEvents(sb, brokerSlugs, prevStart, prevEnd),
     // ── Group A: current period totals ────────────────────────────────────────
     Promise.all([
-      // a0: new leads — genuine lead_created events; broker via join on crm_people
-      sb
-        .from('crm_timeline')
-        .select('id, crm_people!inner(assigned_broker)', { count: 'exact', head: true })
-        .eq('kind', 'lead_created')
-        .in('crm_people.assigned_broker', brokerSlugs)
-        .gte('ts', start)
-        .lte('ts', end),
       // a1: calls (inbound + voicemail)
       sb
         .from('crm_timeline')
@@ -304,13 +363,6 @@ async function readOverviewReport(params: OverviewParams): Promise<OverviewResul
     Promise.all([
       sb
         .from('crm_timeline')
-        .select('id, crm_people!inner(assigned_broker)', { count: 'exact', head: true })
-        .eq('kind', 'lead_created')
-        .in('crm_people.assigned_broker', brokerSlugs)
-        .gte('ts', prevStart)
-        .lte('ts', prevEnd),
-      sb
-        .from('crm_timeline')
         .select('id', { count: 'exact', head: true })
         .in('broker', brokerSlugs)
         .in('kind', CALL_KINDS)
@@ -357,15 +409,8 @@ async function readOverviewReport(params: OverviewParams): Promise<OverviewResul
     ] as const),
 
     // ── Group C: current period raw rows (sparkline shape only) ──────────────
+    // (lead sparkline rows come from curLeadEvents above — already inbound-only)
     Promise.all([
-      // lead_created events — ts only (broker scoped via join)
-      sb
-        .from('crm_timeline')
-        .select('ts, crm_people!inner(assigned_broker)')
-        .eq('kind', 'lead_created')
-        .in('crm_people.assigned_broker', brokerSlugs)
-        .gte('ts', start)
-        .lte('ts', end),
       // calls / emails / texts / notes
       sb
         .from('crm_timeline')
@@ -393,9 +438,8 @@ async function readOverviewReport(params: OverviewParams): Promise<OverviewResul
     ] as const),
   ])
 
-  // 3. Unpack current totals
+  // 3. Unpack current totals (newLeads = inbound-classified event rows)
   const [
-    { count: newLeadsCount },
     { count: callsCount },
     { count: emailsCount },
     { count: textsCount },
@@ -405,7 +449,7 @@ async function readOverviewReport(params: OverviewParams): Promise<OverviewResul
   ] = curGroup
 
   const totals: OverviewTotals = {
-    newLeads: newLeadsCount ?? 0,
+    newLeads: curLeadEvents.length,
     calls: callsCount ?? 0,
     emails: emailsCount ?? 0,
     texts: textsCount ?? 0,
@@ -416,7 +460,6 @@ async function readOverviewReport(params: OverviewParams): Promise<OverviewResul
 
   // 4. Unpack previous period totals
   const [
-    { count: prevNewLeadsCount },
     { count: prevCallsCount },
     { count: prevEmailsCount },
     { count: prevTextsCount },
@@ -426,7 +469,7 @@ async function readOverviewReport(params: OverviewParams): Promise<OverviewResul
   ] = prevGroup
 
   const previousTotals: OverviewTotals = {
-    newLeads: prevNewLeadsCount ?? 0,
+    newLeads: prevLeadEvents.length,
     calls: prevCallsCount ?? 0,
     emails: prevEmailsCount ?? 0,
     texts: prevTextsCount ?? 0,
@@ -436,14 +479,13 @@ async function readOverviewReport(params: OverviewParams): Promise<OverviewResul
   }
 
   // 5. Build time series for sparklines
-  const [leadsRes, timelineRes, tasksRes, apptsRes] = tsGroup
+  const [timelineRes, tasksRes, apptsRes] = tsGroup
 
-  const leads = (leadsRes.data ?? []) as Array<{ ts: string }>
   const timeline = (timelineRes.data ?? []) as Array<{ ts: string; kind: string }>
   const tasks = (tasksRes.data ?? []) as Array<{ completed_at: string | null }>
   const appts = (apptsRes.data ?? []) as Array<{ start_at: string }>
 
-  const timeSeries = buildTimeSeries(timeline, leads, tasks, appts, start, end)
+  const timeSeries = buildTimeSeries(timeline, curLeadEvents, tasks, appts, start, end)
 
   return {
     totals,
@@ -467,10 +509,16 @@ async function readOverviewReport(params: OverviewParams): Promise<OverviewResul
  *   crm_tasks    (completed_at)
  *   crm_appointments (start_at)
  *
- * Count approach: all aggregate totals use { count:'exact', head:true } which
+ * Count approach: activity totals use { count:'exact', head:true } which
  * returns the real database COUNT(*) via the Content-Range response header,
  * bypassing the Supabase max_rows cap.  Raw-row queries are retained only for
  * the per-day sparkline time series.
+ *
+ * newLeads: paged lead_created events classified through leadSourceTaxonomy
+ * (inbound sources only, matching getLeadIntake) — the lead_created trigger
+ * fires on every crm_people insert, so bulk Farm/Import/Sphere/Expired/FSBO
+ * outreach rows must be excluded or the KPI overcounts by orders of magnitude
+ * versus the broker dashboard.
  *
  * V1 approximations (honest empty states):
  *   - calls = all call + voicemail timeline events; outbound click-to-call
@@ -482,7 +530,9 @@ export async function getOverviewReport(
   const cached = unstable_cache(
     () => readOverviewReport(params),
     [
-      'crm-overview-report-v1',
+      // v2: newLeads switched from raw lead_created counts to the
+      // taxonomy-filtered inbound definition (2026-07-14).
+      'crm-overview-report-v2',
       params.brokerSlug ?? 'all',
       params.datePreset,
       params.dateStart ?? 'none',

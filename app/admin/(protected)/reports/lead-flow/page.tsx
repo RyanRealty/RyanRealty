@@ -36,7 +36,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
 import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
-import { getGA4Summary, type GA4Summary } from '@/app/actions/ga4-report'
+// Cached GA4 wrapper (React request-dedup + 15-min Supabase ga4_query_cache
+// tier) — the raw getGA4Summary fires 9 GA4 runReport calls per request on
+// this force-dynamic page. Same signature and result shape; errors pass
+// through uncached so the ga4Ok/ga4Error banner keeps working.
+import { getGA4SummaryCached as getGA4Summary } from '@/lib/ga4-cache'
+import type { GA4Summary } from '@/app/actions/ga4-report'
 import { countCmasInRange } from '@/lib/data/sync/syncWrites'
 import { getLeadIntake } from '@/lib/data'
 import { DateRangePicker } from '@/app/admin/(protected)/analytics/_components/DateRangePicker'
@@ -62,10 +67,6 @@ function formatPct(numerator: number, denominator: number): string {
   if (denominator === 0) return '—'
   const pct = (numerator / denominator) * 100
   return `${pct.toFixed(1)}%`
-}
-
-function isoNDaysAgo(n: number): string {
-  return new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString()
 }
 
 function getServiceSupabase() {
@@ -181,6 +182,10 @@ function statusLabel(s: WiringStatus): string {
 
 async function LeadFlowContent({ range }: { range: { startDate: string; endDate: string } }) {
   const cutoffIso = `${range.startDate}T00:00:00.000Z`
+  // Honor the SELECTED end date for every CRM-side read, matching GA4. The
+  // old code ran leads/CMAs/visits through now(), so a custom historical
+  // range compared mismatched windows in the funnel and wiring tables.
+  const untilIso = `${range.endDate}T23:59:59.999Z`
   const startDate = range.startDate
   const endDate = range.endDate
   const lookbackDays = Math.round((new Date(range.endDate).getTime() - new Date(range.startDate).getTime()) / (24 * 60 * 60 * 1000)) + 1
@@ -188,54 +193,75 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
 
   const supabase = getServiceSupabase()
 
+  // visits can exceed 1000 rows in a window, and PostgREST silently caps a
+  // single response at 1000 regardless of .limit() — page with .range() until
+  // a short read (same pattern as getLeadIntake).
+  async function fetchAllVisitPaths(): Promise<Array<{ path: string }>> {
+    const rows: Array<{ path: string }> = []
+    const PAGE = 1000
+    for (let from = 0; from < 200_000; from += PAGE) {
+      const { data, error } = await supabase
+        .from('visits')
+        .select('path')
+        .gte('created_at', cutoffIso)
+        .lte('created_at', untilIso)
+        .order('created_at', { ascending: true })
+        .range(from, from + PAGE - 1)
+      if (error) break
+      const page = (data ?? []) as Array<{ path: string }>
+      rows.push(...page)
+      if (page.length < PAGE) break
+    }
+    return rows
+  }
+
   // Parallel fetch: GA4 + every Supabase table the dashboard needs.
   // `cmas` is read via the canonical DAL helper (countCmasInRange) so this
   // page respects the DAL-boundary rule. The other tables here are not in
   // the DAL-boundary banned list, so direct supabase.from() reads are
   // allowed for them today.
-  const nowIso = new Date().toISOString()
   const [
     ga4Result,
     intake,
     valuationReqRes,
     listingInquiriesRes,
     cmaCount,
-    visitsRes,
+    visitRows,
   ] = await Promise.all([
     getGA4Summary(startDate, endDate),
-    getLeadIntake({ startIso: cutoffIso, endIso: nowIso }),
+    // Day-granular ISO bounds match the analytics pages' rangeToIso exactly,
+    // so both surfaces share one getLeadIntake cache entry per range (a
+    // millisecond now() end bound forced a cache miss on every render).
+    getLeadIntake({ startIso: `${range.startDate}T00:00:00Z`, endIso: `${range.endDate}T23:59:59Z` }),
+    // Count-only reads: only the totals render, and { count:'exact',
+    // head:true } returns the real COUNT(*) — a .limit(5000) row fetch is
+    // silently capped at 1000 by PostgREST.
     supabase
       .from('valuation_requests')
-      .select('id, created_at, email, source_url')
+      .select('id', { count: 'exact', head: true })
       .gte('created_at', cutoffIso)
-      .limit(5000),
+      .lte('created_at', untilIso),
     supabase
       .from('listing_inquiries')
-      .select('id, created_at, type, listing_url')
+      .select('id', { count: 'exact', head: true })
       .gte('created_at', cutoffIso)
-      .limit(5000),
-    countCmasInRange({ fromIso: cutoffIso }),
-    supabase
-      .from('visits')
-      .select('path')
-      .gte('created_at', cutoffIso)
-      .limit(20000),
+      .lte('created_at', untilIso),
+    countCmasInRange({ fromIso: cutoffIso, toIso: untilIso }),
+    fetchAllVisitPaths(),
   ])
 
   const ga4Ok = ga4Result.ok
   const ga4: GA4Summary | null = ga4Ok ? ga4Result.data : null
   const ga4Error = ga4Ok ? null : ga4Result.error
 
-  const valuationCount = valuationReqRes.data?.length ?? 0
-  const listingInquiries = listingInquiriesRes.data ?? []
-  const listingInquiryCount = listingInquiries.length
+  const valuationCount = valuationReqRes.count ?? 0
+  const listingInquiryCount = listingInquiriesRes.count ?? 0
 
   // Aggregate visits per path prefix.
   const visitsByPath: VisitsByPath[] = (() => {
     const tally = new Map<string, number>()
-    for (const v of visitsRes.data ?? []) {
-      const path = (v as { path: string }).path
-      tally.set(path, (tally.get(path) ?? 0) + 1)
+    for (const v of visitRows) {
+      tally.set(v.path, (tally.get(v.path) ?? 0) + 1)
     }
     return Array.from(tally.entries()).map(([path, visits]) => ({ path, visits, sessions: visits }))
   })()
@@ -284,12 +310,14 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
     if (c.attributable) channelSplit.set(c.label, c.count)
   }
 
-  // Daily timeline of inbound leads.
+  // Daily timeline of inbound leads — anchored to the SELECTED end date, not
+  // today, so a custom historical range charts its own days.
   const dailyTally = new Map<string, number>()
   for (const d of intake.byDay) dailyTally.set(d.date, d.inbound)
+  const rangeEndMs = new Date(`${range.endDate}T00:00:00Z`).getTime()
   const dailySeries: DailySeries[] = []
   for (let i = lookbackDays - 1; i >= 0; i--) {
-    const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
+    const d = new Date(rangeEndMs - i * 24 * 60 * 60 * 1000)
     const key = d.toISOString().slice(0, 10)
     dailySeries.push({ date: key, count: dailyTally.get(key) ?? 0 })
   }
@@ -595,7 +623,7 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
           <strong className="text-foreground">Wiring helpers:</strong> <code className="rounded bg-muted px-1">lib/lead-tracking.ts</code> (fireLeadGenerated), <code className="rounded bg-muted px-1">lib/canonical-lead-tagger.ts</code> (canonicallyTagLead), <code className="rounded bg-muted px-1">lib/ga4-measurement-protocol.ts</code> (fireGa4Event).
         </p>
         <p>
-          <strong className="text-foreground">Methodology:</strong> Sessions counted from GA4 Data API for the property the service account has access to. Lead events filtered to <code className="rounded bg-muted px-1">generate_lead</code>, <code className="rounded bg-muted px-1">listing_inquiry</code>, <code className="rounded bg-muted px-1">home_valuation_cta_click</code>, plus the legacy event names (<code className="rounded bg-muted px-1">contact_agent</code>, <code className="rounded bg-muted px-1">valuation_requested</code>, etc.). Leads come from <code className="rounded bg-muted px-1">crm_people</code> (system of record) via <code className="rounded bg-muted px-1">getLeadIntake</code>, inbound sources only, created <code className="rounded bg-muted px-1">&gt;= {range.startDate}</code>.
+          <strong className="text-foreground">Methodology:</strong> Sessions counted from GA4 Data API for the property the service account has access to. Lead events filtered to <code className="rounded bg-muted px-1">generate_lead</code>, <code className="rounded bg-muted px-1">listing_inquiry</code>, <code className="rounded bg-muted px-1">home_valuation_cta_click</code>, plus the legacy event names (<code className="rounded bg-muted px-1">contact_agent</code>, <code className="rounded bg-muted px-1">valuation_requested</code>, etc.). Leads come from <code className="rounded bg-muted px-1">crm_people</code> (system of record) via <code className="rounded bg-muted px-1">getLeadIntake</code>, inbound sources only, created <code className="rounded bg-muted px-1">{range.startDate}</code> to <code className="rounded bg-muted px-1">{range.endDate}</code> inclusive.
         </p>
       </div>
     </div>

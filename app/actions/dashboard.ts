@@ -3,7 +3,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { getMetaPageTokenTrimmed } from '@/lib/meta-env'
 import { createServiceClient } from '@/lib/supabase/service'
-import { fetchMyLeadsFromFubLive } from '@/lib/followupboss'
 import { getGA4Summary } from './ga4-report'
 import {
   getAdminSyncCounts,
@@ -217,65 +216,65 @@ async function getFubPipelineSnapshot(
   // Primary source: in-house CRM (lib/crm/), which replaced FUB as the
   // execution engine on 2026-06-10. FUB API access was decommissioned
   // 2026-06-24 (getFubApiKey() always returns undefined — see
-  // lib/crm/fub-env.ts), so fub_contacts_cache stops receiving new syncs and
-  // ages out; crm_people is the live, current source of lead/pipeline data.
-  const crmQuery = await supabase
-    .from('crm_people')
-    .select('id, assigned_broker, stage, tags, emails, name')
-    .eq('deleted', false)
-    .in('assigned_broker', ['matt', 'matt-ryan'])
-    .or(`updated_at.gte.${startIso},last_activity_at.gte.${startIso}`)
-    .limit(5000)
+  // lib/crm/fub-env.ts), so crm_people is the live, current source of
+  // lead/pipeline data. The old fub_contacts_cache / fetchMyLeadsFromFubLive
+  // fallback branch was deleted 2026-07-14: the cache stopped syncing at the
+  // cutover and the live fetch was a guaranteed no-op, so the fallback could
+  // only ever produce stale or empty data dressed up as a measurement.
+  //
+  // Paged read: PostgREST caps a single response at 1000 rows regardless of
+  // .limit(), so a plain .limit(5000) silently truncated pipeline totals.
+  const crmRows: Array<{
+    id: string
+    stage: string | null
+    tags: unknown
+    emails: unknown
+    name: string | null
+  }> = []
+  const PAGE = 1000
+  for (let from = 0; from < 20_000; from += PAGE) {
+    const { data, error } = await supabase
+      .from('crm_people')
+      .select('id, assigned_broker, stage, tags, emails, name')
+      .eq('deleted', false)
+      .in('assigned_broker', ['matt', 'matt-ryan'])
+      .or(`updated_at.gte.${startIso},last_activity_at.gte.${startIso}`)
+      .order('id', { ascending: true })
+      .range(from, from + PAGE - 1)
+    if (error) {
+      console.error('[getFubPipelineSnapshot] crm_people page error', error.message)
+      break
+    }
+    const page = (data ?? []) as typeof crmRows
+    crmRows.push(...page)
+    if (page.length < PAGE) break
+  }
 
-  let contacts: FubContactSnapshot[] = (crmQuery.data ?? []).map((row) => ({
+  // crm_people.emails is a jsonb array of { value, isPrimary } objects (or
+  // plain strings on legacy rows) — String(row.emails[0]) produced the literal
+  // "[object Object]", which permanently disabled the realtor-email exclusion.
+  const firstEmailValue = (field: unknown): string | null => {
+    if (!Array.isArray(field)) return null
+    for (const entry of field) {
+      if (typeof entry === 'string' && entry.trim()) return entry.trim()
+      if (entry && typeof entry === 'object') {
+        const value = (entry as { value?: unknown }).value
+        if (typeof value === 'string' && value.trim()) return value.trim()
+      }
+    }
+    return null
+  }
+
+  const contacts: FubContactSnapshot[] = crmRows.map((row) => ({
     id: row.id,
     broker_id: mattBrokerId,
     stage: row.stage,
     tags: row.tags,
-    email: Array.isArray(row.emails) && row.emails.length > 0 ? String(row.emails[0]) : null,
+    email: firstEmailValue(row.emails),
     name: row.name,
-  })) as FubContactSnapshot[]
-  let usedLiveSource = true
+  }))
 
-  // Legacy fallback: the old FUB cache/live-API path, kept only in case the
-  // CRM query errors or the crm_people table is briefly empty (e.g. a bad
-  // migration). Since getFubApiKey() is hardcoded to undefined post-cutover,
-  // fetchMyLeadsFromFubLive is a guaranteed no-op today — this branch is
-  // dead code until FUB is either fully retired or intentionally re-enabled.
-  if (crmQuery.error || contacts.length === 0) {
-    const cacheQuery = await supabase
-      .from('fub_contacts_cache')
-      .select('id, broker_id, stage, tags, email, name')
-      .gte('synced_at', startIso)
-      .limit(5000)
-
-    let fallbackContacts: FubContactSnapshot[] = (cacheQuery.data ?? []) as FubContactSnapshot[]
-    usedLiveSource = false
-    if (cacheQuery.error || fallbackContacts.length === 0) {
-      const live = await fetchMyLeadsFromFubLive({
-        brokerSlug: mattBroker?.slug ?? 'matt-ryan',
-        brokerEmail: mattBroker?.email ?? null,
-        brokerId: mattBrokerId,
-      })
-      if (live.rows.length > 0) {
-        usedLiveSource = true
-        fallbackContacts = live.rows.map((row) => ({
-          id: row.fub_id,
-          broker_id: mattBrokerId,
-          stage: row.stage,
-          tags: row.tags,
-          email: row.email,
-          name: row.name,
-        }))
-      }
-    }
-    contacts = fallbackContacts
-  }
-
-  const myLeads =
-    usedLiveSource || !mattBrokerId
-      ? contacts
-      : contacts.filter((row) => row.broker_id === mattBrokerId)
+  const myLeads = contacts
 
   const targetable = myLeads.filter((row) => !isLikelyRealtorContact(row))
   const realtorExcludedCount = myLeads.length - targetable.length
@@ -494,12 +493,28 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
 
   if (url?.trim() && serviceKey?.trim()) {
     const supabase = createClient(url, serviceKey)
+
+    // Contact metrics come from crm_people via getLeadIntake — the org-wide
+    // "new leads" source of truth (lib/data/crm/getLeadIntake.ts). The old
+    // fub_contacts_cache counts froze at the 2026-06-24 FUB decommission and
+    // read a permanent fabricated 0. Snap the intake window to 10-minute
+    // buckets so its unstable_cache key stays stable (getDashboardKpis
+    // pattern) — a millisecond now() would force a full re-read per render.
+    const TEN_MIN_MS = 600_000
+    const intakeEndMs = Math.ceil(now.getTime() / TEN_MIN_MS) * TEN_MIN_MS
+    const intakePromise = (async () => {
+      const { getLeadIntake } = await import('@/lib/data')
+      return getLeadIntake({
+        startIso: new Date(intakeEndMs - 30 * 24 * 60 * 60 * 1000).toISOString(),
+        endIso: new Date(intakeEndMs).toISOString(),
+      })
+    })()
+
     const [
       sellerVisitsRes,
       sellerFacebookRes,
       valuationRes,
-      contactsRes,
-      facebookContactsRes,
+      intake,
       pipelineSnapshot,
       bendCtx,
     ] = await Promise.all([
@@ -529,15 +544,7 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
           .from('valuation_requests')
           .select('id', { count: 'exact', head: true })
           .gte('created_at', startIso),
-        supabase
-          .from('fub_contacts_cache')
-          .select('id', { count: 'exact', head: true })
-          .gte('synced_at', startIso),
-        supabase
-          .from('fub_contacts_cache')
-          .select('id', { count: 'exact', head: true })
-          .gte('synced_at', startIso)
-          .ilike('source', 'Facebook%'),
+        intakePromise,
         getFubPipelineSnapshot(supabase, startIso),
         getBendMarketContext(supabase),
       ])
@@ -545,8 +552,12 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
     sellerVisits30d = sellerVisitsRes.count ?? 0
     sellerVisitsFromFacebook30d = sellerFacebookRes.count ?? 0
     valuationRequests30d = valuationRes.count ?? 0
-    contactsSynced30d = contactsRes.count ?? 0
-    facebookContacts30d = facebookContactsRes.count ?? 0
+    // All crm_people rows created in the window (imports included) — the
+    // honest "contacts added" figure now that FUB syncing is dead.
+    contactsSynced30d = intake.totalRows
+    // Social-channel inbound leads per leadSourceTaxonomy (Meta lead forms +
+    // paid/organic social) — the taxonomy-consistent "Facebook sourced" count.
+    facebookContacts30d = intake.byChannel.find((c) => c.channel === 'social')?.count ?? 0
     fubPipeline = pipelineSnapshot
     bendMarketContext = bendCtx
   }
@@ -669,8 +680,8 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
       reportItems.push({
         action: 'fix',
         priority: 'medium',
-        title: 'Facebook to FUB capture gap',
-        rationale: `Only ${(facebookContactCaptureRate * 100).toFixed(1)}% of Facebook lead events map to Facebook-tagged FUB contacts. Validate webhook attribution and source tags.`,
+        title: 'Facebook to CRM capture gap',
+        rationale: `Only ${(facebookContactCaptureRate * 100).toFixed(1)}% of Facebook lead events map to social-channel CRM leads (leadSourceTaxonomy). Validate webhook attribution and source tags.`,
       })
     }
   }
@@ -819,7 +830,9 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
     fub: {
       // FUB API access was decommissioned 2026-06-24 (lib/crm/fub-env.ts) —
       // "configured" now means the in-house CRM pipeline (crm_people) has
-      // live data, not that a FUB API key is set.
+      // live data, not that a FUB API key is set. contactsSynced30d and
+      // facebookContacts30d are crm_people figures via getLeadIntake (the
+      // dead fub_contacts_cache reads were removed 2026-07-14).
       configured: fubPipeline.myLeadsTotal > 0,
       contactsSynced30d,
       facebookContacts30d,
@@ -865,18 +878,16 @@ export async function getDashboardDataQuality(): Promise<DashboardDataQuality> {
   const supabase = createClient(url, serviceKey)
 
   void supabase // legacy client retained for sibling queries elsewhere
-  const { getListingTiles } = await import('@/lib/data')
+  const { getListingTilesCount } = await import('@/lib/data')
   const [totalActivePending, missingPhotoTiles, classifiedRes] = await Promise.all([
-    // DAL: count active+pending tiles via listing_tile_mv. scope:'all' —
-    // admin data-quality counts intentionally cover the full statewide feed
-    // (the default service-area guard would shrink them; audit P0-3).
-    getListingTiles({ status: 'active-and-pending', scope: 'all', limit: 500 }).then(
-      (tiles) => tiles.length
-    ),
+    // DAL: exact head-count of active+pending tiles via listing_tile_mv.
+    // scope:'all' — admin data-quality counts intentionally cover the full
+    // statewide feed (the default service-area guard would shrink them; audit
+    // P0-3). Count query, NOT a row fetch: the old limit-500 tile fetch pegged
+    // totalListings at exactly 500 forever (the feed has far more rows).
+    getListingTilesCount({ status: 'active-and-pending', scope: 'all' }),
     // DAL: active+pending tiles missing a hero photo (feed-wide, see above).
-    getListingTiles({ status: 'active-and-pending', missingPhoto: true, scope: 'all', limit: 500 }).then(
-      (tiles) => tiles.length
-    ),
+    getListingTilesCount({ status: 'active-and-pending', missingPhoto: true, scope: 'all' }),
     createClient(url, serviceKey)
       .from('listing_photo_classifications')
       .select('*', { count: 'exact', head: true }),

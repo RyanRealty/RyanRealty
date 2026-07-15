@@ -10,7 +10,13 @@
  * section from our own CRM, scoped to one broker by their slug (the value stored
  * in crm_people.assigned_broker / crm_tasks.assigned_broker):
  *
- *   - newLeads:        crm_people created in the window, assigned to the broker.
+ *   - newLeads:        crm_people created in the window, assigned to the broker,
+ *                      EXCLUDING outreach-list rows (Farm/Import/Sphere/Expired/
+ *                      FSBO batches we build ourselves — classified via
+ *                      leadSourceTaxonomy, the same discriminator getLeadIntake
+ *                      uses; a digest that counts every crm_people row as a
+ *                      "lead" mislabels bulk prospecting imports as leads).
+ *                      Excluded rows surface separately as outreachAdded.
  *   - openTasks:       crm_tasks not completed, due (or overdue) for the broker.
  *   - activeEnrollments: this broker's leads on a workflow that is hot or awaiting
  *                      a broker action (crm_sequence_enrollments live statuses).
@@ -26,6 +32,7 @@
  * not a FUB person page.
  */
 import { createServiceClient } from '@/lib/supabase/service'
+import { classifyLeadSource } from './leadSourceTaxonomy'
 
 /** Inbound crm_timeline kinds that count as a real inbound touch from a contact. */
 export const INBOUND_TIMELINE_KINDS = ['sms_in', 'email_in', 'form_submit', 'voicemail'] as const
@@ -94,6 +101,13 @@ export type BrokerDigestRows = {
   openTasks: DigestTaskRow[]
   activeEnrollments: DigestEnrollmentRow[]
   recentInbound: DigestInboundRow[]
+  /**
+   * Contacts created in the window whose source classifies as an outreach list
+   * (leadSourceTaxonomy outreachList — Farm/Import/Sphere/Expired/FSBO). These
+   * are NOT leads and are excluded from newLeads. Optional for backward
+   * compatibility with pre-partition callers/tests.
+   */
+  outreachAdded?: number
 }
 
 export type DigestLead = {
@@ -131,6 +145,8 @@ export type DigestSummary = {
     awaiting: boolean
   }>
   inbound: Array<{ timelineId: number; personName: string | null; kind: string; snippet: string | null; tsIso: string }>
+  /** Outreach-list contacts added in the window (not leads — see BrokerDigestRows). */
+  outreachAdded?: number
   /** One-line plain-English headline, brand voice, no banned words. */
   summarySentence: string
 }
@@ -233,6 +249,7 @@ export function summarizeDigest(rows: BrokerDigestRows): DigestSummary {
     tasks,
     enrollments,
     inbound,
+    outreachAdded: rows.outreachAdded,
     summarySentence: buildSummarySentence({
       newLeads: leads.length,
       sellers,
@@ -241,6 +258,7 @@ export function summarizeDigest(rows: BrokerDigestRows): DigestSummary {
       awaitingBroker,
       overdueTasks,
       recentInbound: inbound.length,
+      outreachAdded: rows.outreachAdded,
     }),
   }
 }
@@ -254,6 +272,8 @@ export function buildSummarySentence(c: {
   awaitingBroker: number
   overdueTasks: number
   recentInbound: number
+  /** Outreach-list contacts added in the window — reported separately, never as leads. */
+  outreachAdded?: number
 }): string {
   const parts: string[] = []
 
@@ -267,6 +287,11 @@ export function buildSummarySentence(c: {
     if (c.buyers > 0) mix.push(`${c.buyers} ${c.buyers === 1 ? 'buyer' : 'buyers'}`)
     if (c.unclassified > 0) mix.push(`${c.unclassified} unclassified`)
     parts.push(mix.length > 0 ? `You got ${c.newLeads} new leads, ${mix.join(', ')}.` : `You got ${c.newLeads} new leads.`)
+  }
+
+  if ((c.outreachAdded ?? 0) > 0) {
+    const n = c.outreachAdded as number
+    parts.push(`${n} ${n === 1 ? 'contact was' : 'contacts were'} added from outreach lists, not counted as leads.`)
   }
 
   if (c.awaitingBroker > 0) {
@@ -323,15 +348,59 @@ export async function getBrokerDigest(params: {
   }
   if (!slug) return empty
 
-  // 1. New leads created in the window, assigned to this broker.
-  const newLeadsP = sb
-    .from('crm_people')
-    .select('id,name,first_name,last_name,emails,phones,source,stage,tags,created_at,last_activity_at')
-    .eq('assigned_broker', slug)
-    .eq('deleted', false)
-    .gte('created_at', windowStartIso)
-    .order('created_at', { ascending: false })
-    .limit(leadLimit)
+  // 1. New leads created in the window, assigned to this broker. The digest
+  //    counts LEADS, not list rows: prospecting/import batches (Farm, the
+  //    expired/FSBO crons, bulk imports) also create crm_people rows, and a
+  //    morning email calling those "new leads" is wrong — getLeadIntake is the
+  //    org-wide rule (outreach lists are never leads). Classification is
+  //    keyword JS (leadSourceTaxonomy), so it cannot run server-side: page ALL
+  //    window rows (PostgREST caps one response at 1000, and a big outreach
+  //    batch would otherwise crowd genuine leads out of a single page), then
+  //    partition in app code. Outreach rows are counted, never listed as leads.
+  type NewLeadPersonRow = {
+    id: unknown
+    name: unknown
+    first_name: unknown
+    last_name: unknown
+    emails: unknown
+    phones: unknown
+    source: unknown
+    stage: unknown
+    tags: unknown
+    created_at: unknown
+    last_activity_at: unknown
+  }
+  const newLeadsP = (async (): Promise<{ leads: NewLeadPersonRow[]; outreachAdded: number }> => {
+    const rows: NewLeadPersonRow[] = []
+    const PAGE = 1000
+    for (let from = 0; from < 100_000; from += PAGE) {
+      const { data, error } = await sb
+        .from('crm_people')
+        .select('id,name,first_name,last_name,emails,phones,source,stage,tags,created_at,last_activity_at')
+        .eq('assigned_broker', slug)
+        .eq('deleted', false)
+        .gte('created_at', windowStartIso)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .range(from, from + PAGE - 1)
+      if (error) {
+        console.error('[getBrokerDigest] newLeads page error', error.message)
+        break
+      }
+      const page = (data ?? []) as NewLeadPersonRow[]
+      rows.push(...page)
+      if (page.length < PAGE) break
+    }
+    let outreachAdded = 0
+    const leads: NewLeadPersonRow[] = []
+    for (const r of rows) {
+      // Outreach-list rows are not leads. Everything else (inbound, manual,
+      // unknown source) still surfaces so a hand-keyed contact is not hidden.
+      if (classifyLeadSource((r.source as string | null) ?? null).outreachList) outreachAdded += 1
+      else leads.push(r)
+    }
+    return { leads: leads.slice(0, leadLimit), outreachAdded }
+  })()
 
   // 2. Open (uncompleted) tasks for this broker, soonest due first.
   const openTasksP = sb
@@ -369,7 +438,7 @@ export async function getBrokerDigest(params: {
     inboundP,
   ])
 
-  const newLeads: DigestLeadRow[] = (newLeadsRes.data ?? []).map((r) => ({
+  const newLeads: DigestLeadRow[] = newLeadsRes.leads.map((r) => ({
     personId: Number(r.id),
     name: (r.name as string | null) ?? null,
     firstName: (r.first_name as string | null) ?? null,
@@ -419,6 +488,7 @@ export async function getBrokerDigest(params: {
     openTasks,
     activeEnrollments,
     recentInbound,
+    outreachAdded: newLeadsRes.outreachAdded,
   }
 }
 
@@ -427,17 +497,22 @@ export async function getBrokerDigest(params: {
 //
 // The weekly digest used to aggregate the FUB People API + FUB deals +
 // appointments + smart lists + conversations. This repoints every section that
-// has a clean crm_* source: new leads by audience and by source (crm_people),
-// active deals + pipeline value (crm_deals), and conversation volume
-// (crm_timeline). Appointments and FUB smart-list movement have NO crm_*
-// equivalent, so the route keeps sourcing those from FUB and is FLAGGED.
+// has a clean crm_* source: new leads by audience and by source (crm_people,
+// outreach-list rows partitioned out via leadSourceTaxonomy), active deals +
+// pipeline value (crm_deals), and conversation volume (crm_timeline). The
+// route sources appointments from crm_appointments; FUB smart-list movement
+// has no crm_* equivalent and was dropped at the 2026-06-24 FUB decommission
+// (getFubApiKey() is hardcoded undefined — a fetched zero would be fabricated).
 // ---------------------------------------------------------------------------
 
 export type WeeklyLeadRow = { tags: string[]; source: string | null }
 
 export type WeeklyPipelineRows = {
   weekStartIso: string
+  /** Window rows EXCLUDING outreach-list sources (leadSourceTaxonomy). */
   newLeads: WeeklyLeadRow[]
+  /** Outreach-list contacts added in the window (Farm/Import/Sphere/Expired/FSBO) — not leads. */
+  outreachAdded: number
   activeDeals: { count: number; value: number }
   conversations: number
 }
@@ -510,6 +585,13 @@ const CONVERSATION_KINDS = [
  * starting at weekStartIso. Brokerage-wide (the weekly digest is Matt-only, not
  * per-broker). Returns raw rows; shape leads via summarizeWeeklyLeads and deals
  * via summarizeActiveDeals.
+ *
+ * New-lead accuracy: every crm_people row created in the week is paged in
+ * (PostgREST caps a single response at 1000, so a plain .limit() silently
+ * truncates on bulk-import weeks) and classified via leadSourceTaxonomy —
+ * outreach-list rows (Farm/Import/Sphere/Expired/FSBO) are counted in
+ * outreachAdded and never reported as leads, matching getLeadIntake. leadLimit
+ * only caps the returned LEAD rows (weekly inbound volume is far below it).
  */
 export async function getWeeklyPipelineDigest(params: {
   weekStartIso: string
@@ -518,13 +600,34 @@ export async function getWeeklyPipelineDigest(params: {
   const { weekStartIso, leadLimit = 2000 } = params
   const sb = createServiceClient()
 
-  const newLeadsP = sb
-    .from('crm_people')
-    .select('tags,source')
-    .eq('deleted', false)
-    .gte('created_at', weekStartIso)
-    .order('created_at', { ascending: false })
-    .limit(leadLimit)
+  const newLeadsP = (async (): Promise<{ leads: Array<{ tags: unknown; source: unknown }>; outreachAdded: number }> => {
+    const rows: Array<{ tags: unknown; source: unknown }> = []
+    const PAGE = 1000
+    for (let from = 0; from < 100_000; from += PAGE) {
+      const { data, error } = await sb
+        .from('crm_people')
+        .select('tags,source')
+        .eq('deleted', false)
+        .gte('created_at', weekStartIso)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .range(from, from + PAGE - 1)
+      if (error) {
+        console.error('[getWeeklyPipelineDigest] newLeads page error', error.message)
+        break
+      }
+      const page = (data ?? []) as Array<{ tags: unknown; source: unknown }>
+      rows.push(...page)
+      if (page.length < PAGE) break
+    }
+    let outreachAdded = 0
+    const leads: Array<{ tags: unknown; source: unknown }> = []
+    for (const r of rows) {
+      if (classifyLeadSource((r.source as string | null) ?? null).outreachList) outreachAdded += 1
+      else leads.push(r)
+    }
+    return { leads: leads.slice(0, leadLimit), outreachAdded }
+  })()
 
   // Open deals across the whole pipeline (not windowed — pipeline is a snapshot).
   const dealsP = sb.from('crm_deals').select('stage,status,value').limit(1000)
@@ -538,7 +641,7 @@ export async function getWeeklyPipelineDigest(params: {
 
   const [newLeadsRes, dealsRes, conversationsRes] = await Promise.all([newLeadsP, dealsP, conversationsP])
 
-  const newLeads: WeeklyLeadRow[] = (newLeadsRes.data ?? []).map((r) => ({
+  const newLeads: WeeklyLeadRow[] = newLeadsRes.leads.map((r) => ({
     tags: Array.isArray(r.tags) ? (r.tags as string[]) : [],
     source: (r.source as string | null) ?? null,
   }))
@@ -554,6 +657,7 @@ export async function getWeeklyPipelineDigest(params: {
   return {
     weekStartIso,
     newLeads,
+    outreachAdded: newLeadsRes.outreachAdded,
     activeDeals,
     conversations: conversationsRes.count ?? 0,
   }
