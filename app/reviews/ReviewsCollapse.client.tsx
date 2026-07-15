@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 
 /**
  * design-audit: on mobile all 24 review cards stacked into a ~20-screen scroll.
@@ -16,9 +17,13 @@ export function ReviewsCollapse({ total, children }: { total: number; children: 
     <>
       <ul className={`kb-reviews-grid${collapsed ? ' kb-reviews-collapsed' : ''}`}>{children}</ul>
       {collapsed ? (
-        <button type="button" className="kb-reviews-more" onClick={() => setExpanded(true)}>
+        // Design-system Button carrying the KB skin: .kb-reviews-more (kb.css,
+        // unlayered so it wins over the utility layer) supplies display, border,
+        // color, padding, and type; h-auto/rounded-none clear the primitive's
+        // fixed height + radius so the brutalist square look is unchanged.
+        <Button type="button" variant="ghost" className="kb-reviews-more h-auto rounded-none" onClick={() => setExpanded(true)}>
           Show all {total} reviews <span className="arr">↓</span>
-        </button>
+        </Button>
       ) : null}
     </>
   )

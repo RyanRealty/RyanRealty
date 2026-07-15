@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-15T06:30:31.734Z",
-  "total": 328,
+  "generatedAt": "2026-07-15T11:28:38.694Z",
+  "total": 326,
   "byFile": {
     "app/actions/auto-response.ts": 3,
     "app/admin/(protected)/analytics/_components/CityReportSection.tsx": 3,
@@ -48,7 +48,6 @@
     "app/api/meta/oauth-callback/route.ts": 2,
     "app/area-guides/loading.tsx": 1,
     "app/blog/[slug]/loading.tsx": 1,
-    "app/blog/[slug]/page.tsx": 1,
     "app/blog/page.tsx": 1,
     "app/cma-drafts/[id]/SendCmaButton.tsx": 1,
     "app/cma-drafts/[id]/page.tsx": 2,
@@ -81,7 +80,6 @@
     "app/reports/[slug]/page.tsx": 1,
     "app/reports/explore/ExploreClient.tsx": 1,
     "app/resources/page.tsx": 1,
-    "app/reviews/ReviewsCollapse.client.tsx": 1,
     "app/search/[...slug]/loading.tsx": 1,
     "app/search/og/[...slug]/route.tsx": 2,
     "app/signup/page.tsx": 2,

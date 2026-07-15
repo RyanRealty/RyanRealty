@@ -239,8 +239,9 @@ export default async function BlogPostPage({ params }: PageProps) {
               {articleBody ? (
                 <div
                   // design-audit TRU-3: max-w-none let body text run ~100+ chars
-                  // per line (too wide to read comfortably). Cap the measure.
-                  className="prose prose-neutral mt-8 max-w-[72ch]"
+                  // per line (too wide to read comfortably). Cap the measure
+                  // with the ladder's prose-width utility (max-w-prose = 65ch).
+                  className="prose prose-neutral mt-8 max-w-prose"
                   style={proseVars}
                   dangerouslySetInnerHTML={{ __html: articleBody }}
                 />
