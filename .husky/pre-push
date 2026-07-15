@@ -43,6 +43,10 @@ if [ -z "$CHANGED" ]; then
   echo "Pre-push: nothing ahead of upstream — skipping build."
 elif [ "$CHANGED" = "__force_build__" ] || printf '%s\n' "$CHANGED" | grep -qE '\.(ts|tsx|js|jsx|mjs|cjs|css)$|(^|/)next\.config|(^|/)package\.json|(^|/)tsconfig'; then
   echo "Pre-push: production build (Turbopack, matches Vercel) — catches use-server/RSC breaks tsc misses…"
+  # Next's type-check phase OOMs at Node's default ~4GB heap at this repo's size
+  # (observed 2026-07-14: SIGABRT mid "Running TypeScript"). 8GB fits the 16GB Mac mini.
+  NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}"
+  export NODE_OPTIONS
   npm run build || {
     echo ""
     echo "✗ next build FAILED — this commit would ERROR on Vercel and silently never deploy."

@@ -166,6 +166,8 @@ listing_video_v4/out/
 listing_video_v4/public/then-now/
 listing_video_v4/public/trend/
 scratch/
+# session smoke scripts / probe outputs — excluded from tsconfig too (build breaks otherwise)
+scratchpad/
 
 # Design-audit raw capture panels — regenerable via scripts/_design-audit-capture.mjs; too heavy to track (316MB).
 docs/design-audit/assets/*-desktop-*.png
