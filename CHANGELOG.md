@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.790.1 (2026-07-15)
+
+### Bug Fixes
+- fix(fsbo): Zillow actor requires canonical searchQueryState — regions harvested live
+
+---
+
+
 ## v1.790.0 (2026-07-15)
 
 ### Features
