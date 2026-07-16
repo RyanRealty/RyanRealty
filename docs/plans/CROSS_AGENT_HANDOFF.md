@@ -1,6 +1,6 @@
 > **NEWEST, START HERE: the ADMIN-REBUILD RC1 block immediately below (2026-07-16).** Prior: ADMIN-CONSOLIDATION (2026-07-07 evening), LIFECYCLE-WORKFLOWS (2026-07-07 morning), NEIGHBORHOOD-DEFAULTS (2026-07-06 evening). Older: [`HANDOFF_CRM_STREAMLINE_2026-07-03.md`](./HANDOFF_CRM_STREAMLINE_2026-07-03.md), `HANDOFF_2026-06-28.md`.
 
-# ADMIN REBUILD — RC1 FIRST-CLASS CONVERSATION MODEL (2026-07-16, Claude Code — DATA FOUNDATION SHIPPED, read-rewire is next)
+# ADMIN REBUILD — RC1 FIRST-CLASS CONVERSATION MODEL (2026-07-16, Claude Code — COMPLETE END-TO-END: inbox now reads the model)
 
 **Full plan: `docs/plans/ADMIN_REBUILD/` (PROGRESS.md carries the live build log; spec 02 is the conversation model). This block is the collision-avoidance summary.**
 
@@ -11,24 +11,27 @@
   group is participant_count>1. Two triggers (participant-sync; order-independent message rollup:
   GREATEST clocks + needs_reply/reopen only on the newest message). Unique indexes: one 1:1 thread
   per contact (`crm_conversation_one_to_one_idx`), one message per provider_sid, one per timeline_id.
-- **Dual-write is LIVE but SHADOW-ONLY.** `lib/crm/record-message.ts` (`recordConversationMessage`)
-  is wired into all outbound sends (`app/actions/crm.ts`: 1:1 SMS, group MMS, email) + both inbound
-  webhooks (`app/api/twilio/inbound-sms`, `conversations-events`), each as a **non-fatal try/catch**.
-  **crm_timeline is STILL the source of truth — nothing READS the new tables yet.** So the site is
-  fully non-regressed; you can ignore these tables entirely for now.
-- **History backfilled:** `20260716210000_conversation_backfill.sql` projected the ~45k message-kind
-  timeline rows → 8,385 1:1 threads + 2 real Twilio group threads + 45,209 messages. Idempotent +
-  replay-safe (timeline_id + provider_sid guards).
-- **NEXT STEP (not started — needs a focused session + a Matt decision):** the inbox READ rewire.
-  `getInboxFolderQueue` (lib/data/crm/getInboxQueue.ts) currently RE-DERIVES person-collapsed
-  conversations from crm_timeline every load; the model precomputes all of it. The open product fork
-  Matt must decide: **person-keyed inbox (today's shape, groups fold onto a contact) vs
-  conversation-keyed (group threads become their own inbox rows).** That choice changes the output
-  shape + all ~9 inbox consumers + the mobile/desktop fork, so it's deliberately deferred to its own
-  browser-verified pass. Do NOT flip it casually.
-- **If you touch messaging/CRM sends or the Twilio webhooks:** the shadow-write call is additive and
-  swallows its own errors — leave it in place; if you change a send's variable names, update the
-  matching `recordConversationMessage({...})` args (tsc will catch mismatches).
+- **Dual-write is LIVE.** `lib/crm/record-message.ts` (`recordConversationMessage`) is wired into all
+  outbound sends (`app/actions/crm.ts`: 1:1 SMS, group MMS, email) + both inbound webhooks
+  (`app/api/twilio/inbound-sms`, `conversations-events`), each as a **non-fatal try/catch**. It also
+  covers calls/voicemail (channel parity). If you change a send's variable names, update the matching
+  `recordConversationMessage({...})` args (tsc catches mismatches).
+- **History backfilled + channel-parity:** migrations `20260716210000` (backfill) + `230000`
+  (calls/voicemail into `crm_message.meta`) + `240000` (denorm latest-message fields +
+  `message_count` + `outbound_brokers` onto `crm_conversation`). ~8.4k conversations, 45k+ messages.
+  Idempotent + replay-safe (timeline_id + provider_sid guards).
+- **The inbox now READS the model (DONE, browser-verified).** `getInboxQueue.ts`
+  `buildInboxWorkingSet` reads `crm_conversation` (single query, precomputed fields) — the inbox is
+  **conversation-keyed** (a contact's 1:1 and a group are distinct rows). Triage status still overlays
+  from person-keyed `crm_conversation_state` (mark read/handled/closed actions unchanged). Working set
+  bounded to ~120 days + any needs_reply thread. `crm_timeline` stays the immutable ledger and the
+  person-page thread (getContactActivityFeed) still reads it — only the INBOX LIST flipped.
+- **Open follow-up (Matt's call):** the inbox count is higher than the old one because the model
+  surfaces real threads the old 2000-message window HID (good), but also includes ~4% automated
+  broadcasts (app market-reports, sequence drips). Filtering those needs a `source` marker threaded
+  onto `crm_message`. Not started.
+- **Gotcha:** the dev server's stale in-memory client chunks masked correct edits in a long-lived
+  browser tab — verify inbox changes in a FRESH tab (the source was always right).
 
 # ADMIN CONSOLIDATION: ~40 PAGES → BROKER WORKFLOWS (2026-07-07 evening, Claude Code — SHIPPED)
 
