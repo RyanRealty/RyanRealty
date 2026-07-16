@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.802.3 (2026-07-16)
+
+### Bug Fixes
+- fix(crm): show SMS delivery status + group badge in the inbox thread
+
+---
+
+
 ## v1.802.2 (2026-07-16)
 
 ### Bug Fixes
