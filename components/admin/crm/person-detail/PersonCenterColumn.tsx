@@ -42,7 +42,9 @@ import {
   Clock3,
   TriangleAlert,
   RefreshCw,
+  Users,
 } from 'lucide-react'
+import { groupInfoFromPayload } from '@/lib/crm/group-message'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -298,6 +300,10 @@ function EventCard({ item }: { item: TimelineItem }) {
   // import (payload.contentHidden === true, body null). Show a labeled
   // placeholder instead of a confusingly blank card.
   const contentHidden = !preview && (item.payload as { contentHidden?: unknown } | null)?.contentHidden === true
+  // Group text detection (RC1): a group message is written with payload.groupTo /
+  // groupMembers. Surfacing it here is what makes a group text unmistakable from a
+  // private 1:1 — previously they rendered identically.
+  const group = groupInfoFromPayload(item.payload)
 
   function toggleStar() {
     const next = !starred
@@ -333,6 +339,16 @@ function EventCard({ item }: { item: TimelineItem }) {
               </Badge>
             ) : null}
             {item.kind === 'sms_out' ? <SmsDeliveryBadge item={item} /> : null}
+            {group ? (
+              <Badge
+                variant="secondary"
+                className="ml-2 gap-1 text-[10px]"
+                title={`Group text · ${group.participants.join(', ')}`}
+              >
+                <Users className="h-3 w-3" aria-hidden />
+                Group · {group.count} people
+              </Badge>
+            ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <span className="text-xs tabular-nums text-muted-foreground">{cardTimestamp(item.ts, now)}</span>

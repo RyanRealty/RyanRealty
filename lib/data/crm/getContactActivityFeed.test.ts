@@ -63,6 +63,7 @@ describe('getContactActivityFeed pure helpers (2.1)', () => {
         recordingSid: null,
         recordingDurationSec: null,
         contentHidden: false,
+        group: null,
       })
     })
     it('defaults source to app when missing', () => {

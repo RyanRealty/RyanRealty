@@ -9,7 +9,8 @@
  * recordings (features FUB's collapsed rows don't carry, surfaced on demand).
  */
 import { useState, useTransition } from 'react'
-import { EyeOff, Mail, MailOpen, MessageSquare, Phone, ShieldAlert, Voicemail } from 'lucide-react'
+import { EyeOff, Mail, MailOpen, MessageSquare, Phone, ShieldAlert, Users, Voicemail } from 'lucide-react'
+import { groupInfoFromPayload } from '@/lib/crm/group-message'
 import { Button } from '@/components/ui/button'
 import { blockCrmNumber } from '@/app/actions/crm-block'
 import { timelineEmailBody } from '@/lib/crm/email-body'
@@ -149,6 +150,7 @@ export default function ConversationFeed({
         const media = mediaOf(e.payload)
         const recordingSid = recordingSidOf(e.payload)
         const spamSuspected = Boolean(e.payload && e.payload.spamSuspected === true)
+        const group = groupInfoFromPayload(e.payload)
         // Only inbound calls/voicemails carry an external caller to block — on an
         // outbound call `fromNumber` is OUR broker line, so never offer to block it.
         const isInbound = e.kind === 'voicemail' || (e.kind === 'call' && e.payload?.direction !== 'out')
@@ -170,6 +172,14 @@ export default function ConversationFeed({
                     {spamSuspected ? (
                       <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-warning/15 px-2 py-0.5 align-middle text-[11px] font-medium text-warning">
                         <ShieldAlert className="h-3 w-3" aria-hidden /> Possible spam
+                      </span>
+                    ) : null}
+                    {group ? (
+                      <span
+                        className="ml-2 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 align-middle text-[11px] font-medium text-primary"
+                        title={`Group text · ${group.participants.join(', ')}`}
+                      >
+                        <Users className="h-3 w-3" aria-hidden /> Group · {group.count}
                       </span>
                     ) : null}
                   </span>

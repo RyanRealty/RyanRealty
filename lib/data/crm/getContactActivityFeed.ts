@@ -14,6 +14,7 @@
  */
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import { groupInfoFromPayload } from '@/lib/crm/group-message'
 
 export type ActivityCategory = 'message' | 'email' | 'call' | 'note' | 'system' | 'milestone' | 'web' | 'other'
 
@@ -36,6 +37,12 @@ export type ActivityFeedItem = {
    *  content access (see scripts/crm-import-fub-comms.mjs). The UI labels these
    *  rather than rendering a blank, so a redacted message never reads as empty. */
   contentHidden: boolean
+  /** When this message was part of a GROUP text (2+ participants): the participant
+   *  count + their numbers. Null for a 1:1. Drives the "Group · N people" badge so
+   *  a group text is never mistaken for a private message (the owner's #1 messaging
+   *  confusion, RC1). Written by the send path (payload.groupTo) and the inbound
+   *  Conversations webhook (payload.groupMembers + group:true). */
+  group: { count: number; participants: string[] } | null
 }
 
 type KindMeta = { category: ActivityCategory; direction: 'in' | 'out' | null; label: string }
@@ -133,6 +140,7 @@ export function toFeedItem(row: Record<string, unknown>): ActivityFeedItem {
     recordingSid,
     recordingDurationSec,
     contentHidden,
+    group: groupInfoFromPayload(payload),
   }
 }
 
