@@ -115,6 +115,33 @@ Tagged **u**nderstanding / **t**rust / **c**onversion. The honest count from thi
 
 ---
 
+## Completion register — 2026-07-16 (all 18 items closed, commits 13ce782f..23aee2eb)
+
+| # | Status | Where it landed |
+|---|---|---|
+| 1 | ops → Matt | Everything code-side is ready: 106 unsent owners with phones, guarded send queue at /admin/expired-outreach (intro SMS now carries the built audit link). Actually pressing Send is Matt's call. |
+| 2 | shipped | Email CTA → /housing-market/\<city\> (report-framed hero) or geo page at #market-report; reportCtaUrl + tests (04d61e26) |
+| 3 | shipped | Seller ask inside KbMarketHud on every geo template, from= attributed (3befad2f) |
+| 4 | shipped | Satori region median-price chart replaces the grok AI banner (c507a81c) |
+| 5 | shipped | CMA/expired-audit final "Your next step" page: tel/sms/mailto + consult ask + broker card; expired adds "reply to the text" (65a6b378) |
+| 6 | shipped | Root cause corrected: the Jul 11 cron DID fire (row created 14:01 UTC) — the Saturday schedule published every report 7 days late by design. Cron → Sunday, empty-data refusal + ops alarm, market_reports freshness check in market-stat-consistency, weekly-2026-07-05 backfilled (c507a81c) |
+| 7 | shipped | ?_pid= + UTMs on the expired CMA link at merge time (13ce782f) |
+| 8 | shipped | utm_source=crm on email CTA + SMS doc link; attributeSiteLinks made fragment-aware (04d61e26, 13ce782f) |
+| 9 | shipped | "\<Name\> homes for sale" → #listings anchors on /communities rows; Broken Top alias pages consolidate via subdivision_aliases redirect (a617ef27) |
+| 10 | shipped | DB-only: three top-impression posts re-titled with verified numbers (Sunriver $870K rolling-365d median; Eagle Crest homes $385K / lots $199K — the old "$200K homes" claim was type-D LAND, not condos) |
+| 11 | verified done | Legacy report URLs already 301 via middleware (live-checked both slash variants); all 152 GSC ranking paths covered by the gate |
+| 12 | shipped | Presets lots-and-land (196 Bend actives) + gated-community (255, MLS-verified) + "Popular searches" chips on /cities/\<slug\>; golf demand routes to the existing on-golf-course landing (a699be6d) |
+| 13 | shipped | Per-city verdict + meaningLine in the weekly report, city links → /housing-market/\<city\> (c507a81c) |
+| 14 | shipped | shellBrokerFor() default-Matt close card on every send + preview path (04d61e26) |
+| 15 | ops → Matt | Meta 39% engagement: ad→LP promise-match review still open (analysis, not code) |
+| 16 | verified done | 4f218e9d + the committed rework: /admin/expireds builds, /admin/expired-outreach sends, cross-linked; /admin/expired-listings redirects |
+| 17 | shipped | Same KbMarketHud edit as #3 — lands on all KB geo templates |
+| 18 | shipped | view_city/view_community win; *_view dupes removed from firing code + EventName union (25a62c39) |
+
+Bonus §0 catch shipped with #13: formatMonths' near-threshold band was exclusive, so Bend's true 4.05 MoS printed "Balanced market · 4.0 months" (verdict-contradicting number). Band now inclusive + unit-tested.
+
+---
+
 ## Verification traces (§0)
 
 - **3 subscriptions / 8 sent / 6 open / 2 click / 3 recipients** — Supabase `crm_report_subscriptions` (count, `is_active`), `email_events` grouped by `event` where `send_type='market-report'`, 2026-07-15.
