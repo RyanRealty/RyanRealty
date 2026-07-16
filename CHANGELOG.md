@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.807.0 (2026-07-16)
+
+### Features
+- feat(crm): conversation-model channel parity — calls + voicemail (RC1)
+
+---
+
+
 ## v1.806.2 (2026-07-16)
 
 ### Maintenance
