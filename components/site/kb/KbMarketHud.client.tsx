@@ -1,10 +1,12 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { kbMoneyFull, type KbMarketData } from './types'
 import { KbMarketChart } from './KbMarketChart.client'
+import { valuationPath } from '@/lib/slug'
 import { monthsOfSupplyVerdict as verdictOf, formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 
 function Kpi({ val, lbl }: { val: string | null; lbl: string }) {
@@ -65,6 +67,7 @@ export function KbMarketHud({
   byTownKind?: 'town' | 'neighborhood'
 }) {
   const root = useRef<HTMLElement>(null)
+  const pathname = usePathname()
   const updatedAt = pacificTime(asOf)
   const [now, setNow] = useState('--:--')
 
@@ -244,13 +247,24 @@ export function KbMarketHud({
           </div>
         ) : null}
 
-        <div className="sec-cta">
-          {/* design-audit #118: was hardcoded to /housing-market, the summary
-              hub this HUD is often embedded IN (self-referential on the
-              region page). /housing-market/reports is the actual full report. */}
-          <a href="/housing-market/reports" className="btn">
-            See the full market report <span className="arr">→</span>
-          </a>
+        {/* conversion-audit 2026-07-15 #3: this section makes a homeowner ask
+            "what does this mean for MY home" — and never asked it back. The
+            seller ask is the primary action here; the full report is the
+            secondary. from=<pathname> carries the true originating surface
+            into the valuation lead (same mechanism as KbSell). */}
+        <div className="mkt-ask">
+          <p className="mkt-ask-q">What does this market mean for your home?</p>
+          <div className="mkt-ask-row">
+            <a href={`${valuationPath()}?from=${encodeURIComponent(pathname || '/')}`} className="btn">
+              Get your number <span className="arr">→</span>
+            </a>
+            {/* design-audit #118: was hardcoded to /housing-market, the summary
+                hub this HUD is often embedded IN (self-referential on the
+                region page). /housing-market/reports is the actual full report. */}
+            <a href="/housing-market/reports" className="btn ghost">
+              See the full market report <span className="arr">→</span>
+            </a>
+          </div>
         </div>
         <p className="mkt-fine">
           Live single-family figures from the regional MLS. Months of supply is active inventory divided by the homes closed in the last 6 months, then divided by 6. Four months or less is a seller&rsquo;s market, four to six is balanced, six or more is a buyer&rsquo;s market. Sale to list compares the final sale price to the asking price. Median to pending is days from listing to an accepted offer.

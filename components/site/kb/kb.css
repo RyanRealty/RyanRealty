@@ -587,6 +587,11 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .mkt-bar .bhd b{font-variant-numeric:tabular-nums;}
 .kb-root .mkt-bar .btrack{height:9px;background:rgba(250,248,244,.16);position:relative;overflow:hidden;}
 .kb-root .mkt-bar .bfill{position:absolute;top:0;bottom:0;left:0;width:0;background:var(--cream);}
+/* Seller ask inside the market HUD (conversion-audit 2026-07-15 #3): the one
+   question a homeowner reading this section is already asking themselves. */
+.kb-root .mkt-ask{margin-top:clamp(26px,4vw,40px);}
+.kb-root .mkt-ask-q{font-size:clamp(1.1rem,2.4vw,1.5rem);font-weight:600;color:var(--cream);line-height:1.3;max-width:30ch;text-wrap:balance;}
+.kb-root .mkt-ask-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;}
 .kb-root .mkt-fine{margin-top:20px;font-size:.68rem;color:var(--cream-70);letter-spacing:.03em;line-height:1.5;max-width:60ch;}
 .kb-root .mkt-chrome{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--cream-12);position:relative;}
 .kb-root .mkt-chrome::after{content:"";position:absolute;left:0;bottom:-1px;height:1px;width:100%;background:var(--cream);transform-origin:left;}
