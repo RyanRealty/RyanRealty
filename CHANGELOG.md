@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.802.19 (2026-07-16)
+
+### Bug Fixes
+- fix(crm-automation): fire the tag_added trigger (was configurable but never dispatched)
+
+---
+
+
 ## v1.802.18 (2026-07-16)
 
 ### Bug Fixes
