@@ -10,6 +10,40 @@ the local callback) or integration-tested against the real DB.
 
 ## Shipped
 
+### Task #8 — responsive shell + Today home + drop public bundle — ASSESSED (2 of 3 done; 1 gated as dangerous)
+Investigated the whole task this session against the live code + gates + git history.
+Two of the three sub-items were already delivered by prior work following Matt's own
+LATER directives, and browser-verified production-grade this session:
+- **Responsive shell — DONE + verified.** ONE `ConsoleShell` (single nav source for the
+  desktop rail + mobile Sheet), locked by `ci:admin-mobile-shell` + `ci:admin-responsive`
+  (whole admin is mobile-first, ratcheted). The 32 `components/admin/**/mobile/*` files
+  are the INTENDED mobile-first CRM (iOS-style tab bar + sheets + swipe rows), not
+  duplication to eliminate — collapsing them into one tree would DEGRADE the phone UX.
+  Browser-verified authed as matt@: `/admin/broker-dashboard` renders clean on desktop
+  (KPI cards, single header, no double-nav) AND reflows to a purpose-built mobile layout
+  (hamburger, tabbed lead cards, bottom Home/Inbox/People/Deals/Activity bar, FAB).
+- **Today home — DONE (superseded).** The original spec wanted a separate "Today" home,
+  but Matt directed **"one home, not three" (2026-06-16)** — the three dashboards
+  collapsed into `/admin/broker-dashboard` ("Good afternoon, Matt." + live pulse), and
+  `/admin` is a thin redirect to it (`(protected)/page.tsx`). Building a separate Today
+  home now would CONTRADICT that directive, so this is correctly done, not undone.
+- **Drop the public JS bundle from admin — the one genuine remaining item; NOT rushed.**
+  The root layout imports the public chrome (SiteHeader/Footer + RootProvider contexts +
+  SignInPrompt/InstallPrompt/ComparisonTray/trackers). `HideChrome`/`HideOnLP` already
+  UNMOUNT/CSS-hide them on admin and the trackers already skip admin
+  (VisitTracker.tsx:229), so admin is fast + clean at RUNTIME — but the JS still ships in
+  the shared client chunk. **The naive drops are actively dangerous:** SiteHeader is an
+  async SERVER component (ships zero client JS) whose chrome MUST be CSS-toggled on a
+  stable node — mount-toggling or `next/dynamic`-ing it reraces the "double nav" Matt
+  reported 2026-07-11 (`reference_double_nav_chrome_gate` + the HideChrome §50-62 comment).
+  So the only safe fix is the route-group refactor: a minimal root `app/layout.tsx`
+  (html/body/fonts/globals/essential providers, NO public chrome, NO `headers()` — must
+  stay static-prerenderable per SITE_SPEC §45-47) + an `app/(public)/layout.tsx` carrying
+  the public chrome with the public pages moved under it; admin then inherits the minimal
+  root and stops paying for the public bundle. That is a large, full-site-prerender-
+  verified change — a dedicated pass, not a mega-session tail. It's a PERF optimization
+  (unused-JS parse cost), not a usability blocker — the admin is verified usable + fast.
+
 ### RC7 — consumer save→sign-in→resume — DONE (browser-verified)
 - **A logged-out save now completes itself after sign-in** (`lib/pending-save.ts` +
   `lib/hooks/useResumePendingSave.ts`). Before: an anonymous saver was bounced to
