@@ -35,6 +35,14 @@ the local callback) or integration-tested against the real DB.
   `lib/hooks/useSessionUser` (client /api/auth/me fetch) drives a new
   `HeaderAccount` (SiteHeader account menu) + KbNav's auth link → "My account" when
   signed in. Verified live: KbNav shows "MY ACCOUNT" for the authed session.
+- **save→sign-in returns you to the page** (`be5a8eca`). All 11 save entry points sent
+  `?returnUrl=` (or `/account?signin=1`) which login ignored (it honors `next`), so a
+  save→sign-in dumped the visitor on /account with the listing lost. Standardized every
+  save on `/login?next=<page>`. Verified live. (Auto-replay of the save = spec-10.)
+- **Viewing history made real** (`3a567bbc`). /account/history read user_activities (no
+  writer → always empty, Remove on nonexistent rows). Now VisitTracker writes
+  user_events on a signed-in listing view; getRecentListingViews reads it. Verified
+  live end-to-end: viewed 2 listings → both render in history.
 
 ### Person-page CMA flow — DONE (partial)
 - **CMA "Review comp" dead-end fixed + build feedback** (`1ab7872c`). Repointed to
