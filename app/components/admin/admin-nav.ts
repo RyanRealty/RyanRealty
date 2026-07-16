@@ -134,7 +134,8 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
   const system: AdminNavItem[] = []
   if (isSuperuser) system.push(item('/admin/operations', 'Operations', 'gauge'))
   if (isSuperuser) system.push(item('/admin/crm/health', 'CRM health', 'activity'))
-  if (isSuperuser) system.push(item('/admin/crm/settings', 'CRM settings', 'gauge'))
+  // CRM settings lives in the CRM menu (crmItems below) — was duplicated here in the
+  // Admin menu too (audit: "/admin/crm/settings appears twice in the superuser nav").
   // /admin/sync's layout is superuser-only; match the nav gate to it.
   // Consolidation 2026-07-07: Spark is now a tab inside System health (/admin/sync).
   if (isSuperuser) system.push(item('/admin/sync', 'System health', 'refresh'))

@@ -75,6 +75,25 @@ the local callback) or integration-tested against the real DB.
   8-destination IA as a projection of the capability map (nav can't show a dead-end).
   9 unit tests.
 
+### Shell / IA pass — IN PROGRESS (bounded HIGH defects landing)
+- **Broker dead-ends killed** (`ef95e240`). /admin/listings + /admin/crm/import were
+  shown to brokers but their pages redirect non-superusers → gated the nav to match.
+  Verified: superuser nav intact, brokers no longer see them. (crm/calendar, templates,
+  reporting use isSuperuser for DATA scoping not gating — left unchanged.)
+- **Sign-out added** (`486bc01d`). Audited "no sign-out anywhere in the admin" — the
+  avatar was a bare image. Desktop: account DropdownMenu (name/email, My settings, View
+  site, Sign out). Mobile: sign-out footer in the hamburger sheet. Verified live (desktop
+  menu opens showing Sign out; mobile sheet is Radix so harness can't open it but real
+  users can).
+- **Deep-link destination preserved through sign-in** (`d9e92c63`). Layout hardcoded
+  next=/admin + AdminLoginForm hardcoded ADMIN_NEXT → a deep link with an expired session
+  dumped you on the dashboard. Now the funnel carries the real page end to end (layout
+  x-pathname → auth-error → login page → form dest). Verified page renders carrying next.
+- STILL in shell scope (larger/risky, deferred): the responsive single-tree consolidation
+  (kill the mobile/desktop fork), the persistable session-refresh (middleware/server.ts
+  cookie writes), dropping the public-site bundle from admin (route-group refactor), and
+  the full nav→buildNav(capability) migration with canonical routes.
+
 ### Dedicated review pass — DONE (`7108d338`)
 A 5-area adversarial multi-agent review of the session's 14 commits found + fixed
 **2 confirmed HIGH bugs manual testing missed**: (1) withSendIdempotency reported a
