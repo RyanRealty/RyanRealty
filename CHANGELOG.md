@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.802.12 (2026-07-16)
+
+### Maintenance
+- docs(admin-rebuild): PROGRESS log — consumer funnel fixes (RC7)
+
+---
+
+
 ## v1.802.11 (2026-07-16)
 
 ### Bug Fixes
