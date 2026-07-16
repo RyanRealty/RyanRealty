@@ -14,6 +14,8 @@ import { listingDetailPath } from '@/lib/slug'
 import { getCanonicalSiteUrl, listingShareText } from '@/lib/share-metadata'
 import { incrementListingShareCount } from '@/app/actions/engagement'
 import { toggleSavedListing } from '@/app/actions/saved-listings'
+import { redirectToLoginForSave } from '@/lib/pending-save'
+import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import { toggleLikeListing } from '@/app/actions/likes'
 
 function eventLabel(type: ActivityFeedItem['event_type']): string {
@@ -119,10 +121,22 @@ export default function ActivityFeedCard({ item, priority = false, className, si
   async function handleSave(e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
-    if (!signedIn) return goToLogin(e)
+    if (!signedIn) {
+      redirectToLoginForSave(item.listing_key) // RC7: stash so the save resumes after sign-in
+      return
+    }
     const result = await toggleSavedListing(item.listing_key)
     setSavedState(result.saved)
   }
+
+  useResumePendingSave({
+    listingKey: item.listing_key,
+    alreadySaved: savedState,
+    resume: async () => {
+      const result = await toggleSavedListing(item.listing_key)
+      setSavedState(result.saved)
+    },
+  })
 
   async function handleLike(e: React.MouseEvent) {
     e.preventDefault()

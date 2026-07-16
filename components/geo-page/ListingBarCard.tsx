@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { ListingTileRow } from '@/app/actions/listings'
 import { toggleSavedListing } from '@/app/actions/saved-listings'
+import { redirectToLoginForSave } from '@/lib/pending-save'
+import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import { toggleLikeListing } from '@/app/actions/likes'
 import { getCanonicalSiteUrl, listingShareText } from '@/lib/share-metadata'
 import { incrementListingShareCount } from '@/app/actions/engagement'
@@ -98,10 +100,23 @@ export default function ListingBarCard({
   async function handleSave(e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
-    if (!signedIn) return goToLogin(e)
+    if (!signedIn) {
+      // Stash the intent so the save completes on return from sign-in (RC7).
+      redirectToLoginForSave(listingKey)
+      return
+    }
     const result = await toggleSavedListing(listingKey)
     setSavedState(result.saved)
   }
+
+  useResumePendingSave({
+    listingKey,
+    alreadySaved: savedState,
+    resume: async () => {
+      const result = await toggleSavedListing(listingKey)
+      setSavedState(result.saved)
+    },
+  })
 
   async function handleLike(e: React.MouseEvent) {
     e.preventDefault()

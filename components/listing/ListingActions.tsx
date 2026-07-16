@@ -9,6 +9,8 @@ import { trackEvent } from '@/lib/tracking'
 import { toggleSavedListing } from '@/app/actions/saved-listings'
 import { toggleLikeListing } from '@/app/actions/likes'
 import { incrementListingShareCount } from '@/app/actions/engagement'
+import { redirectToLoginForSave } from '@/lib/pending-save'
+import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import { useComparison } from '@/contexts/ComparisonContext'
 import { listingDetailPath } from '@/lib/slug'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -61,8 +63,8 @@ export default function ListingActions({ listingKey, address, price, isSaved, is
   const handleSaveClick = async () => {
     const result = await toggleSavedListing(listingKey)
     if (result.error === 'Not signed in') {
-      const returnUrl = encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : listingDetailPath(listingKey))
-      window.location.href = `/login?next=${returnUrl}`
+      // Stash the intent so the save auto-completes on return from sign-in (RC7).
+      redirectToLoginForSave(listingKey)
       return
     }
     if (result.saved) {
@@ -70,6 +72,17 @@ export default function ListingActions({ listingKey, address, price, isSaved, is
     }
     router.refresh()
   }
+
+  // RC7 resume: complete a save this listing was bounced to login for.
+  useResumePendingSave({
+    listingKey,
+    alreadySaved: isSaved,
+    resume: async () => {
+      const result = await toggleSavedListing(listingKey)
+      if (result.saved) trackEvent('save_listing', { listing_key: listingKey, listing_url: listingUrl, value: price })
+      router.refresh()
+    },
+  })
 
   const handleShareComplete = () => {
     trackEvent('share_listing', { listing_key: listingKey, listing_url: listingUrl })

@@ -8,6 +8,8 @@ import type { HomeTileRow, ListingTileRow } from '@/app/actions/listings'
 import { isResortCommunity } from '@/lib/resort-communities'
 import { toggleSavedListing } from '@/app/actions/saved-listings'
 import { toggleLikeListing } from '@/app/actions/likes'
+import { redirectToLoginForSave } from '@/lib/pending-save'
+import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import { cn } from '@/lib/utils'
 import { formatDate } from '@/lib/format/date'
 import CardActionBar from '@/components/ui/CardActionBar'
@@ -297,6 +299,25 @@ function ListingTile({
     setSavedState(result.saved)
   }
 
+  // Logged-out save on a card: stash the intent so it completes on return (RC7),
+  // instead of the generic goToLogin that forgets which listing.
+  function goToLoginForSave(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (canonicalListingKey) redirectToLoginForSave(canonicalListingKey)
+    else goToLogin(e)
+  }
+
+  useResumePendingSave({
+    listingKey: canonicalListingKey ?? '',
+    alreadySaved: savedState,
+    resume: async () => {
+      if (!canonicalListingKey) return
+      const result = await toggleSavedListing(canonicalListingKey)
+      setSavedState(result.saved)
+    },
+  })
+
   async function handleToggleLike(e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
@@ -550,7 +571,7 @@ function ListingTile({
             : { active: false, count: likeCount, ariaLabel: 'Like', onToggle: goToLogin }}
           save={signedIn
             ? { active: savedState, count: saveCount, ariaLabel: savedState ? 'Remove from saved' : 'Save listing', onToggle: handleToggleSave }
-            : { active: false, count: saveCount, ariaLabel: 'Save listing', onToggle: goToLogin }}
+            : { active: false, count: saveCount, ariaLabel: 'Save listing', onToggle: goToLoginForSave }}
           signedIn={signedIn}
           guestCounts={!signedIn ? { viewCount, likeCount, saveCount } : undefined}
         />

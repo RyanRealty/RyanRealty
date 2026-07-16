@@ -10,6 +10,24 @@ the local callback) or integration-tested against the real DB.
 
 ## Shipped
 
+### RC7 — consumer save→sign-in→resume — DONE (browser-verified)
+- **A logged-out save now completes itself after sign-in** (`lib/pending-save.ts` +
+  `lib/hooks/useResumePendingSave.ts`). Before: an anonymous saver was bounced to
+  `/login?next=<page>` and returned signed in but the listing was NOT saved — the
+  save→account→lead-capture path silently dropped. Now every save control stashes the
+  intended listing (`sessionStorage`, survives the OAuth round-trip) before the login
+  bounce, and resumes it once on return. Applied to ALL seven live save entry points:
+  `SaveListingButton` (search/map), `ListingActions` + `PriceCtaStrip` (detail),
+  `ListingTile` (grids), `geo-page/ListingBarCard`, `activity/ActivityFeedCard`,
+  `geo-page/ActivityFeedCard`. (`components/ActivityFeedCard.tsx` is dead + hides save
+  when logged out — chip spawned to delete it.) The hook consumes the flag whenever it
+  names this listing (even if the page already renders it saved from an ISR-cached prior
+  save) so a stale intent never lingers. **Browser-verified end-to-end authed as matt@**:
+  set the pending flag, loaded a listing detail (451 C St, Madras), the save auto-
+  completed — DB row written, both detail-page buttons flipped to "Saved" — then cleaned
+  up. The RC4 accretion (save-with-login-redirect duplicated across 7 components) is now
+  behind one shared helper.
+
 ### RC1 — the inbox now READS the conversation model — DONE (browser-verified)
 - **The inbox read path flipped off the person-collapsed timeline** (`getInboxQueue.ts`
   `buildInboxWorkingSet` rewritten; channel-parity + denorm migrations `20260716230000`

@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation'
 import { toggleSavedListing } from '../../app/actions/saved-listings'
 import { trackSavedPropertyAction } from '../../app/actions/track-saved-property'
 import { trackSaveListing } from '@/lib/tracking'
+import { redirectToLoginForSave } from '@/lib/pending-save'
+import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import { BookmarkIcon } from '@/components/icons/ActionIcons'
 import { Button } from "@/components/ui/button"
 
@@ -30,39 +32,50 @@ export default function SaveListingButton({
 }: Props) {
   const router = useRouter()
 
+  // Fire the same lead-capture + analytics a manual save fires. Shared by the
+  // click handler and the post-sign-in resume so both paths are attributed.
+  function fireSaveTracking() {
+    if (userEmail && listingUrl && property) {
+      trackSavedPropertyAction({
+        userEmail,
+        listingKey,
+        listingUrl,
+        sourcePage: typeof window !== 'undefined' ? window.location.href : undefined,
+        property,
+      })
+    }
+    if (listingUrl) {
+      trackSaveListing({
+        listingKey,
+        listingUrl,
+        price: property?.price,
+        mlsNumber: property?.mlsNumber ?? listingKey,
+      })
+    }
+  }
+
+  // RC7 resume: on return from sign-in, complete the save this listing was bounced
+  // to login for. Shared across every save control.
+  useResumePendingSave({
+    listingKey,
+    alreadySaved: saved,
+    resume: async () => {
+      const result = await toggleSavedListing(listingKey)
+      if (result.saved) fireSaveTracking()
+      router.refresh()
+    },
+  })
+
   async function handleClick(e: React.MouseEvent) {
     e.preventDefault()
     const result = await toggleSavedListing(listingKey)
     if (result.error === 'Not signed in') {
-      // Route anonymous savers to sign-in (and back) — mirrors ListingActions —
-      // so the save -> account-creation lead-capture path isn't silently lost.
-      const returnUrl = encodeURIComponent(
-        typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/',
-      )
-      if (typeof window !== 'undefined') {
-        window.location.href = `/login?next=${returnUrl}`
-      }
+      // Route anonymous savers to sign-in, stashing the intent so the save
+      // auto-completes on return (RC7). The lead-capture path must not be lost.
+      redirectToLoginForSave(listingKey)
       return
     }
-    if (result.saved) {
-      if (userEmail && listingUrl && property) {
-        trackSavedPropertyAction({
-          userEmail,
-          listingKey,
-          listingUrl,
-          sourcePage: typeof window !== 'undefined' ? window.location.href : undefined,
-          property,
-        })
-      }
-      if (listingUrl) {
-        trackSaveListing({
-          listingKey,
-          listingUrl,
-          price: property?.price,
-          mlsNumber: property?.mlsNumber ?? listingKey,
-        })
-      }
-    }
+    if (result.saved) fireSaveTracking()
     router.refresh()
   }
 
