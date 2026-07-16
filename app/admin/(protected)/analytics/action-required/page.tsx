@@ -11,6 +11,7 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
+import { getLeadIntake } from '@/lib/data/crm/getLeadIntake'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -260,27 +261,35 @@ async function AnonymousHighEngagementCard() {
 
 async function SpendAlerts() {
   const supabase = getSupabase()
-  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-  const [{ data: spend3d }, { data: qual3d }] = await Promise.all([
+  const now = Date.now()
+  const threeDaysAgo = new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  // Denominator = REAL inbound leads via getLeadIntake (the canonical lead source).
+  // The old code divided by marketing_channel_daily channel='fub'
+  // qualified_seller_leads — a metric whose writer was removed 2026-07, so it was
+  // structurally always 0 and fired a false "CRITICAL: pause your ads" on any $60
+  // of spend. getLeadIntake reads crm_people directly (dashboard source of truth).
+  const [{ data: spend3d }, intake] = await Promise.all([
     supabase.from('marketing_channel_daily').select('value')
       .eq('channel', 'meta_ads').eq('scope', 'account').eq('metric', 'spend').gte('date', threeDaysAgo),
-    supabase.from('marketing_channel_daily').select('value')
-      .eq('channel', 'fub').eq('scope', 'account').eq('metric', 'qualified_seller_leads').gte('date', threeDaysAgo),
+    getLeadIntake({
+      startIso: new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString(),
+      endIso: new Date(now).toISOString(),
+    }),
   ])
   const totalSpend = (spend3d ?? []).reduce((acc, r) => acc + (Number((r as { value: number }).value) || 0), 0)
-  const totalQual = (qual3d ?? []).reduce((acc, r) => acc + (Number((r as { value: number }).value) || 0), 0)
+  const totalLeads = intake.inboundLeads
   const alerts: { severity: 'critical' | 'warning' | 'info'; message: string }[] = []
-  if (totalSpend >= 60 && totalQual === 0) {
+  if (totalSpend >= 60 && totalLeads === 0) {
     alerts.push({
       severity: 'critical',
-      message: `Spent ${fmtUsd(totalSpend)} on Meta over the last 3 days with zero qualified seller leads. Pause the weakest ad set and audit creative before more spend ships.`,
+      message: `Spent ${fmtUsd(totalSpend)} on Meta over the last 3 days with zero new leads. Pause the weakest ad set and audit creative before more spend ships.`,
     })
-  } else if (totalSpend > 0 && totalQual > 0) {
-    const cpl = totalSpend / totalQual
+  } else if (totalSpend > 0 && totalLeads > 0) {
+    const cpl = totalSpend / totalLeads
     if (cpl > 150) {
       alerts.push({
         severity: 'warning',
-        message: `3-day cost per qualified lead is ${fmtUsd(cpl)}, above the $150 healthy threshold. Tighten audience or pause weakest creative.`,
+        message: `3-day cost per new lead is ${fmtUsd(cpl)}, above the $150 healthy threshold. Tighten audience or pause weakest creative.`,
       })
     }
   }
@@ -294,7 +303,7 @@ async function SpendAlerts() {
       </CardHeader>
       <CardContent className="space-y-2">
         {alerts.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No spend anomalies detected. {fmtUsd(totalSpend)} spent for {totalQual} qualified leads.</p>
+          <p className="text-sm text-muted-foreground">No spend anomalies detected. {fmtUsd(totalSpend)} spent for {totalLeads} new leads.</p>
         ) : (
           alerts.map((a, i) => (
             <Alert key={i} variant={a.severity === 'critical' ? 'destructive' : 'default'}>
