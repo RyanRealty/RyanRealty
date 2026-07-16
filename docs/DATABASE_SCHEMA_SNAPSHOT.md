@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-07-16T21:43:53.929Z
+**Generated:** 2026-07-16T21:59:27.800Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -593,7 +593,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 163**
+### `cmas` · **rows ≈ 164**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -672,7 +672,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 154**
+### `expired_listings` · **rows ≈ 155**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -719,7 +719,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_crm_person_id` | bigint | yes |  |
 | `outreach_sms_sid` | text | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 497**
+### `marketing_brain_actions` · **rows ≈ 498**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -1808,6 +1808,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `idempotency_key` | text | yes |  |
 | `timeline_id` | bigint | yes |  |
 | `created_at` | timestamp with time zone | no | now() |
+| `meta` | jsonb | no | '{}'::jsonb |
 
 ### `crm_message_drafts`
 
