@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.808.1 (2026-07-16)
+
+### Maintenance
+- docs(handoff): RC1 complete — inbox now reads the conversation model end-to-end
+
+---
+
+
 ## v1.808.0 (2026-07-16)
 
 ### Features
