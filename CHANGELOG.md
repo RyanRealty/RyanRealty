@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.806.2 (2026-07-16)
+
+### Maintenance
+- docs(handoff): RC1 conversation model shipped (shadow-only), read-rewire next
+
+---
+
+
 ## v1.806.1 (2026-07-16)
 
 ### Bug Fixes
