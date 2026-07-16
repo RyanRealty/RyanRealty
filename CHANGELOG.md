@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.801.0 (2026-07-16)
+
+### Features
+- feat(admin-foundation): capability model, in-body guard, idempotency ledger, mutation primitive
+
+---
+
+
 ## v1.800.3 (2026-07-16)
 
 ### Maintenance
