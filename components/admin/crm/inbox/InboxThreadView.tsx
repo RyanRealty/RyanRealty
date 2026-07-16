@@ -13,10 +13,29 @@
  * Server component — timestamps pre-formatted by the page (no client Date).
  */
 
-import { Download } from 'lucide-react'
+import { Download, Users, Check, CheckCheck, Clock3, TriangleAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { sanitizeHtml } from '@/lib/sanitize'
+import type { DeliveryTone } from '@/lib/crm/sms-delivery'
 import type { InboxThreadItemData } from '@/lib/data/crm/getInboxThread'
+
+/** Compact delivery indicator under an outbound bubble (sent/delivered/failed). */
+function DeliveryChip({ delivery }: { delivery: { label: string; tone: DeliveryTone } }) {
+  const Icon =
+    delivery.tone === 'delivered' ? CheckCheck : delivery.tone === 'sent' ? Check : delivery.tone === 'failed' ? TriangleAlert : Clock3
+  const tone =
+    delivery.tone === 'delivered'
+      ? 'text-success'
+      : delivery.tone === 'failed'
+        ? 'text-destructive'
+        : 'text-muted-foreground'
+  return (
+    <span className={cn('inline-flex items-center gap-1', tone)}>
+      <Icon className="h-3 w-3" aria-hidden />
+      {delivery.label}
+    </span>
+  )
+}
 
 export type InboxThreadViewItem = InboxThreadItemData & { tsLabel: string }
 
@@ -145,6 +164,14 @@ export default function InboxThreadView({
           const out = e.direction === 'out'
           return (
             <div key={e.id} className={cn('flex flex-col', out ? 'items-end' : 'items-start')}>
+              {e.group ? (
+                <span
+                  className="mb-0.5 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                  title={`Group text · ${e.group.participants.join(', ')}`}
+                >
+                  <Users className="h-3 w-3" aria-hidden /> Group · {e.group.count} people
+                </span>
+              ) : null}
               <div
                 className={cn(
                   'max-w-xs whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm leading-relaxed sm:max-w-md',
@@ -155,8 +182,16 @@ export default function InboxThreadView({
               >
                 {e.contentHidden ? <em>Content unavailable</em> : e.fullBody ?? e.snippet ?? e.label}
               </div>
-              <div className="mt-0.5 text-xs text-muted-foreground">
-                {out ? e.broker ?? 'us' : personName} · {e.tsLabel}
+              <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span>
+                  {out ? e.broker ?? 'us' : personName} · {e.tsLabel}
+                </span>
+                {out && e.delivery ? (
+                  <>
+                    <span aria-hidden>·</span>
+                    <DeliveryChip delivery={e.delivery} />
+                  </>
+                ) : null}
               </div>
             </div>
           )

@@ -10,6 +10,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { toFeedItem, type ActivityFeedItem } from '@/lib/data/crm/getContactActivityFeed'
+import { readSmsDelivery, deliverySummary } from '@/lib/crm/sms-delivery'
 
 /** The condensed contact card for the inbox reading-pane sidebar (spec §6). */
 export type InboxContactCard = {
@@ -67,6 +68,8 @@ export type InboxThreadItemData = ActivityFeedItem & {
   fullBody: string | null
   /** Email subject (crm_timeline.title) for email items. */
   subject: string | null
+  /** Outbound SMS delivery receipt for the inbox bubble (sent/delivered/failed). */
+  delivery: ReturnType<typeof deliverySummary>
 }
 
 /**
@@ -92,6 +95,8 @@ export async function getConversationThreadFull(personId: number, limit = 100): 
       ...item,
       fullBody: typeof row.body === 'string' ? row.body : null,
       subject: typeof row.title === 'string' ? row.title : null,
+      // Outbound-text delivery receipt so the inbox shows sent/delivered/failed.
+      delivery: item.kind === 'sms_out' ? deliverySummary(readSmsDelivery(row.payload)) : null,
     }
   })
 }
