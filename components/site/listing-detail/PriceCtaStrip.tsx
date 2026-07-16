@@ -9,6 +9,8 @@ import {
 } from '@/components/site/primitives'
 import { cn } from '@/lib/utils'
 import { displaySubdivision } from '@/lib/slug'
+import { redirectToLoginForSave } from '@/lib/pending-save'
+import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
 
 /**
@@ -96,6 +98,14 @@ export function PriceCtaStrip({
 }: Props) {
   const [saveState, setSaveState] = useState<SaveState>(initialSaved ? 'saved' : 'idle')
 
+  // RC7 resume: complete a save this listing was bounced to login for (the hook
+  // owns the idempotent save + re-stash; this is the detail page's real save CTA).
+  useResumePendingSave({
+    listingKey: listing.listingKey,
+    alreadySaved: saveState === 'saved',
+    onSaved: () => setSaveState('saved'),
+  })
+
   const isClosed = listing.status === 'Closed'
   const headlinePrice = isClosed ? listing.closePrice : listing.listPrice
   const street = [listing.streetNumber, listing.streetName, listing.streetSuffix].filter(Boolean).join(' ').trim()
@@ -128,9 +138,9 @@ export function PriceCtaStrip({
     try {
       const res = await onSave(listing.listingKey)
       if (res.needsAuth) {
-        // Signed-out: send them to sign in (and back), the save→account capture path.
-        const back = typeof window !== 'undefined' ? window.location.pathname : '/'
-        window.location.href = `/login?next=${encodeURIComponent(back)}`
+        // Signed-out: stash the intent + send them to sign in (and back), so the
+        // save→account capture path completes itself on return (RC7).
+        redirectToLoginForSave(listing.listingKey)
         return
       }
       setSaveState(res.saved ? 'saved' : 'idle')
