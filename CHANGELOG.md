@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.810.0 (2026-07-16)
+
+### Features
+- feat(consumer): save→sign-in→resume across save controls (RC7)
+
+---
+
+
 ## v1.809.0 (2026-07-16)
 
 ### Features
