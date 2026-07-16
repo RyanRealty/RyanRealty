@@ -49,9 +49,22 @@ the local callback) or integration-tested against the real DB.
   true, clock set), cleaned to 0/0; conversations-events 7-test regression suite green
   with the shadow-write in place (proves the try/catch is truly non-fatal). Deferred to
   a focused follow-up: delivery-status → crm_message.delivery_state (an UPDATE keyed on
-  provider_sid, forward-only; crm_message.delivery_state isn't read yet). Next: the
-  crm_timeline backfill (populate history), then the inbox read rewire (flip the source
-  of truth off the person-collapsed timeline).
+  provider_sid, forward-only; crm_message.delivery_state isn't read yet).
+- **History backfilled** (`20260716210000_conversation_backfill.sql`). Projected the
+  ~45k message-kind crm_timeline rows into the model: **8,385 1:1 conversations + 2 real
+  Twilio group threads + 45,209 messages**, idempotent by `crm_message.timeline_id`
+  (unique). Two-tier dedup — group member rows sharing a (conversationSid, messageSid)
+  collapse to one message; a multi-recipient email stays faithful-per-person with the
+  shared gmailId kept on the first row and nulled on the rest (the provider_sid unique
+  index caught this). A corrective rollup recompute sets clocks/needs_reply/channel_set
+  from the messages so inbox ordering is exact regardless of insert order. Verified vs
+  the real DB: message counts match the timeline exactly (974/974, 488/488, 447/447 on
+  the three busiest contacts), needs_reply correctly derived from the latest message
+  direction, channel_set unions email+sms, 0 orphan messages, both group threads read
+  is_group=true (participant_count 2 and 6). Migration file reconciled to the deployed
+  functions and made replay-safe (every step not-exists-guarded). Next: the inbox read
+  rewire — flip getInboxFolderQueue + the person thread off the person-collapsed
+  timeline onto crm_conversation/crm_message.
 
 ### Integrity + security (compliance-grade wrong numbers / unauthenticated writes) — DONE
 - **Content-write security holes closed** (`979350ad`). 18 in-body `checkAdminAction`
