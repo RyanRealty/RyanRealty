@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.802.16 (2026-07-16)
+
+### Bug Fixes
+- fix(admin-shell): add sign-out to the admin (was absent everywhere — audited HIGH)
+
+---
+
+
 ## v1.802.15 (2026-07-16)
 
 ### Bug Fixes
