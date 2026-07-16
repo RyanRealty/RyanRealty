@@ -1205,6 +1205,15 @@ export async function addCrmTagAction(formData: FormData): Promise<CrmActionResu
     tags: [...person.tags, tag], updated_at: new Date().toISOString(),
   }).eq('id', personId)
   if (error) return { ok: false, error: error.message }
+  // Automation trigger dispatch: fire tag_added so rules/sequences triggered by
+  // this tag enroll the person. The audit found tag_added was configurable in the
+  // UI but never fired (fireTrigger had ONE call site — stage_changed); this wires
+  // it. Non-blocking + dry-safe (fireTrigger returns [] when no rule matches).
+  void import('@/lib/crm/trigger-dispatch').then(({ fireTrigger }) =>
+    fireTrigger('tag_added', tag, personId).catch((e) =>
+      console.warn('[crm] trigger-dispatch tag_added failed:', e),
+    ),
+  )
   revalidateCrm(personId)
   return { ok: true }
 }
