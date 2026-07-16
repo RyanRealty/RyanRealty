@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.796.4 (2026-07-16)
+
+### Other
+- audit(market-reports): homeowner conversion audit + 6 funnel fixes
+
+---
+
+
 ## v1.796.3 (2026-07-16)
 
 ### Bug Fixes
