@@ -182,7 +182,24 @@ export async function resolveConversation(
     })
     .select('id')
     .single()
-  if (error || !created) return { ok: false, error: error?.message ?? 'conversation create failed' }
+  if (error || !created) {
+    // Lost a create race — crm_conversation_one_to_one_idx guarantees one 1:1 thread
+    // per contact, so a concurrent insert re-reads the winner instead of fragmenting.
+    const { data: raced } = await sb
+      .from('crm_conversation')
+      .select('id')
+      .eq('primary_person_id', pid)
+      .eq('is_group', false)
+      .is('twilio_conversation_sid', null)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+    if (raced?.id) {
+      await upsertParticipants(sb, raced.id, input.participants)
+      return { ok: true, conversationId: raced.id }
+    }
+    return { ok: false, error: error?.message ?? 'conversation create failed' }
+  }
   await upsertParticipants(sb, created.id, input.participants)
   return { ok: true, conversationId: created.id }
 }

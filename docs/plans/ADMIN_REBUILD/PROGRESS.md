@@ -65,6 +65,25 @@ the local callback) or integration-tested against the real DB.
   functions and made replay-safe (every step not-exists-guarded). Next: the inbox read
   rewire — flip getInboxFolderQueue + the person thread off the person-collapsed
   timeline onto crm_conversation/crm_message.
+- **Adversarial review + hardening** (`20260716220000_conversation_model_hardening.sql`).
+  A dedicated adversarial review of the foundation found 3 real correctness bugs (all
+  latent until the read path flips) — fixed and re-verified vs the real DB:
+  1. **HIGH — duplicate 1:1 threads.** The 1:1 resolver did read-then-insert with no
+     unique constraint, so concurrent inbound+outbound to a brand-new contact could
+     create two 1:1 threads (the exact fragmentation RC1 kills). Added a partial unique
+     index `(primary_person_id) where is_group=false and twilio_conversation_sid is null`
+     + a create-race re-read in record-message.ts (mirrors the group branch). Verified:
+     index present + unique; a 5th unit test locks the re-read.
+  2. **MED — needs_reply reflected the last-INSERTED row, not the latest by created_at.**
+     Crossing inbound/outbound inserted out of order could drop a waiting client from
+     triage. Trigger rewritten order-independent (clocks use GREATEST; needs_reply + the
+     closed→unread reopen only change when the inserted row is actually newest). Verified:
+     a late older inbound after a newer outbound correctly leaves needs_reply=false.
+  3. **MED — backfill replay could abort.** No live dual-write set timeline_id, so a
+     replay after a live send would collide on the provider_sid unique index. Backfill
+     now also guards on provider_sid (every live shadow-write carries one), so a replay
+     skips instead of colliding. The other probes (channel_set NULL, group upsert dupes,
+     RLS/service-client, provider_sid window) came back safe-by-design. Snapshot refreshed.
 
 ### Integrity + security (compliance-grade wrong numbers / unauthenticated writes) — DONE
 - **Content-write security holes closed** (`979350ad`). 18 in-body `checkAdminAction`

@@ -109,6 +109,30 @@ describe('recordConversationMessage — resolution logic', () => {
     expect(rows.find((x) => x.person_id === null)?.role).toBe('raw')
   })
 
+  it('re-reads the winning 1:1 thread when a concurrent insert loses the race', async () => {
+    const { sb, calls } = makeSb({
+      reads: [
+        { data: null },                    // provider_sid dedup probe → miss
+        { data: null },                    // 1:1 lookup → miss (no existing thread)
+        { data: { id: 'race-winner' } },   // re-read after the insert conflict → the winner
+      ],
+      writes: [
+        { data: null, error: { message: 'duplicate key', code: '23505' } }, // conversation insert loses the race
+        { data: { id: 'msg-x' } },         // message insert
+      ],
+    })
+    const r = await recordConversationMessage({
+      sb, direction: 'in', channel: 'sms', providerSid: 'SID-race', primaryPersonId: 7,
+      participants: [{ personId: 7, address: '+1' }],
+    })
+    expect(r.ok).toBe(true)
+    // resolves to the race winner rather than fragmenting into a second thread
+    if (r.ok) expect(r.conversationId).toBe('race-winner')
+    // it actually attempted the insert then re-read (two conversation selects: initial + re-read)
+    const convSelects = calls.filter((c) => c.table === 'crm_conversation' && c.op === 'select')
+    expect(convSelects.length).toBe(2)
+  })
+
   it('returns an error result (never throws) when a 1:1 has no primary contact', async () => {
     const { sb } = makeSb({ reads: [{ data: null }] })
     const r = await recordConversationMessage({
