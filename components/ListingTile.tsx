@@ -311,11 +311,7 @@ function ListingTile({
   useResumePendingSave({
     listingKey: canonicalListingKey ?? '',
     alreadySaved: savedState,
-    resume: async () => {
-      if (!canonicalListingKey) return
-      const result = await toggleSavedListing(canonicalListingKey)
-      setSavedState(result.saved)
-    },
+    onSaved: () => setSavedState(true),
   })
 
   async function handleToggleLike(e: React.MouseEvent) {

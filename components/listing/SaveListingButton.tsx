@@ -55,13 +55,13 @@ export default function SaveListingButton({
   }
 
   // RC7 resume: on return from sign-in, complete the save this listing was bounced
-  // to login for. Shared across every save control.
+  // to login for. The hook owns the idempotent save; onSaved fires the same
+  // tracking a manual save does, then refreshes so the button reads "Saved".
   useResumePendingSave({
     listingKey,
     alreadySaved: saved,
-    resume: async () => {
-      const result = await toggleSavedListing(listingKey)
-      if (result.saved) fireSaveTracking()
+    onSaved: () => {
+      fireSaveTracking()
       router.refresh()
     },
   })

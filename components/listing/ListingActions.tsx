@@ -77,9 +77,8 @@ export default function ListingActions({ listingKey, address, price, isSaved, is
   useResumePendingSave({
     listingKey,
     alreadySaved: isSaved,
-    resume: async () => {
-      const result = await toggleSavedListing(listingKey)
-      if (result.saved) trackEvent('save_listing', { listing_key: listingKey, listing_url: listingUrl, value: price })
+    onSaved: () => {
+      trackEvent('save_listing', { listing_key: listingKey, listing_url: listingUrl, value: price })
       router.refresh()
     },
   })

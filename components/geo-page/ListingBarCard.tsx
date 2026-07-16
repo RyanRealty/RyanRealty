@@ -112,10 +112,7 @@ export default function ListingBarCard({
   useResumePendingSave({
     listingKey,
     alreadySaved: savedState,
-    resume: async () => {
-      const result = await toggleSavedListing(listingKey)
-      setSavedState(result.saved)
-    },
+    onSaved: () => setSavedState(true),
   })
 
   async function handleLike(e: React.MouseEvent) {

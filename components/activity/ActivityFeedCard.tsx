@@ -132,10 +132,7 @@ export default function ActivityFeedCard({ item, priority = false, className, si
   useResumePendingSave({
     listingKey: item.listing_key,
     alreadySaved: savedState,
-    resume: async () => {
-      const result = await toggleSavedListing(item.listing_key)
-      setSavedState(result.saved)
-    },
+    onSaved: () => setSavedState(true),
   })
 
   async function handleLike(e: React.MouseEvent) {

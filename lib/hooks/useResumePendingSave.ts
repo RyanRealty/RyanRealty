@@ -1,33 +1,46 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { consumePendingSave } from '@/lib/pending-save'
+import { consumePendingSave, stashPendingSave } from '@/lib/pending-save'
+import { resumeSaveListing } from '@/app/actions/saved-listings'
 
 /**
- * Completes a pending save on return from sign-in (RC7). On mount, if this listing
- * was the intent stashed before the login bounce AND it isn't already saved, run
- * `resume` once. The ref + consume-on-first-match guard against a double-fire
- * (React StrictMode double-invokes effects in dev).
+ * Completes a pending save on return from sign-in (RC7). The hook OWNS the save so
+ * no call site can get it wrong (an earlier version let callers pass a blind
+ * toggle, which could silently UN-save a listing whose card prop was stale-false):
  *
- * Used by every save control so a save survives the login round-trip no matter
- * where the visitor clicked it.
+ *  - Idempotent add only — via resumeSaveListing, never a toggle, so a stale
+ *    "not saved" client state can never remove an already-saved listing.
+ *  - Auth-honest — if the session isn't established yet (e.g. the user hit Back to
+ *    the page while still logged out), the intent is RE-STASHED so the real save
+ *    resumes on the next return, instead of being consumed with a false "Saved".
+ *  - Fires exactly once per mount (ref + consume-on-first-match guard StrictMode).
+ *
+ * The caller supplies `onSaved` to reflect the save in local UI + fire the same
+ * analytics/lead-capture a manual save fires. It is called only on a real save.
  */
 export function useResumePendingSave(opts: {
   listingKey: string
   alreadySaved: boolean
-  resume: () => void | Promise<void>
+  onSaved: () => void
 }): void {
-  const { listingKey, alreadySaved, resume } = opts
+  const { listingKey, alreadySaved, onSaved } = opts
   const ran = useRef(false)
   useEffect(() => {
     if (ran.current) return
-    // Consume the flag whenever it names THIS listing — even if the page already
-    // renders it saved (a prior save the server cached) — so a stale intent never
-    // lingers into a later visit. Only run the resume when it isn't saved yet.
+    // Consume whenever the flag names THIS listing — even if it already renders
+    // saved (an ISR-cached prior save) — so a stale intent never lingers.
     if (!consumePendingSave(listingKey)) return
     ran.current = true
     if (alreadySaved) return
-    void resume()
+    void (async () => {
+      const res = await resumeSaveListing(listingKey)
+      if (res.needsAuth) {
+        stashPendingSave(listingKey) // still logged out — try again on the next return
+        return
+      }
+      if (res.saved) onSaved()
+    })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alreadySaved, listingKey])
 }

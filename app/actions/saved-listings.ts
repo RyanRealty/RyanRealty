@@ -51,6 +51,32 @@ export async function saveListing(listingKey: string): Promise<{ error: string |
   return { error: null }
 }
 
+/**
+ * Idempotent, auth-honest save for the post-sign-in resume (RC7). NEVER toggles:
+ * a resume must only ever ADD, so a stale/optimistic "not saved" client state can
+ * never silently REMOVE a listing the user already saved. Returns needsAuth=true
+ * (not saved) when the session isn't established — the caller re-stashes and tries
+ * again on the next return, instead of consuming the intent and showing a false
+ * "Saved". Already-saved is a success no-op.
+ */
+export async function resumeSaveListing(listingKey: string): Promise<{ saved: boolean; needsAuth: boolean }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { saved: false, needsAuth: true }
+  const canonicalKey = await resolveCanonicalListingKey(listingKey.trim())
+  const { data: existing } = await supabase
+    .from('saved_listings')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('listing_key', canonicalKey)
+    .maybeSingle()
+  if (existing) return { saved: true, needsAuth: false } // already saved — no-op success
+  const { error } = await supabase.from('saved_listings').insert({ user_id: user.id, listing_key: canonicalKey })
+  if (error) return { saved: false, needsAuth: false } // a real write error is NOT auth — don't claim saved
+  await incrementListingSaveCount(canonicalKey)
+  return { saved: true, needsAuth: false }
+}
+
 export async function unsaveListing(listingKey: string): Promise<{ error: string | null }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
