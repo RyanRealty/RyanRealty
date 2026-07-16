@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.810.3 (2026-07-16)
+
+### Maintenance
+- docs(admin-rebuild): Task #8 assessed — shell+home done, bundle-drop is a dedicated pass
+
+---
+
+
 ## v1.810.2 (2026-07-16)
 
 ### Maintenance
