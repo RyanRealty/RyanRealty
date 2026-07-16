@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.809.0 (2026-07-16)
+
+### Features
+- feat(ci): ci:admin-content-authz gate — lock the RC5 content-write guards
+
+---
+
+
 ## v1.808.1 (2026-07-16)
 
 ### Maintenance
