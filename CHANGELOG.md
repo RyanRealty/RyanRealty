@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.802.13 (2026-07-16)
+
+### Bug Fixes
+- fix(review): address adversarial review of the session diff — 2 HIGH + material findings
+
+---
+
+
 ## v1.802.12 (2026-07-16)
 
 ### Maintenance
