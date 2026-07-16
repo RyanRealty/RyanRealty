@@ -8,6 +8,8 @@
  */
 
 import { supabaseAnon } from '@/lib/data/client'
+import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
 
 export type MarketPulseSnapshot = {
   geo_slug: string
@@ -57,17 +59,34 @@ export async function getMarketPulseRegionSnapshot(
   return toSnapshot(data as Record<string, unknown>)
 }
 
-/** City snapshots by geo_label (display name, not slug). */
-export async function getMarketPulseCitySnapshots(
+/** Inner fetch for city snapshots. THROWS on a query error so the resilient
+ * cache never stores a transient failure as an empty list (the hub, region,
+ * and every city page render their comparison tiles from this — an [] here
+ * silently blanks those sections for a full cache window). */
+async function fetchMarketPulseCitySnapshots(
   cityLabels: string[]
 ): Promise<MarketPulseSnapshot[]> {
   const sb = supabaseAnon()
   if (!sb || cityLabels.length === 0) return []
-  const { data } = await sb
+  const { data, error } = await sb
     .from('market_pulse_live')
     .select(COLUMNS)
     .eq('geo_type', 'city')
     .eq('property_type', 'A')
     .in('geo_label', cityLabels)
+  if (error) throw new Error(`market_pulse_live city snapshots: ${error.message}`)
   return ((data ?? []) as Array<Record<string, unknown>>).map(toSnapshot)
 }
+
+/** City snapshots by geo_label (display name, not slug). Resilient-cached —
+ * previously the ONLY uncached DAL fn on the housing-market routes (every ISR
+ * render hit the DB and a blip rendered empty tiles). */
+export const getMarketPulseCitySnapshots = makeResilientCached(
+  fetchMarketPulseCitySnapshots,
+  ['market-pulse-city-snapshots-v1'],
+  {
+    revalidate: CACHE_WINDOWS.marketPulse,
+    tags: [cacheTag.market],
+  },
+  [],
+)

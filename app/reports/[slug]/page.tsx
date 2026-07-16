@@ -24,13 +24,15 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
-import { getMarketReportBySlug, getReportImageUrl } from '@/lib/data'
+import { getMarketReportBySlug, getReportImageUrl, getMarketPulse } from '@/lib/data'
 import ShareButton from '../../../components/ShareButton'
 import { sanitizeHtml } from '@/lib/sanitize'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { Suspense } from 'react'
+import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import '@/components/site/kb/kb.css'
 
@@ -176,8 +178,29 @@ export default async function ReportPage({ params }: Props) {
           </div>
         </section>
 
+        {/* Seller conversion CTA — report readers previously hit a bare
+            footer with zero on-page capture. */}
+        <Suspense fallback={null}>
+          <ReportsSellSection />
+        </Suspense>
+
         <KbFooter towns={[]} />
       </SmoothScrollProvider>
     </main>
+  )
+}
+
+/** Region-pulse-fed KbSell (same §0-verified figures the hub CTA uses). */
+async function ReportsSellSection() {
+  const regionPulse = await getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => null)
+  return (
+    <KbSell
+      data={{
+        medianListPrice: regionPulse?.medianListPrice ?? null,
+        medianDaysToPending: regionPulse?.medianDaysToPending ?? null,
+        soldCount30d: regionPulse?.closedLast30Days ?? null,
+      }}
+      eyebrow="Sell in Central Oregon"
+    />
   )
 }

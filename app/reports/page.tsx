@@ -33,6 +33,7 @@ import { getSalesReportCardsData } from '../actions/market-reports'
 import { getEngagementCountsBatchCached } from '@/app/actions/engagement'
 import { getReportCities } from '@/app/actions/reports'
 import { getMarketReportData } from '@/app/actions/market-report'
+import { getMarketPulse } from '@/lib/data'
 import { MARKET_REPORT_DEFAULT_CITIES } from '@/app/actions/market-report-types'
 import { PRIMARY_CITIES } from '@/lib/cities'
 import ReportsByCityView from '@/components/reports/ReportsByCityView'
@@ -43,6 +44,7 @@ import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import '@/components/site/kb/kb.css'
@@ -51,11 +53,11 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 const defaultOgImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
-  title: 'Central Oregon Real Estate Market Reports | Ryan Realty',
+  title: 'Central Oregon Real Estate Market Reports',
   description: 'Real-time Housing Market Report by city: sold volume, median price, days on market, inventory. Choose cities and time range. Weekly reports and explore tools.',
   alternates: { canonical: `${siteUrl}/housing-market/reports` },
   openGraph: {
-    title: 'Central Oregon Real Estate Market Reports | Ryan Realty',
+    title: 'Central Oregon Real Estate Market Reports',
     description: 'Real-time Housing Market Report by city. Weekly reports and explore tools.',
     url: `${siteUrl}/housing-market/reports`,
     type: 'website',
@@ -64,7 +66,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Market Reports | Ryan Realty',
+    title: 'Market Reports',
     description: 'Real-time Housing Market Report by city. Weekly reports and explore.',
     images: [defaultOgImage],
   },
@@ -310,8 +312,31 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
           </div>
         </section>
 
+        {/* Seller conversion CTA — the highest-intent readers on the site
+            (actively studying market data) previously hit a bare footer with
+            zero on-page capture. Region pulse figures per §0; streamed so a
+            pulse hiccup never blocks the page. */}
+        <Suspense fallback={null}>
+          <ReportsSellSection />
+        </Suspense>
+
         <KbFooter towns={[]} />
       </SmoothScrollProvider>
     </main>
+  )
+}
+
+/** Region-pulse-fed KbSell (same §0-verified figures the hub's CTA uses). */
+async function ReportsSellSection() {
+  const regionPulse = await getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => null)
+  return (
+    <KbSell
+      data={{
+        medianListPrice: regionPulse?.medianListPrice ?? null,
+        medianDaysToPending: regionPulse?.medianDaysToPending ?? null,
+        soldCount30d: regionPulse?.closedLast30Days ?? null,
+      }}
+      eyebrow="Sell in Central Oregon"
+    />
   )
 }

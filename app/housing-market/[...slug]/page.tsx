@@ -232,11 +232,14 @@ function buildNarrative(
   }
 
   if (mos != null) {
-    const rounded = Math.round(mos * 10) / 10
+    // formatMonthsOfSupply keeps the printed digits on the same side of the
+    // 4/6 thresholds as the raw value the verdict classified — a naive
+    // Math.round(4.04*10)/10 prints "4" beside "a balanced market" and the
+    // page contradicts itself (§0 rule 5).
     parts.push(
-      `At ${rounded} months of supply, the market sits in ${verdict}. ` +
+      `At ${formatMonthsOfSupply(mos)} months of supply, the market sits in ${verdict}. ` +
         `A balanced market runs between 4 and 6 months. ` +
-        `Below 4 months benefits sellers; above 6 months benefits buyers.`,
+        `Under 4 months favors sellers. Over 6 favors buyers.`,
     )
   }
 
@@ -362,6 +365,14 @@ export default async function HousingMarketGeoPage({ params }: Props) {
       ? getRecentBlogPosts({ limit: 3 }).catch(() => [])
       : Promise.resolve([] as Awaited<ReturnType<typeof getRecentBlogPosts>>),
   ])
+
+  // Unknown-geo guard: a URL with NO pulse row and NO price history is not a
+  // place we cover — 404 instead of rendering confident fallback copy
+  // ("Single-family market data for Anything At All, Oregon…") for a made-up
+  // slug. dynamicParams is true, so without this the route is an infinite
+  // thin-page space. A transient double-failure can 404 one ISR window (300s);
+  // that beats publishing §0-violating copy about a place with no data.
+  if (!pulse && priceHistory.length === 0) notFound()
 
   // Drop in-progress current month from price series to avoid a misleading
   // partial-month spike at the chart edge.

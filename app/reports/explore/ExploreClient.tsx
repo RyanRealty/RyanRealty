@@ -268,7 +268,7 @@ export default function ExploreClient({
       if (updates.minPrice !== undefined) (updates.minPrice ? params.set('minPrice', updates.minPrice) : params.delete('minPrice'))
       if (updates.maxPrice !== undefined) (updates.maxPrice ? params.set('maxPrice', updates.maxPrice) : params.delete('maxPrice'))
       const q = params.toString()
-      router.replace(q ? `/reports/explore?${q}` : '/reports/explore', { scroll: false })
+      router.replace(q ? `/housing-market/explore?${q}` : '/housing-market/explore', { scroll: false })
     },
     [router, searchParams]
   )
@@ -356,7 +356,7 @@ export default function ExploreClient({
 
   const shareUrl =
     typeof window !== 'undefined'
-      ? window.location.origin + '/reports/explore' + (searchParams.toString() ? `?${searchParams.toString()}` : '')
+      ? window.location.origin + '/housing-market/explore' + (searchParams.toString() ? `?${searchParams.toString()}` : '')
       : ''
   const shareTitle = location ? `${locationLabel(location)} Market Snapshot` : 'Market Explorer'
   const shareText = city && start && end ? `${locationLabel(location)} market: ${start} – ${end}` : shareTitle

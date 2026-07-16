@@ -502,9 +502,13 @@ async function _fetchSalesReportCardsData(
   return cards
 }
 
+// v2 key: force-evict the "No sales this period" entries cached while
+// listing_tile_mv sat 8 days stale (2026-07 incident) — the data cache
+// survives deploys, so without the bump the wall of empty cards would
+// outlive the fix by up to an hour.
 const _getSalesReportCardsDataCached = unstable_cache(
   _fetchSalesReportCardsData,
-  ['sales-report-cards-v1'],
+  ['sales-report-cards-v2'],
   { revalidate: 3600, tags: ['market-reports'] },
 )
 
@@ -520,7 +524,12 @@ export async function getSalesReportCardsData(cities: string[]): Promise<SalesRe
   const dateKey = new Date().toISOString().slice(0, 10)
   try {
     return await _getSalesReportCardsDataCached(cityList, dateKey)
-  } catch {
+  } catch (err) {
+    // Loud, not silent: an [] here renders a wall of "No sales this period"
+    // cards that reads as real market data (the 2026-07 stale-MV incident hid
+    // for 8 days behind exactly this). The page still degrades gracefully, but
+    // the failure lands in the function logs.
+    console.error('[market-reports] getSalesReportCardsData failed:', err)
     return []
   }
 }

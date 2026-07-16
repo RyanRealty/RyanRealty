@@ -19,6 +19,7 @@ function healthy(): HealthSignals {
     newLeads24h: 4,
     twilioReachable: true,
     geoSmartLists: [],
+    mvLagDays: 0,
   }
 }
 
@@ -197,6 +198,7 @@ describe('evaluateHealthRules', () => {
         a2pStatus: 'FAILED',
         smsSendAttempts24h: 3,
         newLeads24h: 0,
+        mvLagDays: 0,
         twilioReachable: false,
         geoSmartLists: [],
       })
@@ -218,6 +220,7 @@ describe('evaluateHealthRules', () => {
         newLeads24h: 0,
         twilioReachable: false,
         geoSmartLists: [{ id: 9, name: 'Bad list', exactCount: 0, signalCount: 100 }],
+        mvLagDays: 8,
       })
       for (const a of alarms) {
         expect(a.key.length).toBeGreaterThan(0)
@@ -225,5 +228,31 @@ describe('evaluateHealthRules', () => {
         expect(a.message.trim().length).toBeGreaterThan(0)
       }
     })
+  })
+})
+
+describe('rule 8: listing_tile_mv staleness', () => {
+  const healthySignals = (): Parameters<typeof evaluateHealthRules>[0] => ({
+    businessHours: true,
+    hoursSinceLastInbound: 0.5,
+    a2pStatus: 'VERIFIED',
+    smsSendAttempts24h: 12,
+    newLeads24h: 4,
+    twilioReachable: true,
+    geoSmartLists: [],
+    mvLagDays: 0,
+  })
+  it('fires critical when the MV lags past the threshold (the 8-day incident)', () => {
+    const { alarms } = evaluateHealthRules({ ...healthySignals(), mvLagDays: 8 })
+    const alarm = alarms.find((a) => a.key === 'listing-tile-mv-stale')
+    expect(alarm).toBeDefined()
+    expect(alarm!.severity).toBe('critical')
+    expect(alarm!.message).toContain('8 days')
+  })
+  it('stays quiet at or under the threshold and when the probe is unavailable', () => {
+    for (const lag of [0, 1, 2, null]) {
+      const { alarms } = evaluateHealthRules({ ...healthySignals(), mvLagDays: lag })
+      expect(alarms.map((a) => a.key)).not.toContain('listing-tile-mv-stale')
+    }
   })
 })

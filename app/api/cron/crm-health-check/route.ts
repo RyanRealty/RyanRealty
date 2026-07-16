@@ -170,6 +170,19 @@ export async function GET(request: Request) {
 
   const geoSmartLists = await gatherGeoSmartLists(sb)
 
+  // DAL MV freshness: how far listing_tile_mv lags the listings table on max
+  // CloseDate (mv_freshness() probe, migration 20260716043000). null on any
+  // failure → the rule skips rather than false-alarming.
+  let mvLagDays: number | null = null
+  try {
+    const { data } = await sb.rpc('mv_freshness')
+    const lag = (data as { lag_days?: number | string | null } | null)?.lag_days
+    const n = lag == null ? null : Number(lag)
+    mvLagDays = n != null && Number.isFinite(n) ? n : null
+  } catch {
+    mvLagDays = null
+  }
+
   const signals: HealthSignals = {
     businessHours: isBusinessHoursPacific(now),
     hoursSinceLastInbound,
@@ -178,6 +191,7 @@ export async function GET(request: Request) {
     newLeads24h: newLeads24h.count ?? 0,
     twilioReachable,
     geoSmartLists,
+    mvLagDays,
   }
 
   const { alarms } = evaluateHealthRules(signals)

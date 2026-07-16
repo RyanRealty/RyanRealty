@@ -65,7 +65,7 @@ export default function ReportsByCityView({
         params.set('range', String(updates.range))
       }
       const q = params.toString()
-      return q ? `/reports?${q}` : '/reports'
+      return q ? `/housing-market/reports?${q}` : '/housing-market/reports'
     },
     [searchParams]
   )

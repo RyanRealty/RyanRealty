@@ -72,6 +72,20 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     { url: `${baseUrl}/parks`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${baseUrl}/housing-market`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${baseUrl}/housing-market/central-oregon`, lastModified: now, changeFrequency: 'weekly', priority: 0.65 },
+    { url: `${baseUrl}/housing-market/reports`, lastModified: now, changeFrequency: 'daily', priority: 0.65 },
+    { url: `${baseUrl}/housing-market/explore`, lastModified: now, changeFrequency: 'weekly', priority: 0.55 },
+    // Per-city market pages (mirror the generateStaticParams list in
+    // app/housing-market/[...slug]/page.tsx) — the section's main organic
+    // asset; without these entries they were crawl-discovery only.
+    ...[
+      'bend', 'redmond', 'sisters', 'sunriver', 'la-pine', 'tumalo',
+      'prineville', 'terrebonne', 'black-butte-ranch', 'eagle-crest', 'crooked-river-ranch',
+    ].map((slug) => ({
+      url: `${baseUrl}/housing-market/${slug}`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.6,
+    })),
     { url: `${baseUrl}/open-houses`, lastModified: now, changeFrequency: 'daily', priority: 0.7 },
     { url: `${baseUrl}/activity`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
     { url: `${baseUrl}/about`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },

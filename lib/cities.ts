@@ -22,23 +22,29 @@ export type CityDetail = {
   communityCount: number
 }
 
-/** Primary Central Oregon cities to feature at top of /cities (exact display order). */
+/** Primary Central Oregon cities to feature at top of /cities (exact display order).
+ * Spellings are the canonical MLS `listings.City` values ("La Pine", "Sunriver" —
+ * verified against the live table 2026-07-16). The sales-report cards match these
+ * against per-city report data with a raw .get() AND render them as labels, so a
+ * non-canonical spelling here means permanently-empty cards ("No sales this
+ * period") plus "LAPINE"/"SUN RIVER" typos in the UI. */
 export const PRIMARY_CITIES = [
   'Bend',
   'Redmond',
-  'Lapine',
+  'La Pine',
   'Sisters',
-  'Sun River',
+  'Sunriver',
   'Tumalo',
   'Crooked River Ranch',
   'Prineville',
   'Madras',
 ]
 
-/** Map primary display name → possible DB/listings name for matching. */
+/** Map primary display name → possible DB/listings name for matching (legacy
+ * feed rows occasionally carry "Lapine" / "Sun River"). */
 export const PRIMARY_CITY_NAME_ALIASES: Record<string, string[]> = {
-  Lapine: ['Lapine', 'La Pine'],
-  'Sun River': ['Sun River', 'Sunriver'],
+  'La Pine': ['La Pine', 'Lapine'],
+  'Sunriver': ['Sunriver', 'Sun River'],
 }
 
 /** Returns true if city name matches a primary city (by name or alias). */

@@ -60,7 +60,7 @@ export default function GeoMarketOverview({
   salesHistory = [],
   fullReportHref,
   ytdReportHref,
-  exploreHref = '/reports/explore',
+  exploreHref = '/housing-market/explore',
   trackContext,
 }: Props) {
   const fallbackSeries = priceHistory.map((point) => ({

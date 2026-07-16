@@ -27,6 +27,8 @@ import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSell } from '@/components/site/kb/KbSell.client'
+import { getMarketPulse } from '@/lib/data'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -179,8 +181,29 @@ export default async function ExplorePage({ searchParams }: Props) {
           </div>
         </section>
 
+        {/* Seller conversion CTA — report readers previously hit a bare
+            footer with zero on-page capture. */}
+        <Suspense fallback={null}>
+          <ReportsSellSection />
+        </Suspense>
+
         <KbFooter towns={[]} />
       </SmoothScrollProvider>
     </main>
+  )
+}
+
+/** Region-pulse-fed KbSell (same §0-verified figures the hub CTA uses). */
+async function ReportsSellSection() {
+  const regionPulse = await getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => null)
+  return (
+    <KbSell
+      data={{
+        medianListPrice: regionPulse?.medianListPrice ?? null,
+        medianDaysToPending: regionPulse?.medianDaysToPending ?? null,
+        soldCount30d: regionPulse?.closedLast30Days ?? null,
+      }}
+      eyebrow="Sell in Central Oregon"
+    />
   )
 }

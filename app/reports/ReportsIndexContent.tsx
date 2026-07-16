@@ -35,7 +35,7 @@ export default function ReportsIndexContent({ reports, salesCards }: Props) {
         className="mt-2 bg-accent text-primary hover:bg-accent/90 shadow-sm"
         onClick={() => trackEvent('view_market_report', { context: 'reports_index_explore' })}
       >
-        <Link href="/reports/explore">
+        <Link href="/housing-market/explore">
           Explore market data
           <span aria-hidden>→</span>
         </Link>
@@ -47,7 +47,7 @@ export default function ReportsIndexContent({ reports, salesCards }: Props) {
           {reports.map((r) => (
             <li key={r.slug}>
               <Link
-                href={`/reports/${r.slug}`}
+                href={`/housing-market/reports/${r.slug}`}
                 className="block rounded-lg border border-border bg-card p-4 shadow-sm transition hover:shadow-md hover:border-primary/20"
                 onClick={() => trackEvent('view_market_report', { context: 'reports_index_weekly', slug: r.slug, title: r.title })}
               >

@@ -60,6 +60,11 @@ export interface HealthSignals {
    *  the same ilike the compiler emits, so the numbers equal what the CRM UI
    *  shows. Empty array = no geographic lists (rule skips). */
   geoSmartLists: Array<{ id: number; name: string; exactCount: number; signalCount: number }>
+  /** Days the listing_tile_mv lags the listings table on max CloseDate (from the
+   *  mv_freshness() probe). Every tile/report/geo surface reads the MV, so lag
+   *  means the whole site serves stale market data. null = probe unavailable
+   *  (skip the rule). */
+  mvLagDays: number | null
 }
 
 /** A geographic list is "undercounting" when the contains-signal is at least
@@ -72,6 +77,12 @@ export const LIST_UNDERCOUNT_FACTOR = 10
 
 /** Inbound webhook is "stale" after this many hours of business-hours silence. */
 export const INBOUND_STALE_HOURS = 6
+
+/** listing_tile_mv is "stale" when its newest close lags the listings table by
+ *  more than this many days. Closings land daily; 2+ days of lag means the
+ *  refresh pipeline is dead (the 2026-07 incident ran 8 days silent because a
+ *  timeout-killed refresh looked identical to a successful skip). */
+export const MV_STALE_LAG_DAYS = 2
 
 /**
  * Evaluate every CRM health rule against a snapshot. Returns the alarms that are
@@ -169,6 +180,20 @@ export function evaluateHealthRules(signals: HealthSignals): { alarms: HealthAla
         } but its community's subdivision signal holds ${list.signalCount}. The filter likely uses an exact match where subdivision-contains is needed (see the Northwest Crossing fix, 593f5fe4).`,
       })
     }
+  }
+
+  // Rule 8: DAL materialized view stale.
+  // listing_tile_mv backs every search tile, geo page, and market report. When
+  // its refresh dies (2026-07: REFRESH CONCURRENTLY outgrew its statement
+  // timeout and was killed every 15 minutes for 8 days), the whole site quietly
+  // serves last week's market. Closings land daily, so a multi-day lag on max
+  // CloseDate is a dead pipeline, not a quiet market.
+  if (signals.mvLagDays !== null && signals.mvLagDays > MV_STALE_LAG_DAYS) {
+    alarms.push({
+      key: 'listing-tile-mv-stale',
+      severity: 'critical',
+      message: `listing_tile_mv is ${signals.mvLagDays} days behind the listings table (newest closed sale missing from every tile, report, and geo page). The MV refresh pipeline is failing — check the refresh_dal_mvs_15min pg_cron job and /api/cron/refresh-mvs.`,
+    })
   }
 
   return { alarms }
