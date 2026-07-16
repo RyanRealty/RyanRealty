@@ -16,8 +16,10 @@
  * template key here so the send action can stamp emailKey='tpl:<key>' on the
  * email_events row. This is what enables per-template open/click reporting.
  */
-import { useRef, useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { useFormStatus } from 'react-dom'
+import { ChevronDown, Loader2 } from 'lucide-react'
+import { newIdempotencyKey } from '@/lib/admin/mutation-result'
 import { EmailBodyEditor } from '@/components/admin/crm/EmailBodyEditor'
 import type { CustomFieldToken } from '@/components/admin/crm/MergeFieldInserter'
 import { RecipientField, type RecipientOption } from '@/components/admin/crm/RecipientField'
@@ -34,6 +36,37 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
+
+/**
+ * Pending-aware Send button (admin rebuild §4.2, RC2 fix). useFormStatus disables
+ * it + shows a spinner while the multi-second send runs, so the broker sees the
+ * send happening and can't fire it twice. Rotates the idempotency key on settle.
+ */
+function EmailSendButton(props: {
+  disabled: boolean
+  uploading: boolean
+  label: string
+  className?: string
+  onSettled: () => void
+}) {
+  const { pending } = useFormStatus()
+  const wasPending = useRef(false)
+  useEffect(() => {
+    if (wasPending.current && !pending) props.onSettled()
+    wasPending.current = pending
+  }, [pending, props])
+  return (
+    <Button type="submit" size="sm" disabled={props.disabled || pending} aria-busy={pending} className={props.className}>
+      {pending ? (
+        <span className="flex items-center gap-1.5"><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Sending…</span>
+      ) : props.uploading ? (
+        'Uploading…'
+      ) : (
+        props.label
+      )}
+    </Button>
+  )
+}
 
 export function EmailComposer(props: {
   initialSubject: string
@@ -75,6 +108,9 @@ export function EmailComposer(props: {
   const [subject, setSubject] = useState(props.initialSubject)
   const [body, setBody] = useState(props.initialBody)
   const sendCloseRef = useRef<HTMLButtonElement>(null)
+  // Per-attempt idempotency key (server backstop for the sub-frame double-tap).
+  const [idempotencyKey, setIdempotencyKey] = useState('')
+  useEffect(() => setIdempotencyKey(newIdempotencyKey()), [])
 
   // Attachments (multiple, uploaded client-direct — see ComposerAttachments).
   const attachments = useComposerAttachments({ personId: props.personId, channel: 'email' })
@@ -91,6 +127,8 @@ export function EmailComposer(props: {
     <form action={props.sendAction} className="space-y-2">
       {/* Hidden field carries the template key for email_events stamping. */}
       {props.tplKey ? <input type="hidden" name="tplKey" value={props.tplKey} /> : null}
+      {/* Per-attempt idempotency key — the server backstop against a double-send. */}
+      <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       {/* Recipients — Gmail-style rows; Cc/Bcc reveal on demand. Empty To
           falls back to the contact's primary email server-side. */}
       <div className={cn('space-y-1', props.hideRecipients && 'hidden')}>
@@ -164,14 +202,13 @@ export function EmailComposer(props: {
             </Button>
           ) : null}
           <div className="flex items-center">
-            <Button
-              type="submit"
-              size="sm"
-              disabled={attachments.uploading || props.sendDisabled}
+            <EmailSendButton
+              disabled={Boolean(attachments.uploading || props.sendDisabled)}
+              uploading={attachments.uploading}
+              label={props.submitLabel ?? 'Send email'}
               className={props.sendAndCloseAction ? 'rounded-r-none' : undefined}
-            >
-              {attachments.uploading ? 'Uploading…' : props.submitLabel ?? 'Send email'}
-            </Button>
+              onSettled={() => setIdempotencyKey(newIdempotencyKey())}
+            />
             {props.sendAndCloseAction ? (
               <>
                 {/* Hidden submit carries the compound formAction; the menu clicks it. */}

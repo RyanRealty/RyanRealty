@@ -8,8 +8,10 @@
  * MergeFieldInserter: click a token in the dropdown to insert it at the cursor
  * position in the body textarea.
  */
-import { useMemo, useRef, useState } from 'react'
-import { ArrowUp } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useFormStatus } from 'react-dom'
+import { ArrowUp, Loader2 } from 'lucide-react'
+import { newIdempotencyKey } from '@/lib/admin/mutation-result'
 import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { MergeFieldInserter, insertAtCursor, type CustomFieldToken } from '@/components/admin/crm/MergeFieldInserter'
 import {
@@ -39,6 +41,39 @@ export type SmsRecipient = { personId: number; name: string; phone: string; rela
 /** Stable per-recipient key: contact id when we have one, else the phone. */
 function recipKey(r: SmsRecipient): string {
   return r.personId > 0 ? `p${r.personId}` : `ph${r.phone}`
+}
+
+/**
+ * The round send arrow — but pending-aware (admin rebuild §4.2, kills RC2's SMS
+ * hang + double-send). useFormStatus flips `pending` true the instant the form
+ * submits, so the button DISABLES and shows a spinner while the multi-second send
+ * runs — the broker sees the send is happening (no more "nothing happened") and
+ * physically cannot fire it twice. On settle it calls onSettled so the parent can
+ * rotate the idempotency key for the next message.
+ */
+function SmsSendButton({ disabled, onSettled }: { disabled: boolean; onSettled: () => void }) {
+  const { pending } = useFormStatus()
+  const wasPending = useRef(false)
+  useEffect(() => {
+    if (wasPending.current && !pending) onSettled()
+    wasPending.current = pending
+  }, [pending, onSettled])
+  return (
+    <Button
+      type="submit"
+      size="icon"
+      disabled={disabled || pending}
+      aria-busy={pending}
+      aria-label={pending ? 'Sending' : 'Send text'}
+      className="h-9 w-9 shrink-0 rounded-full"
+    >
+      {pending ? (
+        <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+      ) : (
+        <ArrowUp className="h-5 w-5" aria-hidden />
+      )}
+    </Button>
+  )
 }
 
 export function SmsComposer(props: {
@@ -71,6 +106,13 @@ export function SmsComposer(props: {
   const bodyRef = useRef<HTMLTextAreaElement>(null)
   const { chars, segments } = segmentInfo(body)
   const unresolved = useMemo(() => findUnresolvedMergeTokens(body), [body])
+
+  // Per-attempt idempotency key (the server backstop for the sub-frame double-tap
+  // race useFormStatus can't catch). Empty on SSR + first paint so no hydration
+  // mismatch; set after mount; rotated on each send-settle so the next message
+  // gets a fresh key while a rapid double-tap of the SAME message reuses it.
+  const [idempotencyKey, setIdempotencyKey] = useState('')
+  useEffect(() => setIdempotencyKey(newIdempotencyKey()), [])
 
   // MMS attachments (images/PDF, up to 10, 5MB total — uploaded client-direct;
   // see ComposerAttachments). Applied to every recipient in a group text.
@@ -182,15 +224,11 @@ export function SmsComposer(props: {
           // "everything huge with the keyboard open" screenshot.
           className="max-h-32 min-h-9 flex-1 resize-none self-center border-0 bg-transparent px-1 py-1.5 text-base shadow-none focus-visible:ring-0 md:text-sm"
         />
-        <Button
-          type="submit"
-          size="icon"
-          disabled={!body.trim() || attachments.uploading || props.sendDisabled}
-          aria-label={attachments.uploading ? 'Uploading attachment' : 'Send text'}
-          className="h-9 w-9 shrink-0 rounded-full"
-        >
-          <ArrowUp className="h-5 w-5" aria-hidden />
-        </Button>
+        <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
+        <SmsSendButton
+          disabled={!body.trim() || attachments.uploading || Boolean(props.sendDisabled)}
+          onSettled={() => setIdempotencyKey(newIdempotencyKey())}
+        />
       </div>
 
       {/* Quiet-hours override + live segment count, quiet under the bar. */}

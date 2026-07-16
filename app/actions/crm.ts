@@ -527,6 +527,12 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   const mergedSubject = renderCrmMerge(subject, person, mergeCtx)
   const mergedBody = attributeSiteLinks(renderCrmMerge(body, person, mergeCtx), actingSlugForLinks, person.fub_legacy_id as number | null)
 
+  // Idempotency backstop (admin rebuild §A5): a per-attempt key from the composer
+  // makes a sub-frame double-tap that slips past the disabled button a no-op
+  // instead of a second email. A failed send releases the key so a retry re-sends.
+  const idempotencyKey = String(formData.get('idempotencyKey') ?? '').trim()
+
+  const performSend = async (): Promise<CrmActionResult> => {
   const { CRM_MAILBOXES, sendCrmEmail } = await import('@/lib/crm/gmail')
   const actingSlug = actingSlugForLinks
   const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
@@ -571,6 +577,14 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   revalidateCrm(personId)
   extraPersonIds.forEach((pid) => revalidateCrm(pid))
   return { ok: true }
+  }
+
+  if (!idempotencyKey) return performSend()
+  const { withSendIdempotency } = await import('@/lib/crm/idempotency')
+  return withSendIdempotency(
+    { key: `email:${personId}:${idempotencyKey}`, scope: 'email', onInFlight: { ok: true } },
+    performSend,
+  )
 }
 
 // listCrmInbox + CrmInboxRow removed 2026-07-14 (audit): superseded by the
@@ -777,6 +791,13 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
     return { ok: false, error: 'Quiet hours (TCPA): texts pause 9pm to 8am Pacific. Call instead, or check "send anyway" to override.' }
   }
 
+  // Idempotency backstop (admin rebuild §A5): a per-attempt key from the composer.
+  // Wrapping the send below means a sub-frame double-tap (the race useFormStatus
+  // can't catch) that slips two submits through returns the first result instead
+  // of sending twice. A failed send releases the key so a real retry re-sends.
+  const idempotencyKey = String(formData.get('idempotencyKey') ?? '').trim()
+
+  const performSend = async (): Promise<CrmActionResult> => {
   const sb = createServiceClient()
   const { getSendTarget } = await import('@/lib/data/crm/getSendTarget')
   const { isSuppressed } = await import('@/lib/crm/suppressions')
@@ -935,6 +956,14 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   if (sentCount === 0) return { ok: false, error: lastError ?? 'No recipient could be texted' }
   recipientIds.forEach((rid) => revalidateCrm(rid))
   return { ok: true }
+  }
+
+  if (!idempotencyKey) return performSend()
+  const { withSendIdempotency } = await import('@/lib/crm/idempotency')
+  return withSendIdempotency(
+    { key: `sms:${personId}:${idempotencyKey}`, scope: 'sms', onInFlight: { ok: true } },
+    performSend,
+  )
 }
 
 /**

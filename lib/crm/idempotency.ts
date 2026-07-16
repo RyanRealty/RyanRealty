@@ -27,6 +27,70 @@ export class IdempotencyInFlightError extends Error {
   }
 }
 
+/**
+ * Result-aware variant for SEND paths (SMS/email/deliverables) whose result is a
+ * `{ ok: boolean }` union. Semantics tuned for messaging:
+ *   - A duplicate submit of a SUCCESSFUL send returns the stored success (no
+ *     re-send) — the RC2 double-send guard.
+ *   - A FAILED send RELEASES the key, so a legitimate retry (same key) re-attempts
+ *     rather than replaying the failure.
+ *   - A duplicate that lands while the first is still in flight returns the
+ *     `onInFlight` value (default a success-shaped no-op) so the caller never
+ *     double-fires.
+ */
+export async function withSendIdempotency<T extends { ok: boolean }>(
+  args: { key: string; scope: string; onInFlight: T },
+  run: () => Promise<T>,
+): Promise<T> {
+  const sb = createServiceClient()
+
+  const existing = await sb
+    .from('crm_idempotency_keys')
+    .select('result')
+    .eq('key', args.key)
+    .maybeSingle()
+  if (existing.data && existing.data.result != null) {
+    return existing.data.result as T
+  }
+
+  if (!existing.data) {
+    const claim = await sb
+      .from('crm_idempotency_keys')
+      .insert({ key: args.key, scope: args.scope, result: null })
+    if (!claim.error) {
+      let result: T
+      try {
+        result = await run()
+      } catch (e) {
+        // Release so a retry can re-attempt, then surface the error.
+        await sb.from('crm_idempotency_keys').delete().eq('key', args.key)
+        throw e
+      }
+      if (result.ok) {
+        await sb
+          .from('crm_idempotency_keys')
+          .update({ result: result as never })
+          .eq('key', args.key)
+      } else {
+        // Failed send — release the key so the broker's retry actually re-sends.
+        await sb.from('crm_idempotency_keys').delete().eq('key', args.key)
+      }
+      return result
+    }
+  }
+
+  // Row exists with null result, or we lost the claim race → a sibling is mid-send.
+  const reread = await sb
+    .from('crm_idempotency_keys')
+    .select('result')
+    .eq('key', args.key)
+    .maybeSingle()
+  if (reread.data && reread.data.result != null) {
+    return reread.data.result as T
+  }
+  return args.onInFlight
+}
+
 export async function withIdempotency<T>(
   args: { key: string; scope: string },
   run: () => Promise<T>,
