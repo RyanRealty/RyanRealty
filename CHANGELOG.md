@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.799.0 (2026-07-16)
+
+### Features
+- feat(cma): closing "Your next step" page — the document no longer ends on disclaimers
+
+---
+
+
 ## v1.798.0 (2026-07-16)
 
 ### Features
