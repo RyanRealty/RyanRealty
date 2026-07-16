@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.808.0 (2026-07-16)
+
+### Features
+- feat(crm): inbox reads the conversation model — conversation-keyed (RC1, spec 02)
+
+---
+
+
 ## v1.807.0 (2026-07-16)
 
 ### Features
