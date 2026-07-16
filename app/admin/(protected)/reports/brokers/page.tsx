@@ -14,7 +14,8 @@ type BrokerRow = { id: string; slug: string; display_name: string; yearly?: Year
 export default async function AdminBrokerReportsPage() {
   const supabase = await createClient()
   const { data: brokers } = await supabase.from('brokers').select('id, slug, display_name').eq('is_active', true).order('sort_order')
-  const { data: stats } = await supabase.from('broker_stats').select('broker_id, period_type, period_start, metrics')
+  const { data: stats, error: statsError } = await supabase.from('broker_stats').select('broker_id, period_type, period_start, metrics')
+  if (statsError) console.error('[reports/brokers] broker_stats read failed:', statsError.message)
   const byBroker = new Map<string, { monthly?: Record<string, unknown>; yearly?: Record<string, unknown> }>()
   for (const row of stats ?? []) {
     const r = row as { broker_id: string; period_type: string; period_start: string; metrics: Record<string, unknown> }
@@ -32,10 +33,15 @@ export default async function AdminBrokerReportsPage() {
     yearly: byBroker.get(b.id)?.yearly as Yearly | undefined,
   }))
 
-  // 12-month team rollups for the KPI lead.
-  const teamVolume = rows.reduce((sum, b) => sum + (Number(b.yearly?.total_volume) || 0), 0)
-  const teamTransactions = rows.reduce((sum, b) => sum + (Number(b.yearly?.transaction_count) || 0), 0)
-  const teamAvgSale = teamTransactions > 0 ? teamVolume / teamTransactions : null
+  // 12-month team rollups for the KPI lead. broker_stats currently has no writer
+  // (the daily compute job was retired), so there is genuinely NO closed-volume
+  // data to sum. Render "—", never a fabricated "$0" — a licensed broker's report
+  // must not assert the brokerage closed $0 (data-accuracy §0). The real closed
+  // volume gets wired through the one metric layer (rebuild spec 06).
+  const hasVolumeData = rows.some((b) => b.yearly?.total_volume != null || b.yearly?.transaction_count != null)
+  const teamVolume = hasVolumeData ? rows.reduce((sum, b) => sum + (Number(b.yearly?.total_volume) || 0), 0) : null
+  const teamTransactions = hasVolumeData ? rows.reduce((sum, b) => sum + (Number(b.yearly?.transaction_count) || 0), 0) : null
+  const teamAvgSale = teamVolume != null && teamTransactions ? teamVolume / teamTransactions : null
 
   return (
     <main className="mx-auto max-w-4xl space-y-6 px-4 py-10 sm:px-6">
@@ -50,10 +56,20 @@ export default async function AdminBrokerReportsPage() {
         stats={[
           { label: 'Active brokers', value: String(rows.length) },
           { label: 'Team volume (12mo)', value: formatUsd(teamVolume) },
-          { label: 'Transactions (12mo)', value: String(teamTransactions) },
+          { label: 'Transactions (12mo)', value: teamTransactions != null ? String(teamTransactions) : '—' },
           { label: 'Avg sale (12mo)', value: formatUsd(teamAvgSale) },
         ]}
       />
+
+      {!hasVolumeData ? (
+        <Card>
+          <CardContent className="py-3 text-sm text-muted-foreground">
+            Closed-volume figures are being reconnected to the transaction ledger and
+            show as <span className="font-medium text-foreground">—</span> until then.
+            The broker roster below is live.
+          </CardContent>
+        </Card>
+      ) : null}
 
       <TableWithMobileCards
         rows={rows}
