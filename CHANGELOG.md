@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.803.0 (2026-07-16)
+
+### Features
+- feat(crm): first-class Conversation model (admin rebuild RC1, spec 02)
+
+---
+
+
 ## v1.802.19 (2026-07-16)
 
 ### Bug Fixes
