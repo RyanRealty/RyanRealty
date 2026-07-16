@@ -112,6 +112,17 @@ describe('formatMonths', () => {
     expect(formatMonths(3.5)).toBe('3.5 months')
     expect(formatMonths(10.8)).toBe('10.8 months')
   })
+  it('two decimals inside the verdict-threshold bands, INCLUSIVE of the edges', () => {
+    // 4.05 classifies balanced (> 4) but toFixed(1) floating-point-rounds it
+    // DOWN to "4.0" — which would print "Balanced market · 4.0 months", the
+    // verdict-vs-number contradiction §0 bans. Bend hit this live 2026-07-16.
+    expect(formatMonths(4.05)).toBe('4.05 months')
+    expect(formatMonths(4.04)).toBe('4.04 months')
+    expect(formatMonths(3.95)).toBe('3.95 months')
+    expect(formatMonths(5.95)).toBe('5.95 months')
+    expect(formatMonths(6.05)).toBe('6.05 months')
+    expect(formatMonths(4.1)).toBe('4.1 months')
+  })
   it('em-dash when unavailable', () => {
     expect(formatMonths(null)).toBe('—')
   })

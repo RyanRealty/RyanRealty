@@ -22,21 +22,38 @@ const ALERT_FROM = process.env.RESEND_FROM ?? 'alerts@mail.ryan-realty.com'
 
 export type MarketStatAlertParams = {
   failures: string[]
+  /**
+   * Optional overrides so other data-integrity alarms (the weekly-report
+   * generator, conversion-audit 2026-07-15 #6) reuse this ONE allowlisted
+   * sendEmail site instead of minting new ungated call sites.
+   */
+  subject?: string
+  heading?: string
+  intro?: string
+  context?: string
 }
 
 export async function sendMarketStatAlertEmail(
   p: MarketStatAlertParams,
 ): Promise<{ ok: boolean; id?: string; error?: string }> {
   const items = p.failures.map((f) => `<li>${f}</li>`).join('')
+  const heading = p.heading ?? 'Market stats are contradicting themselves'
+  const intro =
+    p.intro ??
+    'The nightly consistency check found the site could be showing two different numbers for the same stat. This is the exact failure class the 2026-07-07 design audit flagged (Bend 788 vs 500).'
+  const context =
+    p.context ??
+    'Sources: market_pulse_live (canonical, city/region) and geo_snapshot_mv (community/neighborhood + fallback). The DAL contract lives in lib/data/geo/getGeoSnapshot.ts.'
   const html = `<!doctype html>
 <html><body style="font-family:${EMAIL_FONT_STACK};color:#1a1a1a;font-size:14px;line-height:1.55;max-width:640px;margin:0 auto;padding:24px;">
-<h2 style="margin:0 0 8px 0;color:#102742;">Market stats are contradicting themselves</h2>
-<p style="margin:0 0 16px 0;color:#666;">The nightly consistency check found the site could be showing two different numbers for the same stat. This is the exact failure class the 2026-07-07 design audit flagged (Bend 788 vs 500).</p>
+<h2 style="margin:0 0 8px 0;color:#102742;">${heading}</h2>
+<p style="margin:0 0 16px 0;color:#666;">${intro}</p>
 <ul style="margin:0 0 16px 0;padding-left:20px;">${items}</ul>
-<p style="margin:0;">Sources: market_pulse_live (canonical, city/region) and geo_snapshot_mv (community/neighborhood + fallback). The DAL contract lives in lib/data/geo/getGeoSnapshot.ts.</p>
+<p style="margin:0;">${context}</p>
 </body></html>`
 
-  const subject = `[Data] Market-stat consistency check failed (${p.failures.length} issue${p.failures.length === 1 ? '' : 's'})`
+  const subject =
+    p.subject ?? `[Data] Market-stat consistency check failed (${p.failures.length} issue${p.failures.length === 1 ? '' : 's'})`
 
   try {
     const r = await sendEmail({ to: ALERT_TO, from: `Ryan Realty Ops <${ALERT_FROM}>`, subject, html })

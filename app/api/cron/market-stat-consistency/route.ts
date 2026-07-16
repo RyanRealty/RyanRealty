@@ -62,6 +62,31 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // 4 — weekly market report freshness (conversion-audit 2026-07-15 #6). The
+  // Sunday generator covers the week ending the prior Saturday, so a healthy
+  // pipeline never lets the newest period_end age past 8 days. Older = a
+  // missed firing or a silent generator failure (the 2026-07 mode: the stale
+  // listing_tile_mv produced a report nobody knew was blank — and before
+  // today's fix, a SATURDAY schedule published every report seven days late).
+  const { data: newestReport } = await sb
+    .from('market_reports')
+    .select('slug, period_end')
+    .eq('period_type', 'weekly')
+    .order('period_end', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (!newestReport) {
+    failures.push('market_reports has no weekly rows at all — the generator has never run')
+  } else {
+    const endMs = new Date(`${newestReport.period_end}T23:59:59Z`).getTime()
+    const ageDays = Math.floor((Date.now() - endMs) / 86_400_000)
+    if (ageDays > 8) {
+      failures.push(
+        `weekly market report stale: newest report (${newestReport.slug}) covers a period ending ${newestReport.period_end}, ${ageDays} days ago — /api/cron/market-report missed a firing or failed silently`,
+      )
+    }
+  }
+
   // 3 — SFR-median sentinel
   const { data: sentinel } = await sb
     .from('geo_snapshot_mv')
