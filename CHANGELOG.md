@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.800.2 (2026-07-16)
+
+### Maintenance
+- docs(audit): completion register — all 18 conversion-audit items closed 2026-07-16
+
+---
+
+
 ## v1.800.1 (2026-07-16)
 
 ### Maintenance
