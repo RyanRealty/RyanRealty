@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.810.2 (2026-07-16)
+
+### Maintenance
+- docs(handoff): RC7 + admin-content-authz gate shipped; Task #8 (shell) remains
+
+---
+
+
 ## v1.810.1 (2026-07-16)
 
 ### Bug Fixes
