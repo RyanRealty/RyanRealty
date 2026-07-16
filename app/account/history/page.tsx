@@ -36,7 +36,18 @@ export default async function AccountHistoryPage() {
   ])
   const keys = views.map((v) => v.entity_id).filter(Boolean)
   const listings = keys.length > 0 ? await getListingsByKeys(keys) : []
-  const listingMap = new Map(listings.map((l) => [(l.ListingKey ?? l.ListNumber ?? '').toString().trim(), l]))
+  // entity_id is whichever identifier the viewed URL carried: the canonical
+  // /homes-for-sale/.../{street}-{ListNumber} URL yields the MLS ListNumber, while
+  // a legacy /listing/{ListingKey} URL yields the 26-digit ListingKey. Key the map
+  // under BOTH so the lookup hits regardless of which URL was viewed (the previous
+  // ListingKey-only key silently missed every canonical-URL row → empty page).
+  const listingMap = new Map<string, (typeof listings)[number]>()
+  for (const l of listings) {
+    const lk = (l.ListingKey ?? '').toString().trim()
+    const ln = (l.ListNumber ?? '').toString().trim()
+    if (lk) listingMap.set(lk, l)
+    if (ln) listingMap.set(ln, l)
+  }
   const displayPrefs = prefs ?? {
     downPaymentPercent: DEFAULT_DISPLAY_DOWN_PCT,
     interestRate: DEFAULT_DISPLAY_RATE,

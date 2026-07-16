@@ -50,7 +50,8 @@ export type Capability =
   | 'financials.view'
   // ── Performance ──
   | 'performance.financials' // spend / CPL / ROI / P&L — superuser only (D3)
-  // ── Content (granular so brokers reach blog/guides/listings; writes stay superuser) ──
+  // ── Content (granular per D3: brokers author blog/guides — blog_posts.author_broker_id
+  //    is a real column — and read listings; site/media/communities stay superuser) ──
   | 'content.listings' // broker: read-only enforced at the page; superuser: edit
   | 'content.blog'
   | 'content.guides'

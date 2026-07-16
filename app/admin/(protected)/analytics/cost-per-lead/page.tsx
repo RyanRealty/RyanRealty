@@ -1,11 +1,11 @@
 /**
  * /admin/analytics/cost-per-lead - the number that decides paid-spend strategy.
  *
- * Joins Meta Ads spend (from marketing_channel_daily, channel=meta_ads,
- * scope=campaign, metric=spend) with FUB qualified seller leads
- * (channel=fub, scope=account, metric=qualified_seller_leads).
- *
- * Headline: $X per qualified seller lead from FB this week.
+ * Joins paid spend (marketing_channel_daily, channel=meta_ads/google_ads,
+ * metric=spend) with REAL inbound leads (getLeadIntake, from crm_people). The old
+ * FUB channel='fub' qualified_seller_leads plane was decommissioned at the 2026-06
+ * cutover (writer removed) — do not restore it. The denominator is ALL inbound
+ * leads, so cost-per-lead here is BLENDED, not paid-only (see the page caveat).
  * Drill-down: by campaign and by week so the trend is visible.
  */
 import { Suspense } from 'react'
@@ -277,9 +277,12 @@ export default async function CostPerLeadPage({ searchParams }: { searchParams: 
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">Cost per lead</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Cost per lead (blended)</h1>
         <p className="text-sm text-muted-foreground">
-          The number that decides whether to scale or kill paid spend. Joins Meta + Google Ads spend with real inbound leads (getLeadIntake), week by week. Brackets cost-per-lead so you see at-a-glance which weeks were healthy.
+          Paid spend (Meta + Google) divided by <span className="font-medium text-foreground">all</span> inbound
+          leads that week, week by week. It is <span className="font-medium text-foreground">blended</span>: the
+          denominator includes leads from every source (Zillow, organic, phone, referral), not only paid ads, so
+          true cost-per-paid-lead is higher than shown. Read it as a directional trend, not a precise paid-ad CPL.
         </p>
         <DateRangePicker current={sp.range ?? '90d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
       </header>

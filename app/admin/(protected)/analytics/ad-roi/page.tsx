@@ -6,7 +6,7 @@
  * This page joins three live feeds and says, in plain words, what they add up to:
  *   - Ad spend          → marketing_channel_daily (channel=meta_ads / google_ads, metric=spend)
  *   - Site visitors     → visitor_sessions (utm_source → channel, identified_at, fub_person_id, hot_lead_fired_at)
- *   - Leads             → marketing_channel_daily (channel=fub, metric=new_leads / qualified_seller_leads)
+ *   - Leads             → getLeadIntake (real crm_people inbound leads; the dead FUB channel='fub' plane was decommissioned 2026-06)
  *   - FB lead forms     → processed_meta_leads (campaign_name + fub_person_id)
  *
  * Design intent: honest first. When a data pipe is dry (no spend synced, no

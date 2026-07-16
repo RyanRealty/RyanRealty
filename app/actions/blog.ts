@@ -192,6 +192,10 @@ export async function getRelatedBlogPosts(
 // ─── Admin actions ────────────────────────────────────────────────
 
 export async function getAdminBlogPosts(): Promise<BlogPostWithAuthor[]> {
+  // Guard the read too: this service-role action returns ALL posts incl. drafts —
+  // an unauthenticated caller must not read unpublished editorial content.
+  const gate = await checkAdminAction('content.blog')
+  if (!gate.ok) return []
   const supabase = getServiceSupabase()
   if (!supabase) return []
   // P1-1 fix: include content and tags so the edit form can pre-populate them.

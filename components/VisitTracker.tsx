@@ -241,8 +241,9 @@ export default function VisitTracker({ userId }: Props) {
     // Per-USER viewing history: a signed-in visitor's listing views go to
     // user_events (the real source /account/history reads — before, that page read
     // user_activities, which nothing wrote, so it was always empty). Own ref +
-    // userId gate so it fires on the null→id re-render, once per pathname.
-    if (userId && firedUserViewPath.current !== pathname) {
+    // userId gate so it fires on the null→id re-render, once per pathname. Honors a
+    // cookie decline (compliance) like the visitor_events write above.
+    if (userId && consentLevel() !== 'declined' && firedUserViewPath.current !== pathname) {
       const detU = detectListing(pathname)
       if (detU.isListing && detU.mls) {
         firedUserViewPath.current = pathname

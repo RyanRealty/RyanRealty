@@ -176,6 +176,9 @@ export async function getGuidesByCity(city: string): Promise<GuideRow[]> {
 }
 
 export async function getAdminGuides(): Promise<GuideRow[]> {
+  // Guard the read too: returns drafts/archived — not for unauthenticated callers.
+  const gate = await checkAdminAction('content.guides')
+  if (!gate.ok) return []
   const supabase = createServiceClient()
   const { data } = await supabase
     .from('guides')

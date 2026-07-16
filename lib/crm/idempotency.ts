@@ -16,8 +16,15 @@ import { createServiceClient } from '@/lib/supabase/service'
  *      second time (the double-send we are preventing).
  *
  * Retry uses the SAME key, so a retried send returns the original result instead of
- * sending again. Group sends key per-recipient (`{messageId}:{address}`) so a
- * partial-failure retry only re-drives the recipients that actually failed.
+ * sending again.
+ *
+ * NOTE (group sends): the CRM SMS path wraps the WHOLE group/broadcast send under one
+ * key (`sms:${personId}:${key}`) and reports ok when at least one recipient succeeds.
+ * Per-recipient idempotency (so a partial-failure retry re-drives only the failed
+ * members, instead of re-texting everyone) is NOT yet implemented — tracked for the
+ * messaging rebuild (spec 02). Until then, a broker retrying a partially-failed group
+ * text re-sends to all members; the composer's disabled-button guard makes an
+ * accidental retry unlikely, but it is not idempotent per-recipient.
  */
 
 export class IdempotencyInFlightError extends Error {
@@ -37,6 +44,15 @@ export class IdempotencyInFlightError extends Error {
  *   - A duplicate that lands while the first is still in flight returns the
  *     `onInFlight` value (default a success-shaped no-op) so the caller never
  *     double-fires.
+ *
+ * FAIL-OPEN on ledger errors. The idempotency table is a BACKSTOP (the composer's
+ * disabled Send button is the primary double-send guard). If the ledger is briefly
+ * unavailable — a transient Supabase error, a statement timeout, a pooler blip — we
+ * run the send anyway. Returning a fabricated `{ok:true}` on a DB error would tell
+ * the broker "sent" while nothing left (a silent no-send) — far worse than the tiny
+ * double-send window the ledger was only ever hedging. Only a CONFIRMED concurrent
+ * claim (a row that actually exists with result IS NULL, or a PK unique-violation
+ * race) returns `onInFlight`.
  */
 export async function withSendIdempotency<T extends { ok: boolean }>(
   args: { key: string; scope: string; onInFlight: T },
@@ -49,46 +65,47 @@ export async function withSendIdempotency<T extends { ok: boolean }>(
     .select('result')
     .eq('key', args.key)
     .maybeSingle()
+  if (existing.error) return run() // ledger unreadable → fail open, send.
   if (existing.data && existing.data.result != null) {
     return existing.data.result as T
   }
-
-  if (!existing.data) {
-    const claim = await sb
-      .from('crm_idempotency_keys')
-      .insert({ key: args.key, scope: args.scope, result: null })
-    if (!claim.error) {
-      let result: T
-      try {
-        result = await run()
-      } catch (e) {
-        // Release so a retry can re-attempt, then surface the error.
-        await sb.from('crm_idempotency_keys').delete().eq('key', args.key)
-        throw e
-      }
-      if (result.ok) {
-        await sb
-          .from('crm_idempotency_keys')
-          .update({ result: result as never })
-          .eq('key', args.key)
-      } else {
-        // Failed send — release the key so the broker's retry actually re-sends.
-        await sb.from('crm_idempotency_keys').delete().eq('key', args.key)
-      }
-      return result
-    }
+  if (existing.data) {
+    // Row exists with a NULL result → a sibling is genuinely mid-send.
+    return args.onInFlight
   }
 
-  // Row exists with null result, or we lost the claim race → a sibling is mid-send.
-  const reread = await sb
+  const claim = await sb
     .from('crm_idempotency_keys')
-    .select('result')
-    .eq('key', args.key)
-    .maybeSingle()
-  if (reread.data && reread.data.result != null) {
-    return reread.data.result as T
+    .insert({ key: args.key, scope: args.scope, result: null })
+  if (claim.error) {
+    // Only a PK unique-violation means a sibling won the claim race. Any OTHER
+    // insert error is a ledger failure → fail open and send (never a fake success).
+    if (claim.error.code !== '23505') return run()
+    const reread = await sb
+      .from('crm_idempotency_keys')
+      .select('result')
+      .eq('key', args.key)
+      .maybeSingle()
+    if (reread.error) return run() // can't confirm the sibling → fail open.
+    if (reread.data && reread.data.result != null) return reread.data.result as T
+    return args.onInFlight // sibling confirmed in flight (row exists, NULL result).
   }
-  return args.onInFlight
+
+  // We own the key — run exactly once.
+  let result: T
+  try {
+    result = await run()
+  } catch (e) {
+    await sb.from('crm_idempotency_keys').delete().eq('key', args.key)
+    throw e
+  }
+  if (result.ok) {
+    await sb.from('crm_idempotency_keys').update({ result: result as never }).eq('key', args.key)
+  } else {
+    // Failed send — release the key so the broker's retry actually re-sends.
+    await sb.from('crm_idempotency_keys').delete().eq('key', args.key)
+  }
+  return result
 }
 
 export async function withIdempotency<T>(
