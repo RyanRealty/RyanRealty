@@ -6,6 +6,7 @@
  */
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { PendingButton } from '@/components/admin/PendingButton'
 
 export function OwnedHomeCard(props: {
   address: string
@@ -43,17 +44,23 @@ export function OwnedHomeCard(props: {
             <div className="mt-auto flex flex-wrap gap-2 pt-2">
               {props.reviewDeliveryId ? (
                 <>
+                  {/* Broker review = the authed admin CMA page (/admin/cmas/[slug]).
+                      The old /cma-drafts/[id] link is the TOKENIZED lead-facing
+                      review and 404'd for a broker passing a bare slug (audit
+                      dead-end fix). */}
                   <Button asChild variant="outline" size="sm" className="h-9">
-                    <a href={`/cma-drafts/${props.reviewDeliveryId}`} target="_blank" rel="noopener noreferrer">Review comp</a>
+                    <a href={`/admin/cmas/${props.reviewDeliveryId}`}>Review comp</a>
                   </Button>
                   <form action={props.sendAction}>
                     <input type="hidden" name="deliveryId" value={props.reviewDeliveryId} />
-                    <Button type="submit" size="sm" className="h-9">Send to lead</Button>
+                    <PendingButton pendingLabel="Sending…" className="h-9">Send to lead</PendingButton>
                   </form>
                 </>
               ) : (
                 <form action={props.generateAction}>
-                  <Button type="submit" size="sm" className="h-9">Generate comp</Button>
+                  {/* The build runs 30–60s server-side; PendingButton shows it's
+                      working so the broker doesn't re-click or assume it hung. */}
+                  <PendingButton pendingLabel="Building comp…" className="h-9">Generate comp</PendingButton>
                 </form>
               )}
             </div>
