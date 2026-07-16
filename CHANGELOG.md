@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.802.11 (2026-07-16)
+
+### Bug Fixes
+- fix(consumer): make viewing history real (was reading a table nothing writes)
+
+---
+
+
 ## v1.802.10 (2026-07-16)
 
 ### Bug Fixes
