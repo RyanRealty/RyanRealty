@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.802.15 (2026-07-16)
+
+### Bug Fixes
+- fix(admin-nav): kill the two real broker dead-ends (nav showed superuser-only pages)
+
+---
+
+
 ## v1.802.14 (2026-07-16)
 
 ### Maintenance
