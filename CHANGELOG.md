@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.806.1 (2026-07-16)
+
+### Bug Fixes
+- fix(crm): harden the conversation model — 3 review-found correctness bugs (RC1)
+
+---
+
+
 ## v1.806.0 (2026-07-16)
 
 ### Features
