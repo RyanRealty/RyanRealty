@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.796.2 (2026-07-16)
+
+### Bug Fixes
+- fix(twilio): idempotent sends, atomic delivery merge, daily cap, task dedupe
+
+---
+
+
 ## v1.796.1 (2026-07-16)
 
 ### Maintenance
