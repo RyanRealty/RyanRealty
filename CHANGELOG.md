@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.802.17 (2026-07-16)
+
+### Bug Fixes
+- fix(admin-auth): preserve the deep-link destination through sign-in (RC5)
+
+---
+
+
 ## v1.802.16 (2026-07-16)
 
 ### Bug Fixes
