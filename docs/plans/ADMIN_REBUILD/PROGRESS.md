@@ -23,6 +23,18 @@ the local callback) or integration-tested against the real DB.
   Alerts divided Meta spend by the dead `fub` qualified_seller_leads metric (always 0 →
   fired CRITICAL every $60 week). Now divides by real getLeadIntake inbound leads.
   Verified live: "$0.00 spent for 3 new leads", no false alarm.
+- **cost-per-lead + ad-ROI repaired** (`d2b35ddb`). Both pages (named for the owner's
+  core question) divided ad spend by the dead `fub` lead metrics → permanent "—"/0.
+  Now use real getLeadIntake (cost-per-lead buckets byDay into weeks; ad-ROI uses the
+  aggregate). Closed-deal figures (no live source) show "— ledger reconnecting", not a
+  fake 0. Verified live: real per-week counts (5/9/3/15/2), "34 real inbound leads".
+
+### Consumer funnel (RC7) — partial
+- **Signed-in visitors can reach their account** (`e5cb7662`). The header/nav always
+  said "Sign in" and the account menu (AuthDropdown) had 0 importers. New
+  `lib/hooks/useSessionUser` (client /api/auth/me fetch) drives a new
+  `HeaderAccount` (SiteHeader account menu) + KbNav's auth link → "My account" when
+  signed in. Verified live: KbNav shows "MY ACCOUNT" for the authed session.
 
 ### Person-page CMA flow — DONE (partial)
 - **CMA "Review comp" dead-end fixed + build feedback** (`1ab7872c`). Repointed to

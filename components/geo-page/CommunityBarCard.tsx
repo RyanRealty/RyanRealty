@@ -48,7 +48,7 @@ export default function CommunityBarCard({ community, signedIn = false, saved = 
     e.preventDefault()
     e.stopPropagation()
     const returnUrl = typeof window !== 'undefined' ? encodeURIComponent(window.location.pathname + window.location.search) : ''
-    router.push(`/login${returnUrl ? `?returnUrl=${returnUrl}` : ''}`)
+    router.push(`/login${returnUrl ? `?next=${returnUrl}` : ''}`)
   }
 
   async function handleSave(e: React.MouseEvent) {

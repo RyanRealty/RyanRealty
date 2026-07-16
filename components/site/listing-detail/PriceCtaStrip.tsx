@@ -130,7 +130,7 @@ export function PriceCtaStrip({
       if (res.needsAuth) {
         // Signed-out: send them to sign in (and back), the save→account capture path.
         const back = typeof window !== 'undefined' ? window.location.pathname : '/'
-        window.location.href = `/account?signin=1&returnUrl=${encodeURIComponent(back)}`
+        window.location.href = `/login?next=${encodeURIComponent(back)}`
         return
       }
       setSaveState(res.saved ? 'saved' : 'idle')

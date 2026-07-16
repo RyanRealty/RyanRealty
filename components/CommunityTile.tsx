@@ -79,7 +79,7 @@ export default function CommunityTile({ city, community, bannerUrl = null, signe
     e.preventDefault()
     e.stopPropagation()
     const returnUrl = typeof window !== "undefined" ? encodeURIComponent(window.location.pathname + window.location.search) : ""
-    router.push(`/login${returnUrl ? `?returnUrl=${returnUrl}` : ""}`)
+    router.push(`/login${returnUrl ? `?next=${returnUrl}` : ""}`)
   }
 
   useEffect(() => {

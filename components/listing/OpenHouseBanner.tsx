@@ -52,7 +52,7 @@ export default function OpenHouseBanner({ openHouses, listingKey }: Props) {
     })
     if (res.status === 401) {
       const returnUrl = encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : listingDetailPath(listingKey))
-      window.location.href = `/account?signin=1&returnUrl=${returnUrl}`
+      window.location.href = `/login?next=${returnUrl}`
       return
     }
   }

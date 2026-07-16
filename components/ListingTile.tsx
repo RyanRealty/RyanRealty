@@ -214,8 +214,11 @@ function ListingTile({
   function goToLogin(e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
-    const returnUrl = typeof window !== 'undefined' ? encodeURIComponent(window.location.pathname + window.location.search) : ''
-    router.push(`/login${returnUrl ? `?returnUrl=${returnUrl}` : ''}`)
+    // The login page + OAuth callback honor `next` (NOT `returnUrl` — that param
+    // was silently ignored, dumping the visitor on /account with the listing lost;
+    // RC7 save→resume fix). Return them to the page they were saving from.
+    const next = typeof window !== 'undefined' ? encodeURIComponent(window.location.pathname + window.location.search) : ''
+    router.push(`/login${next ? `?next=${next}` : ''}`)
   }
   const price = Number(listing.ListPrice ?? 0)
   // dom is "now"-relative. Computing it during render (especially on an ISR-cached

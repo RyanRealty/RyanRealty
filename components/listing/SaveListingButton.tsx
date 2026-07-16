@@ -40,7 +40,7 @@ export default function SaveListingButton({
         typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/',
       )
       if (typeof window !== 'undefined') {
-        window.location.href = `/account?signin=1&returnUrl=${returnUrl}`
+        window.location.href = `/login?next=${returnUrl}`
       }
       return
     }

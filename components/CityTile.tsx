@@ -54,7 +54,7 @@ export default function CityTile({ city, signedIn = false, saved = false, engage
     e.preventDefault()
     e.stopPropagation()
     const returnUrl = typeof window !== 'undefined' ? encodeURIComponent(window.location.pathname + window.location.search) : ''
-    router.push(`/login${returnUrl ? `?returnUrl=${returnUrl}` : ''}`)
+    router.push(`/login${returnUrl ? `?next=${returnUrl}` : ''}`)
   }
 
   async function handleToggleSave(e: React.MouseEvent) {

@@ -62,7 +62,7 @@ export default function ListingActions({ listingKey, address, price, isSaved, is
     const result = await toggleSavedListing(listingKey)
     if (result.error === 'Not signed in') {
       const returnUrl = encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : listingDetailPath(listingKey))
-      window.location.href = `/account?signin=1&returnUrl=${returnUrl}`
+      window.location.href = `/login?next=${returnUrl}`
       return
     }
     if (result.saved) {
@@ -90,7 +90,7 @@ export default function ListingActions({ listingKey, address, price, isSaved, is
     const result = await toggleLikeListing(listingKey)
     if (result.error === 'Not signed in') {
       const returnUrl = encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : listingDetailPath(listingKey))
-      window.location.href = `/account?signin=1&returnUrl=${returnUrl}`
+      window.location.href = `/login?next=${returnUrl}`
       return
     }
     if (result.error == null) setLiked(result.liked)
