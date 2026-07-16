@@ -10,6 +10,26 @@ the local callback) or integration-tested against the real DB.
 
 ## Shipped
 
+### Integrity + security (compliance-grade wrong numbers / unauthenticated writes) — DONE
+- **Content-write security holes closed** (`979350ad`). 18 in-body `checkAdminAction`
+  guards across blog / guides / site-pages / geo-places / brokerage — the RC5
+  criticals (unauthenticated service-role writes → public-site stored-XSS/defacement;
+  several wrote BEFORE their getSession). Verified: /admin/blog loads + editor intact
+  (superuser short-circuit).
+- **No more fabricated "$0 team volume"** (`73a76054`). /admin/reports/brokers read the
+  empty broker_stats and rendered "$0"; now shows "—" + a "being reconnected" note.
+  Verified live.
+- **False-CRITICAL "pause your ads" alert fixed** (`1890f17e`). action-required Spend
+  Alerts divided Meta spend by the dead `fub` qualified_seller_leads metric (always 0 →
+  fired CRITICAL every $60 week). Now divides by real getLeadIntake inbound leads.
+  Verified live: "$0.00 spent for 3 new leads", no false alarm.
+
+### Person-page CMA flow — DONE (partial)
+- **CMA "Review comp" dead-end fixed + build feedback** (`1ab7872c`). Repointed to
+  /admin/cmas/[slug] (was the tokenized lead page → "Link not valid"); "Generate comp"
+  + "Send to lead" now use `PendingButton` (reusable useFormStatus button,
+  `components/admin/PendingButton.tsx`).
+
 ### Messaging pain trilogy (the owner's #1 stated pain) — DONE
 - **Double-send killed** (`0d786a49`). SmsComposer + EmailComposer Send buttons use
   `useFormStatus` → disable + spinner the instant you tap (no more "nothing happened →
