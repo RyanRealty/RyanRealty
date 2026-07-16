@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.800.0 (2026-07-16)
+
+### Features
+- feat(seo): lifestyle collection presets + city-page links for measured GSC demand
+
+---
+
+
 ## v1.799.0 (2026-07-16)
 
 ### Features
