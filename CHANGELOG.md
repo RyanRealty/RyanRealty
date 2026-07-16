@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.800.1 (2026-07-16)
+
+### Maintenance
+- chore(gates): remaining baseline updates for the conversion-audit batch
+- chore(gates): restore ci:gates green after the conversion-audit batch
+
+---
+
+
 ## v1.800.0 (2026-07-16)
 
 ### Features
