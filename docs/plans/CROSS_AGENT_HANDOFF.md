@@ -31,7 +31,34 @@
   broadcasts (app market-reports, sequence drips). Filtering those needs a `source` marker threaded
   onto `crm_message`. Not started.
 - **Gotcha:** the dev server's stale in-memory client chunks masked correct edits in a long-lived
-  browser tab — verify inbox changes in a FRESH tab (the source was always right).
+  browser tab — verify inbox changes in a FRESH tab (the source was always right). Worse: Turbopack
+  (Next 16) ignored component edits until a full `.next` clear + dev-server restart — component
+  changes here need that to verify, not just HMR.
+
+## Also shipped this session (RC5 gate + RC7 consumer funnel)
+
+- **`ci:admin-content-authz` gate** (`scripts/check-admin-content-authz.mjs`, wired into `ci:gates`).
+  Regression-locks the RC5 in-body `checkAdminAction` guards on the content-write actions
+  (blog/guides/communities/site-pages/brokerage): per file it asserts the guard count stays at/above
+  its floor and every guard's `!ok` early-return is present (no called-but-ignored guard).
+- **RC7 save→sign-in→resume — DONE + reviewed.** A logged-out save now completes after sign-in.
+  Shared `lib/pending-save.ts` + `lib/hooks/useResumePendingSave.ts`, wired into all 7 live save
+  controls incl. the detail-page `PriceCtaStrip` (the real save CTA — `ListingActions` is DEAD, not
+  rendered anywhere; delete-chip spawned). The resume is an **idempotent add** via
+  `resumeSaveListing` (NEVER a toggle — a blind toggle could silently un-save when a card's `saved`
+  prop was stale-false; that data-loss bug was found by an adversarial review and fixed). The hook
+  re-stashes on `needsAuth` so a logged-out Back-button return doesn't burn the intent. If you touch
+  a save control, use the hook's `onSaved` callback — never call `toggleSavedListing` in a resume.
+
+## Remaining admin-rebuild spec (NOT started — the big one)
+
+- **Task #8 — responsive shell + Today home + drop the public bundle from admin (RC3).** Kill the
+  ~27 forked mobile/desktop admin components (one responsive tree), add a Today home, and the
+  route-group refactor to stop shipping the public-site bundle inside admin. HIGH blast radius —
+  the naive public-bundle move regresses the whole site (root layout must stay static for public
+  prerender). Deferred to its own focused, full-site-browser-verified pass. Do NOT rush it.
+- **RC1 inbox source-filter** (Matt's call): ~4% of inbox rows are automated broadcasts (app
+  market-reports, sequence drips) — filter them via a `source` marker threaded onto `crm_message`.
 
 # ADMIN CONSOLIDATION: ~40 PAGES → BROKER WORKFLOWS (2026-07-07 evening, Claude Code — SHIPPED)
 
