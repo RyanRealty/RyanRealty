@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.798.0 (2026-07-16)
+
+### Features
+- feat(seo): Broken Top consolidation + exact-anchor community listing links
+- feat(market-report-email): seller-framed CTA destination, GA4 UTMs, broker close card
+- feat(kb): seller ask inside the market HUD on every geo template
+
+### Bug Fixes
+- fix(analytics): one event name per geo pageview (view_city / view_community)
+- fix(weekly-report): real-data banner, per-city verdicts, fresh cadence, loud failures
+
+---
+
+
 ## v1.797.0 (2026-07-16)
 
 ### Features
