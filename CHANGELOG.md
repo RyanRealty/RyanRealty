@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.805.0 (2026-07-16)
+
+### Features
+- feat(crm): inbound dual-write into the conversation model (RC1, spec 02)
+
+---
+
+
 ## v1.804.0 (2026-07-16)
 
 ### Features
