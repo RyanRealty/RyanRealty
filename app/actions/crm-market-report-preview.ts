@@ -20,6 +20,7 @@ import {
   renderMarketReportEmail,
   type EmailFigureTrace,
 } from '@/lib/crm/market-report-email'
+import { shellBrokerFor } from '@/lib/email/broker-identity'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -57,6 +58,9 @@ export async function previewMarketReportEmail(input: {
       areas: blocks,
       // Preview placeholder — a real send mints a per-person token instead.
       unsubscribeUrl: `${SITE_URL}/api/email/unsubscribe?preview=1`,
+      // Mirror production: a real send always carries a close card (Matt by
+      // default) — the preview must show the same email (audit #14).
+      senderBroker: shellBrokerFor(null),
     })
 
     const renderedAreas = blocks.map((b) => b.slug)

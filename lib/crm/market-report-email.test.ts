@@ -4,6 +4,7 @@ import {
   buildSubject,
   buildHeadline,
   chartImageUrl,
+  reportCtaUrl,
   formatCurrencyRounded,
   formatDays,
   formatYoy,
@@ -204,6 +205,21 @@ describe('chartImageUrl', () => {
   })
 })
 
+describe('reportCtaUrl (conversion-audit #2/#8 — seller-framed destination + UTMs)', () => {
+  it('sends a city area to /housing-market/<city>, not the buyer storefront', () => {
+    const url = reportCtaUrl({ slug: 'bend', geoType: 'city', href: '/cities/bend' })
+    expect(url).toBe(
+      'https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=market-report#market-report',
+    )
+  })
+  it('sends a neighborhood/community area to its geo page AT the market section', () => {
+    const url = reportCtaUrl({ slug: 'tetherow', geoType: 'neighborhood', href: '/communities/tetherow' })
+    expect(url).toBe(
+      'https://ryan-realty.com/communities/tetherow?utm_source=crm&utm_medium=email&utm_campaign=market-report#market-report',
+    )
+  })
+})
+
 describe('renderMarketReportEmail', () => {
   const UNSUB = 'https://ryan-realty.com/api/email/unsubscribe?t=abc.def'
 
@@ -221,7 +237,13 @@ describe('renderMarketReportEmail', () => {
     expect(out.html).toContain("Seller's market")
     expect(out.html).toContain('3.5 months of supply')
     expect(out.html).toContain('↓ 1.2% YoY')
-    expect(out.html).toContain('https://ryan-realty.com/cities/bend')
+    // The CTA lands on the seller-framed report page, never the buyer
+    // storefront at /cities/bend (conversion-audit 2026-07-15 #2), and
+    // carries GA4 UTMs (#8) plus the market-section anchor.
+    expect(out.html).toContain(
+      'https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=market-report#market-report',
+    )
+    expect(out.html).not.toContain('https://ryan-realty.com/cities/bend')
     expect(out.html).toContain(UNSUB)
     // The one branded frame (lib/email/shell.ts): masthead + navy + 640px sheet.
     expect(out.html).toContain('MARKET REPORT · BEND')

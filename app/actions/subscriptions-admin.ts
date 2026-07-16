@@ -36,6 +36,7 @@ import { getCrmReportAreas } from '@/lib/data/crm/getCrmReportAreas'
 import { getMarketReportData } from '@/lib/data/crm/getMarketReportData'
 import { renderMarketReportEmail } from '@/lib/crm/market-report-email'
 import { buildUnsubscribeUrl } from '@/lib/email/unsubscribe-token'
+import { shellBrokerFor } from '@/lib/email/broker-identity'
 import { buildListingAlertEmail, type ListingAlertListing } from '@/lib/crm/listing-alert-email'
 import { getCachedSearchListings } from '@/app/actions/search-cache'
 import type { ListingTileRow } from '@/app/actions/listings'
@@ -358,6 +359,9 @@ export async function previewReportEmailAction(
       contactName: typeof personName === 'string' ? personName : null,
       areas,
       unsubscribeUrl: buildUnsubscribeUrl(personId),
+      // Mirror production: a real send always carries a close card (Matt by
+      // default) — the preview must show the same email (audit #14).
+      senderBroker: shellBrokerFor(null),
     })
     const omitted = sub.areas.length - areas.length
     const note = omitted > 0

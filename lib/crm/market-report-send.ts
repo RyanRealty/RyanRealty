@@ -39,7 +39,7 @@ import { isSuppressed } from '@/lib/crm/suppressions'
 import { prepareDeliverableEmail } from '@/lib/email/prepare'
 import { buildUnsubscribeUrl } from '@/lib/email/unsubscribe-token'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
-import { brokerSendIdentity } from '@/lib/email/broker-identity'
+import { brokerSendIdentity, shellBrokerFor } from '@/lib/email/broker-identity'
 import { recordEmailEvent } from '@/lib/crm/email-events'
 import { sendEmail } from '@/lib/resend'
 import { renderMarketReportEmail } from '@/lib/crm/market-report-email'
@@ -314,6 +314,10 @@ export async function runMarketReportSend(options: RunSendOptions = {}): Promise
       brokerSlug,
       areas,
       unsubscribeUrl,
+      // Close card = the human face on the report (conversion-audit #14).
+      // Resolves the assigned broker, defaulting to Matt — no send goes out
+      // faceless because a subscription's person has no assigned_broker.
+      senderBroker: shellBrokerFor(brokerSlug),
     })
 
     const outcome = await deps.sendOne({

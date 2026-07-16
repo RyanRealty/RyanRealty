@@ -329,7 +329,12 @@ export function attributeSiteLinks(
   if (!slug && !fuid && !pid) return text
   return text.replace(/https:\/\/(?:www\.)?ryan-realty\.com[^\s"'<)\]]*/g, (url) => {
     if (url.includes('/admin')) return url
-    let out = url
+    // Split off a #fragment so params land in the query string, not the hash —
+    // an anchor-carrying CTA (/housing-market/bend?utm=..#market-report) must
+    // not become ..#market-report&agent=.., which the server never sees.
+    const hashAt = url.indexOf('#')
+    let out = hashAt === -1 ? url : url.slice(0, hashAt)
+    const fragment = hashAt === -1 ? '' : url.slice(hashAt)
     // Agent attribution — routes the lead to the broker whose email this is.
     if (slug && !/[?&]agent=/.test(out)) out += (out.includes('?') ? '&' : '?') + 'agent=' + encodeURIComponent(slug)
     // Recipient identity — every click on a link WE sent stamps ?_fuid=<id>, so
@@ -341,7 +346,7 @@ export function attributeSiteLinks(
     // send that only stamps _fuid can never stitch their web sessions.
     // PersonIdentityBridge prefers _pid when both are present.
     if (pid && !/[?&]_pid=/.test(out)) out += (out.includes('?') ? '&' : '?') + '_pid=' + pid
-    return out
+    return out + fragment
   })
 }
 

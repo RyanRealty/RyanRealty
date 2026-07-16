@@ -40,6 +40,21 @@ describe('attributeOutbound', () => {
     expect(payload.u).toContain('_fuid=9001')
   })
 
+  it('appends attribution params BEFORE a #fragment, never inside the hash', () => {
+    // The market-report CTA carries UTMs + a #market-report anchor
+    // (conversion-audit #2/#8). Params landing after the hash would be
+    // invisible to the server — the agent cookie and identity stitch would
+    // silently fail on every anchored link.
+    const html =
+      '<a href="https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=market-report#market-report">Report</a>'
+    const out = attributeOutbound(html, OPTS)
+    const tok = decodeURIComponent(out.match(/\/api\/track\/e\/click\?t=([^"]+)/)![1])
+    const payload = JSON.parse(Buffer.from(tok.split('.')[0], 'base64url').toString())
+    expect(payload.u).toBe(
+      'https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=market-report&agent=matt-ryan&_fuid=9001&_pid=4242#market-report',
+    )
+  })
+
   it('is idempotent — running twice does not double-encode or break the link', () => {
     const html = '<body><a href="https://ryan-realty.com/homes-for-sale">Browse</a></body>'
     const once = attributeOutbound(html, OPTS)

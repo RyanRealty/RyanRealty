@@ -20,6 +20,7 @@ import { buildMarketReportAreas } from '@/lib/data/crm/getContactReportSubscript
 import { renderMarketReportEmail } from '@/lib/crm/market-report-email'
 import { sendOneSubscriber } from '@/lib/crm/market-report-send'
 import { buildUnsubscribeUrl } from '@/lib/email/unsubscribe-token'
+import { shellBrokerFor } from '@/lib/email/broker-identity'
 
 export async function sendMarketReportNowAction(
   personId: number,
@@ -77,7 +78,13 @@ export async function sendMarketReportNowAction(
   const brokerSlug = access.access.brokerSlug ?? (person.assigned_broker as string | null) ?? 'matt'
   const contactName = String(person.first_name ?? person.name ?? '').trim() || undefined
   const unsubscribeUrl = buildUnsubscribeUrl(pid)
-  const rendered = renderMarketReportEmail({ contactName, brokerSlug, areas, unsubscribeUrl })
+  const rendered = renderMarketReportEmail({
+    contactName,
+    brokerSlug,
+    areas,
+    unsubscribeUrl,
+    senderBroker: shellBrokerFor(brokerSlug),
+  })
 
   // Suppression runs fail-closed inside sendOneSubscriber, same as the cron.
   const outcome = await sendOneSubscriber({

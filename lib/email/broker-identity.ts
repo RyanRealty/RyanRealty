@@ -25,8 +25,20 @@
  */
 
 import { BROKERS } from '@/lib/brand/contact'
+import type { ShellBroker } from '@/lib/email/shell'
 
 const SEND_DOMAIN = 'mail.ryan-realty.com'
+
+/**
+ * Absolute-HTTPS headshots (email can't load relative/app assets). The
+ * transparent .png cutouts are canonical (design system): they drop cleanly
+ * onto the navy close card with no white box. Same map the newsletter uses.
+ */
+const HEADSHOTS: Record<string, string> = {
+  matt: 'https://ryan-realty.com/images/brokers/ryan-matt.png',
+  paul: 'https://ryan-realty.com/images/brokers/stevenson-paul.png',
+  rebecca: 'https://ryan-realty.com/images/brokers/peterson-rebecca.png',
+}
 
 export type BrokerSendIdentity = {
   /** RFC 5322 From with display name, e.g. `"Matt Ryan · Ryan Realty" <matt@mail.ryan-realty.com>`. */
@@ -46,5 +58,29 @@ export function brokerSendIdentity(brokerKeyOrSlug: string | null | undefined): 
   return {
     from: `"${broker.nameShort} · Ryan Realty" <${local}@${SEND_DOMAIN}>`,
     replyTo: broker.email,
+  }
+}
+
+/**
+ * Resolve a broker key ('matt'), roster slug ('matthew-ryan'), or mailbox to
+ * the branded close-card identity for wrapBrandedEmail. Falls back to Matt —
+ * conversion-audit 2026-07-15 #14: no market-report send path passed
+ * senderBroker, so the close card (the human face on the report) never
+ * rendered in production. Pure — reads only the static BROKERS registry.
+ */
+export function shellBrokerFor(brokerKeyOrSlug: string | null | undefined): ShellBroker {
+  const wanted = (brokerKeyOrSlug ?? '').trim().toLowerCase()
+  const [key, broker] =
+    (Object.entries(BROKERS) as Array<[string, (typeof BROKERS)[keyof typeof BROKERS]]>).find(
+      ([k, b]) => k === wanted || b.slug === wanted || b.email === wanted,
+    ) ?? (['matt', BROKERS.matt] as const)
+  return {
+    name: broker.nameShort,
+    firstName: broker.nameShort.split(/\s+/)[0] || broker.nameShort,
+    title: broker.title,
+    phone: broker.phone,
+    email: broker.email,
+    headshotUrl: HEADSHOTS[key] ?? HEADSHOTS.matt!,
+    isOwner: key === 'matt',
   }
 }

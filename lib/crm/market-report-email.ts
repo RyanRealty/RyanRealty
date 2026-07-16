@@ -292,12 +292,28 @@ type AreaRender = { html: string; text: string; traces: EmailFigureTrace[] }
  * inventory chart, and the CTA. Also returns the plain-text mirror and the
  * per-figure traces.
  */
+/**
+ * Where "SEE THE FULL REPORT" actually lands (conversion-audit 2026-07-15 #2).
+ * The email promises a report; the /cities and /communities heroes sell buyer
+ * search. City areas land on /housing-market/<city> — a hero that literally
+ * reads "<City> market report", straight into the market HUD. Neighborhood and
+ * community areas land on their geo page AT the market section (#market-report
+ * anchor), skipping the for-sale hero. GA4 UTMs ride along (audit #8) so the
+ * click stops landing as direct/(none); the first-party agent/_pid/_fuid params
+ * are stamped by attributeOutbound at send time (fragment-aware since today).
+ * Exported for tests.
+ */
+export function reportCtaUrl(area: Pick<MarketReportAreaBlock, 'slug' | 'geoType' | 'href'>): string {
+  const path = area.geoType === 'city' ? `/housing-market/${area.slug}` : area.href
+  return `${SITE_URL}${path}?utm_source=crm&utm_medium=email&utm_campaign=market-report#market-report`
+}
+
 function renderAreaBlock(area: MarketReportAreaBlock): AreaRender {
   const traces: EmailFigureTrace[] = []
   const textLines: string[] = []
   const verdict = verdictLabel(area.marketVerdict)
   const hasVerdict = area.marketVerdict != null
-  const href = `${SITE_URL}${area.href}`
+  const href = reportCtaUrl(area)
   const trend = area.trend ?? null
 
   // ── Kicker ────────────────────────────────────────────────────────────────
