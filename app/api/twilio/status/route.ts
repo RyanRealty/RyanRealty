@@ -21,19 +21,12 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { verifiedTwilioParams } from '@/lib/crm/twilio'
-import { classifyTwilioStatus, isForwardStateTransition, type SmsDeliveryState } from '@/lib/crm/sms-status'
+import { classifyTwilioStatus } from '@/lib/crm/sms-status'
 import { addSuppression } from '@/lib/crm/suppressions'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
-
-type SmsOutPayload = Record<string, unknown> & {
-  twilioSid?: string
-  deliveryState?: SmsDeliveryState
-  carrierFiltered?: boolean
-  errorCode?: number | null
-}
 
 export async function POST(request: Request) {
   const verified = await verifiedTwilioParams(request)
@@ -51,16 +44,19 @@ export async function POST(request: Request) {
   const classified = classifyTwilioStatus(status, rawErrorCode)
   const sb = createServiceClient()
 
-  // Find the sms_out row this SID belongs to. The sequence engine + relay both
-  // stamp payload.twilioSid when they send (dedupe_key twilio:<sid>:p<pid>).
-  const { data: row } = await sb
-    .from('crm_timeline')
-    .select('id,person_id,payload')
-    .eq('kind', 'sms_out')
-    .filter('payload->>twilioSid', 'eq', sid)
-    .order('ts', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+  // Atomic forward-only merge (crm_advance_sms_delivery). Twilio fires
+  // queued/sent/delivered in rapid succession; doing SELECT->compute->UPDATE in
+  // app code let a late callback that read before the `delivered` write committed
+  // clobber it. The RPC does the whole forward-only merge in one statement, so
+  // Postgres row locks serialize concurrent callbacks and the state only ever
+  // moves forward. Matches on payload.twilioSid, returns the row it touched.
+  const { data: rows } = await sb.rpc('crm_advance_sms_delivery', {
+    p_sid: sid,
+    p_state: classified.state,
+    p_error_code: classified.errorCode,
+    p_carrier_filtered: classified.carrierFiltered,
+  })
+  const row = Array.isArray(rows) ? (rows[0] as { id: number; person_id: number } | undefined) : undefined
 
   if (!row) {
     // No matching outbound row (e.g. an alert text the relay sent that we never
@@ -68,26 +64,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, sid, state: classified.state, matched: false })
   }
 
-  const prev = (row.payload as SmsOutPayload | null) ?? {}
-  const prevState = (prev.deliveryState as SmsDeliveryState | undefined) ?? null
-  const advance = isForwardStateTransition(prevState, classified.state)
-
-  // Forward-only: only roll the state forward. carrierFiltered + errorCode are
-  // always recorded (additive evidence), even when the state itself is held.
-  const nextPayload: SmsOutPayload = {
-    ...prev,
-    deliveryState: advance ? classified.state : prevState ?? classified.state,
-    deliveryUpdatedAt: new Date().toISOString(),
-    errorCode: classified.errorCode ?? prev.errorCode ?? null,
-    carrierFiltered: classified.carrierFiltered || prev.carrierFiltered === true,
-  }
-
-  await sb.from('crm_timeline').update({ payload: nextPayload }).eq('id', row.id)
-
   // Carrier filter (30007/30008): the carrier silently dropped the text. Record
-  // a visible system note once (deduped) so the broker knows the contact never
-  // got it. Detected, not suppressed — a lone filter is often transient.
-  if (classified.carrierFiltered && !(prev.carrierFiltered === true)) {
+  // a visible system note (deduped by SID, so it lands once even across retries)
+  // so the broker knows the contact never got it. Detected, not suppressed — a
+  // lone filter is often transient.
+  if (classified.carrierFiltered) {
     await sb.from('crm_timeline').upsert(
       {
         person_id: row.person_id,
@@ -110,8 +91,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     sid,
-    state: nextPayload.deliveryState,
-    advanced: advance,
+    state: classified.state,
     carrierFiltered: classified.carrierFiltered,
     matched: true,
   })

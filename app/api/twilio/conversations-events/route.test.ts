@@ -136,8 +136,12 @@ describe('conversations-events — group inbound recording', () => {
       expect(payload.conversationSid).toBe('CH' + 'a'.repeat(32))
     }
     expect(markUnread).toHaveBeenCalledWith(52283)
-    // Broker follow-up: reply task on the author's contact.
-    expect(inserts.some((i) => i.table === 'crm_tasks')).toBe(true)
+    // Broker follow-up: reply task on the author's contact — upserted on a
+    // per-message dedupe_key so a webhook retry can't stack duplicate tasks.
+    const taskUpsert = upserts.find((u) => u.table === 'crm_tasks')
+    expect(taskUpsert).toBeDefined()
+    expect(taskUpsert!.row.dedupe_key).toBe(`twilio-grouptask:IM${'b'.repeat(32)}:p52283`)
+    expect(taskUpsert!.opts).toEqual({ onConflict: 'dedupe_key', ignoreDuplicates: true })
   })
 
   it('LOCK 2: unknown author → find-or-create as a lead + new-lead alert on a real create', async () => {
@@ -165,6 +169,7 @@ describe('conversations-events — group inbound recording', () => {
       expect.objectContaining({ personId: 52283, channel: 'sms', reason: 'stop-keyword' }),
     )
     expect(inserts.some((i) => i.table === 'crm_tasks')).toBe(false)
+    expect(upserts.some((u) => u.table === 'crm_tasks')).toBe(false)
     // START clears it again.
     await POST(request({ Body: 'START' }))
     expect(removeSuppression).toHaveBeenCalledWith(

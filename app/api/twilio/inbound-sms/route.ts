@@ -172,15 +172,21 @@ export async function POST(request: Request) {
       })
     }
 
-    // Alert the assigned broker: open a task + email notification
-    await sb.from('crm_tasks').insert({
-      person_id: match.personId,
-      name: `Reply to text from ${match.name ?? from}`,
-      type: 'Text',
-      due_at: new Date(Date.now() + 15 * 60000).toISOString(),
-      assigned_broker: alertBroker,
-      origin: 'twilio',
-    })
+    // Alert the assigned broker: open a task + email notification. Upsert on a
+    // per-message dedupe_key so a Twilio inbound RETRY (non-2xx/timeout) can't
+    // stack duplicate "reply to text" tasks for the same inbound message.
+    await sb.from('crm_tasks').upsert(
+      {
+        person_id: match.personId,
+        name: `Reply to text from ${match.name ?? from}`,
+        type: 'Text',
+        due_at: new Date(Date.now() + 15 * 60000).toISOString(),
+        assigned_broker: alertBroker,
+        origin: 'twilio',
+        dedupe_key: `twilio-task:${sid}:p${match.personId}`,
+      },
+      { onConflict: 'dedupe_key', ignoreDuplicates: true },
+    )
     const mailbox = CRM_MAILBOXES.find((m) => m.slug === alertBroker) ?? CRM_MAILBOXES[0]
     // AWAITED: a bare void is dropped when Vercel freezes the invocation on
     // response, so the broker's new-text email alert silently never sends.

@@ -157,18 +157,26 @@ export async function POST(request: Request) {
   const firstToken = body.toLowerCase().split(/\s+/)[0] ?? ''
   if (STOP_WORDS.has(firstToken)) {
     await addSuppression({ personId: match.personId, channel: 'sms', reason: 'stop-keyword', source: 'twilio' })
-    await sb.from('crm_timeline').insert({
-      person_id: match.personId, kind: 'system',
-      title: 'SMS opt-out (STOP, via group text) — sms channel suppressed', source: 'twilio',
-    })
+    await sb.from('crm_timeline').upsert(
+      {
+        person_id: match.personId, kind: 'system',
+        title: 'SMS opt-out (STOP, via group text) — sms channel suppressed', source: 'twilio',
+        dedupe_key: `twilio-stop:${messageSid}`,
+      },
+      { onConflict: 'dedupe_key', ignoreDuplicates: true },
+    )
     return ok()
   }
   if (START_WORDS.has(firstToken)) {
     await removeSuppression({ personId: match.personId, channel: 'sms', reason: 'stop-keyword' })
-    await sb.from('crm_timeline').insert({
-      person_id: match.personId, kind: 'system',
-      title: 'SMS opt-in (START, via group text) — sms stop-keyword suppression removed', source: 'twilio',
-    })
+    await sb.from('crm_timeline').upsert(
+      {
+        person_id: match.personId, kind: 'system',
+        title: 'SMS opt-in (START, via group text) — sms stop-keyword suppression removed', source: 'twilio',
+        dedupe_key: `twilio-start:${messageSid}`,
+      },
+      { onConflict: 'dedupe_key', ignoreDuplicates: true },
+    )
     return ok()
   }
 
@@ -188,15 +196,21 @@ export async function POST(request: Request) {
     })
   }
 
-  // Alert the owning broker: reply task + email, mirroring the 1:1 path.
-  await sb.from('crm_tasks').insert({
-    person_id: match.personId,
-    name: `Reply to group text from ${match.name ?? author}`,
-    type: 'Text',
-    due_at: new Date(Date.now() + 15 * 60000).toISOString(),
-    assigned_broker: alertBroker,
-    origin: 'twilio',
-  })
+  // Alert the owning broker: reply task + email, mirroring the 1:1 path. Upsert
+  // on a per-message dedupe_key so a Conversations webhook RETRY can't stack
+  // duplicate reply tasks for the same group message.
+  await sb.from('crm_tasks').upsert(
+    {
+      person_id: match.personId,
+      name: `Reply to group text from ${match.name ?? author}`,
+      type: 'Text',
+      due_at: new Date(Date.now() + 15 * 60000).toISOString(),
+      assigned_broker: alertBroker,
+      origin: 'twilio',
+      dedupe_key: `twilio-grouptask:${messageSid}:p${match.personId}`,
+    },
+    { onConflict: 'dedupe_key', ignoreDuplicates: true },
+  )
   const mailbox = CRM_MAILBOXES.find((m) => m.slug === alertBroker) ?? CRM_MAILBOXES[0]
   // AWAITED: a bare void here is dropped when Vercel freezes the invocation on
   // response, so the broker never gets the group-text alert. try/catch keeps a

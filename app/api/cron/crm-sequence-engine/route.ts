@@ -74,6 +74,21 @@ export async function GET(request: Request) {
   // and fire automatically on the first run after approval.
   const a2pStatus = await getA2pCampaignStatus().catch(() => null)
 
+  // A2P daily send cap (#3). The messaging service paces per-SECOND, but nothing
+  // bounded DAILY volume against the low-volume campaign's carrier cap — a big
+  // enrollment backlog could blast past it and get carrier-filtered (30007).
+  // Count what the ENGINE has already texted in the last 24h (manual composer
+  // sends are source='app', excluded, so brokers always work) and hold once at
+  // the cap. Counted once per run; tracked in-run as we send.
+  const SMS_DAILY_CAP = Number(process.env.SEQ_SMS_DAILY_CAP ?? 500)
+  const { count: smsSentToday } = await sb
+    .from('crm_timeline')
+    .select('id', { count: 'exact', head: true })
+    .eq('kind', 'sms_out')
+    .eq('source', 'sequence')
+    .gte('ts', new Date(Date.now() - 24 * 3600e3).toISOString())
+  let smsThisRun = 0
+
   // Per-run template cache: a batch of 50 enrollments commonly shares a handful
   // of templates. Fetch each templateKey at most once per run instead of once
   // per enrollment (perf audit: repeated crm_templates lookups in the loop).
@@ -93,6 +108,22 @@ export async function GET(request: Request) {
       sb.from('crm_sequence_enrollments').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', en.id)
     const log = async (title: string, body?: string) =>
       sb.from('crm_timeline').insert({ person_id: en.person_id, kind: 'system', title, body: body ?? null, source: 'sequence' })
+
+    // Per-step send claim (#1) — makes the external client send at-most-once.
+    // Claim (enrollment,step) BEFORE the send; a re-run after a crash between
+    // send and step-advance hits the unique violation ('duplicate') and advances
+    // WITHOUT re-sending. On a send FAILURE the claim is released so the retry
+    // re-sends. 'claimed' = we won it, proceed; 'error' = DB failure, reschedule.
+    const claimSend = async (channel: string): Promise<'claimed' | 'duplicate' | 'error'> => {
+      const { error: cErr } = await sb
+        .from('crm_sequence_sends')
+        .insert({ enrollment_id: en.id, step_index: en.step_index, channel })
+      if (!cErr) return 'claimed'
+      if (cErr.code === '23505') return 'duplicate'
+      return 'error'
+    }
+    const releaseSend = async () =>
+      sb.from('crm_sequence_sends').delete().eq('enrollment_id', en.id).eq('step_index', en.step_index)
 
     try {
       // stop-on-reply: any inbound since enrollment
@@ -256,16 +287,23 @@ export async function GET(request: Request) {
         }
 
         const mailbox = CRM_MAILBOXES.find((m) => m.slug === person.assigned_broker) ?? CRM_MAILBOXES[0]
-        const sent = await sendCrmEmail({
-          fromMailbox: mailbox.email, to, subject, bodyText: body, withSignature: true,
-          track: { personId: person.id, emailKey: `seq:${seq.name}:${en.step_index}`, label: subject },
-        })
-        if (!sent.ok) { await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log(`Sequence email send failed, retrying in 30m`, sent.error); errored++; continue }
-        await sb.from('crm_timeline').insert({
-          person_id: person.id, kind: 'email_out', title: subject, body: sent.plainBody,
-          payload: { gmailId: sent.gmailId, sequence: seq.name, step: en.step_index, templateKey: step.templateKey ?? null, to },
-          broker: mailbox.slug, source: 'sequence', dedupe_key: `gmail:${sent.gmailId}:p${person.id}`,
-        })
+        // Claim the step before the send so a crash between send and step-advance
+        // can't re-email the client on the next run (at-most-once).
+        const emailClaim = await claimSend('email')
+        if (emailClaim === 'error') { await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log('Sequence email claim failed, retrying in 30m'); errored++; continue }
+        if (emailClaim === 'claimed') {
+          const sent = await sendCrmEmail({
+            fromMailbox: mailbox.email, to, subject, bodyText: body, withSignature: true,
+            track: { personId: person.id, emailKey: `seq:${seq.name}:${en.step_index}`, label: subject },
+          })
+          if (!sent.ok) { await releaseSend(); await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log(`Sequence email send failed, retrying in 30m`, sent.error); errored++; continue }
+          await sb.from('crm_timeline').insert({
+            person_id: person.id, kind: 'email_out', title: subject, body: sent.plainBody,
+            payload: { gmailId: sent.gmailId, sequence: seq.name, step: en.step_index, templateKey: step.templateKey ?? null, to },
+            broker: mailbox.slug, source: 'sequence', dedupe_key: `gmail:${sent.gmailId}:p${person.id}`,
+          })
+        }
+        // emailClaim === 'duplicate' → already sent on a prior crashed run; fall through to advance.
       } else if (step.channel === 'sms') {
         // Gate order matters: suppression first (suppressed people never even
         // show a queued text), then CMA hold + A2P queue (visible immediately,
@@ -351,26 +389,42 @@ export async function GET(request: Request) {
         if (a2pStatus === 'VERIFIED') {
           // Quiet hours gate the actual Twilio send only (8 AM to 9 PM PT).
           if (inSmsQuietHours()) { await finish({ next_run_at: nextSendWindow().toISOString() }); continue }
+          // Daily cap (#3): hold once the engine hits its daily budget so a big
+          // backlog can't blast past the low-volume campaign's carrier cap.
+          if ((smsSentToday ?? 0) + smsThisRun >= SMS_DAILY_CAP) {
+            await finish({ next_run_at: nextSendWindow().toISOString() })
+            await log(`Sequence SMS held — daily cap ${SMS_DAILY_CAP} reached; resumes next window`)
+            queuedSms++
+            continue
+          }
           // Send from the assigned broker's OWN Twilio line (same model as the
           // composer) so the lead always sees a consistent caller ID — the
           // pooled messaging service picks an arbitrary sticky number (this is
           // how texts went out from the temp 541.224.5025 line, 2026-07-02
           // fix). MS remains the fallback when no broker line resolves.
           const seqFrom = await brokerTwilioNumber(mailbox.slug)
-          const sent = seqFrom
-            ? await sendSms({ from: seqFrom, to: toPhone, body })
-            : await sendSmsViaMessagingService({ to: toPhone, body })
-          if (!sent.ok) {
-            await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() })
-            await log(`Sequence SMS send failed, retrying in 30m`, sent.error)
-            errored++
-            continue
+          // Claim the step before the send (at-most-once across a crash).
+          const smsClaim = await claimSend('sms')
+          if (smsClaim === 'error') { await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log('Sequence SMS claim failed, retrying in 30m'); errored++; continue }
+          if (smsClaim === 'claimed') {
+            const sent = seqFrom
+              ? await sendSms({ from: seqFrom, to: toPhone, body })
+              : await sendSmsViaMessagingService({ to: toPhone, body })
+            if (!sent.ok) {
+              await releaseSend()
+              await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() })
+              await log(`Sequence SMS send failed, retrying in 30m`, sent.error)
+              errored++
+              continue
+            }
+            smsThisRun++
+            await sb.from('crm_timeline').insert({
+              person_id: person.id, kind: 'sms_out', title: 'Text sent', body,
+              payload: { twilioSid: sent.sid, sequence: seq.name, step: en.step_index, templateKey: step.templateKey ?? null, to: toPhone },
+              broker: mailbox.slug, source: 'sequence', dedupe_key: `twilio:${sent.sid}:p${person.id}`,
+            })
           }
-          await sb.from('crm_timeline').insert({
-            person_id: person.id, kind: 'sms_out', title: 'Text sent', body,
-            payload: { twilioSid: sent.sid, sequence: seq.name, step: en.step_index, templateKey: step.templateKey ?? null, to: toPhone },
-            broker: mailbox.slug, source: 'sequence', dedupe_key: `twilio:${sent.sid}:p${person.id}`,
-          })
+          // smsClaim === 'duplicate' → already sent on a prior crashed run; fall through to advance.
         } else if (step.fallbackEmailBody) {
           // A2P not live — NEVER route a lead text through a personal iMessage
           // (incident 2026-06-16). Fall back to email so the touch still lands.
@@ -379,15 +433,21 @@ export async function GET(request: Request) {
           // still lands. Reuses the email suppression + send path.
           const fbTo = (person.emails as Array<{ value?: string }>)?.[0]?.value
           if (fbTo && !(await isSuppressed(person.id, 'email')).suppressed) {
-            const fbSubject = renderMerge(step.fallbackEmailSubject ?? 'A quick note from Ryan Realty', person, mergeCtx)
-            const fbBody = renderMerge(step.fallbackEmailBody, person, mergeCtx)
-            const sent = await sendCrmEmail({ fromMailbox: mailbox.email, to: fbTo, subject: fbSubject, bodyText: fbBody, withSignature: true })
-            if (!sent.ok) { await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log('Fallback email send failed, retrying in 30m', sent.error); errored++; continue }
-            await sb.from('crm_timeline').insert({
-              person_id: person.id, kind: 'email_out', title: fbSubject, body: sent.plainBody,
-              payload: { gmailId: sent.gmailId, sequence: seq.name, step: en.step_index, via: 'sms-email-fallback', to: fbTo },
-              broker: mailbox.slug, source: 'sequence', dedupe_key: `gmail:${sent.gmailId}:p${person.id}`,
-            })
+            // Claim the step before the fallback send (at-most-once across a crash).
+            const fbClaim = await claimSend('email-fallback')
+            if (fbClaim === 'error') { await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log('Fallback email claim failed, retrying in 30m'); errored++; continue }
+            if (fbClaim === 'claimed') {
+              const fbSubject = renderMerge(step.fallbackEmailSubject ?? 'A quick note from Ryan Realty', person, mergeCtx)
+              const fbBody = renderMerge(step.fallbackEmailBody, person, mergeCtx)
+              const sent = await sendCrmEmail({ fromMailbox: mailbox.email, to: fbTo, subject: fbSubject, bodyText: fbBody, withSignature: true })
+              if (!sent.ok) { await releaseSend(); await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log('Fallback email send failed, retrying in 30m', sent.error); errored++; continue }
+              await sb.from('crm_timeline').insert({
+                person_id: person.id, kind: 'email_out', title: fbSubject, body: sent.plainBody,
+                payload: { gmailId: sent.gmailId, sequence: seq.name, step: en.step_index, via: 'sms-email-fallback', to: fbTo },
+                broker: mailbox.slug, source: 'sequence', dedupe_key: `gmail:${sent.gmailId}:p${person.id}`,
+              })
+            }
+            // fbClaim === 'duplicate' → already sent on a prior crashed run; fall through to advance.
           } else {
             await finish({ next_run_at: new Date(Date.now() + 4 * 3600e3).toISOString() }); queuedSms++; continue
           }
