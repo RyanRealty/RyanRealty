@@ -69,7 +69,11 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
   }
 
   // ── Listings ──
-  const listings: AdminNavItem[] = [item('/admin/listings', 'Listings', 'home')]
+  // /admin/listings has a superuser-only layout (listings/layout.tsx redirects
+  // non-superusers), so showing it to brokers was a dead-end (nav shows what the
+  // page denies — RC5). Gate the nav item to match the page's actual access.
+  const listings: AdminNavItem[] = []
+  if (isSuperuser) listings.push(item('/admin/listings', 'Listings', 'home'))
   // /admin/expired-listings index retired 2026-07-15 — it redirects to the
   // consolidated /admin/expireds dashboard below. The per-listing review
   // detail at /admin/expired-listings/[key] remains (linked from Expireds + CMAs).
@@ -206,7 +210,9 @@ export function buildAdminNav(role: AdminRoleType, brokerId: string | null): Adm
     ...has(marketing, '/admin/broker-links'),
     ...content,
     ...system,
-    item('/admin/crm/import', 'Import contacts', 'database'),
+    // /admin/crm/import redirects non-superusers — gate the nav item to match
+    // (was shown to brokers → dead-end, RC5).
+    ...(isSuperuser ? [item('/admin/crm/import', 'Import contacts', 'database')] : []),
     item('/admin/settings', 'My settings', 'user-cog'),
   ]
 
