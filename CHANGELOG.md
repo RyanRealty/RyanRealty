@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.802.14 (2026-07-16)
+
+### Maintenance
+- docs(admin-rebuild): record the dedicated review pass outcome (2 HIGH fixed)
+
+---
+
+
 ## v1.802.13 (2026-07-16)
 
 ### Bug Fixes
