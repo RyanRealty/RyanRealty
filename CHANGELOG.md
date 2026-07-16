@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.796.1 (2026-07-16)
+
+### Maintenance
+- refactor(crm): one compose interface for every text + email send — G50 composer discipline
+
+---
+
+
 ## v1.796.0 (2026-07-15)
 
 ### Features
