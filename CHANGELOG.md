@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.802.5 (2026-07-16)
+
+### Bug Fixes
+- fix(security): close unauthenticated content-write holes (RC5 criticals)
+
+---
+
+
 ## v1.802.4 (2026-07-16)
 
 ### Bug Fixes
