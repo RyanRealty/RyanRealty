@@ -574,6 +574,18 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
       broker: mailbox.slug, source: 'app', dedupe_key: `gmail:${sent.gmailId}:p${pid}`,
     })),
   )
+  // Shadow-write into the conversation model (RC1) on the primary contact's
+  // thread, channel=email. Non-fatal. (Cc/Bcc-as-group email threading is a
+  // follow-up refinement — the timeline still logs each recipient.)
+  try {
+    const { recordConversationMessage } = await import('@/lib/crm/record-message')
+    await recordConversationMessage({
+      sb, direction: 'out', channel: 'email', body: sent.plainBody, subject: mergedSubject,
+      providerSid: sent.gmailId, sentBy: mailbox.slug, primaryPersonId: personId,
+      assignedBroker: mailbox.slug,
+      participants: [{ personId, address: toList[0] ?? primaryEmail ?? String(personId) }],
+    })
+  } catch (e) { console.warn('[crm] conversation shadow-write (email) failed', e) }
   revalidateCrm(personId)
   extraPersonIds.forEach((pid) => revalidateCrm(pid))
   return { ok: true }
@@ -891,6 +903,22 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
               broker: slug, source: 'app', dedupe_key: `twilio:${group.messageSid}:p${m.rid}`,
             })
           }
+          // Shadow-write ONE conversation for the whole carrier group (RC1),
+          // keyed on the Twilio Conversation SID, with every member a participant
+          // (contacts + raw numbers). Non-fatal.
+          try {
+            const { recordConversationMessage } = await import('@/lib/crm/record-message')
+            await recordConversationMessage({
+              sb, direction: 'out', channel: 'mms', body: mergedBody,
+              providerSid: group.messageSid, sentBy: slug, primaryPersonId: personId,
+              assignedBroker: slug, twilioConversationSid: group.conversationSid,
+              conversationSubject: `Group · ${primaryTarget.person.name ?? personId}`,
+              media: group.media.length ? group.media : [],
+              participants: members.map((m) => ({
+                personId: m.rid, rawPhone: m.rid === null ? m.phone : null, address: m.phone,
+              })),
+            })
+          } catch (e) { console.warn('[crm] conversation shadow-write (group) failed', e) }
           members.forEach((m) => { if (m.rid !== null) revalidateCrm(m.rid) })
           return { ok: true }
         }
@@ -936,6 +964,17 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
       },
       broker: slug, source: 'app', dedupe_key: `twilio:${sent.sid}:p${rid}`,
     })
+    // Shadow-write into the conversation model (RC1). Non-fatal: the timeline is
+    // still the source of truth until the inbox read path flips.
+    try {
+      const { recordConversationMessage } = await import('@/lib/crm/record-message')
+      await recordConversationMessage({
+        sb, direction: 'out', channel: storedMedia.length ? 'mms' : 'sms', body: mergedBody,
+        providerSid: sent.sid, sentBy: slug, primaryPersonId: rid, assignedBroker: slug,
+        media: storedMedia.length ? storedMedia : [],
+        participants: [{ personId: rid, address: to, displayName: person.name ?? null }],
+      })
+    } catch (e) { console.warn('[crm] conversation shadow-write (sms 1:1) failed', e) }
     sentCount++
   }
 

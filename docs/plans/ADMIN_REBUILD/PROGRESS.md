@@ -27,6 +27,20 @@ the local callback) or integration-tested against the real DB.
   inbound + 1 outbound → participant_count=2, is_group=true, needs_reply=false (cleared
   by the reply), channel_set={sms}, both clocks set, msg_count=2; test row deleted,
   tables back to 0/0/0. Snapshot + DAL index refreshed.
+- **Outbound dual-write chokepoint live** (`lib/crm/record-message.ts`). ONE
+  `recordConversationMessage()` resolves-or-creates the conversation (group → keyed
+  on the Twilio Conversation SID; 1:1 → the canonical per-contact thread) and inserts
+  one typed `crm_message`; `provider_sid` dedups a repeat. Wired into all three
+  outbound send sites in `crm.ts` (1:1 SMS, native group MMS, email) as **non-fatal
+  shadow-writes** — wrapped in try/catch so a conversation-model bug can never break
+  a live send; `crm_timeline` stays the source of truth until the read path flips.
+  This is the RC1 fix for "group send writes N person-collapsed rows": a group now
+  becomes ONE conversation with N participants. Verified: helper integration-tested
+  vs the real DB (1:1 reuse + needs_reply flip + SID dedup + group participant_count=3,
+  then cleaned to 0/0/0); 3 call sites tsc + esbuild clean; 4 committed unit tests pin
+  the resolution branching (dedup short-circuit, 1:1 reuse, group SID key, raw-vs-
+  contact participant roles). Next: inbound paths (twilio inbound-sms + conversations-
+  events + resend webhook), then the crm_timeline backfill, then the inbox read rewire.
 
 ### Integrity + security (compliance-grade wrong numbers / unauthenticated writes) — DONE
 - **Content-write security holes closed** (`979350ad`). 18 in-body `checkAdminAction`
