@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { trackVisit } from '@/app/actions/track-visit'
+import { trackUserEvent } from '@/app/actions/track-user-event'
 import { hasAnalyticsConsent, getStoredConsent, getOrCreateVisitId, autoGrantConsentForAdTraffic } from './CookieConsentBanner'
 
 
@@ -212,6 +213,11 @@ export default function VisitTracker({ userId }: Props) {
   // userId), so it must fire once per pathname or the null->id re-render would
   // double-count every page/property view for a logged-in visitor.
   const firedVisitorPath = useRef<string | null>(null)
+  // Separate ref for the per-user listing-view write: the visitor event fires on
+  // the first (userId=null) render, but the user event must fire on the null→id
+  // re-render once /api/auth/me resolves userId — its own ref keeps that at
+  // once-per-pathname without being pre-empted by the visitor-event guard.
+  const firedUserViewPath = useRef<string | null>(null)
 
   useEffect(() => {
     // Aggressive ad-traffic consent (Matt 2026-06-02): a visitor arriving from a
@@ -231,6 +237,17 @@ export default function VisitTracker({ userId }: Props) {
       firedVisitorPath.current = pathname
       const det = detectListing(pathname)
       fireVisitorEvent(pathname, det.isListing ? 'listing_view' : 'page_view', det.mls)
+    }
+    // Per-USER viewing history: a signed-in visitor's listing views go to
+    // user_events (the real source /account/history reads — before, that page read
+    // user_activities, which nothing wrote, so it was always empty). Own ref +
+    // userId gate so it fires on the null→id re-render, once per pathname.
+    if (userId && firedUserViewPath.current !== pathname) {
+      const detU = detectListing(pathname)
+      if (detU.isListing && detU.mls) {
+        firedUserViewPath.current = pathname
+        trackUserEvent({ eventType: 'listing_view', listingKey: detU.mls, pagePath: pathname }).catch(() => {})
+      }
     }
     // Everything below (legacy visits table, GA-adjacent writes) stays behind
     // explicit analytics consent.
