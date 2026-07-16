@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.796.3 (2026-07-16)
+
+### Bug Fixes
+- fix(market): heal 8-day-stale listing_tile_mv + overhaul market-reports data integrity
+
+---
+
+
 ## v1.796.2 (2026-07-16)
 
 ### Bug Fixes
