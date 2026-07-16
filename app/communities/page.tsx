@@ -376,6 +376,18 @@ export default async function CommunitiesPage() {
                         >
                           {r.name} guide
                         </a>
+                        {/* Exact-match anchor to the community's live-listings
+                            section (conversion-audit #9: "tetherow homes for
+                            sale" sat at pos 13 with zero exact-anchor internal
+                            links). #listings keeps the inventory promise the
+                            old bare guide link broke (design-audit P2). */}
+                        <a
+                          href={`/communities/${r.slug}#listings`}
+                          className="underline-offset-4 hover:underline"
+                          style={{ color: 'var(--navy)' }}
+                        >
+                          {r.name} homes for sale
+                        </a>
                         <a
                           href={`/homes-for-sale/${r.citySlug}`}
                           className="underline-offset-4 hover:underline"

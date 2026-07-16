@@ -255,8 +255,18 @@ export default async function CommunityDetailPage({ params }: Props) {
   // (/communities/bend-tetherow) resolves to the same community but bypasses the
   // alias-aware path and would publish the literal-name undercount, AND duplicates
   // the bare-slug page. Redirect it to the canonical bare slug. (review BLOCKER)
+  // Member subdivisions (registry subdivision_aliases) consolidate too:
+  // GSC 2026-07 showed "broken top homes for sale" split across
+  // bend-parks-at-broken-top and bend-the-highlands-at-broken-top at pos ~25
+  // while the one real page sat unranked — self-cannibalization
+  // (conversion-audit 2026-07-15 #9). Their active counts already attribute
+  // to the resort ledger, so standalone pages contradicted the counts anyway.
+  const subdivisionLc = community.subdivision.toLowerCase().trim()
   const resortMatch = cityResorts(citySlug).find(
-    (r) => r.slug === slug || r.label.toLowerCase().trim() === community.subdivision.toLowerCase().trim(),
+    (r) =>
+      r.slug === slug ||
+      r.label.toLowerCase().trim() === subdivisionLc ||
+      (r.subdivision_aliases ?? []).some((a) => a.toLowerCase().trim() === subdivisionLc),
   )
   if (resortMatch && slug !== resortMatch.slug) redirect(`/communities/${resortMatch.slug}`)
 
