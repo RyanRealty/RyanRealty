@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.802.2 (2026-07-16)
+
+### Bug Fixes
+- fix(crm): make group texts unmistakable from 1:1 (RC1)
+
+---
+
+
 ## v1.802.1 (2026-07-16)
 
 ### Bug Fixes
