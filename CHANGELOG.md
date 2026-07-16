@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.802.6 (2026-07-16)
+
+### Bug Fixes
+- fix(reports): stop rendering a fabricated "$0 team volume" (data-accuracy §0)
+
+---
+
+
 ## v1.802.5 (2026-07-16)
 
 ### Bug Fixes
