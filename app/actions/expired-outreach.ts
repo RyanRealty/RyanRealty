@@ -2,18 +2,21 @@
 
 /**
  * Expired-listing manual outreach — the guarded send action behind
- * /admin/expired-outreach (Matt directive 2026-07-11).
+ * /admin/expired-outreach (Matt directive 2026-07-11; reworked 2026-07-15 so
+ * the first-touch message accompanies the built CMA/expired-audit instead of
+ * asking permission to send one that doesn't exist yet).
  *
  * EVERY guard re-runs at send time, in order, fail-closed:
  *   1. admin auth
- *   2. re-list check (a same-address newer on-market listing = never solicit)
- *   3. hard-stop check (litigator / TCPA / deceased from skip-trace)
- *   4. already-sent check (one intro per owner, ever)
- *   5. TCPA quiet hours (8am–9pm Pacific)
- *   6. ensure a native CRM lead exists (created on first send) + suppressions
- *   7. render template expired-first-touch-sell-v1 with %address% merge —
- *      refuse to send if any merge token is left unresolved
- *   8. Twilio send via the A2P messaging service, timeline log, stamp sent
+ *   2. CMA/audit built check — refuse until row.cma_slug exists
+ *   3. re-list check (a same-address newer on-market listing = never solicit)
+ *   4. hard-stop check (litigator / TCPA / deceased from skip-trace)
+ *   5. already-sent check (one intro per owner, ever)
+ *   6. TCPA quiet hours (8am–9pm Pacific)
+ *   7. ensure a native CRM lead exists (created on first send) + suppressions
+ *   8. render template expired-first-touch-sell-v1 with %address%/%cma_link%
+ *      merge — refuse to send if any merge token is left unresolved
+ *   9. Twilio send via the A2P messaging service, timeline log, stamp sent
  */
 
 import { getSession } from '@/app/actions/auth'
@@ -29,6 +32,7 @@ import { sendSmsViaMessagingService, toE164 } from '@/lib/crm/twilio'
 import { revalidatePath } from 'next/cache'
 
 const TEMPLATE_KEY = 'expired-first-touch-sell-v1'
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 async function requireAdmin(): Promise<boolean> {
   const session = await getSession()
@@ -44,7 +48,15 @@ export async function sendExpiredIntroAction(listingKey: string): Promise<Expire
     const row = await getExpiredOutreachRow(listingKey.trim())
     if (!row) return { ok: false, error: 'Expired listing not found.' }
 
-    // 2–4: the non-negotiable exclusions, re-checked at the moment of send.
+    // This first-touch message accompanies the CMA/expired-audit (Matt
+    // directive 2026-07-15) — it is no longer a bare permission-ask sent
+    // before any analysis exists. Refuse to send until the document is built.
+    if (!row.cma_slug) {
+      return { ok: false, error: 'No CMA/audit built yet for this address. Build it before sending the intro text.' }
+    }
+    const docUrl = `${SITE_URL}/cma/${row.cma_slug}`
+
+    // 3–5: the non-negotiable exclusions, re-checked at the moment of send.
     if (row.relisted) {
       return { ok: false, error: 'This property has re-listed (Active/Pending). Soliciting a listed property is not allowed — row excluded.' }
     }
@@ -57,12 +69,12 @@ export async function sendExpiredIntroAction(listingKey: string): Promise<Expire
     const to = toE164(row.contact_phone)
     if (!to) return { ok: false, error: 'No valid phone on file for this owner.' }
 
-    // 5: TCPA quiet hours.
+    // 6: TCPA quiet hours.
     if (inSmsQuietHours()) {
       return { ok: false, error: 'TCPA quiet hours (before 8am / after 9pm Pacific). Try again inside the window.' }
     }
 
-    // 6: native CRM lead (find-or-create) + suppression gate.
+    // 7: native CRM lead (find-or-create) + suppression gate.
     const lead = await ensureNativeLead({
       name: row.owner_name,
       phone: row.contact_phone,
@@ -83,7 +95,7 @@ export async function sendExpiredIntroAction(listingKey: string): Promise<Expire
       },
     })
 
-    // 7: template + merge, fail-closed on unresolved tokens.
+    // 8: template + merge, fail-closed on unresolved tokens.
     const sb = createServiceClient()
     const { data: tpl } = await sb
       .from('crm_templates')
@@ -100,7 +112,16 @@ export async function sendExpiredIntroAction(listingKey: string): Promise<Expire
       .maybeSingle()
     const ctx = await buildMergeContext({ person: undefined, senderSlug: 'matt' })
     ctx.property = { ...(ctx.property ?? {}), address: row.street_address }
-    const merged = renderCrmMerge(String(tpl.body), (personRow ?? {}) as MergePersonLike, ctx)
+    // The sent link carries _pid so the web session on the CMA stitches to
+    // this contact (rr-doc-tracker identifies on _pid), plus UTMs so the click
+    // is not invisible to GA4 as direct/(none). The short-linker swaps the
+    // whole URL for /r/<code>, so none of this lengthens the SMS.
+    const docUrlForPerson = `${docUrl}?_pid=${lead.personId}&utm_source=crm&utm_medium=sms&utm_campaign=expired`
+    const personLike: MergePersonLike = {
+      ...(personRow ?? {}),
+      custom: { ...((personRow?.custom as Record<string, unknown> | null) ?? {}), cmaLink: docUrlForPerson },
+    }
+    const merged = renderCrmMerge(String(tpl.body), personLike, ctx)
     const unresolved = findUnresolvedMergeTokens(merged)
     if (unresolved.length > 0) {
       return { ok: false, error: `Send refused. Unresolved merge tokens: ${unresolved.join(', ')}.` }
@@ -111,7 +132,7 @@ export async function sendExpiredIntroAction(listingKey: string): Promise<Expire
     const { instrumentSmsLinks } = await import('@/lib/data/crm/shortLinks')
     const body = await instrumentSmsLinks(merged, { personId: lead.personId, broker: 'matt' }).catch(() => merged)
 
-    // 8: send + log + stamp.
+    // 9: send + log + stamp.
     const sent = await sendSmsViaMessagingService({ to, body })
     if (!sent.ok) return { ok: false, error: sent.error }
     await sb.from('crm_timeline').insert({
@@ -139,6 +160,8 @@ export async function previewExpiredIntroAction(listingKey: string): Promise<{ b
     if (!(await requireAdmin())) return { body: null, error: 'Unauthorized' }
     const row = await getExpiredOutreachRow(listingKey.trim())
     if (!row) return { body: null, error: 'Not found' }
+    if (!row.cma_slug) return { body: null, error: 'No CMA/audit built yet for this address. Build it before previewing the intro text.' }
+    const docUrl = `${SITE_URL}/cma/${row.cma_slug}`
     const sb = createServiceClient()
     const { data: tpl } = await sb
       .from('crm_templates')
@@ -150,7 +173,7 @@ export async function previewExpiredIntroAction(listingKey: string): Promise<{ b
     if (!tpl?.body) return { body: null, error: 'Template missing' }
     const ctx = await buildMergeContext({ senderSlug: 'matt' })
     ctx.property = { ...(ctx.property ?? {}), address: row.street_address }
-    return { body: renderCrmMerge(String(tpl.body), {}, ctx), error: null }
+    return { body: renderCrmMerge(String(tpl.body), { custom: { cmaLink: docUrl } }, ctx), error: null }
   } catch {
     return { body: null, error: 'Preview failed' }
   }
