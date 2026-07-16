@@ -748,6 +748,74 @@ function netSheetPage(a: RenderCmaArgs): PageDef | null {
   }
 }
 
+/** E.164-ish number for tel:/sms: hrefs. Null when the phone can't parse. */
+function phoneHref(phone: string | null): string | null {
+  if (!phone) return null
+  const d = phone.replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '')
+  return d.length === 10 ? `+1${d}` : null
+}
+
+/** Brand-voice display format 541.703.3095 (dotted) — brokers rows store
+ *  parenthesized strings, which is not the locked brand format. */
+function dottedPhone(phone: string | null): string | null {
+  if (!phone) return null
+  const d = phone.replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '')
+  return d.length === 10 ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}` : phone
+}
+
+/**
+ * Closing next-step page (conversion-audit 2026-07-15 #5): the document used
+ * to END on disclosure paragraphs with zero tel:/sms:/mailto: links anywhere —
+ * an 18-page trust build with no ask. One page: a direct next step, tappable
+ * call/text/email, and the listing-consultation ask. Shared by both doc types;
+ * the expired audit adds the "reply to the text that brought you here" line
+ * (the outreach SMS is how the owner got the link).
+ */
+function nextStepPage(a: RenderCmaArgs): PageDef {
+  const b = a.broker
+  const isAudit = Boolean(a.expiredAudit)
+  const tel = phoneHref(b.phone)
+  const first = esc(b.displayName.split(/\s+/)[0] ?? b.displayName)
+  const lead = isAudit
+    ? `You have the full picture now. The price story, what the last listing left on the table, and the number the market supports today. When you are ready to talk it through, the fastest path is a call or a text. No pressure either way.`
+    : `You have the full picture now. When you want to talk through the range, the timing, or what listing ${esc(a.subject.streetAddress)} would actually look like, the fastest path is a call or a text. No pressure either way.`
+  // Pinned to the canonical production domain, NOT SITE_URL: the document is a
+  // permanent artifact, and a local/preview build would otherwise bake a
+  // vercel.app link (which redirects and strips params) into a client-facing doc.
+  const consultUrl = `https://ryan-realty.com/contact?utm_source=crm&utm_medium=doc&utm_campaign=${isAudit ? 'expired' : 'cma'}`
+  return {
+    meta: `${esc(a.subject.streetAddress)} · Presented by ${esc(b.displayName)}`,
+    body: `
+  <h2 class="section">Your next step</h2>
+  <p class="cta-lead">${lead}</p>
+  <div class="cta-actions">
+    ${tel && b.phone ? `<a href="tel:${tel}">Call ${first} · ${esc(dottedPhone(b.phone) ?? b.phone)}</a>` : ''}
+    ${tel ? `<a href="sms:${tel}">Text ${first}</a>` : ''}
+    ${b.email ? `<a class="ghost" href="mailto:${esc(b.email)}">Email ${first}</a>` : ''}
+    <a class="ghost" href="${consultUrl}">Book the listing consultation</a>
+  </div>
+  ${isAudit ? `<p class="cta-reply-note">Or simply reply to the text that brought you here. It comes straight to ${first}'s phone.</p>` : ''}
+  <div class="signature-page">
+    ${brokerPortrait(b)}
+    <div class="sig-content">
+      <div class="sig-printed">${esc(b.displayName)}</div>
+      <div class="sig-title">${esc(b.title)} · Ryan Realty · Bend · Oregon</div>
+      <div class="sig-contact">
+        ${b.phone && tel ? `<strong><a href="tel:${tel}">${esc(dottedPhone(b.phone) ?? b.phone)}</a></strong><br/>` : ''}
+        ${b.email ? `<a href="mailto:${esc(b.email)}">${esc(b.email)}</a><br/>` : ''}
+        ryan-realty.com
+      </div>
+      ${b.licenseNumber ? `<div class="sig-license">Oregon Real Estate License # ${esc(b.licenseNumber)}</div>` : ''}
+    </div>
+  </div>`,
+  }
+}
+
+function brokerPortrait(b: RenderCmaArgs['broker']): string {
+  const headshot = b.photoUrl ? (b.photoUrl.startsWith('http') ? b.photoUrl : `${SITE_URL}${b.photoUrl}`) : null
+  return headshot ? `<img class="portrait" src="${esc(headshot)}" alt="${esc(b.displayName)}" />` : '<div></div>'
+}
+
 function disclosurePage(a: RenderCmaArgs): PageDef {
   const b = a.broker
   const headshot = b.photoUrl ? (b.photoUrl.startsWith('http') ? b.photoUrl : `${SITE_URL}${b.photoUrl}`) : null
@@ -768,8 +836,8 @@ function disclosurePage(a: RenderCmaArgs): PageDef {
       <div class="sig-printed">${esc(b.displayName)}</div>
       <div class="sig-title">${esc(b.title)} · Ryan Realty · Prepared ${dateLong(a.generatedAtIso)}</div>
       <div class="sig-contact">
-        ${b.phone ? `<strong>${esc(b.phone)}</strong><br/>` : ''}
-        ${b.email ? `${esc(b.email)}<br/>` : ''}
+        ${b.phone ? `<strong>${phoneHref(b.phone) ? `<a href="tel:${phoneHref(b.phone)}">${esc(dottedPhone(b.phone) ?? b.phone)}</a>` : esc(dottedPhone(b.phone) ?? b.phone)}</strong><br/>` : ''}
+        ${b.email ? `<a href="mailto:${esc(b.email)}">${esc(b.email)}</a><br/>` : ''}
         ryan-realty.com · Bend · Oregon
       </div>
       ${b.licenseNumber ? `<div class="sig-license">Oregon Real Estate License # ${esc(b.licenseNumber)}</div>` : ''}
@@ -805,8 +873,11 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   const netSheet = netSheetPage(a)
   if (netSheet) pages.push(netSheet)
   pages.push(disclosurePage(a))
+  // The ask comes LAST — the document must not end on disclaimers
+  // (conversion-audit 2026-07-15 #5).
+  pages.push(nextStepPage(a))
 
-  const brokerPhone = a.broker.phone ?? '541.213.6706'
+  const brokerPhone = dottedPhone(a.broker.phone) ?? '541.213.6706'
   const body = pages.map((p, i) => wrapPage(p, i, pages.length, brokerPhone)).join('\n')
   const html = `<!DOCTYPE html>
 <html lang="en">

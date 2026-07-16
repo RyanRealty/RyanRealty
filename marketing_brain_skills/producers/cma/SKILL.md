@@ -346,7 +346,8 @@ The canonical layout (clone from the 21042 Robin exemplar at `public/drafts/cma-
 | N+1 | **Market context**.  the subject geo's verified conditions from `market_stats_cache` / `market_pulse_live`: months of supply + seller/balanced/buyer verdict, median days to offer, sale-to-list ratio, YoY $/sqft trend, % sold over/under asking.  with the source trace. Frames why the recommended list sits where it does. |
 | N+2 | **Pricing strategy**.  Method 1 ($/sqft tier) + Method 2 (baseline + value-add) + Method 3 (time-and-physically-adjusted comp reconciliation) + converged range (3 tiers: Conservative / Recommended / High End) + the confidence statement |
 | N+3 | **Why this list price**.  outlier explanations (if any high or low comps need context) + market-conditions rationale + listing-history rationale + verification trace (data sources) |
-| Final | **Disclosure + broker signature**.  disclosure paragraphs + Amboqia-script broker signature + transparent headshot + license # |
+| N+4 | **Disclosure + broker signature**.  disclosure paragraphs + Amboqia-script broker signature + transparent headshot + license # (phone/email are tappable tel:/mailto: links) |
+| Final | **Your next step** (added 2026-07-16, conversion-audit #5).  the ask the document used to end without: direct next-step copy + tappable Call (tel:) / Text (sms:) / Email (mailto:) buttons + "Book the listing consultation" link (pinned to https://ryan-realty.com/contact with doc UTMs — never SITE_URL, so a local build can't bake a vercel.app link into a client artifact) + broker card. EXPIRED AUDIT adds "reply to the text that brought you here." The document must never again end on disclaimers. |
 
 Page numbers in the comp flyer area scale with the number of comps. 6 comps → 13 pages, 8 comps → 15 pages, etc. Always renumber footers. NEVER hardcode a `Page X of 15`.  count actual pages.
 

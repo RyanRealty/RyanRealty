@@ -368,6 +368,27 @@ export function cmaStylesheet(siteUrl: string): string {
   .signature-page .sig-title { font-size: 11px; color: var(--navy); margin-bottom: 14px; line-height: 1.45; }
   .signature-page .sig-contact { font-size: 11px; line-height: 1.7; color: var(--navy); }
   .signature-page .sig-contact strong { font-weight: 500; }
+  .signature-page .sig-contact a { color: inherit; text-decoration: none; }
+
+  /* Closing next-step page (conversion-audit 2026-07-15 #5): the document
+     used to end on disclaimers with zero tappable contact. */
+  .cta-lead { font-size: 14px; line-height: 1.75; color: var(--navy); max-width: 62ch; }
+  .cta-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+  .cta-actions a {
+    display: inline-block;
+    background: var(--navy);
+    color: var(--cream);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 13px 22px;
+    border: 1px solid var(--navy);
+    border-radius: 10px;
+  }
+  .cta-actions a.ghost { background: transparent; color: var(--navy); }
+  .cta-reply-note { margin-top: 16px; font-size: 12px; color: var(--muted); line-height: 1.6; }
   .signature-page .sig-license {
     margin-top: 12px;
     padding-top: 10px;
