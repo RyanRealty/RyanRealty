@@ -3,6 +3,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { unstable_cache } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
+import { checkAdminAction } from '@/lib/admin/require-admin'
 import { cityEntityKey } from '@/lib/slug'
 
 export type GuideRow = {
@@ -194,6 +195,10 @@ export async function saveGuide(input: {
   city?: string
   status: 'draft' | 'published' | 'archived'
 }): Promise<{ ok: boolean; error?: string }> {
+  // In-body auth (RC5 fix): guide HTML renders on the public site — an unguarded
+  // action id would let anyone publish arbitrary HTML/JS there.
+  const gate = await checkAdminAction('content.guides')
+  if (!gate.ok) return { ok: false, error: gate.error }
   const supabase = createServiceClient()
   const payload = {
     id: input.id,
@@ -213,6 +218,8 @@ export async function saveGuide(input: {
 
 /** P1-2: Delete a guide by id. Superuser-only operation (called from admin UI). */
 export async function deleteGuide(id: string): Promise<{ ok: boolean; error?: string }> {
+  const gate = await checkAdminAction('content.guides')
+  if (!gate.ok) return { ok: false, error: gate.error }
   if (!id?.trim()) return { ok: false, error: 'No guide id provided.' }
   const supabase = createServiceClient()
   const { error } = await supabase.from('guides').delete().eq('id', id)

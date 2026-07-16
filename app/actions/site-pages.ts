@@ -5,6 +5,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { checkAdminAction } from '@/lib/admin/require-admin'
 import { logAdminAction } from '@/app/actions/log-admin-action'
 
 export type SitePageContent = { title: string; body_html: string } | null
@@ -36,6 +37,11 @@ export async function updatePageContent(
   key: string,
   payload: { title: string; body_html: string }
 ): Promise<{ ok: boolean; error?: string }> {
+  // In-body auth (RC5 fix): this upsert wrote body_html to a public page BEFORE any
+  // session check (the getSession below only fed the audit log) — an unauthenticated
+  // defacement path. Gate the write first.
+  const gate = await checkAdminAction('content.site')
+  if (!gate.ok) return { ok: false, error: gate.error }
   const supabase = serviceSupabase()
   if (!supabase) return { ok: false, error: 'Server not configured' }
   const { error } = await supabase.from('site_pages').upsert(

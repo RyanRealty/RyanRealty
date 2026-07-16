@@ -3,6 +3,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { checkAdminAction } from '@/lib/admin/require-admin'
 import { logAdminAction } from '@/app/actions/log-admin-action'
 
 export type GeoPlaceType = 'country' | 'state' | 'city' | 'neighborhood' | 'community'
@@ -56,6 +57,8 @@ export async function createGeoPlace(params: {
   name: string
   metadata?: Record<string, unknown>
 }): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const gate = await checkAdminAction('content.communities')
+  if (!gate.ok) return { ok: false, error: gate.error }
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!supabaseUrl?.trim() || !serviceKey?.trim()) {
@@ -102,6 +105,8 @@ export async function updateGeoPlace(
   id: string,
   updates: { parent_id?: string | null; name?: string; metadata?: Record<string, unknown> }
 ): Promise<{ ok: true } | { ok: false; error: string }> {
+  const gate = await checkAdminAction('content.communities')
+  if (!gate.ok) return { ok: false, error: gate.error }
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!supabaseUrl?.trim() || !serviceKey?.trim()) {
@@ -131,6 +136,8 @@ export async function updateGeoPlace(
  * Returns count of cities ensured. Does not remove or change existing rows.
  */
 export async function ensureGeoPlacesFromListings(): Promise<{ ok: true; citiesEnsured: number } | { ok: false; error: string }> {
+  const gate = await checkAdminAction('content.communities')
+  if (!gate.ok) return { ok: false, error: gate.error }
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!supabaseUrl?.trim() || !serviceKey?.trim()) {

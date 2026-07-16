@@ -5,6 +5,7 @@ import { unstable_cache } from 'next/cache'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { checkAdminAction } from '@/lib/admin/require-admin'
 import { logAdminAction } from '@/app/actions/log-admin-action'
 
 export type BrokerageSettingsRow = {
@@ -61,6 +62,10 @@ export const getBrokerageSettings = unstable_cache(
 
 /** Update brokerage logo URL (admin). Call from admin only. */
 export async function updateBrokerageLogoUrl(logoUrl: string | null): Promise<{ ok: boolean; error?: string }> {
+  // In-body auth (RC5 fix): branding writes had no gate — an unauthenticated caller
+  // could swap the brokerage logo used across the public site + PDFs.
+  const gate = await checkAdminAction('content.site')
+  if (!gate.ok) return { ok: false, error: gate.error }
   const supabase = getServiceSupabase()
   if (!supabase) return { ok: false, error: 'Server not configured' }
   const { error } = await supabase
@@ -75,6 +80,8 @@ export async function updateBrokerageLogoUrl(logoUrl: string | null): Promise<{ 
 
 /** Upload logo file to Storage and set as brokerage logo (admin). */
 export async function uploadBrokerageLogo(formData: FormData): Promise<{ ok: boolean; url?: string; error?: string }> {
+  const gate = await checkAdminAction('content.site')
+  if (!gate.ok) return { ok: false, error: gate.error }
   const file = formData.get('file') as File | null
   if (!file?.size || !file.type.startsWith('image/')) return { ok: false, error: 'Please choose an image file.' }
   const supabase = getServiceSupabase()
@@ -100,6 +107,8 @@ export async function uploadBrokerageLogo(formData: FormData): Promise<{ ok: boo
 
 /** Update homepage hero video and/or image URL (admin). */
 export async function updateBrokerageHeroMedia(heroVideoUrl: string | null, heroImageUrl: string | null): Promise<{ ok: boolean; error?: string }> {
+  const gate = await checkAdminAction('content.site')
+  if (!gate.ok) return { ok: false, error: gate.error }
   const supabase = getServiceSupabase()
   if (!supabase) return { ok: false, error: 'Server not configured' }
   const { error } = await supabase
@@ -123,6 +132,8 @@ export async function updateBrokerageHeroMedia(heroVideoUrl: string | null, hero
 
 /** Update team/social proof image URL (admin). Used by the homepage testimonials section. */
 export async function updateBrokerageTeamImageUrl(teamImageUrl: string | null): Promise<{ ok: boolean; error?: string }> {
+  const gate = await checkAdminAction('content.site')
+  if (!gate.ok) return { ok: false, error: gate.error }
   const supabase = getServiceSupabase()
   if (!supabase) return { ok: false, error: 'Server not configured' }
   const { error } = await supabase
@@ -138,6 +149,8 @@ export async function updateBrokerageTeamImageUrl(teamImageUrl: string | null): 
 
 /** Upload team image to Storage and set as brokerage team photo (admin). Same bucket as logo. */
 export async function uploadBrokerageTeamImage(formData: FormData): Promise<{ ok: boolean; url?: string; error?: string }> {
+  const gate = await checkAdminAction('content.site')
+  if (!gate.ok) return { ok: false, error: gate.error }
   const file = formData.get('file') as File | null
   if (!file?.size || !file.type.startsWith('image/')) return { ok: false, error: 'Please choose an image file.' }
   const supabase = getServiceSupabase()
@@ -193,6 +206,8 @@ async function logBrokerageAudit(details: Record<string, unknown>) {
 }
 
 export async function uploadBrokerageHeroImage(formData: FormData): Promise<{ ok: boolean; url?: string; error?: string }> {
+  const gate = await checkAdminAction('content.site')
+  if (!gate.ok) return { ok: false, error: gate.error }
   const file = formData.get('file') as File | null
   if (!file?.size || !file.type.startsWith('image/')) {
     return { ok: false, error: 'Please choose an image file.' }
@@ -218,6 +233,8 @@ export async function uploadBrokerageHeroImage(formData: FormData): Promise<{ ok
 }
 
 export async function uploadBrokerageHeroVideo(formData: FormData): Promise<{ ok: boolean; url?: string; error?: string }> {
+  const gate = await checkAdminAction('content.site')
+  if (!gate.ok) return { ok: false, error: gate.error }
   const file = formData.get('file') as File | null
   if (!file?.size || !file.type.startsWith('video/')) {
     return { ok: false, error: 'Please choose a video file.' }

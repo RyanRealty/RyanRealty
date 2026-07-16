@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import { checkAdminAction } from '@/lib/admin/require-admin'
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -222,6 +223,11 @@ export async function saveBlogPost(input: {
   publishedAt?: string
   authorBrokerId?: string
 }): Promise<{ ok: boolean; error?: string }> {
+  // In-body auth (RC5 fix): a server action is an independently-invocable POST —
+  // the admin layout gate does not run on it. Without this, anyone who extracts
+  // the action id could publish arbitrary HTML/JS on the public blog.
+  const gate = await checkAdminAction('content.blog')
+  if (!gate.ok) return { ok: false, error: gate.error }
   const supabase = getServiceSupabase()
   if (!supabase) return { ok: false, error: 'Database not configured' }
 
@@ -254,6 +260,8 @@ export async function saveBlogPost(input: {
 }
 
 export async function deleteBlogPost(id: string): Promise<{ ok: boolean; error?: string }> {
+  const gate = await checkAdminAction('content.blog')
+  if (!gate.ok) return { ok: false, error: gate.error }
   const supabase = getServiceSupabase()
   if (!supabase) return { ok: false, error: 'Database not configured' }
   const { error } = await supabase.from('blog_posts').delete().eq('id', id)
