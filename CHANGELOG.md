@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.802.4 (2026-07-16)
+
+### Bug Fixes
+- fix(crm): CMA card — fix the Review-comp dead-end + show the 30-60s build is working
+
+---
+
+
 ## v1.802.3 (2026-07-16)
 
 ### Bug Fixes
