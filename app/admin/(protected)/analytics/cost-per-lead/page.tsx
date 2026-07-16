@@ -11,6 +11,7 @@
 import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
+import { getLeadIntake } from '@/lib/data/crm/getLeadIntake'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -62,7 +63,13 @@ async function CostPerLead({ range }: { range: { startDate: string; endDate: str
   // Spend pulls BOTH Meta + Google Ads so cost-per-lead is computed against
   // total paid spend, not Meta-only. Channel column is preserved per row so
   // we can break out by platform in the table.
-  const [spendRes, gadsSpendRes, fubQualRes, fubNewRes, identifiedRes, closedWonRes, closedVolRes] = await Promise.all([
+  // Leads come from getLeadIntake (real crm_people inbound leads, per-day), NOT the
+  // dead marketing_channel_daily channel='fub' metrics whose writer was removed at
+  // the 2026-06 FUB cutover — those returned 0 forever, so every CPL read "—" and
+  // the page (named for the owner's core question) was permanently broken.
+  // deals_closed_won / closed_deal_volume_usd have no live source at all (they need
+  // the transaction ledger, rebuild spec 05/06) — shown as "—", never a fake 0.
+  const [spendRes, gadsSpendRes, identifiedRes, intake] = await Promise.all([
     supabase.from('marketing_channel_daily')
       .select('date, scope_id, value, metadata')
       .eq('channel', 'meta_ads').eq('scope', 'campaign').eq('metric', 'spend')
@@ -70,14 +77,6 @@ async function CostPerLead({ range }: { range: { startDate: string; endDate: str
     supabase.from('marketing_channel_daily')
       .select('date, scope_id, value, metadata')
       .eq('channel', 'google_ads').eq('scope', 'campaign').eq('metric', 'spend')
-      .gte('date', cutoff),
-    supabase.from('marketing_channel_daily')
-      .select('date, value')
-      .eq('channel', 'fub').eq('scope', 'account').eq('metric', 'qualified_seller_leads')
-      .gte('date', cutoff),
-    supabase.from('marketing_channel_daily')
-      .select('date, value')
-      .eq('channel', 'fub').eq('scope', 'account').eq('metric', 'new_leads')
       .gte('date', cutoff),
     // From visitor_sessions: identified-from-FB count per day. Paged read —
     // PostgREST caps single responses at 1,000 rows, so the old .limit(20000)
@@ -92,15 +91,10 @@ async function CostPerLead({ range }: { range: { startDate: string; endDate: str
           .range(from, to),
       20000,
     ),
-    supabase.from('marketing_channel_daily')
-      .select('date, value')
-      .eq('channel', 'fub').eq('scope', 'account').eq('metric', 'deals_closed_won')
-      .gte('date', cutoff),
-    supabase.from('marketing_channel_daily')
-      .select('date, value')
-      .eq('channel', 'fub').eq('scope', 'account').eq('metric', 'closed_deal_volume_usd')
-      .gte('date', cutoff),
+    getLeadIntake({ startIso: sinceTs, endIso: endTs }),
   ])
+  // Closed-deal figures have no live source yet — flagged so the tiles render "—".
+  const closedDataAvailable = false
 
   if (spendRes.error) return <Card><CardContent className="p-6 text-sm text-destructive">spend read failed: {spendRes.error.message}</CardContent></Card>
 
@@ -134,17 +128,14 @@ async function CostPerLead({ range }: { range: { startDate: string; endDate: str
     const campName = (r.metadata as { campaign_name?: string } | null)?.campaign_name || r.scope_id || 'unknown'
     b.campaigns.set(`[Google] ${campName}`, (b.campaigns.get(`[Google] ${campName}`) ?? 0) + v)
   }
-  for (const r of (fubQualRes.data ?? []) as DailyRow[]) {
-    bucket(isoWeekStart(r.date)).qualifiedLeads += Number(r.value) || 0
-  }
-  for (const r of (fubNewRes.data ?? []) as DailyRow[]) {
-    bucket(isoWeekStart(r.date)).newLeads += Number(r.value) || 0
-  }
-  for (const r of (closedWonRes.data ?? []) as DailyRow[]) {
-    bucket(isoWeekStart(r.date)).closedWon += Number(r.value) || 0
-  }
-  for (const r of (closedVolRes.data ?? []) as DailyRow[]) {
-    bucket(isoWeekStart(r.date)).closedVolume += Number(r.value) || 0
+  // Real inbound leads per day from getLeadIntake, bucketed into weeks. There is no
+  // separate "qualified seller" sub-count (that was the dead FUB metric), so both
+  // fields hold the one real lead number. closedWon/closedVolume have no source and
+  // stay 0 → rendered as "—" via closedDataAvailable.
+  for (const day of intake.byDay) {
+    const b = bucket(isoWeekStart(day.date))
+    b.qualifiedLeads += day.inbound
+    b.newLeads += day.inbound
   }
   for (const row of identifiedRes.rows) {
     const src = (row.utm_source || '').toLowerCase()
@@ -196,12 +187,12 @@ async function CostPerLead({ range }: { range: { startDate: string; endDate: str
       )}
       <DashboardSummaryStrip
         stats={[
-          { label: 'Cost / qualified lead (wk)', value: last7Cpl == null ? null : formatUsd(last7Cpl), caption: last4Cpl != null ? `4-wk avg ${formatUsd(last4Cpl)}` : undefined },
+          { label: 'Cost / lead (wk)', value: last7Cpl == null ? null : formatUsd(last7Cpl), caption: last4Cpl != null ? `4-wk avg ${formatUsd(last4Cpl)}` : undefined },
           { label: 'Paid spend this week', value: formatUsd(last7Spend), caption: `Meta ${formatUsd(weeks[0]?.[1].metaSpend ?? 0)} · Google ${formatUsd(weeks[0]?.[1].googleSpend ?? 0)}` },
-          { label: 'Qualified leads (wk)', value: formatInt(last7Qualified) },
+          { label: 'New leads (wk)', value: formatInt(last7Qualified) },
           { label: 'FB identified (wk)', value: formatInt(last7FbIdentified), caption: last7CplIdentified != null ? `${formatUsd(last7CplIdentified)} / id` : undefined },
-          { label: 'Closed deals (90d)', value: formatInt(totals90.closedWon), caption: `${formatUsd(totals90.closedVolume)} volume` },
-          { label: 'Spend / closing (90d)', value: costPerClosed90 == null ? null : formatUsd(costPerClosed90), caption: 'blended, all sources' },
+          { label: 'Closed deals (90d)', value: closedDataAvailable ? formatInt(totals90.closedWon) : null, caption: closedDataAvailable ? `${formatUsd(totals90.closedVolume)} volume` : 'ledger reconnecting' },
+          { label: 'Spend / closing (90d)', value: closedDataAvailable && costPerClosed90 != null ? formatUsd(costPerClosed90) : null, caption: closedDataAvailable ? 'blended, all sources' : 'ledger reconnecting' },
         ]}
       />
 
@@ -209,7 +200,7 @@ async function CostPerLead({ range }: { range: { startDate: string; endDate: str
         <div className="space-y-1">
           <h2 className="text-base font-semibold text-foreground">Weekly trend</h2>
           <p className="text-xs text-muted-foreground">
-            Combined paid spend (Meta + Google Ads, broken out per column) joined with FUB qualified seller leads. Cost-per-qualified-lead is the headline column. If you spent $400 last week and got 4 qualified seller leads, you paid $100 per. Compare week-over-week and against the 4-week average above.
+            Combined paid spend (Meta + Google Ads, broken out per column) joined with real inbound leads (getLeadIntake, from crm_people). Cost-per-lead is the headline column. If you spent $400 last week and got 4 leads, you paid $100 per. Compare week-over-week and against the 4-week average above.
           </p>
         </div>
         <TableWithMobileCards
@@ -219,10 +210,9 @@ async function CostPerLead({ range }: { range: { startDate: string; endDate: str
           columns={[
             { key: 'week', header: 'Week of', className: 'whitespace-nowrap font-medium', cell: (r) => r.wk },
             { key: 'spend', header: 'Spend', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatUsd(r.b.spend) },
-            { key: 'qual', header: 'Qualified leads', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.b.qualifiedLeads) },
-            { key: 'cpl', header: 'Cost / qualified lead', className: 'whitespace-nowrap text-right', cell: (r) => { const cpl = r.b.qualifiedLeads > 0 ? r.b.spend / r.b.qualifiedLeads : null; const v: 'default' | 'destructive' | 'secondary' | 'outline' = cpl == null ? 'outline' : cpl < 75 ? 'default' : cpl < 150 ? 'secondary' : 'destructive'; return <Badge variant={v} className="tabular-nums">{cpl == null ? '—' : formatUsd(cpl)}</Badge> } },
-            { key: 'closed', header: 'Closed deals', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.b.closedWon) },
-            { key: 'newLeads', header: 'All new leads (FUB)', className: 'whitespace-nowrap text-right tabular-nums text-muted-foreground', cell: (r) => formatInt(r.b.newLeads) },
+            { key: 'qual', header: 'New leads', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.b.qualifiedLeads) },
+            { key: 'cpl', header: 'Cost / lead', className: 'whitespace-nowrap text-right', cell: (r) => { const cpl = r.b.qualifiedLeads > 0 ? r.b.spend / r.b.qualifiedLeads : null; const v: 'default' | 'destructive' | 'secondary' | 'outline' = cpl == null ? 'outline' : cpl < 75 ? 'default' : cpl < 150 ? 'secondary' : 'destructive'; return <Badge variant={v} className="tabular-nums">{cpl == null ? '—' : formatUsd(cpl)}</Badge> } },
+            { key: 'closed', header: 'Closed deals', className: 'whitespace-nowrap text-right tabular-nums', cell: () => closedDataAvailable ? formatInt(0) : '—' },
             { key: 'fbSessions', header: 'FB sessions', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.b.fbSessions) },
             { key: 'fbId', header: 'FB identified', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.b.fbIdentified) },
             { key: 'fbHot', header: 'FB hot', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.b.fbHot) },
@@ -237,12 +227,12 @@ async function CostPerLead({ range }: { range: { startDate: string; endDate: str
                     <span className="font-medium tabular-nums">{r.wk}</span>
                     <Badge variant={v} className="tabular-nums">{cpl == null ? '—' : `${formatUsd(cpl)} / lead`}</Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground tabular-nums">{formatUsd(r.b.spend)} spend · {formatInt(r.b.qualifiedLeads)} qualified · {formatInt(r.b.closedWon)} closed · {formatInt(r.b.fbIdentified)} FB id</p>
+                  <p className="text-xs text-muted-foreground tabular-nums">{formatUsd(r.b.spend)} spend · {formatInt(r.b.qualifiedLeads)} leads · {closedDataAvailable ? `${formatInt(r.b.closedWon)} closed` : '— closed'} · {formatInt(r.b.fbIdentified)} FB id</p>
                 </CardContent>
               </Card>
             )
           }}
-          empty={<>No paid-ad spend or qualified lead data in the last 90 days. Once the Meta/Google spend cron and FUB lead snapshots populate, weekly cost-per-lead appears here.</>}
+          empty={<>No paid-ad spend or lead data in the last 90 days. Once the Meta/Google spend cron populates, weekly cost-per-lead appears here.</>}
         />
         <p className="text-xs text-muted-foreground">
           Cost-per-lead badge: green &lt; $75, amber $75-$150, red &gt;= $150. Industry HNW seller benchmarks land in the $80-$120 range; consistent reds mean creative + audience need a rebuild, not more spend.
@@ -287,9 +277,9 @@ export default async function CostPerLeadPage({ searchParams }: { searchParams: 
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">Cost per qualified lead</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Cost per lead</h1>
         <p className="text-sm text-muted-foreground">
-          The number that decides whether to scale or kill paid spend. Joins Meta Ads spend with FUB qualified seller leads, week by week. Brackets cost-per-lead so you see at-a-glance which weeks were healthy.
+          The number that decides whether to scale or kill paid spend. Joins Meta + Google Ads spend with real inbound leads (getLeadIntake), week by week. Brackets cost-per-lead so you see at-a-glance which weeks were healthy.
         </p>
         <DateRangePicker current={sp.range ?? '90d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
       </header>

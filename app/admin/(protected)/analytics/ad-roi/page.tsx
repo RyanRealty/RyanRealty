@@ -20,6 +20,7 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
+import { getLeadIntake } from '@/lib/data/crm/getLeadIntake'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -95,10 +96,9 @@ async function AdRoi({ range }: { range: { startDate: string; endDate: string } 
     metaAcctRes,
     metaCampRes,
     googleAcctRes,
-    fubNewRes,
-    fubQualRes,
     sessionsRes,
     leadFormCountRes,
+    intake,
   ] = await Promise.all([
     // Meta account-scope metrics (authoritative daily totals, no double-count).
     supabase.from('marketing_channel_daily')
@@ -116,16 +116,6 @@ async function AdRoi({ range }: { range: { startDate: string; endDate: string } 
       .select('date, value')
       .eq('channel', 'google_ads').eq('scope', 'account').eq('metric', 'spend')
       .gte('date', sinceDate),
-    // FUB new leads (all sources, account daily metric).
-    supabase.from('marketing_channel_daily')
-      .select('date, value')
-      .eq('channel', 'fub').eq('scope', 'account').eq('metric', 'new_leads')
-      .gte('date', sinceDate),
-    // FUB qualified seller leads.
-    supabase.from('marketing_channel_daily')
-      .select('date, value')
-      .eq('channel', 'fub').eq('scope', 'account').eq('metric', 'qualified_seller_leads')
-      .gte('date', sinceDate),
     // Site sessions with their source + identity state. Paged read —
     // PostgREST caps single responses at 1,000 rows, so the old .limit(20000)
     // silently truncated there.
@@ -142,9 +132,13 @@ async function AdRoi({ range }: { range: { startDate: string; endDate: string } 
     // Facebook lead-form submissions captured (count only).
     supabase.from('processed_meta_leads')
       .select('leadgen_id', { count: 'exact', head: true }),
+    // Leads = real crm_people inbound via getLeadIntake, NOT the dead
+    // marketing_channel_daily channel='fub' metrics (writer removed 2026-06 → always
+    // 0, so this page's lead + ROI numbers were permanently broken).
+    getLeadIntake({ startIso: sinceTs, endIso: `${range.endDate}T23:59:59.999Z` }),
   ])
 
-  const firstErr = [metaAcctRes, metaCampRes, googleAcctRes, fubNewRes, fubQualRes, sessionsRes]
+  const firstErr = [metaAcctRes, metaCampRes, googleAcctRes]
     .find((r) => r.error) as { error: { message: string } | null } | undefined
   if (firstErr?.error) {
     return <Card><CardContent className="p-6 text-sm text-destructive">Data read failed: {firstErr.error.message}</CardContent></Card>
@@ -193,8 +187,9 @@ async function AdRoi({ range }: { range: { startDate: string; endDate: string } 
   const campaigns = Array.from(campaignSpend.entries()).sort((a, b) => b[1] - a[1])
 
   // ── Leads (FUB account metrics) ──────────────────────────────────────────────
-  const newLeads = ((fubNewRes.data ?? []) as DailyValueRow[]).reduce((s, r) => s + (Number(r.value) || 0), 0)
-  const qualifiedLeads = ((fubQualRes.data ?? []) as DailyValueRow[]).reduce((s, r) => s + (Number(r.value) || 0), 0)
+  // Real inbound leads from crm_people (getLeadIntake). There is no separate live
+  // "qualified seller" sub-count, so the ROI math uses the one real lead number.
+  const newLeads = intake.inboundLeads
 
   // ── Sessions by channel ──────────────────────────────────────────────────────
   const sessions = sessionsRes.rows
@@ -281,8 +276,7 @@ async function AdRoi({ range }: { range: { startDate: string; endDate: string } 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <KpiCard label="Ad spend (tracked)" value={formatUsd(totalSpend)} hint={`${formatUsd(metaSpend)} Meta · ${formatUsd(googleSpend)} Google`} />
           <KpiCard label="Visitors from paid ads" value={formatInt(paidSessions)} hint={`of ${formatInt(totalSessions)} total visitors`} />
-          <KpiCard label="New leads (Follow Up Boss)" value={formatInt(newLeads)} hint="all sources, not just ads" />
-          <KpiCard label="Qualified seller leads" value={formatInt(qualifiedLeads)} hint="marked qualified in FUB" />
+          <KpiCard label="New leads (all sources)" value={formatInt(newLeads)} hint="real inbound leads, getLeadIntake" />
           <KpiCard
             label="Visitors matched to a name"
             value={formatInt(totalIdentified)}
