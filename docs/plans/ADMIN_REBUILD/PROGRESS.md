@@ -75,6 +75,17 @@ the local callback) or integration-tested against the real DB.
   8-destination IA as a projection of the capability map (nav can't show a dead-end).
   9 unit tests.
 
+### Dedicated review pass — DONE (`7108d338`)
+A 5-area adversarial multi-agent review of the session's 14 commits found + fixed
+**2 confirmed HIGH bugs manual testing missed**: (1) withSendIdempotency reported a
+fake `{ok:true}` on a transient ledger DB error → silent no-send reported as sent (now
+fails OPEN); (2) /account/history rendered ZERO cards for real users (keyed by
+ListingKey but views store MLS ListNumber — my live test passed only via a legacy URL;
+now keys by both). Plus MEDIUM cost-per-lead "blended" honesty + LOW guards/consent/doc
+fixes. Deferred to spec 02: group participant-count off-by-one (inbound counts broker
+line), per-recipient group idempotency. **Lesson: manual browser verification misses
+transient-error paths + URL-form edge cases — the adversarial review is not optional.**
+
 ## Next (in priority order)
 1. "Send a CMA in seconds" — collapse the CMA build+send to one fast path on the
    person workspace (the owner's explicit litmus test).
