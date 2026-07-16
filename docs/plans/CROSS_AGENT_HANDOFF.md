@@ -1,4 +1,34 @@
-> **NEWEST, START HERE: the ADMIN-CONSOLIDATION block immediately below (2026-07-07 evening).** Prior sessions: LIFECYCLE-WORKFLOWS (2026-07-07 morning), NEIGHBORHOOD-DEFAULTS (2026-07-06 evening). Older: [`HANDOFF_CRM_STREAMLINE_2026-07-03.md`](./HANDOFF_CRM_STREAMLINE_2026-07-03.md), `HANDOFF_2026-06-28.md`.
+> **NEWEST, START HERE: the ADMIN-REBUILD RC1 block immediately below (2026-07-16).** Prior: ADMIN-CONSOLIDATION (2026-07-07 evening), LIFECYCLE-WORKFLOWS (2026-07-07 morning), NEIGHBORHOOD-DEFAULTS (2026-07-06 evening). Older: [`HANDOFF_CRM_STREAMLINE_2026-07-03.md`](./HANDOFF_CRM_STREAMLINE_2026-07-03.md), `HANDOFF_2026-06-28.md`.
+
+# ADMIN REBUILD — RC1 FIRST-CLASS CONVERSATION MODEL (2026-07-16, Claude Code — DATA FOUNDATION SHIPPED, read-rewire is next)
+
+**Full plan: `docs/plans/ADMIN_REBUILD/` (PROGRESS.md carries the live build log; spec 02 is the conversation model). This block is the collision-avoidance summary.**
+
+- **What shipped (4 commits, all on main, all verified vs the real hosted DB):** the missing
+  first-class conversation entity behind the owner's #1 messaging confusion. New tables
+  `crm_conversation` / `crm_conversation_participant` / `crm_message` (migrations
+  `20260716200000` + hardening `20260716220000`); the broker's own line is NOT a participant; a
+  group is participant_count>1. Two triggers (participant-sync; order-independent message rollup:
+  GREATEST clocks + needs_reply/reopen only on the newest message). Unique indexes: one 1:1 thread
+  per contact (`crm_conversation_one_to_one_idx`), one message per provider_sid, one per timeline_id.
+- **Dual-write is LIVE but SHADOW-ONLY.** `lib/crm/record-message.ts` (`recordConversationMessage`)
+  is wired into all outbound sends (`app/actions/crm.ts`: 1:1 SMS, group MMS, email) + both inbound
+  webhooks (`app/api/twilio/inbound-sms`, `conversations-events`), each as a **non-fatal try/catch**.
+  **crm_timeline is STILL the source of truth — nothing READS the new tables yet.** So the site is
+  fully non-regressed; you can ignore these tables entirely for now.
+- **History backfilled:** `20260716210000_conversation_backfill.sql` projected the ~45k message-kind
+  timeline rows → 8,385 1:1 threads + 2 real Twilio group threads + 45,209 messages. Idempotent +
+  replay-safe (timeline_id + provider_sid guards).
+- **NEXT STEP (not started — needs a focused session + a Matt decision):** the inbox READ rewire.
+  `getInboxFolderQueue` (lib/data/crm/getInboxQueue.ts) currently RE-DERIVES person-collapsed
+  conversations from crm_timeline every load; the model precomputes all of it. The open product fork
+  Matt must decide: **person-keyed inbox (today's shape, groups fold onto a contact) vs
+  conversation-keyed (group threads become their own inbox rows).** That choice changes the output
+  shape + all ~9 inbox consumers + the mobile/desktop fork, so it's deliberately deferred to its own
+  browser-verified pass. Do NOT flip it casually.
+- **If you touch messaging/CRM sends or the Twilio webhooks:** the shadow-write call is additive and
+  swallows its own errors — leave it in place; if you change a send's variable names, update the
+  matching `recordConversationMessage({...})` args (tsc will catch mismatches).
 
 # ADMIN CONSOLIDATION: ~40 PAGES → BROKER WORKFLOWS (2026-07-07 evening, Claude Code — SHIPPED)
 
