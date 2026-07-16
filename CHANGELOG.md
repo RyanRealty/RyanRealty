@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.802.8 (2026-07-16)
+
+### Bug Fixes
+- fix(analytics): repair cost-per-lead + ad-ROI (dead FUB lead plane → getLeadIntake)
+
+---
+
+
 ## v1.802.7 (2026-07-16)
 
 ### Bug Fixes
