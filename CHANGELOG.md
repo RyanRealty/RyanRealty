@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.802.18 (2026-07-16)
+
+### Bug Fixes
+- fix(admin-nav): de-duplicate CRM settings (was in two menus) + record shell-pass progress
+
+---
+
+
 ## v1.802.17 (2026-07-16)
 
 ### Bug Fixes
