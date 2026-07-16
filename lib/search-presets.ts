@@ -42,6 +42,19 @@ export type SearchPreset = {
     yearBuiltMinOffset?: number
     /** Property subtype keyword (details.PropertySubType ILIKE %value%) */
     propertySubType?: string
+    /**
+     * Property type filter value (Residential / Land / Commercial), mapped to
+     * MLS codes by propertyTypeFilterToCodes. Powers the lots-and-land preset
+     * (conversion-audit 2026-07-15 #12: "bend buildable lots" demand measured
+     * in GSC with no dedicated page).
+     */
+    propertyType?: string
+    /**
+     * MLS-verified gated flag (hoa_amenities/parking_features contains
+     * 'Gated' — the searchListingsAll registry filter). Powers the
+     * gated-community preset (GSC: "bend gated community homes").
+     */
+    gatedCommunity?: boolean
     /** Free-text keyword matched against the listing's PublicRemarks. */
     keywords?: string
     sort?: 'newest' | 'oldest' | 'price_asc' | 'price_desc'
@@ -84,6 +97,12 @@ export const SEARCH_PRESETS: SearchPreset[] = [
   // Land / lot
   { slug: 'acreage', shortLabel: 'Acreage', label: 'Homes on Acreage (1+ Acres)', params: { lotAcresMin: 1, sort: 'newest' } },
   { slug: 'acreage-5', shortLabel: '5+ Acres', label: 'Homes on 5+ Acres', params: { lotAcresMin: 5, sort: 'newest' } },
+  // Bare lots/land (PropertyType D) — GSC-measured demand: "bend buildable
+  // lots" ranked /cities/bend at pos 36-55 with no dedicated surface
+  // (conversion-audit #12).
+  { slug: 'lots-and-land', shortLabel: 'Lots and Land', label: 'Lots and Land for Sale', params: { propertyType: 'Land', sort: 'newest' } },
+  // Community types
+  { slug: 'gated-community', shortLabel: 'Gated Community', label: 'Gated Community Homes', params: { gatedCommunity: true, sort: 'newest' } },
   // Property types
   { slug: 'condos', shortLabel: 'Condos', label: 'Condos for Sale', params: { propertySubType: 'Condo', sort: 'newest' } },
   { slug: 'townhomes', shortLabel: 'Townhomes', label: 'Townhomes for Sale', params: { propertySubType: 'Townhouse', sort: 'newest' } },

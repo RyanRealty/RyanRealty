@@ -357,6 +357,12 @@ export default async function SearchPage({
         ...(preset.params.lotAcresMin != null && !sp.lotAcresMin && { lotAcresMin: preset.params.lotAcresMin }),
         ...(presetYearBuiltMin != null && !sp.yearBuiltMin && { yearBuiltMin: presetYearBuiltMin }),
         ...(preset.params.propertySubType != null && preset.params.propertySubType !== '' && !sp.propertySubType && { propertySubType: preset.params.propertySubType }),
+        // lots-and-land: PropertyType filter (Land -> code D); an explicit URL
+        // propertyType still wins, same contract as the other preset keys.
+        ...(preset.params.propertyType != null && preset.params.propertyType !== '' && !sp.propertyType && { propertyType: preset.params.propertyType }),
+        // gated-community: MLS-verified gated flag. Amenity-style preset with
+        // no URL off-switch, matching hasPool/hasGolfCourse behavior.
+        ...(preset.params.gatedCommunity != null && { gatedCommunity: preset.params.gatedCommunity }),
         ...(preset.params.keywords != null && preset.params.keywords !== '' && !sp.keywords && { keywords: preset.params.keywords }),
         ...(preset.params.sort != null && !sp.sort && { sort: preset.params.sort as AdvancedSort }),
       }

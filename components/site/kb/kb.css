@@ -587,6 +587,12 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .mkt-bar .bhd b{font-variant-numeric:tabular-nums;}
 .kb-root .mkt-bar .btrack{height:9px;background:rgba(250,248,244,.16);position:relative;overflow:hidden;}
 .kb-root .mkt-bar .bfill{position:absolute;top:0;bottom:0;left:0;width:0;background:var(--cream);}
+/* Lifestyle-collection links row on geo pages (conversion-audit 2026-07-15
+   #12): exact-match anchors into the preset search pages that the measured
+   GSC demand never had a path to. */
+.kb-root .kb-collections{padding:clamp(30px,4vw,48px) 0;}
+.kb-root .kb-collection-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;}
+
 /* Seller ask inside the market HUD (conversion-audit 2026-07-15 #3): the one
    question a homeowner reading this section is already asking themselves. */
 .kb-root .mkt-ask{margin-top:clamp(26px,4vw,40px);}

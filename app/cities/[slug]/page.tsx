@@ -608,6 +608,24 @@ export default async function CityDetailPage({ params }: Props) {
           sectionId="neighborhoods"
           cta={{ href: `/homes-for-sale/${slug}`, label: `All ${cityName} homes` }}
         />
+        {/* Lifestyle collections (conversion-audit 2026-07-15 #12): GSC showed
+            "bend golf course homes", "bend gated community homes", and "bend
+            buildable lots" ranking THIS page at pos 36-55 because nothing
+            linked the dedicated preset pages. Exact-match anchors, one per
+            measured query class. */}
+        <section className="section kb-collections" aria-label={`Browse ${cityName} homes by lifestyle`}>
+          <div className="wrap">
+            <span className="sec-index">{cityName} · Popular searches</span>
+            <div className="kb-collection-links">
+              <a href={`/homes-for-sale/${slug}/on-golf-course`} className="btn alt">{cityName} golf course homes</a>
+              <a href={`/homes-for-sale/${slug}/gated-community`} className="btn alt">{cityName} gated community homes</a>
+              <a href={`/homes-for-sale/${slug}/lots-and-land`} className="btn alt">{cityName} lots and land</a>
+              <a href={`/homes-for-sale/${slug}/acreage`} className="btn alt">{cityName} homes on acreage</a>
+              <a href={`/homes-for-sale/${slug}/new-construction`} className="btn alt">{cityName} new construction</a>
+              <a href="/communities" className="btn alt">Resort communities</a>
+            </div>
+          </div>
+        </section>
         <KbCommunities communities={communityItems} eyebrow={`${cityName} · Communities`} />
         {/* Ledger dedupes against the carousel above it (design-audit P2: the
             same 3-4 resorts rendered twice, once as a photo carousel and again

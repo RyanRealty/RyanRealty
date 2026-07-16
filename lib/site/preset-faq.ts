@@ -155,6 +155,19 @@ const PRESET_COPY: Record<string, PresetCopy> = {
     singular: 'home on 5 or more acres',
     criteria: (city) => `Homes in ${city} on lots of 5 acres or more, per the MLS lot-size field.`,
   },
+  'lots-and-land': {
+    plural: 'lots and land listings',
+    singular: 'lot or land listing',
+    criteria: (city) =>
+      `Bare land and residential lots in ${city}, per the MLS property-type field. Before you buy a lot to build on, verify zoning, water (well or municipal), septic or sewer, and access with the county. We can walk you through what to check.`,
+  },
+  // Community types
+  'gated-community': {
+    plural: 'homes in gated communities',
+    singular: 'home in a gated community',
+    criteria: (city) =>
+      `Listings in ${city} whose MLS records list gated access among the community or parking features.`,
+  },
   // Property types
   condos: {
     plural: 'condos',
