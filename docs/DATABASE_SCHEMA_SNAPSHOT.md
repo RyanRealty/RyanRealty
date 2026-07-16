@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-07-16T17:07:43.351Z
+**Generated:** 2026-07-16T20:58:13.494Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -303,7 +303,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 593,341**
+### `listing_tile_mv` · **rows ≈ 595,160**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -593,7 +593,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 159**
+### `cmas` · **rows ≈ 163**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -672,7 +672,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 150**
+### `expired_listings` · **rows ≈ 154**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -719,7 +719,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_crm_person_id` | bigint | yes |  |
 | `outreach_sms_sid` | text | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 493**
+### `marketing_brain_actions` · **rows ≈ 497**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -1592,6 +1592,41 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `is_primary` | boolean | no | false |
 | `status` | text | no | 'active'::text |
 
+### `crm_conversation`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `subject` | text | yes |  |
+| `channel_set` | ARRAY | no | '{}'::text[] |
+| `primary_person_id` | bigint | yes |  |
+| `is_group` | boolean | no | false |
+| `participant_count` | integer | no | 0 |
+| `state` | text | no | 'unread'::text |
+| `assigned_broker` | text | yes |  |
+| `last_message_at` | timestamp with time zone | no | now() |
+| `last_inbound_at` | timestamp with time zone | yes |  |
+| `last_outbound_at` | timestamp with time zone | yes |  |
+| `needs_reply` | boolean | no | false |
+| `twilio_conversation_sid` | text | yes |  |
+| `gmail_thread_id` | text | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+
+### `crm_conversation_participant`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `conversation_id` | uuid | no |  |
+| `person_id` | bigint | yes |  |
+| `raw_phone` | text | yes |  |
+| `raw_email` | text | yes |  |
+| `role` | text | no | 'contact'::text |
+| `channel_address` | text | no |  |
+| `display_name` | text | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+
 ### `crm_conversation_state`
 
 | Column | Type | Nullable | Default |
@@ -1752,6 +1787,27 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `row_count` | integer | yes |  |
 | `error_rows` | jsonb | no | '[]'::jsonb |
 | `processing_started_at` | timestamp with time zone | yes |  |
+
+### `crm_message`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `conversation_id` | uuid | no |  |
+| `direction` | text | no |  |
+| `channel` | text | no |  |
+| `body` | text | yes |  |
+| `subject` | text | yes |  |
+| `provider_sid` | text | yes |  |
+| `delivery_state` | text | no | 'queued'::text |
+| `error_code` | text | yes |  |
+| `error_message` | text | yes |  |
+| `media` | jsonb | no | '[]'::jsonb |
+| `sent_by` | text | yes |  |
+| `in_reply_to_id` | uuid | yes |  |
+| `idempotency_key` | text | yes |  |
+| `timeline_id` | bigint | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
 
 ### `crm_message_drafts`
 

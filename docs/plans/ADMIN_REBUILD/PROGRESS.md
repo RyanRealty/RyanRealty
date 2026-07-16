@@ -10,6 +10,24 @@ the local callback) or integration-tested against the real DB.
 
 ## Shipped
 
+### RC1 — the first-class Conversation model — IN PROGRESS (schema landed)
+- **Conversation / participant / message tables live** (`20260716200000_conversation_model.sql`).
+  The root of the owner's #1 messaging confusion: today a "conversation" is just
+  `person_id`, so groups, multi-channel threads, and multiple phone numbers collapse
+  onto the person and receipts fragment across an untyped blob. New entity:
+  `crm_conversation` (1..N participants, typed `state`/clocks/`needs_reply`) +
+  `crm_conversation_participant` (broker line is NOT a participant) +
+  `crm_message` (one typed shape; `provider_sid` is THE receipt key; unique on
+  `provider_sid` and `idempotency_key`). Two triggers: participant-sync maintains
+  `participant_count` + `is_group=(cnt>1)`; message-insert advances the clocks,
+  sets/clears `needs_reply`, reopens closed→unread on inbound, unions `channel_set`.
+  RLS on all three. **ADDITIVE + zero live behavior** — nothing reads/writes them yet;
+  `crm_timeline` stays the ledger. Backfill + dual-write + inbox rewire are the next
+  steps. **Trigger verified end-to-end vs the real DB**: seeded 2 participants + 1
+  inbound + 1 outbound → participant_count=2, is_group=true, needs_reply=false (cleared
+  by the reply), channel_set={sms}, both clocks set, msg_count=2; test row deleted,
+  tables back to 0/0/0. Snapshot + DAL index refreshed.
+
 ### Integrity + security (compliance-grade wrong numbers / unauthenticated writes) — DONE
 - **Content-write security holes closed** (`979350ad`). 18 in-body `checkAdminAction`
   guards across blog / guides / site-pages / geo-places / brokerage — the RC5
