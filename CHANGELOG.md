@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.806.0 (2026-07-16)
+
+### Features
+- feat(crm): backfill the conversation model from crm_timeline (RC1, spec 02)
+
+---
+
+
 ## v1.805.0 (2026-07-16)
 
 ### Features
