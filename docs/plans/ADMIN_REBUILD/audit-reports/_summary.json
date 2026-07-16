@@ -1,0 +1,2113 @@
+{
+ "domains": [
+  {
+   "domain": "Admin shell, navigation, layouts, auth/role model",
+   "headline": "The \"two shells\" problem was already collapsed (2026-07-15: app/admin/console is now 3 redirect stubs; one ConsoleShell inside (protected)/layout.tsx hosts everything), but the shell around it is held together by exceptions: a 56-item/5-menu nav (superuser; broker 30, report_viewer 17) built by a two-pass regroup function whose second pass bypasses role gating and produces at least 6 classes of access-denied dead ends for brokers; EIGHT coexisting navigation systems (desktop dropdown bar, mobile sheet, bottom tab bar, ⌘K palette covering only 4 of 56 destinations with stale labels, quick-action FAB, per-section tab bars, launchpad card grids, mobile-only lead tabs); NO sign-out affordance anywhere in the admin; unauthenticated deep links hard-lose their destination (redirect target is a hardcoded next=/admin); and a per-request tax on every page: a serial GoTrue round trip, the hidden public SiteHeader (4 DAL fetches serialized then display:none'd), 12 markdown file reads for the help index, and — the sleeper — no cookie-persistable Supabase session-refresh path on page renders (middleware does zero auth; server.ts swallows cookie writes), so expired sessions re-refresh on every RSC render forever. Access rules live in three disagreeing places (nav conditionals, 8 copy-pasted gate layouts, per-page checks) with no mechanical gate keeping them aligned.",
+   "reportPath": "/private/tmp/claude-501/-Users-matthewryan-RyanRealty/c597719f-4d05-43fd-aca0-d2deece1c162/scratchpad/audit/shell-ia.md",
+   "featureCount": 23,
+   "statuses": {
+    "works": 8,
+    "partial": 11,
+    "broken": 3,
+    "dead": 1
+   },
+   "criticalDefects": [],
+   "highDefects": [
+    {
+     "title": "Nav shows items that dead-end at access-denied for brokers (6 classes)",
+     "severity": "high",
+     "evidence": "admin-nav.ts:72+203 puts /admin/listings in every role's Admin menu but listings/layout.tsx is superuser-only; expireds/page.tsx:77 and cmas/page.tsx:380,460 link rows to /admin/expired-listings/[key] whose layout is superuser-only while /admin/expireds is broker-visible (admin-nav.ts:81-84); admin-nav.ts:209 adds Import contacts for all roles but crm/import/page.tsx:38 requires superuser; MobileSettingsScreen.tsx:260 links every role to superuser-only /admin/crm/settings (crm/settings/page.tsx:43); brokers/page.tsx:17-18 bounces report_viewer and brokerId-less brokers",
+     "rootCause": "Access rules live in three places (nav conditionals, gate layouts, page checks) with no mechanical gate keeping them aligned; buildAdminNav's second regroup pass (admin-nav.ts:161-211) appends items without role conditions",
+     "userImpact": "A broker clicks visible menu items or Expireds/CMAs detail rows and is told 'this account does not have admin access' — cannot open any expired-listing detail from the dashboard they are supposed to work"
+    },
+    {
+     "title": "No sign-out anywhere in the admin",
+     "severity": "high",
+     "evidence": "Case-insensitive grep for sign-out/log-out across app/admin, components/console, components/admin returns zero UI hits; signOut() exists at app/actions/auth.ts:169 with no admin caller; ConsoleTopNav.tsx:101-108 avatar is a bare img with no menu; public SiteHeader (with account menu) is display:none on /admin via HideOnLP.tsx:64-72",
+     "rootCause": "Shell never grew an account menu after the brand admin chrome was deleted",
+     "userImpact": "Brokers cannot sign out or switch accounts from the admin at all; shared-device and wrong-account recovery requires navigating to the public site chrome"
+    },
+    {
+     "title": "No persistable session-refresh path on admin page renders",
+     "severity": "high",
+     "evidence": "middleware.ts contains zero Supabase code (no updateSession); lib/supabase/server.ts:16-24 setAll wrapped in try/catch 'Ignore in Server Components' so refreshed tokens rotated during RSC getUser() are discarded",
+     "rootCause": "@supabase/ssr middleware-refresh pattern never implemented; auth resolution happens only inside RSC renders where Next forbids cookie writes",
+     "userImpact": "Once the access token expires (~1h) every admin request performs a token refresh that cannot persist — permanent added latency on every click and refresh-token-rotation races that produce random logouts"
+    },
+    {
+     "title": "Unauthenticated deep links lose their destination",
+     "severity": "high",
+     "evidence": "(protected)/layout.tsx:33 redirect('/auth-error?next=/admin') hardcodes the path; AdminLoginForm.tsx:10,106,148 always pushes ADMIN_NEXT='/admin'; login/page.tsx never reads searchParams",
+     "rootCause": "next param plumbing never implemented through auth-error → login → post-login",
+     "userImpact": "A broker tapping an SMS/notification link to a lead with an expired session goes through 4 redirects and lands on the dashboard, then must re-find the lead manually (3+ more actions)"
+    }
+   ],
+   "duplication": [
+    {
+     "what": "Role-gate layout copy-pasted 8 times (session → getAdminRoleForEmail → redirect access-denied), plus the same knowledge re-encoded in buildAdminNav conditionals and again in per-page checks — three disagreeing sources of access truth",
+     "routes": [
+      "app/admin/(protected)/analytics/layout.tsx",
+      "app/admin/(protected)/audit-log/layout.tsx",
+      "app/admin/(protected)/expired-listings/layout.tsx",
+      "app/admin/(protected)/listings/layout.tsx",
+      "app/admin/(protected)/sync/layout.tsx",
+      "app/admin/(protected)/media/banners/layout.tsx",
+      "app/admin/(protected)/media/stock-photos/layout.tsx",
+      "app/admin/(protected)/operations/optimization/layout.tsx",
+      "app/components/admin/admin-nav.ts"
+     ]
+    },
+    {
+     "what": "/admin/crm/settings appears twice in the superuser nav (CRM menu and Admin menu)",
+     "routes": [
+      "app/components/admin/admin-nav.ts:189",
+      "app/components/admin/admin-nav.ts:133"
+     ]
+    },
+    {
+     "what": "Reports menu lists the Performance hub AND its 10 children as flat siblings, all of which the hub's own ReportCatalog also links — hub-and-spoke duplicated as a spoke list",
+     "routes": [
+      "/admin/analytics",
+      "/admin/analytics/social",
+      "/admin/analytics/demographics",
+      "/admin/analytics/funnel-breakdown",
+      "/admin/analytics/lp-leaderboard",
+      "/admin/analytics/cost-per-lead",
+      "/admin/analytics/listing-performance",
+      "/admin/analytics/google-search",
+      "/admin/analytics/google-business-profile",
+      "/admin/visitors/live",
+      "/admin/operations/optimization"
+     ]
+    },
+    {
+     "what": "Three separate approval surfaces in nav with near-identical names",
+     "routes": [
+      "/admin/crm/approvals",
+      "/admin/approval-queue",
+      "/admin/sign-off"
+     ]
+    },
+    {
+     "what": "Workflows split across two surfaces: nav 'Workflows' → /admin/crm/sequences (editor) while the enrollment board lives nav-invisible at /admin/crm/workflows; /admin/crm/automations is a third URL redirecting to sequences",
+     "routes": [
+      "/admin/crm/sequences",
+      "/admin/crm/workflows",
+      "/admin/crm/automations"
+     ]
+    },
+    {
+     "what": "Broker identity mapping duplicated across admin_roles.broker_id, CRM_BROKER_BY_EMAIL, FUB_USER_ID_BY_BROKER, CRM_BROKER_DISPLAY, and two headshot maps — adding a broker requires 5+ code edits",
+     "routes": [
+      "lib/crm/constants.ts:11-32",
+      "components/console/TopBarScope.tsx:15-19",
+      "components/admin/crm/inbox/mobile/mobile-data.ts"
+     ]
+    },
+    {
+     "what": "17 redirect-stub pages kept from two consolidation waves (2026-07-07, 2026-07-15), each a full server render + second navigation",
+     "routes": [
+      "/admin",
+      "/admin/console",
+      "/admin/console/leads",
+      "/admin/console/leads/[id]",
+      "/admin/banners",
+      "/admin/stock-photos",
+      "/admin/photos",
+      "/admin/optimization",
+      "/admin/query-builder",
+      "/admin/resort-communities",
+      "/admin/search",
+      "/admin/spark-status",
+      "/admin/reports",
+      "/admin/people",
+      "/admin/email",
+      "/admin/visitors",
+      "/admin/expired-listings"
+     ]
+    }
+   ],
+   "performance": [
+    {
+     "issue": "Serial auth resolution before any content on every server request",
+     "evidence": "(protected)/layout.tsx:31-40 awaits getSession → getAdminRoleForEmail → getCrmAccess sequentially; pages are 123/150 force-dynamic so every nav click is a full server render",
+     "impact": "Every click pays a GoTrue network round trip (plus an admin_roles query for non-Matt) before first byte of page content"
+    },
+    {
+     "issue": "Un-persistable token refresh on every render once session is >1h old",
+     "evidence": "lib/supabase/server.ts:21-23 swallows cookie writes; middleware.ts has no Supabase refresh",
+     "impact": "Permanent added GoTrue round trip per request for aged sessions; refresh-token rotation races cause intermittent logouts"
+    },
+    {
+     "issue": "Hidden public SiteHeader + footer rendered and fetched on all admin routes",
+     "evidence": "app/layout.tsx:130-136 + HideOnLP.tsx:64-72 (display:none, never unmounted); SiteHeader.tsx:124-199 runs 4 DAL fetches",
+     "impact": "Invisible payload + fetch work on every admin hard load, worst on mobile"
+    },
+    {
+     "issue": "Help KB read from disk and serialized per request",
+     "evidence": "lib/admin-help.ts:65-81 readdir + 12 readFileSync per request (React cache is request-scoped); index passed to HelpProvider in every page payload ((protected)/layout.tsx:67)",
+     "impact": "Constant fs I/O and RSC payload bloat on every admin page"
+    },
+    {
+     "issue": "Dual-rendered mobile+desktop trees CSS-toggled",
+     "evidence": "settings/page.tsx:69-80 renders MobileSettingsScreen AND MySettingsForm; 28 admin files use md:/lg:hidden forking",
+     "impact": "Roughly double render + payload on forked surfaces"
+    },
+    {
+     "issue": "/admin home performs a settings query then double-redirects",
+     "evidence": "(protected)/page.tsx:16-18; both shell logos link to /admin",
+     "impact": "Extra DB hit + extra navigation on the most-tapped shell control"
+    },
+    {
+     "issue": "/admin/users engagement counts fetched as up to 60×1000-row pages",
+     "evidence": "admin-roles.ts:162-191",
+     "impact": "Slow page, truncated counts past 20k rows"
+    }
+   ],
+   "mobileDivergence": [
+    "Primary nav is a different system per viewport: desktop = 5 Radix dropdown menus in a dark top bar (no icons), mobile = hamburger Sheet with grouped collapsible icon list + localStorage state (ConsoleShell.tsx:71-128)",
+    "Bottom 5-tab bar exists only on phones and is hardcoded (Home/Inbox/People/Deals/Activity), not derived from buildAdminNav; deliberately lights nothing on calendar/tasks (CrmMobileTabBar.tsx:29-44)",
+    "Broker scope switcher (TopBarScope) exists only in the mobile header and only when pathname === '/admin/crm' (ConsoleShell.tsx:66,87-93); desktop has no shell-level scope control",
+    "'View site' link exists only at xl+ (ConsoleTopNav.tsx:96-100); mobile shell has NO path back to the public site (wordmark links to /admin)",
+    "FAB 'Send text'/'Send email' on a lead route to different surfaces per viewport: desktop hash-links #comms on the lead page, mobile reroutes to /admin/crm/inbox?c=<id>&m=sms|email (ConsoleQuickAction.tsx:111-122)",
+    "My settings is two entirely different components (MobileSettingsScreen < md vs MySettingsForm md+), both server-rendered every request and CSS-toggled (settings/page.tsx:69-80)",
+    "Lead detail IA forks: mobile gets LeadTabs 6-tab CSS toggle, desktop gets all sections in one scroll (components/console/LeadTabs.tsx:4-15)",
+    "Tablets in portrait (<1024px) receive the full phone experience including bottom tab bar; landscape iPad flips to desktop",
+    "Bottom-edge choreography (tab bar, 2 FABs, composer, soft keyboard) is coordinated via global CSS attributes --kb-inset/[data-kb-open]/[data-crm-comms]/--crm-dock-offset with a load-bearing 3.5rem constant (console-theme.css:33-39, KeyboardInsetSync.tsx, CrmMobileTabBar.tsx:75-76)",
+    "Deep links on mobile hit hardest: expired session = 4 redirects and destination loss (§7.1 of report) — and notification links are the primary mobile entry point"
+   ],
+   "deadOrOrphan": [
+    "/admin/console, /admin/console/leads, /admin/console/leads/[id] — redirect stubs of the deleted second shell (load-bearing for legacy SMS/FUB deep links)",
+    "CrmMobileTabBar inboxUnread badge — prop never passed by the only caller; unreachable feature",
+    "ConsoleCommandPalette static NAV — 2 of 4 labels reference the deleted 'brand admin'; palette blind to 52 of 56 nav destinations",
+    "ConsoleShell docblock + check-admin-mobile-shell.mjs gate text describe a 'desktop rail' that no longer exists (nav is a top bar; AdminNavList renders only in the mobile Sheet)",
+    "report_viewer role — zero rows exist per admin-nav.ts:92; its only layout allowance (/admin/reports) redirects into superuser-only /admin/analytics",
+    "/admin/guides — live CRUD editor reachable only via a panel link on /admin/operations (DashboardContentStatusPanel.tsx:53); not in nav",
+    "/admin/crm/workflows — live enrollment board not in nav; reachable only from the sequences page and AutomationsListView",
+    "/admin/crm/automations — FUB-parity redirect URL nothing links to",
+    "14 more consolidation redirect stubs: /admin/banners, /stock-photos, /photos, /optimization, /query-builder, /resort-communities, /search, /spark-status, /reports, /people, /email, /admin/visitors, /admin/expired-listings, /admin (index)",
+    "AdminNavIcons registry: ~44 lucide icons bundled; icons only render in the mobile Sheet — desktop dropdowns never show them; several icon names in the union are unused"
+   ]
+  },
+  {
+   "domain": "CRM contacts — list, person detail, mobile fork",
+   "headline": "The contacts domain is a faithful FUB clone built as TWO separate products — a dense desktop tree and a thin mobile tree, both server-rendered on every request and toggled by a CSS breakpoint — sitting on an uncached query storm (~85 Supabase round-trips per list view from per-view/per-stage/per-sequence COUNT fan-outs; ~40-55 queries across four sequential await-stages per person view). Its most critical user-facing failures cluster on the send path: both composers submit multi-second server actions with no pending state, no double-send protection, and no state reset (the sent text stays in the box), and on mobile the conversation feed snapshots server props into state so a sent message never appears in the thread — together making duplicate texts to clients the natural outcome of normal use. Five of seven mobile mutation wrappers swallow errors entirely, the same concept (market reports, saved searches, automations, CMA/BPO) is editable in 3-5 competing widgets on one page, and the capability matrix forces device-hopping (rename a contact: phone only; log a call or send a CMA: desktop only; bulk actions: desktop only; desktop list has no search box while its Text/Call icons bypass the compliance-gated Twilio path with raw sms:/tel: links). RBAC, the AST query compiler, the bulk-job framework, and the SMS compliance chain are genuinely solid and worth carrying into the rebuild.",
+   "reportPath": "/private/tmp/claude-501/-Users-matthewryan-RyanRealty/c597719f-4d05-43fd-aca0-d2deece1c162/scratchpad/audit/crm-people.md",
+   "featureCount": 20,
+   "statuses": {
+    "partial": 12,
+    "works": 6,
+    "broken": 2
+   },
+   "criticalDefects": [
+    {
+     "title": "Composers have no pending state, no double-send guard, and never clear after send",
+     "severity": "critical",
+     "evidence": "components/admin/crm/SmsComposer.tsx:118 and EmailComposer.tsx:91 submit via bare <form action> with no useFormStatus/transition; send button stays enabled during the multi-second sendCrmSmsAction chain (app/actions/crm.ts:881-919); on success the wrapper returns void (form-actions.ts:60-69) and client body/subject state survives the RSC refresh (page.tsx:534,556 key never changes)",
+     "userImpact": "Broker sees nothing happen after tapping send, taps again, and texts/emails a client twice; sent message sits in the box looking unsent",
+     "rootCause": "Server-action form pattern adopted without useFormStatus/optimistic reset; success path returns void with no client signal"
+    },
+    {
+     "title": "Mobile Comms thread never shows newly sent or received messages",
+     "severity": "critical",
+     "evidence": "components/admin/crm/ConversationFeed.tsx:98 useState(events) snapshots server props once and never syncs; MobileCommsTab passes fresh server items after the pinned composer's revalidate but the feed ignores them",
+     "userImpact": "On the phone, a sent text is invisible in the thread until a hard reload — looks like a failed send and compounds the duplicate-send risk",
+     "rootCause": "Client component caches server prop in state to support its own load-older pagination, with no prop-sync effect or key remount"
+    },
+    {
+     "title": "List page executes ~85 uncached queries per view (COUNT fan-out)",
+     "severity": "critical",
+     "evidence": "app/admin/(protected)/crm/page.tsx:73-91 fires 11 readers; getCrmSavedViews.ts:113-118 runs one COUNT per saved view; getCrmStageCounts.ts:26-37 one per stage; listCrmSequences (crm.ts:1004-1034) runs 5 exact head-counts per sequence whose results the page discards (only id+name used, page.tsx:177-179); force-dynamic, zero caching",
+     "userImpact": "Multi-second contact-list loads on every navigation, every filter change, every pagination click",
+     "rootCause": "Per-entity live COUNT pattern plus fetching all bulk-dialog picker data eagerly on every request instead of on dialog open"
+    }
+   ],
+   "highDefects": [
+    {
+     "title": "Person page runs ~40-55 queries across 4 sequential await-stages with no loading state of its own",
+     "severity": "high",
+     "evidence": "[id]/page.tsx:124 (stage 1), 157-206 (28-way batch incl. getPersonDetailExtras.ts:86-150 ~16 internal queries + serial signed-URL loop), 223-231 (stage 3); crm/[id]/ has no loading.tsx so the people-LIST skeleton shows during detail loads",
+     "userImpact": "Slow person opens with a wrong-shaped skeleton; every inline edit router.refresh()es the entire pipeline",
+     "rootCause": "All widgets' data fetched unconditionally in the page; no per-widget suspense/caching; missing route-level loading file"
+    },
+    {
+     "title": "Five mutation wrappers swallow errors — mobile edits fail silently",
+     "severity": "high",
+     "evidence": "[id]/form-actions.ts:35-54 (updateStageForm/addTagForm/removeTagForm/addTaskForm/assignBrokerForm return void after console.error); these exact actions are bound into mobile Info pickers (mobile-detail.tsx:458-464); MobileDetailsSection.tsx:135-139,187-191,221-225 also console-log only; PersonSidebar TagChips:266-287 and PersonRightRail enrollment controls:502-522 ignore results",
+     "userImpact": "A failed stage change, tag, assignment, or enrollment on the phone looks identical to success; data silently diverges from what the broker believes",
+     "rootCause": "Void-returning form-action wrappers written for fire-and-forget desktop forms, reused as the mobile mutation layer"
+    },
+    {
+     "title": "Desktop list Text/Call/Email are raw sms:/tel:/mailto: links bypassing the compliance path",
+     "severity": "high",
+     "evidence": "components/admin/crm/people-list/PeopleListView.tsx:699-721",
+     "userImpact": "Texts/calls from the list are untracked, unlogged, skip quiet hours/suppressions/A2P — the exact behavior Matt's punch #4 banned and that was fixed on mobile (MobileContactPointsSection.tsx:136-143)",
+     "rootCause": "List rows never migrated to the in-app composer routes after the mobile fix"
+    },
+    {
+     "title": "Contact-point data has 3 writers but only 2 mirror to the jsonb the list and email sender read",
+     "severity": "high",
+     "evidence": "addCrmContactPointAction (crm.ts:1228-1251) inserts into crm_contact_points without updating crm_people.phones/emails jsonb; savePhoneNumbersAction/saveEmailRowAction do mirror (crm-person-detail.ts:189-205,260-279); list page primaryContact() reads jsonb (page.tsx:41-45); sendCrmEmailAction primary-email pick reads jsonb (crm.ts:498-499)",
+     "userImpact": "A phone/email added via the mobile Add flow doesn't show in list columns and can be missed by the email send path",
+     "rootCause": "Dual-representation (table + jsonb cache) without a single write path"
+    },
+    {
+     "title": "savePhoneNumbersAction is delete-then-insert with no transaction",
+     "severity": "high",
+     "evidence": "app/actions/crm-person-detail.ts:167-187 — delete all phone contact_points, then insert; comment claims 'Atomic replace'",
+     "userImpact": "An insert failure after the delete permanently erases every phone number on the contact; concurrent saves race",
+     "rootCause": "No RPC/transaction; two independent PostgREST calls"
+    },
+    {
+     "title": "Desktop timeline capped at 100 rows while tab badges show exact totals; no pagination",
+     "severity": "high",
+     "evidence": "crm.ts:365 .limit(100) and :406-408 re-cap after visitor merge; PersonCenterColumn tab counts come from exact head-counts (getPersonDetailExtras); no load-more exists on desktop (mobile Comms got getContactConversation pagination instead, page.tsx:197-200)",
+     "userImpact": "'Texts (342)' tab renders only the texts that survived the newest-100 cap — brokers cannot reach older messages/notes on desktop",
+     "rootCause": "Timeline fetch never upgraded after the mobile pagination fix"
+    },
+    {
+     "title": "Free-text search: partial email returns zero rows; email/phone match capped at 200 ids; desktop has no search box at all",
+     "severity": "high",
+     "evidence": "crm.ts:227-251 exact-match eq + .limit(200) contradicting buildCrmPeopleQuery.ts:17-19 invariant; ContactsSearch rendered only in the md:hidden mobile header (page.tsx:222-237); desktop path is FilterPanel 'Name contains' (FilterPanel.tsx:200-210)",
+     "userImpact": "The most common CRM job (find a contact) takes 3 clicks on desktop and silently fails for partial emails",
+     "rootCause": "listCrmPeople kept a legacy q implementation instead of the compiler's jsonb ilike path; search input never added to desktop toolbar"
+    }
+   ],
+   "duplication": [
+    {
+     "what": "Market-report subscription editor rendered 3 times on one page (ContactSendCenter tab, ContactQuickActions sheet embedding ReportSubscriptionsPanel, standalone ReportSubscriptionsPanel)",
+     "routes": [
+      "/admin/crm/[id]"
+     ]
+    },
+    {
+     "what": "Saved searches / listing alerts in 3 widgets fed by 2 different tables (getListingAlertsForLead vs getContactListingAlerts) that can disagree",
+     "routes": [
+      "/admin/crm/[id]"
+     ]
+    },
+    {
+     "what": "Automations/enrollments on 5 desktop surfaces (Action Plans rail, duplicate Automations rail, QuickActions sheet, sidebar Campaigns row, ApplyAutomationDialog) + mobile Details row",
+     "routes": [
+      "/admin/crm/[id]"
+     ]
+    },
+    {
+     "what": "CMA/BPO send from 3 surfaces (OwnedHomeCard, ContactCmaCard/ContactBpoCard, ContactSendCenter)",
+     "routes": [
+      "/admin/crm/[id]"
+     ]
+    },
+    {
+     "what": "Two contact-create surfaces with divergent fields (AddPersonDialog has source; /new page has broker+note)",
+     "routes": [
+      "/admin/crm",
+      "/admin/crm/new"
+     ]
+    },
+    {
+     "what": "Bulk icon strip rendered twice (above table + in selection bar)",
+     "routes": [
+      "/admin/crm"
+     ]
+    },
+    {
+     "what": "Timeline tab→kind maps hand-duplicated (PersonCenterColumn.TAB_KINDS vs getPersonDetailExtras.TIMELINE_TAB_KINDS)",
+     "routes": [
+      "/admin/crm/[id]"
+     ]
+    },
+    {
+     "what": "BROKER_HEADSHOT literal map copy-pasted in 3 files (crm/page.tsx, activity/page.tsx, mobile-detail.tsx)",
+     "routes": [
+      "/admin/crm",
+      "/admin/crm/activity",
+      "/admin/crm/[id]"
+     ]
+    },
+    {
+     "what": "Two message renderers for the same crm_timeline rows (desktop EventCard vs mobile/inbox ConversationFeed)",
+     "routes": [
+      "/admin/crm/[id]"
+     ]
+    },
+    {
+     "what": "Contact points stored twice (crm_contact_points + crm_people phones/emails jsonb), 3 writers of which only 2 mirror",
+     "routes": [
+      "/admin/crm/[id]",
+      "/admin/crm"
+     ]
+    },
+    {
+     "what": "Merge available via sidebar '+' dialog and separately via bulk merge_people (2-10 ids)",
+     "routes": [
+      "/admin/crm/[id]",
+      "/admin/crm"
+     ]
+    },
+    {
+     "what": "Entire desktop and mobile component trees both SSR'd on every request for list and detail (CSS-toggled)",
+     "routes": [
+      "/admin/crm",
+      "/admin/crm/[id]"
+     ]
+    }
+   ],
+   "performance": [
+    {
+     "issue": "COUNT-query fan-out on every contacts-list request",
+     "evidence": "getCrmSavedViews.ts:113-118 (1 COUNT/view), getCrmStageCounts.ts:26-37 (1/stage), listCrmSequences crm.ts:1004-1034 (5 head-counts/sequence, results discarded by the page), all force-dynamic + explicitly uncached",
+     "impact": "~85 Supabase round-trips per list view at realistic view/sequence counts; the primary slow-list cause"
+    },
+    {
+     "issue": "Person detail: 4 sequential await-stages totaling ~40-55 queries, re-run in full on every router.refresh() after any inline edit",
+     "evidence": "[id]/page.tsx:124,157-206,223-231; getCrmPersonFull crm.ts:346-424 (8-way batch + 2 serial visitor-merge queries); getPersonDetailExtras.ts:86-150 (~16 queries + per-file serial createSignedUrl loop)",
+     "impact": "Multi-second opens and multi-second post-edit refreshes on the highest-traffic screen"
+    },
+    {
+     "issue": "Double-tree SSR: mobile and desktop component families both rendered and shipped on every request",
+     "evidence": "crm/page.tsx:222-301 (MobilePeopleRoot + full PeopleListView), [id]/page.tsx:482-499 (MobileLeadDetail + 3-column)",
+     "impact": "Roughly 2x server render work and HTML payload per page view on both form factors"
+    },
+    {
+     "issue": "Eager fetch of all bulk-dialog picker data (tags, templates, areas, ponds, sequences, neighborhoods) on every list load",
+     "evidence": "crm/page.tsx:73-85 — 6 readers consumed only inside dialogs the user may never open",
+     "impact": "Fixed per-request cost paid for rarely-used UI"
+    },
+    {
+     "issue": "No loading.tsx for crm/[id] — the list skeleton renders during detail loads",
+     "evidence": "ls app/admin/(protected)/crm/[id]/ shows only page.tsx, mobile-detail.tsx, form-actions.ts",
+     "impact": "Wrong-shaped skeleton plus perceived jank on the most common navigation"
+    }
+   ],
+   "mobileDivergence": [
+    "Switch is a pure CSS breakpoint at md (md:hidden / hidden md:block) between two unrelated component trees; both stay mounted so no state is lost on resize, but they share no components and hold independent state (desktop compose mode vs mobile tab); ?view=mobile force-renders the mobile tree at any width",
+    "Mobile list is browse-only: no bulk actions (BulkActions is max-md:hidden), no export, no column chooser, no tag/neighborhood/pond filters, no add-person; rows drop phone/tags/agent/last-activity columns",
+    "Mobile person detail lacks: email compose in-detail, manual call logging, CMA/BPO, market reports, newsletter, saved searches, files, deals, merge, delete, timeline star, custom-field editing, price/lender/background/address editing, add-relationship",
+    "Mobile-only capabilities missing on desktop: contact NAME editing (MobileEditSheet is the sole consumer of updatePersonNameAction), in-place appointment creation (desktop rail links away to the calendar), cursor-paginated full conversation history, always-visible contact search box",
+    "Mobile Info tab SMS/Email circles navigate away to /admin/crm/inbox while the Comms tab one swipe over has a pinned composer — two inconsistent in-app text paths from one screen",
+    "Mobile mutation layer is error-blind: bound void-returning form actions + console.error swallowing on pickers; the URL ?flash/?error feedback channel used by desktop is never rendered by MobileLeadDetail",
+    "Desktop list punch-#4 regression: raw sms:/tel: links remain on desktop rows after the mobile fix routed texting through the compliance-gated composer"
+   ],
+   "deadOrOrphan": [
+    "components/admin/crm/ContactActivityFeed.tsx — zero importers (only a doc-comment reference in GlobalActivityFeed.client.tsx)",
+    "components/admin/crm/NextStepCard.tsx — zero importers; referenced only by a comment in [id]/page.tsx:241 while getContactNextStep is still fetched every view",
+    "PersonSidebar 'Social Profile' and 'Groups' sections — permanently fed empty arrays by page.tsx:376-377",
+    "Lead Score column — no model exists; permanent em-dash yet first in DEFAULT_PEOPLE_COLUMNS (people-list-utils.ts:88)",
+    "'How it works' inert span (PersonCenterColumn.tsx:612-614)",
+    "Keyboard ←/→ prev/next-lead hint with no handler anywhere in person-detail (PersonRightRail.tsx:777-780)",
+    "'SEE ALL' inert span on MobileHomesTab.tsx:50; homes cards link nowhere",
+    "deleteCrmPersonAction redirect ?flash= param never read by the list page (crm-person-detail.ts:645 vs crm/page.tsx SearchParams)",
+    "?view=mobile 390px verification affordance living in production routing ([id]/page.tsx:470-476)",
+    "openTasks = tasks.filter((t) => t) no-op filter (PersonRightRail.tsx:445)"
+   ]
+  },
+  {
+   "domain": "Messaging — inbox, SMS, email, group messages, delivery visibility",
+   "headline": "The messaging server core is compliance-hardened and largely correct (suppression chokepoint, A2P fail-closed, signed webhooks, forward-only delivery state), but the UI around it is why the owner suffers: sends are plain form-actions that serially await Twilio plus ~10 DB reads plus a full force-dynamic re-render of a page that rescans 2,000 timeline rows, with zero pending state, no idempotency key, and a controlled textarea that keeps the sent text after the redirect — so sends feel hung and double-taps produce real duplicate texts; group messages are faithfully recorded in payload JSON that no UI component reads, so a group text is pixel-identical to a 1:1 everywhere, and replying from the inbox silently drops every other group participant; delivery state is written to the DB by webhook but rendered on exactly one surface (desktop person-detail), never in the inbox; and the same conversation is rendered by four different components with four different capability sets across desktop and mobile.",
+   "reportPath": "/private/tmp/claude-501/-Users-matthewryan-RyanRealty/c597719f-4d05-43fd-aca0-d2deece1c162/scratchpad/audit/crm-messaging.md",
+   "featureCount": 14,
+   "statuses": {
+    "works": 6,
+    "partial": 6,
+    "broken": 2
+   },
+   "criticalDefects": [
+    {
+     "title": "Send has zero pending feedback and the sent text stays in the compose box — the direct cause of perceived hangs and real double-sends",
+     "severity": "critical",
+     "evidence": "components/admin/crm/SmsComposer.tsx:118,188 (form action, disable only on empty/uploading); repo grep: useFormStatus only in NextStepCard.tsx:18; SmsComposer.tsx:70 controlled body state; InlineReply.tsx:260-266 no key → component instance survives the same-URL redirect from app/admin/(protected)/crm/inbox/page.tsx:258-265; no idempotency anywhere in app/actions/crm.ts:732-938 (dedupe_key is per-Twilio-SID, crm.ts:916)",
+     "userImpact": "Owner taps Send, sees nothing change for 2-6s while Twilio + ~10 serial DB reads + a full page re-render run, sees his text still in the box with a live Send button, taps again, and the client receives duplicate texts.",
+     "rootCause": "Form-action + redirect as the only update mechanism; controlled composer state not reset by navigation; no client send state machine and no server idempotency key."
+    },
+    {
+     "title": "Group messages are indistinguishable from 1:1 in every UI, and inbox replies silently drop group participants",
+     "severity": "critical",
+     "evidence": "payload.groupTo/groupMembers written at app/actions/crm.ts:858-871 and app/api/twilio/conversations-events/route.ts:128-151 but toFeedItem drops payload (lib/data/crm/getContactActivityFeed.ts:110-137); grep of components for groupMembers|groupTo|'Group text' = zero hits; InlineReply.tsx:260-266 and MobileThread.tsx:436 pass no recipients; getGroupReplyParticipants used only by [id]/page.tsx:230",
+     "userImpact": "Owner cannot tell if a message was part of a group thread (his stated #1 confusion), and replying from the inbox sends a private 1:1 that drops the spouse/co-buyer from the conversation with no warning.",
+     "rootCause": "No thread entity — group context lives in unread payload JSON conventions; reply-recipient reconstruction was built only into the person page."
+    }
+   ],
+   "highDefects": [
+    {
+     "title": "getGroupReplyParticipants excludes broker-initiated group threads",
+     "severity": "high",
+     "evidence": "lib/data/crm/getGroupReplyParticipants.ts:41-47 filters .contains('payload',{group:true}) but outbound rows (app/actions/crm.ts:858-871) never write group:true — only inbound rows do; the function's own doc comment claims groupTo coverage its query excludes; also hardcoded BROKER_LINES at :30",
+     "userImpact": "Even on the one surface with group reply-all, a group the broker STARTED (no inbound reply yet) reconstructs zero participants and the reply degrades to 1:1.",
+     "rootCause": "Asymmetric payload conventions between the outbound send path and the inbound webhook."
+    },
+    {
+     "title": "Delivery state rendered on exactly one surface; none in the inbox; receipts never attach to doc/outreach sends",
+     "severity": "high",
+     "evidence": "deliveryState read only in components/admin/crm/person-detail/PersonCenterColumn.tsx:181,335 (grep); RPC matches payload->>'twilioSid' (supabase/migrations/20260715153000_twilio_hardening.sql:76-79) but send-doc.ts:283, expired-outreach.ts:143, fsbo-dashboard.ts:185 write 'sid'; no realtime/poll anywhere",
+     "userImpact": "From the inbox the owner can never see queued/sent/delivered/failed — the exact 'did it go through' anxiety that drives his re-sends; for doc/FSBO/expired texts delivery is invisible everywhere forever.",
+     "rootCause": "Delivery badge built into the person-detail rebuild only; payload SID key never standardized."
+    },
+    {
+     "title": "Inbox working set silently truncates to the most recent 2,000 messages company-wide",
+     "severity": "high",
+     "evidence": "lib/data/crm/getInboxQueue.ts:430-449 (WINDOW=2000, 2 sequential 1000-row pages) — conversations older than the window vanish from ALL folders including Closed and Sent; messageCount admits window-derivation at :127-130",
+     "userImpact": "Older conversations disappear from the inbox entirely; Closed/Sent are not archives; the owner cannot trust the inbox as a record.",
+     "rootCause": "Queue derived in memory from a rolling message window instead of a conversation table."
+    },
+    {
+     "title": "Inbound email never marks a conversation unread and is up to 15 minutes late",
+     "severity": "high",
+     "evidence": "markConversationUnreadOnInbound called only from the two Twilio webhooks (inbound-sms/route.ts:125, conversations-events/route.ts:154); lib/crm/gmail.ts syncMailboxWindow writes timeline rows only; crm-inbox.ts:19-28 documents the unwired hook; cron cadence 9,24,39,54 in vercel.json",
+     "userImpact": "A client's email reply produces no unread badge and never resurfaces a closed thread; owner misses emails unless he happens to scroll.",
+     "rootCause": "Phase-B hook documented but never wired; poll-based Gmail sync with no push."
+    },
+    {
+     "title": "CRM email replies do not thread in recipients' mail clients",
+     "severity": "high",
+     "evidence": "lib/crm/gmail.ts:360-369 builds headers without In-Reply-To/References/threadId despite the 'real reply chain' claim at :11-12; those headers exist only in lib/marketing-brain/inbox-reply.ts:146-147",
+     "userImpact": "Every CRM reply lands as a new thread in the client's Gmail/Outlook, fragmenting the client-side conversation and looking broken/spammy.",
+     "rootCause": "Send path never captures or replays the RFC Message-ID chain the sync already stores."
+    }
+   ],
+   "duplication": [
+    {
+     "what": "Four renderers of the same crm_timeline conversation with four capability sets (bubbles vs FUB rows vs event cards; delivery badge, media, engagement, pagination each exist on only some)",
+     "routes": [
+      "components/admin/crm/inbox/InboxThreadView.tsx",
+      "components/admin/crm/inbox/mobile/MobileThread.tsx",
+      "components/admin/crm/ConversationFeed.tsx (mobile Comms tab)",
+      "components/admin/crm/person-detail/PersonCenterColumn.tsx"
+     ]
+    },
+    {
+     "what": "Parallel SMS send paths with incompatible payload conventions (twilioSid vs sid vs messageSid) — only two of five get delivery receipts",
+     "routes": [
+      "app/actions/crm.ts sendCrmSmsAction",
+      "app/actions/send-doc.ts sendDocSmsAction",
+      "app/actions/expired-outreach.ts",
+      "app/actions/fsbo-dashboard.ts",
+      "app/api/cron/crm-sequence-engine/route.ts"
+     ]
+    },
+    {
+     "what": "Two email backbones for the same conversation domain: Gmail DWD (CRM sends, no bounce webhook) and Resend (newsletters, market reports, inbox @mention notifications)",
+     "routes": [
+      "lib/crm/gmail.ts",
+      "lib/resend.ts + inbox/page.tsx:409-414"
+     ]
+    },
+    {
+     "what": "Six overlapping 'send the client something' surfaces on one person page, each with a different feedback idiom (redirect-flash vs sonner toast vs inline error)",
+     "routes": [
+      "EmailComposer/SmsComposer center column",
+      "ContactSendCenter dialog",
+      "NextStepCard",
+      "OwnedHomeCard/ContactCmaCard",
+      "SendDocDialog",
+      "ContactQuickActions"
+     ]
+    },
+    {
+     "what": "Send wrapper actions re-implemented per page (redirect-on-error vs silent console.error vs result-returning) around the same gated actions",
+     "routes": [
+      "app/admin/(protected)/crm/inbox/page.tsx:258-345",
+      "app/admin/(protected)/crm/[id]/form-actions.ts:60-69"
+     ]
+    },
+    {
+     "what": "Bulk 'Mark read' and 'Reopen' are the same mutation under two buttons; legacy InboxScope model kept alive alongside the scope×folder model",
+     "routes": [
+      "components/admin/crm/inbox/InboxThreadList.tsx:263-274",
+      "lib/data/crm/getInboxQueue.ts:70-215"
+     ]
+    }
+   ],
+   "performance": [
+    {
+     "issue": "Every inbox navigation re-scans up to 2,000 crm_timeline rows joined to crm_people (2 sequential PostgREST pages) and filters the array 11× for folder counts, uncached, force-dynamic",
+     "evidence": "lib/data/crm/getInboxQueue.ts:364-404,430-449; inbox/page.tsx:86",
+     "impact": "Folder clicks, thread opens, view toggles and every post-send redirect each cost a full working-set rebuild — the baseline slowness under all messaging actions."
+    },
+    {
+     "issue": "Send round trip serially awaits auth+scope+target+suppression+merge+telephony+short-links+Twilio+insert, then draft-discard, then redirect into the full page rebuild",
+     "evidence": "app/actions/crm.ts:732-938; inbox/page.tsx:258-265",
+     "impact": "2-6s of dead air with no feedback — the perceived hang that triggers double sends."
+    },
+    {
+     "issue": "Unread thread open triggers a second full render (auto-read effect + router.refresh)",
+     "evidence": "ThreadHeader.tsx:54-63",
+     "impact": "Most common inbox action pays 2× the page cost."
+    },
+    {
+     "issue": "No pending indicator for search-param navigations; the only loading.tsx is the people-list skeleton (wrong surface, wrong shape); no progress bar anywhere in admin",
+     "evidence": "app/admin/(protected)/crm/loading.tsx; grep nprogress/useLinkStatus = zero",
+     "impact": "Clicks appear to do nothing until the full payload lands — reads as 'the CRM is frozen'."
+    },
+    {
+     "issue": "Desktop inbox renders the entire mobile tree too (MobileBranch always mounted, email HTML sanitized twice server-side per open pane)",
+     "evidence": "inbox/page.tsx:193,517-554 + hidden md:block desktop grid at :560",
+     "impact": "Every open-conversation render does double thread assembly regardless of device."
+    },
+    {
+     "issue": "Person-page template pick is a router.push(?tpl=) full navigation through a 33-query force-dynamic page",
+     "evidence": "TemplatePickerNav.tsx:30-40; [id]/page.tsx:120-206,223-231",
+     "impact": "Loading a canned SMS/email template costs a full page rebuild."
+    },
+    {
+     "issue": "Inbound webhooks run many serial awaits (per-member scope/target/suppression loops; group path fetches participants + per-member lookups sequentially)",
+     "evidence": "app/actions/crm.ts:824-836; conversations-events/route.ts:88-151",
+     "impact": "Webhook latency grows linearly with group size; within maxDuration but adds delivery lag to alerts/forwards."
+    }
+   ],
+   "mobileDivergence": [
+    "Drafts folder and save-draft exist on desktop only (mobile folds drafts→inbox: inbox/page.tsx:521, MobileInbox.tsx:37-42; MobileThread passes no saveDraftAction)",
+    "Mobile thread is single-channel: email mode shows ONLY emails, SMS mode reduces emails to a centered pill — a mixed conversation is never fully visible on a phone (mobile-data.ts:86-91, MobileThread.tsx:203,299-411); desktop interleaves all channels",
+    "Group text can be STARTED only on mobile (MobileComposeSheet multi-recipient); desktop inbox Compose is single-contact (ComposeButton.tsx:74-78)",
+    "AI draft pills + template picker exist in the mobile inbox but not the desktop inbox; desktop templates live only on the person page via full-page ?tpl= navigation",
+    "Reply All/Forward, quick-tag row, and the notes tray are desktop-only (InlineReply.tsx:139-151,200-256; NoteTray); mobile email reply is a bare Re: sheet",
+    "Inbox search exists on mobile only (client-side, MobileInbox.tsx:85-97); desktop inbox has no search at all",
+    "Conversation presentation forks per platform AND per entry point: mobile inbox = iOS bubbles, mobile person Comms tab = FUB row list (ConversationFeed), desktop inbox = bubbles, desktop person page = event cards",
+    "Delivery badge appears only on desktop person-detail — no delivery state anywhere on mobile",
+    "Assignee is visible/changeable in the desktop thread header; on mobile only via a right-swipe on list rows"
+   ],
+   "deadOrOrphan": [
+    "markAllReadAction — zero UI callers, live POST endpoint (app/actions/crm-inbox.ts:125-194)",
+    "'handled' conversation status — in the model and DB check but no UI ever sets it (getInboxQueue.ts:35-38 vs ThreadHeader/InboxThreadList/MobileThread triage options)",
+    "needsReply and lastKindLabel — derived for every queue row, rendered nowhere (getInboxQueue.ts:113-114,274,539; component grep zero hits)",
+    "payload.group:true convention — written by inbound webhook only; outbound group sends never write it, which both orphans the convention and breaks getGroupReplyParticipants for broker-initiated groups",
+    "Assigned-folder empty-state 'How It Works' button links to /admin/crm people list — placeholder destination (InboxThreadList.tsx:91-93)",
+    "Legacy InboxScope/matchesScope model retained beside the scope×folder model, used only for legacy URL mapping (getInboxQueue.ts:70-215, inbox-url.ts:46-65)",
+    "Hardcoded BROKER_LINES phone set duplicating brokers.twilio_number DB truth (getGroupReplyParticipants.ts:30)",
+    "sms_in rows from 1:1 webhook carry no title while group inbound writes 'Group text received' — inconsistent, title effectively unused for 1:1 (inbound-sms/route.ts:110-121)"
+   ]
+  },
+  {
+   "domain": "Send Center — sending deliverables to leads (CMA, BPO, newsletters, saved-search/listing alerts, market reports, one-off email)",
+   "headline": "There is no single \"send this lead a CMA\" flow. The CMA alone has 4 build entry points and 6 send entry points (two through a retired pipeline); the person page stacks 3 CMA surfaces, 2 BPO surfaces, and 3 market-report subscription controls on one screen, each behaving differently. The unifying component (ContactSendCenter) can only send deliverables already built AND approved elsewhere, so it is the last step of a multi-page approval chase, not a send button. The entire send domain (CMA/BPO cards, Send Center, report/newsletter toggles, saved-search create) does not exist on mobile — mobile gets free-text email/SMS only. The owner's core \"send a CMA in seconds\" job measured out to ~10-12 clicks across 4-5 page loads plus a 30-60s synchronous build that can time out.",
+   "reportPath": "/private/tmp/claude-501/-Users-matthewryan-RyanRealty/c597719f-4d05-43fd-aca0-d2deece1c162/scratchpad/audit/send-center.md",
+   "featureCount": 22,
+   "statuses": {
+    "works": 10,
+    "partial": 9,
+    "broken": 2,
+    "dead": 1
+   },
+   "criticalDefects": [
+    {
+     "title": "Owner's core job impossible in 'seconds' — CMA send is a ~10-12 click, 4-5 page-load chase with a 30-60s synchronous build",
+     "severity": "critical",
+     "evidence": "No screen does find-lead -> build -> approve -> send. Build (startCmaForContactAction contact-cma.ts:147 / buildCmaAdminAction cma-admin.ts:48) is synchronous 30-60s; approve is only at /admin/cmas/[slug] (CmaReviewActions.tsx:102); send requires status finalized/delivered (ContactSendCenter.tsx:57). Broker must leave the contact to approve, then return to send.",
+     "rootCause": "Build, approve, and send are three separate routes with no unified surface; ContactSendCenter is a last step, not a send button.",
+     "userImpact": "The owner literally cannot do the thing he says he needs (get to the site and send a CMA in seconds). This is the #1 reason the admin is 'unusable' for the core job."
+    },
+    {
+     "title": "Entire send domain absent on mobile",
+     "severity": "critical",
+     "evidence": "mobile-detail.tsx:258-306 renders only Info/Activity/Comms/Homes/Notes/Calendar tabs. ContactCmaCard/ContactBpoCard/ContactSendCenter/ReportSubscriptionsPanel/ContactListingAlertsPanel/ContactQuickActions are inside the hidden md:block desktop tree (crm/[id]/page.tsx:483,588-704).",
+     "rootCause": "Mobile person layout was built as a separate component tree that never received the send surfaces.",
+     "userImpact": "A broker who gets a text that a lead wants a CMA and opens the site on a phone cannot build, approve, or send any CMA/BPO/market-report/newsletter — only free-text SMS/email. Directly defeats the stated mobile use case."
+    }
+   ],
+   "highDefects": [
+    {
+     "title": "OwnedHomeCard 'Review comp' is a guaranteed dead end",
+     "severity": "high",
+     "evidence": "OwnedHomeCard.tsx:47 links to /cma-drafts/${reviewDeliveryId} with no ?token=; /cma-drafts/[id]/page.tsx:74-86 requires a valid HMAC token via verifyDeliveryToken and otherwise renders 'Link not valid'. reviewDeliveryId is sourced from the retired cma_deliveries pipeline (crm/[id]/page.tsx:245-248).",
+     "rootCause": "Legacy cma_deliveries pipeline (declared retired, contact-cma.ts:6-11) still wired into the primary contact screen with a token-less link.",
+     "userImpact": "Clicking Review on the owned-home card always lands on 'Link not valid' — a broken, confusing dead end on the main contact page."
+    },
+    {
+     "title": "ContactCmaCard Review button silently missing for builder-built CMAs; when present opens wrong page",
+     "severity": "high",
+     "evidence": "ContactCmaCard.tsx:74 renders Review only when c.previewUrl truthy; getContactCmas.ts:37,52 reads cmas.preview_url; nothing in build.ts (upsert 578-611), cma-request.ts, or worker.ts writes cmas.preview_url (only executor_response.preview_url on a different table). Column is nullable/no-default (schema line 623).",
+     "rootCause": "Data-source mismatch: the deterministic builder never populates cmas.preview_url, and even when set the link targets public /cma/[slug] not /admin/cmas/[slug].",
+     "userImpact": "For exactly the CMAs the builder produces, the contact card shows no Review link and offers no Approve action — forcing the broker to hunt for the CMA in /admin/cmas."
+    },
+    {
+     "title": "Per-contact 'Send newsletter' can email an unapproved draft to a live lead",
+     "severity": "high",
+     "evidence": "contact-newsletter.ts:83-93 resolveCurrentNewsletter falls back to the newest DRAFT with a body; sendNewsletterToContactAction (:97) sends it on one click with a voice gate but no approval gate. Contrast bulk send which requires superuser + confirm dialog (newsletter.ts:349).",
+     "rootCause": "The one-off contact path bypasses the approval gate the bulk path enforces.",
+     "userImpact": "A newest draft (possibly unreviewed) can be emailed to a client from the contact page, violating draft-first."
+    },
+    {
+     "title": "Synchronous CMA/BPO builds in server actions with no maxDuration — timeout risk",
+     "severity": "high",
+     "evidence": "buildCmaAdminAction (cma-admin.ts:48), startCmaForContactAction (contact-cma.ts:147), startBpoForContactAction (contact-bpo.ts:53) await buildCma/buildBpo synchronously; no maxDuration exported. BuildCmaForm.tsx:140 advertises '30 to 60 seconds'. The async cron path exists precisely because these are too slow (worker maxDuration=300).",
+     "rootCause": "Interactive build paths never got the timeout budget the cron path has.",
+     "userImpact": "Manual 'Build CMA' and contact-card 'Generate comp' can time out mid-build and return a generic failure, with unclear row state."
+    }
+   ],
+   "duplication": [
+    {
+     "what": "Market-report subscription editable in three controls on the SAME contact page, one silently forcing monthly cadence",
+     "routes": [
+      "components/admin/crm/ContactSendCenter.tsx:262 (Report tab, frequency hardcoded 'monthly' at :134)",
+      "components/admin/crm/ContactQuickActions.tsx:217 (Market reports sheet -> ReportSubscriptionsPanel)",
+      "app/admin/(protected)/crm/[id]/page.tsx:652 (standalone ReportSubscriptionsPanel again)"
+     ]
+    },
+    {
+     "what": "CMA present in three surfaces on the contact page, each behaving differently",
+     "routes": [
+      "components/admin/crm/OwnedHomeCard.tsx (generate/review-broken/send, legacy pipeline)",
+      "components/admin/crm/ContactCmaCard.tsx (review/send)",
+      "components/admin/crm/ContactSendCenter.tsx CMA tab (send only)"
+     ]
+    },
+    {
+     "what": "BPO split across build/review and send surfaces",
+     "routes": [
+      "components/admin/crm/ContactBpoCard.tsx (build/review)",
+      "components/admin/crm/ContactSendCenter.tsx BPO tab (send)",
+      "app/admin/(protected)/bpo/[slug] (finalize)"
+     ]
+    },
+    {
+     "what": "Saved-search create on a lead has two paths with different fields and different behavior",
+     "routes": [
+      "components/admin/crm/ContactSendCenter.tsx:290 (create + email matches now)",
+      "app/admin/(protected)/crm/[id]/page.tsx:682 inline form -> adminAssignSavedSearchAction (create, no send)"
+     ]
+    },
+    {
+     "what": "Six CMA send entry points across four code paths",
+     "routes": [
+      "app/actions/cma-admin.ts:232 sendCmaToLeadAction",
+      "app/actions/contact-cma.ts:189 sendCmaForContactAction (slug + legacy UUID branch)",
+      "components/admin/crm/ContactSendCenter.tsx:118",
+      "app/actions/send-doc.ts:197/240 (Expireds/FSBO)",
+      "app/api/cma/[slug]/email|gmail-draft|finalize-deliver",
+      "app/api/cma-drafts/[id]/send"
+     ]
+    },
+    {
+     "what": "Market-report subscriber list rendered in two separate admin routes",
+     "routes": [
+      "/admin/crm/settings/market-reports",
+      "/admin/crm/subscriptions (Market reports tab)"
+     ]
+    },
+    {
+     "what": "Four disjoint subscription models with four separate toggle surfaces",
+     "routes": [
+      "newsletter_subscribers (ContactQuickActions newsletter)",
+      "crm_report_subscriptions (3 controls above)",
+      "listing_alerts (2 controls above)",
+      "CRM sequences (ContactQuickActions automations)"
+     ]
+    }
+   ],
+   "performance": [
+    {
+     "issue": "CMA list fetches up to 500 rows on every load and filters/paginates in-memory",
+     "evidence": "app/admin/(protected)/cmas/page.tsx:47 WINDOW=500, :181-185 listCmasForAdmin + getCmaExpiredLinks, :208-223 in-memory status/search filter + slice; force-dynamic (:38), uncached.",
+     "impact": "Grows linearly with CMA count (155 today), re-fetches the whole window on every filter change, and silently caps the visible universe at 500."
+    },
+    {
+     "issue": "Synchronous CMA/BPO builds block the request 30-60s with no maxDuration budget",
+     "evidence": "cma-admin.ts:48 / contact-cma.ts:147 / contact-bpo.ts:53 await buildCma/buildBpo; no maxDuration; BuildCmaForm.tsx:140 says 30-60s; cron worker sets maxDuration=300 (cma-build-worker/route.ts:18).",
+     "impact": "Interactive builds risk Vercel server-action timeouts; the broker sees a spinner then a generic failure of ambiguous outcome."
+    },
+    {
+     "issue": "Person page runs a very wide parallel fetch (~28 awaits) per view",
+     "evidence": "crm/[id]/page.tsx:157-206 single Promise.all of ~28 DAL calls including getContactCmas, getContactBpos, getContactListingAlerts, getContactReportSubscription, listAvailableMarketReportAreas, getLatestNewsletterIssue plus owned-home media/matches.",
+     "impact": "Every contact open pays the full cost of loading all send surfaces even for a lead that will never receive most of them; heavy first-load latency."
+    }
+   ],
+   "mobileDivergence": [
+    "CMA send (ContactCmaCard) — desktop only; absent from mobile-detail.tsx tabs",
+    "BPO build/send (ContactBpoCard) — desktop only",
+    "Unified Send Center (ContactSendCenter) — desktop only",
+    "Market-report subscription + send-now (ReportSubscriptionsPanel, ContactQuickActions) — desktop only",
+    "Newsletter enrollment + send (ContactQuickActions) — desktop only",
+    "Saved-search create on behalf of lead (inline form + Send Center Listings tab) — desktop only",
+    "Listing-alerts panel (ContactListingAlertsPanel) — desktop only",
+    "OwnedHomeCard CMA generate/send — desktop only",
+    "Mobile person page provides only free-text SMS/email via MobileCommsTab (mobile-detail.tsx:295)",
+    "CMA list has a mobile card fork; BPO/newsletter/subscribers lists render desktop tables in horizontal scroll on mobile"
+   ],
+   "deadOrOrphan": [
+    "Legacy cma_deliveries pipeline: lib/cma-delivery.ts, app/api/cma-delivery/route.ts, app/cma-drafts/[id]/page.tsx + /send route — retired for new builds (contact-cma.ts:6-11) but still read on the person page (crm.ts:370) and sendable via the UUID branch of sendCmaForContactAction (contact-cma.ts:250)",
+    "OwnedHomeCard 'Review comp' link into /cma-drafts/[id] — token-less, always dead-ends on the token-gated page",
+    "Legacy CMA API routes /api/cma/[slug]/email, /gmail-draft, /finalize-deliver — reference the pre-2026-07 file-based producer (public/cmas/*.html); no live UI points at them",
+    "Legacy CMA tracking pixel /api/cma/[slug]/track — parallel to canonical /api/track/e/*; only reachable if the built HTML embeds it",
+    "cmas.preview_url column — read by getContactCmas/getContactIdentityStrip but never written by the deterministic builder (build.ts/worker.ts/cma-request.ts); effectively dead data for builder-built CMAs",
+    "components/admin/crm/NextStepCard.tsx — imported context but component appears unused by the person page (which renders OwnedHomeCard for the CMA next step); verify before deletion"
+   ]
+  },
+  {
+   "domain": "Deals pipeline + Transaction coordination (TC)",
+   "headline": "There are three disconnected deal systems under one \"Deals\" nav section: the CRM Kanban (crm_deals, 20 rows, live and solid on desktop), a SkySlope snapshot dashboard at /admin/deals whose data is 36 days stale because its only refresh path is a shell script run by hand (no cron), and an in-house TC system (tc_* tables) whose entire e-sign + principal sign-off apparatus is fully built but has ZERO production use (tc_envelopes=0, tc_principal_reviews=0, live DB 2026-07-16). No key, FK, or sync links the systems — a CRM deal can never become a transaction, commission is recorded in three unreconciled places so every money report disagrees by construction, and no UI can create a transaction at all. The e-sign flow itself (tokenized ordered signing → seal → certificate) is well engineered, but several service-role read actions have no auth check, signing emails fail silently after the envelope is already marked \"sent\", and the public signing page's fixed-width PDF canvas overflows phone screens — the one surface consumers touch.",
+   "reportPath": "/private/tmp/claude-501/-Users-matthewryan-RyanRealty/c597719f-4d05-43fd-aca0-d2deece1c162/scratchpad/audit/deals-tc.md",
+   "featureCount": 15,
+   "statuses": {
+    "works": 5,
+    "dead": 1,
+    "stub": 1,
+    "partial": 7,
+    "unverified": 1
+   },
+   "criticalDefects": [
+    {
+     "title": "TC system of record is script-fed and stale; no UI or cron can create/refresh transactions",
+     "severity": "critical",
+     "evidence": "vercel.json crons contain no skyslope/tc path; only writers of tc_deals/tc_cycles are scripts/tc-migrate-from-skyslope.mjs and skyslope-dashboard-refresh.mjs (manual); grep finds no insert into tc_deals/tc_cycles anywhere in app/; live DB: max(skyslope_transactions.synced_at)=2026-06-10 vs today 2026-07-16",
+     "userImpact": "The 'Transactions' home, its KPIs, live pipeline, and action items have been 5 weeks stale; a new listing or sale after June 10 appears nowhere in the admin; the broker cannot open a deal file from any UI",
+     "rootCause": "TC data spine was migrated once from SkySlope and never given a create path or scheduled sync; refresh remained a developer laptop script"
+    },
+    {
+     "title": "E-sign + sign-off apparatus fully built, never used (0 envelopes, 0 principal reviews ever)",
+     "severity": "critical",
+     "evidence": "Live DB 2026-07-16: tc_envelopes=0, tc_envelopes completed=0, tc_principal_reviews=0, tc_expenses=1; while tc_form_versions=111 loaded and ~2,700 lines of signing code exist (app/actions/tc-envelopes.ts 760L, tc-sign.ts 287L, lib/tc/seal-*.ts, components/tc/pdf-sign/*)",
+     "userImpact": "Matt is legally exposed on OAR 863-015-0140 review records (none exist) despite a purpose-built queue; the signing capability advertised in nav has produced nothing; rebuild decisions must treat this as unvalidated code, not proven product",
+     "rootCause": "Intake depends on the stale script-fed deal spine and a 6-step compose path buried on the deal page; template flow (the intended entry) was never wired"
+    }
+   ],
+   "highDefects": [
+    {
+     "title": "Unauthenticated service-role reads: getTcDeal, getTcDocumentUrl, getEnvelopesForCycle, getEnvelopeDetail, getEnvelopesOverview",
+     "severity": "high",
+     "evidence": "app/actions/tc.ts:98-104 and :221-228 (no getSession/role check, service client); app/actions/tc-envelopes.ts:116,160,717 same pattern; sibling mutations in the same files all check roles",
+     "userImpact": "Anyone who can invoke the server-action endpoints can enumerate transaction data and mint 5-minute signed URLs to confidential deal documents without logging in",
+     "rootCause": "Auth guards were added per-mutation, never to the read actions; layout-level page auth mistaken for action-level auth"
+    },
+    {
+     "title": "Orphaned /admin/crm/deals/[id] page renders any deal without the broker-scope check the modal path enforces",
+     "severity": "high",
+     "evidence": "crm/deals/[id]/page.tsx:38-44 calls getCrmAccess then getCrmDeal(numId) with no dealInScope; contrast crm/deals/page.tsx:93-95; getCrmDeal is unscoped service-role (lib/data/crm/getCrmDeal.ts:56-127); repo-wide grep shows zero inbound links to the route",
+     "userImpact": "A restricted broker can read another broker's deal value, commission, and splits by typing a URL; two drifting UIs maintained for one job",
+     "rootCause": "Full-page detail predates the modal rebuild and was never deleted; scope rule was added only to the new path"
+    },
+    {
+     "title": "Signing emails fail silently; envelope marked sent before sending; no delivery tracking",
+     "severity": "high",
+     "evidence": "tc-envelopes.ts:592 sets status='sent' then :606-615 ignores sendSigningInvite return; lib/resend.ts:48-60 returns {error} without throwing; seal-envelope.ts:64-71 and :214-226 also discard email results",
+     "userImpact": "Broker sees 'Sent for signature' while the signer received nothing; a legal signing workflow can stall invisibly with no error, log, or bounce record",
+     "rootCause": "Fire-and-forget email calls; no outcome persistence on tc_envelope_recipients"
+    },
+    {
+     "title": "No way to change a deal's stage on mobile (and none in the detail modal on desktop either)",
+     "severity": "high",
+     "evidence": "DealsBoard.tsx:471-515 mobile list is read-only (no drag, no add); DealDetailModal.tsx:253-267 renders stage as breadcrumb only, no control; crm/deals/[id] DealHeader has no stage editor",
+     "userImpact": "The single most common pipeline action (advance a deal) is impossible from a phone and requires closing the modal and dragging on desktop",
+     "rootCause": "Drag-and-drop treated as the only restage affordance; mobile fork built as a viewer"
+    },
+    {
+     "title": "Commission recorded in three unlinked systems; money reports disagree by construction",
+     "severity": "high",
+     "evidence": "Leaderboard sums crm_deals.commission_dollars (lib/data/crm/agentActivityClosedDeals.ts:54); /admin/commissions + /admin/financials read tc_commissions (tc-commissions.ts:86); /admin/deals shows snapshot officeGross (app/actions/deals.ts); no FK or sync between crm_deals and tc_deals (grep zero cross-references)",
+     "userImpact": "Three different answers to 'what did we close and earn'; per §0 data-accuracy doctrine, none can be trusted as the source of truth",
+     "rootCause": "Each system grew independently (FUB import, SkySlope snapshot, TC migration) with duplicated money fields and no canonical ledger"
+    }
+   ],
+   "duplication": [
+    {
+     "what": "Two complete deal-detail UIs for crm_deals with drifted behavior (modal has scope check + junction people; orphaned page has neither)",
+     "routes": [
+      "/admin/crm/deals?deal=<id>",
+      "/admin/crm/deals/[id]"
+     ]
+    },
+    {
+     "what": "Two template→envelope actions (createDraftEnvelope makes unsendable husks; createEnvelopeFromTemplate is complete) — neither wired to any UI",
+     "routes": [
+      "app/actions/tc-forms.ts:107",
+      "app/actions/tc-envelopes.ts:322"
+     ]
+    },
+    {
+     "what": "Three commission stores (crm_deals.commission_dollars + crm_deal_splits / tc_commissions / snapshot officeGross) and two per-deal contact stores (crm_deal_people vs tc_deal_contacts + tc_cycles.sellers/buyers)",
+     "routes": [
+      "/admin/crm/deals",
+      "/admin/commissions",
+      "/admin/deals"
+     ]
+    },
+    {
+     "what": "Two checklists for one transaction: regexed snapshot activities on the list vs live tc_checklist_items on the detail — approving on the detail never updates the list",
+     "routes": [
+      "/admin/deals",
+      "/admin/deals/[key]"
+     ]
+    },
+    {
+     "what": "Three audit ledgers (admin_actions / tc_events / crm_timeline); the only viewer shows the least relevant one and /admin/deals mislinks to it as the TC audit trail",
+     "routes": [
+      "/admin/audit-log",
+      "/admin/deals/[key]"
+     ]
+    },
+    {
+     "what": "getServiceSupabase() re-implemented identically in 8 TC action files, all bypassing the lib/data DAL boundary",
+     "routes": [
+      "app/actions/tc.ts",
+      "app/actions/tc-envelopes.ts",
+      "app/actions/tc-sign.ts",
+      "app/actions/tc-signoff.ts",
+      "app/actions/tc-commissions.ts",
+      "app/actions/tc-financials.ts",
+      "app/actions/tc-forms.ts",
+      "app/actions/deals.ts"
+     ]
+    },
+    {
+     "what": "Nav 'Deals' section offers two deal homes over disjoint data (Pipeline vs Transactions) plus a circular Deal Reporting → Deals-tab → redirect-to-board loop",
+     "routes": [
+      "/admin/crm/deals",
+      "/admin/deals",
+      "/admin/crm/reporting/deals"
+     ]
+    }
+   ],
+   "performance": [
+    {
+     "issue": "TC deal detail waterfall: 5 sequential await stages, ~15 queries, signed-URL minting for 2× every document per view",
+     "evidence": "deals/[key]/page.tsx:398-419; tc.ts:100-148 (thumb URLs for all docs, 2,358 total in table)",
+     "impact": "Slowest load in the domain; repeated in full after every mutation because 5 controls end in window.location.reload()"
+    },
+    {
+     "issue": "tc_checklist_assignments fetched with no filter — full table load on every TC deal-page view",
+     "evidence": "tc.ts:121-123 (.select('item_id, document_id') with no .in('cycle_id'))",
+     "impact": "Grows linearly with all-time checklist assignments across every deal"
+    },
+    {
+     "issue": "Kanban card click = full board RSC refetch (?deal= navigation reruns listDealsBoard + getCrmDeal server-side) with no pending feedback",
+     "evidence": "crm/deals/page.tsx:68-92; DealsBoard.tsx:333-340",
+     "impact": "Each deal open feels dead for the roundtrip; browsing 5 deals refetches the board 5 times"
+    },
+    {
+     "issue": "getDealDashboard selects * from skyslope_transactions including full cycles jsonb (every checklist activity) just to render the list",
+     "evidence": "app/actions/deals.ts:136-139",
+     "impact": "Payload grows with transaction history; force-dynamic on every visit"
+    },
+    {
+     "issue": "Composer/signing render every PDF page to canvas eagerly, no virtualization",
+     "evidence": "components/tc/pdf-sign/pdf-pages.tsx:62-67,96-111",
+     "impact": "Multi-document envelopes decode and paint all pages up front on client devices"
+    }
+   ],
+   "mobileDivergence": [
+    "CRM board mobile fork is a read-only stacked list: no drag-to-restage, no add-deal, no stage editing (DealsBoard.tsx:471-515); combined with a stage-control-less modal, phones cannot advance a deal at all",
+    "Public /sign/[token] page (the consumer-facing surface) overflows horizontally on phones — fixed 612-760px PDF canvas (pdf-pages.tsx:65-67)",
+    "TC deal detail doc previews are HoverCard (hover-only) — feature nonexistent on touch; docs/closed/dead tables fork to bespoke md:hidden card lists",
+    "Envelope composer stacks on mobile but click-to-place + pointer-drag field chips on an overflowing canvas make phone composing impractical",
+    "Six TC pages (deals, signing, commissions, financials, forms, audit-log) each hand-roll a different table→card mobile fork and render in the generic console shell; only /admin/crm/deals gets the mobile CRM navy header + tab-bar treatment",
+    "Sign-off and checklist controls rely on window.prompt/window.alert — jarring native dialogs on iOS"
+   ],
+   "deadOrOrphan": [
+    "/admin/crm/deals/[id]/** — 604-line orphaned duplicate deal detail (zero inbound links, weaker auth than the modal path)",
+    "createDraftEnvelope (app/actions/tc-forms.ts:107-172) — never called; would create envelopes with no documents/fields",
+    "createEnvelopeFromTemplate (app/actions/tc-envelopes.ts:322-440) — complete template→envelope flow, zero UI call sites; the 111-form library's only intended consumer",
+    "sendBrokerSignedNotice 'N signers still pending' branch (lib/tc/signing-emails.ts:94-101) — dead code, only ever called with remaining:0",
+    "Deal modal 'Custom fields → Show all fields' — permanent stub (DealDetailModal.tsx:412-425)",
+    "/admin/crm/reporting/deals — intentional redirect stub back to the board",
+    "Anticipated-docs 'Confirm to refine' prompt lists facts with no control to confirm them (deals/[key]/page.tsx:209-215)",
+    "fub_person_ids fetched and typed on TcDeal but never rendered (tc.ts:93,214)",
+    "tc_envelopes / tc_principal_reviews tables: entire feature areas with zero rows ever written"
+   ]
+  },
+  {
+   "domain": "Analytics, reports, dashboards",
+   "headline": "This domain is ~46 routes answering roughly 8 real questions, built as four uncoordinated reporting stacks (operations panels, analytics/reports, CRM reporting, and an orphaned /dashboard/marketing) that were never reconciled after the 2026-06-24 FUB decommission: \"new leads\" has SIX simultaneous definitions in production (getLeadIntake inbound, classified lead_created, raw lead_created, raw crm_people count, dead FUB snapshot metrics, GA4 events), the two pages literally named for the owner's core question — cost-per-lead and ad-roi — divide live ad spend by a metric whose writer was deleted and therefore can never show a number again, the \"Hot leads\" page fires a false CRITICAL \"pause your ads\" alert by construction whenever $60 of spend syncs, one catalog-linked report reads a database table dropped in April and renders \"$0 team volume\" as fact, and nearly every analytics sub-page bypasses the DAL to page 5,000–50,000 rows from prod per uncached render, which is exactly why the admin feels slow and untrustworthy.",
+   "reportPath": "/private/tmp/claude-501/-Users-matthewryan-RyanRealty/c597719f-4d05-43fd-aca0-d2deece1c162/scratchpad/audit/analytics-reporting.md",
+   "featureCount": 37,
+   "statuses": {
+    "works": 26,
+    "partial": 4,
+    "dead": 4,
+    "broken": 2,
+    "stub": 1
+   },
+   "criticalDefects": [
+    {
+     "title": "Cost-per-lead and ad-ROI pages permanently broken — lead denominators read the dead FUB metric plane",
+     "severity": "critical",
+     "evidence": "analytics/cost-per-lead/page.tsx:74-102 and analytics/ad-roi/page.tsx:119-128 read marketing_channel_daily channel='fub' metrics (qualified_seller_leads, new_leads, deals_closed_won); the writer was removed — app/api/cron/snapshot-channels/route.ts:8-10: 'marketing-snapshot-fub was removed 2026-07-09 (FUB decommissioned 2026-06-24)'. /dashboard/marketing/page.tsx:224-237 has the same dead north-star.",
+     "userImpact": "The two pages named for the owner's core question ('is my ad money working, what does a lead cost') show '—'/zero qualified leads and zero closed deals forever, while the correct CPL quietly lives on a different page (hub Conversions tab). Direct trust destroyer.",
+     "rootCause": "FUB decommission removed the metric writer but no audit swept the readers; pages violate the 'leads from crm_people via getLeadIntake' rule."
+    },
+    {
+     "title": "False CRITICAL spend alerts fired by construction on the Hot leads page",
+     "severity": "critical",
+     "evidence": "analytics/action-required/page.tsx:261-286: SpendAlerts divides live 3-day Meta spend by dead fub qualified_seller_leads; totalSpend>=60 && totalQual===0 → 'CRITICAL: Spent $X with zero qualified seller leads. Pause the weakest ad set.'",
+     "userImpact": "Every week with ≥$60 ad spend, the morning-triage page tells the broker to pause ads based on a metric that can never be nonzero again.",
+     "rootCause": "Alert numerator live, denominator decommissioned."
+    },
+    {
+     "title": "Broker performance report reads a table dropped from the database and renders $0 as fact",
+     "severity": "critical",
+     "evidence": "reports/brokers/page.tsx:17 queries broker_stats; supabase/migrations/20260425090000_cache_layer_complete_rewrite.sql:59-61 says 'broker_stats: no writer exists' and DROPs it. Page destructures {data} discarding the error, then renders 'Team volume (12mo) $0'.",
+     "userImpact": "A catalog-linked report asserts the brokerage closed $0 across 12 months. Compliance-grade wrong number on a licensed broker's own dashboard.",
+     "rootCause": "Table dropped in April; page never removed; error silently swallowed."
+    }
+   ],
+   "highDefects": [
+    {
+     "title": "Six simultaneous definitions of 'new leads' across the domain",
+     "severity": "high",
+     "evidence": "(1) getLeadIntake inbound (getDashboardKpis.ts:28-48, analytics/_lib/queries.ts:83); (2) lead_created × classifyLeadSource (getAgentActivityReport.ts:38-43); (3) RAW lead_created incl. Farm imports (getLeadSourcesReport.ts:261-300); (4) raw crm_people count (getCrmSignalFreshness.ts:94-95); (5) dead FUB snapshot metrics; (6) GA4 generate_lead events.",
+     "userImpact": "Adjacent tabs in the same reporting suite (Agent Activity vs Lead Sources) disagree on the same period's lead count; crm/health can report a 'lead surge' from a bulk import the dashboard correctly ignores.",
+     "rootCause": "Each stack invented its own counting rule; the canonical getLeadIntake was retrofitted onto only one stack."
+    },
+    {
+     "title": "Live visitors page links FUB person ids into the CRM person route — wrong contact or 404",
+     "severity": "high",
+     "evidence": "visitors/live/page.tsx:178-184, 251-257: href=/admin/crm/${crm_person_id ?? fub_person_id}. /admin/crm/[id] does no legacy mapping; the shim for legacy ids is /admin/people/[legacyId] (used correctly by action-required page.tsx:80).",
+     "userImpact": "Clicking an identified visitor can open a completely different contact whose CRM id collides with the old FUB id — silent wrong-person navigation in a lead-followup flow.",
+     "rootCause": "Two pages resolve legacy ids two different ways; no shared link helper."
+    }
+   ],
+   "duplication": [
+    {
+     "what": "Lead counts — six definitions: getLeadIntake inbound (canonical), classified lead_created, RAW lead_created (imports included), raw crm_people count, dead FUB snapshot metrics, GA4 generate_lead events. Same period returns four different live numbers plus two frozen zeros.",
+     "routes": [
+      "/admin/broker-dashboard",
+      "/admin/analytics",
+      "/admin/reports/leads",
+      "/admin/reports/lead-flow",
+      "/admin/crm/reporting/agent-activity",
+      "/admin/crm/reporting/overview",
+      "/admin/crm/reporting/lead-sources",
+      "/admin/crm/health",
+      "/admin/analytics/ad-roi",
+      "/admin/analytics/cost-per-lead",
+      "/admin/analytics/action-required",
+      "/dashboard/marketing",
+      "/admin/analytics/lp-leaderboard"
+     ]
+    },
+    {
+     "what": "Cost-per-lead / paid spend — 6 surfaces; only the hub Conversions tab computes it correctly (spend ÷ getLeadIntake); cost-per-lead, ad-roi, action-required, /dashboard/marketing all divide by the dead FUB plane",
+     "routes": [
+      "/admin/analytics",
+      "/admin/analytics/cost-per-lead",
+      "/admin/analytics/ad-roi",
+      "/admin/analytics/action-required",
+      "/admin/operations",
+      "/dashboard/marketing"
+     ]
+    },
+    {
+     "what": "Traffic sources / UTM / social — 8 surfaces mixing GA4 numbers with own-tracker visitor_sessions numbers that structurally never match",
+     "routes": [
+      "/admin/analytics (Acquisition)",
+      "/admin/reports/traffic-sources",
+      "/admin/analytics/social",
+      "/admin/analytics/ad-roi",
+      "/admin/analytics/cost-per-lead",
+      "/admin/analytics/funnel-breakdown",
+      "/admin/crm/reporting/marketing",
+      "/admin/operations"
+     ]
+    },
+    {
+     "what": "Funnels — three full implementations with different stage definitions and denominators",
+     "routes": [
+      "/admin/analytics (Funnel tab)",
+      "/admin/analytics/funnel-breakdown",
+      "/admin/reports/lead-flow"
+     ]
+    },
+    {
+     "what": "Email performance — same email_events store, two admin surfaces (plus newsletter analytics outside this domain)",
+     "routes": [
+      "/admin/reports/emails",
+      "/admin/crm/reporting/batch-emails"
+     ]
+    },
+    {
+     "what": "Market report builders — four entry points; two client UIs over identical getReportMetrics/getReportPriceBands actions, plus a stub page and a weekly-report button",
+     "routes": [
+      "/admin/analytics (CityReportSection + GenerateReportButton)",
+      "/admin/reports/custom",
+      "/admin/reports/market"
+     ]
+    },
+    {
+     "what": "GSC/SEO — live Search Console API (own cache) vs marketing_channel_daily snapshots — two data paths, guaranteed disagreement",
+     "routes": [
+      "/admin/operations (SitePerformancePanel)",
+      "/admin/analytics/google-search"
+     ]
+    },
+    {
+     "what": "Listing attention — visitor_events listing views aggregated on two pages in two suites",
+     "routes": [
+      "/admin/analytics/listing-performance",
+      "/admin/crm/reporting/properties"
+     ]
+    },
+    {
+     "what": "Deals/revenue — four planes: Vault tc_deals (dashboard), crm_deals (agent reports), dead FUB closed-deal metrics (cost-per-lead), dropped broker_stats (reports/brokers)",
+     "routes": [
+      "/admin/broker-dashboard",
+      "/admin/crm/reporting/agent-activity",
+      "/admin/crm/reporting/agent-goals",
+      "/admin/analytics/cost-per-lead",
+      "/admin/reports/brokers",
+      "/admin/operations"
+     ]
+    },
+    {
+     "what": "GA4 summary — two separate cache wrappers (lib/ga4-cache 15-min tier vs operations panel's private unstable_cache) yield different numbers for the same metric at the same moment",
+     "routes": [
+      "/admin/analytics",
+      "/admin/operations",
+      "/admin/reports/lead-flow",
+      "/admin/reports/traffic-sources"
+     ]
+    },
+    {
+     "what": "Report launchpads — three catalogs listing overlapping report sets",
+     "routes": [
+      "/admin/analytics (ReportCatalog, 19 tiles)",
+      "/admin/crm/reporting (14 cards)",
+      "/admin/operations (quick links)"
+     ]
+    }
+   ],
+   "performance": [
+    {
+     "issue": "Page-level sequential scans of 5,000–50,000 rows per render on force-dynamic, revalidate-0 pages with no caching",
+     "evidence": "listing-performance pages ≤50,000 visitor_events (page.tsx:50-62); google-search ≤50,000 marketing_channel_daily (page.tsx:43-45); cost-per-lead + ad-roi ≤20,000 visitor_sessions each; crm/reporting/marketing ≤20,000; lp-leaderboard 10,000; social/funnel-breakdown/action-required 5,000. fetchPagedRows issues sequential 1,000-row PostgREST requests.",
+     "impact": "Up to 50 serial round-trips per page view; render time grows linearly with traffic history; all aggregation done in JS that Postgres could do in one query. These are the 'slow admin' pages."
+    },
+    {
+     "issue": "Operations dashboard cold render 30–45s",
+     "evidence": "operations/page.tsx:28-32 own comment; 5 live-API fetchers (GA4, Meta Graph, exact-count scans) behind a single 180s unstable_cache bundle.",
+     "impact": "One user every 3 minutes pays a 30-45s load that 'reads as admin is down on a phone' (their words)."
+    },
+    {
+     "issue": "Lead Sources report pages the all-time lead_created set (~23K rows, growing) per uncached render just to discover source names",
+     "evidence": "getLeadSourcesReport.ts:237, 321-329 (Group C fetchAllPages with no date bound).",
+     "impact": "Unbounded growth; every visit to the tab re-downloads the full event history."
+    },
+    {
+     "issue": "meta-health fans out serial live Meta Graph API calls per render, uncached",
+     "evidence": "analytics/meta-health/page.tsx header + TOKEN fetches (lines 20-38).",
+     "impact": "Multi-second page dependent on Meta API latency every open."
+    },
+    {
+     "issue": "Raw service-role Supabase clients constructed in 10+ page files, bypassing DAL and every cache tier",
+     "evidence": "createClient(NEXT_PUBLIC_SUPABASE_URL, SERVICE_ROLE_KEY) in cost-per-lead:32-37, ad-roi:43-48, action-required:22-27, lp-leaderboard, social, google-search, gbp, listing-performance, funnel-breakdown, meta-health, visitors/_lib, reports/lead-flow, reports/traffic-sources, /dashboard/marketing.",
+     "impact": "No unstable_cache, no request dedup, no shared read path — violates the repo's own G1/G16 discipline and puts direct load on prod."
+    }
+   ],
+   "mobileDivergence": [
+    "Broker dashboard hard-forks at lg: phones get ONLY the activity feed and lose all 5 KPI cards (New Leads / Needs Action / Tasks Due / Calendar / Active Deals) and the Recent Activity table (broker-dashboard/page.tsx:209-262)",
+    "Three different mobile table paradigms coexist: analytics suite uses TableWithMobileCards (card fork, capped at 8-12 rows, usually with NO see-all path so mobile users literally cannot reach the rest of the data); crm/reporting suite uses wide tables in overflow-x-auto horizontal scroll; the analytics hub tabs use raw tables in scroll shells",
+    "visitors/live is the only page with a fully designed dual layout (mobile cards + desktop table) — proving the pattern was available and simply not applied elsewhere",
+    "Recharts-based hub charts have no mobile treatment beyond container squeeze"
+   ],
+   "deadOrOrphan": [
+    "/admin/reports/brokers — reads broker_stats, a table DROPPED by migration 20260425090000; renders $0 volume as fact",
+    "/admin/operations/optimization — writer cron /api/cron/optimization-loop exists but is not scheduled in vercel.json (49 crons checked); permanently empty",
+    "/admin/analytics/cost-per-lead and /admin/analytics/ad-roi — dead-data: lead metrics on the decommissioned FUB snapshot plane (writer deleted 2026-07-09)",
+    "/admin/reports/market — stub link list; ignores the ?city= param its callers pass; no period control",
+    "Operations 'Notification and alert center' — hardcoded placeholder (DashboardNotificationsPanel.tsx)",
+    "Operations Revenue panel 'Revenue (30d)' — revenue_events table has zero writers repo-wide",
+    "/admin/crm/reporting/overview — orphan: zero inbound links anywhere; the tab strip's Overview points at the hub instead",
+    "/dashboard/marketing and /dashboard/marketing/inbox — 1,459-line admin dashboard outside /admin, reachable only from digest-email links, north-star KPI dead",
+    "action-required 'FUB ↗' buttons — deep-link to the decommissioned app.followupboss.com",
+    "report_viewer role branch in reports/layout.tsx:12 — nav comment confirms no such role exists",
+    "crm/health 'Mirror' tile — monitors the decommissioned FUB→crm_* mirror",
+    "Duplicate hub tile: 'Closed Deals By Source' card links to lead-sources which has no closed-deal or commission columns (false promise)"
+   ]
+  },
+  {
+   "domain": "Prospecting — expireds, FSBOs, expired outreach",
+   "headline": "The detect → skip-trace → CRM → auto-CMA → guarded-send spine genuinely exists and its core compliance chokepoints (suppressions, quiet hours, outreach-list auto-enroll gate) are real and fail-closed, but the surface is split across four routes with TWO competing SMS pipelines whose guarantees contradict each other (one-intro-ever vs unlimited repeats, auto-linked CMA vs paste-it-yourself), the automation loop is broken by a doc-type mismatch that forces a manual ~60s rebuild of every auto-built expired CMA, the FSBO off-market guard tests a status no code ever writes (and FSBOs have no MLS re-list guard at all), the row-level hard-stop is a fragile regex over free-text notes that the Tracerfy skip-trace path never populates (deceased/DNC contacts can pass every gate on that path), and the per-listing review detail is superuser-gated while broker-role users get links to it from every row.",
+   "reportPath": "/private/tmp/claude-501/-Users-matthewryan-RyanRealty/c597719f-4d05-43fd-aca0-d2deece1c162/scratchpad/audit/prospecting.md",
+   "featureCount": 10,
+   "statuses": {
+    "partial": 5,
+    "dead": 1,
+    "broken": 1,
+    "works": 3
+   },
+   "criticalDefects": [],
+   "highDefects": [
+    {
+     "title": "Broker-role dead end: review detail is superuser-only while every link to it renders for brokers",
+     "severity": "high",
+     "evidence": "app/admin/(protected)/expired-listings/layout.tsx:12-14 redirects non-superusers to /admin/access-denied; links render for canBrokers = superuser||broker (app/components/admin/admin-nav.ts:36,81-83; expireds/page.tsx:77; expired-outreach/page.tsx:145)",
+     "userImpact": "Rebecca/Paul click any property name on the Expireds dashboard or the outreach queue and land on access-denied — the pre-outreach review surface (price history, owner contact, compliance flags) is unusable for two of three brokers.",
+     "rootCause": "Segment layout gate written when the page was a superuser research tool; never updated when the 2026-07-14 nav restore exposed the dashboards to the broker role."
+    },
+    {
+     "title": "FSBO off-market guard tests a status no code ever writes; no MLS re-list guard for FSBOs",
+     "severity": "high",
+     "evidence": "Guards on status==='gone' at app/actions/fsbo-dashboard.ts:93,134 and app/actions/send-doc.ts:98/:208/:251; only writers set 'active' (lib/fsbo-processor.ts:74-77,286 — grep confirms no 'gone' writer); relisted hardcoded false for fsbo kind (send-doc.ts:97)",
+     "userImpact": "A FSBO that sold, delisted, or signed with another brokerage stays 'active' and sendable forever — the broker can solicit another agent's active listing (the exact compliance rule the expired path enforces twice).",
+     "rootCause": "The status lifecycle was designed (guards + badge) but the mark-gone sweep was never built; the re-list check was implemented for expireds only."
+    },
+    {
+     "title": "Hard-stop is a free-text regex, and the Tracerfy skip-trace path writes neither the matching strings nor the compliance tags",
+     "severity": "high",
+     "evidence": "/HARD STOP|LITIGATOR/i over enrichment_notes duplicated at lib/data/expired/dashboard.ts:190, lib/data/expired/outreach.ts:98,321, lib/data/fsbo/dashboard.ts:171, app/actions/fsbo-dashboard.ts:90,131, app/actions/send-doc.ts:96; the skiptrace-direct result omits complianceTags entirely (lib/expired-owner-lookup.ts:546-555); Tracerfy notes say 'DECEASED'/'BEST PHONE ON DNC' (not matched by the regex, :303-307) and bestPhone falls back to a DNC number (:287-290)",
+     "userImpact": "On the Tracerfy fallback lookup path, a deceased or DNC-flagged owner carries no compliance:hard-stop/contact:do-not-* tags and no 'HARD STOP' note string — they pass isSuppressed, pass the UI regex, and are one click from an SMS. TCPA/license exposure.",
+     "rootCause": "Compliance flags were engineered into the county+BatchData path (owner-resolution.mjs:201-203) and never ported to the Tracerfy/Apify fallback; the UI derives hard_stop from prose instead of the tag system that actually enforces sends."
+    },
+    {
+     "title": "Auto-CMA doc-type mismatch breaks the expired automation loop and makes the two surfaces disagree on 'built'",
+     "severity": "high",
+     "evidence": "cma-build-worker passes no docType (lib/cma/worker.ts:68-85) → doc_type:'cma' (lib/cma/build.ts:283); Expireds dashboard requires doc_type==='expired-audit' to offer Send (expireds/page.tsx:72,96); outreach queue joins cmas with no doc_type filter (lib/data/expired/outreach.ts:80-106)",
+     "userImpact": "Every automatically queued expired CMA lands as 'plain CMA' on /admin/expireds and demands a manual ~60s 'Rebuild as audit', while /admin/expired-outreach happily counts the same plain doc as send-ready and links it in the intro text — contradictory state, wasted builds, wasted broker time.",
+     "rootCause": "docType was added to buildCma for the dashboard's manual build action but never threaded through createCmaRequest payload or the queue worker."
+    },
+    {
+     "title": "FSBO detection fails completely silent",
+     "severity": "high",
+     "evidence": "scrapeZillowCity catches all errors and returns [] (lib/fsbo-detector.ts:426-441) so detectFsboListings' errors[] is unreachable (:456-476) and stats.scrape_errors is always empty; empty dashboard shows success copy (fsbos/page.tsx:55-62); 6 sequential Apify calls with timeout=180 each vs maxDuration=300 (detector :419, route :22)",
+     "userImpact": "When Apify hits its billing cap (a known recurring event) or the Zillow actor breaks, the pipeline goes dark with zero signal — the broker sees 'No FSBOs detected yet' and assumes the market is empty; slow days silently skip late-list cities (Tumalo, La Pine).",
+     "rootCause": "Error handling written as log-and-continue at every layer with no propagation and no alerting; sequential scrape budget never reconciled against the route's duration cap."
+    }
+   ],
+   "duplication": [
+    {
+     "what": "Two complete SMS send pipelines to the same expired owner with different templates, guards, and link handling",
+     "routes": [
+      "/admin/expired-outreach (sendExpiredIntroAction)",
+      "/admin/expireds (SendDocDialog → sendDocSmsAction)"
+     ]
+    },
+    {
+     "what": "Engagement-aggregation DAL copy-pasted (~200 lines each incl. independent 5,000-row visitor_events scans)",
+     "routes": [
+      "lib/data/expired/dashboard.ts",
+      "lib/data/fsbo/dashboard.ts"
+     ]
+    },
+    {
+     "what": "Hard-stop regex /HARD STOP|LITIGATOR/i duplicated at 5 sites instead of reading the tag system that actually enforces sends",
+     "routes": [
+      "lib/data/expired/dashboard.ts:190",
+      "lib/data/expired/outreach.ts:98,321",
+      "lib/data/fsbo/dashboard.ts:171",
+      "app/actions/fsbo-dashboard.ts:90,131",
+      "app/actions/send-doc.ts:96"
+     ]
+    },
+    {
+     "what": "Re-list check implemented twice with divergent shapes (batch street-number probe vs single-address probe)",
+     "routes": [
+      "lib/data/expired/outreach.ts:59-77",
+      "lib/data/expired/outreach.ts:215-230"
+     ]
+    },
+    {
+     "what": "Guard chains and build/email actions triplicated across live and dead paths (dead ones retain a doc-type check the live one dropped)",
+     "routes": [
+      "app/actions/expired-outreach.ts",
+      "app/actions/send-doc.ts",
+      "app/actions/expired-dashboard.ts (dead email)",
+      "app/actions/fsbo-dashboard.ts (dead email+sms)"
+     ]
+    },
+    {
+     "what": "Intro-SMS template body duplicated: hosted crm_templates row vs hardcoded page preview string",
+     "routes": [
+      "crm_templates key expired-first-touch-sell-v1",
+      "app/admin/(protected)/expired-outreach/page.tsx:41-46"
+     ]
+    }
+   ],
+   "performance": [
+    {
+     "issue": "Both dashboards re-run an uncached ~8–12-serial-query composite per load, each including its own newest-5000 visitor_events scan",
+     "evidence": "lib/data/expired/dashboard.ts:53-208 and lib/data/fsbo/dashboard.ts:45-186, both force-dynamic, service-role, zero unstable_cache",
+     "impact": "Page-load cost is O(global engagement events) not O(rows shown); every visit to either dashboard re-pages up to 5 PostgREST requests of visitor_events on top of 5+ other query groups."
+    },
+    {
+     "issue": "Every single queue send/preview recomputes the ENTIRE outreach queue",
+     "evidence": "getExpiredOutreachRow = listExpiredOutreachQueue().find() (lib/data/expired/outreach.ts:111-114) — full expired_listings read + on-market listings probe + full cmas table read per send",
+     "impact": "A one-row guard check costs three table scans; latency on the send button and needless prod DB load."
+    },
+    {
+     "issue": "Compose dialog pays the 5-serial-query getExpiredListingDetail twice (prepare + send), including the BPO price-cycle scan",
+     "evidence": "app/actions/send-doc.ts:60-79 loadTarget('expired') → getExpiredListingDetail (outreach.ts:194-327) called by prepareDocSendAction and again by sendDocEmailAction/sendDocSmsAction",
+     "impact": "Dialog open and send each block on redundant listing-history queries that the send doesn't use."
+    },
+    {
+     "issue": "FSBO cron scrape budget exceeds its duration cap",
+     "evidence": "6 sequential Apify run-sync calls, timeout=180 each (lib/fsbo-detector.ts:419) inside maxDuration=300 (detect-fsbo-listings/route.ts:22)",
+     "impact": "Worst case 1,080s of scraping in a 300s window — late cities silently never scrape and downstream processing of completed cities is lost when the function is killed."
+    }
+   ],
+   "mobileDivergence": [
+    "No mobile forks anywhere in the domain — single implementations, so feature parity is trivially perfect but ergonomics are not: /admin/expireds and /admin/fsbos are 7-column tables in overflow-x-auto cards where the Actions column starts off-screen on a phone (expireds/page.tsx:57, fsbos/page.tsx:65).",
+    "Touch-target inconsistency between sibling pages: table-row action buttons are h-8 (32px) on both dashboards while /admin/expired-outreach uses h-11 (44px) for the same class of action.",
+    "/admin/expired-outreach uses a native confirm() for the send (ExpiredOutreachRow.client.tsx:26-29) — OS-truncated message preview on mobile, off-design-system vs the Dialog used everywhere else.",
+    "SendDocDialog hosts a full EmailComposer inside a max-w-xl dialog with max-h-[90dvh] scroll — functional but cramped composing on a phone."
+   ],
+   "deadOrOrphan": [
+    "app/actions/expired-dashboard.ts → sendExpiredAuditEmailAction (zero consumers; superseded by send-doc.ts but retains the doc-type check the live path dropped)",
+    "app/actions/fsbo-dashboard.ts → sendFsboCmaEmailAction and sendFsboIntroSmsAction (zero consumers; the SMS one references template fsbo-first-touch-v1 which is seeded nowhere)",
+    "app/actions/expired-outreach.ts → previewExpiredIntroAction (zero consumers; the page hardcodes its own preview string instead)",
+    "fsbo_listings.status='gone' — three guards and an 'off market' badge for a state no code ever writes",
+    "/admin/expired-listings index — redirect stub whose superuser-only layout breaks it for the broker role it was kept alive for",
+    "crm_templates rows expired-first-touch-sell-v1 / fsbo-first-touch-v1 exist only in hosted prod DB — no migration/seed; fresh environments fail the queue send",
+    "Stale load-bearing comments: lib/fsbo-processor.ts:19-23 documents the retired NULL-fub_created_at auto-enroll gate (real gate is the source taxonomy), lib/fsbo-detector.ts:5,398 claim an hourly cron (it is daily 09:35 UTC)"
+   ]
+  },
+  {
+   "domain": "Listings admin + content/site management (listings, geo, media, blog, guides, site-pages, sync, users, settings, people, help, operations)",
+   "headline": "This domain is dominated by two systemic failures: (1) a large family of service-role server actions with zero auth checks (blog, guides, site-pages, brokerage branding, geo, resort flags, area-guide upload) — combined with unsanitized dangerouslySetInnerHTML rendering of blog/guide HTML on the public site, this is an unauthenticated stored-XSS/defacement path onto ryan-realty.com; and (2) placebo editing — the listing editor's price/status/remarks edits are silently reverted by the next MLS delta sync (details JSON rebuilt wholesale, admin_overrides wiped and never read by anything), the site-pages editor writes hero video/team image/body HTML that no page consumes since the homepage rebuild, and the entire /admin/geo hierarchy manages a geo_places table with zero consumers. Only media suppression, listing_photos curation, resort-community flags, photo curation, and the media library are wired end-to-end to real outcomes. The 2026-07-07 consolidation cleaned up the duplicate top-level routes into redirects, but left /admin/guides orphaned from nav, 378 lines of dead sync components, an optimization page whose cron is never scheduled, and a sync cockpit that polls every 5 seconds forever in engineer jargon a broker cannot use.",
+   "reportPath": "/private/tmp/claude-501/-Users-matthewryan-RyanRealty/c597719f-4d05-43fd-aca0-d2deece1c162/scratchpad/audit/content-geo-media.md",
+   "featureCount": 28,
+   "statuses": {
+    "works": 11,
+    "partial": 9,
+    "broken": 2,
+    "dead": 5,
+    "stub": 1
+   },
+   "criticalDefects": [
+    {
+     "title": "Unauthenticated service-role write actions across content domain → public-site defacement/stored XSS",
+     "severity": "critical",
+     "evidence": "No auth check in saveBlogPost/deleteBlogPost (app/actions/blog.ts:209-265), saveGuide/deleteGuide (app/actions/guides.ts:189-224), updatePageContent (app/actions/site-pages.ts:35-72), all brokerage branding writes+uploads (app/actions/brokerage.ts:63-240), createGeoPlace/updateGeoPlace/ensureGeoPlacesFromListings (app/actions/geo-places.ts:53-198), setSubdivisionResort/seed (app/actions/subdivision-flags.ts:64-95,179-185), uploadAreaGuideFolder/getAreaGuideEntityMapping (app/actions/area-guide-upload.ts:148,241). Middleware is rate-limit only (middleware.ts). Blog body rendered unsanitized at app/blog/[slug]/page.tsx:146,247; guides at app/guides/[slug]/page.tsx:164 (reports DOES sanitize at app/reports/[slug]/page.tsx:169 — guides/blog do not).",
+     "userImpact": "Anyone who extracts a server-action ID from the JS bundle can publish arbitrary HTML/JS on ryan-realty.com's blog and guides, delete posts, replace the brokerage logo used in PDFs, flip resort flags on public community pages, and upload files to public buckets — no session required.",
+     "rootCause": "Auth enforced at page/layout level only; server actions are public POST endpoints. The correct in-action guard pattern exists (admin-listing-detail.ts requireSuperuser) but was never applied to the older content actions."
+    },
+    {
+     "title": "Listing editor edits are silently destroyed by the MLS sync; the editor's marketing fields are read by nothing",
+     "severity": "critical",
+     "evidence": "updateAdminEditableListingRow writes ListPrice/StandardStatus/details to listings (lib/data/admin/listingEdit.ts:67-83). Delta sync rebuilds cleanRow from sparkToListingRow and upserts on ListNumber (app/api/cron/sync-delta/route.ts:276-283; lib/data/sync/syncWrites.ts:105-114); lib/listing-mapper.ts contains zero merge of admin_overrides/media_suppressed — details is replaced wholesale. Repo-wide grep: admin_overrides/marketing_headline consumed only by the editor itself.",
+     "userImpact": "A broker 'fixes' a price or remarks, sees 'Listing changes saved', and the edit evaporates whenever the listing next changes in the MLS — a licensed-broker compliance hazard (wrong price displayed then silently swapped). Featured/headline/notes fields are pure placebo.",
+     "rootCause": "Editor writes to sync-owned columns instead of a durable override layer (only media_suppressed and listing_photos live outside the sync's write set)."
+    }
+   ],
+   "highDefects": [
+    {
+     "title": "Placebo site-management: hero video/image, team image, and page body HTML have zero consumers",
+     "severity": "high",
+     "evidence": "getBrokerageSettings consumers: app/team/[slug]/page.tsx:72,198 (.name only), app/api/pdf/report/route.ts:33,63 (.logo_url). No reader of hero_video_url/hero_image_url/team_image_url. site_pages: only app/contact/page.tsx:75 reads title. UI claims otherwise (HeroMediaForm.tsx:36, SitePagesList.tsx:16).",
+     "userImpact": "The owner uploads a homepage hero video, gets 'Homepage will update shortly', and nothing changes — this exact loop is the 'admin is unusable' experience.",
+     "rootCause": "Homepage/header were rebuilt with hardcoded heroes; the admin forms were never rewired or retired."
+    },
+    {
+     "title": "Blog 'Draft' cannot unpublish and editing strips the author byline",
+     "severity": "high",
+     "evidence": "Public reads filter .not('published_at','is',null) only (app/actions/blog.ts:72,138,156); status column never checked. Save keeps published_at from the pre-filled form field (blog.ts:238; page.tsx:100). Save always writes author_broker_id: input.authorBrokerId || null and the form never sends it (blog.ts:240; page.tsx:118-131). Slug rename = upsert onConflict slug carrying old PK id (blog.ts:242-244) → PK violation or silent overwrite of another post.",
+     "userImpact": "No working unpublish path in the UI; any edit of an authored post removes the author's name/photo from the public blog; renaming a slug errors or clobbers another post.",
+     "rootCause": "status/published_at dual source of truth; form payload not round-tripping all columns; upsert keyed on the mutable slug."
+    },
+    {
+     "title": "Area-guide media upload cannot handle real folders (4MB server-action limit)",
+     "severity": "high",
+     "evidence": "All files of a place appended to one FormData (AreaGuideUploadClient.tsx:109-118); next.config.ts:223-224 serverActions.bodySizeLimit='4mb'; VIDEO_EXT includes mp4/mov/mkv.",
+     "userImpact": "Any folder with a video or more than a couple photos fails with an opaque error after the mapping-confirm step; the tool's stated purpose (bulk area-guide media) is unachievable.",
+     "rootCause": "Uploads routed through a server action instead of direct-to-storage signed uploads."
+    },
+    {
+     "title": "/admin/geo manages a table nothing consumes; cities beyond the first 12 are unreachable",
+     "severity": "high",
+     "evidence": "grep -rln geo_places outside admin = only app/actions/geo-places.ts. CITY_CAP=12 with link list sliced (geo/page.tsx:12,86-99) and no search/pagination.",
+     "userImpact": "Time spent building neighborhoods/communities here changes nothing on the site; the real taxonomy lives in subdivision_flags + registry, one tab over.",
+     "rootCause": "Abandoned parallel taxonomy never deleted after the registry/flags system won."
+    }
+   ],
+   "duplication": [
+    {
+     "what": "Two parallel community taxonomies as sibling tabs: geo_places hierarchy editor (dead) vs subdivision_flags/communities resort editor (live)",
+     "routes": [
+      "/admin/geo",
+      "/admin/geo/resort-communities"
+     ]
+    },
+    {
+     "what": "Three disconnected banner/imagery surfaces with no shared flow (files in bucket, missing/generate-all, stock search without apply)",
+     "routes": [
+      "/admin/media",
+      "/admin/media/banners",
+      "/admin/media/stock-photos"
+     ]
+    },
+    {
+     "what": "Duplicate public guide readers: app/actions/guides.ts carries ~150 dead lines of getPublishedGuides/getGuideBySlug/getGeneratedGuidesFromStats that diverged from the canonical lib/data/guides/getGuides.ts",
+     "routes": [
+      "/admin/guides"
+     ]
+    },
+    {
+     "what": "Second dashboard: operations command center panels (sync, leads, marketing, GA4) overlap broker-dashboard and /admin/analytics sections",
+     "routes": [
+      "/admin/operations",
+      "/admin/broker-dashboard",
+      "/admin/analytics"
+     ]
+    },
+    {
+     "what": "Four settings/people surfaces: my settings, CRM settings tree, team/roles, site users — plus mobile settings re-implementing a subset of desktop",
+     "routes": [
+      "/admin/settings",
+      "/admin/crm/settings",
+      "/admin/crm/settings/team",
+      "/admin/users"
+     ]
+    },
+    {
+     "what": "Blog and guides editors are near-identical 400-line client CRUD pages with the same defect family (raw HTML textarea, slug-conflict upsert, unauth actions) implemented twice",
+     "routes": [
+      "/admin/blog",
+      "/admin/guides"
+     ]
+    },
+    {
+     "what": "Listings admin list reads listing_tile_mv while the editor reads the live listings table — same entity, two sources that can disagree",
+     "routes": [
+      "/admin/listings",
+      "/admin/listings/[listingKey]"
+     ]
+    }
+   ],
+   "performance": [
+    {
+     "issue": "Sync page perpetual polling",
+     "evidence": "5s /api/admin/sync/live + 30s /api/admin/sync-heavy + 180s Spark probe, no visibility pause (SyncLiveStatusAndTerminal.tsx:61-62,171; SyncHeavyStatusSections.tsx:60-62)",
+     "impact": "~12 req/min per open tab into count queries over 589K rows + live Spark calls"
+    },
+    {
+     "issue": "/admin/users full scan",
+     "evidence": "Up to 20×1000 auth users + 20×1000 rows × 3 tables, sequential, uncached, force-dynamic (app/actions/admin-roles.ts:130-175+)",
+     "impact": "Page load grows linearly with users/activity; already a multi-second load"
+    },
+    {
+     "issue": "Listing detail count fan-out",
+     "evidence": "getAdminSyncCounts() on every [listingKey] view (page.tsx:38; actions/listings.ts:1762+)",
+     "impact": "~15 exact counts per listing open for a 2-number card"
+    },
+    {
+     "issue": "Media library search per keystroke",
+     "evidence": "useEffect on raw search, no debounce (AdminMediaManager.tsx:98-114)",
+     "impact": "Storage list + usage-map rebuild per character typed"
+    },
+    {
+     "issue": "Resort communities full-table fetch per request and per toggle",
+     "evidence": "listSubdivisionsWithFlags loads all snapshots+flags then filters in memory (subdivision-flags.ts:103-173); toggle calls router.refresh (ResortCommunityToggle.tsx:24)",
+     "impact": "Every switch flip re-fetches the entire subdivision universe"
+    },
+    {
+     "issue": "Blog admin ships whole corpus to client",
+     "evidence": "getAdminBlogPosts selects content for 500 posts into a client component (blog.ts:196-200; page.tsx:71-78)",
+     "impact": "Payload grows with every post; renders 6 rows"
+    },
+    {
+     "issue": "Geo page query waterfall",
+     "evidence": "4 sequential awaited listGeoPlaces + all-communities fetch (geo/page.tsx:27-35)",
+     "impact": "Serial round-trips on a force-dynamic page"
+    },
+    {
+     "issue": "Stock photos mount cost",
+     "evidence": "3 external API searches fired on mount with default query (StockPhotosPicker.tsx:213-215)",
+     "impact": "Burns Shutterstock/Pexels/Unsplash quota on every tab visit"
+    }
+   ],
+   "mobileDivergence": [
+    "/admin/settings: fully forked mobile component (fixed full-screen iOS-style modal) missing the Gmail signature sync — mobile signature edits silently ignored when Gmail signature is synced (MobileSettingsScreen.tsx vs MySettingsForm.tsx:27-29); desktop batch-saves, mobile saves per-toggle",
+    "/admin/listings + [listingKey] + /admin/media: duplicated md:hidden card markup vs hidden md:block tables — feature parity but every change maintained twice",
+    "/admin/geo/area-guide-upload: webkitdirectory folder picker does not work on iOS Safari — page is desktop-only with no notice",
+    "/admin/sync: no mobile design at all — 10-column tables in overflow-x scrollers, 5s polling drains phones",
+    "/admin/media/photos: intentional fork done well (geo Select on mobile vs chips on desktop, 44px targets)",
+    "/admin/blog + /admin/guides + /admin/site-pages: desktop-first forms with no mobile adaptation (11-field forms, raw HTML textareas)"
+   ],
+   "deadOrOrphan": [
+    "geo_places table + entire /admin/geo hierarchy editor (create neighborhood, assign community, seed) — zero consumers outside its own action file",
+    "site_pages.body_html for all pages; site_pages rows for about/sell; only contact title is read (app/contact/page.tsx:75)",
+    "brokerage_settings.hero_video_url / hero_image_url / team_image_url — zero consumers; the site-pages forms editing them are placebo",
+    "listings.details.admin_overrides (featured, marketing_headline, admin_notes) — zero readers, wiped by sync",
+    "/admin/guides — live page orphaned from buildAdminNav; only link is inside a collapsed dashboard panel (DashboardContentStatusPanel.tsx:53)",
+    "/admin/operations/optimization — /api/cron/optimization-loop not in vercel.json crons; page permanently empty",
+    "5 orphan sync components, 378 lines: SyncButton, SyncDataRefreshButton, SyncHistoryTable, SyncHistoryTest, SyncRunLog (zero importers)",
+    "~150 lines duplicate/dead public-guide readers in app/actions/guides.ts (public pages import from lib/data)",
+    "refreshPlaceBanner + setPlaceBannerFromPhoto actions (app/actions/banners.ts:201,223) — no UI consumer; the stock-photos picker has no apply action",
+    "privateOnlyKeys returned by searchAdminRemarksPage but never rendered (admin-listings.ts:115-117)",
+    "dead SELECT constant + void SELECT in app/actions/admin-listings.ts:6-7,22",
+    "top-level redirect shims (banners, photos, stock-photos, resort-communities, search, query-builder, spark-status, optimization, people) — intentional, keep or replace with middleware redirects"
+   ]
+  },
+  {
+   "domain": "CRM settings + automation machinery (settings/**, sequences/workflows/automations, import, calendar, tasks, approvals, cron executors)",
+   "headline": "The settings layer is genuinely wired (stages, tags, templates, suppression, block list, company settings, and market-report subscriptions all write tables the CRM provably consumes, and the sequence-engine cron is a production-grade executor with suppression fail-closed and at-most-once sends), but the automation authoring surface promises far more than the runtime delivers: 7 of 9 trigger types offered in two UIs never fire anywhere (fireTrigger has exactly one call site, stage change), condition branches with 2+ steps execute the wrong steps across cron ticks because the engine materializes branches in memory while persisting a flat step_index, pond routing configured in Lead Flows silently assigns every lead to Matt (the '__pond__' sentinel is swallowed by coerceBroker and pond_id is never set), lead-flow price/area/tag conditions can never match (the only caller passes source alone), group \"first to claim\" is silently round-robined by SQL that ignores distribution_type, and the Team page's Export/Pause toggles write admin_roles columns nothing reads — so a broker configuring automation or permissions gets a convincing UI whose config is substantially decorative.",
+   "reportPath": "/private/tmp/claude-501/-Users-matthewryan-RyanRealty/c597719f-4d05-43fd-aca0-d2deece1c162/scratchpad/audit/crm-settings-automation.md",
+   "featureCount": 33,
+   "statuses": {
+    "works": 26,
+    "partial": 6,
+    "broken": 1
+   },
+   "criticalDefects": [
+    {
+     "title": "7 of 9 automation trigger types are dead config — fireTrigger has exactly one call site",
+     "severity": "critical",
+     "evidence": "lib/crm/trigger-dispatch.ts consumed only at app/actions/crm.ts:1145 (stage_changed); AutomationRulesManager.tsx:81-91 and StepConfigPanel.tsx:489 offer tag_added/stage_changed/source_is/inactivity/deal_stage_changed/inquiry/property_saved/calendar_date/appointment; grep shows zero dispatchers for 7 types; autoEnrollPerson (lib/crm/enroll.ts:76-99) evaluates tag_added only at lead creation — tag added later, bulk tag add, and engine tag steps (crm-sequence-engine/route.ts:477-482) never dispatch",
+     "userImpact": "A broker configures 'inactive 30 days → task' or 'property saved → enroll' and it never runs, with zero warning; even tag-triggered enrollment fails for tags added after creation",
+     "rootCause": "Trigger dispatch was built as a library but wired to a single write boundary; UIs enumerate the full schema enum instead of the implemented subset"
+    },
+    {
+     "title": "Condition branches with 2+ steps execute wrong steps across cron ticks",
+     "severity": "critical",
+     "evidence": "crm-sequence-engine/route.ts:164-178 splices chosen path in-memory ('steps column stays authoritative') then persists step_index in materialized coordinates (route.ts:585-601); next tick rebuilds rawSteps from the raw tree and only re-splices when the node AT step_index is a condition (route.ts:166-167). Schema (sequence-step-schema.ts:155-162) and editor (StepConfigPanel.tsx:606-611 BranchPathEditor) allow multi-step truePath/falsePath",
+     "userImpact": "For steps [s0,s1,COND{true:[a,b,c]},s3]: a executes, then b and c are silently skipped and s3 fires with b's delay — clients receive the wrong drip sequence; enrollment-board columns (crm.ts:1875-1881) also misplace people",
+     "rootCause": "Flat persistent step_index over a per-tick in-memory tree flattening; materialization is never persisted"
+    }
+   ],
+   "highDefects": [
+    {
+     "title": "Pond routing silently assigns every lead to Matt; entire pond feature is a dead end",
+     "severity": "high",
+     "evidence": "lib/crm/lead-routing.ts:41,148-153 returns '__pond__' expecting caller to set pond_id via pondResult; the only intake caller ensureNativeLead.ts:209 wraps it in coerceBroker (lines 43-45: unknown slug → DEFAULT_BROKER) and never passes pondResult; claimPondLeadAction (app/actions/crm-ponds.ts:116+) has zero UI callers (grep)",
+     "userImpact": "A Lead Flow targeting a pond routes leads to Matt with pond_id null; the ponds settings page, pond scope filter (crm.ts:218-222), and claim flow all operate on data that can never exist",
+     "rootCause": "Sentinel contract between lead-routing and ensureNativeLead was never implemented on the caller side"
+    },
+    {
+     "title": "Lead-flow conditional rules (price/area/tag) can never match",
+     "severity": "high",
+     "evidence": "ensureNativeLead.ts:209 calls pickRoutedBroker({ source }) with no price/area/tags; evalCondition (lib/crm/lead-flow-resolver.ts:38-74) returns false for null price and empty strings; LeadFlowEditor.tsx:137-160 lets brokers author these conditions",
+     "userImpact": "'Leads over $750K → Matt, else group' style rules silently never fire; only unconditional rules/defaults apply",
+     "rootCause": "Caller passes a minimal context; resolver was built for a richer context that intake never supplies"
+    },
+    {
+     "title": "Group 'first to claim' distribution is silently round-robined and ignores broker eligibility",
+     "severity": "high",
+     "evidence": "lead-routing.ts:136-146 always calls crm_advance_group_round_robin; the fn (supabase/migrations/20260626100000_crm_groups.sql) never reads distribution_type and rotates crm_group_members without checking brokers.routing_eligible/crm_active (unlike global RR in 20260625211000_crm_assignment_config.sql:67)",
+     "userImpact": "First-to-claim groups behave as round-robin; leads can rotate to a broker disabled in settings",
+     "rootCause": "SQL function implemented for one mode; UI/actions accept two"
+    },
+    {
+     "title": "Team page Export and Pause-leads toggles write columns nothing reads",
+     "severity": "high",
+     "evidence": "settings/team/page.tsx:99-106,192-222 write admin_roles.can_export/pause_leads; exhaustive grep shows zero consumers; export route app/api/admin/crm/export/route.ts checks only session+scope; lead-routing and both RR SQL fns never read pause_leads",
+     "userImpact": "Owner believes he blocked a broker's contact export or paused their lead flow; neither happens — a real compliance/permission illusion",
+     "rootCause": "Permission columns shipped with the settings UI but enforcement was never added to the export/routing paths"
+    },
+    {
+     "title": "CSV import dies on large files: 60s cap, job stuck 'running' forever, restart duplicates no-email rows",
+     "severity": "high",
+     "evidence": "api/admin/crm-import/route.ts:23 maxDuration=60 with ~3 serial DB round-trips per row (lines 89-182) against a 10MB file cap (actions/crm-import.ts:46); no cron resumes crm_imports (grep: only crm-portal-lead-intake touches it, for its own rows); status page polls forever (import/[id]/page.tsx:33-42); progress offset not persisted so re-claim reprocesses from row 0; dedup is email-only (route.ts:92-101) so phone-only/no-email rows duplicate",
+     "userImpact": "A realistic farm/sphere CSV import silently stalls mid-run with partial data and an eternally-'running' status page; retries create duplicate contacts",
+     "rootCause": "Synchronous single-request processing model for an unbounded workload; no resumable cursor, no background worker"
+    }
+   ],
+   "duplication": [
+    {
+     "what": "Source→broker routing configured in two systems evaluated in sequence (Lead Flows first, then assignment by_source rules)",
+     "routes": [
+      "/admin/crm/settings/lead-flows",
+      "/admin/crm/settings/assignment"
+     ]
+    },
+    {
+     "what": "Broker management split across three pages: roles/permissions, CRM+routing flags, identity fields",
+     "routes": [
+      "/admin/crm/settings/team",
+      "/admin/crm/settings/brokers",
+      "/admin/brokers/edit"
+     ]
+    },
+    {
+     "what": "Market-report subscriber roster: read-only settings page vs full-CRUD subscriptions hub vs person-card panel",
+     "routes": [
+      "/admin/crm/settings/market-reports",
+      "/admin/crm/subscriptions",
+      "/admin/crm/[id]"
+     ]
+    },
+    {
+     "what": "Enrollment approval actionable in two places with different capability (approvals has preview/edit; board has bare Approve) and different error UX",
+     "routes": [
+      "/admin/crm/approvals",
+      "/admin/crm/workflows"
+     ]
+    },
+    {
+     "what": "One automation engine under four names: 'Workflows' nav label → /sequences titled 'Automations'; /workflows titled 'Enrollment board'; /automations is a redirect; code says 'sequences'",
+     "routes": [
+      "/admin/crm/automations",
+      "/admin/crm/sequences",
+      "/admin/crm/workflows"
+     ]
+    },
+    {
+     "what": "Stage taxonomy duplicated as crm_stages table (settings) and hardcoded CRM_STAGES constant (stage-change validation)",
+     "routes": [
+      "/admin/crm/settings/stages",
+      "app/actions/crm.ts:1127"
+     ]
+    }
+   ],
+   "performance": [
+    {
+     "issue": "Every domain page is force-dynamic with heavy parallel fetch fan-out",
+     "evidence": "settings hub 10 reads (settings/page.tsx:47-59), calendar 7 (calendar/page.tsx:209-217), sequences 6 (sequences/page.tsx:152-159), tasks up to 2 serial getTaskQueue calls when defaulting overdue→today (tasks/page.tsx:83-87)",
+     "impact": "Slow first paint on every navigation; nothing cached at page level"
+    },
+    {
+     "issue": "getCalendarContactOptions fetched on every calendar request though only the mobile branch uses it",
+     "evidence": "calendar/page.tsx:215 in the unconditional Promise.all; consumed only by MobileCalendarScreen (line 316)",
+     "impact": "Wasted DB read + payload on all desktop loads"
+    },
+    {
+     "issue": "getWorkflowAnalytics runs one email_events count per sequence with a LIKE prefix scan",
+     "evidence": "lib/data/crm/getWorkflowAnalytics.ts:211-226 (serial loop), 60s unstable_cache",
+     "impact": "Sequences page cache-miss latency grows linearly with workflow count"
+    },
+    {
+     "issue": "CSV import: serial row-by-row processing, ~3 queries per row in a 60s-capped request",
+     "evidence": "api/admin/crm-import/route.ts:75-182",
+     "impact": "Multi-thousand-row imports cannot complete (see defect)"
+    },
+    {
+     "issue": "Desktop AND mobile component trees both server-rendered on every tasks/calendar request, mobile positioned via negative-margin hacks",
+     "evidence": "tasks/page.tsx:177-215 (-mx-7 -mt-9), calendar/page.tsx:280-331",
+     "impact": "Double render work + double payload per request; fragile layout coupling to shell padding"
+    }
+   ],
+   "mobileDivergence": [
+    "Tasks and Calendar are complete component forks (TasksView vs mobile/MobileTasksScreen; CalendarView vs mobile/MobileCalendarScreen) with no parity gate between them; both trees always render (tasks/page.tsx:177-215, calendar/page.tsx:280-331)",
+    "Mobile bottom tab bar covers only Home/Inbox/People/Deals/Activity (CrmMobileTabBar.tsx:30-36); Calendar, Tasks, Approvals, Workflows, CRM settings, and Import are hamburger-only on phones, and the bar deliberately lights nothing while on Calendar/Tasks (line 44)",
+    "MobileCrmHeader's gear icon links to /admin/settings (personal settings), not /admin/crm/settings — no direct mobile path to CRM config (MobileCrmHeader.tsx:46)",
+    "Settings tables degrade by hiding columns below md: import history hides Rows/Imported/Skipped/Errors (import/page.tsx:69-76), Team hides Role/CRM-active/Routing/Last-seen (team/page.tsx:142-147), Brokers hides Slug/Email",
+    "Sequence editor canvas (704+832-line islands) has no mobile adaptation; enrollment board correctly degrades kanban→stacked cards (workflows/page.tsx:266-288)",
+    "Negative-margin full-bleed hacks (-mx-7 -mt-9 md:hidden) couple mobile screens to exact shell padding values in two places"
+   ],
+   "deadOrOrphan": [
+    "Pond routing end-to-end: crm_ponds/crm_pond_members/PondEditor/pond sentinel/claimPondLeadAction — no working intake path sets pond_id, claim action has zero UI callers (app/actions/crm-ponds.ts:116+, lib/data/crm/ensureNativeLead.ts:209)",
+    "7 trigger types (source_is, inactivity, deal_stage_changed, inquiry, property_saved, calendar_date, appointment) configurable in AutomationRulesManager.tsx:81-91 and StepConfigPanel.tsx:489 with no dispatcher anywhere",
+    "admin_roles.can_export and admin_roles.pause_leads — written by Team page, read by nothing (grep-verified)",
+    "crm_groups.distribution_type='first_to_claim' — stored, ignored by crm_advance_group_round_robin (20260626100000_crm_groups.sql)",
+    "skippedSms counter hardcoded 0 in the engine response (crm-sequence-engine/route.ts:70)",
+    "/admin/crm/automations — intentional redirect alias only (automations/page.tsx:18)",
+    "Sequence-level triggers jsonb (crm_sequences.triggers) effectively dead for all types except stage_changed via the single fireTrigger call site (trigger-dispatch.ts:84-104, crm.ts:1145)"
+   ]
+  },
+  {
+   "domain": "Cross-cutting performance (why the admin is slow)",
+   "headline": "The admin is slow because every page is force-dynamic with all UI state in searchParams and every render fans out to dozens of live, uncached Supabase queries: /admin/crm executes ~90 queries per render (40 live count(*) for saved-view badges + 35 sequence-status head-counts consumed only as dropdown options + 8 stage counts + exact counts over the 22,865-row crm_people table), /admin/crm/inbox re-downloads a 2,000-row joined message window carrying ~1.4 MB of bodies on every folder switch, thread open, and post-triage router.refresh(), and /admin/crm/[id] runs 45-55 queries across up to 7 sequential stages — then every mutation calls router.refresh(), re-running the entire fan-out to show one tag. There is no Suspense streaming on any hot page (3 loading.tsx + 32 Suspense across 150 pages), zero next/dynamic code-splitting under 53,250 lines of 'use client' admin code, every CRM route server-renders and ships BOTH the mobile and desktop trees, and every admin page also downloads the public site's chrome/tracking bundle (SiteHeader, VisitTracker, GTM, InstallPrompt) that no-ops at runtime via usePathname.",
+   "reportPath": "/private/tmp/claude-501/-Users-matthewryan-RyanRealty/c597719f-4d05-43fd-aca0-d2deece1c162/scratchpad/audit/perf.md",
+   "featureCount": 12,
+   "statuses": {
+    "works": 2,
+    "partial": 8,
+    "broken": 2
+   },
+   "criticalDefects": [
+    {
+     "title": "40 live count(*) queries per People-list render from saved-view badges",
+     "severity": "critical",
+     "evidence": "lib/data/crm/getCrmSavedViews.ts:113-118 runs countForAst per view via buildCrmPeopleQuery(countOnly); production has 40 crm_saved_views rows (audited SQL); explicitly uncached by design comment at :19-22; fired from app/admin/(protected)/crm/page.tsx:74 on every render",
+     "rootCause": "Per-view live counts with per-broker scope were declared uncacheable instead of keying the cache by scope or precomputing counts; a script seeded one view per neighborhood (scripts/_build-neighborhood-lists.mjs) multiplying the fan-out",
+     "userImpact": "Every visit to the main contacts list — and every filter, page, or view click — fires 40 concurrent count(*) queries over 22,865 rows, contending on DB CPU; the page blocks on the slowest"
+    },
+    {
+     "title": "Inbox rebuilds a 2,000-row joined message window (~1.4 MB of bodies) on every interaction",
+     "severity": "critical",
+     "evidence": "lib/data/crm/getInboxQueue.ts:430-448 pages crm_timeline (2x1000, inner join crm_people, selects body); audited SQL: newest 2,000 message bodies = 1,378 kB; thread open is ?c= searchParam (inbox/page.tsx:106,181-189); triage actions call router.refresh() (InboxThreadList.tsx:173,189; ThreadHeader.tsx:60; NoteTray.tsx:71)",
+     "rootCause": "Conversation list, folder counts for both scopes, and unread totals are all derived in JS from a raw message window instead of a conversation-level table/view; UI state in URL forces full re-render per click",
+     "userImpact": "Every folder switch, every conversation open, every close/assign/note action re-transfers and re-folds ~1.4 MB and 2,000 rows; inbox feels heavy on desktop and worse on mobile"
+    }
+   ],
+   "highDefects": [
+    {
+     "title": "35 sequence-status head-counts per People-list render, consumed only as dropdown options",
+     "severity": "high",
+     "evidence": "app/actions/crm.ts:1015-1035 (7 sequences x 5 statuses, prod count 7 via audited SQL); crm/page.tsx:81 includes listCrmSequences in the page batch; :177-179 keeps only {id,name} of active sequences",
+     "rootCause": "The list page reuses a reporting-shaped reader (with counts) to populate a picker that needs only names",
+     "userImpact": "~35 wasted count queries added to every contacts-list render"
+    },
+    {
+     "title": "router.refresh() is the universal mutation feedback under force-dynamic",
+     "severity": "high",
+     "evidence": "40+ call sites (BulkActions.tsx:367,433,494; TasksView.tsx:376,540; NoteTray.tsx:71; AppointmentModal.tsx:231,245; settings editors); 123/150 admin pages export dynamic='force-dynamic' (grep)",
+     "rootCause": "No client cache or optimistic state; the only invalidation primitive used is whole-page refresh, which re-runs the entire query fan-out",
+     "userImpact": "Adding one tag on a lead re-executes ~50 queries; completing a task re-reads all task queues; user waits a full round trip to see their own action with no pending state on most paths"
+    },
+    {
+     "title": "Lead detail runs 45-55 live queries across up to 7 sequential stages",
+     "severity": "high",
+     "evidence": "crm/[id]/page.tsx:124 (5-way batch), :157 (28-way batch), :223 (2-way batch); getCrmPersonFull is internally 4 sequential stages incl. select('*') (app/actions/crm.ts:346-421)",
+     "rootCause": "Every panel of the contact 360 is an independent uncached reader; assembly happens per request with no composite read or cache",
+     "userImpact": "Opening any contact is the slowest common action in the CRM; each stage adds a full round-trip floor"
+    },
+    {
+     "title": "No streaming: content pane blocks on the slowest query of the fan-out",
+     "severity": "high",
+     "evidence": "3 loading.tsx files and 32 <Suspense> usages across 150 admin pages (grep/find); crm/loading.tsx renders a People-table skeleton that also fronts crm/[id] navigations",
+     "rootCause": "Pages await all data before returning JSX; Suspense adopted only in analytics/reports",
+     "userImpact": "Perceived latency equals the max of ~90 queries; person-detail navigation flashes a mismatched table skeleton"
+    }
+   ],
+   "duplication": [
+    {
+     "what": "Two independent conversation-thread readers over the same crm_timeline rows (getContactConversation vs getConversationThreadFull/getContactActivityFeed), both live per render",
+     "routes": [
+      "/admin/crm/[id]",
+      "/admin/crm/inbox"
+     ]
+    },
+    {
+     "what": "Scoped-count logic executes ~50 separate times per People-list render through the same compiler (40 saved views + 8 stages + overview + list count), each a live count(*)",
+     "routes": [
+      "/admin/crm"
+     ]
+    },
+    {
+     "what": "Every CRM route server-renders BOTH the desktop tree and a dedicated mobile tree (27 mobile components), CSS-hidden — double RSC/HTML payload and both JS forks shipped to all devices",
+     "routes": [
+      "/admin/crm",
+      "/admin/crm/[id]",
+      "/admin/crm/inbox",
+      "/admin/crm/deals",
+      "/admin/crm/tasks",
+      "/admin/crm/calendar"
+     ]
+    },
+    {
+     "what": "Home reachable via two legacy redirect stubs, each a full request cycle (old notification/bookmark links still target them)",
+     "routes": [
+      "/admin",
+      "/admin/console",
+      "/admin/console/leads/[id]"
+     ]
+    }
+   ],
+   "performance": [
+    {
+     "issue": "Saved-view count fan-out: 40 live count(*) per /admin/crm render",
+     "evidence": "getCrmSavedViews.ts:113-118; prod crm_saved_views=40 (audited SQL); uncached by design (:19-22)",
+     "impact": "Dominant DB cost of the main contacts list; re-paid on every filter/page/view click"
+    },
+    {
+     "issue": "Sequence-status fan-out: 35 head-counts per /admin/crm render for a dropdown",
+     "evidence": "app/actions/crm.ts:1015-1035; crm/page.tsx:81,177-179; prod crm_sequences=7",
+     "impact": "~35 wasted queries per list render"
+    },
+    {
+     "issue": "Inbox 2,000-row / ~1.4 MB working-set rebuild per interaction",
+     "evidence": "getInboxQueue.ts:430-448; audited SQL sum(body) over newest 2,000 message rows = 1,378 kB; ?c= thread-open + router.refresh() triage",
+     "impact": "Largest per-click payload in the admin; scales with message volume (45,279 message rows and growing)"
+    },
+    {
+     "issue": "force-dynamic + URL-state architecture: every click is a full server re-render of the whole page fan-out",
+     "evidence": "123/150 pages force-dynamic (grep); deals ?deal= modal (deals/page.tsx:90-92); inbox ?c=; crm searchParams",
+     "impact": "Interaction latency = full page data cost everywhere; nothing is incremental"
+    },
+    {
+     "issue": "Lead detail 45-55 queries / up to 7 sequential stages",
+     "evidence": "crm/[id]/page.tsx:124,157,223; app/actions/crm.ts:346-421",
+     "impact": "Slowest common workflow (open a contact) has a multi-round-trip floor"
+    },
+    {
+     "issue": "No Suspense/streaming on hot pages; 3 loading.tsx for 150 pages",
+     "evidence": "grep Suspense=32 (analytics/reports only); find loading.tsx=3",
+     "impact": "Time-to-first-content equals slowest query of the batch"
+    },
+    {
+     "issue": "count:'exact' x114 on large tables for badges/KPIs",
+     "evidence": "grep; crm_people=22,865, crm_timeline=99,282 rows",
+     "impact": "Expensive planner-executed counts as routine page furniture"
+    },
+    {
+     "issue": "Zero code-splitting in admin; recharts/dnd-kit static; 53,250 lines of client code; dual mobile+desktop forks in every route bundle",
+     "evidence": "grep next/dynamic=0; charts.tsx; DealsBoard.tsx; wc -l use-client files",
+     "impact": "First-load JS heavier than any admin screen needs"
+    },
+    {
+     "issue": "Public-site chrome/tracking bundle + GTM + /api/auth/me on every admin page",
+     "evidence": "app/layout.tsx:116-166; GTMHead.tsx no admin skip; middleware.ts:117-122",
+     "impact": "Wasted bytes, main-thread work, and an extra API call per navigation"
+    },
+    {
+     "issue": "Sync page triple polling (2.5s/5s/15s) with dedicated 300 req/min limiter tier",
+     "evidence": "SyncSmart.tsx:9; SyncLiveStatusAndTerminal.tsx:61; BackfillHealthPanel.tsx:81; middleware.ts:33",
+     "impact": "~40 req/min background load from one open tab"
+    },
+    {
+     "issue": "Per-navigation auth tax: serialized GoTrue getUser (+admin_roles for non-superusers) in the layout; /admin home pays it twice via double redirect",
+     "evidence": "(protected)/layout.tsx:31-40; (protected)/page.tsx:15-19",
+     "impact": "~100-250ms fixed floor per navigation; doubled on the home path"
+    },
+    {
+     "issue": "Signals over-fetch: up to 3,000 rows for 50 cells as a sequential post-stage",
+     "evidence": "getPeopleListSignals.ts:41-63; crm/page.tsx:91",
+     "impact": "Extra round-trip stage + payload on every list render"
+    }
+   ],
+   "mobileDivergence": [
+    "Every CRM route (People, Person detail, Inbox, Deals, Tasks, Calendar) server-renders both a dedicated mobile tree (27 mobile components under components/admin/crm/**/mobile/) and the desktop tree, hidden by md:hidden / hidden md:block — both forks' serialized props and JS ship to every device (crm/page.tsx:222-301, crm/[id]/page.tsx:482-499, inbox/page.tsx:514-560, deals/page.tsx:103-110)",
+    "Mobile pays the identical server cost as desktop (~90 queries on the list, ~1.4 MB inbox window) plus the doubled payload, over cellular latency — there is no lighter mobile data path anywhere",
+    "Mobile mutation flows lean on router.refresh() the same as desktop (MobileTasksScreen.tsx:253-280,512; MobileCalendarRows.tsx:75-86), so every tap-action re-runs the full page fan-out on the slowest connections"
+   ],
+   "deadOrOrphan": [
+    "app/admin/console/page.tsx, app/admin/console/leads/page.tsx, app/admin/console/leads/[id]/page.tsx — legacy redirect stubs kept alive for old bookmarks and notification links; each hit costs a full request cycle before reaching the real route",
+    "The unstable_cache layer in lib/data/crm (42 of 165 modules) is orphaned from the hot interactive paths — people rows, counts, person bundle, inbox window, conversations are all always-live; the cached set is vocabulary/config and reporting rollups only",
+    "Zero next/dynamic in the admin means the code-splitting capability of the framework is entirely unused on this surface"
+   ]
+  },
+  {
+   "domain": "Consumer-side account (saved homes, saved searches, account hub, auth funnel, alert delivery)",
+   "headline": "The /account pages themselves are the cleanest consumer code in the repo, but the system around them is severed at every seam: a signed-in user has no way to reach their account from the site chrome (the header always says \"Sign in\" — the account menu component has zero importers), the save-a-home → sign-in → resume funnel is broken in all three of its variants (nothing consumes the return params and the intended save never happens), Viewing History reads a table (user_activities) that nothing in the entire codebase writes, password sign-in skips the guest-alert claim that OAuth gets (so email subscribers see an empty saved-searches page while still receiving alerts), and interest in a home is scattered across seven parallel persistence systems (saved_listings, likes, saved_cities, saved_communities, community_likes, listing_collections, listing_alerts + zombie saved_searches) with inconsistent key canonicalization. The one healthy spine is the unified listing_alerts pipeline — guest/signed-in/broker rows in one table, a careful hourly send cron with seen-set diffing and compliance gates, and the broker CRM reading the same table — which the rebuild should treat as the model; meanwhile saved homes, the strongest buyer signal collected, never reaches the broker UI at all.",
+   "reportPath": "/private/tmp/claude-501/-Users-matthewryan-RyanRealty/c597719f-4d05-43fd-aca0-d2deece1c162/scratchpad/audit/consumer-account.md",
+   "featureCount": 20,
+   "statuses": {
+    "partial": 9,
+    "works": 7,
+    "broken": 3,
+    "dead": 1
+   },
+   "criticalDefects": [
+    {
+     "title": "Viewing history reads a table nothing writes (user_activities)",
+     "severity": "critical",
+     "evidence": "app/actions/dashboard-history.ts:17-24 reads user_activities activity_type='view_listing'; repo-wide grep for from('user_activities') matches ONLY that file; supabase/migrations/20260309100006_006_user_engagement.sql creates the table with no trigger; supabase/functions has no reference. Listing views are written to 4 OTHER systems instead (lib/tracking GA4, app/actions/listing-views.ts listing_views, app/api/listings/[listingKey]/track/route.ts view_count, app/actions/track-user-event.ts user_events).",
+     "userImpact": "/account/history, the hub 'Recently viewed' section, and the 'Recently viewed' stat card are permanently empty for every user; the Remove button operates on rows that cannot exist.",
+     "rootCause": "History writer was removed or never built after the tracking stack fragmented into four parallel systems; the reader was never repointed."
+    },
+    {
+     "title": "Signed-in users have no path to their account from site chrome",
+     "severity": "critical",
+     "evidence": "components/site/SiteHeader.tsx:96-98 renders a static 'Sign in' CTA with no session read; components/site/MobileNav.tsx:165-170 same; components/AuthDropdown.tsx (the entire signed-in avatar menu with account links) has zero importers; app/login/page.tsx has no signed-in redirect.",
+     "userImpact": "The account hub is reachable only by typing the URL. Signed-in users see 'Sign in' forever; clicking it shows the login form again. Explains 'saving searches/homes is confusing' at the root.",
+     "rootCause": "Header was rebuilt as a cacheable server component (SiteHeader) and the session-aware menu (AuthDropdown) was orphaned instead of ported to the /api/auth/me client-fetch pattern already used by SignInPromptWithSession."
+    },
+    {
+     "title": "Save → sign-in → resume funnel broken in all three variants; intended save never executes",
+     "severity": "critical",
+     "evidence": "PriceCtaStrip.tsx:130-134 redirects to /account?signin=1&returnUrl=… (grep: nothing consumes signin/returnUrl); middleware.ts:316-319 sets x-pathname to pathname only so /account layout's login?next= drops the query; ListingTile.tsx:214-219 pushes /login?returnUrl=… but app/login/page.tsx:19-23 reads only 'next'.",
+     "userImpact": "An anonymous visitor who taps Save (the highest-intent action on the site) signs in and lands on the account hub with nothing saved and the listing lost; must re-find it and save again (~9 steps).",
+     "rootCause": "Three generations of return-path conventions never unified; no post-auth intent replay was ever built."
+    }
+   ],
+   "highDefects": [
+    {
+     "title": "Password sign-in/sign-up skips guest-alert claim and rr_pid identity stamping (OAuth-only)",
+     "severity": "high",
+     "evidence": "app/auth/callback/route.ts:154-157,180-183 calls claimGuestSearchesForUser + stampPersonIdFromEmail for OAuth/magic-link; app/actions/auth.ts:94-167 (signInWithEmailPassword/signUpWithEmailPassword) calls neither. getSavedSearches filters on user_id (app/actions/saved-searches.ts:78-99). Callback also only handles token types magiclink|recovery (route.ts:162) — type=signup falls through to /auth-error (route.ts:188).",
+     "userImpact": "A guest who subscribed to alerts by email then registers with a password sees an EMPTY saved-searches page while alert emails keep arriving; cannot manage or pause them from the account; visitor attribution cookie never set for password users.",
+     "rootCause": "Identity-stitching was implemented in the OAuth callback route instead of a shared post-auth hook."
+    },
+    {
+     "title": "Like feature incoherent: primary UI dead, secondary writers live, counters asymmetric",
+     "severity": "high",
+     "evidence": "components/listing/ListingActions.tsx, LikeButton.tsx, SaveListingButton.tsx: zero importers (grep). components/ui/CardActionBar.tsx:17-19 accepts and deliberately drops the like prop. Live detail page (PriceCtaStrip) has no like. Live like writers only: geo-page/ListingBarCard.tsx:106-113, activity feed cards. app/actions/likes.ts:47-53 decrements the like counter on unlike but likeListing never increments (engagement.ts:52 uncalled). likes stores raw keys (likes.ts:35-38) while saved_listings canonicalizes (saved-listings.ts:44).",
+     "userImpact": "Users can 'like' only on obscure surfaces; liked homes appear in saved-homes but Remove can silently fail on them (key mismatch); public like counts drift downward.",
+     "rootCause": "A 2026-06-03 directive ('liking is detail-page only') was half-executed: tile likes were removed but the detail-page like UI was replaced by PriceCtaStrip without one, orphaning the like system mid-flight."
+    },
+    {
+     "title": "Five of eight notification toggles are placebo; empty states promise alerts no code sends",
+     "severity": "high",
+     "evidence": "grep priceDropAlerts|statusChangeAlerts|openHouseReminders|marketDigestFrequency|blogUpdates → only app/actions/profile.ts (type), app/actions/saved-search-alerts.ts (reads emailEnabled only, lines 204-215), and the prefs component. Promises at app/account/page.tsx:151 and saved-homes/page.tsx:68 ('get price-drop and status alerts').",
+     "userImpact": "Users configure alert types that will never arrive and save homes expecting price-drop emails that don't exist — silent broken promise on the core value proposition of saving.",
+     "rootCause": "Preferences UI shipped ahead of the senders; only the saved-search cron was ever built."
+    }
+   ],
+   "duplication": [
+    {
+     "what": "Two 'homes I care about' stores (saved_listings + likes) merged at read time with three different key strategies and asymmetric canonicalization",
+     "routes": [
+      "/account",
+      "/account/saved-homes",
+      "app/actions/dashboard-likes.ts"
+     ]
+    },
+    {
+     "what": "Two saved-search tables: live listing_alerts + zombie saved_searches kept for an unrendered public-search feature",
+     "routes": [
+      "app/actions/saved-searches.ts",
+      "lib/data/leads/listingAlerts.ts"
+     ]
+    },
+    {
+     "what": "Two community-affinity stores (saved_communities + community_likes) written by two buttons on the same tile; likes shown nowhere",
+     "routes": [
+      "/account/saved-communities",
+      "components/CommunityTile.tsx"
+     ]
+    },
+    {
+     "what": "Four live view-tracking systems (GA4 trackEvent, listing_views, listings.view_count, user_events) plus the dead user_activities the history UI reads",
+     "routes": [
+      "/account/history",
+      "components/listing/ListingTracker.tsx",
+      "app/api/listings/[listingKey]/track"
+     ]
+    },
+    {
+     "what": "Four auth UIs (login page, SignInPrompt modal, AuthModal, dead AuthDropdown) with three provider sets and two return-param conventions (next vs returnUrl)",
+     "routes": [
+      "/login",
+      "app/layout.tsx (SignInPrompt)",
+      "components/auth/AuthModal.tsx",
+      "components/AuthDropdown.tsx"
+     ]
+    },
+    {
+     "what": "Two account shells: /account layout+AccountNav vs /dashboard layout+DashboardShell (the latter wrapping only redirect stubs)",
+     "routes": [
+      "/account",
+      "/dashboard"
+     ]
+    },
+    {
+     "what": "Two guest save-search capture implementations with divergent path-parsing correctness (SaveSearchButton guest branch vs SearchAlertCapture)",
+     "routes": [
+      "components/SaveSearchButton.tsx",
+      "components/search/SearchAlertCapture.tsx"
+     ]
+    },
+    {
+     "what": "Two alert-cadence controls that overwrite each other: per-search Select vs global fan-out ('applies to every search you have saved')",
+     "routes": [
+      "/account/saved-searches",
+      "/account/notifications"
+     ]
+    },
+    {
+     "what": "Places-followed data rendered on three surfaces across two nav tabs plus hub chips",
+     "routes": [
+      "/account",
+      "/account/saved-cities",
+      "/account/saved-communities"
+     ]
+    }
+   ],
+   "performance": [
+    {
+     "issue": "Account hub issues ~13+ DB round trips per render, force-dynamic, uncached",
+     "evidence": "app/account/page.tsx:66-90 (8-way Promise.all where getDashboardLikesData itself fans out to 5 reads incl. full city+community indexes, then two sequential getListingsByKeys calls)",
+     "impact": "Slow first paint on the page users land on after sign-in; every visit repeats the full fan-out."
+    },
+    {
+     "issue": "getListingsByKeys doubles every tile fetch to cover two keyspaces (ListingKey + ListNumber)",
+     "evidence": "app/actions/listings.ts:2504-2523 runs two getListingTiles queries and merges",
+     "impact": "2x listing-tile query load on hub, saved-homes, history, collections — a tax paid to paper over inconsistent key storage."
+    },
+    {
+     "issue": "toggleSavedListing = 3 sequential server round trips per tap with no pending UI on tiles",
+     "evidence": "app/actions/saved-listings.ts:69-77 (isListingSaved → resolveCanonicalListingKey → insert/delete → counter update); ListingTile.tsx:288-295 no pending state",
+     "impact": "Save taps feel dead for 1-3s on mobile networks; users re-tap and toggle themselves back off."
+    },
+    {
+     "issue": "Alert cron N+1: per-row profiles fetch + person resolution + cached-search fetch, up to 600 rows sequential",
+     "evidence": "app/actions/saved-search-alerts.ts:158-229 (loop body), route maxDuration 300",
+     "impact": "Send latency grows linearly with subscribers; approaching the 300s ceiling means silently unprocessed queue tail."
+    },
+    {
+     "issue": "Saved/liked hydration on search page capped at 600ms with silent empty fallback",
+     "evidence": "app/search/[...slug]/page.tsx:525-533 withTimeout(getSavedListingKeys(), [], 600)",
+     "impact": "On slow DB, signed-in users see saved homes render as unsaved with no indication — correctness silently traded for TTFB."
+    },
+    {
+     "issue": "EditSearchDialog save blocks on inline cache prewarm plus a second sequential cadence write",
+     "evidence": "app/actions/saved-searches.ts:215 (await prewarmSearchCache), EditSearchDialog.tsx:130-147",
+     "impact": "Saving a filter edit waits on warming a 24-listing search cache; two round trips where one would do."
+    }
+   ],
+   "mobileDivergence": [
+    "Neither desktop nor mobile chrome shows signed-in state, but mobile buries even the 'Sign in' entry at the bottom of the nav sheet (MobileNav.tsx:165-170) below every menu section.",
+    "Save-a-home capability forks by view mode, not viewport styling: search list-view grid cards (site/ListingCard) have no save affordance while map/split-view tiles (ListingTile) do — and map view is the dominant mobile browse mode, so mobile can save from results while desktop list view cannot.",
+    "AccountNav is a 10-item horizontal scroll pill bar with no overflow cue on mobile (components/account/AccountNav.tsx:29-31) — most account destinations are off-screen.",
+    "SaveSearchButton uses a hand-rolled absolute w-72 popover (not a Dialog/Sheet) that can clip on narrow viewports and autofocuses an email input causing keyboard jump (SaveSearchButton.tsx:150-243).",
+    "The dead ListingActions component carried a mobile fixed-bottom-bar vs desktop sticky-top-bar fork; its live replacement PriceCtaStrip is single-layout responsive — the fork pattern exists only in orphaned code."
+   ],
+   "deadOrOrphan": [
+    "components/AuthDropdown.tsx — 283 lines including the ONLY signed-in account menu ever built; zero importers.",
+    "components/listing/ListingActions.tsx, components/listing/LikeButton.tsx, components/listing/SaveListingButton.tsx — zero importers; stale doc references in CardActionBar.tsx:17.",
+    "user_activities table — read by /account/history and hub Recently-viewed, written by nothing (no app code, API route, migration trigger, or edge function).",
+    "Public-search feature: getPopularPublicSearches, trackPublicSearchClick, /api/public-search/click, setSavedSearchPublicState, refreshSavedSearchCache, and the SaveSearchButton isPublic checkbox — no rendering consumer anywhere.",
+    "listing_collections.share_token — generated (Math.random) and selected on every read; no consuming route; 'shareable' doc claim false.",
+    "profiles.buyer_preferences — typed in app/actions/profile.ts, written by nothing.",
+    "/dashboard/* consumer namespace — 8 redirect stubs wrapped by a still-live layout + DashboardShell (133 lines) that fetches profile before children redirect.",
+    "CardActionBar like prop — accepted for backward compat, deliberately never rendered (ui/CardActionBar.tsx:52-58).",
+    "5 placebo notification-preference flags (priceDropAlerts, statusChangeAlerts, openHouseReminders, marketDigestFrequency, blogUpdates) — written, never read by any sender.",
+    "community_likes consumer path — getDashboardLikesData().communities computed but no page renders it since /dashboard/likes became a redirect.",
+    "/api/cron/neighborhood-default-subscriptions — deliberately unscheduled (manual-trigger only per 2026-07-06 directive); not dead but dormant.",
+    "resetPasswordForEmail default next '/dashboard/settings' — points at a redirect stub (app/actions/auth.ts:181)."
+   ]
+  },
+  {
+   "domain": "API + server-action surface (186 app/api route files / 199 method handlers, 161 app/actions files / 664 exported functions)",
+   "headline": "The surface is enormous (199 HTTP handlers + 664 server actions) and only partly consolidated. A canonical guard module exists (lib/auth/guards.ts) but adoption is incomplete: routes authenticate through ~8 distinct mechanisms and — most importantly — the primary admin mutation surface (server actions) carries no in-body auth, relying entirely on the (protected) layout that only gates page rendering, not the action POST. Layered on top are ~24 genuinely dead routes, 7 dead action files, several duplicate-capability clusters (unified vs per-platform social publish, weekly-cycle aliases, sync-route sprawl, uncentralized email/SMS senders), 13 orphaned crons not on any schedule, and an internal HTTP self-fetch fan-out anti-pattern. The rebuild needs one auth entry point, self-authorizing actions, de-duplicated send/publish/sync paths, and a cron reconciliation against vercel.json.",
+   "reportPath": "/private/tmp/claude-501/-Users-matthewryan-RyanRealty/c597719f-4d05-43fd-aca0-d2deece1c162/scratchpad/audit/api-surface.md",
+   "featureCount": 18,
+   "statuses": {
+    "partial": 6,
+    "works": 5,
+    "dead": 7
+   },
+   "criticalDefects": [
+    {
+     "title": "Server actions carry no in-body authorization; rely solely on the (protected) layout gate",
+     "severity": "critical",
+     "evidence": "app/admin/(protected)/layout.tsx:31-38 gates page rendering via getSession+getAdminRoleForEmail redirects, but Next server actions compile to POST endpoints invocable independently of the rendering page — a layout redirect() does not run on a direct action POST. app/actions/blog.ts:210 saveBlogPost (.upsert) and :256 deleteBlogPost (.delete), app/actions/admin-email.ts:7 sendAdminEmail (arbitrary Resend send), plus admin-setup/guides/hero-videos/broker-generated-media/subdivision-descriptions/community-engagement all do service-role writes/sends with no session/role check in the function body (action-auth.txt).",
+     "rootCause": "Auth consolidation (guards.ts) targeted API routes; the 664 server-action mutation surface was left depending on layout-level gating, which does not protect the action endpoint itself.",
+     "userImpact": "Potential unauthenticated/under-privileged invocation of admin mutations (publish/delete blog, send email as the brokerage) bypassing role checks; defense-in-depth absent across the primary mutation surface."
+    }
+   ],
+   "highDefects": [
+    {
+     "title": "Eight distinct auth mechanisms with no gate forcing adoption of the canonical guard",
+     "severity": "high",
+     "evidence": "guards.ts canonical set adopted by only ~5 routes; 42 routes use isAuthorizedCron (snapshot.ts:148), ~15 use bare CRON_SECRET string compares, ~14 use inline getAdminRoleForEmail, 2 use isSuperuserAdmin, 4 use bespoke per-endpoint secrets, plus Twilio-sig and webhook-token variants. scripts/check-admin-endpoint-auth.mjs whitelists only 2 files (gbp/set-website-utm, expired-listing-lookup).",
+     "rootCause": "Incremental migration to guards.ts stalled; no mechanical gate covering the full admin route+action set.",
+     "userImpact": "No guarantee a new or existing admin route is authenticated; inconsistent 401/403 behavior; auth logic drift across the surface."
+    },
+    {
+     "title": "Unauthenticated live AI-cost endpoint with no consumer",
+     "severity": "high",
+     "evidence": "app/api/ai/generate-text (POST) has zero callers (verified permissive grep) yet is deployed, calls an LLM, and is guarded only by checkRateLimit (rate-limit, no auth). generate-text/route.ts:34 uses checkRateLimit('strict') only.",
+     "rootCause": "Dead route left deployed; AI endpoints were never brought under admin/session auth.",
+     "userImpact": "Anyone can drive LLM spend against the endpoint up to the rate limit; no business value since nothing consumes it."
+    }
+   ],
+   "duplication": [
+    {
+     "what": "Social publishing implemented in a unified route AND per-platform routes, all calling the same lib helpers",
+     "routes": [
+      "app/api/social/publish/route.ts",
+      "app/api/social/publish-facebook/route.ts",
+      "app/api/social/publish-instagram/route.ts",
+      "app/api/social/publish-tiktok/route.ts"
+     ]
+    },
+    {
+     "what": "weekly-cycle is a self-described alias of marketing-weekly-cycle; both call runWeeklyCycle",
+     "routes": [
+      "app/api/cron/weekly-cycle/route.ts",
+      "app/api/cron/marketing-weekly-cycle/route.ts"
+     ]
+    },
+    {
+     "what": "snapshot-channels fans out via internal HTTP self-fetch to 9 marketing-snapshot-* routes that duplicate lib snapshot logic",
+     "routes": [
+      "app/api/cron/snapshot-channels/route.ts",
+      "app/api/cron/marketing-snapshot-ga4/route.ts",
+      "app/api/cron/marketing-snapshot-meta-page/route.ts"
+     ]
+    },
+    {
+     "what": "Sync capability spread across two namespaces with several dead members; live logic lives in actions/lib",
+     "routes": [
+      "app/api/admin/sync/route.ts",
+      "app/api/admin/sync/photos/route.ts",
+      "app/api/cron/sync-delta/route.ts",
+      "app/api/cron/sync-full/route.ts",
+      "app/api/sync-spark/route.ts"
+     ]
+    },
+    {
+     "what": "CMA-to-lead delivery via at least four overlapping code paths",
+     "routes": [
+      "app/api/cma/[slug]/email/route.ts",
+      "app/api/cma/[slug]/gmail-draft/route.ts",
+      "app/api/cma-delivery/route.ts",
+      "app/api/cma-drafts/[id]/send/route.ts"
+     ]
+    },
+    {
+     "what": "20+ uncentralized email/SMS send primitives; alert emails bypass the CRM suppression/timeline choke point that CRM sends use",
+     "routes": [
+      "lib/resend.ts",
+      "lib/crm/gmail.ts",
+      "lib/crm/twilio.ts",
+      "lib/seller-lead-alert.ts",
+      "lib/expired-alert.ts"
+     ]
+    },
+    {
+     "what": "Five hardcoded per-CMA static map routes instead of one parametric route",
+     "routes": [
+      "app/api/maps/cma-18705-tumalo-reservoir/route.ts",
+      "app/api/maps/cma-21042-robin/route.ts",
+      "app/api/maps/cma-3735-eagle-usa/route.ts"
+     ]
+    },
+    {
+     "what": "Server-action wrappers duplicating cron routes (both call the same lib fn), with the action wrapper having no importer",
+     "routes": [
+      "app/actions/video-tours-cache.ts",
+      "app/api/cron/refresh-video-tours-cache/route.ts",
+      "app/actions/refresh-place-content.ts"
+     ]
+    }
+   ],
+   "performance": [
+    {
+     "issue": "Cron orchestrators fan out via internal HTTP self-fetch instead of direct lib calls",
+     "evidence": "snapshot-channels/route.ts:58 fetch(`${baseUrl}/api/cron/marketing-snapshot-${p}`) for 9 platforms; publisher-sweep/route.ts:183 fetch(`${appUrl}/api/social/publish`)",
+     "impact": "Each fan-out pays an extra edge/serverless cold-invocation + re-auth handshake per sibling route (9x for snapshots), multiplying latency and function invocations vs a single process calling lib/marketing-brain/snapshot.ts directly."
+    },
+    {
+     "issue": "Heavy public tracking endpoint",
+     "evidence": "app/api/visitors/track/route.ts is 469 lines, unauthenticated (public telemetry), hit on visitor sessions",
+     "impact": "Large synchronous handler on a hot public path; candidate for slow response contributing to perceived site slowness."
+    },
+    {
+     "issue": "No overlap lease on */2 and */5 minute crons",
+     "evidence": "crm-bulk-worker (*/2), newsletter-send (*/2), crm-scheduled-sends (*/5) have no crm_try_cron_lease",
+     "impact": "Overlapping runs re-scan and re-process the same due rows, wasting DB/compute and risking duplicate sends."
+    }
+   ],
+   "mobileDivergence": [
+    "Not applicable — API + server-action surface has no rendered mobile/desktop fork. Client callers (components) are covered by the CRM/admin-UI auditors; this domain is backend-only."
+   ],
+   "deadOrOrphan": [
+    "app/api/admin/offline-conversion (POST) — superseded by lib/meta-offline-conversions.ts",
+    "app/api/admin/producer-change-requests (POST) — no UI",
+    "app/api/admin/run-loop-cycle (GET) — no UI, not scheduled",
+    "app/api/admin/sync/history-active (POST) — no caller",
+    "app/api/admin/sync/photos (POST) — no caller",
+    "app/api/admin/tracerfy-history (GET) — no caller",
+    "app/api/ai/generate-text (POST) — no caller and unauthenticated LLM endpoint",
+    "app/api/pdf/listing (POST) — no caller (sibling pdf routes wired)",
+    "app/api/search/semantic (GET) — no caller; live search uses /api/search/suggestions",
+    "app/api/spark-status (GET) — no caller",
+    "app/api/sync-spark (GET/POST) — dead HTTP wrapper (action/lib is used, route is not)",
+    "app/api/tiktok/diagnostic (GET) — no caller",
+    "app/api/social/publish-facebook + publish-instagram (POST) — superseded by /api/social/publish; publish-tiktok script-only",
+    "app/api/cma/[slug]/finalize-deliver (POST) — only a doc-comment reference; nothing fetches it",
+    "app/api/marketing-brain/{audit/ads,audit/crm,audit/website,diagnose,generate-briefs,gsc-properties,linkedin-orgs} — 7 dead HTTP wrappers; real audit runs via cron+lib",
+    "app/api/maps/cma-21042-robin (GET) — draft-only/no live embed (family should be one parametric route)",
+    "app/api/listings/[listingKey]/photos (GET) — sparse-sync photo fallback, no UI caller",
+    "app/actions/auto-response.ts (sendAutoResponse) — 0 importers; whole 5-minute auto-reply feature wired to nothing",
+    "app/actions/home.ts (3 fns) — 0 importers",
+    "app/actions/lead-scoring.ts (computeLeadScore) — 0 importers; scoring system wired to nothing",
+    "app/actions/video-tours-cache.ts — dead action wrapper of executeRefreshVideoToursCache",
+    "app/actions/refresh-place-content.ts — redundant action wrapper (only its cron uses it)",
+    "Orphaned crons not on any vercel.json schedule and not self-fetched: marketing-snapshot-google-ads, neighborhood-default-subscriptions, refresh-video-tours-cache, strategy-revision-check, optimization-loop, weekly-cycle, refresh-listing-year-stats, sync-parity, sync-verify-full-history, start-sync, daily-broker-digest, weekly-pipeline-digest, marketing-inbox-poll",
+    "Schedule/reality mismatch: detect-expired-listings — CLAUDE.md claims hourly but it is not in vercel.json (lib/expired-listing-processor.ts:17 confirms manual-only)"
+   ]
+  }
+ ],
+ "critique": {
+  "missedSurfaces": [
+   "/admin/approval-queue — real 137-line marketing-brain approval queue (app/admin/(protected)/approval-queue/page.tsx + _components/{ActionCard,ActionButtons,FilterSidebar,CommentsThread,MediaPreview}.tsx) reading marketing_brain_actions via service client; the human gate for the entire content pipeline. NO auditor covered it.",
+   "/admin/brokers + /admin/brokers/new + /admin/brokers/edit — broker roster CRUD (142/28/47 lines, app/actions/brokers.ts), distinct from the audited /admin/crm/settings/brokers. NO auditor covered it.",
+   "/admin/broker-links — per-broker ad-link generator with CopyLinkButton (app/admin/(protected)/broker-links/page.tsx, 78 lines), feeds the ?agent= attribution cookie chain. NO auditor covered it.",
+   "/admin/email/campaigns — 167-line campaigns+engagement page (lib/data/crm/getEmailReporting.ts). Messaging covered only /admin/email/compose; Analytics covered the different route /admin/reports/emails. Uncovered.",
+   "Twilio VOICE calling end-to-end — /api/twilio/{voice,voice-complete,outbound-bridge,recording} + the start-call server action in app/actions/crm.ts (pre-inserts crm_timeline row keyed by CallSid) + the recording kill-switch in Company Settings. API auditor counted 'app/api/twilio/* (7 routes) [works]' at surface level only; no domain auditor traced click-to-call → bridge → recording → timeline → /admin/crm/reporting/calls.",
+   "Newsletter sub-pages /admin/newsletters/[id] (278-line approval+delivery detail), /new, /analytics (172), /subscribers (197) — Send Center's feature list names only the /admin/newsletters index.",
+   "/admin/bpo/new (52 lines) + /admin/bpo/[slug] (182 lines) — Send Center's list names only /admin/bpo.",
+   "app/lp/** lead-capture actions (fsbo, seller-home-value) that create CRM people and fire lib/seller-lead-alert.ts — the CRM-intake edge of the funnel; consumer auditor covered site save/search surfaces but not the LP→CRM actions.",
+   "Note (not gaps): /admin/{banners,photos,search,query-builder,resort-communities,spark-status,stock-photos,email,visitors} are verified pure-redirect stubs from the 2026-07-07 consolidation; no audit needed, but /admin/search redirecting to /admin/listings is evidence for the global-search seam below."
+  ],
+  "unownedSeams": [
+   "New-lead → broker notification chain: lib/seller-lead-alert.ts (email alert on LP submission, called from app/lp/fsbo/actions.ts and app/lp/seller-home-value/actions.ts), inbound-SMS forward-to-cell, DashboardNotificationsPanel/DashboardDeliveryAttention on /admin. Nobody owns 'how does a broker learn a lead arrived or wants a CMA' across email/SMS/dashboard — no auditor traced any of these writers/readers.",
+   "Global search: /admin/search is now a redirect to /admin/listings?search= (listings-only), the ⌘K palette covers 4 of 56 destinations (shell), and the CRM desktop list has no search box (contacts). Net: there is NO way to find a person/deal from anywhere, and no auditor owns that job.",
+   "Keyboard shortcuts: only the ⌘K palette was audited (shell); no auditor enumerated any other shortcut surface or its mobile absence.",
+   "Unified send-audit trail: 'who sent what to which lead when' is split across crm_timeline (contacts), delivery webhooks rendered on one surface (messaging), attributed-links/doc-tracker /api/track/e/* (send center, [partial]), email-events (analytics reports/emails), and /admin/audit-log which Deals audited as TC-scoped only. No owner for the cross-channel send ledger.",
+   "Approval-queue ↔ marketing-brain producers: the live /admin/approval-queue UI approves rows whose producer/publish API routes the API auditor declared [dead] (app/api/marketing-brain/*, publisher-sweep [partial]). Nobody verifies the queue's Approve/Kill buttons lead anywhere.",
+   "Voice-call compliance seam: contacts says desktop Call icons emit raw tel: links; a signed, recorded Twilio outbound-bridge exists with a company-settings recording switch. Which path the UI actually uses (and Oregon two-party recording consent) is unowned.",
+   "PWA/service-worker staleness: components/site/StaleServiceWorkerReset.tsx and InstallPrompt were flagged only as bundle tax (performance); nobody audited stale-SW behavior against the admin shell."
+  ],
+  "contradictions": [
+   "middleware.ts: Performance lists it [works]; Shell lists it [partial] and calls lib/supabase/middleware.ts [broken] ('middleware does zero auth', no cookie-persistable session refresh). Same file, opposite verdicts.",
+   "/admin/crm/reporting/deals: Deals auditor says [stub]; Analytics auditor says [works].",
+   "/admin/crm/workflows: Shell says [partial]; Settings/automation auditor says [works].",
+   "/admin/sync: Listings/content auditor says [works]; Performance auditor says [partial].",
+   "Legacy CMA delivery cluster (api/cma/[slug]/{email,gmail-draft,finalize-deliver} + /api/cma-delivery + cma-drafts): Send Center marks it [dead] ('retired pipeline'); API auditor marks the same cluster [partial].",
+   "Person-detail fetch shape: Contacts says ~40-55 queries across FOUR sequential await-stages; Performance says 45-55 across up to SEVEN sequential stages. Numbers need reconciling before the rebuild sizes the fix.",
+   "Calling: Contacts claims Call icons bypass the compliance-gated Twilio path with raw tel: (implying no in-app calling), while Analytics marks /admin/crm/reporting/calls + call-logs [works] and a full click-to-call bridge exists in app/actions/crm.ts + /api/twilio/outbound-bridge — either the icons claim or the 'calls reporting works' framing is incomplete.",
+   "Inbox: Messaging's own headline marks /admin/crm/inbox (desktop) [works] while marking its reading pane + MobileThread [broken] and Performance marks the route [partial]; the top-line verdict overstates."
+  ]
+ },
+ "failedDomains": 0
+}
