@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { CTAButton, RyanRealtyMark } from '@/components/site/primitives'
+import HeaderAccount from '@/components/site/HeaderAccount'
 import MobileNav from '@/components/site/MobileNav'
 import MegaMenu from '@/components/site/nav/MegaMenu'
 import { MENU } from '@/lib/site-menu'
@@ -93,9 +94,11 @@ export default async function SiteHeader() {
         <MegaMenu menu={MENU} navData={navData} />
 
         <div className="flex items-center gap-2.5">
-          <CTAButton href="/login" tone="on-navy-ghost" size="md" className="hidden sm:inline-flex whitespace-nowrap">
-            Sign in
-          </CTAButton>
+          {/* Account control: signed-out → "Sign in"; signed-in → account menu with
+              paths to saved searches/homes + sign-out (RC7 fix — the header used to
+              always say "Sign in", stranding signed-in users). Client island so the
+              header shell stays statically prerenderable. */}
+          <HeaderAccount />
           {/* Buyer CTA — drives listing-alerts LP so buyers have a one-click capture
               path alongside the seller CTA. Ghost (secondary); lg+ only so the
               header never crowds — smaller screens reach it via the Homes menu. */}

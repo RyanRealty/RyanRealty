@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { CONTACT } from '@/lib/brand/contact'
+import { useSessionUser } from '@/lib/hooks/useSessionUser'
 
 // ONE coherent nav that navigates the WHOLE site. The top bar shows the key
 // destinations; the overlay is a comprehensive grouped directory (every real
@@ -89,6 +90,10 @@ const MENU_GROUPS: { title: string; links: { href: string; label: string }[] }[]
 export function KbNav({ solid = false }: { solid?: boolean } = {}) {
   const bar = useRef<HTMLElement>(null)
   const [open, setOpen] = useState(false)
+  // RC7: signed-in visitors got only "Sign in" here, stranding them from their
+  // saved homes/searches. When signed in, the auth affordance links to /account.
+  const sessionUser = useSessionUser()
+  const signedIn = Boolean(sessionUser)
   const overlayRef = useRef<HTMLDivElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -165,8 +170,8 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
           {/* design-audit NAV-4/NAV-5/CNV-5: persistent conversion + auth CTAs in
               the topbar (matching the search chrome), so the seller money action
               and sign-in are one tap from every KB page, not buried in the menu. */}
-          <a className="nav-signin" href="/login">
-            Sign in
+          <a className="nav-signin" href={signedIn ? '/account' : '/login'}>
+            {signedIn ? 'My account' : 'Sign in'}
           </a>
           <a className="nav-cta" href="/sell/valuation">
             What’s my home worth
@@ -201,8 +206,8 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
           <a className="nav-cta" href="/sell/valuation" onClick={() => setOpen(false)}>
             What’s my home worth
           </a>
-          <a className="nav-signin overlay" href="/login" onClick={() => setOpen(false)}>
-            Sign in
+          <a className="nav-signin overlay" href={signedIn ? '/account' : '/login'} onClick={() => setOpen(false)}>
+            {signedIn ? 'My account' : 'Sign in'}
           </a>
         </div>
         <div className="menu-foot">
