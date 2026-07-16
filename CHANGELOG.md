@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.800.3 (2026-07-16)
+
+### Maintenance
+- docs(admin-rebuild): full spec package — 7 root causes, target architecture, 11 feature specs
+
+---
+
+
 ## v1.800.2 (2026-07-16)
 
 ### Maintenance
