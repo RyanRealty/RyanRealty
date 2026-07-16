@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.802.7 (2026-07-16)
+
+### Bug Fixes
+- fix(analytics): stop the false-CRITICAL "pause your ads" alert (dead FUB denominator)
+
+### Maintenance
+- docs(admin-rebuild): update PROGRESS log (integrity + security + analytics fixes)
+
+---
+
+
 ## v1.802.6 (2026-07-16)
 
 ### Bug Fixes
