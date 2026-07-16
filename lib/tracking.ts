@@ -69,11 +69,12 @@ export type EventName =
   | 'view_featured_listings'
   | 'community_impression'
   | 'newsletter_signup'
-  | 'community_view'
+  // 'community_view' / 'city_view' / 'neighborhood_view' removed 2026-07-16
+  // (conversion-audit #18): duplicate names for the same facts as the
+  // verb-first 'view_community' / 'view_city' / 'view_neighborhood' above —
+  // the page trackers fired BOTH, double-counting every geo pageview in GA4.
   | 'community_cta_click'
-  | 'city_view'
   | 'city_cta_click'
-  | 'neighborhood_view'
   | 'broker_view'
   | 'contact_agent'
   | 'view_landing_page'

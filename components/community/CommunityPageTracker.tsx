@@ -23,16 +23,16 @@ export default function CommunityPageTracker({
   useEffect(() => {
     if (sentRef.current) return
     sentRef.current = true
-    trackEvent('community_view', {
+    // ONE event name per fact (conversion-audit 2026-07-15 #18): this fired
+    // both 'community_view' and 'view_community' from the same effect,
+    // double-counting every community pageview in GA4. 'view_community'
+    // (GA4 verb-first convention) keeps the union of both param sets.
+    trackEvent('view_community', {
       community_name: communityName,
       community_slug: slug,
       city,
       listing_count: activeCount,
       median_price: medianPrice ?? undefined,
-    })
-    trackEvent('view_community', {
-      community_name: communityName,
-      listing_count: activeCount,
     })
   }, [slug, communityName, city, activeCount, medianPrice])
 

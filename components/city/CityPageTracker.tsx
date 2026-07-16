@@ -23,16 +23,16 @@ export default function CityPageTracker({
   useEffect(() => {
     if (sentRef.current) return
     sentRef.current = true
-    trackEvent('city_view', {
+    // ONE event name per fact (conversion-audit 2026-07-15 #18): this fired
+    // both 'city_view' and 'view_city' from the same effect, double-counting
+    // every city pageview in GA4. 'view_city' (GA4 verb-first convention)
+    // keeps the union of both param sets.
+    trackEvent('view_city', {
       city_name: cityName,
       city_slug: slug,
       listing_count: listingCount,
       median_price: medianPrice ?? undefined,
       community_count: communityCount,
-    })
-    trackEvent('view_city', {
-      city_name: cityName,
-      listing_count: listingCount,
     })
   }, [cityName, slug, listingCount, medianPrice, communityCount])
 
