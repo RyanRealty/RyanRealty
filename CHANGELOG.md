@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.802.10 (2026-07-16)
+
+### Bug Fixes
+- fix(consumer): save→sign-in returns you to the page, not a dead end (RC7)
+
+---
+
+
 ## v1.802.9 (2026-07-16)
 
 ### Bug Fixes
