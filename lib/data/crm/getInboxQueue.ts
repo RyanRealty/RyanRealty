@@ -95,6 +95,14 @@ export function channelOfKind(kind: string): InboxChannel | null {
 
 /** A single conversation row in the inbox queue. */
 export type InboxConversation = {
+  /** The conversation this row represents (RC1 model). The React list keys on this,
+   *  so a contact's 1:1 thread and a group they're in are DISTINCT rows. A draft with
+   *  no messages yet gets a synthetic `draft:<personId>` id. */
+  conversationId: string
+  /** True when the thread has 2+ participants (a real group text). Drives the badge. */
+  isGroup: boolean
+  /** Participant count (contacts + raw numbers; the broker line is not counted). */
+  participantCount: number
   personId: number
   name: string | null
   pictureUrl: string | null
@@ -403,10 +411,33 @@ export async function getInboxFolderQueue(params: {
   return { conversations: filtered.slice(offset, offset + limit), counts }
 }
 
+/** Model channel value → the inbox's coarse channel class. */
+function channelClassOf(channel: string | null): InboxChannel | null {
+  if (channel === 'sms' || channel === 'mms') return 'text'
+  if (channel === 'email') return 'email'
+  if (channel === 'call' || channel === 'voicemail') return 'call'
+  return null
+}
+
+/** Model (channel, direction) → the row's human label ("Text received", ...). */
+function labelForMessage(channel: string | null, direction: string | null): string {
+  if (channel === 'call') return 'Call'
+  if (channel === 'voicemail') return 'Voicemail'
+  const isEmail = channel === 'email'
+  if (direction === 'out') return isEmail ? 'Email sent' : 'Text sent'
+  if (direction === 'in') return isEmail ? 'Email received' : 'Text received'
+  return ''
+}
+
 /**
  * buildInboxWorkingSet — the shared conversation builder both queue readers use.
- * Pulls the recent message window (broker-scoped), folds to one conversation per
- * person, overlays triage state + drafts, and derives every per-row field.
+ * Reads the RC1 conversation model (crm_conversation, with per-row fields the
+ * message trigger precomputes), overlays the person-keyed triage state + drafts,
+ * and returns ONE row per conversation. This replaced the path that re-derived
+ * person-collapsed conversations from a 2000-row crm_timeline window on every load
+ * (slow, and its message_count "may undercount"): the model carries an EXACT
+ * message_count, an order-independent needs_reply, and real group-ness, so a group
+ * thread is now its own row instead of collapsing onto a contact.
  */
 async function buildInboxWorkingSet(
   brokerScope: string | null,
@@ -414,168 +445,179 @@ async function buildInboxWorkingSet(
 ): Promise<InboxConversation[]> {
   const sb = createServiceClient()
 
-  type Joined = RawMessageRow & {
-    crm_people:
-      | { name: string | null; picture_url: string | null; assigned_broker: string | null; deleted: boolean }
-      | Array<{ name: string | null; picture_url: string | null; assigned_broker: string | null; deleted: boolean }>
-      | null
+  type PersonEmbed =
+    | { name: string | null; picture_url: string | null; assigned_broker: string | null; deleted: boolean }
+    | Array<{ name: string | null; picture_url: string | null; assigned_broker: string | null; deleted: boolean }>
+    | null
+  type ConvRow = {
+    id: string
+    primary_person_id: number | null
+    is_group: boolean
+    participant_count: number
+    state: string
+    assigned_broker: string | null
+    needs_reply: boolean
+    last_message_at: string | null
+    last_inbound_at: string | null
+    last_outbound_at: string | null
+    channel_set: string[] | null
+    message_count: number
+    last_snippet: string | null
+    last_direction: string | null
+    last_channel: string | null
+    last_subject: string | null
+    last_call_duration_sec: number | null
+    outbound_brokers: string[] | null
+    crm_people: PersonEmbed
   }
 
-  // Pull a generous window of recent messages with the joined contact, scoped to
-  // the broker. PostgREST caps every response at 1000 rows regardless of
-  // .limit(), so the 2000-row window is read as .range() pages until a short
-  // read (newest-first, id as the tie-breaker so equal-ts rows never straddle a
-  // page boundary). We group to one conversation per person in memory — the
-  // volume of recent inbound/outbound is small relative to the full timeline.
-  const WINDOW = 2000
+  const SELECT =
+    'id,primary_person_id,is_group,participant_count,state,assigned_broker,needs_reply,' +
+    'last_message_at,last_inbound_at,last_outbound_at,channel_set,message_count,' +
+    'last_snippet,last_direction,last_channel,last_subject,last_call_duration_sec,outbound_brokers,' +
+    'crm_people!inner(name,picture_url,assigned_broker,deleted)'
+
+  type StateRow = { person_id: number; status: string | null; assigned_broker: string | null; last_inbound_at: string | null; last_outbound_at: string | null }
+  const fetchState = async (ids: number[]): Promise<Map<number, StateRow>> => {
+    const m = new Map<number, StateRow>()
+    if (ids.length === 0) return m
+    const { data } = await sb
+      .from('crm_conversation_state')
+      .select('person_id,status,assigned_broker,last_inbound_at,last_outbound_at')
+      .in('person_id', ids)
+    for (const s of (data ?? []) as StateRow[]) m.set(s.person_id, s)
+    return m
+  }
+
+  // Active working set: conversations touched in the last ACTIVE_DAYS, PLUS any
+  // thread still waiting on a reply (so nothing actionable is ever hidden by the
+  // recency floor). This mirrors the old inbox, which pulled the 2000 most-recent
+  // messages (~140 contacts over ~3 months) — without it, the model would surface
+  // all ~8.4k historical threads (mostly a one-time email import) and flood the
+  // untriaged-defaults-to-unread count. Newest-first, range-paged past the 1000-row
+  // PostgREST cap. Scoped by the primary contact's assigned broker (superuser = all).
+  const ACTIVE_DAYS = 120
+  const cutoff = new Date(Date.now() - ACTIVE_DAYS * 86_400_000).toISOString()
+  const WINDOW = 4000
   const PAGE = 1000
-  const fetchMessageWindow = async (): Promise<Joined[]> => {
-    const rows: Joined[] = []
-    for (let fromRow = 0; fromRow < WINDOW; fromRow += PAGE) {
+  const fetchConvWindow = async (): Promise<ConvRow[]> => {
+    const rows: ConvRow[] = []
+    for (let from = 0; from < WINDOW; from += PAGE) {
       let q = sb
-        .from('crm_timeline')
-        .select('person_id,ts,kind,title,body,broker,payload,crm_people!inner(name,picture_url,assigned_broker,deleted)')
-        .in('kind', MESSAGE_KINDS as unknown as string[])
-        .order('ts', { ascending: false })
+        .from('crm_conversation')
+        .select(SELECT)
+        .or(`last_message_at.gte.${cutoff},needs_reply.eq.true`)
+        .order('last_message_at', { ascending: false })
         .order('id', { ascending: false })
-        .range(fromRow, fromRow + PAGE - 1)
-      // brokerScope null = superuser, no filter.
+        .range(from, from + PAGE - 1)
       if (brokerScope) q = q.eq('crm_people.assigned_broker', brokerScope)
       const { data } = await q
-      rows.push(...((data ?? []) as unknown as Joined[]))
+      rows.push(...((data ?? []) as unknown as ConvRow[]))
       if (!data || data.length < PAGE) break
     }
     return rows
   }
 
-  // Draft summaries owned by the acting broker fold into the queue: they set the
-  // hasDraft flag (Drafts-folder membership) and may introduce a conversation
-  // that carries a draft but has no timeline messages yet. The drafts read takes
-  // no input from the message window, so both run in one flight.
-  const [msgRows, draftsByPerson] = await Promise.all([
-    fetchMessageWindow(),
+  const [convRows, draftsByPerson] = await Promise.all([
+    fetchConvWindow(),
     listDraftsByPerson(actingBroker),
   ])
 
-  // Group rows by person, preserving newest-first order.
-  const byPerson = new Map<number, { person: { name: string | null; pictureUrl: string | null; assignedBroker: string | null }; rows: RawMessageRow[] }>()
-  for (const raw of msgRows) {
-    const p = Array.isArray(raw.crm_people) ? raw.crm_people[0] : raw.crm_people
-    if (!p || p.deleted) continue
-    const existing = byPerson.get(raw.person_id)
-    const row: RawMessageRow = {
-      person_id: raw.person_id,
-      ts: raw.ts,
-      kind: raw.kind,
-      title: raw.title ?? null,
-      body: raw.body ?? null,
-      broker: raw.broker ?? null,
-      payload: raw.payload ?? null,
-    }
-    if (existing) {
-      existing.rows.push(row)
-    } else {
-      byPerson.set(raw.person_id, {
-        person: { name: p.name, pictureUrl: p.picture_url, assignedBroker: p.assigned_broker },
-        rows: [row],
-      })
-    }
-  }
+  // Triage status stays in the person-keyed crm_conversation_state overlay (the
+  // mark read/handled/closed/assign actions write it); the model supplies every
+  // message-derived field. Keyed by primary_person_id.
+  const personIds = Array.from(
+    new Set(convRows.map((c) => c.primary_person_id).filter((x): x is number => x != null)),
+  )
+  const stateByPerson = await fetchState(personIds)
 
-  const timelinePersonIds = [...byPerson.keys()]
-  const allPersonIds = Array.from(new Set([...timelinePersonIds, ...draftsByPerson.keys()]))
-  if (allPersonIds.length === 0) return []
-
-  // Overlay the triage state for every conversation in the working set
-  // (timeline-derived + draft-only persons).
-  const { data: stateRows } = await sb
-    .from('crm_conversation_state')
-    .select('person_id,status,assigned_broker,last_inbound_at,last_outbound_at')
-    .in('person_id', allPersonIds)
-  const stateByPerson = new Map<number, { status: string | null; assigned_broker: string | null; last_inbound_at: string | null; last_outbound_at: string | null }>()
-  for (const s of (stateRows ?? []) as Array<{ person_id: number; status: string | null; assigned_broker: string | null; last_inbound_at: string | null; last_outbound_at: string | null }>) {
-    stateByPerson.set(s.person_id, s)
-  }
-
-  // A draft can exist for a contact with no timeline message (a reply started in
-  // a brand-new thread). Fetch just those persons so the Drafts folder can render
-  // a row. Drafts are already the acting broker's own, so no extra scope filter.
-  const draftOnlyIds = [...draftsByPerson.keys()].filter((id) => !byPerson.has(id))
-  const draftOnlyPeople = new Map<number, { name: string | null; pictureUrl: string | null; assignedBroker: string | null }>()
-  if (draftOnlyIds.length > 0) {
-    const { data: people } = await sb
-      .from('crm_people')
-      .select('id,name,picture_url,assigned_broker,deleted')
-      .in('id', draftOnlyIds)
-    for (const p of (people ?? []) as Array<{ id: number; name: string | null; picture_url: string | null; assigned_broker: string | null; deleted: boolean }>) {
-      if (p.deleted) continue
-      draftOnlyPeople.set(p.id, { name: p.name, pictureUrl: p.picture_url, assignedBroker: p.assigned_broker })
-    }
-  }
-
-  // Build the full conversation list (pre-filter), then scope + page.
   const all: InboxConversation[] = []
-  // 1) timeline-derived conversations
-  for (const [personId, { person, rows }] of byPerson) {
-    const derived = deriveConversationFromMessages(rows)
-    const state = stateByPerson.get(personId)
+  // 1) conversation rows from the model
+  for (const conv of convRows) {
+    const person = Array.isArray(conv.crm_people) ? conv.crm_people[0] : conv.crm_people
+    if (!person || person.deleted) continue
+    const pid = conv.primary_person_id
+    if (pid == null) continue
+    const state = stateByPerson.get(pid)
     const status = effectiveStatus(state?.status)
-    // The state row may have explicit clocks; fall back to the derived ones.
-    const lastInboundAt = state?.last_inbound_at ?? derived.lastInboundAt
-    const lastOutboundAt = state?.last_outbound_at ?? derived.lastOutboundAt
-    const assignedBroker = state?.assigned_broker ?? person.assignedBroker
+    const lastInboundAt = state?.last_inbound_at ?? conv.last_inbound_at
+    const lastOutboundAt = state?.last_outbound_at ?? conv.last_outbound_at
+    const channels = Array.from(
+      new Set(
+        (conv.channel_set ?? [])
+          .map((ch) => channelClassOf(ch))
+          .filter((x): x is InboxChannel => x != null),
+      ),
+    )
     all.push({
-      personId,
+      conversationId: conv.id,
+      isGroup: conv.is_group,
+      participantCount: conv.participant_count,
+      personId: pid,
       name: person.name,
-      pictureUrl: person.pictureUrl,
-      assignedBroker,
+      pictureUrl: person.picture_url,
+      assignedBroker: state?.assigned_broker ?? conv.assigned_broker ?? person.assigned_broker,
       status,
-      snippet: derived.snippet,
-      lastKindLabel: derived.lastKindLabel,
-      lastDirection: derived.lastDirection,
-      lastMessageAt: derived.lastMessageAt,
+      snippet: buildSnippet({ title: conv.last_subject, body: conv.last_snippet }),
+      lastKindLabel: labelForMessage(conv.last_channel, conv.last_direction),
+      lastDirection: conv.last_direction === 'in' || conv.last_direction === 'out' ? conv.last_direction : null,
+      lastMessageAt: conv.last_message_at,
       lastInboundAt,
       lastOutboundAt,
       needsReply: needsReply(status, lastInboundAt, lastOutboundAt),
-      hasDraft: draftsByPerson.has(personId),
-      channels: derived.channels,
+      hasDraft: draftsByPerson.has(pid),
+      channels,
       explicitAssignee: state?.assigned_broker ?? null,
-      outboundBrokers: derived.outboundBrokers,
+      outboundBrokers: conv.outbound_brokers ?? [],
       isUnknown: isUnknownCaller(person.name),
-      lastCallDurationSec: derived.lastCallDurationSec,
-      messageCount: derived.messageCount,
-      lastChannel: derived.lastChannel,
-      lastEmailSubject: derived.lastEmailSubject,
+      lastCallDurationSec: conv.last_call_duration_sec,
+      messageCount: conv.message_count,
+      lastChannel: channelClassOf(conv.last_channel),
+      lastEmailSubject: conv.last_channel === 'email' ? conv.last_subject : null,
     })
   }
-  // 2) draft-only conversations (a draft exists but no message is in the timeline)
-  for (const [personId, person] of draftOnlyPeople) {
-    const state = stateByPerson.get(personId)
-    const status = effectiveStatus(state?.status)
-    const summary = draftsByPerson.get(personId)
-    all.push({
-      personId,
-      name: person.name,
-      pictureUrl: person.pictureUrl,
-      assignedBroker: state?.assigned_broker ?? person.assignedBroker,
-      status,
-      snippet: 'Draft, not sent',
-      lastKindLabel: 'Draft',
-      lastDirection: null,
-      lastMessageAt: summary?.updatedAt ?? null,
-      lastInboundAt: state?.last_inbound_at ?? null,
-      lastOutboundAt: state?.last_outbound_at ?? null,
-      needsReply: false,
-      hasDraft: true,
-      channels: [],
-      explicitAssignee: state?.assigned_broker ?? null,
-      outboundBrokers: [],
-      isUnknown: isUnknownCaller(person.name),
-      lastCallDurationSec: null,
-      messageCount: 0,
-      lastChannel: null,
-      lastEmailSubject: null,
-    })
+
+  // 2) draft-only conversations (a reply started in a brand-new thread with no
+  //    message/conversation yet). These carry a synthetic conversationId.
+  const convPersonIds = new Set(all.map((c) => c.personId))
+  const draftOnlyIds = [...draftsByPerson.keys()].filter((id) => !convPersonIds.has(id))
+  if (draftOnlyIds.length > 0) {
+    const [{ data: people }, dState] = await Promise.all([
+      sb.from('crm_people').select('id,name,picture_url,assigned_broker,deleted').in('id', draftOnlyIds),
+      fetchState(draftOnlyIds),
+    ])
+    for (const p of (people ?? []) as Array<{ id: number; name: string | null; picture_url: string | null; assigned_broker: string | null; deleted: boolean }>) {
+      if (p.deleted) continue
+      const state = dState.get(p.id)
+      const status = effectiveStatus(state?.status)
+      const summary = draftsByPerson.get(p.id)
+      all.push({
+        conversationId: `draft:${p.id}`,
+        isGroup: false,
+        participantCount: 1,
+        personId: p.id,
+        name: p.name,
+        pictureUrl: p.picture_url,
+        assignedBroker: state?.assigned_broker ?? p.assigned_broker,
+        status,
+        snippet: 'Draft, not sent',
+        lastKindLabel: 'Draft',
+        lastDirection: null,
+        lastMessageAt: summary?.updatedAt ?? null,
+        lastInboundAt: state?.last_inbound_at ?? null,
+        lastOutboundAt: state?.last_outbound_at ?? null,
+        needsReply: false,
+        hasDraft: true,
+        channels: [],
+        explicitAssignee: state?.assigned_broker ?? null,
+        outboundBrokers: [],
+        isUnknown: isUnknownCaller(p.name),
+        lastCallDurationSec: null,
+        messageCount: 0,
+        lastChannel: null,
+        lastEmailSubject: null,
+      })
+    }
   }
 
   return all

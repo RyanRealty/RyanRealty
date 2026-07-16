@@ -20,6 +20,10 @@ import { cn } from '@/lib/utils'
 import { CrmAvatar } from '@/components/admin/crm/mobile/CrmMobileKit'
 
 export type MobileConvRow = {
+  /** The conversation this row represents (RC1). Distinct from personId: a contact's
+   *  1:1 and a group they're in are separate rows. The list keys on this. */
+  conversationId: string
+  isGroup: boolean
   personId: number
   name: string
   pictureUrl: string | null

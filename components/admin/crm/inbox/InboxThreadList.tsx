@@ -306,7 +306,7 @@ export default function InboxThreadList({
             const preview = (c.lastDirection === 'out' ? 'You: ' : '') + (c.snippet ?? 'No message body')
             return (
               <div
-                key={c.personId}
+                key={c.conversationId}
                 className={cn(
                   'flex items-start gap-2.5 border-b border-border px-3 py-2.5 transition-colors',
                   isActive ? 'bg-primary/5' : 'hover:bg-primary/5',

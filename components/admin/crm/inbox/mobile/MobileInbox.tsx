@@ -209,7 +209,7 @@ export default function MobileInbox({
 
         {visible.map((row) => (
           <MobileInboxRow
-            key={row.personId}
+            key={row.conversationId}
             row={row}
             closedFolder={folder === 'closed'}
             canAssign={canAssign}

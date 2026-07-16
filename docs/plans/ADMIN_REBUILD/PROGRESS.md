@@ -10,7 +10,31 @@ the local callback) or integration-tested against the real DB.
 
 ## Shipped
 
-### RC1 — the first-class Conversation model — IN PROGRESS (schema landed)
+### RC1 — the inbox now READS the conversation model — DONE (browser-verified)
+- **The inbox read path flipped off the person-collapsed timeline** (`getInboxQueue.ts`
+  `buildInboxWorkingSet` rewritten; channel-parity + denorm migrations `20260716230000`
+  + `20260716240000`). The old path re-derived person-collapsed conversations from a
+  2000-row `crm_timeline` window every load — slow, and its `messageCount` "may
+  undercount". It now reads the model: exact `message_count`, order-independent
+  `needs_reply`, real group-ness, all precomputed. **The inbox is CONVERSATION-keyed**
+  now — a contact's 1:1 and a group they're in are DISTINCT rows (verified live: two
+  "Ernie Oster" rows, his 1:1 "No worries:)" and his group thread). Channel parity first
+  (calls + voicemail projected into the model via `crm_message.meta`) so the flip drops
+  nobody — measured 22 of 8,408 would-be-dropped were call-only, now covered. Latest-
+  message display fields + `message_count` + `outbound_brokers` denormalized onto
+  `crm_conversation` (single-query read, no per-row join). Working set bounded to ~120
+  days of activity + any `needs_reply` thread, matching the old inbox's recency (the old
+  window actually HID ~800 recent low-volume threads the model correctly surfaces).
+  Triage status still overlays from the person-keyed `crm_conversation_state` (mark
+  read/handled/closed unchanged). **Browser-verified end-to-end authed as matt@**: rows
+  render with exact counts (Ernie Oster 457, Maria Hoffman 497), calls appear, group
+  rows distinct, folder counts live (Inbox 905, Sent 910), ZERO console errors in a
+  fresh tab. Gotcha logged: the dev server's stale in-memory client chunks masked the fix
+  in the long-lived tab — a fresh tab showed it clean (the source was always correct).
+  Follow-up (Matt's call): filter automated broadcasts (app market-reports, sequence
+  drips — ~4% of the count) from the inbox via a `source` marker on the model.
+
+### RC1 — the first-class Conversation model — data foundation (schema landed)
 - **Conversation / participant / message tables live** (`20260716200000_conversation_model.sql`).
   The root of the owner's #1 messaging confusion: today a "conversation" is just
   `person_id`, so groups, multi-channel threads, and multiple phone numbers collapse

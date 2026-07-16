@@ -38,6 +38,8 @@ export function buildMobileRows(
   nowMs: number,
 ): MobileConvRow[] {
   return conversations.map((c) => ({
+    conversationId: c.conversationId,
+    isGroup: c.isGroup,
     personId: c.personId,
     name: cleanContactName(c.name, c.personId),
     pictureUrl: c.pictureUrl,
