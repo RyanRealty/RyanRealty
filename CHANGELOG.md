@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.802.1 (2026-07-16)
+
+### Bug Fixes
+- fix(crm): kill the SMS/email double-send — pending-aware composers + idempotency backstop
+
+---
+
+
 ## v1.802.0 (2026-07-16)
 
 ### Features
