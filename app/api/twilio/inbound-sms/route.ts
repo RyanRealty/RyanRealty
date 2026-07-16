@@ -120,6 +120,19 @@ export async function POST(request: Request) {
       { onConflict: 'dedupe_key', ignoreDuplicates: true },
     )
 
+    // Shadow-write into the conversation model (RC1). Non-fatal: the timeline is
+    // still the source of truth until the inbox read path flips. The message-insert
+    // trigger sets needs_reply + reopens a closed thread to unread.
+    try {
+      const { recordConversationMessage } = await import('@/lib/crm/record-message')
+      await recordConversationMessage({
+        sb, direction: 'in', channel: media.length ? 'mms' : 'sms', body: displayBody,
+        providerSid: sid, primaryPersonId: match.personId, assignedBroker: match.broker,
+        media: media.length ? media : [],
+        participants: [{ personId: match.personId, address: from }],
+      })
+    } catch (e) { console.warn('[twilio/inbound-sms] conversation shadow-write failed', e) }
+
     // Reset the inbox conversation to "unread" so the new inbound surfaces in the
     // triage queue (Wave 7). Idempotent; never sends a message.
     await markConversationUnreadOnInbound(match.personId)

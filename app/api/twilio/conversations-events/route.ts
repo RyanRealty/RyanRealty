@@ -115,11 +115,17 @@ export async function POST(request: Request) {
   const memberPersons: Array<{ personId: number; broker: CrmBrokerSlug | null }> = [
     { personId: match.personId, broker: match.broker },
   ]
+  // Address → contact map for the conversation-model participant list (below).
+  const contactByTen = new Map<string, number>([[authorTen, match.personId]])
   for (const addr of shape.smsAddresses) {
-    if (normalizeTo10(addr) === authorTen) continue
+    const ten = normalizeTo10(addr)
+    if (!ten || ten === authorTen) continue
     const found = await lookupPersonByPhone(addr)
-    if (found && !memberPersons.some((m) => m.personId === found.personId)) {
-      memberPersons.push({ personId: found.personId, broker: found.broker })
+    if (found) {
+      contactByTen.set(ten, found.personId)
+      if (!memberPersons.some((m) => m.personId === found.personId)) {
+        memberPersons.push({ personId: found.personId, broker: found.broker })
+      }
     }
   }
 
@@ -149,6 +155,23 @@ export async function POST(request: Request) {
       { onConflict: 'dedupe_key', ignoreDuplicates: true },
     )
   }
+
+  // Shadow-write ONE inbound message into the conversation model (RC1), keyed on
+  // the Twilio Conversation SID with every sms member a participant (contact or
+  // raw). Non-fatal. The trigger sets needs_reply + reopens the thread to unread.
+  try {
+    const { recordConversationMessage } = await import('@/lib/crm/record-message')
+    await recordConversationMessage({
+      sb, direction: 'in', channel: media.length ? 'mms' : 'sms', body: displayBody,
+      providerSid: messageSid, primaryPersonId: match.personId, assignedBroker: alertBroker,
+      twilioConversationSid: conversationSid, media: media.length ? media : [],
+      participants: shape.smsAddresses.map((addr) => {
+        const ten = normalizeTo10(addr)
+        const pid = ten ? contactByTen.get(ten) : undefined
+        return pid ? { personId: pid, address: addr } : { rawPhone: addr, address: addr }
+      }),
+    })
+  } catch (e) { console.warn('[twilio/conversations-events] conversation shadow-write failed', e) }
 
   // Surface the author's thread in the triage queue.
   await markConversationUnreadOnInbound(match.personId)

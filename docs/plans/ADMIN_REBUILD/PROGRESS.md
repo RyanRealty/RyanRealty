@@ -39,8 +39,19 @@ the local callback) or integration-tested against the real DB.
   vs the real DB (1:1 reuse + needs_reply flip + SID dedup + group participant_count=3,
   then cleaned to 0/0/0); 3 call sites tsc + esbuild clean; 4 committed unit tests pin
   the resolution branching (dedup short-circuit, 1:1 reuse, group SID key, raw-vs-
-  contact participant roles). Next: inbound paths (twilio inbound-sms + conversations-
-  events + resend webhook), then the crm_timeline backfill, then the inbox read rewire.
+  contact participant roles).
+- **Inbound dual-write live** (twilio `inbound-sms` + `conversations-events`). Both
+  inbound message paths now shadow-write through the same chokepoint, non-fatal: a 1:1
+  inbound reuses the contact's thread; a group reply keys the conversation on the
+  Twilio Conversation SID with every sms member a participant (contact or raw, paired
+  by ten-digit match). Verified: the message-insert trigger's closed→unread reopen
+  branch proven vs the real DB (closed thread + inbound → state=unread, needs_reply=
+  true, clock set), cleaned to 0/0; conversations-events 7-test regression suite green
+  with the shadow-write in place (proves the try/catch is truly non-fatal). Deferred to
+  a focused follow-up: delivery-status → crm_message.delivery_state (an UPDATE keyed on
+  provider_sid, forward-only; crm_message.delivery_state isn't read yet). Next: the
+  crm_timeline backfill (populate history), then the inbox read rewire (flip the source
+  of truth off the person-collapsed timeline).
 
 ### Integrity + security (compliance-grade wrong numbers / unauthenticated writes) — DONE
 - **Content-write security holes closed** (`979350ad`). 18 in-body `checkAdminAction`
