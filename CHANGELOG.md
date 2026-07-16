@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.802.9 (2026-07-16)
+
+### Bug Fixes
+- fix(consumer): give signed-in visitors a path to their account from the chrome (RC7)
+
+---
+
+
 ## v1.802.8 (2026-07-16)
 
 ### Bug Fixes
