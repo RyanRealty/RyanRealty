@@ -115,6 +115,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ sl
         }}
       />
       <KbBreadcrumb
+        belowNav
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Guides', href: '/guides' },

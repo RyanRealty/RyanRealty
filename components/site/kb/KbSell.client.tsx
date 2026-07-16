@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { kbMoneyFull, type KbSellData } from './types'
+import { valuationPath } from '@/lib/slug'
 
 /**
  * KB Sell (06) — the primary seller conversion block. Address-capture hands off
@@ -15,6 +16,7 @@ import { kbMoneyFull, type KbSellData } from './types'
 export function KbSell({ data, eyebrow = 'Sell with us' }: { data: KbSellData; eyebrow?: string }) {
   const root = useRef<HTMLElement>(null)
   const router = useRouter()
+  const pathname = usePathname()
   const [address, setAddress] = useState('')
 
   useEffect(() => {
@@ -43,7 +45,14 @@ export function KbSell({ data, eyebrow = 'Sell with us' }: { data: KbSellData; e
   function submit(e: React.FormEvent) {
     e.preventDefault()
     const v = address.trim()
-    router.push(v ? `/sell/valuation?address=${encodeURIComponent(v)}` : '/sell/valuation')
+    // `from` carries the originating surface into the valuation flow so the
+    // lead records WHICH page converted (2026-07-15 conversion audit — every
+    // KbSell lead previously landed under one generic legacy source path).
+    const params = new URLSearchParams()
+    if (v) params.set('address', v)
+    if (pathname) params.set('from', pathname)
+    const qs = params.toString()
+    router.push(qs ? `${valuationPath()}?${qs}` : valuationPath())
   }
 
   const median = kbMoneyFull(data.medianListPrice)

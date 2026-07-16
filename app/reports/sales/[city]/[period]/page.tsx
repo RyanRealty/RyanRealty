@@ -150,7 +150,7 @@ export default async function SalesReportPage({ params }: PageProps) {
 
   return (
     <main className="kb-root">
-      <KbNav />
+      <KbNav solid />
       <KbSectionTracker pageType="reports" />
       <MetadataBlock
         schema={{
@@ -167,6 +167,7 @@ export default async function SalesReportPage({ params }: PageProps) {
         }}
       />
       <KbBreadcrumb
+        belowNav
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Market reports', href: '/housing-market/reports' },

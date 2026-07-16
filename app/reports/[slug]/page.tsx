@@ -34,6 +34,7 @@ import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { Suspense } from 'react'
 import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { formatDate } from '@/lib/format/date'
 import '@/components/site/kb/kb.css'
 
 type Props = { params: Promise<{ slug: string }> }
@@ -101,10 +102,11 @@ export default async function ReportPage({ params }: Props) {
 
   return (
     <main className="kb-root">
-      <KbNav />
+      <KbNav solid />
       <KbSectionTracker pageType="market-reports" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reportSchema) }} />
       <KbBreadcrumb
+        belowNav
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Market reports', href: '/housing-market/reports' },
@@ -116,7 +118,10 @@ export default async function ReportPage({ params }: Props) {
         <section className="section" id="report" aria-label="Market report">
           <div className="wrap">
             <div className="sec-head">
-              <span className="sec-index">Weekly report · {report.period_start} to {report.period_end}</span>
+              <span className="sec-index">
+                Weekly report · {formatDate(report.period_start, { timeZone: 'UTC' })} to{' '}
+                {formatDate(report.period_end, { timeZone: 'UTC' })}
+              </span>
             </div>
             <article className="mx-auto w-full max-w-3xl pt-7">
               <div className="flex flex-wrap items-start justify-between gap-4">
@@ -126,19 +131,13 @@ export default async function ReportPage({ params }: Props) {
                 {/* Share — interactive client, preserved. KB-skinned button. */}
                 <ShareButton
                   title={report.title}
-                  text={`Central Oregon market report: ${report.period_start} - ${report.period_end}. Pending and closed sales by city.`}
+                  text={`Central Oregon market report: ${formatDate(report.period_start, { timeZone: 'UTC' })} to ${formatDate(report.period_end, { timeZone: 'UTC' })}. Pending and closed sales by city.`}
                   url={reportUrl}
                   variant="default"
                   trackContext="weekly_report"
                   className="btn alt"
                 />
               </div>
-              <p
-                className="mono-num mt-3"
-                style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.6vw,1.2rem)', letterSpacing: '.02em' }}
-              >
-                {report.period_start} to {report.period_end}
-              </p>
 
               {/* Report banner — pre-rendered 1200x336, unoptimized (serverless-safe). */}
               {imageUrl && (

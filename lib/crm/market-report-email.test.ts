@@ -126,11 +126,20 @@ describe('verdictLabel', () => {
 })
 
 describe('buildSubject', () => {
-  it('names the single area', () => {
-    expect(buildSubject([block({ areaLabel: 'Tetherow' })])).toBe('Tetherow market update')
+  it('carries the verified headline story for a single area', () => {
+    expect(buildSubject([block({ areaLabel: 'Tetherow' })])).toBe(
+      'Tetherow home prices are down 1.2% from a year ago',
+    )
   })
-  it('uses a regional framing for several areas', () => {
+  it('leads with the biggest verified story across several areas', () => {
     expect(buildSubject([block(), block({ slug: 'redmond', areaLabel: 'Redmond' })])).toBe(
+      'Bend home prices are down 1.2% from a year ago',
+    )
+  })
+  it('falls back to the plain area framing when the headline has no story', () => {
+    const bare = block({ yoyPct: null, marketVerdict: null, monthsOfSupply: null, medianPrice: null })
+    expect(buildSubject([bare])).toBe('Bend market update')
+    expect(buildSubject([bare, { ...bare, slug: 'redmond', areaLabel: 'Redmond' }])).toBe(
       'Your Central Oregon market update',
     )
   })
@@ -205,7 +214,7 @@ describe('renderMarketReportEmail', () => {
       areas: [block()],
       unsubscribeUrl: UNSUB,
     })
-    expect(out.subject).toBe('Bend market update')
+    expect(out.subject).toBe('Bend home prices are down 1.2% from a year ago')
     expect(out.html).toContain('Hi Jordan,')
     expect(out.html).toContain('$721,000')
     expect(out.html).toContain('25 days')
@@ -284,7 +293,7 @@ describe('renderMarketReportEmail', () => {
       areas: [block(), block({ slug: 'tetherow', areaLabel: 'Tetherow', href: '/communities/tetherow', geoType: 'neighborhood', marketVerdict: 'buyers', monthsOfSupply: 10.8, medianPrice: 1700000 })],
       unsubscribeUrl: UNSUB,
     })
-    expect(out.subject).toBe('Your Central Oregon market update')
+    expect(out.subject).toBe('Bend home prices are down 1.2% from a year ago')
     expect(out.html).toContain('Hi,') // no name -> neutral greeting
     expect(out.html).toContain('Bend')
     expect(out.html).toContain('Tetherow')

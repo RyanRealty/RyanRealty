@@ -74,6 +74,27 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
   const state = stateZipMatch?.[1] ?? stateZip.replace(/\d/g, '').trim()
   const postalCode = stateZipMatch?.[2] ?? parts[3]?.trim() ?? ''
 
+  // Resolve the TRUE originating surface (2026-07-15 conversion audit — the
+  // hardcoded '/home-valuation' erased which page produced every seller lead).
+  // The form posts from /sell/valuation, whose ?from= param carries the page
+  // that handed off (KbSell on a city / community / market-report page); when
+  // absent, the referer's own path is still truer than the constant. Same-host
+  // only, path-shaped only — a cross-site or malformed value falls back.
+  let sourcePath = '/home-valuation'
+  try {
+    const h = await headers()
+    const referer = h.get('referer') ?? ''
+    if (referer) {
+      const refUrl = new URL(referer)
+      if (refUrl.host === (h.get('host') ?? '')) {
+        const fromParam = refUrl.searchParams.get('from') ?? ''
+        if (/^\/(?!\/)\S{0,200}$/.test(fromParam)) sourcePath = fromParam.split('?')[0]
+        else if (refUrl.pathname && refUrl.pathname !== '/') sourcePath = refUrl.pathname
+      }
+    }
+  } catch {}
+  const sourceUrl = `${siteUrl}${sourcePath}`
+
   const { insertValuationRequest } = await import('@/lib/data')
   const insertRes = await insertValuationRequest({
     address_street: street || null,
@@ -83,7 +104,7 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
     name: name || null,
     email,
     phone: phone || null,
-    source_url: `${siteUrl}/home-valuation`,
+    source_url: sourceUrl,
   })
   if (!insertRes.ok) return { error: insertRes.error ?? 'insert failed' }
 
@@ -113,7 +134,7 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
       ...(phone && { phones: [{ value: phone }] }),
     },
     source,
-    sourceUrl: `${siteUrl}/home-valuation`,
+    sourceUrl,
     message: `Home Valuation request: ${fullAddress || '(address not provided)'}`,
     property: {
       street: street || undefined,

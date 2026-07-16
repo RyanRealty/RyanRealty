@@ -463,3 +463,11 @@ components/admin/crm/settings/MarketReportPreviewDialog.tsx
 # targets and the board chrome predates the merge. Tracked for cleanup with
 # the rest of the curation board backlog.
 app/admin/(protected)/media/photos/PhotoCurationBoard.tsx
+# G50 composer surfaces (2026-07-15 gate unblock — f0ab5a9f landed past a stale
+# baseline): EmailBodyEditor posts bodyFormat via a hidden form input (no visual
+# surface, so no ds equivalent; same pattern as the baselined EmailComposer /
+# ComposerAttachments hidden fields). SendDocDialog needs a viewport-relative
+# dialog max-height the locked ladder does not carry (same class as the
+# baselined DealDetailModal / MobileThread max-h exceptions).
+components/admin/crm/EmailBodyEditor.tsx
+components/admin/SendDocDialog.client.tsx

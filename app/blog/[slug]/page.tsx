@@ -165,6 +165,7 @@ export default async function BlogPostPage({ params }: PageProps) {
         }}
       />
       <KbBreadcrumb
+        belowNav
         trail={[{ label: 'Home', href: '/' }, { label: 'Blog', href: '/blog' }, { label: post.title }]}
       />
       <SmoothScrollProvider>

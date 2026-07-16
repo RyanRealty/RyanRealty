@@ -53,7 +53,7 @@ export async function getBestListingHeroForGeography(
   const { data: classifications } = await supabase
     .from('listing_photo_classifications')
     .select('photo_url, quality_score, tags')
-    .in('listing_key', [...keys])
+    .in('listing_key', [...keys]) // @canonical-key — keys extracted from listings rows fetched just above
     .not('photo_url', 'is', null)
     .order('quality_score', { ascending: false })
     .limit(100)

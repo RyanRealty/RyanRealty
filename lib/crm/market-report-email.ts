@@ -166,12 +166,21 @@ export function meaningLine(verdict: MoSVerdict | null | undefined): string | nu
   }
 }
 
-/** Build the subject line. One area names it; several use a regional framing. */
+/**
+ * Build the subject line. The subject carries the period's ONE verified story
+ * (the same deterministic headline the hero shows) — "Bend home prices are
+ * down 1.2% from a year ago" earns the open that "Bend market update" never
+ * did (2026-07-15 conversion audit: static subjects on a data product bury
+ * the very numbers that make it worth opening). When the headline engine has
+ * no story to tell (the "Where … stands" fallbacks), the plain area framing
+ * is honest and stays.
+ */
 export function buildSubject(areas: MarketReportAreaBlock[]): string {
-  if (areas.length === 1) {
-    return `${areas[0].areaLabel} market update`
-  }
-  return `Your Central Oregon market update`
+  const base =
+    areas.length === 1 ? `${areas[0].areaLabel} market update` : 'Your Central Oregon market update'
+  const headline = buildHeadline(areas)
+  if (headline.startsWith('Where')) return base
+  return headline
 }
 
 /**

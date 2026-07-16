@@ -234,7 +234,7 @@ export async function getExpiredListingDetail(listingKey: string): Promise<Expir
     .select(
       'ListingKey, PhotoURL, photos_count, public_remarks, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, year_built, lot_size_acres, garage_spaces, view_description, PropertyType, property_sub_type',
     )
-    .eq('ListingKey', r.listing_key)
+    .eq('ListingKey', r.listing_key) // @canonical-key — expired_listings.listing_key is copied verbatim from the listings row by the detect cron
     .maybeSingle()
   const listing: ExpiredFullListing | null = fullRow
     ? {

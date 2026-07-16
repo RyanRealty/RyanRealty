@@ -821,6 +821,15 @@ html.lenis, html.lenis body{height:auto;}
   user-select:none;
   line-height:1;
 }
+/* No-hero pages (blog article, guide, report detail) open with the crumb as the
+   first flow element under the FIXED topbar — clear it so the wordmark never
+   prints over the trail (2026-07-15 audit). */
+.kb-root .kb-bc.below-nav{padding-top:62px;}
+@media(max-width:760px){
+  .kb-root .kb-bc.below-nav{padding-top:54px;}
+  /* Long current crumbs (a full report/article title) must wrap, not overflow. */
+  .kb-root .kb-bc-current{white-space:normal;overflow-wrap:anywhere;}
+}
 /* Dark-context variant: drop .kb-bc.on-navy on a navy strip for cream-on-navy. */
 .kb-root .kb-bc.on-navy{
   background:var(--navy);

@@ -61,7 +61,9 @@ const REQUIRED_KIT_PAGES = [
   'app/admin/(protected)/email/compose/page.tsx',
   // Ops / data cluster
   'app/admin/(protected)/approval-queue/page.tsx',
-  'app/admin/(protected)/expired-listings/page.tsx',
+  // app/admin/(protected)/expired-listings/page.tsx — REMOVED 2026-07-15: pure
+  // redirect to /admin/expireds (4f218e9d consolidation — the manual-research
+  // index retired into the Expireds dashboard, which carries ConsoleSections).
   // app/admin/(protected)/spark-status/page.tsx — REMOVED 2026-07-07: pure
   // redirect to /admin/sync/spark (admin consolidation — Spark is a tab inside
   // System health). The surface it pointed at (sync) stays in this list.

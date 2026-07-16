@@ -115,9 +115,10 @@ export default async function ExplorePage({ searchParams }: Props) {
   return (
     <main className="kb-root">
       <MetadataBlock schemas={exploreSchemas} />
-      <KbNav />
+      <KbNav solid />
       <KbSectionTracker pageType="market-reports" />
       <KbBreadcrumb
+        belowNav
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Market reports', href: '/housing-market/reports' },

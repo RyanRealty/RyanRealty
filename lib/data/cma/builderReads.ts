@@ -119,7 +119,7 @@ export async function getListingPhotosCount(listingKey: string): Promise<number 
   const { data, error } = await sb
     .from('listings')
     .select('photos_count')
-    .eq('ListingKey', listingKey)
+    .eq('ListingKey', listingKey) // @canonical-key — builder callers pass keys read from cmas/expired_listings rows, stored verbatim from listings
     .maybeSingle()
   if (error || !data) return null
   return data.photos_count != null ? Number(data.photos_count) : null

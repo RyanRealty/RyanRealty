@@ -84,9 +84,25 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
     return qs.has('fbclid') || qs.has('gclid') || qs.has('msclkid') || qs.has('ttclid') ||
       [...qs.keys()].some((k) => k.toLowerCase().startsWith('utm_'))
   })()
+  // Outreach traffic (2026-07-15 conversion audit): a market-report email or CRM
+  // text link arrives carrying ?agent= / ?_pid= / ?_fuid=. That visitor is a KNOWN
+  // contact — the identity stitch already happened server-side, so the sign-in
+  // modal offers them nothing and interrupts the report they were sent. Unlike the
+  // per-page-load ad suppression, dismiss for the full 24h window: the params are
+  // stripped/lost on the next client nav, but the visitor is still the same
+  // identified contact mid-visit.
+  const fromOutreachClick = (() => {
+    if (typeof window === 'undefined') return false
+    const qs = new URLSearchParams(window.location.search || '')
+    return qs.has('agent') || qs.has('_pid') || qs.has('_fuid')
+  })()
 
   useEffect(() => {
     if (user) return
+    if (fromOutreachClick) {
+      setDismissed()
+      return
+    }
     // Never interrupt a landing-page or paid-traffic conversion with the social modal.
     if (isLandingPage || fromAdClick) return
     // Never stack the modal over the dedicated auth pages or a lead form.
@@ -103,7 +119,7 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
       if (!isNotFoundPage()) setShow(true)
     }, 1000)
     return () => clearTimeout(t)
-  }, [user, hasNextParam, isHome, isLandingPage, fromAdClick, isAuthPage, isLeadFormPage])
+  }, [user, hasNextParam, isHome, isLandingPage, fromAdClick, fromOutreachClick, isAuthPage, isLeadFormPage])
 
   async function handleSignIn(provider: 'google' | 'facebook') {
     setLoading(provider)

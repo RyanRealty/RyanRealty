@@ -3,6 +3,8 @@
 **Date:** 2026-07-12 · **Auditor:** Claude (senior product-design-lead lens) · **Build:** live `next dev` off `main` @ `4780d901`
 
 > **Prior passes preserved:** the fully-remediated **[2026-07-07 audit](README.2026-07-07.md)** (218 findings, all fixed) and its **[2026-07-11 search-system addendum](search-audit-2026-07-11.md)** still live in this folder. This is a fresh 2026-07-12 pass on the current build; the "[Since the 2026-07-07 audit](#since-the-2026-07-07-audit)" section reconciles the two.
+>
+> **Newest pass:** the **[2026-07-15 market-report → homeowner conversion audit](market-report-conversion-audit-2026-07-15.md)** — does the market report a homeowner receives convert them into a seller lead, is every recipient tracked send→visit→conversion, and what do GA4 + Search Console say. Six fixes shipped in-session (story-carrying email subject, outreach modal suppression, true lead source attribution, nav/breadcrumb collision on no-hero pages, humanized report dates, gate-chain restoration); 18 ranked items remain, led by: the funnel has ~no audience yet (3 subscribers, 0 expired sends), seller emails land on buyer-framed pages, and the valuation ask sits 24+ screens deep on geo pages.
 
 **The question this answers:** can a normal Bend buyer or seller land on the site, **understand** what it is, **trust** it enough to hand over contact info, and **finish the core action** (find a home and ask about it · request a home valuation) without help — measured against the Zillow-class bar consumers arrive with. Not "does it look nice." Every issue is tagged **P0–P3**, marked for which of **understanding / trust / conversion** it hurts, with a **specific fix** and an **effort** estimate.
 

@@ -97,22 +97,26 @@ export function EmailBodyEditor(props: {
           ) : null}
           {/* Text | HTML body-mode toggle. */}
           <div className="flex items-center overflow-hidden rounded-full border border-input text-xs">
-            <button
+            <Button
               type="button"
+              size="sm"
+              variant={format === 'text' ? 'default' : 'ghost'}
               onClick={() => setFormat('text')}
               aria-pressed={format === 'text'}
-              className={cn('px-2.5 py-1', format === 'text' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}
+              className={cn('h-auto rounded-none px-2.5 py-1 text-xs', format === 'text' ? '' : 'text-muted-foreground hover:text-foreground')}
             >
               Text
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              size="sm"
+              variant={format === 'html' ? 'default' : 'ghost'}
               onClick={() => setFormat('html')}
               aria-pressed={format === 'html'}
-              className={cn('px-2.5 py-1', format === 'html' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}
+              className={cn('h-auto rounded-none px-2.5 py-1 text-xs', format === 'html' ? '' : 'text-muted-foreground hover:text-foreground')}
             >
               HTML
-            </button>
+            </Button>
           </div>
           {props.toolbarExtra}
         </div>
