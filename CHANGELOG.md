@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.797.0 (2026-07-16)
+
+### Features
+- feat(expired-outreach): intro SMS carries the built CMA link, stitched + attributed
+
+---
+
+
 ## v1.796.4 (2026-07-16)
 
 ### Other
