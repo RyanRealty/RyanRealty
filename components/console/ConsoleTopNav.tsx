@@ -16,16 +16,19 @@
  */
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { ChevronDown } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { ChevronDown, LogOut } from 'lucide-react'
 import type { AdminNavSection } from '@/app/components/admin/admin-nav'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import ConsoleCommandPalette from '@/components/console/ConsoleCommandPalette'
+import { signOut } from '@/app/actions/auth'
 import { cn } from '@/lib/utils'
 
 const NAVY = '#102742'
@@ -46,6 +49,12 @@ export default function ConsoleTopNav({
 }) {
   const pathname = usePathname() ?? ''
   const initials = (user.fullName ?? user.email ?? '?').trim().charAt(0).toUpperCase()
+  const router = useRouter()
+  async function handleSignOut() {
+    await signOut()
+    router.push('/admin/login')
+    router.refresh()
+  }
 
   return (
     <nav
@@ -98,14 +107,42 @@ export default function ConsoleTopNav({
         >
           View site
         </a>
-        {user.avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={user.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover object-top" referrerPolicy="no-referrer" />
-        ) : (
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-xs font-semibold text-white">
-            {initials}
-          </span>
-        )}
+        {/* Account menu — fixes the audited "no sign-out anywhere in the admin":
+            the avatar was a bare image with no menu, so a broker on a shared device
+            could not sign out or switch accounts. */}
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            aria-label="Account menu"
+            className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+          >
+            {user.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={user.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover object-top" referrerPolicy="no-referrer" />
+            ) : (
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-xs font-semibold text-white">
+                {initials}
+              </span>
+            )}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="truncate font-normal">
+              <span className="block text-sm font-medium text-foreground">{user.fullName ?? 'Signed in'}</span>
+              <span className="block truncate text-xs text-muted-foreground">{user.email}</span>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/admin/settings">My settings</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <a href="/">View site</a>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); void handleSignOut() }} className="text-destructive focus:text-destructive">
+              <LogOut className="mr-2 h-4 w-4" aria-hidden />
+              Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </nav>
   )

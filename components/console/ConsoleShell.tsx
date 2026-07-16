@@ -14,7 +14,9 @@
 
 import Link from 'next/link'
 import { useState, Suspense } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { LogOut } from 'lucide-react'
+import { signOut } from '@/app/actions/auth'
 import type { AdminNavSection } from '@/app/components/admin/admin-nav'
 import AdminNavList from '@/app/components/admin/AdminNavList'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
@@ -61,6 +63,13 @@ export default function ConsoleShell({
   const [open, setOpen] = useState(false)
   const initials = (user.fullName ?? user.email ?? '?').trim().charAt(0).toUpperCase()
   const pathname = usePathname() ?? ''
+  const router = useRouter()
+  async function handleSignOut() {
+    setOpen(false)
+    await signOut()
+    router.push('/admin/login')
+    router.refresh()
+  }
   // The FUB scope switcher is meaningful only on the contacts list, where the
   // ?broker= param drives the feed. Elsewhere the wordmark shows.
   const onContactsList = pathname === '/admin/crm'
@@ -124,6 +133,20 @@ export default function ConsoleShell({
             <Wordmark />
           </div>
           <AdminNavList sections={navSections} onNavigate={() => setOpen(false)} />
+          {/* Account footer — the mobile shell had no sign-out either (audited).
+              Signed-in identity + a sign-out action at the bottom of the sheet. */}
+          <div className="mt-2 border-t border-sidebar-border p-3">
+            <div className="truncate px-3 pb-2 text-xs text-muted-foreground">{user.email}</div>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleSignOut}
+              className="h-10 w-full justify-start gap-2 rounded-lg px-3 text-sm font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              <LogOut className="h-4 w-4" aria-hidden />
+              Sign out
+            </Button>
+          </div>
         </SheetContent>
       </Sheet>
     </div>
