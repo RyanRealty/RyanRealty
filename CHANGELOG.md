@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.802.0 (2026-07-16)
+
+### Features
+- feat(admin-foundation): capability-projected nav generator + tests
+
+---
+
+
 ## v1.801.0 (2026-07-16)
 
 ### Features
