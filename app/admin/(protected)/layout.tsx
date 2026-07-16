@@ -1,6 +1,8 @@
 import './console-theme.css'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { getSession } from '@/app/actions/auth'
+import { safeRedirectPath } from '@/lib/auth/safeRedirect'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getCrmAccess } from '@/app/actions/crm'
 import { CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
@@ -30,7 +32,13 @@ export default async function AdminProtectedLayout({
 }) {
   const session = await getSession()
   if (!session?.user) {
-    redirect('/auth-error?next=/admin')
+    // Preserve the deep-link destination (the page the broker was trying to reach)
+    // through the auth funnel instead of hardcoding /admin — so an SMS/notification
+    // link to a lead with an expired session lands back on that lead after sign-in
+    // (RC5). x-pathname is stamped by middleware; safeRedirectPath guards it.
+    const h = await headers()
+    const next = safeRedirectPath(h.get('x-pathname'), '/admin')
+    redirect(`/auth-error?next=${encodeURIComponent(next)}`)
   }
   const adminRole = await getAdminRoleForEmail(session.user.email)
   if (!adminRole) {

@@ -8,10 +8,18 @@ export const metadata: Metadata = {
   robots: 'noindex, nofollow',
 }
 
-export default function AdminLoginPage() {
+export default async function AdminLoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>
+}) {
   // Web OAuth client id for Google One Tap (FedCM). Read server-side so it never
   // needs a NEXT_PUBLIC_ duplicate; passed to the client form below.
   const googleClientId = process.env.GOOGLE_OAUTH_CLIENT_ID?.trim() || null
+  // Preserve the post-auth destination the (protected) layout forwarded through
+  // /auth-error → here, so a deep link survives sign-in (RC5). Admin-scoped only.
+  const { next } = await searchParams
+  const dest = next && next.startsWith('/admin') ? next : undefined
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-muted px-4">
       <div className="w-full max-w-sm rounded-lg border border-border bg-card p-8 shadow-sm">
@@ -24,7 +32,7 @@ export default function AdminLoginPage() {
         <p className="mt-1 text-center text-sm text-muted-foreground">
           Sign in with your Ryan Realty Google account
         </p>
-        <AdminLoginForm googleClientId={googleClientId} />
+        <AdminLoginForm googleClientId={googleClientId} next={dest} />
       </div>
     </main>
   )

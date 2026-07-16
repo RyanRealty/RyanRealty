@@ -86,8 +86,12 @@ async function sha256Hex(input: string): Promise<string> {
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
-export default function AdminLoginForm({ googleClientId }: { googleClientId: string | null }) {
+export default function AdminLoginForm({ googleClientId, next }: { googleClientId: string | null; next?: string }) {
   const router = useRouter()
+  // Preserve the deep-link destination through auth (RC5 fix): a broker who taps an
+  // SMS/notification link to a lead with an expired session lands BACK on that lead
+  // after signing in, instead of being dumped on the dashboard. Falls back to /admin.
+  const dest = next && next.startsWith('/admin') ? next : ADMIN_NEXT
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const buttonRef = useRef<HTMLDivElement>(null)
@@ -103,10 +107,10 @@ export default function AdminLoginForm({ googleClientId }: { googleClientId: str
         setError(error.message)
         return
       }
-      router.push(ADMIN_NEXT)
+      router.push(dest)
       router.refresh()
     },
-    [router],
+    [router, dest],
   )
 
   useEffect(() => {
@@ -146,7 +150,7 @@ export default function AdminLoginForm({ googleClientId }: { googleClientId: str
   async function handleRedirect() {
     setLoading(true)
     setError(null)
-    const result = await signInWithOAuthBrowser('google', ADMIN_NEXT)
+    const result = await signInWithOAuthBrowser('google', dest)
     if (result.error) {
       setLoading(false)
       setError(result.error)
