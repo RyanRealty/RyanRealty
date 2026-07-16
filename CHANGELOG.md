@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.810.1 (2026-07-16)
+
+### Bug Fixes
+- fix(consumer): wire RC7 save-resume into PriceCtaStrip (the detail page's real save CTA)
+- fix(consumer): RC7 resume is idempotent + auth-honest — no silent un-save
+
+---
+
+
 ## v1.810.0 (2026-07-16)
 
 ### Features
