@@ -56,6 +56,16 @@ export function SmsComposer(props: {
   personId?: number
   /** Live crm_field_definitions → Custom Fields group in the merge-field dropdown. */
   customFields?: CustomFieldToken[]
+  /* ── Variant props — every SMS-send surface renders THIS component (Matt
+        directive 2026-07-15: one interface for every text/email send). ── */
+  /** Hide the MMS attachment control (host path has no contact-file scope). */
+  hideAttachments?: boolean
+  /** Hide the CRM merge-field dropdown (host path resolves its own tokens). */
+  hideMergeFields?: boolean
+  /** Hide the quiet-hours override (host send path has no override wiring). */
+  hideQuietHours?: boolean
+  /** Externally gate the send button (e.g. a review-ack checkbox in the host). */
+  sendDisabled?: boolean
 }) {
   const [body, setBody] = useState(props.initialBody)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
@@ -148,14 +158,18 @@ export function SmsComposer(props: {
       {/* FUB chat input bar: insert-field · paperclip · message · round send arrow. */}
       <div className="flex items-end gap-1.5 rounded-3xl border border-input bg-background py-1.5 pl-1.5 pr-1.5">
         {/* Merge fields — dropdown behind the braces icon so the bar stays clean. */}
-        <MergeFieldInserter channel="sms" customFields={props.customFields} onInsert={handleInsertToken} iconOnly />
-        <AttachmentControl
-          attachments={attachments}
-          accept={MMS_ACCEPT_ATTR}
-          ariaLabel="Attach images or PDFs"
-          className="h-9 w-9 shrink-0 rounded-full"
-          iconClassName="h-5 w-5"
-        />
+        {!props.hideMergeFields ? (
+          <MergeFieldInserter channel="sms" customFields={props.customFields} onInsert={handleInsertToken} iconOnly />
+        ) : null}
+        {!props.hideAttachments ? (
+          <AttachmentControl
+            attachments={attachments}
+            accept={MMS_ACCEPT_ATTR}
+            ariaLabel="Attach images or PDFs"
+            className="h-9 w-9 shrink-0 rounded-full"
+            iconClassName="h-5 w-5"
+          />
+        ) : null}
         <Textarea
           ref={bodyRef}
           name="body"
@@ -171,7 +185,7 @@ export function SmsComposer(props: {
         <Button
           type="submit"
           size="icon"
-          disabled={!body.trim() || attachments.uploading}
+          disabled={!body.trim() || attachments.uploading || props.sendDisabled}
           aria-label={attachments.uploading ? 'Uploading attachment' : 'Send text'}
           className="h-9 w-9 shrink-0 rounded-full"
         >
@@ -181,10 +195,14 @@ export function SmsComposer(props: {
 
       {/* Quiet-hours override + live segment count, quiet under the bar. */}
       <div className="flex items-center justify-between gap-3 px-1">
-        <label className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
-          <Checkbox id="overrideQuietHours" name="overrideQuietHours" value="1" />
-          Send anyway (quiet hours)
-        </label>
+        {!props.hideQuietHours ? (
+          <label className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
+            <Checkbox id="overrideQuietHours" name="overrideQuietHours" value="1" />
+            Send anyway (quiet hours)
+          </label>
+        ) : (
+          <span />
+        )}
         <div className="flex shrink-0 items-center gap-3">
           {props.saveDraftAction ? (
             <Button

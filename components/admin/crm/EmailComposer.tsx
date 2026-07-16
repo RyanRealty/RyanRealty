@@ -3,16 +3,11 @@
 /**
  * CRM email composer with a live "exactly what sends" preview.
  *
- * The textarea holds the editable source (template HTML or plain text, merge
- * tokens already resolved server-side). The preview pane renders the same
- * composition the send path builds — buildEmailPreviewDoc wraps
- * composeOutboundHtml(body, signature, format) — inside a sandboxed iframe,
- * so brokers review the rendered email, never raw HTML.
- *
- * Text/HTML mode: the broker picks how the body is interpreted (defaults to
- * auto-detection of the initial body). The choice posts as `bodyFormat`, and
- * the preview + send path share the same format, keeping preview byte-equal
- * to what sends.
+ * The editing surface (subject, Preview⇄Edit tabs, Text/HTML toggle, merge
+ * fields, preview iframe) is the shared EmailBodyEditor — the ONE canonical
+ * email editing interface. This component wraps it with the send form:
+ * To/Cc/Bcc recipients, attachments, the signature footnote, and the
+ * Send / Save draft / Send-and-Close buttons.
  *
  * Attachments upload client-direct to the crm-files bucket as they're picked
  * (see ComposerAttachments) — multiple files, 10MB each / 18MB total.
@@ -21,11 +16,10 @@
  * template key here so the send action can stamp emailKey='tpl:<key>' on the
  * email_events row. This is what enables per-template open/click reporting.
  */
-import { useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
-import { buildEmailPreviewDoc, looksLikeHtml, type EmailBodyFormat } from '@/lib/crm/email-body'
-import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
-import { MergeFieldInserter, insertAtCursor, type CustomFieldToken } from '@/components/admin/crm/MergeFieldInserter'
+import { EmailBodyEditor } from '@/components/admin/crm/EmailBodyEditor'
+import type { CustomFieldToken } from '@/components/admin/crm/MergeFieldInserter'
 import { RecipientField, type RecipientOption } from '@/components/admin/crm/RecipientField'
 import {
   AttachmentChips,
@@ -39,8 +33,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 
 export function EmailComposer(props: {
@@ -64,17 +56,25 @@ export function EmailComposer(props: {
   initialTo?: string[]
   /** Live crm_field_definitions → Custom Fields group in the merge-field dropdown. */
   customFields?: CustomFieldToken[]
+  /* ── Variant props — every email-send surface renders THIS component; these
+        let hosts with a fixed/externally-picked audience or their own send
+        semantics reuse the one canonical interface (Matt directive 2026-07-15:
+        "anytime a text or email is sent it uses the same interface"). ── */
+  /** Hide To/Cc/Bcc rows (recipient is fixed or picked by the host surface). */
+  hideRecipients?: boolean
+  /** Hide the attachment control (host path attaches its own files, or no contact scope). */
+  hideAttachments?: boolean
+  /** Hide the CRM merge-field dropdown (host path resolves its own tokens). */
+  hideMergeFields?: boolean
+  /** Replaces the default signature footnote; null hides the line entirely. */
+  footnote?: string | null
+  /** Externally gate the send button (e.g. a review-ack checkbox in the host). */
+  sendDisabled?: boolean
+  submitLabel?: string
 }) {
   const [subject, setSubject] = useState(props.initialSubject)
   const [body, setBody] = useState(props.initialBody)
-  const bodyRef = useRef<HTMLTextAreaElement>(null)
   const sendCloseRef = useRef<HTMLButtonElement>(null)
-  const [tab, setTab] = useState<'preview' | 'edit'>(props.initialBody ? 'preview' : 'edit')
-  // Text vs HTML body interpretation — seeded from the initial body, broker
-  // can override. Posts as bodyFormat; preview uses the same value.
-  const [format, setFormat] = useState<Exclude<EmailBodyFormat, 'auto'>>(
-    looksLikeHtml(props.initialBody) ? 'html' : 'text',
-  )
 
   // Attachments (multiple, uploaded client-direct — see ComposerAttachments).
   const attachments = useComposerAttachments({ personId: props.personId, channel: 'email' })
@@ -87,36 +87,13 @@ export function EmailComposer(props: {
   const [showCc, setShowCc] = useState(false)
   const [showBcc, setShowBcc] = useState(false)
 
-  const previewDoc = useMemo(
-    () => buildEmailPreviewDoc(body, props.signatureHtml, format),
-    [body, props.signatureHtml, format],
-  )
-  const unresolved = useMemo(() => findUnresolvedMergeTokens(subject + ' ' + body), [subject, body])
-
-  function handleInsertToken(token: string) {
-    const el = bodyRef.current
-    if (!el) {
-      setBody((b) => b + token)
-      return
-    }
-    const next = insertAtCursor(el, token)
-    setBody(next)
-    // Restore cursor after inserted token
-    const pos = (el.selectionStart ?? 0) + token.length
-    requestAnimationFrame(() => {
-      el.focus()
-      el.setSelectionRange(pos, pos)
-    })
-  }
-
   return (
     <form action={props.sendAction} className="space-y-2">
       {/* Hidden field carries the template key for email_events stamping. */}
       {props.tplKey ? <input type="hidden" name="tplKey" value={props.tplKey} /> : null}
-      <input type="hidden" name="bodyFormat" value={format} />
       {/* Recipients — Gmail-style rows; Cc/Bcc reveal on demand. Empty To
           falls back to the contact's primary email server-side. */}
-      <div className="space-y-1">
+      <div className={cn('space-y-1', props.hideRecipients && 'hidden')}>
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
             <RecipientField
@@ -150,72 +127,36 @@ export function EmailComposer(props: {
           <input type="hidden" name="bcc" value={bcc.length ? JSON.stringify(bcc) : ''} />
         )}
       </div>
-      <Input name="subject" placeholder="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Button type="button" size="sm" variant={tab === 'preview' ? 'default' : 'ghost'} onClick={() => setTab('preview')}>
-            Preview, what sends
-          </Button>
-          <Button type="button" size="sm" variant={tab === 'edit' ? 'default' : 'ghost'} onClick={() => setTab('edit')}>
-            Edit
-          </Button>
-        </div>
-        <div className="flex items-center gap-1">
-          {tab === 'edit' ? (
-            <MergeFieldInserter channel="email" customFields={props.customFields} onInsert={handleInsertToken} />
-          ) : null}
-          {/* Text | HTML body-mode toggle. */}
-          <div className="flex items-center overflow-hidden rounded-full border border-input text-xs">
-            <button
-              type="button"
-              onClick={() => setFormat('text')}
-              aria-pressed={format === 'text'}
-              className={cn('px-2.5 py-1', format === 'text' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}
-            >
-              Text
-            </button>
-            <button
-              type="button"
-              onClick={() => setFormat('html')}
-              aria-pressed={format === 'html'}
-              className={cn('px-2.5 py-1', format === 'html' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}
-            >
-              HTML
-            </button>
-          </div>
-          <AttachmentControl
-            attachments={attachments}
-            ariaLabel="Attach files"
-            className="h-8 w-8 shrink-0 rounded-full"
-          />
-        </div>
-      </div>
-      <AttachmentChips items={attachments.items} onRemove={attachments.remove} />
-      {/* The textarea stays mounted (hidden) so the form always posts `body`. */}
-      <Textarea
-        ref={bodyRef}
-        name="body"
-        rows={10}
-        placeholder={format === 'html' ? 'Paste or write HTML. Preview shows the rendered email.' : "Message. Sends from the signed-in broker's own mailbox."}
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        className={cn(tab === 'edit' ? '' : 'hidden', format === 'html' && 'font-mono text-xs')}
+
+      {/* The canonical editing surface (subject + preview/edit + format + merge). */}
+      <EmailBodyEditor
+        subject={subject}
+        onSubjectChange={setSubject}
+        body={body}
+        onBodyChange={setBody}
+        signatureHtml={props.signatureHtml}
+        hideMergeFields={props.hideMergeFields}
+        customFields={props.customFields}
+        toolbarExtra={
+          !props.hideAttachments ? (
+            <AttachmentControl
+              attachments={attachments}
+              ariaLabel="Attach files"
+              className="h-8 w-8 shrink-0 rounded-full"
+            />
+          ) : null
+        }
       />
-      {tab === 'preview' ? (
-        <iframe
-          title="Email preview"
-          sandbox=""
-          srcDoc={previewDoc}
-          className="h-96 w-full rounded-xl border border-border bg-card"
-        />
-      ) : null}
-      {unresolved.length > 0 ? (
-        <p className="text-xs font-medium text-warning">
-          Unfilled merge fields, this contact has no value for: {unresolved.join(', ')}. Edit before sending.
-        </p>
-      ) : null}
+      <AttachmentChips items={attachments.items} onRemove={attachments.remove} />
+
       <div className="flex items-center justify-between gap-4">
-        <span className="text-xs text-muted-foreground">Your signature and the Oregon agency disclosure link are added to every send.</span>
+        {props.footnote !== null ? (
+          <span className="text-xs text-muted-foreground">
+            {props.footnote ?? 'Your signature and the Oregon agency disclosure link are added to every send.'}
+          </span>
+        ) : (
+          <span />
+        )}
         <div className="flex items-center gap-2">
           {props.saveDraftAction ? (
             <Button type="submit" formAction={props.saveDraftAction} variant="ghost" size="sm" disabled={!subject.trim() && !body.trim()}>
@@ -226,10 +167,10 @@ export function EmailComposer(props: {
             <Button
               type="submit"
               size="sm"
-              disabled={attachments.uploading}
+              disabled={attachments.uploading || props.sendDisabled}
               className={props.sendAndCloseAction ? 'rounded-r-none' : undefined}
             >
-              {attachments.uploading ? 'Uploading…' : 'Send email'}
+              {attachments.uploading ? 'Uploading…' : props.submitLabel ?? 'Send email'}
             </Button>
             {props.sendAndCloseAction ? (
               <>

@@ -37,10 +37,10 @@ import type {
 } from '@/lib/data/crm/getComposeAudienceOptions'
 import { validateComposeContent, type ComposePreview } from '@/lib/crm/compose-audience'
 import BulkProgress from '@/components/admin/crm/BulkProgress'
+import { EmailBodyEditor } from '@/components/admin/crm/EmailBodyEditor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
@@ -317,33 +317,20 @@ export default function ComposeToCohort() {
               </SelectContent>
             </Select>
           ) : (
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="cohort-subject" className="text-xs text-muted-foreground">
-                  Subject
-                </Label>
-                <Input
-                  id="cohort-subject"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  className="mt-1"
-                  placeholder="Subject line"
-                />
-              </div>
-              <div>
-                <Label htmlFor="cohort-body" className="text-xs text-muted-foreground">
-                  Body
-                </Label>
-                <Textarea
-                  id="cohort-body"
-                  rows={8}
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  className="mt-1"
-                  placeholder="Write the email. Merge fields like {{first_name}} are supported."
-                />
-              </div>
-            </div>
+            // The canonical email editing surface (EmailBodyEditor — same
+            // subject/preview/edit interface as every other email send). The
+            // cohort pipeline resolves {{handlebars}} tokens itself, so the
+            // CRM merge dropdown is hidden.
+            <EmailBodyEditor
+              subject={subject}
+              onSubjectChange={setSubject}
+              body={body}
+              onBodyChange={setBody}
+              signatureHtml={null}
+              hideMergeFields
+              subjectPlaceholder="Subject line"
+              bodyPlaceholder="Write the email. Merge fields like {{first_name}} are supported."
+            />
           )}
         </section>
 

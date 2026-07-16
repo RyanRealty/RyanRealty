@@ -5,17 +5,24 @@
  * text, pick a template (pre-merged for this owner + property) or write the
  * message, edit freely, send. The Send click is the approval; a flagged
  * document adds the acknowledgment checkbox.
+ *
+ * The editing surfaces are the canonical EmailComposer / SmsComposer (Matt
+ * directive 2026-07-15: every text/email send uses the same interface). This
+ * dialog only owns the doc context: channel tabs, template seeding, the
+ * review-ack gate, and adapting FormData to the send-doc actions. Merge
+ * fields / attachments / quiet-hours are hidden — this path pre-merges its
+ * own tokens, attaches the report itself, and has no override wiring.
  */
 
 import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { EmailComposer } from '@/components/admin/crm/EmailComposer'
+import { SmsComposer } from '@/components/admin/crm/SmsComposer'
 import {
   prepareDocSendAction,
   sendDocEmailAction,
@@ -38,8 +45,11 @@ export function SendDocDialog(props: {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [channel, setChannel] = useState<'email' | 'sms'>('email')
   const [templateKey, setTemplateKey] = useState<string>('__default__')
+  // Seed values for the composers — updated only by open/template/channel
+  // changes; seedV re-keys the composer so the new seed takes effect.
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
+  const [seedV, setSeedV] = useState(0)
   const [ack, setAck] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -62,6 +72,7 @@ export function SendDocDialog(props: {
       setTemplateKey('__default__')
       setSubject(res.data.defaultEmailSubject)
       setBody(startChannel === 'email' ? res.data.defaultEmailBody : '')
+      setSeedV((v) => v + 1)
       setAck(false)
     })
   }
@@ -71,6 +82,7 @@ export function SendDocDialog(props: {
     setChannel(next)
     setTemplateKey('__default__')
     setBody(next === 'email' ? ctx.defaultEmailBody : '')
+    setSeedV((v) => v + 1)
     setMsg(null)
   }
 
@@ -80,10 +92,12 @@ export function SendDocDialog(props: {
     if (key === '__default__') {
       setBody(channel === 'email' ? ctx.defaultEmailBody : '')
       setSubject(ctx.defaultEmailSubject)
+      setSeedV((v) => v + 1)
       return
     }
     if (key === '__blank__') {
       setBody('')
+      setSeedV((v) => v + 1)
       return
     }
     const list = channel === 'email' ? ctx.emailTemplates : ctx.smsTemplates
@@ -91,28 +105,41 @@ export function SendDocDialog(props: {
     if (tpl) {
       setBody(tpl.body)
       if (channel === 'email' && tpl.subject) setSubject(tpl.subject)
+      setSeedV((v) => v + 1)
     }
   }
 
-  const send = () =>
-    startTransition(async () => {
-      if (!ctx) return
-      setMsg(channel === 'email' ? 'Sending email...' : 'Sending text...')
-      if (channel === 'email') {
-        const res = await sendDocEmailAction(kind, id, { subject, body, acknowledgeReview: ack })
+  /** EmailComposer posts here — adapt FormData to the send-doc action. */
+  const sendEmailFromComposer = (fd: FormData) =>
+    new Promise<void>((resolve) => {
+      startTransition(async () => {
+        setMsg('Sending email...')
+        const res = await sendDocEmailAction(kind, id, {
+          subject: String(fd.get('subject') ?? '').trim(),
+          body: String(fd.get('body') ?? ''),
+          acknowledgeReview: ack,
+        })
         setMsg(res.error ? `Failed: ${res.error}` : `Sent (${res.data?.transport}).`)
         if (!res.error) setTimeout(() => setOpen(false), 1200)
-      } else {
-        const res = await sendDocSmsAction(kind, id, { body })
+        resolve()
+      })
+    })
+
+  /** SmsComposer posts here — adapt FormData to the send-doc action. */
+  const sendSmsFromComposer = (fd: FormData) =>
+    new Promise<void>((resolve) => {
+      startTransition(async () => {
+        setMsg('Sending text...')
+        const res = await sendDocSmsAction(kind, id, { body: String(fd.get('body') ?? '') })
         setMsg(res.error ? `Failed: ${res.error}` : 'Text sent.')
         if (!res.error) setTimeout(() => setOpen(false), 1200)
-      }
+        resolve()
+      })
     })
 
   const templates = ctx ? (channel === 'email' ? ctx.emailTemplates : ctx.smsTemplates) : []
   const channelReady = ctx && (channel === 'email' ? !!ctx.email : !!ctx.phone)
-  const smsLen = body.length
-  const canSend = !!ctx && !pending && channelReady && body.trim().length > 0 && (!ctx.needsReview || ack)
+  const sendBlocked = !ctx || pending || !channelReady || (ctx.needsReview && !ack)
 
   return (
     <Dialog open={open} onOpenChange={onOpen}>
@@ -121,7 +148,7 @@ export function SendDocDialog(props: {
           {buttonLabel}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-h-[90dvh] max-w-xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             Send to {ctx?.ownerName ?? 'owner'} · {ctx?.subjectAddress ?? ''}
@@ -163,25 +190,6 @@ export function SendDocDialog(props: {
               </Select>
             </div>
 
-            {channel === 'email' ? (
-              <div>
-                <Label className="mb-1 block text-xs text-muted-foreground">Subject</Label>
-                <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
-              </div>
-            ) : null}
-
-            <div>
-              <Label className="mb-1 block text-xs text-muted-foreground">
-                Message{channel === 'sms' ? ` · ${smsLen} characters${smsLen > 320 ? ' (long for a first text)' : ''}` : ''}
-              </Label>
-              <Textarea rows={channel === 'email' ? 8 : 5} value={body} onChange={(e) => setBody(e.target.value)} />
-              <p className="mt-1 text-xs leading-snug text-muted-foreground">
-                {channel === 'email'
-                  ? 'The report button, PDF attachment, and your signature append automatically.'
-                  : `Link to the report: ${ctx.docUrl} (paste it in if you want it in the text — links are tap-tracked).`}
-              </p>
-            </div>
-
             {ctx.needsReview ? (
               <Label className="items-start text-xs font-normal leading-normal text-foreground">
                 <Checkbox checked={ack} onCheckedChange={(v) => setAck(v === true)} className="mt-0.5" />
@@ -189,15 +197,42 @@ export function SendDocDialog(props: {
               </Label>
             ) : null}
 
+            {channel === 'email' ? (
+              <EmailComposer
+                key={`email-${seedV}`}
+                initialSubject={subject}
+                initialBody={body}
+                signatureHtml={null}
+                sendAction={sendEmailFromComposer}
+                hideRecipients
+                hideAttachments
+                hideMergeFields
+                sendDisabled={sendBlocked}
+                footnote="The report button, PDF attachment, and your signature append automatically."
+              />
+            ) : (
+              <div className="space-y-1.5">
+                <SmsComposer
+                  key={`sms-${seedV}`}
+                  initialBody={body}
+                  sendAction={sendSmsFromComposer}
+                  hideAttachments
+                  hideMergeFields
+                  hideQuietHours
+                  sendDisabled={sendBlocked}
+                />
+                <p className="text-xs leading-snug text-muted-foreground">
+                  Link to the report: {ctx.docUrl} (paste it in if you want it in the text — links are tap-tracked).
+                </p>
+              </div>
+            )}
+
             <div className="flex items-center justify-between gap-3">
               <a href={`/admin/cmas/${ctx.docSlug}`} target="_blank" rel="noreferrer" className="text-xs text-muted-foreground underline underline-offset-2">
                 Open the document
               </a>
-              <Button disabled={!canSend} onClick={send}>
-                {pending ? 'Working...' : channel === 'email' ? 'Send email' : 'Send text'}
-              </Button>
+              {msg ? <p className="text-xs text-muted-foreground">{msg}</p> : null}
             </div>
-            {msg ? <p className="text-xs text-muted-foreground">{msg}</p> : null}
           </div>
         ) : null}
       </DialogContent>

@@ -22,16 +22,13 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowUp, ChevronsUpDown, FileText, Pencil, X } from 'lucide-react'
+import { ChevronsUpDown, Pencil, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { Textarea } from '@/components/ui/textarea'
 import { EmailComposer } from '@/components/admin/crm/EmailComposer'
-import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
+import { SmsComposer } from '@/components/admin/crm/SmsComposer'
 import { CrmAvatar } from '@/components/admin/crm/mobile/CrmMobileKit'
 import MobileAiPills from './MobileAiPills'
 import type { AiDraftKind } from '@/app/actions/crm-inbox'
@@ -93,13 +90,15 @@ export default function MobileComposeSheet({
   const [channel, setChannel] = useState<'email' | 'text'>(initialChannel)
   const [q, setQ] = useState('')
   const [hits, setHits] = useState<ComposeRecipient[]>([])
+  // SMS body is injected into the canonical SmsComposer via key-remount
+  // (initialBody + version bump) — same pattern as MobileThread's AI drafts.
   const [smsBody, setSmsBody] = useState('')
-  const [overrideQuiet, setOverrideQuiet] = useState(false)
+  const [smsBodyV, setSmsBodyV] = useState(0)
   const [tplOpen, setTplOpen] = useState(false)
   const [emailTpl, setEmailTpl] = useState<ComposeTemplate | null>(null)
   const [emailKey, setEmailKey] = useState(0)
   const [error, setError] = useState<string | null>(null)
-  const [pending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const primary = recipients[0] ?? null
@@ -121,9 +120,9 @@ export default function MobileComposeSheet({
     setQ('')
     setHits([])
     setSmsBody('')
+    setSmsBodyV((v) => v + 1)
     setError(null)
     setEmailTpl(null)
-    setOverrideQuiet(false)
   }
 
   function finish(personId: number) {
@@ -132,25 +131,18 @@ export default function MobileComposeSheet({
     router.push(`${hrefBase}&c=${personId}`)
   }
 
-  function sendSms() {
-    if (!primary || !smsBody.trim()) return
+  /** The canonical SmsComposer posts its FormData here — the sheet only layers
+   *  in its picked group recipients before handing off to the gated action. */
+  async function sendSmsFromComposer(fd: FormData) {
+    if (!primary) return
     setError(null)
-    startTransition(async () => {
-      const fd = new FormData()
-      fd.set('body', smsBody)
-      if (overrideQuiet) fd.set('overrideQuietHours', '1')
-      if (recipients.length > 1) fd.set('recipientIds', recipients.slice(1).map((r) => r.id).join(','))
-      const res = await sendSmsAction(primary.id, fd)
-      if (res.ok) finish(primary.id)
-      else setError(res.error ?? 'Text not sent')
-    })
+    if (recipients.length > 1) fd.set('recipientIds', recipients.slice(1).map((r) => r.id).join(','))
+    const res = await sendSmsAction(primary.id, fd)
+    if (res.ok) finish(primary.id)
+    else setError(res.error ?? 'Text not sent')
   }
 
-  const chars = smsBody.length
   const templates = channel === 'email' ? emailTemplates : smsTemplates
-  // Tokens still %literal% in the body — after the server-side template render
-  // these are genuinely unresolved for this contact (desktop SmsComposer parity).
-  const smsUnresolved = findUnresolvedMergeTokens(smsBody)
 
   return (
     <>
@@ -265,60 +257,26 @@ export default function MobileComposeSheet({
             </button>
           ) : null}
 
-          {/* ── Text compose (S2/S3) ─────────────────────────────────────── */}
+          {/* ── Text compose (S2/S3) — the canonical SmsComposer, same chat bar
+                 as the thread view and the person Comms tab. AI pills + the
+                 template row above inject via initialBody + key-remount. ── */}
           {primary && channel === 'text' ? (
             smsAllowed ? (
               <div className="mt-3">
                 <MobileAiPills
                   aiDraftAction={(kind, custom) => aiDraftAction(primary.id, kind, custom)}
-                  onDraft={(text) => setSmsBody(text)}
+                  onDraft={(text) => {
+                    setSmsBody(text)
+                    setSmsBodyV((v) => v + 1)
+                  }}
                 />
-                {smsUnresolved.length > 0 ? (
-                  <p className="mb-1.5 px-1 text-xs font-medium text-warning">
-                    Unfilled merge fields, this contact has no value for: {smsUnresolved.join(', ')}.
-                    Edit before sending.
-                  </p>
-                ) : null}
-                <div className="flex items-end gap-1.5 rounded-3xl border border-input bg-background p-1.5">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Insert a template"
-                    onClick={() => setTplOpen(true)}
-                    className="h-9 w-9 shrink-0 rounded-full bg-muted"
-                  >
-                    <FileText className="h-4 w-4" aria-hidden />
-                  </Button>
-                  <Textarea
-                    rows={1}
-                    value={smsBody}
-                    onChange={(e) => setSmsBody(e.target.value)}
-                    placeholder="Text message · SMS"
-                    className="max-h-32 min-h-9 flex-1 resize-none self-center border-0 bg-transparent px-1 py-1.5 text-[15px] shadow-none focus-visible:ring-0"
-                  />
-                  <Button
-                    type="button"
-                    size="icon"
-                    aria-label="Send text"
-                    disabled={pending || !smsBody.trim()}
-                    onClick={sendSms}
-                    className="h-9 w-9 shrink-0 rounded-full"
-                  >
-                    <ArrowUp className="h-5 w-5" aria-hidden />
-                  </Button>
-                </div>
-                <div className="mt-1.5 flex items-center justify-between px-1">
-                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Checkbox checked={overrideQuiet} onCheckedChange={(v) => setOverrideQuiet(v === true)} />
-                    Send anyway (quiet hours)
-                  </label>
-                  {chars > 0 ? (
-                    <span className={cn('text-xs tabular-nums', chars > 320 ? 'text-warning' : 'text-muted-foreground')}>
-                      {chars}/320
-                    </span>
-                  ) : null}
-                </div>
+                <SmsComposer
+                  key={smsBodyV}
+                  initialBody={smsBody}
+                  personId={primary.id}
+                  primaryPersonId={primary.id}
+                  sendAction={sendSmsFromComposer}
+                />
                 {recipients.length > 1 ? (
                   <p className="mt-1 px-1 text-xs text-muted-foreground">
                     Group text · {recipients.length} people share one thread
@@ -397,15 +355,20 @@ export default function MobileComposeSheet({
                     setEmailKey((k) => k + 1)
                   } else if (renderTemplateAction && primary) {
                     // Resolve merge tokens server-side BEFORE the body lands in
-                    // the input — the broker sees what will send, and anything
-                    // still %literal% is genuinely unresolved (warned below).
+                    // the composer — the broker sees what will send; anything
+                    // still %literal% is genuinely unresolved (SmsComposer warns).
                     setSmsBody(t.body)
+                    setSmsBodyV((v) => v + 1)
                     startTransition(async () => {
                       const res = await renderTemplateAction(primary.id, t.body)
-                      if (res.ok) setSmsBody(res.body)
+                      if (res.ok) {
+                        setSmsBody(res.body)
+                        setSmsBodyV((v) => v + 1)
+                      }
                     })
                   } else {
                     setSmsBody(t.body)
+                    setSmsBodyV((v) => v + 1)
                   }
                   setTplOpen(false)
                 }}

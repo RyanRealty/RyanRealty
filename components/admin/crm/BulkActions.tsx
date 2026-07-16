@@ -66,8 +66,8 @@ import type { LegacyFilters } from '@/lib/crm/segment-ast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
+import { EmailBodyEditor } from '@/components/admin/crm/EmailBodyEditor'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
@@ -724,16 +724,17 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
                   options={emailTemplates.filter((t) => t.channel === 'email').map((t) => ({ key: String(t.id), label: t.name }))}
                 />
                 {!templateId ? (
-                  <>
-                    <div>
-                      <Label htmlFor="bulk-email-subject" className="mb-1.5 block text-xs text-muted-foreground">Subject</Label>
-                      <Input id="bulk-email-subject" value={subject} onChange={(e) => setSubject(e.target.value)} className="h-10 md:h-9" />
-                    </div>
-                    <div>
-                      <Label htmlFor="bulk-email-body" className="mb-1.5 block text-xs text-muted-foreground">Body</Label>
-                      <Textarea id="bulk-email-body" value={body} onChange={(e) => setBody(e.target.value)} rows={5} />
-                    </div>
-                  </>
+                  // The canonical email editing surface — same interface as
+                  // every other email send (the bulk pipeline resolves its own
+                  // tokens, so the CRM merge dropdown is hidden).
+                  <EmailBodyEditor
+                    subject={subject}
+                    onSubjectChange={setSubject}
+                    body={body}
+                    onBodyChange={setBody}
+                    signatureHtml={null}
+                    hideMergeFields
+                  />
                 ) : null}
               </>
             ) : null}
