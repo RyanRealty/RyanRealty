@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.813.5 (2026-07-17)
+
+### Bug Fixes
+- fix(ci): install npm deps before Playwright browsers in the smoke workflow
+
+---
+
+
 ## v1.813.4 (2026-07-17)
 
 ### Maintenance
