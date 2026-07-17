@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.810.6 (2026-07-17)
+
+### Other
+- ci(hooks): enforce full ci:gates static chain in pre-push (Matt directive)
+
+---
+
+
 ## v1.810.5 (2026-07-17)
 
 ### Maintenance
