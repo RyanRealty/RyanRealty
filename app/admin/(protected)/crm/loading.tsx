@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 export default function CrmPeopleLoading() {
   const HEADERS = ['Name', 'Lead Score', 'Agent', 'Last Visit', 'Phone', 'Email', 'Last Activity', 'Tags']
   return (
-    <main className="mx-auto max-w-[1600px] px-4 pb-8 pt-2 sm:px-6 sm:py-6" aria-busy>
+    <div className="mx-auto max-w-[1600px] px-4 pb-8 pt-2 sm:px-6 sm:py-6" aria-busy>
       {/* Mobile: simple list skeleton */}
       <div className="mt-1 space-y-3 md:hidden">
         <Skeleton className="h-7 w-32" />
@@ -70,6 +70,6 @@ export default function CrmPeopleLoading() {
           <Skeleton className="h-24 w-full rounded-md" />
         </div>
       </div>
-    </main>
+    </div>
   )
 }

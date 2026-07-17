@@ -1,6 +1,6 @@
 export default function PulseLoading() {
   return (
-    <main className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       <div aria-hidden="true" className="border-b border-border bg-card">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
           <div className="h-3 w-32 animate-pulse rounded bg-muted" />
@@ -34,6 +34,6 @@ export default function PulseLoading() {
           ))}
         </div>
       </div>
-    </main>
+    </div>
   )
 }

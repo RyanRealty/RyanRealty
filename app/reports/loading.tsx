@@ -1,6 +1,6 @@
 export default function ReportsLoading() {
   return (
-    <main className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       <div className="h-64 animate-pulse bg-primary" />
       <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
         <div className="h-10 w-56 animate-pulse rounded bg-muted" />
@@ -10,6 +10,6 @@ export default function ReportsLoading() {
           ))}
         </div>
       </section>
-    </main>
+    </div>
   )
 }

@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 export default function ListingsLoading() {
   return (
-    <main className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <Skeleton className="mb-2 h-8 w-64" />
         <Skeleton className="mb-6 h-4 w-96" />
@@ -12,6 +12,6 @@ export default function ListingsLoading() {
           ))}
         </div>
       </div>
-    </main>
+    </div>
   )
 }

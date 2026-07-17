@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 export default function SearchLoading() {
   return (
-    <main className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       {/* Hero skeleton */}
       <div className="relative h-[280px] w-full bg-primary/80">
         <div className="absolute inset-0 flex items-end">
@@ -45,6 +45,6 @@ export default function SearchLoading() {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   )
 }

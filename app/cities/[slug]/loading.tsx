@@ -1,6 +1,6 @@
 export default function CityDetailLoading() {
   return (
-    <main className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       <div className="h-80 animate-pulse bg-primary" />
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <div className="h-8 w-48 animate-pulse rounded bg-muted" />
@@ -11,6 +11,6 @@ export default function CityDetailLoading() {
         </div>
         <div className="mt-12 h-64 animate-pulse rounded-lg bg-muted" />
       </div>
-    </main>
+    </div>
   )
 }

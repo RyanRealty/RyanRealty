@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 export default function HousingMarketLoading() {
   return (
-    <main className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       <div className="h-[280px] bg-primary/80" />
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
         <Skeleton className="mb-4 h-6 w-48" />
@@ -12,6 +12,6 @@ export default function HousingMarketLoading() {
           ))}
         </div>
       </div>
-    </main>
+    </div>
   )
 }

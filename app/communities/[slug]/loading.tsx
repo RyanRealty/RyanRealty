@@ -10,7 +10,7 @@
  */
 export default function CommunityDetailLoading() {
   return (
-    <main className="kb-root min-h-screen bg-primary text-primary-foreground">
+    <div className="kb-root min-h-screen bg-primary text-primary-foreground">
       {/* Hero band */}
       <div className="relative h-[70vh] min-h-[480px] w-full overflow-hidden bg-primary">
         <div className="absolute inset-0 animate-pulse bg-primary-foreground/5" />
@@ -37,6 +37,6 @@ export default function CommunityDetailLoading() {
           ))}
         </div>
       </div>
-    </main>
+    </div>
   )
 }

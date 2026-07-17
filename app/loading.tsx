@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <main className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       {/* Hero skeleton */}
       <div className="relative flex min-h-[520px] items-center justify-center bg-primary">
         <div className="h-12 w-3/4 max-w-md animate-pulse rounded bg-card/20" />
@@ -68,6 +68,6 @@ export default function Loading() {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   )
 }
