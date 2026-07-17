@@ -10,7 +10,21 @@ the local callback) or integration-tested against the real DB.
 
 ## Shipped
 
-### Task #8 — responsive shell + Today home + drop public bundle — ASSESSED (2 of 3 done; 1 gated as dangerous)
+### Task #8 — responsive shell + Today home + drop public bundle — DONE (all 3, browser-verified)
+
+**Update: the public-bundle drop is now shipped safely** (`components/layout/PublicClientLayer.tsx`).
+The interactive public CLIENT components (sign-in + install prompts, visitor + intent
+trackers, OAuth/sign-up bridges, comparison tray) are consolidated behind route-aware
+`next/dynamic` imports; on `/admin` the wrapper returns null BEFORE any import fires, so
+those chunks never load on an admin page. Deliberately NOT touched: SiteHeader/SiteFooter
+(async server components — zero client JS — and CSS-toggled by HideChrome, never
+mount-toggled/dynamic'd, per the double-nav incident) and RootProvider (admin surfaces use
+its contexts). Verified: `next build` passes (**prerender intact — the #1 risk cleared**);
+the homepage fires the trackers (visitors/track + web-vitals + session fetch) with zero
+console errors (public behavior byte-identical); `/admin/broker-dashboard` loads clean and
+fires NO visitors/track (chunks gated off admin). No double-nav (server chrome untouched).
+
+Original assessment (still accurate for the other two sub-items):
 Investigated the whole task this session against the live code + gates + git history.
 Two of the three sub-items were already delivered by prior work following Matt's own
 LATER directives, and browser-verified production-grade this session:

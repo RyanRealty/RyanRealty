@@ -5,19 +5,15 @@ import "./globals.css";
 import SiteHeader from "../components/site/SiteHeader";
 import SiteFooter from "../components/site/SiteFooter";
 import { RootProvider } from "../components/site/providers";
-import SignInPromptWithSession from "../components/layout/SignInPromptWithSession";
-import VisitTrackerWithSession from "../components/layout/VisitTrackerWithSession";
 import HideOnLP, { HideChrome } from "../components/layout/HideOnLP";
+// PublicClientLayer bundles the interactive public client components (prompts,
+// comparison tray, visitor/intent trackers, auth bridges) behind route-aware
+// dynamic imports so their chunks never load on /admin (RC3 drop-public-bundle).
+import PublicClientLayer from "../components/layout/PublicClientLayer";
 import JsonLd from "../components/JsonLd";
 import GTMHead from "../components/GTMHead";
-import GlobalIntentTracker from "../components/GlobalIntentTracker";
 import { WebVitalsReporter } from "@/components/WebVitalsReporter";
-import AuthCodeRedirect from "../components/AuthCodeRedirect";
-import AuthErrorRedirect from "../components/AuthErrorRedirect";
-import SignUpTracker from "../components/tracking/SignUpTracker";
 import AdminHashRedirect from "../components/AdminHashRedirect";
-import InstallPrompt from "../components/pwa/InstallPrompt";
-import ComparisonTray from "@/components/comparison/ComparisonTray";
 import StaleServiceWorkerReset from "@/components/site/StaleServiceWorkerReset";
 import { getCanonicalSiteUrl } from "@/lib/share-metadata";
 import { GeistSans } from "geist/font/sans";
@@ -134,36 +130,22 @@ export default function RootLayout({
           <HideChrome>
             <SiteFooter />
           </HideChrome>
-          <HideOnLP>
-            <SignInPromptWithSession />
-          </HideOnLP>
-          <HideOnLP>
-            <InstallPrompt />
-          </HideOnLP>
-          {/* Visitor tracking runs on EVERY public route, including /lp/* landing
-              pages (so paid-traffic conversions tie to a tracked session). The
-              tracker self-skips /admin internally. */}
-          <VisitTrackerWithSession />
-          {/* High-intent micro-event capture (tel:, mailto:, form_start).
-              Runs on every page including LPs because form_start on a seller
-              LP is one of the strongest pre-submit intent signals we have. */}
-          <GlobalIntentTracker />
           {/* Real-user Core Web Vitals -> /api/web-vitals + GA4 (field CWV). */}
           <WebVitalsReporter />
           <Suspense fallback={null}>
-            {/* Auth + sign-up redirects do NOT run on LPs — LP visitors
-                aren't authenticating. Identity/attribution bridges DO run
-                on LPs (they're inside RootProvider above). */}
+            {/* AdminHashRedirect catches legacy /#admin-hash bookmarks on public
+                routes and forwards them to /admin. Kept in the root (admin-adjacent,
+                tiny). */}
             <HideOnLP>
-              <AuthCodeRedirect />
-              <AuthErrorRedirect />
-              <SignUpTracker />
               <AdminHashRedirect />
             </HideOnLP>
           </Suspense>
-          <HideOnLP>
-            <ComparisonTray />
-          </HideOnLP>
+          {/* Every other interactive public client component — the sign-in /
+              install prompts, the visitor + intent trackers, the OAuth/sign-up
+              bridges, and the comparison tray — is code-split behind
+              PublicClientLayer so /admin never loads their chunks. Non-admin
+              behavior is byte-identical (each keeps its HideOnLP / Suspense gate). */}
+          <PublicClientLayer />
         </RootProvider>
       </body>
     </html>
