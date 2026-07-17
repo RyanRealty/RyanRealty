@@ -433,6 +433,17 @@ newest-requester payload) + `lib/cma/address-slug.test.ts` pin the contract.
 **Lesson confirmed again: the adversarial review pays for itself — both HIGHs were
 invisible to the happy-path tests.**
 
+Follow-through (same day, second commit): the BPO half of the class is closed —
+`resolveWritableBpoSlot` (generic version-chain core in `lib/cma/versions.ts`,
+statuses draft|final) now guards `buildBpoAdminAction` + `startBpoForContactAction`,
+so a 'final' BPO's live /bpo/[slug] link survives every later build for the same
+address; `rebuildBpoAction` (explicit slug) keeps deliberate in-place rebuilds. And
+the documented attach residual (N1) is closed for real: `cma_action_merge_contact`
+(migration 20260717150000, APPLIED to hosted) merges only the four contact keys
+under the same row lock as the notify append, so a concurrent kicker's entry can
+never be lost to the intake's contact refresh. Int suites:
+`lib/cma/versions.int.test.ts` (BPO slot + RPC notify-survival) + the existing two.
+
 ## Next (in priority order)
 1. "Send a CMA in seconds" — collapse the CMA build+send to one fast path on the
    person workspace (the owner's explicit litmus test).

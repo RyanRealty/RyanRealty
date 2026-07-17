@@ -16,6 +16,7 @@ import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import { buildBpo } from '@/lib/bpo/build'
 import { sendBpoToLead } from '@/lib/bpo/send'
 import { slugifyBpoAddress } from '@/lib/bpo/slug'
+import { resolveWritableBpoSlot } from '@/lib/cma/versions'
 import { parseContactAddress } from '@/lib/crm/contact-cma-address'
 
 export type StartBpoResult = { ok: true; slug: string } | { ok: false; error: string }
@@ -61,7 +62,13 @@ export async function startBpoForContactAction(personId: number): Promise<StartB
     const home = await resolveHomeAddress(personId)
     if ('error' in home) return { ok: false, error: home.error }
 
-    const slug = slugifyBpoAddress(home.rawAddress)
+    // Land the build on a writable slot: rebuild the open draft in place, or
+    // open a new --vN document after a 'final' BPO — never reset a final
+    // document (and its live /bpo/[slug] link) back to draft
+    // (lib/cma/versions.ts — the upsert-by-slug clobber class).
+    const slot = await resolveWritableBpoSlot(slugifyBpoAddress(home.rawAddress))
+    if (!slot.ok) return { ok: false, error: slot.error }
+    const slug = slot.slug
     const built = await buildBpo({
       slug,
       rawAddress: home.rawAddress,

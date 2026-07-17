@@ -13,6 +13,7 @@ import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { buildBpo } from '@/lib/bpo/build'
 import { resolveCmaSubject } from '@/lib/cma/subject'
 import { slugifyBpoAddress } from '@/lib/bpo/slug'
+import { resolveWritableBpoSlot } from '@/lib/cma/versions'
 import { getBpoAdminRowBySlug, updateBpoRowFieldsBySlug, deleteBpoRowById } from '@/lib/data/bpo/reads'
 
 async function requireAdmin(): Promise<string | null> {
@@ -56,6 +57,15 @@ export async function buildBpoAdminAction(
       rawAddress = `${resolved.subject.streetAddress}, ${resolved.subject.city}, ${resolved.subject.state} ${resolved.subject.postalCode ?? ''}`.trim()
       slug = slugifyBpoAddress(rawAddress)
     }
+
+    // Land the build on a writable slot: rebuild the open draft in place, or
+    // open a new --vN document after a 'final' BPO — never reset a final
+    // document (and its live /bpo/[slug] link) back to draft
+    // (lib/cma/versions.ts — the upsert-by-slug clobber class). In-place
+    // rebuilds of a specific document stay on rebuildBpoAction (explicit slug).
+    const slot = await resolveWritableBpoSlot(slug)
+    if (!slot.ok) return { data: null, error: slot.error }
+    slug = slot.slug
 
     const result = await buildBpo({
       slug,

@@ -103,6 +103,45 @@ export async function appendCmaActionNotify(
 }
 
 /**
+ * Atomically merge non-null client contact fields into an open build's payload
+ * (cma_action_merge_contact, migration 20260717150000). Backs the intake
+ * attach path: a repeat request that attaches to an open build refreshes the
+ * payload so the worker builds for the NEWEST requester. Server-side row lock,
+ * `payload || patch` on only the four contact keys — a concurrent
+ * cma_action_append_notify can never lose an entry to this write.
+ *
+ * Returns `merged` plus the row's status at lock time; status 'ready'/'killed'
+ * means the worker closed the build first (the old payload already built).
+ */
+export async function mergeCmaActionContact(
+  actionId: string,
+  contact: {
+    clientName?: string | null
+    clientEmail?: string | null
+    clientPhone?: string | null
+    clientNotes?: string | null
+  },
+): Promise<{ merged: boolean; status: string | null }> {
+  const sb = client()
+  if (!sb) return { merged: false, status: null }
+  const { data, error } = await sb.rpc('cma_action_merge_contact', {
+    p_action_id: actionId,
+    p_client_name: contact.clientName ?? null,
+    p_client_email: contact.clientEmail ?? null,
+    p_client_phone: contact.clientPhone ?? null,
+    p_client_notes: contact.clientNotes ?? null,
+  })
+  if (error) {
+    console.error('[mergeCmaActionContact]', error.message)
+    return { merged: false, status: null }
+  }
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | { merged: boolean; status: string | null }
+    | undefined
+  return { merged: Boolean(row?.merged), status: row?.status ?? null }
+}
+
+/**
  * Fresh payload read for one action row. The worker re-reads the notify list at
  * text time — kickers that attached while the build was running are missing
  * from the scan-time snapshot listOpenCmaActions returned.

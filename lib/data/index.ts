@@ -514,7 +514,7 @@ export {
   replaceCmaComps,
 } from '@/lib/data/cma/documents'
 export type { CmaAdminRow, CmaCompInsert } from '@/lib/data/cma/documents'
-export { listOpenCmaActions, updateCmaActionRow, findOpenCmaActionBySlug, appendCmaActionNotify, getCmaActionPayload } from '@/lib/data/cma/queue'
+export { listOpenCmaActions, updateCmaActionRow, findOpenCmaActionBySlug, appendCmaActionNotify, getCmaActionPayload, mergeCmaActionContact } from '@/lib/data/cma/queue'
 export type { CmaActionRow } from '@/lib/data/cma/queue'
 export { findCrmPersonIdByEmail, stampCmaLinkOnPerson, logCmaTimelineEvent } from '@/lib/data/cma/crm'
 

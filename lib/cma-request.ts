@@ -198,8 +198,7 @@ export async function createCmaRequest(
       upsertCmaRowBySlug,
       updateCmaRowFieldsBySlug,
       findOpenCmaActionBySlug,
-      getCmaActionPayload,
-      updateCmaActionRow,
+      mergeCmaActionContact,
       appendCmaActionNotify,
     } = await import('@/lib/data')
     const { resolveWritableCmaSlot } = await import('@/lib/cma/versions')
@@ -345,22 +344,15 @@ export async function createCmaRequest(
       // Refresh the open action's contact payload so the worker builds for the
       // NEWEST requester — the draft row was already patched above, and without
       // this the build would revert client fields to the first requester's
-      // (adversarial review 2026-07-17 MED). KNOWN RESIDUAL: this is a plain
-      // read-modify-write of the whole payload, so a notify entry appended by
-      // ANOTHER kicker's atomic RPC inside the read→write window would be
-      // overwritten (that broker would miss the ready text, recoverable in
-      // /admin/cmas). Same-instant window on one slug; the airtight fix is a
-      // jsonb-merge RPC mirroring cma_action_append_notify.
+      // (adversarial review 2026-07-17 MED). Atomic server-side merge on ONLY
+      // the four contact keys (cma_action_merge_contact, row-locked), so a
+      // concurrent notify append can never lose an entry to this write.
       try {
-        const openPayload = (await getCmaActionPayload(open.id)) ?? {}
-        await updateCmaActionRow(open.id, {
-          payload: {
-            ...openPayload,
-            ...(leadName ? { client_name: leadName } : {}),
-            ...(leadEmail ? { client_email: leadEmail } : {}),
-            ...(leadPhoneTrimmed ? { client_phone: leadPhoneTrimmed } : {}),
-            ...(clientNotesFull ? { client_notes: clientNotesFull } : {}),
-          },
+        await mergeCmaActionContact(open.id, {
+          clientName: leadName,
+          clientEmail: leadEmail,
+          clientPhone: leadPhoneTrimmed,
+          clientNotes: clientNotesFull,
         })
       } catch (e) {
         console.warn('[cma-request] attach payload refresh failed:', e instanceof Error ? e.message : String(e))

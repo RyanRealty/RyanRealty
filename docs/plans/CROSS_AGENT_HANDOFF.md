@@ -27,6 +27,11 @@ narrative in `docs/plans/ADMIN_REBUILD/PROGRESS.md` ("CMA upsert-by-slug clobber
   `lib/cma-request.int.test.ts` + `lib/crm/cma-kickoff.int.test.ts` green.
 - **Deliberately preserved:** kickoff still returns `alreadyBuilt` (no new version from
   the CRM sheet) when the latest document is protected — product decision pending.
+- **Second commit (same day):** BPO half closed — `resolveWritableBpoSlot` guards both
+  BPO build actions (broker_price_opinions, statuses draft|final; `rebuildBpoAction`
+  stays in-place). Attach contact refresh is now the row-locked
+  `cma_action_merge_contact` RPC (migration 20260717150000, applied to hosted) — the
+  N1 notify-loss window is gone. New suite: `lib/cma/versions.int.test.ts`.
 
  Prior newest block below.
 
