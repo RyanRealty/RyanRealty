@@ -60,6 +60,16 @@ the local callback) or integration-tested against the real DB.
 - Pain #1 (litmus): from "≈10–12 clicks / 4–5 page loads / 30–60 s sync build desktop;
   impossible on mobile" → **≤ 3 taps and ≤ 30 s on a phone from notification to CMA
   kick-off** (pending Matt's budget confirmation in the Phase-0 micro-batch).
+- Pain #2 (comms), thresholds written 2026-07-17 BEFORE the demonstration, from the
+  audit baseline ("2–6 s dead air, no pending state, sent text stays in the box,
+  double-taps produce real duplicate texts, group pixel-identical to 1:1"):
+  1. **Double-tap Send → exactly ONE delivery**: one Twilio SID, one `sms_out`
+     timeline row, one `crm_message` row (DB-verified, not UI-verified).
+  2. **Sent-state resolves ≤ 5 s** from tap: button disables instantly, the box
+     clears, the message renders in the thread — no stuck "sending", no re-tap
+     ambiguity.
+  3. **Group vs 1:1 labeled**: a group thread renders the "Group · N" badge in the
+     inbox thread + person timeline; a 1:1 renders none.
 
 ## Shipped
 
@@ -146,6 +156,44 @@ exit 0 ×4 (prerender intact — middleware/layout changes safe).
   page.tsx 710→718 (+8) for the litmus mount after extraction to
   `CmaKickoffMount.tsx`; the page's wholesale spec-03 rebuild is the queued
   structural payback (chip task_c4fbba7e re-ratchets it down).
+
+### Pain #2 — comms (double-send / stuck-sending / group-vs-1:1) — DEMONSTRATED + one real defect found & fixed
+
+Timed, click-counted, real-DB browser demonstration on the production build,
+against the pre-registered thresholds (above). Real texts to Matt's own cell
+(the established self-send pattern); fixtures cleaned to zero residue.
+
+**Threshold 1 — double-tap → exactly ONE delivery: PASS (twice).** Two
+SYNCHRONOUS clicks (faster than any human double-tap; React cannot re-render
+between them): exactly 1 Twilio SID + 1 `sms_out` row + 1 `crm_message` + 1
+idempotency key, delivery receipt `delivered` on the handset. Proven on both
+the pre-fix tree (ledger held) and the fixed tree.
+
+**The demonstration FOUND the real residual defect:** on the pre-fix tree the
+same-tick double-tap dispatched TWO action POSTs which ABORT EACH OTHER in the
+App Router — no duplicate send (ledger), but NEITHER response resolves: the
+composer hung on "sending" forever with the sent text in the box — Matt's
+exact stated pain. **Fixed at the canonical layer**: `composer-submit-guard.ts`
+(form-level one-submission-at-a-time guard + success detector) wired into
+`SmsComposer` + `EmailComposer`; a successful send now also CLEARS the box
+(stale-`?error`-immune, inbox-success-redirect-aware — the first detector
+iteration mis-read the inbox redirect; caught in re-verification, fixed,
+8 unit tests). Adversarially reviewed (no confirmed hazards; the reviewer's
+Q3 defensive fix implemented as the detector).
+
+**Threshold 2 — sent-state resolves, never stalls: PASS on the inbox** (the
+primary send surface): tap → ledger ≤5 s → box cleared + message rendered with
+delivery chip, ~10–20 s total on the memory-pressured local prod server (audit
+baseline for prod serverless: 2–6 s). **The person-page composer still cannot
+resolve** — its action response inlines a re-render of the force-dynamic
+40–55-query page and the client abandons the stream (single-POST proven, not
+double-tap-related). That is the audited structural cause (spec 03 §5 fetch
+rebuild, queued) — scoped precisely, handed off, NOT silently waved through.
+
+**Threshold 3 — group vs 1:1 labeled: PASS.** Group thread renders
+"Group · 4 people" / "Group · 3 people" badges live in the inbox; the 1:1
+fixture thread renders none. Delivery chips (Delivered / Pending) render on
+outbound bubbles.
 
 ### Task #8 — responsive shell + Today home + drop public bundle — DONE (all 3, browser-verified)
 

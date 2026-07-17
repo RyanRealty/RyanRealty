@@ -12,6 +12,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { ArrowUp, Loader2 } from 'lucide-react'
 import { newIdempotencyKey } from '@/lib/admin/mutation-result'
+import { createSubmitGuard } from '@/components/admin/crm/composer-submit-guard'
 import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { MergeFieldInserter, insertAtCursor, type CustomFieldToken } from '@/components/admin/crm/MergeFieldInserter'
 import {
@@ -107,6 +108,11 @@ export function SmsComposer(props: {
   const { chars, segments } = segmentInfo(body)
   const unresolved = useMemo(() => findUnresolvedMergeTokens(body), [body])
 
+  // Same-tick double-submit guard (Pain #2, 2026-07-17) — full mechanism note
+  // + unit tests in ./composer-submit-guard.ts. Released on settle
+  // (SmsSendButton onSettled fires for every submission of this form).
+  const [submitGuard] = useState(createSubmitGuard)
+
   // Per-attempt idempotency key (the server backstop for the sub-frame double-tap
   // race useFormStatus can't catch). Empty on SSR + first paint so no hydration
   // mismatch; set after mount; rotated on each send-settle so the next message
@@ -157,7 +163,11 @@ export function SmsComposer(props: {
   }
 
   return (
-    <form action={props.sendAction} className="space-y-2">
+    <form
+      action={props.sendAction}
+      onSubmit={(e) => submitGuard.onSubmit(e, window.location.search)}
+      className="space-y-2"
+    >
       {/* Recipients — the lead is always on; tap a linked person (spouse, …) to
           add them to the same text. No typing needed. */}
       {recipients.length > 0 ? (
@@ -227,7 +237,19 @@ export function SmsComposer(props: {
         <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
         <SmsSendButton
           disabled={!body.trim() || attachments.uploading || Boolean(props.sendDisabled)}
-          onSettled={() => setIdempotencyKey(newIdempotencyKey())}
+          onSettled={() => {
+            submitGuard.settle()
+            setIdempotencyKey(newIdempotencyKey())
+            // A successful SEND clears the box (the sent text lingering LOOKED
+            // unsent — the audit's re-tap trigger). A failed send redirects
+            // with ?error= (URL changes) and a draft-save keeps the text —
+            // both keep it. See sendSucceeded() for the stale-?error rationale.
+            try {
+              if (!submitGuard.lastWasDraft && submitGuard.sendSucceeded(window.location.search)) setBody('')
+            } catch {
+              /* non-fatal */
+            }
+          }}
         />
       </div>
 
@@ -246,6 +268,7 @@ export function SmsComposer(props: {
             <Button
               type="submit"
               formAction={props.saveDraftAction}
+              data-composer-draft=""
               variant="ghost"
               size="sm"
               disabled={!body.trim()}

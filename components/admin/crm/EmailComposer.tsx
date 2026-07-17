@@ -20,6 +20,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { ChevronDown, Loader2 } from 'lucide-react'
 import { newIdempotencyKey } from '@/lib/admin/mutation-result'
+import { createSubmitGuard } from '@/components/admin/crm/composer-submit-guard'
 import { EmailBodyEditor } from '@/components/admin/crm/EmailBodyEditor'
 import type { CustomFieldToken } from '@/components/admin/crm/MergeFieldInserter'
 import { RecipientField, type RecipientOption } from '@/components/admin/crm/RecipientField'
@@ -112,6 +113,11 @@ export function EmailComposer(props: {
   const [idempotencyKey, setIdempotencyKey] = useState('')
   useEffect(() => setIdempotencyKey(newIdempotencyKey()), [])
 
+  // Same-tick double-submit guard — mechanism note + unit tests in
+  // ./composer-submit-guard.ts (two same-tick submissions abort EACH OTHER'S
+  // action POST: no duplicate send, but the composer hung on "sending" forever).
+  const [submitGuard] = useState(createSubmitGuard)
+
   // Attachments (multiple, uploaded client-direct — see ComposerAttachments).
   const attachments = useComposerAttachments({ personId: props.personId, channel: 'email' })
 
@@ -124,7 +130,11 @@ export function EmailComposer(props: {
   const [showBcc, setShowBcc] = useState(false)
 
   return (
-    <form action={props.sendAction} className="space-y-2">
+    <form
+      action={props.sendAction}
+      onSubmit={(e) => submitGuard.onSubmit(e, window.location.search)}
+      className="space-y-2"
+    >
       {/* Hidden field carries the template key for email_events stamping. */}
       {props.tplKey ? <input type="hidden" name="tplKey" value={props.tplKey} /> : null}
       {/* Per-attempt idempotency key — the server backstop against a double-send. */}
@@ -197,7 +207,7 @@ export function EmailComposer(props: {
         )}
         <div className="flex items-center gap-2">
           {props.saveDraftAction ? (
-            <Button type="submit" formAction={props.saveDraftAction} variant="ghost" size="sm" disabled={!subject.trim() && !body.trim()}>
+            <Button type="submit" formAction={props.saveDraftAction} data-composer-draft="" variant="ghost" size="sm" disabled={!subject.trim() && !body.trim()}>
               Save draft
             </Button>
           ) : null}
@@ -207,7 +217,21 @@ export function EmailComposer(props: {
               uploading={attachments.uploading}
               label={props.submitLabel ?? 'Send email'}
               className={props.sendAndCloseAction ? 'rounded-r-none' : undefined}
-              onSettled={() => setIdempotencyKey(newIdempotencyKey())}
+              onSettled={() => {
+                submitGuard.settle()
+                setIdempotencyKey(newIdempotencyKey())
+                // A successful SEND clears the compose state (a lingering sent
+                // email LOOKED unsent); a failed send changes the URL
+                // (?error=) and a draft-save keeps the text — both keep it.
+                try {
+                  if (!submitGuard.lastWasDraft && submitGuard.sendSucceeded(window.location.search)) {
+                    setSubject('')
+                    setBody('')
+                  }
+                } catch {
+                  /* non-fatal */
+                }
+              }}
             />
             {props.sendAndCloseAction ? (
               <>
