@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.813.1 (2026-07-17)
+
+### Bug Fixes
+- fix(ci): zero the 179-error lint debt + repair the 7 post-deploy E2E specs — CI red since Jun 24
+
+---
+
+
 ## v1.813.0 (2026-07-17)
 
 ### Features
