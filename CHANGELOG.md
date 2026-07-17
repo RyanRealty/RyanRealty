@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.810.5 (2026-07-17)
+
+### Maintenance
+- chore(ci): clean the full gate chain after the RC1 + RC7 session (all 133 green)
+
+---
+
+
 ## v1.810.4 (2026-07-17)
 
 ### Maintenance
