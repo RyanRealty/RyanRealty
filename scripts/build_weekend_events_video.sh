@@ -8,9 +8,9 @@ DIR="out/carousel/weekend-events-2026-07-17"
 OUT="$DIR/weekend-events-animated.mp4"
 N=$(ls "$DIR"/slide-*.png | wc -l | tr -d ' ')
 FPS=30
-SECS=3                 # seconds per slide
-DUR=0.5                # transition duration
-D=$(( FPS * SECS ))    # frames per slide
+SECS=4.5               # seconds per slide (slowed from 3 per Matt: too fast between slides)
+DUR=0.6                # transition duration
+D=$(echo "$FPS * $SECS / 1" | bc)   # frames per slide
 
 # Build inputs + per-slide zoompan labels
 inputs=()

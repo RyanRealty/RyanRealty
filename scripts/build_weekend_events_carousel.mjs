@@ -51,8 +51,8 @@ const SLIDES = [
   },
   {
     type: 'event',
-    photo: 'public/images/venues/hayden-homes-amphitheater.jpg',
-    pos: 'center center',
+    photo: 'out/carousel/weekend-events-2026-07-17/band-photos/jew_southside.jpg',
+    pos: 'center 30%',
     kicker: 'FRIDAY · JULY 17',
     name: 'Jimmy Eat World',
     detail: 'Hayden Homes Amphitheater · 4:30 pm',
@@ -87,8 +87,8 @@ const SLIDES = [
   },
   {
     type: 'event',
-    photo: 'public/asset-library/photos/wikimedia/b7abdbf0-113c-471c-a514-f0e0e7bb6578.jpg',
-    pos: 'center center',
+    photo: 'out/carousel/weekend-events-2026-07-17/band-photos/levity_press.jpg',
+    pos: 'center 36%',
     kicker: 'SATURDAY · JULY 18',
     name: 'Levity & Tape B',
     detail: 'Hayden Homes Amphitheater · 4:30 pm',
@@ -105,8 +105,8 @@ const SLIDES = [
   },
   {
     type: 'event',
-    photo: 'public/asset-library/photos/pexels/72dfb597-db51-4fb8-bff1-1c441c857d1e.jpg',
-    pos: 'center center',
+    photo: 'out/carousel/weekend-events-2026-07-17/band-photos/eric_vertical.jpg',
+    pos: 'center 28%',
     kicker: 'SATURDAY · JULY 18',
     name: 'Eric Leadbetter Band',
     detail: 'Worthy Brewing · 7 pm',
@@ -114,8 +114,8 @@ const SLIDES = [
   },
   {
     type: 'event',
-    photo: 'public/asset-library/photos/curated/cfd21504-a083-4ca2-8290-0e6e36bbfb2c.JPG',
-    pos: 'center center',
+    photo: 'public/asset-library/photos/curated/cc841602-2edc-4aee-8433-a65c114d6908.JPG',
+    pos: 'center 60%',
     kicker: 'SUNDAY · JULY 19',
     name: 'Sisters Farmers Market',
     detail: 'Fir Street Park · 10 am to 2 pm',
