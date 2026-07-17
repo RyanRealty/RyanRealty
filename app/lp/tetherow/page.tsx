@@ -191,7 +191,7 @@ export default async function TetherowLandingPage() {
   }
 
   return (
-    <div className="tetherow-lp bg-[color:var(--rr-cream)] text-[color:var(--rr-text)]" style={{ fontFamily: 'var(--rr-font-sans)' }}>
+    <main className="tetherow-lp bg-[color:var(--rr-cream)] text-[color:var(--rr-text)]" style={{ fontFamily: 'var(--rr-font-sans)' }}>
       {/* Self-contained design tokens — match the static exemplar's --rr-* palette */}
       <TetherowGlobalStyle />
 
@@ -1371,7 +1371,7 @@ export default async function TetherowLandingPage() {
       </footer>
 
       <TetherowExitModal />
-    </div>
+    </main>
   )
 }
 

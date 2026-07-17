@@ -112,8 +112,9 @@ test.describe('Seller LP form (/lp/seller-home-value)', () => {
     await expect(page.locator('body')).toBeVisible()
     await expect(page.locator('h1, h2, [role="heading"]').first()).toBeVisible({ timeout: 20_000 })
 
-    // Step 1: address field — id="seller-lp-address" (AddressAutocomplete)
-    const addressInput = page.locator('#seller-lp-address')
+    // Step 1: address field — the form renders twice (hero + card), so the id
+    // is prefixed per instance (`${formId}-seller-lp-address`); match by suffix.
+    const addressInput = page.locator('[id$="seller-lp-address"]').first()
     const hasAddressInput = await addressInput.isVisible({ timeout: 10_000 }).catch(() => false)
     if (!hasAddressInput) {
       // Could not find address step — skip gracefully
@@ -153,7 +154,7 @@ test.describe('Seller LP form (/lp/seller-home-value)', () => {
     // The address field should be present on the initial view.
     // Use waitFor with a generous timeout — production cold-cache hits in the full
     // test suite can be slow. CI uses retries=2 which covers remaining flakiness.
-    const addressInput = page.locator('#seller-lp-address')
+    const addressInput = page.locator('[id$="seller-lp-address"]').first()
     const hasAddressInput = await addressInput.waitFor({ state: 'visible', timeout: 45_000 }).then(() => true).catch(() => false)
 
     // Either the address step or the email step should be visible

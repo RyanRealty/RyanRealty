@@ -97,12 +97,12 @@ test.describe('Navigation', () => {
   test('first 10 footer links resolve without errors', async ({ page, request }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded', timeout: DATA_TIMEOUT })
 
-    // Scroll to footer to ensure it renders
-    const footer = page.getByRole('contentinfo')
-    await footer.scrollIntoViewIfNeeded()
-    await page.waitForTimeout(200)
-
-    const footerHrefs = await footer.locator('a[href^="/"]').evaluateAll(
+    // Harvest footer hrefs from the DOM without scrolling: KB pages run Lenis
+    // (transform-based smooth scroll), where scrollIntoViewIfNeeded stalls on
+    // elements that reveal on scroll (2026-07-17 false failure), and HideChrome
+    // can leave a second, CSS-hidden footer in the DOM. evaluateAll works on
+    // attached elements regardless of visibility.
+    const footerHrefs = await page.locator('footer a[href^="/"]').evaluateAll(
       (links) => [...new Set((links as HTMLAnchorElement[]).map((a) => a.pathname))]
     )
 

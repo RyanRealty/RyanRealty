@@ -160,7 +160,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       const op = deriveOpinion(subject, p, market, history, { priceOverride: input.priceOverride ?? null })
       return { adj, p, op }
     }
-    let derived = deriveAll(compsForPricing)
+    const derived = deriveAll(compsForPricing)
     if (!derived) {
       const err = 'Pricing could not be computed (subject sqft missing).'
       await recordFailure(slug, err)

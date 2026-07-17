@@ -10,6 +10,7 @@
  */
 
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { getTrailsForIndex, getTrailsCount } from '@/lib/data'
 import { TRAIL_USE_LABEL, type CoTrail } from '@/data/co-trails'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -143,9 +144,9 @@ export default function TrailsIndexPage() {
               </div>
               <p className="about-p" style={{ paddingTop: 'clamp(24px,3vw,36px)' }}>
                 The trail guide is being updated. Browse{' '}
-                <a className="ev-inline-link" href="/central-oregon/events">
+                <Link className="ev-inline-link" href="/central-oregon/events">
                   Central Oregon events
-                </a>{' '}
+                </Link>{' '}
                 in the meantime.
               </p>
             </div>

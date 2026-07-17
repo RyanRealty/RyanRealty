@@ -11,6 +11,7 @@
 
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { getVenueDetail, type VenueHomeTile } from '@/lib/data'
 import { CO_VENUES, getVenueBySlug, VENUE_TYPE_LABEL, type CoVenue } from '@/data/co-venues'
 import { EVENT_CATEGORY_LABEL, type CoEvent } from '@/data/co-events'
@@ -353,9 +354,9 @@ export default async function VenueDetailPage({ params }: Props) {
                 ))}
               </ul>
               <p style={{ marginTop: '22px' }}>
-                <a className="ev-link" href="/central-oregon/venues">
+                <Link className="ev-link" href="/central-oregon/venues">
                   All Central Oregon venues <span className="arr">→</span>
-                </a>
+                </Link>
               </p>
             </div>
           </section>

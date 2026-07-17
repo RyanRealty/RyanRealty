@@ -16,6 +16,7 @@
  */
 
 import { useEffect, useRef, useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   ChevronDown,
@@ -686,9 +687,9 @@ export function PersonRightRail({
           icon={<Briefcase className="h-4 w-4" />}
           title="Deals"
           headerRight={
-            <a href="/admin/crm/deals" aria-label="Add deal">
+            <Link href="/admin/crm/deals" aria-label="Add deal">
               <AddButton />
-            </a>
+            </Link>
           }
         >
           {deals.length === 0 ? (

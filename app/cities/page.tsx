@@ -30,6 +30,7 @@
 
 import type { Metadata } from 'next'
 import Image from 'next/image'
+import Link from 'next/link'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { sortCitiesWithPrimaryFirst } from '@/lib/cities'
 import { getAllCitySnapshots, getRegionPulse, getMarketPulseCitySnapshots } from '@/lib/data'
@@ -292,9 +293,9 @@ export default async function CitiesPage() {
               <p className="note">
                 Single-family active inventory across the region. Figures from the MLS, updated through the day.
               </p>
-              <a href="/search" className="btn">
+              <Link href="/search" className="btn">
                 Search all listings <span className="arr">→</span>
-              </a>
+              </Link>
             </div>
           </div>
         </section>
@@ -399,7 +400,7 @@ export default async function CitiesPage() {
                               <span className="font-sans text-xs font-medium" style={{ color: 'var(--navy-70)', marginLeft: '5px' }}>days</span>
                             </p>
                             <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
-                              Active listings' median age
+                              Active listings&apos; median age
                             </p>
                           </div>
                         ) : null}
@@ -527,9 +528,9 @@ export default async function CitiesPage() {
                 Search active listings across all cities with live filters for price, beds, and location.
               </p>
               <div className="sec-cta" style={{ gap: '12px', flexWrap: 'wrap', display: 'flex' }}>
-                <a href="/search" className="btn">
+                <Link href="/search" className="btn">
                   Search all listings <span className="arr">→</span>
-                </a>
+                </Link>
                 <a href="/lp/buyer-listing-alerts" className="btn ghost">
                   Get listing alerts
                 </a>

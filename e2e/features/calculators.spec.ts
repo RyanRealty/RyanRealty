@@ -95,10 +95,16 @@ test.describe('Rental property calculator', () => {
     // Heading
     await expect(page.locator('h1, [role="heading"]').first()).toBeVisible()
 
-    // Should have inputs
+    // Should have inputs. The calculator is a client island — its inputs mount
+    // after hydration, so poll instead of counting at domcontentloaded (the
+    // 2026-07-17 false failure: 1 input pre-hydration, 26 in a real browser).
     const inputs = page.locator('input')
-    const count = await inputs.count()
-    expect(count, 'Rental calculator should have at least 3 inputs').toBeGreaterThanOrEqual(3)
+    await expect
+      .poll(async () => inputs.count(), {
+        message: 'Rental calculator should have at least 3 inputs',
+        timeout: 20_000,
+      })
+      .toBeGreaterThanOrEqual(3)
 
     // No application error
     const bodyText = await page.locator('body').innerText().catch(() => '')

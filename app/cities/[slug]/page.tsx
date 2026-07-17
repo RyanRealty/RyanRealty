@@ -18,6 +18,7 @@
  */
 
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import type { Metadata } from 'next'
 import {
   getGeoSnapshot,
@@ -622,7 +623,7 @@ export default async function CityDetailPage({ params }: Props) {
               <a href={`/homes-for-sale/${slug}/lots-and-land`} className="btn alt">{cityName} lots and land</a>
               <a href={`/homes-for-sale/${slug}/acreage`} className="btn alt">{cityName} homes on acreage</a>
               <a href={`/homes-for-sale/${slug}/new-construction`} className="btn alt">{cityName} new construction</a>
-              <a href="/communities" className="btn alt">Resort communities</a>
+              <Link href="/communities" className="btn alt">Resort communities</Link>
             </div>
           </div>
         </section>

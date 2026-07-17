@@ -184,7 +184,7 @@ export default async function SellerHomeValuePage({
   }
 
   return (
-    <div className="bg-[#faf8f4] text-[#102742]">
+    <main className="bg-[#faf8f4] text-[#102742]">
       <LandingPageTracker
         lpVariant={variantKey ? `seller-home-value:${variantKey}` : 'seller-home-value'}
       />
@@ -611,7 +611,7 @@ export default async function SellerHomeValuePage({
           </a>
         </div>
       </div>
-    </div>
+    </main>
   )
 }
 

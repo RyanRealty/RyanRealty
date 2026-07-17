@@ -15,6 +15,7 @@
  */
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ChevronDown, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -128,7 +129,7 @@ export default function ScopeDropdown({
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-[11px] uppercase tracking-widest text-muted-foreground">Ponds</DropdownMenuLabel>
             <DropdownMenuItem asChild>
-              <a href="/admin/crm/settings/ponds">View All Ponds</a>
+              <Link href="/admin/crm/settings/ponds">View All Ponds</Link>
             </DropdownMenuItem>
             {ponds.filter((p) => matches(p.name)).map((p) => (
               <Row key={p.id} sel={{ kind: 'pond', id: p.id }}>{p.name}</Row>

@@ -235,7 +235,7 @@ export default async function BuyerLPPage() {
     : null
 
   return (
-    <div className="bg-[#faf8f4] text-[#102742]">
+    <main className="bg-[#faf8f4] text-[#102742]">
       <LandingPageTracker lpVariant="buyer-listing-alerts" />
 
       {/* ─── Sticky minimal header — wordmark + phone (KB navy bar) ───────── */}
@@ -715,7 +715,7 @@ export default async function BuyerLPPage() {
           </a>
         </div>
       </div>
-    </div>
+    </main>
   )
 }
 

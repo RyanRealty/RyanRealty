@@ -95,11 +95,16 @@ test.describe('Pulse feed', () => {
     await page.goto(PULSE_URL, { waitUntil: 'domcontentloaded', timeout: DATA_TIMEOUT })
     await expect(page.locator('main').first()).toBeVisible()
 
-    // PulseFeed renders city filter chips in a sticky bar
-    // Look for filter buttons (city names like "Bend", "Redmond", etc.)
-    const filterChips = page.locator('button[class*="chip"], button[class*="filter"], button[class*="Badge"]')
-      .or(page.locator('nav button, [role="tab"]'))
+    // PulseFeed renders city filter chips as aria-pressed buttons
+    // (components/pulse/PulseFilters.tsx). Scope to main — the old loose
+    // `nav button` fallback matched the KbNav menu trigger and timed out
+    // clicking it (2026-07-17 false failure).
+    const filterChips = page.locator('main button[aria-pressed]')
 
+    // The chips are client-rendered (PulseFeed island) — wait for the first
+    // one to mount before counting, or the count races hydration and the test
+    // silently skips (2026-07-17: 0 at domcontentloaded, 62 in a real browser).
+    await filterChips.first().waitFor({ state: 'attached', timeout: 20_000 }).catch(() => {})
     const chipCount = await filterChips.count()
     if (chipCount === 0) {
       test.skip(true, 'No filter chips found — pulse filter bar may not be rendered')

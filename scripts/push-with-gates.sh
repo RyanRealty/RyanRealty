@@ -53,6 +53,18 @@ run_chain_and_build() {
   }
   echo "✓ ci:gates OK"
 
+  # Full ESLint pass (added 2026-07-17). CI's lint-and-build job runs
+  # `npm run lint` and NOTHING local did — 179 errors accumulated unseen and
+  # GitHub Actions CI was red on every push from Jun 24 to Jul 17 while local
+  # hooks stayed green. Zero-error policy; warnings pass.
+  echo "push: eslint (matches CI lint-and-build) in $workdir…"
+  ( cd "$workdir" && npm run lint ) || {
+    echo ""
+    echo "✗ eslint FAILED — push aborted. This is the same lint CI runs; fix the errors."
+    exit 1
+  }
+  echo "✓ eslint OK"
+
   # G47 — production build gate (Turbopack, matches Vercel). Doc/json-only
   # pushes skip it. A "use server" / RSC break passes tsc and ci:gates but
   # fails the Turbopack build Vercel runs, then silently never deploys

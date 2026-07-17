@@ -206,7 +206,7 @@ export default async function TeamPage() {
             soldCount30d: null,
           }}
         />
-        <section id="faq" aria-label="Working with a Bend broker — common questions">
+        <section id="faq" aria-label="Working with a Bend broker: common questions">
           <FAQBlock
             eyebrow="Choosing a broker"
             title="Working with a Bend broker"

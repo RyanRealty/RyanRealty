@@ -112,7 +112,7 @@ export default async function LuxuryHomesBendPage() {
             High-end homes for sale in Bend
           </h2>
           <p className="mt-4 max-w-2xl text-base text-[#102742]/70">
-            A live look at the top of Bend's market, priced high to low. New homes in this range reach your inbox the morning they list.{' '}
+            A live look at the top of Bend&apos;s market, priced high to low. New homes in this range reach your inbox the morning they list.{' '}
             <Link href="/lp/buyer-listing-alerts" className="font-semibold underline underline-offset-4">
               Set up an alert
             </Link>
@@ -153,10 +153,10 @@ export default async function LuxuryHomesBendPage() {
       <section className="border-b-[3px] border-[#102742] bg-[#102742] text-[#faf8f4]">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
           <h2 className="font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] sm:text-4xl">
-            Where Bend's high-end homes sit
+            Where Bend&apos;s high-end homes sit
           </h2>
           <p className="mt-4 max-w-2xl text-base text-[#faf8f4]/80">
-            Much of Bend's top-of-market inventory is in its gated and golf communities on the west side and along the Deschutes. Start with these.
+            Much of Bend&apos;s top-of-market inventory is in its gated and golf communities on the west side and along the Deschutes. Start with these.
           </p>
           <div className="mt-10 flex flex-wrap gap-3">
             {LUX_COMMUNITIES.map((c) => (

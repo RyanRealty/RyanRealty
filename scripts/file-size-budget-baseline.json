@@ -19,7 +19,7 @@
     "app/api/cron/crm-sequence-engine/route.ts": 619,
     "app/api/meta/lead-webhook/route.ts": 807,
     "app/api/social/publish/route.ts": 783,
-    "app/cities/[slug]/page.tsx": 678,
+    "app/cities/[slug]/page.tsx": 679,
     "app/communities/[slug]/page.tsx": 973,
     "app/components/admin/AdminBrokerForm.tsx": 1339,
     "app/dashboard/marketing/page.tsx": 1163,

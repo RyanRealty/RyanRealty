@@ -19,6 +19,7 @@
  */
 
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import MortgageCalculator from './MortgageCalculator'
 import { getCalculatorDefaults } from '@/lib/data'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
@@ -165,13 +166,13 @@ export default async function MortgageCalculatorPage({ searchParams }: Props) {
               <a href="/homes-for-sale" className="btn alt">
                 Browse homes in this range <span className="arr">&rarr;</span>
               </a>
-              <a
+              <Link
                 href="/sell/valuation"
                 className="btn alt"
                 style={{ background: 'transparent', color: 'var(--navy)' }}
               >
                 Get a home value estimate <span className="arr">&rarr;</span>
-              </a>
+              </Link>
             </div>
           </div>
         </section>

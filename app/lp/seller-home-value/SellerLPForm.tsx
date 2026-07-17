@@ -393,7 +393,7 @@ export default function SellerLPForm({
         {isListNow ? 'How should we reach you?' : 'Where should we send it?'}
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Two quick fields and it's on its way. Phone is optional, and we promise not to call during dinner.
+        Two quick fields and it&apos;s on its way. Phone is optional, and we promise not to call during dinner.
       </p>
 
       <div className="mt-5 grid gap-4">

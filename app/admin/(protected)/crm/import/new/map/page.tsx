@@ -82,7 +82,7 @@ export default function ImportMapPage() {
       <h1 className="text-2xl font-bold text-foreground mb-1">Map CSV columns</h1>
       <p className="text-sm text-muted-foreground mb-8">
         {totalRows.toLocaleString()} data rows detected. Match each column to a CRM field, or skip it.
-        Columns mapped to "skip" are ignored.
+        Columns mapped to &quot;skip&quot; are ignored.
       </p>
 
       {error && (

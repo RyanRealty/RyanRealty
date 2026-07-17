@@ -30,6 +30,7 @@
 
 import type { Metadata } from 'next'
 import Image from 'next/image'
+import Link from 'next/link'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getAllCommunitySnapshots, getAllCitySnapshots } from '@/lib/data'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
@@ -260,9 +261,9 @@ export default async function CommunitiesPage() {
               <p className="note">
                 Single-family active inventory across every Central Oregon community we track. Figures from the MLS.
               </p>
-              <a href="/search" className="btn">
+              <Link href="/search" className="btn">
                 Search all listings <span className="arr">→</span>
-              </a>
+              </Link>
             </div>
           </div>
         </section>
@@ -442,12 +443,12 @@ export default async function CommunitiesPage() {
                 price, beds, and location. Or start with what your current home is worth.
               </p>
               <div className="sec-cta" style={{ gap: '12px', flexWrap: 'wrap', display: 'flex' }}>
-                <a href="/search" className="btn">
+                <Link href="/search" className="btn">
                   Search all listings <span className="arr">→</span>
-                </a>
-                <a href="/sell/valuation" className="btn ghost">
+                </Link>
+                <Link href="/sell/valuation" className="btn ghost">
                   What is your home worth
-                </a>
+                </Link>
               </div>
             </div>
           </div>

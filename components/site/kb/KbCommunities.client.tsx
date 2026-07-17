@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import type { KbCommunityItem } from './types'
@@ -147,9 +148,9 @@ export function KbCommunities({ communities, eyebrow = 'Communities' }: { commun
       </div>
       <div className="wrap">
         <div className="sec-cta">
-          <a href="/communities" className="btn alt">
+          <Link href="/communities" className="btn alt">
             Browse every community <span className="arr">→</span>
-          </a>
+          </Link>
         </div>
       </div>
     </section>

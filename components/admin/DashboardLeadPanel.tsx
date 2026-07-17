@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { DashboardLeadData } from '@/app/actions/dashboard'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
@@ -46,9 +47,9 @@ export default function DashboardLeadPanel({ data }: Props) {
             Recent activity{data.recentVisits.length > shownVisits.length ? ` (latest ${shownVisits.length})` : ''}
           </h3>
           {data.recentVisits.length > shownVisits.length ? (
-            <a href="/admin/visitors/live" className="shrink-0 text-xs font-medium text-primary hover:underline">
+            <Link href="/admin/visitors/live" className="shrink-0 text-xs font-medium text-primary hover:underline">
               See all →
-            </a>
+            </Link>
           ) : null}
         </div>
         {data.recentVisits.length === 0 ? (

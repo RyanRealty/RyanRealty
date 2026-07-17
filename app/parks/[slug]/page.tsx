@@ -22,6 +22,7 @@
  */
 
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import type { Metadata } from 'next'
 import {
   getParkDetail,
@@ -339,9 +340,9 @@ export default async function ParkDetailPage({ params }: Props) {
               </ul>
             ) : null}
             <p style={{ marginTop: '22px' }}>
-              <a className="park-link" href="/parks">
+              <Link className="park-link" href="/parks">
                 All Central Oregon parks <span className="arr">→</span>
-              </a>
+              </Link>
             </p>
           </div>
         </section>

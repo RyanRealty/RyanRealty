@@ -53,10 +53,14 @@ test.describe('Videos grid', () => {
     await expect(page.locator('main').first()).toBeVisible()
 
     // Filter nav: aria-label="Filter video tours by city"
-    const filterNav = page.locator('[aria-label="Filter video tours by city"]')
-    // Use waitFor to poll until the element is visible — avoids a race with
-    // Next.js hydration that can make the nav briefly invisible at domcontentloaded.
-    const hasFilterNav = await filterNav.waitFor({ state: 'visible', timeout: 20_000 }).then(() => true).catch(() => false)
+    // .first(): the label appears on BOTH the section region and its inner nav,
+    // and a strict-mode violation in waitFor reads as "not found" via the catch.
+    const filterNav = page.locator('[aria-label="Filter video tours by city"]').first()
+    // Assert ATTACHED, not visible: the nav sits below the fold inside a KB
+    // scroll-reveal section, so it stays at opacity 0 until scrolled into view
+    // (Lenis pages — the 2026-07-17 false failure). Presence in the DOM is the
+    // regression signal; visibility is an animation state, not a health check.
+    const hasFilterNav = await filterNav.waitFor({ state: 'attached', timeout: 20_000 }).then(() => true).catch(() => false)
 
     // If the filter nav doesn't exist it's a UI regression
     expect(hasFilterNav, '"Filter video tours by city" nav not found on /videos page').toBe(true)

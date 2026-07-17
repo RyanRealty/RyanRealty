@@ -55,7 +55,7 @@ export function ReviewCard({ review, tone = 'light', className }: Props) {
             isLight ? 'text-foreground/85' : 'text-card/90',
           )}
         >
-          "{review.quote}"
+          &quot;{review.quote}&quot;
         </p>
         <footer
           className={cn(

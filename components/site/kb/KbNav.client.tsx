@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { CONTACT } from '@/lib/brand/contact'
 import { useSessionUser } from '@/lib/hooks/useSessionUser'
 
@@ -158,9 +159,9 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
   return (
     <>
       <header className={`topbar${solid ? ' scrolled solid' : ''}`} ref={bar}>
-        <a href="/" aria-label="Ryan Realty home" className="topbar-logo">
+        <Link href="/" aria-label="Ryan Realty home" className="topbar-logo">
           <img className="logo-img" src="/images/brand/logo-horizontal-navy-transparent.png" alt="Ryan Realty" />
-        </a>
+        </Link>
         <nav className="nav-right">
           {LINKS.map((l) => (
             <a key={l.href} className="nav-link" href={l.href}>
@@ -173,9 +174,9 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
           <a className="nav-signin" href={signedIn ? '/account' : '/login'}>
             {signedIn ? 'My account' : 'Sign in'}
           </a>
-          <a className="nav-cta" href="/sell/valuation">
+          <Link className="nav-cta" href="/sell/valuation">
             What’s my home worth
-          </a>
+          </Link>
           <button ref={triggerRef} className="menu-btn" onClick={() => setOpen(true)} aria-expanded={open} aria-controls="menu-overlay" aria-label="Open menu">
             Menu +
           </button>
@@ -183,9 +184,9 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
       </header>
       <div id="menu-overlay" ref={overlayRef} className={`menu-overlay${open ? ' open' : ''}`} aria-hidden={!open}>
         <div className="menu-top">
-          <a href="/" aria-label="Ryan Realty home">
+          <Link href="/" aria-label="Ryan Realty home">
             <img className="logo-img" src="/images/brand/logo-horizontal-navy-transparent.png" alt="Ryan Realty" />
-          </a>
+          </Link>
           <button ref={closeBtnRef} className="menu-close" onClick={() => setOpen(false)}>
             Close ×
           </button>
@@ -203,9 +204,9 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
           ))}
         </nav>
         <div className="menu-cta-row">
-          <a className="nav-cta" href="/sell/valuation" onClick={() => setOpen(false)}>
+          <Link className="nav-cta" href="/sell/valuation" onClick={() => setOpen(false)}>
             What’s my home worth
-          </a>
+          </Link>
           <a className="nav-signin overlay" href={signedIn ? '/account' : '/login'} onClick={() => setOpen(false)}>
             {signedIn ? 'My account' : 'Sign in'}
           </a>

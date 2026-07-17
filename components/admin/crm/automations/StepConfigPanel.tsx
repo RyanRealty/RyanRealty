@@ -711,7 +711,7 @@ export function StepConfigPanel({
             </>
           ) : (
             <p className="rounded-lg border border-border bg-secondary/30 p-2.5 text-xs text-muted-foreground">
-              Texts send from the assigned broker's number, honor the 8:00 am – 9:00 pm quiet hours, and skip opted-out
+              Texts send from the assigned broker&apos;s number, honor the 8:00 am – 9:00 pm quiet hours, and skip opted-out
               contacts.
             </p>
           )}

@@ -91,7 +91,7 @@ export function analyzeListingHistory(
   trace.push(`Reconstructed ${cycles.length} MLS listing cycle(s) at ${subject.streetAddress}.`)
 
   // The "current" cycle is the subject's own listing key, else the newest row.
-  let currentCycle: BpoListingCycle | null =
+  const currentCycle: BpoListingCycle | null =
     (subject.listingKey ? cycles.find((c) => c.listingKey === subject.listingKey) : null) ??
     cycles[0] ??
     null

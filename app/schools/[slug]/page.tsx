@@ -18,6 +18,7 @@
  */
 
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import type { Metadata } from 'next'
 import {
   getSchoolDetail,
@@ -440,9 +441,9 @@ export default async function SchoolDetailPage({ params }: Props) {
             ) : null}
 
             <div className="sec-cta">
-              <a href="/schools" className="btn alt">
+              <Link href="/schools" className="btn alt">
                 All Central Oregon schools <span className="arr">→</span>
-              </a>
+              </Link>
             </div>
           </div>
         </section>

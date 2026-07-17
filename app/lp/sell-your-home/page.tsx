@@ -104,7 +104,7 @@ export default async function ListYourHomePage() {
   }
 
   return (
-    <div className="bg-[#faf8f4] text-[#102742]">
+    <main className="bg-[#faf8f4] text-[#102742]">
       <LandingPageTracker lpVariant="sell-your-home" />
       <script
         type="application/ld+json"
@@ -538,7 +538,7 @@ export default async function ListYourHomePage() {
           </a>
         </div>
       </div>
-    </div>
+    </main>
   )
 }
 

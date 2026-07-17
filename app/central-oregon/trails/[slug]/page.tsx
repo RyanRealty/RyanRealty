@@ -11,6 +11,7 @@
 
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { getTrailDetail, getTrailLineGeoJSON, type TrailHomeTile } from '@/lib/data'
 import {
   CO_TRAILS,
@@ -370,9 +371,9 @@ export default async function TrailDetailPage({ params }: Props) {
                 ))}
               </ul>
               <p style={{ marginTop: '22px' }}>
-                <a className="ev-link" href="/central-oregon/trails">
+                <Link className="ev-link" href="/central-oregon/trails">
                   All Central Oregon trails <span className="arr">→</span>
-                </a>
+                </Link>
               </p>
             </div>
           </section>

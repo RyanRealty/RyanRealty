@@ -16,6 +16,7 @@
  */
 
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { getEventsForIndex, getEventsByCategory, getEventsCount } from '@/lib/data'
 import { EVENT_CATEGORY_LABEL, type CoEvent } from '@/data/co-events'
 import { formatEventDate, shortEventDate } from '@/lib/events-format'
@@ -182,13 +183,13 @@ export default function EventsIndexPage() {
               </div>
               <p className="about-p" style={{ paddingTop: 'clamp(24px,3vw,36px)' }}>
                 The events calendar is being updated. Browse{' '}
-                <a className="ev-inline-link" href="/parks">
+                <Link className="ev-inline-link" href="/parks">
                   Central Oregon parks
-                </a>{' '}
+                </Link>{' '}
                 or{' '}
-                <a className="ev-inline-link" href="/cities">
+                <Link className="ev-inline-link" href="/cities">
                   cities
-                </a>{' '}
+                </Link>{' '}
                 in the meantime.
               </p>
             </div>

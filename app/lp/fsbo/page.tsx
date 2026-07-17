@@ -103,7 +103,7 @@ const REPORT_CONTENTS = [
 
 export default function FsboLPPage() {
   return (
-    <div className="bg-[#faf8f4] text-[#102742]">
+    <main className="bg-[#faf8f4] text-[#102742]">
       <LandingPageTracker lpVariant="fsbo" />
 
       {/* ─── Sticky minimal header — wordmark + phone (KB navy bar) ───────── */}
@@ -473,7 +473,7 @@ export default function FsboLPPage() {
           </a>
         </div>
       </div>
-    </div>
+    </main>
   )
 }
 

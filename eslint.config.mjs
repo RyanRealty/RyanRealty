@@ -27,6 +27,11 @@ const eslintConfig = defineConfig([
       "react-hooks/set-state-in-effect": "warn",
       "react-hooks/immutability": "warn",
       "react-hooks/preserve-manual-memoization": "warn",
+      // Same charter as the five above (added 2026-07-17): inline closure
+      // components (a dropdown's Row helper, the dev component gallery) are
+      // valid pre-compiler React; the remount cost is real but not a build
+      // blocker. 20 of these were part of why CI sat red since June 24.
+      "react-hooks/static-components": "warn",
             // Downgrade no-explicit-any to warning — Supabase query builder
             // callbacks use pragmatic `any` for filter chain parameters.
             "@typescript-eslint/no-explicit-any": "warn",
@@ -112,6 +117,39 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    // DAL-boundary WRITE-PATH mirror (G1). scripts/check-dal-boundary.mjs is
+    // the canonical enforcement, and its WRITE_PATH_PREFIXES explicitly allow
+    // .from('<table>') in app/actions/ (action files own the write path),
+    // app/api/ (server-side mutation/cron paths), app/admin/ (internal tool,
+    // direct access by design), and lib/tc/ + lib/crm/ (server-only domain
+    // layers). The eslint DAL selector never mirrored that decision, so 30
+    // legitimate write-path call sites errored ONLY in CI — part of why CI was
+    // silently red from 2026-06-24 to 2026-07-17. This block drops just the DAL
+    // selector for those paths; the D32/D33 style selectors stay ON.
+    files: [
+      "app/actions/**/*.{ts,tsx}",
+      "app/api/**/*.{ts,tsx}",
+      "app/admin/**/*.{ts,tsx}",
+      "lib/tc/**/*.{ts,tsx}",
+      "lib/crm/**/*.{ts,tsx}",
+      // Integration tests exercise raw tables by design (setup/teardown +
+      // asserting real DB effects) — never a consumer read path.
+      "**/*.int.test.{ts,tsx}",
+    ],
+    rules: {
+      "no-restricted-syntax": ["error",
+        {
+          selector: "JSXElement[openingElement.name.name='style']",
+          message: "D32: inline <style> JSX elements are banned in user-facing code. Use Tailwind utilities, app/globals.css, or CSS modules. The design-system primitives (DisplayHeading, CTAButton, Container etc.) own typography/layout — do not re-define them per-page.",
+        },
+        {
+          selector: "CallExpression[callee.name='createGlobalStyle']",
+          message: "D33: client-side <style> injection (styled-components / createGlobalStyle / similar) is banned. Use Tailwind utilities + app/globals.css.",
+        },
+      ],
+    },
+  },
+  {
     // scripts/ + eslint-rules/ are dev tooling, NOT the Next.js app runtime:
     //   - one-off ops scripts (backfills, seeds, migrations, audits) must use
     //     raw supabase.from(). The cached DAL is for the app, not maintenance
@@ -150,9 +188,29 @@ const eslintConfig = defineConfig([
       "app/lp/tetherow/page.tsx",
       "data/golf/community-kpis.ts",
       "data/golf/featured-listings.ts",
+      // KB-surface scoped <style> idiom (added 2026-07-17): these KB pages carry
+      // small `.kb-root`-scoped CSS override blocks (hero sizing, table theming,
+      // LP hero layout) — the same self-contained pattern as the app/lp entries
+      // above, not design-system typography redefinition.
+      "app/buy/page.tsx",
+      "app/parks/page.tsx",
+      "app/parks/\\[slug\\]/page.tsx",
+      "app/schools/page.tsx",
+      "app/schools/\\[slug\\]/page.tsx",
+      "app/reports/sales/\\[city\\]/\\[period\\]/page.tsx",
+      "components/landing/LeadLandingPage.tsx",
     ],
     rules: {
       "no-restricted-syntax": "off",
+    },
+  },
+  {
+    // Test files may require() CommonJS fixtures directly (e.g. the email tests
+    // load scripts/brand-voice-vocabulary.cjs — a .cjs artifact with no ESM
+    // build). Same rationale as the scripts/ block above.
+    files: ["**/*.test.{ts,tsx,mjs}"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
     },
   },
   {
@@ -168,6 +226,12 @@ const eslintConfig = defineConfig([
     files: [
       "app/api/**/*.{ts,tsx}",
       "app/admin/**/*.{ts,tsx}",
+      // Admin/console UI COMPONENTS are the same internal-only surface as
+      // app/admin (the CRM screens they render into) — added 2026-07-17 when 24
+      // of 30 CI brand-voice errors turned out to be internal CRM chrome (em
+      // dashes in tooltips, editor labels), not consumer copy.
+      "components/admin/**/*.{ts,tsx}",
+      "components/console/**/*.{ts,tsx}",
       "lib/**/*.{ts,tsx}",
       "scripts/**/*.{ts,tsx,mjs,js}",
       "eslint-rules/**/*.{js,mjs}",
@@ -184,6 +248,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored/static assets served as-is — not our source (e.g. the minified
+    // pdf.worker.min.mjs was throwing 7 no-this-alias errors in CI).
+    "public/**",
     // Parallel-agent worktrees — these are scratch copies of the
     // repo that other Claude sessions create. They're not part of
     // this checkout's source and shouldn't be lint-gated.

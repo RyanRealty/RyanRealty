@@ -37,6 +37,7 @@
  */
 
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { getSurfaceImage, getRecentBlogPosts, getRegionPulse } from '@/lib/data'
@@ -290,9 +291,9 @@ export default async function AboutPage() {
               <h2 className="sec-title display">Meet the team</h2>
             </div>
             <div className="sec-cta">
-              <a href="/team" className="btn alt">
+              <Link href="/team" className="btn alt">
                 Meet the full team <span className="arr">&rarr;</span>
-              </a>
+              </Link>
             </div>
           </div>
         </section>

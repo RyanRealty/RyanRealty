@@ -15,6 +15,7 @@
  */
 
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { getSchools, getSchoolsCount } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -99,13 +100,13 @@ export default function SchoolsIndexPage() {
               </div>
               <p className="about-p" style={{ paddingTop: 'clamp(24px,3vw,36px)' }}>
                 The school registry is being updated. Browse{' '}
-                <a className="schools-inline-link" href="/cities">
+                <Link className="schools-inline-link" href="/cities">
                   Central Oregon cities
-                </a>{' '}
+                </Link>{' '}
                 or{' '}
-                <a className="schools-inline-link" href="/search">
+                <Link className="schools-inline-link" href="/search">
                   search homes
-                </a>{' '}
+                </Link>{' '}
                 in the meantime.
               </p>
             </div>

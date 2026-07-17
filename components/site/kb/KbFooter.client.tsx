@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import Link from 'next/link'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { kbMoneyFull, type KbTownItem } from './types'
@@ -74,9 +75,9 @@ export function KbFooter({
                 {/* "What's my home worth" lands on the valuation FORM, not the
                     /sell marketing page (design-audit P2 — the promise must
                     match the page). */}
-                <a href="/sell/valuation" className="btn">
+                <Link href="/sell/valuation" className="btn">
                   {"What's my home worth"} <span className="arr">→</span>
-                </a>
+                </Link>
                 <a href="/homes-for-sale" className="btn ghost">
                   Browse homes
                 </a>
@@ -102,38 +103,38 @@ export function KbFooter({
           </div>
           <nav className="foot-col" aria-label="Explore">
             <h3>Explore</h3>
-            <a href="/cities/bend">Bend homes</a>
-            <a href="/cities/redmond">Redmond homes</a>
-            <a href="/cities/sisters">Sisters homes</a>
-            <a href="/cities/sunriver">Sunriver homes</a>
-            <a href="/cities/la-pine">La Pine homes</a>
-            <a href="/cities/terrebonne">Terrebonne homes</a>
+            <Link href="/cities/bend">Bend homes</Link>
+            <Link href="/cities/redmond">Redmond homes</Link>
+            <Link href="/cities/sisters">Sisters homes</Link>
+            <Link href="/cities/sunriver">Sunriver homes</Link>
+            <Link href="/cities/la-pine">La Pine homes</Link>
+            <Link href="/cities/terrebonne">Terrebonne homes</Link>
           </nav>
           <nav className="foot-col" aria-label="Communities">
             <h3>Communities</h3>
-            <a href="/communities/tetherow">Tetherow</a>
-            <a href="/communities/broken-top">Broken Top</a>
-            <a href="/communities/northwest-crossing">NorthWest Crossing</a>
-            <a href="/communities/caldera-springs">Caldera Springs</a>
+            <Link href="/communities/tetherow">Tetherow</Link>
+            <Link href="/communities/broken-top">Broken Top</Link>
+            <Link href="/communities/northwest-crossing">NorthWest Crossing</Link>
+            <Link href="/communities/caldera-springs">Caldera Springs</Link>
           </nav>
           <nav className="foot-col" aria-label="Explore Central Oregon">
             <h3>Central Oregon</h3>
-            <a href="/central-oregon/events">Events</a>
-            <a href="/central-oregon/venues">Live music {'&'} shows</a>
-            <a href="/central-oregon/trails">Trails</a>
+            <Link href="/central-oregon/events">Events</Link>
+            <Link href="/central-oregon/venues">Live music {'&'} shows</Link>
+            <Link href="/central-oregon/trails">Trails</Link>
             <a href="/lp/central-oregon-golf">Golf</a>
           </nav>
           <nav className="foot-col" aria-label="Buyers">
             <h3>Buyers</h3>
             <a href="/homes-for-sale">Browse homes</a>
-            <a href="/housing-market">The market</a>
-            <a href="/team">The team</a>
+            <Link href="/housing-market">The market</Link>
+            <Link href="/team">The team</Link>
           </nav>
           <nav className="foot-col" aria-label="Sellers">
             <h3>Sellers</h3>
-            <a href="/sell/valuation">What&rsquo;s my home worth</a>
-            <a href="/sell">Sell your home</a>
-            <a href="/housing-market">Market reports</a>
+            <Link href="/sell/valuation">What&rsquo;s my home worth</Link>
+            <Link href="/sell">Sell your home</Link>
+            <Link href="/housing-market">Market reports</Link>
           </nav>
         </div>
         <div className="foot-bottom">

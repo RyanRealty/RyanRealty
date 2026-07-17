@@ -313,7 +313,7 @@ export default async function AccountPage() {
         <Card className="mt-3 flex flex-col items-start gap-2 p-4">
           <span className="text-sm font-semibold text-foreground">Privacy &amp; data</span>
           <span className="text-xs text-muted-foreground">
-            Download a copy of your data — saved homes, searches, profile, and activity. For deletion requests, contact us.
+            Download a copy of your data. Saved homes, searches, profile, and activity. For deletion requests, contact us.
           </span>
           <ExportMyDataButton className="mt-1" />
         </Card>

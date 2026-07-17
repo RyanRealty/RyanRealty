@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
+import Link from 'next/link'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { kbMoneyFull, type KbMarketData } from './types'
@@ -261,9 +262,9 @@ export function KbMarketHud({
             {/* design-audit #118: was hardcoded to /housing-market, the summary
                 hub this HUD is often embedded IN (self-referential on the
                 region page). /housing-market/reports is the actual full report. */}
-            <a href="/housing-market/reports" className="btn ghost">
+            <Link href="/housing-market/reports" className="btn ghost">
               See the full market report <span className="arr">→</span>
-            </a>
+            </Link>
           </div>
         </div>
         <p className="mkt-fine">

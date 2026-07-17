@@ -20,6 +20,7 @@
  * gated send paths — sends to the calling broker only).
  */
 import { useRef, useState } from 'react'
+import Link from 'next/link'
 import { Mail } from 'lucide-react'
 import {
   Dialog,
@@ -247,9 +248,9 @@ export function EmailTemplateModal({
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
                 The sender&rsquo;s signature is added automatically at send time from{' '}
-                <a href="/admin/crm/settings" className="text-primary underline">
+                <Link href="/admin/crm/settings" className="text-primary underline">
                   My Settings
-                </a>
+                </Link>
                 . Inline styles only — style blocks and iframes are stripped.
               </p>
             </TabsContent>

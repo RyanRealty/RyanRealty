@@ -19,6 +19,7 @@
  */
 
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import AppreciationCalculator from '@/components/tools/AppreciationCalculator'
 import AdUnit from '@/components/AdUnit'
 import HomeValuationCta from '@/components/HomeValuationCta'
@@ -147,9 +148,9 @@ export default function AppreciationToolPage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3 mt-6">
-              <a href="/sell/valuation" className="btn alt">
+              <Link href="/sell/valuation" className="btn alt">
                 Get your home&apos;s actual value <span className="arr">&rarr;</span>
-              </a>
+              </Link>
             </div>
           </div>
         </section>

@@ -101,12 +101,12 @@ export default function ConsoleTopNav({
         <div className="w-64 [&_button]:bg-white/10 [&_button]:text-white/70 [&_button]:hover:bg-white/15">
           <ConsoleCommandPalette />
         </div>
-        <a
+        <Link
           href="/"
           className="hidden h-9 items-center rounded-md px-3 text-xs font-medium text-white/70 hover:bg-white/10 hover:text-white xl:inline-flex"
         >
           View site
-        </a>
+        </Link>
         {/* Account menu — fixes the audited "no sign-out anywhere in the admin":
             the avatar was a bare image with no menu, so a broker on a shared device
             could not sign out or switch accounts. */}
@@ -134,7 +134,7 @@ export default function ConsoleTopNav({
               <Link href="/admin/settings">My settings</Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <a href="/">View site</a>
+              <Link href="/">View site</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); void handleSignOut() }} className="text-destructive focus:text-destructive">
