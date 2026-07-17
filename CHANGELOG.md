@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.813.6 (2026-07-17)
+
+### Bug Fixes
+- fix(ci): heap for the e2e job's build too — its first-ever run OOM'd the same way
+
+---
+
+
 ## v1.813.5 (2026-07-17)
 
 ### Bug Fixes
