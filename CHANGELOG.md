@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.817.0 (2026-07-17)
+
+### Features
+- feat(crm): unified send v1 — THE SendPanel, duplicates dead, sync CMA build entry closed (Pain #4)
+
+---
+
+
 ## v1.816.1 (2026-07-17)
 
 ### Bug Fixes
