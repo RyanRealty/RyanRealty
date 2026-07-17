@@ -115,7 +115,13 @@ export default defineConfig({
       command: 'npm run start:ci',
       url: 'http://127.0.0.1:3000',
       reuseExistingServer: !process.env.CI,
-      timeout: 120000,
+      // 180s + piped output: the CI e2e job's first-ever run (2026-07-17)
+      // timed out at 120s with the server's stdout swallowed — pipe it so a
+      // boot failure is diagnosable from the CI log instead of a blind
+      // "Timed out waiting from config.webServer".
+      timeout: 180_000,
+      stdout: 'pipe',
+      stderr: 'pipe',
     },
   }),
 })
