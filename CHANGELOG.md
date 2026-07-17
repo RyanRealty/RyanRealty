@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.813.3 (2026-07-17)
+
+### Bug Fixes
+- fix(e2e): saved-search asserts attached not visible; mobile-nav skips hidden-chrome no-op clicks
+
+---
+
+
 ## v1.813.2 (2026-07-17)
 
 ### Bug Fixes
