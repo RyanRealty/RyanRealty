@@ -10,7 +10,7 @@
  * the action row with the reason recorded.
  */
 
-import { listOpenCmaActions, updateCmaActionRow, getCmaActionPayload } from '@/lib/data'
+import { listOpenCmaActions, updateCmaActionRow, getCmaActionPayload, getCmaAdminRowBySlug } from '@/lib/data'
 import type { CmaActionRow } from '@/lib/data'
 import { buildCma } from '@/lib/cma/build'
 import { slugifyAddress } from '@/lib/cma-request'
@@ -83,6 +83,22 @@ async function processOne(action: CmaActionRow): Promise<{ slug: string; status:
       killed_reason: 'No slug derivable from target or payload.',
     })
     return { slug: '(none)', status: 'killed', error: 'no slug' }
+  }
+
+  // Clobber guard: never build over a protected document. An open action can
+  // outlive a finalize/deliver (the broker approved while the build sat queued
+  // or retry-pending); building would flip the document back to draft with the
+  // action's stale client fields and 404 the client's live /cma/[slug] link —
+  // the upsert-by-slug clobber class (adversarial review 2026-07-17). New
+  // requests for the address open a --vN slot via createCmaRequest instead.
+  const existingDoc = (await getCmaAdminRowBySlug(slug)) as { status?: unknown } | null
+  const existingStatus = existingDoc ? String(existingDoc.status ?? '') : null
+  if (existingDoc && existingStatus !== 'draft') {
+    await updateCmaActionRow(action.id, {
+      status: 'killed',
+      killed_reason: `Build skipped: the document at ${slug} is already ${existingStatus} — building would reset it to draft and break its delivered link.`,
+    })
+    return { slug, status: 'killed', error: `document already ${existingStatus}` }
   }
 
   const prior = (action.executor_response ?? {}) as Record<string, unknown>

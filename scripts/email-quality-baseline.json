@@ -16,7 +16,7 @@
   "app/home-valuation/actions.ts",
   "lib/cma-deliver.ts",
   "lib/cma-delivery.ts",
-  "lib/cma-request.ts",
+  "lib/cma/request-emails.ts",
   "lib/digest-email-templates.tsx",
   "lib/expired-alert.ts",
   "lib/fsbo-alert.ts",

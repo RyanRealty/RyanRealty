@@ -14,7 +14,7 @@ import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
-import { slugifyAddress } from '@/lib/cma/address-slug'
+import { cmaSlugBase, pickLatestCmaVersion, slugifyAddress } from '@/lib/cma/address-slug'
 
 export interface ExpiredDashboardRow {
   listing_key: string
@@ -78,19 +78,32 @@ export async function listExpiredDashboardRows(): Promise<ExpiredDashboardRow[]>
     ),
   ]
 
-  // 2. Audit documents (cmas by slug).
+  // 2. Audit documents (cmas by ADDRESS slug — latest version wins). An
+  // address can carry a preserved older delivered CMA under the base slug plus
+  // a newer --vN document (lib/cma/versions.ts); the worklist must show the
+  // newest one, so the map is keyed by base slug. Chunks are smaller than the
+  // plain .in() version because each slug contributes two or-conditions.
   const cmaBySlug = new Map<string, Record<string, unknown>>()
-  for (let i = 0; i < slugs.length; i += 100) {
+  const allDocSlugs = new Set<string>()
+  for (let i = 0; i < slugs.length; i += 25) {
+    const chunk = slugs.slice(i, i + 25)
     const { data } = await sb
       .from('cmas')
       .select('slug, doc_type, status, delivered_at, recommended_list, client_email, build_summary')
-      .in('slug', slugs.slice(i, i + 100))
-    for (const c of data ?? []) cmaBySlug.set(String(c.slug), c)
+      .or(chunk.flatMap((s) => [`slug.eq.${s}`, `slug.like.${s}--v*`]).join(','))
+    for (const c of data ?? []) allDocSlugs.add(String((c as { slug: unknown }).slug))
+    for (const base of chunk) {
+      const latest = pickLatestCmaVersion((data ?? []) as Array<{ slug: string }>, base)
+      if (latest) cmaBySlug.set(base, latest as Record<string, unknown>)
+    }
   }
 
-  // 3. Email opens/clicks keyed by email_key `cma:<slug>`.
+  // 3. Email opens/clicks keyed by email_key `cma:<slug>` — the send path
+  // stamps the DOCUMENT slug (possibly --vN), so query base + EVERY version's
+  // key (intermediate versions carried real sends too) and roll the aggregate
+  // up to the base address slug.
   const emailAgg = new Map<string, { opens: number; clicks: number; last: string | null }>()
-  const emailKeys = slugs.map((s) => `cma:${s}`)
+  const emailKeys = [...new Set([...slugs, ...allDocSlugs])].map((s) => `cma:${s}`)
   for (let i = 0; i < emailKeys.length; i += 100) {
     const { data } = await sb
       .from('email_events')
@@ -98,7 +111,7 @@ export async function listExpiredDashboardRows(): Promise<ExpiredDashboardRow[]>
       .in('email_key', emailKeys.slice(i, i + 100))
       .in('event', ['open', 'click'])
     for (const ev of data ?? []) {
-      const slug = String(ev.email_key).slice(4)
+      const slug = cmaSlugBase(String(ev.email_key).slice(4))
       const agg = emailAgg.get(slug) ?? { opens: 0, clicks: 0, last: null }
       if (ev.event === 'open') agg.opens++
       else agg.clicks++
@@ -155,7 +168,8 @@ export async function listExpiredDashboardRows(): Promise<ExpiredDashboardRow[]>
     for (const v of rows) {
       const m = String(v.page_url ?? '').match(/\/cma\/([a-z0-9-]+)/)
       if (!m) continue
-      const slug = m[1]!
+      // Roll --vN document views up to the base address slug the map is keyed by.
+      const slug = cmaSlugBase(m[1]!)
       const agg = viewsBySlug.get(slug) ?? { count: 0, last: null }
       agg.count++
       const at = v.event_at as string | null
@@ -190,7 +204,7 @@ export async function listExpiredDashboardRows(): Promise<ExpiredDashboardRow[]>
       hard_stop: /HARD STOP|LITIGATOR/i.test(String(e.enrichment_notes ?? '')),
       relisted: false, // per-row re-list checks are done at send time (guarded action)
       crm_person_id: pid,
-      audit_slug: cma ? slug : null,
+      audit_slug: cma ? String(cma.slug) : null,
       audit_doc_type: (cma?.doc_type as string | null) ?? null,
       audit_status: (cma?.status as string | null) ?? null,
       audit_needs_review: String(bs.needs_review ?? '') === 'true' || bs.needs_review === true,

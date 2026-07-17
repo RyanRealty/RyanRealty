@@ -20,8 +20,8 @@ import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getCmaAdminRowBySlug } from '@/lib/data/cma/documents'
-import { updateCmaRowFieldsBySlug } from '@/lib/data'
+import { getCmaAdminRowBySlug, updateCmaRowFieldsBySlug } from '@/lib/data'
+import { getLatestBuiltCmaRowForBaseSlug } from '@/lib/cma/versions'
 import { getExpiredListingDetail } from '@/lib/data/expired/outreach'
 import { sendCmaToLead, prepareCmaSendPreview } from '@/lib/cma/send'
 import { slugifyAddress } from '@/lib/cma/address-slug'
@@ -133,9 +133,12 @@ export async function prepareDocSendAction(
     if (!(await requireAdmin())) return { data: null, error: 'Unauthorized' }
     const t = await loadTarget(kind, id)
     if (!t) return { data: null, error: 'Record not found' }
-    const slug = slugifyAddress(t.streetAddress)
-    const row = await getCmaAdminRowBySlug(slug)
-    if (!row) return { data: null, error: 'No document built yet. Build it first.' }
+    // Resolve the NEWEST BUILT document for the address (base slug or --vN,
+    // see lib/cma/versions.ts): never an older preserved delivered document
+    // when a fresh one exists, and never an unbuilt intake placeholder.
+    const latest = await getLatestBuiltCmaRowForBaseSlug(slugifyAddress(t.streetAddress))
+    if (!latest) return { data: null, error: 'No document built yet. Build it first.' }
+    const { slug, row } = latest
     const bs = (row.build_summary ?? {}) as Record<string, unknown>
     const needsReview = String(bs.needs_review ?? '') === 'true' || bs.needs_review === true
 
@@ -212,9 +215,10 @@ export async function sendDocEmailAction(
     const unresolved = findUnresolvedMergeTokens(body + ' ' + (input.subject ?? ''))
     if (unresolved.length > 0) return { data: null, error: `Send refused. Unresolved merge tokens: ${unresolved.join(', ')}.` }
 
-    const slug = slugifyAddress(t.streetAddress)
-    const row = await getCmaAdminRowBySlug(slug)
-    if (!row) return { data: null, error: 'No document built yet. Build it first.' }
+    // Same latest-BUILT resolution as the prepare step above.
+    const latest = await getLatestBuiltCmaRowForBaseSlug(slugifyAddress(t.streetAddress))
+    if (!latest) return { data: null, error: 'No document built yet. Build it first.' }
+    const { slug, row } = latest
     const bs = (row.build_summary ?? {}) as Record<string, unknown>
     const needsReview = String(bs.needs_review ?? '') === 'true' || bs.needs_review === true
     if (needsReview && !input.acknowledgeReview) {
@@ -255,6 +259,20 @@ export async function sendDocSmsAction(
     if (!body) return { data: null, error: 'The message is empty.' }
     const unresolved = findUnresolvedMergeTokens(body)
     if (unresolved.length > 0) return { data: null, error: `Send refused. Unresolved merge tokens: ${unresolved.join(', ')}.` }
+    // Any /cma/ link in the text must point at a CLIENT-READY document. The
+    // SMS rail never finalizes anything (unlike the email rail), and the
+    // public route 404s drafts, so a draft link here would reach the owner
+    // dead. Fail closed on every linked slug.
+    for (const m of body.matchAll(/\/cma\/([a-z0-9-]+)/g)) {
+      const linked = await getCmaAdminRowBySlug(m[1]!)
+      const linkedStatus = String(linked?.status ?? '')
+      if (!linked || (linkedStatus !== 'finalized' && linkedStatus !== 'delivered')) {
+        return {
+          data: null,
+          error: `The linked document /cma/${m[1]} is not client-ready (${linked ? linkedStatus || 'unknown status' : 'not found'}). Approve it first, or send by email which finalizes on send.`,
+        }
+      }
+    }
     const to = toE164(t.phone)
     if (!to) return { data: null, error: 'Owner phone did not normalize to E.164.' }
 

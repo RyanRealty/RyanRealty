@@ -18,6 +18,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { Files01Icon, SearchRemoveIcon } from '@hugeicons/core-free-icons'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { cmaSlugBase } from '@/lib/cma/address-slug'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
@@ -187,7 +188,10 @@ async function CmasContent({ params }: { params: Record<string, string | undefin
   // to an expired listing (Matt directive 2026-07-12: jump to the owner + the
   // expired info from the CMA list).
   const allRows = (rawRows as unknown as CmaRow[]).map((r) => {
-    const link = expiredLinks[r.slug]
+    // Versioned CMA slugs (--vN, lib/cma/versions.ts) share the base address
+    // slug the expired-links map is keyed by. Exact match first so an address
+    // whose own slug happens to end in --vN never mis-resolves.
+    const link = expiredLinks[r.slug] ?? expiredLinks[cmaSlugBase(r.slug)]
     return {
       ...r,
       expired_listing_key: link?.listingKey ?? null,

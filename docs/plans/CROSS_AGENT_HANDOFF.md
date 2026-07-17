@@ -1,4 +1,34 @@
-> **NEWEST, START HERE: the ADMIN-REBUILD v2 LITMUS block immediately below (2026-07-17).** Prior: RC1 (2026-07-16).
+> **NEWEST, START HERE: the CMA VERSION-CHAIN block immediately below (2026-07-17 PM).** Prior: the ADMIN-REBUILD v2 LITMUS block (2026-07-17 AM), then RC1 (2026-07-16).
+
+# CMA VERSION CHAIN — THE UPSERT-BY-SLUG CLOBBER CLASS IS CLOSED (2026-07-17 PM, Claude Code sibling session)
+
+**Closes the litmus block's open chip task_401091b4 (seller-LP clobber residue).** Full
+narrative in `docs/plans/ADMIN_REBUILD/PROGRESS.md` ("CMA upsert-by-slug clobber class
+— CLOSED at every writer").
+
+- **The model:** one address = one base slug + `--vN` successor documents
+  (`lib/cma/address-slug.ts` pure helpers; `--` is unreachable from slugifyAddress, so
+  the namespace can't collide with a real address). `lib/cma/versions.ts` is the shared
+  resolver: `resolveWritableCmaSlot` (writers: open draft → merge/rebuild in place;
+  protected → next version) + `getLatestCmaRowForBaseSlug` / `…Built…` / `…ClientReady…`
+  (readers). Protected = any non-draft status, fail-safe.
+- **Writers routed through the slot:** `createCmaRequest` (all intakes — its merge path
+  patches contact fields ONLY, under a status='draft' compare-and-patch, and on a 23505
+  attach refreshes the open action's payload + joins the ready-notify list);
+  `buildExpiredAuditAction`, `buildFsboCmaAction`, `buildCmaAdminAction`, contact-card
+  build; `kickoffCmaCore` (version-aware port, attach/guard/stub at the chain's writable
+  end — your int suite is green unchanged). The build worker now KILLS an open action
+  whose document finalized while queued instead of building over it.
+- **Readers latest-aware:** expired/FSBO dashboards + outreach worklist (latest),
+  email send rails (latest BUILT), SMS link surfaces (latest CLIENT-READY, fail-closed —
+  a texted draft link 404s on the public route).
+- **If you touch:** anything that derives a cmas slug from an address must go through
+  `lib/cma/versions.ts`, never `.eq('slug', slugifyAddress(addr))` directly. Keep
+  `lib/cma-request.int.test.ts` + `lib/crm/cma-kickoff.int.test.ts` green.
+- **Deliberately preserved:** kickoff still returns `alreadyBuilt` (no new version from
+  the CRM sheet) when the latest document is protected — product decision pending.
+
+ Prior newest block below.
 
 # ADMIN REBUILD v2 — THE LITMUS SHIPPED (2026-07-17, Claude Code)
 

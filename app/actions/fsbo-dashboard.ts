@@ -12,9 +12,9 @@ import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { createServiceClient } from '@/lib/supabase/service'
 import { buildCma } from '@/lib/cma/build'
 import { sendCmaToLead } from '@/lib/cma/send'
-import { getCmaAdminRowBySlug } from '@/lib/data/cma/documents'
 import { updateCmaRowFieldsBySlug } from '@/lib/data'
 import { slugifyAddress } from '@/lib/cma/address-slug'
+import { getLatestBuiltCmaRowForBaseSlug, resolveWritableCmaSlot } from '@/lib/cma/versions'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { isSuppressed } from '@/lib/crm/suppressions'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
@@ -61,7 +61,12 @@ export async function buildFsboCmaAction(fsboUrl: string): Promise<{ data: { slu
     const f = await getFsboRow(fsboUrl)
     if (!f) return { data: null, error: 'FSBO listing not found' }
     if (!f.street_address) return { data: null, error: 'No street address on the FSBO record' }
-    const slug = slugifyAddress(f.street_address)
+    // Land the build on a writable slot: rebuild the open draft in place, or
+    // open a new --vN document after a finalized/delivered CMA — never clobber
+    // a protected document back to draft (lib/cma/versions.ts).
+    const slot = await resolveWritableCmaSlot(slugifyAddress(f.street_address))
+    if (!slot.ok) return { data: null, error: slot.error }
+    const slug = slot.slug
     const res = await buildCma({
       slug,
       rawAddress: f.street_address,
@@ -94,9 +99,13 @@ export async function sendFsboCmaEmailAction(
     if (!f.contact_email) return { data: null, error: 'No owner email on file.' }
     if (!f.street_address) return { data: null, error: 'No street address on the FSBO record' }
 
-    const slug = slugifyAddress(f.street_address)
-    const row = await getCmaAdminRowBySlug(slug)
-    if (!row) return { data: null, error: 'No CMA built yet. Build it first.' }
+    // Resolve the NEWEST BUILT document for the address (base slug or --vN):
+    // never an older delivered document when a fresh one exists, and never an
+    // unbuilt intake placeholder (finalizing one would strand an empty
+    // protected row and the send would fail rendering).
+    const latest = await getLatestBuiltCmaRowForBaseSlug(slugifyAddress(f.street_address))
+    if (!latest) return { data: null, error: 'No CMA built yet. Build it first.' }
+    const { slug, row } = latest
     const bs = (row.build_summary ?? {}) as Record<string, unknown>
     const needsReview = String(bs.needs_review ?? '') === 'true' || bs.needs_review === true
     if (needsReview && !opts.acknowledgeReview) {

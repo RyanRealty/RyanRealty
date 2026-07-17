@@ -16,6 +16,7 @@ import { buildCma } from '@/lib/cma/build'
 import { sendCmaToLead } from '@/lib/cma/send'
 import { resolveCmaSubject } from '@/lib/cma/subject'
 import { slugifyAddress } from '@/lib/cma-request'
+import { resolveWritableCmaSlot } from '@/lib/cma/versions'
 import {
   getCmaAdminRowBySlug,
   updateCmaRowFieldsBySlug,
@@ -70,6 +71,14 @@ export async function buildCmaAdminAction(
       rawAddress = `${resolved.subject.streetAddress}, ${resolved.subject.city}, OR ${resolved.subject.postalCode ?? ''}`.trim()
       slug = slugifyAddress(rawAddress)
     }
+
+    // Land the build on a writable slot: rebuild the open draft in place, or
+    // open a new --vN document after a finalized/delivered CMA — never clobber
+    // a protected document back to draft (lib/cma/versions.ts). In-place
+    // rebuilds of a specific document stay on rebuildCmaAction (explicit slug).
+    const slot = await resolveWritableCmaSlot(slug)
+    if (!slot.ok) return { data: null, error: slot.error }
+    slug = slot.slug
 
     const result = await buildCma({
       slug,

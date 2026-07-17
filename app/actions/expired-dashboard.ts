@@ -13,10 +13,10 @@ import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { buildCma } from '@/lib/cma/build'
 import { sendCmaToLead } from '@/lib/cma/send'
-import { getCmaAdminRowBySlug } from '@/lib/data/cma/documents'
 import { updateCmaRowFieldsBySlug } from '@/lib/data'
 import { getExpiredListingDetail } from '@/lib/data/expired/outreach'
 import { slugifyAddress } from '@/lib/cma/address-slug'
+import { getLatestBuiltCmaRowForBaseSlug, resolveWritableCmaSlot } from '@/lib/cma/versions'
 
 async function requireAdmin(): Promise<string | null> {
   const session = await getSession()
@@ -33,7 +33,12 @@ export async function buildExpiredAuditAction(
     const e = await getExpiredListingDetail(listingKey)
     if (!e) return { data: null, error: 'Expired listing not found' }
     if (!e.street_address) return { data: null, error: 'No street address on the expired record' }
-    const slug = slugifyAddress(e.street_address)
+    // Land the build on a writable slot: rebuild the open draft in place, or
+    // open a new --vN document after a finalized/delivered audit — never
+    // clobber a protected document back to draft (lib/cma/versions.ts).
+    const slot = await resolveWritableCmaSlot(slugifyAddress(e.street_address))
+    if (!slot.ok) return { data: null, error: slot.error }
+    const slug = slot.slug
     const res = await buildCma({
       slug,
       mlsNumber: e.listing_key,
@@ -68,9 +73,13 @@ export async function sendExpiredAuditEmailAction(
     if (!e.contact_email) return { data: null, error: 'No owner email on file. Skip-trace found no email for this owner.' }
     if (!e.street_address) return { data: null, error: 'No street address on the expired record' }
 
-    const slug = slugifyAddress(e.street_address)
-    const row = await getCmaAdminRowBySlug(slug)
-    if (!row) return { data: null, error: 'No audit built yet. Build the audit first.' }
+    // Resolve the NEWEST BUILT document for the address (base slug or --vN):
+    // never an older delivered document when a fresh one exists, and never an
+    // unbuilt intake placeholder (finalizing one would strand an empty
+    // protected row and the send would fail rendering).
+    const latest = await getLatestBuiltCmaRowForBaseSlug(slugifyAddress(e.street_address))
+    if (!latest) return { data: null, error: 'No audit built yet. Build the audit first.' }
+    const { slug, row } = latest
     if ((row.doc_type as string | null) !== 'expired-audit') {
       return { data: null, error: 'The document for this address is a plain CMA, not an expired audit. Rebuild it as an audit first.' }
     }

@@ -407,6 +407,32 @@ fixes. Deferred to spec 02: group participant-count off-by-one (inbound counts b
 line), per-recipient group idempotency. **Lesson: manual browser verification misses
 transient-error paths + URL-form edge cases — the adversarial review is not optional.**
 
+### CMA upsert-by-slug clobber class — CLOSED at every writer (2026-07-17 follow-through session)
+The D8 review's HIGH finding said the kick-off guard alone was not the class fix: the
+seller-LP / expired / FSBO / Meta-webhook intakes (createCmaRequest) and every direct
+buildCma caller still blind-upserted by slug, flipping a finalized/delivered CMA back
+to draft, reassigning the client, and 404ing the client's live /cma/[slug] link. Fixed
+at the chokepoints with a **version chain**: one address = one base slug + `--vN`
+successors (the `--` is reserved by construction — slugifyAddress collapses hyphen
+runs, so no address-derived slug can collide). New primitives: pure helpers in
+`lib/cma/address-slug.ts` + probing resolvers in `lib/cma/versions.ts`
+(resolveWritableCmaSlot for writers; latest / latest-BUILT / latest-CLIENT-READY for
+readers). Writers (intake, dashboard builds, contact-card build, admin new-CMA) land
+on the writable slot; the intake merge path refreshes contact fields only under a
+status='draft' compare-and-patch; the build worker kills (never builds) an action
+whose document finalized while queued. Readers that key CMAs by address (expired/FSBO
+dashboards + outreach worklist + send rails) resolve the latest version; SMS rails
+resolve latest CLIENT-READY (a texted draft link 404s); email rails resolve latest
+BUILT (auto-finalizing an unbuilt placeholder would strand an empty protected row).
+kickoffCmaCore ported to the chain (attach/guard/stub logic at the writable end —
+its int suite green unchanged). Own adversarial review (2 independent agents) found
+11 findings incl. 2 HIGH regressions in the first draft (draft-link SMS, stale attach
+payload reverting the newest requester) — all fixed before commit; int tests
+`lib/cma-request.int.test.ts` (never-clobber, merge-not-reset, archived-protected,
+newest-requester payload) + `lib/cma/address-slug.test.ts` pin the contract.
+**Lesson confirmed again: the adversarial review pays for itself — both HIGHs were
+invisible to the happy-path tests.**
+
 ## Next (in priority order)
 1. "Send a CMA in seconds" — collapse the CMA build+send to one fast path on the
    person workspace (the owner's explicit litmus test).

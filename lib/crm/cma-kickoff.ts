@@ -30,7 +30,8 @@ import 'server-only'
 import { parseContactAddress } from '@/lib/crm/contact-cma-address'
 import { slugifyAddress } from '@/lib/cma/address-slug'
 import { withSendIdempotency } from '@/lib/crm/idempotency'
-import { appendCmaActionNotify, findOpenCmaActionBySlug, getCmaAdminRowBySlug } from '@/lib/data'
+import { appendCmaActionNotify, findOpenCmaActionBySlug } from '@/lib/data'
+import { getLatestCmaRowForBaseSlug, resolveWritableCmaSlot } from '@/lib/cma/versions'
 import { getPersonForCmaKickoff, logCmaKickoffTimeline } from '@/lib/data/crm/cmaKickoff'
 
 export type CmaKickoffResult =
@@ -126,17 +127,26 @@ export async function kickoffCmaCore(input: {
       onInFlight: { ok: true, slug, alreadyQueued: true, inFlight: true },
     },
     async () => {
+      // Resolve the address's version-chain slot FIRST (lib/cma/versions.ts):
+      // an address can carry a preserved delivered document at the base slug
+      // plus a newer --vN document, so the open-build check, the existing-
+      // document guard, and the stub carve-out below all operate on the
+      // chain's writable end — never blindly on the base slug.
+      const slot = await resolveWritableCmaSlot(slug)
+      if (!slot.ok) return { ok: false, error: slot.error }
+
       // Direction-explicit dedupe FIRST: attach to an in-flight build for this
-      // slug rather than enqueueing a second one ("already building" is the
-      // truthful answer while an open action row exists). Attaching joins the
-      // build's ready-notify list — the sheet promises this kicker a text too.
-      // Stamp the attach on the timeline (review MED: the second kicker's
-      // audit trail must not be silent).
-      const open = await findOpenCmaActionBySlug(slug)
+      // slot rather than enqueueing a second one ("already building" is the
+      // truthful answer while an open action row exists) — a build queued by
+      // ANY intake path (seller LP, cron) for this chain position counts.
+      // Attaching joins the build's ready-notify list — the sheet promises
+      // this kicker a text too. Stamp the attach on the timeline (review MED:
+      // the second kicker's audit trail must not be silent).
+      const open = await findOpenCmaActionBySlug(slot.slug)
       if (open) {
         await joinReadyNotify({
           actionId: open.id,
-          slug,
+          slug: slot.slug,
           subjectAddress: parsed.rawAddress,
           personId: person.id,
           broker: alertBroker,
@@ -146,40 +156,46 @@ export async function kickoffCmaCore(input: {
           title: 'CMA kick-off attached to in-flight build',
           body: `A CMA build for ${parsed.rawAddress} is already queued. No duplicate was created — ${alertBroker} is on the ready-text list for this build.`,
           broker: alertBroker,
-          dedupeKey: `cma:kickoff-attach:${slug}:${input.idempotencyKey.slice(0, 8)}`,
+          dedupeKey: `cma:kickoff-attach:${slot.slug}:${input.idempotencyKey.slice(0, 8)}`,
         })
-        return { ok: true, slug, alreadyQueued: true }
+        return { ok: true, slug: slot.slug, alreadyQueued: true }
       }
 
-      // Clobber guard (review HIGH): no open build, but a cmas row for this
-      // slug already exists — a prior draft, or a finalized/delivered document
-      // possibly for a DIFFERENT client. Do not touch it: the upsert-by-slug
-      // in createCmaRequest would reset status/client/html_path. Surface the
-      // existing document instead; the broker reviews it at /admin/cmas/[slug].
-      //
+      // Clobber guard (review HIGH): surface an existing reviewable document
+      // instead of rebuilding or overwriting anything from a kick-off:
+      //   · the chain's newest document is protected (finalized/delivered/
+      //     archived — the slot stepped past it), or
+      //   · the writable slot already holds a BUILT draft.
       // EXCEPTION — never-built stubs are re-kickable (review LOW liveness
       // gap): a build killed after 3 failures leaves `html_path: 'pending:…'`
       // with no html_content. That row holds NO reviewed content to clobber,
       // and without this carve-out the address would be permanently stuck at
       // "already on file" pointing at a document that never built.
-      const existing = await getCmaAdminRowBySlug(slug)
-      const ex = existing as { html_path?: unknown; html_content?: unknown; status?: unknown } | null
-      // Draft-only on purpose: any finalized/delivered row is NEVER a stub,
-      // whatever its html fields claim — those rows must always hit the guard.
-      const isNeverBuiltStub =
-        ex != null &&
-        ex.status === 'draft' &&
-        String(ex.html_path ?? '').startsWith('pending:') &&
-        !ex.html_content
-      if (existing && !isNeverBuiltStub) {
+      if (!slot.existing && slot.priorStatus) {
+        const latest = await getLatestCmaRowForBaseSlug(slug)
+        const docSlug = latest?.slug ?? slug
         await logCmaKickoffTimeline({
           personId: person.id,
           title: 'CMA kick-off — existing document found',
-          body: `A CMA for ${parsed.rawAddress} already exists (${String(existing.status ?? 'draft')}). Nothing was rebuilt or overwritten — review it at /admin/cmas/${slug}.`,
+          body: `A CMA for ${parsed.rawAddress} already exists (${slot.priorStatus}). Nothing was rebuilt or overwritten — review it at /admin/cmas/${docSlug}.`,
           broker: alertBroker,
-          dedupeKey: `cma:kickoff-existing:${slug}:${input.idempotencyKey.slice(0, 8)}`,
+          dedupeKey: `cma:kickoff-existing:${docSlug}:${input.idempotencyKey.slice(0, 8)}`,
         })
-        return { ok: true, slug, alreadyQueued: false, alreadyBuilt: true }
+        return { ok: true, slug: docSlug, alreadyQueued: false, alreadyBuilt: true }
+      }
+      if (slot.existing) {
+        const ex = slot.existing.row as { html_path?: unknown; html_content?: unknown }
+        const isNeverBuiltStub = String(ex.html_path ?? '').startsWith('pending:') && !ex.html_content
+        if (!isNeverBuiltStub) {
+          await logCmaKickoffTimeline({
+            personId: person.id,
+            title: 'CMA kick-off — existing document found',
+            body: `A CMA for ${parsed.rawAddress} already exists (draft). Nothing was rebuilt or overwritten — review it at /admin/cmas/${slot.slug}.`,
+            broker: alertBroker,
+            dedupeKey: `cma:kickoff-existing:${slot.slug}:${input.idempotencyKey.slice(0, 8)}`,
+          })
+          return { ok: true, slug: slot.slug, alreadyQueued: false, alreadyBuilt: true }
+        }
       }
 
       const { createCmaRequest } = await import('@/lib/cma-request')

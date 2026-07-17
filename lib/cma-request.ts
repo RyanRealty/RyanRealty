@@ -17,12 +17,8 @@
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
-import { sendEmail } from '@/lib/resend'
-import { sendGmailMessage } from '@/lib/gmail-draft'
-import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
-
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+import { sendBrokerNotification, sendLeadConfirmation } from '@/lib/cma/request-emails'
 
 export type CreateCmaRequestInput = {
   rawAddress: string
@@ -116,7 +112,7 @@ export async function createCmaRequest(
   try {
     const sb = createServiceClient()
     const rawAddress = input.rawAddress.trim()
-    const slug = slugifyAddress(rawAddress)
+    const baseSlug = slugifyAddress(rawAddress)
     const leadEmail = input.leadEmail?.toLowerCase().trim() || null
     const leadName = input.leadName?.trim() || null
     const requestSource = input.requestSource ?? 'seller-lp'
@@ -187,33 +183,79 @@ export async function createCmaRequest(
       : null
     const clientNotesFull = [baseNotes, sellerImprovementsText].filter(Boolean).join(' · ') || null
 
-    // Step 1: create the cmas draft row. ON CONFLICT (slug) preserves any
-    // existing in-progress CMA for the same address — we update the client
-    // info but don't blow away the broker's draft work.
-    void sb
-    const { upsertCmaRowBySlug } = await import('@/lib/data')
-    const cmaUpsertResult = await upsertCmaRowBySlug({
-      slug,
-      subject_address: rawAddress,
-      subject_city: input.parsedCity,
-      client_name: leadName,
-      client_email: leadEmail,
-      client_phone: input.leadPhone?.trim() || null,
-      client_notes: clientNotesFull,
-      broker_id: brokerId,
-      broker_slug: broker.slug,
-      status: 'draft',
-      // Placeholder until the deterministic builder writes html_content and
-      // stamps html_path 'db:cmas.html_content:<slug>' (lib/cma/build.ts).
-      html_path: `pending:${slug}`,
-      generation_reason: `${sourceLabel} from ${leadEmail ?? input.leadPhone ?? 'unknown contact'}${
+    // Step 1: land the intake on a writable cmas row. The old blind
+    // upsert-by-slug here was the clobber class (adversarial review 2026-07-17
+    // HIGH): a new request for an address whose CMA was already finalized or
+    // delivered flipped that document back to draft, reassigned the client,
+    // and killed the client's live /cma/[slug] link. The intake now resolves
+    // a version-chain slot instead (lib/cma/versions.ts):
+    //   · empty slot → create a fresh draft there (base slug, or --vN after a
+    //     protected document — the protected row is never touched)
+    //   · open draft → refresh contact fields only; status, html_path, broker,
+    //     and built content are never written, so a built draft keeps its
+    //     content pointer and the broker keeps their work
+    const {
+      upsertCmaRowBySlug,
+      updateCmaRowFieldsBySlug,
+      findOpenCmaActionBySlug,
+      getCmaActionPayload,
+      updateCmaActionRow,
+      appendCmaActionNotify,
+    } = await import('@/lib/data')
+    const { resolveWritableCmaSlot } = await import('@/lib/cma/versions')
+
+    const leadPhoneTrimmed = input.leadPhone?.trim() || null
+    let slug = baseSlug
+    let cmaRow: { id: string; slug: string } | null = null
+    // Two attempts: if the open draft gets finalized between the probe and the
+    // status-guarded patch (TOCTOU), re-resolve once — the second pass lands on
+    // the next version slot instead of touching the now-protected document.
+    for (let attempt = 0; attempt < 2 && !cmaRow; attempt++) {
+      const slot = await resolveWritableCmaSlot(baseSlug)
+      if (!slot.ok) return { ok: false, error: slot.error }
+      slug = slot.slug
+      const generationReason = `${sourceLabel} from ${leadEmail ?? input.leadPhone ?? 'unknown contact'}${
         input.leadTimeline ? ` (${input.leadTimeline})` : ''
-      }`,
-    })
-    if (cmaUpsertResult.error || !cmaUpsertResult.id) {
-      return { ok: false, error: `cmas upsert failed: ${cmaUpsertResult.error ?? 'no row'}` }
+      }${slot.priorStatus ? ` · new version — the earlier ${slot.priorStatus} CMA for this address is preserved` : ''}`
+
+      if (slot.existing) {
+        const patch: Record<string, unknown> = { generation_reason: generationReason }
+        if (leadName) patch.client_name = leadName
+        if (leadEmail) patch.client_email = leadEmail
+        if (leadPhoneTrimmed) patch.client_phone = leadPhoneTrimmed
+        if (clientNotesFull) patch.client_notes = clientNotesFull
+        const updated = await updateCmaRowFieldsBySlug(slug, patch, { onlyWhenStatus: 'draft' })
+        if (!updated.ok) {
+          if (attempt === 0) continue
+          return { ok: false, error: `cmas update failed: ${updated.error ?? 'unknown'}` }
+        }
+        cmaRow = { id: slot.existing.id, slug }
+      } else {
+        const inserted = await upsertCmaRowBySlug({
+          slug,
+          subject_address: rawAddress,
+          subject_city: input.parsedCity,
+          client_name: leadName,
+          client_email: leadEmail,
+          client_phone: leadPhoneTrimmed,
+          client_notes: clientNotesFull,
+          broker_id: brokerId,
+          broker_slug: broker.slug,
+          status: 'draft',
+          // Placeholder until the deterministic builder writes html_content and
+          // stamps html_path 'db:cmas.html_content:<slug>' (lib/cma/build.ts).
+          html_path: `pending:${slug}`,
+          generation_reason: generationReason,
+        })
+        if (inserted.error || !inserted.id) {
+          return { ok: false, error: `cmas upsert failed: ${inserted.error ?? 'no row'}` }
+        }
+        cmaRow = { id: inserted.id, slug: inserted.slug ?? slug }
+      }
     }
-    const cmaRow = { id: cmaUpsertResult.id, slug: cmaUpsertResult.slug ?? slug }
+    if (!cmaRow) {
+      return { ok: false, error: 'could not land the CMA intake on a writable row' }
+    }
 
     // Step 2: queue the action row for the brain dispatcher. The CMA
     // producer SKILL.md picks this up by scanning for pending content:cma rows.
@@ -285,11 +327,68 @@ export async function createCmaRequest(
       })
       .select('id')
       .single()
-    if (actionErr || !actionRow) {
-      return {
-        ok: false,
-        error: `marketing_brain_actions insert failed: ${actionErr?.message ?? 'no row'}`,
+    let actionId = (actionRow as { id?: string } | null)?.id ?? null
+    if (actionErr || !actionId) {
+      // A build for this slug is already open: the partial unique index on
+      // open content:cma rows (marketing_brain_actions_open_cma_uidx) rejects
+      // a second one with 23505. That open build will pick up the draft row
+      // refreshed above, so attach to it instead of failing the lead's request.
+      const isDuplicate =
+        actionErr?.code === '23505' || /duplicate key/i.test(actionErr?.message ?? '')
+      const open = isDuplicate ? await findOpenCmaActionBySlug(slug) : null
+      if (!open) {
+        return {
+          ok: false,
+          error: `marketing_brain_actions insert failed: ${actionErr?.message ?? 'no row'}`,
+        }
       }
+      // Refresh the open action's contact payload so the worker builds for the
+      // NEWEST requester — the draft row was already patched above, and without
+      // this the build would revert client fields to the first requester's
+      // (adversarial review 2026-07-17 MED). KNOWN RESIDUAL: this is a plain
+      // read-modify-write of the whole payload, so a notify entry appended by
+      // ANOTHER kicker's atomic RPC inside the read→write window would be
+      // overwritten (that broker would miss the ready text, recoverable in
+      // /admin/cmas). Same-instant window on one slug; the airtight fix is a
+      // jsonb-merge RPC mirroring cma_action_append_notify.
+      try {
+        const openPayload = (await getCmaActionPayload(open.id)) ?? {}
+        await updateCmaActionRow(open.id, {
+          payload: {
+            ...openPayload,
+            ...(leadName ? { client_name: leadName } : {}),
+            ...(leadEmail ? { client_email: leadEmail } : {}),
+            ...(leadPhoneTrimmed ? { client_phone: leadPhoneTrimmed } : {}),
+            ...(clientNotesFull ? { client_notes: clientNotesFull } : {}),
+          },
+        })
+      } catch (e) {
+        console.warn('[cma-request] attach payload refresh failed:', e instanceof Error ? e.message : String(e))
+      }
+      // Join the build's ready-notify list — the failed insert carried this
+      // kicker's seed entry, so append it to the winner (atomic RPC). If the
+      // worker closed the build in the race, text now instead (same contract
+      // as lib/crm/cma-kickoff.ts joinReadyNotify).
+      if (input.brokerSmsNotify) {
+        try {
+          const res = await appendCmaActionNotify(open.id, {
+            personId: input.brokerSmsNotify.personId,
+            broker: input.brokerSmsNotify.broker,
+          })
+          if (res.status === 'ready') {
+            const { queueCmaReadyAlert } = await import('@/lib/crm/broker-alerts')
+            await queueCmaReadyAlert({
+              slug,
+              subjectAddress: rawAddress,
+              personId: input.brokerSmsNotify.personId,
+              broker: input.brokerSmsNotify.broker,
+            })
+          }
+        } catch (e) {
+          console.warn('[cma-request] attach notify join failed:', e instanceof Error ? e.message : String(e))
+        }
+      }
+      actionId = open.id
     }
 
     // GA4 Measurement Protocol mirror — fire valuation_requested server-side
@@ -363,8 +462,8 @@ export async function createCmaRequest(
 
     return {
       ok: true,
-      cmaId: cmaRow.id as string,
-      actionId: actionRow.id as string,
+      cmaId: cmaRow.id,
+      actionId,
       slug,
     }
   } catch (e) {
@@ -375,158 +474,3 @@ export async function createCmaRequest(
   }
 }
 
-// ───────────────────────────────────────────────────────────────────────────
-
-async function sendBrokerNotification(params: {
-  brokerEmail: string | null
-  brokerName: string | null
-  cmaSlug: string
-  subjectAddress: string
-  leadName: string | null
-  leadEmail: string
-  leadPhone: string | null
-  leadTimeline: string | null
-}): Promise<void> {
-  if (!params.brokerEmail) return
-  const firstName = params.brokerName?.split(/\s+/)[0] ?? 'team'
-  const leadDisplay = params.leadName ?? params.leadEmail
-  const queueUrl = `${SITE_URL}/admin/cmas`
-  const subject = `New CMA request — ${params.subjectAddress}`
-  const text = [
-    `Hi ${firstName},`,
-    '',
-    `New seller lead just submitted the home-value form:`,
-    '',
-    `  Property:  ${params.subjectAddress}`,
-    `  Client:    ${leadDisplay}`,
-    `  Email:     ${params.leadEmail}`,
-    params.leadPhone ? `  Phone:     ${params.leadPhone}` : null,
-    params.leadTimeline ? `  Timeline:  ${params.leadTimeline}` : null,
-    '',
-    `The request is queued in /admin/cmas (slug: ${params.cmaSlug}).`,
-    `The CMA builds automatically within about 30 minutes and lands there as a`,
-    `draft for review. Approve it, then send it to the lead from the review page.`,
-    '',
-    `Open the queue: ${queueUrl}`,
-    '',
-    `— Ryan Realty automation`,
-  ]
-    .filter((line) => line !== null)
-    .join('\n')
-
-  const html = `
-<div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;font-size:15px;line-height:1.55;color:#102742;max-width:560px;margin:0 auto;padding:24px;">
-  <p>Hi ${firstName},</p>
-  <p>New seller lead just submitted the home-value form:</p>
-  <table style="width:100%;border-collapse:collapse;font-size:14px;margin:16px 0;">
-    <tr><td style="padding:4px 0;color:#5b6473;width:90px;">Property:</td><td style="padding:4px 0;font-weight:600;">${escapeHtml(params.subjectAddress)}</td></tr>
-    <tr><td style="padding:4px 0;color:#5b6473;">Client:</td><td style="padding:4px 0;">${escapeHtml(leadDisplay)}</td></tr>
-    <tr><td style="padding:4px 0;color:#5b6473;">Email:</td><td style="padding:4px 0;"><a href="mailto:${escapeHtml(params.leadEmail)}">${escapeHtml(params.leadEmail)}</a></td></tr>
-    ${params.leadPhone ? `<tr><td style="padding:4px 0;color:#5b6473;">Phone:</td><td style="padding:4px 0;"><a href="tel:${escapeHtml(params.leadPhone)}">${escapeHtml(params.leadPhone)}</a></td></tr>` : ''}
-    ${params.leadTimeline ? `<tr><td style="padding:4px 0;color:#5b6473;">Timeline:</td><td style="padding:4px 0;">${escapeHtml(params.leadTimeline)}</td></tr>` : ''}
-  </table>
-  <p>The request is queued in <strong>/admin/cmas</strong> (slug: <code>${escapeHtml(params.cmaSlug)}</code>). The CMA builds automatically within about 30 minutes and lands there as a draft. Approve it on the review page, then send it to the lead.</p>
-  <p><a href="${queueUrl}" style="display:inline-block;background:#102742;color:#faf8f4;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:600;">Open the CMA queue</a></p>
-  <p style="margin-top:24px;color:#5b6473;font-size:13px;">— Ryan Realty automation</p>
-</div>
-`.trim()
-
-  await sendEmail({
-    to: params.brokerEmail,
-    subject,
-    text,
-    html,
-    replyTo: params.leadEmail,
-  })
-}
-
-async function sendLeadConfirmation(params: {
-  leadEmail: string
-  leadName: string | null
-  subjectAddress: string
-  brokerName: string | null
-}): Promise<void> {
-  // Suppression chokepoint (fails closed). A lead who opted out of email never
-  // gets the confirmation by EITHER path (Gmail send-as-matt or Resend
-  // fallback). No crm_person_id here, so gate by email.
-  const sup = await isSuppressedByEmail(params.leadEmail, 'email')
-  if (sup.suppressed) return
-
-  const firstName = params.leadName?.split(/\s+/)[0] ?? 'there'
-  const brokerFirst = params.brokerName?.split(/\s+/)[0] ?? 'one of our brokers'
-  const subject = `We got your home value request — ${params.subjectAddress}`
-  const text = [
-    `Hi ${firstName},`,
-    '',
-    `Thanks for requesting a Comparative Market Analysis for ${params.subjectAddress}.`,
-    '',
-    `${brokerFirst} from Ryan Realty will pull recent comparable sales,`,
-    `apply the right adjustments for your property, and email you a`,
-    `personalized analysis within the next business day.`,
-    '',
-    `If you have anything you'd like us to know upfront, like recent`,
-    `improvements, timing, or specific questions, just reply to this email.`,
-    '',
-    `Matt Ryan`,
-    `Ryan Realty`,
-    `541.703.3095`,
-    `https://ryan-realty.com`,
-  ].join('\n')
-
-  const html = `
-<div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;font-size:15px;line-height:1.6;color:#102742;max-width:560px;margin:0 auto;padding:24px;">
-  <p>Hi ${escapeHtml(firstName)},</p>
-  <p>Thanks for requesting a Comparative Market Analysis for <strong>${escapeHtml(params.subjectAddress)}</strong>.</p>
-  <p>${escapeHtml(brokerFirst)} from Ryan Realty will pull recent comparable sales, apply the right adjustments for your property, and email you a personalized analysis within the next business day.</p>
-  <p>If you have anything you'd like us to know upfront, like recent improvements, timing, or specific questions, just reply to this email.</p>
-  <p style="margin-top:32px;color:#5b6473;font-size:13px;">
-    Matt Ryan<br/>
-    Ryan Realty<br/>
-    <a href="tel:5417033095" style="color:#5b6473;">541.703.3095</a><br/>
-    <a href="https://ryan-realty.com" style="color:#5b6473;">ryan-realty.com</a>
-  </p>
-</div>
-`.trim()
-
-  // Send from Matt's real Google Workspace mailbox (matt@ryan-realty.com) via
-  // domain-wide-delegation impersonation — genuinely his address, lands in his
-  // Sent folder, and replies thread straight to his inbox. No Resend-verified
-  // sending domain required. (Matt 2026-06-05: "email is matt@ryan-realty.com" —
-  // not the noreply, not the mail. subdomain.)
-  const gmailRes = await sendGmailMessage({
-    impersonateAs: 'matt@ryan-realty.com',
-    to: params.leadEmail,
-    subject,
-    bodyText: text,
-    bodyHtml: html,
-    replyTo: 'matt@ryan-realty.com',
-  })
-  if (!gmailRes.ok) {
-    // Suppression chokepoint (fails closed) — re-checked in this scope so the
-    // Resend fallback to the lead is gated independently of the early return.
-    if ((await isSuppressedByEmail(params.leadEmail, 'email')).suppressed) return
-    // Graceful fallback so the acknowledgment never silently fails: send via
-    // Resend from the verified mail.ryan-realty.com subdomain (display name still
-    // reads "Matt Ryan", replies still route to his real inbox).
-    console.warn(
-      `[cma-request] Gmail send-as-matt failed (${gmailRes.error ?? 'unknown'}); falling back to Resend`,
-    )
-    await sendEmail({
-      to: params.leadEmail,
-      from: 'Matt Ryan <matt@mail.ryan-realty.com>',
-      subject,
-      text,
-      html,
-      replyTo: 'matt@ryan-realty.com',
-    })
-  }
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}

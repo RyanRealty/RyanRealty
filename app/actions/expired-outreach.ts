@@ -23,6 +23,8 @@ import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getExpiredOutreachRow, markExpiredOutreachSent } from '@/lib/data/expired/outreach'
+import { slugifyAddress } from '@/lib/cma/address-slug'
+import { getLatestClientReadyCmaRowForBaseSlug } from '@/lib/cma/versions'
 import { ensureNativeLead, enrichNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { isSuppressed } from '@/lib/crm/suppressions'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
@@ -54,7 +56,15 @@ export async function sendExpiredIntroAction(listingKey: string): Promise<Expire
     if (!row.cma_slug) {
       return { ok: false, error: 'No CMA/audit built yet for this address. Build it before sending the intro text.' }
     }
-    const docUrl = `${SITE_URL}/cma/${row.cma_slug}`
+    // The texted link must be a CLIENT-READY document — the public /cma route
+    // 404s drafts, and the latest version for the address can be an unapproved
+    // draft (a rebuild or a new intake atop a delivered document). Resolve the
+    // newest finalized|delivered version; refuse if none exists yet.
+    const clientReady = await getLatestClientReadyCmaRowForBaseSlug(slugifyAddress(row.street_address))
+    if (!clientReady) {
+      return { ok: false, error: 'The CMA/audit for this address is not approved yet. Approve it at /admin/cmas first, otherwise the texted link would 404 as a draft.' }
+    }
+    const docUrl = `${SITE_URL}/cma/${clientReady.slug}`
 
     // 3–5: the non-negotiable exclusions, re-checked at the moment of send.
     if (row.relisted) {
@@ -161,7 +171,13 @@ export async function previewExpiredIntroAction(listingKey: string): Promise<{ b
     const row = await getExpiredOutreachRow(listingKey.trim())
     if (!row) return { body: null, error: 'Not found' }
     if (!row.cma_slug) return { body: null, error: 'No CMA/audit built yet for this address. Build it before previewing the intro text.' }
-    const docUrl = `${SITE_URL}/cma/${row.cma_slug}`
+    // Same client-ready resolution as the send — the preview must show the
+    // link that would actually send.
+    const clientReady = await getLatestClientReadyCmaRowForBaseSlug(slugifyAddress(row.street_address))
+    if (!clientReady) {
+      return { body: null, error: 'The CMA/audit for this address is not approved yet. Approve it at /admin/cmas first.' }
+    }
+    const docUrl = `${SITE_URL}/cma/${clientReady.slug}`
     const sb = createServiceClient()
     const { data: tpl } = await sb
       .from('crm_templates')

@@ -31,6 +31,9 @@ export interface ExpiredOutreachRow {
   outreach_sms_sent_at: string | null
   outreach_crm_person_id: number | null
   cma_slug: string | null
+  /** Newest finalized|delivered version — what the intro SMS would actually
+   *  link (the send action refuses drafts). Null until a version is approved. */
+  cma_client_ready_slug: string | null
   cma_status: string | null
   cma_needs_review: boolean
   cma_recommended: number | null
@@ -76,13 +79,22 @@ export async function listExpiredOutreachQueue(): Promise<ExpiredOutreachRow[]> 
     )
   }
 
-  // CMA join by the shared address slug.
+  // CMA join by the shared address slug — LATEST version wins. An address can
+  // carry a preserved older delivered CMA under the base slug plus a newer
+  // --vN document (lib/cma/versions.ts); outreach must gate on and link the
+  // newest one, never an older document's stale numbers (§0).
   const { data: cmas } = await sb.from('cmas').select('slug, status, recommended_list, build_summary')
 
-  const { slugifyAddress } = await import('@/lib/cma/address-slug')
+  const { slugifyAddress, pickLatestCmaVersion } = await import('@/lib/cma/address-slug')
   return rows.map((r) => {
     const slug = slugifyAddress(String(r.street_address))
-    const cma = (cmas ?? []).find((c) => c.slug === slug) ?? null
+    const cma = pickLatestCmaVersion(cmas ?? [], slug)
+    // Same rows, client-ready filter — powers the row preview so it shows the
+    // link the send action would actually text (never a draft that would 404).
+    const clientReady = pickLatestCmaVersion(
+      (cmas ?? []).filter((c) => c.status === 'finalized' || c.status === 'delivered'),
+      slug,
+    )
     const summary = (cma?.build_summary ?? null) as { needs_review?: boolean } | null
     return {
       listing_key: r.listing_key,
@@ -99,7 +111,8 @@ export async function listExpiredOutreachQueue(): Promise<ExpiredOutreachRow[]> 
       relisted: relisted(r),
       outreach_sms_sent_at: r.outreach_sms_sent_at,
       outreach_crm_person_id: r.outreach_crm_person_id,
-      cma_slug: cma ? slug : null,
+      cma_slug: cma ? String(cma.slug) : null,
+      cma_client_ready_slug: clientReady ? String(clientReady.slug) : null,
       cma_status: (cma?.status as string | null) ?? null,
       cma_needs_review: summary?.needs_review === true,
       cma_recommended: cma?.recommended_list != null ? Number(cma.recommended_list) : null,
@@ -206,11 +219,13 @@ export async function getExpiredListingDetail(listingKey: string): Promise<Expir
     if (error) console.error('[getExpiredListingDetail]', error.message)
     return null
   }
-  const { slugifyAddress } = await import('@/lib/cma/address-slug')
+  const { slugifyAddress, pickLatestCmaVersion } = await import('@/lib/cma/address-slug')
   const slug = r.street_address ? slugifyAddress(String(r.street_address)) : null
-  const { data: cma } = slug
-    ? await sb.from('cmas').select('slug').eq('slug', slug).maybeSingle()
+  // Latest version wins — base slug plus any --vN documents (lib/cma/versions.ts).
+  const { data: cmaRows } = slug
+    ? await sb.from('cmas').select('slug').or(`slug.eq.${slug},slug.like.${slug}--v*`)
     : { data: null }
+  const cma = slug ? pickLatestCmaVersion(cmaRows ?? [], slug) : null
   // Re-list check for this one address.
   let relisted = false
   if (r.street_address) {
@@ -320,7 +335,7 @@ export async function getExpiredListingDetail(listingKey: string): Promise<Expir
     crm_person_id: (r.outreach_crm_person_id as number | null) ?? (r.fub_person_id as number | null) ?? null,
     hard_stop: /HARD STOP|LITIGATOR/i.test(String(r.enrichment_notes ?? '')),
     relisted,
-    cma_slug: cma ? slug : null,
+    cma_slug: cma ? String(cma.slug) : null,
     listing,
     price_cycles,
   }

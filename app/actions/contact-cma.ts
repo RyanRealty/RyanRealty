@@ -31,6 +31,7 @@ import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import { buildCma } from '@/lib/cma/build'
 import { sendCmaToLead } from '@/lib/cma/send'
 import { slugifyAddress } from '@/lib/cma-request'
+import { resolveWritableCmaSlot } from '@/lib/cma/versions'
 import { parseContactAddress } from '@/lib/crm/contact-cma-address'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
 import { prepareDeliverableEmail } from '@/lib/email/prepare'
@@ -143,7 +144,12 @@ export async function startCmaForContactAction(personId: number): Promise<StartC
       }
     }
 
-    const slug = slugifyAddress(parsed.rawAddress)
+    // Land the build on a writable slot: rebuild the open draft in place, or
+    // open a new --vN document after a finalized/delivered CMA — never clobber
+    // a protected document back to draft (lib/cma/versions.ts).
+    const slot = await resolveWritableCmaSlot(slugifyAddress(parsed.rawAddress))
+    if (!slot.ok) return { ok: false, error: slot.error }
+    const slug = slot.slug
     const built = await buildCma({
       slug,
       rawAddress: parsed.rawAddress,

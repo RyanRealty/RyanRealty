@@ -137,7 +137,7 @@ export default async function ExpiredOutreachPage() {
                     {r.owner_name ?? 'Owner on file'} · {maskPhone(r.contact_phone)}
                   </div>
                   <p className="line-clamp-2 text-xs text-muted-foreground">
-                    {previewBody(`${r.street_address}, ${r.city}`, r.cma_slug as string)}
+                    {previewBody(`${r.street_address}, ${r.city}`, (r.cma_client_ready_slug ?? r.cma_slug) as string)}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
@@ -151,7 +151,7 @@ export default async function ExpiredOutreachPage() {
                     listingKey={r.listing_key}
                     address={`${r.street_address}, ${r.city}`}
                     phoneMasked={maskPhone(r.contact_phone)}
-                    previewBody={previewBody(`${r.street_address}, ${r.city}`, r.cma_slug as string)}
+                    previewBody={previewBody(`${r.street_address}, ${r.city}`, (r.cma_client_ready_slug ?? r.cma_slug) as string)}
                   />
                 </div>
               </div>

@@ -38,15 +38,26 @@ export async function getCmaHtmlBySlug(
   return (data ?? null) as { html_content: string | null; html_path: string | null; status: string } | null
 }
 
-/** Patch a cmas row by slug. */
+/** Patch a cmas row by slug. With `onlyWhenStatus`, the update is guarded:
+ *  it applies only while the row still holds that status, and reports
+ *  ok:false if the row moved on (e.g. a draft finalized mid-flight) — the
+ *  compare-and-patch the intake merge path needs so a contact refresh can
+ *  never land on a protected document. */
 export async function updateCmaRowFieldsBySlug(
   slug: string,
   updates: Record<string, unknown>,
+  options?: { onlyWhenStatus?: string },
 ): Promise<{ ok: boolean; error?: string }> {
   const sb = client()
   if (!sb) return { ok: false, error: 'Supabase not configured' }
-  const { error } = await sb.from('cmas').update(updates).eq('slug', slug.trim().toLowerCase())
-  return error ? { ok: false, error: error.message } : { ok: true }
+  let q = sb.from('cmas').update(updates).eq('slug', slug.trim().toLowerCase())
+  if (options?.onlyWhenStatus) q = q.eq('status', options.onlyWhenStatus)
+  const { data, error } = await q.select('id')
+  if (error) return { ok: false, error: error.message }
+  if (options?.onlyWhenStatus && (data ?? []).length === 0) {
+    return { ok: false, error: `row is no longer status '${options.onlyWhenStatus}'` }
+  }
+  return { ok: true }
 }
 
 /** Delete a cmas row (and its comps) by id. */
