@@ -74,7 +74,7 @@ export default function HeaderAccount() {
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label="Account menu"
-        className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-sm font-semibold text-white transition-colors hover:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-foreground/15 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-foreground/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground/60"
       >
         {initials(user)}
       </DropdownMenuTrigger>

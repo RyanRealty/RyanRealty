@@ -4,7 +4,7 @@
   "files": {
     "app/actions/cities.ts": 718,
     "app/actions/crm-person-detail.ts": 647,
-    "app/actions/crm.ts": 1898,
+    "app/actions/crm.ts": 1975,
     "app/actions/dashboard.ts": 958,
     "app/actions/listing-detail.ts": 1238,
     "app/actions/listings.ts": 2656,
@@ -45,6 +45,7 @@
     "lib/data/crm/getAgentActivityReport.ts": 652,
     "lib/data/crm/getBrokerDigest.ts": 691,
     "lib/data/crm/getEmailReporting.ts": 686,
+    "lib/data/crm/getInboxQueue.ts": 635,
     "lib/data/crm/getLeadSourcesReport.ts": 626,
     "lib/data/index.ts": 739,
     "lib/data/listings/searchListingsAll.ts": 764,

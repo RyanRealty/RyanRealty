@@ -15,6 +15,7 @@
 
 import { Download, Users, Check, CheckCheck, Clock3, TriangleAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 import { sanitizeHtml } from '@/lib/sanitize'
 import type { DeliveryTone } from '@/lib/crm/sms-delivery'
 import type { InboxThreadItemData } from '@/lib/data/crm/getInboxThread'
@@ -165,12 +166,13 @@ export default function InboxThreadView({
           return (
             <div key={e.id} className={cn('flex flex-col', out ? 'items-end' : 'items-start')}>
               {e.group ? (
-                <span
-                  className="mb-0.5 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                <Badge
+                  variant="secondary"
+                  className="mb-0.5 gap-1 font-medium"
                   title={`Group text · ${e.group.participants.join(', ')}`}
                 >
                   <Users className="h-3 w-3" aria-hidden /> Group · {e.group.count} people
-                </span>
+                </Badge>
               ) : null}
               <div
                 className={cn(
