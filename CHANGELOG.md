@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.812.3 (2026-07-17)
+
+### Bug Fixes
+- fix(cma): close the upsert-by-slug clobber class with version-chain slots at every writer
+
+---
+
+
 ## v1.812.2 (2026-07-17)
 
 ### Bug Fixes
