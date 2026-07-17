@@ -16,6 +16,13 @@ jobs:
       SKYSLOPE_ACCESS_SECRET: ${{ secrets.SKYSLOPE_ACCESS_SECRET }}
       SKYSLOPE_CLIENT_ID: ${{ secrets.SKYSLOPE_CLIENT_ID }}
       SKYSLOPE_CLIENT_SECRET: ${{ secrets.SKYSLOPE_CLIENT_SECRET }}
+      # lib/env.ts requiredForRuntime enforces SPARK_API_KEY at server BOOT
+      # (instrumentation register()) — without it `next start` dies with
+      # "Failed to prepare server" and Playwright's webServer times out (the
+      # CI e2e job's 2026-07-17 failure). The critical-flow specs read
+      # Supabase, never Spark, so a dummy satisfies the boot check when the
+      # secret is unset.
+      SPARK_API_KEY: ${{ secrets.SPARK_API_KEY || 'ci-e2e-dummy-not-a-real-key' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -163,6 +170,13 @@ jobs:
       SKYSLOPE_ACCESS_SECRET: ${{ secrets.SKYSLOPE_ACCESS_SECRET }}
       SKYSLOPE_CLIENT_ID: ${{ secrets.SKYSLOPE_CLIENT_ID }}
       SKYSLOPE_CLIENT_SECRET: ${{ secrets.SKYSLOPE_CLIENT_SECRET }}
+      # lib/env.ts requiredForRuntime enforces SPARK_API_KEY at server BOOT
+      # (instrumentation register()) — without it `next start` dies with
+      # "Failed to prepare server" and Playwright's webServer times out (the
+      # CI e2e job's 2026-07-17 failure). The critical-flow specs read
+      # Supabase, never Spark, so a dummy satisfies the boot check when the
+      # secret is unset.
+      SPARK_API_KEY: ${{ secrets.SPARK_API_KEY || 'ci-e2e-dummy-not-a-real-key' }}
     steps:
       - uses: actions/checkout@v4
 
