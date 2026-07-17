@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.811.0 (2026-07-17)
+
+### Features
+- feat(ci): G51 resume-toggle gate — no toggle mutations in resume/replay/retry/deep-link paths
+
+---
+
+
 ## v1.810.6 (2026-07-17)
 
 ### Other
