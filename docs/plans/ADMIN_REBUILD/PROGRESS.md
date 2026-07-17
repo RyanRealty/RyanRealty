@@ -194,6 +194,60 @@ scratchpad gates-after.log); `ci:crm-mobile-track`'s Reporting/Workflows/
 Templates menu contract re-pointed at the one source (same contract, new file).
 tsc + esbuild clean.
 
+### Pain #4 — unified send v1: THE SendPanel + duplicates dead + sync-build entries closed — SHIPPED (spec-03 full pass handed off)
+
+Scoped per the v3 brief: the spec-03 person-page fetch rebuild did NOT land (chip
+task_c4fbba7e still open), so this builds against the current page and does NOT
+start the fetch rebuild. **One send surface per concept now exists**:
+`ContactSendCenter` is THE SendPanel — 5 tabs (CMA · Opinion · Report · News ·
+Listings), suppression-blocked up front, every send routed to the existing
+guarded actions. New in it: the **Newsletter tab** (subscribed state + latest
+issue + one-off send via `sendNewsletterToContactAction`), the **CMA build
+affordance** routed to the ASYNC kick-off sheet (`?intent=cma` → the litmus
+`kickoffCmaCore` path — idempotent, version-chained, notify-on-ready), and the
+**BPO build affordance** (deterministic builder, `resolveWritableBpoSlot`-guarded
+so double-taps can't clobber).
+
+**Killed on the page (the audited duplication):** the standalone
+`ReportSubscriptionsPanel` mount (report management lives in ContactQuickActions'
+sheet; report SEND lives in the SendPanel only — the sheet's send-now prop
+unwired); the duplicate inline saved-search assign form (creation = SendPanel
+Listings tab, SAME writer `createListingAlertForLead` verified — removal stays
+with the list); ContactQuickActions' newsletter send-now (its sheet degrades to
+the plain subscribe toggle = management only); and **the last synchronous
+30–60 s CMA build entry** — `OwnedHomeCard`'s "Generate comp" form
+(`startCmaForm`, the audited timeout-prone path) is now a "Build CMA" link into
+the async sheet. `startCmaForm`/`assignSavedSearchForm` bindings dropped from
+the page; person page 717 → **698 lines** (file-size baseline RATCHETED DOWN
+718 → 698 — partial payback on the standing obligation).
+
+**Adversarial review (read-only skeptic, 5 probes): all REFUTED** — no other
+render sites of the changed components (mobile tree untouched); every
+previously-possible operation still reachable (market-report send, subscription
+management incl. frequency/active with send-now hidden, newsletter toggle+send,
+saved-search create/remove); `.bind` type contracts verified against the action
+signatures; BPO double-build safe via the version-chain slot; design-tokens
+clean. Known nuance (deliberate, flagged): silent saved-search assign (no
+immediate email) is gone until spec-03's `immediateSend` override — the Listings
+tab always emails current matches.
+
+**Browser-demonstrated (dev server, authed matt@, real DB):** person page
+renders with the assign form + standalone report panel GONE; SendPanel opens
+with the 5 tabs; News tab shows the real "The Bend Brief · July" sent issue
+with an enabled send (not tapped — real email); `?intent=cma` auto-opens the
+kick-off sheet pre-filled ("Brent Babin · 1694 NW Fields St, Bend" pulled from
+their message, draft-first copy intact); zero console errors.
+
+**Data-loss checklist:** (1) writes/deletes: none added — UI recomposition over
+existing guarded actions; the only removals are duplicate FRONTENDS of actions
+that remain wired elsewhere on the same page. (2) wrong-place writes: no writer
+touched. (3) worst case: a send affordance hidden (recoverable; every action
+verified reachable). (4) rollback: single revert, no migration.
+
+**Handed off (spec 03 full pass):** the `sendDeliverable` unified action +
+`build_state` columns + polling chips + inline preview/approve + mobile-tree
+send domain + the deeper merge of the CMA/BPO glance-cards into the panel.
+
 ### THE LITMUS (Pain #1, D8) — notification → pre-filled CMA kick-off — DONE (prod-build browser-demonstrated)
 
 **The first feature-build commit of the v2 session (litmus-first ordering held).**

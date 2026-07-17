@@ -66,5 +66,6 @@
   },
   "barrels": {
     "lib/data/index.ts": 170
-  }
+  },
+  "app/admin/(protected)/crm/[id]/page.tsx": 698
 }

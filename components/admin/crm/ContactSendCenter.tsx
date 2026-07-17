@@ -1,11 +1,16 @@
 'use client'
 
 /**
- * ContactSendCenter — ONE intuitive place to send a CRM contact any of the four
- * deliverables: a Broker Price Opinion, a CMA, a Market report, or Listing
- * matches from a saved search. A single "Send to contact" button opens a dialog
- * with a tab per deliverable; each routes to that deliverable's existing send
- * action. Email-suppressed contacts block every send up front.
+ * ContactSendCenter — THE SendPanel: one place to send a CRM contact any
+ * deliverable (Pain #4, spec 03 §6): a Broker Price Opinion, a CMA, a Market
+ * report, the Newsletter, or Listing matches from a saved search. A single
+ * "Send to contact" button opens a dialog with a tab per concept; each routes
+ * to that deliverable's existing send action. Build affordances live here too:
+ * CMA builds route to the async kick-off sheet (?intent=cma — kickoffCmaCore,
+ * idempotent + version-chained; never the old 30–60 s synchronous build), BPO
+ * builds run the deterministic builder. Email-suppressed contacts block every
+ * send up front. Management (subscribe toggles, areas/frequency) stays in
+ * ContactQuickActions — this panel is the SEND surface.
  */
 
 import { useMemo, useState, useTransition } from 'react'
@@ -49,6 +54,15 @@ export function ContactSendCenter(props: {
   reportAreas: Area[]
   subscribedAreas: string[]
   defaultCity: string | null
+  /** Opens the async CMA kick-off sheet (litmus surface) — e.g. "?intent=cma". */
+  cmaBuildHref: string
+  /** Bound startBpoForm(personId) — deterministic BPO builder for the home on file. */
+  bpoGenerateAction: () => Promise<void>
+  newsletterSubscribed: boolean
+  /** The issue a one-off newsletter send delivers (subject shown before sending). */
+  latestNewsletter: { subject: string; status: 'sent' | 'draft'; sentAt: string | null } | null
+  /** Bound sendNewsletterToContactAction(personId). */
+  newsletterSendAction: () => Promise<{ ok: boolean; error?: string; message?: string }>
 }) {
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
@@ -140,6 +154,15 @@ export function ContactSendCenter(props: {
       return { ok: true, message: 'Market report sent.' }
     })
   }
+  function generateBpo() {
+    run('Price opinion build', async () => {
+      await props.bpoGenerateAction()
+      return { ok: true, message: 'Price opinion build started. It will appear here when ready.' }
+    })
+  }
+  function sendNewsletter() {
+    run('Newsletter', () => props.newsletterSendAction())
+  }
   function sendListings() {
     const filters: Record<string, unknown> = {}
     if (city.trim()) filters.city = city.trim()
@@ -179,20 +202,26 @@ export function ContactSendCenter(props: {
           </div>
         ) : null}
 
-        <Tabs defaultValue="bpo" className="mt-1">
-          <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-4">
-            <TabsTrigger value="bpo">Opinion</TabsTrigger>
+        <Tabs defaultValue="cma" className="mt-1">
+          <TabsList className="grid h-auto w-full grid-cols-3 sm:grid-cols-5">
             <TabsTrigger value="cma">CMA</TabsTrigger>
+            <TabsTrigger value="bpo">Opinion</TabsTrigger>
             <TabsTrigger value="report">Report</TabsTrigger>
+            <TabsTrigger value="newsletter">News</TabsTrigger>
             <TabsTrigger value="alerts">Listings</TabsTrigger>
           </TabsList>
 
           {/* Broker Price Opinion */}
           <TabsContent value="bpo" className="space-y-3 pt-3">
             {finalBpos.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No finalized price opinion yet. Build one from the Broker price opinions card, finalize it, then send it here.
-              </p>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  No finalized price opinion yet. Build one from the home on file, finalize it, then send it here.
+                </p>
+                <Button onClick={generateBpo} disabled={pending} variant="outline" className="w-full min-h-11">
+                  {pending ? 'Starting build…' : 'Build a price opinion'}
+                </Button>
+              </div>
             ) : (
               <>
                 <div className="space-y-1.5">
@@ -230,9 +259,14 @@ export function ContactSendCenter(props: {
           {/* CMA */}
           <TabsContent value="cma" className="space-y-3 pt-3">
             {finalCmas.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No finalized CMA yet. Build and approve one from the CMAs card, then send it here.
-              </p>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  No finalized CMA yet. Build one — the draft arrives async and you review it before anything sends.
+                </p>
+                <Button asChild variant="outline" className="w-full min-h-11">
+                  <a href={props.cmaBuildHref}>Build a CMA</a>
+                </Button>
+              </div>
             ) : (
               <>
                 <div className="space-y-1.5">
@@ -254,8 +288,39 @@ export function ContactSendCenter(props: {
                 <Button onClick={sendCma} disabled={pending || blocked || !cmaSlug} className="w-full min-h-11">
                   {pending ? 'Sending…' : 'Send CMA'}
                 </Button>
+                <a href={props.cmaBuildHref} className="block text-center text-xs font-medium text-primary hover:underline">
+                  Build a new CMA
+                </a>
               </>
             )}
+          </TabsContent>
+
+          {/* Newsletter */}
+          <TabsContent value="newsletter" className="space-y-3 pt-3">
+            <p className="text-sm text-muted-foreground">
+              {props.newsletterSubscribed
+                ? 'Subscribed to the monthly newsletter.'
+                : 'Not subscribed — a one-off send still includes the unsubscribe footer.'}
+            </p>
+            {props.latestNewsletter ? (
+              <div className="rounded-lg border border-border px-3 py-2">
+                <p className="truncate text-sm font-medium text-foreground" title={props.latestNewsletter.subject}>
+                  {props.latestNewsletter.subject}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {props.latestNewsletter.status === 'sent' ? 'Latest sent issue' : 'Newest draft'}
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No newsletter issue available yet.</p>
+            )}
+            <Button
+              onClick={sendNewsletter}
+              disabled={pending || blocked || !props.latestNewsletter}
+              className="w-full min-h-11"
+            >
+              {pending ? 'Sending…' : 'Send the newsletter now'}
+            </Button>
           </TabsContent>
 
           {/* Market report */}

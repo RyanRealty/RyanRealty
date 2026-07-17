@@ -12,7 +12,7 @@ import {
 import {
   addNoteForm, updateStageForm, addTagForm, removeTagForm, addTaskForm,
   assignBrokerForm, addContactPointForm, sendEmailForm, sendSmsForm,
-  startCmaForm, sendCmaForm, startBpoForm, setReportSubsForm, assignSavedSearchForm,
+  sendCmaForm, startBpoForm, setReportSubsForm,
   deleteSavedSearchForm,
 } from './form-actions'
 // CRM record-card cutover (2026-06-24): home-driven next step, CMA-from-contact,
@@ -21,7 +21,6 @@ import { getContactNextStep } from '@/app/actions/contact-next-step'
 import { getContactReportSubscription, listAvailableMarketReportAreas } from '@/lib/data/crm/getContactReportSubscriptions'
 import { getCrmFieldDefinitions } from '@/lib/data/crm/getCrmFieldDefinitions'
 import CustomFieldsPanel from '@/components/admin/crm/CustomFieldsPanel'
-import ReportSubscriptionsPanel from '@/components/admin/crm/ReportSubscriptionsPanel'
 import { OwnedHomeCard } from '@/components/admin/crm/OwnedHomeCard'
 import { timelineEmailBody } from '@/lib/crm/email-body'
 import { renderCrmMerge } from '@/lib/crm/merge'
@@ -46,7 +45,6 @@ import { getLatestNewsletterIssue } from '@/lib/data/crm/getLatestNewsletterIssu
 import { ContactCmaCard } from '@/components/admin/crm/ContactCmaCard'
 import { ContactBpoCard } from '@/components/admin/crm/ContactBpoCard'
 import { sendNewsletterToContactAction } from '@/app/actions/contact-newsletter'
-import { sendMarketReportNowAction } from '@/app/actions/crm-send-now'
 import { getContactListingAlerts } from '@/lib/data/crm/getContactListingAlerts'
 import { ContactListingAlertsPanel } from '@/components/admin/crm/ContactListingAlertsPanel'
 import { getContactCollaborators } from '@/lib/data/crm/getContactCollaborators'
@@ -74,8 +72,6 @@ import { listActiveSequences } from '@/lib/crm/enroll'
 import { getAppointmentsForPerson, getAppointmentTypes, getAppointmentOutcomes } from '@/lib/data/crm/getAppointments'
 import { createAppointmentAction, updateAppointmentAction } from '@/app/actions/appointments'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 
 export const metadata = { title: 'Lead · Console' }
 export const dynamic = 'force-dynamic'
@@ -607,7 +603,7 @@ export default async function ConsoleLeadPage({
                     mapsLink={homeMedia?.googleMapsLink ?? null}
                     onMarket={homeActiveListing ? `${homeActiveListing.status}${usd(homeActiveListing.listPrice) ? ` · ${usd(homeActiveListing.listPrice)}` : ''}` : null}
                     reviewDeliveryId={reviewableCma?.id ? String(reviewableCma.id) : null}
-                    generateAction={startCmaForm.bind(null, person.id)}
+                    buildHref="?intent=cma"
                     sendAction={sendCmaForm.bind(null, person.id)}
                   />
                 ) : null}
@@ -631,7 +627,15 @@ export default async function ConsoleLeadPage({
                   reportAreas={reportAreas}
                   subscribedAreas={reportSub?.areas ?? []}
                   defaultCity={homeFacts?.city ?? null}
+                  cmaBuildHref="?intent=cma"
+                  bpoGenerateAction={startBpoForm.bind(null, person.id)}
+                  newsletterSubscribed={contactMemberships.newsletter.subscribed}
+                  latestNewsletter={latestNewsletter ? { subject: latestNewsletter.subject, status: latestNewsletter.status, sentAt: latestNewsletter.sentAt } : null}
+                  newsletterSendAction={sendNewsletterToContactAction.bind(null, person.id)}
                 />
+                {/* Pain #4: management chips only — one-off SENDS (newsletter,
+                    market report) live in the SendPanel above; the duplicate
+                    send-now affordances inside these sheets are unwired. */}
                 <ContactQuickActions
                   personId={person.id}
                   newsletterSubscribed={contactMemberships.newsletter.subscribed}
@@ -640,9 +644,6 @@ export default async function ConsoleLeadPage({
                   reportSub={reportSub ? { isActive: reportSub.isActive, areas: reportSub.areas, frequency: reportSub.frequency } : null}
                   reportAreas={reportAreas}
                   reportSetAction={setReportSubsForm.bind(null, person.id)}
-                  reportSendNowAction={sendMarketReportNowAction.bind(null, person.id)}
-                  latestNewsletter={latestNewsletter ? { subject: latestNewsletter.subject, status: latestNewsletter.status, sentAt: latestNewsletter.sentAt } : null}
-                  newsletterSendAction={sendNewsletterToContactAction.bind(null, person.id)}
                 />
                 <ContactBehaviorPanel summary={behaviorSummary} />
                 {viewedListings.length > 0 ? (
@@ -657,12 +658,9 @@ export default async function ConsoleLeadPage({
                 {/* WS4 delivery observability: what they're subscribed to +
                     every email they've gotten, with opened/clicked status. */}
                 <ContactDeliveryPanel personId={person.id} email={primaryEmail} />
-                <ReportSubscriptionsPanel
-                  current={reportSub ? { isActive: reportSub.isActive, areas: reportSub.areas, frequency: reportSub.frequency } : null}
-                  areaOptions={reportAreas}
-                  setAction={setReportSubsForm.bind(null, person.id)}
-                  sendNowAction={sendMarketReportNowAction.bind(null, person.id)}
-                />
+                {/* Pain #4: the standalone ReportSubscriptionsPanel mount is gone —
+                    subscription management lives in ContactQuickActions' Market
+                    reports sheet; one-off sends in the SendPanel. */}
                 <ContactListingAlertsPanel alerts={contactAlerts} />
                 {/* Saved searches: assign / edit / remove (in-house feature; \u00a77c.8.5 website-activity slot) */}
                 <div className="space-y-2">
@@ -686,26 +684,9 @@ export default async function ConsoleLeadPage({
                       </div>
                     )
                   })}
-                  {primaryEmail ? (
-                    <details className="group rounded-lg border border-dashed border-border">
-                      <summary className="cursor-pointer px-2.5 py-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground">+ Add saved search</summary>
-                      <form action={assignSavedSearchForm} className="space-y-2 border-t border-border p-2.5">
-                        <input type="hidden" name="personId" value={person.id} />
-                        <input type="hidden" name="email" value={primaryEmail} />
-                        <input type="hidden" name="fubPersonId" value={person.fub_legacy_id ?? ''} />
-                        <Input name="name" placeholder="Search name" className="h-8 text-sm" />
-                        <Input name="city" placeholder="City (e.g. Bend)" className="h-8 text-sm" />
-                        <div className="grid grid-cols-2 gap-2">
-                          <Input name="minPrice" type="number" inputMode="numeric" placeholder="Min price" className="h-8 text-sm" />
-                          <Input name="maxPrice" type="number" inputMode="numeric" placeholder="Max price" className="h-8 text-sm" />
-                        </div>
-                        <Input name="minBeds" type="number" inputMode="numeric" placeholder="Min beds" className="h-8 text-sm" />
-                        <div className="flex justify-end">
-                          <Button type="submit" size="sm" variant="outline">Assign</Button>
-                        </div>
-                      </form>
-                    </details>
-                  ) : null}
+                  {/* Pain #4: the duplicate inline assign form is gone — saved-search
+                      creation lives in the SendPanel's Listings tab (which also
+                      emails the current matches). Removal stays here with the list. */}
                 </div>
               </div>
             }

@@ -80,6 +80,24 @@ narrative in `docs/plans/ADMIN_REBUILD/PROGRESS.md` ("CMA upsert-by-slug clobber
 
  Prior newest block below.
 
+# UNIFIED SEND v1 — Pain #4 partial SHIPPED (2026-07-17 eve, same session as ONE-NAV)
+
+- **`ContactSendCenter` = THE SendPanel** (5 tabs: CMA/Opinion/Report/News/
+  Listings) on `/admin/crm/[id]`. Newsletter one-off send lives THERE only;
+  ContactQuickActions' sheets are management-only (send-now props deliberately
+  unwired). The standalone ReportSubscriptionsPanel mount + the inline
+  saved-search assign form are DELETED from the page (same writers remain via
+  the panel — verified). OwnedHomeCard "Generate comp" (sync 30–60 s build) is
+  now a `?intent=cma` link into the async kick-off sheet.
+- **Do not re-add** a second send affordance for a concept on the person page —
+  one surface per concept is the contract (PROGRESS "Pain #4 v1" entry).
+- **Person page 717 → 698 lines; file-size baseline ratcheted DOWN to 698.**
+  Never re-raise without written justification.
+- **Still open (spec 03 full pass):** `sendDeliverable` unified action,
+  `build_state` + polling chips, inline preview/approve, mobile-tree send
+  domain, merging the CMA/BPO glance-cards into the panel, silent saved-search
+  assign (`immediateSend` override).
+
 # ADMIN REBUILD v2 — THE LITMUS SHIPPED (2026-07-17, Claude Code)
 
 **Read `docs/plans/ADMIN_REBUILD/LITMUS.md` (tap-by-tap evidence) + `PROGRESS.md` (v2

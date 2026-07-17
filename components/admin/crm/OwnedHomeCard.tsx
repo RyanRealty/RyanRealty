@@ -1,8 +1,10 @@
 /**
  * OwnedHomeCard — the compact "home they own" card for the contact landing.
- * A single thumbnail + address + a comp action: "Generate comp" when none
- * exists, or "Review" + "Send to lead" once a CMA draft is ready. Renders only
- * when the contact has a confirmed owned home (caller gates on that).
+ * A single thumbnail + address + a comp action: "Build CMA" when none exists
+ * (opens the ASYNC kick-off sheet — the litmus surface; the old 30–60 s
+ * synchronous in-action build is retired from this card), or "Review" +
+ * "Send to lead" once a CMA draft is ready. Renders only when the contact has
+ * a confirmed owned home (caller gates on that).
  */
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -16,8 +18,8 @@ export function OwnedHomeCard(props: {
   onMarket: string | null
   /** Set when a CMA draft is built + awaiting review/send. */
   reviewDeliveryId: string | null
-  /** server action: start/build the CMA (form action). */
-  generateAction: (formData: FormData) => Promise<void>
+  /** Opens the async CMA kick-off sheet pre-filled for this home ("?intent=cma"). */
+  buildHref: string
   /** server action: send the reviewed CMA to the lead (form action, needs deliveryId). */
   sendAction: (formData: FormData) => Promise<void>
 }) {
@@ -57,11 +59,9 @@ export function OwnedHomeCard(props: {
                   </form>
                 </>
               ) : (
-                <form action={props.generateAction}>
-                  {/* The build runs 30–60s server-side; PendingButton shows it's
-                      working so the broker doesn't re-click or assume it hung. */}
-                  <PendingButton pendingLabel="Building comp…" className="h-9">Generate comp</PendingButton>
-                </form>
+                <Button asChild size="sm" className="h-9">
+                  <a href={props.buildHref}>Build CMA</a>
+                </Button>
               )}
             </div>
           </div>
