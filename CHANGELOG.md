@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.812.0 (2026-07-17)
+
+### Features
+- feat(admin-crm): D8 litmus — notification → pre-filled CMA kick-off in 2 taps (+ attach multi-notify)
+
+---
+
+
 ## v1.811.0 (2026-07-17)
 
 ### Features
