@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.812.2 (2026-07-17)
+
+### Bug Fixes
+- fix(ci): retarget video-sections gate to the shipped design; geo-detail H1 regex fits reveal-mask heroes
+
+---
+
+
 ## v1.812.1 (2026-07-17)
 
 ### Bug Fixes
