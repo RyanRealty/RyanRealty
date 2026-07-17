@@ -255,6 +255,13 @@ const eslintConfig = defineConfig([
     // repo that other Claude sessions create. They're not part of
     // this checkout's source and shouldn't be lint-gated.
     ".claude/worktrees/**",
+    // Gitignored agent scratch dirs — one-off probe scripts that never
+    // reach the committed tree. CI clones the repo, so CI's lint never
+    // sees them; ignoring locally keeps the pre-push lint step (added
+    // 2026-07-17) at exact parity with CI instead of failing pushes on
+    // another session's leftover scratch (13 such errors on 2026-07-17).
+    "tmp/**",
+    "scratchpad/**",
     // OUT OF SCOPE per /goal — video production pipeline + marketing
     // flyer generators live in their own Remotion + node-script worlds
     // and use legacy CommonJS require(). Linting them gates the
