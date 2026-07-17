@@ -45,8 +45,14 @@ const CASES = [
 ]
 
 function parseCount(html) {
-  // The grid header renders "N homes" (also tolerate results/listings/properties).
-  const m = html.match(/([0-9][0-9,]*)\s+(?:homes|results|listings|properties)\b/i)
+  // The grid header renders "N homes" — possibly with modifier words between
+  // the number and the noun ("190 single-level homes are on the market", the
+  // 2026-07-17 false positive). Allow up to 3 adjective-ish words but not
+  // connectives, so "$775,000 and homes take a median of 14 days" in body copy
+  // can never be mistaken for the count header.
+  const m = html.match(
+    /([0-9][0-9,]*)(?:\s+(?!and\b|of\b|or\b|to\b|in\b)[a-z][a-z-]*){0,3}\s+(?:homes|results|listings|properties)\b/i
+  )
   return m ? parseInt(m[1].replace(/,/g, ''), 10) : null
 }
 

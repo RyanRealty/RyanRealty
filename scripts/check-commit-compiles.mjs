@@ -287,6 +287,22 @@ if (tscResult.status === 0) {
 
   const output = (tscResult.stdout ?? '') + (tscResult.stderr ?? '');
   const lines = output.split('\n').filter(Boolean);
+
+  // A killed/timed-out tsc is NOT a self-containment verdict. Without this
+  // branch a 300s timeout printed the "NOT SELF-CONTAINED" banner with an
+  // EMPTY error list (observed 2026-07-17: load avg ~90 from a concurrent
+  // session's tsc starved this one) — a misleading failure that reads like a
+  // real gate hit. Report it as inconclusive-but-blocking with the real cause.
+  if (tscResult.signal || tscResult.error) {
+    console.error('════════════════════════════════════════════════════════════════════');
+    console.error(`  INCONCLUSIVE — tsc did not finish (${tscResult.signal ?? tscResult.error?.code ?? 'unknown'})`);
+    console.error('  This is a timeout/kill, NOT a self-containment verdict. Likely the');
+    console.error('  machine is under heavy load (another build/session). Re-run when');
+    console.error('  load drops. The gate still blocks: an unverified commit must not ship.');
+    console.error('════════════════════════════════════════════════════════════════════');
+    process.exit(1);
+  }
+
   const firstThirty = lines.slice(0, 30).join('\n');
 
   console.error('════════════════════════════════════════════════════════════════════');
