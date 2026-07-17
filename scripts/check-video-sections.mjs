@@ -1,15 +1,19 @@
 #!/usr/bin/env node
 /**
- * check-video-sections.mjs — smoke gate: the site-wide "homes with video tours"
- * sections actually render on the surfaces that should carry them.
+ * check-video-sections.mjs — smoke gate: the site's video surfaces actually
+ * render (a video section can't silently disappear).
  *
- * WHY: video is the highest-engagement listing asset, and the strategy is to lead
- * with video-tour homes on the homepage + every geo page. VideoHomesSection is
- * self-fetching and returns null when a scope has fewer than 2 video homes, so
- * the presence of its heading is proof the section rendered real cards (verified
- * inventory: 1,752 active listings carry has_virtual_tour; Bend 492, Mountain
- * View 19). This gate asserts the heading renders so the section can't silently
- * disappear (e.g. a DAL filter regressing has_virtual_tour to empty).
+ * Retargeted 2026-07-17. The original cases asserted VideoHomesSection on the
+ * homepage + city pages ("Video tours in Bend"), but the KB city-page rebuild
+ * (Phase 9) and the v6 homepage replaced that strategy: city pages now carry
+ * the per-geo "Watch <City>" area-guide video (KbAreaGuideVideo, a server
+ * component that renders nothing when the geo has no approved guide video),
+ * and the video-tour-homes grid lives on the /videos hub ("Tour the homes").
+ * The old markers made three healthy pages read as failures for weeks.
+ *
+ * MATCHING GOTCHA: JSX interpolation renders `Watch <!-- -->Bend`, so literal
+ * substring checks on raw HTML miss server-rendered headings. Markers match
+ * against comment- and tag-STRIPPED text, never raw HTML.
  *
  * Runs against the live deploy. Override the host with VIDEO_SMOKE_BASE.
  *
@@ -20,13 +24,20 @@ const UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36'
 const LATENCY_BUDGET_MS = 10000
 
-// Each marker only appears when VideoHomesSection rendered >= 2 video-tour cards
-// for that scope (it returns null otherwise).
+// "Tour the homes" heads the /videos video-tour card grid; "Watch <City>" is
+// the KbAreaGuideVideo heading, present only when the geo's guide video
+// resolved. All markers verified against live 2026-07-17.
 const CASES = [
-  { path: '/', label: 'homepage (region)', marker: /Walk through homes on video/i },
-  { path: '/cities/bend', label: 'city: Bend', marker: /Video tours in Bend/i },
-  { path: '/cities/redmond', label: 'city: Redmond', marker: /Video tours in Redmond/i },
+  { path: '/videos', label: 'videos hub (tour grid)', marker: /Tour the homes/i },
+  { path: '/cities/bend', label: 'city: Bend', marker: /Watch\s*Bend/i },
+  { path: '/cities/redmond', label: 'city: Redmond', marker: /Watch\s*Redmond/i },
+  { path: '/cities/sisters', label: 'city: Sisters', marker: /Watch\s*Sisters/i },
 ]
+
+/** Comment- and tag-stripped page text (see MATCHING GOTCHA above). */
+function stripMarkup(html) {
+  return html.replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]+>/g, ' ')
+}
 
 async function check(c) {
   const url = `${BASE}${c.path}?_smoke=${Date.now()}`
@@ -40,8 +51,8 @@ async function check(c) {
   }
   const ms = Date.now() - t0
   if (res.status !== 200) return { ...c, ok: false, reason: `HTTP ${res.status}`, ms }
-  if (!c.marker.test(html))
-    return { ...c, ok: false, reason: 'video-tours section did not render (heading absent)', ms }
+  if (!c.marker.test(stripMarkup(html)))
+    return { ...c, ok: false, reason: 'video section did not render (heading absent)', ms }
   if (ms > LATENCY_BUDGET_MS) return { ...c, ok: false, reason: `too slow: ${ms}ms`, ms }
   return { ...c, ok: true, ms }
 }

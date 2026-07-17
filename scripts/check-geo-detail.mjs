@@ -89,7 +89,10 @@ const COMMUNITY_REDIRECT_SLUG = process.env.SMOKE_COMMUNITY_REDIRECT_SLUG ?? 'te
  * H1 heading — rendered by the <H1> primitive from @/components/site/primitives
  * on all three detail pages. We look for any non-empty <h1> tag.
  */
-const H1_RE = /<h1[^>]*>[\s\S]{2,200}<\/h1>/i
+// Lazy match with a generous cap: the hero H1 wraps its text in reveal-mask
+// spans (~400+ chars of markup), so the old {2,200} ceiling made healthy pages
+// read as "no <h1>" (2026-07-17 false positive on tetherow-phase-1 + summit-high).
+const H1_RE = /<h1[^>]*>[\s\S]{2,2000}?<\/h1>/i
 
 /**
  * Stat / content band marker — each page renders a stat or homes-for-sale count.
