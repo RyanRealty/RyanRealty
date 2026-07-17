@@ -444,6 +444,16 @@ under the same row lock as the notify append, so a concurrent kicker's entry can
 never be lost to the intake's contact refresh. Int suites:
 `lib/cma/versions.int.test.ts` (BPO slot + RPC notify-survival) + the existing two.
 
+Third commit (Matt decision, same day): the kick-off sheet's alreadyBuilt state now
+ASKS — review the existing document or "Build a fresh CMA" — with the confirmation
+re-invoking `buildNewVersion: true` under its own idempotency key (double-tap-safe),
+opening the next `--vN` draft; a built open draft is rebuilt in place instead of
+wasting a version. tsc caught a real onClick-event-as-boolean bug in the first sheet
+draft (the original Build button would have silently opted in) — fixed. Verified in
+a real authed browser session against the dev server: guard ask → fresh tap →
+`--v2` draft + pending action with the notify seed, original byte-untouched; probe
+rows self-cleaned.
+
 ## Next (in priority order)
 1. "Send a CMA in seconds" — collapse the CMA build+send to one fast path on the
    person workspace (the owner's explicit litmus test).

@@ -25,8 +25,13 @@ narrative in `docs/plans/ADMIN_REBUILD/PROGRESS.md` ("CMA upsert-by-slug clobber
 - **If you touch:** anything that derives a cmas slug from an address must go through
   `lib/cma/versions.ts`, never `.eq('slug', slugifyAddress(addr))` directly. Keep
   `lib/cma-request.int.test.ts` + `lib/crm/cma-kickoff.int.test.ts` green.
-- **Deliberately preserved:** kickoff still returns `alreadyBuilt` (no new version from
-  the CRM sheet) when the latest document is protected — product decision pending.
+- **Fresh-build ask (Matt decision 2026-07-17, third commit):** when the latest
+  document is protected, the kick-off sheet now ASKS — "Review the existing CMA" or
+  "Build a fresh CMA" — and the explicit confirmation re-invokes with
+  `buildNewVersion: true` + its own idempotency key, opening the next `--vN` draft
+  while the existing document keeps its link. Browser-verified end to end on the dev
+  server (auth'd sheet flow → --v2 draft + pending action with notify seed, probe
+  rows self-cleaned). Int-tested: `cma-kickoff.int.test.ts` "explicit fresh build".
 - **Second commit (same day):** BPO half closed — `resolveWritableBpoSlot` guards both
   BPO build actions (broker_price_opinions, statuses draft|final; `rebuildBpoAction`
   stays in-place). Attach contact refresh is now the row-locked

@@ -36,8 +36,11 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
   afterAll(async () => {
     if (!sb) return
     if (slug) {
-      await sb.from('marketing_brain_actions').delete().eq('target', `cma:${slug}`)
-      await sb.from('cmas').delete().eq('slug', slug)
+      await sb
+        .from('marketing_brain_actions')
+        .delete()
+        .in('target', [`cma:${slug}`, `cma:${slug}--v2`])
+      await sb.from('cmas').delete().in('slug', [slug, `${slug}--v2`])
     }
     for (const pid of [personId, personBId]) {
       if (!pid) continue
@@ -254,6 +257,80 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
     }
     const { data: actions } = await sb.from('marketing_brain_actions').select('id').eq('target', `cma:${slug}`)
     expect((actions ?? []).length).toBe(1)
+  }, 30000)
+
+  it('an explicit fresh build on a protected document opens --v2 and preserves the original (Matt decision 2026-07-17)', async () => {
+    expect(personId).not.toBeNull()
+    expect(slug).not.toBeNull()
+    const { kickoffCmaCore } = await import('@/lib/crm/cma-kickoff')
+
+    // Reset the fixture to a protected document for the ORIGINAL client, with
+    // no open builds and no idempotency interference.
+    await sb
+      .from('cmas')
+      .update({
+        status: 'finalized',
+        client_name: 'Original Client',
+        client_email: 'original@example.invalid',
+        html_path: `db:cmas.html_content:${slug}`,
+        html_content: '<html>original finalized document</html>',
+      })
+      .eq('slug', slug!)
+    await sb
+      .from('marketing_brain_actions')
+      .delete()
+      .in('target', [`cma:${slug}`, `cma:${slug}--v2`])
+    await sb.from('crm_idempotency_keys').delete().like('key', `cma-kickoff:${personId}:%`)
+
+    // Without the opt-in: the guard surfaces the existing document + status.
+    const guarded = await kickoffCmaCore({
+      personId: personId!,
+      address: ADDRESS,
+      idempotencyKey: `test-${STAMP}-3333-4444`,
+      actorBroker: 'matt',
+    })
+    expect(guarded.ok).toBe(true)
+    if (guarded.ok) {
+      expect(guarded.alreadyBuilt).toBe(true)
+      expect(guarded.existingStatus).toBe('finalized')
+    }
+
+    // With the opt-in (a NEW key — the sheet's confirmation tap): fresh --v2.
+    const fresh = await kickoffCmaCore({
+      personId: personId!,
+      address: ADDRESS,
+      idempotencyKey: `test-${STAMP}-5555-6666`,
+      actorBroker: 'matt',
+      buildNewVersion: true,
+    })
+    expect(fresh.ok).toBe(true)
+    if (!fresh.ok) return
+    expect(fresh.alreadyQueued).toBe(false)
+    expect(fresh.alreadyBuilt ?? false).toBe(false)
+    expect(fresh.slug).toBe(`${slug}--v2`)
+
+    // THE invariant: the original document is byte-for-byte untouched.
+    const { data: original } = await sb
+      .from('cmas')
+      .select('status, client_name, client_email, html_content')
+      .eq('slug', slug!)
+      .single()
+    expect(original!.status).toBe('finalized')
+    expect(original!.client_name).toBe('Original Client')
+    expect(original!.html_content).toBe('<html>original finalized document</html>')
+
+    // The fresh draft exists at --v2 with a queued build carrying the notify seed.
+    const { data: v2 } = await sb.from('cmas').select('status').eq('slug', `${slug}--v2`).single()
+    expect(v2!.status).toBe('draft')
+    const { data: action } = await sb
+      .from('marketing_brain_actions')
+      .select('payload, status')
+      .eq('target', `cma:${slug}--v2`)
+      .single()
+    expect(['pending', 'in_production']).toContain(String(action!.status))
+    expect((action!.payload as Record<string, unknown>).notify_broker_sms).toEqual([
+      { person_id: personId, broker: 'matt' },
+    ])
   }, 30000)
 
   it('the DB backstop holds (review MED): a second OPEN content:cma row for one target is rejected by the partial unique index', async () => {

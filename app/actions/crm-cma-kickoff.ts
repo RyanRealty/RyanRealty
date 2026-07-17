@@ -16,6 +16,9 @@ export async function kickoffCmaForContactAction(input: {
   personId: number
   address: string
   idempotencyKey: string
+  /** Explicit "build a fresh CMA" confirmation from the sheet (Matt decision
+   *  2026-07-17) — see kickoffCmaCore. */
+  buildNewVersion?: boolean
 }): Promise<CmaKickoffResult> {
   try {
     const personId = Number(input?.personId)
@@ -32,6 +35,7 @@ export async function kickoffCmaForContactAction(input: {
       address: String(input?.address ?? ''),
       idempotencyKey: String(input?.idempotencyKey ?? ''),
       actorBroker: access.brokerSlug ?? null,
+      buildNewVersion: Boolean(input?.buildNewVersion),
     })
     if (result.ok) {
       revalidatePath(`/admin/crm/${personId}`)

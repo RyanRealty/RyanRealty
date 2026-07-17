@@ -32,7 +32,14 @@ import { Label } from '@/components/ui/label'
 import { kickoffCmaForContactAction } from '@/app/actions/crm-cma-kickoff'
 import { resolveKickoff } from './cma-kickoff-client'
 
-type DoneState = { slug: string; alreadyQueued: boolean; alreadyBuilt: boolean }
+type DoneState = {
+  slug: string
+  alreadyQueued: boolean
+  alreadyBuilt: boolean
+  existingStatus: string | null
+  /** The terminal state came from the explicit fresh-build confirmation. */
+  freshBuild: boolean
+}
 
 export function CmaKickoffSheet({
   personId,
@@ -55,8 +62,12 @@ export function CmaKickoffSheet({
   const [done, setDone] = useState<DoneState | null>(null)
   const [pending, startTransition] = useTransition()
   // One key per mount: a double-tap (or retry after a transient error) replays
-  // the same request server-side instead of enqueueing a second build.
+  // the same request server-side instead of enqueueing a second build. The
+  // fresh-build confirmation is a DISTINCT request (the first key already
+  // stored the alreadyBuilt result), so it carries its own per-mount key —
+  // still double-tap-safe.
   const idempotencyKey = useMemo(() => crypto.randomUUID(), [])
+  const freshBuildKey = useMemo(() => crypto.randomUUID(), [])
 
   const close = () => {
     setOpen(false)
@@ -72,17 +83,24 @@ export function CmaKickoffSheet({
     }
   }
 
-  const submit = () => {
+  const submit = (buildNewVersion = false) => {
     setError(null)
     startTransition(async () => {
       const outcome = await resolveKickoff(() =>
-        kickoffCmaForContactAction({ personId, address, idempotencyKey }),
+        kickoffCmaForContactAction({
+          personId,
+          address,
+          idempotencyKey: buildNewVersion ? freshBuildKey : idempotencyKey,
+          buildNewVersion,
+        }),
       )
       if (outcome.kind === 'done') {
         setDone({
           slug: outcome.result.slug,
           alreadyQueued: outcome.result.alreadyQueued,
           alreadyBuilt: outcome.result.alreadyBuilt ?? false,
+          existingStatus: outcome.result.existingStatus ?? null,
+          freshBuild: buildNewVersion,
         })
       } else {
         setError(outcome.message)
@@ -95,12 +113,16 @@ export function CmaKickoffSheet({
     ? 'CMA already on file'
     : done?.alreadyQueued
       ? 'Already building'
-      : 'CMA build kicked off'
+      : done?.freshBuild
+        ? 'Fresh CMA build kicked off'
+        : 'CMA build kicked off'
   const doneBody = done?.alreadyBuilt
-    ? `A CMA for ${address.trim()} already exists. Nothing was rebuilt or overwritten — review the existing document and send it from there.`
+    ? `A ${done.existingStatus ?? 'previous'} CMA for ${address.trim()} already exists. Nothing was rebuilt or overwritten — review it and send it from there, or build a fresh one with current comps.`
     : done?.alreadyQueued
       ? `A CMA for ${address.trim()} is already in the build queue. No duplicate was created — you'll get a text when the draft is ready to review.`
-      : `Building the CMA for ${address.trim()} now. You'll get a text when the draft is ready to review.`
+      : done?.freshBuild
+        ? `Building a fresh CMA for ${address.trim()} with current comps. The existing document keeps its link. You'll get a text when the new draft is ready to review.`
+        : `Building the CMA for ${address.trim()} now. You'll get a text when the draft is ready to review.`
 
   return (
     <Dialog
@@ -139,7 +161,7 @@ export function CmaKickoffSheet({
             </div>
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
             <DialogFooter className="flex-col gap-2 sm:flex-col">
-              <Button onClick={submit} disabled={pending || address.trim().length === 0}>
+              <Button onClick={() => submit()} disabled={pending || address.trim().length === 0}>
                 {pending ? 'Kicking off…' : 'Build CMA — text me when ready'}
               </Button>
               <Button variant="ghost" onClick={close} disabled={pending}>
@@ -157,16 +179,28 @@ export function CmaKickoffSheet({
               <DialogTitle className="font-display">{doneTitle}</DialogTitle>
               <DialogDescription>{doneBody}</DialogDescription>
             </DialogHeader>
+            {error ? <p className="text-sm text-destructive">{error}</p> : null}
             <DialogFooter className="flex-col gap-2 sm:flex-col">
               <Button variant="outline" asChild>
                 <Link href={done.alreadyBuilt ? `/admin/cmas/${done.slug}` : '/admin/cmas'}>
                   {done.alreadyBuilt ? 'Review the existing CMA' : 'Open the CMA queue'}
                 </Link>
               </Button>
-              <Button variant="ghost" onClick={close}>
+              {done.alreadyBuilt ? (
+                <Button onClick={() => submit(true)} disabled={pending}>
+                  {pending ? 'Kicking off…' : 'Build a fresh CMA — text me when ready'}
+                </Button>
+              ) : null}
+              <Button variant="ghost" onClick={close} disabled={pending}>
                 Done
               </Button>
             </DialogFooter>
+            {done.alreadyBuilt ? (
+              <p className="text-xs text-muted-foreground">
+                A fresh build pulls current comps into a separate new version. The existing
+                document and its link stay exactly as they are.
+              </p>
+            ) : null}
           </>
         )}
       </DialogContent>

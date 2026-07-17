@@ -44,8 +44,12 @@ export type CmaKickoffResult =
        *  NOTHING was enqueued or overwritten; review the existing document.
        *  Guards the upsert-by-slug clobber class (adversarial review 2026-07-17
        *  HIGH: a kick-off for an address with a delivered CMA must never flip
-       *  its status/client back to a fresh draft). */
+       *  its status/client back to a fresh draft). The sheet offers an explicit
+       *  "build a fresh CMA" follow-up that re-invokes with buildNewVersion. */
       alreadyBuilt?: boolean
+      /** Status of the existing document when alreadyBuilt (for the sheet's
+       *  "a <status> CMA already exists" copy). */
+      existingStatus?: string
       /** A sibling request with the SAME key is still mid-flight — the caller
        *  should poll again rather than render a terminal success. */
       inFlight?: boolean
@@ -97,6 +101,14 @@ export async function kickoffCmaCore(input: {
   idempotencyKey: string
   /** CRM broker slug of the broker who tapped (from getCrmAccess). */
   actorBroker: string | null
+  /** Explicit broker opt-in (Matt decision 2026-07-17): when a reviewable
+   *  document already exists for the address, skip the alreadyBuilt guard and
+   *  build fresh — a protected (finalized/delivered/archived) latest opens the
+   *  next --vN version; an open built draft is rebuilt in place with current
+   *  data. The existing protected document is still never touched. The sheet
+   *  sends this ONLY from the "Build a fresh CMA" confirmation tap, with a
+   *  new idempotency key. */
+  buildNewVersion?: boolean
 }): Promise<CmaKickoffResult> {
   const address = (input.address ?? '').trim()
   if (!address) return { ok: false, error: 'Enter the property address.' }
@@ -171,7 +183,7 @@ export async function kickoffCmaCore(input: {
       // with no html_content. That row holds NO reviewed content to clobber,
       // and without this carve-out the address would be permanently stuck at
       // "already on file" pointing at a document that never built.
-      if (!slot.existing && slot.priorStatus) {
+      if (!slot.existing && slot.priorStatus && !input.buildNewVersion) {
         const latest = await getLatestCmaRowForBaseSlug(slug)
         const docSlug = latest?.slug ?? slug
         await logCmaKickoffTimeline({
@@ -181,9 +193,15 @@ export async function kickoffCmaCore(input: {
           broker: alertBroker,
           dedupeKey: `cma:kickoff-existing:${docSlug}:${input.idempotencyKey.slice(0, 8)}`,
         })
-        return { ok: true, slug: docSlug, alreadyQueued: false, alreadyBuilt: true }
+        return {
+          ok: true,
+          slug: docSlug,
+          alreadyQueued: false,
+          alreadyBuilt: true,
+          existingStatus: slot.priorStatus,
+        }
       }
-      if (slot.existing) {
+      if (slot.existing && !input.buildNewVersion) {
         const ex = slot.existing.row as { html_path?: unknown; html_content?: unknown }
         const isNeverBuiltStub = String(ex.html_path ?? '').startsWith('pending:') && !ex.html_content
         if (!isNeverBuiltStub) {
@@ -194,7 +212,13 @@ export async function kickoffCmaCore(input: {
             broker: alertBroker,
             dedupeKey: `cma:kickoff-existing:${slot.slug}:${input.idempotencyKey.slice(0, 8)}`,
           })
-          return { ok: true, slug: slot.slug, alreadyQueued: false, alreadyBuilt: true }
+          return {
+            ok: true,
+            slug: slot.slug,
+            alreadyQueued: false,
+            alreadyBuilt: true,
+            existingStatus: 'draft',
+          }
         }
       }
 
@@ -238,8 +262,12 @@ export async function kickoffCmaCore(input: {
 
       await logCmaKickoffTimeline({
         personId: person.id,
-        title: 'CMA build kicked off',
-        body: `CMA for ${parsed.rawAddress} queued from the contact page. The draft lands in /admin/cmas for review — a text goes to ${alertBroker} when it's ready.`,
+        title: input.buildNewVersion ? 'Fresh CMA build kicked off' : 'CMA build kicked off',
+        body: `CMA for ${parsed.rawAddress} queued from the contact page.${
+          input.buildNewVersion && slot.priorStatus
+            ? ` The earlier ${slot.priorStatus} CMA is preserved — this is a separate new version.`
+            : ''
+        } The draft lands in /admin/cmas for review — a text goes to ${alertBroker} when it's ready.`,
         broker: alertBroker,
         dedupeKey: `cma:kickoff:${slug}:${input.idempotencyKey.slice(0, 8)}`,
       })
