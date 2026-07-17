@@ -9,6 +9,8 @@
     "restart": "npm run dev",
     "build": "next build",
     "build:clean-local": "powershell -ExecutionPolicy Bypass -Command \"if (Test-Path '.next/dev') { Remove-Item -Recurse -Force '.next/dev' }\" && next build",
+    "push": "sh scripts/push-with-gates.sh",
+    "gates:stamp": "node scripts/stamp-gates-marker.mjs",
     "start": "next start",
     "lint": "eslint",
     "lint:design-tokens": "node scripts/lint-design-tokens.js",
