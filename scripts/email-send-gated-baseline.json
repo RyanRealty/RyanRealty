@@ -77,9 +77,9 @@
       "kind": "internal",
       "reason": "Internal: broker-review notification to the assigned broker's email with a signed preview link. processCmaDelivery only builds to 'ready'; it never emails the lead. The lead delivery happens in the gated /api/cma-drafts/[id]/send route and contact-cma.ts. Line shifted in the 2026-07-06 lifecycle-workflows integration (W5)."
     },
-    "lib/cma-request.ts:401": {
+    "lib/cma-request.ts:434": {
       "kind": "internal",
-      "reason": "Internal: new-CMA-request notification to the assigned broker (sendBrokerNotification), not the lead. The lead confirmation (sendLeadConfirmation) is gated by isSuppressedByEmail. Line shifted +5 when the crmPersonId input field + slug-stamp support were added (expired-workflow audit 2026-07-03). Line shifted in the 2026-07-06 lifecycle-workflows integration (W5)."
+      "reason": "Internal: new-CMA-request notification to the assigned broker (sendBrokerNotification), not the lead — and skipped entirely for broker kick-offs (notifyBroker=false). The lead confirmation (sendLeadConfirmation) is gated by isSuppressedByEmail. Line shifted 401 -> 434 by the D8 kick-off inputs (requestSource crm-kickoff, notifyBroker gate, notify_broker_sms list seeding) on 2026-07-17."
     },
     "lib/market-stat-alert.ts:59": {
       "kind": "internal",

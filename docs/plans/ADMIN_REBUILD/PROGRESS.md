@@ -8,7 +8,112 @@ Verification bar for every entry: tsc + esbuild/`next build` clean, and the real
 behavior exercised in the browser (authed as matt@ via a service-role magic link to
 the local callback) or integration-tested against the real DB.
 
+## Session 2026-07-16 (rebuild v2) — Phase 0 reconciliation
+
+**Baselines @ `707a52a5` (HEAD == origin/main at session start):**
+- vitest: 247 files / **2,841 tests, exit 0**.
+- `npm run ci:gates`: **exit 0** (133 gate files accounted for — wired, off-chain, or baselined backlog).
+- **Litmus current state** (evidence: `audit-reports/send-center.md §1.7` + fresh code check):
+  desktop ≈ 10–12 clicks across 4–5 page loads + a 30–60 s SYNCHRONOUS build
+  (`startCmaForContactAction` runs `buildCma` in-action); approval only at
+  `/admin/cmas/[slug]`. Mobile: **impossible** — `crm/[id]/mobile-detail.tsx` renders
+  Info/Activity/Comms/Homes/Notes/Calendar tabs only, no CMA/send surface. No
+  `?intent=` handling on `/admin/crm/[id]` (grep: 0 hits). No `sendDeliverable` /
+  `buildDeliverable` action exists. The notification half EXISTS: `lib/crm/broker-alerts.ts`
+  queues an SMS whose body links `ryan-realty.com/admin/crm/<personId>` (no intent param yet).
+  `withSendIdempotency` (lib/crm/idempotency.ts) confirmed FAIL-OPEN on ledger errors
+  (the 7108d338 fix holds — no fabricated `{ok:true}`).
+- **Pre-existing git stashes (2) — inventoried, left untouched, NOT this session's:**
+  `stash@{0}` "preserve concurrent-session WIP (SellerLPForm) during chrome-fix rebase":
+  its SellerLPForm/actions `pagePath` hunks are ALREADY on main; its
+  `KbHero.client.tsx` `formSlot` hunk is NOT landed (another session's consumer-facing
+  WIP — owner's call, not dropped). `stash@{1}` HideOnLP WIP — superseded by the landed
+  `chrome-routes` refactor. **This session creates no stashes; the per-commit assertion
+  is: stash count stays exactly 2 (these two), nothing popped, nothing added.**
+
+**Bucket classification (seeded Phase 0; refined in Phase 1):**
+1. **DONE-AND-GATED** — composer double-send fix (`05ec175b`, G50 `ci:composer-discipline`
+   + integration test); content-write guards (`979350ad` + `ci:admin-content-authz`);
+   RC1 conversation model + inbox flip (4 commits, browser-verified, unit-tested);
+   RC7 save→sign-in→resume (browser-verified + adversarial review, idempotent-add);
+   public-bundle drop (`fd05b80e`, next-build-verified); group badge + delivery chips
+   (`35c61e01`, `ad0f9fde`); foundation primitives (`ba03ff07`). Session-start chain: 133 gates green.
+2. **DONE-BUT-UNVERIFIED** — deep-link `next` preservation (`d9e92c63`: page renders
+   carrying next, but the full expired-session → login → land-on-lead path not E2E-proven);
+   mobile sign-out sheet (Radix — harness couldn't open it).
+3. **PLACEBO-OR-BROKEN** (audit-cited code traces, still open) — desktop people-list raw
+   `sms:`/`tel:` links bypass the compliance chain (`PeopleListView.tsx:699-721`);
+   `getGroupReplyParticipants` excludes broker-initiated groups (deferred to spec 02);
+   send domain absent on mobile (`mobile-detail.tsx`); contact-point jsonb mirror has a
+   non-mirroring third writer (`crm.ts:1228-1251`); `savePhoneNumbersAction`
+   delete-then-insert without transaction (`crm-person-detail.ts:167-187`).
+4. **SUPERSEDED-BY-DIRECTIVE** — a separate "Today home" (PROGRESS Next-#2 wording):
+   Matt's "one home, not three" (2026-06-16) makes `/admin/broker-dashboard` THE home;
+   `/admin` redirects to it. Do NOT build a Today home. Spec 01's `/admin` → Today
+   route table entry is reconciled to this.
+5. **INTENDED-BY-DESIGN / DO-NOT-CONSOLIDATE** — the `components/admin/**/mobile/*`
+   tree (purpose-built phone UX); the single `ConsoleShell`; the one-home
+   broker-dashboard; the parked e-sign code (dormant/unrouted/guarded per D1). No
+   delete/merge/dedup action against these without an explicit Matt directive.
+
+**Pain thresholds (set from baselines, written BEFORE building):**
+- Pain #1 (litmus): from "≈10–12 clicks / 4–5 page loads / 30–60 s sync build desktop;
+  impossible on mobile" → **≤ 3 taps and ≤ 30 s on a phone from notification to CMA
+  kick-off** (pending Matt's budget confirmation in the Phase-0 micro-batch).
+
 ## Shipped
+
+### THE LITMUS (Pain #1, D8) — notification → pre-filled CMA kick-off — DONE (prod-build browser-demonstrated)
+
+**The first feature-build commit of the v2 session (litmus-first ordering held).**
+Full evidence + tap-by-tap trace + timings: [`LITMUS.md`](LITMUS.md). Summary:
+a NEW lead texting "What is my home at 20695 Town Dr in Bend worth?" through the
+REAL signed Twilio webhook → person auto-created → broker-alert SMS body carries
+`ryan-realty.com/admin/crm/<id>?intent=cma` (seller-intent detected) → tapping it
+lands on the person page with the **CMA kick-off sheet auto-open, address
+pre-filled from the message** → one tap kicks off the standard draft-first async
+build (row in /admin/cmas) → the worker builds it (proven: $560K/9-comp draft)
+and **texts the broker a canonical review link**. Measured on the production
+`next build`: **2 taps, ≈17.5 s** (budget ≤3 taps/≤30 s — MET). Nothing is ever
+auto-sent (§0/D8 hold; kick-off sends no lead email, no broker email, no GA4
+conversion).
+
+New pieces (wired the EXISTING pipeline, no re-implementation): `lib/crm/
+seller-intent.ts` (intent + address extraction, 9 unit tests) · `?intent=cma`
+handling + `CmaKickoffSheet` on `/admin/crm/[id]` (both trees, no Radix) ·
+`app/actions/crm-cma-kickoff.ts` → `lib/crm/cma-kickoff.ts` (auth in-body;
+idempotent; dedupes to open builds) · `createCmaRequest` gains
+`crm-kickoff` source + notify gating · worker `notify_broker_sms` ready-text ·
+deep-link query preservation (middleware `x-search`) · migration
+`20260717120000_cma_open_action_unique` (applied to hosted).
+
+**Adversarial review (3 skeptics, data-loss checklist answered in writing) —
+findings FIXED before commit, then re-reviewed:**
+- HIGH: kick-off could clobber an existing (possibly delivered) `cmas` row via
+  upsert-by-slug → **existing-row guard**: never enqueues over an existing row,
+  returns `alreadyBuilt` + review link; locked by int test ("never clobbers…").
+- HIGH: aborted-POST retry could render a fabricated success while the sibling
+  request later failed → `inFlight` marker + client poll loop with HONEST
+  give-up (`cma-kickoff-client.ts`, 6 unit tests).
+- MED: TOCTOU double-enqueue (two keys, one slug) → partial unique index on
+  open `content:cma` rows (DB backstop, int-tested) + 23505 attach fallback.
+- MED: silently-attached second kicker → timeline stamp + honest copy.
+- LOW: ready-text linked the vercel.app alias (strips auth cookies) → canonical
+  host; LP-subdomain branch now overwrites `x-search` (header hygiene); queue
+  link → next/link (bfcache).
+- Auth skeptic: unauth/non-admin/out-of-scope all blocked (verdict: no
+  HIGH/MED); SMS-body cannot shape the alert URL or intent.
+
+**Verification trace (data-side proof):** before tap: 0 `cmas`/0 action/0 idem
+rows → after: exactly 1+1+1 + one timeline stamp; nothing else changed. Double-
+tap + new-key + concurrent-insert all proven single-enqueue (int tests vs real
+DB, self-cleaning). Fixture fully cleaned after demo (zero-residue check in
+`tmp/litmus-cleanup.mjs`).
+
+**Baselines vs session start:** vitest 247 files/2,841 → **250 files/2,859**
+(18 new tests), exit 0. `ci:gates` green at commit (tail pasted below).
+`next build` exit 0 (prerender intact — middleware/layout changes safe).
+Stash inventory unchanged (the 2 pre-existing stashes untouched, none created).
 
 ### Task #8 — responsive shell + Today home + drop public bundle — DONE (all 3, browser-verified)
 

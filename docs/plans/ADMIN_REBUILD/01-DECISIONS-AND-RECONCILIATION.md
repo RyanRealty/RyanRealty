@@ -250,6 +250,16 @@ rolling window; a prospecting link-tap raises to Hot and notifies immediately. O
 threshold shared by the consumer funnel (spec 10) and prospecting (spec 07). *(Matt
 can retune the numbers at build time.)*
 
+**D8 · CMA litmus shape (2026-07-17, Phase-0 micro-batch — LOCKED).**
+(1) The litmus tap is a **kick-off + notify**: it starts the standard draft-first
+async CMA build AND texts the broker a review link when the draft is ready; review
++ send stay exactly as today (nothing auto-sent, §0 holds). (2) The build engine is
+the **full deterministic `buildCma`, async** — no instant-estimate engine. (3) "New
+lead wants a CMA" produces the **seller CMA** (BPO stays a separate affordance).
+(4) Budget: **≤ 3 taps / ≤ 30 s on mobile** from notification tap to kick-off,
+zero manual entry beyond confirming the resolved lead + address. Mirror:
+`.auto-memory/decisions_litmus_cma_2026-07-17.md`.
+
 **D7 · 4th-broker onboarding. → default: yes.** Broker identity moves into the
 `brokers` table via spec 09's `getBrokerRegistry`; the 5 hardcoded maps are removed so
 onboarding a broker is one settings screen.

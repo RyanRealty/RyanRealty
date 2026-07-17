@@ -37,7 +37,12 @@ export default async function AdminProtectedLayout({
     // link to a lead with an expired session lands back on that lead after sign-in
     // (RC5). x-pathname is stamped by middleware; safeRedirectPath guards it.
     const h = await headers()
-    const next = safeRedirectPath(h.get('x-pathname'), '/admin')
+    // Append the query string (x-search) so an intent deep link survives the
+    // funnel — safeRedirectPath preserves path?query and still blocks
+    // absolute/protocol-relative targets (D8).
+    const rawSearch = h.get('x-search') ?? ''
+    const search = rawSearch.startsWith('?') ? rawSearch : ''
+    const next = safeRedirectPath(`${h.get('x-pathname') ?? ''}${search}`, '/admin')
     redirect(`/auth-error?next=${encodeURIComponent(next)}`)
   }
   const adminRole = await getAdminRoleForEmail(session.user.email)

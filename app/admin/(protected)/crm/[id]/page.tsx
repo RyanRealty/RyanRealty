@@ -60,6 +60,7 @@ import { TemplatePickerNav } from '@/components/admin/crm/TemplatePickerNav'
 import { getContactConversation } from '@/lib/data/crm/getContactConversation'
 import ViewedHomeCard from '@/components/admin/crm/ViewedHomeCard'
 import { StatusPill } from '@/components/console/StatusPill'
+import { CmaKickoffMount } from '@/components/admin/crm/CmaKickoffMount'
 // §25 Mobile Contact Detail (mapping + assembly colocated in mobile-detail.tsx)
 import { MobileLeadDetail } from './mobile-detail'
 // §07 three-column desktop rebuild (CRM_BUILD_MISSION screen: person-detail-desktop)
@@ -114,12 +115,12 @@ export default async function ConsoleLeadPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ tpl?: string; smsTpl?: string; error?: string; flash?: string; view?: string }>
+  searchParams: Promise<{ tpl?: string; smsTpl?: string; error?: string; flash?: string; view?: string; intent?: string }>
 }) {
   const { id: idRaw } = await params
   const id = Number(idRaw)
   if (!Number.isFinite(id) || id <= 0) notFound()
-  const { tpl, smsTpl, error: sendError, flash, view } = await searchParams
+  const { tpl, smsTpl, error: sendError, flash, view, intent } = await searchParams
 
   const [crmAccess, full, templates, smsTemplates, twilioStatus] = await Promise.all([
     getCrmAccess(),
@@ -465,18 +466,25 @@ export default async function ConsoleLeadPage({
     />
   )
 
+  /* D8 litmus: `?intent=cma` auto-opens the one-tap CMA kick-off (both trees). */
+  const cmaKickoffSheet = (
+    <CmaKickoffMount personId={person.id} personName={(person.name as string | null) ?? null} personPhone={primaryPhone} personEmail={primaryEmail} homeAddress={homeAddress} timeline={full.timeline} intent={intent} />
+  )
+
   /* ?view=mobile — forced 390px frame regardless of viewport (verification
      affordance; the automation browser can't resize below 768px). */
   if (view === 'mobile') {
     return (
       <div className="mx-auto w-[390px] max-w-full overflow-hidden border-x border-border bg-secondary">
         {mobileDetail}
+        {cmaKickoffSheet}
       </div>
     )
   }
 
   return (
     <>
+      {cmaKickoffSheet}
       {/* §25 mobile layout (< md) — full-bleed: cancel the ConsoleShell main
           padding (px-4 pt-5 pb-24) so the navy header runs edge-to-edge. */}
       <div className="-mx-4 -mt-5 -mb-24 md:hidden">{mobileDetail}</div>

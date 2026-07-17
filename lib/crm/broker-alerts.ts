@@ -163,6 +163,34 @@ export async function queueBrokerAlert(params: {
 }
 
 /**
+ * "CMA draft ready — review and send" text (D8 kick-off + notify). One body,
+ * one kind, two callers: the build worker texts every entry on the action
+ * row's notify list when the build finishes, and the kick-off attach path
+ * texts directly when it loses the race to a build that finished mid-attach.
+ * queueBrokerAlert's crm_timeline dedupe (`alert:cma-ready:<slug>:<personId>`)
+ * makes the two paths safe to overlap — one text per (slug, person).
+ */
+export async function queueCmaReadyAlert(params: {
+  slug: string
+  subjectAddress: string | null
+  personId: number
+  broker: string | null
+}): Promise<boolean> {
+  return queueBrokerAlert({
+    broker: params.broker,
+    personId: params.personId,
+    kind: `cma-ready:${params.slug}`,
+    body: [
+      `CMA draft ready — ${params.subjectAddress ?? params.slug}`,
+      // Canonical host, matching newLeadAlertBody — the vercel.app alias
+      // redirects and STRIPS AUTH COOKIES (memory project_domain), so a broker
+      // tapping a non-canonical deep link lands logged out.
+      `Review and send: https://ryan-realty.com/admin/cmas/${params.slug}`,
+    ].join('\n'),
+  })
+}
+
+/**
  * System health alert (Contact-360 Phase 9.6 crm-health-check). Unlike
  * queueBrokerAlert, a health alarm is NOT person-scoped — a broken mirror or a
  * stale webhook has no crm_people row to hang a dedupe crm_timeline row off
@@ -207,11 +235,15 @@ export function newLeadAlertBody(p: {
   stage?: string | null
   personId: number
   detail?: string | null
+  /** Deep-link intent (D8): 'cma' lands the broker on the person page with the
+   *  CMA kick-off sheet open + pre-filled — one tap from Build. Set when the
+   *  inbound message reads as seller intent (hasSellerIntent). */
+  intent?: 'cma'
 }): string {
   const lines = [
     `New lead: ${p.name ?? 'Unknown'}${p.source ? ` (${p.source})` : ''}`,
     p.detail ?? null,
-    `ryan-realty.com/admin/crm/${p.personId}`,
+    `ryan-realty.com/admin/crm/${p.personId}${p.intent ? `?intent=${p.intent}` : ''}`,
   ].filter(Boolean)
   return lines.join('\n')
 }

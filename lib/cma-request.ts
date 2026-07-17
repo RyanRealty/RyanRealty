@@ -55,11 +55,21 @@ export type CreateCmaRequestInput = {
     condition?: string
   } | null
   /** Where the request came from. Default 'seller-lp'. */
-  requestSource?: 'seller-lp' | 'expired-listing-cron' | 'fsbo-lp' | 'fsbo-cron'
+  requestSource?: 'seller-lp' | 'expired-listing-cron' | 'fsbo-lp' | 'fsbo-cron' | 'crm-kickoff'
   /** Send the "we received your request" email to the lead. Default true.
    *  MUST be false for outbound-originated requests (expired) — the owner
    *  never asked us for anything. */
   notifyLead?: boolean
+  /** Email the assigned broker about the new request. Default true. False for
+   *  broker-initiated kick-offs — the broker who tapped the button doesn't
+   *  need a "new seller lead submitted" email about their own action. */
+  notifyBroker?: boolean
+  /** When set, the CMA build worker texts this broker (crm_broker_alerts) the
+   *  moment the draft is ready to review (D8 kick-off + notify). Seeds the
+   *  payload's notify_broker_sms LIST — later kickers that attach to the open
+   *  build append their own entries (lib/data/cma/queue.ts
+   *  appendCmaActionNotify) and the worker texts each one. */
+  brokerSmsNotify?: { personId: number; broker: string } | null
 }
 
 export type CreateCmaRequestResult =
@@ -115,7 +125,9 @@ export async function createCmaRequest(
         ? 'Expired-listing detection'
         : requestSource === 'fsbo-lp'
           ? 'FSBO LP submission'
-          : 'Seller LP submission'
+          : requestSource === 'crm-kickoff'
+            ? 'Broker kick-off (CRM)'
+            : 'Seller LP submission'
     const broker = await resolveBrokerSlug(input.fubPersonId ?? null)
 
     // Resolve broker uuid so the cmas row has a valid FK if the cmas.broker_id
@@ -226,9 +238,28 @@ export async function createCmaRequest(
           seller_improvements: sellerImprovementsText,
           seller_improvements_total: sellerImprovementsTotal,
           home_details: homeDetails,
+          // D8 kick-off + notify: the build worker texts each listed broker a
+          // review link when the draft is ready. A LIST, not a flag — kickers
+          // that attach to this build while it is open append their own
+          // entries via the cma_action_append_notify RPC.
+          ...(input.brokerSmsNotify
+            ? {
+                notify_broker_sms: [
+                  {
+                    person_id: input.brokerSmsNotify.personId,
+                    broker: input.brokerSmsNotify.broker,
+                  },
+                ],
+              }
+            : {}),
         },
         data_evidence: {
-          request_source: requestSource === 'expired-listing-cron' ? 'expired-listing-cron' : 'lead-form',
+          request_source:
+            requestSource === 'expired-listing-cron'
+              ? 'expired-listing-cron'
+              : requestSource === 'crm-kickoff'
+                ? 'crm-kickoff'
+                : 'lead-form',
           client_relationship: 'cold-lead',
           fub_person_id: input.fubPersonId ?? null,
         },
@@ -265,8 +296,10 @@ export async function createCmaRequest(
     // so ad-blocked clients still register a conversion. No cookies access
     // here (this lib is also called from cron paths); the client_id falls
     // back to a fresh uuid which still counts as a session-less conversion
-    // tied to the right event taxonomy.
-    void fireGa4Event({
+    // tied to the right event taxonomy. NOT fired for broker kick-offs — a
+    // broker tapping "Build CMA" in the CRM is not a visitor conversion, and
+    // fabricating one would corrupt the ad-attribution numbers (§0).
+    if (requestSource !== 'crm-kickoff') void fireGa4Event({
       eventName: 'valuation_requested',
       eventParams: {
         cma_slug: slug,
@@ -285,7 +318,7 @@ export async function createCmaRequest(
 
     // Step 3 + 4: fire-and-forget the notification emails. We don't await —
     // the visitor sees a fast "we got it" response on the LP.
-    void sendBrokerNotification({
+    if (input.notifyBroker ?? true) void sendBrokerNotification({
       brokerEmail: broker.email,
       brokerName: broker.displayName,
       cmaSlug: slug,

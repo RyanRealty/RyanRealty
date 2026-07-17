@@ -10,7 +10,7 @@
  * the action row with the reason recorded.
  */
 
-import { listOpenCmaActions, updateCmaActionRow } from '@/lib/data'
+import { listOpenCmaActions, updateCmaActionRow, getCmaActionPayload } from '@/lib/data'
 import type { CmaActionRow } from '@/lib/data'
 import { buildCma } from '@/lib/cma/build'
 import { slugifyAddress } from '@/lib/cma-request'
@@ -35,6 +35,34 @@ function num(v: unknown): number | null {
 function str(v: unknown): string | null {
   const s = typeof v === 'string' ? v.trim() : null
   return s || null
+}
+
+/**
+ * Ready-notify entries from a row's payload (D8 kick-off + notify contract).
+ * Canonical shape is notify_broker_sms: [{person_id, broker}, …] — one entry
+ * per kicker (the enqueuer plus everyone who attached to the open build).
+ * Legacy scalar rows (notify_broker_sms: true + flat crm_person_id /
+ * alert_broker, written before the contract became a list) still resolve to
+ * their single entry. De-duped per person: queueBrokerAlert's timeline key is
+ * per (slug, person), so a repeat person entry could never text twice anyway.
+ */
+function notifyEntries(payload: Record<string, unknown>): Array<{ personId: number; broker: string | null }> {
+  const out: Array<{ personId: number; broker: string | null }> = []
+  const raw = payload['notify_broker_sms']
+  if (Array.isArray(raw)) {
+    for (const e of raw) {
+      if (e && typeof e === 'object') {
+        const rec = e as Record<string, unknown>
+        const personId = num(rec['person_id'])
+        if (personId) out.push({ personId, broker: str(rec['broker']) })
+      }
+    }
+  } else if (raw === true) {
+    const personId = num(payload['crm_person_id'])
+    if (personId) out.push({ personId, broker: str(payload['alert_broker']) })
+  }
+  const seen = new Set<number>()
+  return out.filter((e) => (seen.has(e.personId) ? false : (seen.add(e.personId), true)))
 }
 
 function slugForAction(action: CmaActionRow): string | null {
@@ -104,6 +132,35 @@ async function processOne(action: CmaActionRow): Promise<{ slug: string; status:
         page_count: result.pageCount ?? null,
       },
     })
+
+    // D8 kick-off + notify: a broker-initiated build texts EVERY kicker on the
+    // row's notify list the moment the draft is ready — the enqueuer plus
+    // anyone who attached while the build was open. Only rows whose payload
+    // carries entries (set by kickoffCmaCore) — seller-LP / cron rows keep
+    // their existing email-only behavior. The list is RE-READ here rather than
+    // taken from the scan-time snapshot: attaches landing mid-build appended
+    // to the row after listOpenCmaActions captured it, and the append RPC only
+    // admits entries while status is open — so post-ready attaches self-handle
+    // and pre-ready attaches are all visible to this read. queueBrokerAlert
+    // dedupes per (kind, person) and is gated on the broker's SMS opt-in; a
+    // notify failure never fails the build.
+    try {
+      const freshPayload = (await getCmaActionPayload(action.id)) ?? payload
+      const entries = notifyEntries(freshPayload)
+      if (entries.length > 0) {
+        const { queueCmaReadyAlert } = await import('@/lib/crm/broker-alerts')
+        for (const entry of entries) {
+          await queueCmaReadyAlert({
+            slug,
+            subjectAddress: str(payload['subject_address']),
+            personId: entry.personId,
+            broker: entry.broker,
+          })
+        }
+      }
+    } catch (e) {
+      console.warn('[cma-worker] ready-notify failed:', e instanceof Error ? e.message : String(e))
+    }
     return { slug, status: 'ready' }
   }
 

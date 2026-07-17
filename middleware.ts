@@ -314,9 +314,13 @@ const NON_CANONICAL_HOSTS = new Set(['ryanrealty.vercel.app', 'www.ryan-realty.c
 
 function buildNextResponse(pathname: string, request: NextRequest): NextResponse {
   // Always set x-pathname on the forwarded request headers so server
-  // components can read it via headers().get('x-pathname').
+  // components can read it via headers().get('x-pathname'). x-search carries
+  // the raw query string separately (D8: an expired-session deep link like
+  // /admin/crm/123?intent=cma must keep its intent through the auth funnel —
+  // x-pathname alone silently dropped it).
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-pathname', pathname)
+  requestHeaders.set('x-search', request.nextUrl.search ?? '')
   return NextResponse.next({ request: { headers: requestHeaders } })
 }
 
@@ -470,6 +474,10 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     rewriteUrl.pathname = subdomainLpRoot
     const requestHeaders = new Headers(request.headers)
     requestHeaders.set('x-pathname', subdomainLpRoot)
+    // Overwrite x-search here too — new Headers(request.headers) copies the
+    // INBOUND headers, so without this a client-sent x-search would pass
+    // through to any future consumer on this branch (review hygiene).
+    requestHeaders.set('x-search', request.nextUrl.search ?? '')
     return attachVidCookie(attachFbcCookie(NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } }), request, host), request, host)
   }
 

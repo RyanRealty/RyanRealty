@@ -45,6 +45,83 @@ export async function listOpenCmaActions(limit: number): Promise<CmaActionRow[]>
   return (data ?? []) as unknown as CmaActionRow[]
 }
 
+/**
+ * Is a build for this CMA slug already open (pending or in_production)?
+ * Backs the kick-off dedupe (D8): a second "Build CMA" for the same address
+ * must attach to the in-flight build, never enqueue a duplicate action row.
+ */
+export async function findOpenCmaActionBySlug(slug: string): Promise<{ id: string; status: string } | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data, error } = await sb
+    .from('marketing_brain_actions')
+    .select('id, status')
+    .eq('action_type', 'content:cma')
+    .eq('target', `cma:${slug.toLowerCase()}`)
+    .in('status', ['pending', 'in_production'])
+    .order('created_at', { ascending: true })
+    .limit(1)
+  if (error) {
+    console.error('[findOpenCmaActionBySlug]', error.message)
+    return null
+  }
+  const row = (data ?? [])[0] as { id: string; status: string } | undefined
+  return row ?? null
+}
+
+/**
+ * Atomically append a {person_id, broker} entry to an open build's ready-notify
+ * list (payload.notify_broker_sms). Backs the kick-off attach path (D8): every
+ * kicker that attaches to an in-flight build gets the "draft ready" text, not
+ * just the first enqueuer. Runs server-side under a row lock
+ * (cma_action_append_notify, migration 20260717130000) so concurrent attaches
+ * never lose an entry to a read-modify-write race.
+ *
+ * Returns `appended` plus the row's status at lock time. `status` of
+ * 'ready'/'killed' means the worker closed the build before the append landed —
+ * the caller handles the notify itself (the worker's pass has already run).
+ */
+export async function appendCmaActionNotify(
+  actionId: string,
+  entry: { personId: number; broker: string },
+): Promise<{ appended: boolean; status: string | null }> {
+  const sb = client()
+  if (!sb) return { appended: false, status: null }
+  const { data, error } = await sb.rpc('cma_action_append_notify', {
+    p_action_id: actionId,
+    p_person_id: entry.personId,
+    p_broker: entry.broker,
+  })
+  if (error) {
+    console.error('[appendCmaActionNotify]', error.message)
+    return { appended: false, status: null }
+  }
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | { appended: boolean; status: string | null }
+    | undefined
+  return { appended: Boolean(row?.appended), status: row?.status ?? null }
+}
+
+/**
+ * Fresh payload read for one action row. The worker re-reads the notify list at
+ * text time — kickers that attached while the build was running are missing
+ * from the scan-time snapshot listOpenCmaActions returned.
+ */
+export async function getCmaActionPayload(id: string): Promise<Record<string, unknown> | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data, error } = await sb
+    .from('marketing_brain_actions')
+    .select('payload')
+    .eq('id', id)
+    .maybeSingle()
+  if (error) {
+    console.error('[getCmaActionPayload]', error.message)
+    return null
+  }
+  return ((data as { payload?: Record<string, unknown> } | null)?.payload ?? null)
+}
+
 /** Patch one marketing_brain_actions row (status transitions, executor_response). */
 export async function updateCmaActionRow(
   id: string,

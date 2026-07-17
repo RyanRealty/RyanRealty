@@ -1,4 +1,39 @@
-> **NEWEST, START HERE: the ADMIN-REBUILD RC1 block immediately below (2026-07-16).** Prior: ADMIN-CONSOLIDATION (2026-07-07 evening), LIFECYCLE-WORKFLOWS (2026-07-07 morning), NEIGHBORHOOD-DEFAULTS (2026-07-06 evening). Older: [`HANDOFF_CRM_STREAMLINE_2026-07-03.md`](./HANDOFF_CRM_STREAMLINE_2026-07-03.md), `HANDOFF_2026-06-28.md`.
+> **NEWEST, START HERE: the ADMIN-REBUILD v2 LITMUS block immediately below (2026-07-17).** Prior: RC1 (2026-07-16).
+
+# ADMIN REBUILD v2 — THE LITMUS SHIPPED (2026-07-17, Claude Code)
+
+**Read `docs/plans/ADMIN_REBUILD/LITMUS.md` (tap-by-tap evidence) + `PROGRESS.md` (v2
+Phase-0 reconciliation section + the litmus task entry) + `01-DECISIONS` §D8 (Matt's
+locked litmus decisions: kick-off+notify · full async buildCma · seller CMA · ≤3 taps/≤30s).**
+
+- **What shipped:** notification → pre-filled CMA kick-off in 2 taps / ≈17.5 s on the
+  production build. New-lead SMS alerts now append `?intent=cma` on seller-intent messages
+  (`lib/crm/seller-intent.ts`); `/admin/crm/[id]?intent=cma` auto-opens `CmaKickoffSheet`
+  (both trees, non-Radix) pre-filled from the owned home or the lead's message text; the
+  kick-off action (`app/actions/crm-cma-kickoff.ts` → `lib/crm/cma-kickoff.ts`) enqueues
+  the EXISTING `createCmaRequest` → `cma-build-worker` pipeline; the worker now TEXTS the
+  kicking broker a canonical review link on ready (`payload.notify_broker_sms`).
+  Draft-first fully intact — nothing auto-sends, review stays at `/admin/cmas/[slug]`.
+- **Mutation-safety contracts (adversarially reviewed ×2, all HIGH/MED CLOSED):**
+  kick-off is idempotent (per-mount key + `withSendIdempotency` with an `inFlight`
+  non-terminal marker + client poll loop in `components/admin/crm/cma-kickoff-client.ts`);
+  one open build per slug is DB-enforced (partial unique index
+  `marketing_brain_actions_open_cma_uidx`, migration `20260717120000`, APPLIED to hosted);
+  an existing `cmas` row is NEVER clobbered from this surface (`alreadyBuilt` guard;
+  never-built `pending:` stubs with status=draft are re-kickable). All locked by
+  `lib/crm/cma-kickoff.int.test.ts` (4 real-DB tests, self-cleaning).
+- **Also:** middleware now stamps `x-search` so admin deep-link query strings survive the
+  expired-session auth funnel; ready-alert links use the canonical host (vercel.app alias
+  strips auth cookies).
+- **If you touch:** `app/api/twilio/inbound-sms/route.ts` (intent line), `lib/cma/worker.ts`
+  (notify branch), `lib/cma-request.ts` (kick-off gating: notifyBroker/notifyLead/GA4 are
+  OFF for `requestSource='crm-kickoff'` — do not "fix" that), or the person page's
+  `?intent=` wiring — pull first, and keep the int tests green.
+- **Open chips:** seller-LP `createCmaRequest` upsert-clobber class (HIGH residue on
+  non-kickoff surfaces — chip task_401091b4); multi-notify for attached kickers; pre-push
+  ci:gates hook; toggle-in-resume grep gate.
+
+ Prior: ADMIN-CONSOLIDATION (2026-07-07 evening), LIFECYCLE-WORKFLOWS (2026-07-07 morning), NEIGHBORHOOD-DEFAULTS (2026-07-06 evening). Older: [`HANDOFF_CRM_STREAMLINE_2026-07-03.md`](./HANDOFF_CRM_STREAMLINE_2026-07-03.md), `HANDOFF_2026-06-28.md`.
 
 # ADMIN REBUILD — RC1 FIRST-CLASS CONVERSATION MODEL (2026-07-16, Claude Code — COMPLETE END-TO-END: inbox now reads the model)
 

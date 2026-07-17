@@ -17,6 +17,7 @@ import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPh
 import { markConversationUnreadOnInbound } from '@/app/actions/crm-inbox'
 import { addSuppression, removeSuppression } from '@/lib/crm/suppressions'
 import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
+import { hasSellerIntent } from '@/lib/crm/seller-intent'
 import { CRM_MAILBOXES, sendCrmEmail } from '@/lib/crm/gmail'
 
 export const runtime = 'nodejs'
@@ -181,6 +182,9 @@ export async function POST(request: Request) {
           stage: 'Lead',
           personId: match.personId,
           detail: `Texting now from ${from}: ${body.slice(0, 120)}`,
+          // "What's my home worth" → land the broker one tap from the CMA
+          // kick-off (D8 litmus: notification → pre-filled build in ≤3 taps).
+          intent: hasSellerIntent(body) ? 'cma' : undefined,
         }),
       })
     }
