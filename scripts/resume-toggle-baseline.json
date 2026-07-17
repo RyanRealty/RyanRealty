@@ -1,0 +1,5 @@
+{
+  "note": "Baselined toggle-style calls inside resume/replay/retry/deep-link paths — reviewed legit sites only. This list may only SHRINK: new resume-path code must use idempotent direction-explicit mutations (exemplar: lib/hooks/useResumePendingSave.ts -> resumeSaveListing). Regenerate with `npm run ci:resume-toggle:baseline`.",
+  "generated_by": "check-resume-toggle.mjs --write-baseline",
+  "entries": []
+}
