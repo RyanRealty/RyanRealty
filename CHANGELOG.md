@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.812.5 (2026-07-17)
+
+### Bug Fixes
+- fix(crm): kill the composer double-tap hang — one submission at a time + box clears on send (Pain #2)
+- fix(cma,bpo): close the clobber class BPO half + make the attach contact refresh atomic
+
+---
+
+
 ## v1.812.4 (2026-07-17)
 
 ### Bug Fixes
