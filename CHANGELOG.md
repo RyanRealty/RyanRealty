@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.812.1 (2026-07-17)
+
+### Bug Fixes
+- fix(ci): search-gate count regex tolerates modifier words; G46 reports timeouts honestly
+- fix(ci): revive Post-Deploy Smoke Tests — send a browser UA past the Vercel firewall + grant issues:write
+
+### Maintenance
+- docs(admin-rebuild): per-commit protocol artifacts for the litmus (450216c3)
+
+---
+
+
 ## v1.812.0 (2026-07-17)
 
 ### Features
