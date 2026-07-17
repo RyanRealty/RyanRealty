@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.812.4 (2026-07-17)
+
+### Bug Fixes
+- fix(hooks): pre-push is a millisecond marker check — gates run BEFORE the ssh connection opens
+
+### Maintenance
+- docs(gates): G46 wiring note reflects the pre-push marker design
+
+---
+
+
 ## v1.812.3 (2026-07-17)
 
 ### Bug Fixes
