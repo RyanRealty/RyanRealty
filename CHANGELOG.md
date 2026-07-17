@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.816.0 (2026-07-17)
+
+### Features
+- feat(admin): one nav, one IA — capability-projected shell (Pain #3, D9)
+
+---
+
+
 ## v1.815.3 (2026-07-17)
 
 ### Bug Fixes
