@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.813.2 (2026-07-17)
+
+### Bug Fixes
+- fix(ci): give the CI build step the heap it needs; smoke always tests the canonical domain
+
+---
+
+
 ## v1.813.1 (2026-07-17)
 
 ### Bug Fixes
