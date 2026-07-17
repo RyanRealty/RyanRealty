@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.814.0 (2026-07-17)
+
+### Features
+- feat(crm): the CMA kick-off sheet asks before an address with an existing document — review it, or build a fresh version
+
+---
+
+
 ## v1.813.6 (2026-07-17)
 
 ### Bug Fixes
