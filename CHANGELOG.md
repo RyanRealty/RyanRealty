@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.813.0 (2026-07-17)
+
+### Features
+- feat(push): verify the materialized HEAD tree, not the shared working tree
+
+---
+
+
 ## v1.812.5 (2026-07-17)
 
 ### Bug Fixes
