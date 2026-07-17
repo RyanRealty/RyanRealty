@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.813.4 (2026-07-17)
+
+### Maintenance
+- chore(ci): re-baseline bundle budget — 3 weeks of shipped growth accumulated while CI was dark
+
+---
+
+
 ## v1.813.3 (2026-07-17)
 
 ### Bug Fixes
