@@ -35,10 +35,15 @@ jobs:
       }}
 
     env:
+      # Always test the CANONICAL domain. deployment_status.target_url points at
+      # the raw *.vercel.app deployment host — cold lambdas + no CDN cache there
+      # blow the perf budget on every deploy-triggered run (2026-07-17 finding),
+      # so those runs failed even after the UA fix while telling us nothing
+      # about production. The canonical host serves the same deployment once
+      # aliased, warm.
       SITE_URL: >-
         ${{
           github.event.inputs.site_url ||
-          github.event.deployment_status.target_url ||
           vars.SITE_URL ||
           'https://ryan-realty.com'
         }}

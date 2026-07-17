@@ -37,7 +37,13 @@ jobs:
       # See docs/MECHANICAL_GATES.md.
       - run: npm run ci:gates
       - run: npm run test
+      # NODE_OPTIONS: the type-check phase OOMs at Node's default ~4GB heap at
+      # this repo's size (SIGABRT mid "Running TypeScript" — same fix as the
+      # local push chain). Invisible until 2026-07-17 because the lint step
+      # ahead of it failed first from June 24 on.
       - run: npm run build
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
       # Post-build gates: bundle budget + route smoke. Bundle budget
       # parses .next/static after the build step above. Route smoke
       # starts the production server and hits the canonical route set,
