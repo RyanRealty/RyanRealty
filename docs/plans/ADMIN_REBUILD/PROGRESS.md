@@ -8,6 +8,48 @@ Verification bar for every entry: tsc + esbuild/`next build` clean, and the real
 behavior exercised in the browser (authed as matt@ via a service-role magic link to
 the local callback) or integration-tested against the real DB.
 
+## Session 2026-07-17 (rebuild v3) — Phase 0 reconciliation + Pain #3/#4
+
+**Baselines @ `18f2d890` (HEAD == origin/main at session start, after pull):**
+- vitest: 254 files / **2,881 tests, exit 0** (chips added 4 files / 20 tests since v2).
+- `npm run ci:gates`: **exit 0** ("All gates accounted for").
+- Stashes: exactly the 2 pre-existing (SellerLPForm WIP, HideOnLP WIP) — inventoried
+  v2, untouched. Per-commit assertion: count stays 2, nothing popped/created.
+- Chip reconciliation: clobber-class fix (92fcf50a + 36cbb0b2 + b6df9669), multi-notify
+  (450216c3), pre-push stamp hook (6fc8680f + npm run push), G50 ci:composer-discipline,
+  G51 ci:resume-toggle — ALL LANDED. Spec-03 person-page fetch rebuild (task_c4fbba7e)
+  NOT landed (crm/[id]/page.tsx still 717 lines, untouched since 450216c3) → Pain #4
+  builds SendPanel against the current page; the fetch rebuild stays chipped.
+- **Pain #3 measured baseline** (audit shell-ia.md §5.1/§14 + fresh verification):
+  nav items superuser **56 / 5 menus**, broker 30, report_viewer 17; **8 coexisting
+  nav systems**; ⌘K palette covers **4 of 56** destinations, is **double-mounted**
+  (two ⌘K listeners → stacked dialogs); hardcoded independent route lists in shell
+  components: **3** (buildAdminNav two-pass regroup, CrmMobileTabBar tab array,
+  ConsoleCommandPalette NAV array). `lib/admin/nav.ts buildNav(ctx)` exists (9 unit
+  tests) and is UNWIRED. None of the §B1 canonical tops exist as routes
+  (`/admin/inbox`, `/admin/prospecting`, `/admin/transactions`, `/admin/performance`).
+
+**D9 (Matt, micro-batch): locked 8 + Prospecting · ≈35-item superuser budget with
+children dropdowns · redirect-bridge every legacy route · mobile tabs stay
+Home/Inbox/People/Deals/Activity (annotated in the one config).**
+
+**Pain #3 pre-registered thresholds (written BEFORE building, from the measured
+baseline, tightened by D9):**
+1. **One nav source:** desktop top bar + mobile sheet + bottom tab bar + ⌘K palette
+   all render from `buildNav(ctx)` / the one DESTINATIONS config. Hardcoded
+   independent route lists in shell components: 3 → **0** (grep-proven).
+2. **Item count:** superuser 56 → **≤ 39** (D9 budget ≈35 + tolerance for the
+   Prospecting children), broker 30 → **≤ 25**. Counted from the rendered nav.
+3. **Zero role dead-ends:** every visible nav item, clicked as superuser AND as a
+   scoped broker in an authed browser vs the real DB, lands on a 200 page (no
+   access-denied bounce). Baseline: 6 audited dead-end classes.
+4. **Palette:** 4/56 → **100% of capability-visible nav destinations + children**;
+   exactly ONE ⌘K listener / ONE dialog (double-mount dead).
+5. **Mobile == desktop:** the sheet renders the same capability-filtered sections as
+   the desktop bar; tab bar = the D9.4 five, derived from the config.
+6. **Legacy routes:** zero deletions; the 4 missing §B1 canonical tops become
+   redirect-bridges to the live pages (old URLs keep working per D9.3).
+
 ## Session 2026-07-16 (rebuild v2) — Phase 0 reconciliation
 
 **Baselines @ `707a52a5` (HEAD == origin/main at session start):**
@@ -72,6 +114,85 @@ the local callback) or integration-tested against the real DB.
      inbox thread + person timeline; a 1:1 renders none.
 
 ## Shipped
+
+### Pain #3 — ONE nav, ONE IA (the shell pass) — DEMONSTRATED against the pre-registered thresholds
+
+The capability-projected nav (`lib/admin/nav.ts` DESTINATIONS + `buildNav`) is now
+THE source for every nav surface: desktop top bar, mobile hamburger sheet, phone
+bottom tab bar, and the ⌘K palette. The 200-line two-pass `buildAdminNav` regroup
+(the audited source of ≥4 dead-end regressions) is DELETED — `admin-nav.ts` is a
+thin adapter (`toShellSections(buildNav(ctx))` + `buildAdminMobileTabs`) carrying
+zero route literals. New gate **G52 `ci:admin-nav-source`** locks it: no consumer
+`/admin` href lists, every DESTINATIONS href resolves to a live page on disk, one
+palette mount.
+
+**Threshold results (all 6 MET; authed browser vs real DB, dev server):**
+1. **One source:** hardcoded route lists in shell components 3 → **0** (regroup
+   deleted; CrmMobileTabBar takes a `tabs` prop; palette takes `sections`).
+   Gate-proven (`ci:admin-nav-source` would fail the old shapes).
+2. **Item count:** superuser 56/5 menus → **39/8 destinations** (unit-locked);
+   broker 30 → **22**. Cut items stay reachable where live surfaces link them
+   (FAB: New contact + Compose; dashboard panels: Alerts & reports; CRM-settings
+   hub: Import; analytics ReportCatalog: Hot leads + Live visitors).
+3. **Zero role dead-ends:** as matt@ all 39 hrefs → 200 on their own page; as
+   paul@ (real broker session) all 22 → 200 INCLUDING the expireds detail row
+   (`/admin/expired-listings/20260424002209630735000000` renders — audited
+   dead-end class #2 killed by re-gating `expired-listings/layout.tsx` from
+   superuser to any-admin-except-report_viewer per spec 01 §13.3; report_viewer
+   still bounced, matching CMAs/BPO). No over-widening: paul@ navigating
+   `/admin/listings` still lands on `/admin/access-denied`.
+4. **Palette:** coverage 4/56 → **39/39 superuser, 22/22 broker** (fed the same
+   sections); ⌘K opens exactly ONE dialog (was two stacked), toggle-close proven
+   (`data-state="closed"`), zero "(brand admin)" labels.
+5. **Mobile == desktop:** sheet renders the same projected sections; tab bar =
+   the D9.4 five (Home/Inbox/People/Deals/Activity) derived from `tab`
+   annotations in the one config — verified live (aria-current on Inbox), and a
+   role lacking a surface loses the tab (report_viewer → Home only, unit-locked,
+   with a per-count grid class so a short bar renders full-width).
+6. **Legacy:** zero deletions; the 4 missing §B1 canonical tops
+   (`/admin/inbox`, `/admin/prospecting`, `/admin/transactions`,
+   `/admin/performance`) are live redirect bridges (browser-verified:
+   `/admin/inbox` → renders "My Inbox").
+
+**Capability-map corrections (nav must not lie):** `performance.view` +
+`content.listings` → superuser-only until specs 06/08 build the scoped
+broker pages (granting them now would render dead-ends into su-only
+`/admin/analytics` and `/admin/listings`); `settings.templates` +
+`settings.automations` → `['broker']` (pages are broker-accessible and both sat
+in every role's old nav — the cutover strips no daily broker surface); new caps
+`settings.profile` (['broker'], /admin/brokers), `settings.crm` (su),
+`settings.system` (su). **Deliberate broker menu reductions per LOCKED
+decisions, pages still URL-reachable (flag for Matt):** Newsletters + Ad links
+(A1: content.marketing = su), Commissions + Financials (D4), Signing + Sign-off
+(D1 e-sign park).
+
+**Adversarial review (3 foreground skeptics: role-access / client-behavior /
+gates-build) — 2 introduced regressions found, FIXED before commit:**
+- HIGH(UX): top-bar `sectionActive` wasn't longest-match → People double-lit
+  alongside Inbox/Settings on every `/admin/crm/*` route. Fixed with
+  `bestShellNavHref` (shared, in the one nav source) + regression test
+  (exactly-one-section-active over 7 routes); browser-proven on
+  `/admin/crm/inbox` (lit == ["Inbox"]).
+- MED(UX): `grid-cols-5` squished a 1-tab role's bar → per-count static class
+  map. Also hardened the gate's href regex (backticks) per review note.
+- Confirmed pre-existing, left + documented: a broker with NULL `broker_id`
+  would dead-end on Brokers (no such user exists; both real brokers carry ids).
+
+**Data-loss checklist (in writing):** (1) What data can this change write or
+delete? None — the change is nav projection + one layout gate + redirect
+bridges; zero mutations added. (2) Can any existing writer now write to the
+wrong place? No — no writer touched; the expired-listings layout change affects
+page RENDER access only (its mutating actions carry their own guards).
+(3) Worst-case failure? A mis-projected nav hides an item (recoverable by URL;
+nothing destructive). (4) Rollback? Single revert of the commit; no migration,
+no data shape change.
+
+**Baselines:** vitest 254 files/2,881 → 254/2,886 (5 net new: shell projection,
+mobile tabs, single-active regression; nav tests rewritten for the new shape),
+exit 0. Full `ci:gates` green including new G52 (chain output tailed to
+scratchpad gates-after.log); `ci:crm-mobile-track`'s Reporting/Workflows/
+Templates menu contract re-pointed at the one source (same contract, new file).
+tsc + esbuild clean.
 
 ### THE LITMUS (Pain #1, D8) — notification → pre-filled CMA kick-off — DONE (prod-build browser-demonstrated)
 

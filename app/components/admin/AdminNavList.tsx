@@ -68,6 +68,28 @@ export default function AdminNavList({ sections, onNavigate }: AdminNavListProps
   return (
     <nav className="flex flex-1 flex-col gap-1 p-3">
       {sections.map((section) => {
+        // A leaf destination (Home, Inbox) renders as a plain row — a collapse
+        // header wrapping a single item is pure chrome.
+        if (section.items.length === 1) {
+          const { href, label, icon } = section.items[0]
+          const isActive = isItemActive(href)
+          const Icon = ADMIN_NAV_ICONS[icon]
+          return (
+            <Link
+              key={section.label}
+              href={href}
+              onClick={onNavigate}
+              className={`flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
+                isActive
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <Icon className={`h-4 w-4 shrink-0 ${isActive ? '' : 'opacity-70'}`} aria-hidden />
+              {label}
+            </Link>
+          )
+        }
         const hasActive = section.items.some((i) => isItemActive(i.href))
         // SSR + first client paint use defaults only (localStorage is not
         // available on the server) — stored prefs apply after hydration.

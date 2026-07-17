@@ -51,7 +51,10 @@ import {
 } from 'lucide-react'
 import type { AdminIconName } from '@/app/components/admin/admin-nav'
 
-export const ADMIN_NAV_ICONS: Record<AdminIconName, ComponentType<{ className?: string }>> = {
+export const ADMIN_NAV_ICONS: Record<
+  AdminIconName,
+  ComponentType<{ className?: string; strokeWidth?: number; 'aria-hidden'?: boolean | 'true' | 'false' }>
+> = {
   dashboard: LayoutDashboard,
   inbox: Inbox,
   flame: Flame,

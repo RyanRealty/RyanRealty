@@ -63,6 +63,9 @@ export type Capability =
   // ── Settings ──
   | 'settings.account' // my settings + sign-out (everyone)
   | 'settings.team'
+  | 'settings.profile' // broker roster / own profile (/admin/brokers — page bounces report_viewer)
+  | 'settings.crm' // the CRM settings hub (/admin/crm/settings, superuser 19-card launchpad)
+  | 'settings.system' // system plumbing (/admin/sync, /admin/operations, /admin/crm/health)
   | 'settings.routing'
   | 'settings.automations'
   | 'settings.templates'
@@ -90,8 +93,13 @@ export const CAPABILITY_ROLES: Record<Capability, AdminRoleType[]> = {
   'people.view': ['broker'],
   'prospecting.view': ['broker'],
   'transactions.view': ['broker'],
-  'performance.view': ['broker', 'report_viewer'], // broker = scoped own-book (D3)
-  'content.view': ['broker'], // broker sees Content (blog/guides/listings); tabs gated below
+  // D3's end-state grants brokers a SCOPED own-book Performance overview — but that
+  // page doesn't exist yet (spec 06). The only Performance surface today is
+  // /admin/analytics, whose layout is superuser-only, so granting the capability now
+  // would render a nav item that dead-ends brokers (the exact RC5 defect). Spec 06
+  // re-grants ['broker','report_viewer'] when it lands the scoped page.
+  'performance.view': [],
+  'content.view': ['broker'], // broker sees Content (blog + guides per D3); other tabs gated below
   'settings.view': ['broker', 'report_viewer'],
   // Inbox
   'inbox.send': ['broker'],
@@ -109,10 +117,15 @@ export const CAPABILITY_ROLES: Record<Capability, AdminRoleType[]> = {
   // Performance
   'performance.financials': [], // superuser only (D3)
   // Content
-  'content.listings': ['broker'], // broker read-only at the page
+  // D3's end-state gives brokers READ-ONLY listings, but /admin/listings' layout is
+  // superuser-only today and the page has edit affordances — spec 08 builds the
+  // read-only view and re-grants ['broker']. Until then the nav must not show it.
+  'content.listings': [],
   'content.blog': ['broker'],
   'content.guides': ['broker'],
-  'content.datahealth': ['broker'],
+  // /admin/content/data-health does not exist yet (spec 08 builds it). No nav item
+  // references this capability until the route is real.
+  'content.datahealth': [],
   'content.site': [], // superuser only (RC5 public-site write security)
   'content.media': [],
   'content.communities': [],
@@ -120,9 +133,17 @@ export const CAPABILITY_ROLES: Record<Capability, AdminRoleType[]> = {
   // Settings
   'settings.account': ['broker', 'report_viewer'],
   'settings.team': [],
+  'settings.profile': ['broker'], // /admin/brokers allows broker+superuser (bounces report_viewer)
+  'settings.crm': [], // superuser only (crm/settings/page.tsx:43)
+  'settings.system': [], // superuser only (sync layout; operations is su-facing plumbing)
   'settings.routing': [],
-  'settings.automations': [],
-  'settings.templates': [],
+  // Templates + sequences pages are broker-accessible today (crm/settings/templates
+  // + crm/sequences self-gate to any CRM access; edit scope enforced in-page) and
+  // both sat in every role's nav before the capability rewire — preserving that
+  // access here so the one-nav cutover strips no daily broker surface. Spec 09 owns
+  // any future tightening.
+  'settings.automations': ['broker'],
+  'settings.templates': ['broker'],
   'settings.compliance': [],
   'settings.company': [],
   'settings.stages': [],

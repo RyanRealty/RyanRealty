@@ -6,7 +6,8 @@ import { safeRedirectPath } from '@/lib/auth/safeRedirect'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getCrmAccess } from '@/app/actions/crm'
 import { CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
-import { buildAdminNav } from '@/app/components/admin/admin-nav'
+import { buildAdminNav, buildAdminMobileTabs } from '@/app/components/admin/admin-nav'
+import type { AdminCapabilityContext } from '@/lib/admin/capabilities'
 import ConsoleShell from '@/components/console/ConsoleShell'
 import HelpProvider from '@/components/admin/help/HelpProvider'
 import { getHelpArticleIndex } from '@/lib/admin-help'
@@ -58,6 +59,17 @@ export default async function AdminProtectedLayout({
       ? 'All brokers · superuser'
       : adminRole.role
 
+  // The capability context the ONE nav source projects (lib/admin/nav.ts). No nav
+  // item is flag-gated (people.export has no nav entry), so the flags are static
+  // here — resolve the real admin_roles flags when a flag-gated consumer appears.
+  const capabilityCtx: AdminCapabilityContext = {
+    email: session.user.email ?? '',
+    role: adminRole.role,
+    brokerId: adminRole.brokerId,
+    brokerSlug: slug,
+    flags: { canExport: false, pauseLeads: false },
+  }
+
   return (
     <div className="console-root">
       <ConsoleShell
@@ -72,7 +84,8 @@ export default async function AdminProtectedLayout({
         }}
         brokerLabel={brokerLabel}
         brokerSlug={slug}
-        navSections={buildAdminNav(adminRole.role, adminRole.brokerId)}
+        navSections={buildAdminNav(capabilityCtx)}
+        tabs={buildAdminMobileTabs(capabilityCtx)}
       >
         {children}
       </ConsoleShell>

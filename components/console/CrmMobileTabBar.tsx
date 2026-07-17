@@ -4,58 +4,51 @@
  * CrmMobileTabBar — the Follow Up Boss–style bottom tab bar for phones.
  *
  * Matt directive 2026-06-26: the admin CRM must look + behave like the FUB iOS
- * app on mobile. FUB's signature is a fixed 5-tab bottom bar (Inbox / Activity /
- * Calendar / People / Deals) that turns the console into a thumb-reachable app.
- * We map those to the five daily CRM surfaces that already exist as routes.
+ * app on mobile — a fixed 5-tab bottom bar that turns the console into a
+ * thumb-reachable app. D9 (2026-07-17) keeps the tab set Home/Inbox/People/
+ * Deals/Activity, but the tabs now arrive as a PROP derived from the ONE
+ * capability-projected nav source (`buildAdminMobileTabs` — lib/admin/nav.ts
+ * `tab` annotations). This component carries no route list of its own.
  *
- * Lives inside ConsoleShell, shown only below lg (the desktop rail covers nav at
- * lg+). Token-pure so it inherits the neutral .console-root scope. The hamburger
- * Sheet still provides the FULL admin nav — this bar is the fast path.
+ * Lives inside ConsoleShell, shown only below lg (the desktop top nav covers
+ * lg+). Token-pure so it inherits the neutral .console-root scope. The
+ * hamburger Sheet still provides the FULL admin nav — this bar is the fast path.
  */
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Inbox, Users, Layers, Activity } from 'lucide-react'
+import type { MobileTab } from '@/app/components/admin/admin-nav'
+import { ADMIN_NAV_ICONS } from '@/app/components/admin/AdminNavIcons'
 import { cn } from '@/lib/utils'
 
-type Tab = {
-  href: string
-  label: string
-  icon: typeof Home
-  /** Extra path prefixes that should light this tab (e.g. the lead detail). */
-  also?: string[]
+/** Static class map so Tailwind sees every literal (no arbitrary values). */
+const TAB_GRID: Record<number, string> = {
+  1: 'grid-cols-1',
+  2: 'grid-cols-2',
+  3: 'grid-cols-3',
+  4: 'grid-cols-4',
+  5: 'grid-cols-5',
 }
 
-const TABS: Tab[] = [
-  { href: '/admin/broker-dashboard', label: 'Home', icon: Home },
-  { href: '/admin/crm/inbox', label: 'Inbox', icon: Inbox },
-  // The lead detail lives at /admin/crm/[id] (route consolidation 2026-07-15),
-  // so the People prefix match covers it — no `also` entry needed.
-  { href: '/admin/crm', label: 'People', icon: Users },
-  { href: '/admin/crm/deals', label: 'Deals', icon: Layers },
-  { href: '/admin/crm/activity', label: 'Activity', icon: Activity },
-]
-
-/** Longest-prefix match so /admin/crm/inbox lights Inbox, not People. */
-function activeHref(pathname: string): string {
-  // §29: Calendar + Tasks are menu-reached surfaces in this shell (the M2 tab
+/** Longest-prefix match so a nested route lights its owning tab, not a sibling. */
+function activeHref(pathname: string, tabs: MobileTab[]): string {
+  // §29: Calendar + Tasks are menu-reached surfaces in this shell (the D9.4 tab
   // set is Home/Inbox/People/Deals/Activity) — lighting People there via the
   // /admin/crm prefix would lie about where the user is. Nothing lights.
   if (/^\/admin\/crm\/(calendar|tasks)(\/|$)/.test(pathname)) return ''
   let best = ''
-  for (const t of TABS) {
-    const candidates = [t.href, ...(t.also ?? [])]
-    for (const c of candidates) {
-      const isMatch = pathname === c || pathname.startsWith(c + '/')
-      if (isMatch && c.length > best.length) best = t.href
-    }
+  for (const t of tabs) {
+    const isMatch = pathname === t.href || pathname.startsWith(t.href + '/')
+    if (isMatch && t.href.length > best.length) best = t.href
   }
   return best
 }
 
-export default function CrmMobileTabBar({ inboxUnread = 0 }: { inboxUnread?: number }) {
+export default function CrmMobileTabBar({ tabs, inboxUnread = 0 }: { tabs: MobileTab[]; inboxUnread?: number }) {
   const pathname = usePathname() ?? ''
-  const active = activeHref(pathname)
+  const active = activeHref(pathname, tabs)
+
+  if (tabs.length === 0) return null
 
   // Matt directive 2026-07-02 (mobile punch list #1): the bar renders on EVERY
   // mobile CRM route, INCLUDING pushed detail views — "I do not have the bottom
@@ -73,12 +66,14 @@ export default function CrmMobileTabBar({ inboxUnread = 0 }: { inboxUnread?: num
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       {/* h-14 is load-bearing: --crm-dock-offset (console-theme.css) assumes
-          the bar content is exactly 3.5rem tall. */}
-      <ul className="grid h-14 grid-cols-5">
-        {TABS.map((t) => {
+          the bar content is exactly 3.5rem tall. Column count tracks the tab
+          count (a role holding fewer surfaces gets fewer, full-width tabs —
+          grid-cols-5 with one tab squished it into the left fifth). */}
+      <ul className={cn('grid h-14', TAB_GRID[tabs.length] ?? 'grid-cols-5')}>
+        {tabs.map((t) => {
           const isActive = active === t.href
-          const Icon = t.icon
-          const showBadge = t.href === '/admin/crm/inbox' && inboxUnread > 0
+          const Icon = ADMIN_NAV_ICONS[t.icon]
+          const showBadge = t.badge === 'inbox' && inboxUnread > 0
           return (
             <li key={t.href}>
               <Link

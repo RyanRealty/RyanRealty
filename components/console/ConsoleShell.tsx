@@ -17,11 +17,11 @@ import { useState, Suspense } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { LogOut } from 'lucide-react'
 import { signOut } from '@/app/actions/auth'
-import type { AdminNavSection } from '@/app/components/admin/admin-nav'
+import type { AdminNavSection, MobileTab } from '@/app/components/admin/admin-nav'
 import AdminNavList from '@/app/components/admin/AdminNavList'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
-import ConsoleCommandPalette from '@/components/console/ConsoleCommandPalette'
+import ConsoleCommandPalette, { ConsoleCommandPaletteTrigger } from '@/components/console/ConsoleCommandPalette'
 import ConsoleQuickAction from '@/components/console/ConsoleQuickAction'
 import CrmMobileTabBar from '@/components/console/CrmMobileTabBar'
 import KeyboardInsetSync from '@/components/console/KeyboardInsetSync'
@@ -50,6 +50,7 @@ export default function ConsoleShell({
   brokerLabel,
   brokerSlug,
   navSections,
+  tabs,
   inboxUnread = 0,
   children,
 }: {
@@ -57,10 +58,15 @@ export default function ConsoleShell({
   brokerLabel: string
   brokerSlug?: string | null
   navSections: AdminNavSection[]
+  /** Phone bottom tabs, derived from the same one nav source (buildAdminMobileTabs). */
+  tabs: MobileTab[]
   inboxUnread?: number
   children: React.ReactNode
 }) {
   const [open, setOpen] = useState(false)
+  // The ONE command-palette instance (audit §9.2: the old per-header mounts
+  // registered two ⌘K listeners and stacked two dialogs).
+  const [paletteOpen, setPaletteOpen] = useState(false)
   const initials = (user.fullName ?? user.email ?? '?').trim().charAt(0).toUpperCase()
   const pathname = usePathname() ?? ''
   const router = useRouter()
@@ -77,7 +83,7 @@ export default function ConsoleShell({
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       {/* Desktop: FUB-style dark horizontal top nav (lg+) */}
-      <ConsoleTopNav sections={navSections} user={user} />
+      <ConsoleTopNav sections={navSections} user={user} onOpenPalette={() => setPaletteOpen(true)} />
 
       {/* Mobile / tablet header (< lg) — hamburger + logo + search + avatar */}
       <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border bg-background/90 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/75 sm:px-5 lg:hidden">
@@ -102,7 +108,7 @@ export default function ConsoleShell({
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          <ConsoleCommandPalette />
+          <ConsoleCommandPaletteTrigger onOpen={() => setPaletteOpen(true)} />
           {user.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={user.avatarUrl} alt="" title={brokerLabel} className="h-8 w-8 rounded-full object-cover object-top" referrerPolicy="no-referrer" />
@@ -118,8 +124,12 @@ export default function ConsoleShell({
           Lifted above the mobile tab bar on phones. */}
       <ConsoleQuickAction />
 
-      {/* FUB-style bottom tab bar — phones only (desktop rail covers nav at lg+) */}
-      <CrmMobileTabBar inboxUnread={inboxUnread} />
+      {/* FUB-style bottom tab bar — phones only (desktop top nav covers lg+).
+          Tabs derive from the one nav source (D9.4). */}
+      <CrmMobileTabBar tabs={tabs} inboxUnread={inboxUnread} />
+
+      {/* THE command palette — one instance, one ⌘K listener, full nav coverage. */}
+      <ConsoleCommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} sections={navSections} />
 
       {/* Soft-keyboard tracking (--kb-inset / [data-kb-open]) — the tab bar,
           FABs, and bottom-docked composers all key off it. */}

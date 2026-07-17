@@ -63,8 +63,12 @@ const SHIPPED = [
     mustNot: [/isPushedDetailPath/],
   },
   {
-    id: 'Menu — CRM group carries Reporting/Workflows/Templates',
-    file: 'app/components/admin/admin-nav.ts',
+    id: 'Menu — the nav carries Reporting/Workflows/Templates',
+    // 2026-07-17 (Pain #3): the nav source moved from admin-nav.ts (deleted
+    // two-pass regroup) to the capability-projected lib/admin/nav.ts
+    // DESTINATIONS. Same contract: these three surfaces stay menu-reachable
+    // (People · Reporting, Settings · Workflows, Settings · Templates).
+    file: 'lib/admin/nav.ts',
     must: [/\/admin\/crm\/reporting/, /\/admin\/crm\/sequences/, /\/admin\/crm\/settings\/templates/],
   },
   {

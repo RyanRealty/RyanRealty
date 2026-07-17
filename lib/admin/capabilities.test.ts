@@ -5,7 +5,7 @@ import {
   ALL_CAPABILITIES,
   type AdminCapabilityContext,
 } from '@/lib/admin/capabilities'
-import { buildNav, DESTINATIONS } from '@/lib/admin/nav'
+import { buildNav, DESTINATIONS, toShellSections, buildMobileTabs, bestShellNavHref } from '@/lib/admin/nav'
 import type { AdminRoleType } from '@/app/actions/admin-roles'
 
 function ctx(role: AdminRoleType, canExport = true): AdminCapabilityContext {
@@ -29,23 +29,32 @@ describe('capability model', () => {
     expect(hasCapability(b, 'people.view')).toBe(true)
     expect(hasCapability(b, 'inbox.send')).toBe(true)
     expect(hasCapability(b, 'send.deliverable')).toBe(true)
-    expect(hasCapability(b, 'performance.view')).toBe(true) // scoped own-book (D3)
+    expect(hasCapability(b, 'settings.templates')).toBe(true) // daily messaging surface, page allows
+    expect(hasCapability(b, 'settings.automations')).toBe(true)
+    expect(hasCapability(b, 'settings.profile')).toBe(true) // /admin/brokers allows brokers
     // superuser-only
+    // performance.view is su-only until spec 06 lands the scoped own-book page —
+    // /admin/analytics is superuser-gated, so granting it would nav-dead-end brokers.
+    expect(hasCapability(b, 'performance.view')).toBe(false)
+    expect(hasCapability(b, 'content.listings')).toBe(false) // su-only until spec 08's read-only page
     expect(hasCapability(b, 'performance.financials')).toBe(false)
     expect(hasCapability(b, 'financials.view')).toBe(false)
     expect(hasCapability(b, 'commissions.view')).toBe(false) // brokers see own rows via scope (D4)
     expect(hasCapability(b, 'content.site')).toBe(false) // public-site write (RC5)
     expect(hasCapability(b, 'settings.team')).toBe(false)
+    expect(hasCapability(b, 'settings.crm')).toBe(false)
+    expect(hasCapability(b, 'settings.system')).toBe(false)
     expect(hasCapability(b, 'people.import')).toBe(false)
   })
 
   it('report_viewer is read-only numbers only', () => {
     const r = ctx('report_viewer')
     expect(hasCapability(r, 'today.view')).toBe(true)
-    expect(hasCapability(r, 'performance.view')).toBe(true)
     expect(hasCapability(r, 'settings.account')).toBe(true)
+    expect(hasCapability(r, 'performance.view')).toBe(false) // until spec 06 (su-only page today)
     expect(hasCapability(r, 'people.view')).toBe(false)
     expect(hasCapability(r, 'inbox.view')).toBe(false)
+    expect(hasCapability(r, 'settings.profile')).toBe(false) // /admin/brokers bounces report_viewer
   })
 
   it('can_export flag gates people.export for a broker', () => {
@@ -83,9 +92,12 @@ describe('nav generator projects the capability map', () => {
     for (const s of nav) for (const c of s.children) expect(hasCapability(ctx('broker'), c.capability)).toBe(true)
   })
 
-  it('report_viewer reaches only real pages (Today, Performance, Settings)', () => {
+  it('report_viewer reaches only real pages (Home, Settings)', () => {
     const nav = buildNav(ctx('report_viewer'))
-    expect(nav.map((s) => s.key).sort()).toEqual(['performance', 'settings', 'today'])
+    expect(nav.map((s) => s.key).sort()).toEqual(['home', 'settings'])
+    // …and its Settings section carries only My settings (the account page).
+    const settings = nav.find((s) => s.key === 'settings')!
+    expect(settings.children.map((c) => c.label)).toEqual(['My settings'])
   })
 
   it('every destination + child capability is a real enum member', () => {
@@ -94,5 +106,63 @@ describe('nav generator projects the capability map', () => {
       expect(set.has(d.capability)).toBe(true)
       for (const c of d.children ?? []) expect(set.has(c.capability)).toBe(true)
     }
+  })
+})
+
+describe('shell projection (one nav source for every surface)', () => {
+  it('renders the D9.2 budget: 39 superuser items, 22 broker items (was 56/30)', () => {
+    const count = (role: AdminRoleType) =>
+      toShellSections(buildNav(ctx(role))).reduce((n, s) => n + s.items.length, 0)
+    expect(count('superuser')).toBe(39)
+    expect(count('broker')).toBe(22)
+  })
+
+  it('leaf destinations render as single items; hubs as their children', () => {
+    const sections = toShellSections(buildNav(ctx('superuser')))
+    const home = sections.find((s) => s.label === 'Home')!
+    expect(home.items).toEqual([{ label: 'Home', href: '/admin/broker-dashboard', icon: 'dashboard' as const }])
+    const people = sections.find((s) => s.label === 'People')!
+    expect(people.items.map((i) => i.label)).toContain('Pipeline')
+    expect(people.items.map((i) => i.label)).not.toContain('People')
+  })
+
+  it('mobile tabs are the D9.4 five for superuser AND broker, from the annotations', () => {
+    for (const role of ['superuser', 'broker'] as const) {
+      const tabs = buildMobileTabs(buildNav(ctx(role)))
+      expect(tabs.map((t) => t.label)).toEqual(['Home', 'Inbox', 'People', 'Deals', 'Activity'])
+      expect(tabs.map((t) => t.href)).toEqual([
+        '/admin/broker-dashboard',
+        '/admin/crm/inbox',
+        '/admin/crm',
+        '/admin/crm/deals',
+        '/admin/crm/activity',
+      ])
+      expect(tabs.find((t) => t.label === 'Inbox')?.badge).toBe('inbox')
+    }
+  })
+
+  it('a role missing a tab surface loses the tab, never gets a dead one', () => {
+    const tabs = buildMobileTabs(buildNav(ctx('report_viewer')))
+    expect(tabs.map((t) => t.label)).toEqual(['Home'])
+  })
+
+  it('exactly ONE top-bar section lights per route (longest-match, no double-highlight)', () => {
+    // Regression (adversarial review 2026-07-17): People carries the bare
+    // /admin/crm, so a per-section prefix test lit People ALONGSIDE Inbox on
+    // /admin/crm/inbox and alongside Settings on /admin/crm/settings/*.
+    const sections = toShellSections(buildNav(ctx('superuser')))
+    const activeSections = (pathname: string) => {
+      const best = bestShellNavHref(pathname, sections)
+      return sections
+        .filter((s) => best !== '' && s.items.some((i) => i.href.split('?')[0] === best))
+        .map((s) => s.label)
+    }
+    expect(activeSections('/admin/crm/inbox')).toEqual(['Inbox'])
+    expect(activeSections('/admin/crm/settings/templates')).toEqual(['Settings'])
+    expect(activeSections('/admin/crm/sequences')).toEqual(['Settings'])
+    expect(activeSections('/admin/crm/57297')).toEqual(['People']) // lead detail → People
+    expect(activeSections('/admin/crm/deals')).toEqual(['People']) // pipeline, NOT Transactions
+    expect(activeSections('/admin/broker-dashboard')).toEqual(['Home'])
+    expect(activeSections('/admin/help')).toEqual([]) // non-nav route lights nothing
   })
 })

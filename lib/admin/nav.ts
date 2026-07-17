@@ -1,4 +1,4 @@
-import type { AdminIconName } from '@/app/components/admin/admin-nav'
+import type { AdminIconName, AdminNavItem, AdminNavSection } from '@/app/components/admin/admin-nav'
 import {
   hasCapability,
   type AdminCapabilityContext,
@@ -6,32 +6,57 @@ import {
 } from '@/lib/admin/capabilities'
 
 /**
- * The nav generator — a PROJECTION of the capability map (admin rebuild
- * Foundation, spec 01 §5). Kills the 6 dead-end classes of RC5: an item exists iff
- * the caller holds its capability, and that is the SAME capability symbol the
- * destination page guards on (`requireAdminPage`). Nav visibility and access can
- * therefore never disagree — there is no imperative "second pass" that bypasses
- * role gates (the bug that regressed ≥4 times in the old buildAdminNav).
+ * THE one admin nav source — a PROJECTION of the capability map (admin rebuild
+ * spec 01 §5, D9 2026-07-17). An item exists iff the caller holds its capability,
+ * and every href points at a LIVE page whose access allows every role the
+ * capability grants (verified against the per-page gates 2026-07-17) — so nav
+ * visibility and page access can never disagree. There is no imperative "second
+ * pass" that bypasses role gates (the bug that regressed ≥4 times in the old
+ * buildAdminNav).
  *
- * Routes are the canonical, flat set from
- * docs/plans/ADMIN_REBUILD/01-DECISIONS-AND-RECONCILIATION §B1 (lowest blast
- * radius). Some destinations are built by later specs; this generator is pure data
- * + a filter, consumed by the shell — pointing at a not-yet-built route is inert
- * until the shell wires it, and ci:admin-authz (advisory first) flags orphans.
+ * Consumed by EVERY nav surface: the desktop top bar + the mobile sheet (via
+ * `toShellSections`), the phone bottom tab bar (via `buildMobileTabs`, reading
+ * the inline `tab` annotations — D9.4: Home/Inbox/People/Deals/Activity), and
+ * the ⌘K command palette (fed the same shell sections). Enforced by
+ * scripts/check-admin-nav-source.mjs (ci:admin-nav-source): no consumer may
+ * carry its own /admin href list, and every href here must resolve to a real
+ * page under app/admin/(protected)/.
+ *
+ * Pages not in the nav stay reachable where a live surface links them (FAB
+ * quick actions, hub catalogs, settings cards) — the D9.2 budget is ≈35
+ * superuser items; this table renders 39 superuser / 22 broker (was 56 / 30).
  */
+
+/** Phone bottom-tab annotation — the D9.4 five carry these. */
+export interface MobileTabAnnotation {
+  /** Tab order, 1-based left→right. */
+  order: number
+  /** Tab label override (menu label used when absent). */
+  label?: string
+  /** Tab icon override (menu icon used when absent). */
+  icon?: AdminIconName
+  /** Which live badge the tab renders ('inbox' = unread count). */
+  badge?: 'inbox'
+}
 
 export interface NavChild {
   label: string
   href: string
+  icon: AdminIconName
   capability: Capability
+  tab?: MobileTabAnnotation
 }
 
 export interface NavDestination {
   key: string
   label: string
+  /** The destination's landing page (metadata; menus render `children` when present). */
   href: string
   icon: AdminIconName
   capability: Capability
+  /** Mobile-sheet section starts expanded. */
+  defaultOpen: boolean
+  tab?: MobileTabAnnotation
   children?: NavChild[]
 }
 
@@ -41,56 +66,111 @@ export interface NavSection {
   label: string
   href: string
   icon: AdminIconName
+  capability: Capability
+  defaultOpen: boolean
+  tab?: MobileTabAnnotation
   children: NavChild[]
 }
 
+/** One phone bottom tab, derived from the annotations above. */
+export interface MobileTab {
+  href: string
+  label: string
+  icon: AdminIconName
+  badge?: 'inbox'
+}
+
 /**
- * The 8-destination IA (was 56 superuser / 30 broker / 17 report_viewer across 5
- * menus). Every entry references the same Capability constant its page guards on.
+ * The 8-destination IA (D9.1: Home · Inbox · People · Prospecting · Transactions ·
+ * Performance · Content · Settings — was 56 superuser items across 5 menus).
+ * Every entry references the same Capability constant its page's access implies.
+ * Canonical §B1 routes that don't exist yet (/admin/inbox, /admin/prospecting,
+ * /admin/transactions, /admin/performance) are thin redirect bridges to these
+ * live hrefs, so spec-era deep links work while menus skip the redirect hop.
  */
 export const DESTINATIONS: NavDestination[] = [
-  { key: 'today', label: 'Today', href: '/admin', icon: 'dashboard', capability: 'today.view' },
-  { key: 'inbox', label: 'Inbox', href: '/admin/inbox', icon: 'inbox', capability: 'inbox.view' },
+  {
+    key: 'home',
+    label: 'Home',
+    href: '/admin/broker-dashboard',
+    icon: 'dashboard',
+    capability: 'today.view',
+    defaultOpen: true,
+    tab: { order: 1, icon: 'home' },
+  },
+  {
+    key: 'inbox',
+    label: 'Inbox',
+    href: '/admin/crm/inbox',
+    icon: 'inbox',
+    capability: 'inbox.view',
+    defaultOpen: true,
+    tab: { order: 2, badge: 'inbox' },
+  },
   {
     key: 'people',
     label: 'People',
     href: '/admin/crm',
     icon: 'users',
     capability: 'people.view',
+    defaultOpen: true,
     children: [
-      { label: 'Contacts', href: '/admin/crm', capability: 'people.view' },
-      { label: 'Pipeline', href: '/admin/crm/deals', capability: 'people.view' },
-      { label: 'Tasks', href: '/admin/crm/tasks', capability: 'tasks.use' },
-      { label: 'Calendar', href: '/admin/crm/calendar', capability: 'calendar.use' },
+      { label: 'Contacts', href: '/admin/crm', icon: 'users', capability: 'people.view', tab: { order: 3, label: 'People' } },
+      { label: 'Pipeline', href: '/admin/crm/deals', icon: 'layers', capability: 'people.view', tab: { order: 4, label: 'Deals' } },
+      { label: 'Activity', href: '/admin/crm/activity', icon: 'activity', capability: 'people.view', tab: { order: 5 } },
+      { label: 'Tasks', href: '/admin/crm/tasks', icon: 'list-todo', capability: 'tasks.use' },
+      { label: 'Calendar', href: '/admin/crm/calendar', icon: 'calendar', capability: 'calendar.use' },
+      { label: 'Approvals', href: '/admin/crm/approvals', icon: 'clipboard-check', capability: 'people.view' },
+      { label: 'Reporting', href: '/admin/crm/reporting', icon: 'bar-chart', capability: 'people.view' },
+      // Cut from the menu, still linked live: New contact (FAB quick action),
+      // Compose email (FAB + campaigns page), Alerts & reports (dashboard
+      // delivery panel + per-contact panel), Import (CRM settings hub + people list).
     ],
   },
   {
     key: 'prospecting',
     label: 'Prospecting',
-    href: '/admin/prospecting',
+    href: '/admin/expireds',
     icon: 'target',
     capability: 'prospecting.view',
+    defaultOpen: true,
+    children: [
+      { label: 'Expireds', href: '/admin/expireds', icon: 'clock', capability: 'prospecting.view' },
+      { label: 'Expired outreach', href: '/admin/expired-outreach', icon: 'user-plus', capability: 'prospecting.view' },
+      { label: 'FSBOs', href: '/admin/fsbos', icon: 'home', capability: 'prospecting.view' },
+      { label: 'CMAs', href: '/admin/cmas', icon: 'file-search', capability: 'prospecting.view' },
+      { label: 'Price opinions', href: '/admin/bpo', icon: 'gauge', capability: 'prospecting.view' },
+    ],
   },
   {
     key: 'transactions',
     label: 'Transactions',
-    href: '/admin/transactions',
+    href: '/admin/deals',
     icon: 'handshake',
     capability: 'transactions.view',
-    // e-sign Signing + Sign-off are PARKED for v1 (D1) — not in the nav.
+    defaultOpen: true,
+    // e-sign Signing + Sign-off are PARKED for v1 (D1) — pages stay live at
+    // their URLs, deliberately un-navigated.
     children: [
-      { label: 'Deals', href: '/admin/transactions', capability: 'transactions.view' },
-      { label: 'Commissions', href: '/admin/transactions/commissions', capability: 'commissions.view' },
-      { label: 'Financials', href: '/admin/transactions/financials', capability: 'financials.view' },
-      { label: 'Forms', href: '/admin/transactions/forms', capability: 'transactions.edit' },
+      { label: 'Deals', href: '/admin/deals', icon: 'handshake', capability: 'transactions.view' },
+      { label: 'Commissions', href: '/admin/commissions', icon: 'dollar', capability: 'commissions.view' },
+      { label: 'Financials', href: '/admin/financials', icon: 'wallet', capability: 'financials.view' },
+      { label: 'Forms', href: '/admin/forms', icon: 'file-text', capability: 'transactions.edit' },
     ],
   },
   {
     key: 'performance',
     label: 'Performance',
-    href: '/admin/performance',
+    href: '/admin/analytics',
     icon: 'bar-chart',
     capability: 'performance.view',
+    defaultOpen: false,
+    children: [
+      { label: 'Overview', href: '/admin/analytics', icon: 'bar-chart', capability: 'performance.view' },
+      { label: 'Marketing approvals', href: '/admin/approval-queue', icon: 'badge-check', capability: 'approvals.act' },
+      // Hot leads, Live visitors, and the 9 report children live in the
+      // /admin/analytics ReportCatalog hub — hub-and-spoke, not spoke-list (D9.2).
+    ],
   },
   {
     key: 'content',
@@ -98,15 +178,17 @@ export const DESTINATIONS: NavDestination[] = [
     href: '/admin/listings',
     icon: 'files',
     capability: 'content.view',
+    defaultOpen: false,
     children: [
-      { label: 'Listings', href: '/admin/listings', capability: 'content.listings' },
-      { label: 'Blog', href: '/admin/blog', capability: 'content.blog' },
-      { label: 'Guides', href: '/admin/guides', capability: 'content.guides' },
-      { label: 'Communities', href: '/admin/communities', capability: 'content.communities' },
-      { label: 'Media', href: '/admin/media', capability: 'content.media' },
-      { label: 'Site pages', href: '/admin/site', capability: 'content.site' },
-      { label: 'Marketing', href: '/admin/newsletters', capability: 'content.marketing' },
-      { label: 'Data health', href: '/admin/content/data-health', capability: 'content.datahealth' },
+      { label: 'Listings', href: '/admin/listings', icon: 'home', capability: 'content.listings' },
+      { label: 'Blog', href: '/admin/blog', icon: 'file-text', capability: 'content.blog' },
+      { label: 'Guides', href: '/admin/guides', icon: 'files', capability: 'content.guides' },
+      { label: 'Geography', href: '/admin/geo', icon: 'map', capability: 'content.communities' },
+      { label: 'Media library', href: '/admin/media', icon: 'folder-open', capability: 'content.media' },
+      { label: 'Site pages', href: '/admin/site-pages', icon: 'files', capability: 'content.site' },
+      { label: 'Newsletters', href: '/admin/newsletters', icon: 'mail', capability: 'content.marketing' },
+      { label: 'Email campaigns', href: '/admin/email/campaigns', icon: 'mail', capability: 'content.marketing' },
+      { label: 'Ad links', href: '/admin/broker-links', icon: 'megaphone', capability: 'content.marketing' },
     ],
   },
   {
@@ -115,18 +197,18 @@ export const DESTINATIONS: NavDestination[] = [
     href: '/admin/settings',
     icon: 'user-cog',
     capability: 'settings.view',
+    defaultOpen: false,
     children: [
-      { label: 'My account', href: '/admin/settings', capability: 'settings.account' },
-      { label: 'Brokers', href: '/admin/settings/brokers', capability: 'settings.team' },
-      { label: 'Routing', href: '/admin/settings/routing', capability: 'settings.routing' },
-      { label: 'Automations', href: '/admin/settings/automations', capability: 'settings.automations' },
-      { label: 'Templates', href: '/admin/settings/templates', capability: 'settings.templates' },
-      { label: 'Stages', href: '/admin/settings/stages', capability: 'settings.stages' },
-      { label: 'Appointments', href: '/admin/settings/appointments', capability: 'settings.appointments' },
-      { label: 'Compliance', href: '/admin/settings/compliance', capability: 'settings.compliance' },
-      { label: 'Company', href: '/admin/settings/company', capability: 'settings.company' },
-      { label: 'Reports', href: '/admin/settings/reports', capability: 'settings.reports' },
-      { label: 'Audit log', href: '/admin/settings/audit', capability: 'audit.view' },
+      { label: 'My settings', href: '/admin/settings', icon: 'user-cog', capability: 'settings.account' },
+      { label: 'Templates', href: '/admin/crm/settings/templates', icon: 'file-text', capability: 'settings.templates' },
+      { label: 'Workflows', href: '/admin/crm/sequences', icon: 'zap', capability: 'settings.automations' },
+      { label: 'CRM settings', href: '/admin/crm/settings', icon: 'gauge', capability: 'settings.crm' },
+      { label: 'Brokers', href: '/admin/brokers', icon: 'user', capability: 'settings.profile' },
+      { label: 'Site users', href: '/admin/users', icon: 'users', capability: 'settings.team' },
+      { label: 'Audit log', href: '/admin/audit-log', icon: 'scroll-text', capability: 'audit.view' },
+      { label: 'Operations', href: '/admin/operations', icon: 'gauge', capability: 'settings.system' },
+      { label: 'System health', href: '/admin/sync', icon: 'refresh', capability: 'settings.system' },
+      { label: 'CRM health', href: '/admin/crm/health', icon: 'activity', capability: 'settings.system' },
     ],
   },
 ]
@@ -143,11 +225,65 @@ export function buildNav(ctx: AdminCapabilityContext): NavSection[] {
     label: d.label,
     href: d.href,
     icon: d.icon,
+    capability: d.capability,
+    defaultOpen: d.defaultOpen,
+    tab: d.tab,
     children: (d.children ?? []).filter((c) => hasCapability(ctx, c.capability)),
   }))
 }
 
-/** The first N destinations for the phone bottom tab bar (derived, not hardcoded). */
-export function tabBarDestinations(sections: NavSection[], n = 5): NavSection[] {
-  return sections.slice(0, n)
+/**
+ * The shell render shape: one AdminNavSection per destination. A destination
+ * with children renders them as its items (the hub is its own first child where
+ * it belongs in the menu); a leaf destination renders itself as the single item
+ * (the top bar shows it as a direct link, the sheet as a plain row).
+ */
+export function toShellSections(sections: NavSection[]): AdminNavSection[] {
+  return sections
+    .map((s) => ({
+      label: s.label,
+      defaultOpen: s.defaultOpen,
+      items:
+        s.children.length > 0
+          ? s.children.map(({ label, href, icon }): AdminNavItem => ({ label, href, icon }))
+          : [{ label: s.label, href: s.href, icon: s.icon }],
+    }))
+    .filter((s) => s.items.length > 0)
+}
+
+/**
+ * The phone bottom tab bar, derived from the `tab` annotations (D9.4:
+ * Home/Inbox/People/Deals/Activity) — capability-filtered because it walks the
+ * ALREADY-projected sections, so a role lacking a surface never gets its tab.
+ */
+/**
+ * Longest-match active resolution across the WHOLE shell nav. With Inbox
+ * (/admin/crm/inbox) and several Settings children (/admin/crm/settings…) split
+ * into their own destinations while People keeps the bare /admin/crm, a naive
+ * per-section prefix test double-highlights two menus on every /admin/crm/*
+ * route — only the section owning the LONGEST matching item href may light.
+ */
+export function bestShellNavHref(pathname: string, sections: AdminNavSection[]): string {
+  let best = ''
+  for (const s of sections) {
+    for (const i of s.items) {
+      const base = i.href.split('?')[0]
+      if ((pathname === base || pathname.startsWith(base + '/')) && base.length > best.length) best = base
+    }
+  }
+  return best
+}
+
+export function buildMobileTabs(sections: NavSection[]): MobileTab[] {
+  const tabs: Array<MobileTab & { order: number }> = []
+  for (const s of sections) {
+    if (s.tab) tabs.push({ href: s.href, label: s.tab.label ?? s.label, icon: s.tab.icon ?? s.icon, badge: s.tab.badge, order: s.tab.order })
+    for (const c of s.children) {
+      if (c.tab) tabs.push({ href: c.href, label: c.tab.label ?? c.label, icon: c.tab.icon ?? c.icon, badge: c.tab.badge, order: c.tab.order })
+    }
+  }
+  return tabs
+    .sort((a, b) => a.order - b.order)
+    .slice(0, 5)
+    .map(({ href, label, icon, badge }) => ({ href, label, icon, badge }))
 }

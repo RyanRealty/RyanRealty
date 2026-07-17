@@ -19,6 +19,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { ChevronDown, LogOut } from 'lucide-react'
 import type { AdminNavSection } from '@/app/components/admin/admin-nav'
+import { bestShellNavHref } from '@/lib/admin/nav'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -27,14 +28,20 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
-import ConsoleCommandPalette from '@/components/console/ConsoleCommandPalette'
+import { ConsoleCommandPaletteTrigger } from '@/components/console/ConsoleCommandPalette'
 import { signOut } from '@/app/actions/auth'
 import { cn } from '@/lib/utils'
 
 const NAVY = '#102742'
 
-function sectionActive(pathname: string, section: AdminNavSection): boolean {
-  return section.items.some((i) => pathname === i.href || pathname.startsWith(i.href + '/'))
+/**
+ * Longest-match-wins across the WHOLE nav (bestShellNavHref): a section lights
+ * only when it owns the most specific matching item. A per-section prefix test
+ * double-highlighted People alongside Inbox/Settings on every /admin/crm/*
+ * route (People carries the bare /admin/crm).
+ */
+function sectionActive(section: AdminNavSection, best: string): boolean {
+  return best !== '' && section.items.some((i) => i.href.split('?')[0] === best)
 }
 
 const itemClass =
@@ -43,11 +50,15 @@ const itemClass =
 export default function ConsoleTopNav({
   sections,
   user,
+  onOpenPalette,
 }: {
   sections: AdminNavSection[]
   user: { email: string; fullName: string | null; avatarUrl: string | null }
+  /** Opens the ONE ConsoleCommandPalette instance ConsoleShell owns (audit §9.2). */
+  onOpenPalette: () => void
 }) {
   const pathname = usePathname() ?? ''
+  const bestHref = bestShellNavHref(pathname, sections)
   const initials = (user.fullName ?? user.email ?? '?').trim().charAt(0).toUpperCase()
   const router = useRouter()
   async function handleSignOut() {
@@ -68,7 +79,7 @@ export default function ConsoleTopNav({
       </Link>
 
       {sections.map((s) => {
-        const active = sectionActive(pathname, s)
+        const active = sectionActive(s, bestHref)
         if (s.items.length === 1) {
           return (
             <Link
@@ -99,7 +110,7 @@ export default function ConsoleTopNav({
 
       <div className="ml-auto flex items-center gap-2">
         <div className="w-64 [&_button]:bg-white/10 [&_button]:text-white/70 [&_button]:hover:bg-white/15">
-          <ConsoleCommandPalette />
+          <ConsoleCommandPaletteTrigger onOpen={onOpenPalette} />
         </div>
         <Link
           href="/"

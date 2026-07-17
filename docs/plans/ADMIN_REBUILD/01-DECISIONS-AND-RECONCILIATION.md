@@ -264,6 +264,19 @@ zero manual entry beyond confirming the resolved lead + address. Mirror:
 `brokers` table via spec 09's `getBrokerRegistry`; the 5 hardcoded maps are removed so
 onboarding a broker is one settings screen.
 
+**D9 · Nav / IA shape (2026-07-17, Pain-#3 micro-batch — LOCKED, Matt's answers).**
+(1) **Top-level IA: the locked 8 + Prospecting** — Home · Inbox · People ·
+Prospecting · Transactions · Performance · Content · Settings. Prospecting points at
+the live Expireds/FSBO dashboards until spec 07 builds its hub. (2) **Superuser
+nav-item budget ≈35**: destinations may carry capability-gated children dropdowns
+(People/Transactions/Content/Settings); everything deeper reachable inside hub pages
++ the ⌘K palette. (3) **Old-route policy: redirect-bridge every legacy route** —
+when a canonical route supersedes a legacy one, the legacy URL 30x-redirects; nothing
+404s. This session only ADDS bridges (delete pass stays spec 11's). (4) **Mobile
+bottom tabs stay Home/Inbox/People/Deals/Activity** — the current FUB-parity set,
+now ANNOTATED in the one nav config (derived from it, not hardcoded).
+Mirror: `.auto-memory/decisions_nav_ia_2026-07-17.md`.
+
 ---
 
 ## E. Known cleanup (mechanical, at build time)

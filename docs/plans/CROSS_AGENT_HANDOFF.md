@@ -1,4 +1,44 @@
-> **NEWEST, START HERE: the CMA VERSION-CHAIN block immediately below (2026-07-17 PM).** Prior: the ADMIN-REBUILD v2 LITMUS block (2026-07-17 AM), then RC1 (2026-07-16).
+> **NEWEST, START HERE: the ONE-NAV block immediately below (2026-07-17 eve).** Prior: CMA VERSION-CHAIN (2026-07-17 PM), the ADMIN-REBUILD v2 LITMUS block (2026-07-17 AM), then RC1 (2026-07-16).
+
+# ADMIN ONE-NAV CUTOVER — Pain #3 SHIPPED (2026-07-17 eve, Claude Code)
+
+**The admin nav is now ONE capability-projected source.** Full trace:
+`docs/plans/ADMIN_REBUILD/PROGRESS.md` ("Pain #3 — ONE nav, ONE IA"); Matt's
+IA decisions in `01-DECISIONS` **§D9** (locked 8 + Prospecting · ≈35-item
+budget · redirect-bridge legacy · tabs stay Home/Inbox/People/Deals/Activity).
+
+- **THE source:** `lib/admin/nav.ts` (`DESTINATIONS` + `buildNav(ctx)` +
+  `toShellSections` + `buildMobileTabs` + `bestShellNavHref`). `app/components/
+  admin/admin-nav.ts` is a thin adapter (old 200-line regroup DELETED).
+  Desktop bar, mobile sheet, bottom tabs, and the ⌘K palette all consume it.
+  56/5-menu superuser nav → 39/8-destination (broker 30 → 22).
+- **G52 `ci:admin-nav-source`** (in ci:gates): no `/admin` href literals in
+  consumers, every DESTINATIONS href must exist as a real page on disk, one
+  palette mount. If you add an admin route the nav should reach, add it to
+  DESTINATIONS with the capability its page enforces.
+- **Capability map edits** (`lib/admin/capabilities.ts`): `performance.view` +
+  `content.listings` are su-only UNTIL specs 06/08 build the scoped broker
+  pages (do not re-grant before then — it renders dead-ends);
+  `settings.templates`/`settings.automations` now `['broker']` (pages allow);
+  new: `settings.profile`/`settings.crm`/`settings.system`.
+- **Access change (deliberate, spec 01 §13.3):** `expired-listings/layout.tsx`
+  now admits brokers (report_viewer still bounced) — kills audited dead-end
+  class #2 (Expireds/CMAs row → detail).
+- **Canonical bridges added:** `/admin/inbox`, `/admin/prospecting`,
+  `/admin/transactions`, `/admin/performance` redirect to the live pages.
+  Menus link live pages directly; when a spec MOVES a page to its canonical
+  path, flip the bridge direction and update DESTINATIONS (D9.3:
+  redirect-bridge, never 404).
+- **If you touch the shell:** ConsoleShell owns the ONE ConsoleCommandPalette
+  instance (TopNav/mobile header render `ConsoleCommandPaletteTrigger` only);
+  CrmMobileTabBar takes `tabs` via `buildAdminMobileTabs(ctx)`;
+  `ci:crm-mobile-track`'s Reporting/Workflows/Templates menu contract now
+  greps `lib/admin/nav.ts`.
+- **Flag for Matt (menu items brokers no longer see, pages still URL-live, per
+  LOCKED decisions):** Newsletters + Ad links (A1 content.marketing=su),
+  Commissions + Financials (D4), Signing + Sign-off (D1 e-sign park).
+
+ Prior newest block below.
 
 # CMA VERSION CHAIN — THE UPSERT-BY-SLUG CLOBBER CLASS IS CLOSED (2026-07-17 PM, Claude Code sibling session)
 
