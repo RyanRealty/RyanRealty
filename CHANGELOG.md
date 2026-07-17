@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.815.3 (2026-07-17)
+
+### Bug Fixes
+- fix(ci): SPARK_API_KEY for the CI server boot — the e2e webServer timeout root cause
+
+---
+
+
 ## v1.815.2 (2026-07-17)
 
 ### Bug Fixes
