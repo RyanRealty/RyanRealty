@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.815.1 (2026-07-17)
+
+### Bug Fixes
+- fix(hooks): restore the pre-push marker check — 22e9af2e rebuilt the in-hook chain from a stale copy
+
+---
+
+
 ## v1.815.0 (2026-07-17)
 
 ### Features
