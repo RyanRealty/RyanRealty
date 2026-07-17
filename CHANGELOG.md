@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.815.0 (2026-07-17)
+
+### Features
+- feat(content): weekend-events reel builder (9:16) + carousel/video script iterations
+
+### Bug Fixes
+- fix(lint): ignore gitignored scratch dirs (tmp/, scratchpad/) in eslint
+- fix(crm): wire the submit guard into both composers + clear box on send (completes edd3ecd2)
+
+---
+
+
 ## v1.814.0 (2026-07-17)
 
 ### Features
