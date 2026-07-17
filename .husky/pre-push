@@ -1,16 +1,6 @@
 #!/usr/bin/env sh
 . "$(dirname "$0")/_/husky.sh"
 
-# G46 — commit self-containment gate
-#
-# check-commit-compiles.mjs materializes the actual HEAD tree into a temp dir
-# (git archive HEAD | tar -x), symlinks node_modules, and type-checks it in
-# isolation.  This is tree-state-INDEPENDENT: it sees exactly what was
-# committed, nothing more.
-#
-# ci:gates still runs in GitHub Actions CI on every push, so the full suite
-# is not skipped — it just runs at the right moment (after code lands).
-#
 # SKIP_LOCAL_GATES=1 bypasses this hook (same escape hatch as before).
 
 if [ "$SKIP_LOCAL_GATES" = "1" ]; then
@@ -18,7 +8,29 @@ if [ "$SKIP_LOCAL_GATES" = "1" ]; then
   exit 0
 fi
 
-node scripts/check-commit-compiles.mjs --head || exit 1
+# Full static gate chain (Matt directive 2026-07-17) — the same ~120-gate
+# ci:gates chain GitHub Actions runs, now enforced BEFORE the push so a
+# session that forgets to run it locally cannot land a gate regression on
+# main (ci:hydration-safety, ci:design-tokens, ci:composer-discipline,
+# ci:crm-sms-safety, ci:admin-responsive, …).
+#
+# ci:gates includes ci:commit-compiles (G46, --head mode) — it REPLACES the
+# standalone `node scripts/check-commit-compiles.mjs --head` call that used
+# to live here; keeping both would run the isolated tsc pass twice.
+#
+# NOTE: most gates scan the working tree, not the pushed commits. On a box
+# running concurrent agent sessions, uncommitted work from another session
+# can fail a gate here. That is the intended tradeoff: nothing red reaches
+# main.
+
+echo "Pre-push: full ci:gates static chain (~120 gates)…"
+npm run ci:gates || {
+  echo ""
+  echo "✗ ci:gates FAILED — push blocked. Fix the failing gate before pushing."
+  echo "  SKIP_LOCAL_GATES=1 bypasses (only if you know why)."
+  exit 1
+}
+echo "✓ ci:gates OK"
 
 # G47 — production build gate (Turbopack, matches Vercel)
 #
