@@ -173,9 +173,13 @@ jobs:
 
       - run: npm ci
 
-      # Build the Next.js app (self-contained, no artifact transfer)
+      # Build the Next.js app (self-contained, no artifact transfer).
+      # NODE_OPTIONS: same heap fix as lint-and-build — the type-check phase
+      # OOMs at Node's default ~4GB at this repo's size.
       - name: Build
         run: npm run build
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
 
       # Install only chromium for speed
       - name: Install Playwright browsers
