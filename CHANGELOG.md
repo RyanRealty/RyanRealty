@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.816.1 (2026-07-17)
+
+### Bug Fixes
+- fix(a11y+e2e): loading shells no longer render <main>; critical-flows hardened against KB chrome
+
+---
+
+
 ## v1.816.0 (2026-07-17)
 
 ### Features
