@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.815.2 (2026-07-17)
+
+### Bug Fixes
+- fix(e2e): pipe webServer output + 180s boot window for the CI e2e job
+
+---
+
+
 ## v1.815.1 (2026-07-17)
 
 ### Bug Fixes
