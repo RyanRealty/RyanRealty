@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.810.4 (2026-07-17)
+
+### Maintenance
+- perf(admin): drop the public client bundle from admin (RC3, Task #8)
+
+---
+
+
 ## v1.810.3 (2026-07-16)
 
 ### Maintenance
