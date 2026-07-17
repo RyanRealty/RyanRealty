@@ -30,13 +30,17 @@ test.describe('Save search / listing alerts', () => {
     await page.goto(SEARCH_URL, { waitUntil: 'domcontentloaded', timeout: DATA_TIMEOUT })
     await expect(page.locator('main').first()).toBeVisible({ timeout: DATA_TIMEOUT })
 
-    // SaveSearchButton renders as a button with "Save search" text
-    const saveBtn = page.getByRole('button', { name: /save.{0,10}search/i })
-    const hasSaveBtn = await saveBtn.first().isVisible({ timeout: 30_000 }).catch(() => false)
+    // SaveSearchButton renders as a button with "Save search" text. Assert
+    // ATTACHED, not visible: the controls sit inside KB scroll-reveal sections
+    // that stay at opacity 0 in headless until scrolled (2026-07-17 false
+    // failure — both render fine in a real browser). Presence is the
+    // regression signal; visibility is an animation state.
+    const saveBtn = page.getByRole('button', { name: /save.{0,10}search/i, includeHidden: true })
+    const hasSaveBtn = await saveBtn.first().waitFor({ state: 'attached', timeout: 30_000 }).then(() => true).catch(() => false)
 
     // Also check for the alert strip / email capture that appears on search pages
     const alertStrip = page.locator('text=/get.*alert|new.*listing|save.*search|listing.*alert/i').first()
-    const hasAlertStrip = await alertStrip.isVisible({ timeout: 5_000 }).catch(() => false)
+    const hasAlertStrip = await alertStrip.waitFor({ state: 'attached', timeout: 5_000 }).then(() => true).catch(() => false)
 
     expect(
       hasSaveBtn || hasAlertStrip,
