@@ -12,10 +12,11 @@ Market reports are recurring emails with real sales data for a chosen area. Subs
 ## Steps
 
 1. Open the client from **CRM, then Contacts**.
-2. Near the top of their page, find the quick-action chips and click **Market reports**. You can also scroll the right side of the page to the **Market reports** panel.
-3. Pick the areas they care about, for example Bend or Redmond. You can select more than one.
-4. Pick how often the report goes out: weekly, monthly, or quarterly.
-5. Save. The subscription starts with the next send for that cadence.
+2. Near the top of their page, find the quick-action chips and click **Market reports**.
+3. Turn on the **Receiving reports** switch at the top of the panel. The area list stays greyed out until this is on.
+4. Pick the areas they care about, for example Bend or Redmond. You can select more than one, and you have to pick at least one.
+5. Pick how often the report goes out: weekly, monthly, or quarterly.
+6. Click **Save report settings**. The subscription starts with the next send for that cadence.
 
 ## Managing report subscriptions later
 
