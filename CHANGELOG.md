@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.818.0 (2026-07-18)
+
+### Features
+- feat(crm): the SendPanel CMA tab tells the whole story — drafts + in-flight builds visible with review links (Pain #4 inc. 3)
+- feat(crm): the SendPanel reaches phones — mobile send domain + honest baseline ratchet (Pain #4 inc. 2)
+
+### Bug Fixes
+- fix(crm): SendPanel + newsletter chip regressions from unified-send v1 (audit HIGH + MED)
+- fix(admin): enforce the money + approval capability caps in-body — 3 confirmed HIGH auth holes (RC5)
+- fix(crm): newsletter one-off send joins the A5 idempotency ledger (Pain #4 inc. 4)
+
+### Maintenance
+- docs(admin-rebuild): audit findings + dispositions (4 HIGH fixed, MED/LOW logged)
+
+---
+
+
 ## v1.817.2 (2026-07-18)
 
 ### Bug Fixes
