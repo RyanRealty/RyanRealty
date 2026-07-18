@@ -76,12 +76,20 @@ export function ContactQuickActions(props: {
     })
   }
 
-  const newsletterToggle = () =>
+  const applyNewsletter = (next: boolean) =>
     dispatch(
-      () => setNewsletterOn(!newsletterOn),
-      () => setNewsletterOn(newsletterOn),
-      () => setNewsletterSubscription({ personId: props.personId, subscribed: !newsletterOn }),
+      () => setNewsletterOn(next),
+      () => setNewsletterOn(!next),
+      () => setNewsletterSubscription({ personId: props.personId, subscribed: next }),
     )
+  // Unsubscribing is a compliance-sensitive one-way action — confirm before it
+  // fires so a single accidental chip tap can't opt a subscribed contact out
+  // (regression guard: the chip is a one-tap toggle in this branch).
+  const newsletterToggle = () => {
+    const next = !newsletterOn
+    if (!next && typeof window !== 'undefined' && !window.confirm('Unsubscribe this contact from the newsletter?')) return
+    applyNewsletter(next)
+  }
 
   return (
     <div className="space-y-2">

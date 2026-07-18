@@ -113,7 +113,13 @@ export function ContactSendCenter(props: {
     setMinBeds('')
   }
 
+  // Which flow is running, so only ITS button shows "Sending…" — the shared
+  // useTransition would otherwise relabel every tab's button (audit MED).
+  const [activeFlow, setActiveFlow] = useState<string | null>(null)
+  const busy = (flow: string) => pending && activeFlow === flow
+
   function run(label: string, fn: () => Promise<{ ok: boolean; error?: string; message?: string }>) {
+    setActiveFlow(label)
     startTransition(async () => {
       try {
         const r = await fn()
@@ -128,6 +134,8 @@ export function ContactSendCenter(props: {
         // A thrown action must never fail silently and leave the dialog open,
         // inviting a duplicate send. Surface it and keep the dialog open.
         toast.error(e instanceof Error ? e.message : `${label} could not be sent.`)
+      } finally {
+        setActiveFlow(null)
       }
     })
   }
@@ -236,7 +244,7 @@ export function ContactSendCenter(props: {
                   No finalized price opinion yet. Build one from the home on file, finalize it, then send it here.
                 </p>
                 <Button onClick={generateBpo} disabled={pending} variant="outline" className="w-full min-h-11">
-                  {pending ? 'Starting build…' : 'Build a price opinion'}
+                  {busy('Price opinion build') ? 'Starting build…' : 'Build a price opinion'}
                 </Button>
               </div>
             ) : (
@@ -267,7 +275,7 @@ export function ContactSendCenter(props: {
                   </span>
                 </Label>
                 <Button onClick={sendBpo} disabled={pending || blocked || !bpoSlug} className="w-full min-h-11">
-                  {pending ? 'Sending…' : 'Send price opinion'}
+                  {busy('Price opinion') ? 'Sending…' : 'Send price opinion'}
                 </Button>
               </>
             )}
@@ -324,7 +332,7 @@ export function ContactSendCenter(props: {
                   </Select>
                 </div>
                 <Button onClick={sendCma} disabled={pending || blocked || !cmaSlug} className="w-full min-h-11">
-                  {pending ? 'Sending…' : 'Send CMA'}
+                  {busy('CMA') ? 'Sending…' : 'Send CMA'}
                 </Button>
                 <a href={props.cmaBuildHref} className="block text-center text-xs font-medium text-primary hover:underline">
                   Build a new CMA
@@ -357,7 +365,7 @@ export function ContactSendCenter(props: {
               disabled={pending || blocked || !props.latestNewsletter}
               className="w-full min-h-11"
             >
-              {pending ? 'Sending…' : 'Send the newsletter now'}
+              {busy('Newsletter') ? 'Sending…' : 'Send the newsletter now'}
             </Button>
           </TabsContent>
 
@@ -385,7 +393,7 @@ export function ContactSendCenter(props: {
               Also subscribe to a monthly report for these areas
             </Label>
             <Button onClick={sendReport} disabled={pending || blocked || areas.length === 0} className="w-full min-h-11">
-              {pending ? 'Sending…' : 'Send market report now'}
+              {busy('Market report') ? 'Sending…' : 'Send market report now'}
             </Button>
           </TabsContent>
 
@@ -434,7 +442,7 @@ export function ContactSendCenter(props: {
               Starts a recurring alert and emails the current matches now.
             </p>
             <Button onClick={sendListings} disabled={pending || blocked} className="w-full min-h-11">
-              {pending ? 'Sending…' : 'Start alerts + send matches'}
+              {busy('Listing matches') ? 'Sending…' : 'Start alerts + send matches'}
             </Button>
           </TabsContent>
         </Tabs>
