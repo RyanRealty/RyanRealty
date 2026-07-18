@@ -56,8 +56,13 @@ export type PersonDetailExtras = {
   starredCount: number
   /** §7c.8.2 Activity summary widget — exact direction counts. */
   activitySummary: Array<{ label: string; value: number }>
-  /** All tag labels for the §07a 5.6 add-tag autocomplete. */
-  tagOptions: string[]
+  /**
+   * All active tags for the §07a 5.6 add-tag autocomplete, as {key,label}. The
+   * picker displays `label` but writes `key` — storing the label would break
+   * segment / automation / smart-list matching, which all key on the canonical
+   * `namespace:value` tag (e.g. `audience:buyer`, not `Audience - buyer`).
+   */
+  tagOptions: Array<{ key: string; label: string }>
   /** Ponds for the §07a 5.2 Assigned-to dropdown PONDS group. */
   pondOptions: Array<{ id: number; name: string }>
 }
@@ -114,7 +119,7 @@ export async function getPersonDetailExtras(personId: number): Promise<PersonDet
       .eq('person_id', personId)
       .eq('kind', 'email_out')
       .eq('source', 'sequence'),
-    sb.from('crm_tags').select('label').eq('is_active', true).order('label').limit(500),
+    sb.from('crm_tags').select('key, label').eq('is_active', true).order('label').limit(500),
     sb.from('crm_ponds').select('id, name').order('name'),
     countFor(['email_out']),
     countFor(['email_in']),
@@ -179,7 +184,10 @@ export async function getPersonDetailExtras(personId: number): Promise<PersonDet
       { label: 'Texts sent', value: Number(textsSent) },
       { label: 'Calls made', value: Number(callsMade) },
     ],
-    tagOptions: ((tagsRes as { data?: Array<{ label: string }> | null }).data ?? []).map((t) => String(t.label)),
+    tagOptions: ((tagsRes as { data?: Array<{ key: string; label: string }> | null }).data ?? []).map((t) => ({
+      key: String(t.key),
+      label: String(t.label ?? t.key),
+    })),
     pondOptions: ((pondsRes as { data?: Array<{ id: number; name: string }> | null }).data ?? []).map((p) => ({
       id: Number(p.id),
       name: String(p.name),

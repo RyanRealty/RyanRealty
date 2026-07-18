@@ -77,7 +77,7 @@ export type SidebarData = {
   price: number | null
   timeframe: string | null
   tags: string[]
-  tagOptions: string[]
+  tagOptions: Array<{ key: string; label: string }>
   campaigns: string[]
   lenderName: string | null
   background: string | null
@@ -254,7 +254,7 @@ function AddressRow({ personId, address }: { personId: number; address: SidebarA
 
 // ── Tags chips (§07a 5.6) ────────────────────────────────────────────────────
 
-function TagChips({ personId, tags, tagOptions }: { personId: number; tags: string[]; tagOptions: string[] }) {
+function TagChips({ personId, tags, tagOptions }: { personId: number; tags: string[]; tagOptions: Array<{ key: string; label: string }> }) {
   const [expanded, setExpanded] = useState(false)
   const [adding, setAdding] = useState(false)
   const [query, setQuery] = useState('')
@@ -263,8 +263,15 @@ function TagChips({ personId, tags, tagOptions }: { personId: number; tags: stri
   const shown = expanded ? tags : tags.slice(0, 5)
   const overflow = tags.length - shown.length
 
-  function addTag(tag: string) {
-    const clean = tag.trim().slice(0, 64)
+  // Registry key → friendly label, so chips read "Audience - buyer" while the
+  // stored/written value stays the canonical key "audience:buyer".
+  const labelByKey = new Map(tagOptions.map((o) => [o.key, o.label]))
+
+  // addTag ALWAYS writes a canonical key. Selecting a suggestion passes its key;
+  // "Create New Tag" passes the typed text (the action lowercases it). Writing a
+  // display label here would silently break segment/automation/smart-list matching.
+  function addTag(tagKey: string) {
+    const clean = tagKey.trim().slice(0, 64)
     if (!clean) return
     start(async () => {
       const fd = new FormData()
@@ -286,17 +293,22 @@ function TagChips({ personId, tags, tagOptions }: { personId: number; tags: stri
     })
   }
 
-  const suggestions = query.trim()
-    ? tagOptions.filter((t) => t.toLowerCase().includes(query.trim().toLowerCase()) && !tags.includes(t)).slice(0, 8)
+  const q = query.trim().toLowerCase()
+  const suggestions = q
+    ? tagOptions
+        .filter((o) => (o.label.toLowerCase().includes(q) || o.key.toLowerCase().includes(q)) && !tags.includes(o.key))
+        .slice(0, 8)
     : []
+  // Only offer "create" when the typed text is not already a known key/label.
+  const isKnown = tagOptions.some((o) => o.key.toLowerCase() === q || o.label.toLowerCase() === q)
 
   return (
     <div className="space-y-1.5">
       <div className="flex flex-wrap items-center gap-1">
         {shown.map((t) => (
           <Badge key={t} variant="outline" className="gap-1 pr-1 text-xs font-normal">
-            {t}
-            <button type="button" aria-label={`Remove ${t}`} disabled={pending} onClick={() => removeTag(t)} className="rounded px-0.5 text-muted-foreground hover:text-foreground">
+            {labelByKey.get(t) ?? t}
+            <button type="button" aria-label={`Remove ${labelByKey.get(t) ?? t}`} disabled={pending} onClick={() => removeTag(t)} className="rounded px-0.5 text-muted-foreground hover:text-foreground">
               <X className="h-3 w-3" />
             </button>
           </Badge>
@@ -325,11 +337,11 @@ function TagChips({ personId, tags, tagOptions }: { personId: number; tags: stri
             className="h-8 text-sm"
           />
           {suggestions.map((s) => (
-            <button key={s} type="button" onClick={() => addTag(s)} className="block w-full rounded px-2 py-1 text-left text-sm hover:bg-secondary">
-              {s}
+            <button key={s.key} type="button" onClick={() => addTag(s.key)} className="block w-full rounded px-2 py-1 text-left text-sm hover:bg-secondary">
+              {s.label}
             </button>
           ))}
-          {query.trim() && !tagOptions.includes(query.trim()) ? (
+          {query.trim() && !isKnown ? (
             <button type="button" onClick={() => addTag(query)} className="block w-full rounded px-2 py-1 text-left text-sm font-medium hover:bg-secondary">
               Create New Tag: {query.trim()}
             </button>
