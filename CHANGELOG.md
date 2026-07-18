@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.820.0 (2026-07-18)
+
+### Features
+- feat(admin): CMA + Price-Opinion sibling worklists (spec 07 clone)
+
+---
+
+
 ## v1.819.0 (2026-07-18)
 
 ### Features
