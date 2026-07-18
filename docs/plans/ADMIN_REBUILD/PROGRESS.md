@@ -218,8 +218,12 @@ the plain subscribe toggle = management only); and **the last synchronous
 30–60 s CMA build entry** — `OwnedHomeCard`'s "Generate comp" form
 (`startCmaForm`, the audited timeout-prone path) is now a "Build CMA" link into
 the async sheet. `startCmaForm`/`assignSavedSearchForm` bindings dropped from
-the page; person page 717 → **698 lines** (file-size baseline RATCHETED DOWN
-718 → 698 — partial payback on the standing obligation).
+the page; person page 717 → **698 lines** (706 after the mobile send mount).
+**Baseline-ratchet correction (self-audit):** the first ratchet edit wrote the
+key at the JSON top level instead of inside `files` — a no-op the gate ignored
+(commit c48ef5a2 claimed 718→698 but shipped a stray key). Fixed: stray key
+removed, `files` entry properly ratcheted **718 → 707** and verified enforced
+(current == baseline; any growth now fails).
 
 **Adversarial review (read-only skeptic, 5 probes): all REFUTED** — no other
 render sites of the changed components (mobile tree untouched); every

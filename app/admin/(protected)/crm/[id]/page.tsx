@@ -416,11 +416,32 @@ export default async function ConsoleLeadPage({
     <p className="px-1 py-2 text-center text-[13px] text-muted-foreground">No phone number on file.</p>
   )
 
+  /* ── THE SendPanel (Pain #4) — ONE element, mounted on BOTH trees (the mobile
+     tree had NO send domain — the audited RC3 gap). All five concepts:
+     CMA · BPO · report · newsletter · listing matches. */
+  const sendCenterNode = (
+    <ContactSendCenter
+      personId={person.id}
+      emailSuppressed={full.suppressions.some((s) => s.channel === 'email' || s.channel === 'all')}
+      bpos={contactBpos}
+      cmas={contactCmas}
+      reportAreas={reportAreas}
+      subscribedAreas={reportSub?.areas ?? []}
+      defaultCity={homeFacts?.city ?? null}
+      cmaBuildHref="?intent=cma"
+      bpoGenerateAction={startBpoForm.bind(null, person.id)}
+      newsletterSubscribed={contactMemberships.newsletter.subscribed}
+      latestNewsletter={latestNewsletter ? { subject: latestNewsletter.subject, status: latestNewsletter.status, sentAt: latestNewsletter.sentAt } : null}
+      newsletterSendAction={sendNewsletterToContactAction.bind(null, person.id)}
+    />
+  )
+
   /* ── §25 Mobile Contact Detail — mapping + assembly in ./mobile-detail.tsx.
      Renders at < md; standalone under ?view=mobile (the 390px verification
      affordance — the automation browser can't shrink below 768px). */
   const mobileDetail = (
     <MobileLeadDetail
+      sendCenter={sendCenterNode}
       full={full}
       displayName={displayName}
       backHref={BASE}
@@ -619,20 +640,7 @@ export default async function ConsoleLeadPage({
             }
             websiteActivityNode={
               <div data-tour="person-website-activity" className="space-y-3">
-                <ContactSendCenter
-                  personId={person.id}
-                  emailSuppressed={full.suppressions.some((s) => s.channel === 'email' || s.channel === 'all')}
-                  bpos={contactBpos}
-                  cmas={contactCmas}
-                  reportAreas={reportAreas}
-                  subscribedAreas={reportSub?.areas ?? []}
-                  defaultCity={homeFacts?.city ?? null}
-                  cmaBuildHref="?intent=cma"
-                  bpoGenerateAction={startBpoForm.bind(null, person.id)}
-                  newsletterSubscribed={contactMemberships.newsletter.subscribed}
-                  latestNewsletter={latestNewsletter ? { subject: latestNewsletter.subject, status: latestNewsletter.status, sentAt: latestNewsletter.sentAt } : null}
-                  newsletterSendAction={sendNewsletterToContactAction.bind(null, person.id)}
-                />
+                {sendCenterNode}
                 {/* Pain #4: management chips only — one-off SENDS (newsletter,
                     market report) live in the SendPanel above; the duplicate
                     send-now affordances inside these sheets are unwired. */}

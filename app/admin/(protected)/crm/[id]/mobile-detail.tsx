@@ -105,6 +105,10 @@ export interface MobileLeadDetailProps {
   /** iMessage-style SMS composer for the Comms tab (pinned bottom). Built in
       page.tsx so it shares the exact send action + recipients as desktop. */
   smsComposer: React.ReactNode
+  /** THE SendPanel (Pain #4) — the same ContactSendCenter element the desktop
+      rail mounts, so phones finally have the send domain (audited RC3 gap).
+      Rendered at the top of the Info tab. */
+  sendCenter?: React.ReactNode
   addNoteAction: (formData: FormData) => Promise<void>
   addTaskAction: (formData: FormData) => Promise<void>
   createAppointmentAction: (formData: FormData) => Promise<{ ok: boolean; error?: string; id?: number }>
@@ -133,6 +137,7 @@ export function MobileLeadDetail({
   pickers,
   appointments,
   smsComposer,
+  sendCenter,
   addNoteAction,
   addTaskAction,
   createAppointmentAction,
@@ -257,7 +262,9 @@ export function MobileLeadDetail({
       editData={editData}
       activityTab={<MobileActivityTab rows={activityRows} />}
       infoTab={
-        <MobileInfoTab
+        <>
+          {sendCenter ? <div className="bg-card px-4 pb-1 pt-3">{sendCenter}</div> : null}
+          <MobileInfoTab
           personId={person.id}
           personName={displayName}
           recentMessages={recentMessages}
@@ -291,6 +298,7 @@ export function MobileLeadDetail({
           customFields={customFields}
           addresses={addresses}
         />
+        </>
       }
       commsTab={
         <MobileCommsTab
