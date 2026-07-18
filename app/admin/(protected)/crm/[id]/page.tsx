@@ -65,7 +65,7 @@ import { MobileLeadDetail } from './mobile-detail'
 import { PersonSidebar, type SidebarData } from '@/components/admin/crm/person-detail/PersonSidebar'
 import { PersonCenterColumn, type TimelineItem } from '@/components/admin/crm/person-detail/PersonCenterColumn'
 import { PersonRightRail } from '@/components/admin/crm/person-detail/PersonRightRail'
-import { getPersonDetailExtras } from '@/lib/data/crm/getPersonDetailExtras'
+import { getPersonDetailExtras, mergeTagOptions } from '@/lib/data/crm/getPersonDetailExtras'
 import { getCrmSources } from '@/lib/data/crm/getCrmSources'
 import { listActiveSequences } from '@/lib/crm/enroll'
 // §25.9 mobile Calendar tab (P2-4): real appointments + create sheet config
@@ -366,17 +366,7 @@ export default async function ConsoleLeadPage({
     price: typeof personExtra.price === 'number' ? personExtra.price : personExtra.price ? Number(personExtra.price) : null,
     timeframe: personExtra.timeframe ?? null,
     tags: Array.isArray(person.tags) ? person.tags : [],
-    tagOptions: (() => {
-      // Registry tags carry {key,label}; a person may also hold a free-form tag
-      // that has no registry row — surface those too, keyed on themselves, so the
-      // picker never re-offers a tag the person already has. Dedupe by key.
-      const byKey = new Map<string, { key: string; label: string }>()
-      for (const opt of detailExtras.tagOptions) byKey.set(opt.key, opt)
-      for (const t of Array.isArray(person.tags) ? person.tags : []) {
-        if (!byKey.has(t)) byKey.set(t, { key: t, label: t })
-      }
-      return [...byKey.values()]
-    })(),
+    tagOptions: mergeTagOptions(detailExtras.tagOptions, person.tags),
     campaigns: contactMemberships.sequences.filter((s) => s.enrolled).map((s) => s.name),
     lenderName: personExtra.lender_name ?? null,
     background: person.background,

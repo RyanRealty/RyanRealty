@@ -194,3 +194,21 @@ export async function getPersonDetailExtras(personId: number): Promise<PersonDet
     })),
   }
 }
+
+/**
+ * Merge the registry tag options ({key,label}) with the tags a person already
+ * holds. A free-form tag with no registry row is surfaced keyed on itself, so
+ * the add-tag picker never re-offers a tag the person already has. Deduped by
+ * key. Keeps the tag picker writing canonical keys, never labels.
+ */
+export function mergeTagOptions(
+  registry: Array<{ key: string; label: string }>,
+  personTags: unknown,
+): Array<{ key: string; label: string }> {
+  const byKey = new Map<string, { key: string; label: string }>()
+  for (const opt of registry) byKey.set(opt.key, opt)
+  for (const t of Array.isArray(personTags) ? personTags : []) {
+    if (typeof t === 'string' && !byKey.has(t)) byKey.set(t, { key: t, label: t })
+  }
+  return [...byKey.values()]
+}
