@@ -13,7 +13,7 @@ import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { buildCma } from '@/lib/cma/build'
-import { sendCmaToLead } from '@/lib/cma/send'
+import { sendCmaToLead, prepareCmaSendPreview, type CmaSendOverride } from '@/lib/cma/send'
 import { resolveCmaSubject } from '@/lib/cma/subject'
 import { slugifyAddress } from '@/lib/cma-request'
 import { resolveWritableCmaSlot } from '@/lib/cma/versions'
@@ -238,14 +238,23 @@ export async function deleteCmaAction(id: string): Promise<{ error: string | nul
 
 // ─── Send path (explicit click only) ─────────────────────────────────────────
 
+/**
+ * Sends the CMA to its client. `override` (subject/bodyText) carries the
+ * broker's edited compose-dialog message (/admin/cmas worklist's
+ * CmaSendDialog) straight through to lib/cma/send.ts sendCmaToLead, which
+ * already supports it — omitted, the server composes the live default.
+ * CmaReviewActions (/admin/cmas/[slug]) calls this with no second argument.
+ */
 export async function sendCmaToLeadAction(
   slug: string,
+  override?: CmaSendOverride,
 ): Promise<{ data: { transport: 'gmail' | 'resend'; mailbox: string | null } | null; error: string | null }> {
   try {
     if (!(await requireAdmin())) return { data: null, error: 'Unauthorized' }
-    const result = await sendCmaToLead(slug.trim().toLowerCase())
+    const safeSlug = slug.trim().toLowerCase()
+    const result = await sendCmaToLead(safeSlug, override)
     if (!result.ok) return { data: null, error: result.error ?? 'Send failed' }
-    refresh(slug.trim().toLowerCase())
+    refresh(safeSlug)
     return {
       data: { transport: result.transport ?? 'resend', mailbox: result.mailbox ?? null },
       error: null,
@@ -253,5 +262,50 @@ export async function sendCmaToLeadAction(
   } catch (e) {
     console.error('[sendCmaToLeadAction]', e)
     return { data: null, error: 'Send failed unexpectedly' }
+  }
+}
+
+/**
+ * Prepare the /admin/cmas worklist's send dialog: the default subject/body
+ * (lib/cma/send.ts prepareCmaSendPreview, the same compose the server would
+ * send if the broker doesn't edit anything) plus the already-sent state, so
+ * the dialog can show "Already sent <date>" without a second round trip.
+ */
+export async function prepareCmaSendAction(slug: string): Promise<{
+  data: {
+    slug: string
+    subjectAddress: string
+    clientName: string | null
+    clientEmail: string | null
+    defaultSubject: string
+    defaultBodyText: string
+    docUrl: string
+    alreadySent: { at: string } | null
+  } | null
+  error: string | null
+}> {
+  try {
+    if (!(await requireAdmin())) return { data: null, error: 'Unauthorized' }
+    const safeSlug = slug.trim().toLowerCase()
+    const preview = await prepareCmaSendPreview(safeSlug)
+    if (!preview.ok) return { data: null, error: preview.error }
+    const row = await getCmaAdminRowBySlug(safeSlug)
+    const deliveredAt = (row?.delivered_at as string | null) ?? null
+    return {
+      data: {
+        slug: safeSlug,
+        subjectAddress: preview.subjectAddress,
+        clientName: preview.clientName,
+        clientEmail: preview.clientEmail,
+        defaultSubject: preview.subject,
+        defaultBodyText: preview.bodyText,
+        docUrl: preview.docUrl,
+        alreadySent: deliveredAt ? { at: deliveredAt } : null,
+      },
+      error: null,
+    }
+  } catch (e) {
+    console.error('[prepareCmaSendAction]', e)
+    return { data: null, error: 'Could not prepare the send.' }
   }
 }

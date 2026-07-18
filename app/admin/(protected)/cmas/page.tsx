@@ -1,537 +1,132 @@
+// @no-parity — internal admin surface, no public mockup contract
 /**
- * /admin/cmas — index of every Comparative Market Analysis the shop has built.
+ * /admin/cmas — the Seller-CMA worklist, sibling of /admin/prospecting.
+ * Same shape: KPI strip, URL-driven filters, a responsive card grid, a
+ * `?id=` detail drawer, and a guarded email-only send dialog (CmaBoard,
+ * components/admin/cma/worklist/). `cmas/[slug]/page.tsx` (the full-document
+ * review page) is unchanged — CmaBoard's "Review" action still links there.
  *
- * Filters via URL search params (each is a single tap in the facets card):
- *   ?status=draft|finalized|delivered|archived
- *   ?q=<address / client / subdivision substring>
- *   ?page=<n>
- *
- * The data pipeline (listCmasForAdmin) is untouched. Status filtering, search,
- * and pagination are pure presentational slicing in the page so the screen
- * never renders an unbounded wall of rows (admin design standard, Law 1).
+ * listCmasForAdmin (lib/data/sync/syncWrites.ts) now filters to seller CMAs
+ * only (doc_type='cma') — expired-audit documents live in the prospecting
+ * worklist, not here. Filtering/pagination stay presentational in this page:
+ * the CMA table is ~170 rows (docs/DATABASE_SCHEMA_SNAPSHOT.md), well inside
+ * one bounded window, so a second DAL surface isn't warranted for this size.
  */
 
-import { Suspense } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { HugeiconsIcon } from '@hugeicons/react'
-import { Files01Icon, SearchRemoveIcon } from '@hugeicons/core-free-icons'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import { cmaSlugBase } from '@/lib/cma/address-slug'
-import { Badge } from '@/components/ui/badge'
+import { listCmasForAdmin } from '@/lib/data'
+import { approveCmaAction, prepareCmaSendAction, sendCmaToLeadAction } from '@/app/actions/cma-admin'
+import { sendTemplateSelfTestAction } from '@/app/actions/crm-template-test'
 import { Button } from '@/components/ui/button'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
-import { KpiStrip } from '@/components/console/KpiStrip'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination'
+import { CmaBoard } from '@/components/admin/cma/worklist/CmaBoard.client'
+import type {
+  CmaStatusFilter,
+  CmaWorklistFilters,
+  CmaWorklistRow,
+  CmaWorklistStatus,
+  CmaWorklistSummary,
+} from '@/components/admin/cma/worklist/types'
 
 export const dynamic = 'force-dynamic'
 
-// How many CMAs we show per page. Presentational cap so the screen never
-// renders an unbounded wall of rows (admin design standard, Law 1).
-const PAGE_SIZE = 20
-
-// Upper bound on the recent window we pull from the DAL. Wide enough to cover
-// every CMA the shop has realistically produced, bounded so the page never
-// fetches the whole table into the DOM.
+// Upper bound on the window pulled from the DAL — wide enough to cover every
+// CMA the shop has realistically produced, bounded so the page never fetches
+// the whole table into the DOM (admin design standard, Law 1).
 const WINDOW = 500
+const PAGE_SIZE = 24
 
-const STATUS_OPTIONS = ['draft', 'finalized', 'delivered', 'archived'] as const
+const STATUSES: CmaStatusFilter[] = ['all', 'draft', 'finalized', 'delivered', 'archived']
 
-interface CmaRow {
-  id: string
-  slug: string
-  subject_address: string
-  subject_subdivision: string | null
-  client_name: string | null
-  client_email: string | null
-  broker_slug: string | null
-  value_low: number | null
-  value_high: number | null
-  recommended_list: number | null
-  comps_count: number | null
-  status: 'draft' | 'finalized' | 'delivered' | 'archived'
-  created_at: string
-  finalized_at: string | null
-  built_at: string | null
-  build_error: string | null
-  html_path: string
-  build_summary: { needs_review?: boolean; review_reason?: string | null } | null
-  /** Attached at load: the expired listing + CRM contact this CMA maps to. */
-  expired_listing_key?: string | null
-  crm_person_id?: number | null
-  /** Their last (failed) list price — for the our-price-vs-their-price delta. */
-  expired_list_price?: number | null
+function str(v: string | string[] | undefined): string | undefined {
+  const s = Array.isArray(v) ? v[0] : v
+  const t = s?.trim()
+  return t || undefined
 }
 
-/** "Was $635K · Ours $605K ↓ 4.7%" — recommended vs the price that failed to
- *  sell. Only rendered for expired-origin CMAs that carry both numbers. */
-function PriceVsTheirs({ theirs, ours }: { theirs: number; ours: number }) {
-  const deltaPct = theirs > 0 ? ((ours - theirs) / theirs) * 100 : 0
-  const arrow = deltaPct > 0.05 ? '↑' : deltaPct < -0.05 ? '↓' : '→'
-  const tone = deltaPct < -0.05 ? 'text-success' : deltaPct > 0.05 ? 'text-warning' : 'text-muted-foreground'
-  return (
-    <span className="tabular-nums">
-      Was {formatPrice(theirs)} · Ours {formatPrice(ours)}{' '}
-      <span className={tone}>
-        {arrow} {Math.abs(deltaPct).toFixed(1)}%
-      </span>
-    </span>
-  )
+function toWorklistStatus(raw: unknown): CmaWorklistStatus {
+  const s = String(raw ?? '')
+  return s === 'finalized' || s === 'delivered' || s === 'archived' ? s : 'draft'
 }
 
-/** A CMA whose comp set was too heterogeneous for the builder to trust — the
- *  broker must confirm comp selection before it goes to a client (§0). */
-function needsReview(cma: CmaRow): boolean {
-  return cma.build_summary?.needs_review === true
-}
-
-/** A CMA has an openable document when the builder stored HTML in the DB
- *  (html_path 'db:…') or a legacy finalized file ships under public/cmas/. */
-function hasDocument(cma: CmaRow): boolean {
-  return cma.html_path?.startsWith('db:') || cma.html_path?.startsWith('public/cmas/') || false
-}
-
-type SearchParams = Record<string, string | string[] | undefined>
-
-function formatInt(n: number): string {
-  return new Intl.NumberFormat('en-US').format(n)
-}
-
-function formatPrice(n: number | null): string {
-  if (n == null) return '—'
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
-
-function statusVariant(status: CmaRow['status']) {
-  switch (status) {
-    case 'finalized':
-      return 'default' as const
-    case 'delivered':
-      return 'secondary' as const
-    case 'archived':
-      return 'outline' as const
-    case 'draft':
-    default:
-      return 'outline' as const
+function mapRow(r: Record<string, unknown>): CmaWorklistRow {
+  const buildSummary = (r.build_summary ?? null) as { needs_review?: boolean } | null
+  const htmlPath = String(r.html_path ?? '')
+  return {
+    id: String(r.id),
+    slug: String(r.slug),
+    subjectAddress: String(r.subject_address ?? ''),
+    subjectSubdivision: (r.subject_subdivision as string | null) ?? null,
+    subjectCity: (r.subject_city as string | null) ?? null,
+    clientName: (r.client_name as string | null) ?? null,
+    clientEmail: (r.client_email as string | null) ?? null,
+    brokerSlug: (r.broker_slug as string | null) ?? null,
+    valueLow: (r.value_low as number | null) ?? null,
+    valueHigh: (r.value_high as number | null) ?? null,
+    recommendedList: (r.recommended_list as number | null) ?? null,
+    compsCount: (r.comps_count as number | null) ?? null,
+    status: toWorklistStatus(r.status),
+    createdAt: (r.created_at as string | null) ?? null,
+    finalizedAt: (r.finalized_at as string | null) ?? null,
+    deliveredAt: (r.delivered_at as string | null) ?? null,
+    builtAt: (r.built_at as string | null) ?? null,
+    buildError: (r.build_error as string | null) ?? null,
+    needsReview: buildSummary?.needs_review === true,
+    hasDocument: htmlPath.startsWith('db:') || htmlPath.startsWith('public/cmas/'),
   }
 }
 
-function normalizeParams(sp: SearchParams): Record<string, string | undefined> {
-  const out: Record<string, string | undefined> = {}
-  for (const [k, v] of Object.entries(sp)) {
-    out[k] = Array.isArray(v) ? v[0] : v
-  }
-  return out
-}
-
-// Toggle a single facet on/off; changing a facet resets pagination to page 1.
-function toggleParam(current: Record<string, string | undefined>, key: string, value: string): string {
-  const next = { ...current }
-  if (next[key] === value) delete next[key]
-  else next[key] = value
-  delete next.page
-  const params = new URLSearchParams()
-  for (const [k, v] of Object.entries(next)) {
-    if (v) params.set(k, v)
-  }
-  const qs = params.toString()
-  return qs ? `?${qs}` : ''
-}
-
-// Pagination link — keeps every active filter, swaps the page number.
-function pageHref(current: Record<string, string | undefined>, page: number): string {
-  const params = new URLSearchParams()
-  for (const [k, v] of Object.entries(current)) {
-    if (v && k !== 'page') params.set(k, v)
-  }
-  if (page > 1) params.set('page', String(page))
-  const qs = params.toString()
-  return `/admin/cmas${qs ? `?${qs}` : ''}`
-}
-
-// A compact window of page numbers around the current page (max 5), so the
-// pagination control stays inside 390px without wrapping.
-function pageWindow(current: number, total: number): number[] {
-  const span = 5
-  let start = Math.max(1, current - Math.floor(span / 2))
-  const end = Math.min(total, start + span - 1)
-  start = Math.max(1, end - span + 1)
-  const out: number[] = []
-  for (let p = start; p <= end; p++) out.push(p)
-  return out
-}
-
-async function CmasContent({ params }: { params: Record<string, string | undefined> }) {
-  const { listCmasForAdmin, getCmaExpiredLinks } = await import('@/lib/data')
-  const [{ rows: rawRows, total }, expiredLinks] = await Promise.all([
-    listCmasForAdmin({ limit: WINDOW, offset: 0 }),
-    getCmaExpiredLinks(),
-  ])
-  // Attach the expired-listing + CRM-contact link for any CMA whose slug maps
-  // to an expired listing (Matt directive 2026-07-12: jump to the owner + the
-  // expired info from the CMA list).
-  const allRows = (rawRows as unknown as CmaRow[]).map((r) => {
-    // Versioned CMA slugs (--vN, lib/cma/versions.ts) share the base address
-    // slug the expired-links map is keyed by. Exact match first so an address
-    // whose own slug happens to end in --vN never mis-resolves.
-    const link = expiredLinks[r.slug] ?? expiredLinks[cmaSlugBase(r.slug)]
-    return {
-      ...r,
-      expired_listing_key: link?.listingKey ?? null,
-      crm_person_id: link?.crmPersonId ?? null,
-      expired_list_price: link?.listPrice ?? null,
-    }
-  })
-
-  // Summary counts (across the full window, before status/search filtering).
-  const counts = {
-    total,
-    draft: allRows.filter((r) => r.status === 'draft').length,
-    finalized: allRows.filter((r) => r.status === 'finalized').length,
-    delivered: allRows.filter((r) => r.status === 'delivered').length,
-  }
-
-  // Status facet + free-text search (presentational, DAL untouched).
-  const q = (params.q ?? '').trim().toLowerCase()
-  let rows = allRows
-  if (params.status) rows = rows.filter((r) => r.status === params.status)
-  if (q) {
-    rows = rows.filter((r) =>
-      [r.subject_address, r.subject_subdivision, r.client_name, r.client_email, r.broker_slug]
-        .filter((v): v is string => Boolean(v))
-        .some((v) => v.toLowerCase().includes(q)),
-    )
-  }
-
-  const matchCount = rows.length
-  const totalPages = Math.max(1, Math.ceil(matchCount / PAGE_SIZE))
-  const currentPage = Math.min(Math.max(1, parseInt(params.page ?? '1', 10) || 1), totalPages)
-  const pageStart = (currentPage - 1) * PAGE_SIZE
-  const pageRows = rows.slice(pageStart, pageStart + PAGE_SIZE)
-  const filtersActive = Boolean(params.q || params.status)
-
-  return (
-    <div className="space-y-6">
-      {/* Glanceable summary */}
-      <KpiStrip items={[
-        { label: 'Total CMAs', value: formatInt(counts.total) },
-        { label: 'Drafts', value: formatInt(counts.draft) },
-        { label: 'Finalized', value: formatInt(counts.finalized) },
-        { label: 'Delivered', value: formatInt(counts.delivered) },
-      ]} />
-
-      {/* Search + status facets */}
-      <ConsoleSection title="Filters">
-        <div className="space-y-4">
-          <form className="flex flex-wrap items-end gap-2" method="get">
-            {Object.entries(params)
-              .filter(([k]) => k !== 'q' && k !== 'page')
-              .filter(([, v]) => Boolean(v))
-              .map(([k, v]) => (
-                <Input key={k} type="hidden" name={k} value={v!} readOnly />
-              ))}
-            <div className="min-w-[200px] flex-1">
-              <Label htmlFor="q" className="text-xs font-medium text-muted-foreground">
-                Address, client, or subdivision
-              </Label>
-              <Input id="q" name="q" defaultValue={params.q ?? ''} placeholder="20889 SE Caldera Dr" />
-            </div>
-            <Button type="submit" className="min-h-11">Search</Button>
-            {filtersActive ? (
-              <Button asChild variant="outline" className="min-h-11">
-                <Link href="/admin/cmas">Clear all</Link>
-              </Button>
-            ) : null}
-          </form>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="w-16 shrink-0 text-xs font-medium text-muted-foreground">Status</span>
-            <div className="flex flex-wrap gap-1.5">
-              {STATUS_OPTIONS.map((opt) => {
-                const active = params.status === opt
-                return (
-                  <Button
-                    key={opt}
-                    asChild
-                    size="sm"
-                    variant={active ? 'default' : 'outline'}
-                    className="h-8 rounded-full px-3 text-xs capitalize"
-                  >
-                    <Link href={`/admin/cmas${toggleParam(params, 'status', opt)}`} aria-pressed={active}>
-                      {opt}
-                    </Link>
-                  </Button>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      </ConsoleSection>
-
-      {/* CMA list */}
-      <ConsoleSection title="CMAs" count={`(${formatInt(matchCount)})`}>
-        <p className="mb-4 text-xs text-muted-foreground">
-          {matchCount === 0
-            ? 'Newest first. Tap Review to open a CMA.'
-            : `Showing ${formatInt(pageStart + 1)}–${formatInt(pageStart + pageRows.length)}. Newest first. Tap Review to open a CMA.`}
-        </p>
-          {matchCount === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                <HugeiconsIcon icon={filtersActive ? SearchRemoveIcon : Files01Icon} size={24} strokeWidth={1.5} />
-              </span>
-              <div className="space-y-1">
-                <p className="text-base font-medium text-foreground">
-                  {filtersActive ? 'No CMAs match these filters' : 'No CMAs yet'}
-                </p>
-                <p className="mx-auto max-w-xs text-sm text-muted-foreground">
-                  {filtersActive
-                    ? 'Try a broader search or clear a filter to widen the results.'
-                    : 'CMAs appear here once the brain producer builds one. Ask for a CMA on any property to get started.'}
-                </p>
-              </div>
-              {filtersActive ? (
-                <Button asChild variant="outline" className="min-h-11">
-                  <Link href="/admin/cmas">Clear all filters</Link>
-                </Button>
-              ) : null}
-            </div>
-          ) : (
-            <>
-              {/* CMA cards — phones (one thumb-tap per CMA) */}
-              <div className="space-y-2 md:hidden">
-                {pageRows.map((cma) => (
-                  <div key={cma.id} className="rounded-lg border border-border bg-card p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold text-foreground">{cma.subject_address}</div>
-                        {cma.subject_subdivision ? (
-                          <div className="truncate text-xs text-muted-foreground">{cma.subject_subdivision}</div>
-                        ) : null}
-                      </div>
-                      <div className="flex shrink-0 flex-col items-end gap-1">
-                        <Badge variant={statusVariant(cma.status)} className="capitalize">
-                          {cma.status}
-                        </Badge>
-                        {needsReview(cma) ? (
-                          <Badge variant="destructive" title={cma.build_summary?.review_reason ?? undefined}>
-                            Needs review
-                          </Badge>
-                        ) : null}
-                      </div>
-                    </div>
-                    <div className="mt-3 flex items-baseline justify-between gap-2 text-sm">
-                      <span className="text-muted-foreground">Rec. list</span>
-                      <span className="font-semibold tabular-nums text-foreground">{formatPrice(cma.recommended_list)}</span>
-                    </div>
-                    <div className="mt-1 flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
-                      <span>Range</span>
-                      <span className="tabular-nums">
-                        {formatPrice(cma.value_low)} – {formatPrice(cma.value_high)}
-                      </span>
-                    </div>
-                    {cma.expired_list_price && cma.recommended_list ? (
-                      <div className="mt-1 flex items-baseline justify-between gap-2 text-xs">
-                        <span className="text-muted-foreground">Vs their price</span>
-                        <PriceVsTheirs theirs={cma.expired_list_price} ours={cma.recommended_list} />
-                      </div>
-                    ) : null}
-                    <div className="mt-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                      <span className="truncate">
-                        {cma.client_name ?? '—'}
-                        {cma.broker_slug ? ` · ${cma.broker_slug}` : ''}
-                      </span>
-                      <span className="shrink-0 tabular-nums">{formatDate(cma.created_at)}</span>
-                    </div>
-                    <div className="mt-3 flex gap-2">
-                      <Button asChild size="sm" className="h-11 flex-1">
-                        <Link href={`/admin/cmas/${cma.slug}`}>Review</Link>
-                      </Button>
-                      {hasDocument(cma) ? (
-                        <Button asChild size="sm" variant="outline" className="h-11 flex-1">
-                          <Link href={`/api/cma/${cma.slug}/pdf`} target="_blank" rel="noopener noreferrer">
-                            PDF
-                          </Link>
-                        </Button>
-                      ) : null}
-                    </div>
-                    {cma.expired_listing_key || cma.crm_person_id ? (
-                      <div className="mt-2 flex gap-2">
-                        {cma.crm_person_id ? (
-                          <Button asChild size="sm" variant="ghost" className="h-9 flex-1">
-                            <Link href={`/admin/crm/${cma.crm_person_id}`}>Client record</Link>
-                          </Button>
-                        ) : null}
-                        {cma.expired_listing_key ? (
-                          <Button asChild size="sm" variant="ghost" className="h-9 flex-1">
-                            <Link href={`/admin/expired-listings/${encodeURIComponent(cma.expired_listing_key)}`}>
-                              Expired listing
-                            </Link>
-                          </Button>
-                        ) : null}
-                      </div>
-                    ) : null}
-                    {cma.build_error ? (
-                      <div className="mt-2 text-xs text-destructive">Build failed. Open Review for detail.</div>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-
-              {/* CMA table — desktop */}
-              <div className="hidden overflow-hidden rounded-lg border border-border md:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Subject</TableHead>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Broker</TableHead>
-                      <TableHead className="text-right">Rec. List</TableHead>
-                      <TableHead className="text-right">Range</TableHead>
-                      <TableHead className="text-right">Comps</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead>Finalized</TableHead>
-                      <TableHead className="text-right">Open</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {pageRows.map((cma) => (
-                      <TableRow key={cma.id}>
-                        <TableCell>
-                          <div className="font-medium">{cma.subject_address}</div>
-                          {cma.subject_subdivision ? (
-                            <div className="text-xs text-muted-foreground">{cma.subject_subdivision}</div>
-                          ) : null}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {cma.crm_person_id ? (
-                            <Link href={`/admin/crm/${cma.crm_person_id}`} className="text-primary underline-offset-2 hover:underline">
-                              {cma.client_name ?? 'Client record'}
-                            </Link>
-                          ) : (
-                            (cma.client_name ?? '—')
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm">{cma.broker_slug ?? '—'}</TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          <div>{formatPrice(cma.recommended_list)}</div>
-                          {cma.expired_list_price && cma.recommended_list ? (
-                            <div className="text-[11px] font-normal text-muted-foreground">
-                              <PriceVsTheirs theirs={cma.expired_list_price} ours={cma.recommended_list} />
-                            </div>
-                          ) : null}
-                        </TableCell>
-                        <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
-                          {formatPrice(cma.value_low)} – {formatPrice(cma.value_high)}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">{cma.comps_count ?? '—'}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-col items-start gap-1">
-                            <Badge variant={statusVariant(cma.status)} className="capitalize">
-                              {cma.status}
-                            </Badge>
-                            {needsReview(cma) ? (
-                              <Badge variant="destructive" title={cma.build_summary?.review_reason ?? undefined}>
-                                Needs review
-                              </Badge>
-                            ) : null}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm">{formatDate(cma.created_at)}</TableCell>
-                        <TableCell className="text-sm">{formatDate(cma.finalized_at)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            {cma.expired_listing_key ? (
-                              <Button asChild size="sm" variant="ghost">
-                                <Link href={`/admin/expired-listings/${encodeURIComponent(cma.expired_listing_key)}`}>
-                                  Expired
-                                </Link>
-                              </Button>
-                            ) : null}
-                            <Button asChild size="sm">
-                              <Link href={`/admin/cmas/${cma.slug}`}>Review</Link>
-                            </Button>
-                            {hasDocument(cma) ? (
-                              <Button asChild size="sm" variant="outline">
-                                <Link href={`/api/cma/${cma.slug}/pdf`} target="_blank" rel="noopener noreferrer">
-                                  PDF
-                                </Link>
-                              </Button>
-                            ) : null}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {totalPages > 1 ? (
-                <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
-                  <p className="text-xs tabular-nums text-muted-foreground">
-                    Page {currentPage} of {totalPages}
-                  </p>
-                  <Pagination className="mx-0 w-auto">
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious
-                          href={pageHref(params, Math.max(1, currentPage - 1))}
-                          aria-disabled={currentPage <= 1}
-                          className={currentPage <= 1 ? 'pointer-events-none opacity-50' : undefined}
-                        />
-                      </PaginationItem>
-                      {pageWindow(currentPage, totalPages).map((p) => (
-                        <PaginationItem key={p} className="hidden sm:list-item">
-                          <PaginationLink href={pageHref(params, p)} isActive={p === currentPage}>
-                            {p}
-                          </PaginationLink>
-                        </PaginationItem>
-                      ))}
-                      <PaginationItem>
-                        <PaginationNext
-                          href={pageHref(params, Math.min(totalPages, currentPage + 1))}
-                          aria-disabled={currentPage >= totalPages}
-                          className={currentPage >= totalPages ? 'pointer-events-none opacity-50' : undefined}
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                </div>
-              ) : null}
-            </>
-          )}
-      </ConsoleSection>
-    </div>
-  )
-}
-
-
-export default async function AdminCmasPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+export default async function AdminCmasPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const session = await getSession()
   const adminRole = await getAdminRoleForEmail(session?.user?.email ?? null)
   if (!adminRole) redirect('/admin/access-denied')
   if (adminRole.role === 'report_viewer') redirect('/admin/access-denied')
 
   const sp = await searchParams
-  const params = normalizeParams(sp)
+  const qRaw = str(sp.q) ?? null
+  const q = (qRaw ?? '').toLowerCase()
+  const city = str(sp.city) ?? null
+  const statusRaw = str(sp.status)
+  const status: CmaStatusFilter = STATUSES.includes(statusRaw as CmaStatusFilter) ? (statusRaw as CmaStatusFilter) : 'all'
+  const requestedPage = Math.max(1, Number(str(sp.page) ?? '1') || 1)
+
+  const { rows: rawRows, total } = await listCmasForAdmin({ limit: WINDOW, offset: 0 })
+  const allRows = rawRows.map(mapRow)
+
+  const summary: CmaWorklistSummary = {
+    total,
+    drafts: allRows.filter((r) => r.status === 'draft').length,
+    finalized: allRows.filter((r) => r.status === 'finalized').length,
+    delivered: allRows.filter((r) => r.status === 'delivered').length,
+    sent: allRows.filter((r) => r.deliveredAt != null).length,
+  }
+  const cities = Array.from(new Set(allRows.map((r) => r.subjectCity).filter((c): c is string => Boolean(c)))).sort()
+
+  let filtered = allRows
+  if (status !== 'all') filtered = filtered.filter((r) => r.status === status)
+  if (city) filtered = filtered.filter((r) => r.subjectCity === city)
+  if (q) {
+    filtered = filtered.filter((r) =>
+      [r.subjectAddress, r.subjectSubdivision, r.clientName, r.clientEmail]
+        .filter((v): v is string => Boolean(v))
+        .some((v) => v.toLowerCase().includes(q)),
+    )
+  }
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const page = Math.min(requestedPage, totalPages)
+  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  const openId = str(sp.id) ?? null
+  const detail = openId ? (allRows.find((r) => r.id === openId) ?? null) : null
+
+  const filters: CmaWorklistFilters = { q: qRaw, city, status, page, pageSize: PAGE_SIZE }
 
   return (
     <div className="space-y-6">
@@ -539,8 +134,7 @@ export default async function AdminCmasPage({ searchParams }: { searchParams: Pr
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold text-foreground">Comparative Market Analyses</h1>
           <p className="text-sm text-muted-foreground">
-            Every CMA the shop has built. Queued requests build automatically every 30 minutes and land
-            here as drafts. Review a draft, approve it, then send it to the lead.
+            Every seller CMA the shop has built. Approve a draft, then send it to the client.
           </p>
         </div>
         <Button asChild className="min-h-11">
@@ -548,9 +142,20 @@ export default async function AdminCmasPage({ searchParams }: { searchParams: Pr
         </Button>
       </header>
 
-      <Suspense fallback={<Skeleton className="h-96 w-full" />}>
-        <CmasContent params={params} />
-      </Suspense>
+      <CmaBoard
+        filters={filters}
+        basePath="/admin/cmas"
+        rows={pageRows}
+        summary={summary}
+        cities={cities}
+        page={page}
+        totalPages={totalPages}
+        detail={detail}
+        approveAction={approveCmaAction}
+        prepareSendAction={prepareCmaSendAction}
+        sendAction={sendCmaToLeadAction}
+        testSendAction={sendTemplateSelfTestAction}
+      />
     </div>
   )
 }

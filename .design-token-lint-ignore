@@ -488,3 +488,18 @@ components/admin/SendDocDialog.client.tsx
 components/admin/prospecting/ProspectDetailDrawer.client.tsx
 components/admin/prospecting/ProspectSendDialog.client.tsx
 components/admin/prospecting/ProspectMap.client.tsx
+# BPO worklist (/admin/bpo rebuild): same fixed side-panel width / viewport-
+# relative sheet + dialog height exception class as ProspectDetailDrawer /
+# ProspectSendDialog above — no locked-ladder step covers a `w-[380px]`
+# in-flow aside, a `h-[90vh]` bottom sheet, or a `max-h-[90dvh]` compose
+# dialog clamp.
+components/admin/bpo/worklist/BpoDetailDrawer.client.tsx
+components/admin/bpo/worklist/BpoSendDialog.client.tsx
+# CMA worklist (/admin/cmas rebuild, 2026-07-18): same fixed side-panel width /
+# viewport-relative sheet + dialog height exception class as ProspectDetailDrawer /
+# ProspectSendDialog above — no locked-ladder step covers a `w-[380px]` in-flow
+# aside, a `h-[90vh]` bottom sheet, or a `max-h-[90dvh]` compose dialog clamp.
+# CmaBoard hosts the detail-drawer chrome inline (no separate CmaDetailDrawer
+# file for a worklist this size), so the exception lands on CmaBoard itself.
+components/admin/cma/worklist/CmaBoard.client.tsx
+components/admin/cma/worklist/CmaSendDialog.client.tsx

@@ -14,13 +14,25 @@ import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import { buildBpo } from '@/lib/bpo/build'
-import { sendBpoToLead } from '@/lib/bpo/send'
+import { sendBpoToLead, prepareBpoSendPreview, type BpoSendOverride } from '@/lib/bpo/send'
 import { slugifyBpoAddress } from '@/lib/bpo/slug'
 import { resolveWritableBpoSlot } from '@/lib/cma/versions'
 import { parseContactAddress } from '@/lib/crm/contact-cma-address'
+import { sendTemplateSelfTestAction } from '@/app/actions/crm-template-test'
 
 export type StartBpoResult = { ok: true; slug: string } | { ok: false; error: string }
 export type SendBpoContactResult = { ok: true; transport: 'gmail' | 'resend' } | { ok: false; error: string }
+
+/** The /admin/bpo worklist compose dialog's prefill context. */
+export interface BpoSendContext {
+  subject: string
+  bodyText: string
+  docUrl: string
+  recipientEmail: string | null
+  recipientName: string | null
+  subjectAddress: string
+  personId: number | null
+}
 
 async function resolveHomeAddress(
   personId: number,
@@ -109,11 +121,14 @@ export async function startBpoForContactAction(personId: number): Promise<StartB
 }
 
 /** Send a finalized BPO to the contact. Client-safe (offer strategy stripped)
- *  unless includeOfferStrategy is set. Explicit-click only. */
+ *  unless includeOfferStrategy is set. Explicit-click only. `override` carries
+ *  a broker-edited subject/body from a compose dialog (e.g. the /admin/bpo
+ *  worklist send dialog) — omit to send the default composed message. */
 export async function sendBpoForContactAction(
   personId: number,
   slug: string,
   includeOfferStrategy = false,
+  override?: BpoSendOverride,
 ): Promise<SendBpoContactResult> {
   try {
     if (!Number.isFinite(personId) || personId <= 0) return { ok: false, error: 'A valid contact id is required' }
@@ -123,7 +138,7 @@ export async function sendBpoForContactAction(
     const scoped = await requirePersonInScope(personId, access)
     if (!scoped.ok) return { ok: false, error: scoped.error }
 
-    const result = await sendBpoToLead({ personId, slug: slug.trim(), includeOfferStrategy })
+    const result = await sendBpoToLead({ personId, slug: slug.trim(), includeOfferStrategy, override })
     if (!result.ok) return { ok: false, error: result.error ?? 'Send failed' }
 
     revalidatePath(`/admin/crm/${personId}`)
@@ -132,4 +147,45 @@ export async function sendBpoForContactAction(
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Unexpected error sending the BPO' }
   }
+}
+
+/**
+ * /admin/bpo worklist compose-dialog prefill. Resolves the recipient straight
+ * from the BPO's linked person_id (a BPO has no bare-email send path — see
+ * lib/bpo/send.ts's prepareBpoSendPreview docblock) and scopes access to that
+ * contact. Read-only; does not send anything.
+ */
+export async function prepareBpoSendPreviewAction(
+  slug: string,
+): Promise<{ ok: true; context: BpoSendContext } | { ok: false; error: string }> {
+  try {
+    if (!slug?.trim()) return { ok: false, error: 'A broker price opinion is required' }
+    const access = await getCrmAccess()
+    if (!access) return { ok: false, error: 'Unauthorized' }
+
+    const preview = await prepareBpoSendPreview(slug.trim())
+    if (!preview.ok) return preview
+    if (preview.personId == null) {
+      return { ok: false, error: 'Link a contact on the BPO detail page to send.' }
+    }
+    const scoped = await requirePersonInScope(preview.personId, access)
+    if (!scoped.ok) return { ok: false, error: scoped.error }
+
+    const { ok: _ok, ...context } = preview
+    void _ok
+    return { ok: true, context }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Unexpected error preparing the send preview' }
+  }
+}
+
+/** "Send test to myself" for the /admin/bpo worklist compose dialog — thin
+ *  forward to the shared self-test send (app/actions/crm-template-test.ts),
+ *  same reuse pattern as app/actions/prospecting.ts's sendProspectTest. */
+export async function sendBpoTestAction(args: {
+  channel: 'sms' | 'email'
+  subject?: string
+  body: string
+}): Promise<{ ok: boolean; error?: string }> {
+  return sendTemplateSelfTestAction({ channel: args.channel, subject: args.subject ?? null, body: args.body })
 }

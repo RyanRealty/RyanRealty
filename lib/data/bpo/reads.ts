@@ -197,22 +197,199 @@ export async function replaceBpoComps(
   return error ? { ok: false, error: error.message } : { ok: true }
 }
 
-/** Paginated BPO list for the admin index. Never selects the html/citations
- *  blobs — those are multi-hundred-KB and must not ride a list read. */
-export async function listBposForAdmin(options: {
-  limit: number
-  offset: number
-}): Promise<{ rows: Array<Record<string, unknown>>; total: number }> {
+// ─── Admin worklist (/admin/bpo) ─────────────────────────────────────────────
+
+/**
+ * The BPO worklist reader — powers the /admin/bpo board (spec: mirrors the
+ * prospecting hub's "small, bounded table; filter + paginate in memory"
+ * pattern rather than a DB-side WHERE per filter). broker_price_opinions is a
+ * low-hundreds table, so one bounded read (capped, newest first) is read once
+ * per request, classified in JS, then sliced to the requested page — same
+ * shape as lib/data/prospecting/list.ts's listProspects.
+ *
+ * `posture` is a hard binary toggle (buyer/seller, defaults to buyer) — never
+ * an "all posture" state — mirroring ProspectFilters' expired/fsbo `kind`
+ * toggle. A BPO whose offer_strategy.mode is missing (pre-offer-strategy
+ * legacy rows) matches neither toggle position; it is still reachable from
+ * the CRM contact card / the canonical /admin/bpo/[slug] route.
+ */
+
+export type BpoStatusFilter = 'all' | 'draft' | 'final' | 'archived'
+export type BpoPosture = 'buyer' | 'seller'
+
+export interface BpoWorklistFilters {
+  q?: string | null
+  status?: BpoStatusFilter
+  /** Defaults to 'buyer' when omitted — this dashboard is buyer-facing by default. */
+  posture?: BpoPosture
+  city?: string | null
+  page?: number
+  pageSize?: number
+}
+
+export interface BpoWorklistRow {
+  id: string
+  slug: string
+  subjectAddress: string | null
+  subjectSubdivision: string | null
+  subjectCity: string | null
+  subjectStatus: string | null
+  opinionValue: number | null
+  valueLow: number | null
+  valueHigh: number | null
+  confidence: string | null
+  compsCount: number | null
+  brokerSlug: string | null
+  purpose: string | null
+  /** 'draft' | 'final' (the raw DB status column). */
+  status: string
+  /** Derived from offer_strategy.mode — null on legacy rows built before the offer-strategy feature. */
+  posture: BpoPosture | null
+  personId: number | null
+  lastSentAt: string | null
+  sentCount: number
+  createdAt: string | null
+  builtAt: string | null
+  finalizedAt: string | null
+  archivedAt: string | null
+  buildError: string | null
+}
+
+export interface BpoWorklistSummary {
+  total: number
+  drafts: number
+  final: number
+  sent: number
+}
+
+export interface BpoWorklistResult {
+  rows: BpoWorklistRow[]
+  total: number
+  summary: BpoWorklistSummary
+  page: number
+  pageSize: number
+  /** Distinct subject cities in the current posture's non-archived set, for the city filter Select. */
+  cities: string[]
+}
+
+/** Never selects the html/citations blobs — those are multi-hundred-KB and
+ *  must not ride a list read. */
+const BPO_WORKLIST_SELECT =
+  'id, slug, subject_address, subject_subdivision, subject_city, subject_status, opinion_value, value_low, value_high, confidence, comps_count, broker_slug, purpose, status, offer_strategy, person_id, last_sent_at, sent_count, generation_reason, created_at, built_at, finalized_at, archived_at, build_error'
+
+function mapWorklistRow(r: Record<string, unknown>): BpoWorklistRow {
+  const offer = (r.offer_strategy as Record<string, unknown> | null) ?? null
+  const mode = offer?.mode
+  return {
+    id: String(r.id),
+    slug: String(r.slug),
+    subjectAddress: (r.subject_address as string | null) ?? null,
+    subjectSubdivision: (r.subject_subdivision as string | null) ?? null,
+    subjectCity: (r.subject_city as string | null) ?? null,
+    subjectStatus: (r.subject_status as string | null) ?? null,
+    opinionValue: (r.opinion_value as number | null) ?? null,
+    valueLow: (r.value_low as number | null) ?? null,
+    valueHigh: (r.value_high as number | null) ?? null,
+    confidence: (r.confidence as string | null) ?? null,
+    compsCount: (r.comps_count as number | null) ?? null,
+    brokerSlug: (r.broker_slug as string | null) ?? null,
+    purpose: (r.purpose as string | null) ?? null,
+    status: String(r.status ?? 'draft'),
+    posture: mode === 'buyer' || mode === 'seller' ? mode : null,
+    personId: (r.person_id as number | null) ?? null,
+    lastSentAt: (r.last_sent_at as string | null) ?? null,
+    sentCount: (r.sent_count as number | null) ?? 0,
+    createdAt: (r.created_at as string | null) ?? null,
+    builtAt: (r.built_at as string | null) ?? null,
+    finalizedAt: (r.finalized_at as string | null) ?? null,
+    archivedAt: (r.archived_at as string | null) ?? null,
+    buildError: (r.build_error as string | null) ?? null,
+  }
+}
+
+/** Bounded base read (q/city only — status/posture/pagination are applied in
+ *  memory below). THROWS on a Supabase error rather than returning an empty
+ *  set, so a transient blip never masquerades as "no opinions" (no-poison-null). */
+async function fetchRawBpoWorklistRows(filters: { q?: string | null; city?: string | null }): Promise<Record<string, unknown>[]> {
   const sb = client()
-  if (!sb) return { rows: [], total: 0 }
-  const { data, count } = await sb
+  if (!sb) return []
+  let q = sb.from('broker_price_opinions').select(BPO_WORKLIST_SELECT)
+  const term = filters.q?.trim().replace(/[%,()]/g, ' ').trim()
+  if (term) {
+    q = q.or(`subject_address.ilike.%${term}%,subject_subdivision.ilike.%${term}%`)
+  }
+  if (filters.city?.trim()) q = q.eq('subject_city', filters.city.trim())
+  // The BPO universe is a low-hundreds table — a documented cap, not a
+  // reliance on PostgREST's implicit 1,000-row default.
+  const { data, error } = await q.order('created_at', { ascending: false }).limit(1000)
+  if (error) throw new Error(`listBposForAdmin base read failed: ${error.message}`)
+  return (data ?? []) as unknown as Record<string, unknown>[]
+}
+
+/** The BPO worklist read for /admin/bpo. */
+export async function listBposForAdmin(filters: BpoWorklistFilters): Promise<BpoWorklistResult> {
+  const page = Math.max(1, Math.floor(filters.page ?? 1))
+  const pageSize = Math.min(Math.max(Math.floor(filters.pageSize ?? 24), 1), 100)
+  const posture: BpoPosture = filters.posture === 'seller' ? 'seller' : 'buyer'
+  const statusFilter: BpoStatusFilter = filters.status ?? 'all'
+
+  let rawRows: Record<string, unknown>[]
+  try {
+    rawRows = await fetchRawBpoWorklistRows({ q: filters.q, city: filters.city })
+  } catch (e) {
+    console.error('[listBposForAdmin] base read threw:', e instanceof Error ? e.message : e)
+    rawRows = []
+  }
+
+  const mapped = rawRows.map(mapWorklistRow)
+  const postureScoped = mapped.filter((r) => r.posture === posture)
+
+  const cities = [
+    ...new Set(
+      postureScoped
+        .filter((r) => !r.archivedAt)
+        .map((r) => r.subjectCity)
+        .filter((c): c is string => !!c && c.trim().length > 0)
+        .map((c) => c.trim()),
+    ),
+  ].sort((a, b) => a.localeCompare(b))
+
+  const nonArchived = postureScoped.filter((r) => !r.archivedAt)
+  const summary: BpoWorklistSummary = {
+    total: nonArchived.length,
+    drafts: nonArchived.filter((r) => r.status === 'draft').length,
+    final: nonArchived.filter((r) => r.status === 'final').length,
+    sent: nonArchived.filter((r) => r.sentCount > 0).length,
+  }
+
+  const filtered = postureScoped.filter((r) => {
+    if (statusFilter === 'archived') return Boolean(r.archivedAt)
+    if (r.archivedAt) return false
+    if (statusFilter === 'draft') return r.status === 'draft'
+    if (statusFilter === 'final') return r.status === 'final'
+    return true // 'all' — every non-archived row
+  })
+
+  const total = filtered.length
+  const from = (page - 1) * pageSize
+  const rows = filtered.slice(from, from + pageSize)
+
+  return { rows, total, summary, page, pageSize, cities }
+}
+
+/** Single worklist row by id (the `?id=` detail drawer read) — same light
+ *  projection as the list, no html/citations blob. */
+export async function getBpoWorklistRowById(id: string): Promise<BpoWorklistRow | null> {
+  const sb = client()
+  if (!sb || !id?.trim()) return null
+  const { data, error } = await sb
     .from('broker_price_opinions')
-    .select(
-      'id, slug, subject_address, subject_subdivision, subject_city, subject_status, opinion_value, value_low, value_high, confidence, comps_count, broker_slug, purpose, status, generation_reason, created_at, built_at, finalized_at, build_error',
-      { count: 'exact' },
-    )
-    .is('archived_at', null)
-    .order('created_at', { ascending: false })
-    .range(options.offset, options.offset + options.limit - 1)
-  return { rows: (data ?? []) as Array<Record<string, unknown>>, total: count ?? data?.length ?? 0 }
+    .select(BPO_WORKLIST_SELECT)
+    .eq('id', id.trim())
+    .maybeSingle()
+  if (error) {
+    console.error('[getBpoWorklistRowById]', error.message)
+    return null
+  }
+  return data ? mapWorklistRow(data as unknown as Record<string, unknown>) : null
 }

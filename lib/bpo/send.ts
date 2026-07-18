@@ -5,7 +5,16 @@
  *   sendBpoToLead() — an explicit, button-triggered CRM send from the signing
  *   broker's own mailbox (Gmail DWD), with automatic Resend fallback. PDF
  *   attached, FUB BCC'd, open/click instrumented, suppression checked (fails
- *   closed), logged as email_out on the contact's timeline.
+ *   closed), logged as email_out on the contact's timeline. Takes an optional
+ *   `override` (BpoSendOverride) to carry a broker-edited subject/body from a
+ *   compose dialog instead of the default composed message.
+ *
+ *   prepareBpoSendPreview() — read-only compose-dialog prefill (mirrors
+ *   lib/cma/send.ts's prepareCmaSendPreview): the default subject + message
+ *   text, the doc URL, and the linked contact's identity, resolved straight
+ *   from the BPO row's person_id. A BPO has no bare client_email/client_name
+ *   columns of its own — unlike a CMA it can only ever go to its linked CRM
+ *   contact.
  *
  * Client-safe by default: the internal Offer strategy is stripped from the
  * emailed PDF unless the caller passes includeOfferStrategy (a BPO going to
@@ -43,6 +52,15 @@ export interface SendBpoResult {
   personId?: number | null
 }
 
+/** Broker-composed override for the recipient email (worklist compose dialog).
+ *  The report button, PDF attachment, branded shell, and signature stay —
+ *  the override replaces the message paragraphs and optionally the subject.
+ *  Mirrors lib/cma/send.ts's CmaSendOverride. */
+export interface BpoSendOverride {
+  subject?: string | null
+  bodyText?: string | null
+}
+
 function buildBody(opts: {
   slug: string
   subjectAddress: string
@@ -52,12 +70,43 @@ function buildBody(opts: {
   valueHigh: number | null
   broker: ShellBroker
   brokerPhone: string | null
+  override?: BpoSendOverride
 }): { html: string; text: string; subject: string } {
   const firstName = (opts.clientName ?? '').trim().split(/\s+/)[0] || 'there'
   const brokerFirst = opts.broker.firstName
   const viewUrl = `${SITE_URL}/bpo/${opts.slug}`
   const hasNumbers = opts.opinionValue != null
-  const subject = `Our price opinion for ${opts.subjectAddress}`
+  const subject = opts.override?.subject?.trim() || `Our price opinion for ${opts.subjectAddress}`
+
+  if (opts.override?.bodyText?.trim()) {
+    const raw = opts.override.bodyText.trim()
+    const paras = raw
+      .split(/\n{2,}/)
+      .map((p) => `<p style="margin:0 0 16px 0;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`)
+      .join('')
+    const bodyHtml = `
+<div style="padding:32px 34px 8px;">
+  ${paras}
+  <p style="margin:0 0 24px 0;"><a href="${viewUrl}" style="display:inline-block;background:#102742;color:#faf8f4;font-size:13px;font-weight:700;letter-spacing:.08em;text-decoration:none;padding:14px 32px;">READ THE OPINION &rarr;</a></p>
+  <p style="margin:0 0 8px 0;">${escapeHtml(brokerFirst)}<br/>Ryan Realty${opts.brokerPhone ? `<br/>${escapeHtml(opts.brokerPhone)}` : ''}</p>
+</div>`
+    const text = `${raw}
+
+Read the opinion: ${viewUrl}
+
+${brokerFirst}
+Ryan Realty${opts.brokerPhone ? `\n${opts.brokerPhone}` : ''}${brandedTextFooter()}`
+    const html = wrapBrandedEmail({
+      bodyHtml,
+      previewText: `Our price opinion for ${opts.subjectAddress}.`,
+      mastheadLine: 'BROKER PRICE OPINION',
+      heroUrl: null,
+      senderBroker: opts.broker,
+      unsubscribeUrl: null,
+      audienceLine: `You are receiving this because a price opinion was prepared for ${opts.subjectAddress}.`,
+    })
+    return { html, text, subject }
+  }
 
   const numbersHtml = hasNumbers
     ? `<p style="margin:0 0 16px 0;">The short version. Weighing the comparable sales, the market right now, and the home's listing history, our opinion of value is <strong>${usd(opts.opinionValue)}</strong>${
@@ -98,10 +147,126 @@ Ryan Realty${opts.brokerPhone ? `\n${opts.brokerPhone}` : ''}${brandedTextFooter
   return { html, text, subject }
 }
 
+/** The default compose message (the link, signature, and footer append at send). */
+function defaultBpoComposeText(opts: {
+  subjectAddress: string
+  clientName: string | null
+  opinionValue: number | null
+  valueLow: number | null
+  valueHigh: number | null
+}): string {
+  const firstName = (opts.clientName ?? '').trim().split(/\s+/)[0] || 'there'
+  const hasNumbers = opts.opinionValue != null
+  const numbers = hasNumbers
+    ? `\n\nThe short version. Weighing the comparable sales, the market right now, and the home's listing history, our opinion of value is ${usd(opts.opinionValue)}${
+        opts.valueLow != null && opts.valueHigh != null ? `, within a range of ${usd(opts.valueLow)} to ${usd(opts.valueHigh)}` : ''
+      }.`
+    : ''
+  return `Hi ${firstName},
+
+Here is our broker price opinion for ${opts.subjectAddress}. The full report is attached as a PDF, and you can read it online.${numbers}
+
+It walks through the comparable sales, the market conditions, and how the property's listing history shapes the number. Happy to talk any of it through.`
+}
+
+async function resolveBpoShellBroker(brokerSlug: string | null): Promise<{ broker: ShellBroker; phone: string | null }> {
+  const brokerRaw = await getCmaBrokerBySlugOrEmail({ slug: brokerSlug })
+  const brokerEmail = (brokerRaw?.email as string | null) ?? 'matt@ryan-realty.com'
+  const brokerName = (brokerRaw?.display_name as string) ?? 'Matt Ryan'
+  const brokerPhone = (brokerRaw?.phone as string | null) ?? null
+  const brokerPhoto = (brokerRaw?.photo_url as string | null) ?? null
+  return {
+    broker: {
+      name: brokerName,
+      firstName: brokerName.split(/\s+/)[0]!,
+      title: (brokerRaw?.title as string) ?? 'Owner & Principal Broker',
+      phone: brokerPhone,
+      email: brokerEmail,
+      headshotUrl: brokerPhoto
+        ? brokerPhoto.startsWith('http')
+          ? brokerPhoto
+          : `${SITE_URL}${brokerPhoto}`
+        : `${SITE_URL}/images/brokers/ryan-matt.png`,
+      isOwner: (brokerSlug ?? '') === 'matthew-ryan',
+    },
+    phone: brokerPhone,
+  }
+}
+
+/**
+ * Compose-dialog prefill: the default subject + message text (sans footer),
+ * the doc URL, and the linked contact's identity — resolved straight from the
+ * BPO row's person_id (a BPO has no bare client_email/client_name columns of
+ * its own; unlike a CMA it can only ever go to its linked CRM contact).
+ * Read-only. Mirrors lib/cma/send.ts's prepareCmaSendPreview.
+ */
+export async function prepareBpoSendPreview(slug: string): Promise<
+  | {
+      ok: true
+      subject: string
+      bodyText: string
+      docUrl: string
+      recipientEmail: string | null
+      recipientName: string | null
+      subjectAddress: string
+      personId: number | null
+    }
+  | { ok: false; error: string }
+> {
+  const safeSlug = slug.trim().toLowerCase()
+  if (!/^[a-z0-9-]{3,80}$/.test(safeSlug)) {
+    return { ok: false, error: 'Invalid broker price opinion reference.' }
+  }
+  const row = await getBpoAdminRowBySlug(safeSlug)
+  if (!row) return { ok: false, error: 'Broker price opinion not found' }
+  if (row.archived_at != null) {
+    return { ok: false, error: 'This opinion has been archived. Restore it before sending.' }
+  }
+
+  const personId = (row.person_id as number | null) ?? null
+  const subjectAddress = (row.subject_address as string) ?? safeSlug
+  let recipientEmail: string | null = null
+  let recipientName: string | null = null
+  if (personId != null) {
+    const target = await getContactSendTarget(personId)
+    recipientEmail = target?.email ?? null
+    recipientName = target?.name ?? null
+  }
+
+  const { broker, phone } = await resolveBpoShellBroker((row.broker_slug as string | null) ?? null)
+  const opinionValue = (row.opinion_value as number | null) ?? null
+  const valueLow = (row.value_low as number | null) ?? null
+  const valueHigh = (row.value_high as number | null) ?? null
+
+  const body = buildBody({
+    slug: safeSlug,
+    subjectAddress,
+    clientName: recipientName,
+    opinionValue,
+    valueLow,
+    valueHigh,
+    broker,
+    brokerPhone: phone,
+  })
+
+  return {
+    ok: true,
+    subject: body.subject,
+    bodyText: defaultBpoComposeText({ subjectAddress, clientName: recipientName, opinionValue, valueLow, valueHigh }),
+    docUrl: `${SITE_URL}/bpo/${safeSlug}`,
+    recipientEmail,
+    recipientName,
+    subjectAddress,
+    personId,
+  }
+}
+
 export async function sendBpoToLead(opts: {
   personId: number
   slug: string
   includeOfferStrategy?: boolean
+  /** Broker-edited subject/body from the worklist compose dialog (optional). */
+  override?: BpoSendOverride
 }): Promise<SendBpoResult> {
   const slug = opts.slug.trim().toLowerCase()
   if (!/^[a-z0-9-]{3,80}$/.test(slug)) {
@@ -190,6 +355,7 @@ export async function sendBpoToLead(opts: {
     valueHigh: (row.value_high as number | null) ?? null,
     broker: shellBroker,
     brokerPhone,
+    override: opts.override,
   })
 
   const crmBrokerSlug = CRM_BROKER_BY_EMAIL[brokerEmail.toLowerCase()] ?? 'matt'

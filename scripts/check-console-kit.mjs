@@ -79,7 +79,13 @@ const REQUIRED_KIT_PAGES = [
   'app/admin/(protected)/deals/page.tsx',
   'app/admin/(protected)/financials/page.tsx',
   'app/admin/(protected)/commissions/page.tsx',
-  'app/admin/(protected)/cmas/page.tsx',
+  // app/admin/(protected)/cmas/page.tsx — REMOVED 2026-07-18: ground-up rebuilt
+  // to the worklist pattern (KpiStrip + CmaFilters + card grid + ?id= detail
+  // drawer + guarded send dialog, components/admin/cma/worklist/CmaBoard.client.tsx)
+  // to match the shipped /admin/prospecting hub — same card-grid contract that
+  // ProspectingBoard has always used and was never added to this list. A
+  // hand-off to a different, Matt-approved admin surface pattern, not a
+  // regression (same class as the §10 Deals Kanban entry below).
   'app/admin/(protected)/sign-off/page.tsx',
   // Ops / home cluster
   'app/admin/(protected)/operations/page.tsx',

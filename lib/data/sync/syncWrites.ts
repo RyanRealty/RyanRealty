@@ -848,9 +848,9 @@ export async function upsertCmaRowBySlug(
   }
 }
 
-/** Paginated cmas list for admin detail.
- *  Explicit projection — html_content/citations are multi-hundred-KB blobs
- *  since the 2026-07-07 deterministic builder and must never ride a list read. */
+/** Paginated cmas list for admin detail — seller CMAs only (/admin/cmas);
+ *  doc_type filter excludes expired-audit docs. html_content/citations are
+ *  excluded (multi-hundred-KB blobs) — never ride a list read. */
 export async function listCmasForAdmin(options: {
   limit: number
   offset: number
@@ -860,10 +860,10 @@ export async function listCmasForAdmin(options: {
   const { data, count } = await sb
     .from('cmas')
     .select(
-      'id, slug, subject_address, subject_subdivision, subject_city, client_name, client_email, broker_slug, value_low, value_high, recommended_list, comps_count, status, generation_reason, created_at, finalized_at, delivered_at, built_at, build_error, html_path, price_override, build_summary',
+      'id, slug, doc_type, subject_address, subject_subdivision, subject_city, client_name, client_email, broker_slug, value_low, value_high, recommended_list, comps_count, status, generation_reason, created_at, finalized_at, delivered_at, built_at, build_error, html_path, price_override, build_summary',
       { count: 'exact' },
     )
-    .order('created_at', { ascending: false })
+    .or('doc_type.eq.cma,doc_type.is.null').order('created_at', { ascending: false })
     .range(options.offset, options.offset + options.limit - 1)
   return { rows: (data ?? []) as Array<Record<string, unknown>>, total: count ?? data?.length ?? 0 }
 }
