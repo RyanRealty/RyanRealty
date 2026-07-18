@@ -14,6 +14,7 @@
  * pill strip, calling-method sheet) — same gated actions, phone-first layout.
  */
 import { redirect } from 'next/navigation'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import {
   getCrmAccess,
   sendCrmSmsAction,
@@ -90,6 +91,7 @@ export default async function CrmInboxPage({
 }: {
   searchParams: Promise<{ scope?: string; folder?: string; view?: string; c?: string; compose?: string; error?: string; m?: string }>
 }) {
+  await requireAdminPage('inbox.view')
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
 

@@ -1,5 +1,6 @@
 // @no-parity — internal admin surface, no public mockup contract
 import Link from 'next/link'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import { listNewsletters, newsletterSubscriberCounts, type NewsletterRow } from '@/lib/data'
@@ -37,6 +38,7 @@ function fmtDate(iso: string | null): string {
 }
 
 export default async function NewslettersPage() {
+  await requireAdminPage('content.marketing')
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
 

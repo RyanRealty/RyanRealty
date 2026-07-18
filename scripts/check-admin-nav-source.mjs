@@ -69,6 +69,66 @@ if (navSrc) {
   }
 }
 
+// ── 4. Every RESTRICTED nav capability is ENFORCED on its page (kills the RC5
+//       class: nav hides an item but the page still loads it by URL). For each
+//       nav href whose capability excludes a role (superuser-only, or excludes
+//       report_viewer), the page must enforce it via one of:
+//        (a) requireAdminPage('<cap>') in the page.tsx (the canonical guard),
+//        (b) an inline role redirect in the page (role !== 'superuser' / report_viewer),
+//        (c) a parent layout.tsx with a role redirect,
+//        (d) an explicit allowlist entry (client pages guarded at the action layer).
+//       Enforced 2026-07-17 after the audit found 22 nav-vs-page mismatches. ──
+const capsSrc = read('lib/admin/capabilities.ts')
+const CAP_ROLES = {}
+if (capsSrc) {
+  const body = capsSrc.slice(capsSrc.indexOf('CAPABILITY_ROLES'))
+  const RE = /'([\w.]+)':\s*\[([^\]]*)\]/g
+  let mm
+  while ((mm = RE.exec(body)) !== null) {
+    CAP_ROLES[mm[1]] = mm[2].match(/'([\w_]+)'/g)?.map((s) => s.replace(/'/g, '')) ?? []
+  }
+}
+// Pages whose enforcement lives elsewhere than a same-file requireAdminPage /
+// inline role check / parent layout — documented so a NEW restricted route
+// can't silently join without a guard.
+const ENFORCEMENT_ALLOWLIST = {
+  '/admin/blog': 'client page; content.blog guard on getAdminBlogPosts + all blog writes (app/actions/blog.ts)',
+  '/admin/guides': 'client page; content.guides guard on getAdminGuides + all guide writes (app/actions/guides.ts)',
+}
+if (capsSrc && navSrc) {
+  // Parse nav href → capability pairs from DESTINATIONS.
+  const pairs = []
+  const ITEM_RE = /href:\s*'([^']+)'[^}]*?capability:\s*'([\w.]+)'/g
+  let pm
+  while ((pm = ITEM_RE.exec(navSrc)) !== null) pairs.push({ href: pm[1], cap: pm[2] })
+  const hasRoleRedirect = (src) =>
+    /!==\s*'superuser'|===\s*'report_viewer'|requireAdminPage\(|requireSuperuser|role\s*!==\s*'superuser'/.test(src)
+  for (const { href, cap } of pairs) {
+    const roles = CAP_ROLES[cap]
+    if (!roles) { fails.push(`nav href ${href} → capability '${cap}' is not in CAPABILITY_ROLES`); continue }
+    const restricted = !(roles.includes('broker') && roles.includes('report_viewer'))
+    if (!restricted) continue // all-admin cap (today.view / settings.account) — page needs no gate
+    if (ENFORCEMENT_ALLOWLIST[href]) continue
+    const rel = href === '/admin' ? '' : href.slice('/admin/'.length)
+    const page = rel ? `app/admin/(protected)/${rel}/page.tsx` : 'app/admin/(protected)/page.tsx'
+    const pageSrc = existsSync(page) ? readFileSync(page, 'utf8') : ''
+    // Canonical: page calls requireAdminPage('<this cap>'). Accept an inline role
+    // redirect or a parent layout gate as equivalent enforcement.
+    let enforced = pageSrc.includes(`requireAdminPage('${cap}')`) || hasRoleRedirect(pageSrc)
+    if (!enforced) {
+      // walk parent segments for a gating layout.tsx
+      const segs = rel.split('/')
+      for (let i = segs.length; i > 0 && !enforced; i--) {
+        const layout = `app/admin/(protected)/${segs.slice(0, i).join('/')}/layout.tsx`
+        if (existsSync(layout) && hasRoleRedirect(readFileSync(layout, 'utf8'))) enforced = true
+      }
+    }
+    if (!enforced) {
+      fails.push(`nav href ${href} → '${cap}' (roles ${JSON.stringify(roles)}) is RESTRICTED but its page enforces nothing — add requireAdminPage('${cap}') to ${page} (RC5 class). If guarded elsewhere, allowlist it in check-admin-nav-source.mjs.`)
+    }
+  }
+}
+
 // ── 3. Single palette mount ─────────────────────────────────────────────────
 const topNav = read('components/console/ConsoleTopNav.tsx')
 if (topNav && /<ConsoleCommandPalette[\s/>]/.test(topNav)) {

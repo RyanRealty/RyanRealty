@@ -5,9 +5,9 @@
       "kind": "internal",
       "reason": "Internal: newsletter test-send (adminTestSendNewsletterAction) to the authenticated admin's OWN inbox (gate.email from requireAdmin()), subject prefixed [TEST]. Never a lead or subscriber \u2014 it renders the issue as-broker so the admin can preview real delivery before enqueueing. The actual audience send routes through the gated queue drain (per-row isSuppressedByEmail). Permanently allowlisted. Line shifted -45 when the preview render helpers moved to lib/newsletter/preview.ts (W2 review-surface build 2026-07-06)."
     },
-    "app/admin/(protected)/crm/inbox/page.tsx:409": {
+    "app/admin/(protected)/crm/inbox/page.tsx:411": {
       "kind": "internal",
-      "reason": "Internal: inbox note @mention notification to the mentioned BROKER's own ryan-realty.com mailbox (spec 08 paragraph 10.2). Never to a lead \u2014 the CRM_MAILBOXES lookup only resolves broker addresses. Client-facing sends on this page route through the gated sendCrmEmailAction. Permanently allowlisted."
+      "reason": "Internal: inbox note @mention notification to the mentioned BROKER's own ryan-realty.com mailbox (spec 08 paragraph 10.2). Never to a lead \u2014 the CRM_MAILBOXES lookup only resolves broker addresses. Client-facing sends on this page route through the gated sendCrmEmailAction. Permanently allowlisted. Line re-keyed 409->411 when the RC5 requireAdminPage('inbox.view') guard added 2 lines above it (2026-07-17)."
     },
     "app/api/cma/[slug]/gmail-draft/route.ts:167": {
       "kind": "internal",

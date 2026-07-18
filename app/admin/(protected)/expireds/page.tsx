@@ -8,6 +8,7 @@
  */
 
 import Link from 'next/link'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { listExpiredDashboardRows } from '@/lib/data/expired/dashboard'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
@@ -29,6 +30,7 @@ function Engagement({ n, label }: { n: number; label: string }) {
 }
 
 export default async function ExpiredsDashboardPage() {
+  await requireAdminPage('prospecting.view')
   const rows = await listExpiredDashboardRows()
   const withAudit = rows.filter((r) => r.audit_slug && r.audit_doc_type === 'expired-audit').length
   const sent = rows.filter((r) => r.email_sent_at || r.sms_sent_at).length

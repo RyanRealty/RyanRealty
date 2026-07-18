@@ -1,5 +1,6 @@
 // @no-parity — internal admin tool (deal pipeline dashboard), no public mockup contract
 import Link from 'next/link'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
 import { KpiStrip } from '@/components/console/KpiStrip'
@@ -163,6 +164,7 @@ function actionItems(p: DealProperty): string[] {
 /* ---------- page ---------- */
 
 export default async function DealsPage() {
+  await requireAdminPage('transactions.view')
   const data = await getDealDashboard()
   const { properties, totals } = data
 

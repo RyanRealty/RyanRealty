@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { unstable_cache } from 'next/cache'
 import { getSetupComplete } from '@/app/actions/admin-setup'
 import {
@@ -44,6 +45,7 @@ const getDashboardData = unstable_cache(
 )
 
 export default async function AdminDashboardPage() {
+  await requireAdminPage('settings.system')
   const setupComplete = await getSetupComplete()
   if (!setupComplete) redirect('/admin/setup')
 

@@ -18,25 +18,30 @@ export type LatestNewsletterIssue = {
 
 export async function getLatestNewsletterIssue(): Promise<LatestNewsletterIssue | null> {
   const sb = createServiceClient()
+  // MUST mirror resolveCurrentNewsletter (app/actions/contact-newsletter.ts) so
+  // the subject the SendPanel shows is exactly the issue that sends (audit MED —
+  // the display query lacked the created_at tiebreak, the nullsFirst handling,
+  // AND the body requirement, so it could show a bodyless/older sent issue while
+  // the send actually fell through to a draft).
   const { data: sent } = await sb
     .from('newsletters')
-    .select('id,subject,status,sent_at')
+    .select('id,subject,sent_at,body_html,body_text')
     .eq('status', 'sent')
-    .order('sent_at', { ascending: false })
+    .order('sent_at', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
-  if (sent) {
+  if (sent && (sent.body_html || sent.body_text)) {
     return { id: String(sent.id), subject: String(sent.subject ?? ''), status: 'sent', sentAt: (sent.sent_at as string | null) ?? null }
   }
   const { data: draft } = await sb
     .from('newsletters')
-    .select('id,subject,status,body_html')
+    .select('id,subject,body_html,body_text')
     .eq('status', 'draft')
-    .not('body_html', 'is', null)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
-  if (draft) {
+  if (draft && (draft.body_html || draft.body_text)) {
     return { id: String(draft.id), subject: String(draft.subject ?? ''), status: 'draft', sentAt: null }
   }
   return null

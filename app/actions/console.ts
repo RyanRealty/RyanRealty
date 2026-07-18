@@ -1,6 +1,7 @@
 'use server'
 
 import { listCrmPeople, getCrmAccess } from '@/app/actions/crm'
+import { checkAdminAction } from '@/lib/admin/require-admin'
 
 export type ConsoleLeadHit = { id: number; name: string; stage: string; source: string | null }
 
@@ -13,6 +14,12 @@ export async function consoleSearchLeads(q: string): Promise<ConsoleLeadHit[]> {
   if (query.length < 2) return []
   const access = await getCrmAccess()
   if (!access) return []
+  // The ⌘K palette renders for every admin role, but people.view is the CRM
+  // read cap. Without this a report_viewer (null brokerSlug → no broker filter)
+  // would search EVERY lead through the palette, bypassing the page guards
+  // (audit MED — the one non-page CRM read path).
+  const gate = await checkAdminAction('people.view')
+  if (!gate.ok) return []
   const res = await listCrmPeople({ q: query, broker: access.brokerSlug ?? undefined, page: 1 })
   return res.rows.slice(0, 8).map((p) => ({
     id: p.id,

@@ -1,5 +1,23 @@
 > **NEWEST, START HERE: the AUDIT-HARDENING block immediately below (2026-07-17 late).** Prior: ONE-NAV + UNIFIED-SEND (2026-07-17 eve), CMA VERSION-CHAIN (2026-07-17 PM), the ADMIN-REBUILD v2 LITMUS block (2026-07-17 AM), then RC1 (2026-07-16).
 
+# RC5 CLASS FULLY CLOSED — every restricted nav route enforces its cap (2026-07-17 late)
+
+The audit's HIGH fixes closed 4 routes; a full capability-vs-page map then found
+the SAME class on **22 more** and ALL are now closed. Every admin page whose nav
+capability restricts a role enforces it in-body (`requireAdminPage('<cap>')`),
+via a parent layout, or (blog/guides) at the read+write actions. `consoleSearchLeads`
+(⌘K) now checks `people.view`. **`ci:admin-nav-source` (G52) check #4 holds it**:
+a restricted nav route with no page guard fails CI. If you add a nav destination
+with a superuser-only or role-restricted capability, you MUST guard its page or
+the build fails — the gate tells you the exact cap to add.
+- **Brokers keep every CRM/prospecting/transactions/settings surface** (caps are
+  broker-inclusive). Only report_viewer (0 rows today) is newly bounced from those.
+- **Flag for Matt:** newsletters + broker-links are now superuser-only on the PAGE
+  (was broker-visible in the old nav) — enforcing the locked A1 content.marketing
+  decision. If brokers should keep them, edit `CAPABILITY_ROLES['content.marketing']`.
+- Newsletter News-tab subject now provably == the issue that sends
+  (getLatestNewsletterIssue mirrors resolveCurrentNewsletter).
+
 # AUDIT HARDENING — 4 HIGH auth/UX holes closed (2026-07-17 late, same session)
 
 An adversarial 28-agent audit of the day's shipped commits found **4 confirmed

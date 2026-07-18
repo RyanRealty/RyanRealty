@@ -1,5 +1,6 @@
 // @no-parity — internal admin surface, no public mockup contract
 import Link from 'next/link'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { redirect } from 'next/navigation'
 import {
   getCrmAccess,
@@ -55,6 +56,7 @@ function fmtRelative(iso: string): string {
 }
 
 export default async function CrmApprovalsPage() {
+  await requireAdminPage('people.view')
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
 

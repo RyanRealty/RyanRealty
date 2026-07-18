@@ -18,6 +18,7 @@
  */
 
 import { redirect } from 'next/navigation'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { dealInScope } from '@/lib/crm/deal-scope'
@@ -46,6 +47,7 @@ export default async function CrmDealsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
+  await requireAdminPage('people.view')
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
   const scoped = scopeBroker(access)

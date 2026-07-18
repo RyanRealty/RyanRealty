@@ -24,6 +24,7 @@
  * DAL: every DB read goes through lib/data/crm readers (no raw .from() here).
  */
 import { redirect } from 'next/navigation'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { Suspense } from 'react'
 import { getCrmAccess } from '@/app/actions/crm'
 import { mirrorHealthStatus } from '@/lib/crm/mirror-health'
@@ -285,6 +286,7 @@ async function HealthBoard() {
 }
 
 export default async function CrmHealthPage() {
+  await requireAdminPage('settings.system')
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
 

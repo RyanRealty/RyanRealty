@@ -21,6 +21,7 @@
  * superuser-gated in the actions.
  */
 import { redirect } from 'next/navigation'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getCrmAccess } from '@/app/actions/crm'
 import { getCrmTemplatesAdmin, type CrmTemplateAdmin } from '@/lib/data/crm/getCrmTemplatesAdmin'
 import { getCrmFieldDefinitions } from '@/lib/data/crm/getCrmFieldDefinitions'
@@ -70,6 +71,7 @@ export default async function CrmTemplatesSettingsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
+  await requireAdminPage('settings.templates')
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
 

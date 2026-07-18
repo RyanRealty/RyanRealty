@@ -115,6 +115,45 @@ baseline, tightened by D9):**
 
 ## Shipped
 
+### RC5 class CLOSED comprehensively — every restricted nav route now enforces its capability + a gate to hold it
+
+After the first audit fixed the 4 HIGH, a full capability-vs-page-gate map
+(read-only agent, all 45 nav href/capability pairs) found the SAME class open on
+**22 more routes**: the nav hides an item but the page still loads it by URL. All
+closed (commit adds `requireAdminPage('<cap>')` in-body to 20 server pages;
+blog/guides were already guarded at their read+write actions):
+
+- **5 CLASS-A (LIVE broker over-reach)** — superuser-only in the map, page was
+  any-admin: `/admin/newsletters`, `/admin/email/campaigns`, `/admin/broker-links`
+  (`content.marketing`), `/admin/operations`, `/admin/crm/health`
+  (`settings.system`). **Browser-verified: Paul (broker) → access-denied on all 5;
+  Matt → all 5 load.** (Newsletters + broker-links were broker-visible in the OLD
+  nav — this ENFORCES the locked A1 decision that content.marketing is
+  superuser-only. Flagged for Matt: if brokers should keep those two, it's a
+  one-line map edit.)
+- **17 CLASS-B (report_viewer over-reach, latent — 0 such rows today)** — the
+  CRM/prospecting/transactions/settings pages the map grants to broker but not
+  report_viewer. Guards use the broker-inclusive cap, so **brokers keep every one**
+  (browser-verified: Paul loads crm, inbox, deals, expireds, forms, sequences,
+  templates); only report_viewer is bounced. Also closed the one NON-page CRM read
+  path: `consoleSearchLeads` (the ⌘K palette) now checks `people.view`, so a
+  report_viewer can't search every lead through the palette.
+- **Gate to hold it (extends `ci:admin-nav-source`/G52 with check #4):** for every
+  nav href whose capability excludes a role, the page must enforce it via
+  `requireAdminPage('<cap>')`, an inline role redirect, a parent-layout gate, or an
+  explicit action-layer allowlist (blog/guides). Negative-tested: stripping the
+  expireds guard fails the gate; restored, it passes. A new restricted nav route
+  can no longer ship without a guard.
+- **Also fixed (audit MED): the newsletter subject/issue mismatch** —
+  `getLatestNewsletterIssue` (the News-tab subject) now mirrors
+  `resolveCurrentNewsletter` (what actually sends) exactly (same ordering + body
+  requirement + draft fall-through), so the panel can never show one subject and
+  send a different issue.
+
+Adversarial review (read-only skeptic, 6 probes) confirmed no broker is wrongly
+locked out, every guard is the first await before any side effect, and the
+newsletter DAL mirrors the send resolver. tsc + full `ci:gates` green.
+
 ### Adversarial audit of the shipped work (Pain #3 + #4) — 4 HIGH found, all FIXED + browser-verified
 
 A 28-agent find→adversarially-verify workflow (4 lenses × the two shipped

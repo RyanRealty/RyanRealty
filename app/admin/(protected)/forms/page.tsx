@@ -1,5 +1,6 @@
 // @no-parity — internal admin tool (TC forms library browser), no public mockup contract
 import Link from 'next/link'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,6 +24,7 @@ type Props = { searchParams: Promise<{ q?: string; lib?: string }> }
 const PREVIEW_COUNT = 6
 
 export default async function TcFormsPage({ searchParams }: Props) {
+  await requireAdminPage('transactions.edit')
   const { q, lib: expanded } = await searchParams
   const libraries = await getTcFormLibraries(q)
 

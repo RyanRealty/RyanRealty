@@ -1,5 +1,6 @@
 // @no-parity — internal admin surface, no public mockup contract
 import Link from 'next/link'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { redirect } from 'next/navigation'
 import { getCrmAccess, setCrmSequenceStatusAction } from '@/app/actions/crm'
 import {
@@ -145,6 +146,7 @@ const CREATED_ON_FMT = new Intl.DateTimeFormat('en-US', {
 })
 
 export default async function CrmAutomationsPage() {
+  await requireAdminPage('settings.automations')
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
   const broker = scopeBroker(access)

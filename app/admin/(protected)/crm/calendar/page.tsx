@@ -25,6 +25,7 @@
  */
 
 import { redirect } from 'next/navigation'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getCrmAccess, addCrmTaskAction, completeCrmTaskAction } from '@/app/actions/crm'
 import {
   createAppointmentAction,
@@ -170,6 +171,7 @@ export default async function CrmCalendarPage({
 }: {
   searchParams: Promise<{ view?: string; date?: string; agent?: string; month?: string }>
 }) {
+  await requireAdminPage('calendar.use')
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
 

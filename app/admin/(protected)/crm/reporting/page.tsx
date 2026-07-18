@@ -1,5 +1,6 @@
 // @no-parity — internal admin surface, no public mockup contract
 import Link from 'next/link'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import { Card } from '@/components/ui/card'
@@ -61,6 +62,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 export default async function CrmReportingPage() {
+  await requireAdminPage('people.view')
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
 

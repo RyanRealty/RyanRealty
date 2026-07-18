@@ -17,6 +17,7 @@
  */
 
 import Link from 'next/link'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { listExpiredOutreachQueue, type ExpiredOutreachRow } from '@/lib/data'
 import { formatPriceExact } from '@/lib/format/money'
 import { Badge } from '@/components/ui/badge'
@@ -61,6 +62,7 @@ function cmaChip(row: ExpiredOutreachRow) {
 }
 
 export default async function ExpiredOutreachPage() {
+  await requireAdminPage('prospecting.view')
   const rows = await listExpiredOutreachQueue()
   const baseSendable = (r: ExpiredOutreachRow) => Boolean(r.contact_phone) && !r.hard_stop && !r.relisted && !r.outreach_sms_sent_at
   const sendable = rows.filter((r) => baseSendable(r) && r.cma_slug)

@@ -18,6 +18,7 @@
  */
 
 import { redirect } from 'next/navigation'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import {
   getCrmAccess,
   addCrmTaskAction,
@@ -55,6 +56,7 @@ export default async function CrmTasksPage({
 }: {
   searchParams: Promise<{ view?: string; agent?: string; completed?: string; new?: string }>
 }) {
+  await requireAdminPage('tasks.use')
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
 

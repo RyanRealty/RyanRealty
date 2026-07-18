@@ -10,6 +10,7 @@
 //           PeopleListView so the toolbar controls the slot.
 // The < md branch is the §24 mobile People root (mob-09/10) — untouched here.
 import { redirect } from 'next/navigation'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getCrmAccess, getCrmOverview, listCrmPeople, listCrmSequences } from '@/app/actions/crm'
 import { getCrmSavedViews } from '@/lib/data/crm/getCrmSavedViews'
 import { getPeopleListSignals } from '@/lib/data/crm/getPeopleListSignals'
@@ -57,6 +58,7 @@ type SearchParams = {
 }
 
 export default async function CrmPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  await requireAdminPage('people.view')
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
 

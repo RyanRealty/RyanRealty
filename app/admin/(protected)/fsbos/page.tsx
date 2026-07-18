@@ -7,6 +7,7 @@
  */
 
 import Link from 'next/link'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { listFsboDashboardRows } from '@/lib/data/fsbo/dashboard'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
@@ -28,6 +29,7 @@ function Engagement({ n, label }: { n: number; label: string }) {
 }
 
 export default async function FsboDashboardPage() {
+  await requireAdminPage('prospecting.view')
   const rows = await listFsboDashboardRows()
   const withCma = rows.filter((r) => r.cma_slug).length
   const contacted = rows.filter((r) => r.sms_sent_at || r.cma_delivered_at).length

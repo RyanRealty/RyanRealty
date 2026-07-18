@@ -1,5 +1,6 @@
 // @no-parity — admin-internal email surface, no public mockup contract.
 import type { Metadata } from 'next'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
@@ -37,6 +38,7 @@ type CampaignViewRow = {
 }
 
 export default async function AdminEmailCampaignsPage() {
+  await requireAdminPage('content.marketing')
   const session = await getSession()
   if (!session?.user) redirect('/auth-error?next=/admin')
   const role = await getAdminRoleForEmail(session.user.email)

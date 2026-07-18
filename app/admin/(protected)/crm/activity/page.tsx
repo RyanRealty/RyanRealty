@@ -1,5 +1,6 @@
 // @no-parity — internal admin surface, no public mockup contract
 import { redirect } from 'next/navigation'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { resolveActivityScope } from '@/lib/crm/activity-scope'
@@ -27,6 +28,7 @@ export default async function CrmActivityPage({
 }: {
   searchParams: Promise<{ types?: string; broker?: string }>
 }) {
+  await requireAdminPage('people.view')
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
 

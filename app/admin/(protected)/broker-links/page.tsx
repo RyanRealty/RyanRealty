@@ -1,5 +1,6 @@
 // @no-parity — internal broker tool (per-broker ad-link generator)
 import { Card } from '@/components/ui/card'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import type { BrokerSlug } from '@/lib/agent-attribution'
 import { CopyLinkButton } from './CopyLinkButton'
 
@@ -25,7 +26,8 @@ function siteUrl(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL || 'https://ryan-realty.com').replace(/\/$/, '')
 }
 
-export default function BrokerLinksPage() {
+export default async function BrokerLinksPage() {
+  await requireAdminPage('content.marketing')
   const base = siteUrl()
   return (
     <div className="space-y-6 p-4 sm:p-6">
