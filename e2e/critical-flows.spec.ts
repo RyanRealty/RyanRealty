@@ -143,8 +143,12 @@ test.describe('Mobile Responsive', () => {
 
   test('mobile navigation is accessible', async ({ page }) => {
     await page.goto('/')
-    const header = page.locator('header')
-    await expect(header).toBeVisible()
+    // .first() + attached: the homepage carries BOTH the CSS-hidden default
+    // SiteHeader (data-default-chrome) and the KB chrome — a strict-mode
+    // visible check on bare `header` fails a healthy page (2026-07-17 drift,
+    // same class as the nav/footer tests above).
+    const header = page.locator('header').first()
+    await header.waitFor({ state: 'attached', timeout: 20_000 })
   })
 })
 
