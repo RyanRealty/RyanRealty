@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.817.1 (2026-07-18)
+
+### Bug Fixes
+- fix(e2e): mobile-nav test joins the hidden-chrome hardening — the last red test in the CI e2e job
+
+---
+
+
 ## v1.817.0 (2026-07-17)
 
 ### Features
