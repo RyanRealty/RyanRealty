@@ -72,6 +72,13 @@ export function ContactSendCenter(props: {
     () => props.cmas.filter((c) => c.status === 'finalized' || c.status === 'delivered'),
     [props.cmas],
   )
+  // In-flight story: drafts awaiting review + builds still running, so the CMA
+  // tab never claims "no CMA" while one is minutes from ready (the kick-off
+  // worker texts the broker on ready; this is orientation, not live progress).
+  const pendingCmas = useMemo(
+    () => props.cmas.filter((c) => c.status !== 'finalized' && c.status !== 'delivered'),
+    [props.cmas],
+  )
 
   // BPO state
   const [bpoSlug, setBpoSlug] = useState(finalBpos[0]?.slug ?? '')
@@ -258,11 +265,32 @@ export function ContactSendCenter(props: {
 
           {/* CMA */}
           <TabsContent value="cma" className="space-y-3 pt-3">
+            {pendingCmas.length > 0 ? (
+              <div className="space-y-1.5">
+                {pendingCmas.map((c) => (
+                  <div key={c.slug} className="flex items-center justify-between gap-2 rounded-lg border border-border px-2.5 py-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-foreground" title={c.subjectAddress}>{c.subjectAddress}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {c.status === 'building' ? 'Building — you get a text when it is ready' : 'Draft — review it, then it becomes sendable'}
+                      </p>
+                    </div>
+                    {c.status !== 'building' ? (
+                      // Broker review = the authed admin CMA page (works for every
+                      // draft; previewUrl is NULL on builder-built rows).
+                      <a href={`/admin/cmas/${c.slug}`} className="shrink-0 text-xs font-medium text-primary hover:underline">Review</a>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ) : null}
             {finalCmas.length === 0 ? (
               <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  No finalized CMA yet. Build one — the draft arrives async and you review it before anything sends.
-                </p>
+                {pendingCmas.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No finalized CMA yet. Build one — the draft arrives async and you review it before anything sends.
+                  </p>
+                ) : null}
                 <Button asChild variant="outline" className="w-full min-h-11">
                   <a href={props.cmaBuildHref}>Build a CMA</a>
                 </Button>
