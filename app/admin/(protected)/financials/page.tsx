@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table'
 import DashboardSummaryStrip, { type SummaryStat } from '@/components/admin/DashboardSummaryStrip'
 import { getTcFinancials } from '@/app/actions/tc-financials'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { TC_EXPENSE_CATEGORIES } from '@/lib/tc/expense-categories'
 import { AddExpense } from './ExpenseControls'
 import { ExpenseLedger } from './ExpenseLedger'
@@ -23,6 +24,10 @@ const money = (v: number | null | undefined) =>
 const CATEGORY_LABEL = Object.fromEntries(TC_EXPENSE_CATEGORIES.map((c) => [c.value, c.label]))
 
 export default async function FinancialsPage() {
+  // Brokerage P&L is superuser-only (D4/D3 money caps). The nav hides this from
+  // brokers; the page must ENFORCE it too — a broker typing /admin/financials
+  // otherwise reads the full P&L (audit HIGH, RC5 class).
+  await requireAdminPage('financials.view')
   const { years, expenses } = await getTcFinancials()
   const liveExpenses = expenses.filter((e) => !e.archived)
   const current = years[0] // years come pre-sorted newest-first

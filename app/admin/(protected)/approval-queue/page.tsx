@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { createServiceClient } from '@/lib/supabase/service'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { ActionCard, type BrainAction } from './_components/ActionCard'
 import { FilterSidebar } from './_components/FilterSidebar'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
@@ -81,6 +82,11 @@ async function fetchActions(
 }
 
 export default async function ApprovalQueuePage({ searchParams }: PageProps) {
+  // Marketing-brain approvals are the Matt-only publish gate (approvals.act =
+  // superuser). The nav hides this; the page must enforce it — a broker typing
+  // /admin/approval-queue otherwise sees + could approve content for public
+  // auto-publish (audit HIGH, RC5 class). The API route is guarded separately.
+  await requireAdminPage('approvals.act')
   const params = await searchParams
 
   const filterCats = getParam(params, 'cat')

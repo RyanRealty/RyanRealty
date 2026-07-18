@@ -2,8 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
-import { getSession } from '@/app/actions/auth'
-import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { checkAdminAction } from '@/lib/admin/require-admin'
 import { computeCommissionNets } from '@/lib/tc/commission-math'
 
 /**
@@ -84,6 +83,10 @@ export type TcCommissionRollupRow = TcCommission & {
 
 /** Every commission row joined to its deal, for /admin/commissions. */
 export async function getCommissionsRollup(): Promise<TcCommissionRollupRow[]> {
+  // In-body guard (defense in depth): this is an independently-POSTable server
+  // action, so the page redirect alone doesn't protect it. Superuser-only (D4).
+  const gate = await checkAdminAction('commissions.view')
+  if (!gate.ok) return []
   const supabase = getServiceSupabase()
   const { data } = await supabase
     .from('tc_commissions')
@@ -123,11 +126,10 @@ export async function updateTcCommission(
   id: string,
   patch: TcCommissionPatch
 ): Promise<{ ok: boolean; error?: string }> {
-  const session = await getSession()
-  const role = await getAdminRoleForEmail(session?.user?.email ?? null)
-  if (!role || (role.role !== 'superuser' && role.role !== 'broker')) {
-    return { ok: false, error: 'Not authorized' }
-  }
+  // Superuser-only (D4). Was `broker OR superuser` with no row scope, so any
+  // broker could edit any broker's split/fees (audit HIGH).
+  const gate = await checkAdminAction('commissions.view')
+  if (!gate.ok) return { ok: false, error: gate.error }
   if (patch.status && !COMMISSION_STATUSES.includes(patch.status)) return { ok: false, error: 'Invalid status' }
   if (patch.side && !COMMISSION_SIDES.includes(patch.side)) return { ok: false, error: 'Invalid side' }
   for (const k of ['referral_fee', 'tc_fee', 'other_deductions', 'split_percent'] as const) {
@@ -180,7 +182,7 @@ export async function updateTcCommission(
   await supabase.from('tc_events').insert({
     deal_id: (row as DbRow).tc_cycles?.deal_id ?? null,
     cycle_id: row.cycle_id,
-    actor: session?.user?.email ?? 'admin',
+    actor: gate.ctx.email,
     action: 'commission_updated',
     detail: { broker: row.broker_name, changed, agent_net, brokerage_net },
   })

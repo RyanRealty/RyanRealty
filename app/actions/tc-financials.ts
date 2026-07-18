@@ -2,8 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
-import { getSession } from '@/app/actions/auth'
-import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { checkAdminAction } from '@/lib/admin/require-admin'
 import { TC_EXPENSE_CATEGORIES, type TcExpenseCategory } from '@/lib/tc/expense-categories'
 
 /**
@@ -25,14 +24,12 @@ function getServiceSupabase() {
   return createClient(url, key, { auth: { persistSession: false } })
 }
 
-async function requireBrokerRole(): Promise<{ email: string } | { error: string }> {
-  const session = await getSession()
-  const email = session?.user?.email ?? null
-  const role = await getAdminRoleForEmail(email)
-  if (!email || !role || (role.role !== 'superuser' && role.role !== 'broker')) {
-    return { error: 'Not authorized' }
-  }
-  return { email }
+async function requireFinancialsAccess(): Promise<{ email: string } | { error: string }> {
+  // Superuser-only (D4). Was `broker OR superuser`, so any broker could add /
+  // archive brokerage expenses on the P&L (audit HIGH).
+  const gate = await checkAdminAction('financials.view')
+  if (!gate.ok) return { error: gate.error }
+  return { email: gate.ctx.email }
 }
 
 
@@ -71,6 +68,9 @@ export type TcFinancials = {
 
 /** The P&L: per-year revenue (verified commissions), expenses, ads spend, net. */
 export async function getTcFinancials(): Promise<TcFinancials> {
+  // In-body guard (defense in depth): independently-POSTable. Superuser-only (D4).
+  const gate = await checkAdminAction('financials.view')
+  if (!gate.ok) return { years: [], expenses: [] }
   const supabase = getServiceSupabase()
   const [{ data: commissions }, { data: expenses }, { data: ads }] = await Promise.all([
     supabase
@@ -168,7 +168,7 @@ export async function addTcExpense(input: {
   vendor?: string | null
   dealPropertyKey?: string | null
 }): Promise<{ ok: boolean; error?: string }> {
-  const auth = await requireBrokerRole()
+  const auth = await requireFinancialsAccess()
   if ('error' in auth) return { ok: false, error: auth.error }
 
   const { category, description, amount, incurred_on, vendor, dealPropertyKey } = input
@@ -218,7 +218,7 @@ export async function addTcExpense(input: {
 
 /** Delete = archive (stays inside the records window, drops out of the P&L). */
 export async function archiveTcExpense(id: string, reason: string): Promise<{ ok: boolean; error?: string }> {
-  const auth = await requireBrokerRole()
+  const auth = await requireFinancialsAccess()
   if ('error' in auth) return { ok: false, error: auth.error }
 
   const supabase = getServiceSupabase()

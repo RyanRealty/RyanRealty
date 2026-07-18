@@ -13,6 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { getCommissionsRollup, type TcCommissionRollupRow } from '@/app/actions/tc-commissions'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,6 +44,11 @@ function addTo(t: Totals, r: TcCommissionRollupRow) {
 }
 
 export default async function CommissionsPage() {
+  // Brokerage-wide commissions are superuser-only (D4 — brokers see own rows via
+  // row scope, not this all-broker rollup). Nav hides it; the page must enforce
+  // it (a broker typing /admin/commissions otherwise reads every broker's GCI +
+  // compensation — audit HIGH, RC5 class).
+  await requireAdminPage('commissions.view')
   const rows = await getCommissionsRollup()
   const earned = rows.filter((r) => r.status !== 'projected')
   const projected = rows.filter((r) => r.status === 'projected')

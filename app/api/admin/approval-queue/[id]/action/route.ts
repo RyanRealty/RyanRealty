@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { requireAdminRoute } from '@/lib/admin/require-admin'
 
 type ActionBody =
   | { action: 'approve_now' }
@@ -20,12 +19,12 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    // Auth
-    const supabase = await createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const adminRole = await getAdminRoleForEmail(user.email)
-    if (!adminRole) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    // Approving/killing marketing-brain actions is the Matt-only publish gate
+    // (approvals.act = superuser). Was `any admin role`, so a broker or even
+    // report_viewer could approve content for public auto-publish (audit HIGH).
+    const ctx = await requireAdminRoute('approvals.act')
+    if (ctx instanceof Response) return ctx
+    const user = { email: ctx.email }
 
     const { id } = await params
     const body = (await request.json().catch(() => null)) as ActionBody | null
