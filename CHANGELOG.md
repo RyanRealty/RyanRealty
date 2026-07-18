@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.817.2 (2026-07-18)
+
+### Bug Fixes
+- fix(ci): route inventory tells the truth — canonical zips parsed from the page, stale city aliases regenerated
+
+---
+
+
 ## v1.817.1 (2026-07-18)
 
 ### Bug Fixes
