@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.818.1 (2026-07-18)
+
+### Bug Fixes
+- fix(admin): close the RC5 class on all 22 remaining nav routes + gate it (audit)
+
+---
+
+
 ## v1.818.0 (2026-07-18)
 
 ### Features
