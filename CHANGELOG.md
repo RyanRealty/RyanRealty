@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.818.3 (2026-07-18)
+
+### Maintenance
+- docs(admin-help): add 10 how-to articles so the in-app Help covers the whole CRM
+
+---
+
+
 ## v1.818.2 (2026-07-18)
 
 ### Bug Fixes
