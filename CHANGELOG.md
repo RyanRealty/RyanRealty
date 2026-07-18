@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.820.1 (2026-07-18)
+
+### Bug Fixes
+- fix(data): re-type 23 cron-built expired CMAs to expired-audit (spec 07 taxonomy)
+
+---
+
+
 ## v1.820.0 (2026-07-18)
 
 ### Features
