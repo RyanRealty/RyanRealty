@@ -17,6 +17,21 @@ vi.mock('@/app/actions/crm', () => ({
 const isSuppressed = vi.fn()
 vi.mock('@/lib/crm/suppressions', () => ({ isSuppressed: (...a: unknown[]) => isSuppressed(...a) }))
 
+// In-memory ledger with the real contract: duplicate key returns the stored
+// result (no second run); a failed run stores nothing (retry re-sends).
+const ledger = new Map<string, unknown>()
+vi.mock('@/lib/crm/idempotency', () => ({
+  withSendIdempotency: async (
+    args: { key: string; onInFlight: unknown },
+    run: () => Promise<{ ok: boolean }>,
+  ) => {
+    if (ledger.has(args.key)) return ledger.get(args.key)
+    const r = await run()
+    if (r.ok) ledger.set(args.key, r)
+    return r
+  },
+}))
+
 const sendEmail = vi.fn()
 vi.mock('@/lib/resend', () => ({ sendEmail: (...a: unknown[]) => sendEmail(...a) }))
 
@@ -72,6 +87,7 @@ import { sendNewsletterToContactAction } from '@/app/actions/contact-newsletter'
 
 afterEach(() => {
   vi.clearAllMocks()
+  ledger.clear()
   personRow = null
   subRow = null
   sentNewsletterId = null
@@ -152,5 +168,30 @@ describe('sendNewsletterToContactAction', () => {
     getCrmAccess.mockRejectedValue(new Error('boom'))
     const r = await sendNewsletterToContactAction(5)
     expect(r.ok).toBe(false)
+  })
+
+  it('duplicate submit with the same idempotency key sends exactly ONE email (A5)', async () => {
+    getCrmAccess.mockResolvedValue({ email: 'matt@ryan-realty.com', role: 'superuser', brokerSlug: 'matt' })
+    requirePersonInScope.mockResolvedValue({ ok: true })
+    personRow = { id: 5, fub_legacy_id: 42, emails: [{ value: 'a@b.com', isPrimary: 1 }], name: 'A', assigned_broker: 'matt' }
+    isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    sentNewsletterId = 'nl-1'
+    getNewsletter.mockResolvedValue({ id: 'nl-1', subject: 'June update', preview_text: null, body_html: '<p>hi</p>', body_text: null })
+    subRow = { id: 'sub-1', status: 'active', unsubscribe_token: 'tok-1' }
+    sendEmail.mockResolvedValue({ id: 'resend-1' })
+
+    const first = await sendNewsletterToContactAction(5, 'key-1')
+    const dupe = await sendNewsletterToContactAction(5, 'key-1')
+    expect(first.ok).toBe(true)
+    expect(dupe).toEqual(first) // stored result returned verbatim
+    expect(sendEmail).toHaveBeenCalledTimes(1)
+
+    // A FAILED attempt does not poison the key — the retry really re-sends.
+    sendEmail.mockRejectedValueOnce(new Error('resend down'))
+    const failed = await sendNewsletterToContactAction(5, 'key-2')
+    expect(failed.ok).toBe(false)
+    sendEmail.mockResolvedValue({ id: 'resend-2' })
+    const retry = await sendNewsletterToContactAction(5, 'key-2')
+    expect(retry.ok).toBe(true)
   })
 })

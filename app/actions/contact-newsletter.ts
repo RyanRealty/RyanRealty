@@ -25,6 +25,7 @@
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { getCrmAccess, requirePersonInScope, type CrmActionResult } from '@/app/actions/crm'
+import { withSendIdempotency } from '@/lib/crm/idempotency'
 import { isSuppressed } from '@/lib/crm/suppressions'
 import { sendEmail } from '@/lib/resend'
 import { wrapNewsletterHtml, newsletterTextFooter } from '@/lib/email-templates/newsletter-shell'
@@ -94,7 +95,7 @@ async function resolveCurrentNewsletter(): Promise<NewsletterRow | null> {
   return null
 }
 
-export async function sendNewsletterToContactAction(personId: number): Promise<CrmActionResult> {
+export async function sendNewsletterToContactAction(personId: number, idempotencyKey?: string): Promise<CrmActionResult> {
   try {
     if (!personId || !Number.isFinite(personId)) return { ok: false, error: 'Bad personId' }
 
@@ -103,6 +104,31 @@ export async function sendNewsletterToContactAction(personId: number): Promise<C
     const scoped = await requirePersonInScope(personId, access)
     if (!scoped.ok) return scoped
 
+    // A5: every deliverable send is at-most-once. A duplicate submit with the
+    // same key returns the first result (no second email); a FAILED send
+    // releases the key so a real retry re-sends. Callers without a key (legacy
+    // one-tap paths) keep the pre-ledger behavior.
+    if (idempotencyKey) {
+      return await withSendIdempotency<CrmActionResult>(
+        {
+          key: `nl-oneoff:${personId}:${idempotencyKey}`,
+          scope: 'newsletter-oneoff',
+          onInFlight: { ok: false, error: 'That newsletter send is already in flight. Give it a few seconds.' },
+        },
+        () => sendNewsletterToContactCore(personId, access),
+      )
+    }
+    return await sendNewsletterToContactCore(personId, access)
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Send failed' }
+  }
+}
+
+async function sendNewsletterToContactCore(
+  personId: number,
+  access: { brokerSlug: CrmBrokerSlug | null },
+): Promise<CrmActionResult> {
+  try {
     const sb = createServiceClient()
     const { data: person } = await sb
       .from('crm_people')

@@ -13,7 +13,7 @@
  * ContactQuickActions — this panel is the SEND surface.
  */
 
-import { useMemo, useState, useTransition } from 'react'
+import { useMemo, useRef, useState, useTransition } from 'react'
 import { Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -61,11 +61,13 @@ export function ContactSendCenter(props: {
   newsletterSubscribed: boolean
   /** The issue a one-off newsletter send delivers (subject shown before sending). */
   latestNewsletter: { subject: string; status: 'sent' | 'draft'; sentAt: string | null } | null
-  /** Bound sendNewsletterToContactAction(personId). */
-  newsletterSendAction: () => Promise<{ ok: boolean; error?: string; message?: string }>
+  /** Bound sendNewsletterToContactAction(personId) — takes the per-attempt
+      idempotency key (A5: duplicate submit no-ops, failed send releases). */
+  newsletterSendAction: (idempotencyKey: string) => Promise<{ ok: boolean; error?: string; message?: string }>
 }) {
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
+  const nlKeyRef = useRef('')
 
   const finalBpos = useMemo(() => props.bpos.filter((b) => b.status === 'final'), [props.bpos])
   const finalCmas = useMemo(
@@ -168,7 +170,15 @@ export function ContactSendCenter(props: {
     })
   }
   function sendNewsletter() {
-    run('Newsletter', () => props.newsletterSendAction())
+    // Per-attempt key: stable across retries of THIS attempt (the ledger
+    // releases on failure so a retry re-sends), regenerated after success.
+    if (!nlKeyRef.current) nlKeyRef.current = crypto.randomUUID()
+    const key = nlKeyRef.current
+    run('Newsletter', async () => {
+      const r = await props.newsletterSendAction(key)
+      if (r.ok) nlKeyRef.current = ''
+      return r
+    })
   }
   function sendListings() {
     const filters: Record<string, unknown> = {}
