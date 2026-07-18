@@ -1,4 +1,29 @@
-> **NEWEST, START HERE: the ONE-NAV block immediately below (2026-07-17 eve).** Prior: CMA VERSION-CHAIN (2026-07-17 PM), the ADMIN-REBUILD v2 LITMUS block (2026-07-17 AM), then RC1 (2026-07-16).
+> **NEWEST, START HERE: the AUDIT-HARDENING block immediately below (2026-07-17 late).** Prior: ONE-NAV + UNIFIED-SEND (2026-07-17 eve), CMA VERSION-CHAIN (2026-07-17 PM), the ADMIN-REBUILD v2 LITMUS block (2026-07-17 AM), then RC1 (2026-07-16).
+
+# AUDIT HARDENING — 4 HIGH auth/UX holes closed (2026-07-17 late, same session)
+
+An adversarial 28-agent audit of the day's shipped commits found **4 confirmed
+HIGH** issues. All fixed + browser-verified + pushed. Full list +
+dispositions: `docs/plans/ADMIN_REBUILD/PROGRESS.md` ("Adversarial audit").
+
+- **3 money/approval routes now enforce their capability caps in-body**
+  (`3fbd32ce`): `/admin/financials`, `/admin/commissions`,
+  `/admin/approval-queue` (+ its POST API) were superuser-only in the capability
+  map but the PAGES/ACTIONS never checked → a broker could read the P&L + every
+  broker's compensation (and edit splits), or approve content for auto-publish.
+  Guards added: requireAdminPage / requireAdminRoute / checkAdminAction on the
+  pages AND the independently-POSTable actions (getTcFinancials,
+  getCommissionsRollup, updateTcCommission, addTcExpense, archiveTcExpense).
+  **If you touch a money/TC surface, keep the in-body cap check** — the map
+  hiding the nav is NOT enforcement. Tests: `lib/crm/tc-money-authz.action.test.ts`.
+- **Newsletter chip one-tap unsubscribe fixed** (`2cb4bc8e`): confirm before the
+  one-way opt-out. **MED**: SendPanel per-flow pending label.
+- **Still open (handed to spec-03 chip task_30a16d07 + noted here):**
+  report_viewer resolves to UNRESTRICTED CRM scope (latent, 0 rows today — fix
+  `lib/crm/scope.ts` before ever creating a report_viewer);
+  `/admin/operations` has the same map-vs-page gap (settings.system);
+  News-tab subject can differ from the issue that sends; newsletter one-off can
+  re-send an already-delivered issue.
 
 # ADMIN ONE-NAV CUTOVER — Pain #3 SHIPPED (2026-07-17 eve, Claude Code)
 

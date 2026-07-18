@@ -115,6 +115,73 @@ baseline, tightened by D9):**
 
 ## Shipped
 
+### Adversarial audit of the shipped work (Pain #3 + #4) — 4 HIGH found, all FIXED + browser-verified
+
+A 28-agent find→adversarially-verify workflow (4 lenses × the two shipped
+commits, every finding refuted-by-default unless the failure scenario provably
+held at HEAD; 4.07M tokens) ran against `0add5cd8` (one-nav) + `44cd8d5f`
+(unified-send v1). 17 findings survived verification (4 HIGH, 4 MED, 9 LOW).
+
+**HIGH — all FIXED (commits `3fbd32ce` + `2cb4bc8e`):**
+1. **`/admin/financials` unguarded** — the one-nav capability map declares
+   `financials.view` superuser-only, but the page + `getTcFinancials` +
+   `addTcExpense`/`archiveTcExpense` never enforced it → a broker typing the URL
+   read the full brokerage P&L and could add/archive expenses. **Fixed**:
+   `requireAdminPage` + `checkAdminAction('financials.view')` in-body.
+2. **`/admin/commissions` unguarded** — same class; worse, `updateTcCommission`
+   admitted `role='broker'` with no row scope → a broker could read EVERY
+   broker's GCI/compensation and edit any broker's split/fees. **Fixed**: page +
+   action guards on `commissions.view`.
+3. **`/admin/approval-queue` + its API unguarded** — `approvals.act` is
+   superuser-only in the map, but the page + `POST …/action/route.ts` accepted
+   any admin role → a broker (or report_viewer) could approve marketing-brain
+   actions for public auto-publish, or kill/reshape the queue. **Fixed**:
+   `requireAdminPage` + `requireAdminRoute('approvals.act')`.
+   *(1–3 were PRE-EXISTING holes the one-nav commit's map surfaced — the map
+   claimed "nav and access can never disagree"; these routes falsified it. Now
+   true. Browser-proven both ways: Paul→access-denied on all 3 + API 403;
+   Matt→all 3 load. 5 regression tests: `lib/crm/tc-money-authz.action.test.ts`.)*
+4. **Newsletter chip one-tap unsubscribe** — a regression I introduced in
+   `44cd8d5f`: dropping `newsletterSendAction` from the ContactQuickActions
+   mount flipped the chip into the bare one-tap toggle, so an accidental tap
+   opted a subscribed contact out with no confirmation. **Fixed**: confirm
+   before the (one-way, compliance-sensitive) unsubscribe.
+
+**MED — FIXED**: SendPanel's 5 flows shared one `useTransition` → a running
+build relabeled every tab's button "Sending…"; now per-flow (`busy()`). Also
+addressed in the v1 increments below: the CMA tab now shows in-flight drafts
+(inc. 3), the newsletter send joined the A5 idempotency ledger (inc. 4).
+
+**MED/LOW — logged, NOT yet fixed (handed to the spec-03 chip, non-blocking):**
+report_viewer resolves to UNRESTRICTED CRM scope (latent — zero report_viewer
+rows exist today; `lib/crm/scope.ts` admits every contact for a non-broker-mapped
+admin); `getLatestNewsletterIssue` (News-tab subject) can differ from
+`resolveCurrentNewsletter` (what actually sends); newsletter one-off can re-send
+an already-delivered issue with no warning; `/admin/operations` echoes the
+same map-vs-page gap (settings.system superuser-only in nav, page ungated —
+lower blast radius, plumbing); the People mobile-tab lights on non-tab
+`/admin/crm/*` routes; the inbox unread badge is still wired-to-nothing (spec 02
+writer). None is a data-loss or disclosure hazard at the level of the four HIGH.
+
+### Pain #4 — unified send, increments 2–4 (SHIPPED after v1)
+
+- **inc. 2 — the SendPanel reaches phones** (`72c609e8`): the mobile contact
+  detail had NO send domain (audited RC3 gap — a broker on a phone couldn't send
+  anything). The SAME `ContactSendCenter` element is hoisted once and rendered at
+  the top of the mobile Info tab. Browser-verified in the 390px frame: dialog
+  opens with all 5 tabs, zero console errors. Also fixed a self-audit find: the
+  c48ef5a2 baseline ratchet wrote the key at the JSON top level (a no-op the gate
+  ignored) — corrected to `files`, 718 → 707, verified enforced.
+- **inc. 3 — the CMA tab tells the whole story** (`43e56748`): non-final CMAs
+  render as status rows ("Building — you get a text when ready" / "Draft — review
+  it") with a working `/admin/cmas/[slug]` review link, so a broker whose draft
+  is minutes from ready no longer sees "No finalized CMA yet". Verified live on a
+  real draft.
+- **inc. 4 — newsletter one-off joins the A5 ledger** (`5ad5b1f7`): it was the
+  only deliverable send outside `crm_idempotency_keys`. Per-attempt key from the
+  SendPanel → `withSendIdempotency`: duplicate submit = one email, failed send
+  releases the key. Regression test locks it.
+
 ### Pain #3 — ONE nav, ONE IA (the shell pass) — DEMONSTRATED against the pre-registered thresholds
 
 The capability-projected nav (`lib/admin/nav.ts` DESTINATIONS + `buildNav`) is now
