@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.819.0 (2026-07-18)
+
+### Features
+- feat(admin): unified prospecting hub — one /admin/prospecting worklist (spec 07)
+
+---
+
+
 ## v1.818.3 (2026-07-18)
 
 ### Maintenance
