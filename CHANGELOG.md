@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.818.2 (2026-07-18)
+
+### Bug Fixes
+- fix(crm): person-page tag picker writes the canonical key, not the label
+
+### Maintenance
+- refactor(crm): extract mergeTagOptions to keep the person page under budget
+- docs(admin-help): correct the listing-alert + market-report how-tos to match the live UI
+
+---
+
+
 ## v1.818.1 (2026-07-18)
 
 ### Bug Fixes
