@@ -110,11 +110,11 @@ describe('nav generator projects the capability map', () => {
 })
 
 describe('shell projection (one nav source for every surface)', () => {
-  it('renders the D9.2 budget: 39 superuser items, 22 broker items (was 56/30)', () => {
+  it('renders the D9.2 budget: 37 superuser items, 20 broker items (was 39/22; spec 07 folded 3 expired/FSBO nav children into 1 Prospecting hub)', () => {
     const count = (role: AdminRoleType) =>
       toShellSections(buildNav(ctx(role))).reduce((n, s) => n + s.items.length, 0)
-    expect(count('superuser')).toBe(39)
-    expect(count('broker')).toBe(22)
+    expect(count('superuser')).toBe(37)
+    expect(count('broker')).toBe(20)
   })
 
   it('leaf destinations render as single items; hubs as their children', () => {

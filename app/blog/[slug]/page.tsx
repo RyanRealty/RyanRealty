@@ -90,8 +90,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = post.seo_title?.trim() || `${post.title} | Ryan Realty Blog`
   const description = post.seo_description?.trim() || post.excerpt?.trim() || 'Central Oregon real estate insights from Ryan Realty.'
   const canonical = `${siteUrl}/blog/${encodeURIComponent(post.slug)}`
+  // Pre-rendered static OG cards (hosted on Supabase storage) are served directly so
+  // social crawlers that don't reliably fetch the dynamic /api/og endpoint (notably X)
+  // still get a real card image. Posts with Unsplash/relative heroes keep the dynamic card.
   const ogImageUrl = post.hero_image_url
-    ? `${siteUrl}/api/og?type=blog&id=${encodeURIComponent(post.slug)}`
+    ? post.hero_image_url.includes('.supabase.co/storage/')
+      ? post.hero_image_url
+      : `${siteUrl}/api/og?type=blog&id=${encodeURIComponent(post.slug)}`
     : `${siteUrl}/api/og?type=default`
   return {
     title,

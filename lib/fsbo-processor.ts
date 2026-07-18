@@ -210,8 +210,18 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
             crmPersonId,
             requestSource: 'fsbo-cron',
             notifyLead: false,
+            // FSBOs get a plain seller CMA (they have not failed to sell), spec 07 §4.1.
           })
-          if (cmaRes.ok) stats.cmas_queued++
+          if (cmaRes.ok) {
+            stats.cmas_queued++
+            // Spec 07 §4.2 — link the FSBO to its document by id, not a fuzzy slug.
+            try {
+              const { linkProspectCma } = await import('@/lib/data/prospecting/send-claim')
+              await linkProspectCma('fsbo', l.fsboUrl, cmaRes.cmaId)
+            } catch (e) {
+              console.warn('[fsbo-processor] cma_id stamp failed:', e instanceof Error ? e.message : String(e))
+            }
+          }
         } catch (e) {
           console.warn('[fsbo-processor] CMA request threw:', e)
         }

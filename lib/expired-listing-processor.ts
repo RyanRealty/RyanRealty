@@ -401,9 +401,22 @@ export async function processNewExpiredListings(
             crmPersonId,
             requestSource: 'expired-listing-cron',
             notifyLead: false,
+            // Spec 07 §4.1 — expired listings get an AUDIT (failure analysis +
+            // services standard + 2.5% net sheet), not a plain CMA. This is the
+            // Defect-4 fix: the built doc now lands as doc_type='expired-audit'
+            // so /admin/prospecting shows "Send intro" with no manual rebuild.
+            docType: 'expired-audit',
           })
           if (cmaRes.ok) {
             stats.cmas_queued++
+            // Spec 07 §4.2 — link the listing to its document by id, not a fuzzy
+            // address slug. A point-lookup FK the surface resolves directly.
+            try {
+              const { linkProspectCma } = await import('@/lib/data/prospecting/send-claim')
+              await linkProspectCma('expired', l.ListingKey, cmaRes.cmaId)
+            } catch (e) {
+              console.warn('[expired-listing-processor] cma_id stamp failed:', e instanceof Error ? e.message : String(e))
+            }
           } else {
             console.warn('[expired-listing-processor] CMA request failed:', cmaRes.error)
           }

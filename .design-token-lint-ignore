@@ -471,3 +471,20 @@ app/admin/(protected)/media/photos/PhotoCurationBoard.tsx
 # baselined DealDetailModal / MobileThread max-h exceptions).
 components/admin/crm/EmailBodyEditor.tsx
 components/admin/SendDocDialog.client.tsx
+
+# Prospecting worklist (§07, 2026-07-18): ProspectDetailDrawer's mobile bottom
+# Sheet needs a viewport-relative height (h-[90vh]) and the desktop in-flow
+# aside is a fixed master/detail panel width (w-[380px]) with a
+# viewport-minus-header scroll clamp (max-h-[calc(100vh-3rem)]) — same
+# exception class as the DealDetailModal / AdminSidebar calc-height entries
+# above; no locked-ladder step covers a fixed side-panel width or a
+# viewport-relative sheet height. ProspectSendDialog's compose dialog clamps
+# to the viewport (max-h-[90dvh]) — same class as the MarketReportPreviewDialog
+# / SendDocDialog viewport-relative dialog exceptions above. ProspectMap's
+# marker icon passes fillColor/strokeColor into the Google Maps Marker icon
+# config (a JS object handed to the Maps SDK, not a Tailwind class or CSS
+# var context) — same exception class as PropertiesMap.tsx / lib/maps/markers.ts;
+# the brand hexes #102742/#faf8f4 are the only way to color a Maps SDK marker.
+components/admin/prospecting/ProspectDetailDrawer.client.tsx
+components/admin/prospecting/ProspectSendDialog.client.tsx
+components/admin/prospecting/ProspectMap.client.tsx

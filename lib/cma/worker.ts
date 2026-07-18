@@ -125,6 +125,12 @@ async function processOne(action: CmaActionRow): Promise<{ slug: string; status:
     brokerEmail: str(payload['broker_email']),
     sellerImprovementsTotal: num(payload['seller_improvements_total']),
     sellerImprovementsText: str(payload['seller_improvements']),
+    // Spec 07 §4.1 — thread the doc type end to end (kills Defect 4). Expired
+    // detection queues its CMA request with payload.doc_type='expired-audit';
+    // the worker must pass it through so the built cmas row lands as an audit
+    // (failure analysis + services standard + 2.5% net sheet) instead of a plain
+    // CMA the prospecting surface then refuses to send.
+    docType: str(payload['doc_type']) === 'expired-audit' ? 'expired-audit' : 'cma',
     requestSource:
       str((action.data_evidence ?? {})['request_source'] as string | undefined) ?? 'brain-queue',
   })

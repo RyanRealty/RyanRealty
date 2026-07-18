@@ -130,14 +130,12 @@ export const DESTINATIONS: NavDestination[] = [
   {
     key: 'prospecting',
     label: 'Prospecting',
-    href: '/admin/expireds',
+    href: '/admin/prospecting',
     icon: 'target',
     capability: 'prospecting.view',
     defaultOpen: true,
     children: [
-      { label: 'Expireds', href: '/admin/expireds', icon: 'clock', capability: 'prospecting.view' },
-      { label: 'Expired outreach', href: '/admin/expired-outreach', icon: 'user-plus', capability: 'prospecting.view' },
-      { label: 'FSBOs', href: '/admin/fsbos', icon: 'home', capability: 'prospecting.view' },
+      { label: 'Prospecting', href: '/admin/prospecting', icon: 'clock', capability: 'prospecting.view' },
       { label: 'CMAs', href: '/admin/cmas', icon: 'file-search', capability: 'prospecting.view' },
       { label: 'Price opinions', href: '/admin/bpo', icon: 'gauge', capability: 'prospecting.view' },
     ],

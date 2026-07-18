@@ -47,7 +47,7 @@
     "lib/data/crm/getEmailReporting.ts": 686,
     "lib/data/crm/getInboxQueue.ts": 635,
     "lib/data/crm/getLeadSourcesReport.ts": 626,
-    "lib/data/index.ts": 739,
+    "lib/data/index.ts": 745,
     "lib/data/listings/searchListingsAll.ts": 764,
     "lib/data/sync/syncWrites.ts": 1123,
     "lib/listing-mapper.ts": 691,
@@ -65,6 +65,6 @@
     "lib/x.ts": 787
   },
   "barrels": {
-    "lib/data/index.ts": 170
+    "lib/data/index.ts": 171
   }
 }

@@ -736,3 +736,9 @@ export {
   type ExpiredOutreachRow,
   type ExpiredListingDetail,
 } from './expired/outreach'
+
+// Prospecting hub (spec 07) — the ONE surface over expired listings + FSBOs.
+// Read-only DAL: doc-state resolution, fail-closed compliance, bounded/cached
+// engagement, single-row + worklist reads. Writes (sendProspectingIntro,
+// buildProspectDoc) live in app/actions/prospecting.ts, not here.
+export * from './prospecting'

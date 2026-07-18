@@ -137,6 +137,33 @@ export async function isSuppressedByEmail(
 }
 
 /**
+ * Phone-keyed suppression check for cold-SMS paths that identify a recipient by
+ * number, not a crm_person (e.g. a fresh expired/FSBO owner). `isSuppressed`
+ * reads only person-keyed rows + tags; a value-keyed SMS opt-out attached to the
+ * number with no person row would be invisible to it (a suppression bypass on a
+ * phone-first feature). This catches those, mirroring isSuppressedByEmail step 3.
+ * FAIL-CLOSED: on an empty number or any read error, return suppressed=true.
+ */
+export async function isSuppressedByPhone(
+  phoneE164: string,
+  channel: SendChannel,
+): Promise<{ suppressed: boolean; reasons: string[] }> {
+  const normalized = (phoneE164 ?? '').trim()
+  if (!normalized) return { suppressed: true, reasons: ['no-phone'] }
+  const sb = createServiceClient()
+  const rows = await sb
+    .from('crm_suppressions')
+    .select('channel,reason')
+    .eq('value', normalized)
+    .in('channel', ['all', channel])
+  if (rows.error) {
+    return { suppressed: true, reasons: ['phone-suppression-check-failed: ' + rows.error.message] }
+  }
+  const reasons = (rows.data ?? []).map((r) => `${r.channel}:${r.reason}`)
+  return { suppressed: reasons.length > 0, reasons }
+}
+
+/**
  * Remove a suppression (audit p0.3 — makes "Reply START to resubscribe" real).
  * Scoped by channel + optional reason so a user STARTing only clears their own
  * stop-keyword opt-out, never a compliance do-not-text/hard-stop we set.
