@@ -56,14 +56,17 @@ const BEND_NEIGHBORHOODS = (() => {
     .map((s) => s.replace(/^bend-/, ''))
 })()
 
-// Canonical Bend-area ZIPs. Hardcoded because there is no single
-// source-of-truth file in the repo. These are the ZIPs the site
-// targets per docs/EXECUTION_PLAN.md §3.
-const ZIP_CODES = [
-  '97701', '97702', '97703', '97707',
-  '97739', '97759', '97734', '97741',
-  '97760', '97754', '97756',
-]
+// Canonical ZIPs — parsed from the zip page's CANONICAL_ZIPS set, the
+// source of truth: anything outside it 404s (generateStaticParams +
+// notFound guard). The old hardcoded copy here drifted (97734/Culver was
+// listed but the page never served it), so the crawl asserted a 404 route
+// as healthy inventory (2026-07-17 smoke full-crawl failure).
+const ZIP_CODES = (() => {
+  const src = readFileSync(resolve('app/zip/[zip]/page.tsx'), 'utf8')
+  const block = src.match(/CANONICAL_ZIPS = new Set\(\[([\s\S]*?)\]\)/)?.[1]
+  if (!block) throw new Error('app/zip/[zip]/page.tsx no longer defines CANONICAL_ZIPS as a Set literal')
+  return [...block.matchAll(/'(\d{5})'/g)].map((m) => m[1])
+})()
 
 // LP route slugs — these are existing app/lp/<slug>/page.tsx files.
 const LP_SLUGS = ['seller-home-value', 'buyer-listing-alerts', 'expired-listing']
