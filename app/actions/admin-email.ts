@@ -2,7 +2,7 @@
 
 import { sendEmail } from '@/lib/resend'
 import { isSuppressedByEmail } from '@/lib/crm/suppressions'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 
 export async function sendAdminEmail(params: {
   to: string
@@ -28,7 +28,7 @@ export async function sendAdminEmail(params: {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (url?.trim() && key?.trim()) {
-    const supabase = createClient(url, key)
+    const supabase = createServiceClient()
     await supabase.from('email_campaigns').insert({
       fub_campaign_id: result.id ?? null,
       template_type: 'manual_admin',

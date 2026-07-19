@@ -6,7 +6,7 @@
  * not done on-the-fly at page generation. Uses listing and report data to enrich copy.
  */
 
-import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 import { getBrowseCities } from './listings'
 import { getSubdivisionsInCity } from './listings'
 import { getMarketStatsForCity } from './market-stats'
@@ -21,7 +21,7 @@ function serviceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url?.trim() || !key?.trim()) return null
-  return createClient(url, key)
+  return createServiceClient()
 }
 
 export type PlaceContentChunkOptions = {

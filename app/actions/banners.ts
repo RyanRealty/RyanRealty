@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 import { fetchPlacePhoto, fetchPlacePhotoOptions } from '../../lib/photo-api'
 import { cityEntityKey, subdivisionEntityKey } from '../../lib/slug'
 import { getBannerSearchQuery } from '../../lib/banner-prompts'
@@ -162,7 +163,7 @@ async function downloadAndStoreBanner(
       ? `cities/${entityKey}.jpg`
       : `subdivisions/${entityKey.replace(':', '/')}.jpg`
   const source = imageUrl.includes('unsplash') ? 'unsplash' : 'pexels'
-  const supabase = createClient(supabaseUrl, serviceKey)
+  const supabase = createServiceClient()
   const { data: buckets } = await supabase.storage.listBuckets()
   if (!buckets?.some((b) => b.name === BUCKET)) {
     await supabase.storage.createBucket(BUCKET, { public: true })

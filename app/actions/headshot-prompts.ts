@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 import { buildBrokerHeadshotPrompt, type HeadshotGender } from '@/lib/headshot-prompt'
 
 const DEFAULT_PROMPT_ID = 'default'
@@ -14,7 +14,7 @@ function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url?.trim() || !key?.trim()) return null
-  return createClient(url, key)
+  return createServiceClient()
 }
 
 /**

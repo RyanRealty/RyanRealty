@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 import { checkAdminAction } from '@/lib/admin/require-admin'
 
 function getSupabase() {
@@ -14,7 +15,7 @@ function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url?.trim() || !key?.trim()) return null
-  return createClient(url, key)
+  return createServiceClient()
 }
 
 export type BlogPostRow = {

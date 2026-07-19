@@ -12,6 +12,7 @@
 import 'server-only'
 import crypto from 'node:crypto'
 import { createServiceClient } from '@/lib/supabase/service'
+import { resilientFetch } from '@/lib/http/fetchJson'
 import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
 import { getBrokerTelephony } from '@/lib/data/crm/getBrokerTelephony'
 
@@ -204,9 +205,14 @@ export async function getA2pCampaignStatus(): Promise<A2pCampaignStatus> {
   const c = creds()
   const ms = process.env.TWILIO_MESSAGING_SERVICE_SID?.trim()
   if (!c || !ms) return null
-  const res = await fetch(`https://messaging.twilio.com/v1/Services/${ms}/Compliance/Usa2p`, {
-    headers: { Authorization: authHeader(c) },
-  })
+  let res: Response
+  try {
+    res = await resilientFetch(`https://messaging.twilio.com/v1/Services/${ms}/Compliance/Usa2p`, {
+      headers: { Authorization: authHeader(c) },
+    })
+  } catch {
+    return null // fail-closed: a2pBlocked(null) blocks SMS until we can confirm VERIFIED
+  }
   if (!res.ok) return null
   const data = (await res.json()) as { compliance?: Array<{ campaign_status?: string; status?: string }>; us_app_to_person?: Array<{ campaign_status?: string; status?: string }> }
   const row = (data.compliance ?? data.us_app_to_person ?? [])[0]
@@ -245,11 +251,18 @@ async function postMessage(form: URLSearchParams): Promise<{ ok: true; sid: stri
   // (the status route advances payload.deliveryState). Without this no send path
   // had delivery visibility.
   if (!form.has('StatusCallback')) form.set('StatusCallback', `${TWILIO_PUBLIC_ORIGIN}/api/twilio/status`)
-  const res = await fetch(`${API}/Accounts/${c.sid}/Messages.json`, {
-    method: 'POST',
-    headers: { Authorization: authHeader(c), 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: form,
-  })
+  let res: Response
+  try {
+    // POST send: timeout so a hung Twilio call fails fast, but NEVER retry (a
+    // retried send double-texts a real person). resilientFetch defaults POST to 0 retries.
+    res = await resilientFetch(`${API}/Accounts/${c.sid}/Messages.json`, {
+      method: 'POST',
+      headers: { Authorization: authHeader(c), 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: form,
+    })
+  } catch (err) {
+    return { ok: false, error: `Twilio send failed. ${err instanceof Error ? err.message : String(err)}` }
+  }
   const data = (await res.json()) as { sid?: string; message?: string; error_code?: number; status?: string }
   if (!res.ok || !data.sid) {
     const a2p = await getA2pCampaignStatus()
@@ -346,11 +359,17 @@ export async function startOutboundCall(params: {
   const from = toE164(params.fromNumber)
   if (!to || !from) return { ok: false, error: 'Broker phone not configured' }
   const form = new URLSearchParams({ To: to, From: from, Url: params.bridgeUrl, Method: 'POST' })
-  const res = await fetch(`${API}/Accounts/${c.sid}/Calls.json`, {
-    method: 'POST',
-    headers: { Authorization: authHeader(c), 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: form,
-  })
+  let res: Response
+  try {
+    // POST call-create: timeout only, never retry (a retry starts a second call).
+    res = await resilientFetch(`${API}/Accounts/${c.sid}/Calls.json`, {
+      method: 'POST',
+      headers: { Authorization: authHeader(c), 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: form,
+    })
+  } catch (err) {
+    return { ok: false, error: `Twilio call failed. ${err instanceof Error ? err.message : String(err)}` }
+  }
   const data = (await res.json()) as { sid?: string; message?: string }
   if (!res.ok || !data.sid) return { ok: false, error: data.message?.trim() || `Twilio call failed (${res.status})` }
   return { ok: true, sid: data.sid }
@@ -359,7 +378,12 @@ export async function startOutboundCall(params: {
 export async function getAccountType(): Promise<'Trial' | 'Full' | null> {
   const c = creds()
   if (!c) return null
-  const res = await fetch(`${API}/Accounts/${c.sid}.json`, { headers: { Authorization: authHeader(c) } })
+  let res: Response
+  try {
+    res = await resilientFetch(`${API}/Accounts/${c.sid}.json`, { headers: { Authorization: authHeader(c) } })
+  } catch {
+    return null
+  }
   if (!res.ok) return null
   const data = (await res.json()) as { type?: string }
   return (data.type as 'Trial' | 'Full') ?? null
@@ -379,10 +403,15 @@ export async function fetchTwilioMessageStatus(
   if (!c) return { ok: false, error: 'Twilio not configured' }
   const clean = sid.trim()
   if (!clean) return { ok: false, error: 'Missing message SID' }
-  const res = await fetch(`${API}/Accounts/${c.sid}/Messages/${encodeURIComponent(clean)}.json`, {
-    headers: { Authorization: authHeader(c) },
-    cache: 'no-store',
-  })
+  let res: Response
+  try {
+    res = await resilientFetch(`${API}/Accounts/${c.sid}/Messages/${encodeURIComponent(clean)}.json`, {
+      headers: { Authorization: authHeader(c) },
+      cache: 'no-store',
+    })
+  } catch (err) {
+    return { ok: false, error: `Twilio lookup failed. ${err instanceof Error ? err.message : String(err)}` }
+  }
   if (!res.ok) return { ok: false, error: `Twilio lookup failed (${res.status})` }
   const data = (await res.json()) as { status?: string; error_code?: number | null }
   return { ok: true, status: String(data.status ?? ''), errorCode: data.error_code ?? null }

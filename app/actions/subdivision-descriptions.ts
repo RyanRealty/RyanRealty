@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 import { subdivisionEntityKey } from '../../lib/slug'
 import { generateGrokText } from '../../lib/grok-text'
 
@@ -72,7 +73,7 @@ export async function generateSubdivisionDescription(
       return { ok: false, error: 'Supabase not configured for writes.' }
     }
 
-    const supabase = createClient(supabaseUrl, serviceKey)
+    const supabase = createServiceClient()
     await supabase.from('subdivision_descriptions').upsert(
       { entity_key: entityKey, description: description.trim() },
       { onConflict: 'entity_key' }
@@ -101,7 +102,7 @@ export async function generateSubdivisionAttractions(
       return { ok: false, error: 'Supabase not configured for writes.' }
     }
 
-    const supabase = createClient(supabaseUrl, serviceKey)
+    const supabase = createServiceClient()
     const { data } = await supabase.from('subdivision_descriptions').select('description').eq('entity_key', entityKey).maybeSingle()
     const existing = (data as { description?: string } | null)?.description
     await supabase.from('subdivision_descriptions').upsert(

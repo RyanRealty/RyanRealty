@@ -2,6 +2,7 @@
 
 import { unstable_cache } from 'next/cache'
 import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 import { slugify, subdivisionEntityKey } from '@/lib/slug'
 import { getAllCitySnapshots } from '@/lib/data'
 
@@ -54,7 +55,7 @@ const _fetchReportMetrics = unstable_cache(
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY
     if (!url?.trim() || !key?.trim()) throw new Error('Supabase not configured')
-    const supabase = createClient(url, key)
+    const supabase = createServiceClient()
     const { data, error } = await supabase.rpc('get_city_period_metrics', {
       p_city: city.trim(),
       p_period_start: periodStart,
@@ -125,7 +126,7 @@ const _fetchReportPriceBands = unstable_cache(
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY
     if (!url?.trim() || !key?.trim()) throw new Error('Supabase not configured')
-    const supabase = createClient(url, key)
+    const supabase = createServiceClient()
     const { data, error } = await supabase.rpc('get_city_price_bands', {
       p_city: city.trim(),
       p_period_start: periodStart,
@@ -240,7 +241,7 @@ const _fetchReportMetricsTimeSeries = unstable_cache(
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY
     if (!url?.trim() || !key?.trim()) throw new Error('Supabase not configured')
-    const supabase = createClient(url, key)
+    const supabase = createServiceClient()
     const { data, error } = await supabase.rpc('get_city_metrics_timeseries', {
       p_city: city.trim(),
       p_num_months: Math.min(60, Math.max(1, numMonths)),

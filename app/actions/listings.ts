@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 import { unstable_cache } from 'next/cache'
 import { listingDetailPath, listingKeyFromSlug, neighborhoodPagePath, reportsExploreYtdPath } from '../../lib/slug'
 import { HOME_TILE_SELECT } from '@/lib/listing-tile-projections'
@@ -28,7 +29,7 @@ function getServiceSupabase(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url?.trim() || !key?.trim()) return null
-  return createClient(url, key)
+  return createServiceClient()
 }
 
 /**

@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { checkAdminAction } from '@/lib/admin/require-admin'
@@ -66,7 +67,7 @@ export async function createGeoPlace(params: {
   }
   const slug = slugFromName(params.name)
   if (!slug) return { ok: false, error: 'Invalid name.' }
-  const supabase = createClient(supabaseUrl, serviceKey)
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('geo_places')
     .insert({
@@ -116,7 +117,7 @@ export async function updateGeoPlace(
   if (updates.parent_id !== undefined) payload.parent_id = updates.parent_id || null
   if (updates.name !== undefined) payload.name = updates.name.trim()
   if (updates.metadata !== undefined) payload.metadata = updates.metadata
-  const { error } = await createClient(supabaseUrl, serviceKey).from('geo_places').update(payload).eq('id', id)
+  const { error } = await createServiceClient().from('geo_places').update(payload).eq('id', id)
   if (error) return { ok: false, error: error.message }
   const session = await getSession()
   const adminRole = session?.user?.email ? (await getAdminRoleForEmail(session.user.email))?.role ?? null : null
@@ -143,7 +144,7 @@ export async function ensureGeoPlacesFromListings(): Promise<{ ok: true; citiesE
   if (!supabaseUrl?.trim() || !serviceKey?.trim()) {
     return { ok: false, error: 'Supabase not configured.' }
   }
-  const supabase = createClient(supabaseUrl, serviceKey)
+  const supabase = createServiceClient()
   const { getBrowseCities } = await import('./listings')
   const cities = await getBrowseCities()
   if (cities.length === 0) return { ok: true, citiesEnsured: 0 }

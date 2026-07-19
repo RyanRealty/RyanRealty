@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 
 export async function getSetupComplete(): Promise<boolean> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -17,7 +18,7 @@ export async function setSetupComplete(): Promise<{ error: string | null }> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url?.trim() || !serviceKey?.trim()) return { error: 'Server not configured' }
-  const supabase = createClient(url, serviceKey)
+  const supabase = createServiceClient()
   const { error } = await supabase.from('settings').upsert(
     { key: 'setup_complete', value: { complete: true }, updated_at: new Date().toISOString() },
     { onConflict: 'key' }

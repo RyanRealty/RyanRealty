@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 import { sendEvent } from '@/lib/followupboss'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
@@ -106,7 +106,7 @@ export async function submitListingInquiry(params: SubmitListingInquiryParams): 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url?.trim() || !serviceKey?.trim()) return { ok: false, error: 'Server not configured' }
-  const supabase = createClient(url, serviceKey)
+  const supabase = createServiceClient()
   const { error } = await supabase.from('listing_inquiries').insert({
     listing_key: params.listingKey,
     type: params.type,

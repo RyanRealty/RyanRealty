@@ -1,4 +1,5 @@
 import { getMetaPageTokenTrimmed } from '@/lib/meta-env'
+import { resilientFetch } from '@/lib/http/fetchJson'
 
 const META_GRAPH_BASE = 'https://graph.facebook.com/v25.0'
 // Marketing API version pinned separately (v18.0 in the .mjs ad-creation client;
@@ -102,13 +103,15 @@ async function throwIfError(response: Response): Promise<void> {
 }
 
 async function getJson<T>(url: string): Promise<T> {
-  const response = await fetch(url)
+  // Idempotent GET: timeout + retry-on-429/5xx (resilientFetch defaults).
+  const response = await resilientFetch(url)
   await throwIfError(response)
   return (await response.json()) as T
 }
 
 async function postJson<T>(url: string, body: Record<string, unknown>): Promise<T> {
-  const response = await fetch(url, {
+  // POST is non-idempotent (publishes/mutates) — timeout only, NEVER auto-retry.
+  const response = await resilientFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),

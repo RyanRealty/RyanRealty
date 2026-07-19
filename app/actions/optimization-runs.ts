@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 
 export type OptimizationRunRow = {
   id: string
@@ -14,7 +14,7 @@ export async function getLastOptimizationRun(): Promise<OptimizationRunRow | nul
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
   if (!url || !key) return null
-  const supabase = createClient(url, key)
+  const supabase = createServiceClient()
   const { data } = await supabase
     .from('optimization_runs')
     .select('id, run_at, findings, suggested_changes, summary')

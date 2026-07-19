@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { type SupabaseClient } from '@supabase/supabase-js'
 import { getMetaPageTokenTrimmed } from '@/lib/meta-env'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getGA4Summary } from './ga4-report'
@@ -51,7 +51,7 @@ export async function getDashboardLeadData(): Promise<DashboardLeadData> {
       recentVisits: [],
     }
   }
-  const supabase = createClient(url, serviceKey)
+  const supabase = createServiceClient()
 
   const now = new Date()
   const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
@@ -492,7 +492,7 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
   }
 
   if (url?.trim() && serviceKey?.trim()) {
-    const supabase = createClient(url, serviceKey)
+    const supabase = createServiceClient()
 
     // Contact metrics come from crm_people via getLeadIntake — the org-wide
     // "new leads" source of truth (lib/data/crm/getLeadIntake.ts). The old
@@ -757,7 +757,7 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
   let latestExecutionGeneratedCount: number | null = null
 
   if (url?.trim() && serviceKey?.trim()) {
-    const supabase = createClient(url, serviceKey)
+    const supabase = createServiceClient()
     const [latestInsightResult, latestExecutionResult] = await Promise.all([
       supabase
         .from('agent_insights')
@@ -875,9 +875,6 @@ export async function getDashboardDataQuality(): Promise<DashboardDataQuality> {
   if (!url?.trim() || !serviceKey?.trim()) {
     return { totalListings: 0, missingPrimaryPhoto: 0, classifiedPhotos: 0 }
   }
-  const supabase = createClient(url, serviceKey)
-
-  void supabase // legacy client retained for sibling queries elsewhere
   const { getListingTilesCount } = await import('@/lib/data')
   const [totalActivePending, missingPhotoTiles, classifiedRes] = await Promise.all([
     // DAL: exact head-count of active+pending tiles via listing_tile_mv.
@@ -888,7 +885,7 @@ export async function getDashboardDataQuality(): Promise<DashboardDataQuality> {
     getListingTilesCount({ status: 'active-and-pending', scope: 'all' }),
     // DAL: active+pending tiles missing a hero photo (feed-wide, see above).
     getListingTilesCount({ status: 'active-and-pending', missingPhoto: true, scope: 'all' }),
-    createClient(url, serviceKey)
+    createServiceClient()
       .from('listing_photo_classifications')
       .select('*', { count: 'exact', head: true }),
   ])

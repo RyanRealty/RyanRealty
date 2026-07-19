@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { Suspense } from 'react'
+import { Suspense, cache } from 'react'
 import {
   getListingKeysWithRecentPriceChange,
   getCityFromSlug,
@@ -90,7 +90,16 @@ async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500
 const LISTINGS_FETCH_TIMEOUT_MS = 12000
 
 /** Resolve slug segments to city, subdivision (display name), and preset. */
-async function resolveSlug(slug: string[]): Promise<{
+// Request-scoped dedup: resolveSlug runs in both generateMetadata and the page
+// body (1-3 sequential DB round trips each). cache() keys by per-arg Object.is,
+// so an array arg never dedupes — key on the joined path to collapse the two
+// resolutions into one per render.
+const _resolveSlugByPath = cache((path: string) => resolveSlugImpl(path ? path.split('/') : []))
+function resolveSlug(slug: string[]) {
+  return _resolveSlugByPath(slug.join('/'))
+}
+
+async function resolveSlugImpl(slug: string[]): Promise<{
   city: string | null
   subdivisionSlug: string | null
   subdivisionDisplayName: string | null

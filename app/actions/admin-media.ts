@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { logAdminAction } from '@/app/actions/log-admin-action'
@@ -86,7 +86,7 @@ function getServiceSupabase() {
   if (!url?.trim() || !serviceKey?.trim()) {
     throw new Error('Supabase service role is not configured.')
   }
-  return createClient(url, serviceKey)
+  return createServiceClient()
 }
 
 function getPublicBaseUrl() {

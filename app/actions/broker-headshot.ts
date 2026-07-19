@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 import { getBrokerById, updateBroker } from '@/app/actions/brokers'
 import { resolveHeadshotPromptText } from '@/app/actions/headshot-prompts'
 import { BROKER_HEADSHOT_NEGATIVE_PROMPT, type HeadshotGender } from '@/lib/headshot-prompt'
@@ -18,7 +18,7 @@ function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url?.trim() || !key?.trim()) return null
-  return createClient(url, key)
+  return createServiceClient()
 }
 
 function getBrokersPublicUrl(storagePath: string): string {
