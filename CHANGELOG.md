@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.822.0 (2026-07-19)
+
+### Features
+- feat(flyer-design): canonical 8.5x11 print feature-sheet generator + skill
+
+---
+
+
 ## v1.821.7 (2026-07-19)
 
 ### Maintenance
