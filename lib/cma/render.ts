@@ -794,27 +794,14 @@ function nextStepPage(a: RenderCmaArgs): PageDef {
     ${b.email ? `<a class="ghost" href="mailto:${esc(b.email)}">Email ${first}</a>` : ''}
     <a class="ghost" href="${consultUrl}">Book the listing consultation</a>
   </div>
-  ${isAudit ? `<p class="cta-reply-note">Or simply reply to the text that brought you here. It comes straight to ${first}'s phone.</p>` : ''}
-  <div class="signature-page">
-    ${brokerPortrait(b)}
-    <div class="sig-content">
-      <div class="sig-printed">${esc(b.displayName)}</div>
-      <div class="sig-title">${esc(b.title)} · Ryan Realty · Bend · Oregon</div>
-      <div class="sig-contact">
-        ${b.phone && tel ? `<strong><a href="tel:${tel}">${esc(dottedPhone(b.phone) ?? b.phone)}</a></strong><br/>` : ''}
-        ${b.email ? `<a href="mailto:${esc(b.email)}">${esc(b.email)}</a><br/>` : ''}
-        ryan-realty.com
-      </div>
-      ${b.licenseNumber ? `<div class="sig-license">Oregon Real Estate License # ${esc(b.licenseNumber)}</div>` : ''}
-    </div>
-  </div>`,
+  ${isAudit ? `<p class="cta-reply-note">Or simply reply to the text that brought you here. It comes straight to ${first}'s phone.</p>` : ''}`,
   }
 }
-
-function brokerPortrait(b: RenderCmaArgs['broker']): string {
-  const headshot = b.photoUrl ? (b.photoUrl.startsWith('http') ? b.photoUrl : `${SITE_URL}${b.photoUrl}`) : null
-  return headshot ? `<img class="portrait" src="${esc(headshot)}" alt="${esc(b.displayName)}" />` : '<div></div>'
-}
+// The closing "Your next step" page no longer repeats a broker signature block —
+// the single broker signature lives on the Disclosure page (the ORS/OAR
+// certification). The broker is still named in the CTA buttons above. This
+// removed the second signature that made every document read as double-signed
+// (regression from the 2026-07-16 closing-page commit).
 
 function disclosurePage(a: RenderCmaArgs): PageDef {
   const b = a.broker
