@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.821.2 (2026-07-19)
+
+### Bug Fixes
+- fix(audit): Tier-2 — Meta lead-webhook after(), insight failure logging, DAL page-import gate
+
+---
+
+
 ## v1.821.1 (2026-07-19)
 
 ### Bug Fixes
