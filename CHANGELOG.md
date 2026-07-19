@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.821.6 (2026-07-19)
+
+### Maintenance
+- refactor(audit): #3b finish createServiceClient sweep (9 files the grep missed)
+
+---
+
+
 ## v1.821.5 (2026-07-19)
 
 ### Bug Fixes
