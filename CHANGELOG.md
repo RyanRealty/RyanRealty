@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.821.5 (2026-07-19)
+
+### Bug Fixes
+- fix(audit): #2 label /reports scope + add market verdict (resolves /reports vs /housing-market MoS gap)
+
+---
+
+
 ## v1.821.4 (2026-07-19)
 
 ### Bug Fixes
