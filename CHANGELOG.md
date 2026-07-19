@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.821.0 (2026-07-19)
+
+### Features
+- feat(prospecting): close the review→approve→send loop in the hub
+
+### Bug Fixes
+- fix(prospecting): adversarial-audit hardening across the send path, data links, and UI
+
+---
+
+
 ## v1.820.2 (2026-07-19)
 
 ### Bug Fixes
