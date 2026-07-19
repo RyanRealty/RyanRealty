@@ -293,6 +293,10 @@ export async function processNewExpiredListings(
         matchedBy = 'no-contact-skip-fub'
       }
 
+      // Doc id from the auto-CMA queue (set below when a person exists), stamped
+      // into the expired_listings upsert so the row is born linked by id (§4.2).
+      let queuedCmaId: string | null = null
+
       if (crmPersonId) {
         const plainStatusTag =
           l.StandardStatus === 'Expired'
@@ -409,14 +413,11 @@ export async function processNewExpiredListings(
           })
           if (cmaRes.ok) {
             stats.cmas_queued++
-            // Spec 07 §4.2 — link the listing to its document by id, not a fuzzy
-            // address slug. A point-lookup FK the surface resolves directly.
-            try {
-              const { linkProspectCma } = await import('@/lib/data/prospecting/send-claim')
-              await linkProspectCma('expired', l.ListingKey, cmaRes.cmaId)
-            } catch (e) {
-              console.warn('[expired-listing-processor] cma_id stamp failed:', e instanceof Error ? e.message : String(e))
-            }
+            // Spec 07 §4.2 — remember the doc id and stamp it INTO the upsert
+            // below. The expired_listings row does not exist yet at this point
+            // (upsertExpiredListingRow runs after this block), so stamping here
+            // 0-row-updates silently (adversarial audit 2026-07-18 CRITICAL).
+            queuedCmaId = cmaRes.cmaId
           } else {
             console.warn('[expired-listing-processor] CMA request failed:', cmaRes.error)
           }
@@ -456,6 +457,7 @@ export async function processNewExpiredListings(
       await upsertExpiredListingRow(
         {
           listing_key: l.ListingKey,
+          cma_id: queuedCmaId,
           list_number: l.ListNumber,
           full_address: fullAddress,
           street_address: streetAddress,

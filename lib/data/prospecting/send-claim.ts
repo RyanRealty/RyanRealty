@@ -52,6 +52,20 @@ export async function finalizeProspectSend(
   if (error) throw new Error(`prospect_send_finalize failed: ${error.message}`)
 }
 
+/**
+ * Stamp the Twilio message sid the INSTANT the send returns, before finalize.
+ * Closes the finalize-failure double-text hole (adversarial audit 2026-07-18):
+ * if finalize then fails, the row still carries a sid, and prospect_send_claim
+ * treats a sid-bearing row as already-sent — so a retry never re-texts the owner.
+ * Best-effort: a stamp failure is logged but never throws (finalize is the durable
+ * record; the claim's own sid guard is the safety net either way).
+ */
+export async function stampProspectSid(kind: ProspectKind, id: string, sid: string): Promise<void> {
+  const sb = createServiceClient()
+  const { error } = await sb.rpc('prospect_send_stamp_sid', { p_kind: kind, p_id: id, p_sid: sid })
+  if (error) console.warn('[prospecting] prospect_send_stamp_sid failed:', error.message)
+}
+
 /** Release an in-flight claim after a Twilio failure so the row is sendable again. Never clears a finalized send. */
 export async function releaseProspectSend(kind: ProspectKind, id: string): Promise<void> {
   const sb = createServiceClient()

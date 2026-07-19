@@ -210,7 +210,8 @@ export async function replaceBpoComps(
  * `posture` is a hard binary toggle (buyer/seller, defaults to buyer) — never
  * an "all posture" state — mirroring ProspectFilters' expired/fsbo `kind`
  * toggle. A BPO whose offer_strategy.mode is missing (pre-offer-strategy
- * legacy rows) matches neither toggle position; it is still reachable from
+ * legacy rows) defaults to the buyer toggle (see postureScoped below) so it
+ * is never invisible under both positions; it is also always reachable from
  * the CRM contact card / the canonical /admin/bpo/[slug] route.
  */
 
@@ -342,7 +343,12 @@ export async function listBposForAdmin(filters: BpoWorklistFilters): Promise<Bpo
   }
 
   const mapped = rawRows.map(mapWorklistRow)
-  const postureScoped = mapped.filter((r) => r.posture === posture)
+  // A null posture (offer_strategy.mode missing — pre-offer-strategy legacy
+  // rows) must land in exactly one toggle view, never neither: default it to
+  // 'buyer' for scoping purposes only (the row itself keeps posture: null so
+  // the card's "Buyer opinion"/"Seller opinion" badge stays honest and simply
+  // omits itself — a subtle unknown-posture indicator).
+  const postureScoped = mapped.filter((r) => (r.posture ?? 'buyer') === posture)
 
   const cities = [
     ...new Set(

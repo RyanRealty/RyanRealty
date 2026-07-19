@@ -26,6 +26,7 @@ import {
   claimProspectSend,
   finalizeProspectSend,
   releaseProspectSend,
+  stampProspectSid,
   linkProspectCma,
 } from '@/lib/data/prospecting/send-claim'
 import {
@@ -82,7 +83,18 @@ export async function sendProspectingIntro(
     if (!prospect.streetAddress) {
       return { ok: false, error: 'No street address on the prospect record.', code: 'not-found' }
     }
-    const clientReady = await getLatestClientReadyCmaRowForBaseSlug(slugifyAddress(prospect.streetAddress))
+    // Bind the texted link to THIS prospect's own document chain (spec §4.2
+    // cma_id), not a re-derived address slug. prospect.doc is resolved cma_id-first
+    // by resolveDocsBatch, so its slug base is the correct chain; a street-only
+    // slugifyAddress can collide across cities and resolve a DIFFERENT owner's audit
+    // (adversarial audit 2026-07-18 F1). The state is guaranteed ready|sent here
+    // (guards above), so a slug is always present; fall back to the address slug
+    // only in the impossible no-slug case.
+    const docBaseSlug =
+      prospect.doc.state === 'ready' || prospect.doc.state === 'sent'
+        ? prospect.doc.slug.replace(/--v\d+$/, '')
+        : slugifyAddress(prospect.streetAddress)
+    const clientReady = await getLatestClientReadyCmaRowForBaseSlug(docBaseSlug)
     if (!clientReady) {
       return {
         ok: false,
@@ -218,6 +230,18 @@ export async function sendProspectingIntro(
     }
     // claim === 'claimed' — we own the send.
 
+    // 12.5 TCPA TOCTOU guard (adversarial audit 2026-07-18 M6): suppression was
+    // checked at step 9, but compose + short-link + claim ran since. Re-check the
+    // instant before the irreversible send so a STOP that landed in that window
+    // still blocks. No text has gone out yet, so release the claim on a hit.
+    const supNow = await isSuppressed(lead.personId, 'sms')
+    const phoneSupNow = supNow.suppressed ? { suppressed: false, reasons: [] } : await isSuppressedByPhone(to, 'sms')
+    if (supNow.suppressed || phoneSupNow.suppressed) {
+      await releaseProspectSend(kind, id)
+      const reasons = [...supNow.reasons, ...phoneSupNow.reasons].join(', ') || 'opt-out on file'
+      return { ok: false, error: `Suppressed for SMS: ${reasons}.`, code: 'suppressed' }
+    }
+
     // 13. Send via the A2P messaging service. A failure HERE is before any text
     // left the building, so it is safe to release the claim and let a retry go.
     const sent = await sendSmsViaMessagingService({ to, body })
@@ -228,11 +252,19 @@ export async function sendProspectingIntro(
     }
     const sid = sent.sid
 
-    // The text HAS gone out. From here we NEVER release the claim (review F1):
-    // releasing would let a retry double-text a real owner. Finalize (the durable
-    // sent-stamp) with retries; if it still fails, leave the claim in place and log
-    // loudly for manual reconciliation. Timeline/enrich are best-effort and never
-    // release or re-send.
+    // The text HAS gone out. Persist the sid DURABLY, right now, before anything
+    // else can fail (adversarial audit 2026-07-18 H2). prospect_send_claim treats a
+    // sid-bearing row as already-sent, so even if every finalize retry below fails,
+    // a later retry can never double-text this owner. Best-effort by contract, but
+    // the claim's own sid guard is the real safety net.
+    await stampProspectSid(kind, id, sid).catch((e) =>
+      console.error('[sendProspectingIntro] sid stamp failed (finalize still attempted):', e),
+    )
+
+    // From here we NEVER release the claim (review F1): releasing would let a retry
+    // double-text a real owner. Finalize (the durable sent-stamp) with retries; if
+    // it still fails, leave the claim in place and log loudly for manual
+    // reconciliation. Timeline/enrich are best-effort and never release or re-send.
     let finalized = false
     for (let attempt = 1; attempt <= 3 && !finalized; attempt++) {
       try {
@@ -372,7 +404,14 @@ export async function prepareProspectSend(
     const prospect = await getProspect(kind, id)
     if (!prospect) return { ok: false, error: 'Prospect not found.' }
 
-    const baseSlug = prospect.streetAddress ? slugifyAddress(prospect.streetAddress) : null
+    // Same cma_id-first binding as the send path (F1) — preview the link the send
+    // would actually text, from THIS prospect's own doc chain, not a re-derived slug.
+    const baseSlug =
+      prospect.doc.state === 'ready' || prospect.doc.state === 'sent'
+        ? prospect.doc.slug.replace(/--v\d+$/, '')
+        : prospect.streetAddress
+          ? slugifyAddress(prospect.streetAddress)
+          : null
     const clientReadyRow = baseSlug ? await getLatestClientReadyCmaRowForBaseSlug(baseSlug) : null
     const docSlug =
       clientReadyRow?.slug ??

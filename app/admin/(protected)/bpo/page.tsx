@@ -8,9 +8,7 @@
  * the fast triage worklist on top of it.
  */
 
-import { redirect } from 'next/navigation'
-import { getSession } from '@/app/actions/auth'
-import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { listBposForAdmin, getBpoWorklistRowById } from '@/lib/data/bpo/reads'
 import type { BpoPosture, BpoStatusFilter, BpoWorklistFilters } from '@/lib/data/bpo/reads'
 import { finalizeBpoAction } from '@/app/actions/bpo-admin'
@@ -32,10 +30,7 @@ export default async function AdminBpoWorklistPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const session = await getSession()
-  const adminRole = await getAdminRoleForEmail(session?.user?.email ?? null)
-  if (!adminRole) redirect('/admin/access-denied')
-  if (adminRole.role === 'report_viewer') redirect('/admin/access-denied')
+  await requireAdminPage('prospecting.view')
 
   const sp = await searchParams
 

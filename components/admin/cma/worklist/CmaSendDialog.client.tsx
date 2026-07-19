@@ -151,7 +151,14 @@ function CmaSendDialogBody({
         </div>
       ) : null}
 
-      <EmailBodyEditor subject={subject} onSubjectChange={setSubject} body={body} onBodyChange={setBody} signatureHtml={null} />
+      <EmailBodyEditor
+        subject={subject}
+        onSubjectChange={setSubject}
+        body={body}
+        onBodyChange={setBody}
+        signatureHtml={null}
+        hideMergeFields
+      />
 
       <a
         href={context.docUrl}

@@ -249,6 +249,13 @@ export async function prepareCmaSendPreview(slug: string): Promise<
     // without the status gate for prefill purposes only.
     const row = await getCmaAdminRowBySlug(slug)
     if (!row) return { ok: false, error: error ?? 'Document not found' }
+    // Archived is a terminal, hidden-from-the-rail state (mirrors
+    // prepareBpoSendPreview's archived_at gate) — the dialog must never open
+    // fully-prefilled-and-sendable only to have sendCmaToLead reject it with a
+    // confusing "not approved yet" error. Block it here, at prepare time.
+    if (String(row.status ?? '') === 'archived') {
+      return { ok: false, error: 'This CMA is archived. Restore it before sending.' }
+    }
     const brokerRaw = await getCmaBrokerBySlugOrEmail({ slug: (row.broker_slug as string | null) ?? null })
     const fakeCtx: CmaSendContext = {
       slug,

@@ -38,7 +38,10 @@ import { CmaDetailPanel } from './CmaDetailPanel.client'
 import { CmaSendDialog, type CmaSendContext } from './CmaSendDialog.client'
 
 type Actions = {
-  approveAction: (slug: string) => Promise<{ error: string | null }>
+  approveAction: (
+    slug: string,
+    opts?: { acknowledgeReview?: boolean },
+  ) => Promise<{ error: string | null; needsReviewAck?: boolean }>
   prepareSendAction: (slug: string) => Promise<{ data: CmaSendContext | null; error: string | null }>
   sendAction: (
     slug: string,
@@ -103,6 +106,22 @@ export function CmaBoard({
       startTransition(async () => {
         try {
           const res = await approveAction(slug)
+          if (res.error && res.needsReviewAck) {
+            // Accuracy gate: the build carries review findings. Approving is
+            // the broker's call, but only with the findings explicitly
+            // acknowledged (mirrors BpoBoard's handleFinalize).
+            const ack = confirm(
+              `${res.error}\n\nReview the findings on the full review page. Approve anyway, acknowledging the recorded findings?`,
+            )
+            if (!ack) return
+            const retry = await approveAction(slug, { acknowledgeReview: true })
+            if (retry.error) toast.error(retry.error)
+            else {
+              toast.success('Approved with review findings acknowledged. Ready to send.')
+              router.refresh()
+            }
+            return
+          }
           if (!res.error) {
             toast.success('Approved. Ready to send.')
             router.refresh()

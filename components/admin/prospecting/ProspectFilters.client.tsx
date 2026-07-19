@@ -81,6 +81,10 @@ export function ProspectFilters({
   const filtersActive = Boolean(
     params.q || params.city || params.status || params.minPrice || params.maxPrice || params.dateAfter || params.dateBefore,
   )
+  // A stale/out-of-range `?city=` (not present in the current `cities` list)
+  // still needs its own SelectItem so the Select shows the real active value
+  // instead of silently falling back to the "All cities" placeholder.
+  const activeCityMissing = Boolean(params.city) && !cities.includes(params.city as string)
 
   function setCity(next: string) {
     router.push(buildHref(basePath, { ...params, city: next === ALL_CITIES ? undefined : next }))
@@ -183,6 +187,12 @@ export function ProspectFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL_CITIES}>All cities</SelectItem>
+            {/* An applied ?city= filter that fell out of the current `cities`
+                list (e.g. a city with zero matching rows for the other active
+                filters) still needs a matching SelectItem — otherwise Radix
+                can't resolve `value` to a label and silently falls back to
+                the "All cities" placeholder while the filter stays active. */}
+            {activeCityMissing ? <SelectItem value={params.city as string}>{params.city}</SelectItem> : null}
             {cities.map((c) => (
               <SelectItem key={c} value={c}>
                 {c}

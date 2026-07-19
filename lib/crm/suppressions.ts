@@ -138,28 +138,50 @@ export async function isSuppressedByEmail(
 
 /**
  * Phone-keyed suppression check for cold-SMS paths that identify a recipient by
- * number, not a crm_person (e.g. a fresh expired/FSBO owner). `isSuppressed`
- * reads only person-keyed rows + tags; a value-keyed SMS opt-out attached to the
- * number with no person row would be invisible to it (a suppression bypass on a
- * phone-first feature). This catches those, mirroring isSuppressedByEmail step 3.
- * FAIL-CLOSED: on an empty number or any read error, return suppressed=true.
+ * number, not a crm_person (e.g. a fresh expired/FSBO owner). Mirrors
+ * isSuppressedByEmail's enumeration: it resolves EVERY crm_person carrying this
+ * number (crm_contact_points, matched on the normalized last-10) and runs the
+ * canonical isSuppressed() on each — so a STOP written person-keyed on ANY person
+ * on that line is caught, even if the send resolved to a different unmerged person
+ * by email. Without this, a STOP'd owner could be re-texted (adversarial audit
+ * 2026-07-18 HIGH — TCPA opt-out bypass). Also checks value-keyed crm_suppressions
+ * rows in both last-10 and E.164 forms. FAIL-CLOSED: empty/invalid number or any
+ * read error → suppressed=true.
  */
 export async function isSuppressedByPhone(
-  phoneE164: string,
+  phone: string,
   channel: SendChannel,
 ): Promise<{ suppressed: boolean; reasons: string[] }> {
-  const normalized = (phoneE164 ?? '').trim()
-  if (!normalized) return { suppressed: true, reasons: ['no-phone'] }
+  const digits = (phone ?? '').replace(/\D/g, '')
+  const last10 = digits.slice(-10)
+  if (last10.length < 10) return { suppressed: true, reasons: ['no-valid-phone'] }
   const sb = createServiceClient()
+  const reasons: string[] = []
+
+  // 1. Enumerate every person on this number and run the canonical per-person
+  // check (covers person-keyed STOP + compliance tags via TAG_CHANNEL).
+  const cps = await sb.from('crm_contact_points').select('person_id').eq('kind', 'phone').eq('value', last10)
+  if (cps.error) {
+    return { suppressed: true, reasons: ['phone-suppression-check-failed: ' + cps.error.message] }
+  }
+  const personIds = [...new Set((cps.data ?? []).map((r) => Number(r.person_id)).filter((n) => Number.isFinite(n)))]
+  for (const pid of personIds) {
+    const per = await isSuppressed(pid, channel)
+    if (per.suppressed) reasons.push(...per.reasons.map((r) => `person:${pid}:${r}`))
+  }
+
+  // 2. Value-keyed suppression rows (no person required) — match both the last-10
+  // and the +1E.164 form, since imported opt-outs may be stored either way.
   const rows = await sb
     .from('crm_suppressions')
     .select('channel,reason')
-    .eq('value', normalized)
+    .in('value', [last10, `+1${last10}`])
     .in('channel', ['all', channel])
   if (rows.error) {
     return { suppressed: true, reasons: ['phone-suppression-check-failed: ' + rows.error.message] }
   }
-  const reasons = (rows.data ?? []).map((r) => `${r.channel}:${r.reason}`)
+  for (const r of rows.data ?? []) reasons.push(`value:${r.channel}:${r.reason}`)
+
   return { suppressed: reasons.length > 0, reasons }
 }
 

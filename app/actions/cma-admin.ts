@@ -156,7 +156,10 @@ export async function rebuildCmaAction(
 
 // ─── Approve / delete ────────────────────────────────────────────────────────
 
-export async function approveCmaAction(slug: string): Promise<{ error: string | null }> {
+export async function approveCmaAction(
+  slug: string,
+  opts?: { acknowledgeReview?: boolean },
+): Promise<{ error: string | null; needsReviewAck?: boolean }> {
   try {
     if (!(await requireAdmin())) return { error: 'Unauthorized' }
     const safeSlug = slug.trim().toLowerCase()
@@ -164,6 +167,17 @@ export async function approveCmaAction(slug: string): Promise<{ error: string | 
     if (!row) return { error: 'CMA not found' }
     if (!row.html_content && !(row.html_path as string | null)?.startsWith('public/cmas/')) {
       return { error: 'This CMA has no built document yet. Build it before approving.' }
+    }
+    // Accuracy gate (mirrors app/actions/bpo-admin.ts finalizeBpoAction): a
+    // build flagged needs_review (unvetted comps, disputed audit, non-converged
+    // methods) cannot approve silently — the broker must explicitly acknowledge
+    // the recorded findings.
+    const summary = row.build_summary as { needs_review?: boolean; review_reason?: string | null } | null
+    if (summary?.needs_review && !opts?.acknowledgeReview) {
+      return {
+        error: `Flagged for broker review: ${summary.review_reason ?? 'accuracy findings recorded in the build summary'}`,
+        needsReviewAck: true,
+      }
     }
     const res = await updateCmaRowFieldsBySlug(safeSlug, {
       status: 'finalized',

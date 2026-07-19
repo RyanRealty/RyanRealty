@@ -132,6 +132,10 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
         stats.skipped_no_contact++
       }
 
+      // Doc id from the auto-CMA queue (set below when a person exists), stamped
+      // into the fsbo_listings upsert so the row is born linked by id (§4.2).
+      let queuedCmaId: string | null = null
+
       if (crmPersonId) {
         // Demographics → namespaced custom fields (same mapping as expireds).
         const demo = ownerLookup?.demographics
@@ -214,13 +218,10 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
           })
           if (cmaRes.ok) {
             stats.cmas_queued++
-            // Spec 07 §4.2 — link the FSBO to its document by id, not a fuzzy slug.
-            try {
-              const { linkProspectCma } = await import('@/lib/data/prospecting/send-claim')
-              await linkProspectCma('fsbo', l.fsboUrl, cmaRes.cmaId)
-            } catch (e) {
-              console.warn('[fsbo-processor] cma_id stamp failed:', e instanceof Error ? e.message : String(e))
-            }
+            // Spec 07 §4.2 — remember the doc id; it is stamped INTO the
+            // fsbo_listings upsert below. The row does not exist yet here, so a
+            // stamp now 0-row-updates silently (adversarial audit 2026-07-18).
+            queuedCmaId = cmaRes.cmaId
           }
         } catch (e) {
           console.warn('[fsbo-processor] CMA request threw:', e)
@@ -259,6 +260,7 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
       await supabase.from('fsbo_listings').upsert(
         {
           fsbo_url: l.fsboUrl,
+          cma_id: queuedCmaId,
           fsbo_unique_id: l.fsboUniqueId,
           fsbo_source: l.fsboSource,
           full_address: l.fullAddress,

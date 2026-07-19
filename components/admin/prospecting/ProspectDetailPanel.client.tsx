@@ -98,8 +98,7 @@ export function ProspectDetailPanel({
         <p className="text-sm text-muted-foreground">
           {/* fullAddress already includes city + zip; only compose from parts when it is absent. */}
           {detail.fullAddress ??
-            [detail.streetAddress, detail.city, detail.postalCode].filter(Boolean).join(', ') ??
-            '—'}
+            ([detail.streetAddress, detail.city, detail.postalCode].filter(Boolean).join(', ') || '—')}
         </p>
         <p className="text-xs tabular-nums text-muted-foreground">
           {detail.listPrice != null ? `Was ${formatPrice(detail.listPrice)}` : null}

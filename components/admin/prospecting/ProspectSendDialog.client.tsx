@@ -8,18 +8,10 @@
  * inline already-sent + engagement block shows when this owner was already
  * texted. NO native confirm() anywhere in this flow.
  *
- * IMPORTANT — read before touching the send wiring: `sendIntroAction`'s
- * contract (spec §5.3) takes NO body override by design. The intro's exact
- * wording is always composed server-side from the live crm_templates row +
- * merge tokens for this owner/property, never a client-supplied string —
- * that is the fix for Defect 13 ("hardcoded preview ≠ what actually sends").
- * `context.defaultSmsBody` / `defaultEmailBody` ARE that canonical merged
- * text, so editing them here is for REVIEW + TEST SENDS ONLY:
- *   - "Send test to myself" uses your edits (sendTestAction takes a body).
- *   - "Send intro" always delivers the live template for this owner, not
- *     your edits — the caption under the button says so explicitly. Do not
- *     let that caption get dropped in a future edit; it is the only thing
- *     standing between an editable textbox and a confused broker.
+ * `sendIntroAction`'s `bodyOverride` IS honored: editing the SMS body below
+ * sends your edited text, verbatim, through the same server-side compliance
+ * pipeline (unresolved-token fail-closed + short-link tracking) — see the
+ * caption under the buttons, "Your edits above are what sends."
  *
  * SMS tab reuses the same primitives SmsComposer is built from
  * (MergeFieldInserter, findUnresolvedMergeTokens) rather than the whole
@@ -32,7 +24,7 @@
  * directly as a controlled component."
  */
 
-import { useMemo, useRef, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -48,7 +40,8 @@ import { formatDate, maskEmail, maskPhone } from './format'
 
 /** The compose context for one prospect's cold-intro dialog. Owned by the
  *  parent (prepared alongside the guarded send action so the preview always
- *  matches what the server would actually compose). */
+ *  matches what the server would actually compose).
+ *  keep in sync with app/actions/prospecting.ts ProspectSendContext */
 export interface ProspectSendContext {
   kind: ProspectKind
   id: string
@@ -59,6 +52,7 @@ export interface ProspectSendContext {
   defaultEmailSubject: string
   defaultEmailBody: string
   docSlug: string | null
+  clientReady?: boolean
   alreadySent: { at: string; sid: string | null } | null
   engagement: ProspectEngagement
 }
@@ -97,11 +91,20 @@ export function ProspectSendDialog({
    */
   sendEmailIntroAction?: (args: { idempotencyKey: string }) => Promise<{ ok: boolean; error?: string }>
 }) {
+  // Tracks the child's in-flight send state so the Dialog can refuse to close
+  // (Escape, overlay click, the built-in X button) mid-send — a ref, not
+  // state, because only the onOpenChange closure below needs the latest
+  // value; it doesn't need to trigger a re-render of this wrapper.
+  const sendPendingRef = useRef(false)
+
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (!next) onClose()
+        if (!next) {
+          if (sendPendingRef.current) return
+          onClose()
+        }
       }}
     >
       <DialogContent className="max-h-[90dvh] max-w-xl overflow-y-auto">
@@ -120,6 +123,9 @@ export function ProspectSendDialog({
             sendIntroAction={sendIntroAction}
             sendTestAction={sendTestAction}
             sendEmailIntroAction={sendEmailIntroAction}
+            onSendPendingChange={(pending) => {
+              sendPendingRef.current = pending
+            }}
           />
         ) : null}
       </DialogContent>
@@ -133,7 +139,12 @@ function ProspectSendDialogBody({
   sendIntroAction,
   sendTestAction,
   sendEmailIntroAction,
-}: SendDialogActions & { context: ProspectSendContext; onClose: () => void }) {
+  onSendPendingChange,
+}: SendDialogActions & {
+  context: ProspectSendContext
+  onClose: () => void
+  onSendPendingChange: (pending: boolean) => void
+}) {
   const [channel, setChannel] = useState<Channel>(context.toPhone ? 'sms' : 'email')
   const [smsBody, setSmsBody] = useState(context.defaultSmsBody)
   const [emailSubject, setEmailSubject] = useState(context.defaultEmailSubject)
@@ -142,6 +153,12 @@ function ProspectSendDialogBody({
   const smsRef = useRef<HTMLTextAreaElement>(null)
   const [sendPending, startSend] = useTransition()
   const [testPending, startTest] = useTransition()
+
+  // Let the parent Dialog know whether a production send is in flight, so it
+  // can refuse to close (Escape/overlay/X) until it settles.
+  useEffect(() => {
+    onSendPendingChange(sendPending)
+  }, [sendPending, onSendPendingChange])
 
   const smsUnresolved = useMemo(() => findUnresolvedMergeTokens(smsBody), [smsBody])
   const emailUnresolved = useMemo(
@@ -176,7 +193,12 @@ function ProspectSendDialogBody({
       if (res.ok) {
         toast.success(channel === 'sms' ? 'Test text sent to your own number.' : 'Test email sent to your own inbox.')
       } else {
-        setError(res.error ?? 'Test send failed.')
+        const message = res.error ?? 'Test send failed.'
+        // Also toast: the dialog may be closed (test sends aren't guarded by
+        // the close-block above) by the time this resolves, and setError
+        // alone would be silently dropped on an unmounted component.
+        setError(message)
+        toast.error(message)
       }
     })
   }
@@ -201,12 +223,17 @@ function ProspectSendDialogBody({
           toast.success(`Intro sent to ${context.ownerName ?? 'owner'}.`)
           onClose()
         } else {
+          // Also toast: setError alone is silently dropped if this component
+          // unmounted (e.g. the broker navigated away) before the send resolved.
           setError(res.error)
+          toast.error(res.error)
         }
         return
       }
       if (!sendEmailIntroAction) {
-        setError('Email intro sending is not available yet. Use Send test to preview the wording.')
+        const message = 'Email intro sending is not available yet. Use Send test to preview the wording.'
+        setError(message)
+        toast.error(message)
         return
       }
       const res = await sendEmailIntroAction({ idempotencyKey })
@@ -214,7 +241,9 @@ function ProspectSendDialogBody({
         toast.success(`Intro emailed to ${context.ownerName ?? 'owner'}.`)
         onClose()
       } else {
-        setError(res.error ?? 'Send failed.')
+        const message = res.error ?? 'Send failed.'
+        setError(message)
+        toast.error(message)
       }
     })
   }
@@ -287,6 +316,11 @@ function ProspectSendDialogBody({
           />
           {emailUnresolved.length > 0 ? (
             <p className="text-xs font-medium text-warning">Unfilled merge fields: {emailUnresolved.join(', ')}.</p>
+          ) : null}
+          {!sendEmailIntroAction ? (
+            <p className="text-xs text-muted-foreground">
+              Email intro sending isn&apos;t available yet. Use Send test to preview the wording.
+            </p>
           ) : null}
         </div>
       )}

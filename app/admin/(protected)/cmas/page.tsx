@@ -14,9 +14,7 @@
  */
 
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
-import { getSession } from '@/app/actions/auth'
-import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { listCmasForAdmin } from '@/lib/data'
 import { approveCmaAction, prepareCmaSendAction, sendCmaToLeadAction } from '@/app/actions/cma-admin'
 import { sendTemplateSelfTestAction } from '@/app/actions/crm-template-test'
@@ -83,10 +81,7 @@ export default async function AdminCmasPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const session = await getSession()
-  const adminRole = await getAdminRoleForEmail(session?.user?.email ?? null)
-  if (!adminRole) redirect('/admin/access-denied')
-  if (adminRole.role === 'report_viewer') redirect('/admin/access-denied')
+  await requireAdminPage('prospecting.view')
 
   const sp = await searchParams
   const qRaw = str(sp.q) ?? null

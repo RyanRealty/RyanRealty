@@ -13,6 +13,7 @@ import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { slugifyAddress } from '@/lib/cma/address-slug'
+import { TAG_CHANNEL } from '@/lib/crm/suppressions'
 import { expectedDocTypeFor, hasSendablePhone, type ProspectComplianceState, type ProspectDocState, type ProspectKind } from './types'
 
 type Sb = ReturnType<typeof createServiceClient>
@@ -139,7 +140,13 @@ export async function resolveDocsBatch(
 
 // ── Compliance, batched ─────────────────────────────────────────────────────
 
-const HARD_STOP_TAGS = new Set(['compliance:hard-stop', 'contact:do-not-text', 'contact:do-not-call'])
+// Derived from the ONE suppression mapping (M9) — every tag that blocks SMS (an
+// 'all'- or 'sms'-scoped channel) is an SMS hard stop here. Never hand-copy this
+// set: a drift between the two lists is exactly the 2026-06-16 do-not-call → SMS
+// incident. lower-cased to match the case-insensitive tag scan below.
+const HARD_STOP_TAGS = new Set(
+  TAG_CHANNEL.filter((m) => m.channels.includes('all') || m.channels.includes('sms')).map((m) => m.tag.toLowerCase()),
+)
 
 // Defense-in-depth (review F5): a structured skip-trace flag that names a
 // dangerous condition blocks a send even if the writer forgot to also flip the

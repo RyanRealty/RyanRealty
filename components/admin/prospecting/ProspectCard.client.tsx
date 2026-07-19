@@ -156,9 +156,15 @@ export function ProspectCard({
             )}
           </Button>
         ) : row.doc.state === 'sent' ? (
-          <Button variant="outline" className="h-11 w-full" asChild>
-            <Link href={crmHref ?? '#'}>Open in CRM</Link>
-          </Button>
+          crmHref ? (
+            <Button variant="outline" className="h-11 w-full" asChild>
+              <Link href={crmHref}>Open in CRM</Link>
+            </Button>
+          ) : (
+            <Button variant="outline" className="h-11 w-full" disabled>
+              Open in CRM
+            </Button>
+          )
         ) : null}
       </div>
     </Card>
