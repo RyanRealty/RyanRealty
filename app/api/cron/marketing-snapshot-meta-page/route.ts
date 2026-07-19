@@ -31,10 +31,10 @@ import {
 import {
   IngestorResult,
   MetricRow,
-  isAuthorizedCron,
   parseDateRange,
   upsertMetricRows,
 } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const maxDuration = 300
 
@@ -139,9 +139,8 @@ function igMediaRows(date: string, media: IGMedia[]): MetricRow[] {
 // ---------------------------------------------------------------------------
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const token = getMetaPageTokenTrimmed()
   const pageId = process.env.META_FB_PAGE_ID?.trim()

@@ -58,7 +58,13 @@ function classify(pagePath) {
   const src = readFileSync(pagePath, 'utf8')
   const rel = relative(ROOT, pagePath)
   const optOut = /@no-static-params/.test(src.slice(0, 600))
-  const hasStaticParams = /\bgenerateStaticParams\s*[\(=]/.test(src)
+  const declaresStaticParams = /\bgenerateStaticParams\s*[\(=]/.test(src)
+  // An unconditional `return []` body is a hollow stub, not a real
+  // implementation — finite, enumerable geo sets should be seeded (audit #5).
+  // This closes the gate's blind spot: it previously scored `return []` as
+  // compliant, so flagship routes never got build-time SSG.
+  const isEmptyStub = /generateStaticParams[\s\S]{0,400}?\breturn\s*\[\s*\]\s*(?:;|\n|\r)/.test(src)
+  const hasStaticParams = declaresStaticParams && !isEmptyStub
   return { rel, optOut, hasStaticParams }
 }
 

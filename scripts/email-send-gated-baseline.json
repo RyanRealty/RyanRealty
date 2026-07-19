@@ -13,17 +13,17 @@
       "kind": "internal",
       "reason": "Internal: Resend fallback to the BROKER (impersonateAs) when the Gmail draft cannot be created. Never to the lead. The lead recipient is gated by isSuppressedByEmail earlier in handleDraft before any draft/fallback runs."
     },
-    "app/api/cron/daily-broker-digest/route.ts:143": {
+    "app/api/cron/daily-broker-digest/route.ts:142": {
       "kind": "internal",
-      "reason": "Internal: one digest email per BROKER (Matt/Rebecca/Paul), not a lead. No consent record applies; permanently allowlisted."
+      "reason": "Internal: one digest email per BROKER (Matt/Rebecca/Paul), not a lead. No consent record applies; permanently allowlisted. Line re-synced in the audit cron-auth consolidation."
     },
-    "app/api/cron/marketing-optimization-report/route.ts:172": {
+    "app/api/cron/marketing-optimization-report/route.ts:162": {
       "kind": "internal",
-      "reason": "Internal: weekly marketing-optimization report to the brokerage's own inbox, not a lead. Permanently allowlisted."
+      "reason": "Internal: weekly marketing-optimization report to the brokerage's own inbox, not a lead. Permanently allowlisted. Line re-synced in the audit cron-auth consolidation."
     },
-    "app/api/cron/weekly-pipeline-digest/route.ts:184": {
+    "app/api/cron/weekly-pipeline-digest/route.ts:183": {
       "kind": "internal",
-      "reason": "Internal: weekly pipeline digest to the broker (or the admin-configured Weekly Report Recipients from Company Settings \u2014 staff addresses the owner adds, not leads). Same allowlisted site; line shifted when recipients were wired to crm_company_settings (\u00a715 slice)."
+      "reason": "Internal: weekly pipeline digest to the broker (or the admin-configured Weekly Report Recipients from Company Settings \u2014 staff addresses the owner adds, not leads). Same allowlisted site; line shifted when recipients were wired to crm_company_settings (\u00a715 slice). Line re-synced in the audit cron-auth consolidation."
     },
     "app/home-valuation/actions.ts:201": {
       "kind": "internal",
@@ -61,9 +61,9 @@
       "kind": "internal",
       "reason": "1:1 transactional: completed-and-signed copy (sealed PDF + certificate) to a transaction party for one specific envelope. CAN-SPAM transactional-message exemption. Not a marketing send."
     },
-    "app/api/cron/newsletter-monthly-draft/route.ts:58": {
+    "app/api/cron/newsletter-monthly-draft/route.ts:51": {
       "kind": "internal",
-      "reason": "Internal: draft-ready notification to matt@ryan-realty.com (MATT only) after the monthly auto-draft cron writes a newsletter DRAFT. Never a lead or subscriber \u2014 the draft itself sends nothing until Matt approves and schedules it on the review page. Permanently allowlisted. Line shifted in the 2026-07-06 lifecycle-workflows integration (W5)."
+      "reason": "Internal: draft-ready notification to matt@ryan-realty.com (MATT only) after the monthly auto-draft cron writes a newsletter DRAFT. Never a lead or subscriber \u2014 the draft itself sends nothing until Matt approves and schedules it on the review page. Permanently allowlisted. Line shifted in the 2026-07-06 lifecycle-workflows integration (W5). Line re-synced in the audit cron-auth consolidation."
     },
     "lib/cma-deliver.ts:356": {
       "kind": "internal",
@@ -79,7 +79,7 @@
     },
     "lib/cma/request-emails.ts:73": {
       "kind": "internal",
-      "reason": "Internal: new-CMA-request notification to the assigned broker (sendBrokerNotification), not the lead — and skipped entirely for broker kick-offs (notifyBroker=false). The lead confirmation (sendLeadConfirmation) in the same module is gated by isSuppressedByEmail on both transports. Site relocated from lib/cma-request.ts:535 (history: 401 -> 434 D8 kick-off inputs, 434 -> 535 version-chain clobber guard) when the email senders were extracted for the 600-LOC file-size budget on 2026-07-17."
+      "reason": "Internal: new-CMA-request notification to the assigned broker (sendBrokerNotification), not the lead \u2014 and skipped entirely for broker kick-offs (notifyBroker=false). The lead confirmation (sendLeadConfirmation) in the same module is gated by isSuppressedByEmail on both transports. Site relocated from lib/cma-request.ts:535 (history: 401 -> 434 D8 kick-off inputs, 434 -> 535 version-chain clobber guard) when the email senders were extracted for the 600-LOC file-size budget on 2026-07-17."
     },
     "lib/market-stat-alert.ts:59": {
       "kind": "internal",

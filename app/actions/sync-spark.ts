@@ -647,6 +647,14 @@ export async function syncSparkListingsDelta(options?: {
   let totalPages = 1
   const deltaListings: Array<{ key: string; status: string | null }> = []
   const terminalTransitionKeys = new Set<string>()
+  // Cursor-safety (audit p0.1 — ported from the hardened cron lane in
+  // app/api/cron/sync-delta/route.ts). Advance the delta cursor only as far as we
+  // actually drained, so a maxPages overflow or a failed upsert can't skip rows
+  // forever. runStartedAt is captured BEFORE fetching so rows modified mid-run are
+  // re-picked next tick. Feed is _orderby=+ModificationTimestamp (ascending).
+  const runStartedAt = new Date().toISOString()
+  let maxProcessedTs: string | null = null
+  let upsertFailed = false
 
   try {
     while (currentPage <= totalPages && pagesProcessed < maxPages) {
@@ -684,6 +692,11 @@ export async function syncSparkListingsDelta(options?: {
         ListPrice?: number | null
         [k: string]: unknown
       }>
+      // Track the newest ModificationTimestamp actually processed (cursor-safety).
+      for (const row of rows) {
+        const ts = typeof row.ModificationTimestamp === 'string' ? row.ModificationTimestamp : null
+        if (ts && (!maxProcessedTs || ts > maxProcessedTs)) maxProcessedTs = ts
+      }
       const listNumbers = rows.map((r) => r.ListNumber).filter(Boolean) as string[]
       const { getExistingListingsByListNumbers, upsertListingRows } = await import('@/lib/data')
       const existingRows = await getExistingListingsByListNumbers(listNumbers)
@@ -696,6 +709,7 @@ export async function syncSparkListingsDelta(options?: {
         const chunk = rows.slice(i, i + UPSERT_CHUNK_SIZE)
         const result = await upsertListingRows(chunk)
         if (result.ok) totalUpserted += chunk.length
+        else upsertFailed = true
       }
 
       // Collect listing keys + status for history refresh after all pages
@@ -865,11 +879,19 @@ export async function syncSparkListingsDelta(options?: {
       )
     }
 
-    const { upsertSyncState } = await import('@/lib/data')
-    await upsertSyncState({
-      last_delta_sync_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
+    // Cursor-safety (audit p0.1): advance the delta cursor only as far as we
+    // actually drained. truncated = exited on the maxPages cap with pages still
+    // remaining. A persist failure holds the cursor so the window is retried.
+    const truncated = pagesProcessed >= maxPages && currentPage <= totalPages
+    const { computeNextDeltaCursor } = await import('@/lib/sync/deltaCursor')
+    const { updateSyncStateLastDelta } = await import('@/lib/data')
+    const nextCursor = computeNextDeltaCursor({ upsertFailed, truncated, runStartedAt, maxProcessedTs })
+    if (nextCursor) await updateSyncStateLastDelta(nextCursor)
+    if (upsertFailed) {
+      console.warn('[syncSparkListingsDelta] upsert failure this run. delta cursor held, window retried next tick')
+    } else if (truncated) {
+      console.warn(`[syncSparkListingsDelta] TRUNCATED at maxPages=${maxPages}/${totalPages}. cursor advanced to ${nextCursor ?? '(unchanged)'} not now()`)
+    }
     return {
       success: true,
       message: `Delta sync done. ${totalUpserted} updated, ${eventsEmitted} events, ${historyRowsUpserted} history rows.`,

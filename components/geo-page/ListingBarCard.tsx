@@ -12,6 +12,7 @@ import { getCanonicalSiteUrl, listingShareText } from '@/lib/share-metadata'
 import { incrementListingShareCount } from '@/app/actions/engagement'
 import CardActionBar from '@/components/ui/CardActionBar'
 import { listingDetailPath } from '@/lib/slug'
+import { formatPrice } from '@/lib/format/money'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Camera01Icon } from '@hugeicons/core-free-icons'
 
@@ -26,11 +27,6 @@ type Props = {
   likeCount?: number
   saveCount?: number
   shareCount?: number
-}
-
-function formatPrice(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(n) || n <= 0) return ''
-  return `$${Number(n).toLocaleString()}`
 }
 
 function addressOneLine(listing: ListingTileRow): string {

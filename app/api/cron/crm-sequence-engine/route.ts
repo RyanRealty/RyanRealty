@@ -23,12 +23,13 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { sendCrmEmail, CRM_MAILBOXES } from '@/lib/crm/gmail'
 import { isSuppressed } from '@/lib/crm/suppressions'
 import { referencesCmaLink, findUnresolvedMergeTokens } from '@/lib/crm/merge'
-import { isArchivedPlaceholder, isAuthorized, laHour, inSmsQuietHours, nextSendWindow, renderMerge, type Step } from './helpers'
+import { isArchivedPlaceholder, laHour, inSmsQuietHours, nextSendWindow, renderMerge, type Step } from './helpers'
 import { buildMergeContext } from '@/lib/crm/merge-context'
 import { sendSms, sendSmsViaMessagingService, brokerTwilioNumber, getA2pCampaignStatus } from '@/lib/crm/twilio'
 import { isConditionNode, type AnyStepOrCondition } from '@/lib/crm/sequence-step-schema'
 import { resolveConditionPath } from '@/lib/crm/conditions-eval'
 import { manualEnrollPerson } from '@/lib/crm/enroll'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -38,7 +39,8 @@ const BATCH = 50
 
 
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = requireCronAuth(request)
+  if (denied) return denied
   const startMs = Date.now()
   const sb = createServiceClient()
 

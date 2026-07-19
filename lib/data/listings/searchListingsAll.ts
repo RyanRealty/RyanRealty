@@ -18,6 +18,7 @@
 
 import { z } from 'zod'
 import { supabaseAnon } from '@/lib/data/client'
+import { TILE_MV_SELECT_COLUMNS } from '@/lib/listing-tile-projections'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import type { ListingTile, ListingStatus } from '@/lib/data/types/listing'
@@ -641,16 +642,6 @@ function mvRowToTile(row: ListingSearchMvRow): ListingTile {
   }
 }
 
-const TILE_SELECT_COLUMNS = [
-  'listing_key', 'list_number', 'standard_status', 'list_price', 'close_price',
-  'close_date', 'beds', 'baths', 'sqft', 'street_number', 'street_name',
-  'street_suffix', 'city', 'postal_code', 'subdivision_name', 'lat', 'lng',
-  'photo_url', 'property_type', 'property_sub_type', 'on_market_date',
-  'modified_at', 'price_per_sqft', 'lot_size_acres', 'year_built',
-  'garage_spaces', 'pool_yn', 'has_virtual_tour', 'dom', 'price_drop_count',
-  'address_slug', 'boundary_city', 'boundary_neighborhood', 'boundary_subdivision',
-].join(',')
-
 async function fetchSearchListingsAll(
   parsed: z.output<typeof FilterSchema>
 ): Promise<SearchListingsAllResult> {
@@ -661,7 +652,7 @@ async function fetchSearchListingsAll(
   let query = applySearchFilters(
     // Explicit tile columns: select('*') hauled the 36 feature arrays +
     // remarks + tsvector (~2 MB per 500 rows) that mvRowToTile discards.
-    supabase.from('listing_search_mv').select(TILE_SELECT_COLUMNS, { count: 'exact' }),
+    supabase.from('listing_search_mv').select(TILE_MV_SELECT_COLUMNS, { count: 'exact' }),
     parsed
   )
   query = applySort(query, parsed.sort)

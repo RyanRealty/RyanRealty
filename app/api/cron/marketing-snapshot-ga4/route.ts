@@ -16,10 +16,10 @@ import { getGA4Summary } from '@/app/actions/ga4-report'
 import {
   IngestorResult,
   MetricRow,
-  isAuthorizedCron,
   parseDateRange,
   upsertMetricRows,
 } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const maxDuration = 300
 
@@ -200,9 +200,8 @@ function rowsForDay(date: string, summary: Awaited<ReturnType<typeof getGA4Summa
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   let startDate: string
   let endDate: string

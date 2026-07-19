@@ -3,7 +3,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { getActiveBrokers, getBrokerBySlug, type BrokerRow } from '@/app/actions/brokers'
 import type { HomeTileRow } from '@/app/actions/listings'
-import { HOME_TILE_SELECT } from '@/lib/listing-tile-projections'
 import { getListingTiles } from '@/lib/data'
 import type { ListingTile } from '@/lib/data'
 

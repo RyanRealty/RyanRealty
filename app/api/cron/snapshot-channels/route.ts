@@ -18,7 +18,7 @@
  * Manual invocation: GET /api/cron/snapshot-channels
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const maxDuration = 300
 export const runtime = 'nodejs'
@@ -37,9 +37,8 @@ const PLATFORMS = [
 ] as const
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const cronSecret = process.env.CRON_SECRET
   if (!cronSecret) {

@@ -89,6 +89,23 @@ async function _getCrmDeal(id: number): Promise<CrmDealDetail | null> {
     crm_people: { id: number; name: string | null; assigned_broker: string | null } | null
   }
 
+  const people = ((peopleRes.data ?? []) as Array<{
+    person_id: number
+    role: string | null
+    person: { id: number; name: string | null } | { id: number; name: string | null }[] | null
+  }>).flatMap((j) => {
+    const p = Array.isArray(j.person) ? (j.person[0] ?? null) : j.person
+    return p ? [{ id: Number(p.id), name: p.name ?? null, role: j.role ?? null }] : []
+  })
+  // Legacy single-link fallback (mirrors listDealsBoard.ts): a deal whose
+  // junction row failed to write (or predates the junction table) but still
+  // carries person_id + a joined crm_people row shows its contact instead of
+  // an empty PEOPLE list.
+  const person_id = (raw.person_id as number | null) ?? null
+  if (people.length === 0 && person_id != null && raw.crm_people) {
+    people.push({ id: person_id, name: raw.crm_people.name ?? null, role: null })
+  }
+
   return {
     id: raw.id as number,
     name: (raw.name as string | null) ?? null,
@@ -97,7 +114,7 @@ async function _getCrmDeal(id: number): Promise<CrmDealDetail | null> {
     status: (raw.status as string | null) ?? null,
     value: (raw.value as number | null) ?? null,
     entered_stage_at: (raw.entered_stage_at as string | null) ?? null,
-    person_id: (raw.person_id as number | null) ?? null,
+    person_id,
     listing_key: (raw.listing_key as string | null) ?? null,
     close_date: (raw.close_date as string | null) ?? null,
     earnest_money_due: (raw.earnest_money_due as string | null) ?? null,
@@ -113,14 +130,7 @@ async function _getCrmDeal(id: number): Promise<CrmDealDetail | null> {
     actual_close_date: (raw.actual_close_date as string | null) ?? null,
     created_at: (raw.created_at as string | null) ?? null,
     person: raw.crm_people ?? null,
-    people: ((peopleRes.data ?? []) as Array<{
-      person_id: number
-      role: string | null
-      person: { id: number; name: string | null } | { id: number; name: string | null }[] | null
-    }>).flatMap((j) => {
-      const p = Array.isArray(j.person) ? (j.person[0] ?? null) : j.person
-      return p ? [{ id: Number(p.id), name: p.name ?? null, role: j.role ?? null }] : []
-    }),
+    people,
     splits: (splitsRes.data ?? []) as CrmDealSplit[],
     files: (filesRes.data ?? []) as CrmDealFile[],
   }

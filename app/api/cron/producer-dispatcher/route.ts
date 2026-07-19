@@ -23,7 +23,7 @@
  *     &dryRun=true  (returns candidates without writing)
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { createServiceClient } from '@/lib/supabase/service'
 
 export const maxDuration = 60
@@ -45,9 +45,8 @@ interface SkippedRow {
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const url = new URL(request.url)
   const maxRowsParam = url.searchParams.get('maxRows')

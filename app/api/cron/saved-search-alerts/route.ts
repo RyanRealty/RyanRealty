@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { runListingAlerts } from '@/app/actions/saved-search-alerts'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 /**
  * Cron endpoint to send listing-alert emails (ONE scan over the unified
@@ -11,21 +12,10 @@ import { runListingAlerts } from '@/app/actions/saved-search-alerts'
  * rollout) even though sends per run are capped inside runListingAlerts.
  */
 export const maxDuration = 300
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim()
-  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
-  if (!secret) {
-    if (isProd) return false
-    return true
-  }
-  const auth = request.headers.get('authorization') ?? ''
-  return auth === `Bearer ${secret}`
-}
 
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const url = new URL(request.url)
   // 600-row default scan budget: large enough that the weekly-cadence

@@ -26,6 +26,7 @@ import { findNewsletterIdBySubject } from '@/lib/data/newsletter/scheduled'
 import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
 import { sendEmail } from '@/lib/resend'
 import { zonedDateKey } from '@/lib/format/date'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -33,14 +34,6 @@ export const maxDuration = 120
 
 const MATT_EMAIL = 'matt@ryan-realty.com'
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim()
-  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
-  if (!secret) return !isProd
-  const auth = request.headers.get('authorization') ?? ''
-  return auth === `Bearer ${secret}`
-}
 
 /** Day-of-month in America/Los_Angeles — the schedule is UTC, Matt's month is not. */
 function dayOfMonthPacific(now = new Date()): number {
@@ -72,7 +65,8 @@ async function notifyMatt(newsletterId: string, subject: string): Promise<void> 
 }
 
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = requireCronAuth(request)
+  if (denied) return denied
   try {
     const force = new URL(request.url).searchParams.get('force') === '1'
     const day = dayOfMonthPacific()

@@ -14,13 +14,13 @@
  * This route is G1-exempt (app/api/** skips the DAL-boundary gate); the writes
  * are targeted per-row UPDATEs of the 4 geo columns only.
  *
- * Auth: Authorization: Bearer ${CRON_SECRET} (isValidCronAuth).
+ * Auth: Authorization: Bearer ${CRON_SECRET} (requireCronAuth).
  * Schedule: vercel.json — daily at 09:10 UTC (01:10 Pacific, quiet hours).
  */
 
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { isValidCronAuth } from '@/lib/auth/cron-auth'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 import registry from '@/data/resort-communities.json'
 
 export const runtime = 'nodejs'
@@ -38,9 +38,8 @@ const RESORT = new Map(registry.communities.map((c) => [c.slug, c.is_resort === 
 const PAGE = 1000
 
 export async function GET(request: Request) {
-  if (!isValidCronAuth(request.headers.get('authorization'), process.env.CRON_SECRET?.trim())) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const startMs = Date.now()
   const sb = createServiceClient()

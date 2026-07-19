@@ -29,10 +29,10 @@ import { getGBPDailyMetrics, GBPDailyMetric } from '@/lib/google-business-profil
 import {
   IngestorResult,
   MetricRow,
-  isAuthorizedCron,
   parseDateRange,
   upsertMetricRows,
 } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const maxDuration = 300
 
@@ -57,9 +57,8 @@ const METRIC_NAME_MAP: Record<GBPDailyMetric, string> = {
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   let startDate: string
   let endDate: string

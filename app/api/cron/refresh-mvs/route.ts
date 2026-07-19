@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -8,18 +9,6 @@ export const dynamic = 'force-dynamic'
 // 362+6486+15-row geo_snapshot_mv). Allow 5 min of headroom so we don't
 // hit the serverless ceiling as the listings table grows.
 export const maxDuration = 300
-
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim()
-  const isProd =
-    process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
-  if (!secret) {
-    if (isProd) return false
-    return true
-  }
-  const auth = request.headers.get('authorization') ?? ''
-  return auth === `Bearer ${secret}`
-}
 
 /**
  * GET /api/cron/refresh-mvs
@@ -48,9 +37,8 @@ function isAuthorized(request: Request): boolean {
  *   listing_boundary_xref_mv: {...}, listing_search_mv: {...}, duration_ms }
  */
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const startMs = Date.now()
   const ranAt = new Date().toISOString()

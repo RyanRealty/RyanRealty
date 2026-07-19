@@ -2,17 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { runOneFullSyncChunk } from '@/app/actions/sync-full-cron'
 import { syncListingHistory, syncSparkListingsDelta } from '@/app/actions/sync-spark'
-
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim()
-  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
-  if (!secret) {
-    if (isProd) return false
-    return true
-  }
-  const auth = request.headers.get('authorization') ?? ''
-  return auth === `Bearer ${secret}`
-}
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 function parseIntParam(value: string | null, fallback: number, min: number, max: number): number {
   const n = Number.parseInt(value ?? '', 10)
@@ -30,9 +20,8 @@ type CursorRow = {
 }
 
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY

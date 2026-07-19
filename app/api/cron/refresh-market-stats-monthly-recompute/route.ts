@@ -2,21 +2,11 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { MARKET_REPORT_DEFAULT_CITIES } from '@/app/actions/market-report-types'
 import { slugify } from '@/lib/slug'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
-
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim()
-  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
-  if (!secret) {
-    if (isProd) return false
-    return true
-  }
-  const auth = request.headers.get('authorization') ?? ''
-  return auth === `Bearer ${secret}`
-}
 
 /**
  * GET /api/cron/refresh-market-stats-monthly-recompute
@@ -32,9 +22,8 @@ function isAuthorized(request: Request): boolean {
  * Returns: { ok, ran_at, rows_refreshed: { rolling: 0, monthly: N, quarterly: 0, ytd: 0 }, duration_ms }
  */
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const startMs = Date.now()
   const ranAt = new Date().toISOString()

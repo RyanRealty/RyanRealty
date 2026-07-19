@@ -19,7 +19,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { processNewExpiredListings } from '@/lib/expired-listing-processor'
 
 export const maxDuration = 300
@@ -33,9 +33,8 @@ function getSupabase() {
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const url = new URL(request.url)
   const maxPerRunParam = url.searchParams.get('maxPerRun')

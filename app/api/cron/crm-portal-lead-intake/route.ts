@@ -19,6 +19,7 @@ import { getGmailFor } from '@/lib/crm/gmail'
 import { parsePortalLead, type Portal } from '@/lib/crm/portal-lead-parser'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -37,13 +38,6 @@ const MAX_LIST_PAGES = 10
 // Broad Gmail filter; detectPortal() drops the consumer-marketing blasts.
 const QUERY =
   '(from:zillow.com OR from:zillowgroup.com OR from:realtor.com OR from:move.com OR from:leads.realtor.com) -in:spam -in:trash'
-
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim()
-  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
-  if (!secret) return !isProd
-  return (request.headers.get('authorization') ?? '') === `Bearer ${secret}`
-}
 
 function headerOf(msg: gmail_v1.Schema$Message, name: string): string | undefined {
   return msg.payload?.headers?.find((h) => h.name?.toLowerCase() === name.toLowerCase())?.value ?? undefined
@@ -65,7 +59,8 @@ function decodeBody(payload: gmail_v1.Schema$MessagePart | undefined): string {
 }
 
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const gmail = getGmailFor(MAILBOX, READONLY)
   if (!gmail) return NextResponse.json({ ok: false, error: 'gmail service account not configured' }, { status: 500 })

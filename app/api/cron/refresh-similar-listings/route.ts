@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -7,18 +8,6 @@ export const dynamic = 'force-dynamic'
 // is small enough to complete well under a minute. Generous 300s ceiling
 // matches the other MV refresh routes.
 export const maxDuration = 300
-
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim()
-  const isProd =
-    process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
-  if (!secret) {
-    if (isProd) return false
-    return true
-  }
-  const auth = request.headers.get('authorization') ?? ''
-  return auth === `Bearer ${secret}`
-}
 
 /**
  * GET /api/cron/refresh-similar-listings
@@ -40,9 +29,8 @@ function isAuthorized(request: Request): boolean {
  * Returns: { ok, ran_at, duration_ms, rpc_duration_ms?, error? }
  */
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const startMs = Date.now()
   const ranAt = new Date().toISOString()

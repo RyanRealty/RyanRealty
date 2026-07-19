@@ -3,17 +3,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { getDashboardMarketingData } from '@/app/actions/dashboard'
 import { sendEmail } from '@/lib/resend'
 import { EMAIL_FONT_STACK, EMAIL_NAVY, EMAIL_CREAM } from '@/lib/email/brand'
-
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim()
-  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
-  if (!secret) {
-    if (isProd) return false
-    return true
-  }
-  const auth = request.headers.get('authorization') ?? ''
-  return auth === `Bearer ${secret}`
-}
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -201,9 +191,8 @@ async function getPreviousVerdict(
 }
 
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const supabase = getServiceSupabase()
   if (!supabase) {

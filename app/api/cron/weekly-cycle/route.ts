@@ -16,7 +16,7 @@
  * strategy was ratified 2026-05-17 (b1cff7f7-3817-45c6-a772-901d4bace526).
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { runWeeklyCycle } from '@/lib/marketing-brain/weekly-cycle'
 import { createClient } from '@supabase/supabase-js'
 
@@ -25,9 +25,8 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const url = new URL(request.url)
   const asOfDate = url.searchParams.get('asOfDate')?.trim() || (() => {

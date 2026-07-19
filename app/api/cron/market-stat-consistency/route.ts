@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { createServiceClient } from '@/lib/data/client'
 import { getAllCitySnapshots } from '@/lib/data'
 import { sendMarketStatAlertEmail } from '@/lib/market-stat-alert'
@@ -28,9 +28,8 @@ export const dynamic = 'force-dynamic'
  */
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const failures: string[] = []
   const sb = createServiceClient()

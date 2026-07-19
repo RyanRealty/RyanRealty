@@ -1,17 +1,7 @@
 import { NextResponse } from 'next/server'
 import { runOneFullSyncChunk } from '@/app/actions/sync-full-cron'
 import { syncListingHistory, syncSparkListingsDelta } from '@/app/actions/sync-spark'
-
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim()
-  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
-  if (!secret) {
-    if (isProd) return false
-    return true
-  }
-  const auth = request.headers.get('authorization') ?? ''
-  return auth === `Bearer ${secret}`
-}
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 function parseIntParam(value: string | null, fallback: number, min: number, max: number): number {
   const n = Number.parseInt(value ?? '', 10)
@@ -30,9 +20,8 @@ function parseIntParam(value: string | null, fallback: number, min: number, max:
  * This gives one endpoint to call repeatedly from cron until parity reaches zero.
  */
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const { searchParams } = new URL(request.url)
   const workerCount = parseIntParam(searchParams.get('worker_count'), 1, 1, 16)

@@ -13,7 +13,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -25,9 +25,8 @@ interface Check { name: string; status: CheckStatus; value: string; note?: strin
 const CHANNELS = ['ga4', 'gsc', 'fub', 'meta_page', 'instagram', 'x', 'youtube', 'linkedin', 'tiktok', 'gbp']
 
 export async function GET(req: NextRequest) {
-  if (!isAuthorizedCron(req)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(req)
+  if (denied) return denied
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,

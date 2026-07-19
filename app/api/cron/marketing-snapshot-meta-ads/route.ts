@@ -21,10 +21,10 @@ import { getMetaAdsInsights, MetaAdsInsightRow } from '@/lib/meta-graph'
 import {
   IngestorResult,
   MetricRow,
-  isAuthorizedCron,
   parseDateRange,
   upsertMetricRows,
 } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const maxDuration = 300
 
@@ -102,9 +102,8 @@ function campaignRowsForDay(date: string, row: MetaAdsInsightRow): MetricRow[] {
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   let startDate: string
   let endDate: string

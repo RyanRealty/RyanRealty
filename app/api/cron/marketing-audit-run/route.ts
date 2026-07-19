@@ -23,15 +23,14 @@
  * Cron timeout: 800s to accommodate scrape + classifier serialization.
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { runAudit } from '@/lib/marketing-brain/audit-run'
 
 export const maxDuration = 800
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const url = new URL(request.url)
   const auditId = url.searchParams.get('auditId')?.trim() || undefined

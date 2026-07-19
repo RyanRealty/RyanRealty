@@ -14,6 +14,7 @@
  * mega-function that's impossible to compose.
  */
 
+import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
 import { z } from 'zod'
 import { supabaseAnon } from '@/lib/data/client'
@@ -475,7 +476,7 @@ async function fetchOneOrThrow(listingKey: string): Promise<GetListingDetailResu
  * DB error throws (never cached) and we retry once uncached before giving up, so
  * a healthy listing can never get stuck behind a cached not-found.
  */
-export const getListingDetail = async (listingKey: string): Promise<GetListingDetailResult> => {
+const getListingDetailUncoalesced = async (listingKey: string): Promise<GetListingDetailResult> => {
   InputSchema.parse({ listingKey })
   const cached = unstable_cache(
     () => fetchOneOrThrow(listingKey),
@@ -501,3 +502,11 @@ export const getListingDetail = async (listingKey: string): Promise<GetListingDe
     }
   }
 }
+
+/**
+ * Request-scoped dedup (React cache) OVER unstable_cache (cross-request). The
+ * listing-detail page calls this in both generateMetadata and the page body;
+ * without cache() each cold render pays the Supabase round trip twice. listingKey
+ * is a primitive, so Object.is memoization coalesces the two awaits into one.
+ */
+export const getListingDetail = cache(getListingDetailUncoalesced)

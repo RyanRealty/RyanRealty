@@ -19,6 +19,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { enqueueBulkJob, type BulkSelection } from '@/lib/crm/bulk-jobs'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -36,16 +37,9 @@ type DueRow = {
   broker_scope: string | null
 }
 
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim()
-  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
-  if (!secret) return !isProd
-  const auth = request.headers.get('authorization') ?? ''
-  return auth === `Bearer ${secret}`
-}
-
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = requireCronAuth(request)
+  if (denied) return denied
   const startMs = Date.now()
   const sb = createServiceClient()
 

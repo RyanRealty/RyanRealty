@@ -1,20 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { fetchSparkListingHistory, fetchSparkPriceHistory, type SparkListingHistoryItem } from '@/lib/spark'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 /** Spark history per listing can exceed default serverless limits; raise on Vercel Pro+. */
 export const maxDuration = 300
-
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim()
-  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
-  if (!secret) {
-    if (isProd) return false
-    return true
-  }
-  const auth = request.headers.get('authorization') ?? ''
-  return auth === `Bearer ${secret}`
-}
 
 function isTerminalStatus(status: string | null | undefined): boolean {
   const t = String(status ?? '').toLowerCase()
@@ -215,9 +205,8 @@ export async function GET(request: Request) {
   const hasYear = Number.isFinite(year) && year >= 1990 && year <= new Date().getUTCFullYear()
   const yearFilter = hasYear ? year : null
 
-  if (!isAuthorized(request)) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY

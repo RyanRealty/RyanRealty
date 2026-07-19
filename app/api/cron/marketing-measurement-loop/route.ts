@@ -17,15 +17,14 @@
  * Auth: Authorization: Bearer $CRON_SECRET
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { runMeasurementLoop } from '@/lib/marketing-brain/measurement-loop'
 
 export const maxDuration = 300
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const url = new URL(request.url)
   const maxCandidatesParam = url.searchParams.get('maxCandidates')

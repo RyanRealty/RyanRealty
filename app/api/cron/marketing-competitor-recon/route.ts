@@ -28,7 +28,7 @@
  * Auth: Authorization: Bearer $CRON_SECRET
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 import {
   CompetitorSlug,
   CompetitorSource,
@@ -91,9 +91,8 @@ function sourceForDayOfWeek(dayOfWeekUTC: number): SourceKey | null {
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const url = new URL(request.url)
   const sourceFilter = url.searchParams.get('source') as SourceKey | null

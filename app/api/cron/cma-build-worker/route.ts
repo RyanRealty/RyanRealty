@@ -12,16 +12,15 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { runCmaBuildWorker } from '@/lib/cma/worker'
 
 export const maxDuration = 300
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
   const url = new URL(request.url)
   const limitParam = parseInt(url.searchParams.get('limit') ?? '3', 10)
   const limit = Math.min(Math.max(Number.isFinite(limitParam) ? limitParam : 3, 1), 10)

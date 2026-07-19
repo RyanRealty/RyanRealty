@@ -13,23 +13,15 @@ import { CRM_MAILBOXES, loadEmailPersonMap, syncMailboxWindow } from '@/lib/crm/
 import { syncGmailSignaturesIfStale } from '@/lib/crm/gmail-signature-sync'
 import { cacheTag } from '@/lib/data/cache/unstable-cache'
 import { createServiceClient } from '@/lib/supabase/service'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim()
-  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
-  if (!secret) return !isProd
-  const auth = request.headers.get('authorization') ?? ''
-  return auth === `Bearer ${secret}`
-}
-
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
   const startMs = Date.now()
   const url = new URL(request.url)
   const pageBudget = Math.min(40, Math.max(1, Number(url.searchParams.get('pages') ?? '4')))

@@ -39,7 +39,7 @@ import { getOpenHousesWithListings } from '@/app/actions/open-houses'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
 import { getCityMetadataByName } from '@/lib/data/cities/getCityMetadata'
 import { getCityContent, buildDataDrivenCityAbout } from '@/lib/city-content'
-import { CITY_QUICK_FACTS } from '@/lib/cities'
+import { CITY_QUICK_FACTS, PRIMARY_CITIES } from '@/lib/cities'
 import bendNeighborhoodPolygons from '@/data/bend/bend-neighborhood-polygons.json'
 import { cityHero, GOLF_COMMUNITY_IMAGES } from '@/lib/geo-images'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
@@ -47,7 +47,7 @@ import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { assignNeighborhoodPhotos } from '@/lib/kb/neighborhood-photos'
 import { resortActiveSfrCounts, resortLabelToSlug, cityResorts } from '@/lib/kb/resort-active-counts'
-import { listingTileHref } from '@/lib/slug'
+import { listingTileHref, slugify } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
@@ -87,7 +87,9 @@ import communityVideoManifest from '@/data/city-hero-videos.resolved.json'
 import '@/components/site/kb/kb.css'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
-  return []
+  // Seed the primary Central Oregon cities (finite, in-repo). Long-tail city
+  // slugs still SSR on demand via dynamicParams. Build-verified resolvable.
+  return PRIMARY_CITIES.map((name) => ({ slug: slugify(name) }))
 }
 export const dynamicParams = true
 export const revalidate = 60

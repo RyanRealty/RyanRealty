@@ -26,7 +26,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail } from '@/lib/resend'
-import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 import {
   WeeklyPipelineDigestEmail,
   type AudienceCount,
@@ -103,10 +103,9 @@ async function buildKeyInsight(supabase: ReturnType<typeof getServiceSupabase>, 
   }
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+export async function GET(request: NextRequest): Promise<Response> {
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const url = new URL(request.url)
   const dryRun = url.searchParams.get('dryRun') === 'true'

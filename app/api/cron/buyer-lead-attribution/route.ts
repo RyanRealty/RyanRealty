@@ -26,7 +26,7 @@
  *   GET /api/cron/buyer-lead-attribution?lookbackHours=24&dryRun=true
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { createServiceClient } from '@/lib/supabase/service'
 
 export const maxDuration = 120
@@ -70,9 +70,8 @@ function tagValue(tags: string[], prefix: string): string | undefined {
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const url = new URL(request.url)
   const lookbackHoursParam = url.searchParams.get('lookbackHours')

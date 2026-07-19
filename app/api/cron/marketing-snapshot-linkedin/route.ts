@@ -46,11 +46,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import {
   IngestorResult,
   MetricRow,
-  isAuthorizedCron,
   parseDateRange,
   upsertMetricRows,
 } from '@/lib/marketing-brain/snapshot'
 import { getLinkedInAccessToken } from '@/lib/linkedin'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const maxDuration = 300
 
@@ -398,9 +398,8 @@ function* dateIter(startDate: string, endDate: string): Generator<string> {
 // ---------------------------------------------------------------------------
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   // Validate required env vars up front
   let orgId: string

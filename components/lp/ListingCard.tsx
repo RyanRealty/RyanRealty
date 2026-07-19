@@ -13,13 +13,17 @@
  *   - "Schedule a showing" navy CTA button at the bottom
  *   - Hover lift + drop shadow upgrade
  *
- * Colors use literal hex (no CSS vars) so the card renders correctly in any
- * scope, including Radix portals.
+ * Colors reference the design-token CSS custom properties (var(--primary),
+ * var(--card), ...) via inline style rather than Tailwind classes, so the
+ * card renders correctly in any scope, including Radix portals, while still
+ * resolving to the same brand tokens as the rest of the site.
  *
  * Server component — no client-side state. Pass listings in pre-sorted.
  */
 import Link from 'next/link'
 import { listingDetailPath } from '@/lib/slug'
+import { formatPriceCompact } from '@/lib/format/money'
+import { statusPillClass } from '@/lib/format/listing-status'
 
 export type ListingCardData = {
   /** Unique key, used for React + the listing detail route. */
@@ -50,31 +54,6 @@ export interface ListingCardProps {
   href?: string
   /** Override the showing-CTA target. Default: same href + #schedule. */
   scheduleHref?: string
-}
-
-function fmtUsd(n: number, opts: { compact?: boolean } = {}): string {
-  if (!Number.isFinite(n)) return '—'
-  if (opts.compact) {
-    if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(n >= 10_000_000 ? 1 : 2)}M`
-    if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`
-    return `$${n.toFixed(0)}`
-  }
-  return n.toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  })
-}
-
-function statusPillStyle(label: string): { bg: string; text: string } {
-  const lower = label.toLowerCase()
-  if (lower.includes('pending')) return { bg: '#b8860b', text: '#faf8f4' }
-  if (lower.includes('contract')) return { bg: '#8b4513', text: '#faf8f4' }
-  if (lower.includes('closed') || lower.includes('sold')) return { bg: '#5d6470', text: '#faf8f4' }
-  // Active / for-sale: a bright cream pill (navy text) reads as "available" and
-  // stays legible on any photo. The old solid navy pill blended into darker
-  // shots and read as greyed/inactive.
-  return { bg: '#faf8f4', text: '#102742' }
 }
 
 /**
@@ -109,12 +88,10 @@ export function ListingCard({ listing, href, scheduleHref }: ListingCardProps) {
     if (Number.isFinite(sqftNum) && sqftNum > 0) facts.push(`${sqftNum.toLocaleString()} sqft`)
   }
 
-  const pill = listing.statusLabel ? statusPillStyle(listing.statusLabel) : null
-
   return (
     <article
       style={{
-        background: '#ffffff',
+        background: 'var(--card)',
         border: '1px solid rgba(16,39,66,0.08)',
         borderRadius: 16,
         overflow: 'hidden',
@@ -123,7 +100,7 @@ export function ListingCard({ listing, href, scheduleHref }: ListingCardProps) {
         boxShadow: '0 1px 2px rgba(16,39,66,0.04), 0 6px 18px rgba(16,39,66,0.06)',
         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
         fontFamily: 'Geist, system-ui, sans-serif',
-        color: '#102742',
+        color: 'var(--primary)',
       }}
       className="rr-listing-card"
     >
@@ -134,20 +111,19 @@ export function ListingCard({ listing, href, scheduleHref }: ListingCardProps) {
           display: 'block',
           aspectRatio: '4 / 3',
           background: listing.photoUrl
-            ? `#102742 url('${listing.photoUrl}') center/cover no-repeat`
+            ? `var(--primary) url('${listing.photoUrl}') center/cover no-repeat`
             : 'rgba(16,39,66,0.08)',
           textDecoration: 'none',
         }}
         aria-label={`View ${listing.address}`}
       >
-        {pill && listing.statusLabel && (
+        {listing.statusLabel && (
           <span
+            className={statusPillClass(listing.statusLabel)}
             style={{
               position: 'absolute',
               top: 12,
               left: 12,
-              background: pill.bg,
-              color: pill.text,
               padding: '4px 10px',
               borderRadius: 999,
               fontSize: 10.5,
@@ -166,7 +142,7 @@ export function ListingCard({ listing, href, scheduleHref }: ListingCardProps) {
               top: 12,
               right: 12,
               background: 'rgba(255,255,255,0.95)',
-              color: '#102742',
+              color: 'var(--primary)',
               padding: '4px 10px',
               borderRadius: 999,
               fontSize: 11,
@@ -195,19 +171,19 @@ export function ListingCard({ listing, href, scheduleHref }: ListingCardProps) {
             fontSize: 24,
             lineHeight: 1.1,
             fontWeight: 500,
-            color: '#102742',
+            color: 'var(--primary)',
             fontVariantNumeric: 'tabular-nums',
             letterSpacing: '-0.01em',
           }}
         >
-          {fmtUsd(listing.listPrice, { compact: listing.listPrice >= 1_000_000 })}
+          {formatPriceCompact(listing.listPrice)}
         </div>
         <Link
           href={detailHref}
           style={{
             fontSize: 14,
             fontWeight: 500,
-            color: '#102742',
+            color: 'var(--primary)',
             textDecoration: 'none',
             lineHeight: 1.35,
           }}
@@ -245,8 +221,8 @@ export function ListingCard({ listing, href, scheduleHref }: ListingCardProps) {
           style={{
             marginTop: 12,
             display: 'block',
-            background: '#102742',
-            color: '#faf8f4',
+            background: 'var(--primary)',
+            color: 'var(--primary-foreground)',
             textAlign: 'center',
             padding: '11px 14px',
             borderRadius: 10,

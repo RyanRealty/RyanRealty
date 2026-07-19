@@ -30,7 +30,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
 import Anthropic from '@anthropic-ai/sdk'
-import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { createServiceClient } from '@/lib/supabase/service'
 import {
   classifyProducerFromDisk,
@@ -108,9 +108,8 @@ async function logFailure(
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const url = new URL(request.url)
   const dryRun = url.searchParams.get('dryRun') === 'true'

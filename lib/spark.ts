@@ -355,13 +355,22 @@ export async function fetchSparkListingsPage(
   const baseQuery = params.toString()
   const filterPart = filter ? `_filter=${encodeURIComponent(filter)}` : ''
   const url = `${SPARK_BASE}/listings?${[baseQuery, filterPart].filter(Boolean).join('&')}`
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `${SPARK_AUTH_SCHEME} ${token}`,
-      Accept: 'application/json',
-    },
-    next: { revalidate: 0 },
-  })
+  const doFetch = () =>
+    fetch(url, {
+      headers: {
+        Authorization: `${SPARK_AUTH_SCHEME} ${token}`,
+        Accept: 'application/json',
+      },
+      next: { revalidate: 0 },
+    })
+  let res = await doFetch()
+  // One 429 backoff, mirroring lib/spark-odata.ts fetchWithRetry. A transient
+  // rate-limit must not abort a multi-thousand-page full/delta sync run.
+  if (res.status === 429) {
+    console.warn('[spark] HTTP 429 rate limited. waiting 60s then retrying once')
+    await new Promise((r) => setTimeout(r, 60_000))
+    res = await doFetch()
+  }
 
   if (res.status === 404) {
     return { D: { Success: true, Results: [], Pagination: { TotalRows: 0, PageSize: limit, TotalPages: 0, CurrentPage: 1 } } }

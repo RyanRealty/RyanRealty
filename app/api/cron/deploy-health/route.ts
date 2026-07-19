@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { sendDeployHealthAlertEmail } from '@/lib/deploy-health-alert'
 
 export const dynamic = 'force-dynamic'
@@ -28,9 +28,8 @@ const REPO = 'RyanRealty/RyanRealty'
 const GRACE_MINUTES = 20
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const deployedSha = process.env.VERCEL_GIT_COMMIT_SHA
   if (!deployedSha) {

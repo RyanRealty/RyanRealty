@@ -20,6 +20,7 @@ import { makeResilientCached } from '@/lib/data/cache/resilient'
 import type { ListingTile, ListingStatus } from '@/lib/data/types/listing'
 import { propertyTypeFilterToCodes } from '@/lib/property-type'
 import { SERVICE_AREA_CITIES_LOWER } from '@/lib/data/listings/service-area'
+import { TILE_MV_SELECT_COLUMNS } from '@/lib/listing-tile-projections'
 
 const ACTIVE_STATUSES: ListingStatus[] = ['Active', 'Coming Soon', 'Active Under Contract']
 const PENDING_STATUSES: ListingStatus[] = ['Pending']
@@ -364,7 +365,7 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
   const supabase = supabaseAnon()
   if (!supabase) return []
 
-  let query = applyTileFilters(supabase.from('listing_tile_mv').select('*'), parsed)
+  let query = applyTileFilters(supabase.from('listing_tile_mv').select(TILE_MV_SELECT_COLUMNS), parsed)
 
   // Sort
   if (parsed.sort === 'newest') {
@@ -388,7 +389,9 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
     // resilient wrapper retries once uncached, then falls back to [].
     throw new Error(`[getListingTiles] supabase error: ${error.message}`)
   }
-  return (data ?? []).map((row) => mvRowToTile(row as ListingTileMvRow))
+  // `.select(TILE_MV_SELECT_COLUMNS)` with a runtime string makes supabase-js
+  // infer GenericStringError, so cast through unknown (same as searchListingsAll).
+  return (data ?? []).map((row) => mvRowToTile(row as unknown as ListingTileMvRow))
 }
 
 /**

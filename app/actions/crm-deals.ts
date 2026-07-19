@@ -342,9 +342,16 @@ export async function createCrmDeal(
     if (error) return { ok: false, error: error.message }
     const id = data.id as number
     if (personId) {
-      await sb
+      const { error: linkErr } = await sb
         .from('crm_deal_people')
         .upsert({ deal_id: id, person_id: personId }, { onConflict: 'deal_id,person_id' })
+      if (linkErr) {
+        // Compensate: don't leave a "successful" deal whose initial contact
+        // silently failed to link (the junction table is the sole source for
+        // the DealDetailModal PEOPLE list).
+        await sb.from('crm_deals').delete().eq('id', id)
+        return { ok: false, error: linkErr.message }
+      }
     }
     revalidatePath('/admin/crm/deals')
     return { ok: true, id }

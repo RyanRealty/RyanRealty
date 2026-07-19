@@ -14,13 +14,13 @@
  * reads are computed inline here rather than via lib/data. The decision logic
  * lives entirely in the pure helper, which is unit-tested.
  *
- * Auth: Authorization: Bearer ${CRON_SECRET} (isValidCronAuth).
+ * Auth: Authorization: Bearer ${CRON_SECRET} (requireCronAuth).
  * Schedule: vercel.json — every 30 minutes.
  */
 
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { isValidCronAuth } from '@/lib/auth/cron-auth'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { getA2pCampaignStatus, getAccountType } from '@/lib/crm/twilio'
 import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
 import { evaluateHealthRules, type HealthSignals } from '@/lib/crm/health-rules'
@@ -113,9 +113,8 @@ function isBusinessHoursPacific(now: Date): boolean {
 }
 
 export async function GET(request: Request) {
-  if (!isValidCronAuth(request.headers.get('authorization'), process.env.CRON_SECRET?.trim())) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const startMs = Date.now()
   const now = new Date()

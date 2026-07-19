@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
 import { subdivisionEntityKey, slugify } from '@/lib/slug'
 import { getSubdivisionMatchNames } from '@/lib/subdivision-aliases'
@@ -14,7 +15,6 @@ import { entityKeyToSlug } from '@/lib/community-slug'
 import { isResidentialInventoryType } from '@/lib/inventory-filters'
 import { getCanonicalCityForSubdivision } from '@/lib/data/communities/registry'
 import { isCentralOregonCity } from '@/lib/central-oregon'
-import { COMMUNITY_LISTING_TILE_SELECT } from '@/lib/listing-tile-projections'
 import { getGeoSnapshot, getCommunityListings as getCommunityListingsDAL } from '@/lib/data'
 import type { ListingTile } from '@/lib/data'
 
@@ -225,10 +225,15 @@ async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetai
   }
 }
 
-export const getCommunityBySlug = unstable_cache(
-  _getCommunityBySlugUncached,
-  ['community-by-slug-v1'],
-  { revalidate: 300, tags: ['community-detail'] }
+// Request-scoped dedup (React cache) OVER unstable_cache: the community page
+// calls getCommunityBySlug in both generateMetadata and the page body. slug is a
+// primitive, so cache() coalesces the two awaits into one fetch per render.
+export const getCommunityBySlug = cache(
+  unstable_cache(
+    _getCommunityBySlugUncached,
+    ['community-by-slug-v1'],
+    { revalidate: 300, tags: ['community-detail'] }
+  )
 )
 
 const PENDING_OR =

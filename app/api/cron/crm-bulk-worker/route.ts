@@ -30,6 +30,7 @@ import '@/lib/crm/bulk-handlers'
 import { createServiceClient } from '@/lib/supabase/service'
 import { validateSegment, EMPTY_SEGMENT } from '@/lib/crm/segment-ast'
 import { buildCrmPeopleQuery } from '@/lib/data/crm/buildCrmPeopleQuery'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 /**
  * Resolve an ast-mode selection to a concrete, ordered id list under the FROZEN
@@ -132,16 +133,9 @@ export const maxDuration = 300
 // chunks per run keep the queue moving while staying inside maxDuration.
 const CHUNKS_PER_RUN = 4
 
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim()
-  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
-  if (!secret) return !isProd
-  const auth = request.headers.get('authorization') ?? ''
-  return auth === `Bearer ${secret}`
-}
-
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = requireCronAuth(request)
+  if (denied) return denied
   const startMs = Date.now()
 
   let claimedJobId: number | null = null

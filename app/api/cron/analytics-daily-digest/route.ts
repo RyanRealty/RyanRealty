@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
-import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
@@ -58,9 +58,8 @@ function lpVariantFromPath(pathOrUrl: string | null | undefined): string | null 
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
   const supabase = getSupabase()
   if (!supabase) {
     return NextResponse.json({ ok: false, error: 'supabase_not_configured' }, { status: 500 })

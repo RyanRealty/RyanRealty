@@ -16,7 +16,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { processNewFsboListings, FSBO_SERVICE_AREA_CITIES, FSBO_MIN_LIST_PRICE, FSBO_MAX_PER_RUN } from '@/lib/fsbo-processor'
 
 export const maxDuration = 300
@@ -30,9 +30,8 @@ function getSupabase() {
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
   const supabase = getSupabase()
   const stats = await processNewFsboListings(supabase)
   return NextResponse.json({

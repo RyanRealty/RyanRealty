@@ -29,6 +29,7 @@ import { fetchLinkedInPostMetrics } from '@/lib/linkedin'
 import { fetchXPostMetrics } from '@/lib/x'
 import { fetchGbpPostMetrics } from '@/lib/google-business-profile'
 import { platformFetchCode } from '@/lib/marketing-brain/platform-fetch-code'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -66,10 +67,8 @@ async function fetchByPlatform(platform: string, postId: string): Promise<Record
 }
 
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get('authorization')
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(req)
+  if (denied) return denied
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

@@ -33,7 +33,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
-import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
@@ -272,9 +272,8 @@ async function markFired(sessionIds: string[]): Promise<void> {
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const threshold = readThreshold()
   const sessions = await fetchHotSessions(threshold)

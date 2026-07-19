@@ -22,7 +22,7 @@
  *     ?asOfDate=YYYY-MM-DD   (compute for the month containing this date)
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { createServiceClient } from '@/lib/supabase/service'
 
 export const maxDuration = 60
@@ -50,9 +50,8 @@ function gapStatus(gap: number | null, isInverted = false): GapMetric['status'] 
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const url = new URL(request.url)
   const asOfDateParam = url.searchParams.get('asOfDate')?.trim()

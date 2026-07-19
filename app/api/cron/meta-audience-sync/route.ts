@@ -19,12 +19,12 @@
  * G1-exempt (the DAL-boundary gate skips app/api/**), but it still routes every
  * DB read/write through lib/data readers (the queue drain + ledger write).
  *
- * Auth: Authorization: Bearer ${CRON_SECRET} (isValidCronAuth).
+ * Auth: Authorization: Bearer ${CRON_SECRET} (requireCronAuth).
  * Schedule: vercel.json -- daily.
  */
 
 import { NextResponse } from 'next/server'
-import { isValidCronAuth } from '@/lib/auth/cron-auth'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { isMetaAudiencePushEnabled } from '@/lib/meta-env'
 import { syncCrmAudience } from '@/lib/meta/audienceUpload'
 import { removeFromCrmAudience } from '@/lib/meta/audienceRemove'
@@ -41,9 +41,8 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 120
 
 export async function GET(request: Request) {
-  if (!isValidCronAuth(request.headers.get('authorization'), process.env.CRON_SECRET?.trim())) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const startMs = Date.now()
   // The master switch. When false, BOTH legs are forced dry regardless of any

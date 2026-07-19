@@ -20,14 +20,6 @@ export function isArchivedPlaceholder(subject: string, body: string): boolean {
   return norm(body) === 'archived' || norm(subject) === 'archived'
 }
 
-export function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim()
-  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
-  if (!secret) return !isProd
-  const auth = request.headers.get('authorization') ?? ''
-  return auth === `Bearer ${secret}`
-}
-
 export function laHour(): number {
   return Number(new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone: 'America/Los_Angeles' }).format(new Date()))
 }

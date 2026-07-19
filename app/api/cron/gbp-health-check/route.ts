@@ -23,6 +23,7 @@
 
 import { NextResponse } from 'next/server'
 import { getOrRefreshGoogleBusinessProfileAccessToken } from '@/lib/google-business-profile'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -80,11 +81,8 @@ interface HealthAlert {
 }
 
 export async function GET(request: Request) {
-  const auth = request.headers.get('authorization') || ''
-  const cronSecret = process.env.CRON_SECRET
-  if (cronSecret && !auth.includes(cronSecret)) {
-    return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const accountId = process.env.GOOGLE_BUSINESS_PROFILE_ACCOUNT_ID
   const locationId = process.env.GOOGLE_BUSINESS_PROFILE_LOCATION_ID

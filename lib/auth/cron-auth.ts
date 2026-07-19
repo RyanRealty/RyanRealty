@@ -12,3 +12,16 @@ export function isValidCronAuth(header: string | null | undefined, secret: strin
   const h = header ?? ''
   return h === `Bearer ${secret}` || h === secret
 }
+
+/**
+ * Route-handler guard for every cron/worker endpoint. Returns null when
+ * authorized, or a 401 Response to return early. Fail-CLOSED via isValidCronAuth.
+ */
+export function requireCronAuth(req: Request): Response | null {
+  const header = req.headers.get('authorization') ?? req.headers.get('x-cron-secret')
+  if (isValidCronAuth(header, process.env.CRON_SECRET)) return null
+  return new Response(JSON.stringify({ error: 'unauthorized' }), {
+    status: 401,
+    headers: { 'content-type': 'application/json' },
+  })
+}

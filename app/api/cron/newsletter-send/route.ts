@@ -11,21 +11,15 @@
  */
 import { NextResponse } from 'next/server'
 import { drainAllSending, enqueueDueScheduled } from '@/lib/newsletter/send-queue'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim()
-  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
-  if (!secret) return !isProd
-  const auth = request.headers.get('authorization') ?? ''
-  return auth === `Bearer ${secret}`
-}
-
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = requireCronAuth(request)
+  if (denied) return denied
   try {
     // Promote any scheduled newsletter whose time has arrived, then drain.
     const scheduled = await enqueueDueScheduled()

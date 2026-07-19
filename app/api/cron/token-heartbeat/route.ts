@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getMetaPageToken } from '@/lib/meta-env'
 import { randomUUID } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
-import { requireSecret } from '@/lib/require-secret'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 /**
  * Token Heartbeat Cron
@@ -47,7 +47,7 @@ interface PlatformResult {
   duration_ms?: number
 }
 
-// Auth handled via requireSecret() — see GET handler below.
+// Auth handled via requireCronAuth() — see GET handler below.
 // (Old validateApiKey() removed 2026-05-21: it read `x-cron-secret` while Vercel
 // sends `Authorization: Bearer <CRON_SECRET>`. Every scheduled invocation returned
 // 401, refresh never ran, all 3 OAuth tokens drifted to expiry on 2026-05-20.)
@@ -265,10 +265,8 @@ async function writeHeartbeatSyncLogs(
 }
 
 export async function GET(request: NextRequest) {
-  const auth = requireSecret(request, 'CRON_SECRET')
-  if (!auth.ok) {
-    return NextResponse.json({ error: auth.message }, { status: auth.status })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const startedAt = new Date().toISOString()
   const cycleId = randomUUID()

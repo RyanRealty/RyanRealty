@@ -22,14 +22,14 @@
  * from the pure helper taskQueueBounds (lib/data/crm/getTaskQueue.ts), so the
  * date logic stays unit-tested.
  *
- * Auth: Authorization: Bearer ${CRON_SECRET} (isValidCronAuth).
+ * Auth: Authorization: Bearer ${CRON_SECRET} (requireCronAuth).
  * Schedule: vercel.json — once daily (see the integrator note in the manifest).
  */
 
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
-import { isValidCronAuth } from '@/lib/auth/cron-auth'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import { taskQueueBounds } from '@/lib/data/crm/getTaskQueue'
 
@@ -46,9 +46,8 @@ type OpenTaskRow = {
 }
 
 export async function GET(request: Request) {
-  if (!isValidCronAuth(request.headers.get('authorization'), process.env.CRON_SECRET?.trim())) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const startMs = Date.now()
   const now = new Date()

@@ -44,26 +44,15 @@ function daysOnMarket(
   return days >= 0 ? days : null
 }
 
-function formatListedDate(dateText: string | null | undefined): string | null {
-  if (!dateText) return null
-  const d = new Date(dateText)
-  if (Number.isNaN(d.getTime())) return null
-  // formatDate's default opts (short month, numeric day/year) + forced
-  // America/Los_Angeles equal this exact call — byte-identical for a valid Date.
-  return formatDate(d)
-}
-
+/**
+ * Activity timestamp (no year — "Jun 22, 3:04 PM"), rendered only when
+ * `activityAt` is present. formatDate already applies the brand timezone
+ * (America/Los_Angeles) and handles null/invalid input; this just overrides
+ * the default opts to drop the year and add time-of-day.
+ */
 function formatActivityDateTime(dateText: string | null | undefined): string | null {
   if (!dateText) return null
-  const d = new Date(dateText)
-  if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    timeZone: 'America/Los_Angeles',
-  })
+  return formatDate(dateText, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
 function statusLabel(s: string | null | undefined): string {
@@ -238,7 +227,7 @@ function ListingTile({
       ),
     )
   }, [listing.OnMarketDate, listing.CloseDate, listing.StandardStatus])
-  const listedDate = formatListedDate(listing.OnMarketDate ?? null)
+  const listedDate = formatDate(listing.OnMarketDate ?? null)
   const activityDateTime = formatActivityDateTime(activityAt)
   const hasOpenHouse = Array.isArray(listing.OpenHouses) && listing.OpenHouses.length > 0
   const isResort =
@@ -595,7 +584,7 @@ function ListingTile({
           <span>
             Days on market: {dom != null && dom >= 0 ? (dom === 0 ? 'New' : `${dom} day${dom !== 1 ? 's' : ''}`) : '—'}
           </span>
-          <span>Listed: {listedDate ?? '—'}</span>
+          <span>Listed: {listedDate}</span>
           {activityDateTime && <span>Activity: {activityDateTime}</span>}
           {hasRecentPriceChange && priceDropAmount && priceDropAmount > 0 && (
             <span className="text-warning">Price drop: ${Math.round(priceDropAmount).toLocaleString()}</span>

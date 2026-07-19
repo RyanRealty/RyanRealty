@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-17T00:10:32.610Z",
+  "generatedAt": "2026-07-19T05:29:47.736Z",
   "format": "file:line:ruleId — each entry is one violation; both the set (no new entries) and total (count ceiling) must not grow.",
   "total": 116,
   "violations": [
@@ -42,7 +42,7 @@
     "components/GoogleAnalytics.tsx:84:clock-new-date",
     "components/HomeValuationCta.tsx:24:impure-helper",
     "components/HomeValuationCta.tsx:45:impure-helper",
-    "components/ListingTile.tsx:307:impure-helper",
+    "components/ListingTile.tsx:296:impure-helper",
     "components/ListingTile.tsx:42:clock-now",
     "components/PageCTA.tsx:76:impure-helper",
     "components/activity/ActivityFeedCard.tsx:125:impure-helper",
@@ -62,7 +62,7 @@
     "components/geo-page/ActivityFeedCard.tsx:111:impure-helper",
     "components/geo-page/GeoMarketOverview.tsx:73:clock-new-date",
     "components/geo-page/GeoMarketOverview.tsx:78:clock-new-date",
-    "components/geo-page/ListingBarCard.tsx:105:impure-helper",
+    "components/geo-page/ListingBarCard.tsx:101:impure-helper",
     "components/landing/LeadLandingForm.tsx:60:impure-helper",
     "components/landing/LeadLandingForm.tsx:61:impure-helper",
     "components/landing/LeadLandingForm.tsx:63:impure-helper",

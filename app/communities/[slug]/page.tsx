@@ -64,7 +64,7 @@ import { buildYearSeries } from '@/lib/kb/year-series'
 import { resortActiveSfrCounts, cityResorts, resortTilesForSlug } from '@/lib/kb/resort-active-counts'
 import { getDistrictForCity } from '@/data/co-schools'
 import { listingTileHref, homesForSalePath, slugify } from '@/lib/slug'
-import { getCanonicalCityForSubdivision } from '@/lib/data/communities/registry'
+import { getCanonicalCityForSubdivision, getAllResortCommunities } from '@/lib/data/communities/registry'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { CONTACT } from '@/lib/brand/contact'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
@@ -108,7 +108,10 @@ import { TESTIMONIALS } from '@/lib/testimonials'
 import '@/components/site/kb/kb.css'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
-  return []
+  // Seed the curated resort-community set (finite, in-repo registry) so the
+  // flagship pages get build-time SSG instead of cold-rendering every 60s.
+  // Long-tail subdivision slugs still SSR on demand via dynamicParams below.
+  return getAllResortCommunities().map((c) => ({ slug: c.slug }))
 }
 export const dynamicParams = true
 export const revalidate = 60

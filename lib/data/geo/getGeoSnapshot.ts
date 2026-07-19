@@ -10,6 +10,7 @@
  * Migration: 20260522144510_geo_snapshot_mv.sql (applied 2026-05-22).
  */
 
+import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
 import { z } from 'zod'
 import { supabaseAnon } from '@/lib/data/client'
@@ -170,7 +171,7 @@ async function fetchOneOrThrow(input: GeoSnapshotInput): Promise<GeoSnapshot | n
  *   3. Only a genuine miss (or a fully-failed retry) returns null. The public
  *      function never throws, so consumers keep their simple `if (!snap) notFound()`.
  */
-export const getGeoSnapshot = async (input: GeoSnapshotInput): Promise<GeoSnapshot | null> => {
+const getGeoSnapshotUncoalesced = async (input: GeoSnapshotInput): Promise<GeoSnapshot | null> => {
   const parsed = GeoSnapshotSchema.parse(input)
   const cached = unstable_cache(
     () => fetchOneOrThrow(parsed),
@@ -199,6 +200,23 @@ export const getGeoSnapshot = async (input: GeoSnapshotInput): Promise<GeoSnapsh
       return null
     }
   }
+}
+
+/**
+ * Request-scoped dedup (React cache) OVER unstable_cache. The city/community/
+ * neighborhood pages call getGeoSnapshot in both generateMetadata and the page
+ * body. cache() memoizes by per-arg Object.is, so wrapping the OBJECT-arg fn
+ * directly would dedupe nothing (each call site passes a fresh literal). Key on
+ * the two primitives instead, so both awaits collapse to one fetch per render.
+ */
+const getGeoSnapshotByKeys = cache(
+  (geoType: GeoSnapshotInput['geoType'], geoKey: string): Promise<GeoSnapshot | null> =>
+    getGeoSnapshotUncoalesced({ geoType, geoKey })
+)
+
+export const getGeoSnapshot = (input: GeoSnapshotInput): Promise<GeoSnapshot | null> => {
+  const parsed = GeoSnapshotSchema.parse(input)
+  return getGeoSnapshotByKeys(parsed.geoType, parsed.geoKey)
 }
 
 // The three list-helpers below mirror getGeoSnapshot's resilience: each fetch fn

@@ -24,6 +24,7 @@
 
 import { NextResponse } from 'next/server'
 import { runMarketReportSend } from '@/lib/crm/market-report-send'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -34,18 +35,9 @@ const MAX_SENDS = 200
 /** Max active rows to scan per invocation. */
 const SCAN_LIMIT = 1000
 
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim()
-  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
-  if (!secret) return !isProd
-  const auth = request.headers.get('authorization') ?? ''
-  return auth === `Bearer ${secret}`
-}
-
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   try {
     const runId = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '')

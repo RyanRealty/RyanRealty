@@ -13,6 +13,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { autoEnrollPerson, ENROLLMENT_EPOCH, type AutoEnrollResult } from '@/lib/crm/enroll'
 import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import { classifyLeadSource } from '@/lib/data/crm/leadSourceTaxonomy'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -35,16 +36,9 @@ function chunk<T>(items: T[], size: number): T[][] {
   return out
 }
 
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim()
-  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
-  if (!secret) return !isProd
-  const auth = request.headers.get('authorization') ?? ''
-  return auth === `Bearer ${secret}`
-}
-
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = requireCronAuth(request)
+  if (denied) return denied
   const startMs = Date.now()
   const sb = createServiceClient()
 

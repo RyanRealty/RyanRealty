@@ -16,7 +16,6 @@ import type { CommunityForIndex } from '@/lib/communities'
 import { listSubdivisionsWithFlags } from '@/app/actions/subdivision-flags'
 import { isResidentialInventoryType } from '@/lib/inventory-filters'
 import { getResortCommunityImage } from '@/lib/resort-community-images'
-import { CITY_LISTING_TILE_SELECT } from '@/lib/listing-tile-projections'
 import {
   getAllCitySnapshots,
   getGeoSnapshot,
@@ -526,7 +525,6 @@ async function _getNeighborhoodListingsUncached(
     // Fall through to legacy path
   }
   // DAL: active tiles for the neighborhood via listing_tile_mv.
-  void CITY_LISTING_TILE_SELECT
   void ACTIVE_OR
   const name = await _resolveNeighborhoodName(neighborhoodId)
   if (!name) return []

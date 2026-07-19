@@ -19,16 +19,15 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
+import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { pollMarketingInbox } from '@/lib/marketing-brain/inbox-poll'
 
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const url = new URL(request.url)
   const maxMessagesParam = url.searchParams.get('maxMessages')

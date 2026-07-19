@@ -7,7 +7,6 @@ import {
   getHomeTileRowsByKeys,
   getHotCommunitiesInCity,
 } from '@/app/actions/listings'
-import { HOME_TILE_SELECT } from '@/lib/listing-tile-projections'
 import { getLiveMarketPulse } from '@/app/actions/market-stats'
 import { MARKET_REPORT_DEFAULT_CITIES } from '@/app/actions/market-report-types'
 import {
@@ -173,7 +172,6 @@ export const getRecentlySold = unstable_cache(
 export async function getPriceDrops(city?: string): Promise<(HomeTileRow & { originalPrice?: number; savings?: number })[]> {
   try {
     void supabase
-    void HOME_TILE_SELECT
     void ACTIVE_OR
     const { getPriceDropTiles } = await import('@/lib/data')
     const rows = await getPriceDropTiles({ city: city ?? null, limit: 6 })
