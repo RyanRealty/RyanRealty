@@ -122,6 +122,91 @@ For repeatable **1080×1350** just-listed layouts (minimal chrome): **Amboqia** 
 - Source: `scripts/render-just-listed-flyer.mjs` (hard-fails if any `config.photos` path repeats)
 - Source: `scripts/fetch-listing-photos-for-flyer.mjs`
 
+## CANONICAL print feature sheet (8.5×11 @ 300 DPI)
+
+For a **hi-res print property flyer** ("property sheet", "feature sheet", "8.5×11 flyer",
+"print handout", "flyer for the flyer box / open house") use the canonical engine:
+
+**`scripts/build_property_feature_sheet.mjs`**. Config-driven, reusable across every listing
+and all three brokers. Renders `feature-sheet.png` (2550×3300 = 8.5×11 @ 300 DPI) **and**
+`feature-sheet.pdf` (Letter, for the print shop), plus `citations.json` / `fonts_used.json`.
+
+Layout (locked, approved by Matt 2026-07-19): header (navy `logo-blue.png` + status kicker) ·
+rounded hero photo with a small "Just Listed" tag · address in Amboqia + price · 6-cell spec
+strip (beds/baths/sqft/lot/built/garage) · brand-clean description · **3×2 tile grid** of six
+distinct-register interior photos with corner labels · **cream signature sign-off** (listing
+agent's uncropped transparent-cutout headshot + name in Amboqia + role + `phone · web`) ·
+**tracked QR** to the live listing (bottom-right, "Scan to tour this listing"). **No navy footer
+bar. No disclaimer line.** Navy `#102742` + cream `#faf8f4` only.
+
+### Run
+
+```bash
+node scripts/build_property_feature_sheet.mjs --config out/listing/<slug>/feature-sheet.config.json
+```
+
+It prints a **content-height probe** (`FITS` / `OVERFLOW Npx`). If it overflows 1100px, trim
+the description or a tile before shipping. The engine renders anyway so the clip stays visible.
+
+### Config schema
+
+```jsonc
+{
+  "slug": "3480-sw-45th-redmond",           // out dir: out/listing/<slug>/
+  "listing_key": "…", "mls": "220225317",   // for the citation trace
+  "kicker": "Just Listed · Redmond",         // top-right ribbon
+  "tag": "Just Listed",                       // hero corner tag (false = hide)
+  "address1": "3480 SW 45th St",
+  "city": "Redmond, Oregon", "sub": "Forked Horn Butte",
+  "price": "$655,000",
+  "beds": "3", "baths": "2", "sqft": "1,631", "lot": "0.21", "year": "2018", "garage": "2",
+  "description": "…brand-voice-clean prose (no banned words / em-dash / semicolon)…",
+  "hero": "photos/02.jpg", "hero_focus": "60%",         // paths relative to the config file
+  "tiles": [ {"file":"photos/17.jpg","label":"Great Room"}, … exactly 6 … ],
+  "agent": "matt",                            // slug (matt|paul|rebecca) OR email OR inline {name,role,phone,web,headshot}
+  "listing_url": "https://ryan-realty.com/homes-for-sale/…/<addr>-<mls>",  // canonical, verify 200 first
+  "utm": { "source": "print_flyer", "medium": "qr", "campaign": "<slug>" }
+}
+```
+
+The engine resolves the **listing agent → broker** (name/role/phone/headshot) from a built-in
+registry (Matt / Paul / Rebecca), so the signature and headshot are always the listing agent.
+It builds the QR from `listing_url` + `utm` so **every scan is attributed in GA4** under
+`source/medium = print_flyer/qr` (see below).
+
+### Build workflow (what to do for the next flyer)
+
+1. **Resolve the listing + pull verified facts (CLAUDE.md §0).** One audit query on `public.listings`
+   for the address/MLS: price, beds, baths, sqft, `details->>'LotSizeAcres'`, `year_built`,
+   `details->>'GarageSpaces'`, `SubdivisionName`, `City`/`PostalCode`, `StandardStatus`,
+   `details->>'ListAgentEmail'`. (Prefix the SQL with `-- audit:` to pass the DAL guard.)
+2. **Curate photos.** Fetch listing photos (`scripts/fetch-listing-photos-for-flyer.mjs`, or reuse a
+   local `photos/` dir). **Look at them** and pick a hero (money-shot exterior) + 6 distinct
+   registers (great room, kitchen, view, primary suite, bath, outdoor). Never duplicate a photo.
+3. **Resolve the listing agent** from `ListAgentEmail` → `agent` slug. Falls back to Matt.
+4. **Build + verify the listing URL.** `listingDetailPath` form is
+   `/homes-for-sale/{city}/{subdivision}/{street-address}-{mls}`; `curl` it (browser UA) and confirm
+   `200` + that it self-canonicals to the same URL before baking it into the QR.
+5. **Write the config**, then run the engine.
+6. **QA before surfacing (all must pass):** height probe = `FITS`; **decode the rendered QR**
+   (crop bottom-right, threshold, `jsQR`) and confirm it equals the tracked URL; banned-word/
+   punctuation grep clean on `description`; headshot uncropped; every figure matches the §0 trace.
+7. **Draft-first.** Renders to `out/` (gitignored). Show Matt the PNG + PDF. **Never auto-commit the
+   render.** The engine + skill are tooling and commit normally.
+
+`qrcode` / `jsqr` / `pngjs` are dev-only helpers; install with `npm install <pkg> --no-save` so
+`package.json` stays clean (node_modules is gitignored).
+
+### Tracking
+
+Web scans → GA4 (Traffic acquisition, session source/medium `print_flyer / qr`, campaign =
+`utm.campaign`). The listing page also bumps its own view counter via
+`/api/listings/{listingKey}/track`. For exact server-side scan counts independent of GA4, a
+`/go/...` redirect route could be added later (a separate site change), not built.
+
+**Reference build:** 3480 SW 45th St, Redmond (config + render under
+`out/listing/3480-sw-45th-redmond/`).
+
 ## Typography.  NON-NEGOTIABLE (brand fonts only)
 
 Flyers are **static collateral**. They must use the licensed brand faces from the authoritative
