@@ -72,6 +72,7 @@ export function ProspectSendDialog({
   sendIntroAction,
   sendTestAction,
   sendEmailIntroAction,
+  onApprove,
 }: {
   open: boolean
   onClose: () => void
@@ -90,6 +91,13 @@ export function ProspectSendDialog({
    * absent, the Email tab's Send button disables with an inline note.
    */
   sendEmailIntroAction?: (args: { idempotencyKey: string }) => Promise<{ ok: boolean; error?: string }>
+  /**
+   * Approve a still-draft audit in place (Matt's "approve on this page"
+   * requirement). Resolves true on success. When omitted, the draft banner still
+   * shows but without the one-click button (the "Open the document" link is the
+   * fallback). Returns a boolean so the body can clear its pending state.
+   */
+  onApprove?: (kind: ProspectKind, id: string, slug: string) => Promise<boolean>
 }) {
   // Tracks the child's in-flight send state so the Dialog can refuse to close
   // (Escape, overlay click, the built-in X button) mid-send — a ref, not
@@ -117,12 +125,16 @@ export function ProspectSendDialog({
           // text, channel, error) whenever the dialog is handed a new
           // prospect, instead of syncing props into state via an effect.
           <ProspectSendDialogBody
-            key={context.id}
+            // Re-key on clientReady too: when an in-dialog approve flips a draft
+            // to client-ready, the body remounts and re-initializes its editable
+            // body from the fresh context (now carrying the live document link).
+            key={`${context.id}:${context.clientReady ? 'ready' : 'draft'}`}
             context={context}
             onClose={onClose}
             sendIntroAction={sendIntroAction}
             sendTestAction={sendTestAction}
             sendEmailIntroAction={sendEmailIntroAction}
+            onApprove={onApprove}
             onSendPendingChange={(pending) => {
               sendPendingRef.current = pending
             }}
@@ -139,10 +151,12 @@ function ProspectSendDialogBody({
   sendIntroAction,
   sendTestAction,
   sendEmailIntroAction,
+  onApprove,
   onSendPendingChange,
 }: SendDialogActions & {
   context: ProspectSendContext
   onClose: () => void
+  onApprove?: (kind: ProspectKind, id: string, slug: string) => Promise<boolean>
   onSendPendingChange: (pending: boolean) => void
 }) {
   const [channel, setChannel] = useState<Channel>(context.toPhone ? 'sms' : 'email')
@@ -153,6 +167,23 @@ function ProspectSendDialogBody({
   const smsRef = useRef<HTMLTextAreaElement>(null)
   const [sendPending, startSend] = useTransition()
   const [testPending, startTest] = useTransition()
+  const [approvePending, startApprove] = useTransition()
+
+  // The audit exists but hasn't been approved yet, so its public link would 404
+  // as a draft. The server send refuses this too — surface it up front and offer
+  // a one-click approve instead of letting the broker hit a guaranteed-fail send.
+  const needsApproval = context.clientReady === false && !context.alreadySent
+
+  function handleApprove() {
+    if (approvePending || sendPending || testPending) return
+    if (!onApprove || !context.docSlug) return
+    setError(null)
+    startApprove(async () => {
+      await onApprove(context.kind, context.id, context.docSlug as string)
+      // The parent re-prepares and re-keys this body on success; nothing else to
+      // do here (a failure toasts from the parent).
+    })
+  }
 
   // Let the parent Dialog know whether a production send is in flight, so it
   // can refuse to close (Escape/overlay/X) until it settles.
@@ -251,7 +282,13 @@ function ProspectSendDialogBody({
   const recipientLine = channel === 'sms' ? maskPhone(context.toPhone) : maskEmail(context.toEmail)
   const channelMissing = channel === 'sms' ? !context.toPhone : !context.toEmail
   const sendDisabled =
-    sendPending || testPending || channelMissing || Boolean(context.alreadySent) || (channel === 'email' && !sendEmailIntroAction)
+    sendPending ||
+    testPending ||
+    approvePending ||
+    needsApproval ||
+    channelMissing ||
+    Boolean(context.alreadySent) ||
+    (channel === 'email' && !sendEmailIntroAction)
 
   return (
     <div className="space-y-3">
@@ -260,6 +297,27 @@ function ProspectSendDialogBody({
         <p className="text-sm font-medium text-foreground">{context.ownerName ?? 'Owner unknown'}</p>
         <p className="text-xs tabular-nums text-muted-foreground">{recipientLine}</p>
       </div>
+
+      {/* Draft → approve gate (the only approve affordance in the hub) */}
+      {needsApproval ? (
+        <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2.5">
+          <p className="text-sm font-medium text-foreground">This audit is still a draft.</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Approve it to make the link live, then send. The link would 404 until it is approved.
+          </p>
+          {onApprove && context.docSlug ? (
+            <Button className="mt-2 h-9" disabled={approvePending} onClick={handleApprove}>
+              {approvePending ? (
+                <span className="flex items-center gap-1.5">
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Approving…
+                </span>
+              ) : (
+                'Approve audit'
+              )}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* Already-sent + engagement */}
       {context.alreadySent ? (
@@ -361,6 +419,8 @@ function ProspectSendDialogBody({
               </span>
             ) : context.alreadySent ? (
               'Already sent'
+            ) : needsApproval ? (
+              'Approve first'
             ) : (
               'Send intro'
             )}

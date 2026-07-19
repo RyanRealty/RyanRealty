@@ -52,6 +52,7 @@ type Actions = {
     args: { idempotencyKey: string; bodyOverride?: string | null },
   ) => Promise<SendIntroResult>
   sendTestAction: (args: { channel: 'sms' | 'email'; subject?: string; body: string }) => Promise<{ ok: boolean; error?: string }>
+  approveAction: (slug: string) => Promise<{ ok: boolean; error?: string }>
 }
 
 export function ProspectingBoard({
@@ -68,6 +69,7 @@ export function ProspectingBoard({
   prepareSendAction,
   sendIntroAction,
   sendTestAction,
+  approveAction,
 }: Actions & {
   kind: ProspectKind
   filters: ProspectListFilters
@@ -146,6 +148,26 @@ export function ProspectingBoard({
     setDialog({ open: false, context: null })
     router.refresh()
   }, [router])
+
+  // Approve a still-draft audit from inside the send dialog (Matt's "review,
+  // approve, send on this page" requirement — the only approve affordance in the
+  // hub). On success, re-prepare so the dialog's clientReady flips true and the
+  // now-live link is composed; refresh the worklist so the pill/CTA update too.
+  const handleApproveInDialog = useCallback(
+    async (k: ProspectKind, id: string, slug: string): Promise<boolean> => {
+      const res = await approveAction(slug)
+      if (!res.ok) {
+        toast.error(res.error ?? 'Approve failed.')
+        return false
+      }
+      toast.success('Audit approved. The link is live.')
+      const prep = await prepareSendAction(k, id)
+      if (prep.ok) setDialog({ open: true, context: prep.context })
+      router.refresh()
+      return true
+    },
+    [approveAction, prepareSendAction, router],
+  )
 
   return (
     <div className="space-y-4">
@@ -229,6 +251,7 @@ export function ProspectingBoard({
         context={dialog.context}
         sendIntroAction={sendIntroAction}
         sendTestAction={sendTestAction}
+        onApprove={handleApproveInDialog}
       />
     </div>
   )

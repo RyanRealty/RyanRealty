@@ -16,7 +16,7 @@
  * link must be a CLIENT-READY (finalized/delivered) document or the send refuses.
  */
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -55,6 +55,22 @@ async function requireAdmin(): Promise<boolean> {
   const session = await getSession()
   const role = await getAdminRoleForEmail(session?.user?.email ?? null)
   return Boolean(role && role.role !== 'report_viewer')
+}
+
+/**
+ * Bust the tag-keyed worklist + engagement caches (M10). The list reads go
+ * through makeResilientCached/unstable_cache with a 30s TTL and their own tags,
+ * so a bare revalidatePath (the page is force-dynamic but the DATA is cached)
+ * leaves a sent/approved row showing its old state for up to 30s. revalidateTag
+ * flips it immediately. `kinds` defaults to both because approve resolves by slug
+ * and doesn't carry the prospect kind.
+ */
+function revalidateProspectCaches(kinds: ProspectKind[] = ['expired', 'fsbo']): void {
+  for (const k of kinds) {
+    revalidateTag(`prospecting:list:${k}`, 'max')
+    revalidateTag(`prospecting:engagement:${k}`, 'max')
+  }
+  revalidatePath('/admin/prospecting')
 }
 
 // ── The reconciled cold intro (spec §5.3) ───────────────────────────────────
@@ -309,7 +325,7 @@ export async function sendProspectingIntro(
       },
     }).catch((e) => console.warn('[sendProspectingIntro] enrich failed:', e))
 
-    revalidatePath('/admin/prospecting')
+    revalidateProspectCaches([kind])
     return { ok: true, sid, personId: lead.personId, sentAt: new Date().toISOString() }
   } catch (e) {
     console.error('[sendProspectingIntro]', e)
@@ -352,7 +368,7 @@ export async function buildProspectDoc(
     // Stamp the id link so the surface resolves this doc by cma_id (spec §4.2).
     if (res.cmaId) await linkProspectCma(kind, id, res.cmaId)
 
-    revalidatePath('/admin/prospecting')
+    revalidateProspectCaches([kind])
     return { ok: true, slug: slot.slug }
   } catch (e) {
     console.error('[buildProspectDoc]', e)
@@ -370,7 +386,7 @@ export async function approveProspectDoc(
     const { approveCmaAction } = await import('@/app/actions/cma-admin')
     const res = await approveCmaAction(slug)
     if (res.error) return { ok: false, error: res.error }
-    revalidatePath('/admin/prospecting')
+    revalidateProspectCaches()
     return { ok: true }
   } catch (e) {
     console.error('[approveProspectDoc]', e)

@@ -11,6 +11,7 @@ import { requireAdminPage } from '@/lib/admin/require-admin'
 import { listProspects, getProspectDetail } from '@/lib/data'
 import type { ProspectKind, ProspectListFilters, ProspectStatusFilter } from '@/lib/data/prospecting/types'
 import {
+  approveProspectDoc,
   buildProspectDoc,
   prepareProspectSend,
   sendProspectingIntro,
@@ -94,6 +95,7 @@ export default async function ProspectingPage({
         prepareSendAction={prepareProspectSend}
         sendIntroAction={sendProspectingIntro}
         sendTestAction={sendProspectTest}
+        approveAction={approveProspectDoc}
       />
     </div>
   )
