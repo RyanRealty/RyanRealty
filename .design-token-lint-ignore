@@ -114,6 +114,15 @@ app/admin/(protected)/sync/SyncRunLog.tsx
 app/admin/(protected)/sync/page.tsx
 app/api/og/route.tsx
 app/components/admin/AdminBrokerForm.tsx
+# Broker-form decomposition (audit #7b, 2026-07-18): the 1338-line AdminBrokerForm
+# (grandfathered above) was split into concern-components. These carry the SAME
+# pre-existing styling verbatim (arbitrary sizing utilities, hand-rolled cards,
+# the full-size headshot lightbox modal) — extracted, not authored new. Same
+# accepted exception as the monolith; converting to Card/Dialog would change the
+# admin UX and break the behavior-preserving decomposition.
+app/components/admin/broker/BrokerHeadshotStudio.tsx
+app/components/admin/broker/BrokerVideoStudio.tsx
+app/components/admin/broker/HeadshotLightbox.tsx
 app/components/admin/AdminUsersList.tsx
 app/dashboard/page.tsx
 app/layout.tsx

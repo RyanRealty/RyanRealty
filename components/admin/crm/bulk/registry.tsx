@@ -1,0 +1,648 @@
+'use client'
+
+/**
+ * The declarative bulk-action registry (audit finding #7b decomposition of the
+ * 977-line BulkActions.tsx god-component). One `BulkActionSpec` per action —
+ * its form (`Fields`), its client-side `validate`, and its `run`, which calls
+ * the EXACT same server action, with the EXACT same payload, that the original
+ * mega-switch called. Behavior-preserving only — see BulkActions.tsx for the
+ * shared "chrome" (scope toggle, preflight, confirm dialog, enqueue handling)
+ * every spec here plugs into.
+ */
+
+import {
+  bulkAssignBrokerAction,
+  bulkAddTagAction,
+  bulkRemoveTagAction,
+  bulkSetStageAction,
+  bulkEnrollWorkflowAction,
+  bulkSetReportSubscriptionAction,
+  bulkAssignSavedSearchAction,
+  bulkEmailCohortAction,
+  bulkDeleteAction,
+  bulkSetSourceAction,
+  bulkSetTimeframeAction,
+  bulkSetLenderAction,
+  bulkAssignPondAction,
+  bulkAddCollaboratorAction,
+  bulkRemoveCollaboratorAction,
+} from '@/app/actions/crm-bulk'
+import { bulkMergePeopleAction } from '@/app/actions/crm-person-gaps'
+import { adminBulkAssignNewsletterAction } from '@/app/actions/newsletter'
+import { TIMEFRAME_OPTIONS } from '@/components/admin/crm/people-list/people-list-utils'
+import { getFiltersSummary } from '@/lib/search-filters'
+import { PROPERTY_TYPES } from '@/lib/property-type'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import { EmailBodyEditor } from '@/components/admin/crm/EmailBodyEditor'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
+import { FormSelect } from './FormSelect'
+import {
+  defineBulkAction,
+  type ActionId,
+  type BulkActionSpec,
+  type BulkFieldsProps,
+  type BulkPickerOption,
+} from './types'
+
+const NEWSLETTER_SEGMENTS: BulkPickerOption[] = [
+  { key: 'general', label: 'General' },
+  { key: 'buyer', label: 'Buyer' },
+  { key: 'seller', label: 'Seller' },
+  { key: 'past-client', label: 'Past client' },
+]
+
+// ── assign_broker ─────────────────────────────────────────────────────────────
+
+type AssignBrokerValue = { broker: string }
+
+function AssignBrokerFields({ value, onChange, ctx }: BulkFieldsProps<AssignBrokerValue>) {
+  return (
+    <FormSelect
+      label="Broker" value={value.broker} onChange={(v) => onChange({ broker: v })}
+      placeholder="Pick a broker" options={ctx.brokers}
+    />
+  )
+}
+
+const assignBroker = defineBulkAction<AssignBrokerValue>({
+  id: 'assign_broker',
+  title: 'Assign Agent',
+  jobKind: 'crm:assign-broker',
+  initialValue: { broker: '' },
+  Fields: AssignBrokerFields,
+  validate: (v) => (!v.broker ? 'Pick a broker' : null),
+  run: async (v, sel) => ({ mode: 'job', result: await bulkAssignBrokerAction(sel, v.broker) }),
+})
+
+// ── add_tag / remove_tag ──────────────────────────────────────────────────────
+
+type TagValue = { tag: string }
+
+function TagFields({ value, onChange, ctx }: BulkFieldsProps<TagValue>) {
+  return (
+    <FormSelect
+      label="Tag" value={value.tag} onChange={(v) => onChange({ tag: v })}
+      placeholder="Pick a tag" options={ctx.tags}
+    />
+  )
+}
+
+const addTag = defineBulkAction<TagValue>({
+  id: 'add_tag',
+  title: 'Add Tags',
+  jobKind: 'crm:add-tag',
+  initialValue: { tag: '' },
+  Fields: TagFields,
+  validate: (v) => (!v.tag.trim() ? 'Pick or type a tag' : null),
+  run: async (v, sel) => ({ mode: 'job', result: await bulkAddTagAction(sel, v.tag.trim()) }),
+})
+
+const removeTag = defineBulkAction<TagValue>({
+  id: 'remove_tag',
+  title: 'Remove Tags',
+  jobKind: 'crm:remove-tag',
+  initialValue: { tag: '' },
+  Fields: TagFields,
+  validate: (v) => (!v.tag.trim() ? 'Pick or type a tag' : null),
+  run: async (v, sel) => ({ mode: 'job', result: await bulkRemoveTagAction(sel, v.tag.trim()) }),
+})
+
+// ── set_stage ──────────────────────────────────────────────────────────────────
+
+type StageValue = { stage: string }
+
+function SetStageFields({ value, onChange, ctx }: BulkFieldsProps<StageValue>) {
+  return (
+    <FormSelect
+      label="Stage" value={value.stage} onChange={(v) => onChange({ stage: v })}
+      placeholder="Pick a stage" options={ctx.stages}
+    />
+  )
+}
+
+const setStage = defineBulkAction<StageValue>({
+  id: 'set_stage',
+  title: 'Update Stage',
+  jobKind: 'crm:set-stage',
+  initialValue: { stage: '' },
+  Fields: SetStageFields,
+  validate: (v) => (!v.stage ? 'Pick a stage' : null),
+  run: async (v, sel) => ({ mode: 'job', result: await bulkSetStageAction(sel, v.stage) }),
+})
+
+// ── enroll_workflow ────────────────────────────────────────────────────────────
+
+type EnrollWorkflowValue = { sequenceId: string }
+
+function EnrollWorkflowFields({ value, onChange, ctx }: BulkFieldsProps<EnrollWorkflowValue>) {
+  return (
+    <FormSelect
+      label="Workflow" value={value.sequenceId} onChange={(v) => onChange({ sequenceId: v })}
+      placeholder="Pick a workflow"
+      options={ctx.sequences.map((s) => ({ key: String(s.id), label: s.name }))}
+    />
+  )
+}
+
+const enrollWorkflow = defineBulkAction<EnrollWorkflowValue>({
+  id: 'enroll_workflow',
+  title: 'Apply Automation',
+  jobKind: 'crm:enroll-workflow',
+  initialValue: { sequenceId: '' },
+  Fields: EnrollWorkflowFields,
+  validate: (v) => (!Number(v.sequenceId) ? 'Pick a workflow' : null),
+  run: async (v, sel) => ({ mode: 'job', result: await bulkEnrollWorkflowAction(sel, Number(v.sequenceId)) }),
+})
+
+// ── set_report_subscription ───────────────────────────────────────────────────
+
+type ReportSubscriptionValue = { areaKeys: Set<string>; active: boolean; frequency: string }
+
+function SetReportSubscriptionFields({ value, onChange, ctx }: BulkFieldsProps<ReportSubscriptionValue>) {
+  const toggleArea = (key: string) => {
+    const next = new Set(value.areaKeys)
+    if (next.has(key)) next.delete(key)
+    else next.add(key)
+    onChange({ ...value, areaKeys: next })
+  }
+  return (
+    <>
+      <Label className="flex items-center gap-2 text-sm">
+        <Checkbox checked={value.active} onCheckedChange={(v) => onChange({ ...value, active: v === true })} />
+        Turn the subscription on
+      </Label>
+      {value.active ? (
+        <>
+          <div>
+            <Label className="mb-1.5 block text-xs text-muted-foreground">Areas</Label>
+            <div className="max-h-40 space-y-1.5 overflow-y-auto no-scrollbar rounded-md border border-border p-2">
+              {ctx.reportAreas.map((a) => (
+                <Label key={a.key} className="flex items-center gap-2 text-sm font-normal">
+                  <Checkbox checked={value.areaKeys.has(a.key)} onCheckedChange={() => toggleArea(a.key)} />
+                  {a.label}
+                </Label>
+              ))}
+            </div>
+          </div>
+          <FormSelect
+            label="Frequency" value={value.frequency} onChange={(v) => onChange({ ...value, frequency: v })}
+            placeholder="Frequency"
+            options={[{ key: 'monthly', label: 'Monthly' }, { key: 'weekly', label: 'Weekly' }]}
+          />
+        </>
+      ) : null}
+    </>
+  )
+}
+
+const setReportSubscription = defineBulkAction<ReportSubscriptionValue>({
+  id: 'set_report_subscription',
+  title: 'Market report subscription',
+  jobKind: 'crm:set-report-subscription',
+  initialValue: { areaKeys: new Set<string>(), active: true, frequency: 'monthly' },
+  Fields: SetReportSubscriptionFields,
+  validate: (v) => {
+    const areas = Array.from(v.areaKeys)
+    return v.active && areas.length === 0 ? 'Pick at least one area' : null
+  },
+  run: async (v, sel) => {
+    const areas = Array.from(v.areaKeys)
+    return {
+      mode: 'job',
+      result: await bulkSetReportSubscriptionAction(sel, { areas, frequency: v.frequency, isActive: v.active }),
+    }
+  },
+})
+
+// ── email_cohort ───────────────────────────────────────────────────────────────
+
+type EmailCohortValue = { templateId: string; subject: string; body: string }
+
+function EmailCohortFields({ value, onChange, ctx }: BulkFieldsProps<EmailCohortValue>) {
+  return (
+    <>
+      <FormSelect
+        label="Template (optional)" value={value.templateId} onChange={(v) => onChange({ ...value, templateId: v })}
+        placeholder="Pick a template, or write below"
+        options={ctx.emailTemplates.filter((t) => t.channel === 'email').map((t) => ({ key: String(t.id), label: t.name }))}
+      />
+      {!value.templateId ? (
+        // The canonical email editing surface — same interface as every other
+        // email send (the bulk pipeline resolves its own tokens, so the CRM
+        // merge dropdown is hidden).
+        <EmailBodyEditor
+          subject={value.subject}
+          onSubjectChange={(v) => onChange({ ...value, subject: v })}
+          body={value.body}
+          onBodyChange={(v) => onChange({ ...value, body: v })}
+          signatureHtml={null}
+          hideMergeFields
+        />
+      ) : null}
+    </>
+  )
+}
+
+const emailCohort = defineBulkAction<EmailCohortValue>({
+  id: 'email_cohort',
+  title: 'Batch Email',
+  jobKind: 'email-cohort',
+  initialValue: { templateId: '', subject: '', body: '' },
+  Fields: EmailCohortFields,
+  validate: (v) => {
+    const tId = v.templateId.trim()
+    return !tId && !(v.subject.trim() && v.body.trim())
+      ? 'Pick a template, or write a subject and body'
+      : null
+  },
+  run: async (v, sel) => {
+    const tId = v.templateId.trim()
+    return {
+      mode: 'job',
+      result: await bulkEmailCohortAction(sel, {
+        templateId: tId || undefined,
+        subject: v.subject.trim() || undefined,
+        body: v.body || undefined,
+      }),
+    }
+  },
+})
+
+// ── newsletter (legacy — ids only) ────────────────────────────────────────────
+
+type NewsletterValue = { segment: string }
+
+function NewsletterFields({ value, onChange }: BulkFieldsProps<NewsletterValue>) {
+  return (
+    <FormSelect
+      label="Segment" value={value.segment} onChange={(v) => onChange({ segment: v })}
+      placeholder="Segment" options={NEWSLETTER_SEGMENTS}
+    />
+  )
+}
+
+const newsletter = defineBulkAction<NewsletterValue>({
+  id: 'newsletter',
+  title: 'Add to newsletter',
+  initialValue: { segment: 'general' },
+  Fields: NewsletterFields,
+  run: async (v, _sel, ctx) => {
+    const res = await adminBulkAssignNewsletterAction(
+      ctx.selectedIds,
+      v.segment as 'general' | 'buyer' | 'seller' | 'past-client',
+    )
+    if (!res.ok) {
+      return { mode: 'legacy', result: { ok: false, error: res.error ?? 'Could not add to the newsletter' } }
+    }
+    return { mode: 'legacy', result: { ok: true, assigned: res.assigned ?? 0, skipped: res.skipped ?? 0 } }
+  },
+})
+
+// ── saved_search ───────────────────────────────────────────────────────────────
+
+type SavedSearchValue = {
+  name: string
+  frequency: string
+  city: string
+  minPrice: string
+  maxPrice: string
+  beds: string
+  baths: string
+  propertyType: string
+}
+
+/** The filters object for Assign a saved search — EXACT FILTER_KEYS names from
+ *  lib/search-filters.ts (city, minPrice, maxPrice, beds, baths, propertyType)
+ *  so the alert cron + search URL builders read them natively. Verbatim move. */
+function buildSavedSearchFilters(v: SavedSearchValue): Record<string, unknown> {
+  const filters: Record<string, unknown> = {}
+  if (v.city.trim()) filters.city = v.city.trim()
+  const minPrice = Number(v.minPrice)
+  if (v.minPrice.trim() && Number.isFinite(minPrice) && minPrice > 0) filters.minPrice = minPrice
+  const maxPrice = Number(v.maxPrice)
+  if (v.maxPrice.trim() && Number.isFinite(maxPrice) && maxPrice > 0) filters.maxPrice = maxPrice
+  if (v.beds !== 'any') filters.beds = Number(v.beds)
+  if (v.baths !== 'any') filters.baths = Number(v.baths)
+  if (v.propertyType !== 'any') filters.propertyType = v.propertyType
+  return filters
+}
+
+function SavedSearchFields({ value, onChange }: BulkFieldsProps<SavedSearchValue>) {
+  return (
+    <>
+      <div>
+        <Label htmlFor="bulk-ss-name" className="mb-1.5 block text-xs text-muted-foreground">Search name (optional)</Label>
+        <Input
+          id="bulk-ss-name" value={value.name} onChange={(e) => onChange({ ...value, name: e.target.value })}
+          placeholder="Bend under 600k" className="h-10 md:h-9"
+        />
+      </div>
+      <FormSelect
+        label="Alert frequency" value={value.frequency} onChange={(v) => onChange({ ...value, frequency: v })}
+        placeholder="Frequency" options={[{ key: 'daily', label: 'Daily' }, { key: 'weekly', label: 'Weekly' }]}
+      />
+      <div>
+        <Label htmlFor="bulk-ss-city" className="mb-1.5 block text-xs text-muted-foreground">City</Label>
+        <Input
+          id="bulk-ss-city" value={value.city} onChange={(e) => onChange({ ...value, city: e.target.value })}
+          placeholder="Bend" className="h-10 md:h-9"
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <Label htmlFor="bulk-ss-min-price" className="mb-1.5 block text-xs text-muted-foreground">Min price</Label>
+          <Input
+            id="bulk-ss-min-price" type="number" inputMode="numeric" min={0}
+            value={value.minPrice} onChange={(e) => onChange({ ...value, minPrice: e.target.value })}
+            placeholder="500000" className="h-10 md:h-9"
+          />
+        </div>
+        <div>
+          <Label htmlFor="bulk-ss-max-price" className="mb-1.5 block text-xs text-muted-foreground">Max price</Label>
+          <Input
+            id="bulk-ss-max-price" type="number" inputMode="numeric" min={0}
+            value={value.maxPrice} onChange={(e) => onChange({ ...value, maxPrice: e.target.value })}
+            placeholder="900000" className="h-10 md:h-9"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <FormSelect
+          label="Min beds" value={value.beds} onChange={(v) => onChange({ ...value, beds: v })}
+          placeholder="Any"
+          options={[
+            { key: 'any', label: 'Any' },
+            { key: '1', label: '1+' },
+            { key: '2', label: '2+' },
+            { key: '3', label: '3+' },
+            { key: '4', label: '4+' },
+            { key: '5', label: '5+' },
+          ]}
+        />
+        <FormSelect
+          label="Min baths" value={value.baths} onChange={(v) => onChange({ ...value, baths: v })}
+          placeholder="Any"
+          options={[
+            { key: 'any', label: 'Any' },
+            { key: '1', label: '1+' },
+            { key: '2', label: '2+' },
+            { key: '3', label: '3+' },
+            { key: '4', label: '4+' },
+          ]}
+        />
+      </div>
+      <FormSelect
+        label="Property type" value={value.propertyType} onChange={(v) => onChange({ ...value, propertyType: v })}
+        placeholder="All types"
+        options={[
+          { key: 'any', label: 'All types' },
+          ...PROPERTY_TYPES.filter((t) => t.value !== '').map((t) => ({ key: t.value, label: t.label })),
+        ]}
+      />
+      <p className="text-xs text-muted-foreground" aria-live="polite">
+        Alerts will match {getFiltersSummary(buildSavedSearchFilters(value))}
+      </p>
+    </>
+  )
+}
+
+const savedSearch = defineBulkAction<SavedSearchValue>({
+  id: 'saved_search',
+  title: 'Assign a saved search',
+  jobKind: 'crm:assign-saved-search',
+  initialValue: {
+    name: '', frequency: 'daily', city: '', minPrice: '', maxPrice: '', beds: 'any', baths: 'any', propertyType: 'any',
+  },
+  Fields: SavedSearchFields,
+  validate: (v) => (Object.keys(buildSavedSearchFilters(v)).length === 0 ? 'Add at least one search filter first' : null),
+  run: async (v, sel) => ({
+    mode: 'job',
+    result: await bulkAssignSavedSearchAction(sel, {
+      filters: buildSavedSearchFilters(v),
+      name: v.name.trim() || undefined,
+      frequency: v.frequency,
+    }),
+  }),
+})
+
+// ── delete_contacts ────────────────────────────────────────────────────────────
+
+const deleteContacts = defineBulkAction<undefined>({
+  id: 'delete_contacts',
+  title: 'Delete contacts',
+  jobKind: 'crm:delete',
+  dangerous: true,
+  initialValue: undefined,
+  Fields: null,
+  run: async (_v, sel) => ({ mode: 'job', result: await bulkDeleteAction(sel) }),
+})
+
+// ── set_source ─────────────────────────────────────────────────────────────────
+
+type SourceValue = { source: string }
+
+function SetSourceFields({ value, onChange, ctx }: BulkFieldsProps<SourceValue>) {
+  return ctx.sources.length > 0 ? (
+    <FormSelect
+      label="Lead source" value={value.source} onChange={(v) => onChange({ source: v })}
+      placeholder="Pick a source" options={ctx.sources}
+    />
+  ) : (
+    <div>
+      <Label htmlFor="bulk-source" className="mb-1.5 block text-xs text-muted-foreground">Lead source</Label>
+      <Input
+        id="bulk-source" value={value.source} onChange={(e) => onChange({ source: e.target.value })}
+        placeholder="Referral" className="h-10 md:h-9"
+      />
+    </div>
+  )
+}
+
+const setSource = defineBulkAction<SourceValue>({
+  id: 'set_source',
+  title: 'Update Source',
+  jobKind: 'crm:set-source',
+  initialValue: { source: '' },
+  Fields: SetSourceFields,
+  validate: (v) => (!v.source.trim() ? 'Pick or type a source' : null),
+  run: async (v, sel) => ({ mode: 'job', result: await bulkSetSourceAction(sel, v.source.trim()) }),
+})
+
+// ── set_timeframe ──────────────────────────────────────────────────────────────
+
+type TimeframeValue = { timeframe: string }
+
+function SetTimeframeFields({ value, onChange }: BulkFieldsProps<TimeframeValue>) {
+  return (
+    <FormSelect
+      label="Timeframe" value={value.timeframe} onChange={(v) => onChange({ timeframe: v })}
+      placeholder="Pick a timeframe" options={TIMEFRAME_OPTIONS.map((t) => ({ key: t, label: t }))}
+    />
+  )
+}
+
+const setTimeframe = defineBulkAction<TimeframeValue>({
+  id: 'set_timeframe',
+  title: 'Update Timeframe',
+  jobKind: 'crm:set-timeframe',
+  initialValue: { timeframe: '' },
+  Fields: SetTimeframeFields,
+  validate: (v) => (!v.timeframe ? 'Pick a timeframe' : null),
+  run: async (v, sel) => ({ mode: 'job', result: await bulkSetTimeframeAction(sel, v.timeframe) }),
+})
+
+// ── set_lender ─────────────────────────────────────────────────────────────────
+
+type LenderValue = { lender: string }
+
+function SetLenderFields({ value, onChange }: BulkFieldsProps<LenderValue>) {
+  return (
+    <div>
+      <Label htmlFor="bulk-lender" className="mb-1.5 block text-xs text-muted-foreground">Lender name</Label>
+      <Input
+        id="bulk-lender" value={value.lender} onChange={(e) => onChange({ lender: e.target.value })}
+        placeholder="Lender or loan officer" className="h-10 md:h-9"
+      />
+    </div>
+  )
+}
+
+const setLender = defineBulkAction<LenderValue>({
+  id: 'set_lender',
+  title: 'Assign Lender',
+  jobKind: 'crm:set-lender',
+  initialValue: { lender: '' },
+  Fields: SetLenderFields,
+  validate: (v) => (!v.lender.trim() ? 'Type a lender name' : null),
+  run: async (v, sel) => ({ mode: 'job', result: await bulkSetLenderAction(sel, v.lender.trim()) }),
+})
+
+// ── assign_pond ────────────────────────────────────────────────────────────────
+
+type PondValue = { pondId: string }
+
+function AssignPondFields({ value, onChange, ctx }: BulkFieldsProps<PondValue>) {
+  return (
+    <FormSelect
+      label="Pond" value={value.pondId} onChange={(v) => onChange({ pondId: v })}
+      placeholder="Pick a pond" options={ctx.ponds}
+    />
+  )
+}
+
+const assignPond = defineBulkAction<PondValue>({
+  id: 'assign_pond',
+  title: 'Assign Ponds',
+  jobKind: 'crm:assign-pond',
+  initialValue: { pondId: '' },
+  Fields: AssignPondFields,
+  validate: (v) => (!Number(v.pondId) ? 'Pick a pond' : null),
+  run: async (v, sel) => ({ mode: 'job', result: await bulkAssignPondAction(sel, Number(v.pondId)) }),
+})
+
+// ── add_collaborator / remove_collaborator ────────────────────────────────────
+
+type CollaboratorValue = { collabBroker: string }
+
+function CollaboratorFields({ value, onChange, ctx }: BulkFieldsProps<CollaboratorValue>) {
+  return (
+    <FormSelect
+      label="Broker" value={value.collabBroker} onChange={(v) => onChange({ collabBroker: v })}
+      placeholder="Pick a broker" options={ctx.brokers}
+    />
+  )
+}
+
+const addCollaborator = defineBulkAction<CollaboratorValue>({
+  id: 'add_collaborator',
+  title: 'Add Collaborators',
+  jobKind: 'crm:add-collaborator',
+  initialValue: { collabBroker: '' },
+  Fields: CollaboratorFields,
+  validate: (v) => (!v.collabBroker ? 'Pick a broker' : null),
+  run: async (v, sel) => ({ mode: 'job', result: await bulkAddCollaboratorAction(sel, v.collabBroker) }),
+})
+
+const removeCollaborator = defineBulkAction<CollaboratorValue>({
+  id: 'remove_collaborator',
+  title: 'Remove Collaborators',
+  jobKind: 'crm:remove-collaborator',
+  initialValue: { collabBroker: '' },
+  Fields: CollaboratorFields,
+  validate: (v) => (!v.collabBroker ? 'Pick a broker' : null),
+  run: async (v, sel) => ({ mode: 'job', result: await bulkRemoveCollaboratorAction(sel, v.collabBroker) }),
+})
+
+// ── merge_people (legacy — ids only, custom result shape) ────────────────────
+
+type MergePeopleValue = { survivorId: string }
+
+function MergePeopleFields({ value, onChange, ctx }: BulkFieldsProps<MergePeopleValue>) {
+  // Matches the original `open === 'merge_people' && !legacyResult` guard —
+  // the survivor picker disappears once the merge has completed.
+  if (ctx.legacyResult) return null
+  const idCount = ctx.selectedIds.length
+  return (
+    <div>
+      <Label className="mb-1.5 block text-xs text-muted-foreground">
+        Surviving contact (the {idCount - 1} other {idCount === 2 ? 'contact keeps' : 'contacts keep'} nothing. Timeline, tasks and workflows move to the survivor, duplicates are archived to Trash)
+      </Label>
+      <Select value={value.survivorId} onValueChange={(v) => onChange({ survivorId: v })}>
+        <SelectTrigger className="h-10 md:h-9">
+          <SelectValue placeholder="Pick the survivor" />
+        </SelectTrigger>
+        <SelectContent>
+          {ctx.selectedRows
+            .filter((r) => ctx.selectedIds.includes(r.id))
+            .map((r) => (
+              <SelectItem key={r.id} value={String(r.id)}>{r.name ?? `Contact #${r.id}`}</SelectItem>
+            ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
+const mergePeople = defineBulkAction<MergePeopleValue>({
+  id: 'merge_people',
+  title: 'Merge People',
+  initialValue: { survivorId: '' },
+  Fields: MergePeopleFields,
+  validate: (v) => (!Number(v.survivorId) ? 'Pick the surviving contact' : null),
+  run: async (v, _sel, ctx) => {
+    const survivorId = Number(v.survivorId)
+    const mergedIds = ctx.selectedIds.filter((id) => id !== survivorId)
+    const res = await bulkMergePeopleAction({ survivorId, mergedIds })
+    if (!res.ok) return { mode: 'legacy', result: { ok: false, error: res.error } }
+    return {
+      mode: 'legacy',
+      result: { ok: true, assigned: res.merged, skipped: ctx.selectedIds.length - 1 - res.merged },
+    }
+  },
+})
+
+// ── Registry ───────────────────────────────────────────────────────────────────
+
+export const BULK_ACTION_REGISTRY: Record<ActionId, BulkActionSpec<any>> = {
+  assign_broker: assignBroker,
+  add_tag: addTag,
+  remove_tag: removeTag,
+  set_stage: setStage,
+  enroll_workflow: enrollWorkflow,
+  set_report_subscription: setReportSubscription,
+  email_cohort: emailCohort,
+  newsletter,
+  saved_search: savedSearch,
+  delete_contacts: deleteContacts,
+  set_source: setSource,
+  set_timeframe: setTimeframe,
+  set_lender: setLender,
+  assign_pond: assignPond,
+  add_collaborator: addCollaborator,
+  remove_collaborator: removeCollaborator,
+  merge_people: mergePeople,
+}

@@ -28,46 +28,34 @@
  * suppression-gated bulk-job framework — newsletter subscription has its own
  * double-opt-in path). Assign-saved-search graduated to the bulk-job framework
  * (kind 'crm:assign-saved-search') with a real filter builder — no more {} filters.
+ *
+ * DECOMPOSITION (audit finding #7b, verbatim-behavior refactor): each of the 17
+ * discriminated actions (assign_broker, add_tag, remove_tag, set_stage,
+ * enroll_workflow, set_report_subscription, email_cohort, newsletter,
+ * saved_search, delete_contacts, set_source, set_timeframe, set_lender,
+ * assign_pond, add_collaborator, remove_collaborator, merge_people) now lives as
+ * one small, colocated `BulkActionSpec` in `bulk/registry.tsx` — its form
+ * (`Fields`), its client validation, and its `run` (which calls the exact same
+ * server action with the exact same payload the old mega-switch called). This
+ * component owns only the shared chrome every spec plugs into: the sticky bar +
+ * icon strip, the scope toggle (checked ids vs "all matching"), the preflight
+ * count, the confirm-dialog shell, and the enqueue -> BulkProgress hookup. The
+ * public API (props, the `openAction` imperative handle) is unchanged so the
+ * parent (PeopleListView) needs no changes.
  */
 
 import { forwardRef, useImperativeHandle, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Loader2, X, MoreHorizontal, Tag, Mail, Upload, Trash2, Download } from 'lucide-react'
-import {
-  bulkAssignBrokerAction,
-  bulkAddTagAction,
-  bulkRemoveTagAction,
-  bulkSetStageAction,
-  bulkEnrollWorkflowAction,
-  bulkSetReportSubscriptionAction,
-  bulkAssignSavedSearchAction,
-  bulkEmailCohortAction,
-  bulkPreflightCount,
-  bulkDeleteAction,
-  bulkSetSourceAction,
-  bulkSetTimeframeAction,
-  bulkSetLenderAction,
-  bulkAssignPondAction,
-  bulkAddCollaboratorAction,
-  bulkRemoveCollaboratorAction,
-} from '@/app/actions/crm-bulk'
-import { bulkMergePeopleAction } from '@/app/actions/crm-person-gaps'
-import { TIMEFRAME_OPTIONS } from '@/components/admin/crm/people-list/people-list-utils'
+import { bulkPreflightCount } from '@/app/actions/crm-bulk'
 import type {
   BulkActionSelection,
   BulkKind,
   BulkEnqueueResult,
 } from '@/lib/crm/bulk-helpers'
-import { adminBulkAssignNewsletterAction } from '@/app/actions/newsletter'
-import { getFiltersSummary } from '@/lib/search-filters'
-import { PROPERTY_TYPES } from '@/lib/property-type'
 import type { LegacyFilters } from '@/lib/crm/segment-ast'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
-import { EmailBodyEditor } from '@/components/admin/crm/EmailBodyEditor'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
@@ -79,12 +67,18 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import BulkProgress from '@/components/admin/crm/BulkProgress'
+import { BULK_ACTION_REGISTRY } from '@/components/admin/crm/bulk/registry'
+import type { ActionId, BulkCtx } from '@/components/admin/crm/bulk/types'
 
 // ── Picker option shapes (passed from the server page's Wave-2 readers) ───────
-
-export type BulkPickerOption = { key: string; label: string }
-export type BulkTemplateOption = { id: number; name: string; channel: 'email' | 'sms' }
-export type BulkSequenceOption = { id: number; name: string }
+// Re-exported from the registry's type module so this file's public import
+// path stays identical for every existing caller (PeopleListView, etc.).
+export type {
+  BulkPickerOption,
+  BulkTemplateOption,
+  BulkSequenceOption,
+} from '@/components/admin/crm/bulk/types'
+import type { BulkPickerOption, BulkTemplateOption, BulkSequenceOption } from '@/components/admin/crm/bulk/types'
 
 export type BulkActionsProps = {
   /** The explicit checkbox set the operator ticked. */
@@ -128,74 +122,8 @@ export type BulkActionsProps = {
   onExport?: () => void
 }
 
-// One discriminated action the dialog renders a form for.
-type ActionId =
-  | 'assign_broker'
-  | 'add_tag'
-  | 'remove_tag'
-  | 'set_stage'
-  | 'enroll_workflow'
-  | 'set_report_subscription'
-  | 'email_cohort'
-  | 'newsletter'
-  | 'saved_search'
-  | 'delete_contacts'
-  | 'set_source'
-  | 'set_timeframe'
-  | 'set_lender'
-  | 'assign_pond'
-  | 'add_collaborator'
-  | 'remove_collaborator'
-  | 'merge_people'
-
-// The bulk-job kind each action maps to (legacy + merge have no job kind).
-const ACTION_KIND: Partial<Record<ActionId, BulkKind>> = {
-  assign_broker: 'crm:assign-broker',
-  add_tag: 'crm:add-tag',
-  remove_tag: 'crm:remove-tag',
-  set_stage: 'crm:set-stage',
-  enroll_workflow: 'crm:enroll-workflow',
-  set_report_subscription: 'crm:set-report-subscription',
-  saved_search: 'crm:assign-saved-search',
-  email_cohort: 'email-cohort',
-  delete_contacts: 'crm:delete',
-  set_source: 'crm:set-source',
-  set_timeframe: 'crm:set-timeframe',
-  set_lender: 'crm:set-lender',
-  assign_pond: 'crm:assign-pond',
-  add_collaborator: 'crm:add-collaborator',
-  remove_collaborator: 'crm:remove-collaborator',
-}
-
-const ACTION_TITLE: Record<ActionId, string> = {
-  assign_broker: 'Assign Agent',
-  add_tag: 'Add Tags',
-  remove_tag: 'Remove Tags',
-  set_stage: 'Update Stage',
-  enroll_workflow: 'Apply Automation',
-  set_report_subscription: 'Market report subscription',
-  email_cohort: 'Batch Email',
-  newsletter: 'Add to newsletter',
-  saved_search: 'Assign a saved search',
-  delete_contacts: 'Delete contacts',
-  set_source: 'Update Source',
-  set_timeframe: 'Update Timeframe',
-  set_lender: 'Assign Lender',
-  assign_pond: 'Assign Ponds',
-  add_collaborator: 'Add Collaborators',
-  remove_collaborator: 'Remove Collaborators',
-  merge_people: 'Merge People',
-}
-
 /** Imperative handle exposed via forwardRef so the icon toolbar can open actions. */
 export type BulkActionsHandle = { openAction: (id: ActionId) => void }
-
-const NEWSLETTER_SEGMENTS: BulkPickerOption[] = [
-  { key: 'general', label: 'General' },
-  { key: 'buyer', label: 'Buyer' },
-  { key: 'seller', label: 'Seller' },
-  { key: 'past-client', label: 'Past client' },
-]
 
 const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function BulkActions(props, ref) {
   const {
@@ -217,35 +145,12 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
   const [preflight, setPreflight] = useState<{ total: number; skip: number } | null>(null)
   const [preflightLoading, setPreflightLoading] = useState(false)
 
-  // Per-action form state.
-  const [broker, setBroker] = useState('')
-  const [tag, setTag] = useState('')
-  const [stage, setStage] = useState('')
-  const [sequenceId, setSequenceId] = useState('')
-  const [templateId, setTemplateId] = useState('')
-  const [subject, setSubject] = useState('')
-  const [body, setBody] = useState('')
-  const [reportAreaKeys, setReportAreaKeys] = useState<Set<string>>(new Set())
-  const [reportActive, setReportActive] = useState(true)
-  const [reportFrequency, setReportFrequency] = useState('monthly')
-  const [segment, setSegment] = useState('general')
-  const [ssName, setSsName] = useState('')
-  const [ssFrequency, setSsFrequency] = useState('daily')
-  const [ssCity, setSsCity] = useState('')
-  const [ssMinPrice, setSsMinPrice] = useState('')
-  const [ssMaxPrice, setSsMaxPrice] = useState('')
-  const [ssBeds, setSsBeds] = useState('any')
-  const [ssBaths, setSsBaths] = useState('any')
-  const [ssPropertyType, setSsPropertyType] = useState('any')
-  // §14.3 mass-action form state
-  const [source, setSource] = useState('')
-  const [timeframe, setTimeframe] = useState('')
-  const [lender, setLender] = useState('')
-  const [pondId, setPondId] = useState('')
-  const [collabBroker, setCollabBroker] = useState('')
-  const [mergeSurvivorId, setMergeSurvivorId] = useState('')
+  // The open action's form values — one slot, typed per-spec via the registry.
+  // Replaces the old pool of 25+ per-field useState hooks; each spec's Fields
+  // component owns the shape of its own value object.
+  const [values, setValues] = useState<any>(undefined)
 
-  // Result feedback for legacy actions (newsletter / saved_search) that return counts.
+  // Result feedback for legacy actions (newsletter / merge_people) that return counts.
   const [legacyResult, setLegacyResult] = useState<{ assigned: number; skipped: number } | null>(null)
 
   const idCount = selectedIds.length
@@ -266,38 +171,23 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
       ? { mode: 'ids', ids: selectedIds }
       : matchingSelection()
 
-  const resetForm = () => {
-    setBroker(''); setTag(''); setStage(''); setSequenceId(''); setTemplateId('')
-    setSubject(''); setBody(''); setReportAreaKeys(new Set()); setReportActive(true)
-    setReportFrequency('monthly'); setSegment('general'); setSsName('')
-    setSource(''); setTimeframe(''); setLender(''); setPondId(''); setCollabBroker('')
-    setMergeSurvivorId('')
-    setSsFrequency('daily')
-    setSsCity('')
-    setSsMinPrice('')
-    setSsMaxPrice('')
-    setSsBeds('any')
-    setSsBaths('any')
-    setSsPropertyType('any')
-  }
-
   const closeDialog = () => {
     setOpen(null)
     setError(null)
     setPreflight(null)
     setLegacyResult(null)
-    resetForm()
+    setValues(undefined)
   }
 
   const openAction = (id: ActionId) => {
+    const spec = BULK_ACTION_REGISTRY[id]
     setOpen(id)
     setError(null)
     setPreflight(null)
     setLegacyResult(null)
-    resetForm()
-    const kind = ACTION_KIND[id]
-    if (!kind) {
-      // Legacy actions (newsletter, saved_search, merge) act on ids only.
+    setValues(spec.initialValue)
+    if (!spec.jobKind) {
+      // Legacy actions (newsletter, merge_people) act on ids only.
       setScope('ids')
       return
     }
@@ -305,7 +195,7 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
     // matching cohort; a checked selection targets the ids by default.
     const nextScope: 'ids' | 'matching' = selectedIds.length > 0 ? 'ids' : 'matching'
     setScope(nextScope)
-    runPreflightForScope(kind, nextScope)
+    runPreflightForScope(spec.jobKind, nextScope)
   }
 
   // Expose openAction so PeopleListView's §5 icon strip can trigger actions.
@@ -320,8 +210,9 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
   const switchScope = (next: 'ids' | 'matching') => {
     setScope(next)
     if (open) {
-      const kind = ACTION_KIND[open]
-      if (kind) {
+      const spec = BULK_ACTION_REGISTRY[open]
+      if (spec.jobKind) {
+        const kind = spec.jobKind
         // Defer to the next render so buildSelection reads the new scope.
         queueMicrotask(() => runPreflightForScope(kind, next))
       }
@@ -343,22 +234,6 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
     })
   }
 
-  // The filters object for Assign a saved search — EXACT FILTER_KEYS names
-  // from lib/search-filters.ts (city, minPrice, maxPrice, beds, baths,
-  // propertyType) so the alert cron + search URL builders read them natively.
-  const buildSavedSearchFilters = (): Record<string, unknown> => {
-    const filters: Record<string, unknown> = {}
-    if (ssCity.trim()) filters.city = ssCity.trim()
-    const minPrice = Number(ssMinPrice)
-    if (ssMinPrice.trim() && Number.isFinite(minPrice) && minPrice > 0) filters.minPrice = minPrice
-    const maxPrice = Number(ssMaxPrice)
-    if (ssMaxPrice.trim() && Number.isFinite(maxPrice) && maxPrice > 0) filters.maxPrice = maxPrice
-    if (ssBeds !== 'any') filters.beds = Number(ssBeds)
-    if (ssBaths !== 'any') filters.baths = Number(ssBaths)
-    if (ssPropertyType !== 'any') filters.propertyType = ssPropertyType
-    return filters
-  }
-
   const onEnqueued = (res: BulkEnqueueResult) => {
     if (!res.ok) { setError(res.error); return }
     setJobId(res.jobId)
@@ -367,149 +242,49 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
     startTransition(() => router.refresh())
   }
 
+  // Context every spec's Fields / validate / run reads from — the picker data
+  // this component already receives as props, plus the live selection state.
+  const ctx: BulkCtx = {
+    selectedIds,
+    selectedRows,
+    brokers,
+    stages,
+    tags,
+    reportAreas,
+    emailTemplates,
+    sequences,
+    ponds,
+    sources,
+    legacyResult,
+  }
+
   const run = () => {
     if (!open) return
+    const spec = BULK_ACTION_REGISTRY[open]
     setError(null)
     const sel = buildSelection()
     startTransition(async () => {
-      switch (open) {
-        case 'assign_broker': {
-          if (!broker) { setError('Pick a broker'); return }
-          onEnqueued(await bulkAssignBrokerAction(sel, broker))
-          return
-        }
-        case 'add_tag': {
-          if (!tag.trim()) { setError('Pick or type a tag'); return }
-          onEnqueued(await bulkAddTagAction(sel, tag.trim()))
-          return
-        }
-        case 'remove_tag': {
-          if (!tag.trim()) { setError('Pick or type a tag'); return }
-          onEnqueued(await bulkRemoveTagAction(sel, tag.trim()))
-          return
-        }
-        case 'set_stage': {
-          if (!stage) { setError('Pick a stage'); return }
-          onEnqueued(await bulkSetStageAction(sel, stage))
-          return
-        }
-        case 'enroll_workflow': {
-          const id = Number(sequenceId)
-          if (!id) { setError('Pick a workflow'); return }
-          onEnqueued(await bulkEnrollWorkflowAction(sel, id))
-          return
-        }
-        case 'set_report_subscription': {
-          const areas = Array.from(reportAreaKeys)
-          if (reportActive && areas.length === 0) { setError('Pick at least one area'); return }
-          onEnqueued(await bulkSetReportSubscriptionAction(sel, {
-            areas, frequency: reportFrequency, isActive: reportActive,
-          }))
-          return
-        }
-        case 'email_cohort': {
-          const tId = templateId.trim()
-          if (!tId && !(subject.trim() && body.trim())) {
-            setError('Pick a template, or write a subject and body')
-            return
-          }
-          onEnqueued(await bulkEmailCohortAction(sel, {
-            templateId: tId || undefined,
-            subject: subject.trim() || undefined,
-            body: body || undefined,
-          }))
-          return
-        }
-        // Legacy — ids only, not a bulk-job kind.
-        case 'newsletter': {
-          const res = await adminBulkAssignNewsletterAction(
-            selectedIds,
-            segment as 'general' | 'buyer' | 'seller' | 'past-client',
-          )
-          if (!res.ok) { setError(res.error ?? 'Could not add to the newsletter'); return }
-          setError(null)
-          setLegacyResult({ assigned: res.assigned ?? 0, skipped: res.skipped ?? 0 })
-          onClear()
-          startTransition(() => router.refresh())
-          return
-        }
-        case 'saved_search': {
-          const filters = buildSavedSearchFilters()
-          if (Object.keys(filters).length === 0) {
-            setError('Add at least one search filter first')
-            return
-          }
-          onEnqueued(await bulkAssignSavedSearchAction(sel, {
-            filters,
-            name: ssName.trim() || undefined,
-            frequency: ssFrequency,
-          }))
-          return
-        }
-        case 'delete_contacts': {
-          onEnqueued(await bulkDeleteAction(buildSelection()))
-          return
-        }
-        // §14.3 mass actions (05-people-list spec)
-        case 'set_source': {
-          if (!source.trim()) { setError('Pick or type a source'); return }
-          onEnqueued(await bulkSetSourceAction(sel, source.trim()))
-          return
-        }
-        case 'set_timeframe': {
-          if (!timeframe) { setError('Pick a timeframe'); return }
-          onEnqueued(await bulkSetTimeframeAction(sel, timeframe))
-          return
-        }
-        case 'set_lender': {
-          if (!lender.trim()) { setError('Type a lender name'); return }
-          onEnqueued(await bulkSetLenderAction(sel, lender.trim()))
-          return
-        }
-        case 'assign_pond': {
-          const id = Number(pondId)
-          if (!id) { setError('Pick a pond'); return }
-          onEnqueued(await bulkAssignPondAction(sel, id))
-          return
-        }
-        case 'add_collaborator': {
-          if (!collabBroker) { setError('Pick a broker'); return }
-          onEnqueued(await bulkAddCollaboratorAction(sel, collabBroker))
-          return
-        }
-        case 'remove_collaborator': {
-          if (!collabBroker) { setError('Pick a broker'); return }
-          onEnqueued(await bulkRemoveCollaboratorAction(sel, collabBroker))
-          return
-        }
-        case 'merge_people': {
-          const survivorId = Number(mergeSurvivorId)
-          if (!survivorId) { setError('Pick the surviving contact'); return }
-          const mergedIds = selectedIds.filter((id) => id !== survivorId)
-          const res = await bulkMergePeopleAction({ survivorId, mergedIds })
-          if (!res.ok) { setError(res.error); return }
-          setError(null)
-          setLegacyResult({ assigned: res.merged, skipped: selectedIds.length - 1 - res.merged })
-          onClear()
-          startTransition(() => router.refresh())
-          return
-        }
+      const validationError = spec.validate ? spec.validate(values, ctx) : null
+      if (validationError) { setError(validationError); return }
+      const outcome = await spec.run(values, sel, ctx)
+      if (outcome.mode === 'job') {
+        onEnqueued(outcome.result)
+        return
       }
+      // Legacy actions (newsletter, merge_people): report the count, clear the
+      // selection, and refresh — but leave the dialog open showing "Done."
+      if (!outcome.result.ok) { setError(outcome.result.error); return }
+      setError(null)
+      setLegacyResult({ assigned: outcome.result.assigned, skipped: outcome.result.skipped })
+      onClear()
+      startTransition(() => router.refresh())
     })
   }
 
-  const toggleArea = (key: string) => {
-    setReportAreaKeys((prev) => {
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
-  }
-
+  const currentSpec = open ? BULK_ACTION_REGISTRY[open] : null
   const actingCount = scope === 'ids' ? idCount : matchingTotal
-  const isLegacy = open === 'newsletter' || open === 'merge_people'
-  const isDelete = open === 'delete_contacts'
+  const isLegacy = currentSpec ? !currentSpec.jobKind : false
+  const isDelete = currentSpec?.dangerous === true
 
   return (
     <>
@@ -658,7 +433,7 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
       <Dialog open={open !== null} onOpenChange={(o) => { if (!o) closeDialog() }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{open ? ACTION_TITLE[open] : ''}</DialogTitle>
+            <DialogTitle>{currentSpec?.title ?? ''}</DialogTitle>
             <DialogDescription>
               {legacyResult
                 ? `Done. ${legacyResult.assigned} ${open === 'merge_people' ? 'merged' : 'added'}, ${legacyResult.skipped} skipped.`
@@ -690,230 +465,11 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
             </div>
           ) : null}
 
-          {/* Per-action form body */}
+          {/* Per-action form body — one small colocated spec per action, see
+              bulk/registry.tsx. */}
           <div className="space-y-3">
-            {open === 'assign_broker' ? (
-              <FormSelect label="Broker" value={broker} onChange={setBroker} placeholder="Pick a broker" options={brokers} />
-            ) : null}
-
-            {open === 'add_tag' || open === 'remove_tag' ? (
-              <FormSelect label="Tag" value={tag} onChange={setTag} placeholder="Pick a tag" options={tags} />
-            ) : null}
-
-            {open === 'set_stage' ? (
-              <FormSelect label="Stage" value={stage} onChange={setStage} placeholder="Pick a stage" options={stages} />
-            ) : null}
-
-            {open === 'enroll_workflow' ? (
-              <FormSelect
-                label="Workflow"
-                value={sequenceId}
-                onChange={setSequenceId}
-                placeholder="Pick a workflow"
-                options={sequences.map((s) => ({ key: String(s.id), label: s.name }))}
-              />
-            ) : null}
-
-            {open === 'email_cohort' ? (
-              <>
-                <FormSelect
-                  label="Template (optional)"
-                  value={templateId}
-                  onChange={setTemplateId}
-                  placeholder="Pick a template, or write below"
-                  options={emailTemplates.filter((t) => t.channel === 'email').map((t) => ({ key: String(t.id), label: t.name }))}
-                />
-                {!templateId ? (
-                  // The canonical email editing surface — same interface as
-                  // every other email send (the bulk pipeline resolves its own
-                  // tokens, so the CRM merge dropdown is hidden).
-                  <EmailBodyEditor
-                    subject={subject}
-                    onSubjectChange={setSubject}
-                    body={body}
-                    onBodyChange={setBody}
-                    signatureHtml={null}
-                    hideMergeFields
-                  />
-                ) : null}
-              </>
-            ) : null}
-
-            {open === 'set_report_subscription' ? (
-              <>
-                <Label className="flex items-center gap-2 text-sm">
-                  <Checkbox checked={reportActive} onCheckedChange={(v) => setReportActive(v === true)} />
-                  Turn the subscription on
-                </Label>
-                {reportActive ? (
-                  <>
-                    <div>
-                      <Label className="mb-1.5 block text-xs text-muted-foreground">Areas</Label>
-                      <div className="max-h-40 space-y-1.5 overflow-y-auto no-scrollbar rounded-md border border-border p-2">
-                        {reportAreas.map((a) => (
-                          <Label key={a.key} className="flex items-center gap-2 text-sm font-normal">
-                            <Checkbox checked={reportAreaKeys.has(a.key)} onCheckedChange={() => toggleArea(a.key)} />
-                            {a.label}
-                          </Label>
-                        ))}
-                      </div>
-                    </div>
-                    <FormSelect
-                      label="Frequency"
-                      value={reportFrequency}
-                      onChange={setReportFrequency}
-                      placeholder="Frequency"
-                      options={[{ key: 'monthly', label: 'Monthly' }, { key: 'weekly', label: 'Weekly' }]}
-                    />
-                  </>
-                ) : null}
-              </>
-            ) : null}
-
-            {open === 'newsletter' ? (
-              <FormSelect label="Segment" value={segment} onChange={setSegment} placeholder="Segment" options={NEWSLETTER_SEGMENTS} />
-            ) : null}
-
-            {open === 'saved_search' ? (
-              <>
-                <div>
-                  <Label htmlFor="bulk-ss-name" className="mb-1.5 block text-xs text-muted-foreground">Search name (optional)</Label>
-                  <Input id="bulk-ss-name" value={ssName} onChange={(e) => setSsName(e.target.value)} placeholder="Bend under 600k" className="h-10 md:h-9" />
-                </div>
-                <FormSelect
-                  label="Alert frequency"
-                  value={ssFrequency}
-                  onChange={setSsFrequency}
-                  placeholder="Frequency"
-                  options={[{ key: 'daily', label: 'Daily' }, { key: 'weekly', label: 'Weekly' }]}
-                />
-                <div>
-                  <Label htmlFor="bulk-ss-city" className="mb-1.5 block text-xs text-muted-foreground">City</Label>
-                  <Input id="bulk-ss-city" value={ssCity} onChange={(e) => setSsCity(e.target.value)} placeholder="Bend" className="h-10 md:h-9" />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label htmlFor="bulk-ss-min-price" className="mb-1.5 block text-xs text-muted-foreground">Min price</Label>
-                    <Input
-                      id="bulk-ss-min-price" type="number" inputMode="numeric" min={0}
-                      value={ssMinPrice} onChange={(e) => setSsMinPrice(e.target.value)}
-                      placeholder="500000" className="h-10 md:h-9"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="bulk-ss-max-price" className="mb-1.5 block text-xs text-muted-foreground">Max price</Label>
-                    <Input
-                      id="bulk-ss-max-price" type="number" inputMode="numeric" min={0}
-                      value={ssMaxPrice} onChange={(e) => setSsMaxPrice(e.target.value)}
-                      placeholder="900000" className="h-10 md:h-9"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <FormSelect
-                    label="Min beds"
-                    value={ssBeds}
-                    onChange={setSsBeds}
-                    placeholder="Any"
-                    options={[
-                      { key: 'any', label: 'Any' },
-                      { key: '1', label: '1+' },
-                      { key: '2', label: '2+' },
-                      { key: '3', label: '3+' },
-                      { key: '4', label: '4+' },
-                      { key: '5', label: '5+' },
-                    ]}
-                  />
-                  <FormSelect
-                    label="Min baths"
-                    value={ssBaths}
-                    onChange={setSsBaths}
-                    placeholder="Any"
-                    options={[
-                      { key: 'any', label: 'Any' },
-                      { key: '1', label: '1+' },
-                      { key: '2', label: '2+' },
-                      { key: '3', label: '3+' },
-                      { key: '4', label: '4+' },
-                    ]}
-                  />
-                </div>
-                <FormSelect
-                  label="Property type"
-                  value={ssPropertyType}
-                  onChange={setSsPropertyType}
-                  placeholder="All types"
-                  options={[
-                    { key: 'any', label: 'All types' },
-                    ...PROPERTY_TYPES.filter((t) => t.value !== '').map((t) => ({ key: t.value, label: t.label })),
-                  ]}
-                />
-                <p className="text-xs text-muted-foreground" aria-live="polite">
-                  Alerts will match {getFiltersSummary(buildSavedSearchFilters())}
-                </p>
-              </>
-            ) : null}
-
-            {open === 'set_source' ? (
-              sources.length > 0 ? (
-                <FormSelect label="Lead source" value={source} onChange={setSource} placeholder="Pick a source" options={sources} />
-              ) : (
-                <div>
-                  <Label htmlFor="bulk-source" className="mb-1.5 block text-xs text-muted-foreground">Lead source</Label>
-                  <Input id="bulk-source" value={source} onChange={(e) => setSource(e.target.value)} placeholder="Referral" className="h-10 md:h-9" />
-                </div>
-              )
-            ) : null}
-
-            {open === 'set_timeframe' ? (
-              <FormSelect
-                label="Timeframe"
-                value={timeframe}
-                onChange={setTimeframe}
-                placeholder="Pick a timeframe"
-                options={TIMEFRAME_OPTIONS.map((t) => ({ key: t, label: t }))}
-              />
-            ) : null}
-
-            {open === 'set_lender' ? (
-              <div>
-                <Label htmlFor="bulk-lender" className="mb-1.5 block text-xs text-muted-foreground">Lender name</Label>
-                <Input id="bulk-lender" value={lender} onChange={(e) => setLender(e.target.value)} placeholder="Lender or loan officer" className="h-10 md:h-9" />
-              </div>
-            ) : null}
-
-            {open === 'assign_pond' ? (
-              <FormSelect
-                label="Pond"
-                value={pondId}
-                onChange={setPondId}
-                placeholder="Pick a pond"
-                options={ponds}
-              />
-            ) : null}
-
-            {open === 'add_collaborator' || open === 'remove_collaborator' ? (
-              <FormSelect label="Broker" value={collabBroker} onChange={setCollabBroker} placeholder="Pick a broker" options={brokers} />
-            ) : null}
-
-            {open === 'merge_people' && !legacyResult ? (
-              <div>
-                <Label className="mb-1.5 block text-xs text-muted-foreground">
-                  Surviving contact (the {idCount - 1} other {idCount === 2 ? 'contact keeps' : 'contacts keep'} nothing. Timeline, tasks and workflows move to the survivor, duplicates are archived to Trash)
-                </Label>
-                <Select value={mergeSurvivorId} onValueChange={setMergeSurvivorId}>
-                  <SelectTrigger className="h-10 md:h-9">
-                    <SelectValue placeholder="Pick the survivor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {selectedRows
-                      .filter((r) => selectedIds.includes(r.id))
-                      .map((r) => (
-                        <SelectItem key={r.id} value={String(r.id)}>{r.name ?? `Contact #${r.id}`}</SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {currentSpec?.Fields ? (
+              <currentSpec.Fields value={values} onChange={setValues} ctx={ctx} />
             ) : null}
 
             {error ? <p className="text-xs text-destructive" role="alert">{error}</p> : null}
@@ -944,34 +500,3 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
 })
 
 export default BulkActions
-
-/** A small labeled select used by most action forms. */
-function FormSelect({
-  label, value, onChange, placeholder, options,
-}: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  placeholder: string
-  options: BulkPickerOption[]
-}) {
-  return (
-    <div>
-      <Label className="mb-1.5 block text-xs text-muted-foreground">{label}</Label>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="h-10 md:h-9">
-          <SelectValue placeholder={placeholder} />
-        </SelectTrigger>
-        <SelectContent>
-          {options.length === 0 ? (
-            <SelectItem value="__none" disabled>None available</SelectItem>
-          ) : (
-            options.map((o) => (
-              <SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>
-            ))
-          )}
-        </SelectContent>
-      </Select>
-    </div>
-  )
-}
