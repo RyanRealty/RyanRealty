@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.820.2 (2026-07-19)
+
+### Bug Fixes
+- fix(cma): remove duplicate broker signature from every CMA/audit
+
+---
+
+
 ## v1.820.1 (2026-07-18)
 
 ### Bug Fixes
