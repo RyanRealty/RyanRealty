@@ -59,7 +59,7 @@
     "lib/marketing-brain/generate-briefs.ts": 2884,
     "lib/marketing-brain/measurement-loop.ts": 948,
     "lib/marketing-brain/platform-trends.ts": 743,
-    "lib/meta-graph.ts": 1192,
+    "lib/meta-graph.ts": 1206,
     "lib/search/field-registry.ts": 1082,
     "lib/spark.ts": 721,
     "lib/x.ts": 787

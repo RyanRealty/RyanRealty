@@ -795,7 +795,15 @@ export async function getPagePostsWithInsights(
           post_reactions_by_type_total: insightMap['post_reactions_by_type_total'] ?? 0,
           post_clicks: insightMap['post_clicks'] ?? 0,
         }
-      } catch {
+      } catch (err) {
+        // §0 data-accuracy: a swallowed error used to write a SILENT false 0 to
+        // marketing_channel_daily with no trace. Log loudly so a corrupted row is
+        // auditable. (0-vs-null honesty needs a nullable value column + reporting
+        // aggregation change — tracked follow-up.)
+        console.error(
+          `[meta-graph] getPagePostsWithInsights: insights failed for post ${post.id}, recording 0 (UNVERIFIED)`,
+          err instanceof Error ? err.message : err
+        )
         return {
           id: post.id,
           created_time: post.created_time,
@@ -942,7 +950,13 @@ export async function getIGMediaWithInsights(
           engagement: insightMap['engagement'] ?? 0,
           saved: insightMap['saved'] ?? 0,
         }
-      } catch {
+      } catch (err) {
+        // §0 data-accuracy: log the failure instead of silently writing a false 0
+        // to marketing_channel_daily (see getPagePostsWithInsights above).
+        console.error(
+          `[meta-graph] getIGMediaWithInsights: insights failed for media ${media.id}, recording 0 (UNVERIFIED)`,
+          err instanceof Error ? err.message : err
+        )
         return {
           id: media.id,
           timestamp: media.timestamp,

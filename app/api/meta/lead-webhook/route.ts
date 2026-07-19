@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import { sendEvent } from '@/lib/followupboss'
@@ -775,11 +775,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false }, { status: 400 })
   }
 
-  // Meta requires a fast 200 response — process async, return immediately
-  // We respond 200 first, then process. This prevents Meta retry storms.
-
-  // Fire-and-forget processing (errors are caught internally)
-  void (async () => {
+  // Meta requires a fast 200 response — process AFTER responding. `after()`
+  // (next/server) keeps the work alive past the flushed response on Vercel;
+  // a bare fire-and-forget IIFE can be frozen/recycled once the response ships,
+  // silently dropping a paid FB/IG lead (CRM contact + CMA + hot-lead task).
+  after(async () => {
     try {
       const entries = payload.entry || []
       for (const entry of entries) {
@@ -799,7 +799,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     } catch (err) {
       console.error('[lead-webhook] Unhandled error during async processing:', err)
     }
-  })()
+  })
 
   // Return 200 immediately so Meta doesn't retry
   return NextResponse.json({ ok: true })
