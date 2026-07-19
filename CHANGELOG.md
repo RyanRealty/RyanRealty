@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.821.4 (2026-07-19)
+
+### Bug Fixes
+- fix(audit): #3b hardened HTTP primitive + createServiceClient adoption; #5 resolveSlug memo
+
+---
+
+
 ## v1.821.3 (2026-07-19)
 
 ### Maintenance
