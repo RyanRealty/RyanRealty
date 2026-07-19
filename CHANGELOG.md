@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.821.7 (2026-07-19)
+
+### Maintenance
+- refactor(audit): #1b shared terminal-status classifier; #4 dead-scaffolding purge; #3b twilio-conversations timeout
+
+---
+
+
 ## v1.821.6 (2026-07-19)
 
 ### Maintenance
