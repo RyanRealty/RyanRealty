@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.821.3 (2026-07-19)
+
+### Maintenance
+- refactor(audit): #7b — decompose BulkActions + AdminBrokerForm god-components
+
+---
+
+
 ## v1.821.2 (2026-07-19)
 
 ### Bug Fixes
