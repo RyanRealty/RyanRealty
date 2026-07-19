@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.821.1 (2026-07-19)
+
+### Bug Fixes
+- fix(audit): Tier-1 remediation — sync data-loss, cron auth, DAL perf, card tokens
+
+---
+
+
 ## v1.821.0 (2026-07-19)
 
 ### Features
