@@ -2613,9 +2613,6 @@ export async function getListingKeysWithRecentPriceChange(withinDays = PRICE_CHA
 
 /* ---------- Brokerage (Ryan Realty) listings ---------- */
 
-/** Same columns as HOME_TILE_SELECT — brokerage slider is ListingTile only. */
-const BROKERAGE_TILE_SELECT = HOME_TILE_SELECT
-
 /**
  * Get listings from Ryan Realty's brokerage.
  * Returns listings across all statuses (Active first, then Pending, then Closed).
@@ -2628,11 +2625,6 @@ const BROKERAGE_TILE_SELECT = HOME_TILE_SELECT
 async function _getBrokerageListingsUncached(
   officeName: string = 'Ryan Realty'
 ): Promise<HomeTileRow[]> {
-  const supabase = getServiceSupabase()
-  if (!supabase) return []
-
-  void supabase
-  void BROKERAGE_TILE_SELECT
   const { getBrokerageListingTiles } = await import('@/lib/data')
   const data = await getBrokerageListingTiles({ officeName, limit: 30 })
   const rows = data as unknown as HomeTileRow[]

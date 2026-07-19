@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { isTerminalStatus } from '@/lib/sync/terminalStatus'
 import {
   fetchSparkListingHistory,
   fetchSparkPriceHistory,
@@ -67,11 +68,6 @@ function getSupabase() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url?.trim() || !key?.trim()) return null
   return createClient(url, key)
-}
-
-function isTerminalStatus(s: string | null | undefined): boolean {
-  const t = String(s ?? '').toLowerCase()
-  return /closed/.test(t) || /expired/.test(t) || /withdrawn/.test(t) || /cancel/.test(t)
 }
 
 async function fetchSparkDelta(accessToken: string, sinceIso: string, page: number) {

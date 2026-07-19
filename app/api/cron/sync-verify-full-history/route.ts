@@ -2,14 +2,10 @@ import { NextResponse } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { fetchSparkListingHistory, fetchSparkPriceHistory, type SparkListingHistoryItem } from '@/lib/spark'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
+import { isTerminalStatus } from '@/lib/sync/terminalStatus'
 
 /** Spark history per listing can exceed default serverless limits; raise on Vercel Pro+. */
 export const maxDuration = 300
-
-function isTerminalStatus(status: string | null | undefined): boolean {
-  const t = String(status ?? '').toLowerCase()
-  return /closed/.test(t) || /expired/.test(t) || /withdrawn/.test(t) || /cancel/.test(t)
-}
 
 /** PostgREST OR filter aligned with isTerminalStatus (terminal rows only — avoids wasting batch limit). */
 const TERMINAL_STATUS_OR_FILTER =

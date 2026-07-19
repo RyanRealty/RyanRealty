@@ -1,6 +1,7 @@
 'use server'
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { isTerminalStatus } from '@/lib/sync/terminalStatus'
 import {
   fetchSparkListingsPage,
   fetchSparkListingHistory,
@@ -1115,11 +1116,6 @@ function buildTerminalScopedStatusOr(params: {
     ...nonClosedTerms('Withdrawn'),
     ...nonClosedTerms('Cancel'),
   ].join(',')
-}
-
-function isTerminalStatus(s: string | null | undefined): boolean {
-  const t = String(s ?? '').toLowerCase()
-  return /closed/.test(t) || /expired/.test(t) || /withdrawn/.test(t) || /cancel/.test(t)
 }
 
 function inIsoRange(raw: string | null | undefined, fromIso?: string | null, toIsoExclusive?: string | null): boolean {
