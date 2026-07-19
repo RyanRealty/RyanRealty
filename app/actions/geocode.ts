@@ -1,5 +1,5 @@
 'use server'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 
 const GEOCODE_URL = 'https://maps.googleapis.com/maps/api/geocode/json'
 const MAX_GEOCODE_BATCH = 10
@@ -25,7 +25,7 @@ export async function getGeocodedListings<T extends GeocodeListingInput>(listing
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   const supabase =
     supabaseUrl?.trim() && serviceKey?.trim()
-      ? createClient(supabaseUrl, serviceKey)
+      ? createServiceClient()
       : null
 
   let geocodeAttempts = 0

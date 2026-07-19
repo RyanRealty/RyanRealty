@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
@@ -11,10 +11,11 @@ import { logAdminAction } from '@/app/actions/log-admin-action'
 export type SitePageContent = { title: string; body_html: string } | null
 
 const serviceSupabase = () => {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) return null
-  return createServiceClient(url, key)
+  try {
+    return createServiceClient()
+  } catch {
+    return null
+  }
 }
 
 /** Get editable content for a site page by key (about, sell, contact, etc.). */

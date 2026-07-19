@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 import {
   fetchSparkListingsPage,
   fetchSparkListingHistory,
@@ -140,7 +140,7 @@ export async function syncSparkListings(options?: {
     }
   }
 
-  const supabase = createClient(supabaseUrl, supabaseServiceKey)
+  const supabase = createServiceClient()
 
   const maxPages = options?.maxPages ?? 999
   const pageSize = options?.pageSize ?? 100
@@ -617,7 +617,7 @@ export async function syncSparkListingsDelta(options?: {
       error: 'Missing Supabase env vars',
     }
   }
-  const supabase = createClient(supabaseUrl, serviceKey)
+  const supabase = createServiceClient()
   const maxPages = options?.maxPages ?? 50
   const pageSize = options?.pageSize ?? 100
 
@@ -952,7 +952,7 @@ export async function syncPhotosOnly(options?: {
       error: 'Missing Supabase env vars',
     }
   }
-  const supabase = createClient(supabaseUrl, serviceKey)
+  const supabase = createServiceClient()
   const maxPages = options?.maxPages ?? 999
   const pageSize = options?.pageSize ?? 100
   let currentPage = Math.max(1, options?.startPage ?? 1)
@@ -1198,7 +1198,7 @@ export async function syncListingHistory(options?: {
       error: 'Missing Supabase env vars',
     }
   }
-  const supabase = createClient(supabaseUrl, serviceKey)
+  const supabase = createServiceClient()
   const limit = Math.min(options?.limit ?? 50, 200)
   const offset = Math.max(0, options?.offset ?? 0)
   const activeAndPendingOnly = options?.activeAndPendingOnly !== false
@@ -1607,7 +1607,6 @@ export async function testListingHistory(listingKey?: string | null): Promise<Te
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   let keyToUse = (listingKey ?? '').trim()
   if (!keyToUse && supabaseUrl?.trim() && serviceKey?.trim()) {
-    void createClient
     const { getAnyListingKey } = await import('@/lib/data')
     const row = await getAnyListingKey()
     keyToUse = (row?.ListingKey ?? row?.ListNumber ?? '').toString().trim()

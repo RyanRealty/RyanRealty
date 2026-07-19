@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 import { cityEntityKey } from '../../lib/slug'
 import { getMarketReportData, type MarketReportByCity } from './market-reports'
 import {
@@ -268,7 +268,7 @@ export async function generateWeeklyMarketReport(): Promise<
   if (banner) {
     imagePath = `reports/${slug}.png`
     try {
-      const supabase = createClient(supabaseUrl, serviceKey)
+      const supabase = createServiceClient()
       const { data: buckets } = await supabase.storage.listBuckets()
       if (!buckets?.some((b) => b.name === BUCKET)) {
         await supabase.storage.createBucket(BUCKET, { public: true })
@@ -283,7 +283,7 @@ export async function generateWeeklyMarketReport(): Promise<
     }
   }
 
-  const supabase = createClient(supabaseUrl, serviceKey)
+  const supabase = createServiceClient()
   const { error: insertErr } = await supabase.from('market_reports').upsert(
     {
       slug,

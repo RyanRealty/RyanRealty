@@ -1,6 +1,7 @@
 'use server'
 
-import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 import { unstable_cache } from 'next/cache'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
@@ -30,17 +31,18 @@ const DEFAULT_ID = 'a0000000-0000-0000-0000-000000000001'
 const LOGO_BUCKET = 'branding'
 
 function getServiceSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) return null
-  return createServiceClient(url, key)
+  try {
+    return createServiceClient()
+  } catch {
+    return null
+  }
 }
 
 function getAnonSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url?.trim() || !anonKey?.trim()) return null
-  return createServiceClient(url, anonKey)
+  return createSupabaseClient(url, anonKey)
 }
 
 async function _getBrokerageSettingsUncached(): Promise<BrokerageSettingsRow | null> {

@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 import { incrementListingSaveCount, decrementListingSaveCount } from '@/app/actions/engagement'
 import { unlikeListing } from '@/app/actions/likes'
 import { normalizeListingKey, planSavedHomeRemoval } from '@/lib/saved-home-toggle'
@@ -131,7 +131,7 @@ export async function getSavedListingCount(listingKey: string): Promise<number> 
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url?.trim() || !serviceKey?.trim() || !listingKey?.trim()) return 0
   const canonicalKey = await resolveCanonicalListingKey(listingKey.trim())
-  const supabase = createServiceClient(url, serviceKey)
+  const supabase = createServiceClient()
   const { count, error } = await supabase
     .from('saved_listings')
     .select('*', { count: 'exact', head: true })

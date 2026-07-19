@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 import { syncSparkListings, syncListingHistory, runOnePageActivePendingSync, syncSparkListingsDelta } from './sync-spark'
 import { recordSyncRun, refreshListingsBreakdown } from './sync-history'
 
@@ -46,7 +46,7 @@ export async function getSyncCursor(): Promise<SyncCursor | null> {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!supabaseUrl?.trim() || !serviceKey?.trim()) return null
 
-  const supabase = createClient(supabaseUrl, serviceKey)
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('sync_cursor')
     .select('phase, next_listing_page, total_listing_pages, next_history_offset, updated_at, run_started_at, run_listings_upserted, run_history_rows, paused, abort_requested, cron_enabled, error')
@@ -96,7 +96,7 @@ export async function runOneFullSyncChunk(): Promise<RunOneChunkResult> {
     return { ok: false, phase: 'listings', done: false, message: 'Supabase not configured.', error: 'Missing env' }
   }
 
-  const supabase = createClient(supabaseUrl, serviceKey)
+  const supabase = createServiceClient()
 
   const { data: cursorRow } = await supabase
     .from('sync_cursor')
@@ -438,7 +438,7 @@ export async function updateSyncCursorAfterListingsComplete(totalListingPages: n
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!supabaseUrl?.trim() || !serviceKey?.trim()) return
-  const supabase = createClient(supabaseUrl, serviceKey)
+  const supabase = createServiceClient()
   await supabase.from('sync_cursor').upsert(
     {
       id: CURSOR_ID,
@@ -457,7 +457,7 @@ export async function updateSyncCursorToIdle(): Promise<void> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!supabaseUrl?.trim() || !serviceKey?.trim()) return
-  const supabase = createClient(supabaseUrl, serviceKey)
+  const supabase = createServiceClient()
   await supabase.from('sync_cursor').upsert(
     {
       id: CURSOR_ID,
@@ -486,7 +486,7 @@ export async function getLastDeltaSyncCompletedAt(): Promise<string | null> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!supabaseUrl?.trim() || !serviceKey?.trim()) return null
-  const supabase = createClient(supabaseUrl, serviceKey)
+  const supabase = createServiceClient()
   const { data } = await supabase
     .from('sync_checkpoints')
     .select('completed_at')
@@ -542,7 +542,7 @@ export async function startRefreshActivePending(): Promise<{ ok: boolean; error?
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!supabaseUrl?.trim() || !serviceKey?.trim()) return { ok: false, error: 'Supabase not configured' }
-  const supabase = createClient(supabaseUrl, serviceKey)
+  const supabase = createServiceClient()
   const now = new Date().toISOString()
   const { error } = await supabase.from('sync_cursor').upsert(
     {
@@ -570,7 +570,7 @@ export async function setSyncPaused(paused: boolean): Promise<{ ok: boolean; err
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!supabaseUrl?.trim() || !serviceKey?.trim()) return { ok: false, error: 'Supabase not configured' }
-  const supabase = createClient(supabaseUrl, serviceKey)
+  const supabase = createServiceClient()
   const { error } = await supabase.from('sync_cursor').update({
     paused,
     updated_at: new Date().toISOString(),
@@ -584,7 +584,7 @@ export async function setSyncAbortRequested(): Promise<{ ok: boolean; error?: st
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!supabaseUrl?.trim() || !serviceKey?.trim()) return { ok: false, error: 'Supabase not configured' }
-  const supabase = createClient(supabaseUrl, serviceKey)
+  const supabase = createServiceClient()
   const { error } = await supabase.from('sync_cursor').update({
     abort_requested: true,
     updated_at: new Date().toISOString(),

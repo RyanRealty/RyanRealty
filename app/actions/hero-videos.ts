@@ -1,8 +1,8 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
 import { generateFlyoverVideo, generateImageToVideo } from '../../lib/grok-video'
 import { refreshPlaceBanner } from './banners'
+import { createServiceClient } from '@/lib/supabase/service'
 
 const BUCKET = 'banners'
 const VIDEO_PREFIX = 'videos'
@@ -58,7 +58,7 @@ export async function generateHeroVideoForPage(params: {
 
   const storagePath = `${VIDEO_PREFIX}/cities/${cityKey}.mp4`
 
-  const supabase = createClient(supabaseUrl, serviceKey)
+  const supabase = createServiceClient()
   const { error: uploadError } = await supabase.storage.from(BUCKET).upload(storagePath, buffer, {
     contentType: 'video/mp4',
     upsert: true,
@@ -123,7 +123,7 @@ export async function refreshHeroMedia(params: {
   const buffer = Buffer.from(await res.arrayBuffer())
   const storagePath = `${VIDEO_PREFIX}/cities/${cityKey}.mp4`
 
-  const supabase = createClient(supabaseUrl, serviceKey)
+  const supabase = createServiceClient()
   const { error: uploadError } = await supabase.storage.from(BUCKET).upload(storagePath, buffer, {
     contentType: 'video/mp4',
     upsert: true,

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 
 /** Community metrics table (not yet in generated Supabase types). Use for insert/update/select. */
 function communityMetrics(supabase: SupabaseClient) {
@@ -137,7 +138,7 @@ export async function toggleCommunityLike(
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url?.trim() || !serviceKey?.trim()) return { liked: false, error: 'Server not configured' }
-  const serviceSupabase = createSupabaseClient(url, serviceKey)
+  const serviceSupabase = createServiceClient()
 
   const liked = await isCommunityLiked(entityKey)
   if (liked) {
@@ -168,7 +169,7 @@ export async function incrementCommunityShare(entityKey: string): Promise<void> 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url?.trim() || !serviceKey?.trim()) return
-  const supabase = createSupabaseClient(url, serviceKey)
+  const supabase = createServiceClient()
   const { data } = await communityMetrics(supabase).select('share_count').eq('entity_key', key).maybeSingle()
   if (data) {
     await communityMetrics(supabase)
@@ -196,7 +197,7 @@ export async function incrementCommunitySaveCount(entityKey: string): Promise<vo
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url?.trim() || !serviceKey?.trim()) return
-  const supabase = createSupabaseClient(url, serviceKey)
+  const supabase = createServiceClient()
   const { data } = await communityMetrics(supabase).select('save_count').eq('entity_key', key).maybeSingle()
   if (data) {
     await communityMetrics(supabase)
@@ -224,7 +225,7 @@ export async function decrementCommunitySaveCount(entityKey: string): Promise<vo
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url?.trim() || !serviceKey?.trim()) return
-  const supabase = createSupabaseClient(url, serviceKey)
+  const supabase = createServiceClient()
   const { data } = await communityMetrics(supabase).select('save_count').eq('entity_key', key).maybeSingle()
   if (data) {
     const cur = (data as { save_count: number }).save_count
