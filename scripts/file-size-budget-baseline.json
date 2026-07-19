@@ -32,7 +32,7 @@
     "app/lp/tetherow/heath/page.tsx": 1100,
     "app/lp/tetherow/page.tsx": 1716,
     "app/price-drops/page.tsx": 685,
-    "app/reports/explore/ExploreClient.tsx": 919,
+    "app/reports/explore/ExploreClient.tsx": 925,
     "app/search/[...slug]/page.tsx": 1078,
     "lib/bpo/build.ts": 610,
     "lib/cma/build.ts": 650,

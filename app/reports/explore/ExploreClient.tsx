@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { marketVerdict } from '@/lib/market/classify'
 import {
   BarChart,
   Bar,
@@ -740,8 +741,13 @@ export default function ExploreClient({
               </Card>
               <Card className="border-border bg-card shadow-sm">
                 <CardContent className="p-4">
-                  <p className="text-sm font-medium text-muted-foreground">Inventory (months)</p>
+                  <p className="text-sm font-medium text-muted-foreground">Months of supply</p>
                   <p className="mt-1 text-2xl font-semibold text-foreground">{metrics.inventory_months ?? '—'}</p>
+                  {metrics.inventory_months != null && (
+                    <p className="mt-0.5 text-xs font-medium text-muted-foreground">
+                      {marketVerdict(metrics.inventory_months).label}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </div>

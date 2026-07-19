@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
+import { marketVerdict } from '@/lib/market/classify'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -151,7 +152,7 @@ export default function ReportsByCityView({
             Housing market metrics
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            {periodStart} - {periodEnd}. Real-time data from MLS.
+            {periodStart} - {periodEnd}. Residential (single-family, condos, townhomes). Real-time data from MLS.
           </p>
         </CardHeader>
         <CardContent className="p-0">
@@ -170,7 +171,7 @@ export default function ReportsByCityView({
                   <TableHead className="text-right font-semibold">$/sq ft</TableHead>
                   <TableHead className="text-right font-semibold">Active listings</TableHead>
                   <TableHead className="text-right font-semibold">Sales (12 mo)</TableHead>
-                  <TableHead className="text-right font-semibold">Inventory (mo)</TableHead>
+                  <TableHead className="text-right font-semibold">Months of supply</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -188,7 +189,14 @@ export default function ReportsByCityView({
                     <TableCell className="text-right tabular-nums">{metrics.current_listings}</TableCell>
                     <TableCell className="text-right tabular-nums">{metrics.sales_12mo}</TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {metrics.inventory_months != null ? String(metrics.inventory_months) : '—'}
+                      {metrics.inventory_months != null ? (
+                        <>
+                          {String(metrics.inventory_months)}
+                          <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                            {marketVerdict(metrics.inventory_months).label}
+                          </span>
+                        </>
+                      ) : '—'}
                     </TableCell>
                   </TableRow>
                 ))}
