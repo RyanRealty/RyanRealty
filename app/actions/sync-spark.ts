@@ -177,7 +177,7 @@ export async function syncSparkListings(options?: {
       const rows = D.Results.map(unifiedSparkToRow)
       totalFetched += rows.length
 
-      const { upsertListingRows, upsertSyncState } = await import('@/lib/data')
+      const { upsertListingRows } = await import('@/lib/data')
       const ignoreDuplicates = options?.insertOnly === true
       for (let i = 0; i < rows.length; i += UPSERT_CHUNK_SIZE) {
         const chunk = rows.slice(i, i + UPSERT_CHUNK_SIZE)
@@ -660,7 +660,6 @@ export async function syncPhotosOnly(options?: {
       error: 'Missing Supabase env vars',
     }
   }
-  const supabase = createServiceClient()
   const maxPages = options?.maxPages ?? 999
   const pageSize = options?.pageSize ?? 100
   let currentPage = Math.max(1, options?.startPage ?? 1)
