@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.822.7 (2026-07-20)
+
+### Maintenance
+- refactor(audit): #1b CUTOVER — both delta-sync lanes now wrap the unified core
+
+---
+
+
 ## v1.822.6 (2026-07-20)
 
 ### Bug Fixes
