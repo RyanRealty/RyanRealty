@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.822.5 (2026-07-20)
+
+### Maintenance
+- chore(cleanup): delete dead BrokerageListingsSlider component
+
+---
+
+
 ## v1.822.4 (2026-07-20)
 
 ### Maintenance
