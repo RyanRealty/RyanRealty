@@ -9,7 +9,7 @@
     "app/actions/listing-detail.ts": 1238,
     "app/actions/listings.ts": 2589,
     "app/actions/sync-full-cron.ts": 605,
-    "app/actions/sync-spark.ts": 1671,
+    "app/actions/sync-spark.ts": 1378,
     "app/actions/tc-envelopes.ts": 761,
     "app/admin/(protected)/broker-dashboard/page.tsx": 671,
     "app/admin/(protected)/crm/[id]/page.tsx": 707,
@@ -61,6 +61,7 @@
     "lib/meta-graph.ts": 1215,
     "lib/search/field-registry.ts": 1082,
     "lib/spark.ts": 734,
+    "lib/sync/deltaSync.ts": 626,
     "lib/x.ts": 787
   },
   "barrels": {

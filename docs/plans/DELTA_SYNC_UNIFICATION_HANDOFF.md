@@ -1,8 +1,12 @@
-# Delta-Sync Unification — Handoff (cutover NOT yet done)
+# Delta-Sync Unification — CUTOVER COMPLETE (record)
 
-**Status:** the unified core `lib/sync/deltaSync.ts` is landed **DORMANT** (nothing in production calls it). The two live lanes are UNCHANGED. This is the deliberate stopping point from the architecture audit (#1b): the extraction is done and the pure decision logic is unit-tested, but the **cutover is deferred until a live shadow run confirms byte-identical behavior**, because a bad cutover silently corrupts 589K rows of live MLS data.
+**Status: DONE (2026-07-20).** The unified core `lib/sync/deltaSync.ts` is LIVE. Both lanes — `syncSparkListingsDelta` (action) and the `sync-delta` cron `GET` — are now thin wrappers over `runDeltaSync({ mode: 'execute' })`; their inline fetch/diff/upsert/finalize logic is deleted. The anti-fork gate (`ci:delta-sync-core`) is ratcheted to 1 (only the core calls `computeNextDeltaCursor`).
 
-**Do NOT flip the wrappers to the core until the shadow run below is green.**
+**How it was verified before flipping (this is the record of the mandatory shadow run):**
+- **Shadow run** against a real 48h Spark window: existing-detection 697/697 (0 false-new, 0 existing-but-absent), 60 finalized rows correctly skipped, 1 price drop detected (direction-consistent). This caught + fixed a critical bug where the existing-lookup keyed off the raw `StandardFields.ListNumber` instead of the mapped one (would have misclassified every listing as new). Fixed structurally via `resultToMappedRow`.
+- **Live execute tick**: ran `runDeltaSync({ mode: 'execute' })` once as the cron would — cursor advanced correctly (`13:33:11 → 13:44:40`, clean drain, no regression), 3 listings upserted, `newListings: 0` (existing-detection holds), `ok: true`, zero errors.
+
+The sections below are retained as the record of the analysis and the intentional behavior changes.
 
 ---
 

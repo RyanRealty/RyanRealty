@@ -7,7 +7,6 @@ import {
   fetchSparkListingHistory,
   fetchSparkPriceHistory,
   fetchSparkHistoricalListings,
-  type SparkListingHistoryItem,
 } from '../../lib/spark'
 import { fetchListings } from '@/lib/spark-odata'
 import type { SparkListing } from '@/lib/spark-odata'
@@ -31,13 +30,6 @@ const SYNC_EXPAND = 'Photos,FloorPlans,Videos,VirtualTours,OpenHouses,Documents'
 /** Upsert in small chunks to avoid Supabase statement timeout (large details JSON). */
 const UPSERT_CHUNK_SIZE = 12
 const UPSERT_CHUNK_SIZE_RETRY = 5
-
-/** Activity event types from sync change detection (Priority 2). */
-const ACTIVITY_NEW_LISTING = 'new_listing'
-const ACTIVITY_PRICE_DROP = 'price_drop'
-const ACTIVITY_STATUS_PENDING = 'status_pending'
-const ACTIVITY_STATUS_CLOSED = 'status_closed'
-const ACTIVITY_STATUS_ACTIVE = 'status_active'
 
 function isLikelyVideoUrl(url: string): boolean {
   const u = url.toLowerCase()
@@ -602,318 +594,33 @@ export async function syncSparkListingsActiveAndPending(): Promise<SyncActivePen
 export async function syncSparkListingsDelta(options?: {
   maxPages?: number
   pageSize?: number
-  /** If set, sync only listings modified after this ISO date. Otherwise use last_delta_sync_at from sync_state (or 24h ago). */
+  /** If set, sync only listings modified after this ISO date. Otherwise the stored last_delta_sync_at cursor (or the core default window). */
   sinceOverride?: string
 }): Promise<SyncDeltaResult> {
-  const accessToken = process.env.SPARK_API_KEY
-  if (!accessToken?.trim()) {
-    return { success: false, message: 'SPARK_API_KEY is not set.', error: 'Missing SPARK_API_KEY' }
-  }
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!supabaseUrl?.trim() || !serviceKey?.trim()) {
-    return {
-      success: false,
-      message: 'Supabase not configured.',
-      error: 'Missing Supabase env vars',
-    }
-  }
-  const supabase = createServiceClient()
-  const maxPages = options?.maxPages ?? 50
-  const pageSize = options?.pageSize ?? 100
-
-  let sinceIso: string
-  if (options?.sinceOverride) {
-    sinceIso = options.sinceOverride
-  } else {
-    const { getSyncState } = await import('@/lib/data')
-    const stateRow = await getSyncState()
-    const lastAt = stateRow?.last_delta_sync_at
-    if (lastAt) {
-      sinceIso = lastAt
-    } else {
-      const t = new Date(Date.now() - 24 * 60 * 60 * 1000)
-      sinceIso = t.toISOString()
-    }
-  }
-  // SparkQL: datetime literals must be unquoted (per Spark API docs; quotes cause 1040 syntax error)
-  const filter = `ModificationTimestamp Gt ${sinceIso.trim()}`
-
-  let totalFetched = 0
-  let totalUpserted = 0
-  let eventsEmitted = 0
-  let historyRowsUpserted = 0
-  let pagesProcessed = 0
-  let currentPage = 1
-  let totalPages = 1
-  const deltaListings: Array<{ key: string; status: string | null }> = []
-  const terminalTransitionKeys = new Set<string>()
-  // Cursor-safety (audit p0.1 — ported from the hardened cron lane in
-  // app/api/cron/sync-delta/route.ts). Advance the delta cursor only as far as we
-  // actually drained, so a maxPages overflow or a failed upsert can't skip rows
-  // forever. runStartedAt is captured BEFORE fetching so rows modified mid-run are
-  // re-picked next tick. Feed is _orderby=+ModificationTimestamp (ascending).
-  const runStartedAt = new Date().toISOString()
-  let maxProcessedTs: string | null = null
-  let upsertFailed = false
-
+  // Thin wrapper over the unified delta-sync core (lib/sync/deltaSync.ts). The
+  // fetch -> diff -> upsert -> finalize logic is shared with the cron lane
+  // (app/api/cron/sync-delta) so the two lanes can never drift. See
+  // docs/plans/DELTA_SYNC_UNIFICATION_HANDOFF.md.
   try {
-    while (currentPage <= totalPages && pagesProcessed < maxPages) {
-      const response = await fetchSparkListingsPage(accessToken, {
-        page: currentPage,
-        limit: pageSize,
-        filter,
-        orderby: '+ModificationTimestamp',
-        expand: SYNC_EXPAND,
-      })
-      const D = response.D
-      if (!D?.Success || !D.Results?.length) {
-        if (pagesProcessed === 0) {
-          const { upsertSyncState } = await import('@/lib/data')
-          await upsertSyncState({
-            last_delta_sync_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          return {
-            success: true,
-            message: 'Delta sync: no changes since last run.',
-            totalFetched: 0,
-            totalUpserted: 0,
-            eventsEmitted: 0,
-            pagesProcessed: 0,
-          }
-        }
-        break
-      }
-      if (D.Pagination) totalPages = D.Pagination.TotalPages
-      const rows = D.Results.map(unifiedSparkToRow) as Array<{
-        ListNumber?: string
-        ListingKey?: string
-        StandardStatus?: string | null
-        ListPrice?: number | null
-        [k: string]: unknown
-      }>
-      // Track the newest ModificationTimestamp actually processed (cursor-safety).
-      for (const row of rows) {
-        const ts = typeof row.ModificationTimestamp === 'string' ? row.ModificationTimestamp : null
-        if (ts && (!maxProcessedTs || ts > maxProcessedTs)) maxProcessedTs = ts
-      }
-      const listNumbers = rows.map((r) => r.ListNumber).filter(Boolean) as string[]
-      const { getExistingListingsByListNumbers, upsertListingRows } = await import('@/lib/data')
-      const existingRows = await getExistingListingsByListNumbers(listNumbers)
-      const existingByNum = new Map<string, { StandardStatus?: string | null; ListPrice?: number | null }>()
-      for (const row of existingRows) {
-        if (row.ListNumber) existingByNum.set(row.ListNumber, { StandardStatus: row.StandardStatus, ListPrice: row.ListPrice })
-      }
-
-      for (let i = 0; i < rows.length; i += UPSERT_CHUNK_SIZE) {
-        const chunk = rows.slice(i, i + UPSERT_CHUNK_SIZE)
-        const result = await upsertListingRows(chunk)
-        if (result.ok) totalUpserted += chunk.length
-        else upsertFailed = true
-      }
-
-      // Collect listing keys + status for history refresh after all pages
-      for (const row of rows) {
-        const key = (row.ListingKey ?? row.ListNumber ?? '').toString().trim()
-        if (key) deltaListings.push({ key, status: row.StandardStatus ?? null })
-      }
-
-      const nowIso = new Date().toISOString()
-      for (const row of rows) {
-        const listNumber = (row.ListNumber ?? '').toString()
-        const listingKey = (row.ListingKey ?? row.ListNumber ?? '').toString()
-        if (!listNumber) continue
-        const existing = existingByNum.get(listNumber)
-        const status = (row.StandardStatus ?? '').toString().toLowerCase()
-        const isPending = /pending/i.test(status)
-        const isClosed = /closed/i.test(status)
-        const isActive = /active/i.test(status) && !isPending
-        const isTerminalNow = isTerminalStatus(status)
-        const newPrice = typeof row.ListPrice === 'number' && !Number.isNaN(row.ListPrice) ? row.ListPrice : null
-
-        const { insertActivityEventRow, updateListingByListNumber } = await import('@/lib/data')
-        if (!existing) {
-          const evRes = await insertActivityEventRow({
-            listing_key: listingKey,
-            event_type: ACTIVITY_NEW_LISTING,
-            event_at: nowIso,
-            payload: { ListNumber: listNumber, City: row.City, SubdivisionName: row.SubdivisionName },
-          })
-          if (evRes.ok) eventsEmitted++
-          if (isTerminalNow && listingKey) terminalTransitionKeys.add(listingKey)
-        } else {
-          const oldStatus = (existing.StandardStatus ?? '').toString().toLowerCase()
-          const oldPending = /pending/i.test(oldStatus)
-          const oldClosed = /closed/i.test(oldStatus)
-          const oldActive = /active/i.test(oldStatus) && !oldPending
-          const oldTerminal = isTerminalStatus(oldStatus)
-          const oldPrice = existing.ListPrice != null && !Number.isNaN(Number(existing.ListPrice)) ? Number(existing.ListPrice) : null
-          if (!oldPending && isPending) {
-            const r = await insertActivityEventRow({
-              listing_key: listingKey,
-              event_type: ACTIVITY_STATUS_PENDING,
-              event_at: nowIso,
-              payload: { ListNumber: listNumber },
-            })
-            if (r.ok) eventsEmitted++
-          }
-          if (!oldClosed && isClosed) {
-            const r = await insertActivityEventRow({
-              listing_key: listingKey,
-              event_type: ACTIVITY_STATUS_CLOSED,
-              event_at: nowIso,
-              payload: { ListNumber: listNumber, ListPrice: newPrice },
-            })
-            if (r.ok) eventsEmitted++
-            await updateListingByListNumber(listNumber, { media_finalized: true })
-          }
-          if (!oldActive && isActive) {
-            const r = await insertActivityEventRow({
-              listing_key: listingKey,
-              event_type: ACTIVITY_STATUS_ACTIVE,
-              event_at: nowIso,
-              payload: { ListNumber: listNumber, previous_status: oldStatus || null },
-            })
-            if (r.ok) eventsEmitted++
-          }
-          if (newPrice != null && oldPrice != null && newPrice < oldPrice) {
-            const r = await insertActivityEventRow({
-              listing_key: listingKey,
-              event_type: ACTIVITY_PRICE_DROP,
-              event_at: nowIso,
-              payload: { ListNumber: listNumber, previous_price: oldPrice, new_price: newPrice },
-            })
-            if (r.ok) eventsEmitted++
-          }
-          if (!oldTerminal && isTerminalNow && listingKey) {
-            terminalTransitionKeys.add(listingKey)
-          }
-        }
-      }
-
-      totalFetched += rows.length
-      pagesProcessed += 1
-      currentPage += 1
-    }
-
-    // --- Terminal-transition snapshot ---
-    // Only listings that JUST transitioned to terminal (Closed/Expired/Withdrawn/Canceled) get the
-    // full snapshot: history pull + aux hydration (Photos/Videos/OpenHouses/etc). Active/pending
-    // listings already have their status/price changes captured via activity_events above — they
-    // don't need a fresh history fetch every 10 min.
-    if (terminalTransitionKeys.size > 0 && accessToken) {
-      const HISTORY_CONCURRENCY = 5
-      const byKey = new Map(deltaListings.map(d => [d.key, d.status]))
-      const uniqueKeys = [...terminalTransitionKeys]
-      let keyIndex = 0
-
-      const historyWorker = async () => {
-        while (keyIndex < uniqueKeys.length) {
-          const idx = keyIndex
-          keyIndex++
-          if (idx >= uniqueKeys.length) break
-          const key = uniqueKeys[idx]!
-          try {
-            let historyItems = await fetchSparkListingHistory(accessToken, key)
-            // Fallback to price history if main history is empty
-            if (historyItems.ok && historyItems.partial !== true && historyItems.items.length === 0) {
-              historyItems = await fetchSparkPriceHistory(accessToken, key)
-            }
-            if (historyItems.items.length > 0) {
-              const historyRows = historyItems.items.map((item) => ({
-                listing_key: key,
-                event_date: item.ModificationTimestamp ?? item.Date ?? new Date().toISOString(),
-                event: item.Event ?? 'FieldChange',
-                description: null,
-                price: typeof item.PriceAtEvent === 'number' ? item.PriceAtEvent : (typeof item.Price === 'number' ? item.Price : null),
-                price_change: typeof item.PriceChange === 'number' ? item.PriceChange : null,
-                raw: item,
-              }))
-              // Delete existing history for this listing and re-insert fresh
-              // (no unique constraint on listing_history, so upsert won't work)
-              const {
-                deleteListingHistoryForKey,
-                insertListingHistoryRows,
-              } = await import('@/lib/data')
-              await deleteListingHistoryForKey(key)
-              const ins = await insertListingHistoryRows(historyRows)
-              if (ins.ok) historyRowsUpserted += historyRows.length
-            }
-            const { getListingFieldsByListingKey, updateListingByListingKey } = await import('@/lib/data')
-            const listingContext = await getListingFieldsByListingKey<{
-              ListingKey?: string
-              PhotoURL?: string | null
-              details?: unknown
-              ListAgentName?: string | null
-              ListOfficeName?: string | null
-            }>(key, 'ListingKey, PhotoURL, details, ListAgentName, ListOfficeName')
-            const auxSync = await syncAuxiliaryTablesForFinalization(
-              supabase,
-              {
-                listingKey: key,
-                photoUrl: listingContext?.PhotoURL ?? null,
-                details: listingContext?.details ?? null,
-                listAgentName: listingContext?.ListAgentName ?? null,
-                listOfficeName: listingContext?.ListOfficeName ?? null,
-              },
-              historyItems.items,
-              { accessToken }
-            )
-            // Only finalize terminal listings (Closed/Expired/Withdrawn/Canceled)
-            const listingStatus = byKey.get(key)
-            if (listingStatus && isTerminalStatus(listingStatus) && historyItems.ok && historyItems.partial !== true && auxSync.ok) {
-              await updateListingByListingKey(key, {
-                history_finalized: true,
-                history_verified_full: true,
-                is_finalized: true,
-              })
-            }
-          } catch {
-            // Don't fail the delta sync if history fetch fails for one listing
-          }
-        }
-      }
-
-      await Promise.all(
-        Array.from({ length: Math.min(HISTORY_CONCURRENCY, uniqueKeys.length) }, () => historyWorker())
-      )
-    }
-
-    // Cursor-safety (audit p0.1): advance the delta cursor only as far as we
-    // actually drained. truncated = exited on the maxPages cap with pages still
-    // remaining. A persist failure holds the cursor so the window is retried.
-    const truncated = pagesProcessed >= maxPages && currentPage <= totalPages
-    const { computeNextDeltaCursor } = await import('@/lib/sync/deltaCursor')
-    const { updateSyncStateLastDelta } = await import('@/lib/data')
-    const nextCursor = computeNextDeltaCursor({ upsertFailed, truncated, runStartedAt, maxProcessedTs })
-    if (nextCursor) await updateSyncStateLastDelta(nextCursor)
-    if (upsertFailed) {
-      console.warn('[syncSparkListingsDelta] upsert failure this run. delta cursor held, window retried next tick')
-    } else if (truncated) {
-      console.warn(`[syncSparkListingsDelta] TRUNCATED at maxPages=${maxPages}/${totalPages}. cursor advanced to ${nextCursor ?? '(unchanged)'} not now()`)
-    }
+    const { runDeltaSync } = await import('@/lib/sync/deltaSync')
+    const r = await runDeltaSync({
+      mode: 'execute',
+      sinceOverride: options?.sinceOverride,
+      maxPages: options?.maxPages,
+      pageSize: options?.pageSize,
+    })
     return {
-      success: true,
-      message: `Delta sync done. ${totalUpserted} updated, ${eventsEmitted} events, ${historyRowsUpserted} history rows.`,
-      totalFetched,
-      totalUpserted,
-      eventsEmitted,
-      historyRowsUpserted,
-      pagesProcessed,
+      success: r.ok,
+      message: `Delta sync done. ${r.totalUpserted} updated, ${r.eventsEmitted} events, ${r.historyRowsInserted} history rows.`,
+      totalFetched: r.totalFetched,
+      totalUpserted: r.totalUpserted,
+      eventsEmitted: r.eventsEmitted,
+      historyRowsUpserted: r.historyRowsInserted,
+      pagesProcessed: r.pages,
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
-    return {
-      success: false,
-      message: `Delta sync failed: ${message}`,
-      totalFetched,
-      totalUpserted,
-      eventsEmitted,
-      historyRowsUpserted,
-      pagesProcessed,
-      error: message,
-    }
+    return { success: false, message: `Delta sync failed: ${message}`, error: message }
   }
 }
 

@@ -6,10 +6,14 @@
  * to now() at the end of a run (that silently skips overflow pages and rows from
  * failed upserts). Every cursor write must go through computeNextDeltaCursor(),
  * which refuses to advance past a truncated window or a failed upsert.
+ *
+ * The cursor write lives in the unified delta-sync core (lib/sync/deltaSync.ts)
+ * since the #1b cutover — both the cron and action lanes are thin wrappers that
+ * no longer touch the cursor directly. Guard the core.
  */
 import { readFileSync } from 'node:fs'
 
-const FILE = 'app/api/cron/sync-delta/route.ts'
+const FILE = 'lib/sync/deltaSync.ts'
 const src = readFileSync(FILE, 'utf8')
 const fails = []
 
