@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.822.4 (2026-07-20)
+
+### Maintenance
+- refactor(audit): #1b extract unified delta-sync core (dormant) + anti-fork gate
+
+---
+
+
 ## v1.822.3 (2026-07-20)
 
 ### Maintenance
