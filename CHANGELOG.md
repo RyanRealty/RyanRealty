@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.822.6 (2026-07-20)
+
+### Bug Fixes
+- fix(sync): delta-sync core existing-detection keyed off wrong ListNumber
+
+---
+
+
 ## v1.822.5 (2026-07-20)
 
 ### Maintenance
