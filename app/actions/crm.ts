@@ -343,9 +343,24 @@ const EMPTY_PERSON_FULL: CrmPersonFull = {
   visitorSessions: 0,
 }
 
+/**
+ * Explicit crm_people projection for the person-360 read. This is `*` minus the
+ * `raw` column (the full FUB import JSON blob), which nothing in the person-detail
+ * page or its panels ever renders (audited 2026-07-19). Every other column is
+ * kept so no typed field or cast-read on the person object can silently blank.
+ * assigned_broker (RBAC scope) and fub_legacy_id (drives the geo/cma/visitor
+ * sub-reads) are load-bearing and stay in the list.
+ */
+const CRM_PERSON_COLUMNS =
+  'id, fub_legacy_id, created_at, updated_at, fub_created_at, fub_updated_at, ' +
+  'first_name, last_name, name, stage, source, source_url, assigned_broker, ' +
+  'assigned_fub_user_id, emails, phones, addresses, tags, custom, background, ' +
+  'price, picture_url, deleted, last_activity_at, pond_id, timeframe, ' +
+  'lender_name, neighborhood_slug, subdivision, is_resort, neighborhood_source'
+
 export async function getCrmPersonFull(id: number): Promise<CrmPersonFull> {
   const sb = createServiceClient()
-  const personQ = await sb.from('crm_people').select('*').eq('id', id).maybeSingle()
+  const personQ = await sb.from('crm_people').select(CRM_PERSON_COLUMNS).eq('id', id).maybeSingle()
   const person = personQ.data as CrmPersonFull['person']
 
   // GAP-0 (highest risk): broker-RBAC gate. A self-guard so the contact 360
