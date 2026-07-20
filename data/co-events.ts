@@ -802,8 +802,11 @@ export const CO_EVENTS: CoEvent[] = [
     lat: 44.2857,
     lng: -120.8339,
     recurrence: 'Annually. Rodeo in late June, horse races in mid-July.',
-    nextConfirmedDate: '2026-07-15',
-    endDate: '2026-07-18',
+    // 2026 instance concluded 2026-07-18; 2027 dates not yet published on the
+    // official site. Null per the schema so the page shows the recurrence
+    // descriptor only and never a past date as upcoming (§0 + freshness).
+    nextConfirmedDate: null,
+    endDate: null,
     organizer: 'Crooked River Roundup Association',
     officialUrl: 'https://crookedriverroundup.com/',
     lastVerified: '2026-07-03',
