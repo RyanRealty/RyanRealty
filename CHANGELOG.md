@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.822.8 (2026-07-20)
+
+### Maintenance
+- chore(sync): drop two pre-existing unused vars in sync-spark.ts
+
+---
+
+
 ## v1.822.7 (2026-07-20)
 
 ### Maintenance
