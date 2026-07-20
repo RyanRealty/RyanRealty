@@ -123,6 +123,17 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100
 }
 
+/**
+ * Map a raw Spark result to the flat listings row. THE single mapping used for
+ * both the existing-lookup key derivation and the diff, so the two can never
+ * key off different ListNumber sources (a real-data-only divergence a synthetic
+ * unit test cannot catch: the raw StandardFields.ListNumber is not the mapped
+ * ListNumber). Every ListNumber the core reads flows through here.
+ */
+export function resultToMappedRow(result: SparkDeltaResult): Record<string, unknown> {
+  return sparkToListingRow(result.StandardFields ?? {}, result.Id)
+}
+
 // ── The pure decision heart (unit-tested) ────────────────────────────────────
 
 /**
@@ -164,7 +175,7 @@ export function computeDeltaPlan(
   for (const result of results) {
     plan.counters.fetched++
     const fields = result.StandardFields ?? {}
-    const row = sparkToListingRow(fields, result.Id)
+    const row = resultToMappedRow(result)
 
     const listNumber = String(row.ListNumber ?? '').trim()
     if (!listNumber) continue // no upsert conflict key -> unpersistable, skip
@@ -370,8 +381,13 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
     page++
   }
 
+  // Derive the existing-lookup keys through resultToMappedRow — the SAME mapping
+  // computeDeltaPlan uses for its lookup. The raw StandardFields.ListNumber is
+  // NOT the mapped ListNumber, so keying off the raw field returned an empty
+  // existing map and misclassified every listing as new. Sharing the mapper makes
+  // the query keys match the lookup keys by construction.
   const listNumbers = results
-    .map((r) => String((r.StandardFields?.ListNumber ?? '') as string).trim())
+    .map((r) => String(resultToMappedRow(r).ListNumber ?? '').trim())
     .filter(Boolean)
   const existingByNum = await loadExistingByNum(listNumbers)
 
