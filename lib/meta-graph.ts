@@ -561,7 +561,9 @@ export async function publishFacebookReel(
   // Phase 2 — transfer: pull full bytes then POST (buffered). Streaming the
   // response body with duplex can fail tsc on RequestInit and has seen Graph
   // "Bad Request" when Content-Length on the source URL is missing or stale.
-  const videoResponse = await fetch(videoUrl)
+  // Idempotent GET download of a source video (can be tens of MB) — longer
+  // timeout than the 15s JSON default; idempotent so the default GET retries apply.
+  const videoResponse = await resilientFetch(videoUrl, { timeoutMs: 60_000 })
   if (!videoResponse.ok) {
     throw new MetaGraphError(`Failed to fetch video from URL: ${videoResponse.statusText}`)
   }
@@ -569,7 +571,10 @@ export async function publishFacebookReel(
   const videoBytes = await videoResponse.arrayBuffer()
   const fileSize = String(videoBytes.byteLength)
 
-  const uploadResponse = await fetch(upload_url, {
+  // POST upload of the full video bytes — resilientFetch defaults a POST to 0
+  // retries so a transfer is never re-sent, and a large upload needs a long
+  // timeout. resilientFetch returns the raw Response so the !ok check is preserved.
+  const uploadResponse = await resilientFetch(upload_url, {
     method: 'POST',
     headers: {
       Authorization: `OAuth ${accessToken}`,
@@ -577,6 +582,7 @@ export async function publishFacebookReel(
       file_size: fileSize,
     },
     body: videoBytes,
+    timeoutMs: 120_000,
   })
 
   if (!uploadResponse.ok) {

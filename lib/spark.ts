@@ -355,14 +355,27 @@ export async function fetchSparkListingsPage(
   const baseQuery = params.toString()
   const filterPart = filter ? `_filter=${encodeURIComponent(filter)}` : ''
   const url = `${SPARK_BASE}/listings?${[baseQuery, filterPart].filter(Boolean).join('&')}`
-  const doFetch = () =>
-    fetch(url, {
-      headers: {
-        Authorization: `${SPARK_AUTH_SCHEME} ${token}`,
-        Accept: 'application/json',
-      },
-      next: { revalidate: 0 },
-    })
+  // Bare per-attempt AbortController timeout so a hung Spark socket fails fast
+  // instead of burning the whole cron budget. Intentionally NOT resilientFetch:
+  // its exponential backoff would fight the fixed 60s 429 rate window below.
+  // 30s is generous for a heavy expanded page yet well inside the function budget.
+  const SPARK_PAGE_TIMEOUT_MS = 30_000
+  const doFetch = async () => {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), SPARK_PAGE_TIMEOUT_MS)
+    try {
+      return await fetch(url, {
+        headers: {
+          Authorization: `${SPARK_AUTH_SCHEME} ${token}`,
+          Accept: 'application/json',
+        },
+        next: { revalidate: 0 },
+        signal: controller.signal,
+      })
+    } finally {
+      clearTimeout(timer)
+    }
+  }
   let res = await doFetch()
   // One 429 backoff, mirroring lib/spark-odata.ts fetchWithRetry. A transient
   // rate-limit must not abort a multi-thousand-page full/delta sync run.

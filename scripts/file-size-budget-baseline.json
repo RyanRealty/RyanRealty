@@ -7,9 +7,9 @@
     "app/actions/crm.ts": 1975,
     "app/actions/dashboard.ts": 955,
     "app/actions/listing-detail.ts": 1238,
-    "app/actions/listings.ts": 2657,
+    "app/actions/listings.ts": 2589,
     "app/actions/sync-full-cron.ts": 605,
-    "app/actions/sync-spark.ts": 1676,
+    "app/actions/sync-spark.ts": 1671,
     "app/actions/tc-envelopes.ts": 761,
     "app/admin/(protected)/broker-dashboard/page.tsx": 671,
     "app/admin/(protected)/crm/[id]/page.tsx": 707,
@@ -58,9 +58,9 @@
     "lib/marketing-brain/generate-briefs.ts": 2884,
     "lib/marketing-brain/measurement-loop.ts": 948,
     "lib/marketing-brain/platform-trends.ts": 743,
-    "lib/meta-graph.ts": 1209,
+    "lib/meta-graph.ts": 1215,
     "lib/search/field-registry.ts": 1082,
-    "lib/spark.ts": 721,
+    "lib/spark.ts": 734,
     "lib/x.ts": 787
   },
   "barrels": {
