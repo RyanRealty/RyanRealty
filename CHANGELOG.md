@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.822.3 (2026-07-20)
+
+### Maintenance
+- refactor(audit): #6 project getCrmPersonFull off select('*') on crm_people
+
+---
+
+
 ## v1.822.2 (2026-07-20)
 
 ### Maintenance
