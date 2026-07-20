@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-19T05:48:23.430Z",
+  "generatedAt": "2026-07-20T05:29:56.027Z",
   "reason": "Audit #4: pages importing read symbols from app/actions instead of @/lib/data. Ratchet — may only shrink as reads migrate to the DAL.",
-  "total": 315,
+  "total": 314,
   "violations": [
     "app/about/page.tsx :: getCitiesForIndex <- @/app/actions/cities",
     "app/account/buying-preferences/page.tsx :: getBuyingPreferences <- @/app/actions/buying-preferences",
@@ -265,7 +265,6 @@
     "app/open-houses/[city]/page.tsx :: getCityFromSlug <- @/app/actions/listings",
     "app/open-houses/[city]/page.tsx :: getOpenHousesWithListings <- @/app/actions/open-houses",
     "app/open-houses/page.tsx :: getOpenHousesWithListings <- @/app/actions/open-houses",
-    "app/our-homes/page.tsx :: getBrokerageListings <- @/app/actions/listings",
     "app/page.tsx :: getCitiesForIndex <- @/app/actions/cities",
     "app/page.tsx :: getCommunitiesForIndex <- @/app/actions/communities",
     "app/pulse/page.tsx :: getPulseCitySnapshots <- @/app/actions/pulse-feed",

@@ -8,6 +8,7 @@ import { HOME_TILE_SELECT } from '@/lib/listing-tile-projections'
 import { getSubdivisionMatchNames } from '../../lib/subdivision-aliases'
 import { getPolygonBounds, isPointInPolygon, type MapPolygonPoint } from '@/lib/map-polygon'
 import { propertyTypeFilterToCodes } from '@/lib/property-type'
+import { isActiveStatus } from '@/lib/listing-status'
 import {
   getCommunityListings as getCommunityListingsDAL,
   getCityListings as getCityListingsDAL,
@@ -30,31 +31,6 @@ function getServiceSupabase(): SupabaseClient | null {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url?.trim() || !key?.trim()) return null
   return createServiceClient()
-}
-
-/**
- * Spark API uses StandardStatus for listing state. We categorize into Spark's three main states:
- * - Active: for sale / available (Spark often sends "Active", "For Sale", "Coming Soon", or null)
- * - Pending: under contract (Spark sends status containing "Pending")
- * - Closed: sold/closed (Spark sends status containing "Closed")
- * We store StandardStatus exactly as Spark sends it; these helpers map to Active/Pending/Closed for display and filtering.
- */
-function isActiveStatus(s: string | null | undefined): boolean {
-  const t = String(s ?? '').trim().toLowerCase()
-  if (t === '') return true
-  if (t === 'active') return true
-  if (t.includes('for sale')) return true
-  if (t.includes('coming soon')) return true
-  return false
-}
-
-function isPendingStatus(s: string | null | undefined): boolean {
-  const t = String(s ?? '').toLowerCase()
-  return /pending/.test(t) || /under contract/.test(t) || /undercontract/.test(t) || /contingent/.test(t)
-}
-
-function isClosedStatus(s: string | null | undefined): boolean {
-  return /closed/i.test(String(s ?? ''))
 }
 
 /** Supabase .or() filter for active listings (matches Spark "active" state). */
@@ -2610,39 +2586,3 @@ export async function getListingKeysWithRecentPriceChange(withinDays = PRICE_CHA
   const since = new Date(Date.now() - withinDays * 24 * 60 * 60 * 1000).toISOString()
   return getListingKeysWithPriceChangeSince(since)
 }
-
-/* ---------- Brokerage (Ryan Realty) listings ---------- */
-
-/**
- * Get listings from Ryan Realty's brokerage.
- * Returns listings across all statuses (Active first, then Pending, then Closed).
- * Canceled listings are excluded from display.
- *
- * Uses service role client because the ListOfficeName ILIKE query on 586K rows
- * exceeds the anon client's statement timeout. This is a public read-only query.
- * Cached for 5 minutes — brokerage listings change infrequently.
- */
-async function _getBrokerageListingsUncached(
-  officeName: string = 'Ryan Realty'
-): Promise<HomeTileRow[]> {
-  const { getBrokerageListingTiles } = await import('@/lib/data')
-  const data = await getBrokerageListingTiles({ officeName, limit: 30 })
-  const rows = data as unknown as HomeTileRow[]
-
-  // Sort: Active first, then Pending, then Closed
-  return rows.sort((a, b) => {
-    const order = (s: string | null | undefined): number => {
-      if (isActiveStatus(s)) return 1
-      if (isPendingStatus(s)) return 2
-      if (isClosedStatus(s)) return 3
-      return 4
-    }
-    return order(a.StandardStatus) - order(b.StandardStatus)
-  })
-}
-
-export const getBrokerageListings = unstable_cache(
-  _getBrokerageListingsUncached,
-  ['brokerage-listings'],
-  { revalidate: 300, tags: ['brokerage-listings'] }
-)

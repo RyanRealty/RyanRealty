@@ -10,8 +10,10 @@
  * doesn't poke `listings` directly.
  */
 
+import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { SERVICE_AREA_CITIES_PROPER } from '@/lib/data/listings/service-area'
+import { isActiveStatus, isPendingStatus, isClosedStatus } from '@/lib/listing-status'
 
 const ACTIVE_OR =
   'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%'
@@ -92,6 +94,32 @@ export async function getBrokerageListingTiles(options: {
   if (error) return []
   return (data ?? []) as unknown as PriceDropTile[]
 }
+
+/**
+ * Cached brokerage listings for one office, sorted Active then Pending then
+ * Closed. Wraps getBrokerageListingTiles (the raw fetch) with the status sort
+ * and a 5-minute cache. Moved out of app/actions/listings.ts so pages read
+ * brokerage inventory through the DAL boundary. Returns PriceDropTile[] (the
+ * tile shape the fetch projects); brokerage listings change infrequently.
+ */
+async function _getBrokerageListingsUncached(
+  officeName: string = 'Ryan Realty'
+): Promise<PriceDropTile[]> {
+  const rows = await getBrokerageListingTiles({ officeName, limit: 30 })
+  const order = (s: string | null | undefined): number => {
+    if (isActiveStatus(s)) return 1
+    if (isPendingStatus(s)) return 2
+    if (isClosedStatus(s)) return 3
+    return 4
+  }
+  return rows.sort((a, b) => order(a.StandardStatus) - order(b.StandardStatus))
+}
+
+export const getBrokerageListings = unstable_cache(
+  _getBrokerageListingsUncached,
+  ['brokerage-listings'],
+  { revalidate: 300, tags: ['brokerage-listings'] }
+)
 
 export async function getPriceDropTiles(options?: {
   city?: string | null

@@ -26,7 +26,7 @@
 
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { getBrokerageListings, type ListingTileRow } from '@/app/actions/listings'
+import { getBrokerageListings, type PriceDropTile } from '@/lib/data'
 import { listingDetailPath, listingsBrowsePath } from '@/lib/slug'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
@@ -57,11 +57,11 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic'
 
-/** Map a ListingTileRow (PascalCase, from getListingsWithAdvanced) to a KB
- *  featured item. Carries every field the prior ListingCard surfaced — price,
- *  address line, city/state + zip + subdivision, beds, baths, sqft, photo, and
- *  the canonical listing detail href. No listing data dropped. */
-function tileToFeaturedItem(listing: ListingTileRow): KbFeaturedItem {
+/** Map a brokerage PriceDropTile (PascalCase, from the DAL getBrokerageListings)
+ *  to a KB featured item. PriceDropTile carries every field the prior ListingCard
+ *  surfaced — price, address line, city/state + zip + subdivision, beds, baths,
+ *  sqft, photo, and the canonical listing detail href. No listing data dropped. */
+function tileToFeaturedItem(listing: PriceDropTile): KbFeaturedItem {
   const address =
     [listing.StreetNumber ?? '', listing.StreetName ?? ''].filter(Boolean).join(' ') ||
     'Address on request'

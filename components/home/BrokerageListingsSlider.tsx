@@ -1,7 +1,6 @@
-import { getBrokerageListings } from '@/app/actions/listings'
+import { getBrokerageListings, type PriceDropTile } from '@/lib/data'
 import TilesSlider from '@/components/TilesSlider'
 import ListingTile from '@/components/ListingTile'
-import type { HomeTileRow } from '@/app/actions/listings'
 
 /**
  * BrokerageListingsSlider — Shows Ryan Realty's own listings across all statuses.
@@ -23,7 +22,7 @@ export default async function BrokerageListingsSlider() {
           title="Ryan Realty Listings"
           subtitle="Properties listed by our team across Central Oregon"
         >
-          {listings.map((listing: HomeTileRow) => {
+          {listings.map((listing: PriceDropTile) => {
             const key = listing.ListingKey ?? listing.ListNumber ?? ''
             return (
               <div
@@ -31,7 +30,11 @@ export default async function BrokerageListingsSlider() {
                 className="w-[280px] shrink-0 snap-start sm:w-[320px]"
               >
                 <ListingTile
-                  listing={listing}
+                  // PriceDropTile omits Latitude/Longitude (the brokerage tile
+                  // projection never selects coords, and ListingTile never reads
+                  // them). Fill them as null so the row satisfies the tile prop
+                  // without a blind cast.
+                  listing={{ ...listing, Latitude: null, Longitude: null }}
                   listingKey={key}
                   signedIn={false}
                   saved={false}
