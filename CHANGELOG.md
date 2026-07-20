@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.822.1 (2026-07-20)
+
+### Bug Fixes
+- fix(content): null crooked-river-roundup past date to unblock freshness gate
+
+### Maintenance
+- refactor(audit): #4 migrate getBrokerageListings into the DAL + repoint consumers
+
+---
+
+
 ## v1.822.0 (2026-07-19)
 
 ### Features
