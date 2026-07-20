@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.822.2 (2026-07-20)
+
+### Maintenance
+- refactor(audit): #3b tail — Spark page-fetch timeout + meta-graph resilientFetch
+
+---
+
+
 ## v1.822.1 (2026-07-20)
 
 ### Bug Fixes
