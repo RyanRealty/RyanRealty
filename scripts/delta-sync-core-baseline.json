@@ -1,0 +1,10 @@
+{
+  "generatedAt": "2026-07-20T06:11:13.196Z",
+  "reason": "Audit #1b anti-fork: files permitted to call computeNextDeltaCursor (a delta-sync core). Ratchet — may only SHRINK. Target after cutover: 1 (lib/sync/deltaSync.ts).",
+  "total": 3,
+  "allowlist": [
+    "app/actions/sync-spark.ts",
+    "app/api/cron/sync-delta/route.ts",
+    "lib/sync/deltaSync.ts"
+  ]
+}

@@ -110,6 +110,7 @@ Everything in `docs/plans/` is registered here. A new file in that directory wit
 | `CRM_BUILD_MISSION.md` | **live** — CRM delivery mission: locked §07 person-detail parity gap list, delivery order, CI override authorization, per-deliverable status log |
 | `CRM_FUB_ASSOCIATION_AND_ACTIVITY_2026-06-29.md` | research record — FUB association + activity parity analysis feeding crm-completion-spec (archive) |
 | `CRM_AUDIT_2026-07-02.md` | **live** — DESKTOP adversarial CRM audit ledger (production-ready-bar pass); findings feed the closure slices (record) |
+| `DELTA_SYNC_UNIFICATION_HANDOFF.md` | **open input** — delta-sync lane unification (audit #1b): the dormant unified core `lib/sync/deltaSync.ts` + its tests + anti-fork gate are landed; this is the mandatory shadow-run + cutover handoff. Feed into the loop's backlog. |
 | `CRM_AUDIT_MOBILE_2026-07-02.md` | **live** — MOBILE adversarial CRM audit ledger (390x844, post-punch-list); P0/P1 fixed in-slice except P1-6 signature wire-up (record) |
 | `CRM_PRODUCTION_SIGNOFF_2026-07-02.md` | executed — independent CRM production sign-off verification pass (record) |
 | `WESTSIDE_DATA_SWEEP_2026-07-02.md` | executed — westside-import data-quality sweep (995 flags, 114 Hoffman-pattern, DIAL-verified) (record) |
