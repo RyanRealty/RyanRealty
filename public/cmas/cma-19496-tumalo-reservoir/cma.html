@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="robots" content="noindex,nofollow" />
-<title>CMA · 19496 Tumalo Reservoir Road · Bend, OR 97703</title>
+<title>CMA · 19496 Tumalo Reservoir · Bend, OR 97703</title>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
 <style>
   @font-face {
     font-family: 'Amboqia Boriango';
-    src: url('./assets/Amboqia_Boriango.otf') format('opentype');
+    src: url('https://ryanrealty.vercel.app/fonts/Amboqia_Boriango.otf') format('opentype');
     font-weight: 400;
     font-style: normal;
     font-display: swap;
@@ -81,7 +81,6 @@
   }
 
   h2.section {
-    font-family: 'Geist', sans-serif;
     font-weight: 600;
     font-size: 11px;
     text-transform: uppercase;
@@ -93,7 +92,6 @@
     display: inline-block;
   }
   h3.subhead {
-    font-family: 'Geist', sans-serif;
     font-weight: 600;
     font-size: 12px;
     color: var(--navy);
@@ -110,8 +108,8 @@
     margin-bottom: 12px;
   }
   .cover-title {
-    font-family: 'Amboqia Boriango', serif;
-    font-size: 60px;
+    font-family: 'Amboqia Boriango', Georgia, serif;
+    font-size: 52px;
     line-height: 0.95;
     color: var(--navy);
     margin: 0 0 6px 0;
@@ -155,8 +153,8 @@
     margin-bottom: 8px;
   }
   .value-block .vb-range {
-    font-family: 'Amboqia Boriango', serif;
-    font-size: 44px;
+    font-family: 'Amboqia Boriango', Georgia, serif;
+    font-size: 40px;
     line-height: 1;
     color: var(--cream);
     margin: 0;
@@ -213,16 +211,9 @@
     color: var(--muted);
     text-align: center;
   }
-  .presented-by strong {
-    color: var(--navy);
-    font-weight: 500;
-  }
+  .presented-by strong { color: var(--navy); font-weight: 500; }
 
-  .two-col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
   table.comps {
     width: 100%;
@@ -251,10 +242,6 @@
     font-weight: 500;
   }
   table.comps .num { text-align: right; }
-  table.comps .anchor td {
-    background: var(--navy-fill);
-    font-weight: 500;
-  }
 
   .comp-grid {
     display: grid;
@@ -270,14 +257,26 @@
   }
   .comp-card .ph {
     width: 100%;
-    height: 58px;
+    height: 92px;
     object-fit: cover;
     display: block;
     background: var(--navy-fill);
   }
-  .comp-card .body {
-    padding: 5px 7px 6px;
+  .comp-card .ph-missing {
+    width: 100%;
+    height: 92px;
+    background: var(--navy-fill);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 0 10px;
   }
+  .comp-card .body { padding: 5px 7px 6px; }
   .comp-card .addr {
     font-size: 9.5px;
     font-weight: 500;
@@ -285,11 +284,7 @@
     line-height: 1.2;
     margin-bottom: 2px;
   }
-  .comp-card .stats {
-    font-size: 8.5px;
-    color: var(--muted);
-    line-height: 1.3;
-  }
+  .comp-card .stats { font-size: 8.5px; color: var(--muted); line-height: 1.3; }
   .comp-card .price {
     font-size: 11px;
     font-weight: 600;
@@ -318,11 +313,7 @@
     padding: 16px 14px;
     background: white;
   }
-  .tier.featured {
-    background: var(--navy);
-    color: var(--cream);
-    border-color: var(--navy);
-  }
+  .tier.featured { background: var(--navy); color: var(--cream); border-color: var(--navy); }
   .tier .t-lbl {
     font-size: 9px;
     text-transform: uppercase;
@@ -332,7 +323,7 @@
   }
   .tier.featured .t-lbl { color: rgba(250, 248, 244, 0.72); }
   .tier .t-val {
-    font-family: 'Amboqia Boriango', serif;
+    font-family: 'Amboqia Boriango', Georgia, serif;
     font-size: 24px;
     line-height: 1;
     color: var(--navy);
@@ -342,25 +333,20 @@
   .tier .t-note { font-size: 10px; color: var(--muted); line-height: 1.4; }
   .tier.featured .t-note { color: rgba(250, 248, 244, 0.80); }
 
-  /* Signature page — transparent portrait, no constraints (CLAUDE.md). */
   .signature-page {
     display: grid;
-    grid-template-columns: 220px 1fr;
+    grid-template-columns: 200px 1fr;
     gap: 36px;
     align-items: end;
     margin-top: 22px;
     padding-top: 22px;
     border-top: 1px solid var(--navy-line);
   }
-  .signature-page .portrait {
-    width: 100%;
-    height: auto;
-    display: block;
-  }
+  .signature-page .portrait { width: 100%; height: auto; display: block; }
   .signature-page .sig-content { padding-bottom: 6px; }
   .signature-page .sig-name {
     font-family: 'Caveat', cursive;
-    font-size: 48px;
+    font-size: 44px;
     color: var(--navy);
     line-height: 1;
     border-bottom: 1px solid var(--navy);
@@ -369,24 +355,36 @@
     width: 260px;
   }
   .signature-page .sig-printed {
-    font-family: 'Amboqia Boriango', serif;
+    font-family: 'Amboqia Boriango', Georgia, serif;
     font-size: 22px;
     line-height: 1;
     color: var(--navy);
     margin: 0 0 4px 0;
   }
-  .signature-page .sig-title {
-    font-size: 11px;
-    color: var(--navy);
-    margin-bottom: 14px;
-    line-height: 1.45;
-  }
-  .signature-page .sig-contact {
-    font-size: 11px;
-    line-height: 1.7;
-    color: var(--navy);
-  }
+  .signature-page .sig-title { font-size: 11px; color: var(--navy); margin-bottom: 14px; line-height: 1.45; }
+  .signature-page .sig-contact { font-size: 11px; line-height: 1.7; color: var(--navy); }
   .signature-page .sig-contact strong { font-weight: 500; }
+  .signature-page .sig-contact a { color: inherit; text-decoration: none; }
+
+  /* Closing next-step page (conversion-audit 2026-07-15 #5): the document
+     used to end on disclaimers with zero tappable contact. */
+  .cta-lead { font-size: 14px; line-height: 1.75; color: var(--navy); max-width: 62ch; }
+  .cta-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+  .cta-actions a {
+    display: inline-block;
+    background: var(--navy);
+    color: var(--cream);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 13px 22px;
+    border: 1px solid var(--navy);
+    border-radius: 10px;
+  }
+  .cta-actions a.ghost { background: transparent; color: var(--navy); }
+  .cta-reply-note { margin-top: 16px; font-size: 12px; color: var(--muted); line-height: 1.6; }
   .signature-page .sig-license {
     margin-top: 12px;
     padding-top: 10px;
@@ -413,24 +411,16 @@
     margin-bottom: 6px;
   }
   .trace code {
-    font-family: 'Geist Mono', monospace;
+    font-family: 'Geist Mono', ui-monospace, monospace;
     font-size: 9px;
     background: rgba(16,39,66,0.10);
     padding: 1px 4px;
     border-radius: 3px;
   }
 
-  .note-list {
-    margin: 5px 0 8px 16px;
-    padding: 0;
-  }
-  .note-list li {
-    font-size: 10.5px;
-    line-height: 1.4;
-    margin-bottom: 3px;
-  }
+  .note-list { margin: 5px 0 8px 16px; padding: 0; }
+  .note-list li { font-size: 10.5px; line-height: 1.4; margin-bottom: 3px; }
 
-  /* Comp flyer pages */
   .flyer-badge {
     display: inline-block;
     background: var(--navy);
@@ -443,27 +433,33 @@
     margin-bottom: 8px;
   }
   .flyer-title {
-    font-family: 'Amboqia Boriango', serif;
+    font-family: 'Amboqia Boriango', Georgia, serif;
     font-size: 32px;
     line-height: 1;
     color: var(--navy);
     margin: 0 0 3px 0;
   }
-  .flyer-sub {
-    font-size: 11px;
-    color: var(--muted);
-    letter-spacing: 0.06em;
-    margin-bottom: 9px;
-  }
+  .flyer-sub { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; margin-bottom: 9px; }
   .flyer-hero {
     width: 100%;
-    height: 2.4in;
+    height: 3.4in;
     object-fit: cover;
     object-position: center;
     border-radius: 8px;
     background: var(--navy-fill);
     display: block;
     margin-bottom: 9px;
+  }
+  .flyer-hero.is-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 0 24px;
   }
   .flyer-stats {
     display: grid;
@@ -472,11 +468,7 @@
     border-bottom: 1px solid var(--navy-line);
     margin-bottom: 9px;
   }
-  .flyer-stats .s {
-    padding: 7px 6px;
-    text-align: center;
-    border-right: 1px solid var(--navy-line);
-  }
+  .flyer-stats .s { padding: 7px 6px; text-align: center; border-right: 1px solid var(--navy-line); }
   .flyer-stats .s:last-child { border-right: 0; }
   .flyer-stats .s .l {
     font-size: 8px;
@@ -485,21 +477,9 @@
     color: var(--muted);
     margin-bottom: 1px;
   }
-  .flyer-stats .s .v {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--navy);
-  }
-  .flyer-stats .s.featured .v {
-    color: var(--navy);
-    font-weight: 600;
-  }
-  .flyer-desc {
-    font-size: 9.5px;
-    line-height: 1.45;
-    color: var(--navy);
-    margin: 0 0 9px 0;
-  }
+  .flyer-stats .s .v { font-size: 13px; font-weight: 500; color: var(--navy); }
+  .flyer-stats .s.featured .v { font-weight: 600; }
+  .flyer-desc { font-size: 9.5px; line-height: 1.45; color: var(--navy); margin: 0 0 9px 0; }
   .flyer-features {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -507,41 +487,49 @@
     margin-bottom: 9px;
     font-size: 9px;
   }
-  .flyer-features .f {
-    background: var(--navy-fill);
-    padding: 4px 8px;
-    border-radius: 5px;
-    color: var(--navy);
-  }
+  .flyer-features .f { background: var(--navy-fill); padding: 4px 8px; border-radius: 5px; color: var(--navy); }
   .flyer-features .f .fl {
     font-size: 7.5px;
     letter-spacing: 0.10em;
     text-transform: uppercase;
     color: var(--muted);
-    margin-bottom: 0;
   }
-  .flyer-features .f .fv {
-    font-size: 9px;
-    line-height: 1.2;
-  }
-  .flyer-photos {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 5px;
-  }
-  .flyer-photos img {
-    width: 100%;
-    height: 0.95in;
-    object-fit: cover;
-    border-radius: 5px;
-    display: block;
-    background: var(--navy-fill);
-  }
+  .flyer-features .f .fv { font-size: 9px; line-height: 1.2; }
 
-  @page {
-    size: Letter;
-    margin: 0;
+  .map-img {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    background: var(--navy-fill);
+    display: block;
+    margin-bottom: 14px;
   }
+  .map-key { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .map-key .k {
+    background: var(--navy-fill);
+    padding: 8px 10px;
+    border-radius: 6px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .map-key .k .pin {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: var(--cream);
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .map-key .k .pin.subject { background: #b3261e; }
+  .map-key .k .txt { font-size: 10px; line-height: 1.3; }
+
+  @page { size: Letter; margin: 0; }
   @media print {
     body { background: white; margin: 0; padding: 0; }
     .page {
@@ -560,20 +548,18 @@
 </head>
 <body>
 
-<!-- PAGE 1 — COVER -->
 <section class="page">
   <header class="pg-header">
-    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
-    <div class="pg-meta">Comparative Market Analysis · May 15, 2026</div>
+    <img src="https://ryanrealty.vercel.app/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparative Market Analysis · Jul 20, 2026</div>
   </header>
-
-  <div class="cover-label">Prepared for Matt Ryan (Canonical v3 Smoke)</div>
-  <h1 class="cover-title">19496 Tumalo Reservoir Road</h1>
-  <div class="cover-sub">Bend, Oregon 97703 · Tumalo · Rural Acreage</div>
-
-  <img class="hero-photo" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20260304175825195222000000-o.jpg" alt="19496 Tumalo Reservoir Road" />
-  <div class="hero-caption">Subject · currently listed by Ryan Realty · MLS 220215931 · photos updated March 2026</div>
-
+  
+  <div class="cover-label">Prepared for Patrick &amp; Tanya Hogan</div>
+  <h1 class="cover-title">19496 Tumalo Reservoir</h1>
+  <div class="cover-sub">Bend, Oregon 97703 · N/A</div>
+  <img class="hero-photo" src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260307035352655634000000-o.jpg" alt="19496 Tumalo Reservoir" />
+  <div class="hero-caption">Most recent MLS listing photo (Mar 2026) · MLS 220215931</div>
+  
   <div class="stat-strip">
     <div class="stat"><div class="lbl">Beds</div><div class="val">3</div></div>
     <div class="stat"><div class="lbl">Baths</div><div class="val">3</div></div>
@@ -581,690 +567,648 @@
     <div class="stat"><div class="lbl">Lot</div><div class="val">2.28 ac</div></div>
     <div class="stat"><div class="lbl">Year Built</div><div class="val">1995</div></div>
   </div>
-
   <div class="value-block">
     <div class="vb-label">Estimated Market Value Range</div>
-    <p class="vb-range">$1.10M — $1.275M</p>
-    <div class="vb-detail">Based on 5 closed sales of rural acreage homes within 3 miles of the subject over the last 12 months, with $/sqft weighted by lot size, view exposure, and condition tier.</div>
-    <div class="vb-most-likely"><strong>Recommended list price · $1,225,000.</strong> Holds the current Active list price. Sits between the renovated-similar comp at 65010 Gerking Market ($1.20M Jan 2026 on 5 acres) and a view-premium ceiling informed by 64141 Tumalo Rim, which closed $125K over list in Aug 2025 after only 8 days under contract.</div>
+    <p class="vb-range">$955,000 to $1,060,000</p>
+    <div class="vb-detail">Based on 5 closed sales near the subject, each adjusted to today's market conditions and to the subject's size before reconciliation.</div>
+    <div class="vb-most-likely"><strong>Recommended list price · $1,050,000.</strong> Confidence: Moderate. Capped by method spread 8.5%.</div>
   </div>
-
   <div class="presented-by">
-    Presented by <strong>Matt Ryan</strong> · Owner &amp; Principal Broker · Ryan Realty · 541.213.6706
+    Presented by <strong>Matt Ryan</strong> · Owner &amp; Principal Broker · Ryan Realty · (541) 703-3095
   </div>
-
   <footer class="pg-footer">
-    <span>Ryan Realty · Bend · Oregon</span>
-    <span>Page 1 of 13</span>
+    <span>Ryan Realty · 541.703.3095</span>
+    <span>Page 1 of 17</span>
   </footer>
 </section>
 
-<!-- PAGE 2 — SUBJECT + CONTEXT -->
 <section class="page">
   <header class="pg-header">
-    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
-    <div class="pg-meta">19496 Tumalo Reservoir Rd · Subject &amp; Context</div>
+    <img src="https://ryanrealty.vercel.app/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">19496 Tumalo Reservoir · Subject Property</div>
   </header>
-
+  
   <h2 class="section">Subject Property</h2>
-
   <div class="two-col">
     <div>
       <h3 class="subhead">At a glance</h3>
-      <p>Custom 1995-built home on 2.28 acres in Tumalo. Three Sisters views from nearly every room. Mature trees, established landscaping, a meandering water feature, an expansive second-floor deck, and a covered main-level deck. Heated three-car garage, paved driveway, RV parking. Currently Active with Ryan Realty at $1,225,000 (MLS 220215931, listed 2026-03-04, 62 days on market as of the pull date).</p>
-
-      <h3 class="subhead">Site &amp; structure</h3>
-      <ul class="note-list">
-        <li>3 bedrooms · 3 bathrooms · 2,325 sqft (MLS 220215931)</li>
-        <li>2.28-acre rural parcel · paved driveway · RV parking</li>
-        <li>Heated 3-car garage</li>
-        <li>Three Sisters view orientation from primary, living, kitchen, decks</li>
-        <li>Established landscaping with mature trees and water feature</li>
-      </ul>
+      <p>1995-built home on 2.28 acres in the N/A subdivision, Bend. Currently listed at $1,225,000 since Mar 2026.</p>
+      <h3 class="subhead">Site and structure</h3>
+      <ul class="note-list"><li>3 bedrooms · 3 bathrooms · 2,325 sqft (MLS 220215931)</li><li>2.28-acre parcel · 3-car garage</li><li>Built 1995</li><li>View: Cascade Mountains, Desert, Forest, Mountain(s), Neighborhood, Panoramic, Territorial</li><li>Annual property tax $7,247</li></ul>
+      
+      <h3 class="subhead">Property &amp; site intelligence (county / state / FEMA records)</h3><ul class="note-list"><li><strong>Zoning:</strong> MUA10</li><li><strong>Parcel:</strong> 2.28 acres · taxlot 161136D000601 · T16S R11E Sec 36</li><li><strong>Water:</strong> Private well (nearest area log about 408 ft, 1970-01-15. Confirm the subject's OWRD log)</li><li><strong>Irrigation district:</strong> Tumalo Irrigation District (district boundary is not a water right. Confirm the appurtenant right with the district and OWRD)</li><li><strong>Sewer/septic:</strong> Onsite septic system (permit 247-S36480)</li><li><strong>Permits of record:</strong> 9 on file (Onsite septic, Plumbing, Mechanical, Permit, Electrical)</li><li><strong>FEMA flood:</strong> zone X (not a Special Flood Hazard Area)</li><li><strong>Wildfire hazard zone:</strong> yes (defensible-space + build standards apply)</li></ul><h3 class="subhead">Buildability &amp; constraints</h3><ul class="note-list"><li>Not in a FEMA Special Flood Hazard Area (zone X). No mandatory flood insurance.</li><li>Zone MUA10 allows a dwelling by-right subject to standard siting review.</li></ul><h3 class="subhead">Confirm at listing</h3><ul class="note-list"><li>Steep slope (over 25%), wetland inventory, and any irrigation-canal easement crossing the parcel. The county retired those map services, so confirm these from the survey or a site visit.</li><li>The parcel sits inside Tumalo Irrigation District, but no OWRD water-right place-of-use maps onto it. District boundary is not a water right. The irrigated acreage may sit elsewhere on the parcel, or the parcel may be dry within the district. Confirm the appurtenant right and certificated acreage with the district and OWRD.</li></ul>
     </div>
     <div>
-      <h3 class="subhead">Why this matters</h3>
-      <p>Rural Tumalo acreage between Bend and Redmond is its own market — buyers in the $1M–$1.6M tier are paying for view exposure, lot privacy, and condition. There is no formal subdivision filter to anchor on. The comp set on page 4 is built by distance (≤ 3 miles), property class (SFR with acreage), and a tight size band (1,700–2,900 sqft, 0.76–6.84 acres, vintage 1980–2010).</p>
-      <p>The narrative for pricing is <em>view + lot quality + condition tier</em>, not raw $/sqft. The closest comparable on lifestyle and lot (65010 Gerking Market) closed at $1.20M in Jan 2026. The strongest view + renovation comp (64141 Tumalo Rim) closed $125K above list at $1.60M in Aug 2025.</p>
-
-      <h3 class="subhead">Listing history</h3>
-      <ul class="note-list">
-        <li><strong>1998-09-01:</strong> Sold $375,000 (28 years ago — not a comp, included for record only)</li>
-        <li><strong>2024-12-12 to 2026-04 (Canceled):</strong> Listed at $1,449,000 by an outside agent, 492 days on market without a sale</li>
-        <li><strong>2026-03-04 to present (Active):</strong> Relisted by Ryan Realty at $1,225,000 — 62 DOM as of pull date</li>
-      </ul>
+      <h3 class="subhead">How this analysis works</h3>
+      <p>Every comparable sale in this report is a real closed transaction pulled from the Oregon Data Share MLS. Each comp is first normalized to today's market using the verified year-over-year price trend for Bend (-0.7% YoY), then adjusted for the size difference against your home. The reconciled result is checked against two independent pricing methods before a recommendation is made.</p>
+      <p>The full adjustment ledger, the market context, and the data trace are all included, so every number in this document can be audited back to its source.</p>
     </div>
   </div>
-
-  <h2 class="section" style="margin-top:24px;">What the listing history tells us</h2>
-  <p>The 2024–2026 attempt at $1,449,000 generated no qualifying offer over the full 492-day window. The 2026 relist at $1,225,000 (down 15.5%) is closer to the comp evidence on page 4. The current Active position is defensible against renovated subdivision comps in the 2-acre tier and below the view-premium ceiling — the right question now is whether to hold the line, drop incrementally, or sharpen the marketing presentation.</p>
-
-  <h3 class="subhead" style="margin-top:14px;">No seller improvements reported</h3>
-  <p>This CMA does not include an improvements ledger — the seller did not document a remodel or capital-improvement spend between the 2024 and 2026 listings. If updates were completed and receipts exist, surface them and we will rebuild the value range with a Method 2 (un-renovated baseline + improvement value-add) — see page 11.</p>
-
+  <h2 class="section" style="margin-top:20px;">Most Recent MLS Remarks</h2><p class="small" style="font-style:italic;">"Tumalo is one of Central Oregon&#39;s best kept secrets. Wide open spaces, a tight knit community, and a rural pace of life just minutes from Bend. This stunning 2,238 square foot retreat captures that spirit completely. Three Sisters views dominate nearly every room, framed by fresh paint inside and out and a light filled floor plan designed to put the Cascades front and center. The covered main level deck is where you will spend your evenings, listening to the creek, watching deer move through the trees, and breathing in the pure Central Oregon air. An expansive second floor deck gives you even more space to soak it all in. The sprawling 2.28 acre lot features mature trees, lush landscaping, and a graceful water feature meandering through the grounds. A heated three car garage, paved driveway, and RV parking handle the practical side. Just a short drive to The Bite for tacos, craft beer, and live music. Float the Deschutes. Ski Bachelor. This is the Tumalo lifestyle."</p><p class="small">Quoted from the property's most recent MLS listing. Descriptions are the prior listing agent's words, provided for record.</p>
   <footer class="pg-footer">
-    <span>Ryan Realty · 541.213.6706</span>
-    <span>Page 2 of 13</span>
+    <span>Ryan Realty · 541.703.3095</span>
+    <span>Page 2 of 17</span>
   </footer>
 </section>
 
-<!-- PAGE 3 — SUBJECT PROPERTY FLYER -->
 <section class="page">
   <header class="pg-header">
-    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
-    <div class="pg-meta">Subject Property · Tumalo</div>
+    <img src="https://ryanrealty.vercel.app/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sales Map · Bend</div>
   </header>
-  <div class="flyer-badge">Subject · Currently Active · MLS 220215931</div>
-  <h1 class="flyer-title">19496 Tumalo Reservoir Road</h1>
-  <div class="flyer-sub">Bend, Oregon 97703 · Tumalo · 2.28-acre rural parcel</div>
-
-  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20260304175825195222000000-o.jpg" alt="19496 Tumalo Reservoir Road" />
-
-  <div class="flyer-stats">
-    <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
-    <div class="s"><div class="l">Baths</div><div class="v">3</div></div>
-    <div class="s"><div class="l">Sqft</div><div class="v">2,325</div></div>
-    <div class="s"><div class="l">Lot</div><div class="v">2.28 ac</div></div>
-    <div class="s"><div class="l">Year</div><div class="v">1995</div></div>
-    <div class="s featured"><div class="l">Active $/sqft</div><div class="v">$527</div></div>
-  </div>
-
-  <p class="flyer-desc">From the current MLS listing: "Tumalo is one of Central Oregon's best kept secrets. Wide open spaces, a tight knit community, and a rural pace of life just minutes from Bend. This 2,238 square foot retreat captures that spirit completely. Three Sisters views dominate nearly every room, framed by fresh paint inside and out and a light filled floor plan designed to put the Cascades front and center. The covered main level deck is where you will spend your evenings, listening to the creek, watching deer move through the trees, and breathing in the pure Central Oregon air. An expansive second floor deck gives you even more space to soak it all in. The sprawling 2.28 acre lot features mature trees, lush landscaping, and a graceful water feature meandering through the grounds. A heated three car garage, paved driveway, and RV parking handle the practical side. Just a short drive to The Bite for tacos, craft beer, and live music. Float the Deschutes. Ski Bachelor. This is the Tumalo lifestyle."</p>
-
-  <div class="flyer-features">
-    <div class="f"><div class="fl">Active List</div><div class="fv">$1,225,000</div></div>
-    <div class="f"><div class="fl">Prior List (Canceled)</div><div class="fv">$1,449,000 (Dec 2024)</div></div>
-    <div class="f"><div class="fl">Recommended List</div><div class="fv">$1,225,000</div></div>
-    <div class="f"><div class="fl">View</div><div class="fv">Three Sisters · Cascade</div></div>
-    <div class="f"><div class="fl">Garage</div><div class="fv">Heated 3-car</div></div>
-    <div class="f"><div class="fl">Lot Features</div><div class="fv">Mature trees · Water feature · RV parking</div></div>
-    <div class="f"><div class="fl">Days on Market</div><div class="fv">62 active days as of pull</div></div>
-    <div class="f"><div class="fl">Photos on File</div><div class="fv">63 (2026 — current listing)</div></div>
-  </div>
-
-  <div class="flyer-photos">
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260304175719779563000000-o.jpg" alt="Subject — front exterior approach" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260304175720531554000000-o.jpg" alt="Subject — interior" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260304175815521055000000-o.jpg" alt="Subject — main living" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260304175723357841000000-o.jpg" alt="Subject — kitchen" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260304175724080591000000-o.jpg" alt="Subject — primary" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260307035352655634000000-o.jpg" alt="Subject — deck / view" />
-  </div>
-
-  <p class="small" style="margin-top:10px;">Photos shown are from the current 2026 MLS listing. The current Active list price of $1,225,000 represents a 15.5% reduction from the prior Dec 2024 listing at $1,449,000 (Canceled after 492 days).</p>
-
-  <footer class="pg-footer">
-    <span>Ryan Realty · 541.213.6706</span>
-    <span>Page 3 of 13</span>
-  </footer>
-</section>
-
-<!-- PAGE 4 — COMP LOCATION MAP -->
-<section class="page">
-  <header class="pg-header">
-    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
-    <div class="pg-meta">Comparable Sales Map · Tumalo Acreage</div>
-  </header>
-
+  
   <h2 class="section">Where the Comps Sit</h2>
-  <p style="margin-bottom:14px;">Five rural-acreage comparable sales on a single map, with the subject as the red S pin. Marker numbers correspond to the flyer page for each property (pages 6–10). The cluster spans roughly 4.5 miles north-south by 2 miles east-west — a tight enough geography that all five comps share the same Tumalo / West Bend lifestyle profile, similar commute access to Bend, and the same Cascade view orientation.</p>
-
-  <img src="/api/maps/cma-19496-tumalo-reservoir" alt="Tumalo acreage comp location map" style="width:100%; height:auto; border-radius:10px; background:var(--navy-fill); display:block; margin-bottom:14px;" />
-
-  <h3 class="subhead" style="margin-top:0;">Marker Key</h3>
-  <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">
-    <div class="f" style="background:var(--navy-fill); padding:8px 10px; border-radius:6px; display:flex; gap:10px; align-items:center;">
-      <span style="display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; background:#d4af37; color:var(--navy); font-size:13px; font-weight:600; flex-shrink:0;">S</span>
-      <div style="font-size:10px; line-height:1.3;"><strong>Subject</strong><br/>19496 Tumalo Reservoir Rd</div>
-    </div>
-    <div class="f" style="background:var(--navy-fill); padding:8px 10px; border-radius:6px; display:flex; gap:10px; align-items:center;">
-      <span style="display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:12px; font-weight:600; flex-shrink:0;">1</span>
-      <div style="font-size:10px; line-height:1.3;"><strong>64141 Tumalo Rim</strong> · 0.78 mi<br/>$1,600,000 · Aug 2025</div>
-    </div>
-    <div class="f" style="background:var(--navy-fill); padding:8px 10px; border-radius:6px; display:flex; gap:10px; align-items:center;">
-      <span style="display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:12px; font-weight:600; flex-shrink:0;">2</span>
-      <div style="font-size:10px; line-height:1.3;"><strong>65010 Gerking Market</strong> · 1.60 mi<br/>$1,200,000 · Jan 2026</div>
-    </div>
-    <div class="f" style="background:var(--navy-fill); padding:8px 10px; border-radius:6px; display:flex; gap:10px; align-items:center;">
-      <span style="display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:12px; font-weight:600; flex-shrink:0;">3</span>
-      <div style="font-size:10px; line-height:1.3;"><strong>64265 Old Bend Redmond</strong> · 1.72 mi<br/>$680,000 · May 2026</div>
-    </div>
-    <div class="f" style="background:var(--navy-fill); padding:8px 10px; border-radius:6px; display:flex; gap:10px; align-items:center;">
-      <span style="display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:12px; font-weight:600; flex-shrink:0;">4</span>
-      <div style="font-size:10px; line-height:1.3;"><strong>63510 Gold Spur</strong> · 2.52 mi<br/>$812,000 · Feb 2026</div>
-    </div>
-    <div class="f" style="background:var(--navy-fill); padding:8px 10px; border-radius:6px; display:flex; gap:10px; align-items:center;">
-      <span style="display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; background:var(--navy); color:var(--cream); font-size:12px; font-weight:600; flex-shrink:0;">5</span>
-      <div style="font-size:10px; line-height:1.3;"><strong>19083 Saddleback</strong> · 3.00 mi<br/>$950,000 · Sep 2025</div>
-    </div>
-  </div>
-
+  <p style="margin-bottom:14px;">Every comparable sale in this report on one map, with the subject marked S. Marker numbers match the comp order used throughout the report. Pin positions use each listing's recorded MLS coordinates.</p>
+  <img class="map-img" src="data:image/png;base64,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" alt="Comparable sales map" />
+  <h3 class="subhead" style="margin-top:0;">Marker key</h3>
+  <div class="map-key"><div class="k"><span class="pin subject">S</span><div class="txt"><strong>Subject</strong><br/>19496 Tumalo Reservoir</div></div><div class="k"><span class="pin">1</span><div class="txt"><strong>63940 Quail Haven</strong><br/>$965,000 · Jun 2026</div></div><div class="k"><span class="pin">2</span><div class="txt"><strong>64495 Quail</strong><br/>$975,000 · Apr 2026</div></div><div class="k"><span class="pin">3</span><div class="txt"><strong>21435 Modoc</strong><br/>$939,000 · Apr 2026</div></div><div class="k"><span class="pin">4</span><div class="txt"><strong>64950 Glacier View</strong><br/>$945,000 · Jan 2026</div></div><div class="k"><span class="pin">5</span><div class="txt"><strong>64492 Sylvan</strong><br/>$979,900 · Dec 2025</div></div></div>
   <footer class="pg-footer">
-    <span>Map · Google Maps Static via Ryan Realty platform · Coordinates from Oregon Data Share MLS</span>
-    <span>Page 4 of 13</span>
+    <span>Ryan Realty · 541.703.3095</span>
+    <span>Page 3 of 17</span>
   </footer>
 </section>
 
-<!-- PAGE 5 — COMP THUMBNAILS + TABLE -->
 <section class="page">
   <header class="pg-header">
-    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
-    <div class="pg-meta">19496 Tumalo Reservoir Rd · Comparable Sales</div>
+    <img src="https://ryanrealty.vercel.app/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">19496 Tumalo Reservoir · Comparable Sales</div>
   </header>
-
-  <h2 class="section">Distance-Based Comparable Sales — Tumalo Acreage</h2>
-  <p>Every closed single-family sale within 3 miles of the subject over the last 12 months, filtered to 1,700–2,900 sqft on 0.76–6.84 acres, vintage 1980–2010. Ordered most recent first.</p>
-
+  
+  <h2 class="section">Comparable Closed Sales</h2>
+  <p>5 closed single-family sales selected for similarity to the subject (size, location, and recency). Ordered most recent first. DTO is days to offer, the active-marketing read. DOM includes time under contract.</p>
   <div class="comp-grid">
     <div class="comp-card">
-      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260325195820160429000000-o.jpg" alt="64265 Old Bend Redmond" />
+      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260327170901452235000000-o.jpg" alt="63940 Quail Haven" />
       <div class="body">
-        <div class="addr">64265 Old Bend Redmond</div>
-        <div class="stats">3 bd · 4 ba · 1,980 sf · 2.76 ac · 2002</div>
-        <div class="price">$680,000 <span class="when">May 2026 · 0d to offer</span></div>
+        <div class="addr">63940 Quail Haven</div>
+        <div class="stats">3 bd · 3 ba · 2,084 sf · 5.00 ac · 1977</div>
+        <div class="price">$965,000 <span class="when">Jun 2026 · 11d to offer</span></div>
       </div>
     </div>
     <div class="comp-card">
-      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20251027192707192457000000-o.jpg" alt="63510 Gold Spur" />
+      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260422181734952721000000-o.jpg" alt="64495 Quail" />
       <div class="body">
-        <div class="addr">63510 Gold Spur</div>
-        <div class="stats">3 bd · 2 ba · 1,902 sf · 2.48 ac · 1991</div>
-        <div class="price">$812,000 <span class="when">Feb 2026 · 81d to offer</span></div>
+        <div class="addr">64495 Quail</div>
+        <div class="stats">3 bd · 2 ba · 2,160 sf · 2.50 ac · 1976</div>
+        <div class="price">$975,000 <span class="when">Apr 2026 · 0d to offer</span></div>
       </div>
     </div>
     <div class="comp-card">
-      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250925233851059559000000-o.jpg" alt="65010 Gerking Market" />
+      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20260317225613831829000000-o.jpg" alt="21435 Modoc" />
       <div class="body">
-        <div class="addr">65010 Gerking Market</div>
-        <div class="stats">3 bd · 4 ba · 2,416 sf · 5.00 ac · 1992</div>
-        <div class="price">$1,200,000 <span class="when">Jan 2026 · 76d to offer</span></div>
+        <div class="addr">21435 Modoc</div>
+        <div class="stats">3 bd · 3 ba · 2,548 sf · 4.49 ac · 2005</div>
+        <div class="price">$939,000 <span class="when">Apr 2026 · 5d to offer</span></div>
       </div>
     </div>
     <div class="comp-card">
-      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250507171948716115000000-o.jpg" alt="19083 Saddleback" />
+      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20250430221025261761000000-o.jpg" alt="64950 Glacier View" />
       <div class="body">
-        <div class="addr">19083 Saddleback</div>
-        <div class="stats">4 bd · 3 ba · 1,792 sf · 0.76 ac · 1990</div>
-        <div class="price">$950,000 <span class="when">Sep 2025 · 83d to offer</span></div>
+        <div class="addr">64950 Glacier View</div>
+        <div class="stats">4 bd · 3 ba · 2,038 sf · 2.39 ac · 1979</div>
+        <div class="price">$945,000 <span class="when">Jan 2026 · 235d to offer</span></div>
       </div>
     </div>
     <div class="comp-card">
-      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250709213425008193000000-o.jpg" alt="64141 Tumalo Rim" />
+      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/640x480/true/20251006200433370839000000-o.jpg" alt="64492 Sylvan" />
       <div class="body">
-        <div class="addr">64141 Tumalo Rim</div>
-        <div class="stats">4 bd · 2 ba · 2,088 sf · 0.80 ac · 1980</div>
-        <div class="price">$1,600,000 <span class="when">Aug 2025 · 8d to offer</span></div>
+        <div class="addr">64492 Sylvan</div>
+        <div class="stats">4 bd · 4 ba · 2,382 sf · 2.52 ac · 1996</div>
+        <div class="price">$979,900 <span class="when">Dec 2025 · 50d to offer</span></div>
       </div>
-    </div>
-  </div>
-
+    </div></div>
   <table class="comps">
     <thead>
-      <tr>
-        <th style="width:25%;">Address</th>
-        <th>Bd/Ba</th>
-        <th class="num">Sqft</th>
-        <th class="num">Lot</th>
-        <th class="num">Yr</th>
-        <th class="num">List</th>
-        <th class="num">Sold</th>
-        <th class="num">$/sqft</th>
-        <th class="num">Close</th>
-        <th class="num">Active *</th>
-      </tr>
+      <tr><th>Property</th><th class="num">Closed</th><th class="num">List $</th><th class="num">Close $</th><th class="num">$/sqft</th><th class="num">Bd/Ba</th><th class="num">Sqft</th><th class="num">Lot ac</th><th class="num">Year</th><th class="num">DTO (DOM)</th></tr>
     </thead>
     <tbody>
       <tr class="subject">
-        <td>19496 Tumalo Reservoir Rd <span style="opacity:0.7;">(subject · rec. list)</span></td>
-        <td>3 / 3</td>
+        <td>Subject · 19496 Tumalo Reservoir</td>
+        <td class="num">—</td>
+        <td class="num">$1,050,000</td>
+        <td class="num">—</td>
+        <td class="num">$452</td>
+        <td class="num">3/3</td>
         <td class="num">2,325</td>
         <td class="num">2.28</td>
         <td class="num">1995</td>
-        <td class="num">$1,225,000</td>
-        <td class="num">—</td>
-        <td class="num">$526.88</td>
-        <td class="num">—</td>
         <td class="num">—</td>
       </tr>
-      <tr class="anchor">
-        <td>64141 Tumalo Rim</td>
-        <td>4 / 2</td>
-        <td class="num">2,088</td>
-        <td class="num">0.80</td>
-        <td class="num">1980</td>
-        <td class="num">$1,475,000</td>
-        <td class="num">$1,600,000</td>
-        <td class="num">$766.28</td>
-        <td class="num">Aug 2025</td>
-        <td class="num">8</td>
-      </tr>
-      <tr class="anchor">
-        <td>65010 Gerking Market</td>
-        <td>3 / 4</td>
-        <td class="num">2,416</td>
-        <td class="num">5.00</td>
-        <td class="num">1992</td>
-        <td class="num">$1,270,000</td>
-        <td class="num">$1,200,000</td>
-        <td class="num">$496.69</td>
-        <td class="num">Jan 2026</td>
-        <td class="num">76</td>
-      </tr>
-      <tr>
-        <td>19083 Saddleback</td>
-        <td>4 / 3</td>
-        <td class="num">1,792</td>
-        <td class="num">0.76</td>
-        <td class="num">1990</td>
-        <td class="num">$997,000</td>
-        <td class="num">$950,000</td>
-        <td class="num">$530.13</td>
-        <td class="num">Sep 2025</td>
-        <td class="num">83</td>
-      </tr>
-      <tr>
-        <td>63510 Gold Spur</td>
-        <td>3 / 2</td>
-        <td class="num">1,902</td>
-        <td class="num">2.48</td>
-        <td class="num">1991</td>
-        <td class="num">$835,000</td>
-        <td class="num">$812,000</td>
-        <td class="num">$426.92</td>
-        <td class="num">Feb 2026</td>
-        <td class="num">81</td>
-      </tr>
-      <tr>
-        <td>64265 Old Bend Redmond</td>
-        <td>3 / 4</td>
-        <td class="num">1,980</td>
-        <td class="num">2.76</td>
-        <td class="num">2002</td>
-        <td class="num">$680,000</td>
-        <td class="num">$680,000</td>
-        <td class="num">$343.43</td>
-        <td class="num">May 2026</td>
-        <td class="num">0</td>
-      </tr>
+      
+    <tr>
+      <td>1. 63940 Quail Haven</td>
+      <td class="num">Jun 25, 2026</td>
+      <td class="num">$965,000</td>
+      <td class="num">$965,000</td>
+      <td class="num">$463</td>
+      <td class="num">3/3</td>
+      <td class="num">2,084</td>
+      <td class="num">5.00</td>
+      <td class="num">1977</td>
+      <td class="num">11 (90)</td>
+    </tr>
+    <tr>
+      <td>2. 64495 Quail</td>
+      <td class="num">Apr 26, 2026</td>
+      <td class="num">$1,025,000</td>
+      <td class="num">$975,000</td>
+      <td class="num">$451</td>
+      <td class="num">3/2</td>
+      <td class="num">2,160</td>
+      <td class="num">2.50</td>
+      <td class="num">1976</td>
+      <td class="num">0 (4)</td>
+    </tr>
+    <tr>
+      <td>3. 21435 Modoc</td>
+      <td class="num">Apr 19, 2026</td>
+      <td class="num">$919,000</td>
+      <td class="num">$939,000</td>
+      <td class="num">$369</td>
+      <td class="num">3/3</td>
+      <td class="num">2,548</td>
+      <td class="num">4.49</td>
+      <td class="num">2005</td>
+      <td class="num">5 (32)</td>
+    </tr>
+    <tr>
+      <td>4. 64950 Glacier View</td>
+      <td class="num">Jan 20, 2026</td>
+      <td class="num">$975,000</td>
+      <td class="num">$945,000</td>
+      <td class="num">$464</td>
+      <td class="num">4/3</td>
+      <td class="num">2,038</td>
+      <td class="num">2.39</td>
+      <td class="num">1979</td>
+      <td class="num">235 (264)</td>
+    </tr>
+    <tr>
+      <td>5. 64492 Sylvan</td>
+      <td class="num">Dec 28, 2025</td>
+      <td class="num">$979,900</td>
+      <td class="num">$979,900</td>
+      <td class="num">$411</td>
+      <td class="num">4/4</td>
+      <td class="num">2,382</td>
+      <td class="num">2.52</td>
+      <td class="num">1996</td>
+      <td class="num">50 (83)</td>
+    </tr>
     </tbody>
   </table>
-
-  <h3 class="subhead">What the comps actually say</h3>
-  <ul class="note-list">
-    <li><strong>Three condition / view tiers visible.</strong> The renovated view comp at 64141 Tumalo Rim cleared $766/sqft. The condition-and-acreage cluster (65010 Gerking, 19083 Saddleback) cleared $497–$530/sqft. The dated or quiet-orientation comps (63510 Gold Spur, 64265 Old Bend Redmond) cleared $343–$427/sqft. The subject sits in the middle tier.</li>
-    <li><strong>65010 Gerking Market is the cleanest size + lot anchor.</strong> 2,416 sqft (4% larger than subject), 5 acres (more than 2× subject's lot), 1992 build (close vintage), closed Jan 2026 at $1,200,000 / $497/sqft — view-equivalent on rural acreage.</li>
-    <li><strong>64141 Tumalo Rim is the view-and-condition ceiling.</strong> Smaller (2,088 sqft, 0.80 ac) but a complete renovation with 500 sqft addition, white-oak cabinetry, hardwood floors, mountain views, and a 15-minute downtown commute. Sold $125K over its $1,475,000 list price after 8 days under contract — buyers paid the view + reno premium.</li>
-    <li><strong>64265 Old Bend Redmond is an off-market floor.</strong> $680,000 closed May 15, 2026 with 0 days from list to pending — a pre-listed sale that is not representative of marketed-asking levels in this tier. Useful as a floor reference only.</li>
-    <li><strong>Active demand is moderate, not hot.</strong> 4 of 5 comps sat 76–83 days before getting an offer. Only the renovated view home (Tumalo Rim · 8 days) cleared fast. The current subject's 62-DOM active status is on-trend for the tier and does not signal mispricing on its own.</li>
-  </ul>
-
-  <p class="small">* The <strong>Active</strong> column above is days from list to first accepted offer (pending_timestamp minus OnMarketDate). The Spark-reported DOM includes time under contract through close and is shown alongside Active on each comp's flyer page.</p>
-
+  <p class="small" style="margin-top:8px;">Subject List $ column shows the recommended list price for context. Em dash cells indicate a value that does not apply or is unavailable.</p>
   <footer class="pg-footer">
-    <span>Source · Oregon Data Share MLS via Ryan Realty platform · pulled 2026-05-15</span>
-    <span>Page 5 of 13</span>
+    <span>Ryan Realty · 541.703.3095</span>
+    <span>Page 4 of 17</span>
   </footer>
 </section>
 
-<!-- PAGE 6 — COMP FLYER 1 of 5 : 64141 Tumalo Rim -->
 <section class="page">
   <header class="pg-header">
-    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
-    <div class="pg-meta">Comparable Sale 1 of 5 · Tumalo</div>
+    <img src="https://ryanrealty.vercel.app/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">19496 Tumalo Reservoir · Adjustment Grid</div>
   </header>
-  <div class="flyer-badge">View + Renovation Ceiling · Aug 2025 · 8d to offer · sold $125K over list</div>
-  <h1 class="flyer-title">64141 Tumalo Rim</h1>
-  <div class="flyer-sub">Bend, Oregon 97703 · Tumalo Rim · 0.78 mi from subject · MLS 220205536</div>
-
-  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20250709213425008193000000-o.jpg" alt="64141 Tumalo Rim" />
-
-  <div class="flyer-stats">
-    <div class="s"><div class="l">Beds</div><div class="v">4</div></div>
-    <div class="s"><div class="l">Baths</div><div class="v">2</div></div>
-    <div class="s"><div class="l">Sqft</div><div class="v">2,088</div></div>
-    <div class="s"><div class="l">Lot</div><div class="v">0.80 ac</div></div>
-    <div class="s"><div class="l">Year</div><div class="v">1980</div></div>
-    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">$766.28</div></div>
+  
+  <h2 class="section">Per-Comp Adjustment Grid</h2>
+  <p>Each comp is reconciled to the subject in two transparent steps. The market-conditions line normalizes the close price to today using the verified Bend year-over-year trend of -0.7%. The size line adjusts for the sqft difference at half the comp's adjusted $/sqft rate, the standard appraisal convention for marginal square footage.</p>
+  <table class="comps" style="font-size:9.5px;">
+    <thead>
+      <tr><th>Comp</th><th class="num">Close $</th><th class="num">Age</th><th class="num">Market conditions (time)</th><th class="num">Size ($/sqft)</th><th class="num">Adjusted $</th></tr>
+    </thead>
+    <tbody>
+    <tr>
+      <td>1. 63940 Quail Haven</td>
+      <td class="num">$965,000</td>
+      <td class="num">1 mo</td>
+      <td class="num">−$448</td>
+      <td class="num">+$55,772</td>
+      <td class="num"><strong>$1,020,324</strong></td>
+    </tr>
+    <tr>
+      <td>2. 64495 Quail</td>
+      <td class="num">$975,000</td>
+      <td class="num">3 mo</td>
+      <td class="num">−$1,539</td>
+      <td class="num">+$37,181</td>
+      <td class="num"><strong>$1,010,642</strong></td>
+    </tr>
+    <tr>
+      <td>3. 21435 Modoc</td>
+      <td class="num">$939,000</td>
+      <td class="num">3 mo</td>
+      <td class="num">−$1,604</td>
+      <td class="num">−$41,020</td>
+      <td class="num"><strong>$896,376</strong></td>
+    </tr>
+    <tr>
+      <td>4. 64950 Glacier View</td>
+      <td class="num">$945,000</td>
+      <td class="num">6 mo</td>
+      <td class="num">−$3,176</td>
+      <td class="num">+$66,316</td>
+      <td class="num"><strong>$1,008,140</strong></td>
+    </tr>
+    <tr>
+      <td>5. 64492 Sylvan</td>
+      <td class="num">$979,900</td>
+      <td class="num">7 mo</td>
+      <td class="num">−$3,711</td>
+      <td class="num">−$11,680</td>
+      <td class="num"><strong>$964,509</strong></td>
+    </tr></tbody>
+  </table>
+  <h3 class="subhead" style="margin-top:14px;">What is not adjusted, and why</h3>
+  <p class="small">Bedroom and bathroom counts, lot differences, and condition are shown on the comp table but carry no dollar adjustment in this report. Defensible values for those items require paired-sales evidence specific to each pairing. Where a comp differs meaningfully from the subject on those dimensions, it is weighted down in the reconciliation rather than adjusted with an unsupported number.</p>
+  
+  <div class="trace">
+    <div class="t-hd">Weighting</div>
+    Reconciliation weights favor comps closest to the subject in living area and closest in time. Weight = size proximity × recency, where size proximity = 1 ÷ (1 + |sqft difference| ÷ subject sqft) and recency = 1 ÷ (1 + months since close ÷ 12). Weights for this set: #1 0.85, #2 0.76, #3 0.73, #4 0.30, #5 0.63.
   </div>
-
-  <p class="flyer-desc">From the MLS public remarks: "This single level (4 Bedroom 2 Bath) ranch-style home was completely transformed into a timeless retreat, blending warm, organic textures with modern functionality. With an expanded primary suite and an additional guest bedroom, the renovation added 500 square feet. Simple but quality materials include new hardwood floors, stained ceilings, custom white oak cabinetry, natural stone tiles and thoughtful lighting. Inspired by the surroundings of Central Oregon landscape, the interiors feature a layered, earthy palette and collected elements that tell the story of a relaxed and welcoming family home. Oh and did we mention the amazing views of the cascades, the converted man cave from a Tuff Shed, and the mere 15 minute commute to downtown Bend."</p>
-
-  <div class="flyer-features">
-    <div class="f"><div class="fl">List Price</div><div class="fv">$1,475,000</div></div>
-    <div class="f"><div class="fl">Sold Price</div><div class="fv">$1,600,000</div></div>
-    <div class="f"><div class="fl">Close Date</div><div class="fv">Aug 22, 2025</div></div>
-    <div class="f"><div class="fl">View</div><div class="fv">Cascade Mountains</div></div>
-    <div class="f"><div class="fl">Condition</div><div class="fv">Full renovation + 500 sf addition</div></div>
-    <div class="f"><div class="fl">Outbuilding</div><div class="fv">Converted Tuff Shed</div></div>
-    <div class="f"><div class="fl">Commute</div><div class="fv">15 min to downtown Bend</div></div>
-    <div class="f"><div class="fl">Days to Offer</div><div class="fv">8 days · DOM 42 incl. escrow</div></div>
-  </div>
-
-  <div class="flyer-photos">
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250709213451574610000000-o.jpg" alt="Renovated kitchen" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250709213418595340000000-o.jpg" alt="Great room" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250709213421486824000000-o.jpg" alt="Living area" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250709213448321392000000-o.jpg" alt="Primary suite" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250709213424515875000000-o.jpg" alt="Interior detail" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250709213449355623000000-o.jpg" alt="Exterior / grounds" />
-  </div>
-
   <footer class="pg-footer">
-    <span>Ryan Realty · 541.213.6706</span>
-    <span>Page 6 of 13</span>
+    <span>Ryan Realty · 541.703.3095</span>
+    <span>Page 5 of 17</span>
   </footer>
 </section>
 
-<!-- PAGE 7 — COMP FLYER 2 of 5 : 65010 Gerking Market -->
 <section class="page">
   <header class="pg-header">
-    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
-    <div class="pg-meta">Comparable Sale 2 of 5 · Tumalo</div>
+    <img src="https://ryanrealty.vercel.app/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 1 of 5 · N/A</div>
   </header>
-  <div class="flyer-badge">Closest Size + Lot Anchor · Jan 2026 · 76d to offer</div>
-  <h1 class="flyer-title">65010 Gerking Market</h1>
-  <div class="flyer-sub">Bend, Oregon 97703 · Tumalo · 1.60 mi from subject · MLS 220209787</div>
-
-  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20250925233851059559000000-o.jpg" alt="65010 Gerking Market" />
-
+  
+  <div class="flyer-badge">Closed Jun 2026 · 11d to offer</div>
+  <h1 class="flyer-title">63940 Quail Haven</h1>
+  <div class="flyer-sub">Bend, Oregon · N/A · MLS 220217990</div>
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260327170901452235000000-o.jpg" alt="63940 Quail Haven" />
   <div class="flyer-stats">
     <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
-    <div class="s"><div class="l">Baths</div><div class="v">4</div></div>
-    <div class="s"><div class="l">Sqft</div><div class="v">2,416</div></div>
+    <div class="s"><div class="l">Baths</div><div class="v">3</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">2,084</div></div>
     <div class="s"><div class="l">Lot</div><div class="v">5.00 ac</div></div>
-    <div class="s"><div class="l">Year</div><div class="v">1992</div></div>
-    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">$496.69</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">1977</div></div>
+    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">$463</div></div>
   </div>
-
-  <p class="flyer-desc">From the MLS public remarks: "5 acre irrigated Tumalo horse property. 3 stall barn with run outs, tack room, hay storage, power and water. Arena, two loafing sheds in pasture. Vinyl and top rail wire fencing and machine shed. Gorgeous 2400+ square foot home with views from every room. 3 bed 4 bath plus office &amp; mud room. Decks look out at Cascade mountains and open pastures. Underground sprinklers in yard and pasture. Private well and 4 acres of irrigation water rights with a private pond and pump house. Superbly maintained, roof and HVAC only 4 years old. New sprinkler system in yard. Set up your showing today!"</p>
-
+  <p class="flyer-desc">Nestled on 5 acres, this mid-century home offers a peaceful getaway in an ideal Bend, Oregon location. As you walk in, you&#39;re greeted with original character and cedar vaulted ceilings, accentuated by an abundance of natural light. The oversized living room, family room, and dining room provide plenty of space for entertaining, while the cozy wood-burning fireplace is perfect for those cool Oregon nights. 3 bedrooms and 3 bathrooms round out the charm and functionality throughout this one-owner home. The property is fully irrigated, with 2 acres of water rights, has a 20,000 gallon cistern for water storage from the Swalley Canal and features mountain views from the driveway. Experience for yourself, this rare find, offering both tranquility and convenience.</p>
   <div class="flyer-features">
-    <div class="f"><div class="fl">List Price</div><div class="fv">$1,270,000</div></div>
-    <div class="f"><div class="fl">Sold Price</div><div class="fv">$1,200,000</div></div>
-    <div class="f"><div class="fl">Close Date</div><div class="fv">Jan 9, 2026</div></div>
-    <div class="f"><div class="fl">View</div><div class="fv">Cascade · Open pasture</div></div>
-    <div class="f"><div class="fl">Lot Features</div><div class="fv">Horse property · Barn · Arena</div></div>
-    <div class="f"><div class="fl">Mechanicals</div><div class="fv">Roof &amp; HVAC 4 yrs old</div></div>
-    <div class="f"><div class="fl">Water</div><div class="fv">Private well · 4 ac irrigation</div></div>
-    <div class="f"><div class="fl">Days to Offer</div><div class="fv">76 days · DOM 104 incl. escrow</div></div>
+    <div class="f"><div class="fl">List Price</div><div class="fv">$965,000</div></div>
+    <div class="f"><div class="fl">Sold Price</div><div class="fv">$965,000</div></div>
+    <div class="f"><div class="fl">Close Date</div><div class="fv">Jun 25, 2026</div></div>
+    <div class="f"><div class="fl">Days on Market</div><div class="fv">11 days to offer · DOM 90</div></div>
+    <div class="f"><div class="fl">View</div><div class="fv">Cascade Mountains, Territorial</div></div>
+    <div class="f"><div class="fl">Tax (annual)</div><div class="fv">$6,199</div></div>
+    <div class="f"><div class="fl">Adjusted to Subject</div><div class="fv">$1,020,324</div></div>
+    <div class="f"><div class="fl">Selection Tier</div><div class="fv">broker-selected</div></div>
   </div>
-
-  <div class="flyer-photos">
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250925234227520469000000-o.jpg" alt="Interior view" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250925235356716793000000-o.jpg" alt="Living area" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250925234233659956000000-o.jpg" alt="Kitchen / dining" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250925234608052910000000-o.jpg" alt="Primary suite" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250925234609167619000000-o.jpg" alt="Deck and pasture" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250925234610124550000000-o.jpg" alt="Barn / outbuildings" />
-  </div>
-
+  <p class="small">Description quoted from the MLS listing record.</p>
   <footer class="pg-footer">
-    <span>Ryan Realty · 541.213.6706</span>
-    <span>Page 7 of 13</span>
+    <span>Ryan Realty · 541.703.3095</span>
+    <span>Page 6 of 17</span>
   </footer>
 </section>
 
-<!-- PAGE 8 — COMP FLYER 3 of 5 : 64265 Old Bend Redmond -->
 <section class="page">
   <header class="pg-header">
-    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
-    <div class="pg-meta">Comparable Sale 3 of 5 · Tumalo</div>
+    <img src="https://ryanrealty.vercel.app/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 2 of 5 · N/A</div>
   </header>
-  <div class="flyer-badge">Off-Market Floor · May 2026 · 0d to offer</div>
-  <h1 class="flyer-title">64265 Old Bend Redmond</h1>
-  <div class="flyer-sub">Bend, Oregon 97703 · Tumalo · 1.72 mi from subject · MLS 220217873</div>
-
-  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20260325195820160429000000-o.jpg" alt="64265 Old Bend Redmond" />
-
-  <div class="flyer-stats">
-    <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
-    <div class="s"><div class="l">Baths</div><div class="v">4</div></div>
-    <div class="s"><div class="l">Sqft</div><div class="v">1,980</div></div>
-    <div class="s"><div class="l">Lot</div><div class="v">2.76 ac</div></div>
-    <div class="s"><div class="l">Year</div><div class="v">2002</div></div>
-    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">$343.43</div></div>
-  </div>
-
-  <p class="flyer-desc">From the MLS public remarks: "Private, peaceful living just minutes from downtown Bend. This immaculate single-level home sits on 2.76 fully fenced acres and includes a 1,728 sq ft insulated shop/garage. Offering 3 bedrooms and 3.5 bathrooms, the home features a spacious primary suite with a large, updated bathroom and walk-in closet, along with an open floor plan designed for comfort and functionality. Enjoy great entertaining outdoor living space with a covered brick patio, fireplace and TV. The property also includes irrigated landscaping, a pond, chicken coop, and plenty of open space to enjoy. A perfect blend of country tranquility and convenient access to all that Bend has to offer."</p>
-
-  <div class="flyer-features">
-    <div class="f"><div class="fl">List Price</div><div class="fv">$680,000</div></div>
-    <div class="f"><div class="fl">Sold Price</div><div class="fv">$680,000</div></div>
-    <div class="f"><div class="fl">Close Date</div><div class="fv">May 15, 2026</div></div>
-    <div class="f"><div class="fl">Lot Features</div><div class="fv">Fully fenced · Pond · Chicken coop</div></div>
-    <div class="f"><div class="fl">Shop</div><div class="fv">1,728 sf insulated</div></div>
-    <div class="f"><div class="fl">Outdoor</div><div class="fv">Covered brick patio · Fireplace · TV</div></div>
-    <div class="f"><div class="fl">Listing Type</div><div class="fv">Pre-listed sale (no open market)</div></div>
-    <div class="f"><div class="fl">Days to Offer</div><div class="fv">0 days · DOM 44 incl. escrow</div></div>
-  </div>
-
-  <div class="flyer-photos">
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260325195811639861000000-o.jpg" alt="Front elevation" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260325195812660536000000-o.jpg" alt="Interior view" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260325195809237315000000-o.jpg" alt="Living area" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260325195816391667000000-o.jpg" alt="Kitchen" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260325195815165924000000-o.jpg" alt="Primary suite" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20260325195818843093000000-o.jpg" alt="Shop / outbuilding" />
-  </div>
-
-  <p class="small" style="margin-top:8px;"><strong>Note:</strong> Closed at full list with 0 days between list and pending — a pre-arranged sale, not a marketed-asking comp. Useful as a condition / acreage floor reference but not as a primary anchor for the subject's recommended list price.</p>
-
-  <footer class="pg-footer">
-    <span>Ryan Realty · 541.213.6706</span>
-    <span>Page 8 of 13</span>
-  </footer>
-</section>
-
-<!-- PAGE 9 — COMP FLYER 4 of 5 : 63510 Gold Spur -->
-<section class="page">
-  <header class="pg-header">
-    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
-    <div class="pg-meta">Comparable Sale 4 of 5 · Saddleback West</div>
-  </header>
-  <div class="flyer-badge">Untouched · Feb 2026 · 81d to offer</div>
-  <h1 class="flyer-title">63510 Gold Spur</h1>
-  <div class="flyer-sub">Bend, Oregon 97703 · Saddleback West · 2.52 mi from subject · MLS 220211124</div>
-
-  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20251027192707192457000000-o.jpg" alt="63510 Gold Spur" />
-
+  
+  <div class="flyer-badge">Closed Apr 2026 · 0d to offer</div>
+  <h1 class="flyer-title">64495 Quail</h1>
+  <div class="flyer-sub">Bend, Oregon · N/A · MLS 220219820</div>
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260422181734952721000000-o.jpg" alt="64495 Quail" />
   <div class="flyer-stats">
     <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
     <div class="s"><div class="l">Baths</div><div class="v">2</div></div>
-    <div class="s"><div class="l">Sqft</div><div class="v">1,902</div></div>
-    <div class="s"><div class="l">Lot</div><div class="v">2.48 ac</div></div>
-    <div class="s"><div class="l">Year</div><div class="v">1991</div></div>
-    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">$426.92</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">2,160</div></div>
+    <div class="s"><div class="l">Lot</div><div class="v">2.50 ac</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">1976</div></div>
+    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">$451</div></div>
   </div>
-
-  <p class="flyer-desc">From the MLS public remarks: "The famed Saddleback West! A forested sanctuary tucked away on Bend's west side, minutes from Shevlin Park and Tumalo State Park. Brand new roof in Dec 2025. Crafted in 1991 as the builder's own home, this vintage residence offers unexpected quality enhancements like wood windows, sauna, and a floor to ceiling fireplace centered in the great room. The interior is completely untouched and ripe for an extensive remodel, easily supported by this strong valued neighborhood. There are 3 bedrooms in addition to a small office/den off the living room. A separate workroom off the garage provides ideal space for crafting, projects, or storage. All your parking needs are met on the 2.5 acre level lot, zoned RR10. Lots of room to build a shop and outbuildings."</p>
-
+  <p class="flyer-desc">Fantastic Central Oregon location w/ mountain views. Resting just west of the small but mighty town of Tumalo. Only minutes to downtown Bend, Tumalo State Park and the Deschutes River. Horse trails, hiking, biking and everything else Central Oregon has to offer are all nearby. If you want to create a homesteading lifestyle, this is it! Greenhouse, fenced in garden area Chicken coop, dog kennel, horse shelter, wood shelter and more. While the vegetables are growing you can star gaze while soaking in your peaceful hot tub. The home offers beautiful vaulted wood ceilings, bamboo flooring, tile bathrooms, wood and pellet stoves, newer furnace &amp; roof. Septic tank replaced in 2011. Water provided by Avion Water. Great room upstairs and bonus family room below with office/exercise area. Big…</p>
   <div class="flyer-features">
-    <div class="f"><div class="fl">List Price</div><div class="fv">$835,000</div></div>
-    <div class="f"><div class="fl">Sold Price</div><div class="fv">$812,000</div></div>
-    <div class="f"><div class="fl">Close Date</div><div class="fv">Feb 13, 2026</div></div>
-    <div class="f"><div class="fl">Setting</div><div class="fv">Forested · Saddleback West</div></div>
-    <div class="f"><div class="fl">Roof</div><div class="fv">New Dec 2025</div></div>
-    <div class="f"><div class="fl">Condition</div><div class="fv">Untouched · ripe for remodel</div></div>
-    <div class="f"><div class="fl">Zoning</div><div class="fv">RR10 · level lot</div></div>
-    <div class="f"><div class="fl">Days to Offer</div><div class="fv">81 days · DOM 108 incl. escrow</div></div>
+    <div class="f"><div class="fl">List Price</div><div class="fv">$1,025,000</div></div>
+    <div class="f"><div class="fl">Sold Price</div><div class="fv">$975,000</div></div>
+    <div class="f"><div class="fl">Close Date</div><div class="fv">Apr 26, 2026</div></div>
+    <div class="f"><div class="fl">Days on Market</div><div class="fv">0 days to offer · DOM 4</div></div>
+    <div class="f"><div class="fl">View</div><div class="fv">Cascade Mountains, Mountain(s), Territorial</div></div>
+    <div class="f"><div class="fl">Tax (annual)</div><div class="fv">$5,110</div></div>
+    <div class="f"><div class="fl">Adjusted to Subject</div><div class="fv">$1,010,642</div></div>
+    <div class="f"><div class="fl">Selection Tier</div><div class="fv">broker-selected</div></div>
   </div>
-
-  <div class="flyer-photos">
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20251027192716150947000000-o.jpg" alt="Front exterior" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20251027192712136620000000-o.jpg" alt="Great room with fireplace" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20251027192721031724000000-o.jpg" alt="Kitchen" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20251027192846571804000000-o.jpg" alt="Bedroom" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20251027192849582054000000-o.jpg" alt="Living" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20251027192852903833000000-o.jpg" alt="Wooded lot" />
-  </div>
-
+  <p class="small">Description quoted from the MLS listing record.</p>
   <footer class="pg-footer">
-    <span>Ryan Realty · 541.213.6706</span>
-    <span>Page 9 of 13</span>
+    <span>Ryan Realty · 541.703.3095</span>
+    <span>Page 7 of 17</span>
   </footer>
 </section>
 
-<!-- PAGE 10 — COMP FLYER 5 of 5 : 19083 Saddleback -->
 <section class="page">
   <header class="pg-header">
-    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
-    <div class="pg-meta">Comparable Sale 5 of 5 · Saddleback</div>
+    <img src="https://ryanrealty.vercel.app/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 3 of 5 · N/A</div>
   </header>
-  <div class="flyer-badge">Updated Kitchen + Mountain Views · Sep 2025 · 83d to offer</div>
-  <h1 class="flyer-title">19083 Saddleback</h1>
-  <div class="flyer-sub">Bend, Oregon 97703 · Saddleback · 3.00 mi from subject · MLS 220201278</div>
+  
+  <div class="flyer-badge">Closed Apr 2026 · 5d to offer</div>
+  <h1 class="flyer-title">21435 Modoc</h1>
+  <div class="flyer-sub">Bend, Oregon · N/A · MLS 220217299</div>
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260317225613831829000000-o.jpg" alt="21435 Modoc" />
+  <div class="flyer-stats">
+    <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+    <div class="s"><div class="l">Baths</div><div class="v">3</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">2,548</div></div>
+    <div class="s"><div class="l">Lot</div><div class="v">4.49 ac</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">2005</div></div>
+    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">$369</div></div>
+  </div>
+  <p class="flyer-desc">Enjoy peaceful country living with breathtaking Cascade Mountain views just minutes from Bend&#39;s shops, dining, and amenities. Set on three irrigated acres, this beautiful single-level home blends space, comfort, and Central Oregon lifestyle. Large windows frame the mountain views and fill the home with natural light, perfect for everyday living and entertaining. The thoughtful floor plan features a spacious primary suite, welcoming gathering areas, and a propane fireplace. Step outside to a covered paver patio overlooking a lined pond with waterfall, fire pit, and wide open skies -- ideal for relaxing or hosting. The property is well suited for animals and recreation with irrigated pastures, horse facilities, hay storage, and multiple outbuildings. A 48x48 insulated shop with concrete…</p>
+  <div class="flyer-features">
+    <div class="f"><div class="fl">List Price</div><div class="fv">$919,000</div></div>
+    <div class="f"><div class="fl">Sold Price</div><div class="fv">$939,000</div></div>
+    <div class="f"><div class="fl">Close Date</div><div class="fv">Apr 19, 2026</div></div>
+    <div class="f"><div class="fl">Days on Market</div><div class="fv">5 days to offer · DOM 32</div></div>
+    <div class="f"><div class="fl">View</div><div class="fv">Cascade Mountains, Mountain(s), Pond</div></div>
+    <div class="f"><div class="fl">Tax (annual)</div><div class="fv">$3,731</div></div>
+    <div class="f"><div class="fl">Adjusted to Subject</div><div class="fv">$896,376</div></div>
+    <div class="f"><div class="fl">Selection Tier</div><div class="fv">broker-selected</div></div>
+  </div>
+  <p class="small">Description quoted from the MLS listing record.</p>
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.703.3095</span>
+    <span>Page 8 of 17</span>
+  </footer>
+</section>
 
-  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/800x600/true/20250507171948716115000000-o.jpg" alt="19083 Saddleback" />
-
+<section class="page">
+  <header class="pg-header">
+    <img src="https://ryanrealty.vercel.app/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 4 of 5 · Glacier View</div>
+  </header>
+  
+  <div class="flyer-badge">Closed Jan 2026 · 235d to offer</div>
+  <h1 class="flyer-title">64950 Glacier View</h1>
+  <div class="flyer-sub">Bend, Oregon · Glacier View · MLS 220200732</div>
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20250430221025261761000000-o.jpg" alt="64950 Glacier View" />
   <div class="flyer-stats">
     <div class="s"><div class="l">Beds</div><div class="v">4</div></div>
     <div class="s"><div class="l">Baths</div><div class="v">3</div></div>
-    <div class="s"><div class="l">Sqft</div><div class="v">1,792</div></div>
-    <div class="s"><div class="l">Lot</div><div class="v">0.76 ac</div></div>
-    <div class="s"><div class="l">Year</div><div class="v">1990</div></div>
-    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">$530.13</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">2,038</div></div>
+    <div class="s"><div class="l">Lot</div><div class="v">2.39 ac</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">1979</div></div>
+    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">$464</div></div>
   </div>
-
-  <p class="flyer-desc">From the MLS public remarks: "Perched among the trees of Saddleback, just minutes west of Bend, this home sits on over 3/4 of an acre and is thoughtfully designed to showcase mountain views and serene privacy among the pines. Upstairs, enjoy sunsets over the treetops from the vaulted great room, bathed in natural light from expansive windows and overhead skylights. The upgraded kitchen features cherry cabinetry, generous granite countertops with bar seating, stainless steel appliances, and a gas range. A natural stone-clad fireplace with a custom barnwood mantle anchors the living area, while knotty alder woodwork and solid doors add warmth and mountain-rustic charm throughout. A cedar deck, bedroom, and half bathroom complete the upper level. Downstairs, you'll find three bedrooms, including a tranquil primary suite with its own private deck and access to the outdoor sauna. Blending privacy, comfort, and natural beauty, this home offers a retreat-like feel while keeping you close to all the amenities of Bend."</p>
-
+  <p class="flyer-desc">Nestled in the desirable Tumalo area, this beautifully updated 4 bedroom, 3 bathroom home offers the perfect blend of comfort, versatility and wide open space. Set on 2.39 acres with 2 acres of irrigation, this 2038sqft property features 2 primary suites, ideal for multi-generational living or hosting guests in style. House is fully updated with two living areas and the ideal outdoor space for hosting parties/events or just relaxing by the fire pit. Enjoy your coffee every morning while looking at the beautiful mountains, unwind by the pond tucked into the 1 acre pasture or explore your creative side in the Art Studio attached to the barn. The well-equipped barn includes a loft and bathroom, ready for hobbies, storage or livestock. Whether you&#39;re dreaming of a mini-farm, an artists haven…</p>
   <div class="flyer-features">
-    <div class="f"><div class="fl">List Price</div><div class="fv">$997,000</div></div>
-    <div class="f"><div class="fl">Sold Price</div><div class="fv">$950,000</div></div>
-    <div class="f"><div class="fl">Close Date</div><div class="fv">Sep 3, 2025</div></div>
-    <div class="f"><div class="fl">View</div><div class="fv">Mountain · Treetop</div></div>
-    <div class="f"><div class="fl">Kitchen</div><div class="fv">Upgraded · cherry · granite · gas range</div></div>
-    <div class="f"><div class="fl">Living</div><div class="fv">Vaulted great room · stone fireplace</div></div>
-    <div class="f"><div class="fl">Outdoor</div><div class="fv">Cedar deck · sauna</div></div>
-    <div class="f"><div class="fl">Days to Offer</div><div class="fv">83 days · DOM 117 incl. escrow</div></div>
+    <div class="f"><div class="fl">List Price</div><div class="fv">$975,000</div></div>
+    <div class="f"><div class="fl">Sold Price</div><div class="fv">$945,000</div></div>
+    <div class="f"><div class="fl">Close Date</div><div class="fv">Jan 20, 2026</div></div>
+    <div class="f"><div class="fl">Days on Market</div><div class="fv">235 days to offer · DOM 264</div></div>
+    <div class="f"><div class="fl">View</div><div class="fv">{&quot;Mountain(s)&quot;: true}</div></div>
+    <div class="f"><div class="fl">Tax (annual)</div><div class="fv">$5,497</div></div>
+    <div class="f"><div class="fl">Adjusted to Subject</div><div class="fv">$1,008,140</div></div>
+    <div class="f"><div class="fl">Selection Tier</div><div class="fv">broker-selected</div></div>
   </div>
-
-  <div class="flyer-photos">
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250507171942500790000000-o.jpg" alt="Mountain views from great room" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250507171946531170000000-o.jpg" alt="Upgraded kitchen" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250507171950654640000000-o.jpg" alt="Living with stone fireplace" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250507171920575576000000-o.jpg" alt="Primary suite" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250507171933584015000000-o.jpg" alt="Vaulted great room" />
-    <img src="https://cdn.resize.sparkplatform.com/ore/320x240/true/20250507171954631069000000-o.jpg" alt="Cedar deck and grounds" />
-  </div>
-
+  <p class="small">Description quoted from the MLS listing record.</p>
   <footer class="pg-footer">
-    <span>Ryan Realty · 541.213.6706</span>
-    <span>Page 10 of 13</span>
+    <span>Ryan Realty · 541.703.3095</span>
+    <span>Page 9 of 17</span>
   </footer>
 </section>
 
-<!-- PAGE 11 — PRICING STRATEGY (Methods + Converged Range) -->
 <section class="page">
   <header class="pg-header">
-    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
-    <div class="pg-meta">19496 Tumalo Reservoir Rd · Pricing Strategy</div>
+    <img src="https://ryanrealty.vercel.app/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 5 of 5 · Boonesborough</div>
   </header>
+  
+  <div class="flyer-badge">Closed Dec 2025 · 50d to offer</div>
+  <h1 class="flyer-title">64492 Sylvan</h1>
+  <div class="flyer-sub">Bend, Oregon · Boonesborough · MLS 220210254</div>
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20251006200433370839000000-o.jpg" alt="64492 Sylvan" />
+  <div class="flyer-stats">
+    <div class="s"><div class="l">Beds</div><div class="v">4</div></div>
+    <div class="s"><div class="l">Baths</div><div class="v">4</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">2,382</div></div>
+    <div class="s"><div class="l">Lot</div><div class="v">2.52 ac</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">1996</div></div>
+    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">$411</div></div>
+  </div>
+  <p class="flyer-desc">New Price! Embrace the best of country living in this beautifully crafted, farmhouse-inspired retreat featuring a welcoming wrap-around deck &amp; direct access to more than 13,000 acres of pristine BLM land. With 3,086 sq. ft. total, the property offers a spacious 3 bed, 2.5 bath main home w/ an office, and a 704 sq. ft. single-level 1 bed/1 bath garage conversion—ideal for extended living. Thoughtful finishes include premium pergola flooring, granite kitchen counters, a cozy free-standing propane stove, &amp; three mini-splits ensuring year-round comfort. Outside, enjoy a large shop with RV/boat parking, an enclosed gazebo, manicured landscaping, &amp; an owned alarm system for added peace of mind. Recent improvements—new exterior paint &amp; a 2024 roof—provide lasting value. Perfectly positioned near…</p>
+  <div class="flyer-features">
+    <div class="f"><div class="fl">List Price</div><div class="fv">$979,900</div></div>
+    <div class="f"><div class="fl">Sold Price</div><div class="fv">$979,900</div></div>
+    <div class="f"><div class="fl">Close Date</div><div class="fv">Dec 28, 2025</div></div>
+    <div class="f"><div class="fl">Days on Market</div><div class="fv">50 days to offer · DOM 83</div></div>
+    <div class="f"><div class="fl">View</div><div class="fv">{&quot;Territorial&quot;: true, &quot;Neighborhood&quot;: true}</div></div>
+    <div class="f"><div class="fl">Tax (annual)</div><div class="fv">$6,990</div></div>
+    <div class="f"><div class="fl">Adjusted to Subject</div><div class="fv">$964,509</div></div>
+    <div class="f"><div class="fl">Selection Tier</div><div class="fv">broker-selected</div></div>
+  </div>
+  <p class="small">Description quoted from the MLS listing record.</p>
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.703.3095</span>
+    <span>Page 10 of 17</span>
+  </footer>
+</section>
 
+<section class="page">
+  <header class="pg-header">
+    <img src="https://ryanrealty.vercel.app/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">19496 Tumalo Reservoir · Market Context</div>
+  </header>
+  
+  <h2 class="section">Market Context · Bend</h2>
+  <p>Verified conditions for the subject's market, from the Ryan Realty market data cache. Closed-sale figures cover Jul 20, 2025 to Jul 20, 2026. Inventory is live as of Jul 20, 2026.</p>
+  <div class="stat-strip" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="stat"><div class="lbl">Months of Supply</div><div class="val">3.9</div></div>
+    <div class="stat"><div class="lbl">Median Sale Price</div><div class="val">$724,950</div></div>
+    <div class="stat"><div class="lbl">Median DOM</div><div class="val">25 days</div></div>
+    <div class="stat"><div class="lbl">Sale-to-List</div><div class="val">95.6%</div></div>
+  </div>
+  <div class="stat-strip" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="stat"><div class="lbl">Closed Sales (12 mo)</div><div class="val">1,648</div></div>
+    <div class="stat"><div class="lbl">Active Now</div><div class="val">502</div></div>
+    <div class="stat"><div class="lbl">Median $/sqft</div><div class="val">$386</div></div>
+    <div class="stat"><div class="lbl">YoY Median Price</div><div class="val">-0.7%</div></div>
+  </div>
+  <h3 class="subhead">Seller&#39;s market</h3>
+  <p>Bend is carrying 3.9 months of supply, with 502 active single-family listings on the market right now against the recent pace of closed sales. The standard thresholds read 4 months or less as a seller's market, 4 to 6 as balanced, and 6 or more as a buyer's market.</p>
+  <p>The median closed price is down 0.7% year over year. That trend rate is the market-conditions adjustment applied to every comp in the grid, so older sales are read at today's values rather than at their close-date values.</p>
+  <div class="trace">
+    <div class="t-hd">Source</div>
+    <code>market_stats_cache</code> geo <code>bend</code>, period rolling_365d ending Jul 20, 2026, methodology v3-2026-05-07, computed Jul 20, 2026 · <code>market_pulse_live</code> active count as of Jul 20, 2026.
+  </div>
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.703.3095</span>
+    <span>Page 11 of 17</span>
+  </footer>
+</section>
+
+<section class="page">
+  <header class="pg-header">
+    <img src="https://ryanrealty.vercel.app/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">19496 Tumalo Reservoir · Pricing Strategy</div>
+  </header>
+  
   <h2 class="section">Pricing Strategy</h2>
-
-  <p>Two methods, one answer. Both bracket the subject at roughly the same place — that is the math check.</p>
-
-  <h3 class="subhead">Method 1 — Tiered price-per-sqft (middle bracket)</h3>
-  <p>The five comps sort into three tiers by $/sqft and condition. The renovated view ceiling sits alone at $766/sqft (Tumalo Rim). The middle tier — same vintage, mountain views, marketed at asking on a 1–3 acre rural lot — clears $470–$540/sqft (Gerking Market $497, Saddleback $530, Gold Spur $427). Apply the middle bracket to the subject's 2,325 sqft. The subject's larger lot, water feature, heated 3-car garage, and Three Sisters orientation place it toward the upper end of this band.</p>
-  <p class="small"><code style="font-family:'Geist Mono',monospace; background: var(--navy-fill); padding:2px 6px; border-radius:3px;">$470 × 2,325 = $1,092,750 &nbsp;&nbsp;|&nbsp;&nbsp; $540 × 2,325 = $1,255,500</code></p>
-
-  <h3 class="subhead">Method 2 — Closest comparable + lot &amp; view premium</h3>
-  <p>Anchor on 65010 Gerking Market: $1,200,000 in Jan 2026 for 2,416 sqft on 5 acres at $497/sqft, view-equivalent to the subject. The subject is 91 sqft smaller (-3.8%) and on a smaller lot (-2.7 acres) — net comp-equivalent floor of roughly $1,100,000. Add a Three Sisters direct-view premium (~$80–$125K) and credit the heated 3-car garage + water feature + RV parking package (~$25–$50K). Ceiling tested against the renovated view comp at $1,600,000 (Tumalo Rim) — the subject is not full-reno, so it sits below.</p>
-  <p class="small"><code style="font-family:'Geist Mono',monospace; background: var(--navy-fill); padding:2px 6px; border-radius:3px;">$1,100,000 + $80,000 + $25,000 = $1,205,000 &nbsp;&nbsp;|&nbsp;&nbsp; $1,100,000 + $125,000 + $50,000 = $1,275,000</code></p>
-
+  <p>Three independent methods, one answer. The methods land wider than the 5% tolerance, so the reconciliation method governs and the stated confidence is reduced.</p>
+  <h3 class="subhead">Method 1 · Tiered price per square foot</h3>
+  <p>The comps' time-adjusted $/sqft rates span $410 to $462 at the 25th to 75th percentile. Applied to the subject's 2,325 sqft that brackets $953,000 to $1,074,000, with the median rate landing at $1,048,000.</p>
+  <h3 class="subhead">Method 2 · Size-matched baseline</h3>
+  <p>The median adjusted price of the three comps closest to the subject in living area lands at $965,000.</p>
+  <h3 class="subhead">Method 3 · Adjusted-comp reconciliation</h3>
+  <p>The similarity-weighted average of every comp's fully adjusted price (time plus size, weights favoring the closest and most recent sales) lands at $979,000. This method carries the market-conditions correction, so it anchors the recommendation.</p>
   <h3 class="subhead">Converged range</h3>
   <div class="tier-grid">
     <div class="tier">
       <div class="t-lbl">Conservative</div>
-      <div class="t-val">$1,100,000</div>
-      <div class="t-note">Quick-sale entry. 30–45 day close if photos and showings are clean. Use if the priority is closing in the current selling window rather than holding for ceiling.</div>
+      <div class="t-val">$955,000</div>
+      <div class="t-note">Quick-sale entry. Use when a fast, certain close is the priority.</div>
     </div>
     <div class="tier featured">
       <div class="t-lbl">Recommended List</div>
-      <div class="t-val">$1,225,000</div>
-      <div class="t-note">Holds the current Active list price. Sits above the Gerking Market closing ($1.20M) by the Three Sisters view + heated 3-car + water-feature premium, and well below the Tumalo Rim renovated ceiling ($1.60M).</div>
+      <div class="t-val">$1,050,000</div>
+      <div class="t-note">Broker-adjusted on review, anchored to the data-supported reconciliation.</div>
     </div>
     <div class="tier">
       <div class="t-lbl">High End</div>
-      <div class="t-val">$1,275,000</div>
-      <div class="t-note">Ceiling of the supportable range with refreshed marketing, professional photography, and a 60-day-or-less list-to-pending. Above this is uncomfortable against a comp set whose closest match cleared at $1.20M.</div>
+      <div class="t-val">$1,060,000</div>
+      <div class="t-note">Ceiling of the supportable range with presentation and condition fully resolved.</div>
     </div>
   </div>
-
+  <h3 class="subhead" style="margin-top:14px;">Method notes</h3><ul class="note-list"><li>The methods land 8.5% apart, wider than the 5% convergence tolerance. Method 3 (the adjusted-comp reconciliation) governs the recommendation because it carries both the time and size corrections. Confidence is reduced accordingly.</li><li>The recommended list price reflects a broker adjustment set above the data-derived reconciliation (a strategic list with negotiation room). The Conservative tier stays anchored to the comp-supported quick-sale floor; the full reconciliation is preserved in the verification trace.</li><li>Comparable review: 5 of 5 candidate sales kept after a per-comp comparability review, 1 down-weighted to bracket the range. The subject is a 1995-built Tumalo-area home on 2.28 acres with premium Cascade Mountain views and 2,325 square feet. After excluding the 1977 mid-century comp at $463/sqft (older vintage, different character), the remaining four sales range from $369/sqft to $464/sqft and share the rural Tumalo setting, similar lot sizes (2.39 to 5 acres), and mountain view appeal. The three strong comps on Quail, Modoc, and Sylvan sold between $939k and $979.9k and align closely with the subject&#39;s size, era, and acreage, while the Glacier View sale brackets the upper end but required 264 days on market.</li><li>Adversarial accuracy audit: 5 finding(s) recorded for broker review before this analysis is released.</li></ul>
+  <p class="small" style="margin-top:10px;">Confidence: <strong>Moderate</strong>. Capped by method spread 8.5%.</p>
   <footer class="pg-footer">
-    <span>Ryan Realty · 541.213.6706</span>
-    <span>Page 11 of 13</span>
+    <span>Ryan Realty · 541.703.3095</span>
+    <span>Page 12 of 17</span>
   </footer>
 </section>
 
-<!-- PAGE 12 — WHY THIS LIST PRICE (Outlier + Rationale + Verification Trace) -->
 <section class="page">
   <header class="pg-header">
-    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
-    <div class="pg-meta">19496 Tumalo Reservoir Rd · Why This List Price</div>
+    <img src="https://ryanrealty.vercel.app/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">19496 Tumalo Reservoir · Why This Price</div>
   </header>
-
-  <h2 class="section">Why this list price</h2>
-
-  <h3 class="subhead">Reading the 64141 Tumalo Rim outlier</h3>
-  <p>The renovated view comp at 64141 Tumalo Rim closed $125,000 over its $1,475,000 list price in Aug 2025 — a $766/sqft transaction in a market where the middle of the comp set sits at $470–$540/sqft. The right read is not "the subject can clear $1.6M." The right read is "a full renovation with a 500 sqft addition on a Tumalo lot with Cascade views can compress to 8 days under contract and push 15% above list." The subject's 1995 build is not in the same condition tier; its ceiling is below the Tumalo Rim transaction. The Tumalo Rim closing instead tells us the demand for renovated view product is real — operationally useful if a future seller decides to invest in updates before a relist.</p>
-
-  <h3 class="subhead">Why holding $1,225,000 makes sense</h3>
-  <p>The prior list at $1,449,000 sat 492 days without producing a qualifying offer — a 17% over-shoot of the eventual comp evidence. The current $1,225,000 list is 15.5% below that prior position and sits within the converged range from both methods on the prior page. With 62 active days on market, the data does not yet say "drop the price." It says "hold the line, refresh the marketing, and reassess at 90 active days." The first meaningful inflection point is at 90 days — if a qualifying offer has not surfaced by then, the next move is a measured drop into the $1,175,000–$1,199,000 band rather than a panic cut.</p>
-
-  <h2 class="section" style="margin-top:18px;">Verification trace</h2>
+  
+  <h2 class="section">Why This List Price</h2>
+  <ul class="note-list">
+    <li>The recommendation sits on 5 verified closed sales, not on an automated estimate or a single anchor comp.</li>
+    <li>Every comp was normalized to today's market before comparison, using the verified -0.7% year-over-year trend for Bend.</li>
+    <li>Bend is carrying 3.9 months of supply. The tier grid reflects that reality rather than working against it.</li>
+    <li>The median Bend sale is taking 25 days. Pricing inside the supported range is what keeps a listing on the fast side of that number.</li>
+    <li>Where a defensible dollar adjustment was not possible, the difference is disclosed and down-weighted instead of guessed.</li>
+  </ul>
+  <h2 class="section" style="margin-top:18px;">Verification Trace</h2>
   <div class="trace">
     <div class="t-hd">Data sources (audit trail)</div>
-    Every figure on this report traces to the Oregon Data Share MLS via the Ryan Realty Supabase platform, pulled 2026-05-15.<br/>
-    Subject: <code>listings</code> table, <code>ListingKey = 20260225192329433521000000</code> (Active at $1,225,000, listed 2026-03-04 by Matt Ryan).<br/>
-    Comp set: PostGIS RPC <code>get_cma_comps_by_distance</code> with <code>lat = 44.138729, lng = -121.349064, radius = 4828 m (3 mi), months_back = 12, lot 0.76–6.84 ac, sqft 1,700–2,900, year 1980–2010, include_active = false</code>. Result: 5 closed sales (all shown).<br/>
-    Days to Offer = <code>pending_timestamp − OnMarketDate</code>. DOM = Spark <code>DaysOnMarket</code>.<br/>
-    No subdivision filter — subject's <code>SubdivisionName = 'N/A'</code> (rural Tumalo acreage outside any platted subdivision).
+    Every figure in this report traces to the Oregon Data Share MLS via the Ryan Realty data platform, pulled Jul 20, 2026.<br/><br/>
+    Entered by MLS 20260225192329433521000000. Subject uses the MOST RECENT listing of the property: MLS 220215931, active, listed Mar 2026, 62 photo(s), zip 97703 (chosen from 3 listing row(s) by real listing-activity date, not last-modified).<br/>Broker-selected comp set: 5 of 5 requested ListingKey(s) resolved as valid closed SFR.<br/>Broker-selected set of 5 comps priced as chosen. Comparability judgment (claude-sonnet-4-5) applied for the narrative and down-weighted 1 comp(s) to bracket the range; no selected comp was dropped.
   </div>
-
   <footer class="pg-footer">
-    <span>Ryan Realty · 541.213.6706</span>
-    <span>Page 12 of 13</span>
+    <span>Ryan Realty · 541.703.3095</span>
+    <span>Page 13 of 17</span>
   </footer>
 </section>
 
-<!-- PAGE 13 — DISCLAIMER + SIGNATURE -->
 <section class="page">
   <header class="pg-header">
-    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
-    <div class="pg-meta">19496 Tumalo Reservoir Rd · Presented by Matt Ryan</div>
+    <img src="https://ryanrealty.vercel.app/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">19496 Tumalo Reservoir · Development Potential</div>
   </header>
+  
+  <h2 class="section">Development Potential</h2>
+  <p>Zoning of record: <strong>MUA10</strong> · Deschutes County (unincorporated). Each answer below is a preliminary read of the code in effect 2026-07-14, with the section we relied on cited. None of it is a land-use decision.</p>
+  
+  <h3 class="subhead">Subdivide or partition · Not available</h3>
+  <p><strong>Below the 10-acre-per-parcel minimum to divide.</strong></p>
+  <p class="small">MUA10 requires 10 acres per new parcel. This parcel is 2.28 acres.</p>
+  <p class="small" style="opacity:0.75;">Source: Deschutes County Code 18.32.040 · <a href="https://deschutescounty.municipalcodeonline.com/book/print?type=ordinances&amp;name=CHAPTER_18.32_MULTIPLE_USE_AGRICULTURAL_ZONE%3B_MUA">deschutescounty.municipalcodeonline.com</a></p>
+  <h3 class="subhead">ADU · Conditional</h3>
+  <p><strong>A rural ADU is allowed here, with real conditions.</strong></p>
+  <p class="small">Deschutes County allows one rural ADU outright in MUA10 on a lot of at least 2 acres (5 in some wildfire-mapped areas) that already has a single-family dwelling. The conditions have teeth: sewer or DEQ septic approval before application, wildfire-hardening and defensible-space standards, a size cap, and no vacation occupancy. A rural ADU cannot be used as a short-term rental. This parcel is 2.28 acres.</p>
+  <p class="small" style="opacity:0.75;">Source: Deschutes County Code 18.116.355; ORS 215.495 (SB 391) · <a href="https://deschutescounty.municipalcodeonline.com">deschutescounty.municipalcodeonline.com</a></p>
+  <h3 class="subhead">Second dwelling · Conditional</h3>
+  <p><strong>The rural ADU is the main path. A historic-home ADU is the narrow second one.</strong></p>
+  <p class="small">Beyond the rural ADU above, a separate pathway exists for lots of at least 2 acres holding a historic home (built between specific statutory dates). Manufactured-home secondary dwellings run as accessory uses in limited cases. Each is its own application.</p>
+  <p class="small" style="opacity:0.75;">Source: Deschutes County Code 18.116.350 and 18.116.355; ORS 215.501 · <a href="https://deschutescounty.municipalcodeonline.com">deschutescounty.municipalcodeonline.com</a></p>
+  <h3 class="subhead">Short-term rental · Conditional</h3>
+  <p><strong>Allowed. The county requires tax registration, not a land-use permit.</strong></p>
+  <p class="small">Unincorporated Deschutes County imposes no STR land-use permit, density cap, separation rule, or waitlist in rural residential zones. A lawfully established dwelling may rent short-term after registering with the County Tax Office (within 15 days of starting, with a Certificate of Authority displayed in the unit) and collecting the 8% county room tax. Two carve-outs matter: STRs are prohibited on EFU and Forest land, and a property that adds a rural ADU gives up vacation-rental use of both units. Inside a destination resort (Sunriver, Black Butte Ranch, Caldera Springs, Eagle Crest, Juniper Preserve, Tetherow), nightly rental is a built-in resort use, with the resort association layer (rental registration, access fees, quiet hours) governing on top. Confirm any HOA or CC&amp;R restrictions on the specific property.</p>
+  <p class="small" style="opacity:0.75;">Source: Deschutes County Code 4.08.071, 4.08.090, 4.08.140 (Ord. 2025-006, effective 2025-09-01); DCC 18.113 (destination resorts); DCC 18.116.355 (rural-ADU vacation-rental prohibition) · <a href="https://deschutescounty.municipalcodeonline.com/book?type=ordinances#name=CHAPTER_4.08_TRANSIENT_ROOM_TAX">deschutescounty.municipalcodeonline.com</a></p>
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.703.3095</span>
+    <span>Page 14 of 17</span>
+  </footer>
+</section>
 
+<section class="page">
+  <header class="pg-header">
+    <img src="https://ryanrealty.vercel.app/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">19496 Tumalo Reservoir · Verify It Yourself</div>
+  </header>
+  
+  <h2 class="section">Verify It Yourself</h2>
+  <p>We research each of these questions against the county and city code as of 2026-07-14, the date these rules were last verified against their primary sources, and every rule cites the code section we relied on. Codes change, parcels have particulars a code table cannot see, and none of this is a land-use decision or an entitlement. It is ultimately your responsibility to verify anything you plan to rely on with the offices below before you act on it. We are glad to help you make those calls.</p>
+  <h3 class="subhead">Who to call, and where</h3>
+  <ul class="note-list"><li><strong><a href="https://www.deschutes.org/cd">Deschutes County Community Development (Planning)</a></strong><div class="small" style="margin-top:1px;">Zoning, land divisions, rural ADUs, dwelling entitlements for unincorporated parcels. 117 NW Lafayette Ave, Bend.</div></li><li><strong><a href="https://dial.deschutes.org">Deschutes County DIAL (property records)</a></strong><div class="small" style="margin-top:1px;">The parcel&#39;s permits, development summary, assessment, and zoning of record.</div></li><li><strong><a href="https://www.bendoregon.gov/government/departments/community-and-economic-development/planning-division">City of Bend Planning Division</a></strong> · 541.388.5580 ext. 3<div class="small" style="margin-top:1px;">Zoning, lot standards, ADUs, and middle housing inside Bend city limits.</div></li><li><strong><a href="https://bendoregon.gov/services/business/short-term-rentals/">City of Bend short-term rental program</a></strong> · 541.388.5580 ext. 8<div class="small" style="margin-top:1px;">STR land-use permits and operating licenses inside Bend, including the location-availability check.</div></li><li><strong><a href="https://www.redmondoregon.gov/government/departments/community-development/planning-division-2023">City of Redmond Planning Division</a></strong> · 541.923.7719<div class="small" style="margin-top:1px;">Zoning, lot standards, ADUs, and middle housing inside Redmond city limits.</div></li><li><strong><a href="https://www.oregon.gov/owrd/programs/waterrights/wris/pages/default.aspx">Oregon Water Resources Department</a></strong><div class="small" style="margin-top:1px;">Well logs (Well Report Query) and water rights of record (WRIS).</div></li><li><strong><a href="https://www.oregon.gov/owrd/programs/waterrights/pages/default.aspx">Tumalo Irrigation District</a></strong><div class="small" style="margin-top:1px;">The parcel&#39;s irrigation district: confirm water rights, delivered acreage, and transfer rules directly with the district office.</div></li><li><strong><a href="https://msc.fema.gov/portal/home">FEMA Flood Map Service Center</a></strong><div class="small" style="margin-top:1px;">The parcel&#39;s official flood map and zone determination.</div></li><li><strong><a href="https://myodfw.com/landowner-preference-program">ODFW Landowner Preference Program</a></strong> · 503.947.6101 option 1<div class="small" style="margin-top:1px;">Hunting-tag eligibility for qualifying acreage.</div></li></ul>
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.703.3095</span>
+    <span>Page 15 of 17</span>
+  </footer>
+</section>
+
+<section class="page">
+  <header class="pg-header">
+    <img src="https://ryanrealty.vercel.app/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">19496 Tumalo Reservoir · Presented by Matt Ryan</div>
+  </header>
+  
   <h2 class="section">Disclosure</h2>
-
-  <p>This Comparative Market Analysis is an estimate of market value based on closed comparable sales of rural acreage homes within a 3-mile radius of the subject, drawn over the prior 12 months. It is not a formal appraisal and is not binding on any party. Market conditions change continuously; figures are accurate as of the pull date noted in the verification trace on page 11. Equal Housing Opportunity.</p>
-
-  <p>The pricing range presented assumes the subject is marketed with current professional photography and that no material change in condition has occurred between the pull date and listing or relist. The current 2026 listing imagery referenced on the cover page is recent and reflects the current condition.</p>
-
-  <p>This report does not include an improvements ledger because the seller did not document a remodel or capital-improvement spend between the 2024 and 2026 listings. If updates were completed with receipts on file, surface them and the value range will be rebuilt with a Method 2 (un-renovated baseline + improvement value-add) per the canonical CMA recipe.</p>
-
-  <p>Comparable sales were drawn from the Oregon Data Share MLS via the Ryan Realty platform on 2026-05-15. The full comp pool was five closed single-family sales within 3 miles of the subject over the prior 12 months, filtered to 1,700–2,900 sqft, 0.76–6.84-acre lots, and vintage 1980–2010. All five are shown on pages 6–10. One closed sale (64265 Old Bend Redmond, $680,000 May 2026, 0 days from list to pending) is flagged as a pre-listed transaction and used only as a condition / acreage floor reference, not as a primary anchor.</p>
-
+  <p><strong>Purpose and intent.</strong> This document is a competitive market analysis prepared by a licensed Oregon real estate broker to assist the owner of 19496 Tumalo Reservoir, Bend, Oregon in evaluating a potential listing price. It is provided in accordance with ORS chapter 696 and OAR 863-015-0190.</p>
+  <p><strong>Property description.</strong> 19496 Tumalo Reservoir, Bend, Oregon 97703 · 3 bedrooms · 3 bathrooms · 2,325 sqft · 2.28 acres · built 1995.</p>
+  <p><strong>Basis for the value.</strong> The value range rests on 5 closed comparable sales from the Oregon Data Share MLS, adjusted for market conditions and size as shown in the adjustment grid, and on verified market statistics for Bend. The term value as used in this analysis means the estimated worth of or price for the property. It does not mean or imply a value arrived at by any method of appraisal.</p>
+  <p><strong>Limiting conditions.</strong> Interior condition was not inspected. Figures are accurate as of the pull date in the verification trace and market conditions change continuously. Seller-reported facts, where used, are labeled as such and should be confirmed at listing.</p>
+  <p><strong>Licensee interest.</strong> Neither Matt Ryan nor Ryan Realty holds any existing or contemplated interest in the subject property. Any such interest, should one arise, will be disclosed in writing.</p>
+  <p><strong>Not an appraisal.</strong> This competitive market analysis is not intended as an appraisal. If an appraisal is desired, the services of a competent professional licensed appraiser should be obtained. Unless the preparing licensee is also licensed by the Oregon Appraiser Certification and Licensure Board, this report is not intended to meet the requirements set out in the Uniform Standards of Professional Appraisal Practice. Equal Housing Opportunity.</p>
   <div class="signature-page">
-    <img class="portrait" src="./assets/matt-ryan.png" alt="Matt Ryan" />
+    <img class="portrait" src="https://ryanrealty.vercel.app/images/brokers/ryan-matt.png" alt="Matt Ryan" />
     <div class="sig-content">
       <div class="sig-name">Matt Ryan</div>
       <div class="sig-printed">Matt Ryan</div>
-      <div class="sig-title">Owner &amp; Principal Broker · Ryan Realty</div>
+      <div class="sig-title">Owner &amp; Principal Broker · Ryan Realty · Prepared Jul 20, 2026</div>
       <div class="sig-contact">
-        <strong>541.213.6706</strong><br/>
-        matt@ryan-realty.com<br/>
+        <strong><a href="tel:+15417033095">541.703.3095</a></strong><br/>
+        <a href="mailto:matt@ryan-realty.com">matt@ryan-realty.com</a><br/>
         ryan-realty.com · Bend · Oregon
       </div>
       <div class="sig-license">Oregon Real Estate License # 201206613</div>
     </div>
   </div>
-
   <footer class="pg-footer">
-    <span>Ryan Realty · Honest. Transparent. Trustworthy.</span>
-    <span>Page 13 of 13</span>
+    <span>Ryan Realty · 541.703.3095</span>
+    <span>Page 16 of 17</span>
   </footer>
 </section>
 
+<section class="page">
+  <header class="pg-header">
+    <img src="https://ryanrealty.vercel.app/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">19496 Tumalo Reservoir · Presented by Matt Ryan</div>
+  </header>
+  
+  <h2 class="section">Your next step</h2>
+  <p class="cta-lead">You have the full picture now. When you want to talk through the range, the timing, or what listing 19496 Tumalo Reservoir would actually look like, the fastest path is a call or a text. No pressure either way.</p>
+  <div class="cta-actions">
+    <a href="tel:+15417033095">Call Matt · 541.703.3095</a>
+    <a href="sms:+15417033095">Text Matt</a>
+    <a class="ghost" href="mailto:matt@ryan-realty.com">Email Matt</a>
+    <a class="ghost" href="https://ryan-realty.com/contact?utm_source=crm&utm_medium=doc&utm_campaign=cma">Book the listing consultation</a>
+  </div>
+  
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.703.3095</span>
+    <span>Page 17 of 17</span>
+  </footer>
+</section>
 </body>
 </html>

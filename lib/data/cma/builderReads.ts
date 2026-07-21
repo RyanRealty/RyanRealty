@@ -164,6 +164,28 @@ export async function selectCmaCompsPool(opts: {
   return (data ?? []) as unknown as CmaListingRow[]
 }
 
+/**
+ * Fetch specific closed comps by ListingKey — for a broker-curated comp set.
+ * Same column projection as the tiered pool so the builder's rowToComp mapping
+ * is identical; the builder handles ordering + downstream vetting.
+ */
+export async function selectCmaCompsByKeys(keys: string[]): Promise<CmaListingRow[]> {
+  const sb = client()
+  if (!sb) return []
+  const clean = Array.from(new Set(keys.map((k) => k.trim()).filter(Boolean)))
+  if (clean.length === 0) return []
+  const { data, error } = await sb
+    .from('listings')
+    .select(LISTING_CMA_COLUMNS)
+    .in('ListingKey', clean) // @canonical-key — builder callers pass curated keys read verbatim from listings
+    .limit(50)
+  if (error) {
+    console.error('[selectCmaCompsByKeys]', error.message)
+    return []
+  }
+  return (data ?? []) as unknown as CmaListingRow[]
+}
+
 export type CmaMarketStatsRow = {
   geo_type: string
   geo_slug: string

@@ -150,6 +150,12 @@ export interface CmaBuildInput {
   sellerImprovementsText?: string | null
   /** Broker-adjusted recommended list price (rebuild path). */
   priceOverride?: number | null
+  /**
+   * Broker-curated comp set (ListingKeys). When present, these exact closed
+   * sales are used instead of the auto-tiered selection; the rest of the
+   * pipeline (judge, adjustments, audit, contract, render) is unchanged.
+   */
+  compKeys?: string[] | null
   requestSource?: string | null
   /** cma = standard seller CMA; expired-audit = expired-listing audit (failure
    *  analysis + services + 2.5% net sheet). Same engine, tailored output. */

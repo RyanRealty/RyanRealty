@@ -19,7 +19,7 @@ import {
   type CmaCompInsert,
 } from '@/lib/data'
 import { resolveCmaSubject } from '@/lib/cma/subject'
-import { selectComps, MIN_COMPS } from '@/lib/cma/comps'
+import { selectComps, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
 import { getCmaMarketContext } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { judgeComps } from '@/lib/cma/judge'
@@ -107,8 +107,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // 2 + 3. Comps, market context, and authoritative site data (zoning / well
     // / septic from county + OWRD records — SKILL §3.5/§3.6) in parallel. Site
     // resolution is fail-open and never throws.
+    const curatedKeys = (input.compKeys ?? []).map((k) => k.trim()).filter(Boolean)
     const [selection, market, site] = await Promise.all([
-      selectComps(subject),
+      curatedKeys.length > 0 ? selectCompsByKeys(subject, curatedKeys) : selectComps(subject),
       getCmaMarketContext(subject.city),
       resolveCmaSiteData(subject),
     ])
@@ -133,8 +134,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // math runs. Falls back to the full set + the dispersion guard when the
     // key is absent or the call fails — never blocks a build.
     const judgment = await judgeComps(subject, selection.comps, market)
+    const isCurated = curatedKeys.length > 0
     let compsForPricing = selection.comps
-    if (judgment) {
+    if (judgment && !isCurated) {
       const keep = new Set(judgment.keptKeys)
       const vetted = selection.comps.filter((c) => keep.has(c.listingKey))
       // Never prune below the comp floor — if judgment would leave too few,
@@ -146,6 +148,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         compsForPricing.length === vetted.length
           ? `Comparability judgment (${judgment.model}): kept ${vetted.length} of ${selection.comps.length} candidates, excluded ${judgment.verdicts.filter((v) => v.tier === 'exclude').length} as non-comparable, down-weighted ${judgment.verdicts.filter((v) => v.tier === 'weak').length}. Priced on the ${vetted.length}-comp vetted set.`
           : `Comparability judgment (${judgment.model}) would keep only ${vetted.length} comps — below the ${MIN_COMPS}-comp floor, so the full ${selection.comps.length}-comp set was priced instead.`,
+      )
+    } else if (judgment && isCurated) {
+      // Broker-curated set: the broker already vetted these, so every curated
+      // comp is kept. The judge still narrates and its `weak` verdicts still
+      // down-weight in the Method 3 reconciliation — it just does not drop a
+      // comp the broker deliberately chose.
+      const weak = judgment.verdicts.filter(
+        (v) => v.tier === 'weak' && compsForPricing.some((c) => c.listingKey === v.listingKey),
+      ).length
+      selection.trace.push(
+        `Broker-selected set of ${compsForPricing.length} comps priced as chosen. Comparability judgment (${judgment.model}) applied for the narrative${weak ? ` and down-weighted ${weak} comp(s) to bracket the range` : ''}; no selected comp was dropped.`,
       )
     } else {
       selection.trace.push(
@@ -203,7 +216,10 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // below the comp floor, never loops more than once.
     let firstRoundAudit: typeof audit = null
     let repairedKeys: string[] = []
-    if (audit && audit.verdict !== 'pass') {
+    // A broker-curated set is not auto-repaired by dropping comps — the broker
+    // owns the selection. A non-pass audit still records its findings and forces
+    // needs_review through the contract, so the broker reviews it explicitly.
+    if (audit && audit.verdict !== 'pass' && !isCurated) {
       const flagged = [
         ...new Set(
           audit.findings

@@ -6,7 +6,7 @@
  * standard deviations when enough comps remain.
  */
 
-import { selectCmaCompsPool } from '@/lib/data'
+import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data'
 import type { CmaListingRow } from '@/lib/data'
 import type { CmaComp, CmaSubject } from '@/lib/cma/types'
 import { saneYearBuilt } from '@/lib/cma/subject'
@@ -190,4 +190,34 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
 
   trace.push(`Final comp set: ${comps.length} closed sales (tiers: ${tiersUsed.join(', ') || 'none'}).`)
   return { comps, excludedOutliers, tiersUsed, trace }
+}
+
+/**
+ * Build a comp selection from an explicit, broker-curated set of ListingKeys.
+ * The broker has already vetted these for location / acreage / age / condition,
+ * so the auto-tier widening + outlier drop + similarity cap are skipped. Rows
+ * map through the SAME rowToComp mapper as selectComps, and the downstream
+ * pipeline (judge narrative + weighting, adjustments, audit, contract, render)
+ * is unchanged — this only replaces the SELECTION step.
+ */
+export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Promise<CompSelection> {
+  const requested = Array.from(new Set(keys.map((k) => k.trim()).filter(Boolean)))
+  const rows = await selectCmaCompsByKeys(requested)
+  const byKey = new Map<string, CmaComp>()
+  for (const row of rows) {
+    const comp = rowToComp(row, 'broker-selected')
+    if (!comp) continue
+    if (subject.listingKey && comp.listingKey === subject.listingKey) continue
+    if (!byKey.has(comp.listingKey)) byKey.set(comp.listingKey, comp)
+  }
+  // Most-recent-first, matching the exemplar ordering. No cap, no outlier drop.
+  const comps = Array.from(byKey.values()).sort((a, b) => b.closeDate.localeCompare(a.closeDate))
+  const found = new Set(comps.map((c) => c.listingKey))
+  const missing = requested.filter((k) => !found.has(k))
+  const trace = [
+    `Broker-selected comp set: ${comps.length} of ${requested.length} requested ListingKey(s) resolved as valid closed SFR${
+      missing.length ? ` (unresolved: ${missing.join(', ')})` : ''
+    }.`,
+  ]
+  return { comps, excludedOutliers: [], tiersUsed: ['broker-selected'], trace }
 }

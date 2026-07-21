@@ -500,6 +500,7 @@ export {
   findCmaSubjectByMls,
   findCmaSubjectByAddress,
   selectCmaCompsPool,
+  selectCmaCompsByKeys,
   getCmaMarketStatsRow,
   getCmaMarketPulseRow,
   getCmaBrokerBySlugOrEmail,

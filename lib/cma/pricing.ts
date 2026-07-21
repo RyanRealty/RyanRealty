@@ -183,16 +183,33 @@ export function computePricing(
     )
   }
 
-  // Broker override re-anchors the tier grid proportionally.
+  // Broker override on the recommended list.
   const priceOverride = opts.priceOverride ?? null
   if (priceOverride != null && priceOverride > 0 && recommended > 0) {
-    const ratio = priceOverride / recommended
+    const dataRecommended = recommended
+    const dataConservative = conservative
+    const dataHighEnd = highEnd
     recommended = round5000(priceOverride)
-    conservative = round5000(conservative * ratio)
-    highEnd = round5000(highEnd * ratio)
-    notes.push(
-      'The recommended list price reflects a broker adjustment applied on review. The underlying data-derived reconciliation is preserved in the verification trace.',
-    )
+    if (priceOverride > dataRecommended) {
+      // Listing ABOVE the data reconciliation (a strategic list with negotiation
+      // room): the recommended reflects broker strategy, but the Conservative
+      // "quick-sale" floor stays anchored to the comp-supported value — a fast
+      // sale is at or below market, never above it — and the High End rises to
+      // at least the broker number.
+      conservative = dataConservative
+      highEnd = round5000(Math.max(dataHighEnd, priceOverride))
+      notes.push(
+        'The recommended list price reflects a broker adjustment set above the data-derived reconciliation (a strategic list with negotiation room). The Conservative tier stays anchored to the comp-supported quick-sale floor; the full reconciliation is preserved in the verification trace.',
+      )
+    } else {
+      // At or below the data: re-anchor the tier grid proportionally.
+      const ratio = priceOverride / dataRecommended
+      conservative = round5000(dataConservative * ratio)
+      highEnd = round5000(dataHighEnd * ratio)
+      notes.push(
+        'The recommended list price reflects a broker adjustment applied on review. The underlying data-derived reconciliation is preserved in the verification trace.',
+      )
+    }
   }
 
   if (conservative > recommended) conservative = recommended
