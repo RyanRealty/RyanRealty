@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.823.6 (2026-07-21)
+
+### Maintenance
+- docs(program): agent handoff package for FUB purge + canon consolidation
+- chore(docs): track consolidation program + 3480 build scripts before purge
+
+---
+
+
 ## v1.823.5 (2026-07-21)
 
 ### Bug Fixes
