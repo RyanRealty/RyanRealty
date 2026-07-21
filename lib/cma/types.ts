@@ -156,6 +156,14 @@ export interface CmaBuildInput {
    * pipeline (judge, adjustments, audit, contract, render) is unchanged.
    */
   compKeys?: string[] | null
+  /**
+   * Broker-confirmed site facts that override the GIS-resolved values. §0 allows
+   * a seller/broker-confirmed water source (e.g. a parcel converted off a private
+   * well to a community supplier like Avion Water). Applied after resolveCmaSiteData.
+   */
+  siteOverrides?: {
+    water?: { source: 'well' | 'municipal' | 'unknown'; providerName?: string | null }
+  } | null
   requestSource?: string | null
   /** cma = standard seller CMA; expired-audit = expired-listing audit (failure
    *  analysis + services + 2.5% net sheet). Same engine, tailored output. */

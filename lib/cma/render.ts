@@ -112,7 +112,7 @@ export function propertyIntelligenceBlock(site: CmaSiteData | null | undefined):
     site.water.source === 'well'
       ? `Private well${site.water.wellLog?.completedDepthFt ? ` (nearest area log about ${site.water.wellLog.completedDepthFt} ft, ${escapeHtml(site.water.wellLog.completedDate ?? 'date n/a')}. Confirm the subject's OWRD log)` : ' (confirm the subject\'s OWRD well log at listing)'}`
       : site.water.source === 'municipal'
-        ? 'City water'
+        ? escapeHtml(site.water.providerName || 'City water')
         : null
   if (water) rows.push(`<li><strong>Water:</strong> ${water}</li>`)
   if (site.water.irrigationDistrict) rows.push(`<li><strong>Irrigation district:</strong> ${escapeHtml(site.water.irrigationDistrict)} (district boundary is not a water right. Confirm the appurtenant right with the district and OWRD)</li>`)

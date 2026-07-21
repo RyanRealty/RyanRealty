@@ -113,6 +113,25 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       getCmaMarketContext(subject.city),
       resolveCmaSiteData(subject),
     ])
+
+    // Broker-confirmed site facts override the GIS-resolved values (§0 allows a
+    // seller/broker-confirmed water source). A parcel converted off a private
+    // well to a community supplier supersedes the nearest-well-log inference.
+    const waterOverride = input.siteOverrides?.water
+    if (waterOverride) {
+      site.water.source = waterOverride.source
+      site.water.providerName = waterOverride.providerName ?? null
+      if (waterOverride.source === 'municipal') {
+        site.water.wellLog = null
+        site.notes = site.notes.filter(
+          (n) => !/well log|flow test|private well country|no on-parcel owrd well/i.test(n),
+        )
+        site.notes.push(
+          `Domestic water: ${waterOverride.providerName ?? 'community water system'}, confirmed by the listing broker (the parcel is on a community water supply, not a private well).`,
+        )
+      }
+    }
+
     if (selection.comps.length < MIN_COMPS) {
       const err = `Only ${selection.comps.length} qualifying closed comps found (minimum ${MIN_COMPS}). ${selection.trace.join(' ')}`
       await recordBuildFailure(slug, err)

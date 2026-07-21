@@ -134,6 +134,9 @@ export interface CmaSiteData {
   flood: { zone: string | null; inSFHA: boolean | null }
   water: {
     source: WaterSource
+    /** Named domestic supplier when the parcel is on a community/municipal system
+     *  (e.g. 'Avion Water'). Null for private-well or unknown. */
+    providerName: string | null
     wellLog: CmaWellLog | null
     irrigationDistrict: string | null
     /** Mapped OWRD SUPPLY water rights of record intersecting the parcel (instream /
@@ -396,7 +399,7 @@ export async function resolveCmaSiteData(subject: CmaSubject): Promise<CmaSiteDa
     overlays: [],
     wildfireHazard: null,
     flood: { zone: null, inSFHA: null },
-    water: { source: 'unknown', wellLog: null, irrigationDistrict: null, rights: [], mappedIrrigationAcres: null, primaryIrrigationPriorityDate: null, hasPrivateAppurtenant: false, rightsQueryOk: false, rightsUsedPolygon: false },
+    water: { source: 'unknown', providerName: null, wellLog: null, irrigationDistrict: null, rights: [], mappedIrrigationAcres: null, primaryIrrigationPriorityDate: null, hasPrivateAppurtenant: false, rightsQueryOk: false, rightsUsedPolygon: false },
     septic: { status: 'unknown', permit: null },
     permits: [],
     entitlement: null,
