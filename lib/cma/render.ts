@@ -776,9 +776,15 @@ function nextStepPage(a: RenderCmaArgs): PageDef {
   const isAudit = Boolean(a.expiredAudit)
   const tel = phoneHref(b.phone)
   const first = esc(b.displayName.split(/\s+/)[0] ?? b.displayName)
+  // A subject that is ALREADY on the market is an existing listing client, not a
+  // prospect: never invite them to imagine listing, and never ask them to book a
+  // listing consultation. This document is the price conversation.
+  const onMarket = /active|pending|coming/i.test(a.subject.standardStatus ?? '')
   const lead = isAudit
     ? `You have the full picture now. The price story, what the last listing left on the table, and the number the market supports today. When you are ready to talk it through, the fastest path is a call or a text. No pressure either way.`
-    : `You have the full picture now. When you want to talk through the range, the timing, or what listing ${esc(a.subject.streetAddress)} would actually look like, the fastest path is a call or a text. No pressure either way.`
+    : onMarket
+      ? `You have the full picture now. The recent sales, where they land against the current price, and what the market supports today. When you want to talk it through, the fastest path is a call or a text.`
+      : `You have the full picture now. When you want to talk through the range, the timing, or what listing ${esc(a.subject.streetAddress)} would actually look like, the fastest path is a call or a text. No pressure either way.`
   // Pinned to the canonical production domain, NOT SITE_URL: the document is a
   // permanent artifact, and a local/preview build would otherwise bake a
   // vercel.app link (which redirects and strips params) into a client-facing doc.
@@ -792,7 +798,7 @@ function nextStepPage(a: RenderCmaArgs): PageDef {
     ${tel && b.phone ? `<a href="tel:${tel}">Call ${first} · ${esc(dottedPhone(b.phone) ?? b.phone)}</a>` : ''}
     ${tel ? `<a href="sms:${tel}">Text ${first}</a>` : ''}
     ${b.email ? `<a class="ghost" href="mailto:${esc(b.email)}">Email ${first}</a>` : ''}
-    <a class="ghost" href="${consultUrl}">Book the listing consultation</a>
+    ${onMarket ? '' : `<a class="ghost" href="${consultUrl}">Book the listing consultation</a>`}
   </div>
   ${isAudit ? `<p class="cta-reply-note">Or simply reply to the text that brought you here. It comes straight to ${first}'s phone.</p>` : ''}`,
   }

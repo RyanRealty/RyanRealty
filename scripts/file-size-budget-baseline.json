@@ -37,7 +37,7 @@
     "lib/bpo/build.ts": 610,
     "lib/cma/build.ts": 685,
     "lib/cma/county.ts": 639,
-    "lib/cma/render.ts": 884,
+    "lib/cma/render.ts": 890,
     "lib/cma-delivery.ts": 782,
     "lib/cma.ts": 839,
     "lib/crm/market-report-email.ts": 601,
