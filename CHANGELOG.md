@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.823.2 (2026-07-21)
+
+### Bug Fixes
+- fix(cma): stop pitching a listing consultation to a client already on market
+
+---
+
+
 ## v1.823.1 (2026-07-21)
 
 ### Bug Fixes
