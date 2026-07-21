@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.823.3 (2026-07-21)
+
+### Bug Fixes
+- fix(cma): remove remaining not-yet-listed language from the client doc
+
+---
+
+
 ## v1.823.2 (2026-07-21)
 
 ### Bug Fixes
