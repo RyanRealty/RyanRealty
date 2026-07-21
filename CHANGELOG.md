@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.824.0 (2026-07-21)
+
+### Features
+- feat(process): lift G45, confirm approval model, add G53 cron-registered, fix sitemap drift
+
+---
+
+
 ## v1.823.6 (2026-07-21)
 
 ### Maintenance
