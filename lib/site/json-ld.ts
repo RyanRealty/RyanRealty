@@ -1,4 +1,5 @@
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
+import { isComingSoonStatus } from '@/lib/listing-status-public'
 
 /**
  * Typed schema.org JSON-LD builders for the site v2 MetadataBlock.
@@ -445,13 +446,17 @@ function buildOffer(
 
   const status = availability ?? 'Active'
 
-  // Off-market statuses: no Offer at all.
+  // Off-market statuses: no Offer at all. Coming Soon is here by policy — a
+  // pre-marketing listing never reaches a public surface, so it must never emit
+  // structured data (and must never fall through to InStock, which would
+  // advertise it as purchasable). See lib/listing-status-public.ts.
+  if (isComingSoonStatus(status)) return undefined
   if (['Closed', 'Withdrawn', 'Expired', 'Canceled', 'Pending'].includes(status)) {
     return undefined
   }
 
-  // Active Under Contract / Coming Soon: price is visible but not freely buyable.
-  if (['Active Under Contract', 'Coming Soon'].includes(status)) {
+  // Active Under Contract: price is visible but not freely buyable.
+  if (['Active Under Contract'].includes(status)) {
     return {
       '@type': 'Offer',
       price: listPrice,

@@ -25,6 +25,7 @@ import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { cacheTag } from '@/lib/data/cache/unstable-cache'
 import type { ListingStatus } from '@/lib/data/types/listing'
 import { SERVICE_AREA_CITIES_PROPER } from '@/lib/data/listings/service-area'
+import { PUBLIC_ACTIVE_STATUSES as ACTIVE_STATUSES } from '@/lib/listing-status-public'
 
 // ─── Motivation lexicon ────────────────────────────────────────────────────
 
@@ -145,7 +146,6 @@ const PROJECTION = [
 ].join(', ')
 
 // Active statuses that are buyer-relevant
-const ACTIVE_STATUSES = ['Active', 'Coming Soon', 'Active Under Contract']
 
 // ─── Scoring ─────────────────────────────────────────────────────────────
 

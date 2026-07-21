@@ -22,16 +22,22 @@ describe('buildJsonLd', () => {
     it('no availability defaults to InStock (backwards-compatible)', () => {
       expect(rec(buildJsonLd(base).offers)?.availability).toBe('https://schema.org/InStock')
     })
-    it('Coming Soon / Active Under Contract -> PreOrder', () => {
-      expect(rec(buildJsonLd({ ...base, availability: 'Coming Soon' }).offers)?.availability).toBe(
-        'https://schema.org/PreOrder',
-      )
+    it('Active Under Contract -> PreOrder', () => {
       expect(
         rec(buildJsonLd({ ...base, availability: 'Active Under Contract' }).offers)?.availability,
       ).toBe('https://schema.org/PreOrder')
     })
     it('off-market statuses emit NO offer', () => {
       for (const s of ['Closed', 'Pending', 'Withdrawn', 'Expired', 'Canceled']) {
+        expect(buildJsonLd({ ...base, availability: s }).offers).toBeUndefined()
+      }
+    })
+    // Coming Soon is a pre-marketing state that must never reach a public
+    // surface, so it emits no structured data at all. Critically it must NOT
+    // fall through to the InStock default, which would advertise a listing we
+    // are not permitted to show as purchasable. See lib/listing-status-public.ts.
+    it('Coming Soon emits NO offer (never InStock)', () => {
+      for (const s of ['Coming Soon', 'coming soon', 'ComingSoon']) {
         expect(buildJsonLd({ ...base, availability: s }).offers).toBeUndefined()
       }
     })

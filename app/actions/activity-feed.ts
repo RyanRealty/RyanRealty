@@ -5,6 +5,7 @@ import { unstable_cache } from 'next/cache'
 import type { ActivityFeedItem } from './activity-feed-shared'
 import { slugify } from '@/lib/slug'
 import { getListingTiles } from '@/lib/data'
+import { PUBLIC_ON_MARKET_OR_PREDICATE } from '@/lib/listing-status-public'
 
 /**
  * Fetch activity feed: events joined to listing data, ordered by event_at desc.
@@ -262,7 +263,7 @@ export async function getActivityFeedWithFallback(options: {
 }
 
 const ACTIVE_OR_PENDING_OR =
-  'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%'
+  PUBLIC_ON_MARKET_OR_PREDICATE
 
 /**
  * Activity feed for multiple cities: events first, then fill with newest listings in those cities.

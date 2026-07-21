@@ -33,7 +33,6 @@ function normalizeEvent(raw: string | undefined): string {
 const EVENT_LABEL: Record<string, string> = {
   newlisting: 'Listed',
   listed: 'Listed',
-  comingsoon: 'Coming soon',
   pricechange: 'Price change',
   pricedrop: 'Price drop',
   priceincrease: 'Price increase',

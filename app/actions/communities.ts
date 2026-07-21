@@ -17,13 +17,14 @@ import { getCanonicalCityForSubdivision } from '@/lib/data/communities/registry'
 import { isCentralOregonCity } from '@/lib/central-oregon'
 import { getGeoSnapshot, getCommunityListings as getCommunityListingsDAL } from '@/lib/data'
 import type { ListingTile } from '@/lib/data'
+import { PUBLIC_ACTIVE_OR_PREDICATE } from '@/lib/listing-status-public'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 /** Match listings.ts / cities.ts active inventory (Spark sends several status strings). */
 const INDEX_ACTIVE_OR =
-  'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%'
+  PUBLIC_ACTIVE_OR_PREDICATE
 
 function supabase() {
   if (!url?.trim() || !anonKey?.trim()) throw new Error('Supabase not configured')

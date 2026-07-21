@@ -18,6 +18,7 @@ import {
   pickSearchFeatureFilters,
 } from '@/lib/data'
 import type { ListingTile, SearchFeatureFilters, SearchListingsAllFilter } from '@/lib/data'
+import { PUBLIC_ACTIVE_OR_PREDICATE, PUBLIC_ON_MARKET_OR_PREDICATE_WIDE, PUBLIC_SEARCH_STATUS_FILTERS, isPubliclyDisplayableStatus } from '@/lib/listing-status-public'
 
 function getAnonSupabase(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -35,11 +36,11 @@ function getServiceSupabase(): SupabaseClient | null {
 
 /** Supabase .or() filter for active listings (matches Spark "active" state). */
 const ACTIVE_STATUS_OR =
-  'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%'
+  PUBLIC_ACTIVE_OR_PREDICATE
 
 /** Active + Pending (for home page "recent & pending" slider). RESO: Pending, Active Under Contract, ActiveUnderContract, Contingent. */
 const ACTIVE_OR_PENDING_OR =
-  'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%,StandardStatus.ilike.%UnderContract%,StandardStatus.ilike.%Contingent%'
+  PUBLIC_ON_MARKET_OR_PREDICATE_WIDE
 
 export type BrowseCity = { City: string; count: number }
 /** Row shape for listing tiles (grid, slider, saved). */
@@ -779,7 +780,9 @@ export async function getListingsAdvanced(options: {
   }
   const limit = Math.min(options.limit ?? 100, 200)
   const offset = options.offset ?? 0
-  const validStatus = ['active', 'active_and_pending', 'pending', 'closed', 'all', 'coming_soon', 'expired', 'withdrawn', 'canceled', 'off_market', 'active_or_offmarket'] as const
+  // 'coming_soon' intentionally absent — anon-key backed + reachable from public
+  // search. Off-market values stay for broker prospecting callers.
+  const validStatus = ['active', 'active_and_pending', 'pending', 'closed', 'all', 'expired', 'withdrawn', 'canceled', 'off_market', 'active_or_offmarket'] as const
   const statusFilter =
     (options.statusFilter && validStatus.includes(options.statusFilter as typeof validStatus[number]))
       ? options.statusFilter
@@ -2184,7 +2187,8 @@ async function getHotCommunitiesInCityUncached(city: string): Promise<HotCommuni
     const name = (row.SubdivisionName ?? '').trim()
     if (!name || isNaSubdivision(name)) continue
     const rec = bySub.get(name) ?? { forSale: 0, pending: 0, newLast7: 0, prices: [] }
-    if (isActiveStatus(row.StandardStatus)) {
+    // Public count — Coming Soon excluded (cannot show it, must not count it).
+    if (isActiveStatus(row.StandardStatus) && isPubliclyDisplayableStatus(row.StandardStatus)) {
       rec.forSale += 1
       const p = Number(row.ListPrice)
       if (Number.isFinite(p) && p > 0) rec.prices.push(p)
@@ -2293,7 +2297,9 @@ export async function getSubdivisionsInCity(city: string): Promise<SubdivisionIn
   const bySub = new Map<string, number>()
   for (const row of rows) {
     const name = (row.SubdivisionName ?? '').trim()
-    if (name && !isNaSubdivision(name) && isActiveStatus(row.StandardStatus)) bySub.set(name, (bySub.get(name) ?? 0) + 1)
+    // Public count — Coming Soon excluded. See lib/listing-status-public.ts.
+    if (name && !isNaSubdivision(name) && isActiveStatus(row.StandardStatus) && isPubliclyDisplayableStatus(row.StandardStatus))
+      bySub.set(name, (bySub.get(name) ?? 0) + 1)
   }
   return Array.from(bySub.entries())
     .map(([subdivisionName, count]) => ({ subdivisionName, count }))

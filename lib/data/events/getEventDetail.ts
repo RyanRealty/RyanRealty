@@ -22,6 +22,7 @@ import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { toTileBackgroundVideo } from '@/lib/video-embed'
 import type { AreaMarket } from '@/lib/area-market'
+import { PUBLIC_ACTIVE_STATUSES as ACTIVE_STATUSES } from '@/lib/listing-status-public'
 
 /** A silent, chrome-less MLS background loop that autoplays in a featured tile. */
 export type TileVideo = { url: string; embedType: 'iframe' | 'video-tag' } | null
@@ -89,7 +90,6 @@ const PROJECTION = [
   'StreetNumber, StreetName, City, PostalCode, Latitude, Longitude, PhotoURL',
 ].join(', ')
 
-const ACTIVE_STATUSES = ['Active', 'Coming Soon', 'Active Under Contract']
 
 function rowToHome(row: RawRow): EventHomeTile {
   const street = [row.StreetNumber, row.StreetName].filter(Boolean).join(' ').trim()

@@ -72,7 +72,6 @@ type Props = {
 // 2px navy edge for everything else. `filled` flips the chip to navy ground.
 const PILL_TONE: Record<string, { filled: boolean }> = {
   Active: { filled: true },
-  'Coming Soon': { filled: true },
   'Active Under Contract': { filled: false },
   Pending: { filled: true },
   Closed: { filled: false },
@@ -82,7 +81,7 @@ const PILL_TONE: Record<string, { filled: boolean }> = {
 }
 
 function statusDot(status: string): string {
-  if (status === 'Active' || status === 'Coming Soon') return '●'
+  if (status === 'Active') return '●'
   if (status === 'Active Under Contract' || status === 'Pending') return '●'
   return '●'
 }

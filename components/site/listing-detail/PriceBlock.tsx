@@ -42,7 +42,6 @@ type Props = {
 
 const STATUS_TONE: Record<string, 'navy' | 'success' | 'warning' | 'danger' | 'neutral'> = {
   Active: 'success',
-  'Coming Soon': 'warning',
   'Active Under Contract': 'warning',
   Pending: 'navy',
   Closed: 'neutral',

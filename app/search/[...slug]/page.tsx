@@ -11,6 +11,7 @@ import {
   type AdvancedSort,
 } from '../../actions/listings'
 import { coerceRegistryParams } from '@/lib/search/field-registry'
+import { PUBLIC_SEARCH_STATUS_FILTERS } from '@/lib/listing-status-public'
 import { pickSearchFeatureFilters } from '@/lib/data'
 import { getSession } from '../../actions/auth'
 import { getBannerUrl, getOrCreatePlaceBanner, getBannerSearchQuery } from '../../actions/banners'
@@ -326,7 +327,11 @@ export default async function SearchPage({
     postalCode: sp.postalCode?.trim() || undefined,
     propertyType: sp.propertyType?.trim() || undefined,
     propertySubType: sp.propertySubType?.trim() || undefined,
-    statusFilter: sp.statusFilter?.trim() || undefined,
+    // Sanitized here, not just for the UI toggle below: the raw param used to
+    // reach the fetch, making ?statusFilter=coming_soon a public browse mode.
+    statusFilter: PUBLIC_SEARCH_STATUS_FILTERS.includes(sp.statusFilter?.trim() ?? '')
+      ? sp.statusFilter!.trim()
+      : undefined,
     keywords: sp.keywords?.trim() || undefined,
     hasOpenHouse: sp.hasOpenHouse === '1',
     garageMin: sp.garageMin != null ? Number(sp.garageMin) : undefined,

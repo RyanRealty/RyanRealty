@@ -24,6 +24,7 @@ import {
   getCityCommunitySnapshots,
 } from '@/lib/data'
 import type { ListingTile } from '@/lib/data'
+import { PUBLIC_ACTIVE_OR_PREDICATE } from '@/lib/listing-status-public'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -46,7 +47,7 @@ function normalizeBannerLikeUrl(value: string | null | undefined): string | null
 }
 
 const ACTIVE_OR =
-  'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%'
+  PUBLIC_ACTIVE_OR_PREDICATE
 const PENDING_OR =
   'StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%,StandardStatus.ilike.%Contingent%'
 

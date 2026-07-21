@@ -57,7 +57,7 @@ function formatActivityDateTime(dateText: string | null | undefined): string | n
 
 function statusLabel(s: string | null | undefined): string {
   const t = (s ?? '').toLowerCase()
-  if (!t || t.includes('active') || t.includes('for sale') || t.includes('coming soon')) return 'Active'
+  if (!t || t.includes('active') || t.includes('for sale')) return 'Active'
   if (t.includes('pending')) return 'Pending'
   if (t.includes('closed')) return 'Closed'
   return s ?? 'Active'

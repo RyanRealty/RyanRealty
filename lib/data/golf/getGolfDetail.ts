@@ -17,6 +17,7 @@ import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { toTileBackgroundVideo } from '@/lib/video-embed'
 import type { AreaMarket } from '@/lib/area-market'
+import { PUBLIC_ACTIVE_STATUSES as ACTIVE_STATUSES } from '@/lib/listing-status-public'
 
 const LAT_PAD = 0.022
 const LNG_PAD = 0.028
@@ -71,7 +72,6 @@ const PROJECTION = [
   'StreetNumber, StreetName, City, PostalCode, Latitude, Longitude, PhotoURL',
 ].join(', ')
 
-const ACTIVE_STATUSES = ['Active', 'Coming Soon', 'Active Under Contract']
 
 function getCourseBySlug(slug: string): GolfCourse | undefined {
   return GOLF_COURSES.find((c) => c.slug === slug)

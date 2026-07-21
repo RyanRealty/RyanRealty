@@ -16,9 +16,10 @@ import {
   rowSubdivision,
   unparsedFromRow,
 } from '@/lib/video-tours-listing-videos-join'
+import { PUBLIC_ACTIVE_OR_PREDICATE } from '@/lib/listing-status-public'
 
-const ACTIVE_STATUS_OR =
-  'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%'
+// Public video-tour feed — Coming Soon excluded. See lib/listing-status-public.ts.
+const ACTIVE_STATUS_OR = PUBLIC_ACTIVE_OR_PREDICATE
 
 export type FetchListingsWithVideosFilters = {
   community?: string

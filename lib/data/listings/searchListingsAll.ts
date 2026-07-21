@@ -25,9 +25,11 @@ import type { ListingTile, ListingStatus } from '@/lib/data/types/listing'
 import { propertyTypeFilterToCodes } from '@/lib/property-type'
 import { SERVICE_AREA_CITIES_LOWER } from '@/lib/data/listings/service-area'
 import { SEARCH_FIELDS } from '@/lib/search/field-registry'
+import { PUBLIC_ACTIVE_STATUSES, PUBLIC_PENDING_STATUSES } from '@/lib/listing-status-public'
 
-const ACTIVE_STATUSES: ListingStatus[] = ['Active', 'Coming Soon', 'Active Under Contract']
-const PENDING_STATUSES: ListingStatus[] = ['Pending']
+// Coming Soon is excluded by policy — see lib/listing-status-public.ts.
+const ACTIVE_STATUSES: ListingStatus[] = PUBLIC_ACTIVE_STATUSES
+const PENDING_STATUSES: ListingStatus[] = PUBLIC_PENDING_STATUSES
 
 const bool = () => z.boolean().optional().catch(undefined)
 const multi = () => z.array(z.string().min(1).max(80)).max(40).optional().catch(undefined)

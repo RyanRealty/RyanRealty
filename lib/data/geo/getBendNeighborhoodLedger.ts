@@ -24,6 +24,7 @@ import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { supabaseAnon } from '@/lib/data/client'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { cacheTag } from '@/lib/data/cache/unstable-cache'
+import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'
 
 /** Bend NA districts shown on the /cities/bend neighborhoods ledger (label =
  *  boundary_neighborhood value, verified against live listing_tile_mv rows).
@@ -80,7 +81,7 @@ async function _fetchBendNeighborhoodLedger(): Promise<NeighborhoodLedgerRow[]> 
       sb
         .from('listing_tile_mv')
         .select('boundary_neighborhood, list_price')
-        .in('standard_status', ['Active', 'Coming Soon'])
+        .in('standard_status', PUBLIC_ACTIVE_STATUSES)
         .eq('property_type', 'A')
         .eq('property_sub_type', 'Single Family Residence')
         .in(

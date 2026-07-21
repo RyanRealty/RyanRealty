@@ -12,9 +12,9 @@
 
 import { supabaseAnon } from '@/lib/data/client'
 import { LISTING_VIDEO_SELECT_MAIN } from '@/lib/video-tours-listing-videos-join'
+import { PUBLIC_ACTIVE_OR_PREDICATE } from '@/lib/listing-status-public'
 
-const ACTIVE_STATUS_OR =
-  'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%'
+const ACTIVE_STATUS_OR = PUBLIC_ACTIVE_OR_PREDICATE
 
 export type ListingVideoCandidateRow = Record<string, unknown>
 

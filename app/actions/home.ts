@@ -21,6 +21,7 @@ import { getCityListings as getCityListingsDAL } from '@/lib/data'
 import type { HomeTileRow } from '@/app/actions/listings'
 import type { HotCommunity } from '@/app/actions/listings'
 import type { CityMarketStats } from '@/app/actions/listings'
+import { PUBLIC_ACTIVE_OR_PREDICATE, isPubliclyDisplayableStatus } from '@/lib/listing-status-public'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -31,7 +32,7 @@ function supabase() {
 }
 
 const ACTIVE_OR =
-  'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%'
+  PUBLIC_ACTIVE_OR_PREDICATE
 const CLOSED_OR = 'StandardStatus.ilike.%Closed%'
 
 /** Featured: top 6 by engagement view_count (optional city filter), then by ModificationTimestamp. Active only. */
@@ -56,7 +57,7 @@ async function _getFeaturedListingsUncached(city?: string): Promise<HomeTileRow[
     } else {
       rows = await getHomeTileRowsByKeys(keys)
     }
-    const active = rows.filter((r) => /active|for sale|coming soon/i.test(String(r.StandardStatus ?? '')))
+    const active = rows.filter((r) => isPubliclyDisplayableStatus(r.StandardStatus) && /active|for sale/i.test(String(r.StandardStatus ?? '')))
     const filtered = city?.trim() ? active.filter((r) => (r.City ?? '').toString().trim().toLowerCase() === city.trim().toLowerCase()) : active
     if (filtered.length >= 6) return filtered.slice(0, 6)
     const fill = await getListingsForHomeTiles({ city: city?.trim() ?? 'Bend', limit: 6 - filtered.length })
@@ -94,7 +95,7 @@ async function _getJustListedUncached(city: string = 'Bend'): Promise<HomeTileRo
     const keys = tiles.map((t) => t.listingKey).filter(Boolean).slice(0, 32)
     const rows = await getHomeTileRowsByKeys(keys)
     const active = rows.filter((r) =>
-      /active|for sale|coming soon|pending/i.test(String(r.StandardStatus ?? '')),
+      isPubliclyDisplayableStatus(r.StandardStatus) && /active|for sale|pending/i.test(String(r.StandardStatus ?? '')),
     )
     if (active.length === 0) {
       const fallback = await getListingsForHomeTiles({ city: cityName, limit: 8 })
@@ -351,7 +352,7 @@ async function _getTrendingListingsUncached(city: string = 'Bend'): Promise<Home
   const keys = await getTrendingListingKeys(cityName, 12)
   const rows = keys.length > 0
     ? (await getHomeTileRowsByKeys(keys)).filter((r) =>
-        /active|pending|for sale|coming soon/i.test(String(r.StandardStatus ?? ''))
+        isPubliclyDisplayableStatus(r.StandardStatus) && /active|pending|for sale/i.test(String(r.StandardStatus ?? ''))
       )
     : []
   if (rows.length >= TRENDING_MIN_COUNT) return rows.slice(0, TRENDING_MIN_COUNT)

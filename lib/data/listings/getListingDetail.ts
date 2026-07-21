@@ -21,6 +21,7 @@ import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { cleanText, formatMlsMultiSelect } from './mls-multiselect'
 import type { ListingDetail, ListingStatus } from '@/lib/data/types/listing'
+import { isComingSoonStatus } from '@/lib/listing-status-public'
 
 const InputSchema = z.object({
   listingKey: z.string().min(1).max(100),
@@ -411,6 +412,15 @@ async function fetchByColumn(
     // of internet display, or whose listing broker is not an IDX participant,
     // must NOT be publicly displayed. Treat as a genuine miss → notFound().
     if (row && (row.permit_internet_yn === false || row.idx_participant === false)) {
+      return { row: null, error: null }
+    }
+    // Coming Soon is an MLS pre-marketing state and must NEVER render on a
+    // public surface. Treating it as a genuine miss here (rather than gating in
+    // the page body) also suppresses generateMetadata, the OG image, the
+    // canonical URL, and the realEstateListing JSON-LD in one place.
+    // Broker/admin surfaces read through lib/data/admin/*, not this function.
+    // See lib/listing-status-public.ts.
+    if (row && isComingSoonStatus(row.StandardStatus)) {
       return { row: null, error: null }
     }
     return { row, error: null }

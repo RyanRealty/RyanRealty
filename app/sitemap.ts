@@ -2,9 +2,11 @@ import type { MetadataRoute } from 'next'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { cityEntityKey, listingDetailPath, listingsBrowsePath, slugify, teamPath, valuationPath } from '../lib/slug'
 import { getAllPresetSlugs } from '../lib/search-presets'
+import { PUBLIC_ACTIVE_STATUSES, PUBLIC_ACTIVE_OR_PREDICATE } from '@/lib/listing-status-public'
 
-const ACTIVE_STATUS_OR =
-  'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%'
+// Public sitemap — Coming Soon is excluded by policy. See
+// lib/listing-status-public.ts. Never submit a pre-marketing listing to Google.
+const ACTIVE_STATUS_OR = PUBLIC_ACTIVE_OR_PREDICATE
 
 import { fetchAllRows } from '@/lib/supabase/paginate'
 import { isCentralOregonCity, SITE_CITY_SLUGS } from '@/lib/central-oregon'
@@ -370,7 +372,7 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     }>(
       supabase, 'listing_tile_mv',
       'listing_key, list_number, subdivision_name, city, postal_code, street_number, street_name',
-      (q) => q.in('standard_status', ['Active', 'Coming Soon', 'Active Under Contract']),
+      (q) => q.in('standard_status', PUBLIC_ACTIVE_STATUSES),
     )
 
     for (const r of listings as Array<{

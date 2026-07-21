@@ -27,6 +27,7 @@ import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { getParkBySlug, CO_PARKS, type CoPark } from '@/data/co-parks'
+import { PUBLIC_ACTIVE_STATUSES as ACTIVE_STATUSES } from '@/lib/listing-status-public'
 
 /** Half-width of the bounding box in degrees. ~1.5 mi N/S, ~1.4 mi E/W at 44° N. */
 const LAT_PAD = 0.022
@@ -88,7 +89,6 @@ const PROJECTION = [
   'StreetNumber, StreetName, City, PostalCode, Latitude, Longitude, PhotoURL',
 ].join(', ')
 
-const ACTIVE_STATUSES = ['Active', 'Coming Soon', 'Active Under Contract']
 
 function rowToHome(row: RawRow): ParkHomeTile {
   const street = [row.StreetNumber, row.StreetName].filter(Boolean).join(' ').trim()

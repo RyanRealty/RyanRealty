@@ -14,9 +14,10 @@ import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { SERVICE_AREA_CITIES_PROPER } from '@/lib/data/listings/service-area'
 import { isActiveStatus, isPendingStatus, isClosedStatus } from '@/lib/listing-status'
+import { PUBLIC_ACTIVE_OR_PREDICATE } from '@/lib/listing-status-public'
 
 const ACTIVE_OR =
-  'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%'
+  PUBLIC_ACTIVE_OR_PREDICATE
 
 const PROJECTION = [
   'ListingKey, ListNumber, ListPrice, OriginalListPrice, BedroomsTotal, BathroomsTotal',

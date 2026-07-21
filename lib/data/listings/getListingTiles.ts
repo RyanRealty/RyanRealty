@@ -21,9 +21,11 @@ import type { ListingTile, ListingStatus } from '@/lib/data/types/listing'
 import { propertyTypeFilterToCodes } from '@/lib/property-type'
 import { SERVICE_AREA_CITIES_LOWER } from '@/lib/data/listings/service-area'
 import { TILE_MV_SELECT_COLUMNS } from '@/lib/listing-tile-projections'
+import { PUBLIC_ACTIVE_STATUSES, PUBLIC_PENDING_STATUSES, COMING_SOON_STATUS } from '@/lib/listing-status-public'
 
-const ACTIVE_STATUSES: ListingStatus[] = ['Active', 'Coming Soon', 'Active Under Contract']
-const PENDING_STATUSES: ListingStatus[] = ['Pending']
+// Coming Soon is excluded by policy — see lib/listing-status-public.ts.
+const ACTIVE_STATUSES: ListingStatus[] = PUBLIC_ACTIVE_STATUSES
+const PENDING_STATUSES: ListingStatus[] = PUBLIC_PENDING_STATUSES
 
 const FilterSchema = z.object({
   city: z.string().min(1).max(80).optional(),
@@ -233,6 +235,7 @@ function mvRowToTile(row: ListingTileMvRow): ListingTile {
  */
 type TileQueryBuilder = {
   eq: (column: string, value: string | number | boolean) => TileQueryBuilder
+  neq: (column: string, value: string | number | boolean) => TileQueryBuilder
   in: (column: string, values: readonly (string | number)[]) => TileQueryBuilder
   gte: (column: string, value: string | number) => TileQueryBuilder
   lte: (column: string, value: string | number) => TileQueryBuilder
@@ -296,8 +299,12 @@ function applyTileFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>):
     query = query.in('standard_status', PENDING_STATUSES)
   } else if (parsed.status === 'closed') {
     query = query.eq('standard_status', 'Closed')
+  } else {
+    // 'all' → every status EXCEPT Coming Soon. This branch previously applied no
+    // status filter at all, which let pre-marketing listings reach the public
+    // grid via ?includeClosed=1 / statusFilter=all. Coming Soon is never public.
+    query = query.neq('standard_status', COMING_SOON_STATUS)
   }
-  // 'all' → no status filter
 
   // Price range
   if (parsed.minPrice) query = query.gte('list_price', parsed.minPrice)

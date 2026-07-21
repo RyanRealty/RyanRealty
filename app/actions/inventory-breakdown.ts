@@ -6,6 +6,7 @@ import {
   classifyInventoryPropertyType,
   isActiveForSaleStatus,
 } from '@/lib/inventory-filters'
+import { PUBLIC_ACTIVE_OR_PREDICATE } from '@/lib/listing-status-public'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -82,7 +83,7 @@ export async function getCityInventoryBreakdown(cityName: string): Promise<Inven
   return breakdownFromListingsTableScan((q: any) =>
     q
       .eq('"City"', cityName)
-      .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
+      .or(PUBLIC_ACTIVE_OR_PREDICATE)
   )
 }
 

@@ -114,7 +114,7 @@
     "components/reports/SalesReportCharts.tsx:78:locale-date",
     "components/search/MarketSnapshotChart.tsx:15:locale-date",
     "components/site/kb/KbSectionTracker.client.tsx:9:impure-helper",
-    "components/site/listing-detail/PriceCtaStrip.tsx:143:impure-helper",
+    "components/site/listing-detail/PriceCtaStrip.tsx:142:impure-helper",
     "components/tc/pdf-sign/SignFlow.tsx:140:clock-new-date",
     "components/tc/pdf-sign/SignFlow.tsx:140:locale-date",
     "components/ui/calendar.tsx:203:locale-date",

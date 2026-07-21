@@ -38,6 +38,7 @@ import {
   type CoSchool,
   type SchoolLevel,
 } from '@/data/co-schools'
+import { PUBLIC_ACTIVE_STATUSES as ACTIVE_STATUSES } from '@/lib/listing-status-public'
 
 /**
  * Safety ceiling on rows scanned. Real feeding-home counts top out around ~360
@@ -101,7 +102,6 @@ const PROJECTION = [
   'StreetNumber, StreetName, City, PostalCode, Latitude, Longitude, PhotoURL',
 ].join(', ')
 
-const ACTIVE_STATUSES = ['Active', 'Coming Soon', 'Active Under Contract']
 
 /** Maps a registry level to the listings column that carries that level's school name. */
 const LEVEL_COLUMN: Record<SchoolLevel, 'elementary_school' | 'middle_school' | 'high_school'> = {
