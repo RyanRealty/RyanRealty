@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.823.0 (2026-07-21)
+
+### Features
+- feat(cma): broker-selected comp sets + honest override tiers
+
+---
+
+
 ## v1.822.8 (2026-07-20)
 
 ### Maintenance
