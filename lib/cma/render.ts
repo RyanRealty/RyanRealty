@@ -189,7 +189,7 @@ export function propertyIntelligenceBlock(site: CmaSiteData | null | undefined):
 
   // Field-confirm caveats (facts a machine source can no longer serve).
   if (site.fieldConfirm?.length) {
-    html += `<h3 class="subhead">Confirm at listing</h3><ul class="note-list">${site.fieldConfirm.map((c) => `<li>${escapeHtml(c)}</li>`).join('')}</ul>`
+    html += `<h3 class="subhead">Still to confirm</h3><ul class="note-list">${site.fieldConfirm.map((c) => `<li>${escapeHtml(c)}</li>`).join('')}</ul>`
   }
   return html
 }
@@ -347,7 +347,7 @@ function subjectPage(a: RenderCmaArgs): PageDef {
       <p>The full adjustment ledger, the market context, and the data trace are all included, so every number in this document can be audited back to its source.</p>
     </div>
   </div>
-  ${remarks ? `<h2 class="section" style="margin-top:20px;">Most Recent MLS Remarks</h2><p class="small" style="font-style:italic;">"${esc(remarks)}"</p><p class="small">Quoted from the property's most recent MLS listing. Descriptions are the prior listing agent's words, provided for record.</p>` : ''}`,
+  ${remarks ? `<h2 class="section" style="margin-top:20px;">Most Recent MLS Remarks</h2><p class="small" style="font-style:italic;">"${esc(remarks)}"</p><p class="small">Quoted from the property's most recent MLS listing. Descriptions are the listing agent's words, provided for record.</p>` : ''}`,
   }
 }
 
@@ -819,7 +819,7 @@ function disclosurePage(a: RenderCmaArgs): PageDef {
   <p><strong>Purpose and intent.</strong> This document is a competitive market analysis prepared by a licensed Oregon real estate broker to assist the owner of ${esc(a.subject.streetAddress)}, ${esc(a.subject.city)}, Oregon in evaluating a potential listing price. It is provided in accordance with ORS chapter 696 and OAR 863-015-0190.</p>
   <p><strong>Property description.</strong> ${esc(a.subject.streetAddress)}, ${esc(a.subject.city)}, Oregon ${esc(a.subject.postalCode ?? '')} · ${int(a.subject.beds)} bedrooms · ${dec(a.subject.baths, 0)} bathrooms · ${int(a.subject.sqft)} sqft${a.subject.lotAcres != null ? ` · ${dec(a.subject.lotAcres, 2)} acres` : ''}${a.subject.yearBuilt ? ` · built ${a.subject.yearBuilt}` : ''}.</p>
   <p><strong>Basis for the value.</strong> The value range rests on ${a.comps.length} closed comparable sales from the Oregon Data Share MLS, adjusted for market conditions and size as shown in the adjustment grid, and on verified market statistics for ${esc(a.market?.geoLabel ?? a.subject.city)}. The term value as used in this analysis means the estimated worth of or price for the property. It does not mean or imply a value arrived at by any method of appraisal.</p>
-  <p><strong>Limiting conditions.</strong> Interior condition was not inspected. Figures are accurate as of the pull date in the verification trace and market conditions change continuously. Seller-reported facts, where used, are labeled as such and should be confirmed at listing.</p>
+  <p><strong>Limiting conditions.</strong> Interior condition was not inspected. Figures are accurate as of the pull date in the verification trace and market conditions change continuously. Seller-reported facts, where used, are labeled as such and should be independently confirmed.</p>
   <p><strong>Licensee interest.</strong> Neither ${esc(b.displayName)} nor Ryan Realty holds any existing or contemplated interest in the subject property. Any such interest, should one arise, will be disclosed in writing.</p>
   <p><strong>Not an appraisal.</strong> This competitive market analysis is not intended as an appraisal. If an appraisal is desired, the services of a competent professional licensed appraiser should be obtained. Unless the preparing licensee is also licensed by the Oregon Appraiser Certification and Licensure Board, this report is not intended to meet the requirements set out in the Uniform Standards of Professional Appraisal Practice. Equal Housing Opportunity.</p>
   <div class="signature-page">
