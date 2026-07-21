@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.823.1 (2026-07-21)
+
+### Bug Fixes
+- fix(cma): broker-confirmed water-source override; correct 19496 Tumalo to Avion Water
+
+---
+
+
 ## v1.823.0 (2026-07-21)
 
 ### Features
