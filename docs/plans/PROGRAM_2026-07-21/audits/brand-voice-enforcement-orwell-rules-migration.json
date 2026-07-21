@@ -1,0 +1,106 @@
+{
+  "domain": "Brand Voice Enforcement - Orwell Rules Migration",
+  "summary": "The prior audit's direction is right but its scope is materially wrong in two directions. It UNDERCOUNTED duplication by half: it found 6 rule copies and called that item \"have\"; there are at least 12 independently hand-maintained banned-word lists in executable code, including two live runtime paths it never opened (lib/marketing-brain/generate-briefs.ts applyBrandVoice, reachable via /api/marketing-brain/generate-briefs, and app/api/cron/gbp-health-check/route.ts, registered in vercel.json line 148/120 and scanning public GBP posts). The worst drift is in generate-briefs.ts, which still hard-fails on 'about', 'around', 'approximately' — the exact words the canonical vocabulary emptied to [] on 2026-06-02 — plus spacious/cozy/turnkey/leverage/navigate/comprehensive/foster. It also OVERSTATED the LLM gap: no LLM voice grader exists, but an Anthropic Messages harness with brand-voice instructions already exists (producer-output-class.ts line 172, lib/cma/judge.ts line 202), so the primitive is partial, not zero — though the producer-runtime path is gated behind PRODUCER_RUNTIME_ENABLED and loop-health-check reports it false. Two hard migration blockers were missed entirely: brand-voice-baseline.json total is 0, so the ratchet is fully enforcing with no grandfather room, and G35 (scripts/validate-producer.mjs line 52-56) hard-requires the literal string 'voice_guidelines.md' in all 24 producer SKILL.md files, so retiring that file fails ci:gates immediately. Every \"missing\" verdict on Orwell itself is confirmed: zero hits repo-wide.",
+  "maturity": "partial",
+  "items": [
+    {
+      "requirement": "Three new governing principles: never pander, never over-editorialize, be non-salesy without a banned-word list",
+      "status": "missing",
+      "evidence": "scripts/brand-voice-vocabulary.cjs:34-160 (CLICHES, AI_FILLER, VAGUE_QUALIFIERS=[], MARKETING_SLOP, SMALLNESS_POSITIONING, FAKE_URGENCY, HYPE_OPENINGS, PANDERING) + BANNED_PATTERNS at lines 181-223. scripts/check-brand-voice.mjs:43 consumes VOCAB.BANNED_WORD_STRINGS; the only non-list mechanism is the 18 regexes at vocabulary.cjs:181-223. Line numbers verified by reading the file.",
+      "gap": "[VERIFIED] Confirmed. Pandering is encoded only as five literal phrases (vocabulary.cjs PANDERING array) plus three Law-3 regexes; salesy-ness only as MARKETING_SLOP + FAKE_URGENCY strings. No principle-level representation exists. One thing the auditor missed that makes this HARDER, not easier: scripts/brand-voice-baseline.json is at total=0 (verified), so the ratchet has no grandfather headroom — a rule-set swap cannot be phased in behind an existing allowance, it either holds at zero or the gate has to be re-baselined deliberately.",
+      "effort": "XL"
+    },
+    {
+      "requirement": "Orwell six rules as the governing prose rules",
+      "status": "missing",
+      "evidence": "grep -rniE 'orwell|passive.voice|politics and the english' across *.md *.mjs *.cjs *.ts *.tsx *.py *.json, node_modules excluded: exactly one hit, docs/research/TOOL_MASTERY_audio_2026.md:118, which is VO-delivery advice, not a voice rule. Re-run independently and confirmed.",
+      "gap": "[VERIFIED] Confirmed exactly. Build from zero.",
+      "effort": "XL"
+    },
+    {
+      "requirement": "Mechanical detection of passive voice",
+      "status": "missing",
+      "evidence": "scripts/check-brand-voice.mjs scanFile() lines 209-268: string-literal scan (extractStringLiterals, lines 84-134) plus JSX-text scan (extractJsxText), each matched against BANNED_WORDS regex and BANNED_PATTERNS. No POS tagging, no grammar parse. Confirmed no write-good/alex/retext/nlp dependency: none appear in package.json.",
+      "gap": "[VERIFIED] Confirmed. Adding this touches more surfaces than the auditor implies: the same detector would need to exist in JS (check-brand-voice.mjs + eslint-rules/no-brand-voice-violations.js), Python (_producer_lib.py, used by 28 build_*.py — verified count is 28, not 29), and TS runtime (voice-precheck.ts, generate-briefs.ts).",
+      "effort": "M"
+    },
+    {
+      "requirement": "Mechanical detection of a long word where a short one will do",
+      "status": "missing",
+      "evidence": "No syllable/length/Latinate logic in scripts/brand-voice-vocabulary.cjs, scripts/check-brand-voice.mjs, scripts/_producer_lib.py (HARD_BANNED lines 350-389, SOFT_FLAGGED 391-397 are flat string sets), lib/email/voice-precheck.ts, or lib/marketing-brain/generate-briefs.ts:296-315.",
+      "gap": "[VERIFIED] Confirmed, and the domain-term false-positive risk is real: lib/cma/render.ts and the CMA producer emit escrow/contingency/easement prose with no shorter equivalent.",
+      "effort": "L"
+    },
+    {
+      "requirement": "Mechanical detection of cuttable words (redundant filler, unnecessary qualifiers)",
+      "status": "missing",
+      "evidence": "scripts/brand-voice-vocabulary.cjs:85-92 — VAGUE_QUALIFIERS = [] with the 2026-06-02 comment explaining the reversal. BUT the reversal was never propagated: scripts/_producer_lib.py:391-397 still carries approximately/roughly/fairly/somewhat/about/around in SOFT_FLAGGED, and lib/marketing-brain/generate-briefs.ts:311 still carries 'approximately','roughly','about','around','fairly','somewhat' in HARD BANNED_WORDS with no soft tier.",
+      "gap": "[CORRECTED: the auditor treated the 2026-06-02 reversal as a completed decision. It was completed in exactly one of three places.] generate-briefs.ts:311 hard-fails any brief containing the word 'about' — a live TS path reachable from app/api/marketing-brain/generate-briefs/route.ts:20 and lib/marketing-brain/weekly-cycle.ts:23. So the repo does not merely have a history of abandoning cut-word bans; it is still actively running one in production code. The evidence against a regex-only Orwell rule 3 is stronger than stated.",
+      "effort": "L"
+    },
+    {
+      "requirement": "Mechanical detection of stale metaphor or simile",
+      "status": "partial",
+      "evidence": "scripts/brand-voice-vocabulary.cjs:37-57 CLICHES (20 entries) is the only mechanism, and it is now the SHORTEST of the copies: _producer_lib.py:352-356 still bans spacious/cozy/turnkey, generate-briefs.ts:301-306 still bans spacious/cozy/turnkey, gbp-health-check/route.ts:36-43 still bans turnkey/spacious/cozy (obfuscated via char-code concatenation so the CI scanner does not self-flag).",
+      "gap": "[VERIFIED on the substance, CORRECTED on scope: three additional cliché lists exist and all three are stale relative to canonical.] A fresh-vs-stale metaphor judgment is not string-matchable, as stated. Additionally, any Orwell cutover must reconcile four divergent cliché lists, not one.",
+      "effort": "XL"
+    },
+    {
+      "requirement": "Mechanical detection of foreign phrases, scientific words, or jargon with an everyday equivalent",
+      "status": "missing",
+      "evidence": "No foreign-phrase or jargon list in scripts/brand-voice-vocabulary.cjs, scripts/_producer_lib.py, lib/email/voice-precheck.ts, lib/marketing-brain/generate-briefs.ts, or app/api/cron/gbp-health-check/route.ts. AI_FILLER (vocabulary.cjs:63-77) is a different category, as claimed.",
+      "gap": "[VERIFIED] Confirmed.",
+      "effort": "M"
+    },
+    {
+      "requirement": "Workflow that lists every violation then gives the rewrite, keeping every fact, number, and name unchanged",
+      "status": "missing",
+      "evidence": "scripts/check-brand-voice.mjs report mode emits {word, line, snippet} only (violation objects built at lines 233-266) with no replacement suggestion and no rewrite. scripts/_producer_lib.py grep_banned() (line 403) and grep_banned_categorized() (line 420) return sorted word lists only. lib/marketing-brain/generate-briefs.ts applyBrandVoice() (line 1262) returns {passed, violations:string[]} — rule citations, no rewrite. lib/email/voice-precheck.ts checkNewsletterVoice() returns {ok, violations:string[]}.",
+      "gap": "[VERIFIED, with one nuance the auditor missed] Nothing produces a rewrite or verifies fact preservation. But the rewrite HARNESS is closer than 'nothing exists': lib/cma/judge.ts already calls client.messages.create (line 173) and already post-processes model output for brand-voice punctuation (line 202-203, converting em/en-dashes and semicolons in generated prose). That is a working precedent for LLM-generated-then-voice-corrected prose, and it is the natural host for a rewrite step.",
+      "effort": "XL"
+    },
+    {
+      "requirement": "Enforce in every skill and workflow, per Matt directive",
+      "status": "partial",
+      "evidence": "24 producer SKILL.md files under marketing_brain_skills/producers (not 23 — verified by ls), and 24 of 24 reference brand-voice/voice_guidelines/VOICE.md. 28 scripts/build_*.py call has_hard_fail or grep_banned (not 29 — verified by grep -rl | wc -l). marketing_brain_skills/produce/SKILL.md: zero voice references (only the string 'brand_default' at line 179) — confirmed. marketing_brain_skills/run/SKILL.md: DOES reference voice at lines 176 and 202 ('Voice failures', 'VOICE FAILURES ... blocked by voice validation') — the auditor's 'zero references' claim is literally true only for its three search strings and is misleading as written; run/ reports voice failures but still loads no rule file. video_production_skills confirmed reduced to a single captions/ directory (ls) and commit abd59955 confirmed via git log.",
+      "gap": "[CORRECTED: counts wrong (24 not 23, 28 not 29), and run/SKILL.md is not voice-blind.] More important, the auditor missed the single hardest migration blocker in this domain: scripts/validate-producer.mjs:52-56 defines MANDATORY_REFS_BASE containing the literal string 'voice_guidelines.md', enforced at line 464 across every producer by scripts/check-producer-skills.mjs (G35, wired as ci:producer-skills inside ci:gates — verified in package.json line 171). Retiring or renaming voice_guidelines.md fails ci:gates on all 24 producers immediately. Separately, check-producer-skills.mjs PRODUCER_ROOTS still lists 'video_production_skills', a tree that is now one directory — the gate walks a near-empty root and silently passes.",
+      "effort": "L"
+    },
+    {
+      "requirement": "Scope coverage across emails, SMS, CMA prose, video VO, social captions, and blog posts stored in Supabase",
+      "status": "partial",
+      "evidence": "check-brand-voice.mjs:36 SCAN_DIRS=['app','components']; EXCLUDED_PATH_PREFIXES at lines 194-199 = app/api/, app/actions/, app/admin/, components/admin/ (line numbers verified exactly). Newsletter runtime gate lib/email/voice-precheck.ts is called from FOUR sites, not two: app/actions/newsletter.ts:362 and :406, app/actions/contact-newsletter.ts:152, and app/admin/(protected)/newsletters/actions.ts:52 and :82 — the auditor missed the admin path. GBP posts DO have a live gate the auditor missed entirely: app/api/cron/gbp-health-check/route.ts:36-43 + :114-124, registered in vercel.json line 120, alerts critical on banned words in LIVE public GBP posts. Brain briefs have a live gate the auditor missed: lib/marketing-brain/generate-briefs.ts applyBrandVoice() at line 1262, applied at :1946 and :2404, persisted as decision_type='voice_violation' at :2603. CMA confirmed ungated: scripts/build_cma_wrapper.py exists and has zero voice/banned references; lib/cma/render.ts mentions voice only in comments (lines 9, 646, 758). Blog confirmed ungated: app/actions/blog.ts has zero voice references. CRM composers confirmed ungated: components/admin/crm/SmsComposer.tsx and EmailComposer.tsx (the auditor cited components/crm/, which does not exist — hallucinated path) have zero voice references and sit inside the components/admin/ exclusion.",
+      "gap": "[CORRECTED: coverage is broader than 'one of six surfaces' and the auditor cited a non-existent path.] Actual runtime-gated surfaces: newsletters (4 call sites), GBP posts (cron), brain-generated briefs (applyBrandVoice), plus 28 Python build scripts. Actual ungated surfaces: CMA prose, blog bodies, CRM 1:1 SMS/email, video VO, and any admin-authored copy outside newsletters. The structural point stands and is the real finding: every gated surface uses a DIFFERENT word list, so 'more coverage' has meant 'more drift', and an Orwell rollout inherits five divergent enforcement points rather than one blind spot.",
+      "effort": "L"
+    },
+    {
+      "requirement": "Resolve the conflict that the enforcement foundation is a banned-word list while Matt says he does not need one",
+      "status": "missing",
+      "evidence": "Every mechanical path verified by reading source: scripts/brand-voice-vocabulary.cjs (lists + 18 regexes), scripts/check-brand-voice.mjs:43+233+254, eslint-rules/no-brand-voice-violations.js (second consumer of the same vocabulary), scripts/_producer_lib.py:350-400, lib/email/voice-precheck.ts:23-32, lib/marketing-brain/generate-briefs.ts:296-330, app/api/cron/gbp-health-check/route.ts:36, scripts/preflight.ts:119-230, scripts/build-blog-post.mjs:104-118, scripts/build-comms-client-update.mjs:24-56, scripts/build-agent-coop-eflyer.mjs:41-58, scripts/generate_content_calendar.py:47-70. Zero exceptions.",
+      "gap": "[VERIFIED, and the conflict is larger than stated] Twelve enforcement points, not four. Also worth surfacing to Matt: brand-voice-baseline.json total=0 means the current gate is not a soft burn-down, it is a hard zero. Dropping the list without a replacement does not degrade enforcement gradually, it removes it in one commit.",
+      "effort": "XL"
+    },
+    {
+      "requirement": "Duplication audit to quantify how many places currently hard-code brand-voice rules",
+      "status": "partial",
+      "evidence": "Auditor found 6-8. Verified actual count of independently hand-maintained banned-word/phrase lists in EXECUTABLE code: (1) scripts/brand-voice-vocabulary.cjs (canonical, 2 consumers: check-brand-voice.mjs + eslint-rules/no-brand-voice-violations.js); (2) scripts/_producer_lib.py:350-397; (3) lib/email/voice-precheck.ts:23-32; (4) lib/marketing-brain/generate-briefs.ts:296-330 — MISSED, live, reachable via app/api/marketing-brain/generate-briefs/route.ts:20 and weekly-cycle.ts:23; (5) app/api/cron/gbp-health-check/route.ts:36 — MISSED, cron-registered vercel.json:120, scans public GBP posts; (6) scripts/preflight.ts:119 — MISSED; (7) scripts/build-blog-post.mjs:104 — MISSED; (8) scripts/build-comms-client-update.mjs:24 — MISSED; (9) scripts/build-agent-coop-eflyer.mjs:41 — MISSED; (10) scripts/generate_content_calendar.py:47 — MISSED; (11) .tmp_env/fub-setup/27-wire-plan-content.mjs:80 — MISSED; plus prose copies in CLAUDE.md, VOICE.md, voice_guidelines.md, SKILL.md, and the still-present voice_system_v2.md (625 bytes, confirmed on disk).",
+      "gap": "[CORRECTED: downgraded from have to partial — the audit is incomplete by roughly half and the two most consequential misses are live runtime paths, not scripts.] Drift is also worse than reported. generate-briefs.ts:301-311 carries spacious, cozy, turnkey, leverage, navigate, comprehensive, foster AND approximately/roughly/about/around/fairly/somewhat as HARD fails with no soft tier — meaning the brain currently rejects any generated brief containing the word 'about'. The auditor found the _producer_lib.py drift and stopped; the TypeScript drift is the one that blocks content generation in production.",
+      "effort": "M"
+    }
+  ],
+  "shared_primitives_needed": [
+    "A single canonical voice-rule source with GENERATED exports to every consumer. Twelve hand-maintained copies verified (see duplication item). Minimum viable shape: vocabulary.cjs stays canonical, and a build step emits the Python set for _producer_lib.py, the TS const for voice-precheck.ts and generate-briefs.ts, and the obfuscated list for gbp-health-check/route.ts, with a parity test extending scripts/__tests__/brand-voice-vocabulary.test.cjs to all consumers rather than the current two.",
+    "An LLM-graded prose review step callable from CI and from producers. Partially available already, not zero: lib/cma/judge.ts calls client.messages.create (line 173) and post-processes output for brand-voice punctuation (line 202); lib/marketing-brain/producer-output-class.ts builds an Anthropic system prompt that already instructs brand-voice compliance (line 172). What is missing is a grader that returns per-violation Orwell categories, plus a cost/latency budget for running it in CI. Note the producer-runtime path is behind PRODUCER_RUNTIME_ENABLED (app/api/cron/producer-runtime/route.ts:121) and app/api/cron/loop-health-check/route.ts:145 reports it false, so that harness may currently be dark in production.",
+    "A prose-surface registry enumerating every place client-facing text is generated and which gate covers it. Verified ungated today: CMA prose (scripts/build_cma_wrapper.py, lib/cma/render.ts), blog bodies (app/actions/blog.ts), CRM 1:1 SMS and email (components/admin/crm/SmsComposer.tsx, EmailComposer.tsx), video VO. Verified gated but each with a different list: newsletters, GBP posts, brain briefs, 28 Python build scripts.",
+    "A rewrite-verification primitive that diffs before/after prose and asserts numbers, names, and facts are unchanged. Nothing like it exists. Adjacent prior art to build on: lib/cma/judge.ts already sanitizes model prose without asserting fact preservation, and lib/marketing-brain/producer-output-class.ts already requires a citations array mapping each figure to a payload field — that citations contract is the closest existing shape for a fact-preservation assertion.",
+    "A gate-migration plan for the doc-name coupling. scripts/validate-producer.mjs:52-56 requires the literal 'voice_guidelines.md' in all 24 producer SKILL.md files, enforced by G35 inside ci:gates. Any Orwell doc rename needs this list updated in the same commit or ci:gates fails repo-wide."
+  ],
+  "open_questions_for_owner": [
+    "Fully retire the banned-word mechanism or layer Orwell on top? Note before deciding: scripts/brand-voice-baseline.json is at total=0, so the current gate is a hard zero, not a soft burn-down. Removing the list removes enforcement in one commit rather than degrading it gradually.",
+    "Four of the six Orwell rules are not regex-tractable. Are you okay with those running as a non-deterministic, token-costing LLM review step per draft instead of a deterministic commit-time gate? A partial harness already exists (lib/cma/judge.ts, producer-output-class.ts) so this is wiring, not greenfield.",
+    "Before any Orwell work: do you want the twelve divergent banned-word copies collapsed to one generated source first? Right now lib/marketing-brain/generate-briefs.ts:311 hard-fails any brief containing the word 'about', which the canonical vocabulary un-banned on 2026-06-02. That is actively rejecting valid content today, independent of Orwell.",
+    "Retiring voice_guidelines.md breaks G35 (scripts/validate-producer.mjs:52-56) across all 24 producer SKILL.md files. Do you want the new Orwell doc to take that filename, or should the gate's MANDATORY_REFS_BASE be updated in the same commit?",
+    "Does Orwell apply to surfaces currently ungated on purpose — CMA prose, blog bodies, CRM 1:1 SMS and email — or do those keep the current exemption? VOICE.md's 'our language only' scope excludes reviews and broker-written MLS remarks; confirm that carries over.",
+    "CLAUDE.md's Video Build Hard Rules section still cites ANTI_SLOP_MANIFESTO.md, VIDEO_PRODUCTION_SKILL.md, and VIRAL_GUARDRAILS.md, all deleted in abd59955 (confirmed: only video_production_skills/captions survives). scripts/check-producer-skills.mjs still walks video_production_skills as a producer root. Clean both up as part of this work?"
+  ]
+}

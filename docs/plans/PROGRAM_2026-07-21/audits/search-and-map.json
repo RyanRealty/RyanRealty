@@ -1,0 +1,135 @@
+{
+  "domain": "search-and-map",
+  "summary": "The report I was asked to verify is a placeholder stub — domain \"test\", one item literally named \"test req\" with evidence \"test evidence\". Nothing in it is verifiable because nothing in it is real. I discarded it and audited the search-and-map domain from source. The actual state: the core is genuinely strong — /homes-for-sale rewrites to app/search, split/list/map views render, Google Maps clustering with a dual raster/vector marker path works, polygon draw exists with real point-in-polygon server filtering, an 89-field URL param registry drives filters, and saved-search alerts run on a registered hourly cron that actually sends via Resend. But there are two entirely separate map-search stacks that have diverged (MapSearchView on the root, UnifiedMapListingsView on city/slug pages), and only one of them persists a drawn polygon to the URL. The pure view=map path is the weakest surface: it is fed a static, non-viewport, filter-lossy 1000-row query with no polygon callback and no search-as-you-move. Semantic search is fully built and completely unreachable — no UI calls it and no embedding backfill exists in code. Several map/search components are orphaned dead code.",
+  "maturity": "partial",
+  "items": [
+    {
+      "requirement": "Public search route reachable at a canonical, SEO-friendly URL",
+      "status": "have",
+      "evidence": "next.config.ts:216-217 rewrites /homes-for-sale -> /search and /homes-for-sale/:path* -> /search/:path*; next.config.ts:149-150 301-redirects /search and /search/:path* to /homes-for-sale. Pages exist at app/search/page.tsx and app/search/[...slug]/page.tsx (the [...slug] route is real — a plain `ls` misses it because of shell globbing, which is exactly the kind of thing a lazy auditor would mis-report as missing).",
+      "gap": "[CORRECTED: the stub report contained no such item at all.] No functional gap. Worth noting app/homes-for-sale/ contains only loading.tsx and no page.tsx — that is intentional (the rewrite supplies the page, the loading.tsx supplies the segment-level suspense boundary), but it reads as broken to anyone auditing by file listing.",
+      "effort": "S",
+      "why_it_matters": "This is the highest-traffic commercial surface on the site. If the rewrite chain broke, every IDX URL 404s."
+    },
+    {
+      "requirement": "Map search with clustering and price-pill markers",
+      "status": "have",
+      "evidence": "components/SearchMapClustered.tsx (1122 lines). Dual marker strategy documented and implemented at lines 21-37: NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID present -> vector map + AdvancedMarkerElement (line 246, 423); absent -> raster map + a custom google.maps.OverlayView subclass PricePillOverlay (line 514). Loaded lazily through components/LazySearchMapClustered.tsx, rendered from app/search/page.tsx:327 and components/search/MapSearchView.tsx:539.",
+      "gap": "[CORRECTED: not covered by the stub.] Real but with a live env risk: NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID is NOT present in .env.local (only NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is). Production therefore either runs the raster fallback, or runs vector only because the var is set in Vercel and not locally — meaning local and prod render through two different, independently-buggy marker code paths. That divergence is not covered by any gate.",
+      "effort": "S",
+      "why_it_matters": "Two marker implementations means every marker bug has to be fixed and tested twice, and the one developers see locally is not the one users see."
+    },
+    {
+      "requirement": "Draw-on-map polygon area search that filters results",
+      "status": "partial",
+      "evidence": "lib/map-polygon.ts (encode/decode/bounds, 80-point cap); server-side filtering is real — app/actions/search.ts:249-288 fetches the polygon bbox then applies isPointInPolygon in memory with deliberate overfetch, and app/actions/listings.ts:9 imports the same helpers. Drawing UI at components/SearchMapClustered.tsx:411-413, 725, 945. URL persistence exists ONLY in components/UnifiedMapListingsView.tsx:166-174 (syncPolygonToUrl -> router.replace) which is rendered only from app/search/[...slug]/page.tsx:604.",
+      "gap": "[CORRECTED: not covered by the stub.] Two divergent implementations. On the root /homes-for-sale, components/search/MapSearchView.tsx holds the polygon in useState (line 250) and NEVER writes it to the URL — there is no encodeMapPolygon import in that file and no decodeMapPolygon import in app/search/page.tsx. A polygon drawn on the root search page is lost on refresh, cannot be shared, cannot be saved, and cannot be restored. On /homes-for-sale/<city>/... it persists correctly. Same feature, two behaviors, depending on a URL segment the user never thinks about.",
+      "effort": "M",
+      "why_it_matters": "Draw-your-own-area is the single differentiating feature against Zillow/Redfin on a broker IDX. Half of it silently forgets the user's work."
+    },
+    {
+      "requirement": "Polygon-scoped saved searches / alerts",
+      "status": "missing",
+      "evidence": "lib/search-filters.ts:405-411 explicitly lists 'poly' in NON_NARROWING_KEYS with the comment \"a drawn polygon the alert path cannot match server-side (poly)\". components/SaveSearchButton.tsx:167-170 and 210-213 surface the honest disclosure \"Alerts cover the area around your drawn boundary, not the exact shape.\" public.listing_alerts (docs/DATABASE_SCHEMA_SNAPSHOT.md) has only a generic `filters` jsonb — no geometry column, no PostGIS.",
+      "gap": "[CORRECTED: not covered by the stub.] The alert matcher cannot evaluate point-in-polygon, so a polygon saved search degrades to its bounding box. The UI is honest about it, which is correct behavior, but it means a user who draws around Awbrey Butte gets alerted on homes in the box that includes downtown. Fixing properly needs either a geometry column + PostGIS ST_Contains on the alert scan, or storing the polygon and post-filtering in runListingAlerts.",
+      "effort": "L",
+      "why_it_matters": "Wrong-area alert emails are the fastest way to get an alert program unsubscribed from, and they put unverified geography in front of clients."
+    },
+    {
+      "requirement": "Saved-search alert emails actually send on a schedule",
+      "status": "have",
+      "evidence": "vercel.json:128-129 registers /api/cron/saved-search-alerts on \"0 * * * *\". app/api/cron/saved-search-alerts/route.ts:16-33 gates on requireCronAuth then calls runListingAlerts. app/actions/saved-search-alerts.ts:4 imports sendEmail from lib/resend and line 330 actually calls it (guarded by !dryRun at line 320). Empty-filter guard via hasNarrowingFilter (lib/search-filters.ts:418) prevents whole-feed blasts.",
+      "gap": "[CORRECTED: not covered by the stub.] Working and reachable. One stale artifact: the route comment at line 22-25 describes \"the 4x-daily cron\" and budgets the 600-row scan against that assumption, but vercel.json schedules it hourly (24x/day). The scan budget math in the comment is wrong; behavior is probably fine but nobody has reconciled it.",
+      "effort": "S",
+      "why_it_matters": "This is the only automated re-engagement loop on the buyer side. A miscalibrated scan budget silently starves the tail of the subscriber list."
+    },
+    {
+      "requirement": "view=map renders the same result set the filters describe",
+      "status": "partial",
+      "evidence": "app/search/page.tsx:224 calls getSearchMapListings(effectiveFilters) -> app/actions/search.ts:394-420, which hand-passes only ~18 filter fields into getListingsForMap. lib/search/field-registry.ts:63 defines SEARCH_FIELDS with roughly 90 field entries, and app/search/page.tsx:7 imports ALL_SEARCH_URL_PARAMS to accept all of them. app/actions/listings.ts:1395 caps at mapLimit 1000 (max 3000).",
+      "gap": "[CORRECTED: not covered by the stub.] Two defects on the same path. (1) Filter loss: the map view drops every registry field not in that hand-written list — viewContains, propertySubType, keyword/feature filters and more — so pins on the map do not match the list the user just filtered. (2) Silent truncation: hard 1000-row cap with no `capped` flag returned and no \"showing 1,000 of N\" affordance, unlike the split view which does thread `capped` through (app/actions/search.ts:279-288, MapSearchView initialCapped). Also this path passes no onPolygonDrawn and no viewport re-query, so pure map view has neither draw nor search-as-I-move — both of which the split view has.",
+      "effort": "M",
+      "why_it_matters": "A map showing homes that the user's own filters excluded is a data-accuracy failure on a public surface, and an uncommunicated 1000-pin cap makes inventory look thinner than it is."
+    },
+    {
+      "requirement": "Search-as-I-move-the-map / \"Search this area\"",
+      "status": "have",
+      "evidence": "components/UnifiedMapListingsView.tsx:155 searchAsMove state, :305-318 auto-requery, :520-531 and :561-572 the floating \"Search this area\" pill for both desktop and mobile. components/search/MapSearchView.tsx:248, :325-351 runViewportSearch wired to onBoundsChanged. Server side: app/actions/search.ts:207 getViewportSearch returns one result set feeding both list and map (documented at :198-199).",
+      "gap": "[CORRECTED: not covered by the stub.] Present on the split view and the city/slug map view. Absent on view=map on the root page (see the item above). Third divergent behavior across the two stacks.",
+      "effort": "S",
+      "why_it_matters": "Viewport search is table stakes; having it on two of three views trains users not to trust the third."
+    },
+    {
+      "requirement": "Typeahead / location autocomplete on the search bar",
+      "status": "partial",
+      "evidence": "app/api/search/suggestions/route.ts calls getSearchSuggestions (app/actions/listings.ts:366). Consumed by components/SmartSearch.tsx:45 and components/HeroSearchOverlay.tsx:49. Backed by the DAL — getListingTiles over listing_tile_mv (app/actions/listings.ts:380).",
+      "gap": "[CORRECTED: not covered by the stub — and this is where a credulous auditor would have marked \"have\".] Both consumers are orphaned. `grep -rn \"SmartSearch|HeroSearchOverlay\" app components --include=*.tsx` excluding their own files returns ZERO matches — neither component is rendered anywhere in the app. The only live suggestion path is the route itself, unconsumed. Separately the implementation is expensive: it pulls 250 listing tiles per keystroke (app/actions/listings.ts:381, limit: 250) and derives city/subdivision/zip counts in JS rather than using a suggestion index.",
+      "effort": "M",
+      "why_it_matters": "Two fully built search-entry components sitting dead means either the search bar in use is something else entirely, or the site shipped without typeahead. Either way somebody's work is unreachable and the 250-row-per-keystroke cost is being paid by whatever does call it."
+    },
+    {
+      "requirement": "Natural-language / plain-English query parsing",
+      "status": "have",
+      "evidence": "lib/parse-search-query.ts:227 parseSearchQuery + :521 describeParsedSearch. Live consumers: components/SearchFilterBar.tsx:16,176; components/search/SearchFilters.tsx:8,377; components/search/AllFiltersSheet.tsx:24; components/site/kb/KbHero.client.tsx:7 (searchHrefForQuery). SearchFilters is rendered from app/search/page.tsx:45.",
+      "gap": "[VERIFIED-equivalent — nothing in the stub to verify, confirmed independently.] Genuinely wired and reachable through the live filter bar and the KB hero. This is deterministic rule-based parsing, not LLM — which is the right call for latency and for CLAUDE.md §0 traceability.",
+      "effort": "S",
+      "why_it_matters": "It is the only working \"just type what you want\" path, so it carries the load the dead SmartSearch component was supposed to."
+    },
+    {
+      "requirement": "Semantic / vector listing search",
+      "status": "missing",
+      "evidence": "app/actions/semantic-search.ts:102 searchListingsSemantic, :143 supabase.rpc('match_listings_semantic'). Route at app/api/search/semantic/route.ts:18. Table public.listing_embeddings exists (docs/DATABASE_SCHEMA_SNAPSHOT.md:2600-2607, columns listing_key/city/search_content/embedding).",
+      "gap": "[CORRECTED: not covered by the stub.] Built and completely unreachable. (1) No client calls /api/search/semantic — a repo-wide grep for that path returns only the route file itself. (2) No embedding backfill exists in code: `grep -rln listing_embeddings app scripts lib` returns exactly one unrelated file (lib/data/listings/getListingDetailBundles.ts). There is no writer, no cron in vercel.json, no script. (3) It is additionally gated on OPENAI_API_KEY (app/actions/semantic-search.ts:47 hasOpenAiKey). This is dead infrastructure with a live public endpoint attached to it — the endpoint will burn OpenAI embedding calls for anyone who finds it, and return nothing useful because the table has no maintained population path.",
+      "effort": "L",
+      "why_it_matters": "An unreachable, unpopulated, key-gated public endpoint is pure cost and attack surface with zero product value. Either wire it or delete it."
+    },
+    {
+      "requirement": "Filter surface covering the full MLS field registry",
+      "status": "have",
+      "evidence": "lib/search/field-registry.ts:63 SEARCH_FIELDS (~90 entries) with ALL_SEARCH_URL_PARAMS consumed at app/search/page.tsx:7 and typed as an open string map (app/search/page.tsx:71-77). UI: components/search/SearchFilters.tsx (827 lines), components/search/AllFiltersSheet.tsx (608 lines), components/AdvancedSearchFilters.tsx rendered at app/search/[...slug]/page.tsx:888. Server read path is DAL-compliant — lib/data/listings/searchListingsAll.ts over listing_search_mv (docs/DAL_INDEX.md:1961-1963).",
+      "gap": "[CORRECTED: not covered by the stub.] The list/split path honors the registry. The map path does not (see the view=map item) — that is the gap, and it is filed there rather than here.",
+      "effort": "S",
+      "why_it_matters": "The registry is the thing that makes this search better than a generic IDX widget. It only pays off where it is actually applied."
+    },
+    {
+      "requirement": "Resilience — search must not 500 when Supabase is slow",
+      "status": "have",
+      "evidence": "app/search/page.tsx:56-70 withTimeout() races every data promise against a 4000ms budget and a fallback, with an explicit comment that a statement-timing-out Supabase must never crash the RSC render on the ad-landing surface. Mirrored in app/search/[...slug]/page.tsx (withTimeout used at :570-572 for boundary fetches with a 1000ms budget).",
+      "gap": "[CORRECTED: not covered by the stub.] Real and applied consistently. Caveat: silently degrading to an empty result set on timeout means a slow database renders as \"no homes found\" with no distinguishing signal to the user or to monitoring — a known repo failure mode (memory: ISR caches empty error-fallback). No unstable_noStore() guard on the empty-render path here.",
+      "effort": "M",
+      "why_it_matters": "\"Zero results\" caused by a timeout looks identical to \"zero inventory\" and can get cached, poisoning the highest-value page."
+    },
+    {
+      "requirement": "Orphaned search/map components removed or wired",
+      "status": "missing",
+      "evidence": "Verified dead by repo-wide grep excluding each component's own file: components/SmartSearch.tsx, components/HeroSearchOverlay.tsx, components/listing/NearbySchools.tsx (the live one is components/site/listing-detail/SchoolsBlock.tsx, rendered at app/listing/[listingKey]/page.tsx:435), components/listing/ListingDetailMapGoogle.tsx, components/listing/showcase/ShowcaseMap.tsx, components/city/CityMap.tsx. All return zero external references.",
+      "gap": "[CORRECTED: not covered by the stub.] Six unreferenced search/map components, two of them (SmartSearch, HeroSearchOverlay) being the only consumers of a live API route, and one (NearbySchools) advertising a GreatSchools integration in its docblock that no code performs. This is exactly the residue that makes a future auditor conclude a capability exists when it does not.",
+      "effort": "S",
+      "why_it_matters": "Dead components are how a codebase lies to the next agent. NearbySchools claiming GreatSchools would be cited as evidence of a school-ratings feature by anyone who did not check references."
+    },
+    {
+      "requirement": "Commute-time / drive-time search, Street View, school-rating filters on the map",
+      "status": "missing",
+      "evidence": "Repo-wide grep for commute/driveTime/isochrone/DistanceMatrix/StreetView finds only hardcoded editorial arrays: app/lp/tetherow/heath/page.tsx:72, lib/resort-community-content.ts:86,136 (drive_times read from community content), components/site/CommunityRichContent.tsx:113. No Google Distance Matrix call, no StreetView panorama, no school filter in lib/search/field-registry.ts.",
+      "gap": "[CORRECTED: not covered by the stub.] None of these exist as search capabilities. Drive times are hand-authored prose per community, not computed, which also means they are unsourced numbers on public surfaces under CLAUDE.md §0 unless somebody verified them at authoring time.",
+      "effort": "L",
+      "why_it_matters": "Commute-time and school filters are the two most-requested buyer filters that the portals ship and this site does not."
+    }
+  ],
+  "shared_primitives_needed": [
+    "ONE map-search component. Two stacks exist today (components/search/MapSearchView.tsx and components/UnifiedMapListingsView.tsx) with divergent polygon persistence, divergent search-as-I-move, and divergent capped-result handling. Every future map fix has to be written twice or it regresses one path.",
+    "A single filter-serialization boundary. lib/search/field-registry.ts is the registry, but app/actions/search.ts:394 re-lists ~18 fields by hand for the map path. Any code that turns filters into a query must consume the registry programmatically, and a gate should fail a hand-written subset.",
+    "Geometry storage + a PostGIS predicate in the alert scan, so a drawn polygon means the same thing in the browser and in the nightly email. Needed by saved searches, by any future 'homes near my office' feature, and by neighborhood-boundary alerts.",
+    "A capped/truncated result contract returned by every listing read path, so any surface can render 'showing 1,000 of 3,412' instead of silently lying. Today only getViewportSearch returns it.",
+    "A dead-component gate (scripts/check-*.mjs, wired per docs/MECHANICAL_GATES.md) failing on any component under components/ with zero external references. Six exist in this domain alone and they actively mislead audits.",
+    "A distinguishable degraded-empty signal so a timeout-driven empty render is never cached or shown as 'no homes found' (pairs with the existing ISR empty-fallback lesson)."
+  ],
+  "open_questions_for_owner": [
+    "Is NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID set in Vercel production? It is absent from .env.local, which means local dev and production may be running two different marker implementations. If it is not set in prod either, the vector path in SearchMapClustered.tsx has never run and should be deleted rather than maintained.",
+    "Semantic search: kill it or fund it? Right now /api/search/semantic is a live public endpoint with no UI, no embedding backfill, and an OpenAI key gate. Deleting the route and app/actions/semantic-search.ts is a 30-minute change. Building it properly means an embedding pipeline plus a cron plus ongoing OpenAI spend.",
+    "Polygon alerts: is bbox-approximation acceptable long term? The UI discloses it honestly today. Making it exact requires a geometry column and a PostGIS predicate in runListingAlerts. Worth it only if buyers are actually drawing shapes rather than picking neighborhoods.",
+    "Do the hand-authored drive times in lib/resort-community-content.ts and app/lp/tetherow/heath/page.tsx have a verification trace? They are numeric claims on public pages and fall under the §0 rule; if nobody sourced them they need to be sourced or cut.",
+    "Which search-entry component is actually on the site? SmartSearch and HeroSearchOverlay are both dead. If the intended typeahead was never wired, that is a product decision to confirm before I delete them.",
+    "The map view's 1000-pin cap: raise it, paginate it, or surface it? Raising it costs render performance; surfacing it is honest but shows a limitation. Needs your call on which tradeoff the brand takes."
+  ]
+}

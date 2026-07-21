@@ -1,0 +1,84 @@
+{
+  "domain": "CMA (seller valuation) and BPO (buyer price opinion) products",
+  "summary": "Adversarial re-verification largely upholds the original audit — this domain is genuinely built, not doc-only — but the auditor cited a DEAD delivery path as its headline evidence and missed two live intake callers. Corrections: (1) `lib/cma-deliver.ts:finalizeAndDeliverCma` (Gmail-draft rail) is reachable only by manually POSTing `/api/cma/[slug]/finalize-deliver`; grep across `app/`, `components/`, `lib/` finds ZERO UI or cron callers. The actual production send rail is `lib/cma/send.ts:sendCmaToLead`, wired into five real surfaces. The capability is still \"have\", but the auditor's evidence pointed at orphaned code — exactly the failure mode this pass exists to catch. (2) CMA intake has FOUR entry points, not three: the auditor missed `app/lp/fsbo/actions.ts:328` and `app/lp/expired-listing/actions.ts:287`. (3) BPO has no PDF renderer at all (CMA has `lib/cma-pdf.ts`) — an unremarked parity gap. Everything else verified line-by-line: the cron is registered, the accuracy contract genuinely kills builds, `deriveOfferStrategy` is real 166-line logic, and the proactive saved-home/favorite BPO trigger is confirmed absent.",
+  "maturity": "partial",
+  "items": [
+    {
+      "requirement": "Seller CMA request auto-flows from website form/message to a built CMA draft (request -> build -> ready)",
+      "status": "have",
+      "evidence": "lib/cma-request.ts:116 createCmaRequest; writes cmas row (line 240 upsertCmaRowBySlug) + marketing_brain_actions row with action_type 'content:cma' (lines 269-271). FOUR live callers verified, not three: app/lp/seller-home-value/actions.ts:612, app/lp/fsbo/actions.ts:328, app/lp/expired-listing/actions.ts:287, app/api/meta/lead-webhook/route.ts:633, plus broker one-tap via lib/crm/cma-kickoff.ts:226. Cron registered: vercel.json:187-190 '/api/cron/cma-build-worker' schedule '14,44 * * * *'. Route app/api/cron/cma-build-worker/route.ts calls runCmaBuildWorker (lib/cma/worker.ts) -> lib/cma/build.ts:buildBpo-analog buildCma. No env kill-switch in worker.ts or build.ts (only CMA_DEFAULT_BROKER_SLUG at build.ts:50). Ready-notify SMS fan-out real at lib/cma/worker.ts:49-62,158-168. Admin surface reachable: app/admin/(protected)/cmas/page.tsx, linked from components/console/ConsoleQuickAction.tsx:39.",
+      "gap": "[CORRECTED: auditor undercounted intake callers — it listed 3, there are 5 including the FSBO LP and expired-listing LP.] Pipeline itself is complete and reachable. No gap.",
+      "why_it_matters": "This is the one fully-automated valuation path in the repo and it holds up under verification.",
+      "effort": "S"
+    },
+    {
+      "requirement": "CMA is delivered (not just built) once approved",
+      "status": "have",
+      "evidence": "REAL path: lib/cma/send.ts:300 sendCmaToLead — suppression gate fails closed (line 309 isSuppressed), link attribution + open tracking via attributeOutbound (line 328), Gmail-DWD primary with Resend fallback (lines 352-375), crm_timeline log (line 390). Reachable from FIVE surfaces: app/actions/cma-admin.ts:262 sendCmaToLeadAction (used by app/admin/(protected)/cmas/page.tsx:151 and components/admin/cma/CmaReviewActions.tsx:40), app/actions/contact-cma.ts:225 (CRM contact page), app/actions/send-doc.ts:234, app/actions/fsbo-dashboard.ts:121, app/actions/expired-dashboard.ts:107.",
+      "gap": "[CORRECTED: the auditor's ONLY cited evidence — lib/cma-deliver.ts:finalizeAndDeliverCma via app/api/cma/[slug]/finalize-deliver — is orphaned code. Grep across app/, components/, lib/ for 'finalize-deliver' and 'finalizeAndDeliverCma' returns ONLY the route file itself and a doc comment in lib/cma-deliver.ts:21. No button, no server action, no cron, no vercel.json entry invokes it. The auditor wrote 'this is a real delivery path, not a stub' about a path nothing calls. The capability survives only because a DIFFERENT, unmentioned module (lib/cma/send.ts) actually does the work.] Residual gap: dead-code liability — two divergent delivery implementations, one of which (cma-deliver.ts, ~350 lines incl. PDF attach + FUB BCC) receives no exercise and will silently rot.",
+      "why_it_matters": "An auditor calling an unreachable module the delivery path is exactly how a broken rail ships unnoticed. The FUB-BCC and PDF-attach behavior lives only in the dead path — the live path sends a link, not the PDF.",
+      "effort": "S"
+    },
+    {
+      "requirement": "BPO created for buyer inquiries ('what's my price', 'tell me more about this property')",
+      "status": "partial",
+      "evidence": "Re-verified and confirmed. buildBpo (lib/bpo/build.ts:90) has exactly three callers: app/actions/bpo-admin.ts:70 and :112 (admin form, components/admin/bpo/BuildBpoForm.tsx rendered at app/admin/(protected)/bpo/new/page.tsx:48) and app/actions/contact-bpo.ts:84 (CRM contact one-tap, wired at app/admin/(protected)/crm/[id]/page.tsx:432,637). Grep for 'content:bpo' across the entire repo (ts/tsx/json/md): ZERO hits. No BPO cron in vercel.json. No listing-detail or inquiry-form tie-in.",
+      "gap": "[VERIFIED] No automated buyer-inquiry -> queued BPO build. Every BPO requires a human to notice the inquiry and click. Additionally unremarked by the auditor: BPO has NO PDF renderer (lib/bpo/ contains build/contract/history/narrative/offer/opinion/render/send/slug/types — no pdf module, and no app/api/bpo route exists), while CMA has lib/cma-pdf.ts + /api/cma/[slug]/pdf. BPO can only be sent as a link.",
+      "why_it_matters": "Matt's stated flow is buyer asks -> BPO gets created. Today that is entirely manual, and the deliverable cannot be attached as a document.",
+      "effort": "M"
+    },
+    {
+      "requirement": "BPO includes an offer strategy that is 'very unique' to Ryan Realty",
+      "status": "have",
+      "evidence": "lib/bpo/offer.ts:84 deriveOfferStrategy, 166 lines, read in full. Real branching logic: scoreLeverage from market MoS/DOM/failed attempts, postureFromScore, active-listing branch computing openingOffer/targetOffer/ceiling from posture-scaled discounts (0.06/0.035/0.015) with named negotiation terms per posture; off-market branch computing recommendedList + expectedOfferLow/High from saleToListRatio. Wired on the only build path: lib/bpo/build.ts:38 import, :272 invocation. Client-safety gate real: lib/bpo/send.ts:313 stripOfferStrategy(fullHtml) unless includeOfferStrategy passed (app/actions/contact-bpo.ts:141).",
+      "gap": "[VERIFIED] Not a stub. Substantive, reachable, and correctly gated from the client-facing view.",
+      "effort": "S"
+    },
+    {
+      "requirement": "BPOs are 'very thorough' and give an accurate price idea",
+      "status": "have",
+      "evidence": "Line counts confirmed: lib/bpo/history.ts 234 lines, lib/bpo/opinion.ts 161, lib/bpo/offer.ts 166, lib/bpo/contract.ts 69. lib/bpo/build.ts shares the CMA engine (comps, market context, adjustments) and runs deriveOfferStrategy at :272. Admin detail surface reachable at app/admin/(protected)/bpo/[slug]/page.tsx and app/admin/(protected)/bpo/page.tsx; client doc at app/bpo/[slug]/route.ts.",
+      "gap": "[CORRECTED: auditor claimed BPO 'shares the full CMA engine' including the LLM judge and adversarial audit. lib/bpo/build.ts:4 states the pipeline runs with NO LLM dependency, and lib/bpo/contract.ts is 69 lines against lib/cma/contract.ts's 203 — the BPO accuracy contract is materially thinner than the CMA one. BPO is deterministic-only: no judgeComps, no auditCma, no self-repair loop of the kind at lib/cma/build.ts:241-269.] Also no PDF output (see item above).",
+      "why_it_matters": "A BPO carries an offer recommendation a buyer may act on financially, yet it passes through weaker verification than a CMA. The auditor overstated parity.",
+      "effort": "M"
+    },
+    {
+      "requirement": "Valuation accuracy architecture: judge -> adversarial audit -> contract -> self-repair, finalize gates",
+      "status": "have",
+      "evidence": "Verified in source, CMA side. lib/cma/judge.ts 228 lines (judgeComps, Anthropic Sonnet, fail-open at :124-125 when ANTHROPIC_API_KEY missing). lib/cma/audit.ts 326 lines (auditCma, independent prompt, :186 apiKey, catch at :322). lib/cma/contract.ts 203 lines. Wired at lib/cma/build.ts:155 (judge), :230 (audit), :241-269 (bounded one-shot self-repair dropping audit-flagged comps and re-auditing), :285-311 (evaluateAccuracyContract — hard failures call recordBuildFailure and return {ok:false} so NO draft persists; forceReview sets pricing.needsReview at :303-310). Audit-unavailable case forces review (:279, :406).",
+      "gap": "[CORRECTED: this architecture is CMA-only. lib/bpo/build.ts imports neither judge.ts nor audit.ts and runs no self-repair loop; its contract is a 69-line reduced analog. The auditor wrote 'wired code on the only build path (lib/cma/build.ts / lib/bpo/build.ts)' — that conflated two different pipelines.] Secondary: both LLM stages fail open on a missing ANTHROPIC_API_KEY, so a key outage silently degrades every CMA to needs_review rather than alerting.",
+      "why_it_matters": "The strongest verification in the domain does not cover the product that recommends dollar offer amounts.",
+      "effort": "M"
+    },
+    {
+      "requirement": "Every CMA/BPO send is tracked (opened, clicked) and visible on the contact timeline",
+      "status": "have",
+      "evidence": "app/api/track/e/open/route.ts:41-44 upserts crm_timeline kind 'email_open'; app/api/track/e/click/route.ts present. lib/email-tracking.ts:instrumentEmailHtml exists; live sends use lib/crm/attributed-links attributeOutbound (lib/cma/send.ts:328, lib/bpo/send.ts:363). Raw-HTML docs inject the tracker: app/cma/[slug]/route.ts:72 and app/bpo/[slug]/route.ts:76, file present at public/rr-doc-tracker.js. Resend webhook fails closed: app/api/webhooks/resend/route.ts:42,50-51 returns 500 when RESEND_WEBHOOK_SECRET unset; writes crm_timeline at :87,:161. Contact page renders both: app/admin/(protected)/crm/[id]/page.tsx:42-43 imports, :180-181 fetches, :633 ContactCmaCard, :637 ContactBpoCard.",
+      "gap": "[CORRECTED: the auditor credited lib/cma-deliver.ts:318 instrumentEmailHtml as the CMA tracking wiring. That line is in the orphaned Gmail-draft module nothing calls. The live CMA send instruments via attributeOutbound in lib/cma/send.ts:328 instead — same outcome, different function, and the auditor did not read the path that actually runs.] Unresolvable from repo: whether RESEND_WEBHOOK_SECRET is set in Vercel prod and the endpoint registered in the Resend dashboard.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Proactive BPO offer triggered by saved-search/favorite behavior ('I saw you were looking at this home, want our opinion on price?')",
+      "status": "missing",
+      "evidence": "Searched harder and confirm absent. Saved-home infrastructure DOES exist (app/account/saved-homes/page.tsx, lib/pulse-saves.ts, components/site/ListingCard.tsx favorite affordance) — so the signal source is present and unconsumed. But: grep for 'bpo' (case-insensitive) across lib/crm/, lib/marketing-brain/, app/api/cron/ returns exactly ONE file, app/api/cron/marketing-snapshot-meta-page/route.ts, whose hits are 'fbPosts'/'fbPostRows' false positives — not a single cron or CRM module references BPO. app/api/cron/saved-search-alerts (vercel.json:128) sends listing alerts only. app/api/cron/visitor-hot-lead-escalation creates a crm_tasks call task (createNativeTask, line 34/305) and emails MATT_ALERT_EMAIL (:237-242) — broker-facing only, no lead-facing message, no BPO. No 'content:bpo' action_type anywhere.",
+      "gap": "[VERIFIED] Entire feature absent. The favorite/saved-home signal is captured and stored but has no consumer that offers a price opinion.",
+      "why_it_matters": "Explicitly requested product tie-in. The plumbing (saved homes, engagement scoring, BPO builder, tracked send rail) all exists in isolation — only the connecting trigger is missing, which makes the absence more glaring, not less.",
+      "effort": "M"
+    }
+  ],
+  "shared_primitives_needed": [
+    "Delete or wire lib/cma-deliver.ts. Two divergent CMA delivery implementations exist; only lib/cma/send.ts is reachable. The dead one uniquely holds PDF-attachment and FUB-BCC behavior — either port those into send.ts or remove the module, but do not leave both.",
+    "A BPO PDF renderer at parity with lib/cma-pdf.ts + /api/cma/[slug]/pdf. BPO currently has no document artifact, only a link.",
+    "Extend the judge -> adversarial audit -> self-repair chain (lib/cma/judge.ts, lib/cma/audit.ts) to lib/bpo/build.ts, or explicitly document that BPO is deterministic-only and label it as such in the client-facing document.",
+    "A 'content:bpo' action_type + bpo-build-worker cron mirroring createCmaRequest + cma-build-worker, so an inbound buyer signal can queue a build the same way seller intake does.",
+    "A consumer for the existing saved-home / pulse-saves signal (lib/pulse-saves.ts, app/account/saved-homes) — the tracking plumbing is built and unused for this purpose.",
+    "An alarm on ANTHROPIC_API_KEY absence: both lib/cma/judge.ts:124 and lib/cma/audit.ts:186 fail open, so a key outage silently degrades every CMA to needs_review with no operator signal."
+  ],
+  "open_questions_for_owner": [
+    "lib/cma-deliver.ts (Gmail draft + PDF attachment + FUB BCC) has no caller. Was it superseded by lib/cma/send.ts intentionally, or did a UI trigger get dropped? The PDF attachment and the ryan.realty@followupboss.me BCC only exist in the dead path — do you want those behaviors back on the live send?",
+    "Should BPO run the same LLM comparability judge and adversarial audit as CMA? Today it is deterministic-only with a 69-line contract vs CMA's 203 — and BPO is the one recommending specific offer dollar amounts.",
+    "Should a BPO be deliverable as a PDF, or is the tracked link view sufficient for the buyer-side product?",
+    "For the proactive 'want our opinion on price' trigger: what counts as the signal — a saved home (lib/pulse-saves.ts already records these), N repeat views, or the existing engagement_score threshold? And should it auto-build the BPO or just queue a broker prompt?",
+    "Is RESEND_WEBHOOK_SECRET set in Vercel prod with the endpoint registered in Resend? The route fails closed with a 500, so if it is unset every webhook event is being silently rejected."
+  ]
+}

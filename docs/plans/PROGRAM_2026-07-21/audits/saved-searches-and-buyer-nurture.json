@@ -1,0 +1,133 @@
+{
+  "domain": "Saved searches and buyer nurture",
+  "summary": "The send engine is real and reachable: one table (public.listing_alerts), one DAL (lib/data/leads/listingAlerts.ts), one cron registered hourly in vercel.json:128-129, and consumer self-management at /account/saved-searches linked from the auth dropdown. Beyond that the prior audit was wrong in both directions. It was too generous on open/click tracking (attributeOutbound returns early with no pixel and no click-wrapping whenever no CRM person resolves, so guest alert rows structurally report zero engagement) and on \"broker can see what a lead is viewing\" (getViewedListingsForLead queries only visitor_sessions.fub_person_id and hard-returns [] when fub_legacy_id is null, so every native contact created after the 2026-06-24 FUB cutover shows nothing, even though visitor_sessions.crm_person_id exists). It was wrong that no single-contact broker creation UI exists (ContactSendCenter.tsx creates a listing_alerts row and sends matches), wrong that no UI reaches waterfront/golf/view/instant (AlertCriteriaEditor.tsx exposes all of them plus instant cadence via the /admin/crm/subscriptions edit dialog), and wrong that lead scoring does not exist in code (two complete dead scoring modules exist with zero production callers, and the CRM people list renders a \"Lead Score\" column hardcoded to an em-dash). It also missed entirely that /lp/buyer-listing-alerts promises \"First Matches in 30 Minutes\", collects budget/areas/beds, and creates no listing_alerts row at all. The hide-a-home gap is confirmed real.",
+  "maturity": "partial",
+  "items": [
+    {
+      "requirement": "Set buyers up on saved searches matching their criteria exactly (consumer self-serve)",
+      "status": "have",
+      "evidence": "components/search/SearchAlertCapture.tsx:75-76 builds SAVED_SEARCH_QUERY_KEYS as the union of LEGACY_SAVED_SEARCH_KEYS (line 28) and ALL_SEARCH_URL_PARAMS (imported line 4 from lib/search/field-registry). Rendered and reachable: app/search/page.tsx:51 import, :322 render; app/search/[...slug]/page.tsx:24 import, :762 render. components/SaveSearchButton.tsx:9-13 reuses the same key set for both the signed-in (createSavedSearch) and guest (submitSearchAlertSignup) branch. app/actions/saved-searches.ts:117 upsertListingAlert writes public.listing_alerts.",
+      "gap": "[VERIFIED] Confirmed by reading the components and both render sites. One nuance the auditor omitted: the LEGACY saved_searches table is still live and still written — app/actions/saved-searches.ts:133 inserts a public-mirror row when isPublic is true, and app/actions/export-my-data.ts:31 / app/actions/admin-roles.ts:189 still read it. The 'one table' summary is true for the alert engine, not for saved-search storage overall.",
+      "why_it_matters": "Consumer path genuinely captures the full filter registry. The residual saved_searches table is a second store to keep in mind on any future migration or GDPR export change.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Alerts sent as soon as a new matching property hits the market, or weekly/monthly",
+      "status": "partial",
+      "evidence": "vercel.json:128-129 registers /api/cron/saved-search-alerts on '0 * * * *' (hourly) — verified. lib/saved-search-cadence.ts:17 SavedSearchCadence = 'instant' | 'daily' | 'weekly'; validateCadence (line ~52) rejects anything else; no 'monthly' anywhere in the type, option list, or validator. app/actions/saved-search-alerts.ts:59 normalizeFrequency, :66 shouldSendByFrequency.",
+      "gap": "[CORRECTED: the auditor missed a live comment/config contradiction] Findings on missing 'monthly' and the ~1-hour instant floor are confirmed. But app/api/cron/saved-search-alerts/route.ts sizes its 600-row scan budget on the explicit assumption of a '4x-daily cron' (comment above the maxAlerts default) while vercel.json actually runs it 24x/day. Either the comment is stale or the budget was tuned for a schedule that no longer exists — nobody has reconciled the two. Nothing is broken today (MAX_SENDS_PER_RUN=200 caps damage), but the scan-budget reasoning in the file is not describing the deployed schedule.",
+      "why_it_matters": "A buyer wanting a low-touch monthly digest cannot get one. Separately, capacity reasoning written against a 4x-daily assumption should not be trusted when tuning the 600-row budget.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Back-end/admin path for a broker to create a saved search on behalf of a contact — SAME process, no divergence",
+      "status": "partial",
+      "evidence": "THREE live broker creation paths, not one: (1) single-contact — components/admin/crm/ContactSendCenter.tsx:45 imports and :206 calls sendListingMatchesForContactAction, which at app/actions/contact-listing-matches.ts:77 calls createListingAlertForLead(origin:'broker') then emails current matches; its filter UI (lines 192-201, 404-426) is city / subdivision / minPrice / maxPrice / minBeds and frequency daily|weekly. (2) bulk cohort — components/admin/crm/bulk/registry.tsx:321-421 SavedSearchFields (name, frequency daily|weekly, city, min/max price, beds, baths, propertyType) -> app/actions/crm-bulk.ts:325 (hard-coerces frequency to 'weekly'|'daily') -> lib/crm/bulk-handlers/assign-saved-search.ts:92 createListingAlertForLead. (3) EDIT after the fact — components/admin/crm/subscriptions/AlertSubscriptionsTab.tsx:427 renders AlertEditDialog, which at :93 renders components/admin/crm/criteria/AlertCriteriaEditor.tsx, exposing FREQUENCY_OPTIONS instant|daily|weekly (lines 74-77) and AMENITY_TOGGLES hasPool/hasView/hasWaterfront/hasFireplace/hasGolfCourse/hasOpenHouse (lines 85-91) plus city+neighborhood select and property type. DEAD CODE: app/admin/(protected)/crm/[id]/form-actions.ts:107 assignSavedSearchForm exists and calls adminAssignSavedSearchAction, but page.tsx:12-17 imports only deleteSavedSearchForm — the create form action is never rendered anywhere (grep for assignSavedSearchForm outside form-actions.ts returns nothing). app/actions/newsletter.ts:280 adminBulkAssignSavedSearchAction likewise has zero callers.",
+      "gap": "[CORRECTED: the auditor got three material facts wrong] It claimed 'there is no single-contact create-a-saved-search UI on the person-detail page; the only creation path is the multi-select bulk-cohort action' — false, ContactSendCenter does exactly that. It claimed 'a broker cannot match waterfront, golf course, view type through any UI - only through direct DB/DAL calls' — false, AlertCriteriaEditor exposes all of those. It claimed no broker path can set 'instant' — false via the same editor. The REAL divergence is narrower and stranger than described: every broker CREATE surface is 5-6 basic fields and daily/weekly only, while the richer editor (amenities + instant) is EDIT-only and lives on a different page (/admin/crm/subscriptions), so a broker must create an under-specified search and then go find it in another surface to finish it. Neither editor exposes sqft range, lot acres, year built, or postal code — components/admin/crm/criteria/README.md:38 confirms unexposed keys are preserved silently and only surfaced as 'plus N more filters'. Plus two dead admin server actions rotting in the tree.",
+      "why_it_matters": "The capability gap is smaller than reported but the workflow gap is worse: correct setup requires two surfaces and knowing that the second one exists. The dead assignSavedSearchForm suggests a person-page create form was built and then dropped without removing the action.",
+      "effort": "M"
+    },
+    {
+      "requirement": "Alert delivery cron: correct 'new match' semantics, compliance, caps",
+      "status": "have",
+      "evidence": "app/api/cron/saved-search-alerts/route.ts: maxDuration 300, requireCronAuth, runListingAlerts. Registered vercel.json:128-129. app/actions/saved-search-alerts.ts:51 MAX_SENDS_PER_RUN=200; :167 frequency gate; :197 isHardStopped; :233-254 notified_listing_keys seen-set diff (newly-MATCHING, not just newly-listed); :323 isSuppressedByEmail fail-closed inside the send scope; :336-337 List-Unsubscribe + one-click POST headers; :365 markListingAlertNotified with an explicit logged-loudly failure path guarding duplicate blasts.",
+      "gap": "[VERIFIED] Read end to end. This is the strongest code in the domain — the seen-set diff, the double suppression gate, and the post-send stamp-failure handling are all real and correct. Instant floor is indeed hourly.",
+      "why_it_matters": "Actual SLA is 'within the hour', not real-time. Everything else here holds up.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Open/click tracking on saved-search alert emails",
+      "status": "partial",
+      "evidence": "app/actions/saved-search-alerts.ts:310-318 builds emailKey 'listing-alert:<rowId>:<runDate>' and calls attributeOutbound. BUT lib/crm/attributed-links.ts:72-84: personId is coerced to null unless it is a positive integer, and line 84 `if (personId === null) return attributed` returns BEFORE instrumentEmailHtml — no open pixel, no click wrapping. The send comment at saved-search-alerts.ts:306-308 states this outright ('When no person resolved, attributeOutbound applies attribution only (no tracking wrapper) by design'). app/api/track/e/open/route.ts:32 likewise requires `ctx && Number.isFinite(ctx.personId)` before recording anything. recordEmailEvent still writes the 'sent' row (saved-search-alerts.ts:352) regardless. lib/data/crm/subscriptionsAdminEngagement.ts:66-78 aggregates by email_key prefix.",
+      "gap": "[CORRECTED: auditor marked this 'have' with 'no gap found' — it verified the happy path only] Opens and clicks are recorded ONLY for alert rows whose recipient resolves to a crm_people row. A guest alert row with no crm_person_id gets sends counted and opens/clicks structurally pinned at zero forever. The admin hub renders a dedicated guest-alerts tab (SubscriptionsHub.tsx:5 'listing alerts + saved searches'), so Matt is shown an opens/clicks column for exactly the cohort where those numbers cannot ever be non-zero, with nothing in the UI distinguishing 'zero engagement' from 'not instrumented'. That is worse than a missing feature — it is a silently misleading metric.",
+      "why_it_matters": "Any decision of the form 'these guest subscribers never open, cull them' would be reading an artifact of instrumentation, not behavior.",
+      "effort": "M"
+    },
+    {
+      "requirement": "Management view: who is getting saved searches, are they opening/clicking, looking at homes",
+      "status": "partial",
+      "evidence": "app/admin/(protected)/crm/subscriptions/page.tsx exists, gated by getCrmAccess, renders components/admin/crm/subscriptions/SubscriptionsHub.tsx, and is reachable — linked from components/admin/DashboardDeliveryAttention.tsx:32 and :74. Per-contact view: app/admin/(protected)/crm/[id]/page.tsx:155-156 calls getListingAlertsForLead({crmPersonId, fubPersonId, emails}) AND getViewedListingsForLead(person.fub_legacy_id). lib/data/crm/getViewedListings.ts:31-39: signature takes only fubPersonId, line 32 `if (!fubPersonId) return []`, line 39 `.eq('fub_person_id', fubPersonId)`. docs/DATABASE_SCHEMA_SNAPSHOT.md visitor_sessions carries BOTH `fub_person_id` and `crm_person_id`.",
+      "gap": "[CORRECTED: auditor marked 'have' and framed the only gap as 'no global browsing report' — it missed a live bug] 'Looking at homes' is broken for native contacts. getViewedListingsForLead is keyed exclusively on the legacy FUB id and short-circuits to [] when fub_legacy_id is null. FUB was decommissioned 2026-06-24, so every contact created since then renders an empty viewed-listings panel regardless of how much they actually browsed — while the alerts panel right beside it resolves correctly via crmPersonId. visitor_sessions.crm_person_id exists and is not queried. The auditor's separate point (no global sortable browsing report) is also true, but is second-order next to the per-contact panel being dark for the entire post-cutover contact base.",
+      "why_it_matters": "The single surface a broker would use to spot buyer intent shows a false negative for every lead created in the last month. Combined with the guest-tracking gap above, both halves of 'are they engaged' under-report.",
+      "effort": "M"
+    },
+    {
+      "requirement": "Consumers can save homes they like",
+      "status": "have",
+      "evidence": "app/actions/saved-listings.ts exports getSavedListingKeys, isListingSaved, saveListing, resumeSaveListing, unsaveListing, toggleSavedListing, removeSavedHome, getSavedListingCount — all writing public.saved_listings. Parallel likes store at app/actions/likes.ts (confirmed on disk). lib/saved-home-toggle.ts:5-9 documents the union. app/account/saved-homes/page.tsx renders it; linked from components/AuthDropdown.tsx:155 and components/WelcomeBanner.tsx:46.",
+      "gap": "[VERIFIED] Code path complete and reachable. docs/DATABASE_SCHEMA_SNAPSHOT.md:799 confirms saved_listings rows ≈ 3 — the auditor's adoption caveat is accurate. Note that count is only half the picture since the likes store is separate and was not counted.",
+      "why_it_matters": "Works; near-zero usage on the bookmark store specifically.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Consumers can hide/remove homes they don't want to see",
+      "status": "partial",
+      "evidence": "Only removal exists: app/actions/saved-listings.ts:116 removeSavedHome clears saved_listings + likes for an already-saved home. Independent grep across app/ lib/ components/ scripts/ supabase/migrations for hidden_listing|hide_listing|hiddenListing|not_interested|notInterested|dismissListing|dismissed_listing|excluded_listing returns only unrelated hits — excludeListingKey params in app/actions/listings.ts:169/198/2437, app/actions/listing-detail.ts:1123/1212, lib/kb/fetch-nearby-tiles.ts:18, all of which exclude the CURRENT listing from its own 'similar homes' rail, nothing user-driven. components/pulse/ (PulseFeed, PulseCard, HeartBurst, SignupCard, …) has a like gesture and no dismiss — the only 'dismissed' token in PulseFeed.tsx:133 refers to the signup prompt. No user-scoped exclusion column on any table in docs/DATABASE_SCHEMA_SNAPSHOT.md.",
+      "gap": "[VERIFIED] I searched harder than the auditor did, including migrations and the swipe feed, and found nothing. Confirmed: there is no way for a buyer to say 'never show me this one again.' Removal only un-saves a home that was previously saved.",
+      "why_it_matters": "The literal second half of the requirement is absent, and the swipeable Pulse feed — the one surface where a dismiss gesture would be idiomatic — has a like with no counterpart.",
+      "effort": "M"
+    },
+    {
+      "requirement": "Hide actually filters future alerts",
+      "status": "missing",
+      "evidence": "Nothing to filter against (see above). app/actions/saved-search-alerts.ts has exactly two suppression mechanisms: the per-alert notified_listing_keys seen-set (:233-254, prevents re-sending the same listing within the same alert — system dedupe, not user choice) and recipient-level compliance (isHardStopped :197, isSuppressedByEmail :323, which mute the whole person).",
+      "gap": "[VERIFIED] No code path anywhere excludes one listing from one user's future matches by that user's choice.",
+      "why_it_matters": "Blocked on the hide primitive existing at all.",
+      "effort": "M"
+    },
+    {
+      "requirement": "Consumer create and broker create use the SAME process/code",
+      "status": "partial",
+      "evidence": "Data layer converged: both upsertListingAlert (app/actions/saved-searches.ts:117, app/actions/search-alert-capture.ts:142) and createListingAlertForLead (lib/crm/bulk-handlers/assign-saved-search.ts:92, app/actions/contact-listing-matches.ts:77, app/actions/newsletter.ts:246) write public.listing_alerts keyed (email, filters_hash) and are drained by the identical cron. UI layer diverged three ways: consumer /search captures ~35 registry keys with instant|daily|weekly; broker CREATE surfaces capture 5-6 keys with daily|weekly; broker EDIT (AlertCriteriaEditor) captures ~12 keys with instant|daily|weekly.",
+      "gap": "[CORRECTED: the auditor's 'crux' framing overstated the gap while missing the actual shape of it] It is not consumer-rich vs broker-poor. It is three different filter vocabularies across three surfaces in the same product, with the richest broker vocabulary sitting on an EDIT-only dialog on a different page from every CREATE surface. No filter-builder component is shared between /search and admin. Also note both AlertCriteriaEditor and the consumer editor silently preserve keys they cannot display (criteria/README.md:38), so a broker editing a consumer-built search can round-trip filters they never see.",
+      "why_it_matters": "Matt's stated requirement is no divergence. There are currently three vocabularies, and the one closest to parity is unreachable from the point of creation.",
+      "effort": "M"
+    },
+    {
+      "requirement": "Saved-search activity feeds the contact timeline",
+      "status": "have",
+      "evidence": "Broker bulk: lib/crm/bulk-handlers/assign-saved-search.ts:105-110 inserts crm_timeline (kind='system', source='app'). Broker single-contact delete: app/admin/(protected)/crm/[id]/form-actions.ts:144-152 same. Consumer: app/actions/saved-searches.ts:155-190 sendEvent -> canonicallyTagLead with originContext.want='Listing alerts for <name>, <summary>' -> lib/canonical-lead-tagger.ts enrichNativeLead originNote -> lib/data/crm/ensureNativeLead.ts crm_timeline insert.",
+      "gap": "[VERIFIED] Both paths write timeline rows. One correction to the auditor's detail: the broker-assigned rows are kind='system', not the kind='note' it implied by lumping them together; the consumer path is the kind='note'/source='lp-form' one. Immaterial to the verdict.",
+      "why_it_matters": "n/a",
+      "effort": "S"
+    },
+    {
+      "requirement": "Saved-search activity feeds an intent/lead score",
+      "status": "missing",
+      "evidence": "TWO complete scoring implementations exist and NEITHER is called. (1) app/actions/lead-scoring.ts — a full 0-100 model with six weighted components (pageViews, listingsViewed, saves, returnVisits, timeDepth, contactActions), hot/warm/engaged/cold thresholds, reading listing_views, saved_listings, listing_inquiries, and countListingAlertsForUser from the canonical alerts DAL. Grep for 'lead-scoring|computeLeadScore|getLeadScore' across app/ lib/ components/ scripts/ returns ZERO importers outside the file itself. (2) lib/lead-scoring.ts — POINTS table (saved_search_created:10, property_save:5, price_drop_email_opened:3, …), 20%/week decay, scoreToTier over cold/warm/hot/very_hot. Its only importer is lib/lead-scoring.test.ts. (3) The CRM people list ships a visible 'Lead Score' column: components/admin/crm/people-list/people-list-utils.ts:73 and PeopleListView.tsx:637 label it, and PeopleListView.tsx:678-680 renders a hardcoded em-dash with the comment 'No lead-score model yet — honest em-dash placeholder'. No cron in vercel.json (49 registered, all read) computes any score. The only live scoring is visitor_sessions.engagement_score behind /api/cron/visitor-hot-lead-escalation, unrelated to listing_alerts.",
+      "gap": "[CORRECTED: the auditor claimed grep 'returns zero code paths' for lead scoring — that is false and it materially changes the effort estimate] The verdict stays 'missing' because nothing is reachable, but the situation is dead code, not absent code: two written scoring engines (one of which already reads saved-search count via the canonical DAL), a UI column already plumbed through the column chooser, and no wiring between them. This is a connect-and-backfill job, not a design-from-scratch job — the auditor's 'L' was inflated. Note also app/actions/lead-scoring.ts is keyed on auth user_id, not crm_people.id, so it cannot score the CRM contact base as written.",
+      "why_it_matters": "Matt sees a 'Lead Score' column in the CRM that is permanently blank, backed by two scoring engines nobody plugged in. Spotting intent stays manual.",
+      "effort": "M"
+    },
+    {
+      "requirement": "From saved-search activity, spot interest and offer a BPO",
+      "status": "partial",
+      "evidence": "app/admin/(protected)/crm/[id]/page.tsx:155-156 loads alerts + viewed listings on the same page as startBpoForm (imported line 16) and sendCmaForm. lib/bpo/* and app/actions/contact-bpo.ts provide the broker-initiated flow. No BPO cron: all 49 vercel.json cron paths read, none matches bpo.",
+      "gap": "[CORRECTED: worse than the auditor said, because its manual fallback is itself partly broken] The auditor's 'a broker CAN manually eyeball saved searches + viewed listings on the contact page' is only half true — per the management-view finding, getViewedListingsForLead returns [] for every contact with a null fub_legacy_id, i.e. the entire post-2026-06-24 native contact base. So the manual path shows alerts but a blank browsing history for exactly the newest leads. Combined with the guest open/click instrumentation gap, two of the three intent signals a broker would eyeball are unreliable. No cron, no score, no candidate report — all confirmed.",
+      "why_it_matters": "The fallback the auditor leaned on to justify 'partial' is degraded for new leads, which are the ones most worth catching.",
+      "effort": "L"
+    },
+    {
+      "requirement": "MISSED BY PRIOR AUDIT — /lp/buyer-listing-alerts promises listing alerts and creates none",
+      "status": "missing",
+      "evidence": "app/lp/buyer-listing-alerts/page.tsx:24 title 'First Matches in 30 Minutes | Bend Listing Alerts'; :396 CTA 'Start your alerts'; :428 body copy 'alert goes out the same morning'; :664 and :707 'Start my listing alerts'. app/lp/buyer-listing-alerts/BuyerLPForm.tsx collects budgetMin/budgetMax (:155-159), a 13-option area picker (:28-40), bedsMin (:185-188), and timeframe. app/lp/buyer-listing-alerts/actions.ts imports ensureNativeLead, enrichNativeLead, createNativeTask, canonicallyTagLead, fireLeadGenerated (lines 5-17) — and does NOT import upsertListingAlert or createListingAlertForLead. Confirmed by grepping every caller of both functions across app/ lib/ components/: the buyer LP is not among them. No cron backfills it either — no vercel.json cron route touches listing_alerts.",
+      "gap": "The page collects exactly the criteria needed to build a saved search, promises matches within 30 minutes, and writes only a CRM lead plus a broker task. The person is never enrolled in listing_alerts, so the alert cron will never email them. Delivery depends entirely on a broker manually re-entering the same criteria in ContactSendCenter.",
+      "why_it_matters": "This is a paid-traffic landing page making a specific, time-bound promise the system does not keep automatically. It is a compliance-adjacent copy problem as much as an engineering one — either wire the LP to createListingAlertForLead using the criteria it already collects, or change the copy.",
+      "effort": "M"
+    }
+  ],
+  "shared_primitives_needed": [
+    "A user-scoped exclusion primitive (hidden_listings table + DAL) consumed by search results, the alert cron matcher, and the Pulse feed — needed for hide-a-home and any future recommendation surface.",
+    "ONE shared filter-builder component rendered by /search, every broker CREATE surface (ContactSendCenter, bulk registry), and the AlertEditDialog, so the three current filter vocabularies collapse to one and 'instant' plus amenities are reachable at creation time.",
+    "A person-identity resolution helper that keys behavioral reads on crm_person_id with fub_person_id as fallback — getViewedListings is currently FUB-only and is almost certainly not the only post-cutover read still keyed on the dead id.",
+    "Email instrumentation that works without a resolved CRM person (or an explicit 'not instrumented' state in the admin UI), so guest-cohort engagement columns stop rendering structural zeros as behavior.",
+    "A scoring job that wires one of the two existing dead engines (app/actions/lead-scoring.ts, lib/lead-scoring.ts) to crm_people.id and populates the already-plumbed CRM Lead Score column."
+  ],
+  "open_questions_for_owner": [
+    "/lp/buyer-listing-alerts promises matches in 30 minutes and enrolls nobody. Should the LP auto-create the saved search from the criteria it already collects, or should the copy change to a broker-callback promise? This is running traffic today.",
+    "Should 'hide a home' be a global per-user block-list (suppresses that listing from every one of their searches and alerts forever) or a one-time dismiss from the current view?",
+    "Is 'monthly' actually wanted for listing alerts, or was 'weekly/monthly' shorthand covering the separate market-report product that already has monthly and quarterly?",
+    "Two dead lead-scoring engines exist with different models (0-100 six-component vs points-with-weekly-decay-and-four-tiers). Pick one to wire up, or specify a third — and confirm whether the score should live on crm_people or the reserved profiles.lead_score column.",
+    "Should broker-created searches default to matching the buyer's stated LP criteria automatically, or does Matt want a broker to always review and set filters by hand before an alert starts sending?"
+  ]
+}

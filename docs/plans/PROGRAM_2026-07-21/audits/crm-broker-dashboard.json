@@ -1,0 +1,84 @@
+{
+  "domain": "crm-broker-dashboard",
+  "summary": "Adversarial re-audit: the prior report is broadly accurate on the structural items (one shell, one nav source, real mobile engineering, real Twilio send path, reworked composers) — I opened every cited file, ran the two gates it named, and they hold. Two findings must be corrected. First, the mobile inbox unread badge is DEAD CODE: ConsoleShell accepts `inboxUnread` with a default of 0, has exactly one mount site (app/admin/(protected)/layout.tsx:75), and that mount never passes the prop — so the only in-app \"something is waiting for you\" indicator in the entire broker tool is permanently 0 and never renders. The auditor rated mobile a clean \"have\" and missed this. Second, the notification picture is worse than reported: besides the stub panel and the unregistered digest, the stub is mounted on /admin/operations which is capability-gated to `settings.system`, so a non-superuser broker cannot reach even the placeholder. The dashboard-vs-action-list and merged-priority-queue findings stand exactly as written and are, if anything, understated: getBrokerActionQueue covers ONE signal (paused drip steps) out of the three Matt named.",
+  "maturity": "partial",
+  "items": [
+    {
+      "requirement": "One CRM/admin surface, not two separate dashboards",
+      "status": "have",
+      "evidence": "app/admin/(protected)/layout.tsx:75 is the SOLE <ConsoleShell> mount in the repo (verified by grep for '<ConsoleShell' — one hit); app/admin/(protected)/page.tsx redirects to /admin/broker-dashboard after the setup gate, with the 'One home, not three (Matt directive 2026-06-16)' comment intact; app/admin/console/page.tsx is a 3-line redirect stub to the same route. app/dashboard/layout.tsx mounts a separate DashboardShell for the consumer portal (session-gated, /login?next=/dashboard) — confirmed a different product, not a second broker dashboard.",
+      "gap": "[VERIFIED] Confirmed by reading all three files plus a repo-wide ConsoleShell mount grep. No second broker shell exists.",
+      "why_it_matters": "Structural confusion between parallel dashboards was Matt's root complaint; this is genuinely collapsed to one shell and one home route.",
+      "effort": "S"
+    },
+    {
+      "requirement": "One mechanically-enforced nav source, minimal entry count for a broker",
+      "status": "have",
+      "evidence": "lib/admin/nav.ts is the single DESTINATIONS table (43 real href literals across 8 sections: Home, Inbox, People×7, Prospecting×3, Transactions×4, Performance×2, Content×9, Settings×10). scripts/check-admin-nav-source.mjs exists (7,533 bytes) and I EXECUTED it: exit 0, 'All contracts hold: no consumer route lists, every nav href resolves to a live page, one palette mount.' Wired into package.json:171 ci:gates as ci:admin-nav-source (defined package.json:290). Both files the gate polices exist (app/components/admin/admin-nav.ts, components/console/CrmMobileTabBar.tsx).",
+      "gap": "[CORRECTED: the auditor's '39 superuser / 22 broker items' figure was copied from a source-file comment, not counted. Actual DESTINATIONS href literals = 43 (incl. 8 section-level hrefs that duplicate a child). The gate verdict is right; the number was doc-derived and unverified — exactly the failure mode this audit exists to catch.] The gate is real and passing.",
+      "why_it_matters": "Prevents nav/route drift, the regression class Matt hit repeatedly.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Broker landing view is a simple, prioritized 'who to contact' list, not a generic dashboard",
+      "status": "partial",
+      "evidence": "app/admin/(protected)/broker-dashboard/page.tsx is 670 lines. It fires 8 parallel data fetches (lines 118-127) plus 2 more (lines 131-134) before rendering: getBrokerCommandCenterData, getBrokerActionQueue, getRecentWebsiteVisitors, getRecentEmailPeople, getRecentNewLeads, getGlobalDeliverySummary, getDashboardRecentActivity, getDashboardKpis. Rendered sections: mobile 3-tab feed OR desktop KPI row + 'Recent Activity' table (line 257), 'Needs your action' (line 264-320), DashboardDeliveryAttention (line 324), 'Active deals' (334), Calendar, 'Tasks due' (417), 'Active clients' (450), superuser 'Marketing launchpad' (500-503).",
+      "gap": "[VERIFIED] Confirmed by reading the file end to end. The action list is one card among eight and sits BELOW the KPI row and the Recent Activity table in source order. Worth adding: 'Recent Activity' (getDashboardRecentActivity, 12 most-recently-touched contacts) sits ABOVE 'Needs your action' and is pure noise — recency is not priority.",
+      "why_it_matters": "Matt asked for the landing view to BE the action list, not contain one.",
+      "effort": "L"
+    },
+    {
+      "requirement": "Computed 'next best action' / follow-up queue covering all forms of needed contact (replies, showings, BPO/CMA follow-up)",
+      "status": "partial",
+      "evidence": "app/actions/crm.ts:1784-1888 getBrokerActionQueue() — the query is literally .from('crm_sequence_enrollments').eq('status','awaiting_broker_next'), limit 100. That is the ONLY signal. It renders previews, hold reasons (CMA pending / no email / empty body) and a one-click confirmStepFromDashboard — real and well built, but scoped entirely to outbound drip steps paused for approval. The unread/needs-reply computation lives in a different module (lib/data/crm/getInboxQueue.ts, exporting needsReply/matchesFolder/getInboxFolderQueue per docs/DAL_INDEX.md:1083) and is consumed only by app/admin/(protected)/crm/inbox/page.tsx. No import of it appears in the dashboard page or app/actions/broker-command-center.ts.",
+      "gap": "[VERIFIED — and understated by the auditor.] Every one of Matt's three named scenarios (replied about a BPO, replied about a CMA, wants to see a home) is an INBOUND signal, and getBrokerActionQueue matches zero of them. The queue's coverage of Matt's stated requirement is 0/3, not 'partial coverage'. getDashboardKpis is even fed actionQueue.length as its 'unactioned' count (page.tsx:133), so the headline KPI also undercounts real work.",
+      "why_it_matters": "This is the single most direct thing Matt asked for and the dashboard answers a different question than the one he posed.",
+      "effort": "L"
+    },
+    {
+      "requirement": "Mobile fitness — usable on a phone, keyboard-aware, proper tap targets, working notification/badge affordances",
+      "status": "partial",
+      "evidence": "components/console/KeyboardInsetSync.tsx (69 lines) is real visualViewport wiring publishing --kb-inset/[data-kb-open]; mounted at components/console/ConsoleShell.tsx:136 and consumed by CrmMobileTabBar.tsx:61 and MobileThread.tsx:257. components/admin/crm/SmsComposer.tsx:234 carries the text-base/md:text-sm iOS auto-zoom fix with the audit citation. app/admin/(protected)/crm/[id]/page.tsx:507 renders mobileDetail under md:hidden and page.tsx:493 supports the ?view=mobile 390px frame. HOWEVER: components/console/ConsoleShell.tsx:54 declares `inboxUnread = 0` as a default prop, passes it to CrmMobileTabBar at line 129, and CrmMobileTabBar.tsx:76 gates the badge on `inboxUnread > 0`. The one and only ConsoleShell mount — app/admin/(protected)/layout.tsx:75-95 — does NOT pass inboxUnread (verified by grep: zero hits in that file).",
+      "gap": "[CORRECTED: the auditor marked this a clean 'have' with 'none found'. The mobile Inbox unread badge is dead code — inboxUnread is permanently 0 at the only call site, so the badge NEVER renders. This is the sole in-app unread indicator in the broker tool and it is silently disabled. A broker on a phone gets no visual signal that a client texted back. Fix is one line in app/admin/(protected)/layout.tsx (await an unread count and pass it), but it is broken today.] Keyboard/composer/tap-target work is genuinely solid; the badge is not.",
+      "why_it_matters": "Matt named mobile usability as a top complaint. The engineering is real but the one affordance that tells him something needs him is wired to nothing.",
+      "effort": "S"
+    },
+    {
+      "requirement": "SMS/email composer redesigned away from cluttered 'pills'",
+      "status": "have",
+      "evidence": "components/admin/crm/SmsComposer.tsx:210-254 is a single rounded-3xl chat bar: MergeFieldInserter (iconOnly), AttachmentControl, borderless Textarea, round SmsSendButton — plus a quiet-hours checkbox row beneath. Badge chips appear only for actual attachments (AttachmentChips, line 208) and real recipients (RecipientField). Additional evidence the auditor MISSED: scripts/check-composer-discipline.mjs is a live gate wired at package.json:289 into ci:gates line 171; I executed it — '✓ ci:composer-discipline — every send surface renders a canonical composer'.",
+      "gap": "[VERIFIED, with stronger evidence than the auditor found — the composer-discipline gate mechanically forbids a duplicate composer from reappearing, which the original report did not know about.] Still source-only: no rendered screenshot was taken, so a CSS-layer regression cannot be excluded.",
+      "why_it_matters": "Matt's most specific named UI complaint; the rework is real and now gate-protected against re-fragmentation.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Brokers can text from the CRM on their phone",
+      "status": "have",
+      "evidence": "app/actions/crm.ts:772-830+ sendCrmSmsAction — requireCrmAccess, requirePersonInScope, client-direct MMS attachment refs re-validated via parseAttachmentRefs + freshly signed URLs, group-text recipientIds + raw recipientPhones, TCPA quiet-hours block 9pm-8am Pacific with explicit override, per-attempt idempotencyKey guarding double-tap. app/actions/crm.ts:766-770 getTwilioSmsStatus gates on cached A2P == 'VERIFIED'. Reachable on mobile via app/admin/(protected)/crm/[id]/page.tsx:400 mobileSmsComposer → mobile-detail.tsx smsComposer prop.",
+      "gap": "[VERIFIED] Full send path read line by line; no stub, no disabled flag. Note the hard dependency: getTwilioSmsStatus().canSend is false unless the cached A2P status string is exactly 'VERIFIED', so an A2P registration lapse silently disables texting — that is correct behavior but is a single point of failure worth monitoring.",
+      "why_it_matters": "Hard requirement Matt named; it is genuinely built, scoped, and compliance-gated.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Notifications that are easy to understand and deep-link to the right actionable view",
+      "status": "missing",
+      "evidence": "components/admin/DashboardNotificationsPanel.tsx is the ENTIRE file — 13 lines, two paragraphs of future tense, ending 'No notifications yet. Alert wiring (sync failure, API health, etc.) is coming in a follow-up.' Its only mount is app/admin/(protected)/operations/page.tsx:138, and /admin/operations is capability-gated to `settings.system` in lib/admin/nav.ts:207. app/api/cron/daily-broker-digest/route.ts exists and is fully written, but grep of vercel.json for 'daily-broker-digest' returns NOTHING against 49 registered crons — and the repo's own audit summary (docs/plans/ADMIN_REBUILD/audit-reports/_summary.json:2075) lists it among 13 orphaned crons. The only working alert is app/api/cron/visitor-hot-lead-escalation (registered */15 * * * *), which emails MATT_ALERT_EMAIL (route.ts:240) with a link to https://ryan-realty.com/admin/crm/<personId> (route.ts:214) purely on an engagement_score threshold (route.ts:88-96). notification_queue exists as a table (supabase/migrations/20260309100008_008_crm_notifications.sql:38) but application code touches it in exactly one place — lib/data/sync/syncWrites.ts:554, a listing-alert insert — with no broker-facing reader anywhere.",
+      "gap": "[VERIFIED and made worse.] Three corrections/additions to the auditor's already-harsh verdict: (1) the stub panel lives behind `settings.system`, so a non-superuser broker cannot reach even the placeholder; (2) the one in-app badge that could carry a notification — the mobile Inbox unread count — is dead because ConsoleShell's inboxUnread is never passed at its only mount; (3) daily-broker-digest is not a one-off oversight, it is one of thirteen crons the repo's own audit already flagged as orphaned, which means there is no mechanism preventing this. Desktop has no unread indicator of any kind (grep for 'badge' in ConsoleTopNav.tsx returns nothing).",
+      "why_it_matters": "Matt asked for understandable notifications that jump to what happened. Today: one email type, one threshold, superuser-only surfaces, and the one badge that exists is switched off.",
+      "effort": "M"
+    }
+  ],
+  "shared_primitives_needed": [
+    "A single ranked contact-priority DAL function merging crm_sequence_enrollments.status='awaiting_broker_next' (already in getBrokerActionQueue), the needsReply/unread computation already implemented in lib/data/crm/getInboxQueue.ts, and explicit showing/appointment requests — so /admin/broker-dashboard and /admin/crm/inbox stop being two different answers to 'who needs me right now'. Both halves already exist; nothing merges them.",
+    "One line of plumbing first: compute an unread count in app/admin/(protected)/layout.tsx and pass it as inboxUnread to ConsoleShell (line 75). The badge UI is already built end to end (ConsoleShell.tsx:54/129 → CrmMobileTabBar.tsx:76-91) and is dark solely for want of the prop. Then mirror the same count into ConsoleTopNav so desktop has any unread signal at all.",
+    "A real notification_events table plus a broker-facing reader, generalizing the pattern visitor-hot-lead-escalation already proves (threshold → email → deep link to /admin/crm/<personId>) to inbound replies, BPO/CMA views, and showing requests — replacing the DashboardNotificationsPanel stub and moving it off the settings.system-gated /admin/operations page onto a surface brokers can reach.",
+    "A mechanical gate that fails the build when an app/api/cron/* route exists with no vercel.json registration and no self-fetch caller. Thirteen orphaned crons are already catalogued in docs/plans/ADMIN_REBUILD/audit-reports/_summary.json:2075; daily-broker-digest is just the one that happens to matter here. Per the repo's own 'enforcement over audits' rule this belongs in ci:gates."
+  ],
+  "open_questions_for_owner": [
+    "Should Home be replaced outright by a single merged contact-priority list, with KPIs, Recent Activity, deals, calendar and the marketing launchpad demoted to secondary tabs? Note 'Recent Activity' (12 most-recently-touched contacts) currently renders ABOVE 'Needs your action' and encodes recency, not priority — is it earning its place at all?",
+    "In a merged priority queue, what outranks what: an unread inbound SMS, a paused automated email awaiting approval, an overdue task? Suggested default unless you say otherwise: inbound human reply always beats an outbound automation waiting on approval.",
+    "Turn daily-broker-digest on now by adding it to vercel.json as an interim notification mechanism, or hold it until a real in-app notification center ships? It is fully coded and covers most of what you described.",
+    "Is the current SmsComposer/EmailComposer (one rounded chat bar / Gmail-style To-Cc-Bcc, reworked 2026-07-15/17 and now gate-protected) what you had in mind, or was the 'Frankenstein pills' complaint aimed at an older surface? If the current one still feels wrong, the fix belongs in that single component — ci:composer-discipline guarantees there is no duplicate to hunt.",
+    "The notification stub sits on /admin/operations behind the settings.system capability. When a real notification center ships, should Paul and Rebecca see it, or is broker-facing alerting intentionally superuser-only?"
+  ]
+}

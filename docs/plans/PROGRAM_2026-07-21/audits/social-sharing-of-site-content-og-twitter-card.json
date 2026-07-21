@@ -1,0 +1,126 @@
+{
+  "domain": "Social sharing of site content (OG/Twitter cards, dynamic OG image generation, share buttons, admin-to-social publishing)",
+  "maturity": "partial",
+  "summary": "The two surfaces Matt named (blog posts, MLS listings) do have real dynamic OG cards — I re-verified with independent live production fetches (blog 640,456 bytes, listing 1,679,369 bytes, both HTTP 200 image/png) and confirmed the canonical rewritten listing route (/homes-for-sale/... -> /listing/by-address/[...slug]) re-exports the same generateMetadata, which the prior auditor never checked. Beyond that the prior report was too generous in three places. First and worst: the LIKE feature is dead across the entire site, not just the detail page — components/ui/CardActionBar.tsx accepts a `like` prop and deliberately never renders it, and all four like-capable components (ListingTile, geo-page/ActivityFeedCard, activity/ActivityFeedCard, geo-page/ListingBarCard) route their like through that bar, so toggleLikeListing is unreachable from any UI. Second, the generic-OG problem is far wider than city/subdivision/school/park/zip: the homepage, /search, /our-homes, /videos, /area-guides, /guides, and every /central-oregon/* detail page also hardcode or default to the same generic navy card. Third, market report pages ship NO og:image at all (not even the default) when image_storage_path is null, because that page bypasses pageMetadata entirely. The dead-code, silent-clipboard-fallback, and no-one-click-admin-share findings are all confirmed as stated.",
+  "items": [
+    {
+      "requirement": "Blog post: OG/Twitter card with real photo + compelling headline (not a bare URL)",
+      "status": "have",
+      "evidence": "app/blog/[slug]/page.tsx:96-100 selects the OG image: if post.hero_image_url contains '.supabase.co/storage/' it uses the RAW hero URL directly; otherwise /api/og?type=blog&id=<slug>; if no hero at all, /api/og?type=default. Lines 105-119 set openGraph.images and twitter.images (summary_large_image). app/api/og/route.tsx:126-177 is the blog branch (category eyebrow, 44px title, 'Ryan Realty | Central Oregon Real Estate' line over the hero with a gradient scrim). Independently re-verified live: curl https://ryan-realty.com/api/og?type=blog&id=bend-buyers-market-shift-2026 -> HTTP 200, image/png, 640,456 bytes. ShareButton rendered twice at app/blog/[slug]/page.tsx:219 and :282.",
+      "gap": "[VERIFIED] with one nuance the auditor missed: for posts whose hero lives in Supabase storage, app/blog/[slug]/page.tsx:97 serves the RAW photo as og:image, so that card has no baked-in headline, no category eyebrow, and no brand line — it is a bare photo, and it is declared width:1200 height:630 (line 111) regardless of the file's actual dimensions. Not a broken share (og:title still carries the headline) but not the branded card either. Note also the /blog INDEX page is not in the ogImage set and ships the generic default card.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Listing: OG/Twitter card with real property photo + price + beds/baths (not a bare URL)",
+      "status": "have",
+      "evidence": "app/listing/[listingKey]/page.tsx:169-174 -> pageMetadata({ ..., ogImage: `/api/og?type=listing&id=${listingKey}` }). app/api/og/route.tsx:21-83 is the listing branch: getListingTiles() single-MV lookup, gold price band (#d4a853), address, 'beds · baths · sqft' line. CRITICAL CHECK THE AUDITOR SKIPPED: the canonical public URL is NOT /listing/[listingKey] — lib/slug.ts:201-208 emits /homes-for-sale/<city>/... and next.config.ts:210-215 rewrites those to /listing/by-address/... and /listing/by-key/.... I verified app/listing/by-address/[...slug]/page.tsx:2-3 and app/listing/by-key/[listingKey]/page.tsx:1 both re-export the SAME generateMetadata and default component, so the canonical URL does inherit the card. Independently re-verified live: /api/og?type=listing&id=20260601011821648594000000 -> HTTP 200, image/png, 1,679,369 bytes.",
+      "gap": "[VERIFIED] — but the auditor reached the right answer by auditing a non-canonical route and never confirmed the rewrite chain. The conclusion holds only because by-address/by-key re-export the metadata function.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Share button on blog posts (easy share to social)",
+      "status": "have",
+      "evidence": "app/blog/[slug]/page.tsx:24 imports ShareButton; rendered at :219 (top) and :282 (bottom). components/ShareButton.tsx:88-127 implements handleNativeShare (falls back to opening the dropdown when navigator.share is absent — line 89-92), handleCopyLink, handlePlatformShare; buildShareUrl at :34-58 covers x/twitter, facebook, linkedin, whatsapp, sms, email, and instagram (which just opens instagram.com — a platform limitation, IG has no web share intent).",
+      "gap": "[VERIFIED]",
+      "effort": "S"
+    },
+    {
+      "requirement": "Share button on listing detail pages (easy share to social, looks good)",
+      "status": "partial",
+      "evidence": "app/listing/[listingKey]/page.tsx:405 renders <PriceCtaStrip listing={listingWithPhotos} onSave={saveListingFromStrip} initialSaved={initialSaved} /> — no onShare prop. Correct path is components/site/listing-detail/PriceCtaStrip.tsx (the auditor wrote a bare 'PriceCtaStrip.tsx' with no directory). handleShare() at :152-172: with onShare absent it calls nav.share() if present, else falls through to :169-171 `nav.clipboard.writeText(url).catch(() => {})` — no toast, no state change, zero visible feedback on any desktop browser without navigator.share. The button is a raw <button> at :268-270 (also a design-system violation — CLAUDE.md mandates <Button> from @/components/ui/button). grep confirms zero ShareButton import anywhere under app/listing/. Dead code confirmed: `grep -rn 'ListingActions|ShowcaseStickyBar' app components lib` returns exactly 3 hits — components/listing/ListingActions.tsx:37 (its own export), components/listing/showcase/ShowcaseStickyBar.tsx:43 (its own export), and components/ui/CardActionBar.tsx:17 (a code comment). Neither file is imported by anything.",
+      "gap": "[VERIFIED] and slightly worse than stated: the live share control is not only a silent no-op on desktop, it is also a hand-rolled <button> with inline styles rather than the design-system Button, so it violates the mandatory component-mapping rule in CLAUDE.md. Fix: pass onShare, or replace the button with the canonical components/ShareButton.tsx, and add copy confirmation.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Share button on listing SEARCH RESULT CARDS (tiles) — like + share + save",
+      "status": "partial",
+      "evidence": "SHARE and SAVE are real: components/ListingTile.tsx:321 builds shareText via listingShareText(), :541-560 passes share={...} and save={...} to CardActionBar; components/ui/CardActionBar.tsx:142-162 renders the full ShareButton dropdown and :164-183 renders the save bookmark. LIKE IS NOT RENDERED. I read components/ui/CardActionBar.tsx:120-193 in full: the JSX renders exactly four things — the view-count span (:123-141), ShareButton (:142-162), the save Button (:164-183), and a signed-out guest-counts text span (:184-191). There is NO like button. The `like` prop is declared at :52 and the header comment at :16-19 states it is 'accepted for backward compat with existing callers but is intentionally NOT rendered here'. ListingTile.tsx:554-556 passes like={...} with handleToggleLike — and that prop is silently discarded.",
+      "gap": "[CORRECTED: the auditor marked this 'have' and asserted 'Like is handled separately via toggleLikeListing... by design only on tiles'. That is false. CardActionBar renders no like control, so the like affordance does not exist on tiles either. ListingTile.tsx:306-312 handleToggleLike is unreachable dead code.] Share and save work; like is missing from the requirement as stated.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Like a listing, then share it (the literal workflow Matt described)",
+      "status": "missing",
+      "evidence": "The like feature is unreachable from EVERY surface. All four components that import toggleLikeListing render their action row through CardActionBar, which never renders a like control: components/ListingTile.tsx:10 + :554 -> CardActionBar; components/geo-page/ActivityFeedCard.tsx:17 + :159 -> CardActionBar; components/activity/ActivityFeedCard.tsx:19 + :176 -> CardActionBar; components/geo-page/ListingBarCard.tsx:10 + :143 -> CardActionBar. The fifth importer, components/listing/ListingActions.tsx:10, IS the only file that renders a real like button — and it is dead code, imported by nothing. The listing detail page (app/listing/[listingKey]/page.tsx:405) renders only PriceCtaStrip, which has Save (components/site/listing-detail/PriceCtaStrip.tsx:258-267) and no like. The server action app/actions/likes.ts:57 toggleLikeListing therefore has zero reachable callers, and CardActionBar.tsx:187 still renders a '<n> likes' count for signed-out visitors that no signed-in user can increment.",
+      "gap": "[CORRECTED: the auditor called this 'partial' on the premise that like works on tiles and is only absent from the detail page. Verified false — like is rendered nowhere in the reachable app. The comment at CardActionBar.tsx:16-19 pointing at ListingActions is not merely stale, it documents the removal of the only surviving like UI, which then became dead code.] The 'like then share' workflow does not exist at all. Restoring it means adding a like control to CardActionBar (unblocks all four tile types at once) and/or to PriceCtaStrip.",
+      "effort": "M"
+    },
+    {
+      "requirement": "City pages: page-specific OG image (photo + city name)",
+      "status": "missing",
+      "evidence": "app/cities/[slug]/page.tsx:197 calls pageMetadata({...}) with no ogImage key (grep for 'ogImage' in that file returns zero hits). lib/site/page-metadata.ts:56 DEFAULT_OG_IMAGE = '/api/og?type=default'; :89 applies it when input.ogImage is undefined. app/api/og/route.tsx has branches only for 'listing' (:21), 'community' (:84), 'blog' (:126), 'broker' (:179) and then the generic fallback at :204-212. I proved the absence live: curl 'https://ryan-realty.com/api/og?type=city&id=bend' returned HTTP 200 with 14,163 bytes — byte-identical in size to /api/og?type=default (14,163 bytes), i.e. the plain navy 'Ryan Realty / Central Oregon Real Estate' card.",
+      "gap": "[VERIFIED] — and I confirmed the 'no city branch' claim empirically rather than by reading alone. Fix is small: add a 'city' case mirroring the zero-DB-lookup 'community' branch at app/api/og/route.tsx:84-101 and pass ogImage from generateMetadata.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Community pages: page-specific OG image",
+      "status": "have",
+      "evidence": "app/communities/[slug]/page.tsx:232-244 resolves ogImage (KB_HERO -> COMMUNITY_HERO -> /api/og?type=community&name=&city=) and passes it into pageMetadata at :244. The receiving branch exists: app/api/og/route.tsx:84-101 accepts ?name= and ?city= with no DB lookup and renders a navy card with the community name, '<City>, OR', and 'Homes for Sale · Ryan Realty'; :102-121 is the legacy slug-lookup path.",
+      "gap": "[VERIFIED] Note the generated variant is a text-only navy card, not a photo card — only communities with a curated KB_HERO/COMMUNITY_HERO entry get real photography.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Subdivision, school, park, zip, guides, and central-oregon venue/trail/golf/event pages: page-specific OG image",
+      "status": "missing",
+      "evidence": "Confirmed by grepping 'ogImage' in each generateMetadata: app/subdivisions/[slug]/page.tsx:120, app/schools/[slug]/page.tsx:78, app/parks/[slug]/page.tsx:75, app/zip/[zip]/page.tsx:138 and :146 all call pageMetadata with no ogImage -> generic default. app/guides/[slug]/page.tsx:44 hardcodes `${_siteUrl}/api/og?type=default` and feeds it to openGraph.images (:54) and twitter.images (:60). I additionally checked the four central-oregon detail families the auditor asserted without citing: app/central-oregon/venues/[slug]/page.tsx:55-65, events/[slug]/page.tsx:53, golf/[slug]/page.tsx:52, trails/[slug]/page.tsx:53 — all pageMetadata with title/description/path only, no ogImage. THE PROBLEM IS WIDER THAN REPORTED: app/page.tsx:32 (homepage), app/search/page.tsx:155, app/our-homes/page.tsx:42, app/videos/page.tsx:41, app/area-guides/page.tsx:41 all hardcode `/api/og?type=default` too.",
+      "gap": "[CORRECTED: the auditor scoped this to subdivisions/schools/parks/zip/guides/central-oregon. Verified true, but the same generic card is also served by the HOMEPAGE, the main /search results page, /our-homes, /videos and /area-guides — i.e. the highest-traffic shareable URLs on the site. Sharing ryan-realty.com itself produces the same flat navy card as sharing a school page.] Only listing, blog, community, broker, and (conditionally) market report pages escape the generic card.",
+      "effort": "M"
+    },
+    {
+      "requirement": "Broker/team pages: page-specific OG image with headshot",
+      "status": "have",
+      "evidence": "app/team/[slug]/page.tsx:78 builds `${siteUrl}/api/og?type=broker&id=${slug}`, used at :89 (openGraph.images, 1200x630) and :91 (twitter summary_large_image). Receiving branch app/api/og/route.tsx:179-201 renders b.photo_url as a 160px circle plus display_name and title on a cream (#f0eeec) card via getBrokerForOgBySlug.",
+      "gap": "[VERIFIED]",
+      "effort": "S"
+    },
+    {
+      "requirement": "Market report pages: page-specific OG image (chart/banner, not generic)",
+      "status": "partial",
+      "evidence": "app/reports/[slug]/page.tsx:42-73 generateMetadata does NOT use pageMetadata — it hand-builds the Metadata object. imageUrl comes from getReportImageUrl(report.image_storage_path) at :52, and both openGraph.images (:61) and twitter.images (:71) are spread CONDITIONALLY: `...(imageUrl && { images: [...] })`. When image_storage_path is null/unresolvable there is NO og:image and NO twitter:image emitted at all — not even the site default, because the default only ships via pageMetadata's DEFAULT_OG_IMAGE (lib/site/page-metadata.ts:89), which this file bypasses. Declared dimensions are 1200x336 in both places. app/housing-market/reports/[slug]/page.tsx:1-2 re-exports both generateMetadata and default — confirmed.",
+      "gap": "[CORRECTED: the auditor marked this 'have' with only an aspect-ratio nit. Verified worse: because this page bypasses pageMetadata and spreads the images key conditionally, any report lacking a banner ships a bare-URL share with zero image — the exact failure mode Matt said he does not want. Fix: fall back to /api/og?type=default (or a new 'report' branch) when imageUrl is null, and normalize 1200x336 to 1200x630.] ShareButton is correctly rendered on the page at :132.",
+      "effort": "S"
+    },
+    {
+      "requirement": "CMA / BPO documents: shareable social card",
+      "status": "missing",
+      "evidence": "public/cmas/<slug>/cma.html carries <meta name=\"robots\" content=\"noindex,nofollow\" /> and no og:* tags (verified on public/cmas/cma-18705-tumalo-reservoir/cma.html). These are private client-delivery documents.",
+      "gap": "[VERIFIED] Out of scope by design — private per-client valuation documents, intentionally noindexed. No fix needed unless Matt explicitly wants public CMA sharing, which is a privacy decision, not a bug.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Admin/broker one-click 'share this listing to my Instagram/Facebook' action",
+      "status": "missing",
+      "evidence": "Confirmed: grep for 'social/publish' across app/ and components/ returns hits ONLY inside app/api/cron/publisher-sweep/route.ts:7,179,182 — no admin UI calls it. The publish endpoints exist (app/api/social/publish, publish-facebook, publish-instagram, publish-tiktok) but have zero UI callers. No admin listing-management page exists. The multi-step pipeline IS registered: vercel.json:144 producer-dispatcher, :148 producer-runtime, :152 publisher-sweep; app/api/admin/run-producer/[id]/route.ts exists and is called from app/admin/(protected)/approval-queue/_components/ActionButtons.tsx:154 (the auditor's path 'ActionButtons.tsx:154' omitted the (protected)/approval-queue/_components/ directory). IMPORTANT CAVEAT THE AUDITOR GLOSSED: app/api/cron/producer-runtime/route.ts:121 hard-gates on `process.env.PRODUCER_RUNTIME_ENABLED === 'true'` and returns a skip at :125 otherwise, plus requires ANTHROPIC_API_KEY (:129). CLAUDE.md claims this is set in Vercel prod, but that is a doc claim I cannot verify from source — so the pipeline's actual reachability in production is UNPROVEN, not 'real and wired'.",
+      "gap": "[CORRECTED: the auditor described the fallback pipeline as 'real and wired'. The crons are registered and the routes exist, but execution is behind an env flag (producer-runtime/route.ts:121) whose production value is only asserted by a doc file, and docs in this repo are frequently stale.] The core finding stands: no button anywhere posts a listing or post to IG/FB in one click. Building one is also blocked by the producer-layer freeze (CLAUDE.md, locked 2026-06-09) absent an explicit unfreeze from Matt.",
+      "effort": "L"
+    },
+    {
+      "requirement": "OG images actually render without failure (fonts, remote image fetch, CSP, crawler access)",
+      "status": "have",
+      "evidence": "I re-ran the live fetches myself rather than trusting the prior report. https://ryan-realty.com/api/og?type=default -> 200, image/png, 14,163 bytes; ?type=blog&id=bend-buyers-market-shift-2026 -> 200, image/png, 640,456 bytes; ?type=listing&id=20260601011821648594000000 -> 200, image/png, 1,679,369 bytes; ?type=city&id=bend -> 200, 14,163 bytes (the default card, proving the missing city branch). Route runs on edge (app/api/og/route.tsx:14 `export const runtime = 'edge'`) and fetches remote photos server-side, so no browser CSP/CORS applies. Crawler access confirmed at app/robots.ts:22-25 — '/api/og' is explicitly in the allow list with a comment naming facebookexternalhit.",
+      "gap": "[VERIFIED] independently, not taken on faith.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Share tracking / share counts are wired to something real",
+      "status": "partial",
+      "evidence": "components/ShareButton.tsx:82-88 fires trackEvent('share', { context, method }) only when a trackContext prop is supplied, and calls the optional onShare callback. components/ui/CardActionBar.tsx:159-162 renders share.shareCount when non-null and passes share.onShare through. Not audited at all by the prior report.",
+      "gap": "[CORRECTED: requirement not covered by the auditor.] Share instrumentation depends entirely on each caller passing trackContext; PriceCtaStrip's bespoke handleShare (components/site/listing-detail/PriceCtaStrip.tsx:152-172) bypasses ShareButton entirely and therefore fires NO tracking event at all, so detail-page shares — the highest-intent share on the site — are invisible in analytics.",
+      "effort": "S"
+    }
+  ],
+  "shared_primitives_needed": [
+    "A generic geo branch in app/api/og/route.tsx that accepts ?name=&city=&kind= with no DB lookup (mirroring the existing 'community' branch at :84-101), so city / subdivision / school / park / zip / venue / trail / golf / event pages all stop falling back to the generic navy card with a single change.",
+    "A non-null OG image guarantee: every generateMetadata that bypasses pageMetadata (app/reports/[slug]/page.tsx, app/guides/[slug]/page.tsx, app/team/[slug]/page.tsx, app/blog/[slug]/page.tsx) must still emit an image. Worth a mechanical CI gate (scripts/check-og-metadata.mjs) asserting every page.tsx with generateMetadata emits an openGraph.images key — this class of regression is exactly what CLAUDE.md's 'gates not prose' rule exists for.",
+    "One canonical share control: components/ShareButton.tsx is correct and complete. Delete or wire in the two dead files (components/listing/ListingActions.tsx, components/listing/showcase/ShowcaseStickyBar.tsx) and replace PriceCtaStrip's bespoke raw-<button> handleShare with it — that simultaneously fixes the silent desktop fallback, the design-system violation, and the missing share tracking.",
+    "A like control in components/ui/CardActionBar.tsx. It already accepts the `like` prop and four callers already pass a working handler; rendering it unblocks like on every tile surface at once. Currently zero reachable code paths reach app/actions/likes.ts.",
+    "A toast / 'link copied' confirmation primitive — absent everywhere the clipboard fallback fires."
+  ],
+  "open_questions_for_owner": [
+    "The like button renders NOWHERE on the site — CardActionBar deliberately drops the prop and the only component that rendered one is dead code. Was that removal intentional (in which case the likes table, the like counts shown to signed-out visitors, and app/actions/likes.ts should be retired), or is it a regression to restore?",
+    "Should the homepage, /search, and /our-homes get real OG cards? Those are the most-shared URLs on the site and currently produce the same flat navy card as a school page. That was outside the prior audit's scope entirely.",
+    "Market reports without a stored banner currently ship NO og:image at all. Should they fall back to the generic card, or should a 'report' OG branch be built that renders the actual stats?",
+    "For the admin 'share to social' ask: a one-click IG/FB post button on a listing page would be new self-serve producer UI and needs an explicit unfreeze of the producer-layer freeze (CLAUDE.md, locked 2026-06-09). Do you want that unfreeze, or is the approval-queue path sufficient?",
+    "Can you confirm PRODUCER_RUNTIME_ENABLED=true is actually set in Vercel production? The whole publishing pipeline is gated on it and the only evidence it is set is a doc file."
+  ]
+}

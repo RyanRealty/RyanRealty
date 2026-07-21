@@ -1,0 +1,117 @@
+{
+  "domain": "fsbo-workflow",
+  "summary": "The prior report is a placeholder stub — domain \"test\", one item \"r1\" with evidence \"e1\" and gap \"g1\" — so it contains zero verified findings and its single \"have\" verdict is unsupported by any real file. The actual FSBO workflow is more built out than any stub could suggest: a registered daily cron (vercel.json:167-170) runs an Apify Zillow scrape, skip-traces owners, creates native crm_people leads, queues a CMA, emails Matt, and writes a fsbo_listings audit row; the operator surface lives at /admin/prospecting?kind=fsbo behind a real capability gate and a nav entry; the outbound intro SMS has a genuinely rigorous TCPA/suppression/idempotency pipeline. But there are three real defects: (1) nothing in the codebase ever sets fsbo_listings.status='gone', so the off-market compliance guard is permanently dead and sold/delisted FSBOs stay solicitable forever; (2) the cron's six sequential Apify run-sync calls at timeout=180 each can total 1080s against a 300s maxDuration, so later cities and the whole per-listing processing loop can be truncated mid-run; (3) an entire parallel FSBO dashboard stack (app/actions/fsbo-dashboard.ts, components/admin/fsbo/FsboActions.client.tsx, lib/data/fsbo/dashboard.ts) is dead code with zero importers, including a second unreferenced SMS send path with weaker guards than the live one.",
+  "maturity": "working",
+  "items": [
+    {
+      "requirement": "The prior auditor's single item (\"r1\" / evidence \"e1\" / status \"have\")",
+      "status": "missing",
+      "evidence": "none found — \"e1\" is not a path; `find . -name e1` returns nothing. The whole report body is placeholder text (domain \"test\", summary \"test summary sentence one. test two. test three.\", questions \"q1\", \"q2\", primitives \"a\", \"b\").",
+      "gap": "[CORRECTED: the auditor submitted an unmodified schema stub, not an audit. Its lone \"have\" verdict is unsupported by any file, cites a non-existent path, and describes no capability. Nothing in it can be confirmed or partially credited — it is a non-submission, and treating it as a partial audit would be generous to the point of dishonesty.]",
+      "why_it_matters": "A stub scored as a real report hides the fact that the FSBO domain was never actually examined.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Automated detection of new FSBO listings in the service area, running on a schedule in production",
+      "status": "have",
+      "evidence": "app/api/cron/detect-fsbo-listings/route.ts:33-44 (requireCronAuth, calls processNewFsboListings); registered in vercel.json:167-170 (\"/api/cron/detect-fsbo-listings\", \"35 9 * * *\"); scrape logic lib/fsbo-detector.ts:389-451 (detectFsboListings) using Apify actor maxcopell~zillow-scraper (line 43); APIFY_API_TOKEN is set in .env.local:219.",
+      "gap": "[VERIFIED as reachable, with a caveat the stub never raised: the cron is DAILY (35 9 * * *), while lib/fsbo-detector.ts:6 and the migration header (supabase/migrations/20260521161036_fsbo_listings.sql:12) both still claim \"hourly\" — stale comments. Detection itself is complete and live.",
+      "why_it_matters": "FSBO inventory is the top-of-funnel for the whole domain; if it were unregistered nothing downstream would ever fire.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Cron completes within its execution budget across all six service-area cities",
+      "status": "partial",
+      "evidence": "lib/fsbo-detector.ts:355-357 calls Apify run-sync-get-dataset-items with `&timeout=180` per city; lib/fsbo-detector.ts:398-411 loops FSBO_SERVICE_AREA_CITIES (6 cities) SEQUENTIALLY (comment at 385-388 says parallelism was deliberately rejected); app/api/cron/detect-fsbo-listings/route.ts:21 sets `maxDuration = 300`. 6 × 180s = 1080s worst case, before lib/fsbo-processor.ts:82-296 runs up to MAX_PER_RUN=15 listings each doing a skip-trace, a CMA queue and a Resend email.",
+      "gap": "Scrape budget exceeds the function budget by up to 3.6x. On any slow Apify day the later cities (Sunriver, Tumalo, La Pine) and the entire per-listing processing loop are silently truncated by the platform — and because each city failure path just returns [] (lib/fsbo-detector.ts:378-381), a partial run is indistinguishable from a genuinely empty market in the response JSON. Fix: cap per-city timeout to ~40s, or move to async actor runs with a follow-up drain cron.",
+      "why_it_matters": "Silent partial coverage means FSBOs in the smaller markets may never be detected at all, and no alarm fires.",
+      "effort": "M"
+    },
+    {
+      "requirement": "Owner contact resolution (direct-from-listing, else skip-trace) with compliance tagging",
+      "status": "have",
+      "evidence": "lib/fsbo-processor.ts:99-124 — prefers listing-page contact (parsed at lib/fsbo-detector.ts:290-303), else calls lookupOwnerForExpiredListing (shared with the expireds pipeline); compliance tags folded into the lead at lib/fsbo-processor.ts:183 (`...(ownerLookup?.complianceTags ?? [])`); absentee/out-of-state tags at 181-182.",
+      "gap": "[VERIFIED] Complete and reachable. One honest limitation: lib/fsbo-processor.ts:126-141 correctly refuses to create a placeholder lead when there is no phone or email (stats.skipped_no_contact), so no-contact FSBOs produce an alert email and an audit row only.",
+      "why_it_matters": "Contactless rows would otherwise pollute the CRM and the prospecting worklist.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Off-market / sold FSBOs are excluded from outreach",
+      "status": "missing",
+      "evidence": "The guard exists: lib/data/prospecting/compliance.ts:175 `const offMarket = kind === 'fsbo' ? (prospect.status ?? 'active') !== 'active' : false`, enforced at app/actions/prospecting.ts:123-125. But NOTHING ever writes 'gone': repo-wide grep for a status='gone' write scoped to FSBO returns no matches. The only status writes are lib/fsbo-processor.ts:79 (sets 'active' on re-seen rows) and 289 (sets 'active' on insert). The migration documents the intent at supabase/migrations/20260521161036_fsbo_listings.sql:70 ('active' | 'gone' — last scrape didn't see it) — the reaper was never built.",
+      "gap": "The off-market exclusion is a permanently-false branch. A FSBO that sells, delists, or lists with another brokerage stays status='active' forever and remains sendable in /admin/prospecting indefinitely. This is the single highest-risk defect in the domain: soliciting a property that has since listed with another broker is exactly the conduct the relist guard elsewhere in this file was written to prevent. Fix: after each scrape, mark rows whose last_seen_at is older than the current run (and that were expected in the scraped city set) as status='gone'.",
+      "why_it_matters": "License-risk outreach to owners who are no longer FSBO, and wasted broker time on stale rows.",
+      "effort": "M"
+    },
+    {
+      "requirement": "Operator surface to review, build a CMA for, and send outreach to detected FSBOs",
+      "status": "have",
+      "evidence": "app/admin/(protected)/prospecting/page.tsx:46-101 — gated by requireAdminPage('prospecting.view'), reads kind via `str(sp.kind) === 'fsbo' ? 'fsbo' : 'expired'` (line 49), renders ProspectingBoard with build/prepare/send/test/approve actions. Nav entry exists: lib/admin/nav.ts:138 ({ label: 'Prospecting', href: '/admin/prospecting', capability: 'prospecting.view' }); capability granted to broker at lib/admin/capabilities.ts:94. The old /admin/fsbos is now a redirect to /admin/prospecting?kind=fsbo (app/admin/(protected)/fsbos/page.tsx:11-13), so the legacy URL still lands correctly.",
+      "gap": "[VERIFIED] Live, linked, permission-gated, and the retired route redirects rather than 404s.",
+      "why_it_matters": "Without a reachable surface the entire detection pipeline is write-only.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Compliant outbound intro SMS (TCPA quiet hours, suppression, hard-stop, at-most-once)",
+      "status": "have",
+      "evidence": "app/actions/prospecting.ts:sendProspectingIntro — hard-stop 127-129; live relist re-verify fail-closed 134-147; E.164 149-151; quiet hours 154-156; person-keyed suppression 172-175; value-keyed phone suppression 179-182; unresolved-merge-token refusal 214-217; claim-before-send 224-241; TOCTOU suppression re-check immediately pre-send 246-254; durable sid stamp before finalize 271-278; claim never released after the wire send 280-297. Template seeded by supabase/migrations/20260718120300_seed_prospecting_templates.sql (fsbo-first-touch-v1, is_active true), resolved via introTemplateKeyFor at lib/data/prospecting/types.ts:222-224.",
+      "gap": "[VERIFIED] This is the strongest part of the domain — genuinely fail-closed at every gate, and the template is migration-seeded rather than hosted-DB-only. The one dependency it inherits is the dead off-market flag above: prospect.compliance.offMarket can never be true for FSBO, so this pipeline's #1 exclusion is inert.",
+      "why_it_matters": "A double-text or a quiet-hours send is a TCPA exposure against Matt's license.",
+      "effort": "S"
+    },
+    {
+      "requirement": "No dead or duplicate FSBO code paths that can diverge from the live one",
+      "status": "missing",
+      "evidence": "app/actions/fsbo-dashboard.ts (208 lines, three server actions) — repo-wide grep shows buildFsboCmaAction imported ONLY by components/admin/fsbo/FsboActions.client.tsx:10, which itself has ZERO importers; sendFsboCmaEmailAction and sendFsboIntroSmsAction have no callers at all. lib/data/fsbo/dashboard.ts is referenced only in comments (lib/data/prospecting/list.ts:6, engagement.ts:8) and is not exported from lib/data/index.ts. All three call revalidatePath('/admin/fsbos') — a route that is now only a redirect.",
+      "gap": "An entire second FSBO outreach stack is sitting in the tree, dead. Critically, the orphaned app/actions/fsbo-dashboard.ts:134-210 sendFsboIntroSmsAction is a WEAKER duplicate of the live sender: it has no claim/idempotency gate, no value-keyed phone suppression, no live relist re-verify, and no pre-send TOCTOU re-check — it guards only on the outreach_sms_sent_at column. If anyone re-wires a button to it (it is a fully working server action, reachable by any client component that imports it), FSBO outreach silently regresses to the pre-hardening posture. Delete all three files.",
+      "why_it_matters": "A live-but-unlinked server action with degraded compliance guards is a loaded gun, not merely clutter.",
+      "effort": "S"
+    },
+    {
+      "requirement": "FSBO landing page (paid-traffic capture) wired to CRM, CMA, alerting, and attribution",
+      "status": "have",
+      "evidence": "app/lp/fsbo/page.tsx (530 lines, metadata robots noindex at :38 — intentional for paid traffic); form app/lp/fsbo/FsboLPForm.tsx; server action app/lp/fsbo/actions.ts:submitFsboLPForm — native capture via sendEvent (which is now a native shim, lib/followupboss.ts:101-136, NOT a live FUB POST), ensureNativeLead fallback :212-227, hard-stop gate :243-247, enrichNativeLead with canonical tags :262-276, geocode :279-289, marketing_assignments ledger :292-305, autoEnrollByFubId :311-314, 5-min hot-lead task :318-328, createCmaRequest :331-345, Matt Resend alert :348-386, Meta CAPI :389-419, GA4 :422-435. Reachable via the legacy redirect data/legacy-redirects.json:541 (\"/fsbo\": \"/lp/fsbo\").",
+      "gap": "[VERIFIED] Complete and live end to end. Note for the record: the module still imports `sendEvent` from lib/followupboss, but that function was rewritten to capture natively at the 2026-06-24 cutover — the FUB name is legacy, the behavior is native. This is the exact kind of thing that reads as a dead FUB dependency on a filename-only skim.",
+      "why_it_matters": "This is the only inbound FSBO path; the cron path is outbound-only.",
+      "effort": "S"
+    },
+    {
+      "requirement": "FSBO leads must not be auto-enrolled into an automated texting sequence",
+      "status": "have",
+      "evidence": "lib/crm/enroll.ts:51-59 — classifyLeadSource(...).outreachList short-circuits enrollment for skip-traced outreach lists, while inbound -lp sources pass. Documented and matched at app/api/cron/crm-auto-enroll/route.ts:122-130. lib/fsbo-processor.ts:15-21 states the same contract for the cron path.",
+      "gap": "[VERIFIED] The gate is source-based (outreachList classification), which is more robust than the older fub_created_at-NULL accident the fsbo-processor header still describes at lines 18-21 — that comment is stale but the actual protection is stronger than it claims, not weaker.",
+      "why_it_matters": "Auto-texting a skip-traced owner who never opted in is a TCPA violation.",
+      "effort": "S"
+    },
+    {
+      "requirement": "Multi-source FSBO coverage (Zillow is the only source today)",
+      "status": "missing",
+      "evidence": "lib/fsbo-detector.ts:22-27 names FSBO.com, ForSaleByOwner.com, Craigslist and Facebook Marketplace as \"Phase 2\"; only APIFY_ZILLOW_ACTOR_ID is implemented (line 43). fsbo_source is typed as the literal 'zillow' (lib/fsbo-detector.ts:110), so the type system currently forbids a second source without a change.",
+      "gap": "Single-source dependency on one Apify actor scraping one anti-bot-hardened site. The hardcoded regionId/mapBounds map (lib/fsbo-detector.ts:69-76, captured live 2026-07-14) will silently return zero results whenever Zillow rotates region ids or changes searchQueryState shape — and per the failure path at :378-381 that looks identical to \"no FSBOs on the market.\" There is no zero-result alarm anywhere in the pipeline.",
+      "why_it_matters": "The pipeline can go completely dark without anyone noticing, which is precisely the MV-refresh failure mode this repo has already been burned by.",
+      "effort": "L"
+    },
+    {
+      "requirement": "$500K price floor and SFR-only scoping are correct for FSBO (inherited from the expireds cron)",
+      "status": "unknown",
+      "evidence": "lib/fsbo-detector.ts:113 FSBO_MIN_LIST_PRICE = 500_000, duplicated into the Zillow query filterState at :92; property-type filter at lib/fsbo-detector.ts:251-254 accepts SFR/Townhouse/Manufactured only. Header comment at :29-34 attributes the floor to \"Matt's 2026-05-19 directive\" for the EXPIRED cron.",
+      "gap": "Code is internally consistent and tested (lib/fsbo-detector.test.ts:19-22), so this is not a code defect — but the $500K floor was set for expired listings and copied to FSBO without a recorded FSBO-specific decision. FSBO sellers skew toward lower price bands, so the floor may be discarding the bulk of the actual FSBO market. Only Matt can settle whether that is intentional.",
+      "why_it_matters": "If unintentional, the highest-volume slice of the FSBO funnel is being filtered out at the source.",
+      "effort": "S"
+    }
+  ],
+  "shared_primitives_needed": [
+    "A scrape-liveness alarm: any detector cron returning zero rows across all geographies for N consecutive runs should page, not log. Both FSBO (lib/fsbo-detector.ts:378-381) and the expireds/Zillow pipelines swallow failures into empty arrays that are indistinguishable from a genuinely empty market.",
+    "A generic 'no longer seen in source' reaper for scraped-inventory tables. fsbo_listings.status='gone' is never written; the same last_seen_at staleness pattern applies to expired_listings and any future FSBO source.",
+    "A dead-code gate for orphaned server actions. app/actions/fsbo-dashboard.ts is a fully-functional, zero-importer SMS sender with weaker compliance guards than the live path; a CI check for exported server actions with no importers would have caught it (this repo already prefers mechanical gates over prose per CLAUDE.md).",
+    "A budget-aware Apify runner: per-call timeouts derived from the route's remaining maxDuration, with partial-run reporting, shared by the FSBO, expired, and competitor-recon crons.",
+    "One canonical scraped-prospect schema. fsbo_listings still carries FUB-era column names (fub_person_id, fub_person_matched_by, fub_note_id) that now hold native crm_people ids — a naming trap for every future reader."
+  ],
+  "open_questions_for_owner": [
+    "Is the $500,000 price floor intentional for FSBO, or was it copied from the expired-listings directive? FSBO inventory skews lower, so this may be filtering out most of the market.",
+    "When a FSBO disappears from the Zillow scrape, should it be marked 'gone' after one missed run, or after N consecutive misses? A single-run rule risks flapping on Apify failures; a multi-run rule leaves a solicitation window open.",
+    "Is single-source Zillow coverage acceptable for now, or should Craigslist/FSBO.com be funded as a second source? This is an Apify spend decision, and the $200 usage cap has darkened these pipelines before.",
+    "Should the FSBO detection cron run more than once daily? The code comments still assume hourly; the registered schedule is daily at 09:35 UTC. Faster detection means faster first contact but more Apify spend.",
+    "Confirm the dead stack (app/actions/fsbo-dashboard.ts, components/admin/fsbo/FsboActions.client.tsx, lib/data/fsbo/dashboard.ts) can be deleted outright rather than kept as a fallback — nothing imports them today."
+  ]
+}
