@@ -84,3 +84,14 @@ Recorded as D22 in `00-MASTER-SPEC.md` §4.2.
 - **FSBO price floor**: inherited $500K from expireds with no decision recorded. FSBO stock skews below it.
 - **Broker publishing autonomy**: can Paul and Rebecca publish under the brand with their own attribution, or does it route through Matt?
 - **`transaction-tc` contract**: commission a 20th audit to seed it, or leave it on the `/tc-builder` ladder outside the contract system?
+
+## 9. Platform decisions — 2026-07-21 (evening session)
+
+Recorded from Matt's answers to the 14-domain platform gap analysis. His words: "LIFT G45, KEEP EXPIRED FLOOR, YES ON NEWSLETTER, YES ON APPROVAL MODEL, ME WANT ACTUAL MECHANICAL AND NOT PROSE."
+
+1. **G45 producer freeze — LIFTED.** Gate script and baseline deleted, `ci:producer-freeze` removed from the chain, CLAUDE.md section shrunk to the lift record. New producers may be added; the action-row protocol, approval queue, and voice gates still govern every one.
+2. **Expired capture floor — KEPT.** The 2026-05-19 scope stands: SFR, $500K+, six cities. Widening is a one-constant change whenever Matt says so.
+3. **Newsletter — START.** Audience: past clients + engaged leads + the West Side cohort, consent-respecting. Not the full ~12K cold book. Preconditions before the first large send: postmaster ingestion cron, Resend-webhook registration check.
+4. **Approval model — CONFIRMED.** Decision 1 (full autonomy, post-hoc review for reversible work) stands with the four per-action classes: outbound messages to real people, publishing posts, ad spend, OAuth grants. Mechanically applied: CLAUDE.md §0.5 rewritten, `check-draft-first.mjs` narrowed to rendered content deliverables (media files in tracked `public/` paths) — code and site content commit clean.
+5. **Mechanical over prose — ABSOLUTE, permanent.** Every rule ships as a gate, cron, schema constraint, or contract test, or it does not count. First installment: G53 `ci:cron-registered` (23 dark cron routes: 12 now marked with their real triggers, 11 in a shrink-only baseline), sitemap derives communities from the registry (drift now impossible), sitemap no longer submits 404-ing `/cities/{city}/{subdivision}` URLs.
+6. **Sold-listing pages — still open** (unchanged from §8): needs Matt's ORMLS/IDX display-policy read before indexable sold pages get built.

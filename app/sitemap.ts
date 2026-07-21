@@ -10,6 +10,8 @@ const ACTIVE_STATUS_OR = PUBLIC_ACTIVE_OR_PREDICATE
 
 import { fetchAllRows } from '@/lib/supabase/paginate'
 import { isCentralOregonCity, SITE_CITY_SLUGS } from '@/lib/central-oregon'
+import { getAllResortCommunities } from '@/lib/data/communities/registry'
+import { getAllNeighborhoodsWithCity } from '@/lib/data'
 import { CO_EVENTS } from '@/data/co-events'
 import { CO_VENUES } from '@/data/co-venues'
 import { GOLF_COURSES } from '@/data/golf/courses'
@@ -17,17 +19,13 @@ import { CO_TRAILS } from '@/data/co-trails'
 import { CO_SCHOOLS } from '@/data/co-schools'
 import { CO_PARKS } from '@/data/co-parks'
 
-// The ONLY slugs with a real /communities/[slug] page — the curated resort
-// registry (data/resort-communities.json). The old code emitted every row of
-// the `communities` table, which included ~31 junk subdivision slugs that
-// render fabricated pages ("Industrial, Madras Oregon"). Keep this in sync with
-// the registry.
-const RESORT_COMMUNITY_SLUGS = [
-  'tetherow', 'broken-top', 'eagle-crest', 'pronghorn', 'caldera-springs',
-  'sunriver', 'awbrey-glen', 'northwest-crossing', 'crosswater',
-  'black-butte-ranch', 'brasada-ranch', 'widgi-creek', 'vandevert-ranch',
-  'three-rivers',
-] as const
+// The ONLY slugs with a real /communities/[slug] page — derived directly from
+// the curated resort registry (data/resort-communities.json) so the sitemap
+// CANNOT drift from it (a hardcoded copy here sat at 14 slugs while the
+// registry grew to 19 — five live pages were never submitted to Google).
+// The old code before that emitted every row of the `communities` table,
+// which included ~31 junk subdivision slugs ("Industrial, Madras Oregon").
+const RESORT_COMMUNITY_SLUGS: string[] = getAllResortCommunities().map((c) => c.slug)
 
 /**
  * Dynamic sitemap — generates at request time so it always has fresh data.
@@ -329,15 +327,33 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
       if (!set) { set = new Set(); subsByCity.set(city, set) }
       set.add(sub)
     }
+    // /cities/{city}/{sub} is deliberately NOT emitted here: that route only
+    // resolves for boundary-neighborhood rows (anything else 404s), and
+    // submitting 404s poisons the programmatic-page quality signal. The
+    // neighborhood URLs are emitted below from the table the page resolves.
     for (const [city, subs] of subsByCity) {
       const cityKey = cityEntityKey(city)
       for (const sub of subs) {
         const subSlug = slugify(sub)
         dynamicPages.push(
-          { url: `${baseUrl}/cities/${cityKey}/${encodeURIComponent(subSlug)}`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
           { url: `${baseUrl}/homes-for-sale/${cityKey}/${subSlug}`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
         )
       }
+    }
+
+    // Neighborhood pages — /cities/{city}/{neighborhood} resolves ONLY for
+    // rows in the neighborhoods table; emit exactly those.
+    const neighborhoodRows = await getAllNeighborhoodsWithCity()
+    for (const n of neighborhoodRows) {
+      const cityRel = Array.isArray(n.cities) ? n.cities[0] : n.cities
+      const citySlug = cityRel?.slug
+      if (!citySlug || !n.slug) continue
+      dynamicPages.push({
+        url: `${baseUrl}/cities/${citySlug}/${n.slug}`,
+        lastModified: now,
+        changeFrequency: 'weekly',
+        priority: 0.7,
+      })
     }
 
     // Team members

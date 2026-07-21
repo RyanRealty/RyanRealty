@@ -1,3 +1,4 @@
+// cron: manual-only (canonical trigger moved into sync-delta 2026-05-22; kept as a CRON_SECRET-guarded backfill tool)
 /**
  * Expired-listings detection route — manual / ad-hoc invocation.
  *

@@ -1,3 +1,4 @@
+// cron: manual-only (Matt directive 2026-07-06 — provisioning runs on explicit trigger, dry-run by default)
 import { NextResponse } from 'next/server'
 import { provisionNeighborhoodDefaultSubscriptions } from '@/lib/data/crm/neighborhoodDefaultSubscriptions'
 import { requireCronAuth } from '@/lib/auth/cron-auth'

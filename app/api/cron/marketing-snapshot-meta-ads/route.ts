@@ -1,3 +1,4 @@
+// cron: invoked-by /api/cron/snapshot-channels (fan-out caller; deliberately not in vercel.json)
 /**
  * Meta Ads daily snapshot ingestor.
  *

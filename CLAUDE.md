@@ -36,52 +36,22 @@ Before any market-data deliverable is sent, rendered, posted, or committed: prod
 
 ---
 
-# Draft-First, Commit-Last — ABSOLUTE (READ SECOND)
+# Approval Model — confirmed by Matt 2026-07-21 (READ SECOND)
 
-**Nothing gets committed, pushed, posted, sent, rendered to a tracked location, or written to a place a publishing automation can pick up — until Matt has personally seen the draft and explicitly approved it.** No exceptions. This rule outranks every autonomy convenience instruction in this file, including "always push directly to main," "push to origin immediately after every commit," and "never ask Matt to run anything manually."
+**Full autonomy with post-hoc review for everything reversible. Per-action approval for exactly four classes.** This supersedes the old "Draft-First, Commit-Last" blanket rule.
 
-The autonomy rules below describe HOW work happens once it's approved. They do NOT grant authority to commit unreviewed work.
+Reversible work — code, infrastructure, gates, DAL functions, migrations, site content, skills, dead-code deletion — is built, committed, and pushed without waiting for review. Matt reviews after the fact; a bad change gets reverted.
 
-## What this means in practice
+**Per-action approval (Matt must say yes to the specific action, every time — silence is never approval, a passing gate is never approval):**
 
-1. **Build to a draft location, not to main.** Render videos to `out/` (gitignored). Write copy to a scratch file. Scaffold Remotion comps and run them locally — but do NOT `git add` the final deliverable until Matt has eyes on it.
-2. **Show the draft.** Send the rendered MP4 path, paste the copy, open the artifact in a preview tool, attach stills from the render, or otherwise put the work in front of Matt in a way he can actually evaluate.
-3. **Wait for explicit approval.** "Looks good," "ship it," "push it," "commit and push," "approved," "go" — words Matt actually says. Silence is not approval. A successful build is not approval. A scorecard hitting its threshold is not approval. A subagent's "ready" report is not approval.
-4. **Then commit + push.** Once approved, follow the existing workflow (single-checkout `main`, push to `origin` immediately, no feature branches).
+1. **Outbound messages to real people** — email or SMS to a client, lead, or prospect that an agent initiates. Broker-initiated sends from the CRM are the broker acting for themselves.
+2. **Publishing posts** — anything landing on a public social channel. Runtime mechanism: the publisher requires a human approval stamp ≤ 7 days old.
+3. **Ad spend** — creating, changing, or scaling paid campaigns.
+4. **OAuth grants** — connecting accounts or granting scopes.
 
-## What's forbidden
+**One commit-time class keeps the approval marker:** rendered content deliverables (video files in tracked `public/` paths) require `Approved-by: matt` or `Draft-shown: <url>` in the commit message — enforced mechanically by `scripts/check-draft-first.mjs` via the commit-msg hook. Everything else commits clean.
 
-- Auto-committing rendered MP4s to `public/v5_library/` (or any tracked location) without showing Matt first.
-- Auto-pushing copy, captions, blog posts, emails, social drafts, CMAs, listing descriptions to anywhere a downstream automation could pick them up before Matt sees them.
-- Treating a passing scorecard / quality gate / build as approval. Those are necessary, not sufficient.
-- Treating "the user said 'do X'" several turns ago as approval for the specific deliverable produced now. Re-confirm each turn before commit.
-- Pushing first and asking forgiveness. Reverting a published commit costs more than waiting one turn.
-
-## What is still auto-allowed (no approval needed)
-
-- Local file edits, npm installs, dependency updates needed to get a draft to the review point.
-- Running tests, builds, and renders to scratch (`out/`, `tmp/`, gitignored paths).
-- Pulling latest from `main` to stay in sync.
-- Reading any file in the repo.
-- Drafting `scorecard.json` / `citations.json` / verification traces alongside the draft.
-- Asking Matt clarifying questions before building the draft.
-
-The rule governs COMMIT and PUSH. It does not govern the work that produces the draft.
-
-## How to ask for approval (the standard format)
-
-When a draft is ready, surface it like this:
-
-> **Draft ready:** `<path or preview URL>`
-> **Scorecard:** `<X/100>` (format minimum `<Y>`)
-> **Verification trace:** `<one-line summary>`
-> **Ready to commit + push to `main` on your sign-off.**
-
-Then stop. Do not commit. Do not push. Wait.
-
-## When in doubt
-
-If a deliverable could plausibly be the kind of thing Matt would want to review, treat it as draft-first. The cost of one extra confirmation turn is far cheaper than the cost of an unwanted commit landing on `main` and propagating to the production build, the website, the social pipeline, or the email queue.
+Content drafts (video, copy, creative) still get built to scratch (`out/`, gitignored) and shown to Matt before they enter a distribution path — that is what "publishing is per-action" means in practice.
 
 ---
 
@@ -320,7 +290,7 @@ Enforced by `scripts/check_first_frame.py` — every video render runs this chec
 - Write `out/<deliverable>/scorecard.json` next to the render. Write `out/<deliverable>/citations.json` with every figure traced to a primary source.
 - Auto-zero hits (banned word, unverified number, AI without disclosure, fair-housing hit) = ship-blocker regardless of headline score.
 
-## Draft-first applies (see "Draft-First, Commit-Last" above)
+## Content approval applies (see "Approval Model" above)
 - Render to `out/` (gitignored). Run quality gate + scorecard. Show Matt the path + scorecard summary. Wait for explicit approval. Then move to `public/v5_library/` and commit.
 
 ## When to read the long skill files
@@ -573,13 +543,9 @@ Research sources at `docs/research/best-practices-*.md` (Instagram, TikTok, YouT
 
 Any agent producing content, writing site copy, mutating ad campaigns, or sending communications on behalf of Ryan Realty reads this section first. The architecture governs how every marketing action is generated, dispatched, executed, and approved.
 
-### Producer-layer freeze — Matt directive 2026-06-09 (enforced by G45 `ci:producer-freeze`)
+### Producer layer — freeze LIFTED 2026-07-21
 
-**The brain's EXECUTION layer is frozen at its 2026-06-09 footprint. Maintenance-only.** No new producers, no new REGISTRY rows, no new dispatcher/runtime choreography, no new content crons — by default. Rationale: the execution scaffolding (producer registry + SKILL-recipe runtime) ages with every model generation and had published zero content posts as of the freeze date, while its maintenance cost is real (three silently broken measurement paths repaired 2026-06-09). The durable spine compounds and stays fully active and protected: the Supabase data layer (`marketing_channel_daily`, `content_performance`, `visitor_sessions`, the snapshot ingestors), the action-row protocol + approval queue + audit trail, the voice/QA gates, the admin dashboards, and the `comms:`/`analyze:` digests that already work.
-
-- **Content default:** the live agent produces in-session via `marketing_brain_skills/produce/` — still writing the action row, still routing through Matt's approval and the publish gate, still measured. Producer SKILL.md files remain valuable as recipes the live agent loads; what is frozen is GROWING the autonomous layer, not using the knowledge in it.
-- **A producer already in the REGISTRY keeps working and keeps getting maintained.** This freezes growth, not operation.
-- **Unfreeze condition:** ten real posts through approve → publish → measure that yield a decision-grade insight, then Matt explicitly lifts the freeze. Until then `scripts/check-producer-freeze.mjs` ratchets the REGISTRY row count; regenerating its baseline (`npm run ci:producer-freeze:baseline`) requires Matt's explicit approval in the session transcript, cited in the commit message.
+Matt lifted the 2026-06-09 growth freeze on 2026-07-21 ("LIFT G45", session transcript). Gate G45 and its baseline are deleted. New producers may be added again. Every producer still routes through the action-row protocol, the approval queue, and the voice/QA gates — the freeze governed growth, never those controls.
 
 ### Three invocation modes
 
@@ -722,7 +688,7 @@ Every producer reads its own references before executing. **These rules apply GL
 
 **Tier 1 — mandatory for every producer (every action_type):**
 1. `CLAUDE.md` §0 — Data Accuracy mandate (non-negotiable; outranks all other instructions)
-2. `CLAUDE.md` §0.5 — Draft-First, Commit-Last (non-negotiable)
+2. `CLAUDE.md` "Approval Model" — content publishing is per-action approved (non-negotiable)
 3. `design_system/ryan-realty/SKILL.md` — brand visual system
 4. `marketing_brain_skills/brand-voice/SKILL.md` + `voice_guidelines.md` — voice enforcement (`grep_banned()` / `has_hard_fail()` from `scripts/_producer_lib.py`)
 
@@ -803,7 +769,7 @@ Before every commit on a user-facing surface:
 npm run ci:gates
 ```
 
-That runs the gate chain defined in `package.json` → `ci:gates` (that script is the authoritative list — don't re-enumerate it in prose, it drifts): design-tokens + seo-routes + DAL boundary + brand-voice + **mockup parity** + **page DAL** + **static params** + **producer-freeze** + the meta-gate `ci:gates-wired`, among ~60 others. If any fails, the commit doesn't ship. The meta-gate (`ci:gates-wired`) now also fails on any `scripts/check-*.mjs` that runs nowhere — closing a blind spot the 2026-06-20 audit found (28 gate files ran nowhere while docs called some "enforced"); 7 remain a tracked orphan backlog in `scripts/gates-wired-baseline.json` (21 of the 28 since wired or fixed-then-wired; triage the rest: wire or delete; the count may only shrink). DB-dependent gates (G16 `ci:data-access`) run locally/nightly — they hit live Supabase, so they are NOT in the secret-less static chain.
+That runs the gate chain defined in `package.json` → `ci:gates` (that script is the authoritative list — don't re-enumerate it in prose, it drifts): design-tokens + seo-routes + DAL boundary + brand-voice + **mockup parity** + **page DAL** + **static params** + **cron-registered** + the meta-gate `ci:gates-wired`, among many others. If any fails, the commit doesn't ship. The meta-gate (`ci:gates-wired`) now also fails on any `scripts/check-*.mjs` that runs nowhere — closing a blind spot the 2026-06-20 audit found (28 gate files ran nowhere while docs called some "enforced"); 7 remain a tracked orphan backlog in `scripts/gates-wired-baseline.json` (21 of the 28 since wired or fixed-then-wired; triage the rest: wire or delete; the count may only shrink). DB-dependent gates (G16 `ci:data-access`) run locally/nightly — they hit live Supabase, so they are NOT in the secret-less static chain.
 
 The most important one added 2026-05-28 is **mockup parity** (`scripts/check-mockup-parity.mjs`). Every Wave 3 page rebuild must satisfy the corresponding `design_system/ryan-realty/ui_kits/<route>/parity.json` contract — which enumerates every component the mockup says the page must import. If I edit `app/<route>/page.tsx` without the matching components, CI fails. Adding a new gated route: place the mockup + create the `parity.json` + the gate auto-picks it up.
 

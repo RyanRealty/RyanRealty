@@ -1,3 +1,4 @@
+// cron: invoked-by /api/cron/snapshot-channels (fan-out caller; deliberately not in vercel.json)
 /**
  * TikTok daily snapshot ingestor.
  *
