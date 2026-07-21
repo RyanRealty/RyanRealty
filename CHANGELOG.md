@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.823.4 (2026-07-21)
+
+### Bug Fixes
+- fix(compliance): never show Coming Soon listings on public surfaces
+
+---
+
+
 ## v1.823.3 (2026-07-21)
 
 ### Bug Fixes
