@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.823.5 (2026-07-21)
+
+### Bug Fixes
+- fix(compliance): close Coming Soon exposure at the database layer
+
+---
+
+
 ## v1.823.4 (2026-07-21)
 
 ### Bug Fixes
