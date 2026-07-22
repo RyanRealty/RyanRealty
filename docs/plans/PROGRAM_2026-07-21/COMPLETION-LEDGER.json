@@ -32,16 +32,21 @@
       "workstream": "W1",
       "mission": "M1",
       "title": "Wire search and scroll-depth events into the first-party event store (mechanism: event-taxonomy contract test, component fires \u2194 ALLOWED_EVENT_TYPES accepts)",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
         "gates": [],
         "crons": [],
-        "tests": [],
+        "tests": [
+          "lib/event-taxonomy.contract.test.ts"
+        ],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "components/listing/ListingTracker.tsx",
+          "components/site/experience/useEngagementTracking.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
+      "proofPath": "contract test lib/event-taxonomy.contract.test.ts pins FirstPartyEventType (7) subset of ALLOWED_EVENT_TYPES (9), bites when a client type is added (proven); scroll_depth dual-sinked first-party in ListingTracker.tsx + useEngagementTracking.ts. End-to-end confirmed: producers -> fireFirstPartyEvent (consent-gated) -> /api/visitors/track accepts scroll_depth -> visitor_events.scroll_depth_pct -> consumed per-person by Contact-360 timeline (app/actions/crm.ts) + visitor session detail. GA4 dual-sink intact, no consent bypass, tsc clean.",
+      "verifiedBy": "independent adversarial agent ad1389b0dd041c5b7 \u2014 confirmed test correct+biting+non-vacuous, full producer->consumer path across lanes (2 real per-person consumers), no regression/bypass. VERDICT: SOLID. (browser-live blocked by concurrent dev-server lock on shared .next; verified via biting test + end-to-end code trace.)",
       "remaining": "The promised event-taxonomy contract test does not exist \u2014 no *.test.* file references ALLOWED_EVENT_TYPES or FirstPartyEventType (verified by repo-wide grep); the only guard is a comment in VisitTracker.tsx ('Must stay a subset of ALLOWED_EVENT_TYPES'), and scripts/check-tracking-policy.mjs (G48) does not cover the taxonomy. Also scroll_depth on listing-detail pages (components/listing/ListingTracker.tsx:56) and the experience engagement hook (components/site/experience/useEngagementTracking.ts:56) still go to GA4 only, so per-person drop-off remains invisible on those surfaces."
     },
     {

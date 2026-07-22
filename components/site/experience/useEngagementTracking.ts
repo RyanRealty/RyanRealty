@@ -21,6 +21,7 @@
 
 import { useEffect, useRef, useCallback, RefObject } from 'react'
 import { trackEvent } from '@/lib/tracking'
+import { fireFirstPartyEvent } from '@/components/VisitTracker'
 
 type Options = {
   /** A ref to the DOM element to observe. If not provided, only page-level events fire. */
@@ -54,6 +55,9 @@ function installScrollDepth(pageType: string) {
       if (pct >= q && !scrollDepthFired.has(q)) {
         scrollDepthFired.add(q)
         trackEvent('scroll_depth', { depth: q, page_type: pageType })
+        // W1.3: dual-sink page-scroll depth to the first-party store so per-person
+        // drop-off on experience-archetype pages is visible in the CRM (GA4-only before).
+        fireFirstPartyEvent('scroll_depth', { scrollDepthPct: q, metadata: { surface: 'experience', pageType } })
       }
     }
   }

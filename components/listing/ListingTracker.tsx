@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { trackEvent, trackListingView } from '@/lib/tracking'
+import { fireFirstPartyEvent } from '@/components/VisitTracker'
 
 type Props = {
   listingKey: string
@@ -54,6 +55,13 @@ export default function ListingTracker({ listingKey, listingId, price, community
         if (pct >= m && !scrollMilestones.current.has(m)) {
           scrollMilestones.current.add(m)
           trackEvent('scroll_depth', { listing_key: listingKey, depth_percent: m })
+          // W1.3: dual-sink to the first-party store so per-person scroll depth
+          // on listing-detail pages is visible in the CRM (GA4-only before).
+          fireFirstPartyEvent('scroll_depth', {
+            listingMls: listingId,
+            scrollDepthPct: m,
+            metadata: { surface: 'listing_detail', listingKey },
+          })
         }
       })
     }
