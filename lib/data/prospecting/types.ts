@@ -117,6 +117,27 @@ export interface ProspectPriceCycle {
   daysOnMarket: number | null
   priceDropCount: number | null
   offMarketDate: string | null
+  /** Days from list to first pending — set when the cycle went under contract. */
+  daysToPending: number | null
+  /** listings.was_relisted — carried for downstream analysis; the cycle LIST
+   *  itself is the rendered relist story, so the UI does not restate it. */
+  wasRelisted: boolean
+  /** Times the cycle fell out of contract and returned to market. */
+  backOnMarketCount: number | null
+}
+
+/**
+ * One-click drip enrollment state for the review detail (the "Enroll in drip"
+ * button). `sequenceId` is the active workflow this prospect kind resolves to
+ * (crm_automation_rules first, master-plan fallback — same resolution the
+ * auto-enroll path uses); `enrolled` is a LIVE read of the person's
+ * enrollments in that sequence. Display convenience only — the server action
+ * re-runs every guard (hard-stop, active, double-enroll) at click time.
+ */
+export interface ProspectDripState {
+  sequenceId: number | null
+  sequenceName: string | null
+  enrolled: boolean
 }
 
 /** Full detail for the review drawer — extends the row with property + history. */
@@ -141,6 +162,7 @@ export interface ProspectDetail extends ProspectRow {
   ownerLookupStatus: string | null
   enrichmentNotes: string | null
   priceHistory: ProspectPriceCycle[]
+  drip: ProspectDripState
 }
 
 export type ProspectStatusFilter =

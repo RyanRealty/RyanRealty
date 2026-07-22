@@ -2,18 +2,37 @@
  * /api/cron/loop-health-check
  *
  * Daily diagnostic that surfaces the state of every wire in the marketing-brain
- * loop. Writes findings to marketing_decisions for the next daily digest to
+ * loop AND every critical data pipeline (sync-delta, MV refreshes, FSBO scrape,
+ * expired detection, saved-search engine, market_stats_cache). Pipelines fail
+ * silently — the FSBO scrape went dark on an Apify cap, listing_tile_mv sat 8
+ * days stale — so staleness here sends ONE consolidated alert email to Matt.
+ * Threshold logic is pure and unit-tested in lib/pipeline-heartbeat.ts.
+ *
+ * Writes findings to marketing_decisions for the next daily digest to
  * include. Same logic as scripts/loop-health-check.mjs but server-side.
  *
  * Schedule: daily 12:30 UTC (05:30 Mountain). vercel.json entry required.
  * Auth: Authorization: Bearer ${CRON_SECRET}.
  * Manual: GET /api/cron/loop-health-check
  *
- * Pure Supabase reads; no Anthropic calls; near-zero cost.
+ * Pure Supabase reads; no Anthropic calls; near-zero cost (one Resend send
+ * only when something is stale).
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
+import { sendEmail } from '@/lib/resend'
+import {
+  evalExpired,
+  evalFsbo,
+  evalMarketStats,
+  evalSavedSearch,
+  evalSearchMv,
+  evalSyncDelta,
+  probeFailed,
+  summarizeHeartbeat,
+  type PipelineCheck,
+} from '@/lib/pipeline-heartbeat'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -184,6 +203,161 @@ export async function GET(req: NextRequest) {
     push('value:gsc-queries', 'red', 'probe failed', e instanceof Error ? e.message : String(e))
   }
 
+  // ---------------------------------------------------------------------
+  // Pipeline heartbeat — freshness of every critical data pipeline.
+  // Threshold logic is pure + unit-tested (lib/pipeline-heartbeat.ts); this
+  // block only fetches the latest timestamps. A failed probe is itself red:
+  // a swallowed query error reads identical to a dark pipeline, which is the
+  // exact failure mode this watchdog exists to catch.
+  // ---------------------------------------------------------------------
+  const now = new Date()
+  const pipeline: PipelineCheck[] = []
+
+  // Top-1 timestamp via order-desc-limit-1. nullsFirst:false + not-null
+  // filter so NULL rows can never mask the real max.
+  const latestTimestamp = async (
+    table: string,
+    column: string,
+  ): Promise<{ iso: string | null; error?: string }> => {
+    try {
+      const { data, error } = await supabase
+        .from(table)
+        .select(column)
+        .not(column, 'is', null)
+        .order(column, { ascending: false, nullsFirst: false })
+        .limit(1)
+      if (error) return { iso: null, error: error.message }
+      // Dynamic column select defeats supabase-js inference — the rows are
+      // plain objects keyed by the requested column.
+      const row = (data as unknown as Record<string, unknown>[] | null)?.[0]
+      return { iso: (row?.[column] as string | undefined) ?? null }
+    } catch (e) {
+      return { iso: null, error: e instanceof Error ? e.message : String(e) }
+    }
+  }
+
+  // MV refresh stamps: every row carries the SAME refreshed_at (now() is
+  // stable within the refresh statement), so any non-null row is the value —
+  // no 596K-row sort needed.
+  const mvRefreshStamp = async (
+    table: string,
+  ): Promise<{ iso: string | null; error?: string }> => {
+    try {
+      const { data, error } = await supabase
+        .from(table)
+        .select('refreshed_at')
+        .not('refreshed_at', 'is', null)
+        .limit(1)
+      if (error) return { iso: null, error: error.message }
+      const row = (data as { refreshed_at: string | null }[] | null)?.[0]
+      return { iso: row?.refreshed_at ?? null }
+    } catch (e) {
+      return { iso: null, error: e instanceof Error ? e.message : String(e) }
+    }
+  }
+
+  // 1. sync-delta ingest + listing_tile_mv (compound signal — max(modified_at)
+  //    only advances when both the Spark ingest and the hourly MV refresh are
+  //    alive; refreshed_at disambiguates which half died).
+  {
+    const [mod, ref] = await Promise.all([
+      latestTimestamp('listing_tile_mv', 'modified_at'),
+      mvRefreshStamp('listing_tile_mv'),
+    ])
+    if (mod.error) pipeline.push(probeFailed('pipeline:sync-delta', mod.error))
+    else pipeline.push(evalSyncDelta(mod.iso, ref.iso, now))
+  }
+
+  // 2. listing_search_mv freshness (exposes refreshed_at per the schema snapshot).
+  {
+    const ref = await mvRefreshStamp('listing_search_mv')
+    if (ref.error) pipeline.push(probeFailed('pipeline:listing_search_mv', ref.error))
+    else pipeline.push(evalSearchMv(ref.iso, now))
+  }
+
+  // 3. FSBO scrape (daily Apify actor — the known silent killer is the usage cap).
+  {
+    const seen = await latestTimestamp('fsbo_listings', 'last_seen_at')
+    if (seen.error) pipeline.push(probeFailed('pipeline:fsbo-scrape', seen.error))
+    else pipeline.push(evalFsbo(seen.iso, now))
+  }
+
+  // 4. Expired-listing detection (soft WARN — low volume is normal).
+  {
+    const created = await latestTimestamp('expired_listings', 'created_at')
+    if (created.error) pipeline.push(probeFailed('pipeline:expired-detect', created.error))
+    else pipeline.push(evalExpired(created.iso, now))
+  }
+
+  // 5. Saved-search engine. Signal (verified in app/actions/saved-search-alerts.ts):
+  //    advanceCursor stamps listing_alerts.last_notified_at on EVERY due-row
+  //    scan (even no-match skips), and every real send writes email_events
+  //    with email_key 'listing-alert:<id>:<date>'. Either advancing within
+  //    26h proves the hourly engine ran.
+  {
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 86_400_000).toISOString()
+    const [alertCount, book, evt] = await Promise.all([
+      supabase
+        .from('listing_alerts')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_active', true),
+      supabase
+        .from('listing_alerts')
+        .select('last_notified_at')
+        .eq('is_active', true)
+        .not('last_notified_at', 'is', null)
+        .order('last_notified_at', { ascending: false, nullsFirst: false })
+        .limit(1),
+      supabase
+        .from('email_events')
+        .select('occurred_at')
+        .like('email_key', 'listing-alert:%')
+        .gte('occurred_at', thirtyDaysAgo)
+        .order('occurred_at', { ascending: false })
+        .limit(1),
+    ])
+    const probeErr = [alertCount.error?.message, book.error?.message, evt.error?.message]
+      .filter(Boolean)
+      .join('; ')
+    if (probeErr) {
+      pipeline.push(probeFailed('pipeline:saved-search-alerts', probeErr))
+    } else {
+      pipeline.push(
+        evalSavedSearch(
+          book.data?.[0]?.last_notified_at ?? null,
+          evt.data?.[0]?.occurred_at ?? null,
+          alertCount.count ?? 0,
+          now,
+        ),
+      )
+    }
+  }
+
+  // 6. market_stats_cache recompute (daily 07:00 UTC; this check runs 12:30 UTC).
+  {
+    const computed = await latestTimestamp('market_stats_cache', 'computed_at')
+    if (computed.error) pipeline.push(probeFailed('pipeline:market_stats_cache', computed.error))
+    else pipeline.push(evalMarketStats(computed.iso, now))
+  }
+
+  for (const pc of pipeline) push(pc.name, pc.status, pc.value, pc.note)
+
+  // ONE consolidated alert when any pipeline is stale. Healthy = log only.
+  const heartbeat = summarizeHeartbeat(pipeline, now)
+  let alertEmail: { sent: boolean; id?: string; error?: string } = { sent: false }
+  if (!heartbeat.healthy) {
+    const to = (process.env.MATT_ALERT_EMAIL || 'matt@ryan-realty.com').trim()
+    const sent = await sendEmail({ to, subject: heartbeat.subject, text: heartbeat.text })
+    if (sent.error) {
+      alertEmail = { sent: false, error: sent.error }
+      console.error('[loop-health-check] heartbeat alert email failed:', sent.error)
+    } else {
+      alertEmail = { sent: true, id: sent.id }
+    }
+  } else {
+    console.log(`[loop-health-check] pipeline heartbeat healthy (${pipeline.length} checks, ${heartbeat.warn.length} warn)`)
+  }
+
   const greens = checks.filter((c) => c.status === 'green').length
   const yellows = checks.filter((c) => c.status === 'yellow').length
   const reds = checks.filter((c) => c.status === 'red').length
@@ -222,5 +396,14 @@ export async function GET(req: NextRequest) {
     console.error('[loop-health-check] marketing_decisions insert threw:', e instanceof Error ? e.message : String(e))
   }
 
-  return NextResponse.json({ summary, checks })
+  return NextResponse.json({
+    summary,
+    heartbeat: {
+      healthy: heartbeat.healthy,
+      stale: heartbeat.stale.length,
+      warn: heartbeat.warn.length,
+      alertEmail,
+    },
+    checks,
+  })
 }

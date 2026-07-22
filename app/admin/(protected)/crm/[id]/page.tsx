@@ -44,6 +44,8 @@ import { getContactBpos } from '@/lib/data/crm/getContactBpos'
 import { getLatestNewsletterIssue } from '@/lib/data/crm/getLatestNewsletterIssue'
 import { ContactCmaCard } from '@/components/admin/crm/ContactCmaCard'
 import { ContactBpoCard } from '@/components/admin/crm/ContactBpoCard'
+import { getContactProspectStory } from '@/lib/data/crm/getContactProspectStory'
+import { ContactProspectHistoryCard } from '@/components/admin/crm/ContactProspectHistoryCard'
 import { sendNewsletterToContactAction } from '@/app/actions/contact-newsletter'
 import { getContactListingAlerts } from '@/lib/data/crm/getContactListingAlerts'
 import { ContactListingAlertsPanel } from '@/components/admin/crm/ContactListingAlertsPanel'
@@ -151,7 +153,7 @@ export default async function ConsoleLeadPage({
   const homeAddress = geo?.formatted_address ?? geo?.source_address ?? null
 
   // What they're shopping for — saved searches + the homes they're watching (live MLS) + newsletter status.
-  const [savedSearches, viewedListings, contactMemberships, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, fieldDefs, emailEngagementSummary, collaborators, actionPlanEnrollments, detailExtras, activeSequences, crmSources, recipientOptions, contactCmas, contactBpos, latestNewsletter, signature, mergeCtx, personAppointments, apptTypes, apptOutcomes, conversation, homeMedia, homeMatches] = await Promise.all([
+  const [savedSearches, viewedListings, contactMemberships, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, fieldDefs, emailEngagementSummary, collaborators, actionPlanEnrollments, detailExtras, activeSequences, crmSources, recipientOptions, contactCmas, contactBpos, latestNewsletter, signature, mergeCtx, personAppointments, apptTypes, apptOutcomes, conversation, homeMedia, homeMatches, prospectStories] = await Promise.all([
     getListingAlertsForLead({ crmPersonId: person.id, fubPersonId: person.fub_legacy_id, emails: personEmails }),
     getViewedListingsForLead(person.fub_legacy_id),
     getContactMemberships(person.id),
@@ -200,6 +202,9 @@ export default async function ConsoleLeadPage({
     homeLat !== null && homeLng !== null
       ? getOwnedHomeMatches(homeLat, homeLng, homeAddress)
       : Promise.resolve([] as OwnedHomeMatch[]),
+    // Structured expired/FSBO listing story (right-rail card) — data, not a
+    // buried prose note.
+    getContactProspectStory({ personId: person.id, fubLegacyId: person.fub_legacy_id }),
   ])
 
   const emailInitialSubject = activeTpl?.subject ? renderCrmMerge(activeTpl.subject, personLike, mergeCtx) : ''
@@ -636,6 +641,11 @@ export default async function ConsoleLeadPage({
                 <div className={nextStep.ownsHome && homeAddress ? 'mt-2.5' : undefined}>
                   <ContactBpoCard bpos={contactBpos} generateAction={startBpoForm.bind(null, person.id)} />
                 </div>
+                {prospectStories.length > 0 ? (
+                  <div className="mt-2.5">
+                    <ContactProspectHistoryCard stories={prospectStories} />
+                  </div>
+                ) : null}
               </>
             }
             websiteActivityNode={

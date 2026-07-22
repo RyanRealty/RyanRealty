@@ -3,11 +3,11 @@
   "sites": {
     "app/actions/newsletter.ts:472": {
       "kind": "internal",
-      "reason": "Internal: newsletter test-send (adminTestSendNewsletterAction) to the authenticated admin's OWN inbox (gate.email from requireAdmin()), subject prefixed [TEST]. Never a lead or subscriber \u2014 it renders the issue as-broker so the admin can preview real delivery before enqueueing. The actual audience send routes through the gated queue drain (per-row isSuppressedByEmail). Permanently allowlisted. Line shifted -45 when the preview render helpers moved to lib/newsletter/preview.ts (W2 review-surface build 2026-07-06)."
+      "reason": "Internal: newsletter test-send (adminTestSendNewsletterAction) to the authenticated admin's OWN inbox (gate.email from requireAdmin()), subject prefixed [TEST]. Never a lead or subscriber — it renders the issue as-broker so the admin can preview real delivery before enqueueing. The actual audience send routes through the gated queue drain (per-row isSuppressedByEmail). Permanently allowlisted. Line shifted -45 when the preview render helpers moved to lib/newsletter/preview.ts (W2 review-surface build 2026-07-06)."
     },
     "app/admin/(protected)/crm/inbox/page.tsx:411": {
       "kind": "internal",
-      "reason": "Internal: inbox note @mention notification to the mentioned BROKER's own ryan-realty.com mailbox (spec 08 paragraph 10.2). Never to a lead \u2014 the CRM_MAILBOXES lookup only resolves broker addresses. Client-facing sends on this page route through the gated sendCrmEmailAction. Permanently allowlisted. Line re-keyed 409->411 when the RC5 requireAdminPage('inbox.view') guard added 2 lines above it (2026-07-17)."
+      "reason": "Internal: inbox note @mention notification to the mentioned BROKER's own ryan-realty.com mailbox (spec 08 paragraph 10.2). Never to a lead — the CRM_MAILBOXES lookup only resolves broker addresses. Client-facing sends on this page route through the gated sendCrmEmailAction. Permanently allowlisted. Line re-keyed 409->411 when the RC5 requireAdminPage('inbox.view') guard added 2 lines above it (2026-07-17)."
     },
     "app/api/cma/[slug]/gmail-draft/route.ts:167": {
       "kind": "internal",
@@ -23,7 +23,7 @@
     },
     "app/api/cron/weekly-pipeline-digest/route.ts:183": {
       "kind": "internal",
-      "reason": "Internal: weekly pipeline digest to the broker (or the admin-configured Weekly Report Recipients from Company Settings \u2014 staff addresses the owner adds, not leads). Same allowlisted site; line shifted when recipients were wired to crm_company_settings (\u00a715 slice). Line re-synced in the audit cron-auth consolidation."
+      "reason": "Internal: weekly pipeline digest to the broker (or the admin-configured Weekly Report Recipients from Company Settings — staff addresses the owner adds, not leads). Same allowlisted site; line shifted when recipients were wired to crm_company_settings (§15 slice). Line re-synced in the audit cron-auth consolidation."
     },
     "app/home-valuation/actions.ts:201": {
       "kind": "internal",
@@ -63,7 +63,7 @@
     },
     "app/api/cron/newsletter-monthly-draft/route.ts:51": {
       "kind": "internal",
-      "reason": "Internal: draft-ready notification to matt@ryan-realty.com (MATT only) after the monthly auto-draft cron writes a newsletter DRAFT. Never a lead or subscriber \u2014 the draft itself sends nothing until Matt approves and schedules it on the review page. Permanently allowlisted. Line shifted in the 2026-07-06 lifecycle-workflows integration (W5). Line re-synced in the audit cron-auth consolidation."
+      "reason": "Internal: draft-ready notification to matt@ryan-realty.com (MATT only) after the monthly auto-draft cron writes a newsletter DRAFT. Never a lead or subscriber — the draft itself sends nothing until Matt approves and schedules it on the review page. Permanently allowlisted. Line shifted in the 2026-07-06 lifecycle-workflows integration (W5). Line re-synced in the audit cron-auth consolidation."
     },
     "lib/cma-deliver.ts:356": {
       "kind": "internal",
@@ -79,11 +79,15 @@
     },
     "lib/cma/request-emails.ts:73": {
       "kind": "internal",
-      "reason": "Internal: new-CMA-request notification to the assigned broker (sendBrokerNotification), not the lead \u2014 and skipped entirely for broker kick-offs (notifyBroker=false). The lead confirmation (sendLeadConfirmation) in the same module is gated by isSuppressedByEmail on both transports. Site relocated from lib/cma-request.ts:535 (history: 401 -> 434 D8 kick-off inputs, 434 -> 535 version-chain clobber guard) when the email senders were extracted for the 600-LOC file-size budget on 2026-07-17."
+      "reason": "Internal: new-CMA-request notification to the assigned broker (sendBrokerNotification), not the lead — and skipped entirely for broker kick-offs (notifyBroker=false). The lead confirmation (sendLeadConfirmation) in the same module is gated by isSuppressedByEmail on both transports. Site relocated from lib/cma-request.ts:535 (history: 401 -> 434 D8 kick-off inputs, 434 -> 535 version-chain clobber guard) when the email senders were extracted for the 600-LOC file-size budget on 2026-07-17."
     },
     "lib/market-stat-alert.ts:59": {
       "kind": "internal",
       "reason": "Internal: market-stat consistency alert to MATT_ALERT_EMAIL when the one-number-per-metric contract breaks (design-audit drift gate). No lead recipient. Permanently allowlisted. Line shifted 42 -> 59 when the alert params gained subject/heading/intro/context overrides so the weekly-report generator alarm (conversion-audit 2026-07-15 #6) reuses this ONE allowlisted site instead of minting a new ungated sendEmail call."
+    },
+    "app/api/cron/loop-health-check/route.ts:350": {
+      "kind": "internal",
+      "reason": "Internal: consolidated pipeline-heartbeat staleness alert to MATT_ALERT_EMAIL/matt@ryan-realty.com only (G-heartbeat, Wave A 2026-07-21). Never a lead. Healthy runs send nothing."
     }
   }
 }

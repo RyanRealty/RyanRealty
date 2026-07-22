@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
-import { getRecentBlogPosts, getPublishedGuides, listMarketReports, getEventsForIndex, getVenuesForIndex, getTrailsForIndex } from '@/lib/data'
+import { getRecentBlogPosts, getPublishedGuides, listMarketReports, getEventsForIndex, getVenuesForIndex, getTrailsForIndex, getAllNeighborhoodsWithCity } from '@/lib/data'
+import { getAllResortCommunities } from '@/lib/data/communities/registry'
+import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
 import { GOLF_COURSES } from '@/data/golf/courses'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -17,10 +19,11 @@ export const revalidate = 3600
  * Coverage enforced by scripts/check-ai-crawler-access.mjs.
  */
 export async function GET() {
-  const [posts, guides, reports] = await Promise.all([
+  const [posts, guides, reports, neighborhoods] = await Promise.all([
     getRecentBlogPosts({ limit: 25 }),
     getPublishedGuides(50),
     listMarketReports(12),
+    getAllNeighborhoodsWithCity().catch(() => []),
   ])
 
   // Each dynamic block prefixes its own newline so an empty result (no rows
@@ -58,6 +61,30 @@ export async function GET() {
       .map((t) => `- ${t.name} (${t.city}): ${SITE_URL}/central-oregon/trails/${t.slug}`),
   )
 
+  // Full geo index — the same three sources the sitemap emits from, so the AI
+  // crawler map and the Google crawler map can never disagree on which geo
+  // pages exist: SITE_CITY_SLUGS (city pages), the curated resort registry
+  // (/communities/*), and boundary neighborhoods (/cities/{city}/{slug}).
+  const cityLabel = (slug: string) =>
+    slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+  const cityLines = lines(
+    SITE_CITY_SLUGS.map((slug) => `- ${cityLabel(slug)}: ${SITE_URL}/cities/${slug}`),
+  )
+  const communityLines = lines(
+    getAllResortCommunities().map(
+      (c) => `- ${c.label} (${c.city}): ${SITE_URL}/communities/${c.slug}`,
+    ),
+  )
+  const neighborhoodLines = lines(
+    neighborhoods
+      .map((n) => {
+        const cityRel = Array.isArray(n.cities) ? n.cities[0] : n.cities
+        if (!cityRel?.slug || !n.slug) return null
+        return `- ${n.name} (${cityRel.name}): ${SITE_URL}/cities/${cityRel.slug}/${n.slug}`
+      })
+      .filter((line): line is string => line !== null),
+  )
+
   const body = `# Ryan Realty Central Oregon Real Estate
 
 > Ryan Realty serves Central Oregon buyers and sellers with live listings, market reports, and neighborhood guidance.
@@ -83,6 +110,14 @@ export async function GET() {
 ## Local Areas
 - Cities: ${SITE_URL}/cities
 - Communities: ${SITE_URL}/communities
+
+## Cities
+- All cities: ${SITE_URL}/cities${cityLines}
+
+## Communities
+- All communities: ${SITE_URL}/communities${communityLines}
+
+## Neighborhoods${neighborhoodLines}
 
 ## Local Events
 - Central Oregon events: ${SITE_URL}/central-oregon/events${eventLines}

@@ -22,6 +22,7 @@ import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getProspect } from '@/lib/data'
 import { verifyNotRelisted } from '@/lib/data/prospecting/batch'
+import { resolveDripSequenceForKind } from '@/lib/data/prospecting/drip'
 import {
   claimProspectSend,
   finalizeProspectSend,
@@ -488,6 +489,58 @@ export async function prepareProspectSend(
   } catch (e) {
     console.error('[prepareProspectSend]', e)
     return { ok: false, error: 'Failed to prepare the send.' }
+  }
+}
+
+// ── One-click drip enrollment (worklist/detail button) ──────────────────────
+
+export type EnrollDripResult = { ok: true; sequence: string } | { ok: false; error: string }
+
+/**
+ * Enroll a prospect's CRM person in the kind's drip workflow — one click from
+ * the prospecting detail, no trip through the contact page's automations sheet.
+ *
+ * Reuses the canonical broker-driven enrollment (lib/crm/enroll.ts
+ * manualEnrollPerson): fail-closed on compliance hard-stop, refuses an
+ * inactive sequence, never double-enrolls a live one, and writes the
+ * 'manual-enroll' crm_timeline note itself. An explicit broker click
+ * deliberately bypasses autoEnrollPerson's outreach-source auto-enroll skip —
+ * the same trust model as the contact page sheet (app/actions/crm-membership.ts
+ * setSequenceEnrollment), which also routes through manualEnrollPerson.
+ */
+export async function enrollProspectInDripAction(
+  personId: number,
+  kind: ProspectKind,
+): Promise<EnrollDripResult> {
+  try {
+    const session = await getSession()
+    const email = session?.user?.email ?? null
+    const role = await getAdminRoleForEmail(email)
+    if (!role || role.role === 'report_viewer') return { ok: false, error: 'Unauthorized' }
+
+    const pid = Number(personId)
+    if (!Number.isFinite(pid) || pid <= 0) {
+      return { ok: false, error: 'No CRM contact linked to this prospect yet.' }
+    }
+
+    const seq = await resolveDripSequenceForKind(kind)
+    if (!seq) {
+      return {
+        ok: false,
+        error: `No active ${kind === 'expired' ? 'expired-listing' : 'FSBO'} drip workflow is configured.`,
+      }
+    }
+
+    const { manualEnrollPerson } = await import('@/lib/crm/enroll')
+    const result = await manualEnrollPerson(pid, seq.id, email ?? 'broker')
+    if (!result.enrolled) return { ok: false, error: result.reason }
+
+    revalidateProspectCaches([kind])
+    revalidatePath(`/admin/crm/${pid}`)
+    return { ok: true, sequence: result.sequence }
+  } catch (e) {
+    console.error('[enrollProspectInDripAction]', e)
+    return { ok: false, error: 'Enroll failed unexpectedly.' }
   }
 }
 

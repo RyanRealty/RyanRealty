@@ -28,7 +28,7 @@ const ROUTES = [
   '/admin/commissions', '/admin/crm', '/admin/crm/subscriptions', '/admin/deals', '/admin/email',
   '/admin/expired-listings', '/admin/financials', '/admin/forms', '/admin/fub-attribution',
   '/admin/geo', '/admin/guides', '/admin/listings', '/admin/media', '/admin/newsletters',
-  '/admin/operations', '/admin/optimization', '/admin/people', '/admin/photos', '/admin/producers',
+  '/admin/operations', '/admin/people', '/admin/photos', '/admin/producers',
   '/admin/query-builder', '/admin/reports', '/admin/resort-communities', '/admin/search',
   '/admin/settings', '/admin/sign-off', '/admin/signing', '/admin/site-pages', '/admin/spark-status',
   '/admin/stock-photos', '/admin/sync', '/admin/users', '/admin/visitors',

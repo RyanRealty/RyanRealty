@@ -11,6 +11,7 @@ import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { getBpoListingCyclesByAddress } from '@/lib/data/bpo/reads'
+import { getProspectDripState } from './drip'
 import { resolveDocsBatch, resolveComplianceBatch } from './batch'
 import { getProspectEngagement, EMPTY_ENGAGEMENT, type ProspectEngagementKey } from './engagement'
 import type { ProspectComplianceState, ProspectDetail, ProspectDocState, ProspectKind, ProspectPriceCycle, ProspectRow } from './types'
@@ -317,6 +318,11 @@ async function fetchPriceHistory(row: Pick<ProspectRow, 'streetAddress' | 'city'
     daysOnMarket: c.DaysOnMarket != null ? Number(c.DaysOnMarket) : null,
     priceDropCount: c.price_drop_count != null ? Number(c.price_drop_count) : null,
     offMarketDate: (c.off_market_date as string | null) ?? null,
+    // Under-contract history — already selected by BPO_CYCLE_COLUMNS; surfaced
+    // so the drawer can show "went pending, fell through" instead of dropping it.
+    daysToPending: c.days_to_pending != null ? Number(c.days_to_pending) : null,
+    wasRelisted: Boolean(c.was_relisted),
+    backOnMarketCount: c.back_on_market_count != null ? Number(c.back_on_market_count) : null,
   }))
 }
 
@@ -328,7 +334,10 @@ export async function getProspectDetail(kind: ProspectKind, id: string): Promise
     const loaded = await loadExpired(sb, id)
     if (!loaded) return null
     const { row, raw, listing } = loaded
-    const priceHistory = await fetchPriceHistory(row)
+    const [priceHistory, drip] = await Promise.all([
+      fetchPriceHistory(row),
+      getProspectDripState(kind, row.personId),
+    ])
     return {
       ...row,
       standardStatus: listing?.standardStatus ?? (raw.standard_status as string | null) ?? null,
@@ -351,13 +360,17 @@ export async function getProspectDetail(kind: ProspectKind, id: string): Promise
       ownerLookupStatus: (raw.owner_lookup_status as string | null) ?? null,
       enrichmentNotes: (raw.enrichment_notes as string | null) ?? null,
       priceHistory,
+      drip,
     }
   }
 
   const loaded = await loadFsbo(sb, id)
   if (!loaded) return null
   const { row, raw } = loaded
-  const priceHistory = await fetchPriceHistory(row)
+  const [priceHistory, drip] = await Promise.all([
+    fetchPriceHistory(row),
+    getProspectDripState(kind, row.personId),
+  ])
   return {
     ...row,
     standardStatus: null,
@@ -383,5 +396,6 @@ export async function getProspectDetail(kind: ProspectKind, id: string): Promise
     ownerLookupStatus: (raw.owner_lookup_status as string | null) ?? null,
     enrichmentNotes: (raw.enrichment_notes as string | null) ?? null,
     priceHistory,
+    drip,
   }
 }

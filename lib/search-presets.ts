@@ -138,7 +138,23 @@ export function isPresetSlug(slug: string): boolean {
   return getPresetBySlug(slug) !== null
 }
 
-/** All preset slugs (for sitemap and link generation). */
+/**
+ * A preset whose params ONLY reorder results (no filter) renders the same
+ * inventory as its parent page — indexable duplicate content. Sort-only
+ * presets stay routable for users, but the sitemap skips them and the search
+ * page marks them noindex (price-low-to-high, price-high-to-low).
+ */
+export function isSortOnlyPreset(preset: SearchPreset): boolean {
+  const keys = Object.keys(preset.params)
+  return keys.length > 0 && keys.every((k) => k === 'sort')
+}
+
+/** All preset slugs (for link generation). */
 export function getAllPresetSlugs(): string[] {
   return SEARCH_PRESETS.map((p) => p.slug)
+}
+
+/** Preset slugs eligible for sitemap submission — sort-only presets excluded. */
+export function getIndexablePresetSlugs(): string[] {
+  return SEARCH_PRESETS.filter((p) => !isSortOnlyPreset(p)).map((p) => p.slug)
 }

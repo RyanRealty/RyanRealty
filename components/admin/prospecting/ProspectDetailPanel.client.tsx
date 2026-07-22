@@ -11,10 +11,24 @@
  * body before a compliance-sensitive cold send goes out (spec §5.1/§5.3).
  */
 
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { enrollProspectInDripAction } from '@/app/actions/prospecting'
 import type { ProspectDetail } from '@/lib/data/prospecting/types'
 import { ProspectComplianceRibbon } from './ProspectComplianceRibbon.client'
 import { ProspectDocPill } from './ProspectDocPill.client'
@@ -50,6 +64,35 @@ export function ProspectDetailPanel({
   // panel routes every send through the compose dialog (onOpenSend), never a
   // direct fire-and-forget send, so onSend is not invoked here.
   void onSend
+
+  const router = useRouter()
+  const [confirmEnroll, setConfirmEnroll] = useState(false)
+  const [enrolling, startEnroll] = useTransition()
+
+  // Display-only gating — the server action re-runs every guard at click time.
+  const dripBlockedReason = detail.compliance.hardStop
+    ? 'Hard-stopped contact. Never enroll.'
+    : detail.drip.enrolled
+      ? `Already in ${detail.drip.sequenceName ?? 'the drip workflow'}.`
+      : detail.personId == null
+        ? 'No CRM contact linked yet. Send the intro first.'
+        : detail.drip.sequenceId == null
+          ? 'No active drip workflow is configured for this kind.'
+          : null
+
+  function runEnroll() {
+    const personId = detail.personId
+    if (personId == null) return
+    startEnroll(async () => {
+      const res = await enrollProspectInDripAction(personId, detail.kind)
+      if (res.ok) {
+        toast.success(`Enrolled in ${res.sequence}.`)
+        router.refresh()
+      } else {
+        toast.error(res.error)
+      }
+    })
+  }
 
   const showRibbon =
     detail.compliance.hardStop ||
@@ -188,12 +231,49 @@ export function ProspectDetailPanel({
             Send intro
           </Button>
         ) : null}
+        <Button
+          variant="outline"
+          className="h-11 flex-1"
+          disabled={Boolean(dripBlockedReason) || enrolling}
+          title={dripBlockedReason ?? undefined}
+          onClick={() => setConfirmEnroll(true)}
+        >
+          {enrolling ? (
+            <span className="flex items-center gap-1.5">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Enrolling…
+            </span>
+          ) : detail.drip.enrolled ? (
+            'In drip'
+          ) : (
+            'Enroll in drip'
+          )}
+        </Button>
         {crmHref ? (
           <Button variant="outline" className="h-11 flex-1" asChild>
             <Link href={crmHref}>Open in CRM</Link>
           </Button>
         ) : null}
       </div>
+      {dripBlockedReason ? <p className="text-xs text-muted-foreground">{dripBlockedReason}</p> : null}
+
+      <AlertDialog open={confirmEnroll} onOpenChange={setConfirmEnroll}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Enroll in the {detail.kind === 'expired' ? 'expired-listing' : 'FSBO'} drip?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Starts the {detail.drip.sequenceName ? `"${detail.drip.sequenceName}"` : 'drip'} workflow for{' '}
+              {detail.ownerName ?? 'this owner'}. The first touch sends automatically and every step is
+              suppression-gated at send time. The enrollment is noted on the contact timeline.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={runEnroll}>Enroll</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

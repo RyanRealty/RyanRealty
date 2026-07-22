@@ -2,9 +2,8 @@
 
 import { useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
-import { trackVisit } from '@/app/actions/track-visit'
 import { trackUserEvent } from '@/app/actions/track-user-event'
-import { hasAnalyticsConsent, getStoredConsent, getOrCreateVisitId, autoGrantConsentForAdTraffic } from './CookieConsentBanner'
+import { hasAnalyticsConsent, getStoredConsent, autoGrantConsentForAdTraffic } from './CookieConsentBanner'
 
 
 // localStorage key for the source-agnostic uuid that lets us stitch a visitor
@@ -206,7 +205,6 @@ type Props = { userId?: string | null; userEmail?: string | null }
 
 export default function VisitTracker({ userId }: Props) {
   const pathname = usePathname()
-  const tracked = useRef<string | null>(null)
   // Separate dedupe for the visitor_events write, keyed by pathname ONLY. The
   // session wrapper renders with userId=null then re-renders once /api/auth/me
   // resolves the real id; the visitor_event payload is keyed by sessionId (not
@@ -250,48 +248,17 @@ export default function VisitTracker({ userId }: Props) {
         trackUserEvent({ eventType: 'listing_view', listingKey: detU.mls, pagePath: pathname }).catch(() => {})
       }
     }
-    // Everything below (legacy visits table, GA-adjacent writes) stays behind
-    // explicit analytics consent.
-    if (!hasAnalyticsConsent()) return
-    const visitId = getOrCreateVisitId()
-    if (!visitId) return
-    // Legacy visits table (kept for backward-compat with existing reports) —
-    // keyed by pathname+userId so a login re-associates the visit.
-    const key = pathname + (userId ?? 'anon')
-    if (tracked.current !== key) {
-      tracked.current = key
-      trackVisit({
-        visitId,
-        path: pathname,
-        referrer: typeof document !== 'undefined' ? document.referrer || undefined : undefined,
-        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
-        userId: userId ?? undefined,
-      })
-    }
+    // The legacy visits-table write (trackVisit) was deleted 2026-07-21 — the
+    // visitor_sessions / visitor_events pipeline above is the sole write path.
   }, [pathname, userId])
 
 
   useEffect(() => {
     const onConsent = () => {
       if (hasAnalyticsConsent() && pathname) {
-        // Consent was off at load and just got granted — fire the view the main
-        // effect had to skip. Guard each write with its own ref so this never
-        // double-counts what the main effect already recorded.
-        const key = pathname + (userId ?? 'anon')
-        if (tracked.current !== key) {
-          tracked.current = key
-          const visitId = getOrCreateVisitId()
-          if (visitId) {
-            trackVisit({
-              visitId,
-              path: pathname,
-              referrer: document.referrer || undefined,
-              userAgent: navigator.userAgent,
-              userId: userId ?? undefined,
-            })
-          }
-        }
-        // Mirror to the new visitor_events pipeline on the consent flip too.
+        // Consent was declined at load and just got granted — fire the visitor
+        // event the main effect had to skip. The firedVisitorPath ref keeps
+        // this from double-counting what the main effect already recorded.
         if (firedVisitorPath.current !== pathname) {
           firedVisitorPath.current = pathname
           const det = detectListing(pathname)
@@ -301,7 +268,7 @@ export default function VisitTracker({ userId }: Props) {
     }
     window.addEventListener('cookie-consent', onConsent)
     return () => window.removeEventListener('cookie-consent', onConsent)
-  }, [pathname, userId])
+  }, [pathname])
 
   return null
 }

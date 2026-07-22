@@ -129,7 +129,7 @@ export default function SearchResults({
           const addressLine =
             [listing.StreetNumber, listing.StreetName, listing.StreetSuffix].filter(Boolean).join(' ').trim() || cityParts || 'Listing'
           // Wrapper carries data-listing-key for the map<->list hover sync
-          // (consumed by SearchSplitView / MapSearchView). ListingCard is the
+          // (consumed by MapSearchView). ListingCard is the
           // canonical site card — one look across the whole site.
           return (
             <div key={key} data-listing-key={key}>

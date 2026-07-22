@@ -372,10 +372,8 @@ test.describe('User journeys coverage matrix', () => {
     expect([200, 401, 403]).toContain(response.status())
   })
 
-  test('UJ-083: Optimization Health Check', async ({ page }) => {
-    const response = await page.request.get('/api/cron/optimization-loop')
-    expect([200, 401, 403]).toContain(response.status())
-  })
+  // UJ-083 removed 2026-07-21: /api/cron/optimization-loop was deleted (never
+  // registered in vercel.json, never ran once — 2026-07-21 platform audit).
 
   test('UJ-084: Lead Capture to CRM Pipeline', async ({ page }) => {
     const listingHref = await gotoAndFindFirstListing(page)

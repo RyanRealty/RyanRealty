@@ -194,7 +194,13 @@ export async function generateMetadata({
     title,
     description: metaDesc,
     alternates: { canonical: `${siteUrl}${canonicalPath}` },
-    robots: hasInvalidPresetSegment || shouldNoIndexSearchVariant(sp) ? { index: false, follow: true } : undefined,
+    // Sort-only presets (price-low-to-high / price-high-to-low) reorder the
+    // same inventory the parent page shows — noindex the duplicate, keep links
+    // followable. They are also excluded from the sitemap preset loop.
+    robots:
+      hasInvalidPresetSegment || (!!preset && isSortOnlyPreset(preset)) || shouldNoIndexSearchVariant(sp)
+        ? { index: false, follow: true }
+        : undefined,
     openGraph: {
       title,
       description: metaDesc,

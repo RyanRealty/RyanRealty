@@ -1,12 +1,13 @@
 /**
  * marketing-brain inbox-poll cron route.
  *
- * Polls marketing@ryan-realty.com every 2 minutes for unread messages,
+ * Polls marketing@ryan-realty.com every 15 minutes for unread messages,
  * parses each via Haiku, dispatches to the matching producer (or routes
  * for manual triage if confidence is low), and sends a voice-validated
  * confirmation reply on the original thread.
  *
- * Schedule: every 2 minutes — wired in vercel.json.
+ * Schedule: every 15 minutes (*\/15 * * * *) — registered in vercel.json
+ * 2026-07-21 (the route existed since 2026-05-14 but was never scheduled).
  *
  * Manual invocation:
  *   GET /api/cron/marketing-inbox-poll

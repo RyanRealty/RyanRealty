@@ -1,11 +1,9 @@
 {
-  "generatedAt": "2026-07-21T21:28:00.828Z",
+  "generatedAt": "2026-07-22T01:21:09.815Z",
   "reason": "Pre-gate backlog of cron routes that are neither registered in vercel.json nor marked (cron: invoked-by / cron: manual-only). This list may only shrink: register the cron, mark its real trigger, or delete the route. New unregistered crons fail the build.",
-  "count": 11,
+  "count": 9,
   "names": [
     "daily-broker-digest",
-    "marketing-inbox-poll",
-    "optimization-loop",
     "refresh-listing-year-stats",
     "refresh-video-tours-cache",
     "start-sync",

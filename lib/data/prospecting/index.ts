@@ -26,4 +26,11 @@ export {
 
 export { getProspect, getProspectDetail } from './get'
 
+export {
+  dripIntentTagFor,
+  getProspectDripState,
+  resolveDripSequenceForKind,
+  type DripSequence,
+} from './drip'
+
 export { listProspects } from './list'
