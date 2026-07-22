@@ -40,6 +40,10 @@ export const HEARTBEAT_THRESHOLDS = {
   expiredDays: 7,
   savedSearchHours: 26,
   marketStatsHours: 8,
+  // West Side Meta audience refresh: /api/cron/meta-westside-audience runs
+  // weekly (Mondays 14:00 UTC) and writes a meta_audience_log row every run
+  // (dry-run included) → 8 days = the 7-day cadence + a day of slack.
+  audienceSyncDays: 8,
 } as const
 
 export function ageHours(iso: string | null | undefined, now: Date): number | null {
@@ -178,6 +182,27 @@ export function evalMarketStats(maxComputedAt: string | null, now: Date): Pipeli
     value: `max(computed_at) ${formatAge(age)} old`,
     note: stale
       ? 'market_stats_cache was not recomputed by the daily 07:00 UTC run. Market report pages and stat surfaces serve stale numbers. Check /api/cron/refresh-market-stats.'
+      : undefined,
+  }
+}
+
+/**
+ * West Side Meta audience refresh (Wave C). /api/cron/meta-westside-audience
+ * runs weekly and writes a meta_audience_log row on EVERY run — dry-run
+ * included — so max(ran_at) advancing within 8 days proves the cron is alive,
+ * independent of whether META_AUDIENCE_PUSH_ENABLED gates the actual Meta push.
+ * The audience Ryan Realty paid to build (17,665 parcels) silently going stale
+ * is exactly the invisible-staleness class this watchdog exists to catch.
+ */
+export function evalAudienceSync(maxRanAt: string | null, now: Date): PipelineCheck {
+  const age = ageHours(maxRanAt, now)
+  const stale = age === null || age >= HEARTBEAT_THRESHOLDS.audienceSyncDays * 24
+  return {
+    name: 'pipeline:westside-audience',
+    status: stale ? 'red' : 'green',
+    value: `max(meta_audience_log.ran_at) ${formatAge(age)} old`,
+    note: stale
+      ? 'West Side Meta audience refresh is dark — no meta_audience_log row in over 8 days. The weekly /api/cron/meta-westside-audience is likely failing (cron dropped, Meta token, or a query error); the parcel-linked Custom Audience is going stale. Dry-run runs still log, so this catches a dead cron even when META_AUDIENCE_PUSH_ENABLED is off.'
       : undefined,
   }
 }

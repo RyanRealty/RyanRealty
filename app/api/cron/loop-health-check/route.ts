@@ -23,6 +23,7 @@ import { createClient } from '@supabase/supabase-js'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { sendEmail } from '@/lib/resend'
 import {
+  evalAudienceSync,
   evalExpired,
   evalFsbo,
   evalMarketStats,
@@ -338,6 +339,14 @@ export async function GET(req: NextRequest) {
     const computed = await latestTimestamp('market_stats_cache', 'computed_at')
     if (computed.error) pipeline.push(probeFailed('pipeline:market_stats_cache', computed.error))
     else pipeline.push(evalMarketStats(computed.iso, now))
+  }
+
+  // 7. West Side Meta audience refresh (weekly cron; every run — dry-run
+  //    included — writes a meta_audience_log row, so max(ran_at) proves it ran).
+  {
+    const ran = await latestTimestamp('meta_audience_log', 'ran_at')
+    if (ran.error) pipeline.push(probeFailed('pipeline:westside-audience', ran.error))
+    else pipeline.push(evalAudienceSync(ran.iso, now))
   }
 
   for (const pc of pipeline) push(pc.name, pc.status, pc.value, pc.note)

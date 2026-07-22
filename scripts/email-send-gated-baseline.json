@@ -85,7 +85,7 @@
       "kind": "internal",
       "reason": "Internal: market-stat consistency alert to MATT_ALERT_EMAIL when the one-number-per-metric contract breaks (design-audit drift gate). No lead recipient. Permanently allowlisted. Line shifted 42 -> 59 when the alert params gained subject/heading/intro/context overrides so the weekly-report generator alarm (conversion-audit 2026-07-15 #6) reuses this ONE allowlisted site instead of minting a new ungated sendEmail call."
     },
-    "app/api/cron/loop-health-check/route.ts:350": {
+    "app/api/cron/loop-health-check/route.ts:359": {
       "kind": "internal",
       "reason": "Internal: consolidated pipeline-heartbeat staleness alert to MATT_ALERT_EMAIL/matt@ryan-realty.com only (G-heartbeat, Wave A 2026-07-21). Never a lead. Healthy runs send nothing."
     }

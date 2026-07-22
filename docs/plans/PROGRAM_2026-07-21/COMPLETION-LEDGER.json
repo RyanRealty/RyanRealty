@@ -823,16 +823,22 @@
       "workstream": "W13",
       "mission": "M1",
       "title": "Phase 0: heartbeat cron \u2014 registered pipeline silent past cadence alerts Matt",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
         "gates": [],
-        "crons": [],
-        "tests": [],
+        "crons": [
+          "app/api/cron/loop-health-check"
+        ],
+        "tests": [
+          "lib/pipeline-heartbeat.test.ts"
+        ],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "lib/pipeline-heartbeat.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
+      "proofPath": "evalAudienceSync (lib/pipeline-heartbeat.ts) red when meta_audience_log.ran_at > 8d or null, green within 8d (1-day slack over the weekly cron). Wired as probe #7 in app/api/cron/loop-health-check/route.ts reading meta_audience_log.ran_at (written every run incl dry-run), pushed into the stale-alert pipeline; query error -> probeFailed(red). Test proves it; bites when threshold broken (8->huge -> red-assertion fails). 28 tests pass.",
+      "verifiedBy": "independent adversarial agent a6d112543b1922345 \u2014 confirmed probe correctness, wiring (right table+column vs schema snapshot, written every run, feeds stale-alert, error->red), bite reproduced, no false alarm (8d threshold vs weekly cadence). VERDICT: SOLID.",
       "remaining": "The verdict's third named example \u2014 audience sync \u2014 is not monitored: grep of lib/pipeline-heartbeat.ts and loop-health-check/route.ts finds no westside/meta-audience probe, and the Wave C crons (meta-westside-audience, westside-cohort-digest, vercel.json lines 212/216) have no staleness coverage. Add heartbeat probes for the audience-sync pipelines (and any cron registered after Wave A)."
     },
     {

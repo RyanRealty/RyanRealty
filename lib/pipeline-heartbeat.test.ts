@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   ageHours,
+  evalAudienceSync,
   evalExpired,
   evalFsbo,
   evalMarketStats,
@@ -124,6 +125,19 @@ describe('evalMarketStats (8h threshold on max(computed_at))', () => {
   it('red at 8h and when empty', () => {
     expect(evalMarketStats(hoursAgo(8), NOW).status).toBe('red')
     expect(evalMarketStats(null, NOW).status).toBe('red')
+  })
+})
+
+describe('evalAudienceSync (8-day threshold on max(meta_audience_log.ran_at))', () => {
+  it('green when the weekly cron logged within 8 days', () => {
+    expect(evalAudienceSync(daysAgo(6), NOW).status).toBe('green')
+    expect(evalAudienceSync(hoursAgo(1), NOW).status).toBe('green')
+  })
+  it('red at/after 8 days and when it never ran, naming the dry-run-still-logs insight', () => {
+    expect(evalAudienceSync(daysAgo(8), NOW).status).toBe('red')
+    const never = evalAudienceSync(null, NOW)
+    expect(never.status).toBe('red')
+    expect(never.note).toContain('META_AUDIENCE_PUSH_ENABLED')
   })
 })
 
