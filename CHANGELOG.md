@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.826.0 (2026-07-22)
+
+### Features
+- feat(crm): Wave B — conversion layer: email intro channel, reply intelligence, buyer-funnel gaps, composers, triage queue, governed sends
+- feat(platform): Wave A — reachability spine, heartbeat, dead-code purge, dark crons, SEO index depth, prospecting wins
+
+---
+
+
 ## v1.825.0 (2026-07-22)
 
 ### Features
