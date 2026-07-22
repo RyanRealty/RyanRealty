@@ -34,6 +34,10 @@ import { getEngagementCountsBatchCached } from '@/app/actions/engagement'
 import { getReportCities } from '@/app/actions/reports'
 import { getMarketReportData } from '@/app/actions/market-report'
 import { getMarketPulse } from '@/lib/data'
+import { getCityReportSnapshots, hasReportSignal } from '@/lib/data/market/getCityReportSnapshot'
+import { formatDate } from '@/lib/format/date'
+import { marketVerdict } from '@/lib/market/classify'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { MARKET_REPORT_DEFAULT_CITIES } from '@/app/actions/market-report-types'
 import { PRIMARY_CITIES } from '@/lib/cities'
 import ReportsByCityView from '@/components/reports/ReportsByCityView'
@@ -110,6 +114,159 @@ function ReportsSkeleton() {
           <div key={i} style={skelBlock(48, '100%')} />
         ))}
       </div>
+    </div>
+  )
+}
+
+/* ---- Per-city headline cards (§0 canonical cache path) ------------------- */
+
+const fmtMoneyFull = (n: number | null): string =>
+  n != null ? `$${(Math.round(n / 1000) * 1000).toLocaleString('en-US')}` : '—'
+const fmtCount = (n: number | null): string => (n != null ? n.toLocaleString('en-US') : '—')
+const fmtDays = (n: number | null): string => (n != null ? `${Math.round(n)} days` : '—')
+const fmtYoy = (n: number | null): string => {
+  if (n == null) return '—'
+  const arrow = n > 0 ? '↑ ' : n < 0 ? '↓ ' : ''
+  return `${arrow}${Math.abs(n).toFixed(1)}% YoY`
+}
+const fmtDate = (iso: string | null): string | null => {
+  if (!iso) return null
+  const d = new Date(iso.length <= 10 ? `${iso}T00:00:00Z` : iso)
+  if (Number.isNaN(d.getTime())) return null
+  return formatDate(d, { timeZone: 'UTC' })
+}
+const fmtAsOf = (iso: string | null): string | null => {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'America/Los_Angeles',
+  })
+}
+
+const cardRow = (label: string, value: string, sub?: string | null) => (
+  <div
+    className="flex items-baseline justify-between gap-3 py-1.5"
+    style={{ borderBottom: '1px solid var(--navy-12)' }}
+  >
+    <span className="text-sm" style={{ color: 'var(--navy-70)' }}>
+      {label}
+    </span>
+    <span className="text-sm font-semibold tabular-nums" style={{ color: 'var(--navy)' }}>
+      {value}
+      {sub ? (
+        <span className="ml-1.5 text-xs font-normal" style={{ color: 'var(--navy-70)' }}>
+          {sub}
+        </span>
+      ) : null}
+    </span>
+  </div>
+)
+
+/**
+ * City headline cards. Every figure comes from the SAME cache DAL the KB city
+ * pages read (getMarketPulse + getCityMarketDetail via getCityReportSnapshots),
+ * so a hub card and /cities/<slug> can never show different numbers for the
+ * same stat (§0 one-number rule; 2026-07-22 four-paths consolidation, step 1).
+ *
+ * Each card renders two labeled windows and never mixes figures across them:
+ *   - "Live single-family": market_pulse_live, labeled with its refresh time
+ *   - "Trailing 12 months": market_stats_cache rolling_365d, labeled with the
+ *     cache row's OWN period bounds
+ * The months-of-supply verdict is computed from the number it sits next to
+ * (lib/market/classify, the single threshold source).
+ *
+ * The range-filtered table below (ReportsDataSection) still reads the
+ * get_city_period_metrics RPC over raw listings. That RPC path is the
+ * REMAINING consolidation target. The market-stat-consistency cron
+ * cross-checks it against this cache path daily and alerts on |delta| > 1%.
+ */
+async function CityHeadlineCardsSection({ selectedCities }: { selectedCities: string[] }) {
+  // No-signal cities (zero active, zero sales, no median) are dropped rather
+  // than rendered as a wall of dashes — the same rule the CRM report emails
+  // apply (lib/data/crm/getMarketReportData.ts buildAreaBlock).
+  const snapshots = (await getCityReportSnapshots(selectedCities)).filter(hasReportSignal)
+  if (snapshots.length === 0) return null
+  return (
+    <div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {snapshots.map((s) => {
+          const mos = s.live?.monthsOfSupply ?? null
+          const verdict = mos != null ? marketVerdict(mos) : null
+          const asOf = fmtAsOf(s.live?.refreshedAt ?? null)
+          const periodStart = fmtDate(s.trailing12mo?.periodStart ?? null)
+          const periodEnd = fmtDate(s.trailing12mo?.periodEnd ?? null)
+          return (
+            <div
+              key={s.urlSlug}
+              className="p-5"
+              style={{ border: '1px solid var(--navy-12)', background: 'transparent' }}
+            >
+              <div className="flex items-baseline justify-between gap-3">
+                <Link
+                  href={`/cities/${s.urlSlug}`}
+                  className="text-lg font-semibold underline-offset-4 hover:underline"
+                  style={{ color: 'var(--navy)' }}
+                >
+                  {s.cityLabel}
+                </Link>
+                {verdict && verdict.kind !== 'unknown' ? (
+                  <span className="text-xs" style={{ color: 'var(--navy-70)' }}>
+                    {verdict.label}
+                  </span>
+                ) : null}
+              </div>
+
+              {s.live ? (
+                <div className="mt-4">
+                  <p
+                    className="text-xs uppercase tracking-wide"
+                    style={{ color: 'var(--navy-70)' }}
+                  >
+                    Live single-family{asOf ? ` · as of ${asOf}` : ''}
+                  </p>
+                  <div className="mt-1">
+                    {cardRow('Active listings', fmtCount(s.live.activeCount))}
+                    {cardRow('Median list price', fmtMoneyFull(s.live.medianListPrice))}
+                    {cardRow(
+                      'Months of supply',
+                      mos != null ? formatMonthsOfSupply(mos) : '—',
+                      verdict && verdict.kind !== 'unknown' ? verdict.label : null,
+                    )}
+                    {cardRow('Closed, last 30 days', fmtCount(s.live.closedLast30Days))}
+                    {cardRow('Median days to pending', fmtDays(s.live.medianDaysToPending))}
+                  </div>
+                </div>
+              ) : null}
+
+              {s.trailing12mo ? (
+                <div className="mt-4">
+                  <p
+                    className="text-xs uppercase tracking-wide"
+                    style={{ color: 'var(--navy-70)' }}
+                  >
+                    Trailing 12 months
+                    {periodStart && periodEnd ? ` · ${periodStart} to ${periodEnd}` : ''}
+                  </p>
+                  <div className="mt-1">
+                    {cardRow('Median sale price', fmtMoneyFull(s.trailing12mo.medianSalePrice))}
+                    {cardRow('Homes sold', fmtCount(s.trailing12mo.soldCount))}
+                    {cardRow('Median days on market', fmtDays(s.trailing12mo.medianDom))}
+                    {cardRow('Median price change', fmtYoy(s.trailing12mo.yoyMedianPriceDeltaPct))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          )
+        })}
+      </div>
+      <p className="mt-3 text-xs" style={{ color: 'var(--navy-70)' }}>
+        Single-family data from Oregon Data Share. The same figures each city page shows.
+      </p>
     </div>
   )
 }
@@ -288,7 +445,21 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
               <span className="sec-index">Live data</span>
               <h2 className="sec-title display">Housing<br />market report</h2>
             </div>
+            {/* Headline figures per city: the §0 canonical cache path
+                (market_pulse_live + market_stats_cache via getCityReportSnapshots),
+                identical to the KB city pages. Streamed separately so a pulse
+                hiccup never blocks the range table below. */}
             <div className="pt-7">
+              <Suspense fallback={<ReportsSkeleton />}>
+                <CityHeadlineCardsSection selectedCities={selectedCities} />
+              </Suspense>
+            </div>
+            {/* Range-filtered detail (7/14/30-day windows). Still fed by the
+                get_city_period_metrics RPC over raw listings: the REMAINING
+                consolidation target of the 2026-07-22 four-paths fix. The
+                market-stat-consistency cron cross-checks this RPC path against
+                the cache path above daily and alerts on |delta| > 1% (§0). */}
+            <div className="pt-10">
               <Suspense fallback={<ReportsSkeleton />}>
                 <ReportsDataSection
                   selectedCities={selectedCities}

@@ -80,6 +80,8 @@ import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { KbTicker } from '@/components/site/kb/KbTicker.client'
 import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
+import { MarketCoreCharts } from '@/components/market/MarketCoreCharts'
+import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { KbAreaGuideVideo } from '@/components/site/kb/KbAreaGuideVideo'
 import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
 import { KbCommunities } from '@/components/site/kb/KbCommunities.client'
@@ -303,7 +305,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     snapshot, pulse, stats, mktStats, regionPulse, priceHist,
     boundaryMapData, resortBoundary, allCitySnapshots, communities,
     blogPosts, openHouses, activity, featuredTiles, citySfrTiles, richContent,
-    cityPriceHist, areaGuideVideo,
+    cityPriceHist, areaGuideVideo, commCoreCharts, cityCoreCharts,
   ] = await Promise.all([
     // Always-present community snapshot — the JSON-LD/Place fallback source. (§0)
     withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
@@ -343,6 +345,22 @@ export default async function CommunityDetailPage({ params }: Props) {
     // match, null when the location has no guide video). The slot self-hides when
     // null, so it is always safe to render. (§0)
     withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'comm:areaGuideVideo'),
+    // Tabbed core-chart module series — this community's own scope, plus the
+    // parent city's as the sparse-community fallback (same decision rule as the
+    // HUD trend chart below, relabeled honestly when used). (§0)
+    withTimeoutFallback(
+      getCoreChartSeries({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }),
+      null,
+      4500,
+      'comm:coreCharts',
+    ),
+    withTimeoutFallback(
+      // City cache rows key multi-word cities space-separated ("la pine").
+      getCoreChartSeries({ geoType: 'city', geoSlug: citySlug.replace(/-/g, ' ') }),
+      null,
+      4500,
+      'comm:cityCoreCharts',
+    ),
   ])
 
   // Amenity → blog-post link cards (topic-cluster SEO): resolve the published posts
@@ -641,6 +659,12 @@ export default async function CommunityDetailPage({ params }: Props) {
   const chartIsCityLevel = commPricePoints.length < 8 || commTrendYears.size < 2
   const chartPriceHist = chartIsCityLevel ? cityPriceHist : priceHist
 
+  // Core-chart module scope mirrors the SAME sparse-community decision: the
+  // community's own series when dense enough, else the parent city's — always
+  // labeled, so a city figure is never read as the community's. (§0)
+  const coreCharts = chartIsCityLevel ? cityCoreCharts : commCoreCharts
+  const coreChartsScopeLabel = chartIsCityLevel && cityName ? `${cityName} (city)` : undefined
+
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
   const marketData: KbMarketData = {
     active: activeCount,
@@ -858,6 +882,19 @@ export default async function CommunityDetailPage({ params }: Props) {
           eyebrow={`${community.name} · The market`}
           chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
         />
+        {/* Tabbed core-chart module — one chart component everywhere. Sits under
+            the HUD KPI grid; renders nothing when no series is chartable. (§0) */}
+        {coreCharts ? (
+          <section className="section" aria-label={`${community.name} market trend charts`}>
+            <div className="wrap py-10 sm:py-14">
+              <MarketCoreCharts
+                data={coreCharts}
+                heading={`${community.name} market trends`}
+                scopeLabel={coreChartsScopeLabel}
+              />
+            </div>
+          </section>
+        ) : null}
         {/* Rich resort/golf/master-planned depth (overview · amenities · golf ·
             membership · builders) — null when no config. When present it carries the
             overview, so the thin data-driven About is suppressed to avoid duplication. */}

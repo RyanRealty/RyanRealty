@@ -35,6 +35,8 @@ import { ContactQuickActions } from '@/components/admin/crm/ContactQuickActions'
 import { ContactSendCenter } from '@/components/admin/crm/ContactSendCenter'
 import { getContactEmailEngagement } from '@/lib/data/crm/getContactEmailEngagement'
 import ContactEmailEngagement from '@/components/admin/crm/ContactEmailEngagement'
+import { getNewsletterHistoryForPerson } from '@/lib/data/newsletter/perLead'
+import { ContactNewsletterHistory } from '@/components/admin/crm/ContactNewsletterHistory'
 import ContactDeliveryPanel from '@/components/admin/crm/ContactDeliveryPanel'
 import { getContactBehaviorSummary } from '@/lib/data/crm/getContactBehaviorSummary'
 import ContactBehaviorPanel from '@/components/admin/crm/ContactBehaviorPanel'
@@ -155,7 +157,7 @@ export default async function ConsoleLeadPage({
   const homeAddress = geo?.formatted_address ?? geo?.source_address ?? null
 
   // What they're shopping for — saved searches + the homes they're watching (live MLS) + newsletter status.
-  const [savedSearches, viewedListings, savedHomes, contactMemberships, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, fieldDefs, emailEngagementSummary, collaborators, actionPlanEnrollments, detailExtras, activeSequences, crmSources, recipientOptions, contactCmas, contactBpos, latestNewsletter, signature, mergeCtx, personAppointments, apptTypes, apptOutcomes, conversation, homeMedia, homeMatches, prospectStories] = await Promise.all([
+  const [savedSearches, viewedListings, savedHomes, contactMemberships, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, fieldDefs, emailEngagementSummary, collaborators, actionPlanEnrollments, detailExtras, activeSequences, crmSources, recipientOptions, contactCmas, contactBpos, latestNewsletter, signature, mergeCtx, personAppointments, apptTypes, apptOutcomes, conversation, homeMedia, homeMatches, prospectStories, newsletterHistory] = await Promise.all([
     getListingAlertsForLead({ crmPersonId: person.id, fubPersonId: person.fub_legacy_id, emails: personEmails }),
     // Native identity keys (crm id + lockstep + emails) — the legacy fub-only
     // call returned [] for every native lead (fub_legacy_id NULL).
@@ -211,6 +213,9 @@ export default async function ConsoleLeadPage({
     // Structured expired/FSBO listing story (right-rail card) — data, not a
     // buried prose note.
     getContactProspectStory({ personId: person.id, fubLegacyId: person.fub_legacy_id }),
+    // Per-lead newsletter issue history (received / opened / clicked), keyed by
+    // the contact's emails + any subscriber rows linked via crm_person_id.
+    getNewsletterHistoryForPerson({ crmPersonId: person.id, emails: personEmails }),
   ])
 
   // Homes panel = union of the behavioral trail (visitor_events) and the REAL
@@ -691,6 +696,9 @@ export default async function ConsoleLeadPage({
                   </div>
                 ) : null}
                 <ContactEmailEngagement engagement={emailEngagementSummary} />
+                {/* Per-lead newsletter history: which issues this contact
+                    received, opened, and clicked (recipients + ledger). */}
+                <ContactNewsletterHistory history={newsletterHistory} />
                 {/* WS4 delivery observability: what they're subscribed to +
                     every email they've gotten, with opened/clicked status. */}
                 <ContactDeliveryPanel personId={person.id} email={primaryEmail} />

@@ -431,6 +431,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           pulse={marketPulse}
           stats={marketStats}
           thisListPrice={listing.listPrice}
+          chartCitySlug={listing.citySlug ?? null}
         />
       ) : null}
       <SchoolsBlock listing={listingWithPhotos} />

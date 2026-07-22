@@ -23,6 +23,18 @@ const RESIDENTIAL_ONLY = {
  * Fetch market report data for the given range across multiple cities.
  * Residential focus: condos and townhomes included; manufactured, land or acreage, and commercial excluded unless flags change.
  * Returns per-city metrics for the home page city carousel and reports page.
+ *
+ * CONSOLIDATION TARGET (§0 four-paths fix, 2026-07-22): this path computes its
+ * figures via the get_city_period_metrics RPC over raw `listings`, which can
+ * disagree with the canonical cache (market_pulse_live + market_stats_cache)
+ * that the KB city pages and the /reports headline cards read. As of the
+ * 2026-07-22 change it feeds ONLY the range-filtered detail interactions on
+ * /reports (the 7/14/30-day table) and the homepage carousel; the /reports
+ * per-city HEADLINE figures now come from lib/data/market/getCityReportSnapshot
+ * (the cache DAL). The market-stat-consistency cron cross-checks this RPC path
+ * against the cache path daily and alerts on |delta| > 1%. The end state is to
+ * retire this RPC read in favor of cache-backed period rows; do not add new
+ * consumers.
  */
 export async function getMarketReportData(options?: {
   periodStart?: string

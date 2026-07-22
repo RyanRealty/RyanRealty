@@ -34,6 +34,7 @@ import {
   getAreaGuideVideo,
 } from '@/lib/data'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
+import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
@@ -61,6 +62,7 @@ import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { KbTicker } from '@/components/site/kb/KbTicker.client'
 import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
+import { MarketCoreCharts } from '@/components/market/MarketCoreCharts'
 import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
 import { KbCommunities } from '@/components/site/kb/KbCommunities.client'
 import { KbAreaGuideVideo } from '@/components/site/kb/KbAreaGuideVideo'
@@ -215,7 +217,7 @@ export default async function CityDetailPage({ params }: Props) {
   const [
     pulse, regionPulse, mktStats, priceHist, communities, neighborhoodStats,
     communitySnapshots, allCitySnapshots, blogPosts, openHouses, activity,
-    cityMeta, mapTiles, featuredTiles, resortTiles, areaGuideVideo,
+    cityMeta, mapTiles, featuredTiles, resortTiles, areaGuideVideo, coreCharts,
   ] = await Promise.all([
     withTimeoutFallback(getMarketPulse({ geoType: 'city', geoSlug }), null, 3500, 'city:pulse'),
     withTimeoutFallback(getRegionPulse(), null, 3000, 'city:regionPulse'),
@@ -246,6 +248,9 @@ export default async function CityDetailPage({ params }: Props) {
       ? withTimeoutFallback(fetchAllCityActiveSfr(cityName), [], 6000, 'city:resortTiles')
       : Promise.resolve([] as Awaited<ReturnType<typeof getListingTiles>>),
     withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'area-guide-video'),
+    // Tabbed core-chart module series (24-month cache-fed trends). Null on a
+    // blip → the module renders nothing under the HUD. (§0)
+    withTimeoutFallback(getCoreChartSeries({ geoType: 'city', geoSlug }), null, 4500, 'city:coreCharts'),
   ])
 
   // Hero — Bend reuses the homepage video; otherwise the VERIFIED cityHero photo
@@ -588,6 +593,16 @@ export default async function CityDetailPage({ params }: Props) {
             ticker → the map → drill-down (neighborhoods/communities) → this-week
             (open houses) → live activity → guides → explore out. */}
         <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} byTownKind="neighborhood" />
+        {/* Tabbed core-chart module — the ONE chart component used everywhere.
+            Sits under the HUD (the KPI grid + verdict stay above); renders
+            nothing when no series is chartable, never an empty chart. (§0) */}
+        {coreCharts ? (
+          <section className="section" aria-label={`${cityName} market trend charts`}>
+            <div className="wrap py-10 sm:py-14">
+              <MarketCoreCharts data={coreCharts} heading={`${cityName} market trends`} />
+            </div>
+          </section>
+        ) : null}
         <KbFeatured items={featuredItems} eyebrow={`${cityName} · For sale`} />
         <KbTicker items={tickerItems} />
         {/* totalActive/subtitle describe the PLOTTED set now, not the

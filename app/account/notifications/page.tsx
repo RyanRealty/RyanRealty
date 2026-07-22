@@ -4,8 +4,10 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getProfile } from '@/app/actions/profile'
+import { getNewsletterMembershipForUserEmail } from '@/lib/data/newsletter/perLead'
 import { Card } from '@/components/ui/card'
 import DashboardNotificationPrefs from '@/components/dashboard/DashboardNotificationPrefs'
+import { NewsletterToggle } from './NewsletterToggle'
 
 export const metadata: Metadata = {
   title: 'Notification Preferences',
@@ -21,6 +23,11 @@ export default async function AccountNotificationsPage() {
 
   const profile = await getProfile()
   const prefs = profile?.notificationPreferences ?? {}
+  // Newsletter membership for the signed-in user's email (newsletter_subscribers).
+  const userEmail = session.user.email?.trim().toLowerCase() ?? ''
+  const membership = await getNewsletterMembershipForUserEmail(userEmail)
+  const newsletterSubscribed = membership.subscribed
+  const newsletterCanSubscribe = membership.canSubscribe
 
   return (
     <div className="space-y-8">
@@ -39,6 +46,15 @@ export default async function AccountNotificationsPage() {
           <p className="mt-0.5 text-sm text-muted-foreground">Pick the updates you want and how often we send them.</p>
         </div>
         <DashboardNotificationPrefs initialPrefs={prefs} />
+      </section>
+
+      {/* ── Monthly newsletter ── */}
+      <section>
+        <div className="mb-3 min-w-0">
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">Newsletter</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">Your subscription to the monthly Ryan Realty newsletter.</p>
+        </div>
+        <NewsletterToggle initialSubscribed={newsletterSubscribed} canSubscribe={newsletterCanSubscribe} />
       </section>
 
       {/* ── Unsubscribe ── */}

@@ -512,3 +512,14 @@ components/admin/bpo/worklist/BpoSendDialog.client.tsx
 # file for a worklist this size), so the exception lands on CmaBoard itself.
 components/admin/cma/worklist/CmaBoard.client.tsx
 components/admin/cma/worklist/CmaSendDialog.client.tsx
+
+# Wave C shadcn burn-down migrations (2026-07-22): G47 requires site + account
+# surfaces to be shadcn-free, so these two components hand-roll their controls
+# in the KB idiom (real <button> tab strip with WAI-ARIA tabs pattern, real
+# role="switch" toggle, token-styled card shell). Importing @/components/ui/card
+# or /tabs here would regress G47. All colors remain design tokens; same
+# exception class as components/site/kb/ above. MarketCoreCharts also keeps
+# text-[11px] for the §0 source fine print (chart caption scale, matching the
+# recharts tick sizing exception class).
+components/market/MarketCoreCharts.tsx
+app/account/notifications/NewsletterToggle.tsx

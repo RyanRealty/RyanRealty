@@ -31,6 +31,7 @@
     "ci:email-send-gated": "node scripts/check-email-send-gated.mjs",
     "ci:jsonb-contains": "node scripts/check-jsonb-contains.mjs",
     "ci:newsletter-authz": "node scripts/check-newsletter-authz.mjs",
+    "ci:resend-webhook": "node scripts/check-resend-webhook.mjs",
     "ci:newsletter-schema": "node scripts/check-newsletter-schema.mjs",
     "ci:newsletter-compliance": "node scripts/check-newsletter-compliance.mjs",
     "ci:newsletter-compliance:report": "node scripts/check-newsletter-compliance.mjs --report",

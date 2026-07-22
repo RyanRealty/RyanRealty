@@ -4,11 +4,23 @@ import {
   TextLink,
 } from '@/components/site/primitives'
 import { cn } from '@/lib/utils'
+import { PRIMARY_CITIES } from '@/lib/cities'
+import { slugify } from '@/lib/slug'
+import { parseCommunitySlug } from '@/lib/community-slug'
+import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
+import { MarketCoreCharts } from '@/components/market/MarketCoreCharts'
 import type { MarketPulse, MarketStats } from '@/lib/data/types/market'
 
 /**
  * NeighborhoodMarketContext — THE Zillow beater. KB section style:
- * navy surface, Amboqia heading, mono KPI cells.
+ * navy surface, Amboqia heading, mono KPI cells, and the tabbed core-chart
+ * module (MarketCoreCharts) under the KPI cells at the listing's CITY scope
+ * (city monthly cache series are dense; subdivision series are too sparse to
+ * chart honestly).
+ *
+ * Server component: it fetches the core-chart series itself (timeout-guarded,
+ * fails soft to no module — the KPI cells never depend on it).
  *
  * Spec: design_system/ryan-realty/ui_kits/listing-detail/index.html §nbhd-context
  */
@@ -21,6 +33,32 @@ type Props = {
   thisListPrice: number | null
   refreshedAt?: string
   className?: string
+  /**
+   * The listing's city slug (hyphenated, e.g. "la-pine") for the chart module
+   * scope. Optional: when absent it is derived from hubHref ("/cities/<slug>"
+   * directly, "/communities/<slug>" via the community registry). Underivable →
+   * the module is simply omitted.
+   */
+  chartCitySlug?: string | null
+}
+
+/** Derive the city slug behind this market context from its hub link. */
+export function deriveCitySlugFromHubHref(hubHref: string): string | null {
+  const city = hubHref.match(/^\/cities\/([^/?#]+)/)
+  if (city) return city[1]!
+  const community = hubHref.match(/^\/communities\/([^/?#]+)/)
+  if (community) {
+    const parsed = parseCommunitySlug(community[1]!, new Set(PRIMARY_CITIES.map((name) => slugify(name))))
+    if (parsed) return slugify(parsed.city)
+  }
+  return null
+}
+
+function cityDisplayName(citySlug: string): string {
+  return citySlug
+    .split('-')
+    .map((w) => (w ? w[0]!.toUpperCase() + w.slice(1) : w))
+    .join(' ')
 }
 
 function formatFreshness(iso?: string | null): string {
@@ -44,7 +82,7 @@ function diffPctVsMedian(price: number | null, median: number | null): number | 
   return ((price - median) / median) * 100
 }
 
-export function NeighborhoodMarketContext({
+export async function NeighborhoodMarketContext({
   geoName,
   hubHref,
   pulse,
@@ -52,8 +90,24 @@ export function NeighborhoodMarketContext({
   thisListPrice,
   refreshedAt,
   className,
+  chartCitySlug,
 }: Props) {
   if (!pulse && !stats) return null
+
+  // Tabbed core-chart module at the listing's CITY scope. City cache rows key
+  // multi-word cities space-separated ("la pine"). Fails soft: no derivable
+  // city, a timeout, or zero chartable series → no module, KPI cells unharmed.
+  const citySlug = chartCitySlug ?? deriveCitySlugFromHubHref(hubHref)
+  const coreCharts = citySlug
+    ? await withTimeoutFallback(
+        getCoreChartSeries({ geoType: 'city', geoSlug: citySlug.replace(/-/g, ' ') }),
+        null,
+        4000,
+        'listing:coreCharts',
+      )
+    : null
+  const cityLabel = citySlug ? cityDisplayName(citySlug) : null
+  const chartScopeLabel = cityLabel && cityLabel !== geoName ? `${cityLabel} (city)` : undefined
 
   const activeCount = pulse?.activeCount ?? null
   const medianList = pulse?.medianListPrice ?? stats?.medianListPrice ?? null
@@ -108,6 +162,15 @@ export function NeighborhoodMarketContext({
             <KpiCell label="Months of supply" value={<TabularNumber value={mos} fractionDigits={1} />} />
           ) : null}
         </div>
+
+        {/* Tabbed core-chart module under the KPI cells — city-scope trends,
+            labeled when the scope differs from this section's subject. Renders
+            nothing when no series is chartable. (§0) */}
+        {coreCharts ? (
+          <div className="mt-6 mb-2">
+            <MarketCoreCharts data={coreCharts} scopeLabel={chartScopeLabel} />
+          </div>
+        ) : null}
 
         {/* Comparison line */}
         <div style={{ paddingBottom: 'clamp(22px,3vw,36px)' }}>

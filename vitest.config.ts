@@ -17,6 +17,8 @@ export default defineConfig({
       'components/site/__tests__/**/*.test.tsx',
       'components/search/__tests__/**/*.test.ts',
       'components/search/__tests__/**/*.test.tsx',
+      // Tabbed core-chart module logic (MarketCoreCharts).
+      'components/market/**/*.test.ts',
       'components/admin/crm/**/*.test.ts',
       'components/admin/crm/**/*.test.tsx',
       // Route-handler tests (e.g. the Twilio conversations-events webhook

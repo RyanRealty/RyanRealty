@@ -65,6 +65,7 @@ const NOT_A_GATE = new Set([
 // in a workflow with Supabase creds / locally), not in the secret-less static chain.
 const KNOWN_UNWIRED = new Map([
   ['ci:data-access', 'G16 regenerates the schema snapshot from LIVE Supabase (needs DB creds); run via `npm run ci:data-access` locally + nightly, not the secret-less static ci:gates chain'],
+  ['ci:resend-webhook', 'needs a Resend secret; off-chain nightly like G16 — run locally/nightly, never in the secret-less static chain'],
 ])
 
 // ---- Check 1: ci:* SCRIPT orphans ----

@@ -2,7 +2,15 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { createServiceClient } from '@/lib/data/client'
 import { getAllCitySnapshots } from '@/lib/data'
+import { getCityReportSnapshot } from '@/lib/data/market/getCityReportSnapshot'
+import { getReportMetrics } from '@/app/actions/reports'
 import { sendMarketStatAlertEmail } from '@/lib/market-stat-alert'
+import {
+  VERDICT_CITIES,
+  compareCityCrossPath,
+  crossPathFailureLines,
+  type CrossPathDelta,
+} from './compare'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,6 +31,18 @@ export const dynamic = 'force-dynamic'
  *  3. SENTINEL — bend:pronghorn's MV median must stay SFR-scale (> $500K)
  *     while it has active SFR inventory. If a future MV rewrite drops the
  *     PropertyType filter again, this canary fires the next morning.
+ *
+ *  5. CROSS-PATH (§0 four-paths consolidation, 2026-07-22) — for each of the
+ *     7 verdict cities, compare median close price + active count + months of
+ *     supply from (a) the get_city_period_metrics RPC path (the /reports
+ *     range-filtered table) and (b) the market_stats_cache / market_pulse_live
+ *     cache path (the KB city pages + the /reports hub cards, via
+ *     getCityReportSnapshot). Per-figure deltas are logged on every run;
+ *     |delta| > 1% (the §0 reconciliation tolerance) alerts. The RPC is pinned
+ *     to the cache row's OWN rolling_365d window and default (SFR-intent)
+ *     filters so the comparison is apples-to-apples; the known divergence
+ *     sources the deltas quantify are documented in ./compare.ts — they are
+ *     the remaining consolidation targets, not false positives.
  *
  * Alerts Matt by email on any failure; silent when green.
  */
@@ -99,9 +119,74 @@ export async function GET(request: NextRequest) {
     )
   }
 
+  // 5 — CROSS-PATH (§0 four-paths consolidation). Compare the RPC path against
+  // the cache path for the 7 verdict cities. The cache side reads through
+  // getCityReportSnapshot — literally the same DAL the /reports hub cards and
+  // the KB city pages consume — so an alert here means a visitor could see two
+  // different numbers for the same city. The RPC side is called with the cache
+  // row's own rolling_365d period bounds and default filters, matching windows.
+  const crossPathDeltas: CrossPathDelta[] = []
+  await Promise.all(
+    VERDICT_CITIES.map(async (city) => {
+      try {
+        const snapshot = await getCityReportSnapshot(city)
+        if (!snapshot || (!snapshot.live && !snapshot.trailing12mo)) {
+          failures.push(
+            `${city}: no cache-path data at all (no market_pulse_live row AND no market_stats_cache rolling_365d row) — the hub cards and city page are stat-dead for a verdict city`,
+          )
+          return
+        }
+        const periodStart = snapshot.trailing12mo?.periodStart ?? null
+        const periodEnd = snapshot.trailing12mo?.periodEnd ?? null
+        if (!periodStart || !periodEnd) {
+          failures.push(
+            `${city}: market_stats_cache rolling_365d row missing period bounds — cross-path median comparison has no window to pin the RPC to`,
+          )
+          return
+        }
+        // Default filters (all false) = the RPC's SFR-intent baseline, the
+        // closest available match to the cache's PropertyType='A' scope.
+        const rpcRes = await getReportMetrics(city, periodStart, periodEnd)
+        if (!rpcRes.data) {
+          failures.push(
+            `${city}: get_city_period_metrics RPC failed for ${periodStart}..${periodEnd} (${rpcRes.error ?? 'no data'}) — the /reports RPC path is dark for a verdict city`,
+          )
+          return
+        }
+        crossPathDeltas.push(
+          ...compareCityCrossPath(
+            city,
+            {
+              median_price: rpcRes.data.median_price,
+              current_listings: rpcRes.data.current_listings,
+              inventory_months: rpcRes.data.inventory_months,
+            },
+            {
+              medianSalePrice: snapshot.trailing12mo?.medianSalePrice ?? null,
+              activeCount: snapshot.live?.activeCount ?? null,
+              monthsOfSupply: snapshot.live?.monthsOfSupply ?? null,
+            },
+          ),
+        )
+      } catch (err) {
+        failures.push(
+          `${city}: cross-path check crashed (${err instanceof Error ? err.message : String(err)})`,
+        )
+      }
+    }),
+  )
+  // Log EVERY per-figure delta (not just breaches) so the drift trend is
+  // auditable from cron logs run over run.
+  console.log('[market-stat-consistency] cross-path deltas', JSON.stringify(crossPathDeltas))
+  failures.push(...crossPathFailureLines(crossPathDeltas))
+
   if (failures.length > 0) {
     const alert = await sendMarketStatAlertEmail({ failures })
-    return NextResponse.json({ ok: false, failures, alerted: alert.ok })
+    return NextResponse.json({ ok: false, failures, crossPath: crossPathDeltas, alerted: alert.ok })
   }
-  return NextResponse.json({ ok: true, checked: { cities: pulseRows?.length ?? 0 } })
+  return NextResponse.json({
+    ok: true,
+    checked: { cities: pulseRows?.length ?? 0, crossPathCities: VERDICT_CITIES.length },
+    crossPath: crossPathDeltas,
+  })
 }

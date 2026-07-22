@@ -34,6 +34,12 @@ const SUPERUSER_ONLY = [
   'adminGenerateNewsletterDraftAction',
 ]
 
+// Same reach, different file: the cohort bulk-enroll action writes newsletter_subscribers
+// for the whole eligible book (past clients + engaged + westside cohort).
+const EXTRA_FILES = [
+  { file: 'app/actions/newsletter-enrollment.ts', actions: ['runCohortEnrollment'] },
+]
+
 /** Return the body text of `export async function <name>(...)` up to the next top-level export. */
 function bodyOf(src, name) {
   const start = src.search(new RegExp(`export async function ${name}\\b`))
@@ -66,11 +72,32 @@ export function runChecks(src) {
   return results
 }
 
+export function runExtraChecks() {
+  const results = []
+  for (const { file, actions } of EXTRA_FILES) {
+    const src = stripJsComments(readFileSync(join(ROOT, file), 'utf8'))
+    for (const name of actions) {
+      const body = bodyOf(src, name)
+      if (body == null) {
+        results.push({ id: name, ok: false, detail: `not found in ${file}` })
+        continue
+      }
+      const ok = /await requireSuperuser\(\)/.test(body)
+      results.push({
+        id: name,
+        ok,
+        detail: ok ? `gated by requireSuperuser() (${file})` : `no requireSuperuser() gate found in ${file}`,
+      })
+    }
+  }
+  return results
+}
+
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]
 if (isMain) {
   const report = process.argv.includes('--report')
   const src = stripJsComments(readFileSync(FILE, 'utf8'))
-  const results = runChecks(src)
+  const results = [...runChecks(src), ...runExtraChecks()]
   const failures = results.filter((r) => !r.ok)
   for (const r of results) console.log(`${r.ok ? '✓' : '✗'} newsletter-authz: ${r.id} — ${r.detail}`)
   if (failures.length) {
