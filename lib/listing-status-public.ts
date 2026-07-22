@@ -109,3 +109,12 @@ export const PUBLIC_ON_MARKET_OR_PREDICATE =
 /** As above, plus the UnderContract/Contingent spellings the feed also sends. */
 export const PUBLIC_ON_MARKET_OR_PREDICATE_WIDE =
   'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%,StandardStatus.ilike.%UnderContract%,StandardStatus.ilike.%Contingent%'
+
+/**
+ * PostgREST `.or()` EXCLUSION predicate for lowercase-column MV reads
+ * (listing_tile_mv_src and siblings). Mirrors the coming-soon-lockdown view
+ * predicate (migration 20260721164833): NULL status passes (not pre-marketing),
+ * any Coming Soon spelling is excluded. For service-client reads that bypass
+ * the security_barrier view for index pushdown — keep in lockstep with the view.
+ */
+export const MV_NOT_COMING_SOON_OR_PREDICATE = `standard_status.is.null,standard_status.not.ilike.%${COMING_SOON_STATUS.replace(' ', '%')}%`

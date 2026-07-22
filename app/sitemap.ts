@@ -12,6 +12,10 @@ import { fetchAllRows } from '@/lib/supabase/paginate'
 import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCity, SITE_CITY_SLUGS } from '@/lib/central-oregon'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { getAllNeighborhoodsWithCity } from '@/lib/data'
+import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
+import { subdivisionSitemapUrls } from '@/lib/data/subdivisions/subdivision-index'
+import { getSearchMatrixSitemapEntries } from '@/lib/seo/getSearchMatrixEntries'
+import { getOutOfAreaCitySitemapEntries } from '@/lib/data/geo/getOutOfAreaCities'
 import { CO_EVENTS } from '@/data/co-events'
 import { CO_VENUES } from '@/data/co-venues'
 import { GOLF_COURSES } from '@/data/golf/courses'
@@ -70,6 +74,8 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     { url: `${baseUrl}/luxury-homes-bend`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
     { url: `${baseUrl}/communities`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/cities`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    // Crawlable directory of every browse-URL family (W3.4 internal-link layer).
+    { url: `${baseUrl}/site-index`, lastModified: now, changeFrequency: 'daily', priority: 0.5 },
     { url: `${baseUrl}${teamPath()}`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${baseUrl}/blog`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
     { url: `${baseUrl}/guides`, lastModified: now, changeFrequency: 'weekly', priority: 0.65 },
@@ -343,6 +349,13 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     }
     const subdivisionCitySlugs = [...CENTRAL_OREGON_CITY_SLUGS]
     const SUBDIVISION_RPC_BATCH = 6
+    // SERVICE client for this RPC (verified 2026-07-22): the anon role's 3s
+    // statement_timeout now kills get_subdivision_status_counts for EVERY city
+    // (~3.1s even for Sisters), which silently emptied this whole section.
+    // Service role completes in ~1-2.5s per city. Server-only file, aggregate
+    // counts only — nothing sensitive crosses the wire.
+    const { createServiceClient } = await import('@/lib/supabase/service')
+    const subdivisionCountsClient = createServiceClient()
     for (let i = 0; i < subdivisionCitySlugs.length; i += SUBDIVISION_RPC_BATCH) {
       const batch = subdivisionCitySlugs.slice(i, i + SUBDIVISION_RPC_BATCH)
       const results = await Promise.all(
@@ -351,7 +364,7 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
             // The RPC matches TRIM("City") ILIKE — hyphenless allowlist slugs
             // map back to the MLS spelling by swapping hyphens for spaces
             // ("la-pine" -> "la pine" matches "La Pine").
-            const { data, error } = await supabase.rpc('get_subdivision_status_counts', {
+            const { data, error } = await subdivisionCountsClient.rpc('get_subdivision_status_counts', {
               p_city: citySlug.replace(/-/g, ' '),
             })
             if (error) {
@@ -385,6 +398,24 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
       }
     }
 
+    // Subdivision DETAIL pages (/subdivisions/[slug]) — the plat-boundary pages
+    // (W2.1 light-up). A plat earns a sitemap slot with a GIS polygon AND
+    // >= SUBDIVISION_INDEX_MIN_LIFETIME_SALES lifetime closed sales — the
+    // shared set in lib/data/subdivisions/ that llms.txt also enumerates and
+    // the page's noindex decision reads (parity pinned by
+    // lib/data/subdivisions/subdivision-index.test.ts). Distinct from the
+    // browse-pair floor above: detail pages carry the sold-history section, so
+    // they earn indexation with real sold depth, not a listing trickle.
+    const indexableSubdivisions = await getIndexableSubdivisions()
+    for (const url of subdivisionSitemapUrls(indexableSubdivisions, baseUrl)) {
+      dynamicPages.push({
+        url,
+        lastModified: now,
+        changeFrequency: 'weekly',
+        priority: 0.6,
+      })
+    }
+
     // Neighborhood pages — /cities/{city}/{neighborhood} resolves ONLY for
     // rows in the neighborhoods table; emit exactly those.
     const neighborhoodRows = await getAllNeighborhoodsWithCity()
@@ -399,6 +430,17 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
         priority: 0.7,
       })
     }
+
+    // Search-matrix combos (W3.2) — 3-segment /homes-for-sale/{city}/{area}/{preset}
+    // URLs for curated geos, emitted only with >= 1 verified active listing AND
+    // depth content. Returns [] when the cached inventory read fails, so a
+    // transient DB error thins the sitemap instead of fabricating entries.
+    dynamicPages.push(...(await getSearchMatrixSitemapEntries(baseUrl, now)))
+
+    // Out-of-area referral-tier city pages (W12) — only the indexable top set
+    // (>= 5 active listings, top 25 by active count); every other out-of-area
+    // city renders noindex and is never emitted.
+    dynamicPages.push(...(await getOutOfAreaCitySitemapEntries()))
 
     // Team members
     const brokers = await fetchAllRows<{ slug: string; updated_at?: string }>(

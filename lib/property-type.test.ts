@@ -122,6 +122,13 @@ describe('property-type', () => {
       expect(propertyTypeFilterToCodes('A')).toEqual(['A'])
       expect(propertyTypeFilterToCodes('d')).toEqual(['D'])
     })
+    it('maps Multi-Family (and spellings) to C — the multi-family preset contract', () => {
+      expect(propertyTypeFilterToCodes('Multi-Family')).toEqual(['C'])
+      expect(propertyTypeFilterToCodes('multi-family')).toEqual(['C'])
+      expect(propertyTypeFilterToCodes('multifamily')).toEqual(['C'])
+      expect(propertyTypeFilterToCodes('Multi Family')).toEqual(['C'])
+      expect(propertyTypeFilterToCodes('income')).toEqual(['C'])
+    })
     it('every non-empty PROPERTY_TYPES option resolves to codes', () => {
       for (const opt of PROPERTY_TYPES) {
         if (!opt.value) continue

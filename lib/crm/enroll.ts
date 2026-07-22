@@ -9,6 +9,7 @@
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { geoReferralEnrollBlock } from '@/lib/referral-geo'
 
 /** People created before this moment are never auto-enrolled. */
 export const ENROLLMENT_EPOCH = '2026-06-10T00:00:00Z'
@@ -60,6 +61,15 @@ export async function autoEnrollPerson(personId: number): Promise<AutoEnrollResu
   }
 
   const tags = (person.tags as string[]) ?? []
+
+  // Referral tier (W12): out-of-area referral candidates and fail-closed
+  // unclassified property inquiries never enter the standard drip sequences.
+  // This single gate covers BOTH the intake fire-and-forget path
+  // (canonicallyTagLead -> autoEnrollByFubId) and the 15-min crm-auto-enroll
+  // catch-all cron, because both funnel through autoEnrollPerson after the
+  // tags are written. See lib/referral-geo.ts geoReferralEnrollBlock.
+  const referralBlock = geoReferralEnrollBlock(tags)
+  if (referralBlock) return { enrolled: false, reason: referralBlock }
 
   // hard-stop: never enroll
   const { data: hardStop, error: hardStopError } = await sb

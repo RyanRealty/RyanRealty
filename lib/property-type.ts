@@ -32,6 +32,10 @@ export function propertyTypeFilterToCodes(value: string | null | undefined): str
   if (v === 'residential') return ['A', 'B', 'C']
   if (v === 'land' || v === 'lots' || v === 'acreage') return ['D']
   if (v === 'commercial' || v === 'business') return ['E', 'F', 'G', 'H']
+  // Multi-family / income (duplex/tri/quad) — code C per the live-MV
+  // verification above. Powers the multi-family search preset
+  // (lib/search-presets.ts, W3.2 2026-07-21).
+  if (v === 'multi-family' || v === 'multifamily' || v === 'multi family' || v === 'income') return ['C']
   return null
 }
 

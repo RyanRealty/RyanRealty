@@ -82,6 +82,69 @@ describe('MapSearchView orchestrator', () => {
   })
 })
 
+describe('geo scope drops on user map move (W4.2, 2026-07-22)', () => {
+  // The split view used to pin the URL's city into every viewport query, so
+  // panning from Bend to Redmond returned zero rows with a misleading empty
+  // state. Contract: after the first USER move (not the map's initial settle),
+  // the viewport query is pure bounding-box — no invisible city, subdivision,
+  // or zip pin. Until then, the scope is a visible chip with clear-on-tap.
+  const src = readSrc('components/search/MapSearchView.tsx')
+  const geo = readSrc('components/search/geo-scope.ts')
+
+  it('geo-scope helper strips exactly city/subdivision/postalCode', () => {
+    expect(geo).toMatch(/export const GEO_SCOPE_KEYS = \['city', 'subdivision', 'postalCode'\] as const/)
+    expect(geo).toMatch(/export function stripGeoScope/)
+    expect(geo).toMatch(/city: undefined/)
+    expect(geo).toMatch(/subdivision: undefined/)
+    expect(geo).toMatch(/postalCode: undefined/)
+  })
+
+  it('viewport fetch reads the scope decision at fire time and strips the geo pin once dropped', () => {
+    expect(src).toMatch(/import \{ GEO_SCOPE_KEYS, geoScopeLabel, stripGeoScope \} from '@\/components\/search\/geo-scope'/)
+    // The debounced fetch must consult the ref (not a stale closure) and call
+    // getViewportSearch with the STRIPPED filters after a drop.
+    expect(src).toMatch(/scopeDroppedRef\.current \? stripGeoScope\(base\) : base/)
+    expect(src).toMatch(/getViewportSearch\(effectiveFilters, bounds, poly\)/)
+  })
+
+  it('a non-initial bounds report (a real pan/zoom) drops the geo scope', () => {
+    expect(src).toMatch(/firstBoundsReportRef/)
+    expect(src).toMatch(/initialSettleUntilRef/)
+    expect(src).toMatch(/if \(isInitialSettle === false\) dropGeoScope\(\)/)
+  })
+
+  it('a user-drawn polygon also drops the geo scope', () => {
+    expect(src).toMatch(/if \(poly\) dropGeoScope\(\)/)
+  })
+
+  it('renders the visible scope chip with clear-on-tap until the first move', () => {
+    expect(src).toMatch(/scopeLabel && scopeDropped === false/)
+    expect(src).toMatch(/onClick=\{clearGeoScope\}/)
+    expect(src).toMatch(/Showing <span className="font-semibold">\{scopeLabel\}<\/span> only/)
+  })
+
+  it('a new SSR payload (URL filter change) re-establishes the scope', () => {
+    expect(src).toMatch(/scopeDroppedRef\.current = false\n\s+setScopeDropped\(false\)/)
+  })
+
+  it('the beyond-viewport count query drops the geo pin in lockstep', () => {
+    expect(src).toMatch(/scopeDropped && \(GEO_SCOPE_KEYS as readonly string\[\]\)\.includes\(k\)/)
+  })
+
+  it('map canvas shows a loading state while the viewport fetch is in flight', () => {
+    expect(src).toMatch(/Updating results…/)
+    expect(src).toMatch(/animate-spin/)
+  })
+
+  it('mobile map view shows the result count from the SAME query that renders the pins (§0)', () => {
+    // The count pill renders countLabel — derived from the totalCount state
+    // that getViewportSearch returned alongside the pin listings. No separate
+    // estimate query.
+    expect(src).toMatch(/tabular-nums lg:hidden/)
+    expect(src).toMatch(/const countLabel = capped \? `\$\{totalCount\.toLocaleString\(\)\}\+` : totalCount\.toLocaleString\(\)/)
+  })
+})
+
 describe('SearchMapClustered map primitive', () => {
   const src = readSrc('components/SearchMapClustered.tsx')
 

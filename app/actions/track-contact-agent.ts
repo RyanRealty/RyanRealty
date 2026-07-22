@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { sendEvent } from '@/lib/followupboss'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { classifyPropertyGeo, cityFromListingAddress, referralIntakeTags } from '@/lib/referral-geo'
 
 export type TrackContactAgentParams = {
   listingUrl: string
@@ -67,6 +68,13 @@ async function captureContactAgentInquiry(params: TrackContactAgentParams & {
   // Canonical tagging against the native person id sendEvent returned —
   // listing inquiries are always buyer-side. Falls back to the identity-bridge
   // cookie id for signed-out repeat visitors sendEvent could not resolve.
+  //
+  // Referral tier (W12): classify the inquired property's city first. Local
+  // stays standard; out-of-area / out-of-state carries referral tags (the
+  // enroll gate in lib/crm/enroll.ts keeps those out of the buyer drip); a
+  // city we cannot determine is geo:unclassified — fail-closed, no drip.
+  const scope = classifyPropertyGeo(params.property.city, params.property.state)
+  const geoTags = referralIntakeTags(scope, params.property.city)
   const personId = (result.ok ? result.personId : null) ?? (cookieId && cookieId > 0 ? cookieId : null)
   if (personId) {
     await canonicallyTagLead({
@@ -74,6 +82,7 @@ async function captureContactAgentInquiry(params: TrackContactAgentParams & {
       audience: 'buyer',
       source: params.tagSource,
       tier: 'warm',
+      ...(geoTags.length > 0 ? { extraTags: geoTags } : {}),
     }).catch((err) => console.warn('[contact-agent] canonical tagging failed (non-blocking):', err))
   }
 }
@@ -125,12 +134,18 @@ export async function submitListingInquiry(params: SubmitListingInquiryParams): 
   // catch keeps a capture blip from failing the already-persisted inquiry.
   // Source is 'showings-request' for schedule-a-showing and 'idx-registration'
   // for the ask-a-question modal (mirrors the canonical source taxonomy).
+  // Parse city/state from the display address ("street, City, ST zip") so the
+  // referral-tier classification has real geography to work with. An address
+  // that does not parse cleanly yields nulls -> scope 'unknown' -> fail-closed.
+  const parsedGeo = cityFromListingAddress(params.listingAddress)
   await captureContactAgentInquiry({
     listingUrl: params.listingUrl,
     userEmail: params.email ?? params.userEmail ?? null,
     fubPersonId: params.fubPersonId ?? null,
     property: {
       street: params.listingAddress?.split(',')[0]?.trim(),
+      city: parsedGeo.city ?? undefined,
+      state: parsedGeo.state ?? undefined,
       mlsNumber: params.mlsNumber ?? undefined,
       price: params.listPrice ?? undefined,
     },

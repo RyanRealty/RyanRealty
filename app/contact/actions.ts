@@ -6,6 +6,7 @@ import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { sendEvent } from '@/lib/followupboss'
 import { sendContactNotification } from '@/lib/resend'
 import { canonicallyTagLead, type LeadAudience } from '@/lib/canonical-lead-tagger'
+import { classifyPropertyGeo, referralIntakeTags } from '@/lib/referral-geo'
 import { backfillSessionToFub } from '@/lib/visitor-backfill'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
@@ -43,7 +44,16 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
   // lead names the property (a broker shouldn't have to guess which listing).
   const listingKey = formData.get('listingKey')?.toString()?.trim() ?? ''
   let listingLabel = ''
+  // Referral tier (W12): classify the inquired PROPERTY's city. Local stays on
+  // the standard buyer path (empty tag list). Out-of-area / out-of-state gets
+  // geo + referral:candidate tags, which lib/crm/enroll.ts gates OUT of the
+  // standard drip (referral queue instead). A listingKey whose tile cannot be
+  // resolved is classification uncertainty -> geo:unclassified -> fail-closed,
+  // NO auto-enrollment (a broker reviews by hand). General inquiries with no
+  // listingKey are never classified and keep the standard path.
+  let propertyGeoTags: string[] = []
   if (listingKey) {
+    propertyGeoTags = referralIntakeTags('unknown')
     try {
       const { getListingsByKeys } = await import('@/app/actions/listings')
       const [tile] = await getListingsByKeys([listingKey])
@@ -51,6 +61,8 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
         const street = [tile.StreetNumber, tile.StreetName, tile.StreetSuffix].filter(Boolean).join(' ').trim()
         const where = [street, tile.City].filter(Boolean).join(', ')
         listingLabel = (where || 'a listing') + (tile.ListNumber ? ` (MLS ${tile.ListNumber})` : '')
+        const scope = classifyPropertyGeo(tile.City, tile.State)
+        propertyGeoTags = referralIntakeTags(scope, tile.City)
       } else {
         listingLabel = `listing ${listingKey}`
       }
@@ -143,6 +155,9 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
           fubPersonId: capturedPersonId,
           audience,
           source: 'contact-form',
+          // Non-local property inquiries carry the referral-tier tags; the
+          // enroll gate (lib/crm/enroll.ts) keeps them out of the drip.
+          ...(propertyGeoTags.length > 0 ? { extraTags: propertyGeoTags } : {}),
           originContext: {
             source: 'contact-form',
             sourceLabel: `Contact form (${inquiryType})`,

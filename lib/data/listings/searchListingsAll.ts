@@ -431,7 +431,13 @@ function applySearchFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>
   if (ptCodes && ptCodes.length > 0) query = query.in('property_type', ptCodes)
   if (parsed.propertySubType) {
     const sub = ilikeExact(parsed.propertySubType)
-    if (sub) query = query.ilike('property_sub_type', sub)
+    // SUBSTRING match, mirroring the legacy RPC (`PropertySubType ILIKE
+    // '%' || p || '%'`) and the documented SearchPreset contract
+    // ("details.PropertySubType ILIKE %value%"). The previous exact ilike
+    // silently zeroed the condos preset ('Condo' never matched the feed's
+    // 'Condominium') and would zero the manufactured preset ('Manufactured'
+    // vs 'Manufactured On Land' / 'Manufactured Home'). W3.2 2026-07-22.
+    if (sub) query = query.ilike('property_sub_type', `*${sub}*`)
   }
 
   // ── Ranges ────────────────────────────────────────────────────────────────

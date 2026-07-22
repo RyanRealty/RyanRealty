@@ -261,12 +261,6 @@ const RESORT_COMMUNITY_SLUGS: Set<string> = new Set(
 )
 
 function isInvalidGeoSlug(pathname: string): boolean {
-  const cityMatch = pathname.match(/^\/cities\/([^/]+)\/?$/)
-  if (cityMatch) {
-    let slug = cityMatch[1]
-    try { slug = decodeURIComponent(slug) } catch { /* raw */ }
-    return !CENTRAL_OREGON_CITY_SLUGS.has(slug.toLowerCase())
-  }
   const commMatch = pathname.match(/^\/communities\/([^/]+)\/?$/)
   if (commMatch) {
     let slug = commMatch[1]
@@ -275,6 +269,42 @@ function isInvalidGeoSlug(pathname: string): boolean {
     return !(isCentralOregonCommunitySlug(slug) || RESORT_COMMUNITY_SLUGS.has(slug))
   }
   return false
+}
+
+/**
+ * W12 referral tier: the statewide MLS feed carries ~362 Oregon cities, but
+ * /cities/[slug] serves only the Central Oregon service area. A NON-service-area
+ * city slug used to hard-404 here — killing soft-404 sprawl but also killing
+ * every VALID Oregon city with live inventory (Medford: 672 active at audit).
+ * Those now route to the out-of-area city page:
+ *
+ *   /cities/<not-in-service-area>  -> 308 /oregon/<slug>
+ *   /oregon/<service-area-city>    -> 308 /cities/<slug>   (no duplicate content)
+ *
+ * /oregon/[city] validates the slug against geo_snapshot_mv and returns a REAL
+ * 404 for garbage (guard runs before any streaming boundary), so a junk
+ * /cities/xyz slug ends as 308 -> real 404 — the same terminal signal Google
+ * got from the old edge 404, while real cities get a page. Edge-safe: static
+ * set lookups only, no DB.
+ */
+function resolveGeoCityRedirect(pathname: string): string | null {
+  const cityMatch = pathname.match(/^\/cities\/([^/]+)\/?$/)
+  if (cityMatch) {
+    let slug = cityMatch[1]
+    try { slug = decodeURIComponent(slug) } catch { /* raw */ }
+    slug = slug.toLowerCase()
+    if (!CENTRAL_OREGON_CITY_SLUGS.has(slug)) return `/oregon/${encodeURIComponent(slug)}`
+    return null
+  }
+  const orMatch = pathname.match(/^\/oregon\/([^/]+)\/?$/)
+  if (orMatch) {
+    let slug = orMatch[1]
+    try { slug = decodeURIComponent(slug) } catch { /* raw */ }
+    slug = slug.toLowerCase()
+    if (CENTRAL_OREGON_CITY_SLUGS.has(slug)) return `/cities/${encodeURIComponent(slug)}`
+    return null
+  }
+  return null
 }
 
 const GEO_NOT_FOUND_HTML =
@@ -443,13 +473,27 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   }
 
   // ─── (0c) Invalid geo slug → REAL 404 (kills soft-404 sprawl) ──────────
-  // Unknown /cities/* and /communities/* slugs would otherwise render a hollow
-  // 200 (soft-404). Emit a hard 404 with a noindex body so Google drops them.
+  // Unknown /communities/* slugs would otherwise render a hollow 200
+  // (soft-404). Emit a hard 404 with a noindex body so Google drops them.
   if (!pathname.startsWith('/api/') && isInvalidGeoSlug(pathname)) {
     return new NextResponse(GEO_NOT_FOUND_HTML, {
       status: 404,
       headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
     })
+  }
+
+  // ─── (0d) Out-of-area city routing (W12 referral tier) ─────────────────
+  // Non-service-area /cities/* slugs 308 to /oregon/[city] (which validates
+  // against live inventory and 404s garbage); /oregon/* slugs that ARE
+  // service-area cities 308 back to their real /cities/* page.
+  if (!pathname.startsWith('/api/')) {
+    const geoCityDest = resolveGeoCityRedirect(pathname)
+    if (geoCityDest) {
+      const redirectUrl = url.clone()
+      redirectUrl.pathname = geoCityDest
+      redirectUrl.search = ''
+      return NextResponse.redirect(redirectUrl, 308)
+    }
   }
 
   // ─── (0b) Bot / geo screening for page routes (never /api/*) ───────────

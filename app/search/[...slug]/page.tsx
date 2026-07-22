@@ -45,7 +45,7 @@ import {
 } from '@/lib/site/preset-faq'
 import { GolfLanding } from '@/components/site/golf/GolfLanding'
 import { GOLF_COMMUNITIES } from '@/data/golf-landing'
-import { getGolfImages, pickGolfImage, getGolfHomesForLanding, getMarketPulse } from '@/lib/data'
+import { getGolfImages, pickGolfImage, getGolfHomesForLanding, getMarketPulse, getDerivedPopularSearches } from '@/lib/data'
 import AdvancedSearchFilters from '../../../components/AdvancedSearchFilters'
 import ShareButton from '../../../components/ShareButton'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
@@ -66,6 +66,7 @@ import { getBuyingPreferences } from '../../actions/buying-preferences'
 import { getCityBoundary } from '../../actions/cities'
 import { getCommunityBySlug } from '../../actions/communities'
 import { shouldNoIndexSearchVariant } from '../../../lib/seo-routing'
+import { getMatrixComboNoIndex } from '@/lib/seo/getSearchMatrixEntries'
 import { decodeMapPolygon } from '@/lib/map-polygon'
 
 async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {
@@ -190,6 +191,15 @@ export async function generateMetadata({
     ? `${siteUrl}/search/og/${slug.map((part) => encodeURIComponent(part)).join('/')}`
     : defaultOgImage
   const title = preset ? `${preset.label} in ${placeName}` : `Homes for Sale in ${placeName}`
+  // W3.2 search-matrix noindex: a 3-segment {city}/{area}/{preset} combo with a
+  // VERIFIED zero active-inventory count stays renderable but is noindexed —
+  // the sitemap (lib/seo/getSearchMatrixEntries.ts) only submits combos with
+  // >= 1 verified match AND depth content. Unknown states (failed inventory
+  // read, uncurated geo, non-derivable preset, timeout) fail OPEN.
+  const matrixNoIndex =
+    slug.length >= 3 && !!preset && !hasInvalidPresetSegment
+      ? await withTimeout(getMatrixComboNoIndex(slug[0]!, slug[1]!, preset.slug), false, 2500)
+      : false
   return {
     title,
     description: metaDesc,
@@ -198,7 +208,7 @@ export async function generateMetadata({
     // same inventory the parent page shows — noindex the duplicate, keep links
     // followable. They are also excluded from the sitemap preset loop.
     robots:
-      hasInvalidPresetSegment || (!!preset && isSortOnlyPreset(preset)) || shouldNoIndexSearchVariant(sp)
+      hasInvalidPresetSegment || (!!preset && isSortOnlyPreset(preset)) || shouldNoIndexSearchVariant(sp) || matrixNoIndex
         ? { index: false, follow: true }
         : undefined,
     openGraph: {
@@ -700,9 +710,16 @@ export default async function SearchPage({
   // that city's other popular searches plus an "All [City] homes" link.
   const relatedCitySlug = city ? cityEntityKey(city) : null
   const relatedAllHomes = relatedCitySlug ? getAllCityHomesLink(relatedCitySlug) : null
-  const relatedSearches = relatedCitySlug
-    ? getPopularSearchesForCity(relatedCitySlug, 12).filter((l) => l.href !== searchPagePath).slice(0, 8)
+  // Live-derived links ranked by actual active-tile counts (W3.4); the static
+  // snapshot survives only as the resilience fallback when derivation is empty.
+  const relatedDerived = relatedCitySlug
+    ? (await getDerivedPopularSearches(relatedCitySlug, 12)).filter((l) => l.href !== searchPagePath).slice(0, 8)
     : []
+  const relatedSearches = relatedDerived.length > 0
+    ? relatedDerived
+    : relatedCitySlug
+      ? getPopularSearchesForCity(relatedCitySlug, 12).filter((l) => l.href !== searchPagePath).slice(0, 8)
+      : []
 
   // City-page SEO depth — ONLY the plain /homes-for-sale/[city] page (not the
   // subdivision/preset/filtered variants, which are noindex). Brings this intent

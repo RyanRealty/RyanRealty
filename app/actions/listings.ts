@@ -350,6 +350,7 @@ export type SearchSuggestionZip = { postalCode: string; city?: string; count: nu
 export type SearchSuggestionBroker = { label: string; href: string }
 export type SearchSuggestionNeighborhood = { cityName: string; citySlug: string; neighborhoodName: string; neighborhoodSlug: string; count?: number; href: string }
 export type SearchSuggestionReport = { label: string; href: string }
+export type SearchSuggestionPage = { label: string; href: string; kind: 'page' | 'guide' | 'blog' }
 export type SearchSuggestionsResult = {
   addresses: SearchSuggestionAddress[]
   cities: SearchSuggestionCity[]
@@ -358,6 +359,10 @@ export type SearchSuggestionsResult = {
   zips: SearchSuggestionZip[]
   brokers: SearchSuggestionBroker[]
   reports: SearchSuggestionReport[]
+  /** Static site pages, guides, and blog posts (W4.1 scope extension). */
+  pages: SearchSuggestionPage[]
+  /** A backing read FAILED (vs a genuine empty match). Never cached — the route sends no-store and the client suggestion cache skips it, so a transient DB timeout can't pin an empty dropdown. */
+  degraded?: boolean
 }
 
 /**
@@ -366,28 +371,27 @@ export type SearchSuggestionsResult = {
  */
 export async function getSearchSuggestions(query: string): Promise<SearchSuggestionsResult> {
   const q = (query ?? '').trim()
-  const empty: SearchSuggestionsResult = { addresses: [], cities: [], subdivisions: [], neighborhoods: [], zips: [], brokers: [], reports: [] }
+  const empty: SearchSuggestionsResult = { addresses: [], cities: [], subdivisions: [], neighborhoods: [], zips: [], brokers: [], reports: [], pages: [] }
   if (q.length < 2) return empty
 
-  const supabase = getAnonSupabase()
-  if (!supabase) return empty
-  const safeQ = q.replace(/%/g, '').replace(/\\/g, '').replace(/[,()]/g, '')
-  const like = `%${safeQ}%`
-
   const qLower = q.toLowerCase()
-  // DAL: free-text search across address/locality fields on listing_tile_mv.
-  void like
-  void supabase
-  const { getListingTiles, searchBrokersByDisplayName, searchNeighborhoodsByName } = await import('@/lib/data')
-  const [searchTiles, brokerRows, neighborhoodRowsData] = await Promise.all([
-    getListingTiles({ searchQuery: q, status: 'all', sort: 'newest', limit: 250 }),
+  // DAL: address/locality rows come from the listing_tile_mv tsvector GIN index
+  // (searchListingSuggestTiles) — the ILIKE five-column OR scan is retired.
+  const { searchListingSuggestTiles, searchBrokersByDisplayName, searchNeighborhoodsByName, searchSiteContentTitles } =
+    await import('@/lib/data')
+  const { searchSitePages } = await import('@/lib/search/site-pages')
+  const [searchTiles, brokerRows, neighborhoodRowsData, contentTitles] = await Promise.all([
+    searchListingSuggestTiles(q, 250),
     searchBrokersByDisplayName(q, 10),
     searchNeighborhoodsByName(q, 15),
+    searchSiteContentTitles(q, 5),
   ])
   const brokersRes = { data: brokerRows }
   const neighborhoodsRes = { data: neighborhoodRowsData }
 
-  const listingRows = searchTiles.map((t) => ({
+  // null = the tile read FAILED (degraded), distinct from a genuine empty match.
+  const tilesDegraded = searchTiles === null
+  const listingRows = (searchTiles ?? []).map((t) => ({
     ListNumber: t.listNumber,
     ListingKey: t.listingKey,
     StreetNumber: t.streetNumber,
@@ -469,7 +473,8 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
   const zips: SearchSuggestionZip[] = Array.from(zipMap.values())
     .sort((a, b) => b.count - a.count || a.postalCode.localeCompare(b.postalCode))
     .slice(0, 8)
-    .map((z) => ({ ...z, href: `/search?postalCode=${encodeURIComponent(z.postalCode)}` }))
+    // Canonical search URL — /search is a 301 to /homes-for-sale; link direct.
+    .map((z) => ({ ...z, href: `/homes-for-sale?postalCode=${encodeURIComponent(z.postalCode)}` }))
 
   const brokerSearchRows = (brokersRes.data ?? []) as { slug?: string | null; display_name?: string | null }[]
   const brokers: SearchSuggestionBroker[] = brokerSearchRows
@@ -513,7 +518,14 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
     })
   }
 
-  return { addresses, cities, subdivisions, neighborhoods, zips, brokers, reports }
+  // Static pages first (highest intent: "sell" -> /sell), then guides, then blog.
+  const pages: SearchSuggestionPage[] = [
+    ...searchSitePages(q, 5).map((p) => ({ label: p.label, href: p.href, kind: 'page' as const })),
+    ...contentTitles.guides.map((g) => ({ label: g.title, href: `/guides/${encodeURIComponent(g.slug)}`, kind: 'guide' as const })),
+    ...contentTitles.blog.map((b) => ({ label: b.title, href: `/blog/${encodeURIComponent(b.slug)}`, kind: 'blog' as const })),
+  ].slice(0, 8)
+
+  return { addresses, cities, subdivisions, neighborhoods, zips, brokers, reports, pages, ...(tilesDegraded ? { degraded: true } : {}) }
 }
 
 export type ListingsFilters = {

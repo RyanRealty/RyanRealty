@@ -1801,3 +1801,15 @@ html.lenis, html.lenis body{height:auto;}
   .kb-root .hero-form-note a{color:var(--cream);font-weight:700;text-decoration:underline;text-underline-offset:3px;font-variant-numeric:tabular-nums;}
 }
 .kb-root .hero.has-form .hero-inner{padding-bottom:44px;}
+
+/* ===== Out-of-area referral capture (KbOutOfAreaReferral, W12) =====
+   Stacked variant of the comm-alerts form: name + email + textarea + button
+   in a column. Appended at end-of-file on purpose: the css-layers gate keys
+   its baseline by line number, so mid-file insertions shift baselined rules. */
+.kb-root .comm-alerts-form-stack{flex-direction:column;align-items:stretch;}
+.kb-root .comm-alerts-field{width:100%;border-radius:10px;padding:10px 12px;}
+.kb-root .comm-alerts-textarea{resize:vertical;min-height:84px;line-height:1.45;}
+.kb-root .comm-alerts-form-stack .comm-alerts-btn{border:1.5px solid var(--cream);font-weight:700;cursor:pointer;}
+
+/* ===== Site index (/site-index, Wave D) — link-chip hover ===== */
+.kb-root .si-chip:hover{background:var(--navy);color:var(--cream);}

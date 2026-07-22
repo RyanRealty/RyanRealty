@@ -11,6 +11,7 @@ import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
 import type { ListingForMap } from '@/components/SearchMapClustered'
 import type { MapPolygonPoint } from '@/lib/map-polygon'
 import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registry'
+import { GEO_SCOPE_KEYS, geoScopeLabel, stripGeoScope } from '@/components/search/geo-scope'
 import { listingDetailPath, displaySubdivision } from '@/lib/slug'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -263,6 +264,39 @@ export default function MapSearchView({
 
   const searchFilters = useMemo(() => toSearchFilters(filters), [filters])
   const filtersSnapshot = JSON.stringify(filters)
+
+  // ── Geo scope (W4.2) ──────────────────────────────────────────────────────
+  // The URL can pin the search to a place (city / subdivision / zip). That pin
+  // is honest only while the map still shows that place — once the user MOVES
+  // the map (or draws an area), the viewport query becomes pure bounding-box.
+  // Keeping an invisible city=Bend filter while the map sits over Redmond
+  // returned zero rows with a misleading empty state. Until the first move,
+  // the scope is visible as a chip on the map canvas with clear-on-tap.
+  const scopeLabel = useMemo(
+    () => geoScopeLabel({ city: filters.city, subdivision: filters.subdivision, postalCode: filters.postalCode }),
+    [filters.city, filters.subdivision, filters.postalCode]
+  )
+  const [scopeDropped, setScopeDropped] = useState(false)
+  // Refs mirror the state so the debounced viewport fetch (350 ms setTimeout)
+  // reads the CURRENT scope decision at fire time, not the closure it was
+  // created with — a pan that drops the scope must not race its own refetch.
+  const scopeDroppedRef = useRef(false)
+  const searchFiltersRef = useRef(searchFilters)
+  useEffect(() => {
+    searchFiltersRef.current = searchFilters
+  }, [searchFilters])
+  // The map's FIRST bounds report is its initial settle (fitBounds on load),
+  // not a user gesture — it must not drop the scope. Every report after that
+  // is a real pan/zoom/re-center. A short grace window covers the async
+  // place-viewport fit (SearchMapClustered's PlacesService callback fires a
+  // SECOND idle after the first settle when no boundary polygon is available).
+  const firstBoundsReportRef = useRef(true)
+  const INITIAL_SETTLE_GRACE_MS = 2500
+  const initialSettleUntilRef = useRef(0)
+  useEffect(() => {
+    initialSettleUntilRef.current = Date.now() + INITIAL_SETTLE_GRACE_MS
+    // Mount-only: stamps the settle window once per MapSearchView instance.
+  }, [])
   const router = useRouter()
   const pathname = usePathname()
   // Zero results can come from tight filters, not just the map viewport — the
@@ -291,6 +325,10 @@ export default function MapSearchView({
     let cancelled = false
     const params: Record<string, string> = {}
     for (const [k, v] of Object.entries(filters as Record<string, string | undefined>)) {
+      // Once the user has moved the map the geo pin no longer applies to the
+      // viewport query, so the "matches elsewhere" count must not apply it
+      // either — the two numbers would describe different searches.
+      if (scopeDropped && (GEO_SCOPE_KEYS as readonly string[]).includes(k)) continue
       if (typeof v === 'string' && v.trim() !== '') params[k] = v
     }
     countSearchListings(params)
@@ -303,15 +341,19 @@ export default function MapSearchView({
     return () => {
       cancelled = true
     }
-  }, [totalCount, hasNarrowingFilters, polygon, filtersSnapshot]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [totalCount, hasNarrowingFilters, polygon, scopeDropped, filtersSnapshot]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-seed from server props whenever the URL filters change (new SSR payload).
+  // The SSR payload is scoped again, so the scope-drop resets with it — the
+  // chip re-appears and the next user move re-drops it.
   useEffect(() => {
     setListings(initialListings)
     setTotalCount(initialTotalCount)
     setCapped(initialCapped)
     setPolygon(initialPolygon)
     setVisibleCount(CARD_PAGE)
+    scopeDroppedRef.current = false
+    setScopeDropped(false)
   }, [initialListings, initialTotalCount, initialCapped, initialPolygon, filtersSnapshot])
 
   // Clean up any pending debounce on unmount.
@@ -326,7 +368,13 @@ export default function MapSearchView({
       const reqId = ++reqIdRef.current
       setLoading(true)
       try {
-        const res = await getViewportSearch(searchFilters, bounds, poly)
+        // Read filters + scope decision through refs at FIRE time: this call
+        // often runs from a 350 ms debounce, and the pan that scheduled it may
+        // have just dropped the geo scope. After the drop the query is pure
+        // bounding-box — no invisible city/subdivision/zip pin.
+        const base = searchFiltersRef.current
+        const effectiveFilters = scopeDroppedRef.current ? stripGeoScope(base) : base
+        const res = await getViewportSearch(effectiveFilters, bounds, poly)
         // Ignore out-of-order responses (user kept panning).
         if (reqId !== reqIdRef.current) return
         setListings(res.listings)
@@ -336,27 +384,51 @@ export default function MapSearchView({
         if (reqId === reqIdRef.current) setLoading(false)
       }
     },
-    [searchFilters]
+    []
   )
+
+  /** Drop the place pin (chip tap or first user map move) — see geo-scope.ts. */
+  const dropGeoScope = useCallback(() => {
+    if (scopeDroppedRef.current) return
+    scopeDroppedRef.current = true
+    setScopeDropped(true)
+  }, [])
+
+  const clearGeoScope = useCallback(() => {
+    dropGeoScope()
+    runViewportSearch(lastBoundsRef.current, polygon)
+  }, [dropGeoScope, polygon, runViewportSearch])
 
   const handleBoundsChanged = useCallback(
     (bounds: MapBounds) => {
       lastBoundsRef.current = bounds
+      // The first report is the map's initial settle, not a user gesture.
+      // Every later report means the user moved the map — from then on the
+      // query is the viewport itself, so the geo pin comes off.
+      const isInitialSettle =
+        // Event-time read: runs only when the map fires bounds-changed, never
+        // during render, so SSR/client HTML cannot diverge.
+        firstBoundsReportRef.current || Date.now() < initialSettleUntilRef.current // hydration-safe
+      firstBoundsReportRef.current = false
+      if (isInitialSettle === false) dropGeoScope()
       if (!searchAsMove) return
       if (debounceRef.current) clearTimeout(debounceRef.current)
       debounceRef.current = setTimeout(() => {
         runViewportSearch(bounds, polygon)
       }, 350)
     },
-    [searchAsMove, polygon, runViewportSearch]
+    [searchAsMove, polygon, runViewportSearch, dropGeoScope]
   )
 
   const handlePolygonDrawn = useCallback(
     (poly: MapPolygonPoint[] | null) => {
+      // A user-drawn area is an explicit spatial choice — it supersedes the
+      // URL's place pin the same way a pan does.
+      if (poly) dropGeoScope()
       setPolygon(poly)
       runViewportSearch(lastBoundsRef.current, poly)
     },
-    [runViewportSearch]
+    [runViewportSearch, dropGeoScope]
   )
 
   // When the user flips search-as-you-move ON, immediately sync to the current view.
@@ -557,6 +629,56 @@ export default function MapSearchView({
         />
         Search as I move the map
       </Label>
+      {/* Active place scope — visible until the first user map move, then the
+          query is pure bounding-box. Tap the chip to drop the scope now. */}
+      {scopeLabel && scopeDropped === false ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={clearGeoScope}
+          aria-label={`Showing ${scopeLabel} only. Clear to search the whole map area.`}
+          className="absolute left-1/2 top-[3.6rem] z-[100] flex h-auto -translate-x-1/2 items-center gap-2 rounded-full border-border bg-card px-3.5 py-1.5 text-xs font-medium text-foreground shadow-md transition hover:bg-muted"
+        >
+          <span>
+            Showing <span className="font-semibold">{scopeLabel}</span> only
+          </span>
+          <span
+            aria-hidden
+            className="flex h-4 w-4 items-center justify-center rounded-full bg-foreground/10 text-xs leading-none"
+          >
+            ✕
+          </span>
+        </Button>
+      ) : null}
+      {/* Canvas-level fetch state — the map itself says when results are stale. */}
+      {loading ? (
+        <div className="pointer-events-none absolute inset-0 z-[95] bg-background/20" aria-hidden />
+      ) : null}
+      <div
+        role="status"
+        aria-live="polite"
+        className={cn(
+          'pointer-events-none absolute bottom-16 left-1/2 z-[100] -translate-x-1/2 transition-opacity',
+          loading ? 'opacity-100' : 'opacity-0'
+        )}
+      >
+        <span className="flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-medium text-foreground shadow-md">
+          <span
+            aria-hidden
+            className="h-3 w-3 animate-spin rounded-full border-2 border-foreground/30 border-t-foreground"
+          />
+          {loading ? 'Updating results…' : 'Results updated'}
+        </span>
+      </div>
+      {/* Mobile map view has no list header, so the result count rides the
+          canvas. Same totalCount state the pins render from — one query, one
+          number (§0). */}
+      <p
+        className="pointer-events-none absolute bottom-4 left-1/2 z-[100] -translate-x-1/2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-md tabular-nums lg:hidden"
+        aria-live="polite"
+      >
+        <span className="font-semibold">{countLabel}</span> {totalCount === 1 ? 'home' : 'homes'} in this area
+      </p>
     </div>
   )
 
@@ -567,7 +689,19 @@ export default function MapSearchView({
         <ToggleGroup
           type="single"
           value={mobileView}
-          onValueChange={(v) => { if (v === 'list' || v === 'map') setMobileView(v) }}
+          onValueChange={(v) => {
+            if (v === 'list' || v === 'map') {
+              // Opening the mobile map mounts a fresh map instance whose
+              // initial settle fires a bounds report — that report is not a
+              // user move, so it must not drop the geo scope.
+              if (v === 'map') {
+                firstBoundsReportRef.current = true
+                // Event-time read (user tap on the toggle), never render-time.
+                initialSettleUntilRef.current = Date.now() + INITIAL_SETTLE_GRACE_MS // hydration-safe
+              }
+              setMobileView(v)
+            }
+          }}
           className="w-full rounded-none border-0"
           variant="outline"
           size="sm"

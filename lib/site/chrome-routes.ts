@@ -45,6 +45,7 @@ export const KB_ROUTES: RegExp[] = [
   /^\/reviews$/,
   /^\/schools(\/[^/]+)?$/,
   /^\/sell(\/[^/]+)?$/, // /sell + /sell/valuation + /sell/<intent> lead landing (KB)
+  /^\/site-index$/, // crawlable site directory (W3.4 internal-link layer, KB)
   /^\/subdivisions\/[^/]+$/,
   /^\/team(\/[^/]+)?$/, // /team, /team/<slug>; NOT /team/<slug>/edit (2 segments)
   /^\/tools\/[^/]+$/,

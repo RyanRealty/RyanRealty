@@ -93,6 +93,16 @@ export {
 } from '@/lib/data/listings/getListingTiles'
 export type { GetListingTilesFilter } from '@/lib/data/listings/getListingTiles'
 
+// Listings — typeahead suggestion rows via the listing_tile_mv tsvector GIN
+// index (W4.1 search merge, 2026-07-22). Replaces the five-column ILIKE scan
+// the suggestions dropdown used to run per keystroke.
+export { searchListingSuggestTiles, toPrefixTsQuery } from '@/lib/data/listings/searchSuggestTiles'
+export type { SuggestTileRow } from '@/lib/data/listings/searchSuggestTiles'
+
+// Site content — blog + guide title matches for the suggestions dropdown.
+export { searchSiteContentTitles } from '@/lib/data/search/searchSiteContentTitles'
+export type { ContentTitleMatch, SiteContentTitlesResult } from '@/lib/data/search/searchSiteContentTitles'
+
 // Listings — full-registry on-market search over listing_search_mv
 // (CONTRACT-search-field-exposure, 2026-07-11). Every filter in
 // lib/search/field-registry.ts, bbox, sort, pagination, exact count.
@@ -167,7 +177,6 @@ export {
   getListingDetailVideos,
   getListingDetailHistory,
   getListingKeysWithPriceChangeSince,
-  upsertListingEmbedding,
   getHeroPhotosByListingKeys,
   getOpenHousesInRange,
   getPendingListingHistoryEvents,
@@ -743,3 +752,18 @@ export {
 // engagement, single-row + worklist reads. Writes (sendProspectingIntro,
 // buildProspectDoc) live in app/actions/prospecting.ts, not here.
 export * from './prospecting'
+
+// Auto-derived internal-link layer (W3.4) — /site-index + mega-menu popular
+// searches, ranked by live active inventory (replaces the hand-curated
+// lib/popular-searches.ts snapshot as the live source).
+export { getSiteIndexLinks, getDerivedPopularSearches } from './seo/getSiteIndexLinks'
+export type {
+  SiteIndexLinks,
+  SiteIndexCitySearches,
+  DerivedPopularSearch,
+} from './seo/getSiteIndexLinks'
+export type {
+  DerivedLink,
+  DerivedPresetLink,
+  CityIndexLink,
+} from './seo/derive-search-links'

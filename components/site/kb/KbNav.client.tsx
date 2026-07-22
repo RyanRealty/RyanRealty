@@ -1,9 +1,16 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { CONTACT } from '@/lib/brand/contact'
 import { useSessionUser } from '@/lib/hooks/useSessionUser'
+import {
+  SearchSuggestPanel,
+  flattenSuggestions,
+  useSearchSuggest,
+  type SuggestItem,
+} from '@/components/search/SearchSuggest'
 
 // ONE coherent nav that navigates the WHOLE site. The top bar shows the key
 // destinations; the overlay is a comprehensive grouped directory (every real
@@ -99,6 +106,65 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
   const closeBtnRef = useRef<HTMLButtonElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
 
+  // W4.1 global search — the ONE suggestions engine (SearchSuggest), reachable
+  // from every page that carries the KB nav. Entry point only: the fetch,
+  // flatten, and panel all live in components/search/SearchSuggest.
+  const router = useRouter()
+  const [query, setQuery] = useState('')
+  const [highlight, setHighlight] = useState(-1)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const openViaSearchRef = useRef(false)
+  const { suggestions, loading: suggestLoading } = useSearchSuggest(query)
+  const suggestItems = flattenSuggestions(suggestions)
+
+  // Close the overlay AND clear the search state, so a reopen never shows a
+  // stale query or a stale keyboard highlight.
+  const closeOverlay = useCallback(() => {
+    setOpen(false)
+    setQuery('')
+    setHighlight(-1)
+  }, [])
+
+  const pickSuggestion = useCallback(
+    (item: SuggestItem) => {
+      closeOverlay()
+      router.push(item.href)
+    },
+    [closeOverlay, router]
+  )
+
+  const onSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape' && query) {
+      // First Escape clears the query; a second one (empty query) falls
+      // through to the overlay's own Escape-to-close handler.
+      e.stopPropagation()
+      setQuery('')
+      setHighlight(-1)
+      return
+    }
+    if (e.key === 'ArrowDown' && suggestItems.length > 0) {
+      e.preventDefault()
+      setHighlight((h) => (h < suggestItems.length - 1 ? h + 1 : 0))
+      return
+    }
+    if (e.key === 'ArrowUp' && suggestItems.length > 0) {
+      e.preventDefault()
+      setHighlight((h) => (h > 0 ? h - 1 : suggestItems.length - 1))
+      return
+    }
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+    const picked = highlight >= 0 ? suggestItems[highlight] : suggestItems[0]
+    if (picked) {
+      pickSuggestion(picked)
+      return
+    }
+    const q = query.trim()
+    if (!q) return
+    closeOverlay()
+    router.push(`/homes-for-sale?keywords=${encodeURIComponent(q)}`)
+  }
+
   useEffect(() => {
     // Solid mode: always-navy bar for hero-less surfaces (e.g. /search) that can't
     // take the full kb-root shell. No transparent-over-hero state, no scroll listener.
@@ -125,18 +191,22 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
     // open/close transition, never steal it from the page on initial load.
     if (open) {
       hasOpenedRef.current = true
-      closeBtnRef.current?.focus()
+      // Opened from the topbar Search affordance: put the caret straight into
+      // the search field. Opened as the menu: focus the close control.
+      if (openViaSearchRef.current) searchInputRef.current?.focus()
+      else closeBtnRef.current?.focus()
+      openViaSearchRef.current = false
     } else if (hasOpenedRef.current) {
       triggerRef.current?.focus()
     }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setOpen(false)
+        closeOverlay()
         return
       }
       if (e.key !== 'Tab' || !open) return
       const focusable = overlayRef.current?.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled])'
+        'a[href], button:not([disabled]), input:not([disabled])'
       )
       if (!focusable || focusable.length === 0) return
       const first = focusable[0]!
@@ -154,7 +224,7 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
       document.body.style.overflow = ''
       window.removeEventListener('keydown', onKey)
     }
-  }, [open])
+  }, [open, closeOverlay])
 
   return (
     <>
@@ -171,6 +241,20 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
           {/* design-audit NAV-4/NAV-5/CNV-5: persistent conversion + auth CTAs in
               the topbar (matching the search chrome), so the seller money action
               and sign-in are one tap from every KB page, not buried in the menu. */}
+          {/* W4.1: global search entry — opens the overlay with the caret in
+              the search field. Hidden on small screens like the nav links
+              (the overlay's search field covers mobile via Menu). */}
+          <button
+            type="button"
+            className="nav-link menu-btn"
+            onClick={() => {
+              openViaSearchRef.current = true
+              setOpen(true)
+            }}
+            aria-label="Search the site"
+          >
+            Search
+          </button>
           <a className="nav-signin" href={signedIn ? '/account' : '/login'}>
             {signedIn ? 'My account' : 'Sign in'}
           </a>
@@ -187,16 +271,51 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
           <Link href="/" aria-label="Ryan Realty home">
             <img className="logo-img" src="/images/brand/logo-horizontal-navy-transparent.png" alt="Ryan Realty" />
           </Link>
-          <button ref={closeBtnRef} className="menu-close" onClick={() => setOpen(false)}>
+          <button ref={closeBtnRef} className="menu-close" onClick={closeOverlay}>
             Close ×
           </button>
+        </div>
+        {/* W4.1 global search — one field, every suggestion category the
+            backend returns (addresses, cities, communities, neighborhoods,
+            zips, agents, reports, pages). KB idiom: real input, kb.css vars. */}
+        <div role="search" className="relative mt-7 w-full">
+          <input
+            id="kb-nav-search"
+            ref={searchInputRef}
+            type="search"
+            autoComplete="off"
+            placeholder="Search addresses, cities, communities, agents"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setHighlight(-1)
+            }}
+            onKeyDown={onSearchKeyDown}
+            role="combobox"
+            aria-expanded={open && suggestItems.length > 0}
+            aria-controls="kb-nav-suggest-listbox"
+            aria-activedescendant={highlight >= 0 ? `kb-nav-suggest-item-${highlight}` : undefined}
+            aria-label="Search the site"
+            className="w-full border-0 border-b-2 border-[var(--cream-40)] bg-transparent pb-3 font-sans text-lg text-[var(--cream)] outline-none transition-colors placeholder:text-[var(--cream-muted)] focus:border-[var(--cream)]"
+          />
+          {query.trim().length >= 2 && (
+            <SearchSuggestPanel
+              items={suggestItems}
+              loading={suggestLoading}
+              hasResult={suggestions !== null}
+              highlight={highlight}
+              idPrefix="kb-nav-suggest"
+              onPick={pickSuggestion}
+              className="absolute inset-x-0 top-full z-10 mt-2 max-h-[50vh] overflow-auto rounded-xl border border-border bg-card pb-1 shadow-lg"
+            />
+          )}
         </div>
         <nav className="menu-nav menu-grid">
           {MENU_GROUPS.map((g) => (
             <div className="menu-group" key={g.title}>
               <h3 className="menu-group-title">{g.title}</h3>
               {g.links.map((l) => (
-                <a key={l.href} href={l.href} onClick={() => setOpen(false)}>
+                <a key={l.href} href={l.href} onClick={closeOverlay}>
                   {l.label}
                 </a>
               ))}
@@ -204,10 +323,10 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
           ))}
         </nav>
         <div className="menu-cta-row">
-          <Link className="nav-cta" href="/sell/valuation" onClick={() => setOpen(false)}>
+          <Link className="nav-cta" href="/sell/valuation" onClick={closeOverlay}>
             What’s my home worth
           </Link>
-          <a className="nav-signin overlay" href={signedIn ? '/account' : '/login'} onClick={() => setOpen(false)}>
+          <a className="nav-signin overlay" href={signedIn ? '/account' : '/login'} onClick={closeOverlay}>
             {signedIn ? 'My account' : 'Sign in'}
           </a>
         </div>

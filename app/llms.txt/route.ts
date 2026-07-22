@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getRecentBlogPosts, getPublishedGuides, listMarketReports, getEventsForIndex, getVenuesForIndex, getTrailsForIndex, getAllNeighborhoodsWithCity } from '@/lib/data'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
+import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
+import { subdivisionLlmsLines } from '@/lib/data/subdivisions/subdivision-index'
 import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
 import { GOLF_COURSES } from '@/data/golf/courses'
 
@@ -19,11 +21,15 @@ export const revalidate = 3600
  * Coverage enforced by scripts/check-ai-crawler-access.mjs.
  */
 export async function GET() {
-  const [posts, guides, reports, neighborhoods] = await Promise.all([
+  const [posts, guides, reports, neighborhoods, subdivisions] = await Promise.all([
     getRecentBlogPosts({ limit: 25 }),
     getPublishedGuides(50),
     listMarketReports(12),
     getAllNeighborhoodsWithCity().catch(() => []),
+    // The SAME shared set app/sitemap.ts submits (GIS polygon + lifetime
+    // closed-sales threshold) — parity pinned by
+    // lib/data/subdivisions/subdivision-index.test.ts. Resilient-cached: [].
+    getIndexableSubdivisions(),
   ])
 
   // Each dynamic block prefixes its own newline so an empty result (no rows
@@ -84,6 +90,9 @@ export async function GET() {
       })
       .filter((line): line is string => line !== null),
   )
+  // Subdivision plat pages — built from the same list the sitemap emits, via
+  // the shared line builder (never a copy of the URL logic).
+  const subdivisionLines = lines(subdivisionLlmsLines(subdivisions, SITE_URL))
 
   const body = `# Ryan Realty Central Oregon Real Estate
 
@@ -118,6 +127,8 @@ export async function GET() {
 - All communities: ${SITE_URL}/communities${communityLines}
 
 ## Neighborhoods${neighborhoodLines}
+
+## Subdivisions${subdivisionLines}
 
 ## Local Events
 - Central Oregon events: ${SITE_URL}/central-oregon/events${eventLines}

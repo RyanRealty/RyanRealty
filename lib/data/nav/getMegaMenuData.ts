@@ -39,6 +39,7 @@ import { getMarketStats } from '@/lib/data/market/getMarketStats'
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 import { getRecentBlogPosts } from '@/lib/data/blog/getRecentBlogPosts'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
+import { getDerivedPopularSearches } from '@/lib/data/seo/getSiteIndexLinks'
 import {
   CITY_POPULAR_SEARCHES,
   getPopularSearchesForCity,
@@ -245,15 +246,22 @@ function verdictFromMoS(mos: number | null): MoSVerdict | null {
 
 /**
  * Build one Homes city block. Active count + median come from the geo snapshot
- * MV (one indexed row, well-cached); popular searches come from the static,
- * data-grounded popular-search registry.
+ * MV (one indexed row, well-cached). Popular searches are AUTO-DERIVED from
+ * live inventory (getDerivedPopularSearches, W3.4) — each link is ranked by how
+ * many active tiles actually match its preset, so the menu tracks the market
+ * instead of the 2026-06-03 hand-curated snapshot. The static registry remains
+ * ONLY as the resilience fallback (derivation empty/unavailable), so the panel
+ * never renders a bare city block on a transient DB blip.
  */
 async function buildHomesCity(citySlug: string): Promise<MegaMenuHomesCity> {
   const name = CITY_NAME_BY_SLUG.get(citySlug) ?? citySlug
-  const snapshot = await getGeoSnapshot({ geoType: 'city', geoKey: citySlug })
-  const popular = getPopularSearchesForCity(citySlug, POPULAR_PER_CITY).map(
-    (p): MegaMenuPopularSearch => ({ href: p.href, label: p.label }),
-  )
+  const [snapshot, derived] = await Promise.all([
+    getGeoSnapshot({ geoType: 'city', geoKey: citySlug }),
+    getDerivedPopularSearches(citySlug, POPULAR_PER_CITY),
+  ])
+  const popular = (
+    derived.length > 0 ? derived : getPopularSearchesForCity(citySlug, POPULAR_PER_CITY)
+  ).map((p): MegaMenuPopularSearch => ({ href: p.href, label: p.label }))
   return {
     name,
     citySlug,

@@ -179,6 +179,18 @@ const PRESET_COPY: Record<string, PresetCopy> = {
     singular: 'townhome',
     criteria: (city) => `Listings in ${city} with a townhouse property subtype in the MLS.`,
   },
+  'multi-family': {
+    plural: 'multi-family and income properties',
+    singular: 'multi-family or income property',
+    criteria: (city) =>
+      `Duplexes, triplexes, fourplexes, and other income properties in ${city}, per the MLS multi-family property type. Rent rolls and expenses come from the listing agent, so verify them during due diligence.`,
+  },
+  manufactured: {
+    plural: 'manufactured homes',
+    singular: 'manufactured home',
+    criteria: (city) =>
+      `Listings in ${city} whose MLS property subtype includes manufactured. That covers homes on owned land and homes in parks, so check the land ownership and any space rent on each listing.`,
+  },
   // Layout / lifestyle (PublicRemarks keyword match)
   'single-level': keywordCopy('single-level homes', 'single-level home', 'single level'),
   'with-shop': keywordCopy('homes with a shop', 'home with a shop', 'shop'),

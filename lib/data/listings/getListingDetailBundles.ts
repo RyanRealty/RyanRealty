@@ -266,21 +266,10 @@ export async function getListingDetailVideos(listingKey: string): Promise<Listin
   return (data ?? []) as ListingDetailVideoRow[]
 }
 
-/** Upsert one listing_embeddings row (semantic-search refresh). */
-export async function upsertListingEmbedding(row: {
-  listing_key: string
-  city: string | null
-  search_content: string
-  embedding: number[]
-  updated_at: string
-}): Promise<{ ok: boolean; error?: string }> {
-  const sb = supabaseAnon()
-  if (!sb) return { ok: false, error: 'Supabase not configured' }
-  const { error } = await sb
-    .from('listing_embeddings')
-    .upsert(row, { onConflict: 'listing_key' })
-  return error ? { ok: false, error: error.message } : { ok: true }
-}
+// upsertListingEmbedding (semantic-search refresh) was deleted 2026-07-22:
+// the pgvector semantic-search stack had ZERO consumers — no endpoint, no
+// embedding generator, no UI. The listing_embeddings table + the
+// match_listings_semantic RPC drop via migration 20260722213000.
 
 /** Pending events from listing_history in a date window. */
 export async function getPendingListingHistoryEvents(options: {

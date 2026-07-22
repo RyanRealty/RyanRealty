@@ -121,6 +121,7 @@ export const DESTINATIONS: NavDestination[] = [
       { label: 'Tasks', href: '/admin/crm/tasks', icon: 'list-todo', capability: 'tasks.use' },
       { label: 'Calendar', href: '/admin/crm/calendar', icon: 'calendar', capability: 'calendar.use' },
       { label: 'Approvals', href: '/admin/crm/approvals', icon: 'clipboard-check', capability: 'people.view' },
+      { label: 'Referrals', href: '/admin/crm/referrals', icon: 'handshake', capability: 'people.view' },
       { label: 'Reporting', href: '/admin/crm/reporting', icon: 'bar-chart', capability: 'people.view' },
       // Cut from the menu, still linked live: New contact (FAB quick action),
       // Compose email (FAB + campaigns page), Alerts & reports (dashboard

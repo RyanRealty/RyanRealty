@@ -1,10 +1,15 @@
 'use client'
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useCallback, useState, useEffect, useRef } from 'react'
+import { useCallback, useState, useRef } from 'react'
 import { trackEvent } from '@/lib/tracking'
 import { fireFirstPartyEvent } from '@/components/VisitTracker'
-import { getSearchSuggestions, type SearchSuggestionsResult } from '@/app/actions/listings'
+import {
+  SearchSuggestPanel,
+  flattenSuggestions,
+  useSearchSuggest,
+  type SuggestItem,
+} from '@/components/search/SearchSuggest'
 import { PROPERTY_TYPES } from '@/lib/property-type'
 import { parseSearchQuery } from '@/lib/parse-search-query'
 import SaveSearchButton from '@/components/SaveSearchButton'
@@ -15,7 +20,6 @@ import AllFiltersSheet, {
   useParsedSearchConfirm,
 } from '@/components/search/AllFiltersSheet'
 import VoiceSearchButton from '@/components/VoiceSearchButton'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -146,15 +150,6 @@ function statusLabel(v?: string): string | null {
   return STATUS_OPTIONS.find((s) => s.value === v)?.label ?? null
 }
 
-function useDebounce<T>(value: T, ms: number): T {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), ms)
-    return () => clearTimeout(t)
-  }, [value, ms])
-  return debounced
-}
-
 // ---------------------------------------------------------------------------
 // Popover-based filter dropdown
 // ---------------------------------------------------------------------------
@@ -238,35 +233,21 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
     () => (initialFilters.view === 'list' || initialFilters.view === 'map' ? initialFilters.view : 'split')
   )
 
-  // Location search
+  // Location search — ONE suggestions engine (SearchSuggest): 90ms debounce,
+  // client cache, cached GET route, every backend category rendered
+  // (addresses included — the "3480" class).
   const [locationQuery, setLocationQuery] = useState('')
   const [locationOpen, setLocationOpen] = useState(false)
-  const [suggestions, setSuggestions] = useState<SearchSuggestionsResult>({
-    addresses: [],
-    cities: [],
-    subdivisions: [],
-    neighborhoods: [],
-    zips: [],
-    brokers: [],
-    reports: [],
-  })
+  const [highlight, setHighlight] = useState(-1)
   const locationInputRef = useRef<HTMLInputElement>(null)
-  const debouncedLocation = useDebounce(locationQuery, 300)
+  const { suggestions, loading: suggestLoading } = useSearchSuggest(locationQuery)
+  const suggestItems = flattenSuggestions(suggestions)
 
   // Parsed-search confirmation chips (voice + typed natural-language queries)
   const { chips: parsedChips, show: showParsedChips } = useParsedSearchConfirm()
 
   // Note: outside-click + Escape close are handled by the design-system Popover
   // (radix) for the filter dropdowns, so no manual document listener is needed.
-
-  // Location suggestions
-  useEffect(() => {
-    if (debouncedLocation.length < 2) {
-      setSuggestions({ addresses: [], cities: [], subdivisions: [], neighborhoods: [], zips: [], brokers: [], reports: [] })
-      return
-    }
-    getSearchSuggestions(debouncedLocation).then(setSuggestions)
-  }, [debouncedLocation])
 
   // ---------------------------------------------------------------------------
   // URL helpers
@@ -333,12 +314,34 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
     [updateUrl, locationQuery]
   )
 
-  const handleBrokerSelect = useCallback(
-    (href: string) => {
+  const handleNavigateSelect = useCallback(
+    (href: string, label?: string) => {
       setLocationOpen(false)
+      if (label) {
+        trackEvent('search', { search_term: locationQuery })
+        fireFirstPartyEvent('search', { metadata: { query: label, term: locationQuery || undefined, source: 'typeahead' } })
+      }
       router.push(href)
     },
-    [router]
+    [router, locationQuery]
+  )
+
+  // ONE pick handler for every suggestion category. City / community / zip
+  // apply filters in place (this surface IS the search); everything else —
+  // addresses, neighborhoods, brokers, reports, pages — navigates.
+  const handleSuggestPick = useCallback(
+    (item: SuggestItem) => {
+      if (item.kind === 'city' && item.city) {
+        handleLocationSelect('city', item.city)
+      } else if (item.kind === 'subdivision' && item.city) {
+        handleLocationSelect('subdivision', item.city, item.subdivisionName)
+      } else if (item.kind === 'zip' && item.postalCode) {
+        handleZipSelect(item.postalCode)
+      } else {
+        handleNavigateSelect(item.href, item.label)
+      }
+    },
+    [handleLocationSelect, handleZipSelect, handleNavigateSelect]
   )
 
   // ---------------------------------------------------------------------------
@@ -427,107 +430,58 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
               type="search"
               placeholder={locationPlaceholder}
               value={locationQuery}
-              onChange={(e) => setLocationQuery(e.target.value)}
+              onChange={(e) => {
+                setLocationQuery(e.target.value)
+                setHighlight(-1)
+              }}
               onFocus={() => setLocationOpen(true)}
               onBlur={() => setTimeout(() => setLocationOpen(false), 150)}
               onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setLocationOpen(false)
+                  return
+                }
+                if (e.key === 'ArrowDown' && locationOpen && suggestItems.length > 0) {
+                  e.preventDefault()
+                  setHighlight((h) => (h < suggestItems.length - 1 ? h + 1 : 0))
+                  return
+                }
+                if (e.key === 'ArrowUp' && locationOpen && suggestItems.length > 0) {
+                  e.preventDefault()
+                  setHighlight((h) => (h > 0 ? h - 1 : suggestItems.length - 1))
+                  return
+                }
                 if (e.key !== 'Enter') return
                 e.preventDefault()
-                applyNaturalQuery(locationQuery)
+                const picked = highlight >= 0 ? suggestItems[highlight] : undefined
+                if (picked) handleSuggestPick(picked)
+                else applyNaturalQuery(locationQuery)
               }}
               className="h-auto flex-1 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-              aria-label="Search by city, community, zip, or address"
+              aria-label="Search by address, city, community, zip, or broker"
+              role="combobox"
+              aria-expanded={locationOpen && suggestItems.length > 0}
+              aria-controls="search-filters-suggest-listbox"
+              aria-activedescendant={
+                locationOpen && highlight >= 0 ? `search-filters-suggest-item-${highlight}` : undefined
+              }
             />
           </div>
           <ParsedSearchNotice chips={parsedChips} className="absolute left-0 right-0 top-full z-50 mt-1" />
-          {locationOpen &&
-            (suggestions.cities.length > 0 ||
-              suggestions.subdivisions.length > 0 ||
-              suggestions.neighborhoods.length > 0 ||
-              suggestions.zips.length > 0 ||
-              suggestions.brokers.length > 0 ||
-              suggestions.reports.length > 0) && (
-              <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-auto rounded-xl border border-border bg-card shadow-lg">
-                {suggestions.cities.slice(0, 5).map((c) => (
-                  <Button
-                    key={c.city}
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start gap-2 rounded-none px-3 py-2 h-auto font-normal"
-                    onMouseDown={() => handleLocationSelect('city', c.city)}
-                  >
-                    <Badge variant="secondary" className="shrink-0 text-xs font-normal">City</Badge>
-                    <span className="truncate">{c.city}{c.count > 0 && ` (${c.count})`}</span>
-                  </Button>
-                ))}
-                {suggestions.subdivisions.slice(0, 8).map((s) => (
-                  <Button
-                    key={`${s.city}-${s.subdivisionName}`}
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start gap-2 rounded-none px-3 py-2 h-auto font-normal"
-                    onMouseDown={() => handleLocationSelect('subdivision', s.city, s.subdivisionName)}
-                  >
-                    <Badge variant="secondary" className="shrink-0 text-xs font-normal">Community</Badge>
-                    <span className="truncate">{s.subdivisionName}, {s.city}</span>
-                  </Button>
-                ))}
-                {suggestions.neighborhoods.slice(0, 5).map((n) => (
-                  <Button
-                    key={n.href}
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start gap-2 rounded-none px-3 py-2 h-auto font-normal"
-                    onMouseDown={() => handleBrokerSelect(n.href)}
-                  >
-                    <Badge variant="secondary" className="shrink-0 text-xs font-normal">Neighborhood</Badge>
-                    <span className="truncate">{n.neighborhoodName}, {n.cityName}</span>
-                  </Button>
-                ))}
-                {suggestions.zips.slice(0, 5).map((z) => (
-                  <Button
-                    key={z.postalCode}
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start gap-2 rounded-none px-3 py-2 h-auto font-normal"
-                    onMouseDown={() => handleZipSelect(z.postalCode)}
-                  >
-                    <Badge variant="secondary" className="shrink-0 text-xs font-normal">Zip</Badge>
-                    <span className="truncate">{z.postalCode}{z.city && ` (${z.city})`}</span>
-                  </Button>
-                ))}
-                {suggestions.brokers.slice(0, 5).map((b) => (
-                  <Button
-                    key={b.label}
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start gap-2 rounded-none px-3 py-2 h-auto font-normal"
-                    onMouseDown={() => handleBrokerSelect(b.href)}
-                  >
-                    <Badge variant="secondary" className="shrink-0 text-xs font-normal">Agent</Badge>
-                    <span className="truncate">{b.label}</span>
-                  </Button>
-                ))}
-                {suggestions.reports.slice(0, 3).map((r) => (
-                  <Button
-                    key={r.href}
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start gap-2 rounded-none px-3 py-2 h-auto font-normal"
-                    onMouseDown={() => handleBrokerSelect(r.href)}
-                  >
-                    <Badge variant="secondary" className="shrink-0 text-xs font-normal">Market report</Badge>
-                    <span className="truncate">{r.label}</span>
-                  </Button>
-                ))}
-              </div>
-            )}
+          {/* ONE shared suggestions panel (SearchSuggest) — renders EVERY
+              backend category, addresses included (the "3480" class the old
+              inline dropdown silently dropped). */}
+          {locationOpen && (
+            <SearchSuggestPanel
+              items={suggestItems}
+              loading={suggestLoading}
+              hasResult={suggestions !== null}
+              highlight={highlight}
+              idPrefix="search-filters-suggest"
+              onPick={handleSuggestPick}
+              className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-auto rounded-xl border border-border bg-card pb-1 shadow-lg"
+            />
+          )}
         </div>
 
         {/* Voice search — speaks the same registry the screen panel renders */}

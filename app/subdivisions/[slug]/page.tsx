@@ -29,7 +29,11 @@ import { getCommunityListings } from '@/app/actions/communities'
 import {
   getGeoBoundaryMapData,
   getListingTiles,
+  getMarketStats,
 } from '@/lib/data'
+import { isSubdivisionIndexable } from '@/lib/data/subdivisions/getIndexableSubdivisions'
+import { getSubdivisionSalesHistory } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
+import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
 import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
@@ -117,10 +121,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const registryMatch = resolveRegistryAlias(slug)
   const name = registryMatch?.canonicalName ?? slugToTitle(slug)
   const city = registryMatch?.city ?? 'Central Oregon'
+  // Indexability threshold (W2.1): a plat earns index,follow only with a GIS
+  // polygon AND >= SUBDIVISION_INDEX_MIN_LIFETIME_SALES lifetime closed sales
+  // (lib/data/subdivisions/subdivision-index.ts — the same set the sitemap
+  // submits and llms.txt enumerates). Below the bar the page still renders,
+  // it just carries noindex via the central pageMetadata robots policy so
+  // thin plat pages never dilute the programmatic-page quality signal.
+  const indexable = await isSubdivisionIndexable(slug)
   return pageMetadata({
     title: `${name} Homes for Sale | ${city}, Oregon`,
     description: `Homes for sale in ${name}, a subdivision in ${city}. Boundary map and live listings from a local brokerage.`,
     path: `/subdivisions/${slug}`,
+    noindex: !indexable,
   })
 }
 
@@ -339,6 +351,22 @@ export default async function SubdivisionPage({ params }: Props) {
     (r) => r.listing_key && (r.video_url ?? '').trim(),
   )
 
+  // ── Sales history + per-subdivision market stats (W2.5 depth) ────────────
+  // One cached DAL read each (§0 query shapes documented in the DALs):
+  // history = yearly closed-SFR aggregates via the get_subdivision_sales_history
+  // RPC (fails soft to [] until the migration is applied); stats = the
+  // market_stats_cache geo_type='subdivision' row when one exists (most plats
+  // have none until the cache backfill — the section feature-detects both).
+  const [salesHistory, subdivisionStats] = await Promise.all([
+    withTimeoutFallback(getSubdivisionSalesHistory(slug), [], 4500, 'sub:sales-history'),
+    withTimeoutFallback(
+      getMarketStats({ geoType: 'subdivision', geoSlug: slug }),
+      null,
+      4500,
+      'sub:market-stats',
+    ),
+  ])
+
   // ── JSON-LD ───────────────────────────────────────────────────────────────
   const schemas: SchemaInput[] = [
     {
@@ -432,6 +460,14 @@ export default async function SubdivisionPage({ params }: Props) {
             </div>
           </section>
         )}
+        {/* Sales history (yearly closed-sale aggregates) + market-stats strip.
+            Renders null when neither source has data — ODS-safe: aggregates
+            only, never individual sold listings. */}
+        <SubdivisionSalesHistory
+          displayName={displayName}
+          history={salesHistory}
+          stats={subdivisionStats}
+        />
         <KbSell
           data={{
             medianListPrice: null,

@@ -229,4 +229,8 @@ export const LEGAL_LINKS: NavLink[] = [
   { href: '/accessibility', label: 'Accessibility' },
   { href: '/fair-housing', label: 'Fair housing' },
   { href: '/dmca', label: 'DMCA' },
+  // Site index — crawlable directory of every browse-URL family (W3.4
+  // internal-link layer). Registry entry so both footers render it from the
+  // same source instead of hand-appending the link.
+  { href: '/site-index', label: 'Site index' },
 ]

@@ -106,6 +106,16 @@ export const SEARCH_PRESETS: SearchPreset[] = [
   // Property types
   { slug: 'condos', shortLabel: 'Condos', label: 'Condos for Sale', params: { propertySubType: 'Condo', sort: 'newest' } },
   { slug: 'townhomes', shortLabel: 'Townhomes', label: 'Townhomes for Sale', params: { propertySubType: 'Townhouse', sort: 'newest' } },
+  // Multi-family / income (MLS PropertyType C — duplex/triplex/fourplex,
+  // verified against the live MV in lib/property-type.ts 2026-06-08).
+  // "multi-family homes in Redmond" had no reachable surface before this
+  // preset existed (W3.2 search-matrix audit, 2026-07-21).
+  { slug: 'multi-family', shortLabel: 'Multi-Family', label: 'Multi-Family & Income Properties', params: { propertyType: 'Multi-Family', sort: 'newest' } },
+  // Manufactured homes — matched on the MLS PropertySubType keyword so both
+  // manufactured-on-land (PropertyType A) and manufactured-in-park
+  // (PropertyType B) rows qualify. Same propertySubType contract as
+  // condos/townhomes ("details.PropertySubType ILIKE %value%").
+  { slug: 'manufactured', shortLabel: 'Manufactured', label: 'Manufactured Homes', params: { propertySubType: 'Manufactured', sort: 'newest' } },
   // Layout / lifestyle (PublicRemarks keyword match)
   { slug: 'single-level', shortLabel: 'Single Level', label: 'Single-Level Homes', params: { keywords: 'single level', sort: 'newest' } },
   { slug: 'with-shop', shortLabel: 'With Shop', label: 'Homes with a Shop', params: { keywords: 'shop', sort: 'newest' } },
