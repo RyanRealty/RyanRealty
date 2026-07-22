@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.828.1 (2026-07-22)
+
+### Maintenance
+- docs(program): durable in-repo seed for the RR-PLATFORM-DECISIONS completion run
+
+---
+
+
 ## v1.828.0 (2026-07-22)
 
 ### Features
