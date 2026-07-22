@@ -127,6 +127,8 @@ export type ListingDetail = ListingTile & {
   listAgentEmail: string | null
   listAgentPhone: string | null
   listOfficeName: string | null
+  /** Listing office phone — required contact for IDX attribution (ODS §5-3 P). */
+  listOfficePhone: string | null
   publicRemarks: string | null
   // Community context
   communityId: string | null

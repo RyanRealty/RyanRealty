@@ -421,6 +421,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       <ListingAttribution
         listAgentName={listing.listAgentName}
         listOfficeName={listing.listOfficeName}
+        listContact={listing.listOfficePhone ?? listing.listAgentPhone ?? listing.listAgentEmail}
         refreshedAt={listing.refreshedAt}
       />
       {marketGeo ? (

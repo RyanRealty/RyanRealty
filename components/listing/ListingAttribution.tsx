@@ -38,6 +38,13 @@ type Props = {
   /** Listing office / brokerage name from MLS data. */
   listOfficeName: string | null
   /**
+   * Listing participant contact — ODS §5-3 P requires the email OR phone the
+   * listing participant provided, alongside the firm name, in typeface not
+   * smaller than the median used for listing data. Pass office phone first,
+   * else agent phone, else agent email.
+   */
+  listContact: string | null
+  /**
    * ISO timestamp when this listing was last refreshed from the MLS feed.
    * Renders as "Data last updated <date>" for ODS transparency.
    */
@@ -59,6 +66,7 @@ function formatRefreshedAt(iso: string | null): string | null {
 export function ListingAttribution({
   listAgentName,
   listOfficeName,
+  listContact,
   refreshedAt,
   className,
 }: Props) {
@@ -77,6 +85,8 @@ export function ListingAttribution({
             {listOfficeName && listAgentName ? (
               <>, agent {listAgentName}</>
             ) : null}
+            {/* ODS §5-3 P: listing participant's phone or email, same typeface. */}
+            {listContact ? <>, {listContact}</> : null}
           </Body>
         ) : null}
 

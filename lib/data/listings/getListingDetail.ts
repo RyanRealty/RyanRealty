@@ -126,9 +126,18 @@ const DETAIL_SELECT = [
   'fencing',
   'direction_faces',
   // IDX compliance: seller internet opt-out + IDX participation. A listing the
-  // seller withheld from internet display (ODS Rule B/G) must 404, not render.
+  // seller withheld from internet display (ODS §5-3 B/G) must 404, not render.
+  // permit_address_internet_yn=false (address-only opt-out) is also treated as
+  // non-displayable: our URLs and pages are address-built, so showing the
+  // listing without its address is not possible — conservative exclusion.
   'permit_internet_yn',
+  'permit_address_internet_yn',
   'idx_participant',
+  // ODS §5-3 P: IDX displays must identify the listing firm AND the email or
+  // phone the listing participant provided. Office phone lives only in the
+  // raw feed payload (99.5% coverage on active rows, verified 2026-07-21).
+  'ListOfficePhone:details->>ListOfficePhone',
+  'ListAgentPreferredPhone:details->>ListAgentPreferredPhone',
 ].join(',')
 
 type ListingRow = {
@@ -136,7 +145,11 @@ type ListingRow = {
   ListNumber: string | null
   // IDX compliance — seller internet opt-out / IDX participation flags.
   permit_internet_yn: boolean | null
+  permit_address_internet_yn: boolean | null
   idx_participant: boolean | null
+  // ODS §5-3 P attribution contacts (from the raw feed payload).
+  ListOfficePhone: string | null
+  ListAgentPreferredPhone: string | null
   StandardStatus: ListingStatus
   ListPrice: number | null
   OriginalListPrice: number | null
@@ -365,8 +378,9 @@ function rowToDetail(row: ListingRow): ListingDetail {
     videos: [], // populated separately via getListingVideos
     listAgentName: row.ListAgentName,
     listAgentEmail: row.list_agent_email,
-    listAgentPhone: null, // not stored in our schema
+    listAgentPhone: cleanText(row.ListAgentPreferredPhone),
     listOfficeName: row.ListOfficeName,
+    listOfficePhone: cleanText(row.ListOfficePhone),
     publicRemarks: row.public_remarks,
     communityId: null, // TODO Wave 1.6: resolve via neighborhood_subdivisions
     communityName: row.SubdivisionName,
@@ -411,7 +425,12 @@ async function fetchByColumn(
     // IDX compliance (ODS Rule B/G, NAR 7.58): a listing whose seller opted out
     // of internet display, or whose listing broker is not an IDX participant,
     // must NOT be publicly displayed. Treat as a genuine miss → notFound().
-    if (row && (row.permit_internet_yn === false || row.idx_participant === false)) {
+    if (
+      row &&
+      (row.permit_internet_yn === false ||
+        row.permit_address_internet_yn === false ||
+        row.idx_participant === false)
+    ) {
       return { row: null, error: null }
     }
     // Coming Soon is an MLS pre-marketing state and must NEVER render on a
