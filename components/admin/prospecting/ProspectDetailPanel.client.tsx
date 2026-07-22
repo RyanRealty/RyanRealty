@@ -26,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { enrollProspectInDripAction } from '@/app/actions/prospecting'
@@ -153,6 +154,15 @@ export function ProspectDetailPanel({
 
       <div className="flex items-center gap-2">
         <ProspectDocPill doc={detail.doc} />
+        {/* Tenure chip — shown only when a source proves the date (DAL
+            deriveOwnershipSince). 0 = proven but under a year. */}
+        {detail.ownershipYears != null ? (
+          <Badge variant="secondary" className="tabular-nums">
+            {detail.ownershipYears >= 1
+              ? `Owned ${detail.ownershipYears} ${detail.ownershipYears === 1 ? 'year' : 'years'}`
+              : 'Owned under a year'}
+          </Badge>
+        ) : null}
       </div>
 
       <Separator />

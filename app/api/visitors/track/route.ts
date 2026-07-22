@@ -9,8 +9,9 @@
  *
  * Flow:
  *   1. Receives a tracked event (page_view, listing_view, search,
- *      scroll_depth, cta_click, identify, signin) with a client-generated
- *      session_id (uuid v4 persisted in localStorage as `rr_session_id`).
+ *      scroll_depth, cta_click, identify, signin, save_listing) with a
+ *      client-generated session_id (uuid v4 persisted in localStorage as
+ *      `rr_session_id`).
  *   2. UPSERT into public.visitor_sessions:
  *        - First event for this session_id → INSERT with first-touch UTMs,
  *          referrer, landing page, user_agent, IP geo, source_domain.
@@ -166,8 +167,13 @@ function getSupabase() {
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
+// save_listing (2026-07-21): a consumer like/save mirrored onto the visitor
+// trail. Emitted server-side by lib/data/crm/recordSaveListingEvent (from the
+// like/save actions) and accepted here for any future client-side emitter.
+// Same consent gating as every other type — declined/missing consent is
+// rejected above, 'essential' strips listing meta + metadata below.
 const ALLOWED_EVENT_TYPES = new Set<string>([
-  'page_view', 'listing_view', 'search', 'scroll_depth', 'section_view', 'cta_click', 'identify', 'signin',
+  'page_view', 'listing_view', 'search', 'scroll_depth', 'section_view', 'cta_click', 'identify', 'signin', 'save_listing',
 ])
 
 // Map the host of the page being tracked to a canonical source_domain bucket.

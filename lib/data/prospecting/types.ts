@@ -37,8 +37,13 @@ export type ProspectDocState =
       slug: string
       docType: string
       recommendedList: number | null
+      /** First-touch timestamp across channels (earliest of sms/email). */
       sentAt: string
+      /** Twilio sid — null when the intro went out by email only. */
       sid: string | null
+      /** Per-channel stamps (channel-aware sent-state). null = channel unsent. */
+      smsSentAt: string | null
+      emailSentAt: string | null
     }
 
 export interface ProspectEngagement {
@@ -161,6 +166,15 @@ export interface ProspectDetail extends ProspectRow {
   contactSource: string | null
   ownerLookupStatus: string | null
   enrichmentNotes: string | null
+  /**
+   * Whole years the owner has held the property, when a source proves it.
+   * Source priority (get.ts deriveOwnershipSince): crm_people.custom
+   * customOwnershipSince (county deed record) → the "Owned since YYYY-MM-DD"
+   * marker the owner-lookup chain writes into enrichment_notes → the most
+   * recent closed MLS cycle in priceHistory. 0 = owned under a year.
+   * Null = no source proves a date (never estimated, per §0).
+   */
+  ownershipYears: number | null
   priceHistory: ProspectPriceCycle[]
   drip: ProspectDripState
 }
@@ -213,6 +227,7 @@ export type SendGuardCode =
   | 'off-market'
   | 'hard-stop'
   | 'no-phone'
+  | 'no-email'
   | 'quiet-hours'
   | 'suppressed'
   | 'already-sent'
@@ -223,6 +238,49 @@ export type SendGuardCode =
 export type SendIntroResult =
   | { ok: true; sid: string; personId: number; sentAt: string }
   | { ok: false; error: string; code: SendGuardCode }
+
+/** Result of the guarded EMAIL cold intro (sendProspectingEmailIntro). */
+export type SendEmailIntroResult =
+  | {
+      ok: true
+      /** Gmail message id (or Resend id on the fallback rail); null on replay. */
+      messageId: string | null
+      personId: number | null
+      sentAt: string
+      transport: 'gmail' | 'resend' | null
+    }
+  | { ok: false; error: string; code: SendGuardCode }
+
+/**
+ * Merge the per-channel outreach stamps into the doc's sent-state fields.
+ * Returns null when neither channel has sent (the row is not "sent").
+ * `sentAt` is the FIRST touch (earliest of the two ISO timestamps — ISO-8601
+ * strings compare correctly lexicographically).
+ */
+export function mergeChannelSentState(
+  smsSentAt: string | null,
+  emailSentAt: string | null,
+): { sentAt: string; smsSentAt: string | null; emailSentAt: string | null } | null {
+  if (!smsSentAt && !emailSentAt) return null
+  const sentAt =
+    smsSentAt && emailSentAt ? (smsSentAt <= emailSentAt ? smsSentAt : emailSentAt) : (smsSentAt ?? emailSentAt)!
+  return { sentAt, smsSentAt: smsSentAt ?? null, emailSentAt: emailSentAt ?? null }
+}
+
+/**
+ * PostgREST/Postgres "column does not exist" (SQLSTATE 42703) classifier — the
+ * feature-detect for the 20260722010100 email-outreach columns. The prospecting
+ * reads select those columns optimistically and fall back to the legacy column
+ * list when the migration has not been applied yet, so the dashboard renders
+ * pre-migration instead of erroring.
+ */
+export function isUndefinedColumnError(
+  error: { code?: string | null; message?: string | null } | null | undefined,
+): boolean {
+  if (!error) return false
+  if (error.code === '42703') return true
+  return /column .* does not exist/i.test(error.message ?? '')
+}
 
 /** expired → 'expired-audit', fsbo → 'cma' (spec §4.1). */
 export function expectedDocTypeFor(kind: ProspectKind): 'expired-audit' | 'cma' {
@@ -238,6 +296,17 @@ export function expectedDocTypeFor(kind: ProspectKind): 'expired-audit' | 'cma' 
  */
 export function hasSendablePhone(phone: string | null | undefined): boolean {
   return (phone ?? '').replace(/\D/g, '').length >= 10
+}
+
+/**
+ * Pure "does this row have an emailable address" check, the email twin of
+ * hasSendablePhone. Display/guard convenience only — the SEND action still
+ * runs the fail-closed suppression checks (isSuppressed + isSuppressedByEmail)
+ * as the authoritative gate.
+ */
+export function hasSendableEmail(email: string | null | undefined): boolean {
+  const v = (email ?? '').trim()
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)
 }
 
 /** The crm_templates key that seeds the intro for each kind (spec §4.6). */

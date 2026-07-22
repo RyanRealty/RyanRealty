@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-20T05:29:56.027Z",
+  "generatedAt": "2026-07-22T02:32:14.465Z",
   "reason": "Audit #4: pages importing read symbols from app/actions instead of @/lib/data. Ratchet — may only shrink as reads migrate to the DAL.",
   "total": 314,
   "violations": [
@@ -11,6 +11,8 @@
     "app/account/collections/[id]/page.tsx :: getSession <- @/app/actions/auth",
     "app/account/collections/page.tsx :: getSession <- @/app/actions/auth",
     "app/account/collections/page.tsx :: getUserCollections <- @/app/actions/collections",
+    "app/account/hidden/page.tsx :: getHiddenListingKeys <- @/app/actions/hidden-listings",
+    "app/account/hidden/page.tsx :: getSession <- @/app/actions/auth",
     "app/account/history/page.tsx :: getBuyingPreferences <- @/app/actions/buying-preferences",
     "app/account/history/page.tsx :: getListingsByKeys <- @/app/actions/listings",
     "app/account/history/page.tsx :: getRecentListingViews <- @/app/actions/dashboard-history",
@@ -55,6 +57,7 @@
     "app/admin/(protected)/bpo/new/page.tsx :: getSession <- @/app/actions/auth",
     "app/admin/(protected)/broker-dashboard/page.tsx :: getBrokerActionQueue <- @/app/actions/crm",
     "app/admin/(protected)/broker-dashboard/page.tsx :: getBrokerCommandCenterData <- @/app/actions/broker-command-center",
+    "app/admin/(protected)/broker-dashboard/page.tsx :: getBrokerInboundTriage <- @/app/actions/crm",
     "app/admin/(protected)/broker-dashboard/page.tsx :: getCrmAccess <- @/app/actions/crm",
     "app/admin/(protected)/broker-dashboard/page.tsx :: getRecentEmailPeople <- @/app/actions/crm",
     "app/admin/(protected)/broker-dashboard/page.tsx :: getRecentNewLeads <- @/app/actions/crm",
@@ -189,9 +192,6 @@
     "app/admin/(protected)/newsletters/new/page.tsx :: getCrmAccess <- @/app/actions/crm",
     "app/admin/(protected)/newsletters/page.tsx :: getCrmAccess <- @/app/actions/crm",
     "app/admin/(protected)/newsletters/subscribers/page.tsx :: getCrmAccess <- @/app/actions/crm",
-    "app/admin/(protected)/operations/optimization/layout.tsx :: getAdminRoleForEmail <- @/app/actions/admin-roles",
-    "app/admin/(protected)/operations/optimization/layout.tsx :: getSession <- @/app/actions/auth",
-    "app/admin/(protected)/operations/optimization/page.tsx :: getLastOptimizationRun <- @/app/actions/optimization-runs",
     "app/admin/(protected)/operations/page.tsx :: getDashboardContentStatus <- @/app/actions/dashboard",
     "app/admin/(protected)/operations/page.tsx :: getDashboardDataQuality <- @/app/actions/dashboard",
     "app/admin/(protected)/operations/page.tsx :: getDashboardLeadData <- @/app/actions/dashboard",

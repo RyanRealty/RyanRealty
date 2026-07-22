@@ -15,11 +15,13 @@
  *     email on the detail page (per Zillow's "Owner posted" UX), which
  *     gives us a real contact path without skiptracing in many cases.
  *
- * Other candidate sources (Phase 2):
- *   - FSBO.com (lower volume, but the canonical FSBO site)
- *   - ForSaleByOwner.com
- *   - Craigslist Bend real-estate-by-owner RSS
- *   - Facebook Marketplace (no API; not feasible)
+ * Phase 2 sources:
+ *   - Craigslist Bend real-estate-by-owner — LIVE, see lib/fsbo-craigslist.ts
+ *     (the RSS feed is dead; we parse the static no-JS search fallback).
+ *     The processor merges both sources and dedupes by fsbo_url.
+ *   - Facebook Marketplace — DROPPED by decision 2026-07-21 (no API,
+ *     ToS-fragile).
+ *   - FSBO.com / ForSaleByOwner.com (lower volume; still candidates)
  *
  * Service area + price floor — matches the expired-listings cron exactly
  * per Matt's 2026-05-19 directive:
@@ -111,14 +113,23 @@ const ZILLOW_CITY_URLS: Record<(typeof FSBO_SERVICE_AREA_CITIES)[number], string
 
 export const FSBO_MIN_LIST_PRICE = 500_000
 
+/** Where a normalized FSBO listing came from. */
+export type FsboSource = 'zillow' | 'craigslist'
+
 /**
- * Normalized FSBO listing — output of parseZillowItem(). Mirrors the columns
- * in public.fsbo_listings.
+ * Normalized FSBO listing — output of parseZillowItem() and of
+ * lib/fsbo-craigslist.ts. Mirrors the columns in public.fsbo_listings.
+ *
+ * Source-shape note: Zillow items always carry a non-empty streetAddress
+ * (parseAddress rejects otherwise). Craigslist list-view items usually have
+ * NO street address — streetAddress is '' unless one was extractable from
+ * the posting title, and the processor skips the county/skip-trace owner
+ * lookup for empty streets.
  */
 export type FsboListing = {
   fsboUrl: string
-  fsboUniqueId: string | null  // Zillow zpid
-  fsboSource: 'zillow'
+  fsboUniqueId: string | null  // Zillow zpid / Craigslist posting token
+  fsboSource: FsboSource
   fullAddress: string
   streetAddress: string
   city: string

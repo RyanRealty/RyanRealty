@@ -58,6 +58,17 @@ export type OwnerLookupResult = {
   demographics?: SkipTraceResult['demographics']
   /** Skip-trace behavioral flags (recently moved/divorced, equity-rich, vacant). */
   flags?: SkipTraceResult['flags']
+  /**
+   * ISO date (YYYY-MM-DD) the current ownership began, when a primary source
+   * proves it. Source today: the Deschutes DIAL deed/sales history for the
+   * resolved assessor account (fetchDialOwnershipSince). Never estimated —
+   * absent when no record proves a date (§0). Note: the BatchData skip-trace
+   * parsing (lib/owner-resolution.mjs) exposes no sale-date field on
+   * SkipTraceResult, so the county deed record is the only wired source.
+   */
+  ownershipSince?: string | null
+  /** Where ownershipSince came from, e.g. 'deschutes-dial-deed-history'. */
+  ownershipSource?: string | null
 }
 
 const PLACEHOLDER_EMAIL_RE = /@placeholder\.ryan-realty\.com$/i
@@ -75,6 +86,143 @@ function getSupabase() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) throw new Error('Supabase env vars missing')
   return createClient(url, key)
+}
+
+// ── Ownership tenure from the Deschutes DIAL deed/sales history ─────────────
+//
+// The county ArcGIS taxlot layer (lib/owner-resolution.mjs) carries owner +
+// mailing but NO sale dates (verified against the live layer field list
+// 2026-07-21). The DIAL property site does: /Real/Sales/<accountId> renders a
+// deed-history table (Sale Date · Seller · Buyer · Sale Amount · Recording
+// Instrument). Once the assessor account is resolved, one free fetch answers
+// "how long have they owned it" from the county record itself.
+
+export type DialSaleRow = {
+  /** ISO date (YYYY-MM-DD). */
+  date: string
+  seller: string
+  buyer: string
+  /** Recorded consideration; null when the deed carried none (re-titles). */
+  amount: number | null
+  instrument: string | null
+}
+
+const DIAL_BASE = 'https://dial.deschutes.org'
+
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, '&')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+}
+
+function mmddyyyyToIso(v: string): string | null {
+  const m = v.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  if (!m) return null
+  const [, mo, d, y] = m
+  return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`
+}
+
+/** First alphabetic token of an owner string ("COLVIN, GREGORY P & LORI M" →
+ *  "COLVIN"; "SMITH FAMILY TRUST" → "SMITH"). Used to tell re-titles within a
+ *  family/trust apart from arms-length transfers. */
+function surnameToken(name: string | null | undefined): string | null {
+  const t = (name ?? '').trim().toUpperCase().split(/[,\s]+/)[0] ?? ''
+  return /^[A-Z][A-Z'-]*$/.test(t) ? t : null
+}
+
+/** Parse the DIAL /Real/Sales/<account> HTML into structured deed rows.
+ *  Pure + exported for tests. Unknown markup returns [] (fail soft). */
+export function parseDialSalesHistory(html: string): DialSaleRow[] {
+  const table = html.match(/<table[^>]*>([\s\S]*?)<\/table>/i)?.[1]
+  if (!table) return []
+  const rows: DialSaleRow[] = []
+  for (const tr of table.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) ?? []) {
+    const cells = [...tr.matchAll(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi)].map((m) =>
+      decodeEntities(m[1].replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim(),
+    )
+    if (cells.length < 3) continue
+    const iso = mmddyyyyToIso(cells[0])
+    if (!iso) continue // header row or malformed date
+    const digits = (cells[3] ?? '').replace(/[^0-9.]/g, '')
+    const amount = digits ? Number(digits) : null
+    rows.push({
+      date: iso,
+      seller: cells[1] ?? '',
+      buyer: cells[2] ?? '',
+      amount: amount != null && Number.isFinite(amount) && amount > 0 ? amount : null,
+      instrument: cells[4]?.trim() || null,
+    })
+  }
+  // Newest first, regardless of page order.
+  return rows.sort((a, b) => b.date.localeCompare(a.date))
+}
+
+/**
+ * Resolve when the CURRENT ownership began from the deed rows. Walk newest →
+ * oldest: a transfer where buyer and seller share a surname (spouse re-title,
+ * move into a family trust) is not a new owner, so keep walking; stop at the
+ * first arms-length transfer. When `currentOwnerRaw` is given, every visited
+ * row's buyer must match that surname — a mismatch means the chain does not
+ * provably lead to today's owner, and the answer is null (omit, never guess).
+ * Pure + exported for tests.
+ */
+export function deriveOwnershipFromSales(
+  sales: DialSaleRow[],
+  currentOwnerRaw?: string | null,
+): { since: string; salePrice: number | null } | null {
+  if (sales.length === 0) return null
+  const ownerSurname = surnameToken(currentOwnerRaw)
+  for (const row of sales) {
+    const buyer = surnameToken(row.buyer)
+    const seller = surnameToken(row.seller)
+    if (ownerSurname && buyer && buyer !== ownerSurname) return null
+    if (buyer && seller && buyer === seller) continue // re-title, not a new owner
+    return { since: row.date, salePrice: row.amount }
+  }
+  // Every row was a same-surname re-title — the oldest row started the chain.
+  const oldest = sales[sales.length - 1]
+  return { since: oldest.date, salePrice: oldest.amount }
+}
+
+/** Fetch + parse the DIAL deed history for an assessor account. Fail-soft:
+ *  network error, non-200, or an unparseable/ambiguous chain returns null. */
+export async function fetchDialOwnershipSince(
+  accountId: string,
+  currentOwnerRaw?: string | null,
+): Promise<{ since: string; salePrice: number | null } | null> {
+  const id = accountId.trim()
+  if (!/^\d+$/.test(id)) return null
+  try {
+    const res = await fetch(`${DIAL_BASE}/Real/Sales/${id}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)' },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(10_000),
+    })
+    if (!res.ok) return null
+    return deriveOwnershipFromSales(parseDialSalesHistory(await res.text()), currentOwnerRaw)
+  } catch (err) {
+    console.warn('[expired-owner-lookup] DIAL sales-history fetch failed:', err)
+    return null
+  }
+}
+
+/**
+ * Namespaced crm_people.custom fields for a resolved ownership date — spread
+ * into the enrichNativeLead custom payload alongside the demographics fields
+ * (lib/expired-listing-processor.ts). Empty when no source proved a date.
+ */
+export function ownershipCustomFields(
+  owner: Pick<OwnerLookupResult, 'ownershipSince' | 'ownershipSource'>,
+): Record<string, string> {
+  if (!owner.ownershipSince) return {}
+  return {
+    customOwnershipSince: owner.ownershipSince,
+    ...(owner.ownershipSource ? { customOwnershipSource: owner.ownershipSource } : {}),
+  }
 }
 
 /**
@@ -445,7 +593,11 @@ export async function enrichOwnerContact(params: {
   return apifyRes
 }
 
-function buildCountyNotes(c: CountyOwner, trace: SkipTraceResult | null): string {
+function buildCountyNotes(
+  c: CountyOwner,
+  trace: SkipTraceResult | null,
+  ownership: { since: string; salePrice: number | null } | null,
+): string {
   const mailing = [c.mailingStreet, c.mailingCity, c.mailingState, c.mailingZip]
     .filter(Boolean)
     .join(', ')
@@ -456,6 +608,11 @@ function buildCountyNotes(c: CountyOwner, trace: SkipTraceResult | null): string
     mailing ? `Mailing: ${mailing}.` : '',
     c.absentee ? 'ABSENTEE owner (mailing differs from property).' : 'Owner-occupied per mailing address.',
     c.outOfState ? 'OUT-OF-STATE owner.' : '',
+    // Stable machine-readable marker — lib/data/prospecting/get.ts parses
+    // "Owned since YYYY-MM-DD" out of enrichment_notes for the tenure chip.
+    ownership
+      ? `Owned since ${ownership.since} (county deed history${ownership.salePrice ? `, acquired at $${new Intl.NumberFormat('en-US').format(Math.round(ownership.salePrice))}` : ''}).`
+      : '',
     trace
       ? `Skip trace: ${trace.phones.length} phone(s), ${trace.emails.length} email(s).${trace.hardStop ? ' HARD STOP flags present (litigator/TCPA/deceased).' : ''}`
       : 'Skip trace unavailable (check BATCHDATA_API_KEY on Vercel).',
@@ -494,6 +651,9 @@ export async function lookupOwnerForExpiredListing(params: {
       const mailing = [c.mailingStreet, c.mailingCity, c.mailingState, c.mailingZip]
         .filter(Boolean)
         .join(', ')
+      // Ownership tenure from the county deed history (free, authoritative).
+      // Fail-soft — a miss just leaves the tenure fields absent.
+      const ownership = c.accountId ? await fetchDialOwnershipSince(c.accountId, c.ownerRaw) : null
       const fubMatch = await fubMatchPromise
       const tracePhones = (resolved.trace?.phones ?? []).map((p: SkipTraceResult['phones'][number]) => ({
         value: p.number,
@@ -513,7 +673,7 @@ export async function lookupOwnerForExpiredListing(params: {
         ownerEmail: resolved.bestEmail ?? undefined,
         ownerPhone: resolved.bestPhone ?? undefined,
         source: `deschutes-county:${c.taxlot ?? 'taxlot'}`,
-        notes: buildCountyNotes(c, resolved.trace),
+        notes: buildCountyNotes(c, resolved.trace, ownership),
         allPhones: tracePhones,
         allEmails: traceEmails,
         taxlot: c.taxlot,
@@ -522,6 +682,8 @@ export async function lookupOwnerForExpiredListing(params: {
         outOfState: c.outOfState,
         demographics: resolved.trace?.demographics ?? undefined,
         flags: resolved.trace?.flags ?? undefined,
+        ownershipSince: ownership?.since ?? null,
+        ownershipSource: ownership ? 'deschutes-dial-deed-history' : null,
       }
       if (fubMatch?.fubPersonId) {
         result.fubPersonId = fubMatch.fubPersonId

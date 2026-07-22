@@ -18,14 +18,16 @@ import 'server-only'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { createServiceClient } from '@/lib/supabase/service'
 import {
-  EXPIRED_SELECT,
-  FSBO_SELECT,
   computeSendable,
   engagementKeyFor,
   fetchExpiredListingJoinBatch,
   finalizeRow,
   mapExpiredSkeleton,
   mapFsboSkeleton,
+  markEmailOutreachColumnsAbsent,
+  prospectSelect,
+  prospectSelectLegacy,
+  shouldRetryWithoutEmailColumns,
   type ExpiredListingJoin,
   type ProspectRowSkeleton,
 } from './get'
@@ -65,26 +67,34 @@ type BaseListFilters = Pick<ProspectListFilters, 'q' | 'city' | 'minPrice' | 'ma
 async function fetchRawProspectRows(kind: ProspectKind, filters: BaseListFilters): Promise<RawRow[]> {
   const sb = createServiceClient()
   const table = kind === 'expired' ? 'expired_listings' : 'fsbo_listings'
-  const select = kind === 'expired' ? EXPIRED_SELECT : FSBO_SELECT
   const dateColumn = kind === 'expired' ? 'expired_at' : 'detected_at'
 
-  let q = sb.from(table).select(select)
+  const runQuery = async (select: string) => {
+    let q = sb.from(table).select(select)
 
-  const term = filters.q ? sanitizeSearchTerm(filters.q) : ''
-  if (term) {
-    q = q.or(`street_address.ilike.%${term}%,owner_name.ilike.%${term}%,full_address.ilike.%${term}%`)
+    const term = filters.q ? sanitizeSearchTerm(filters.q) : ''
+    if (term) {
+      q = q.or(`street_address.ilike.%${term}%,owner_name.ilike.%${term}%,full_address.ilike.%${term}%`)
+    }
+    if (filters.city?.trim()) q = q.eq('city', filters.city.trim())
+    if (filters.minPrice != null) q = q.gte('list_price', filters.minPrice)
+    if (filters.maxPrice != null) q = q.lte('list_price', filters.maxPrice)
+    if (filters.dateAfter) q = q.gte(dateColumn, filters.dateAfter)
+    if (filters.dateBefore) q = q.lte(dateColumn, filters.dateBefore)
+
+    // The prospect universe is small (~150-160 rows/kind, spec §0) — this cap
+    // documents the bound explicitly rather than relying on PostgREST's
+    // implicit 1,000-row default (the old unbounded reads this replaces
+    // silently truncated there, spec Defect 11).
+    return q.order(dateColumn, { ascending: false, nullsFirst: false }).limit(1000)
   }
-  if (filters.city?.trim()) q = q.eq('city', filters.city.trim())
-  if (filters.minPrice != null) q = q.gte('list_price', filters.minPrice)
-  if (filters.maxPrice != null) q = q.lte('list_price', filters.maxPrice)
-  if (filters.dateAfter) q = q.gte(dateColumn, filters.dateAfter)
-  if (filters.dateBefore) q = q.lte(dateColumn, filters.dateBefore)
 
-  // The prospect universe is small (~150-160 rows/kind, spec §0) — this cap
-  // documents the bound explicitly rather than relying on PostgREST's
-  // implicit 1,000-row default (the old unbounded reads this replaces
-  // silently truncated there, spec Defect 11).
-  const { data, error } = await q.order(dateColumn, { ascending: false, nullsFirst: false }).limit(1000)
+  let { data, error } = await runQuery(prospectSelect(kind))
+  if (error && shouldRetryWithoutEmailColumns(error)) {
+    // Migration 20260722010100 not applied yet — render pre-migration.
+    markEmailOutreachColumnsAbsent()
+    ;({ data, error } = await runQuery(prospectSelectLegacy(kind)))
+  }
   // THROW on a transient DB error so makeResilientCached never caches an empty
   // result (poison-null gate G): an error must not masquerade as "no prospects".
   if (error) throw new Error(`prospecting base read failed: ${error.message}`)

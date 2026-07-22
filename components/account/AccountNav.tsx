@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 const ACCOUNT_NAV_LINKS = [
   { href: '/account', label: 'Dashboard', exact: true },
   { href: '/account/saved-homes', label: 'Saved homes' },
+  { href: '/account/hidden', label: 'Hidden homes' },
   { href: '/account/saved-searches', label: 'Saved searches' },
   { href: '/account/collections', label: 'Collections' },
   { href: '/account/history', label: 'Viewing history' },

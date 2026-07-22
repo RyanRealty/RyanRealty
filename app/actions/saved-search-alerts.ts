@@ -5,7 +5,7 @@ import { sendEmail } from '@/lib/resend'
 import { getCachedSearchListings } from '@/app/actions/search-cache'
 import type { ListingTileRow } from '@/app/actions/listings'
 import { listingDetailPath } from '@/lib/slug'
-import { buildSearchUrlFromFilters, getFiltersSummary, hasNarrowingFilter, normalizeSavedSearchFilters } from '@/lib/search-filters'
+import { buildSearchUrlFromFilters, getFiltersSummary, hasNarrowingFilter } from '@/lib/search-filters'
 import {
   getActiveListingAlertsDue,
   markListingAlertNotified,
@@ -21,6 +21,7 @@ import {
   resolvePersonForTracking,
   linkAlertRowToPerson,
 } from '@/lib/data/crm/resolvePersonForTracking'
+import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hidden-exclusion'
 
 /**
  * The ONE listing-alert send engine, over the unified public.listing_alerts
@@ -56,30 +57,33 @@ const MAX_SENDS_PER_RUN = 200
  */
 const DEFAULT_BROKER = 'matt'
 
-function normalizeFrequency(raw: string | null | undefined): 'instant' | 'daily' | 'weekly' {
-  const value = (raw ?? '').trim().toLowerCase()
-  if (value === 'instant') return 'instant'
-  if (value === 'weekly') return 'weekly'
-  return 'daily'
+// Cadence due-logic is shared with every write path (validators, /account
+// Select, broker attach) so a stored 'monthly' can never be coerced to a
+// faster cadence here — the exact bug this import replaced (a local
+// normalizeFrequency defaulted unknown values to daily).
+import { isCadenceDue } from '@/lib/saved-search-cadence'
+
+/**
+ * Hidden homes for one signed-in subscriber ("Hide homes I don't want to
+ * see"). Runs on the service client (cron context — no user session).
+ * Fail-soft by design: any error, INCLUDING the hidden_listings table not
+ * being migrated yet, returns an empty set so alerts keep flowing — the
+ * user just is not shielded until the table exists.
+ */
+async function fetchHiddenKeysForUser(userId: string): Promise<Set<string>> {
+  try {
+    const supabase = createServiceClient()
+    const { data, error } = await supabase
+      .from('hidden_listings')
+      .select('listing_key')
+      .eq('user_id', userId)
+    if (error) return new Set()
+    return buildHiddenKeySet((data ?? []).map((r: { listing_key: string }) => r.listing_key))
+  } catch {
+    return new Set()
+  }
 }
 
-function shouldSendByFrequency(
-  search: { notification_frequency: string | null; last_notified_at: string | null },
-  now: Date,
-): boolean {
-  const freq = normalizeFrequency(search.notification_frequency)
-  if (!search.last_notified_at) return true
-  const last = new Date(search.last_notified_at)
-  const elapsedMs = now.getTime() - last.getTime()
-  // 'instant' rides the hourly cron (same cadence as expired-listing
-  // detection) with a ~55-min floor — a new match or a price drop into range
-  // reaches the subscriber within the hour, not the old 6-hour window (Matt
-  // directive 2026-07-11). The floor is just under 60 min so the hourly tick
-  // is never skipped by clock jitter.
-  if (freq === 'instant') return elapsedMs >= 55 * 60 * 1000
-  if (freq === 'weekly') return elapsedMs >= 7 * 24 * 60 * 60 * 1000
-  return elapsedMs >= 24 * 60 * 60 * 1000
-}
 
 function buildListingUrl(row: {
   ListingKey: string | null
@@ -158,13 +162,24 @@ export async function runListingAlerts(options?: {
   const rows: ListingAlertRow[] = await getActiveListingAlertsDue(maxAlerts)
   const summary: AlertRunSummary = { scanned: rows.length, sent: 0, skipped: 0, errors: [] }
 
+  // Per-run memo of each signed-in subscriber's hidden homes — one user can
+  // hold several alert rows, and the set is stable within a single run.
+  const hiddenByUser = new Map<string, Set<string>>()
+  const hiddenSetFor = async (userId: string): Promise<Set<string>> => {
+    const cached = hiddenByUser.get(userId)
+    if (cached) return cached
+    const fetched = await fetchHiddenKeysForUser(userId)
+    hiddenByUser.set(userId, fetched)
+    return fetched
+  }
+
   for (const row of rows) {
     try {
       // Send budget spent — stop scanning; the next cron run resumes with the
       // most-overdue rows (getActiveListingAlertsDue orders by last_notified_at).
       if (summary.sent >= MAX_SENDS_PER_RUN) break
 
-      if (!shouldSendByFrequency(row, now)) {
+      if (!isCadenceDue(row, now)) {
         summary.skipped += 1
         continue
       }
@@ -227,16 +242,26 @@ export async function runListingAlerts(options?: {
         continue
       }
       const results = await getCachedSearchListings(filters, 1, 15)
+      // Hidden homes ("Hide homes I don't want to see"): excluded from the
+      // matched set BEFORE the seen-set diff below, so a hidden home never
+      // counts as "new", never lands in an email, and never enters the seen
+      // set (if the user later unhides it, it may still alert as new — they
+      // were never shown it). Guest rows (no user_id) have no hidden set.
+      const hiddenSet = row.user_id ? await hiddenSetFor(row.user_id) : null
+      const matchedListings =
+        hiddenSet && hiddenSet.size > 0
+          ? excludeHiddenListings(results.listings, hiddenSet)
+          : results.listings
       const listingKeyOf = (l: ListingTileRow): string =>
         String(l.ListNumber ?? l.ListingKey ?? '').trim()
-      const currentKeys = results.listings.map(listingKeyOf).filter(Boolean)
+      const currentKeys = matchedListings.map(listingKeyOf).filter(Boolean)
       const seen = new Set((row.notified_listing_keys ?? []).filter(Boolean))
       const mergedSeen = () => {
         const merged = [...(row.notified_listing_keys ?? [])]
         for (const k of currentKeys) if (!seen.has(k)) merged.push(k)
         return merged
       }
-      if (!results.listings.length) {
+      if (!matchedListings.length) {
         await advanceCursor(row.notified_listing_keys ? mergedSeen() : undefined)
         continue
       }
@@ -253,19 +278,19 @@ export async function runListingAlerts(options?: {
       const sinceMs = row.last_notified_at ? Date.parse(row.last_notified_at) : 0
       const hasSeenSet = row.notified_listing_keys != null && row.notified_listing_keys.length > 0
       const fresh = hasSeenSet
-        ? results.listings.filter((l) => {
+        ? matchedListings.filter((l) => {
             const key = listingKeyOf(l)
             // FAIL-SAFE: a row with no usable key counts as fresh so the
             // alert never goes permanently silent on it.
             return !key || !seen.has(key)
           })
         : sinceMs
-          ? results.listings.filter((l) => {
+          ? matchedListings.filter((l) => {
               const stamp = l.OnMarketDate ?? l.ModificationTimestamp
               const onMarket = stamp ? Date.parse(stamp) : NaN
               return !Number.isFinite(onMarket) || onMarket > sinceMs
             })
-          : results.listings
+          : matchedListings
       if (!fresh.length) {
         // Nothing new to say, but the seen set still absorbs the current
         // matches so pre-column rows migrate onto the set-diff without a

@@ -20,7 +20,7 @@ import { revalidatePath, revalidateTag } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getProspect } from '@/lib/data'
+import { getProspect, updateCmaRowFieldsBySlug } from '@/lib/data'
 import { verifyNotRelisted } from '@/lib/data/prospecting/batch'
 import { resolveDripSequenceForKind } from '@/lib/data/prospecting/drip'
 import {
@@ -29,12 +29,18 @@ import {
   releaseProspectSend,
   stampProspectSid,
   linkProspectCma,
+  claimProspectEmailSend,
+  finalizeProspectEmailSend,
+  releaseProspectEmailSend,
+  stampProspectEmailMessageId,
 } from '@/lib/data/prospecting/send-claim'
 import {
   introTemplateKeyFor,
   expectedDocTypeFor,
+  hasSendableEmail,
   type ProspectKind,
   type SendIntroResult,
+  type SendEmailIntroResult,
 } from '@/lib/data/prospecting/types'
 import { slugifyAddress } from '@/lib/cma/address-slug'
 import {
@@ -42,8 +48,9 @@ import {
   resolveWritableCmaSlot,
 } from '@/lib/cma/versions'
 import { buildCma } from '@/lib/cma/build'
+import { prepareCmaSendPreview, sendCmaToLead } from '@/lib/cma/send'
 import { ensureNativeLead, enrichNativeLead } from '@/lib/data/crm/ensureNativeLead'
-import { isSuppressed, isSuppressedByPhone } from '@/lib/crm/suppressions'
+import { isSuppressed, isSuppressedByPhone, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
 import { renderCrmMerge, findUnresolvedMergeTokens, type MergePersonLike } from '@/lib/crm/merge'
 import { buildMergeContext } from '@/lib/crm/merge-context'
@@ -232,7 +239,12 @@ export async function sendProspectingIntro(
     const claim = await claimProspectSend(kind, id, args.idempotencyKey)
     if (claim === 'replay') {
       // This exact request already completed — return success, never a 2nd text.
-      const sentAt = prospect.doc.state === 'sent' ? prospect.doc.sentAt : new Date().toISOString()
+      // Channel-aware: the SMS stamp specifically (doc.sentAt is the cross-channel
+      // first touch and could be the EMAIL timestamp).
+      const sentAt =
+        prospect.doc.state === 'sent'
+          ? (prospect.doc.smsSentAt ?? prospect.doc.sentAt)
+          : new Date().toISOString()
       const sid = prospect.doc.state === 'sent' ? (prospect.doc.sid ?? '') : ''
       return { ok: true, sid, personId: lead.personId, sentAt }
     }
@@ -334,6 +346,254 @@ export async function sendProspectingIntro(
   }
 }
 
+// ── The reconciled cold EMAIL intro (Email tab of the send dialog) ──────────
+
+/**
+ * Email twin of `sendProspectingIntro` — the SAME fail-closed guard chain,
+ * guard for guard (auth → doc client-ready → off-market → hard-stop → relist
+ * verify → recipient present → lead + suppression → merge-token refusal →
+ * at-most-once claim → TOCTOU suppression re-check → send → stamp → finalize),
+ * swapped to the email channel:
+ *
+ * - Recipient gate is a valid email (no-phone → no-email). TCPA quiet hours do
+ *   NOT apply — that is an SMS/call rule; email has no send-window statute.
+ * - Suppression is the email channel: isSuppressed(personId,'email') UNION the
+ *   value-keyed isSuppressedByEmail(address,'email') (both fail closed).
+ * - At-most-once rides the outreach_email_* columns via the
+ *   prospect_email_send_* RPC trio (migration 20260722010100) — independent of
+ *   the SMS claim, so one channel never blocks the other. Pre-migration the
+ *   claim reports 'not_deployed' and the send refuses (fail-closed, no email).
+ * - The transport is the canonical CMA delivery rail `sendCmaToLead`
+ *   (lib/cma/send.ts): fail-closed suppression re-check inside the rail, PDF
+ *   attached, attributeOutbound with emailKey `cma:<slug>` (so the existing
+ *   engagement aggregation in lib/data/prospecting/engagement.ts picks up
+ *   opens/clicks from email_events), Gmail DWD from the broker mailbox with
+ *   Resend fallback, and the crm_timeline email_out row. Attribution happens
+ *   INSIDE the rail — this action never wraps the HTML itself.
+ */
+export async function sendProspectingEmailIntro(
+  kind: ProspectKind,
+  id: string,
+  args: { idempotencyKey: string; subjectOverride?: string | null; bodyOverride?: string | null },
+): Promise<SendEmailIntroResult> {
+  try {
+    // 1. Auth (mirrors the SMS intro step 1).
+    if (!(await requireAdmin())) return { ok: false, error: 'Unauthorized', code: 'auth' }
+
+    const prospect = await getProspect(kind, id)
+    if (!prospect) return { ok: false, error: 'Prospect not found.', code: 'not-found' }
+
+    // 3. Built-doc: client-ready only — the emailed link/PDF must never be a
+    // draft (same chain as the SMS steps, including the cma_id-first slug
+    // binding from the 2026-07-18 F1 audit).
+    if (prospect.doc.state === 'building') {
+      return { ok: false, error: 'The audit is still building. Try again in a moment.', code: 'no-doc' }
+    }
+    if (prospect.doc.state === 'none' || prospect.doc.state === 'failed') {
+      return { ok: false, error: 'No audit built yet for this address. Build it before sending the intro.', code: 'no-doc' }
+    }
+    if (!prospect.streetAddress) {
+      return { ok: false, error: 'No street address on the prospect record.', code: 'not-found' }
+    }
+    const docBaseSlug =
+      prospect.doc.state === 'ready' || prospect.doc.state === 'sent'
+        ? prospect.doc.slug.replace(/--v\d+$/, '')
+        : slugifyAddress(prospect.streetAddress)
+    const clientReady = await getLatestClientReadyCmaRowForBaseSlug(docBaseSlug)
+    if (!clientReady) {
+      return {
+        ok: false,
+        error: 'The audit for this address is not approved yet. Approve it first, otherwise the emailed link would 404 as a draft.',
+        code: 'no-doc',
+      }
+    }
+
+    // 4–6. Non-negotiable exclusions (mirrors SMS steps 4–6, fail-closed relist).
+    if (prospect.compliance.offMarket) {
+      return { ok: false, error: 'This FSBO is off market. Not sendable.', code: 'off-market' }
+    }
+    if (prospect.compliance.hardStop) {
+      return { ok: false, error: 'Hard-stop contact (litigator / TCPA / deceased flag). Do not contact.', code: 'hard-stop' }
+    }
+    if (prospect.compliance.relisted) {
+      return { ok: false, error: 'This property has re-listed (Active/Pending). Soliciting a listed property is not allowed.', code: 'relisted' }
+    }
+    const relistCheck = await verifyNotRelisted(kind, {
+      street_address: prospect.streetAddress,
+      city: prospect.city,
+      expiryComparator: prospect.expiredAt,
+    })
+    if (relistCheck.relisted) {
+      return { ok: false, error: 'This property is now active/pending in MLS. Soliciting a listed property is not allowed.', code: 'relisted' }
+    }
+    if (relistCheck.verifyFailed) {
+      return { ok: false, error: 'Could not verify the property is still off-market. Send blocked until MLS status is confirmed.', code: 'relisted' }
+    }
+
+    // 7. Recipient (email twin of the SMS phone gate). Quiet hours deliberately
+    // NOT checked — TCPA's calling-window rule covers calls/texts, not email.
+    const toEmail = (prospect.contactEmail ?? '').trim().toLowerCase()
+    if (!hasSendableEmail(toEmail)) {
+      return { ok: false, error: 'No valid email on file for this owner.', code: 'no-email' }
+    }
+
+    // 9. Ensure a native CRM lead + LIVE suppression re-check, person-keyed AND
+    // value-keyed (mirrors SMS step 9 + F6 — an opt-out attached to the address
+    // before any person row existed must block).
+    const lead = await ensureNativeLead({
+      name: prospect.ownerName,
+      phone: prospect.contactPhone,
+      email: toEmail,
+      source: kind === 'expired' ? 'expired-outreach-queue' : 'fsbo-outreach',
+      tags: [
+        'audience:seller',
+        kind === 'expired' ? 'intent:expired-listing' : 'intent:fsbo',
+        kind === 'expired' ? 'source:expired-outreach-queue' : 'source:fsbo-outreach',
+        'broker:matt',
+      ],
+      assignedBroker: 'matt',
+    })
+    const sup = await isSuppressed(lead.personId, 'email')
+    if (sup.suppressed) {
+      return { ok: false, error: `Suppressed for email: ${sup.reasons.join(', ') || 'opt-out on file'}.`, code: 'suppressed' }
+    }
+    const emailSup = await isSuppressedByEmail(toEmail, 'email')
+    if (emailSup.suppressed) {
+      return { ok: false, error: `Address suppressed for email: ${emailSup.reasons.join(', ') || 'opt-out on file'}.`, code: 'suppressed' }
+    }
+
+    // 11. Broker overrides gate: fail-closed on any unresolved %token% (mirrors
+    // SMS step 11's refusal). The rail's own default compose carries no tokens.
+    const overrideText = `${args.subjectOverride ?? ''} ${args.bodyOverride ?? ''}`
+    const unresolved = findUnresolvedMergeTokens(overrideText)
+    if (unresolved.length > 0) {
+      return { ok: false, error: `Send refused. Unresolved merge tokens: ${unresolved.join(', ')}.`, code: 'merge-unresolved' }
+    }
+
+    // 10. CLAIM — the at-most-once gate on the EMAIL columns, right before the
+    // irreversible send (mirrors SMS step 10; independent of the SMS claim).
+    const claim = await claimProspectEmailSend(kind, id, args.idempotencyKey)
+    if (claim === 'not_deployed') {
+      return {
+        ok: false,
+        error: 'Email outreach is not provisioned yet (migration 20260722010100 pending). No email was sent.',
+        code: 'send-failed',
+      }
+    }
+    if (claim === 'replay') {
+      const sentAt =
+        prospect.doc.state === 'sent' && prospect.doc.emailSentAt
+          ? prospect.doc.emailSentAt
+          : new Date().toISOString()
+      return { ok: true, messageId: null, personId: lead.personId, sentAt, transport: null }
+    }
+    if (claim === 'already_sent') {
+      return { ok: false, error: 'Intro already emailed to this owner.', code: 'already-sent' }
+    }
+    if (claim === 'claimed_elsewhere') {
+      return { ok: false, error: 'Another send is already in progress for this owner.', code: 'already-sent' }
+    }
+    if (claim === 'not_found') {
+      return { ok: false, error: 'Prospect not found at claim time.', code: 'not-found' }
+    }
+    // claim === 'claimed' — we own the send.
+
+    // 12.5 TOCTOU guard (mirrors SMS step 12.5 / audit M6): an opt-out that
+    // landed between step 9 and the claim must still block. Nothing has been
+    // sent yet, so releasing the claim is safe.
+    const supNow = await isSuppressed(lead.personId, 'email')
+    const emailSupNow = supNow.suppressed ? { suppressed: false, reasons: [] } : await isSuppressedByEmail(toEmail, 'email')
+    if (supNow.suppressed || emailSupNow.suppressed) {
+      await releaseProspectEmailSend(kind, id)
+      const reasons = [...supNow.reasons, ...emailSupNow.reasons].join(', ') || 'opt-out on file'
+      return { ok: false, error: `Suppressed for email: ${reasons}.`, code: 'suppressed' }
+    }
+
+    // 12.6 The rail resolves its recipient from the cmas row — pin it to the
+    // address this dialog showed the broker (the prospect record is the fresher
+    // skip-trace truth; mirrors send-doc.ts's client_email stamp, strengthened
+    // to also correct a stale mismatch). A drifted recipient here would email a
+    // DIFFERENT address than the one the broker approved on screen.
+    const railEmail = ((clientReady.row.client_email as string | null) ?? '').trim().toLowerCase()
+    if (railEmail !== toEmail) {
+      const stamped = await updateCmaRowFieldsBySlug(clientReady.slug, { client_email: toEmail })
+      if (!stamped.ok) {
+        await releaseProspectEmailSend(kind, id)
+        return { ok: false, error: `Could not pin the recipient on the document (${stamped.error ?? 'update failed'}). No email was sent.`, code: 'send-failed' }
+      }
+    }
+
+    // 13. Send via the canonical CMA delivery rail. Suppression re-checks again
+    // inside the rail (fail-closed), tracking + timeline + attribution are the
+    // rail's job (emailKey `cma:<slug>` — the engagement reader's key). A
+    // failure here means NO email left the building → release and allow retry.
+    const sent = await sendCmaToLead(clientReady.slug, {
+      subject: args.subjectOverride?.trim() || undefined,
+      bodyText: args.bodyOverride?.trim() || undefined,
+    })
+    if (!sent.ok) {
+      await releaseProspectEmailSend(kind, id)
+      console.error('[sendProspectingEmailIntro] rail send failed, claim released:', sent.error)
+      return { ok: false, error: sent.error ?? 'Email send failed.', code: 'send-failed' }
+    }
+    const messageId = sent.gmailMessageId ?? sent.resendId ?? null
+
+    // The email HAS gone out. Stamp the provider id durably RIGHT NOW (mirrors
+    // the SMS sid stamp / audit H2): the claim treats a message-id-bearing row
+    // as already-sent, so even if every finalize retry fails, a later retry can
+    // never double-email this owner.
+    if (messageId) {
+      await stampProspectEmailMessageId(kind, id, messageId).catch((e) =>
+        console.error('[sendProspectingEmailIntro] message-id stamp failed (finalize still attempted):', e),
+      )
+    }
+
+    // From here we NEVER release the claim (mirrors SMS F1). Finalize with
+    // retries; on persistent failure leave the claim in place and log loudly.
+    // The rail already wrote the crm_timeline email_out row and the cmas
+    // delivered stamp — no duplicate logging here.
+    let finalized = false
+    for (let attempt = 1; attempt <= 3 && !finalized; attempt++) {
+      try {
+        await finalizeProspectEmailSend(kind, id, {
+          idempotencyKey: args.idempotencyKey,
+          messageId,
+          personId: lead.personId,
+        })
+        finalized = true
+      } catch (e) {
+        console.error(`[sendProspectingEmailIntro] finalize attempt ${attempt} failed:`, e instanceof Error ? e.message : e)
+      }
+    }
+    if (!finalized) {
+      console.error('[sendProspectingEmailIntro] SENT but finalize FAILED after retries. Manual reconcile needed.', {
+        kind,
+        id,
+        messageId,
+      })
+    }
+    await enrichNativeLead({
+      personId: lead.personId,
+      custom: {
+        customClassification: kind === 'expired' ? 'EXPIRED' : 'FSBO',
+        customSellerPropertyAddress: `${prospect.streetAddress}, ${prospect.city ?? ''}`.replace(/, $/, ''),
+      },
+    }).catch((e) => console.warn('[sendProspectingEmailIntro] enrich failed:', e))
+
+    revalidateProspectCaches([kind])
+    return {
+      ok: true,
+      messageId,
+      personId: lead.personId,
+      sentAt: new Date().toISOString(),
+      transport: sent.transport ?? null,
+    }
+  } catch (e) {
+    console.error('[sendProspectingEmailIntro]', e)
+    return { ok: false, error: 'Send failed unexpectedly.', code: 'send-failed' }
+  }
+}
+
 // ── Build the audit/CMA (spec §5.4) ─────────────────────────────────────────
 
 export async function buildProspectDoc(
@@ -408,7 +668,11 @@ export interface ProspectSendContext {
   defaultEmailBody: string
   docSlug: string | null
   clientReady: boolean
+  /** Either-channel first touch (kept for the dialog's approve gate + banner). */
   alreadySent: { at: string; sid: string | null } | null
+  /** Per-channel sent stamps (channel-aware sent-state; null = channel unsent). */
+  sentSms: { at: string; sid: string | null } | null
+  sentEmail: { at: string } | null
   engagement: { reportViews: number; linkTaps: number; emailOpens: number; emailClicks: number; lastActivityAt: string | null }
 }
 
@@ -451,16 +715,36 @@ export async function prepareProspectSend(
       ? renderCrmMerge(String(tpl.body), { custom: { cmaLink: docUrl ?? '' } }, ctx)
       : ''
 
-    const defaultEmailSubject = prospect.streetAddress
+    // Email defaults come from the SAME rail the send uses (prepareCmaSendPreview
+    // → sendCmaToLead's default compose), so preview always equals send and the
+    // dialog's "edited" detection compares against the true server default. The
+    // rail appends the tracked READ THE FULL REPORT button itself — the default
+    // body deliberately carries no raw URL.
+    let defaultEmailSubject = prospect.streetAddress
       ? `Your market analysis for ${prospect.streetAddress}`
       : 'Your market analysis'
-    const defaultEmailBody = docUrl
+    let defaultEmailBody = docUrl
       ? `Hi, Matt with Ryan Realty. I put together a market analysis for ${prospect.streetAddress ?? 'your property'}. Take a look here: ${docUrl} No pressure either way.`
       : ''
+    if (docSlug) {
+      const preview = await prepareCmaSendPreview(docSlug).catch(() => null)
+      if (preview?.ok) {
+        defaultEmailSubject = preview.subject
+        defaultEmailBody = preview.bodyText
+      }
+    }
 
     const alreadySent =
       prospect.doc.state === 'sent'
         ? { at: prospect.doc.sentAt, sid: prospect.doc.sid }
+        : null
+    const sentSms =
+      prospect.doc.state === 'sent' && prospect.doc.smsSentAt
+        ? { at: prospect.doc.smsSentAt, sid: prospect.doc.sid }
+        : null
+    const sentEmail =
+      prospect.doc.state === 'sent' && prospect.doc.emailSentAt
+        ? { at: prospect.doc.emailSentAt }
         : null
 
     return {
@@ -477,6 +761,8 @@ export async function prepareProspectSend(
         docSlug,
         clientReady: Boolean(clientReadyRow),
         alreadySent,
+        sentSms,
+        sentEmail,
         engagement: {
           reportViews: prospect.engagement.reportViews,
           linkTaps: prospect.engagement.linkTaps,

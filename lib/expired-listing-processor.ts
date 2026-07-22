@@ -34,6 +34,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   lookupOwnerForExpiredListing,
   hasReachableOwnerContact,
+  ownershipCustomFields,
   type OwnerLookupResult,
 } from '@/lib/expired-owner-lookup'
 import { autoEnrollPerson } from '@/lib/crm/enroll'
@@ -355,6 +356,7 @@ export async function processNewExpiredListings(
             customLeadTier: 'hot',
             customMoveTimeline: 'ready-now',
             ...demographicCustom,
+            ...ownershipCustomFields(owner),
           },
           assignedBroker: 'matt',
           originNote: {

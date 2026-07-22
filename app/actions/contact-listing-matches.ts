@@ -16,6 +16,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
+import { normalizeSavedSearchFrequency, type SavedSearchFrequency } from '@/lib/saved-search-frequency'
 import { getContactSendTarget } from '@/lib/data/crm/getContactSendTarget'
 import { getCachedSearchListings } from '@/app/actions/search-cache'
 import { listingDetailPath } from '@/lib/slug'
@@ -47,7 +48,7 @@ export type SendListingMatchesResult =
 export async function sendListingMatchesForContactAction(
   personId: number,
   filtersJson: string,
-  opts?: { name?: string | null; frequency?: 'daily' | 'weekly' },
+  opts?: { name?: string | null; frequency?: SavedSearchFrequency },
 ): Promise<SendListingMatchesResult> {
   try {
     if (!Number.isFinite(personId) || personId <= 0) return { ok: false, error: 'A valid contact id is required' }
@@ -71,7 +72,7 @@ export async function sendListingMatchesForContactAction(
     }
     const filtersHash = getSavedSearchHash(filters)
     const name = opts?.name?.trim() || getFilterNameFallback(filters)
-    const frequency = opts?.frequency === 'daily' ? ('daily' as const) : ('weekly' as const)
+    const frequency = opts?.frequency ? normalizeSavedSearchFrequency(opts.frequency) : ('weekly' as const)
 
     // 1. Attach (idempotent) — mints the row + unsubscribe token, keeps cadence.
     const attach = await createListingAlertForLead({

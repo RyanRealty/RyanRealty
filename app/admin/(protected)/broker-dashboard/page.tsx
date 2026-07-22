@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { revalidatePath } from 'next/cache'
 import { ChevronRight, CheckCircle2 } from 'lucide-react'
 import { getBrokerCommandCenterData } from '@/app/actions/broker-command-center'
-import { getBrokerActionQueue, confirmNextStepAction, getRecentNewLeads, getRecentWebsiteVisitors, getRecentEmailPeople, getCrmAccess } from '@/app/actions/crm'
+import { getBrokerActionQueue, getBrokerInboundTriage, confirmNextStepAction, dismissTriageItemAction, getRecentNewLeads, getRecentWebsiteVisitors, getRecentEmailPeople, getCrmAccess } from '@/app/actions/crm'
+import { mergeNeedsAction, formatTriageAge, type TriageKind } from '@/lib/data/crm/getInboundTriage'
 import { getGlobalDeliverySummary } from '@/lib/data/crm/emailDelivery'
 import { ActionSubmitButton } from '@/components/admin/ActionSubmitButton'
 import DashboardActivityFeed from '@/components/admin/DashboardActivityFeed'
@@ -87,11 +88,33 @@ const CHANNEL_CHIP: Record<string, { label: string; cls: string }> = {
 }
 const CHANNEL_VERB: Record<string, string> = { email: 'Email', sms: 'Text' }
 
+/** Inbound-triage chips — visually distinct from the sequence channel chips so
+ *  a reply/doc-open/visit row reads as inbound activity, not an outbound step. */
+const TRIAGE_CHIP: Record<TriageKind, { label: string; cls: string }> = {
+  reply: { label: 'Reply', cls: 'border-destructive/30 bg-destructive/10 text-destructive' },
+  task: { label: 'Call', cls: 'border-accent/40 bg-accent/10 text-accent-foreground' },
+  'doc-open': { label: 'Doc open', cls: 'border-primary/20 bg-primary/5 text-primary' },
+  visit: { label: 'On site', cls: 'border-border bg-muted text-muted-foreground' },
+}
+
 // ── one-click actions ────────────────────────────────────
 
 async function confirmStepFromDashboard(enrollmentId: number, _formData: FormData) {
   'use server'
   await confirmNextStepAction(enrollmentId)
+  revalidatePath('/admin/broker-dashboard')
+}
+
+/** Lightweight dismiss for a triage row — mark read / snooze via existing
+ *  mechanisms only (dismissTriageItemAction). */
+async function dismissTriageFromDashboard(
+  personId: number,
+  kind: string,
+  taskId: number | null,
+  _formData: FormData,
+) {
+  'use server'
+  await dismissTriageItemAction({ personId, kind, taskId })
   revalidatePath('/admin/broker-dashboard')
 }
 
@@ -116,9 +139,12 @@ export default async function BrokerCommandCenterPage({
   const feedSlug = isSuper
     ? (selectedBroker === 'me' ? feedAccess?.brokerSlug ?? null : null)
     : feedAccess?.brokerSlug ?? null
-  const [data, actionQueue, websiteRows, emailRows, recentLeads, deliverySummary] = await Promise.all([
+  const [data, actionQueue, triageItems, websiteRows, emailRows, recentLeads, deliverySummary] = await Promise.all([
     getBrokerCommandCenterData(selectedBroker === 'me' ? 'me' : 'everyone'),
     getBrokerActionQueue(),
+    // Inbound triage: unread replies, CMA/BPO/report opens, hot visitors,
+    // showing/new-lead call tasks — merged into the queue below. Fails soft.
+    getBrokerInboundTriage(feedSlug).catch(() => []),
     getRecentWebsiteVisitors(feedSlug, 12).catch(() => []),
     getRecentEmailPeople(feedSlug, 12).catch(() => []),
     getRecentNewLeads(12).catch(() => []),
@@ -129,9 +155,10 @@ export default async function BrokerCommandCenterPage({
   ])
 
   // FUB desktop dashboard data: the Recent Activity table rows + real KPI counts.
+  const totalNeedsAction = actionQueue.length + triageItems.length
   const [activityRows, kpis] = await Promise.all([
     getDashboardRecentActivity(feedSlug, 12).catch(() => []),
-    getDashboardKpis(feedSlug, actionQueue.length).catch(() => ({ newLeads30d: 0, newLeads7d: 0, unactioned: actionQueue.length })),
+    getDashboardKpis(feedSlug, totalNeedsAction).catch(() => ({ newLeads30d: 0, newLeads7d: 0, unactioned: totalNeedsAction })),
   ])
 
   if (!data) {
@@ -156,8 +183,11 @@ export default async function BrokerCommandCenterPage({
 
   // Priority counts. Overdue tasks are intentionally NOT surfaced on the
   // dashboard (Matt directive 2026-06-29) — the action queue is what needs action.
-  const needsActionCount = actionQueue.length
-  const heroActions = actionQueue.slice(0, 6)
+  // ONE ranked list: sequence steps waiting on the broker merged with inbound
+  // triage (replies, doc opens, hot visits, showing/new-lead calls), capped 15.
+  const needsActionCount = totalNeedsAction
+  const heroEntries = mergeNeedsAction(actionQueue, triageItems, 15)
+  const nowMs = Date.now()
   // Tasks shown on the dashboard exclude overdue (today + upcoming only).
   const upcomingTasks = data.tasksDue.filter((t) => !t.isOverdue)
 
@@ -224,7 +254,7 @@ export default async function BrokerCommandCenterPage({
             },
             {
               label: 'Needs Action', value: String(needsActionCount), sub: needsActionCount === 0 ? 'all caught up' : 'to act on',
-              help: 'Automated follow-ups paused and waiting for your approval. Each one is a message ready to send from the list below.',
+              help: 'Follow-ups waiting for your approval plus fresh inbound activity from the last 72 hours: unread replies, CMA and BPO opens, hot site visits, and showing or new-lead calls due. Ranked by urgency in the list below.',
             },
             {
               label: 'Tasks Due', value: String(data.tasksTodayCount), sub: 'upcoming',
@@ -273,48 +303,80 @@ export default async function BrokerCommandCenterPage({
                 </span>
               ) : null}
             </div>
-            {needsActionCount > heroActions.length ? (
+            {needsActionCount > heroEntries.length ? (
               <Link href="/admin/crm" className="shrink-0 text-xs font-medium text-primary-foreground/80 hover:text-primary-foreground">
                 See all →
               </Link>
             ) : null}
           </div>
 
-          {needsActionCount === 0 ? (
+          {heroEntries.length === 0 ? (
             <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
               <CheckCircle2 className="h-8 w-8 text-success" />
               <p className="text-sm font-medium text-foreground">You are all caught up</p>
-              <p className="text-xs text-muted-foreground">No leads or tasks need action right now.</p>
+              <p className="text-xs text-muted-foreground">No replies, leads, or steps need action right now.</p>
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {heroActions.map((a) => {
-                const chip = CHANNEL_CHIP[a.channel] ?? { label: 'Step', cls: 'border-warning/30 bg-warning/10 text-warning' }
-                const verb = CHANNEL_VERB[a.channel]
-                const title = verb ? `${verb} ${a.firstName ?? a.personName}` : a.personName
-                const blocked = Boolean(a.holdReason) || a.unresolved.length > 0
-                const detail = a.holdReason ?? (a.unresolved.length > 0 ? 'Open to add missing info before this can send' : (a.subjectPreview ?? a.preview))
+              {heroEntries.map((entry) => {
+                if (entry.kind === 'sequence') {
+                  const a = entry.item
+                  const chip = CHANNEL_CHIP[a.channel] ?? { label: 'Step', cls: 'border-warning/30 bg-warning/10 text-warning' }
+                  const verb = CHANNEL_VERB[a.channel]
+                  const title = verb ? `${verb} ${a.firstName ?? a.personName}` : a.personName
+                  const blocked = Boolean(a.holdReason) || a.unresolved.length > 0
+                  const detail = a.holdReason ?? (a.unresolved.length > 0 ? 'Open to add missing info before this can send' : (a.subjectPreview ?? a.preview))
+                  return (
+                    <div key={`a-${a.enrollmentId}`} className="flex min-h-14 items-center gap-3 px-4 py-2.5">
+                      <span className={`shrink-0 rounded-md border px-2 py-1 text-xs font-semibold ${chip.cls}`}>{chip.label}</span>
+                      <Link
+                        href={`/admin/crm/${a.personId}`}
+                        className="-my-2.5 min-w-0 flex-1 py-2.5 transition-opacity hover:opacity-70"
+                      >
+                        <span className="block truncate text-sm font-semibold text-foreground">{title}</span>
+                        <span className="block truncate text-xs text-muted-foreground">{detail}</span>
+                      </Link>
+                      {blocked ? (
+                        <Link href={`/admin/crm/${a.personId}`} className="flex shrink-0 items-center gap-0.5 text-xs font-medium text-muted-foreground hover:text-foreground">
+                          Open <ChevronRight className="h-4 w-4" />
+                        </Link>
+                      ) : (
+                        <form action={confirmStepFromDashboard.bind(null, a.enrollmentId)}>
+                          <ActionSubmitButton pendingLabel="Sending…" ariaLabel={`${verb ? 'Send' : 'Confirm'} step for ${a.personName}`}>
+                            {verb ? 'Send' : 'Confirm'}
+                          </ActionSubmitButton>
+                        </form>
+                      )}
+                    </div>
+                  )
+                }
+                // Inbound triage row — reply / doc open / hot visit / call task.
+                const t = entry.item
+                const chip = TRIAGE_CHIP[t.kind]
+                const age = formatTriageAge(t.occurredAt, nowMs)
                 return (
-                  <div key={`a-${a.enrollmentId}`} className="flex min-h-14 items-center gap-3 px-4 py-2.5">
+                  <div key={`t-${t.id}`} className="flex min-h-14 items-center gap-3 px-4 py-2.5">
                     <span className={`shrink-0 rounded-md border px-2 py-1 text-xs font-semibold ${chip.cls}`}>{chip.label}</span>
                     <Link
-                      href={`/admin/crm/${a.personId}`}
+                      href={t.deepLink}
                       className="-my-2.5 min-w-0 flex-1 py-2.5 transition-opacity hover:opacity-70"
                     >
-                      <span className="block truncate text-sm font-semibold text-foreground">{title}</span>
-                      <span className="block truncate text-xs text-muted-foreground">{detail}</span>
+                      <span className="block truncate text-sm font-semibold text-foreground">{t.personName ?? `Contact #${t.personId}`}</span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {t.signal}
+                        {age ? ` · ${age} ago` : ''}
+                      </span>
                     </Link>
-                    {blocked ? (
-                      <Link href={`/admin/crm/${a.personId}`} className="flex shrink-0 items-center gap-0.5 text-xs font-medium text-muted-foreground hover:text-foreground">
-                        Open <ChevronRight className="h-4 w-4" />
-                      </Link>
-                    ) : (
-                      <form action={confirmStepFromDashboard.bind(null, a.enrollmentId)}>
-                        <ActionSubmitButton pendingLabel="Sending…" ariaLabel={`${verb ? 'Send' : 'Confirm'} step for ${a.personName}`}>
-                          {verb ? 'Send' : 'Confirm'}
-                        </ActionSubmitButton>
-                      </form>
-                    )}
+                    <form action={dismissTriageFromDashboard.bind(null, t.personId, t.kind, t.taskId)}>
+                      <ActionSubmitButton
+                        variant="ghost"
+                        pendingLabel="Dismissing…"
+                        ariaLabel={`Dismiss ${t.signal.toLowerCase()} for ${t.personName ?? `contact ${t.personId}`}`}
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        Dismiss
+                      </ActionSubmitButton>
+                    </form>
                   </div>
                 )
               })}

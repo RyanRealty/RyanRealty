@@ -1,7 +1,9 @@
 'use server'
 
+import { cookies, headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { recordSaveListingEvent } from '@/lib/data/crm/recordSaveListingEvent'
 import { incrementListingSaveCount, decrementListingSaveCount } from '@/app/actions/engagement'
 import { unlikeListing } from '@/app/actions/likes'
 import { normalizeListingKey, planSavedHomeRemoval } from '@/lib/saved-home-toggle'
@@ -48,7 +50,20 @@ export async function saveListing(listingKey: string): Promise<{ error: string |
   })
   if (error) return { error: error.message }
   await incrementListingSaveCount(canonicalKey)
+  await emitSaveEvent(canonicalKey)
   return { error: null }
+}
+
+/** First-party behavioral mirror (best-effort, GPC + session gated inside) so
+ *  the CRM behavior panels see the save on the visitor's trail. */
+async function emitSaveEvent(canonicalKey: string): Promise<void> {
+  const [cookieStore, headerStore] = await Promise.all([cookies(), headers()])
+  await recordSaveListingEvent({
+    listingKey: canonicalKey,
+    action: 'save',
+    rrVid: cookieStore.get('rr_vid')?.value ?? null,
+    secGpcHeader: headerStore.get('sec-gpc'),
+  })
 }
 
 /**
@@ -74,6 +89,7 @@ export async function resumeSaveListing(listingKey: string): Promise<{ saved: bo
   const { error } = await supabase.from('saved_listings').insert({ user_id: user.id, listing_key: canonicalKey })
   if (error) return { saved: false, needsAuth: false } // a real write error is NOT auth — don't claim saved
   await incrementListingSaveCount(canonicalKey)
+  await emitSaveEvent(canonicalKey)
   return { saved: true, needsAuth: false }
 }
 

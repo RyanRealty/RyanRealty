@@ -13,7 +13,7 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { slugifyAddress, pickLatestCmaVersion } from '@/lib/cma/address-slug'
 import { findOpenCmaActionBySlug } from '@/lib/data/cma/queue'
-import { expectedDocTypeFor, type ProspectDocState, type ProspectKind } from './types'
+import { expectedDocTypeFor, mergeChannelSentState, type ProspectDocState, type ProspectKind } from './types'
 
 export { expectedDocTypeFor, introTemplateKeyFor } from './types'
 
@@ -25,6 +25,10 @@ export interface ProspectDocInput {
   street_address: string | null
   outreach_sms_sent_at: string | null
   outreach_sms_sid: string | null
+  /** Optional — the email-channel stamp (migration 20260722010100). Callers
+   *  reading a pre-migration row simply omit it (channel-aware sent-state
+   *  degrades to SMS-only). */
+  outreach_email_sent_at?: string | null
 }
 
 type CmaJoinRow = {
@@ -126,14 +130,20 @@ export async function getBuiltDocForProspect(
     !cma.html_path.startsWith('pending:')
 
   if (ready && cma) {
-    if (prospect.outreach_sms_sent_at) {
+    const sent = mergeChannelSentState(
+      prospect.outreach_sms_sent_at ?? null,
+      prospect.outreach_email_sent_at ?? null,
+    )
+    if (sent) {
       return {
         state: 'sent',
         slug: cma.slug,
         docType: cma.doc_type ?? expectedType,
         recommendedList: cma.recommended_list,
-        sentAt: prospect.outreach_sms_sent_at,
-        sid: prospect.outreach_sms_sid ?? null,
+        sentAt: sent.sentAt,
+        sid: sent.smsSentAt ? (prospect.outreach_sms_sid ?? null) : null,
+        smsSentAt: sent.smsSentAt,
+        emailSentAt: sent.emailSentAt,
       }
     }
     return {

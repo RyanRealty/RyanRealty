@@ -14,7 +14,7 @@ import { getBpoListingCyclesByAddress } from '@/lib/data/bpo/reads'
 import { getProspectDripState } from './drip'
 import { resolveDocsBatch, resolveComplianceBatch } from './batch'
 import { getProspectEngagement, EMPTY_ENGAGEMENT, type ProspectEngagementKey } from './engagement'
-import type { ProspectComplianceState, ProspectDetail, ProspectDocState, ProspectKind, ProspectPriceCycle, ProspectRow } from './types'
+import { isUndefinedColumnError, type ProspectComplianceState, type ProspectDetail, type ProspectDocState, type ProspectKind, type ProspectPriceCycle, type ProspectRow } from './types'
 
 // Fail-closed default when the batch somehow omits a row (it never should — it
 // iterates every input — but the read must never send an unclassified row).
@@ -47,6 +47,45 @@ export const FSBO_SELECT =
   'year_built, lot_size_sqft, days_listed, description, contact_source, owner_lookup_status, enrichment_notes, ' +
   'outreach_sms_sent_at, outreach_sms_sid, outreach_crm_person_id, fub_person_id, cma_id, ' +
   'compliance_hard_stop, compliance_flags'
+
+// ── Email-outreach column feature-detect (migration 20260722010100) ─────────
+//
+// The email-channel columns may not exist yet (the orchestrator applies
+// migrations after the wave). Every prospecting base read selects them
+// OPTIMISTICALLY; on a 42703 the caller marks them absent (module-level flag)
+// and retries with the legacy column list, so the dashboard renders
+// pre-migration instead of erroring. Once marked absent the extra round-trip
+// is skipped for the life of the server process.
+
+const EMAIL_OUTREACH_SELECT = 'outreach_email_sent_at, outreach_email_status, outreach_email_message_id'
+
+let emailOutreachColumnsPresent: boolean | null = null
+
+/** The current select list for a prospecting base read (email columns included unless known absent). */
+export function prospectSelect(kind: ProspectKind): string {
+  const base = kind === 'expired' ? EXPIRED_SELECT : FSBO_SELECT
+  return emailOutreachColumnsPresent === false ? base : `${base}, ${EMAIL_OUTREACH_SELECT}`
+}
+
+/** Legacy (pre-migration) select list — the 42703 retry target. */
+export function prospectSelectLegacy(kind: ProspectKind): string {
+  return kind === 'expired' ? EXPIRED_SELECT : FSBO_SELECT
+}
+
+/** True when the retry-with-legacy-columns path applies for this read error. */
+export function shouldRetryWithoutEmailColumns(
+  error: { code?: string | null; message?: string | null } | null | undefined,
+): boolean {
+  return emailOutreachColumnsPresent !== false && isUndefinedColumnError(error)
+}
+
+/** Remember the 42703 so later reads skip the optimistic select. */
+export function markEmailOutreachColumnsAbsent(): void {
+  if (emailOutreachColumnsPresent !== false) {
+    console.warn('[prospecting] outreach_email_* columns absent (migration 20260722010100 not applied yet) — using legacy select')
+  }
+  emailOutreachColumnsPresent = false
+}
 
 const LISTINGS_JOIN_COLUMNS =
   'ListingKey, PhotoURL, Latitude, Longitude, ListDate, StandardStatus, public_remarks, year_built, ' +
@@ -247,13 +286,21 @@ async function loadExpired(
   sb: Sb,
   id: string,
 ): Promise<{ row: ProspectRow; raw: RawRow; listing: ExpiredListingJoin | null } | null> {
-  const { data: r, error } = await sb
+  let { data: r, error } = await sb
     .from('expired_listings')
-    .select(EXPIRED_SELECT)
+    .select(prospectSelect('expired'))
     // @canonical-key — expired_listings.listing_key is the MLS key stored at
     // detection time; a self-lookup against our own table.
     .eq('listing_key', id.trim())
     .maybeSingle()
+  if (error && shouldRetryWithoutEmailColumns(error)) {
+    markEmailOutreachColumnsAbsent()
+    ;({ data: r, error } = await sb
+      .from('expired_listings')
+      .select(prospectSelectLegacy('expired'))
+      .eq('listing_key', id.trim())
+      .maybeSingle())
+  }
   if (error) {
     console.error('[prospecting] getProspect(expired) failed:', error.message)
     return null
@@ -267,11 +314,19 @@ async function loadExpired(
 }
 
 async function loadFsbo(sb: Sb, id: string): Promise<{ row: ProspectRow; raw: RawRow } | null> {
-  const { data: r, error } = await sb
+  let { data: r, error } = await sb
     .from('fsbo_listings')
-    .select(FSBO_SELECT)
+    .select(prospectSelect('fsbo'))
     .eq('fsbo_url', id.trim())
     .maybeSingle()
+  if (error && shouldRetryWithoutEmailColumns(error)) {
+    markEmailOutreachColumnsAbsent()
+    ;({ data: r, error } = await sb
+      .from('fsbo_listings')
+      .select(prospectSelectLegacy('fsbo'))
+      .eq('fsbo_url', id.trim())
+      .maybeSingle())
+  }
   if (error) {
     console.error('[prospecting] getProspect(fsbo) failed:', error.message)
     return null
@@ -326,6 +381,67 @@ async function fetchPriceHistory(row: Pick<ProspectRow, 'streetAddress' | 'city'
   }))
 }
 
+// ── Ownership tenure ("how long they owned it") ─────────────────────────────
+//
+// Additive surface field (2026-07-21): ownershipYears on ProspectDetail.
+// Never estimated (§0) — a date is used only when a source proves it:
+//   1. crm_people.custom.customOwnershipSince — county deed record persisted
+//      by the owner-lookup chain (lib/expired-owner-lookup.ts).
+//   2. The "Owned since YYYY-MM-DD" marker the same chain writes into
+//      expired/fsbo enrichment_notes (buildCountyNotes).
+//   3. The most recent CLOSED MLS cycle in the already-fetched price history
+//      (the last recorded MLS sale at the address).
+// When none of the three exists the field is null and the UI stays silent.
+
+const OWNED_SINCE_NOTE_RE = /Owned since (\d{4}-\d{2}-\d{2})/
+
+function parseIsoDate(v: unknown): Date | null {
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}/.test(v.trim())) return null
+  const d = new Date(v.trim().slice(0, 10))
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+/** Whole years between the proven date and now. 0 = under a year. Null when
+ *  the input is absent, unparseable, or in the future (bad data → omit). */
+export function ownershipYearsFromDate(sinceIso: unknown, asOf: Date = new Date()): number | null {
+  const since = parseIsoDate(sinceIso)
+  if (!since) return null
+  const ms = asOf.getTime() - since.getTime()
+  if (ms < 0) return null
+  return Math.floor(ms / (365.2425 * 86_400_000))
+}
+
+/** Resolve the proven ownership-start date by source priority (see above). */
+export function deriveOwnershipSince(args: {
+  customOwnershipSince?: unknown
+  enrichmentNotes: string | null
+  priceHistory: ProspectPriceCycle[]
+}): string | null {
+  const custom = parseIsoDate(args.customOwnershipSince)
+  if (custom) return custom.toISOString().slice(0, 10)
+
+  const noteMatch = args.enrichmentNotes?.match(OWNED_SINCE_NOTE_RE)
+  if (noteMatch && parseIsoDate(noteMatch[1])) return noteMatch[1]
+
+  // Last recorded MLS sale: closed cycle with a real close price, newest first.
+  const closed = args.priceHistory
+    .filter((c) => (c.closePrice ?? 0) > 0 && parseIsoDate(c.offMarketDate) != null)
+    .sort((a, b) => String(b.offMarketDate).localeCompare(String(a.offMarketDate)))
+  const last = closed[0]?.offMarketDate ?? null
+  return last ? last.slice(0, 10) : null
+}
+
+/** Bounded single-person read of crm_people.custom.customOwnershipSince.
+ *  Fail-soft: any error or missing person returns null. */
+async function fetchCustomOwnershipSince(sb: Sb, personId: number | null): Promise<string | null> {
+  if (personId == null) return null
+  const { data, error } = await sb.from('crm_people').select('custom').eq('id', personId).maybeSingle()
+  if (error || !data) return null
+  const custom = (data as { custom?: Record<string, unknown> | null }).custom
+  const v = custom?.customOwnershipSince
+  return typeof v === 'string' ? v : null
+}
+
 /** Row + property card + full price history for the review drawer (spec §7). */
 export async function getProspectDetail(kind: ProspectKind, id: string): Promise<ProspectDetail | null> {
   const sb = createServiceClient()
@@ -334,9 +450,10 @@ export async function getProspectDetail(kind: ProspectKind, id: string): Promise
     const loaded = await loadExpired(sb, id)
     if (!loaded) return null
     const { row, raw, listing } = loaded
-    const [priceHistory, drip] = await Promise.all([
+    const [priceHistory, drip, customOwnershipSince] = await Promise.all([
       fetchPriceHistory(row),
       getProspectDripState(kind, row.personId),
+      fetchCustomOwnershipSince(sb, row.personId),
     ])
     return {
       ...row,
@@ -359,6 +476,13 @@ export async function getProspectDetail(kind: ProspectKind, id: string): Promise
       contactSource: (raw.contact_source as string | null) ?? null,
       ownerLookupStatus: (raw.owner_lookup_status as string | null) ?? null,
       enrichmentNotes: (raw.enrichment_notes as string | null) ?? null,
+      ownershipYears: ownershipYearsFromDate(
+        deriveOwnershipSince({
+          customOwnershipSince,
+          enrichmentNotes: (raw.enrichment_notes as string | null) ?? null,
+          priceHistory,
+        }),
+      ),
       priceHistory,
       drip,
     }
@@ -367,9 +491,10 @@ export async function getProspectDetail(kind: ProspectKind, id: string): Promise
   const loaded = await loadFsbo(sb, id)
   if (!loaded) return null
   const { row, raw } = loaded
-  const [priceHistory, drip] = await Promise.all([
+  const [priceHistory, drip, customOwnershipSince] = await Promise.all([
     fetchPriceHistory(row),
     getProspectDripState(kind, row.personId),
+    fetchCustomOwnershipSince(sb, row.personId),
   ])
   return {
     ...row,
@@ -395,6 +520,13 @@ export async function getProspectDetail(kind: ProspectKind, id: string): Promise
     contactSource: (raw.contact_source as string | null) ?? null,
     ownerLookupStatus: (raw.owner_lookup_status as string | null) ?? null,
     enrichmentNotes: (raw.enrichment_notes as string | null) ?? null,
+    ownershipYears: ownershipYearsFromDate(
+      deriveOwnershipSince({
+        customOwnershipSince,
+        enrichmentNotes: (raw.enrichment_notes as string | null) ?? null,
+        priceHistory,
+      }),
+    ),
     priceHistory,
     drip,
   }

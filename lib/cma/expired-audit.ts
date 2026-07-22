@@ -36,8 +36,11 @@ export const STANDARD_LISTING_FEE_PCT = 3.0
 export const BUYER_BROKER_ASSUMPTION_PCT = 2.5
 
 export interface ExpiredFailureFinding {
-  /** Which of the audit lenses this belongs to. */
-  lens: 'pricing' | 'time-on-market' | 'price-cuts' | 'attempts' | 'presentation'
+  /** Which of the audit lenses this belongs to. 'Ownership' is deliberately
+   *  display-cased: the renderer (lib/cma/render.ts expiredAuditPage) falls
+   *  back to the raw lens string for values missing from LENS_LABELS, so this
+   *  value renders as a correct sentence-case subhead without a render change. */
+  lens: 'pricing' | 'time-on-market' | 'price-cuts' | 'attempts' | 'presentation' | 'Ownership'
   /** The factual observation (numbers, no adjectives). */
   fact: string
   /** What it means for the relist, plainly stated. */
@@ -73,6 +76,58 @@ export interface ExpiredAuditData {
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`
 
 /**
+ * Ownership-tenure line for the pricing/context section — 'Owned since YYYY
+ * (N years)' when a primary source proves the date, omitted when none does
+ * (§0: never estimated). Source priority:
+ *   1. `ownershipSince` — the county deed record resolved by the owner-lookup
+ *      chain (lib/expired-owner-lookup.ts fetchDialOwnershipSince), when the
+ *      caller passes it through.
+ *   2. `history.lastSaleDate` — the last closed MLS sale at the address, which
+ *      the engine already reconstructed and traced (lib/bpo/history.ts).
+ * Exported for tests. Returns null when neither source has a usable date or
+ * the date does not precede the audited listing period.
+ */
+export function buildOwnershipFinding(args: {
+  history: BpoListingHistory
+  ownershipSince?: string | null
+  asOf?: Date
+}): ExpiredFailureFinding | null {
+  const { history } = args
+  const asOf = args.asOf ?? new Date()
+
+  const fromCounty = args.ownershipSince?.trim() || null
+  const fromMls = history.lastSaleDate?.trim() || null
+  const since = fromCounty ?? fromMls
+  if (!since || !/^\d{4}-\d{2}-\d{2}/.test(since)) return null
+  const sinceDate = new Date(since.slice(0, 10))
+  if (Number.isNaN(sinceDate.getTime())) return null
+
+  const ms = asOf.getTime() - sinceDate.getTime()
+  if (ms < 0) return null
+  // Tenure must predate the listing period we are auditing — a sale recorded
+  // after the final cycle listed means the record is not this owner's story.
+  const cycleListDate = history.currentCycle?.listDate
+  if (cycleListDate && since.slice(0, 10) > String(cycleListDate).slice(0, 10)) return null
+
+  const years = Math.floor(ms / (365.2425 * 86_400_000))
+  const yearsLabel = years >= 1 ? `${years} ${years === 1 ? 'year' : 'years'}` : 'under a year'
+  const yyyy = since.slice(0, 4)
+
+  const fact = fromCounty
+    ? `Owned since ${yyyy} (${yearsLabel}) per the county deed record.`
+    : `Owned since ${yyyy} (${yearsLabel}). The MLS record shows the last sale at this address closed in ${yyyy}${
+        history.lastSalePrice ? ` at ${usd(history.lastSalePrice)}` : ''
+      }.`
+
+  const meaning =
+    years >= 5
+      ? 'That much time in one home shifts the relist conversation from the last ask to your net. The net sheet in this report runs the numbers at the recommended price.'
+      : 'A recent purchase price anchors expectations. The comparable sales in this report are the market\'s current answer, independent of what was paid.'
+
+  return { lens: 'Ownership', fact, meaning }
+}
+
+/**
  * Deterministic failure analysis. Every finding derives from a number the
  * engine verified; anything not supported by data is simply absent.
  */
@@ -82,6 +137,10 @@ export function buildFailureFindings(args: {
   market: CmaMarketContext | null
   history: BpoListingHistory
   photosCount: number | null
+  /** County-deed ownership start (lib/expired-owner-lookup.ts), when the
+   *  caller has it. Optional — buildOwnershipFinding falls back to the last
+   *  closed MLS sale already inside `history`. */
+  ownershipSince?: string | null
 }): ExpiredFailureFinding[] {
   const { subject, pricing, market, history, photosCount } = args
   const findings: ExpiredFailureFinding[] = []
@@ -119,6 +178,12 @@ export function buildFailureFindings(args: {
       })
     }
   }
+
+  // 1.6. Ownership tenure — 'Owned since YYYY (N years)' in the pricing
+  // context, only when the county deed record or the last closed MLS sale
+  // proves the date (§0: omitted when unknown, never estimated).
+  const ownership = buildOwnershipFinding({ history, ownershipSince: args.ownershipSince })
+  if (ownership) findings.push(ownership)
 
   // 2. Time on market. Use the FINAL CYCLE's own exposure (list to off-market),
   // not CumulativeDaysOnMarket — the market median is a single-cycle measure,

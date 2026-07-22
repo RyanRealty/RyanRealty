@@ -161,28 +161,58 @@ function captureSource(): { campaign?: { source?: string; medium?: string; campa
   return result
 }
 
+/** Event types client surfaces may fire into the first-party visitor store.
+ *  Must stay a subset of ALLOWED_EVENT_TYPES in app/api/visitors/track. */
+export type FirstPartyEventType =
+  | 'page_view'
+  | 'listing_view'
+  | 'search'
+  | 'scroll_depth'
+  | 'section_view'
+  | 'cta_click'
+  | 'save_listing'
+
+export type FirstPartyEventOptions = {
+  /** MLS number when the event concerns one listing. */
+  listingMls?: string | null
+  /** Scroll depth percent (scroll_depth events). */
+  scrollDepthPct?: number
+  /** Free-form event payload (e.g. { query, city } for search events). */
+  metadata?: Record<string, unknown>
+  /** Override the pathname-derived page category. */
+  pageCategory?: string
+}
+
 /**
  * Fire a same-origin POST to /api/visitors/track. The endpoint upserts the
  * session and inserts the event; the DB trigger updates engagement_score and
  * intent_tags. Server-side consent gate refuses 'declined' events even if
  * something here misbehaves.
+ *
+ * Exported so interaction surfaces (SearchFilters search fires,
+ * LandingPageTracker scroll-depth dual-writes) share ONE consent gate, ONE
+ * session key, and ONE payload shape with the page-view tracker below.
  */
-function fireVisitorEvent(pathname: string, eventType: 'page_view' | 'listing_view', listingMls?: string | null) {
+export function fireFirstPartyEvent(eventType: FirstPartyEventType, opts: FirstPartyEventOptions = {}) {
+  if (typeof window === 'undefined') return
   const sessionId = getOrCreateSessionId()
   if (!sessionId) return
   const consent = consentLevel()
   if (consent === 'declined') return
   const { campaign, referrer, landingPage, fbclid } = captureSource()
+  const pathname = window.location.pathname
   const payload = {
     sessionId,
-    sourceDomain: typeof window !== 'undefined' ? window.location.hostname.toLowerCase().replace(/^www\./, '') : 'ryanrealty.vercel.app',
+    sourceDomain: window.location.hostname.toLowerCase().replace(/^www\./, ''),
     eventType,
-    pageUrl: typeof window !== 'undefined' ? window.location.href : pathname,
+    pageUrl: window.location.href,
     pageTitle: typeof document !== 'undefined' ? document.title.slice(0, 200) : undefined,
-    pageCategory: categorizePage(pathname),
-    // Identifies WHICH property was viewed — the server writes visitor_events.listing_mls
-    // and fires trackListingView() to Follow Up Boss so the CRM logs the property view.
-    listing: listingMls ? { mlsNumber: listingMls } : undefined,
+    pageCategory: opts.pageCategory ?? categorizePage(pathname),
+    // Identifies WHICH property the event concerns — the server writes
+    // visitor_events.listing_mls so the CRM behavior panels can join the home.
+    listing: opts.listingMls ? { mlsNumber: opts.listingMls } : undefined,
+    scrollDepthPct: typeof opts.scrollDepthPct === 'number' ? opts.scrollDepthPct : undefined,
+    metadata: opts.metadata,
     campaign,
     fbclid,
     referrer,
@@ -198,6 +228,11 @@ function fireVisitorEvent(pathname: string, eventType: 'page_view' | 'listing_vi
       keepalive: true,
     }).catch(() => {})
   } catch {}
+}
+
+/** Page/listing view fire keyed to a pathname (the tracker's own effect path). */
+function fireVisitorEvent(pathname: string, eventType: 'page_view' | 'listing_view', listingMls?: string | null) {
+  fireFirstPartyEvent(eventType, { listingMls, pageCategory: categorizePage(pathname) })
 }
 
 

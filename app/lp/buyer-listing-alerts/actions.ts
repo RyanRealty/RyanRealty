@@ -12,6 +12,8 @@ import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { backfillSessionToFub } from '@/lib/visitor-backfill'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
+import { upsertListingAlert } from '@/lib/data/leads/listingAlerts'
+import { buildBuyerAlertFilterSets } from './alert-filters'
 import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
 import { resolveLeadSource, resolvePaidAttributionTags } from '@/lib/crm/lead-source'
 import { cookies, headers } from 'next/headers'
@@ -339,6 +341,38 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
       void import('@/lib/crm/enroll')
         .then(({ autoEnrollByFubId }) => autoEnrollByFubId(fubPersonId, { smsConsent: submission.smsConsent }))
         .catch((e) => console.warn('[buyer-lp] instant auto-enroll failed:', e))
+    }
+
+    // ─── Durable listing alerts (the thing this LP advertises) ─────────────
+    // The page promises listing alerts, so the submission must mint the
+    // listing_alerts rows the cron actually emails — not just the lead
+    // (funnel gap closed 2026-07-21). Mirrors the guest /search capture
+    // (app/actions/search-alert-capture.ts): filters normalized through the
+    // one shared vocabulary, narrowing-guarded (never a whole-MLS alert),
+    // deduped by (email, filters_hash) via upsertListingAlert, which also
+    // keeps a previously unsubscribed identical search muted instead of
+    // resurrecting it. Suppression posture matches the whole rail: the
+    // hard-stop gate above skips creation, and the alert cron re-checks
+    // hard-stop + email suppression at every send. Best-effort — an alert
+    // persist blip must never lose the lead.
+    if (!hardStopped) {
+      try {
+        const alertSets = buildBuyerAlertFilterSets({ budgetMin, budgetMax, bedsMin, searchAreas: searchAreasArr })
+        for (const set of alertSets) {
+          const persisted = await upsertListingAlert({
+            email,
+            filters: set.filters,
+            filtersHash: set.filtersHash,
+            name: set.name,
+            fubPersonId,
+          })
+          if (!persisted.ok) {
+            console.warn(`[buyer-lp] listing alert persist failed for ${set.filtersHash}:`, persisted.error)
+          }
+        }
+      } catch (e) {
+        console.warn('[buyer-lp] listing alert setup failed (non-blocking):', e)
+      }
     }
 
     // ─── 5-min realtime task for hot leads ─────────────────────────────────

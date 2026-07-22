@@ -40,6 +40,12 @@ import {
 } from '@/lib/data/crm/getInboxQueue'
 import { isValidDraftChannel, upsertDraft, deleteDraft } from '@/lib/data/crm/drafts'
 import { nameUnknownCallerContact } from '@/lib/data/crm/addUnknownCallerContact'
+import {
+  isAiEmailDraftKind,
+  parseAiEmailDraft,
+  stripHtmlToText,
+  type AiEmailDraftKind,
+} from '@/components/admin/crm/ai-email-draft'
 
 export type InboxActionResult = { ok: true } | { ok: false; error: string }
 
@@ -473,6 +479,136 @@ export async function aiSmsDraftAction(
     console.error('[aiSmsDraftAction]', e instanceof Error ? e.message : e)
     return { ok: false, error: 'AI drafting is unavailable right now. Write your text below.' }
   }
+}
+
+/**
+ * aiEmailDraftAction — the email twin of aiSmsDraftAction (same model, same
+ * guards, same graceful degradation). Kinds mirror the SMS pills plus REPLY:
+ * 'reply' preloads the FULL text of the contact's last inbound message
+ * (crm_timeline sms_in/email_in — the thread snippets above are truncated) so
+ * the draft answers what was actually asked. This action NEVER sends — the
+ * send still goes through the suppression-gated sendCrmEmailAction, and the
+ * broker always reviews + edits in the canonical EmailComposer first (G50).
+ */
+export async function aiEmailDraftAction(
+  personId: number,
+  kind: AiEmailDraftKind,
+  customPrompt?: string,
+): Promise<{ ok: true; subject: string; body: string } | { ok: false; error: string }> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Unauthorized' }
+  const id = Number(personId)
+  if (!Number.isFinite(id) || id <= 0) return { ok: false, error: 'A contact is required' }
+  if (!isAiEmailDraftKind(kind)) return { ok: false, error: 'Unknown draft type' }
+  const scoped = await requirePersonInScope(id, access)
+  if (!scoped.ok) return scoped
+  if (!process.env.ANTHROPIC_API_KEY?.trim()) return { ok: false, error: 'AI drafting is not configured' }
+
+  const [{ getInboxContactCard }, { getConversationThread }] = await Promise.all([
+    import('@/lib/data/crm/getInboxThread'),
+    import('@/lib/data/crm/getInboxQueue'),
+  ])
+  const [card, thread] = await Promise.all([getInboxContactCard(id), getConversationThread(id, 12)])
+  if (!card) return { ok: false, error: 'Contact not found' }
+
+  const recent = thread
+    .filter((it) => ['message', 'email', 'call', 'note'].includes(it.category))
+    .slice(0, 8)
+    .map((it) => `${it.label} (${it.ts.slice(0, 10)}): ${(it.snippet ?? '').slice(0, 160)}`)
+    .join('\n')
+
+  // REPLY kind: thread-context preload — the newest inbound message, full text.
+  let lastInbound: { kind: string; title: string | null; text: string } | null = null
+  if (kind === 'reply') {
+    const sb = createServiceClient()
+    const { data } = await sb
+      .from('crm_timeline')
+      .select('kind,title,body')
+      .eq('person_id', id)
+      .in('kind', ['sms_in', 'email_in'])
+      .order('ts', { ascending: false })
+      .order('id', { ascending: false })
+      .limit(1)
+    const row = (data ?? [])[0] as { kind: string; title: string | null; body: string | null } | undefined
+    const text = stripHtmlToText(String(row?.body ?? ''), 1200)
+    if (!row || !text) return { ok: false, error: 'No inbound message to reply to yet' }
+    lastInbound = { kind: row.kind, title: (row.title ?? '').trim() || null, text }
+  }
+
+  const ask =
+    kind === 'reply'
+      ? [
+          'Write a reply email to the contact\'s last inbound message quoted below.',
+          'Answer only from the context. If the answer is not in the context, say you will check and follow up.',
+          '',
+          `Last inbound ${lastInbound!.kind === 'email_in' ? 'email' : 'text'}${lastInbound!.title ? ` (subject: ${lastInbound!.title})` : ''}:`,
+          `"""${lastInbound!.text}"""`,
+        ].join('\n')
+      : kind === 'introduction'
+        ? 'Write a first-touch introduction email.'
+        : kind === 'follow_up'
+          ? 'Write a follow-up email that references the most recent real activity in the context.'
+          : kind === 'still_buying'
+            ? 'Write a gentle check-in email asking whether they are still looking at homes.'
+            : `Write an email for this request from the broker: ${String(customPrompt ?? '').slice(0, 300)}`
+
+  const { default: Anthropic } = await import('@anthropic-ai/sdk')
+  const client = new Anthropic()
+  try {
+    const msg = await client.messages.create({
+      model: 'claude-opus-4-8',
+      max_tokens: 600,
+      system: [
+        'You draft one short email for a Ryan Realty broker in Bend, Oregon. The broker reviews and edits before sending.',
+        'Voice: direct, specific, kind, honest. Plain English. Short sentences. Talk to a smart adult.',
+        'HARD RULES: no em dashes, no semicolons, no exclamation marks, no emoji.',
+        'Banned words: stunning, gorgeous, charming, nestled, boasts, dream home, truly, luxurious, delve, seamless, elevate, vibrant, curated, act fast, dont miss out.',
+        'Never invent market numbers, prices, listings, or facts not present in the context. Reference only what the contact actually did or said.',
+        'Plain text only, no HTML. Do not add a signature or sign-off name, the broker signature is appended automatically.',
+        'Under 120 words.',
+        'Output format: first line "Subject: <subject line>", then a blank line, then the email body. Nothing else.',
+      ].join(' '),
+      messages: [
+        {
+          role: 'user',
+          content: `Contact: ${card.name ?? 'Unknown'} · stage ${card.stage}${card.source ? ` · source ${card.source}` : ''}${card.timeframe ? ` · timeframe ${card.timeframe}` : ''}\nRecent activity (newest first):\n${recent || '(no prior activity)'}\n\n${ask}`,
+        },
+      ],
+    })
+    const text = msg.content.find((b) => b.type === 'text')?.text?.trim()
+    if (!text) return { ok: false, error: 'No draft came back. Try again.' }
+    const parsed = parseAiEmailDraft(text)
+    if (!parsed.body) return { ok: false, error: 'No draft came back. Try again.' }
+    // A reply to an inbound email defaults to the Re: threading subject when
+    // the model skipped its subject line.
+    let subject = parsed.subject
+    if (!subject && kind === 'reply' && lastInbound?.kind === 'email_in' && lastInbound.title) {
+      const base = lastInbound.title.replace(/^((re|fwd?):\s*)+/i, '')
+      subject = base ? `Re: ${base}` : ''
+    }
+    return { ok: true, subject: subject.slice(0, 300), body: parsed.body.slice(0, 4000) }
+  } catch (e) {
+    // Graceful degradation — same rationale as aiSmsDraftAction: never surface
+    // raw SDK/billing internals to the composer. Log for diagnosis.
+    console.error('[aiEmailDraftAction]', e instanceof Error ? e.message : e)
+    return { ok: false, error: 'AI drafting is unavailable right now. Write your email below.' }
+  }
+}
+
+/**
+ * getCcSelfAddressAction — the acting broker's sending mailbox, for the
+ * EmailComposer "Cc me" toggle. Resolves the SAME way sendCrmEmailAction picks
+ * its from-mailbox (CRM_MAILBOXES by the session broker's slug, first mailbox
+ * as fallback) so the copy lands where the sent mail actually lives. Read-only.
+ */
+export async function getCcSelfAddressAction(): Promise<
+  { ok: true; email: string } | { ok: false; error: string }
+> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Unauthorized' }
+  const { CRM_MAILBOXES } = await import('@/lib/crm/gmail')
+  const mailbox = CRM_MAILBOXES.find((m) => m.slug === access.brokerSlug) ?? CRM_MAILBOXES[0]
+  return { ok: true, email: mailbox.email }
 }
 
 /**

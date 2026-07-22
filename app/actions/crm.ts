@@ -27,6 +27,7 @@ import { isQualifyingStage, fireQualifiedLeadEvent } from '@/lib/meta/qualifiedE
 import { buildCrmPeopleQuery, CRM_PEOPLE_SELECT } from '@/lib/data/crm/buildCrmPeopleQuery'
 import { savedViewToSegment } from '@/lib/data/crm/getSavedViewSegment'
 import { EMPTY_SEGMENT, type CrmSegment, type CrmNode } from '@/lib/crm/segment-ast'
+import type { TriageItem } from '@/lib/data/crm/getInboundTriage'
 
 export type CrmActionResult = { ok: true } | { ok: false; error: string }
 
@@ -542,76 +543,45 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   const mergedSubject = renderCrmMerge(subject, person, mergeCtx)
   const mergedBody = attributeSiteLinks(renderCrmMerge(body, person, mergeCtx), actingSlugForLinks, person.fub_legacy_id as number | null)
 
-  // Idempotency backstop (admin rebuild §A5): a per-attempt key from the composer
-  // makes a sub-frame double-tap that slips past the disabled button a no-op
-  // instead of a second email. A failed send releases the key so a retry re-sends.
+  // Idempotency backstop (admin rebuild §A5): a per-attempt key from the
+  // composer, enforced inside the governed chokepoint with the same
+  // `email:{personId}:{key}` pattern this action always used. A sub-frame
+  // double-tap that slips past the disabled button is a no-op instead of a
+  // second email; a failed send releases the key so a retry re-sends.
   const idempotencyKey = String(formData.get('idempotencyKey') ?? '').trim()
 
-  const performSend = async (): Promise<CrmActionResult> => {
-  const { CRM_MAILBOXES, sendCrmEmail } = await import('@/lib/crm/gmail')
-  const actingSlug = actingSlugForLinks
-  const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
-  const sent = await sendCrmEmail({
-    fromMailbox: mailbox.email, to: toList, cc: ccList, bcc: bccList,
-    subject: mergedSubject, bodyText: mergedBody, withSignature: true,
-    attachments: emailAttachments, bodyFormat,
-    // Instrument open/click like the sequence engine so the conversation
-    // engagement panel ("Opened N×") works for manually-composed emails too.
-    // label MUST equal the subject — the panel keys engagement on the email title.
-    // Stamp tpl:<key> when a template was used so email_events rows are
-    // queryable per-template in getTemplatePerformance / perf columns.
-    track: {
-      personId,
-      emailKey: (() => {
-        const tplKey = String(formData.get('tplKey') ?? '').trim()
-        return tplKey ? `tpl:${tplKey}:${personId}:${Date.now()}` : `manual:${personId}:${Date.now()}`
-      })(),
-      label: mergedSubject,
+  // Instrument open/click like the sequence engine so the conversation
+  // engagement panel ("Opened N×") works for manually-composed emails too.
+  // label MUST equal the subject — the panel keys engagement on the email title.
+  // Stamp tpl:<key> when a template was used so email_events rows are
+  // queryable per-template in getTemplatePerformance / perf columns.
+  const tplKey = String(formData.get('tplKey') ?? '').trim()
+  const emailKey = tplKey ? `tpl:${tplKey}:${personId}:${Date.now()}` : `manual:${personId}:${Date.now()}`
+
+  // §A4: the governed chokepoint (lib/comms) owns hard-stop → suppression →
+  // idempotency → the Gmail rail → timeline rows + conversation shadow-write.
+  // Rows written there are byte-identical to what this action wrote inline.
+  const { sendGovernedEmail } = await import('@/lib/comms/sendGovernedEmail')
+  const result = await sendGovernedEmail({
+    personId,
+    purpose: 'crm:manual-email',
+    idempotencyKey: idempotencyKey || undefined,
+    initiator: { kind: 'broker', broker: actingSlugForLinks },
+    payload: {
+      rail: 'gmail',
+      to: toList, cc: ccList, bcc: bccList,
+      subject: mergedSubject, bodyText: mergedBody, bodyFormat,
+      attachments: emailAttachments,
+      track: { personId, emailKey, label: mergedSubject },
+      extraPersonIds,
+      attachmentRefs: refs.items,
+      primaryAddress: primaryEmail ?? null,
     },
   })
-  if (!sent.ok) return { ok: false, error: sent.error }
-
-  // Timeline: the primary contact always gets the row; every OTHER recipient
-  // that is a CRM contact (spouse on Cc, co-buyer on To) gets one too, so the
-  // send shows in each of their conversation threads.
-  const timelinePayload = {
-    gmailId: sent.gmailId, to: toList.length === 1 ? toList[0] : toList, mailbox: mailbox.email,
-    ...(ccList.length ? { cc: ccList } : {}),
-    ...(bccList.length ? { bcc: bccList } : {}),
-    // Storage-backed refs so the thread renders the sent files forever
-    // (served by /api/admin/crm/attachment).
-    ...(refs.items.length ? { attachments: refs.items } : {}),
-  }
-  await sb.from('crm_timeline').insert(
-    [personId, ...extraPersonIds].map((pid) => ({
-      person_id: pid, kind: 'email_out', title: mergedSubject, body: sent.plainBody,
-      payload: timelinePayload,
-      broker: mailbox.slug, source: 'app', dedupe_key: `gmail:${sent.gmailId}:p${pid}`,
-    })),
-  )
-  // Shadow-write into the conversation model (RC1) on the primary contact's
-  // thread, channel=email. Non-fatal. (Cc/Bcc-as-group email threading is a
-  // follow-up refinement — the timeline still logs each recipient.)
-  try {
-    const { recordConversationMessage } = await import('@/lib/crm/record-message')
-    await recordConversationMessage({
-      sb, direction: 'out', channel: 'email', body: sent.plainBody, subject: mergedSubject,
-      providerSid: sent.gmailId, sentBy: mailbox.slug, primaryPersonId: personId,
-      assignedBroker: mailbox.slug,
-      participants: [{ personId, address: toList[0] ?? primaryEmail ?? String(personId) }],
-    })
-  } catch (e) { console.warn('[crm] conversation shadow-write (email) failed', e) }
+  if (!result.ok) return { ok: false, error: result.error }
   revalidateCrm(personId)
   extraPersonIds.forEach((pid) => revalidateCrm(pid))
   return { ok: true }
-  }
-
-  if (!idempotencyKey) return performSend()
-  const { withSendIdempotency } = await import('@/lib/crm/idempotency')
-  return withSendIdempotency(
-    { key: `email:${personId}:${idempotencyKey}`, scope: 'email', onInFlight: { ok: true } },
-    performSend,
-  )
 }
 
 // listCrmInbox + CrmInboxRow removed 2026-07-14 (audit): superseded by the
@@ -810,12 +780,16 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   const rawPhoneInput = String(formData.get('recipientPhones') ?? '')
     .split(',').map((s) => s.trim()).filter(Boolean)
 
-  // TCPA quiet hours: one time-based check for the whole send. Block 9pm–8am
-  // Pacific unless the broker explicitly overrides (a deliberate manual reply).
+  // TCPA quiet hours: one time-based check for the whole send (it also covers
+  // the carrier-group path below, which cannot ride the per-person chokepoint).
+  // Block 9pm–8am Pacific unless the broker explicitly overrides (a deliberate
+  // manual reply — the ONE exception §A6 allows). The governed layer re-checks
+  // per recipient with the same helper + the same canonical message.
   const { inSmsQuietHours } = await import('@/lib/crm/quiet-hours')
+  const { QUIET_HOURS_ERROR } = await import('@/lib/comms/guards')
   const override = String(formData.get('overrideQuietHours') ?? '') === '1'
   if (inSmsQuietHours() && !override) {
-    return { ok: false, error: 'Quiet hours (TCPA): texts pause 9pm to 8am Pacific. Call instead, or check "send anyway" to override.' }
+    return { ok: false, error: QUIET_HOURS_ERROR }
   }
 
   // Idempotency backstop (admin rebuild §A5): a per-attempt key from the composer.
@@ -831,7 +805,6 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   const { renderCrmMerge, attributeSiteLinks } = await import('@/lib/crm/merge')
   const { buildMergeContext } = await import('@/lib/crm/merge-context')
   const { sendSms, sendSmsViaMessagingService, brokerTwilioNumber, toE164, lookupPersonByPhone } = await import('@/lib/crm/twilio')
-  const { instrumentSmsLinks } = await import('@/lib/data/crm/shortLinks')
 
   let sentCount = 0
   let lastError: string | null = null
@@ -942,54 +915,28 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
     }
   }
 
+  // §A4: each 1:1 recipient routes through the governed chokepoint
+  // (lib/comms/sendGovernedSms) — hard-stop → suppression (fail closed) →
+  // quiet hours → the Twilio rail → timeline + conversation shadow-write.
+  // Rows written there are byte-identical to what this loop wrote inline.
+  // Scope stays HERE: it is authorization, not compliance. The whole-send
+  // idempotency wrapper below is unchanged, so the governed per-send key is
+  // deliberately omitted (one key per composer submit, the existing pattern).
+  const { sendGovernedSms } = await import('@/lib/comms/sendGovernedSms')
   for (const rid of recipientIds) {
     // Every recipient (including extras) must be in the broker's scope.
     if (rid !== personId) {
       const s = await requirePersonInScope(rid, access.access)
       if (!s.ok) { lastError = 'A recipient is outside your scope'; continue }
     }
-    const target = await getSendTarget(rid)
-    if (!target || !target.phone) { lastError = 'No phone number on file'; continue }
-    const gate = await isSuppressed(rid, 'sms')
-    if (gate.suppressed) { lastError = `Blocked by suppression (${gate.reasons.join(', ')})`; continue }
-
-    const person = target.person
-    const to = target.phone
-    const slug = access.access.brokerSlug ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
-    const smsCtx = await buildMergeContext({ person, senderSlug: slug })
-    const mergedBody = attributeSiteLinks(renderCrmMerge(body, person, smsCtx), slug, person.fub_legacy_id as number | null)
-    // Send from the broker's OWN Twilio business line, else the A2P service.
-    const fromNumber = await brokerTwilioNumber(slug)
-    // Click tracking: rewrite links to short /r/<code> trackers (a click logs an
-    // sms_click engagement event). The timeline row below keeps the readable
-    // mergedBody with the real links, so the broker's thread stays legible.
-    const trackedBody = await instrumentSmsLinks(mergedBody, { personId: rid, broker: slug })
-    const sent = fromNumber
-      ? await sendSms({ from: fromNumber, to, body: trackedBody, mediaUrls })
-      : await sendSmsViaMessagingService({ to, body: trackedBody, mediaUrls })
-    if (!sent.ok) { lastError = sent.error; continue }
-
-    await sb.from('crm_timeline').insert({
-      person_id: rid, kind: 'sms_out', title: 'Text sent', body: mergedBody,
-      payload: {
-        twilioSid: sent.sid, to, hasMedia: Boolean(mediaUrls?.length),
-        // Storage-backed refs so the thread re-renders the sent media forever
-        // (the 15-min signed URLs above are only for Twilio's fetch).
-        ...(storedMedia.length ? { media: storedMedia } : {}),
-      },
-      broker: slug, source: 'app', dedupe_key: `twilio:${sent.sid}:p${rid}`,
+    const sent = await sendGovernedSms({
+      personId: rid,
+      payload: { body, mediaUrls, storedMedia },
+      purpose: 'crm:manual-sms',
+      initiator: { kind: 'broker', broker: access.access.brokerSlug },
+      overrideQuietHours: override,
     })
-    // Shadow-write into the conversation model (RC1). Non-fatal: the timeline is
-    // still the source of truth until the inbox read path flips.
-    try {
-      const { recordConversationMessage } = await import('@/lib/crm/record-message')
-      await recordConversationMessage({
-        sb, direction: 'out', channel: storedMedia.length ? 'mms' : 'sms', body: mergedBody,
-        providerSid: sent.sid, sentBy: slug, primaryPersonId: rid, assignedBroker: slug,
-        media: storedMedia.length ? storedMedia : [],
-        participants: [{ personId: rid, address: to, displayName: person.name ?? null }],
-      })
-    } catch (e) { console.warn('[crm] conversation shadow-write (sms 1:1) failed', e) }
+    if (!sent.ok) { lastError = sent.error; continue }
     sentCount++
   }
 
@@ -1923,6 +1870,99 @@ export async function skipNextStepAction(enrollmentId: number) {
       : { step_index: nextIdx, status: 'running', next_run_at: new Date().toISOString() },
     'Recommended step skipped by broker',
   )
+}
+
+/**
+ * The inbound-activity triage list for the dashboard "Needs your action" queue —
+ * unread replies, CMA/BPO/market-report opens, hot identified visitors, and
+ * showing/new-lead call tasks due, ranked by recency x signal weight
+ * (lib/data/crm/getInboundTriage). Scope mirrors the rest of the dashboard: a
+ * restricted broker is pinned to their own book; a superuser may pass the page's
+ * resolved slug (null = Everyone).
+ */
+export async function getBrokerInboundTriage(requestedSlug?: string | null): Promise<TriageItem[]> {
+  const access = await getCrmAccess()
+  if (!access) return []
+  const own = scopeBroker(access)
+  let slug: string | null
+  if (own) {
+    slug = own
+  } else {
+    const req = (requestedSlug ?? '').trim()
+    slug = req && (CRM_BROKERS as readonly string[]).includes(req) ? req : null
+  }
+  try {
+    const { getInboundTriage } = await import('@/lib/data/crm/getInboundTriage')
+    return await getInboundTriage(slug)
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Lightweight dismiss for a dashboard triage item — EXISTING mechanisms only,
+ * no new tables:
+ *   - reply    -> mark the conversation read (crm_conversation_state, the same
+ *                 write the inbox mark-read performs; never resurrects a
+ *                 handled/closed thread)
+ *   - task     -> snooze the task one day (snoozeCrmTaskAction)
+ *   - doc-open / visit -> touch the person's conversation-state row so the
+ *                 getInboundTriage seen-watermark suppresses the item
+ */
+export async function dismissTriageItemAction(input: {
+  personId: number
+  kind: string
+  taskId?: number | null
+}): Promise<CrmActionResult> {
+  const guard = await requireCrmAccess()
+  if (!guard.ok) return guard
+  const personId = Number(input.personId)
+  if (!Number.isFinite(personId) || personId <= 0) return { ok: false, error: 'A contact is required' }
+  const scoped = await requirePersonInScope(personId, guard.access)
+  if (!scoped.ok) return scoped
+
+  const kind = String(input.kind ?? '')
+  if (kind === 'task') {
+    const taskId = Number(input.taskId)
+    if (!Number.isFinite(taskId) || taskId <= 0) return { ok: false, error: 'A task is required' }
+    const { snoozeCrmTaskAction } = await import('@/app/actions/crm-tasks')
+    const snoozed = await snoozeCrmTaskAction(taskId, 1)
+    if (!snoozed.ok) return snoozed
+    revalidatePath('/admin/broker-dashboard')
+    return { ok: true }
+  }
+
+  if (kind !== 'reply' && kind !== 'doc-open' && kind !== 'visit') {
+    return { ok: false, error: 'Unknown triage kind' }
+  }
+  const sb = createServiceClient()
+  const nowIso = new Date().toISOString()
+  if (kind === 'reply') {
+    // Mark read: unread (or no row) becomes 'open'; an already-triaged status
+    // (open/handled/closed) is preserved — only the touch timestamp advances.
+    const { data: state } = await sb
+      .from('crm_conversation_state')
+      .select('status')
+      .eq('person_id', personId)
+      .maybeSingle()
+    const current = state?.status
+    const status = current === 'open' || current === 'handled' || current === 'closed' ? current : 'open'
+    const { error } = await sb
+      .from('crm_conversation_state')
+      .upsert({ person_id: personId, status, updated_at: nowIso }, { onConflict: 'person_id' })
+    if (error) return { ok: false, error: error.message }
+  } else {
+    // doc-open / visit: bump ONLY updated_at (the seen watermark). A fresh
+    // insert takes the column default status 'unread' — identical to the
+    // no-row inbox default, so inbox behavior is unchanged.
+    const { error } = await sb
+      .from('crm_conversation_state')
+      .upsert({ person_id: personId, updated_at: nowIso }, { onConflict: 'person_id' })
+    if (error) return { ok: false, error: error.message }
+  }
+  revalidateCrm(personId)
+  revalidatePath('/admin/broker-dashboard')
+  return { ok: true }
 }
 
 export type WorkflowBoardSequence = {

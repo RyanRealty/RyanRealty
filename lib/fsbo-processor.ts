@@ -6,8 +6,10 @@
  * 2026-07-14: find every FSBO, skip-trace, add as a record, dashboard, prepare
  * a CMA + initial-contact SMS).
  *
- * Flow per new FSBO listing (Zillow via Apify; Craigslist/Facebook slot in as
- * sources when a vetted actor exists):
+ * Flow per new FSBO listing (two live sources, merged + deduped by fsbo_url:
+ * Zillow via Apify, Craigslist via the static search fallback in
+ * lib/fsbo-craigslist.ts; Facebook Marketplace dropped by decision
+ * 2026-07-21 — no API, ToS-fragile):
  *   detect → owner contact (direct from the listing page, else the county +
  *   BatchData skip-trace chain with compliance tags + demographics) →
  *   ensureNativeLead (NO placeholder leads without a real phone/email) →
@@ -24,6 +26,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { detectFsboListings, FSBO_SERVICE_AREA_CITIES, FSBO_MIN_LIST_PRICE, type FsboListing } from '@/lib/fsbo-detector'
+import { detectCraigslistFsboListings } from '@/lib/fsbo-craigslist'
 import { lookupOwnerForExpiredListing, type OwnerLookupResult } from '@/lib/expired-owner-lookup'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { sendFsboAlertEmail } from '@/lib/fsbo-alert'
@@ -56,11 +59,21 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
     scrape_errors: [], sample: [],
   }
 
-  // 1. Detect (Zillow FSBO per service-area city, via Apify).
-  const detection = await detectFsboListings()
-  const listings: FsboListing[] = detection.listings
+  // 1. Detect — both sources, source-agnostic from here down. Zillow first
+  // (richer records: address, contact, photos), then Craigslist. Cross-source
+  // dedupe is by fsbo_url; the two domains never collide, so this only
+  // guards same-source repeats. MAX_PER_RUN applies to the merged set.
+  const zillow = await detectFsboListings()
+  const craigslist = await detectCraigslistFsboListings()
+  const seenUrls = new Set<string>()
+  const listings: FsboListing[] = []
+  for (const l of [...zillow.listings, ...craigslist.listings]) {
+    if (seenUrls.has(l.fsboUrl)) continue
+    seenUrls.add(l.fsboUrl)
+    listings.push(l)
+  }
   stats.scraped = listings.length
-  stats.scrape_errors = detection.errors ?? []
+  stats.scrape_errors = [...(zillow.errors ?? []), ...(craigslist.errors ?? [])]
 
   // 2. Dedupe against fsbo_listings; refresh last_seen on the known set.
   const urls = listings.map((l) => l.fsboUrl)
@@ -98,6 +111,11 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
         ownerStatus = 'direct-from-listing'
         ownerSource = `${l.fsboSource}-page`
         ownerNotes = 'Owner contact surfaced directly from the FSBO listing page.'
+      } else if (!l.streetAddress.trim()) {
+        // Craigslist list-view items often have no street address. Never feed
+        // an empty street into the county/skip-trace chain (a blank ilike
+        // would false-match, and skip-trace spend on garbage input is waste).
+        ownerNotes = 'No street address on the source posting. Owner lookup skipped, open the listing URL to identify the property.'
       } else {
         ownerLookup = await lookupOwnerForExpiredListing({
           streetAddress: l.streetAddress ?? '',
@@ -117,7 +135,7 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
       const hasContact = Boolean(ownerPhone || ownerEmail)
       if (hasContact) {
         const native = await ensureNativeLead({
-          name: ownerName ?? `Owner of ${l.streetAddress ?? l.fullAddress}`,
+          name: ownerName ?? `Owner of ${l.streetAddress || l.fullAddress}`,
           email: ownerEmail,
           phone: ownerPhone,
           source: 'fsbo-cron',
@@ -189,7 +207,7 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
 
         await createNativeTask({
           personId: crmPersonId,
-          name: `FSBO ${l.streetAddress ?? l.fullAddress}, ${l.city ?? ''}${l.listPrice ? ` ($${Math.round(l.listPrice).toLocaleString()})` : ''}`,
+          name: `FSBO ${l.streetAddress || l.fullAddress}, ${l.city ?? ''}${l.listPrice ? ` ($${Math.round(l.listPrice).toLocaleString()})` : ''}`,
           type: 'Call',
           dueInMinutes: 60,
           assignedBroker: 'matt',
@@ -232,7 +250,10 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
       const alertRes = await sendFsboAlertEmail({
         fsboUrl: l.fsboUrl,
         fsboSource: l.fsboSource,
-        streetAddress: l.streetAddress,
+        // Craigslist items without an extractable street fall back to the
+        // fullAddress ("<posting title> (City, OR)") so the alert subject +
+        // headline stay informative. Zillow always has a real street.
+        streetAddress: l.streetAddress || l.fullAddress,
         city: l.city,
         state: l.state,
         postalCode: l.postalCode,

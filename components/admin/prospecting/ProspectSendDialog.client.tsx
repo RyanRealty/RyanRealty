@@ -27,6 +27,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
@@ -35,7 +36,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { EmailBodyEditor } from '@/components/admin/crm/EmailBodyEditor'
 import { MergeFieldInserter, insertAtCursor } from '@/components/admin/crm/MergeFieldInserter'
 import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
-import type { ProspectEngagement, ProspectKind, SendIntroResult } from '@/lib/data/prospecting/types'
+import { sendProspectingEmailIntro } from '@/app/actions/prospecting'
+import type { ProspectEngagement, ProspectKind, SendEmailIntroResult, SendIntroResult } from '@/lib/data/prospecting/types'
 import { formatDate, maskEmail, maskPhone } from './format'
 
 /** The compose context for one prospect's cold-intro dialog. Owned by the
@@ -53,7 +55,11 @@ export interface ProspectSendContext {
   defaultEmailBody: string
   docSlug: string | null
   clientReady?: boolean
+  /** Either-channel first touch (drives the approve gate + the banner). */
   alreadySent: { at: string; sid: string | null } | null
+  /** Per-channel sent stamps — each tab disables independently. */
+  sentSms?: { at: string; sid: string | null } | null
+  sentEmail?: { at: string } | null
   engagement: ProspectEngagement
 }
 
@@ -62,7 +68,11 @@ type Channel = 'sms' | 'email'
 type SendDialogActions = {
   sendIntroAction: (kind: ProspectKind, id: string, args: { idempotencyKey: string; bodyOverride?: string | null }) => Promise<SendIntroResult>
   sendTestAction: (args: { channel: 'sms' | 'email'; subject?: string; body: string }) => Promise<{ ok: boolean; error?: string }>
-  sendEmailIntroAction?: (args: { idempotencyKey: string }) => Promise<{ ok: boolean; error?: string }>
+  sendEmailIntroAction?: (
+    kind: ProspectKind,
+    id: string,
+    args: { idempotencyKey: string; subjectOverride?: string | null; bodyOverride?: string | null },
+  ) => Promise<SendEmailIntroResult>
 }
 
 export function ProspectSendDialog({
@@ -77,20 +87,27 @@ export function ProspectSendDialog({
   open: boolean
   onClose: () => void
   context: ProspectSendContext | null
-  /** The reconciled, guarded cold-intro send (spec §5.3) — SMS only per spec 07 §5.1.
+  /** The reconciled, guarded cold-intro send (spec §5.3) — the SMS channel.
    *  `bodyOverride` carries the broker's edited message (Matt's editable-template
    *  directive); the server still runs the full compliance pipeline on it
    *  (unresolved-token fail-closed + short-link tracking). When omitted, the
-   *  server composes the live template with _pid/UTM tracking. */
+   *  server composes the live template with _pid/UTM tracking. The email
+   *  channel sends through sendProspectingEmailIntro (same guard chain, email
+   *  suppression + at-most-once email claim). */
   sendIntroAction: (kind: ProspectKind, id: string, args: { idempotencyKey: string; bodyOverride?: string | null }) => Promise<SendIntroResult>
   sendTestAction: (args: { channel: 'sms' | 'email'; subject?: string; body: string }) => Promise<{ ok: boolean; error?: string }>
   /**
-   * The Email tab's production send. Optional for v1 — spec 07 §5.1 scopes
-   * the guarded cold intro to SMS only, so the parent may leave this
-   * undefined (or pass a no-op stub) until an email intro path ships. When
-   * absent, the Email tab's Send button disables with an inline note.
+   * The Email tab's production send — the guarded cold email intro
+   * (sendProspectingEmailIntro: same fail-closed guard chain as the SMS
+   * intro on the email channel + the at-most-once email claim). Optional
+   * override for tests; when omitted the dialog uses the real server action
+   * directly (the parent board does not need to thread it through).
    */
-  sendEmailIntroAction?: (args: { idempotencyKey: string }) => Promise<{ ok: boolean; error?: string }>
+  sendEmailIntroAction?: (
+    kind: ProspectKind,
+    id: string,
+    args: { idempotencyKey: string; subjectOverride?: string | null; bodyOverride?: string | null },
+  ) => Promise<SendEmailIntroResult>
   /**
    * Approve a still-draft audit in place (Matt's "approve on this page"
    * requirement). Resolves true on success. When omitted, the draft banner still
@@ -237,15 +254,15 @@ function ProspectSendDialogBody({
   function handleSendIntro() {
     if (sendPending || testPending) return
     setError(null)
-    // Stable, namespaced per spec §10.27 (`intro:{kind}:{id}`) — never a
-    // fresh key per attempt. A duplicate submit reuses the SAME key so the
-    // server dedupes into the original result instead of sending twice.
-    const idempotencyKey = `intro:${context.kind}:${context.id}`
-    // Only override the server-composed body when the broker actually edited it —
-    // the unedited path keeps full _pid/UTM tracking that the server injects.
-    const edited = smsBody.trim() !== context.defaultSmsBody.trim()
     startSend(async () => {
       if (channel === 'sms') {
+        // Stable, namespaced per spec §10.27 (`intro:{kind}:{id}`) — never a
+        // fresh key per attempt. A duplicate submit reuses the SAME key so the
+        // server dedupes into the original result instead of sending twice.
+        const idempotencyKey = `intro:${context.kind}:${context.id}`
+        // Only override the server-composed body when the broker actually edited it —
+        // the unedited path keeps full _pid/UTM tracking that the server injects.
+        const edited = smsBody.trim() !== context.defaultSmsBody.trim()
         const res = await sendIntroAction(context.kind, context.id, {
           idempotencyKey,
           bodyOverride: edited ? smsBody : undefined,
@@ -261,13 +278,20 @@ function ProspectSendDialogBody({
         }
         return
       }
-      if (!sendEmailIntroAction) {
-        const message = 'Email intro sending is not available yet. Use Send test to preview the wording.'
-        setError(message)
-        toast.error(message)
-        return
-      }
-      const res = await sendEmailIntroAction({ idempotencyKey })
+      // Email channel — its OWN idempotency namespace (the two channels claim
+      // independently server-side; a shared key would make the email claim
+      // read an SMS replay as its own).
+      const idempotencyKey = `intro-email:${context.kind}:${context.id}`
+      // Only override what the broker actually edited — the untouched default
+      // lets the server rail compose its canonical subject/body.
+      const subjectEdited = emailSubject.trim() !== context.defaultEmailSubject.trim()
+      const bodyEdited = emailBody.trim() !== context.defaultEmailBody.trim()
+      const emailAction = sendEmailIntroAction ?? sendProspectingEmailIntro
+      const res = await emailAction(context.kind, context.id, {
+        idempotencyKey,
+        subjectOverride: subjectEdited ? emailSubject : undefined,
+        bodyOverride: bodyEdited ? emailBody : undefined,
+      })
       if (res.ok) {
         toast.success(`Intro emailed to ${context.ownerName ?? 'owner'}.`)
         onClose()
@@ -281,14 +305,21 @@ function ProspectSendDialogBody({
 
   const recipientLine = channel === 'sms' ? maskPhone(context.toPhone) : maskEmail(context.toEmail)
   const channelMissing = channel === 'sms' ? !context.toPhone : !context.toEmail
+  // Per-channel sent-state: an SMS intro does not block the email intro and
+  // vice versa. Only when the per-channel field is ABSENT (a parent that has
+  // not been re-prepared since these fields shipped) fall back to the
+  // either-channel stamp — `??` would wrongly treat an explicit null (channel
+  // unsent) as missing.
+  const sentSms = context.sentSms !== undefined ? context.sentSms : context.alreadySent
+  const sentEmail = context.sentEmail !== undefined ? context.sentEmail : null
+  const channelSent = channel === 'sms' ? Boolean(sentSms) : Boolean(sentEmail)
   const sendDisabled =
     sendPending ||
     testPending ||
     approvePending ||
     needsApproval ||
     channelMissing ||
-    Boolean(context.alreadySent) ||
-    (channel === 'email' && !sendEmailIntroAction)
+    channelSent
 
   return (
     <div className="space-y-3">
@@ -319,10 +350,15 @@ function ProspectSendDialogBody({
         </div>
       ) : null}
 
-      {/* Already-sent + engagement */}
+      {/* Already-sent + engagement (per-channel chips — one channel sent does
+          not block the other; the un-sent tab stays live) */}
       {context.alreadySent ? (
         <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
-          <p className="text-sm font-medium text-foreground">Intro already sent {formatDate(context.alreadySent.at)}</p>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <p className="text-sm font-medium text-foreground">Intro already sent</p>
+            {sentSms ? <Badge variant="secondary">Text · {formatDate(sentSms.at)}</Badge> : null}
+            {sentEmail ? <Badge variant="secondary">Email · {formatDate(sentEmail.at)}</Badge> : null}
+          </div>
           <p className="mt-1 text-xs tabular-nums text-muted-foreground">
             {context.engagement.reportViews} views · {context.engagement.linkTaps} taps ·{' '}
             {context.engagement.emailOpens} opens · {context.engagement.emailClicks} clicks
@@ -375,11 +411,9 @@ function ProspectSendDialogBody({
           {emailUnresolved.length > 0 ? (
             <p className="text-xs font-medium text-warning">Unfilled merge fields: {emailUnresolved.join(', ')}.</p>
           ) : null}
-          {!sendEmailIntroAction ? (
-            <p className="text-xs text-muted-foreground">
-              Email intro sending isn&apos;t available yet. Use Send test to preview the wording.
-            </p>
-          ) : null}
+          <p className="text-xs text-muted-foreground">
+            Sends from the broker mailbox with the audit PDF attached and a tracked link to the live report.
+          </p>
         </div>
       )}
 
@@ -417,18 +451,20 @@ function ProspectSendDialogBody({
               <span className="flex items-center gap-1.5">
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Sending…
               </span>
-            ) : context.alreadySent ? (
-              'Already sent'
+            ) : channelSent ? (
+              channel === 'sms' ? 'Text already sent' : 'Email already sent'
             ) : needsApproval ? (
               'Approve first'
+            ) : channel === 'sms' ? (
+              'Send text intro'
             ) : (
-              'Send intro'
+              'Send email intro'
             )}
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
           Sends to {context.ownerName ?? 'this owner'}. Your edits above are what sends. Every send re-checks hard-stop,
-          do-not-call, quiet hours, and suppression before it leaves.
+          do-not-call, suppression, and for texts quiet hours before it leaves.
         </p>
       </div>
     </div>

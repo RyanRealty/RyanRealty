@@ -1,0 +1,79 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`buildReplyIntentPrompt (construction snapshot — no network) > expired prospect with name and address 1`] = `
+{
+  "system": "You classify an inbound SMS reply from a homeowner prospect that Ryan Realty (a real-estate brokerage in Bend, Oregon) previously texted. Output a SINGLE JSON object and nothing else:
+
+{
+  "intent": "<one of: interested | question | not_interested | wrong_number | later | other>",
+  "confidence": <number between 0.0 and 1.0>,
+  "recommended_reply": "<1-2 sentence draft the broker can send back as-is, or empty string>"
+}
+
+INTENT definitions:
+  - interested: they want to talk, meet, hear more, or asked us to call.
+  - question: they asked something that needs an answer before anything else.
+  - not_interested: they declined, asked us to stop, or are hostile.
+  - wrong_number: they say we reached the wrong person or they do not own the property.
+  - later: not now, but open to it down the road ("maybe in the spring", "check back later").
+  - other: none of the above (small talk, acknowledgement, unclear).
+
+RECOMMENDED_REPLY rules (hard):
+  - Written in first person as the broker. Plain, professional, warm. 1-2 short sentences.
+  - NEVER invent facts. NEVER state a price, valuation, percentage, date, or any number that does not appear verbatim in the prospect's message or the context.
+  - No em dashes, no semicolons, no exclamation marks, no emoji, no marketing cliches.
+  - If intent is not_interested or wrong_number: one polite closing sentence, nothing more.
+  - If intent is question and answering would require facts you do not have, acknowledge and offer a call instead of guessing.
+  - If nothing useful can be suggested, return an empty string.
+
+Output JSON only. No prose. No markdown fences.",
+  "user": "Context:
+- Prospect: Owner of a listing that expired off the MLS. We texted offering help after the listing expired.
+- Prospect name: Dana Smith
+- Property: 61500 Larkspur Loop
+
+Their reply:
+"""
+Is this about the Larkspur house?
+"""",
+}
+`;
+
+exports[`buildReplyIntentPrompt (construction snapshot — no network) > fsbo prospect with no name or address 1`] = `
+{
+  "system": "You classify an inbound SMS reply from a homeowner prospect that Ryan Realty (a real-estate brokerage in Bend, Oregon) previously texted. Output a SINGLE JSON object and nothing else:
+
+{
+  "intent": "<one of: interested | question | not_interested | wrong_number | later | other>",
+  "confidence": <number between 0.0 and 1.0>,
+  "recommended_reply": "<1-2 sentence draft the broker can send back as-is, or empty string>"
+}
+
+INTENT definitions:
+  - interested: they want to talk, meet, hear more, or asked us to call.
+  - question: they asked something that needs an answer before anything else.
+  - not_interested: they declined, asked us to stop, or are hostile.
+  - wrong_number: they say we reached the wrong person or they do not own the property.
+  - later: not now, but open to it down the road ("maybe in the spring", "check back later").
+  - other: none of the above (small talk, acknowledgement, unclear).
+
+RECOMMENDED_REPLY rules (hard):
+  - Written in first person as the broker. Plain, professional, warm. 1-2 short sentences.
+  - NEVER invent facts. NEVER state a price, valuation, percentage, date, or any number that does not appear verbatim in the prospect's message or the context.
+  - No em dashes, no semicolons, no exclamation marks, no emoji, no marketing cliches.
+  - If intent is not_interested or wrong_number: one polite closing sentence, nothing more.
+  - If intent is question and answering would require facts you do not have, acknowledge and offer a call instead of guessing.
+  - If nothing useful can be suggested, return an empty string.
+
+Output JSON only. No prose. No markdown fences.",
+  "user": "Context:
+- Prospect: Owner selling their home without an agent (FSBO). We texted offering help.
+- Prospect name: unknown
+- Property: unknown
+
+Their reply:
+"""
+who is this
+"""",
+}
+`;

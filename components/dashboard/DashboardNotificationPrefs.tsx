@@ -231,7 +231,7 @@ export default function DashboardNotificationPrefs({ initialPrefs }: Props) {
   // the user owns (the per-row value the alert cron actually honors), then keeps
   // the profile mirror in sync so the displayed value and the create-time default
   // match. Without the fan-out this control wrote a global preference no cron read.
-  const updateSavedSearchCadence = useCallback((value: 'instant' | 'daily' | 'weekly') => {
+  const updateSavedSearchCadence = useCallback((value: 'instant' | 'daily' | 'weekly' | 'monthly') => {
     setPrefs((p) => {
       const next = { ...p, savedSearchFrequency: value }
       startTransition(async () => {
@@ -264,7 +264,7 @@ export default function DashboardNotificationPrefs({ initialPrefs }: Props) {
       </div>
       <div>
         <Label className="font-medium text-foreground">Saved search matches</Label>
-        <Select value={prefs.savedSearchFrequency ?? 'daily'} onValueChange={(v) => updateSavedSearchCadence(v as 'instant' | 'daily' | 'weekly')}>
+        <Select value={prefs.savedSearchFrequency ?? 'daily'} onValueChange={(v) => updateSavedSearchCadence(v as 'instant' | 'daily' | 'weekly' | 'monthly')}>
           <SelectTrigger className="mt-1 w-full max-w-xs rounded-lg border border-border bg-card px-3 py-2 text-sm">
             <SelectValue />
           </SelectTrigger>
@@ -272,6 +272,7 @@ export default function DashboardNotificationPrefs({ initialPrefs }: Props) {
             <SelectItem value="instant">Instant</SelectItem>
             <SelectItem value="daily">Daily</SelectItem>
             <SelectItem value="weekly">Weekly</SelectItem>
+            <SelectItem value="monthly">Once a month</SelectItem>
           </SelectContent>
         </Select>
         <p className="mt-1.5 text-xs text-muted-foreground">This applies to every search you have saved.</p>

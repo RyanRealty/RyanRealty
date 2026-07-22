@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-07-21T01:46:16.275Z
+**Generated:** 2026-07-22T02:27:00.172Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -59,7 +59,7 @@ One row per MLS-history event for a listing. snake_case columns; `listing_key` r
 | `sort_order` | integer | no | 0 |
 | `created_at` | timestamp with time zone | no | now() |
 
-### `listings` · **rows ≈ 588,752**
+### `listings` · **rows ≈ 593,551**
 
 Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case columns** — `"ListingKey"`, `"StreetNumber"`, `"StreetName"`, `"ListPrice"`, `"StandardStatus"`, `"Latitude"`, `"Longitude"`, etc. The `details` jsonb column carries the raw RETS payload. **Never aggregate from this table at request time** — use `listing_tile_mv` / `market_pulse_live` / `market_stats_cache`.
 
@@ -303,7 +303,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 596,227**
+### `listing_tile_mv` · **rows ≈ 594,879**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -333,8 +333,8 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `property_sub_type` | text | yes |  |
 | `on_market_date` | timestamp with time zone | yes |  |
 | `modified_at` | timestamp with time zone | yes |  |
-| `price_per_sqft` | numeric(10,2) | yes |  |
-| `lot_size_acres` | numeric(12,4) | yes |  |
+| `price_per_sqft` | numeric | yes |  |
+| `lot_size_acres` | numeric | yes |  |
 | `year_built` | smallint | yes |  |
 | `garage_spaces` | smallint | yes |  |
 | `pool_yn` | boolean | yes |  |
@@ -348,7 +348,7 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `search_vector` | tsvector | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `similar_listings_mv` · **rows ≈ 75,803**
+### `similar_listings_mv` · **rows ≈ 18,848**
 
 (anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).
 
@@ -417,7 +417,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 29,278**
+### `market_stats_cache` · **rows ≈ 29,892**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -593,7 +593,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 175**
+### `cmas` · **rows ≈ 181**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -672,7 +672,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 167**
+### `expired_listings` · **rows ≈ 173**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -725,8 +725,13 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_sms_status` | text | yes |  |
 | `outreach_claim_at` | timestamp with time zone | yes |  |
 | `outreach_idempotency_key` | text | yes |  |
+| `outreach_email_sent_at` | timestamp with time zone | yes |  |
+| `outreach_email_message_id` | text | yes |  |
+| `outreach_email_status` | text | yes |  |
+| `outreach_email_claim_at` | timestamp with time zone | yes |  |
+| `outreach_email_idempotency_key` | text | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 522**
+### `marketing_brain_actions` · **rows ≈ 529**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -2315,6 +2320,11 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_sms_status` | text | yes |  |
 | `outreach_claim_at` | timestamp with time zone | yes |  |
 | `outreach_idempotency_key` | text | yes |  |
+| `outreach_email_sent_at` | timestamp with time zone | yes |  |
+| `outreach_email_message_id` | text | yes |  |
+| `outreach_email_status` | text | yes |  |
+| `outreach_email_claim_at` | timestamp with time zone | yes |  |
+| `outreach_email_idempotency_key` | text | yes |  |
 
 ### `fub_person_geo`
 
@@ -2468,6 +2478,14 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `storage_path` | text | no |  |
 | `created_at` | timestamp with time zone | no | now() |
 
+### `hidden_listings`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `user_id` | uuid | no |  |
+| `listing_key` | text | no |  |
+| `created_at` | timestamp with time zone | no | now() |
+
 ### `lead_flow_rules`
 
 | Column | Type | Nullable | Default |
@@ -2584,6 +2602,20 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `property_type` | text | yes |  |
 | `property_sub_type` | text | yes |  |
 
+### `listing_boundary_xref_mv_src`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `listing_key` | text | yes |  |
+| `geo_type` | text | yes |  |
+| `geo_slug` | text | yes |  |
+| `lat` | numeric | yes |  |
+| `lng` | numeric | yes |  |
+| `list_price` | numeric | yes |  |
+| `standard_status` | text | yes |  |
+| `property_type` | text | yes |  |
+| `property_sub_type` | text | yes |  |
+
 ### `listing_collections`
 
 | Column | Type | Nullable | Default |
@@ -2644,6 +2676,109 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `updated_at` | timestamp with time zone | no | now() |
 
 ### `listing_search_mv`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `listing_key` | text | yes |  |
+| `list_number` | text | yes |  |
+| `standard_status` | text | yes |  |
+| `list_price` | numeric | yes |  |
+| `close_price` | numeric | yes |  |
+| `close_date` | timestamp with time zone | yes |  |
+| `beds` | integer | yes |  |
+| `baths` | numeric | yes |  |
+| `sqft` | numeric | yes |  |
+| `street_number` | text | yes |  |
+| `street_name` | text | yes |  |
+| `street_suffix` | text | yes |  |
+| `city` | text | yes |  |
+| `city_lower` | text | yes |  |
+| `postal_code` | text | yes |  |
+| `subdivision_name` | text | yes |  |
+| `subdivision_lower` | text | yes |  |
+| `lat` | numeric | yes |  |
+| `lng` | numeric | yes |  |
+| `photo_url` | text | yes |  |
+| `property_type` | text | yes |  |
+| `property_sub_type` | text | yes |  |
+| `on_market_date` | timestamp with time zone | yes |  |
+| `modified_at` | timestamp with time zone | yes |  |
+| `price_per_sqft` | numeric | yes |  |
+| `lot_size_acres` | numeric | yes |  |
+| `year_built` | smallint | yes |  |
+| `garage_spaces` | smallint | yes |  |
+| `pool_yn` | boolean | yes |  |
+| `has_virtual_tour` | boolean | yes |  |
+| `dom` | integer | yes |  |
+| `price_drop_count` | smallint | yes |  |
+| `address_slug` | text | yes |  |
+| `boundary_city` | text | yes |  |
+| `boundary_neighborhood` | text | yes |  |
+| `boundary_subdivision` | text | yes |  |
+| `search_vector` | tsvector | yes |  |
+| `refreshed_at` | timestamp with time zone | yes |  |
+| `fireplace_yn` | boolean | yes |  |
+| `waterfront_yn` | boolean | yes |  |
+| `basement_yn` | boolean | yes |  |
+| `horse_yn` | boolean | yes |  |
+| `senior_community_yn` | boolean | yes |  |
+| `new_construction_yn` | boolean | yes |  |
+| `association_yn` | boolean | yes |  |
+| `hoa_monthly` | numeric | yes |  |
+| `tax_annual_amount` | numeric | yes |  |
+| `estimated_monthly_piti` | numeric | yes |  |
+| `irrigation_water_rights_yn` | boolean | yes |  |
+| `county` | text | yes |  |
+| `elementary_school` | text | yes |  |
+| `middle_school` | text | yes |  |
+| `high_school` | text | yes |  |
+| `school_district` | text | yes |  |
+| `levels` | text | yes |  |
+| `baths_full` | smallint | yes |  |
+| `baths_half` | smallint | yes |  |
+| `public_remarks` | text | yes |  |
+| `private_remarks` | text | yes |  |
+| `has_open_house` | boolean | yes |  |
+| `price_reduced` | boolean | yes |  |
+| `appliances` | ARRAY | yes |  |
+| `flooring` | ARRAY | yes |  |
+| `heating_types` | ARRAY | yes |  |
+| `cooling_types` | ARRAY | yes |  |
+| `interior_features` | ARRAY | yes |  |
+| `exterior_features` | ARRAY | yes |  |
+| `window_features` | ARRAY | yes |  |
+| `laundry_features` | ARRAY | yes |  |
+| `security_features` | ARRAY | yes |  |
+| `parking_features` | ARRAY | yes |  |
+| `patio_porch_features` | ARRAY | yes |  |
+| `lot_features_arr` | ARRAY | yes |  |
+| `view_types` | ARRAY | yes |  |
+| `fireplace_types` | ARRAY | yes |  |
+| `basement_types` | ARRAY | yes |  |
+| `other_structures` | ARRAY | yes |  |
+| `structure_types` | ARRAY | yes |  |
+| `hoa_amenities` | ARRAY | yes |  |
+| `community_features` | ARRAY | yes |  |
+| `accessibility_features` | ARRAY | yes |  |
+| `waterfront_types` | ARRAY | yes |  |
+| `utilities` | ARRAY | yes |  |
+| `sewer_types` | ARRAY | yes |  |
+| `water_source` | ARRAY | yes |  |
+| `road_surface` | ARRAY | yes |  |
+| `roof_types` | ARRAY | yes |  |
+| `construction_materials_arr` | ARRAY | yes |  |
+| `foundation_types` | ARRAY | yes |  |
+| `architectural_styles` | ARRAY | yes |  |
+| `listing_terms` | ARRAY | yes |  |
+| `special_conditions` | ARRAY | yes |  |
+| `current_use` | ARRAY | yes |  |
+| `irrigation_source` | ARRAY | yes |  |
+| `common_walls` | ARRAY | yes |  |
+| `road_frontage` | ARRAY | yes |  |
+| `pool_features` | ARRAY | yes |  |
+| `direction_faces` | text | yes |  |
+
+### `listing_search_mv_src`
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -2781,6 +2916,49 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `rental_calendar_synced` | boolean | no | false |
 | `rules_synced` | boolean | no | false |
 | `updated_at` | timestamp with time zone | no | now() |
+
+### `listing_tile_mv_src`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `listing_key` | text | yes |  |
+| `list_number` | text | yes |  |
+| `standard_status` | text | yes |  |
+| `list_price` | numeric | yes |  |
+| `close_price` | numeric | yes |  |
+| `close_date` | timestamp with time zone | yes |  |
+| `beds` | integer | yes |  |
+| `baths` | numeric | yes |  |
+| `sqft` | numeric | yes |  |
+| `street_number` | text | yes |  |
+| `street_name` | text | yes |  |
+| `street_suffix` | text | yes |  |
+| `city` | text | yes |  |
+| `city_lower` | text | yes |  |
+| `postal_code` | text | yes |  |
+| `subdivision_name` | text | yes |  |
+| `subdivision_lower` | text | yes |  |
+| `lat` | numeric | yes |  |
+| `lng` | numeric | yes |  |
+| `photo_url` | text | yes |  |
+| `property_type` | text | yes |  |
+| `property_sub_type` | text | yes |  |
+| `on_market_date` | timestamp with time zone | yes |  |
+| `modified_at` | timestamp with time zone | yes |  |
+| `price_per_sqft` | numeric(10,2) | yes |  |
+| `lot_size_acres` | numeric(12,4) | yes |  |
+| `year_built` | smallint | yes |  |
+| `garage_spaces` | smallint | yes |  |
+| `pool_yn` | boolean | yes |  |
+| `has_virtual_tour` | boolean | yes |  |
+| `dom` | integer | yes |  |
+| `price_drop_count` | smallint | yes |  |
+| `address_slug` | text | yes |  |
+| `boundary_city` | text | yes |  |
+| `boundary_neighborhood` | text | yes |  |
+| `boundary_subdivision` | text | yes |  |
+| `search_vector` | tsvector | yes |  |
+| `refreshed_at` | timestamp with time zone | yes |  |
 
 ### `listing_views`
 
@@ -3419,6 +3597,16 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `value` | jsonb | no | '{}'::jsonb |
 | `updated_at` | timestamp with time zone | no | now() |
 | `created_at` | timestamp with time zone | no | now() |
+
+### `similar_listings_mv_src`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `anchor_key` | text | yes |  |
+| `similar_key` | text | yes |  |
+| `rank` | smallint | yes |  |
+| `similarity_score` | smallint | yes |  |
+| `refreshed_at` | timestamp with time zone | yes |  |
 
 ### `site_improvement_ledger`
 

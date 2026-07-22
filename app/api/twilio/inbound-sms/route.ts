@@ -19,6 +19,8 @@ import { addSuppression, removeSuppression } from '@/lib/crm/suppressions'
 import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import { hasSellerIntent } from '@/lib/crm/seller-intent'
 import { CRM_MAILBOXES, sendCrmEmail } from '@/lib/crm/gmail'
+import { classifyInboundReply, REPLY_INTENT_LABELS, type ReplyClassification } from '@/lib/crm/reply-intent'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -70,6 +72,56 @@ async function isBrokerForwardCell(phone: string): Promise<boolean> {
     if (v && normalizeTo10(v) === ten) return true
   }
   return false
+}
+
+/**
+ * Is this person a texted prospect (expired-listing / FSBO outreach)? Returns
+ * the prospect kind + property address for merge-safe classifier context, or
+ * null when the person is not in either pipeline. Gate order: intent tags on
+ * crm_people first, then an outreach claim row (expired_listings /
+ * fsbo_listings.outreach_crm_person_id), which also supplies the address.
+ * Every read fails soft — a query error means "not a prospect" (no classify).
+ */
+async function prospectOutreachContext(
+  sb: SupabaseClient,
+  personId: number,
+): Promise<{ kind: 'expired' | 'fsbo' | null; address: string | null } | null> {
+  const { data: person } = await sb
+    .from('crm_people')
+    .select('tags')
+    .eq('id', personId)
+    .maybeSingle()
+  const tags: string[] = Array.isArray(person?.tags) ? (person.tags as string[]) : []
+  const tagKind: 'expired' | 'fsbo' | null = tags.includes('intent:expired-listing')
+    ? 'expired'
+    : tags.includes('intent:fsbo')
+      ? 'fsbo'
+      : null
+
+  const [expired, fsbo] = await Promise.all([
+    sb
+      .from('expired_listings')
+      .select('street_address')
+      .eq('outreach_crm_person_id', personId)
+      .order('outreach_claim_at', { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle(),
+    sb
+      .from('fsbo_listings')
+      .select('street_address')
+      .eq('outreach_crm_person_id', personId)
+      .order('outreach_claim_at', { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle(),
+  ])
+  const claim = expired.data
+    ? { kind: 'expired' as const, address: (expired.data.street_address as string | null) ?? null }
+    : fsbo.data
+      ? { kind: 'fsbo' as const, address: (fsbo.data.street_address as string | null) ?? null }
+      : null
+
+  if (!tagKind && !claim) return null
+  return { kind: tagKind ?? claim?.kind ?? null, address: claim?.address ?? null }
 }
 
 export async function POST(request: Request) {
@@ -189,13 +241,70 @@ export async function POST(request: Request) {
       })
     }
 
+    // Reply-intent classification (prospecting pipelines only). Runs AFTER the
+    // STOP/START/HELP keyword handling and suppression writes above — those
+    // branches already returned. Strictly additive + fail-open: any error (or
+    // the CRM_REPLY_INTENT_DISABLED=1 kill switch) leaves replyIntel null and
+    // every write below byte-identical to pre-classifier behavior. Intent
+    // 'other' (bare ack) is treated as no-signal — no enrichment, no note.
+    let replyIntel: ReplyClassification | null = null
+    if (body) {
+      try {
+        const prospect = await prospectOutreachContext(sb, match.personId)
+        if (prospect) {
+          replyIntel = await classifyInboundReply({
+            body,
+            context: { kind: prospect.kind, personName: match.name, address: prospect.address },
+          })
+          if (replyIntel?.intent === 'other') replyIntel = null
+        }
+      } catch (err) {
+        console.warn('[inbound-sms] reply-intent classification failed (fail-open)', err)
+        replyIntel = null
+      }
+    }
+
+    // System note with the classification so the thread carries the "why"
+    // behind the enriched task. Same retry-safe dedupe pattern as sms_in.
+    if (replyIntel) {
+      try {
+        await sb.from('crm_timeline').upsert(
+          {
+            person_id: match.personId,
+            kind: 'system',
+            title: `Text reply classified: ${REPLY_INTENT_LABELS[replyIntel.intent]}`,
+            body: replyIntel.recommendedReply ? `Suggested reply: ${replyIntel.recommendedReply}` : null,
+            payload: {
+              intent: replyIntel.intent,
+              confidence: replyIntel.confidence,
+              recommendedReply: replyIntel.recommendedReply,
+              classifierSource: replyIntel.source,
+              ...(replyIntel.model ? { model: replyIntel.model } : {}),
+              messageSid: sid,
+            },
+            source: 'twilio',
+            dedupe_key: `twilio-intent:${sid}:p${match.personId}`,
+          },
+          { onConflict: 'dedupe_key', ignoreDuplicates: true },
+        )
+      } catch (err) {
+        console.warn('[inbound-sms] reply-intent timeline note failed', err)
+      }
+    }
+
+    const intentLabel = replyIntel ? REPLY_INTENT_LABELS[replyIntel.intent] : null
+    const baseTaskName = `Reply to text from ${match.name ?? from}`
+    const taskName = replyIntel && intentLabel
+      ? `${baseTaskName} (${intentLabel.toLowerCase()})${replyIntel.recommendedReply ? `. Suggested: ${replyIntel.recommendedReply.slice(0, 160)}` : ''}`
+      : baseTaskName
+
     // Alert the assigned broker: open a task + email notification. Upsert on a
     // per-message dedupe_key so a Twilio inbound RETRY (non-2xx/timeout) can't
     // stack duplicate "reply to text" tasks for the same inbound message.
     await sb.from('crm_tasks').upsert(
       {
         person_id: match.personId,
-        name: `Reply to text from ${match.name ?? from}`,
+        name: taskName,
         type: 'Text',
         due_at: new Date(Date.now() + 15 * 60000).toISOString(),
         assigned_broker: alertBroker,
@@ -209,6 +318,12 @@ export async function POST(request: Request) {
     // response, so the broker's new-text email alert silently never sends.
     // try/catch keeps a mail failure from 500-ing the webhook (Twilio retry).
     try {
+      // With a classification, the alert leads with "They said / Suggested
+      // reply" so the broker can one-tap copy the draft. Without one, the body
+      // is byte-identical to the pre-classifier alert.
+      const alertBodyText = replyIntel && intentLabel
+        ? `They said: ${body}\n\nIntent: ${intentLabel} (${Math.round(replyIntel.confidence * 100)}% confident)${replyIntel.recommendedReply ? `\nSuggested reply: ${replyIntel.recommendedReply}` : ''}\n\nFrom ${from} to ${to}\nOpen the conversation: https://ryan-realty.com/admin/crm/${match.personId}#comms`
+        : `${body}\n\nFrom ${from} to ${to}\nOpen the conversation: https://ryan-realty.com/admin/crm/${match.personId}#comms`
       await sendCrmEmail({
         fromMailbox: mailbox.email,
         to: mailbox.email,
@@ -219,7 +334,7 @@ export async function POST(request: Request) {
         // DROPS the #comms fragment (verified 2026-07-13), so the tab never
         // opens. Linking direct keeps the hash → the mobile Comms tab opens on
         // the thread.
-        bodyText: `${body}\n\nFrom ${from} to ${to}\nOpen the conversation: https://ryan-realty.com/admin/crm/${match.personId}#comms`,
+        bodyText: alertBodyText,
       })
     } catch (err) {
       console.error('[inbound-sms] alert email failed', err)

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { trackEvent, trackLandingPageView } from '@/lib/tracking'
+import { fireFirstPartyEvent } from '@/components/VisitTracker'
 
 type Props = {
   lpVariant: string
@@ -77,6 +78,13 @@ export default function LandingPageTracker({ lpVariant }: Props) {
                 depth_percent: threshold,
                 lp_source: ctx.lp_source,
                 lp_campaign: ctx.lp_campaign,
+              })
+              // Dual-write to the first-party visitor store (GA path above
+              // untouched) — same consent gate as every visitor event; the
+              // server additionally strips scroll depth under 'essential'.
+              fireFirstPartyEvent('scroll_depth', {
+                scrollDepthPct: threshold,
+                metadata: { lp_variant: ctx.lp_variant },
               })
             }
           }

@@ -27,7 +27,14 @@ export interface MobileCommsTabProps {
   engagement: Record<string, EmailEngagement>
   /** iMessage-style composer, pinned to the bottom of the tab so a broker who
    *  deep-links here (#comms) from a new-text alert can reply from their phone
-   *  without hunting for a control. Sends from the business line. */
+   *  without hunting for a control. Sends from the business line.
+   *
+   *  Suggested-reply preload: a deep link that carries a suggested reply
+   *  (/admin/crm/<id>?reply=<text>#comms) pre-fills this pinned composer —
+   *  consumption lives inside the canonical SmsComposer via
+   *  components/admin/crm/composer-preload.ts (query-param pattern, same as the
+   *  inbox's ?c=&m= prefills). The text only fills the editable input; the
+   *  broker still reviews and taps send through the gated action. */
   composer?: React.ReactNode
 }
 

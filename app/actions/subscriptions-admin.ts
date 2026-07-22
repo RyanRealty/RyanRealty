@@ -134,7 +134,7 @@ export async function updateAlertSubscriptionAction(
   id: string,
   patch: {
     name?: string
-    frequency?: 'instant' | 'daily' | 'weekly'
+    frequency?: 'instant' | 'daily' | 'weekly' | 'monthly'
     filters?: Record<string, unknown>
     active?: boolean
   },

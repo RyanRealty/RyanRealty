@@ -22,6 +22,10 @@ export default defineConfig({
       // Route-handler tests (e.g. the Twilio conversations-events webhook
       // regression locks) live next to their route.ts.
       'app/api/**/*.test.ts',
+      // LP form/filter logic tests colocate with their actions.
+      'app/lp/**/*.test.ts',
+      'components/admin/prospecting/**/*.test.ts',
+      'components/admin/prospecting/**/*.test.tsx',
     ],
     globals: false,
   },

@@ -21,24 +21,14 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import { submitBuyerLPForm, type BuyerLPTimeline } from './actions'
+import { BUYER_LP_SEARCH_AREAS } from './alert-filters'
 import { CONTACT } from '@/lib/brand/contact'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 
-const SEARCH_AREAS = [
-  { slug: 'northwest-crossing', label: 'NW Crossing' },
-  { slug: 'bend-river-west', label: 'River West (Bend)' },
-  { slug: 'bend-old-bend', label: 'Old Bend' },
-  { slug: 'bend-awbrey-butte', label: 'Awbrey Butte' },
-  { slug: 'tetherow', label: 'Tetherow' },
-  { slug: 'broken-top', label: 'Broken Top' },
-  { slug: 'sunriver', label: 'Sunriver' },
-  { slug: 'crosswater', label: 'Crosswater' },
-  { slug: 'caldera-springs', label: 'Caldera Springs' },
-  { slug: 'redmond', label: 'Redmond' },
-  { slug: 'sisters', label: 'Sisters' },
-  { slug: 'la-pine', label: 'La Pine' },
-  { slug: 'other', label: 'Open to other Central Oregon areas' },
-]
+// Single source of truth for the area list: ./alert-filters.ts maps each slug
+// to the canonical alert filter, so what the form offers and what the alert
+// engine saves can never drift.
+const SEARCH_AREAS = BUYER_LP_SEARCH_AREAS
 
 export default function BuyerLPForm() {
   const [pending, startTransition] = useTransition()
@@ -60,13 +50,13 @@ export default function BuyerLPForm() {
       timeline: (formData.get('timeline')?.toString() || undefined) as BuyerLPTimeline | undefined,
       searchAreas: areas,
       notes: formData.get('notes')?.toString() ?? '',
-      sessionId: readRrSessionId(),
+      sessionId: readRrSessionId(), // hydration-safe (event-handler body, not render)
       smsConsent: formData.get('smsConsent') === 'yes',
     }
     startTransition(async () => {
       const r = await submitBuyerLPForm(submission)
       if (r.success) {
-        const lp = getLpContext('buyer-listing-alerts')
+        const lp = getLpContext('buyer-listing-alerts') // hydration-safe (event-handler body, not render)
         try {
           trackEvent('generate_lead', {
             source: 'buyer_lp',

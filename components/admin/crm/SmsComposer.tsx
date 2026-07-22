@@ -12,9 +12,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { ArrowUp, Loader2 } from 'lucide-react'
 import { newIdempotencyKey } from '@/lib/admin/mutation-result'
+import { consumeSuggestedReply } from '@/components/admin/crm/composer-preload'
 import { createSubmitGuard } from '@/components/admin/crm/composer-submit-guard'
 import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { MergeFieldInserter, insertAtCursor, type CustomFieldToken } from '@/components/admin/crm/MergeFieldInserter'
+import { SaveAsTemplateButton } from '@/components/admin/crm/SaveAsTemplateDialog'
 import {
   AttachmentChips,
   AttachmentControl,
@@ -106,6 +108,15 @@ export function SmsComposer(props: {
   const [body, setBody] = useState(props.initialBody)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
   const { chars, segments } = segmentInfo(body)
+
+  // Suggested-reply deep link (/admin/crm/<id>?reply=…#comms) — preload an
+  // EMPTY compose only, on contact-scoped surfaces. See composer-preload.ts.
+  const preloadPersonId = props.personId ?? props.primaryPersonId
+  useEffect(() => {
+    if (!preloadPersonId) return
+    const pre = consumeSuggestedReply('sms')
+    if (pre) setBody((b) => (b.trim() ? b : pre.body))
+  }, [preloadPersonId])
   const unresolved = useMemo(() => findUnresolvedMergeTokens(body), [body])
 
   // Same-tick double-submit guard (Pain #2, 2026-07-17) — full mechanism note
@@ -264,6 +275,10 @@ export function SmsComposer(props: {
           <span />
         )}
         <div className="flex shrink-0 items-center gap-3">
+          {/* Low-prominence: keep a broker-tweaked text without leaving the flow. */}
+          {body.trim() ? (
+            <SaveAsTemplateButton channel="sms" body={body} className="h-7 px-2 text-xs" />
+          ) : null}
           {props.saveDraftAction ? (
             <Button
               type="submit"

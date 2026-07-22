@@ -34,19 +34,22 @@
  *   - last_seen_at    timestamptz NOT NULL — most-recent-visit ordering
  *   - first_seen_at   timestamptz NOT NULL — the 30-day-window count key
  *
- * ── IDENTITY-JOIN GAP (FLAGGED) ────────────────────────────────────────────
- * This summary is only as complete as `resolvePersonIdentity().sessionIds`,
- * which today stitches sessions via the FUB id (visitor_sessions.fub_person_id)
- * and the visitor_identity_map. ANONYMOUS sessions a contact ran BEFORE they
- * were identified (no fub_person_id, not yet in the identity map) are NOT
- * attributed here — so a brand-new lead's pre-signup browsing is invisible until
- * the identity graph stitches their rr_vid. This lights up as anonymous-session
- * stitching (Phase 1) lands and as traffic moves from WordPress to the Next.js
- * surface (behavior coverage is small today — see Phase 2.6 note in the runbook).
+ * ── IDENTITY JOIN (native, 2026-07-21) ─────────────────────────────────────
+ * `resolvePersonIdentity().sessionIds` alone stitched sessions via the legacy
+ * FUB id (visitor_sessions.fub_person_id) + email-keyed identity-map rows, so a
+ * NATIVE lead (fub_legacy_id NULL) whose sessions carry only crm_person_id
+ * resolved zero sessions. The summary now UNIONS that bundle with
+ * resolveLeadSessionIds (lib/data/crm/getViewedListings.ts) — the native chain:
+ * visitor_sessions.crm_person_id, the lockstep fub_person_id = crm id
+ * convention (lib/visitor-backfill.ts:97-99), identity-map matches by
+ * crm_person_id/fub_person_id/email, and every session sharing the person's
+ * durable rr_vid. Truly anonymous pre-identify sessions (no rr_vid stitch yet)
+ * remain unattributed until the visitor identifies in that browser.
  *
  * DAL boundary (G1): the raw .from() reads live here, inside lib/data/.
  */
 import { resolvePersonIdentity } from '@/lib/data/crm/resolvePersonIdentity'
+import { resolveLeadSessionIds } from '@/lib/data/crm/getViewedListings'
 import { createServiceClient } from '@/lib/supabase/service'
 
 /** A home the contact viewed, with how many times. */
@@ -259,10 +262,18 @@ export async function getContactBehaviorSummary(
   }
 
   const identity = await resolvePersonIdentity(crmPersonId)
-  const sessionIds = identity.sessionIds.filter(Boolean)
-  if (sessionIds.length === 0) return empty
 
   const sb = createServiceClient()
+
+  // Native identity chain (crm_person_id + lockstep + rr_vid) unioned with the
+  // legacy/email bundle so BOTH native and FUB-imported leads resolve sessions.
+  const nativeSessionIds = await resolveLeadSessionIds(sb, {
+    crmPersonId,
+    fubLegacyId: identity.fubLegacyId,
+    emails: identity.emails,
+  })
+  const sessionIds = [...new Set([...identity.sessionIds, ...nativeSessionIds])].filter(Boolean)
+  if (sessionIds.length === 0) return empty
 
   // Sessions: last-seen recency + 30-day session count. Bounded read.
   const { data: sessions } = await sb

@@ -14,12 +14,17 @@
  */
 
 import { useMemo, useRef, useState, useTransition } from 'react'
-import { Send } from 'lucide-react'
+import { ChevronDown, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import {
   Dialog,
   DialogContent,
@@ -36,6 +41,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { cn } from '@/lib/utils'
+import { SAVED_SEARCH_CADENCES, type SavedSearchCadence } from '@/lib/saved-search-cadence'
+import { hasNarrowingFilter } from '@/lib/search-filters'
+import { PROPERTY_TYPES } from '@/lib/property-type'
 import type { ContactBpo } from '@/lib/data/crm/getContactBpos'
 import type { ContactCma } from '@/lib/data/crm/getContactCmas'
 import { sendBpoForContactAction } from '@/app/actions/contact-bpo'
@@ -45,6 +54,18 @@ import { setReportSubscriptionAction } from '@/app/actions/crm-report-subscripti
 import { sendListingMatchesForContactAction } from '@/app/actions/contact-listing-matches'
 
 type Area = { slug: string; label: string }
+
+/**
+ * Status choices for a broker-created alert search. 'active' is the feed
+ * default and is omitted from the saved filters (hash stability with every
+ * pre-existing alert). Sold/closed and coming-soon stay off this surface:
+ * sold data is VOW-scoped and pre-marketing listings never leave the shop.
+ */
+const ALERT_STATUS_OPTIONS = [
+  { value: 'active', label: 'Active (default)' },
+  { value: 'active_and_pending', label: 'Active and pending' },
+  { value: 'pending', label: 'Pending only' },
+] as const
 
 export function ContactSendCenter(props: {
   personId: number
@@ -90,13 +111,19 @@ export function ContactSendCenter(props: {
   // Market report state
   const [areas, setAreas] = useState<string[]>(props.subscribedAreas)
   const [subscribe, setSubscribe] = useState(false)
-  // Listing alerts state
+  // Listing alerts state — the consumer search vocabulary, mapped through the
+  // SAME normalizeSavedSearchFilters keys the /search and /account paths use.
   const [city, setCity] = useState(props.defaultCity ?? '')
   const [subdivision, setSubdivision] = useState('')
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
   const [minBeds, setMinBeds] = useState('')
-  const [freq, setFreq] = useState<'weekly' | 'daily'>('weekly')
+  const [minBaths, setMinBaths] = useState('')
+  const [minSqFt, setMinSqFt] = useState('')
+  const [propType, setPropType] = useState('all')
+  const [status, setStatus] = useState<string>('active')
+  const [moreFiltersOpen, setMoreFiltersOpen] = useState(false)
+  const [freq, setFreq] = useState<SavedSearchCadence>('weekly')
 
   const blocked = props.emailSuppressed
 
@@ -111,6 +138,11 @@ export function ContactSendCenter(props: {
     setMinPrice('')
     setMaxPrice('')
     setMinBeds('')
+    setMinBaths('')
+    setMinSqFt('')
+    setPropType('all')
+    setStatus('active')
+    setMoreFiltersOpen(false)
   }
 
   // Which flow is running, so only ITS button shows "Sending…" — the shared
@@ -192,18 +224,34 @@ export function ContactSendCenter(props: {
     const filters: Record<string, unknown> = {}
     if (city.trim()) filters.city = city.trim()
     if (subdivision.trim()) filters.subdivision = subdivision.trim()
-    const mn = Number(minPrice.replace(/[^0-9]/g, ''))
-    const mx = Number(maxPrice.replace(/[^0-9]/g, ''))
-    const mb = Number(minBeds)
+    const num = (raw: string) => Number(raw.replace(/[^0-9]/g, ''))
+    const mn = num(minPrice)
+    const mx = num(maxPrice)
+    const mb = num(minBeds)
+    const mba = num(minBaths)
+    const msq = num(minSqFt)
     if (Number.isFinite(mn) && mn > 0) filters.minPrice = mn
     if (Number.isFinite(mx) && mx > 0) filters.maxPrice = mx
     if (Number.isFinite(mb) && mb > 0) filters.beds = mb
-    if (Object.keys(filters).length === 0) {
-      toast.error('Add a city, subdivision, price, or beds so the search is not the whole MLS.')
+    if (Number.isFinite(mba) && mba > 0) filters.baths = mba
+    if (Number.isFinite(msq) && msq > 0) filters.minSqFt = msq
+    if (propType !== 'all') filters.propertyType = propType
+    // 'active' is the feed default — omit it so hashes stay stable with every
+    // alert saved before this field existed.
+    if (status !== 'active') filters.statusFilter = status
+    // Same guard as the consumer paths: at least one predicate must actually
+    // narrow inventory (status alone matches the whole feed).
+    if (!hasNarrowingFilter(filters)) {
+      toast.error('Add a city, subdivision, price, beds, or another filter so the search is not the whole MLS.')
       return
     }
     run('Listing matches', () =>
-      sendListingMatchesForContactAction(props.personId, JSON.stringify(filters), { frequency: freq }),
+      // The action currently types frequency as daily | weekly; the runtime
+      // value passes through unchanged and the DAL + DB accept all four
+      // cadences, so the cast is a bridge until the action signature widens.
+      sendListingMatchesForContactAction(props.personId, JSON.stringify(filters), {
+        frequency: freq as 'daily' | 'weekly',
+      }),
     )
   }
 
@@ -427,17 +475,78 @@ export function ContactSendCenter(props: {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="sc-freq">Alert cadence</Label>
-                <Select value={freq} onValueChange={(v) => setFreq(v as 'weekly' | 'daily')}>
+                <Select value={freq} onValueChange={(v) => setFreq(v as SavedSearchCadence)}>
                   <SelectTrigger id="sc-freq" className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="daily">Daily</SelectItem>
+                    {SAVED_SEARCH_CADENCES.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
+            <Collapsible open={moreFiltersOpen} onOpenChange={setMoreFiltersOpen}>
+              <CollapsibleTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-full justify-between px-2 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  More filters
+                  <ChevronDown
+                    className={cn('h-3.5 w-3.5 transition-transform', moreFiltersOpen && 'rotate-180')}
+                    aria-hidden
+                  />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sc-baths">Min baths</Label>
+                    <Input id="sc-baths" inputMode="numeric" placeholder="2" value={minBaths} onChange={(e) => setMinBaths(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sc-sqft">Min sqft</Label>
+                    <Input id="sc-sqft" inputMode="numeric" placeholder="1800" value={minSqFt} onChange={(e) => setMinSqFt(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Home type</Label>
+                    <Select value={propType} onValueChange={setPropType}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PROPERTY_TYPES.map(({ value, label }) => (
+                          <SelectItem key={value || 'all'} value={value || 'all'}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Status</Label>
+                    <Select value={status} onValueChange={setStatus}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ALERT_STATUS_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
             <p className="text-xs text-muted-foreground">
               Starts a recurring alert and emails the current matches now.
             </p>

@@ -1,11 +1,14 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import type { ListingTileRow } from '@/app/actions/listings'
 import { getSearchListings } from '@/app/actions/search'
+import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
 import { listingDetailPath, displaySubdivision } from '@/lib/slug'
 import ListingCard from '@/components/site/ListingCard'
+import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
+import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hidden-exclusion'
 import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
 import { Button } from '@/components/ui/button'
 import { Eyebrow, H3, Body } from '@/components/site/primitives'
@@ -31,9 +34,36 @@ export default function SearchResults({
   const [page, setPage] = useState(initialPage)
   const [total, setTotal] = useState(totalCount)
   const [loading, setLoading] = useState(false)
+  // Per-user hidden homes ("Hide homes I don't want to see"). CONSTRAINT: the
+  // server listing results are SHARED caches (same rows for every visitor), so
+  // per-user hiding must never be baked into the fetch — it is filtered here,
+  // at the edge of render, from the signed-in user's hidden_listings rows.
+  // Signed-out users get an empty set (no filtering, no extra work).
+  const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set())
   const sentinelRef = useRef<HTMLDivElement>(null)
 
   const filtersSnapshot = JSON.stringify(filters)
+
+  useEffect(() => {
+    let cancelled = false
+    getHiddenListingKeys()
+      .then((keys) => {
+        if (!cancelled && keys.length > 0) setHiddenKeys(buildHiddenKeySet(keys))
+      })
+      .catch(() => {}) // fail open: worst case the user sees a home they hid
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const onHiddenChange = useCallback((key: string, hidden: boolean) => {
+    setHiddenKeys((prev) => {
+      const next = new Set(prev)
+      if (hidden) next.add(key)
+      else next.delete(key)
+      return next
+    })
+  }, [])
 
   useEffect(() => {
     setListings(initialListings)
@@ -93,6 +123,12 @@ export default function SearchResults({
 
   const listingKey = (row: ListingTileRow) => row.ListNumber ?? row.ListingKey ?? ''
   const showEmptyState = total === 0 && hasActiveFilters
+  // Hidden homes drop out of the rendered grid only — `total` stays the shared
+  // server count (per-user subtraction would misstate paging + the cache).
+  const visibleListings = useMemo(
+    () => excludeHiddenListings(listings, hiddenKeys),
+    [listings, hiddenKeys],
+  )
 
   return (
     <div className="w-full p-4 space-y-4">
@@ -113,7 +149,7 @@ export default function SearchResults({
             {total.toLocaleString()} home{total !== 1 ? 's' : ''} found
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {listings.map((listing) => {
+        {visibleListings.map((listing) => {
           const key = String(listingKey(listing)).trim()
           const href = listingDetailPath(key, {
             streetNumber: listing.StreetNumber,
@@ -130,9 +166,16 @@ export default function SearchResults({
             [listing.StreetNumber, listing.StreetName, listing.StreetSuffix].filter(Boolean).join(' ').trim() || cityParts || 'Listing'
           // Wrapper carries data-listing-key for the map<->list hover sync
           // (consumed by MapSearchView). ListingCard is the
-          // canonical site card — one look across the whole site.
+          // canonical site card — one look across the whole site. The hide
+          // control overlays at THIS layer (named group `group/hide`) so the
+          // canonical card itself stays lean.
           return (
-            <div key={key} data-listing-key={key}>
+            <div key={key} data-listing-key={key} className="relative group/hide">
+              <ListingCardHideControl
+                listingKey={key}
+                addressLine={addressLine}
+                onVisibilityChange={onHiddenChange}
+              />
               <ListingCard
                 showPricePerSqft
                 listing={{

@@ -3,6 +3,7 @@
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useCallback, useState, useEffect, useRef } from 'react'
 import { trackEvent } from '@/lib/tracking'
+import { fireFirstPartyEvent } from '@/components/VisitTracker'
 import { getSearchSuggestions, type SearchSuggestionsResult } from '@/app/actions/listings'
 import { PROPERTY_TYPES } from '@/lib/property-type'
 import { parseSearchQuery } from '@/lib/parse-search-query'
@@ -313,6 +314,10 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
       }
       setLocationOpen(false)
       trackEvent('search', { city, subdivision: subdivision ?? undefined, search_term: locationQuery })
+      // First-party mirror — feeds visitor_events so the CRM behavior panel's
+      // "top searches" reads real on-site searches (metadata.query is the label
+      // key getContactBehaviorSummary derives from).
+      fireFirstPartyEvent('search', { metadata: { query: subdivision ? `${subdivision}, ${city}` : city, term: locationQuery || undefined, city, subdivision, source: 'typeahead' } })
     },
     [updateUrl, locationQuery]
   )
@@ -323,6 +328,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
       setLocationQuery(postalCode)
       setLocationOpen(false)
       trackEvent('search', { postalCode, search_term: locationQuery })
+      fireFirstPartyEvent('search', { metadata: { query: postalCode, term: locationQuery || undefined, postalCode, source: 'typeahead' } })
     },
     [updateUrl, locationQuery]
   )
@@ -386,6 +392,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
       setLocationOpen(false)
       setLocationQuery(parsed.city ?? '')
       trackEvent('search', { search_term: text, ...(parsed.city ? { city: parsed.city } : {}) })
+      fireFirstPartyEvent('search', { metadata: { query: text, city: parsed.city, source: 'natural_language' } })
     },
     [updateUrl, showParsedChips]
   )

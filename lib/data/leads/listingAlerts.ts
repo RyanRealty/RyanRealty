@@ -1,6 +1,9 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
-import { normalizeSavedSearchFrequency } from '@/lib/saved-search-frequency'
+import {
+  normalizeSavedSearchFrequency,
+  type SavedSearchFrequency,
+} from '@/lib/saved-search-frequency'
 
 /**
  * DAL for public.listing_alerts — the ONE canonical listing-alert table
@@ -169,7 +172,8 @@ export async function createListingAlertForLead(input: {
   filtersHash: string
   origin: 'broker' | 'system'
   assignedBy?: string | null
-  frequency?: 'daily' | 'weekly'
+  /** All four cadences (incl. instant) are broker-assignable. Defaults to weekly. */
+  frequency?: SavedSearchFrequency
 }): Promise<{ ok: boolean; error?: string }> {
   const supabase = createServiceClient()
   const email = input.email.trim().toLowerCase()
@@ -193,7 +197,12 @@ export async function createListingAlertForLead(input: {
       origin: input.origin,
       assigned_by: input.assignedBy ?? null,
       source: input.origin === 'broker' ? 'broker-assigned' : 'system',
-      notification_frequency: input.frequency ?? 'weekly',
+      // Normalize even the typed value (belt-and-suspenders) but keep the
+      // broker-path default of weekly when the caller omits it — the bare
+      // normalizer would default to daily.
+      notification_frequency: input.frequency
+        ? normalizeSavedSearchFrequency(input.frequency)
+        : 'weekly',
       is_active: !optedOut,
       updated_at: new Date().toISOString(),
     },
@@ -268,7 +277,7 @@ export async function updateListingAlert(
     name?: string
     filters?: Record<string, unknown>
     filtersHash?: string
-    frequency?: 'instant' | 'daily' | 'weekly'
+    frequency?: SavedSearchFrequency
   },
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = createServiceClient()
@@ -428,7 +437,7 @@ export async function updateListingAlertForUser(
     name?: string
     filters?: Record<string, unknown>
     filtersHash?: string
-    frequency?: 'instant' | 'daily' | 'weekly'
+    frequency?: SavedSearchFrequency
   },
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = createServiceClient()

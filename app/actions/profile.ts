@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export type NotificationPreferences = {
   emailEnabled?: boolean
-  savedSearchFrequency?: 'instant' | 'daily' | 'weekly'
+  savedSearchFrequency?: 'instant' | 'daily' | 'weekly' | 'monthly'
   priceDropAlerts?: boolean
   statusChangeAlerts?: boolean
   openHouseReminders?: boolean

@@ -14,7 +14,7 @@ import { getPropertyTypeLabel } from '@/lib/property-type-labels'
 import resortCommunities from '@/data/resort-communities.json'
 
 /** Alert cadences the alert cron honors (mirrors lib/saved-search-cadence). */
-export type AlertFrequency = 'instant' | 'daily' | 'weekly'
+export type AlertFrequency = 'instant' | 'daily' | 'weekly' | 'monthly'
 
 /**
  * Market report cadences (mirrors ReportFrequency in
@@ -51,6 +51,7 @@ export function joinWithAnd(items: string[]): string {
 export function alertFrequencyPhrase(frequency: AlertFrequency): string {
   if (frequency === 'instant') return 'as new homes hit the market'
   if (frequency === 'weekly') return 'once a week'
+  if (frequency === 'monthly') return 'once a month'
   return 'once a day'
 }
 

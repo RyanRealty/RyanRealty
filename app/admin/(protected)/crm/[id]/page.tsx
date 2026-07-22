@@ -28,6 +28,7 @@ import { buildMergeContext } from '@/lib/crm/merge-context'
 import { getSignatureForMailbox } from '@/lib/crm/email-signature'
 import { CRM_MAILBOXES } from '@/lib/crm/gmail'
 import { getOwnedHomeMatches, getListingAlertsForLead, getViewedListingsForLead, type OwnedHomeMatch } from '@/lib/data'
+import { getContactSavedHomes, buildHomesPanelUnion } from '@/lib/data/crm/getContactSavedHomes'
 import { getOwnedHomeMedia } from '@/lib/crm/owned-home-media'
 import { getContactMemberships } from '@/lib/data/crm/getContactMemberships'
 import { ContactQuickActions } from '@/components/admin/crm/ContactQuickActions'
@@ -74,6 +75,7 @@ import { listActiveSequences } from '@/lib/crm/enroll'
 import { getAppointmentsForPerson, getAppointmentTypes, getAppointmentOutcomes } from '@/lib/data/crm/getAppointments'
 import { createAppointmentAction, updateAppointmentAction } from '@/app/actions/appointments'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
 
 export const metadata = { title: 'Lead · Console' }
 export const dynamic = 'force-dynamic'
@@ -153,9 +155,13 @@ export default async function ConsoleLeadPage({
   const homeAddress = geo?.formatted_address ?? geo?.source_address ?? null
 
   // What they're shopping for — saved searches + the homes they're watching (live MLS) + newsletter status.
-  const [savedSearches, viewedListings, contactMemberships, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, fieldDefs, emailEngagementSummary, collaborators, actionPlanEnrollments, detailExtras, activeSequences, crmSources, recipientOptions, contactCmas, contactBpos, latestNewsletter, signature, mergeCtx, personAppointments, apptTypes, apptOutcomes, conversation, homeMedia, homeMatches, prospectStories] = await Promise.all([
+  const [savedSearches, viewedListings, savedHomes, contactMemberships, behaviorSummary, relationships, contactAlerts, nextStep, reportSub, reportAreas, fieldDefs, emailEngagementSummary, collaborators, actionPlanEnrollments, detailExtras, activeSequences, crmSources, recipientOptions, contactCmas, contactBpos, latestNewsletter, signature, mergeCtx, personAppointments, apptTypes, apptOutcomes, conversation, homeMedia, homeMatches, prospectStories] = await Promise.all([
     getListingAlertsForLead({ crmPersonId: person.id, fubPersonId: person.fub_legacy_id, emails: personEmails }),
-    getViewedListingsForLead(person.fub_legacy_id),
+    // Native identity keys (crm id + lockstep + emails) — the legacy fub-only
+    // call returned [] for every native lead (fub_legacy_id NULL).
+    getViewedListingsForLead({ crmPersonId: person.id, fubLegacyId: person.fub_legacy_id, emails: personEmails }),
+    // Real consumer stores (likes + saved_listings) via the person → auth-user join.
+    getContactSavedHomes({ crmPersonId: person.id, fubLegacyId: person.fub_legacy_id, emails: personEmails }),
     getContactMemberships(person.id),
     getContactBehaviorSummary(person.id),
     getContactRelationships(person.id),
@@ -206,6 +212,11 @@ export default async function ConsoleLeadPage({
     // buried prose note.
     getContactProspectStory({ personId: person.id, fubLegacyId: person.fub_legacy_id }),
   ])
+
+  // Homes panel = union of the behavioral trail (visitor_events) and the REAL
+  // consumer stores (likes + saved_listings) — a liked-but-never-viewed home
+  // still appears (views 0, Saved badge, Liked chip).
+  const homesPanel = buildHomesPanelUnion(viewedListings, savedHomes)
 
   const emailInitialSubject = activeTpl?.subject ? renderCrmMerge(activeTpl.subject, personLike, mergeCtx) : ''
   const emailInitialBody = activeTpl?.body ? renderCrmMerge(activeTpl.body, personLike, mergeCtx) : ''
@@ -456,7 +467,7 @@ export default async function ConsoleLeadPage({
       emailEngagement={emailEngagement}
       relationships={relationships}
       collaborators={collaborators}
-      viewedListings={viewedListings}
+      viewedListings={homesPanel}
       smsComposer={mobileSmsComposer}
       pickers={{
         sources: crmSources,
@@ -664,11 +675,18 @@ export default async function ConsoleLeadPage({
                   reportSetAction={setReportSubsForm.bind(null, person.id)}
                 />
                 <ContactBehaviorPanel summary={behaviorSummary} />
-                {viewedListings.length > 0 ? (
+                {homesPanel.length > 0 ? (
                   <div className="space-y-2">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Homes viewed ({viewedListings.length})</p>
-                    {viewedListings.slice(0, 4).map((l) => (
-                      <ViewedHomeCard key={l.listingKey} home={l} />
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Homes viewed &amp; saved ({homesPanel.length})</p>
+                    {homesPanel.slice(0, 4).map((l) => (
+                      <div key={l.listingKey} className="relative">
+                        <ViewedHomeCard home={l} />
+                        {/* Consumer-store chip: the card's own badge covers Saved /
+                            Viewed; a real `likes` row gets its own Liked chip. */}
+                        {l.consumerSources?.includes('liked') ? (
+                          <Badge variant="secondary" className="absolute right-2 top-2">Liked</Badge>
+                        ) : null}
+                      </div>
                     ))}
                   </div>
                 ) : null}

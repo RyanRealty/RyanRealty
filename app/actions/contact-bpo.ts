@@ -3,11 +3,14 @@
 /**
  * One-click Broker Price Opinion from a CRM contact record.
  *
- * startBpoForContactAction(personId)
- *   → resolve the contact's owned home from CRM geo, run the deterministic BPO
- *     builder (lib/bpo/build.ts), land a broker_price_opinions row in status
- *     'draft' linked to the person. Review-first: nothing is emailed. The draft
- *     opens at /admin/bpo/<slug> and shows on the contact card.
+ * startBpoForContactAction(personId, subjectListingKey?)
+ *   → default (no listing key): resolve the contact's owned home from CRM geo
+ *     (seller-side). With subjectListingKey: the subject is the listing the
+ *     contact is shopping (buyer-side, e.g. the Homes tab "Draft BPO" action on
+ *     a viewed home). Either way the deterministic BPO builder (lib/bpo/build.ts)
+ *     lands a broker_price_opinions row in status 'draft' linked to the person.
+ *     Review-first: nothing is emailed. The draft opens at /admin/bpo/<slug>
+ *     and shows on the contact card.
  */
 
 import { revalidatePath } from 'next/cache'
@@ -17,10 +20,13 @@ import { buildBpo } from '@/lib/bpo/build'
 import { sendBpoToLead, prepareBpoSendPreview, type BpoSendOverride } from '@/lib/bpo/send'
 import { slugifyBpoAddress } from '@/lib/bpo/slug'
 import { resolveWritableBpoSlot } from '@/lib/cma/versions'
+import { resolveCmaSubject } from '@/lib/cma/subject'
 import { parseContactAddress } from '@/lib/crm/contact-cma-address'
 import { sendTemplateSelfTestAction } from '@/app/actions/crm-template-test'
 
-export type StartBpoResult = { ok: true; slug: string } | { ok: false; error: string }
+export type StartBpoResult =
+  | { ok: true; slug: string; existing?: boolean }
+  | { ok: false; error: string }
 export type SendBpoContactResult = { ok: true; transport: 'gmail' | 'resend' } | { ok: false; error: string }
 
 /** The /admin/bpo worklist compose dialog's prefill context. */
@@ -63,7 +69,34 @@ async function resolveHomeAddress(
   return { rawAddress: parsed.rawAddress, city: parsed.parsedCity, postalCode: parsed.parsedPostalCode ?? null }
 }
 
-export async function startBpoForContactAction(personId: number): Promise<StartBpoResult> {
+/**
+ * Idempotency guard for the buyer-side path: one live BPO per
+ * (person, subject listing). A prior failed draft (build_error set, no usable
+ * document) does not block a retry, and an archived BPO does not block a
+ * fresh one. Returns the existing slug when a live draft/final already covers
+ * this pair.
+ */
+async function findLiveBpoForPersonListing(personId: number, listingKey: string): Promise<string | null> {
+  const sb = createServiceClient()
+  const { data } = await sb
+    .from('broker_price_opinions')
+    .select('slug,status,build_error')
+    .eq('person_id', personId)
+    .eq('subject_listing_key', listingKey)
+    .is('archived_at', null)
+    .in('status', ['draft', 'final'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+  const row = (data?.[0] ?? null) as { slug?: string | null; status?: string | null; build_error?: string | null } | null
+  if (!row?.slug) return null
+  if (row.status === 'draft' && row.build_error) return null
+  return row.slug
+}
+
+export async function startBpoForContactAction(
+  personId: number,
+  subjectListingKey?: string | null,
+): Promise<StartBpoResult> {
   try {
     if (!Number.isFinite(personId) || personId <= 0) return { ok: false, error: 'A valid contact id is required' }
     const access = await getCrmAccess()
@@ -71,24 +104,62 @@ export async function startBpoForContactAction(personId: number): Promise<StartB
     const scoped = await requirePersonInScope(personId, access)
     if (!scoped.ok) return { ok: false, error: scoped.error }
 
-    const home = await resolveHomeAddress(personId)
-    if ('error' in home) return { ok: false, error: home.error }
+    const listingKey = subjectListingKey?.trim() || null
+
+    // Resolve the subject per entry point. Seller-side (default): the
+    // contact's owned home. Buyer-side (listingKey): the listing the contact
+    // is shopping — subject resolves by MLS key, and the slug is scoped to the
+    // person so two leads shopping the same house never share (or clobber)
+    // one draft.
+    let rawAddress: string
+    let baseSlug: string
+    let subjectInput: { mlsNumber?: string; rawAddress?: string; city?: string | null; postalCode?: string | null }
+    let purpose: string
+    let requestSource: string
+
+    if (listingKey) {
+      const existing = await findLiveBpoForPersonListing(personId, listingKey)
+      if (existing) return { ok: true, slug: existing, existing: true }
+
+      const resolved = await resolveCmaSubject({ mlsNumber: listingKey })
+      if (!resolved.subject) {
+        return { ok: false, error: `Listing ${listingKey} could not be resolved. ${resolved.trace}` }
+      }
+      const s = resolved.subject
+      // Stored subject_listing_key is listings.ListingKey — re-check when the
+      // caller passed an MLS ListNumber that maps to a different ListingKey.
+      if (s.listingKey && s.listingKey !== listingKey) {
+        const byResolved = await findLiveBpoForPersonListing(personId, s.listingKey)
+        if (byResolved) return { ok: true, slug: byResolved, existing: true }
+      }
+      rawAddress = [s.streetAddress, s.city].filter(Boolean).join(', ')
+      baseSlug = `${slugifyBpoAddress(rawAddress)}-p${personId}`
+      subjectInput = { mlsNumber: listingKey }
+      purpose = 'buyer valuation'
+      requestSource = 'crm-viewed-home'
+    } else {
+      const home = await resolveHomeAddress(personId)
+      if ('error' in home) return { ok: false, error: home.error }
+      rawAddress = home.rawAddress
+      baseSlug = slugifyBpoAddress(home.rawAddress)
+      subjectInput = { rawAddress: home.rawAddress, city: home.city, postalCode: home.postalCode }
+      purpose = 'contact valuation'
+      requestSource = 'crm-contact-card'
+    }
 
     // Land the build on a writable slot: rebuild the open draft in place, or
     // open a new --vN document after a 'final' BPO — never reset a final
     // document (and its live /bpo/[slug] link) back to draft
     // (lib/cma/versions.ts — the upsert-by-slug clobber class).
-    const slot = await resolveWritableBpoSlot(slugifyBpoAddress(home.rawAddress))
+    const slot = await resolveWritableBpoSlot(baseSlug)
     if (!slot.ok) return { ok: false, error: slot.error }
     const slug = slot.slug
     const built = await buildBpo({
       slug,
-      rawAddress: home.rawAddress,
-      city: home.city,
-      postalCode: home.postalCode,
-      purpose: 'contact valuation',
+      ...subjectInput,
+      purpose,
       requestedBy: access.email,
-      requestSource: 'crm-contact-card',
+      requestSource,
       client: { personId, clientName: null, clientEmail: null },
     })
 
@@ -99,8 +170,8 @@ export async function startBpoForContactAction(personId: number): Promise<StartB
         kind: 'system',
         title: built.ok ? 'Broker price opinion built' : 'Broker price opinion did not finish',
         body: built.ok
-          ? `BPO for ${home.rawAddress} built as a draft. Review it at /admin/bpo/${slug}.`
-          : `BPO build for ${home.rawAddress} failed: ${built.error ?? 'unknown error'}`,
+          ? `BPO for ${rawAddress} built as a draft. Review it at /admin/bpo/${slug}.`
+          : `BPO build for ${rawAddress} failed: ${built.error ?? 'unknown error'}`,
         broker: access.brokerSlug,
         source: 'app',
         dedupe_key: `bpo:${built.ok ? 'built' : 'failed'}:${slug}:${new Date().toISOString().slice(0, 10)}`,
@@ -111,7 +182,6 @@ export async function startBpoForContactAction(personId: number): Promise<StartB
 
     if (!built.ok) return { ok: false, error: built.error ?? 'BPO build did not finish.' }
 
-    revalidatePath(`/admin/crm/${personId}`)
     revalidatePath(`/admin/crm/${personId}`)
     revalidatePath('/admin/bpo')
     return { ok: true, slug }

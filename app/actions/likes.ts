@@ -1,7 +1,9 @@
 'use server'
 
+import { cookies, headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { decrementListingLikeCount } from '@/app/actions/engagement'
+import { recordSaveListingEvent } from '@/lib/data/crm/recordSaveListingEvent'
 
 export async function getLikedListingKeys(): Promise<string[]> {
   const supabase = await createClient()
@@ -37,6 +39,15 @@ export async function likeListing(listingKey: string): Promise<{ error: string |
     listing_key: listingKey.trim(),
   })
   if (error) return { error: error.message }
+  // First-party behavioral mirror (best-effort, GPC + session gated inside) so
+  // the CRM behavior panels see the like on the visitor's trail.
+  const [cookieStore, headerStore] = await Promise.all([cookies(), headers()])
+  await recordSaveListingEvent({
+    listingKey: listingKey.trim(),
+    action: 'like',
+    rrVid: cookieStore.get('rr_vid')?.value ?? null,
+    secGpcHeader: headerStore.get('sec-gpc'),
+  })
   return { error: null }
 }
 

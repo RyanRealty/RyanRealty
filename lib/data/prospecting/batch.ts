@@ -14,7 +14,7 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { slugifyAddress } from '@/lib/cma/address-slug'
 import { TAG_CHANNEL } from '@/lib/crm/suppressions'
-import { expectedDocTypeFor, hasSendablePhone, type ProspectComplianceState, type ProspectDocState, type ProspectKind } from './types'
+import { expectedDocTypeFor, hasSendablePhone, mergeChannelSentState, type ProspectComplianceState, type ProspectDocState, type ProspectKind } from './types'
 
 type Sb = ReturnType<typeof createServiceClient>
 type RawRow = Record<string, unknown>
@@ -108,7 +108,12 @@ export async function resolveDocsBatch(
   for (const raw of rows) {
     const id = String(raw[idKey])
     const cmaId = (raw.cma_id as string | null) ?? null
-    const sentAt = (raw.outreach_sms_sent_at as string | null) ?? null
+    // Channel-aware sent-state: the row is "sent" when EITHER channel sent.
+    // outreach_email_sent_at is absent pre-migration (feature-detected select)
+    // — undefined coerces to null and the state stays SMS-only.
+    const smsSentAt = (raw.outreach_sms_sent_at as string | null) ?? null
+    const emailSentAt = (raw.outreach_email_sent_at as string | null | undefined) ?? null
+    const sent = mergeChannelSentState(smsSentAt, emailSentAt)
     const sid = (raw.outreach_sms_sid as string | null) ?? null
     const street = (raw.street_address as string | null) ?? null
     const base = street ? slugifyAddress(street) : null
@@ -116,8 +121,17 @@ export async function resolveDocsBatch(
     const cma = (cmaId ? byId.get(cmaId) : null) ?? (base ? pickForBase(base) : null)
 
     if (cma && cma.docType === expected && isBuiltStatus(cma.status, cma.htmlPath)) {
-      if (sentAt) {
-        out.set(id, { state: 'sent', slug: cma.slug, docType: cma.docType, recommendedList: cma.recommendedList, sentAt, sid })
+      if (sent) {
+        out.set(id, {
+          state: 'sent',
+          slug: cma.slug,
+          docType: cma.docType,
+          recommendedList: cma.recommendedList,
+          sentAt: sent.sentAt,
+          sid: sent.smsSentAt ? sid : null,
+          smsSentAt: sent.smsSentAt,
+          emailSentAt: sent.emailSentAt,
+        })
       } else {
         out.set(id, { state: 'ready', slug: cma.slug, docType: cma.docType, status: cma.status ?? 'draft', recommendedList: cma.recommendedList })
       }

@@ -6,20 +6,22 @@ import {
 } from './saved-search-frequency'
 
 describe('normalizeSavedSearchFrequency', () => {
-  it('passes through the three canonical values unchanged', () => {
+  it('passes through the four canonical values unchanged', () => {
     expect(normalizeSavedSearchFrequency('instant')).toBe('instant')
     expect(normalizeSavedSearchFrequency('daily')).toBe('daily')
     expect(normalizeSavedSearchFrequency('weekly')).toBe('weekly')
+    expect(normalizeSavedSearchFrequency('monthly')).toBe('monthly')
   })
 
   it('trims and lowercases before matching', () => {
     expect(normalizeSavedSearchFrequency('  Instant ')).toBe('instant')
     expect(normalizeSavedSearchFrequency('WEEKLY')).toBe('weekly')
     expect(normalizeSavedSearchFrequency('Daily')).toBe('daily')
+    expect(normalizeSavedSearchFrequency(' Monthly ')).toBe('monthly')
   })
 
   it('defaults unknown strings to daily (the cron fallback)', () => {
-    expect(normalizeSavedSearchFrequency('monthly')).toBe('daily')
+    expect(normalizeSavedSearchFrequency('yearly')).toBe('daily')
     expect(normalizeSavedSearchFrequency('hourly')).toBe('daily')
     expect(normalizeSavedSearchFrequency('')).toBe('daily')
     expect(normalizeSavedSearchFrequency('   ')).toBe('daily')
@@ -33,7 +35,7 @@ describe('normalizeSavedSearchFrequency', () => {
   })
 
   it('only ever returns a value the cron honors', () => {
-    const inputs: unknown[] = ['instant', 'daily', 'weekly', 'monthly', '', null, 42]
+    const inputs: unknown[] = ['instant', 'daily', 'weekly', 'monthly', 'yearly', '', null, 42]
     for (const input of inputs) {
       const out: SavedSearchFrequency = normalizeSavedSearchFrequency(input)
       expect(SAVED_SEARCH_FREQUENCIES).toContain(out)
