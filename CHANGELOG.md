@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.830.0 (2026-07-22)
+
+### Features
+- feat(seo): ci:sitemap-resolvable gate + output-based rogue-/cities backstop (P0.3, W2.2)
+
+---
+
+
 ## v1.829.0 (2026-07-22)
 
 ### Features
