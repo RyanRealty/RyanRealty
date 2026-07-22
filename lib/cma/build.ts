@@ -29,6 +29,7 @@ import { auditCma } from '@/lib/cma/audit'
 import { evaluateAccuracyContract } from '@/lib/cma/contract'
 import { getBpoListingCyclesByAddress } from '@/lib/data/bpo/reads'
 import { getListingPhotosCount } from '@/lib/data/cma/builderReads'
+import { getExpiredOwnershipSince } from '@/lib/data/prospecting/get'
 import { analyzeListingHistory } from '@/lib/bpo/history'
 import {
   buildFailureFindings,
@@ -311,10 +312,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     }
 
     // 4.7. EXPIRED AUDIT variant (Matt directive 2026-07-14): same engine, the
-    // output adds a deterministic failure analysis (from the listing history +
-    // the numbers this build just verified), the services standard, and a net
-    // sheet at the 2.5% expired rate. All three layers derive from data already
-    // gated above — no new unverified facts enter the document here.
+    // output adds a deterministic failure analysis (listing history + verified
+    // numbers), the services standard, and a net sheet at the 2.5% expired rate.
+    // All derive from data already gated above — no new unverified facts here.
     const docType: 'cma' | 'expired-audit' = input.docType === 'expired-audit' ? 'expired-audit' : 'cma'
     let expiredAudit: ExpiredAuditData | null = null
     if (docType === 'expired-audit') {
@@ -333,7 +333,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
       const photosCount = subject.listingKey ? await getListingPhotosCount(subject.listingKey) : null
       expiredAudit = {
-        findings: buildFailureFindings({ subject, pricing, market, history, photosCount }),
+        findings: buildFailureFindings({ subject, pricing, market, history, photosCount, ownershipSince: await getExpiredOwnershipSince(subject.mlsNumber) }),
         services: buildServicesList(),
         netSheet: buildNetSheet(pricing),
         feeLine: feeLine(),

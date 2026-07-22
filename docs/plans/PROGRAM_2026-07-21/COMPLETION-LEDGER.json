@@ -315,16 +315,21 @@
       "workstream": "W6",
       "mission": "M1",
       "title": "Ownership duration from county sale date into audit doc, prospecting detail, CRM record",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
         "gates": [],
         "crons": [],
-        "tests": [],
+        "tests": [
+          "lib/cma/expired-audit.test.ts"
+        ],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "lib/data/prospecting/get.ts",
+          "lib/cma/build.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
+      "proofPath": "lib/data/prospecting/get.ts getExpiredOwnershipSince(mls) resolves expired_listings.list_number -> outreach_crm_person_id -> crm_people.custom.customOwnershipSince (fail-soft null -> MLS fallback, no fabrication). Wired at lib/cma/build.ts expired-audit call site. buildFailureFindings ownershipSince made REQUIRED: tsc/ci:commit-compiles fails if the call site drops it (proven: removing it -> TS2345). County-preference test (expired-audit.test.ts) asserts county 2004 over MLS 2014, cites county deed record; bites when forced to MLS path. 9 tests pass.",
+      "verifiedBy": "independent adversarial agent aec56b92ca7c919e0 \u2014 verified resolver query vs schema snapshot (no column mismatch), required-param bite (tsc TS2345), test bite (force-MLS -> W6.2 test fails), \u00a70 no-fabrication + cycle-list-date guard intact. VERDICT: SOLID.",
       "remaining": "Plumb the county date into the audit build: read customOwnershipSince (or the owner-lookup result) inside buildCma and pass ownershipSince to buildFailureFindings at lib/cma/build.ts:336. The county-preferring logic and its tests already exist; the parameter is simply dead at the call site."
     },
     {

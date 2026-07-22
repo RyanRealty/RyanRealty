@@ -137,10 +137,12 @@ export function buildFailureFindings(args: {
   market: CmaMarketContext | null
   history: BpoListingHistory
   photosCount: number | null
-  /** County-deed ownership start (lib/expired-owner-lookup.ts), when the
-   *  caller has it. Optional — buildOwnershipFinding falls back to the last
-   *  closed MLS sale already inside `history`. */
-  ownershipSince?: string | null
+  /** County-deed ownership start (getExpiredOwnershipSince / the owner-lookup),
+   *  or null when no county date resolved — buildOwnershipFinding then falls back
+   *  to the last closed MLS sale in `history`. REQUIRED (not optional) so the
+   *  call site can never silently drop it again: tsc/ci:commit-compiles fails if
+   *  buildFailureFindings is called without it. Pass `null` for the MLS fallback. */
+  ownershipSince: string | null
 }): ExpiredFailureFinding[] {
   const { subject, pricing, market, history, photosCount } = args
   const findings: ExpiredFailureFinding[] = []

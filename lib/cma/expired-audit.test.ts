@@ -158,17 +158,20 @@ describe('buildFailureFindings — ownership integration', () => {
     reviewReason: null,
   } as unknown as CmaPricing
 
-  it('adds the Ownership finding right after the pricing finding when known', () => {
+  it('adds the Ownership finding right after the pricing finding when known (MLS fallback)', () => {
     const findings = buildFailureFindings({
       subject,
       pricing,
       market: null,
       history: history({ lastSaleDate: '2014-06-05', lastSalePrice: 451000 }),
       photosCount: 30,
+      ownershipSince: null,
     })
     const lenses = findings.map((f) => f.lens)
     expect(lenses[0]).toBe('pricing')
     expect(lenses[1]).toBe('Ownership')
+    // no county date -> the fact cites the MLS record, not the county deed
+    expect(findings[1].fact).toContain('MLS record')
   })
 
   it('emits no Ownership finding when tenure is unknown', () => {
@@ -178,7 +181,26 @@ describe('buildFailureFindings — ownership integration', () => {
       market: null,
       history: history(),
       photosCount: 30,
+      ownershipSince: null,
     })
     expect(findings.some((f) => f.lens === 'Ownership')).toBe(false)
+  })
+
+  it('W6.2: prefers the county deed date over the MLS last sale when the call site passes ownershipSince', () => {
+    const findings = buildFailureFindings({
+      subject,
+      pricing,
+      market: null,
+      // MLS last sale is 2014; the county deed date is 2004 (older tenure).
+      history: history({ lastSaleDate: '2014-06-05', lastSalePrice: 451000 }),
+      photosCount: 30,
+      ownershipSince: '2004-04-29',
+    })
+    const ownership = findings.find((f) => f.lens === 'Ownership')
+    expect(ownership, 'Ownership finding present').toBeTruthy()
+    // county-preferring fact + the 2004 year, NOT the 2014 MLS year
+    expect(ownership!.fact).toContain('county deed record')
+    expect(ownership!.fact).toContain('2004')
+    expect(ownership!.fact).not.toContain('MLS record')
   })
 })

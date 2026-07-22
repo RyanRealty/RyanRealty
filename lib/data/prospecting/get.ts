@@ -442,6 +442,28 @@ async function fetchCustomOwnershipSince(sb: Sb, personId: number | null): Promi
   return typeof v === 'string' ? v : null
 }
 
+/**
+ * County-deed ownership-start date for an expired-audit SUBJECT, keyed by MLS
+ * number: expired_listings.list_number -> outreach_crm_person_id ->
+ * crm_people.custom.customOwnershipSince (the county deed date persisted at
+ * skip-trace time by lib/expired-listing-processor.ts). Fail-soft: any miss
+ * returns null and buildOwnershipFinding falls back to the last MLS sale, so the
+ * audit document degrades safely (never fabricates tenure). Server-only.
+ */
+export async function getExpiredOwnershipSince(mlsNumber: string | null): Promise<string | null> {
+  const mls = (mlsNumber ?? '').trim()
+  if (!mls) return null
+  const sb = createServiceClient()
+  const { data, error } = await sb
+    .from('expired_listings')
+    .select('outreach_crm_person_id')
+    .eq('list_number', mls)
+    .limit(1)
+  if (error || !data || !data[0]) return null
+  const personId = (data[0] as { outreach_crm_person_id?: number | null }).outreach_crm_person_id ?? null
+  return fetchCustomOwnershipSince(sb, personId)
+}
+
 /** Row + property card + full price history for the review drawer (spec §7). */
 export async function getProspectDetail(kind: ProspectKind, id: string): Promise<ProspectDetail | null> {
   const sb = createServiceClient()
