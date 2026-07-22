@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.833.0 (2026-07-22)
+
+### Features
+- feat(ops): heartbeat probe for the West Side Meta audience cron (P0.4)
+
+---
+
+
 ## v1.832.0 (2026-07-22)
 
 ### Features
