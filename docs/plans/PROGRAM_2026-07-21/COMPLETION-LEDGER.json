@@ -1,0 +1,868 @@
+{
+  "note": "Open-decision completion ledger for RR-PLATFORM-DECISIONS-2026-07-21. One row per OPEN decision (partial / not_started / blocked:needs-matt). Already-done and superseded decisions are not tracked here. A row flips to \"done\" ONLY when its requiredMechanism names artifacts that exist AND (for gates) are wired into ci:gates. Enforced by scripts/check-program-complete.mjs (ci:program-complete). GLOBAL DONE = every non-blocked row is \"done\".",
+  "source": "RR-PLATFORM-DECISIONS-2026-07-21.md",
+  "auditedAgainst": "main@96f76ca1",
+  "seededFrom": "docs/plans/PROGRAM_2026-07-21/audits/REMAINING-2026-07-22-post-wave-d.json",
+  "statuses": [
+    "not_started",
+    "partial",
+    "done",
+    "blocked:needs-matt"
+  ],
+  "rows": [
+    {
+      "id": "W1.1",
+      "workstream": "W1",
+      "mission": "M1",
+      "title": "Promote West Side Meta audience refresh to a daily cron; verify META_AUDIENCE_PUSH_ENABLED in prod (mechanism: vercel.json + cron-registered gate + heartbeat)",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "(a) Cadence is WEEKLY (Mondays 14:00 UTC), not the decided daily \u2014 deviation is stated in the Wave C commit but recorded nowhere in docs/plans/PROGRAM_2026-07-21/04-DECISIONS-RECORDED.md. (b) The promised heartbeat coverage is absent: lib/pipeline-heartbeat.ts evaluators cover only sync-delta, search MV, FSBO, expired, saved-search, market-stats \u2014 no audience-push staleness check, and app/api/cron/loop-health-check/route.ts never probes meta_audience_log. (c) META_AUDIENCE_PUSH_ENABLED being on in prod is unverifiable from code (route forces DRY-RUN when unset via lib/meta-env.ts isMetaAudiencePushEnabled) \u2014 the operating verification is still owed."
+    },
+    {
+      "id": "W1.3",
+      "workstream": "W1",
+      "mission": "M1",
+      "title": "Wire search and scroll-depth events into the first-party event store (mechanism: event-taxonomy contract test, component fires \u2194 ALLOWED_EVENT_TYPES accepts)",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "The promised event-taxonomy contract test does not exist \u2014 no *.test.* file references ALLOWED_EVENT_TYPES or FirstPartyEventType (verified by repo-wide grep); the only guard is a comment in VisitTracker.tsx ('Must stay a subset of ALLOWED_EVENT_TYPES'), and scripts/check-tracking-policy.mjs (G48) does not cover the taxonomy. Also scroll_depth on listing-detail pages (components/listing/ListingTracker.tsx:56) and the experience engagement hook (components/site/experience/useEngagementTracking.ts:56) still go to GA4 only, so per-person drop-off remains invisible on those surfaces."
+    },
+    {
+      "id": "W1.4",
+      "workstream": "W1",
+      "mission": "M1",
+      "title": "SMS click tracking everywhere \u2014 extend short-link instrumentation beyond prospecting (mechanism: governed-send chokepoint W5)",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "'Everywhere' is not true yet: the sequence engine sends person-keyed SMS uninstrumented \u2014 app/api/cron/crm-sequence-engine/route.ts:413-414 calls sendSms/sendSmsViaMessagingService directly with the raw merged body (no instrumentSmsLinks in the file; 4 direct provider call sites baselined in governed-send-baseline.json). Route sequence sends through sendGovernedSms or call instrumentSmsLinks there. Raw no-contact group-reply numbers in app/actions/crm.ts:950 also send untracked (unavoidable: no person to key to)."
+    },
+    {
+      "id": "W1.5",
+      "workstream": "W1",
+      "mission": "M1",
+      "title": "Delete legacy visits/trackVisit duplicate path and FUB-era email_campaigns; fold stale FACEBOOK_SELLER_GROWTH_PIPELINE.md into canon",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Delete or repoint the four `visits` readers (they silently flatline post-2026-07-21); decide + record whether email_campaigns is retired or officially adopted as the native batch-email store; rewrite/fold FACEBOOK_SELLER_GROWTH_PIPELINE.md into canon and fix the CLAUDE.md/AGENTS.md routing entries."
+    },
+    {
+      "id": "W2.1",
+      "workstream": "W2",
+      "mission": "M1",
+      "title": "Subdivision light-up: >=10 lifetime-sales threshold, sales history, per-subdivision stats, noindex below threshold, ci:sitemap-resolvable",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Two promised pieces absent: (1) the per-subdivision market_stats_cache backfill \u2014 the page reads getMarketStats({geoType:'subdivision'}) (page.tsx:360-368) but nothing writes subdivision rows (app/api/cron/refresh-market-stats* cover cities+region only; SubdivisionSalesHistory.tsx:11 admits 'null for most plats until the cache backfill lands'); (2) the ci:sitemap-resolvable gate \u2014 absent from package.json ci:gates, scripts/ (only _gsc-sitemap-fix.mjs / seo-gsc-sitemap-submit.mjs exist), and docs/MECHANICAL_GATES.md (zero 'sitemap' mentions)."
+    },
+    {
+      "id": "W2.2",
+      "workstream": "W2",
+      "mission": "M1",
+      "title": "Sitemap drift fix: communities from registry, stop emitting 404-ing /cities/{city}/{subdivision} URLs, + gate",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "The promised '+ gate' does not exist: no gate or contract test pins registry-to-sitemap community parity or the non-emission of the 404-ing family. lib/sitemap.contract.test.ts asserts only legacy-path exclusion (/listings, /agents, /home-valuation); ci:sitemap-resolvable (the verdict-table gate) was never built. The fix itself is by-construction and working \u2014 only the regression guard is missing."
+    },
+    {
+      "id": "W2.4",
+      "workstream": "W2",
+      "mission": "M1",
+      "title": "MPC parity: subdivision pages gain sales history, stats, schools, parent cross-links; events/HOA/rules only where curated",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Stats leg is starved: market_stats_cache has no geo_type='subdivision' rows and no writer computes them (no cron/script calls compute_and_cache_period_stats for subdivisions). Schools: no schools section or school cross-link anywhere on the subdivision page. Parent cross-links for plain GIS plats (the majority of 3,213 \u2014 no registry alias) go only to the /communities hub, no parent-city link. Events/HOA/rules curated-content population (26 of 27 files) remains the stated ongoing content job \u2014 unchanged."
+    },
+    {
+      "id": "W2.6",
+      "workstream": "W2",
+      "mission": "M1",
+      "title": "Historical depth: earliest-CloseDate query + monthly market_stats_cache backfill to it (feeds W8.5 ten-year reports)",
+      "status": "not_started",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Everything: run the one prod query establishing earliest reliable CloseDate per geo, then build and run the monthly compute_and_cache_period_stats backfill loop to that depth (cities + region at minimum; subdivisions if W2.1's stats leg is to light up). W8.5's ten-year archive pages depend on this."
+    },
+    {
+      "id": "W2.7",
+      "workstream": "W2",
+      "mission": "M1",
+      "title": "Park / school-district / trail GIS polygons as new boundaries geo_types (county + ODE, authoritative only)",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "No 'trail' geo_type in boundaries (trail geometry is linework in trail_lines \u2014 decide whether that satisfies the intent or corridors/polygons are wanted); no ODE school-DISTRICT polygons anywhere in boundaries (the only ODE GeoJSON consumer is the video producer scripts/build_school_district_overlay.py, which caches to data/school-districts/ for renders). If attendance areas + trail_lines are accepted as the substance, the residue is the ODE district layer plus recording that call."
+    },
+    {
+      "id": "W3.1",
+      "workstream": "W3",
+      "mission": "M1",
+      "title": "Inventory threshold rule \u2014 combo joins sitemap at >=1 active listing with depth content; zero-inventory combos render but noindex; gate asserts no zero-count indexable URL",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "The pre-existing 2-segment /homes-for-sale/{city}/{preset} set (~840 URLs \u2014 the 'with-pool-in-Culver class' this decision explicitly targets) is untouched: app/sitemap.ts lines 302-314 still emit EVERY indexable preset for every Central Oregon city with no inventory count check, and 2-segment zero-inventory combos are never noindexed (matrixNoIndex applies only at slug.length >= 3). No CI gate asserts 'no zero-count indexable URL' over the emitted sitemap (check-seo-routes.mjs has no count logic; the only mechanism is the matrix-scope vitest contract). Extend the count-driven emission + zero-count noindex to the 2-segment city\u00d7preset scope and add the promised sitemap-level gate."
+    },
+    {
+      "id": "W3.2",
+      "workstream": "W3",
+      "mission": "M1",
+      "title": "Emit the 3-segment matrix for the curated geo set; extend depth content to subdivision level",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "'Extend depth content to subdivision level' is not done on the rendered pages: existing subdivision descriptions/blurbs are used only as the EMISSION criterion (hasDepthContent in getSearchMatrixEntries.ts). The visible preset depth layer \u2014 editorial intro, preset-scoped FAQ + FAQPage JSON-LD, cross-links \u2014 still renders only on 2-segment city pages: isPresetDepthPage in /Users/matthewryan/RyanRealty/app/search/[...slug]/page.tsx (lines 739-745) requires `!subdivision`, so every 3-segment {city}/{area}/{preset} page renders a bare grid with no depth content (subdivisionBlurb reaches only JSON-LD/share text)."
+    },
+    {
+      "id": "W3.4",
+      "workstream": "W3",
+      "mission": "M1",
+      "title": "Replace hand-curated popular-searches snapshot with auto-derived link layer + crawlable /site-index page; derived on a schedule; freshness gate",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "The promised 'freshness gate' does not exist. Refresh is purely cache-TTL-driven (6h unstable_cache + 1h ISR) \u2014 a reasonable 'schedule', but no mechanical check asserts the derivation is fresh or non-stale: no script in scripts/ references site-index or getSiteIndexLinks (verified by grep), and check-content-freshness.mjs (G-FRESH) covers only data/co-events.ts dates. Add a freshness assertion (e.g. smoke/gate on generatedAt age) or record the TTL model as the accepted mechanism."
+    },
+    {
+      "id": "W3.5",
+      "workstream": "W3",
+      "mission": "M1",
+      "title": "Sort-only presets noindexed; pre-render top-N combos via generateStaticParams",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "No generateStaticParams on the search route: /Users/matthewryan/RyanRealty/app/search/[...slug]/page.tsx exports none (grep confirms; ISR revalidate=60 only) and the route sits in the scripts/static-params-baseline.json violators list (19 tracked, baseline dated 2026-07-19) \u2014 i.e. the gate explicitly grandfathers the gap. Top-N city\u00d7preset combos are not pre-rendered at build; implement generateStaticParams for the top combos and remove the route from the baseline."
+    },
+    {
+      "id": "W4.1",
+      "workstream": "W4",
+      "mission": "M1",
+      "title": "One search component: merge orphaned SmartSearch into filter bar + site header, global header search, blog/guides/static pages in suggestion scope, delete the three orphans; mechanisms: tsvector switch, perf contract test, reachable-exports gate",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "'Global header search on every page' is not literally universal: pages that fall back to the layout's SiteHeader chrome instead of KbNav \u2014 /dashboard/*, /account, /login, /signup, /forgot-password, /feed, and the legal pages (privacy, terms, cookies, dmca, accessibility, fair-housing, data-deletion) \u2014 have no search entry anywhere in their header (grep of components/site/SiteHeader.tsx, MegaMenu.tsx, MobileNav.tsx, HeaderAccount.tsx finds no SearchSuggest or search input). Every KbNav-chrome page (the entire editorial, portal, search, blog, and guides surface, ~70 routes) does carry it. Also note the 150ms perf test bounds handler compute with a mocked DAL, not live warm round-trip \u2014 acceptable as a CI contract but weaker than the decision's wording."
+    },
+    {
+      "id": "W5.1",
+      "workstream": "W5",
+      "mission": "M2",
+      "title": "Ship spec-03: person-workspace rebuild + single sendDeliverable action + governed-send chokepoint (SendPanel converges the three dialogs); mechanism: chokepoint CI gate",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "The whole spec-03 core: build the sendDeliverable unified server action + deliverable idempotency store, rebuild the person-detail 40-55-query force-dynamic fan-out into cached DAL + streamed Suspense, delete the mobile-detail.tsx fork (one responsive tree), add build_state polling chips + inline preview/approve, then pay the crm/[id] 743-line baseline DOWN. Optionally tighten G56 by burning down the 61-site baseline toward the decision's 'any unrouted send fails CI'."
+    },
+    {
+      "id": "W5.3",
+      "workstream": "W5",
+      "mission": "M1",
+      "title": "Recommended replies at the thread: extend AI SMS draft pattern to email and inbound-reply context, preloaded in the composer (broker overrides, no auto-send)",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Wire a producer of the ?reply=/replyChannel deep link (alert email + broker-cell forward + triage/inbox items) so the recommended reply actually preloads the composer, and run reply-intent classification on inbound email (crm-gmail-sync path) with the same suggested-reply surfacing."
+    },
+    {
+      "id": "W5.5",
+      "workstream": "W5",
+      "mission": "M1",
+      "title": "Notifications: flip mac-mini relay to Twilio (existing flag), keep serverless SMS-forward rail, add PWA web-push as the durable channel",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Move the crm_broker_alerts drain off the mac mini (serverless cron sending via Twilio) so alert delivery survives the machine, and build PWA web-push end to end: service worker, push-subscription storage, VAPID send path, broker opt-in UI."
+    },
+    {
+      "id": "W6.2",
+      "workstream": "W6",
+      "mission": "M1",
+      "title": "Ownership duration from county sale date into audit doc, prospecting detail, CRM record",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Plumb the county date into the audit build: read customOwnershipSince (or the owner-lookup result) inside buildCma and pass ownershipSince to buildFailureFindings at lib/cma/build.ts:336. The county-preferring logic and its tests already exist; the parameter is simply dead at the call site."
+    },
+    {
+      "id": "W6.4",
+      "workstream": "W6",
+      "mission": "M1",
+      "title": "Reply intelligence: classify inbound replies; interested \u21d2 task + preloaded recommended reply",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Emit the suggested-reply deep link: when a classification carries a recommendedReply, append ?reply=<encoded>&replyChannel=sms to the alert-email link, the broker-cell forward link, and/or the triage-queue deepLink so the existing composer preload fires. Optionally classify email-channel replies now that the email intro channel exists (decision scoped texted prospects, so this is an extension, not the gap)."
+    },
+    {
+      "id": "W6.8",
+      "workstream": "W6",
+      "mission": "OPERATING",
+      "title": "Capture scope stays at the locked directive ($500K+, SFR, 6 cities)",
+      "status": "blocked:needs-matt",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Nothing to build \u2014 the decision is self-executing and honored. The open item is Matt's widen-or-not call (the document's operating question 2); if he widens, it is the promised one-constant change in expired-listing-processor.ts + fsbo-detector.ts.",
+      "mattAction": "Decide: keep the $500K/SFR/6-city expired+FSBO capture floor, or widen. If widen, it is a one-constant change in lib/expired-listing-processor.ts (MIN_LIST_PRICE / SERVICE_AREA_CITIES) + lib/fsbo-detector.ts (FSBO_MIN_LIST_PRICE / FSBO_SERVICE_AREA_CITIES)."
+    },
+    {
+      "id": "W7.2",
+      "workstream": "W7",
+      "mission": "M1",
+      "title": "Build hide-homes: table + tile control + exclusion from results and alert emails",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "The /search map split view is not covered: components/search/MapSearchView.tsx renders its own listing cards (lines 245-592) with no ListingCardHideControl and no hidden-exclusion import, so a hidden home still shows on the map list and pins. Browse surfaces outside /search (e.g. /homes-for-sale city pages, /search/[...slug]) also do not apply the exclusion \u2014 SearchResults is imported only by app/search/page.tsx."
+    },
+    {
+      "id": "W7.3",
+      "workstream": "W7",
+      "mission": "M1",
+      "title": "Stitch likes/saves to the person (auth-user\u2192person join, save events to first-party store, surface on lead) \u2014 mechanism: identity-join contract test",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "The promised identity-join contract test is only half there: lib/data/crm/getContactSavedHomes.test.ts exercises ONLY the pure rollup/union helpers \u2014 the person\u2192auth-user or-filter (getContactSavedHomes.ts:150-160, visitor_identity_map + profiles chain) is inline and untested. The one join contract test that exists (lib/data/crm/getViewedListings.test.ts, buildSessionOrFilter) covers the visitor_sessions chain, not the consumer-store auth-user join. Extract the saved-homes or-filter into a tested pure helper (same pattern as buildSessionOrFilter) to fulfill the stated mechanism."
+    },
+    {
+      "id": "W7.5",
+      "workstream": "W7",
+      "mission": "M1",
+      "title": "Broker create-search form gets full consumer filter vocabulary + instant cadence; buyer LP creates the alert row",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "'Full consumer filter vocabulary' is not met: the broker form exposes 9 keys while the consumer vocabulary (lib/search-filters.ts LEGACY_FILTER_KEYS + the field registry) spans ~37 keys \u2014 missing maxSqFt, yearBuiltMin/Max, lotAcresMin/Max, neighborhoodSlug, garageMin, keywords, hasPool/hasView/hasWaterfront/hasFireplace/hasGolfCourse, propertySubType, multi-city, and registry fields. Also cleanup: the stale 'cast is a bridge until the action signature widens' comment + `freq as 'daily' | 'weekly'` cast in ContactSendCenter.tsx:249-254 \u2014 the action already types SavedSearchFrequency."
+    },
+    {
+      "id": "W8.1",
+      "workstream": "W8",
+      "mission": "M1",
+      "title": "One generation path: standardize on cache, retire raw-listings RPC + weekly-report path, consistency cron + import gate",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Extend market_stats_cache to cover the /reports range filters, migrate app/actions/reports.ts and app/actions/market-report.ts off get_city_period_metrics, retire the RPC and the separate weekly-report generation path, and add the promised import gate banning the retired RPC (none exists in scripts/ or ci:gates)."
+    },
+    {
+      "id": "W8.4",
+      "workstream": "W8",
+      "mission": "M5",
+      "title": "/housing-market/[geo] canonical pre-generated report (YTD default, timeframe selector); explore page retired",
+      "status": "not_started",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Everything: make /housing-market/[geo] the canonical full pre-generated report with YTD default + timeframe selector, then retire /housing-market/explore and /reports/explore at parity."
+    },
+    {
+      "id": "W8.5",
+      "workstream": "W8",
+      "mission": "M5",
+      "title": "Ten-year back-generation: monthly cache backfill to earliest verified data + per-city archive pages",
+      "status": "not_started",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Everything: earliest-CloseDate depth query, monthly cache backfill to it, and per-city archive pages gated on real sales volume."
+    },
+    {
+      "id": "W8.6",
+      "workstream": "W8",
+      "mission": "M5",
+      "title": "Bulk + individual sends: audience selector on the send engine reusing the newsletter delivery ledger",
+      "status": "not_started",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Build the audience selector on the market-report send engine and route bulk delivery through the newsletter queue's delivery ledger."
+    },
+    {
+      "id": "W8.7",
+      "workstream": "W8",
+      "mission": "M5",
+      "title": "Mohtashami corpus + narrative generation; market_narratives gets its writer",
+      "status": "not_started",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Everything: corpus ingestion, narrative generator with \u00a70 trace + voice gate, and the market_narratives writer."
+    },
+    {
+      "id": "W8.8",
+      "workstream": "W8",
+      "mission": "M5",
+      "title": "One geo registry for report coverage; gate on inline geo lists",
+      "status": "not_started",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Create the single report-coverage geo registry, repoint all five duplicated lists at it, and add the promised gate that fails CI on inline geo lists."
+    },
+    {
+      "id": "W9.1",
+      "workstream": "W9",
+      "mission": "OPERATING",
+      "title": "Start the newsletter: enroll past clients + engaged leads + westside cohort, send the first issue",
+      "status": "blocked:needs-matt",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "The operating steps: superuser runs the dry-run then the real 'ENROLL' run at /admin/newsletters/enroll, and the first issue goes through the approve-then-drain queue. Whether either has happened lives in prod newsletters/newsletter_recipients rows (off-limits to this audit); no repo ledger evidence of a send exists. The decision doc itself marks this '(S \u2014 it's an operating decision, not code)'.",
+      "mattAction": "Run /admin/newsletters/enroll (dry-run, then type ENROLL for real) to enroll past clients + engaged leads + West Side cohort, then approve the first issue in the send queue. Preconditions W9.4 + W9.5 should be green first."
+    },
+    {
+      "id": "W9.4",
+      "workstream": "W9",
+      "mission": "OPERATING",
+      "title": "Postmaster ingestion cron before the first large send",
+      "status": "blocked:needs-matt",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "The one-time ops step is unverifiable from code: the route returns skipped=true (never errors) unless GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL/PRIVATE_KEY exist AND the Workspace domain-wide-delegation grant for https://www.googleapis.com/auth/postmaster.readonly is approved (lib/newsletter/postmaster.ts POSTMASTER_SETUP_HINT). No repo evidence confirms the grant or that deliverability_metrics is receiving real rows \u2014 until confirmed, the reputation gate still runs on fallback/no-data, the exact state this decision was meant to end. Verify one prod cron invocation returns ok (not skipped) or check the grant in Google Admin.",
+      "mattAction": "Approve the Google Workspace domain-wide-delegation grant for scope https://www.googleapis.com/auth/postmaster.readonly so /api/cron/postmaster-sync ingests real deliverability data instead of returning skipped=true."
+    },
+    {
+      "id": "W9.5",
+      "workstream": "W9",
+      "mission": "M1",
+      "title": "Webhook-registration check \u2014 nightly check against the Resend API",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "The promised 'nightly' execution has no scheduler anywhere verifiable: zero references in .github/workflows/ (grep across all 9 workflows), no vercel.json cron route runs it, and the Claude scheduled-task list contains only 3 unrelated tasks. It runs only if someone invokes it manually. Additionally the check needs a full-access RESEND_WEBHOOKS_API_KEY (the account RESEND_API_KEY is send-only restricted and the script fails by design on it); provisioning of that key in .env.local is unverifiable from the repo. Wire an actual nightly runner (scheduled task or secret-bearing workflow) and confirm the full-access key exists."
+    },
+    {
+      "id": "W10.1",
+      "workstream": "W10",
+      "mission": "M3",
+      "title": "Wire marketing@ inbox cron + confirm Workspace grant; make /marketing/request an authenticated form writing action rows",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Convert /marketing/request from a mailto builder to an authenticated form that writes marketing_brain_actions rows (the 'two intakes, one queue' half of the decision). Confirm the gmail.modify scope was added to the DWD allowlist in Workspace Admin (operating step \u2014 code degrades silently to auth-pending without it, so the wired cron may still be reading nothing)."
+    },
+    {
+      "id": "W10.2",
+      "workstream": "W10",
+      "mission": "M3",
+      "title": "Broker content library: broker-visible surface over finished deliverables persisted to storage, with download and per-broker filtering",
+      "status": "not_started",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Everything: storage persistence for finished deliverables, the broker-visible surface, download, and per-broker filtering. (W10 was Phase 4 in the execution order; Phases 0-3 are what shipped.)"
+    },
+    {
+      "id": "W10.3",
+      "workstream": "W10",
+      "mission": "M3",
+      "title": "Re-brand step: one parameterized 'render for broker X' pass using the brokers table",
+      "status": "not_started",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Everything. The G45 freeze that blocked adding this producer was lifted 2026-07-21 (see W10.7), so it is unblocked but unbuilt."
+    },
+    {
+      "id": "W10.4",
+      "workstream": "W10",
+      "mission": "M3",
+      "title": "Bulk approve / bulk reject in the approval queue",
+      "status": "not_started",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Everything: multi-select UI in the queue plus a bulk action endpoint/server action."
+    },
+    {
+      "id": "W10.5",
+      "workstream": "W10",
+      "mission": "M3",
+      "title": "Purge catalog drift: request catalog and dispatch registry offering producers deleted in June",
+      "status": "not_started",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Everything: prune the ~20 dead entries from inbox-producer-registry.ts and the matching items from app/marketing/request/deliverables.ts (and inbox-parser.ts action types), or point them at surviving producers; no gate exists asserting registry paths resolve to real SKILL.md dirs."
+    },
+    {
+      "id": "W10.6",
+      "workstream": "W10",
+      "mission": "M3",
+      "title": "Per-broker Instagram auto-posting deferred; interim share-to-social rides OG-image + ShareButton rails with a pre-written caption field",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "The interim piece \u2014 a pre-written caption field for broker share-to-social \u2014 was never added (no caption concept in any Share* component), and there is no broker deliverable surface to share from since W10.2 does not exist. IG auto-posting itself stays deferred per the decision ('revisit after the library operates')."
+    },
+    {
+      "id": "W11.1",
+      "workstream": "W11",
+      "mission": "M4",
+      "title": "One generated banned-list source; consumers generated; parity test fails CI on any consumer drift",
+      "status": "not_started",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Everything: collapse the ~12 hand-typed lists (generate-briefs.ts, gbp-health-check route, _producer_lib.py, voice-precheck.ts, templateVoiceCheck.ts, plus the copies inventoried in docs/plans/PROGRAM_2026-07-21/audits/brand-voice-enforcement-orwell-rules-migration.json) into generated consumers of brand-voice-vocabulary.cjs, fix the June-relaxed-word drift in generate-briefs.ts and _producer_lib.py, and extend the parity test to fail CI on any consumer drift (today it covers 2 of ~12)."
+    },
+    {
+      "id": "W11.2",
+      "workstream": "W11",
+      "mission": "M4",
+      "title": "One shared voice-check function on every send path (blog, CMA/BPO prose, social captions, sequence templates) + ratchet gate on unchecked send paths",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Build the one shared voice-check function (both existing runtime checks are separate self-contained lists); add blocking checks to blog publish (saveBlogPost), CMA/BPO prose render, and social caption word-scan; add the promised ratchet gate (ci:email-quality pattern) that fails CI when a send path lacks the check."
+    },
+    {
+      "id": "W11.3",
+      "workstream": "W11",
+      "mission": "M4",
+      "title": "Orwell reviewer \u2014 advisory LLM pass on long-form (violations list + rewrite, facts unchanged), non-blocking",
+      "status": "not_started",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "The entire reviewer: advisory LLM pass over blog, newsletter, market narratives, and CMA prose that lists violations (stale phrases, long words with replacements, cuttable words, passive voice) then rewrites with facts/numbers/names unchanged, wired non-blocking alongside the deterministic floor."
+    },
+    {
+      "id": "W11.4",
+      "workstream": "W11",
+      "mission": "M4",
+      "title": "Canon cleanup \u2014 VOICE.md Orwell + never-pander section; delete stale five-attribute SKILL.md model and contradictory cursor blog rules; repoint producer-gate references",
+      "status": "not_started",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "All of it: add the Orwell + never-pander section to VOICE.md, delete the five-attribute model from SKILL.md, delete/reconcile .cursor/rules/blog-voice.mdc, and repoint the G35 validate-producer.mjs required-reference from voice_guidelines.md."
+    },
+    {
+      "id": "W11.5",
+      "workstream": "W11",
+      "mission": "M4",
+      "title": "Rewrite pass over stored copy (published blog posts, templates) with the reviewer, batched, reviewed before republish",
+      "status": "not_started",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Everything, and it is blocked behind W11.3: build the reviewer first, then run the batched rewrite over published blog posts (public.blog_posts) and stored CRM/sequence templates, with Matt review before republish."
+    },
+    {
+      "id": "W12.3",
+      "workstream": "W12",
+      "mission": "M1",
+      "title": "Referral disposition in CRM: referral: tag namespace + Referred-Out disposition + light receivable record (25% inbound fee)",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Write a person-level Referred-Out disposition when a handoff is recorded \u2014 either a 'Referred Out' stage in CRM_STAGES or a referral:referred-out tag stamped by recordReferralReceivable \u2014 so the state is visible/filterable on the person record, not only on /admin/crm/referrals via the receivables join."
+    },
+    {
+      "id": "W12.4",
+      "workstream": "W12",
+      "mission": "OPERATING",
+      "title": "One prod query confirms Burns/Harney presence and sizes the real out-of-area inventory",
+      "status": "blocked:needs-matt",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Run the documented one-off query against prod geo_snapshot_mv (count out-of-area cities with active_all_count >= 5; confirm whether Burns appears and at what count) and record the result with a verification trace in the program package (04-DECISIONS-RECORDED.md or the W12 lane notes).",
+      "mattAction": "Confirm the recorded Burns/Harney out-of-area inventory sizing (the run will execute the read-only geo_snapshot_mv count and record it; you confirm the referral-tier scope decision it implies)."
+    },
+    {
+      "id": "P0.3",
+      "workstream": "W13",
+      "mission": "M1",
+      "title": "Phase 0 gate: ci:sitemap-resolvable \u2014 sitemap-emitted URL family whose resolver can 404 fails CI",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Build the general gate: enumerate every URL family app/sitemap.ts emits and prove each resolves (or is covered by a per-family contract test), wired into ci:gates as ci:sitemap-resolvable. Today only subdivision/search-matrix families have contract tests; cities, communities, neighborhoods, ZIP, blog, /oregon/[city] families have no resolver-parity check, so the 2026-07-21 drift class can silently recur."
+    },
+    {
+      "id": "P0.4",
+      "workstream": "W13",
+      "mission": "M1",
+      "title": "Phase 0: heartbeat cron \u2014 registered pipeline silent past cadence alerts Matt",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "The verdict's third named example \u2014 audience sync \u2014 is not monitored: grep of lib/pipeline-heartbeat.ts and loop-health-check/route.ts finds no westside/meta-audience probe, and the Wave C crons (meta-westside-audience, westside-cohort-digest, vercel.json lines 212/216) have no staleness coverage. Add heartbeat probes for the audience-sync pipelines (and any cron registered after Wave A)."
+    },
+    {
+      "id": "W13.1",
+      "workstream": "W13",
+      "mission": "M6",
+      "title": "CLAUDE.md shrinks \u2014 stale facts out, rules become gates, file converges to canon pointers",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Execute the shrink: purge FUB-era sections and dead-path citations from CLAUDE.md, delete/archive the ~30 FUB_*.md docs the recorded decision condemned (all still in docs/), convert surviving prose rules to gate pointers. The prepared CONSOLIDATION-LANES.json verdicts have not been acted on."
+    },
+    {
+      "id": "W13.2",
+      "workstream": "W13",
+      "mission": "M6",
+      "title": "No new plan files; rogue-plan gate arm fixed (deletions + subdirectories)",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Fix scripts/check-process-canon.mjs: recurse into docs/plans subdirectories for the rogue check, and fail when a canon-registered plan file no longer exists on disk (the deletions arm)."
+    },
+    {
+      "id": "W13.3",
+      "workstream": "W13",
+      "mission": "M6",
+      "title": "Skills reviewed and streamlined \u2014 five loop skills tracked, stale state stripped, updated to new approval model; retired producer stubs deleted; contradicting cursor rules die",
+      "status": "partial",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [],
+        "tests": [],
+        "migrations": [],
+        "paths": []
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "Promote the preserved crm-e2e + tc-builder copies to tracked .claude/skills (add .gitignore un-ignore lines), strip the tc-builder PAUSED block and other stale fleet state, rewrite the approval-model sections of all five loop skills to the 2026-07-21 model, delete retired producer stubs, delete/reconcile cursor rules that contradict canon (blog-voice.mdc et al)."
+    }
+  ]
+}
