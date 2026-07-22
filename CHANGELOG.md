@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.829.0 (2026-07-22)
+
+### Features
+- feat(program): ci:program-complete gate + completion ledger — make "done" un-fakeable
+
+---
+
+
 ## v1.828.1 (2026-07-22)
 
 ### Maintenance
