@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.825.0 (2026-07-22)
+
+### Features
+- feat(compliance): pin ODS Aug-2024 display rules — G54 gate, §5-3(P) contact, address-opt-out guard
+
+---
+
+
 ## v1.824.0 (2026-07-21)
 
 ### Features
