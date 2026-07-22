@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.832.0 (2026-07-22)
+
+### Features
+- feat(cma): wire county deed date into expired-audit ownership finding (W6.2)
+
+---
+
+
 ## v1.831.0 (2026-07-22)
 
 ### Features
