@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.828.0 (2026-07-22)
+
+### Features
+- feat(platform): Wave D — search + index layer: one-search merge, suggest numeric fast path, subdivision light-up, search matrix, site index, map fix + semantic-stack removal, referral tier
+
+---
+
+
 ## v1.827.0 (2026-07-22)
 
 ### Features
