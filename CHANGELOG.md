@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.827.0 (2026-07-22)
+
+### Features
+- feat(platform): Wave C — audience engine: westside Meta cron + cohort digest, newsletter operating layer, weekly market history, core-chart module, one generation path
+
+---
+
+
 ## v1.826.0 (2026-07-22)
 
 ### Features
