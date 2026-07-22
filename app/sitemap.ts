@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { cityEntityKey, listingDetailPath, listingsBrowsePath, slugify, teamPath, valuationPath } from '../lib/slug'
+import { cityEntityKey, cityNeighborhoodPath, listingDetailPath, listingsBrowsePath, slugify, teamPath, valuationPath } from '../lib/slug'
+import { filterRogueCityUrls } from '../lib/sitemap-guard'
 import { getIndexablePresetSlugs } from '../lib/search-presets'
 import { PUBLIC_ACTIVE_STATUSES, PUBLIC_ACTIVE_OR_PREDICATE } from '@/lib/listing-status-public'
 
@@ -67,6 +68,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
  * In production with caching (revalidate: 3600), this is efficient enough.
  */
 async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.Sitemap> {
+  // Sanctioned 2-segment /cities/{a}/{b} paths (from the neighborhoods table);
+  // filterRogueCityUrls drops any 2-seg /cities URL not in this set before serve.
+  const allowedNeighborhoodPaths = new Set<string>()
   // Static pages — always included even without database
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: now, changeFrequency: 'daily', priority: 1 },
@@ -245,11 +249,13 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     )
   }
 
-  // If Supabase is not configured, return only static pages
+  // If Supabase is not configured, return only static pages — still through the
+  // rogue-/cities backstop (allow-set is empty here, so any 2-segment /cities URL
+  // is dropped) so the no-DB path can't emit one either.
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
   if (!supabaseUrl || !supabaseKey) {
-    return staticPages
+    return filterRogueCityUrls(staticPages, allowedNeighborhoodPaths)
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey)
@@ -423,8 +429,12 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
       const cityRel = Array.isArray(n.cities) ? n.cities[0] : n.cities
       const citySlug = cityRel?.slug
       if (!citySlug || !n.slug) continue
+      // Sole sanctioned 2-seg /cities emission (named helper); record it so
+      // filterRogueCityUrls allows exactly these and drops any other.
+      const neighborhoodPath = cityNeighborhoodPath(citySlug, n.slug)
+      allowedNeighborhoodPaths.add(neighborhoodPath)
       dynamicPages.push({
-        url: `${baseUrl}/cities/${citySlug}/${n.slug}`,
+        url: `${baseUrl}${neighborhoodPath}`,
         lastModified: now,
         changeFrequency: 'weekly',
         priority: 0.7,
@@ -578,5 +588,7 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     // Return static pages only if database query fails
   }
 
-  return [...staticPages, ...dynamicPages]
+  // Output-based drift backstop: drop any non-sanctioned 2-seg /cities URL,
+  // however built (template/concat/join/aliased). Inspects final URL strings.
+  return filterRogueCityUrls([...staticPages, ...dynamicPages], allowedNeighborhoodPaths)
 }

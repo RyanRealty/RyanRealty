@@ -100,16 +100,22 @@
       "workstream": "W2",
       "mission": "M1",
       "title": "Sitemap drift fix: communities from registry, stop emitting 404-ing /cities/{city}/{subdivision} URLs, + gate",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-sitemap-resolvable.mjs"
+        ],
         "crons": [],
-        "tests": [],
+        "tests": [
+          "lib/sitemap-guard.test.ts"
+        ],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "lib/sitemap-guard.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
+      "proofPath": "ci:sitemap-resolvable pins both 2026-07-21 drift invariants: communities sourced from getAllResortCommunities() (hardcoded list -> RED) and no inline 2-seg /cities emission (any /cities/{city}/{subdivision} -> RED). Green on real sitemap.",
+      "verifiedBy": "independent adversarial agent a7a0e7e179238b824 \u2014 6 rounds, each found a REAL escape: (1) undeclared app/listing/by-address/[...slug] resolver + name-based /cities drift regex; (2) variable-shadow bypass; (3) concat/Array.join/aliased-baseUrl constructions; (4) protocol-relative + no-leading-slash + dot-relative shapes. Final fix = output-based lib/sitemap-guard.ts filterRogueCityUrls() delegating to the WHATWG URL resolver (crawler algorithm), unit-tested against all vectors, wired at both sitemap returns, guard-wiring asserted by the gate. Round 6 probed 26 exotic shapes (Unicode/%2F/backslash/case/scheme/userinfo/fragment) \u2014 no production-reachable escape. VERDICT: SOLID.",
       "remaining": "The promised '+ gate' does not exist: no gate or contract test pins registry-to-sitemap community parity or the non-emission of the 404-ing family. lib/sitemap.contract.test.ts asserts only legacy-path exclusion (/listings, /agents, /home-valuation); ci:sitemap-resolvable (the verdict-table gate) was never built. The fix itself is by-construction and working \u2014 only the regression guard is missing."
     },
     {
@@ -784,16 +790,22 @@
       "workstream": "W13",
       "mission": "M1",
       "title": "Phase 0 gate: ci:sitemap-resolvable \u2014 sitemap-emitted URL family whose resolver can 404 fails CI",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-sitemap-resolvable.mjs"
+        ],
         "crons": [],
-        "tests": [],
+        "tests": [
+          "lib/sitemap-guard.test.ts"
+        ],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "lib/sitemap-guard.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
+      "proofPath": "ci:sitemap-resolvable green on real sitemap (families:24, resolvers:72); bites on: reintroduced /cities/{city}/{subdivision}, hardcoded communities, deleted resolver, deleted by-address route, renamed-var + shadowed-var rogue /cities emissions \u2014 all exit 1.",
+      "verifiedBy": "independent adversarial agent a7a0e7e179238b824 \u2014 6 rounds, each found a REAL escape: (1) undeclared app/listing/by-address/[...slug] resolver + name-based /cities drift regex; (2) variable-shadow bypass; (3) concat/Array.join/aliased-baseUrl constructions; (4) protocol-relative + no-leading-slash + dot-relative shapes. Final fix = output-based lib/sitemap-guard.ts filterRogueCityUrls() delegating to the WHATWG URL resolver (crawler algorithm), unit-tested against all vectors, wired at both sitemap returns, guard-wiring asserted by the gate. Round 6 probed 26 exotic shapes (Unicode/%2F/backslash/case/scheme/userinfo/fragment) \u2014 no production-reachable escape. VERDICT: SOLID.",
       "remaining": "Build the general gate: enumerate every URL family app/sitemap.ts emits and prove each resolves (or is covered by a per-family contract test), wired into ci:gates as ci:sitemap-resolvable. Today only subdivision/search-matrix families have contract tests; cities, communities, neighborhoods, ZIP, blog, /oregon/[city] families have no resolver-parity check, so the 2026-07-21 drift class can silently recur."
     },
     {

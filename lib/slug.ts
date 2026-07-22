@@ -100,6 +100,19 @@ export function valuationPath(): string {
 }
 
 /**
+ * Canonical city > neighborhood path — the ONLY sanctioned 2-segment /cities
+ * URL. The /cities/[slug]/[neighborhoodSlug] route resolves ONLY neighborhoods-
+ * table slugs; any other second segment 404s. The sitemap emits neighborhood
+ * URLs exclusively through this named helper so ci:sitemap-resolvable can ban
+ * every inline /cities/${a}/${b} template — closing the copy-pasted-loop drift
+ * class (a rogue loop emitting /cities/{city}/{subdivision}) regardless of the
+ * loop variable's name or source.
+ */
+export function cityNeighborhoodPath(citySlug: string, neighborhoodSlug: string): string {
+  return `/cities/${citySlug}/${neighborhoodSlug}`
+}
+
+/**
  * Reports explore page URL with year-to-date pre-loaded for a city (and optional community).
  * Use for "View year-to-date report" from city/community/neighborhood market overview.
  */
