@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.831.0 (2026-07-22)
+
+### Features
+- feat(tracking): event-taxonomy contract test + scroll_depth first-party dual-sink (W1.3)
+
+---
+
+
 ## v1.830.0 (2026-07-22)
 
 ### Features
