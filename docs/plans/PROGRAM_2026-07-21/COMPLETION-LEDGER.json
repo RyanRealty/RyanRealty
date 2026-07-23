@@ -820,17 +820,21 @@
       "workstream": "W11",
       "mission": "M4",
       "title": "Canon cleanup — VOICE.md Orwell + never-pander section; delete stale five-attribute SKILL.md model and contradictory cursor blog rules; repoint producer-gate references",
-      "status": "not_started",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-producer-skills.mjs"
+        ],
         "crons": [],
         "tests": [],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "marketing_brain_skills/brand-voice/VOICE.md"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "All of it: add the Orwell + never-pander section to VOICE.md, delete the five-attribute model from SKILL.md, delete/reconcile .cursor/rules/blog-voice.mdc, and repoint the G35 validate-producer.mjs required-reference from voice_guidelines.md."
+      "proofPath": "VOICE.md gained \"The Orwell rules\" + \"Never pander\" sections (Five Laws stay canonical). brand-voice/SKILL.md retired the five-attribute model -> Five Laws pointer (+ frontmatter). blog-voice.mdc was already reconciled by W13.3. Mechanism: scripts/validate-producer.mjs G35 MANDATORY_REFS_BASE repointed voice_guidelines.md -> VOICE.md, enforced by ci:producer-skills (in ci:gates); all 51 producer SKILL.md + TEMPLATE.md now cite marketing_brain_skills/brand-voice/VOICE.md (zero did before). Decision: 04-DECISIONS §23.",
+      "verifiedBy": "Independent adversarial verifier (different agent, producer-integrity + doc-soundness focus): initially FAIL — the first-pass line-insertion split 21 markdown tables/lists + VOICE.md carried 25 of its own banned punctuation marks. Both fixed + deterministically re-verified: producers now use a structure-safe INLINE replacement (numstat confirms ZERO line-count changes across all 52 files, backticks balanced, previously-broken table/list/sentence diffs render clean), VOICE.md converted to zero banned punctuation (grep-clean, reads well), ci:producer-skills 51/51, gate proven to bite. 2026-07-23.",
+      "remaining": "DONE. VOICE.md is the single voice source the canon + every producer point to. ci:producer-skills fails CI when a producer drops the VOICE.md reference (proven to bite). The stale five-attribute model is retired; the Orwell + never-pander rules are canon."
     },
     {
       "id": "W11.5",
