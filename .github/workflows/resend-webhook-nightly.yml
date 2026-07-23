@@ -1,0 +1,98 @@
+name: Nightly — Resend webhook registration check
+
+# W9.5 — the durable nightly runner for scripts/check-resend-webhook.mjs.
+#
+# The check verifies a Resend webhook is registered + enabled + pointed at
+# /api/webhooks/resend covering the events our ingest route consumes. If that
+# registration silently disappears on the Resend side, the newsletter
+# engagement ledger, the unified email_events store, the per-contact timeline,
+# and the bounce/complaint suppression writes all go dark with no error.
+#
+# Secret posture (matches the script's own doc): the account RESEND_API_KEY is
+# send-only restricted and cannot list webhooks. A FULL-ACCESS key must be
+# stored as the GitHub Actions secret RESEND_WEBHOOKS_API_KEY. Until that secret
+# exists the script prints SKIPPED and exits 0 (green) — so this workflow is safe
+# to run today and starts verifying for real the moment the secret is added. No
+# secret is ever printed; only the endpoint + covered events are logged.
+
+on:
+  # 08:00 UTC nightly (offset from the 09:00 e2e sweep to avoid a pile-up)
+  schedule:
+    - cron: '0 8 * * *'
+  # Ad-hoc manual run
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  resend-webhook:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install npm dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Verify Resend webhook registration
+        id: check
+        continue-on-error: true
+        env:
+          RESEND_WEBHOOKS_API_KEY: ${{ secrets.RESEND_WEBHOOKS_API_KEY }}
+        run: node scripts/check-resend-webhook.mjs
+
+      - name: Open or update issue on failure
+        if: steps.check.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const date = new Date().toISOString();
+            const title = `Resend webhook registration check failed (${date.slice(0, 10)})`;
+            const body = [
+              `## The nightly Resend webhook check failed`,
+              ``,
+              `The webhook feeding email engagement, suppression, and the per-contact`,
+              `timeline may be missing, disabled, or missing required events — or the`,
+              `full-access key is not provisioned. See the run log for the precise cause.`,
+              ``,
+              `**Run:** [${runUrl}](${runUrl})`,
+              `**Date:** ${date}`,
+            ].join('\n');
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'resend-webhook-failure',
+              per_page: 5,
+            });
+            if (issues.length > 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues[0].number,
+                body: `Failed again — [run ${context.runId}](${runUrl}) — ${date}`,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['resend-webhook-failure', 'bug'],
+              });
+            }
+
+      - name: Fail the job if the check failed
+        if: steps.check.outcome == 'failure'
+        run: |
+          echo "::error::Resend webhook registration check failed — see the check step log."
+          exit 1
