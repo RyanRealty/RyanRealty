@@ -585,17 +585,21 @@
       "workstream": "W9",
       "mission": "OPERATING",
       "title": "Postmaster ingestion cron before the first large send",
-      "status": "blocked:needs-matt",
+      "status": "done",
       "requiredMechanism": {
         "gates": [],
-        "crons": [],
+        "crons": [
+          "app/api/cron/postmaster-sync/route.ts"
+        ],
         "tests": [],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "lib/newsletter/postmaster.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "The one-time ops step is unverifiable from code: the route returns skipped=true (never errors) unless GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL/PRIVATE_KEY exist AND the Workspace domain-wide-delegation grant for https://www.googleapis.com/auth/postmaster.readonly is approved (lib/newsletter/postmaster.ts POSTMASTER_SETUP_HINT). No repo evidence confirms the grant or that deliverability_metrics is receiving real rows — until confirmed, the reputation gate still runs on fallback/no-data, the exact state this decision was meant to end. Verify one prod cron invocation returns ok (not skipped) or check the grant in Google Admin.",
+      "proofPath": "Postmaster ingestion cron unblocked. Matt completed the one-time Google Workspace Domain-Wide-Delegation grant for https://www.googleapis.com/auth/postmaster.readonly (confirmed \"W9.4 HAS BEEN COMPLETED\", 2026-07-23). Verified LIVE against the real SA creds: the getPostmasterAuth() JWT (subject matt@ryan-realty.com, scope postmaster.readonly) authorizes cleanly AND gmailpostmastertools domains.list returns all three registered sending domains (mail.ryan-realty.com, news.ryan-realty.com, ryan-realty.com). The postmaster-sync cron (/api/cron/postmaster-sync, daily 12:30 UTC in vercel.json, covered by ci:cron-registered) now authorizes instead of returning skipped=true, and upserts deliverability_metrics as Gmail publishes trafficStats (2-3 day lag). The newsletter pre-send guard (G-NL-20) reads the latest deliverability_metrics.",
+      "verifiedBy": "Live JWT-authorize check (repo SA creds, mirrors lib/newsletter/postmaster.ts getPostmasterAuth): RESULT OK — authorized + domains.list succeeded with 3 domains registered. The grant that gated this row is in place and functional (not skipped, not a grant-problem error).",
+      "remaining": "",
       "mattAction": "Approve the Google Workspace domain-wide-delegation grant for scope https://www.googleapis.com/auth/postmaster.readonly so /api/cron/postmaster-sync ingests real deliverability data instead of returning skipped=true."
     },
     {
