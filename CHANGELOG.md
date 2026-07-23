@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.846.0 (2026-07-23)
+
+### Features
+- feat(approval-queue): bulk approve/reject + ci:bulk-approval-wired gate (W10.4)
+
+### Bug Fixes
+- fix(build): raise staticPageGenerationTimeout 180->600 for local sitemap prerender
+
+### Maintenance
+- refactor(newsletter): extract injectable cohort-enrollment core + orchestration test (W9.1)
+
+---
+
+
 ## v1.845.1 (2026-07-23)
 
 ### Maintenance
