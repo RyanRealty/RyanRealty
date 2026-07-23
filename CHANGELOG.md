@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.844.0 (2026-07-23)
+
+### Features
+- feat(W4.1): global header search on the default chrome + gate
+
+---
+
+
 ## v1.843.1 (2026-07-23)
 
 ### Maintenance
