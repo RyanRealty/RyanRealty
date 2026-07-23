@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.850.0 (2026-07-23)
+
+### Features
+- feat(brand-voice): batched voice-rewrite review over stored copy (W11.5)
+
+### Maintenance
+- chore(program): W11.5 -> done (batched voice-rewrite review, read-only)
+
+---
+
+
 ## v1.849.0 (2026-07-23)
 
 ### Features
