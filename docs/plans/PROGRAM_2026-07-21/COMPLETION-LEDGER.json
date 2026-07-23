@@ -802,10 +802,10 @@
         "migrations": [],
         "paths": []
       },
-      "proofPath": "",
+      "proofPath": "RAN 2026-07-22 (audit query vs geo_snapshot_mv, prod): 181 cities >=1 active, 71 >=5, 61 out-of-area >=5; referral tier indexes top 25 by active count. Burns present (6 active, 0 SFR); Hines 3 active (below the 5 threshold); no Harney city key. Recorded in 04-DECISIONS-RECORDED.md section 10.",
       "verifiedBy": "",
       "remaining": "Run the documented one-off query against prod geo_snapshot_mv (count out-of-area cities with active_all_count >= 5; confirm whether Burns appears and at what count) and record the result with a verification trace in the program package (04-DECISIONS-RECORDED.md or the W12 lane notes).",
-      "mattAction": "Confirm the recorded Burns/Harney out-of-area inventory sizing (the run will execute the read-only geo_snapshot_mv count and record it; you confirm the referral-tier scope decision it implies)."
+      "mattAction": "CONFIRM (default yes): the top-25 out-of-area referral scope stands. The query is run + recorded; no widening implied (Burns clears >=5 on non-SFR stock, ~36 smaller markets stay noindex). Only your one-word confirmation remains."
     },
     {
       "id": "P0.3",
