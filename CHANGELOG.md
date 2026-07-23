@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.836.0 (2026-07-23)
+
+### Features
+- feat(crm): stamp + register a referral:referred-out disposition (W12.3)
+
+---
+
+
 ## v1.835.2 (2026-07-23)
 
 ### Other
