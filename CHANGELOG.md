@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.840.1 (2026-07-23)
+
+### Bug Fixes
+- fix(analytics): W1.5 — repoint 4 dead `visits` readers to the live pipeline + gate
+
+---
+
+
 ## v1.840.0 (2026-07-23)
 
 ### Features
