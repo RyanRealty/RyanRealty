@@ -15,7 +15,7 @@
       "workstream": "W1",
       "mission": "M1",
       "title": "Promote West Side Meta audience refresh to a daily cron; verify META_AUDIENCE_PUSH_ENABLED in prod (mechanism: vercel.json + cron-registered gate + heartbeat)",
-      "status": "partial",
+      "status": "blocked:needs-matt",
       "requiredMechanism": {
         "gates": [],
         "crons": [],
@@ -25,7 +25,7 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "(a) Cadence is WEEKLY (Mondays 14:00 UTC), not the decided daily — deviation is stated in the Wave C commit but recorded nowhere in docs/plans/PROGRAM_2026-07-21/04-DECISIONS-RECORDED.md. (b) The promised heartbeat coverage is absent: lib/pipeline-heartbeat.ts evaluators cover only sync-delta, search MV, FSBO, expired, saved-search, market-stats — no audience-push staleness check, and app/api/cron/loop-health-check/route.ts never probes meta_audience_log. (c) META_AUDIENCE_PUSH_ENABLED being on in prod is unverifiable from code (route forces DRY-RUN when unset via lib/meta-env.ts isMetaAudiencePushEnabled) — the operating verification is still owed."
+      "remaining": "SHIPPED this session (code): the West Side audience heartbeat is now WEST-SIDE-SPECIFIC — loop-health-check probes meta_audience_log scoped to audience_id = WESTSIDE_AUDIENCE_ID (was max(ran_at) over the whole shared table, which the daily general CRM-audience sync masked). Pinned by app/api/cron/loop-health-check/westside-probe.contract.test.ts (bites when the filter is removed). Cadence deviation (weekly vs decided daily) + the §0 flag verification (META_AUDIENCE_PUSH_ENABLED is ON — 32 real non-dry-run pushes, all for the general CRM audience) recorded in 04-DECISIONS §13. BLOCKED on Matt (runtime): the West Side audience refresh (WESTSIDE_AUDIENCE_ID 120244510092910698) is DARK — ZERO meta_audience_log rows since inception, while the general CRM audience (120246504502300698) writes daily. The weekly /api/cron/meta-westside-audience wraps refreshWestsideAudience() in try/catch and only writes the ledger on success (route.ts:57->71), so a throw there leaves no row; the route comment notes the last push was by hand. The now-precise heartbeat will alert on this. ROOT CAUSE needs prod runtime diagnosis (cannot reproduce locally — the caught error at route.ts:97 in the Vercel cron execution log). MATT ACTION: open the Vercel cron log for meta-westside-audience (or trigger it once) and share the error — most likely a Meta token scope for that audience or a loadWestsideInputs data query; then it is a targeted code fix and W1.1 -> done."
     },
     {
       "id": "W1.3",

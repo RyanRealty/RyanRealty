@@ -34,6 +34,7 @@ import {
   summarizeHeartbeat,
   type PipelineCheck,
 } from '@/lib/pipeline-heartbeat'
+import { WESTSIDE_AUDIENCE_ID } from '@/lib/meta-westside-audience'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -219,12 +220,17 @@ export async function GET(req: NextRequest) {
   const latestTimestamp = async (
     table: string,
     column: string,
+    eq?: { column: string; value: string },
   ): Promise<{ iso: string | null; error?: string }> => {
     try {
-      const { data, error } = await supabase
+      let q = supabase
         .from(table)
         .select(column)
         .not(column, 'is', null)
+      // Optional equality filter — e.g. scope meta_audience_log to ONE audience_id
+      // so a shared ledger table's other writers can't mask this pipeline (W1.1).
+      if (eq) q = q.eq(eq.column, eq.value)
+      const { data, error } = await q
         .order(column, { ascending: false, nullsFirst: false })
         .limit(1)
       if (error) return { iso: null, error: error.message }
@@ -344,7 +350,10 @@ export async function GET(req: NextRequest) {
   // 7. West Side Meta audience refresh (weekly cron; every run — dry-run
   //    included — writes a meta_audience_log row, so max(ran_at) proves it ran).
   {
-    const ran = await latestTimestamp('meta_audience_log', 'ran_at')
+    const ran = await latestTimestamp('meta_audience_log', 'ran_at', {
+      column: 'audience_id',
+      value: WESTSIDE_AUDIENCE_ID,
+    })
     if (ran.error) pipeline.push(probeFailed('pipeline:westside-audience', ran.error))
     else pipeline.push(evalAudienceSync(ran.iso, now))
   }
