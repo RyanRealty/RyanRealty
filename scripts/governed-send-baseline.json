@@ -47,6 +47,7 @@
     "lib/marketing-brain/daily-digest.ts": 1,
     "lib/newsletter/send-queue.ts": 1,
     "lib/seller-lead-alert.ts": 1,
-    "lib/tc/signing-emails.ts": 3
+    "lib/tc/signing-emails.ts": 3,
+    "lib/voice/reviewer.ts": 1
   }
 }
