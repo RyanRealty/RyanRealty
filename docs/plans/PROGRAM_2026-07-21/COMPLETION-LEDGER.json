@@ -847,17 +847,21 @@
       "workstream": "W11",
       "mission": "M4",
       "title": "Rewrite pass over stored copy (published blog posts, templates) with the reviewer, batched, reviewed before republish",
-      "status": "not_started",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-voice-rewrite-batch.mjs"
+        ],
         "crons": [],
         "tests": [],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "scripts/voice-rewrite-batch.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "Everything, and it is blocked behind W11.3: build the reviewer first, then run the batched rewrite over published blog posts (public.blog_posts) and stored CRM/sequence templates, with Matt review before republish."
+      "proofPath": "scripts/voice-rewrite-batch.ts runs the W11.3 reviewer (reviewProse) over published blog_posts + crm_templates and writes a review artifact (out/voice-rewrite-batch/report.{json,md}) of violations + fact-safe rewrites for Matt to approve before republish. READ-ONLY on content — never writes to blog_posts/crm_templates; the §0 fact-guard nulls any fact-mangled rewrite. Gate: scripts/check-voice-rewrite-batch.mjs (ci:voice-rewrite-batch, in ci:gates) — AST-asserts the batch calls reviewProse, writes an artifact, and has ZERO Supabase mutations; proven to bite. LIVE run over 2 published posts produced the artifact (21 violations flagged on one). Decision: 04-DECISIONS §25.",
+      "verifiedBy": "Independent adversarial verifier: initially FAIL — confirmed the batch is provably read-only (every Supabase call SELECT-only, results only ever written to out/, and the reviewed blog_posts row's updated_at unchanged after a live run) and correctness/wiring correct, but PROVED 3 gate-evasion paths (.rpc('write_fn'), computed ['update'](), and an aliased .update.bind()) that would let a write-back slip past. ALL THREE fixed + re-proven to bite: the gate now flags ANY reference to a mutator — property access, computed/bracket access, or aliased — plus .rpc. Live run wrote the artifact (21 violations on a real published post) with the DB untouched. 2026-07-23.",
+      "remaining": "DONE. The batched rewrite pass runs the reviewer over stored copy and produces a review artifact for approval before republish, and is provably read-only on the content (ci:voice-rewrite-batch bites on any write-back). Running the full pass + Matt approving the rewrites is the operating step (content, per-action approval)."
     },
     {
       "id": "W12.3",
