@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 import { MediaPreview } from './MediaPreview'
 import { CommentsThread, type Comment } from './CommentsThread'
 import { ActionButtons } from './ActionButtons'
+import { BulkSelectCheckbox } from './BulkSelection'
 
 export interface BrainAction {
   id: string
@@ -86,6 +87,7 @@ export function ActionCard({ action }: ActionCardProps) {
       {/* Top bar */}
       <CardHeader className="space-y-2 pb-3">
         <div className="flex flex-wrap items-start gap-3">
+          {status !== 'killed' && <BulkSelectCheckbox actionId={action.id} />}
           <div className="min-w-0 flex-1 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-semibold text-foreground">{producerName}</span>

@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { ActionCard, type BrainAction } from './_components/ActionCard'
 import { FilterSidebar } from './_components/FilterSidebar'
+import { BulkSelectionProvider, BulkActionBar } from './_components/BulkSelection'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
 
 export const metadata = { title: 'Approval Queue | Admin' }
@@ -131,9 +132,12 @@ export default async function ApprovalQueuePage({ searchParams }: PageProps) {
                 Nothing pending. The queue is clear.
               </div>
             ) : (
-              actions.map((action) => (
-                <ActionCard key={action.id} action={action} />
-              ))
+              <BulkSelectionProvider allIds={actions.map((a) => a.id)}>
+                {actions.map((action) => (
+                  <ActionCard key={action.id} action={action} />
+                ))}
+                <BulkActionBar />
+              </BulkSelectionProvider>
             )}
           </div>
         </div>
