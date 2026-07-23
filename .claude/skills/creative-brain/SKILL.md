@@ -89,4 +89,4 @@ Ryan Realty is a brokerage / **art house**. The product of this skill is work th
 
 ## Compliance floor (when a piece ships as an ad)
 
-Brand voice rules and §0 data accuracy still bind anything public: any on-screen number carries a verification trace, AI-generated content gets Meta's "digitally created" flag + disclosure where it could read as real, Housing Special Ad Category when it promotes real-estate services, no fake or implied listings ever, draft-first commit-last always.
+Brand voice rules and §0 data accuracy still bind anything public: any on-screen number carries a verification trace, AI-generated content gets Meta's "digitally created" flag + disclosure where it could read as real, Housing Special Ad Category when it promotes real-estate services, no fake or implied listings ever, and the ad itself is shown to Matt before it publishes (publishing is a per-action approval class per CLAUDE.md's 2026-07-21 Approval Model — the code/creative that builds it ships post-hoc).

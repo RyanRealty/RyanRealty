@@ -75,6 +75,11 @@ next-env.d.ts
 !.claude/skills/tdd/
 !.claude/skills/optimize-data-loading/
 !.claude/skills/document-external-api/
+# ...and the crm-e2e + tc-builder loop skills — promoted to tracked (W13.3, 2026-07-21) so the in-house CRM/TC build loops survive clones + are visible to Cursor
+!.claude/skills/crm-e2e/
+!.claude/skills/tc-builder/
+# ...and experience-rollout — tracked (its exception was implicit; made explicit for consistency, W13.3)
+!.claude/skills/experience-rollout/
 .claude/worktrees
 .claude/cache
 .claude/projects

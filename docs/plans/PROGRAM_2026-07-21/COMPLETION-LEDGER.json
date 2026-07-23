@@ -956,17 +956,22 @@
       "workstream": "W13",
       "mission": "M6",
       "title": "Skills reviewed and streamlined — five loop skills tracked, stale state stripped, updated to new approval model; retired producer stubs deleted; contradicting cursor rules die",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-loop-skills-canon.mjs"
+        ],
         "crons": [],
         "tests": [],
         "migrations": [],
-        "paths": []
+        "paths": [
+          ".claude/skills/tc-builder/SKILL.md",
+          ".claude/skills/crm-e2e/SKILL.md"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "Promote the preserved crm-e2e + tc-builder copies to tracked .claude/skills (add .gitignore un-ignore lines), strip the tc-builder PAUSED block and other stale fleet state, rewrite the approval-model sections of all five loop skills to the 2026-07-21 model, delete retired producer stubs, delete/reconcile cursor rules that contradict canon (blog-voice.mdc et al)."
+      "proofPath": "scripts/check-loop-skills-canon.mjs (ci:loop-skills-canon, in ci:gates) — fails if crm-e2e/tc-builder untracked, any tracked skill carries the \"commit-last\" blanket model, tc-builder has a PAUSED block, or a cursor rule re-introduces the \"no hyphens or colons\" contradiction. Decision: 04-DECISIONS-RECORDED.md §17.",
+      "verifiedBy": "Independent adversarial verifier agent (assume-broken brief, different agent than the builder): confirmed the approval rewrites faithfully state the 2026-07-21 model, no content silently lost (Oregon-law block preserved, only PAUSED removed), crm-e2e/tc-builder actually git-tracked, the gate bites per-line with no whole-file bypass, and blog-voice/design-system/market-video point at canon. 2026-07-23.",
+      "remaining": "DONE. crm-e2e + tc-builder promoted to tracked (.gitignore un-ignore + git add). tc-builder PAUSED block stripped → replaced with the 2026-07-21 approval section. Approval-model sections of the loop skills (creative-brain, growth-loop, experience-rollout, tc-builder, skyslope-form-compliance) rewritten off the superseded Draft-First/Commit-Last blanket to the 2026-07-21 model (experience-rollout keeps its per-family review as a named exception). No retired producer stubs exist (decommission was registry-level). Contradicting cursor rules reconciled (blog-voice, design-system, market-video → point at VOICE.md / brand-voice-vocabulary.cjs / CLAUDE.md video rules). ci:loop-skills-canon keeps it from drifting."
     }
   ]
 }

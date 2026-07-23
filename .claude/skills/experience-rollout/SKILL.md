@@ -53,7 +53,7 @@ Mission (Matt, 2026-06-09): "thoroughly polished, much smarter UI/UX, more inter
 
 ## Hard limits (unchanged, absolute)
 
-Draft-first for consumer-visible ships (per-family approval); infra/fix lane ships continuously per Matt's standing go. Never publish social content, never OAuth, never spend, never touch app/lp/** conversion paths without explicit per-action approval. Single checkout, `main` only. Stage surgically — the tree carries other sessions' work.
+This program carries a NAMED standing exception on top of the default approval model (Matt directive): each experience FAMILY gets a per-family review before its consumer-visible surface goes live — screenshots + verification trace, Matt's explicit go per family. Everything else follows the 2026-07-21 default: reversible infra/fix work ships continuously post-hoc (commit + push once verified). Never publish social content, never OAuth, never spend, never touch app/lp/** conversion paths without explicit per-action approval. Single checkout, `main` only. Stage surgically — the tree carries other sessions' work.
 
 ## Loop pacing (when fired via /loop dynamic)
 

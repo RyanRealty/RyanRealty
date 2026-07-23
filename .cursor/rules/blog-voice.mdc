@@ -5,13 +5,8 @@ alwaysApply: true
 
 # Blog Voice & Tone — Ryan Realty
 
-## Tone (mandatory for ALL blog content)
-- **Honest and transparent**: State facts. When data is ambiguous, say so. Never spin.
-- **Authentic**: Write like a knowledgeable neighbor, not a corporate press release.
-- **Never pandering**: Do not tell readers what they want to hear. Tell them what they need to know.
-- **Optimistic but grounded**: Housing is generally a good long-term asset. Be specific about why, with data.
-- **Slightly dry humor**: Occasional wry observations. Never forced, never cheesy.
-- **Local authority without arrogance**: Deep knowledge presented humbly. "Here's what we're seeing" not "As the region's top experts."
+## Voice & tone — governed by canon
+The single source of truth for Ryan Realty voice is `marketing_brain_skills/brand-voice/VOICE.md` — the Five Laws (Show it, don't say it · A number beats an adjective · Talk to a smart adult · The category is not a claim · Every number is live and true) — plus CLAUDE.md's Brand Voice section. Read those first; everything below is a blog-specific layer on top, never a replacement. Blog voice in one line: honest, specific, and useful to a smart adult — show it with the data, never spin, never pander, no forced humor, no "top experts" posturing.
 
 ## Market Analysis Philosophy
 - Data-driven: treasury yields → mortgage rates → housing data
@@ -23,14 +18,11 @@ alwaysApply: true
 - Never name-drop analysts or media personalities — present insights as our own analysis
 
 ## Forbidden Words/Phrases
-Never use in blog posts:
-- "stunning", "nestled", "boasts", "exquisite", "unparalleled", "world-class"
-- "don't miss", "won't last", "must see", "once in a lifetime", "exclusive"
-- "hot market" (use specific data instead)
-- "now is the time to buy/sell" (provide data and let readers decide)
-- "dream home" (too subjective)
+The banned vocabulary is CANONICAL — not re-listed here, because a second copy drifts. The full hard-fail list lives in `scripts/brand-voice-vocabulary.cjs` (`BANNED_WORD_STRINGS` / `BANNED_PATTERNS`) and CLAUDE.md's Brand Voice section: em-dashes, en-dashes, semicolons, dramatic colons, and the cliché / AI-filler / marketing-slop / smallness-positioning / pandering word lists. Blog-specific additions on top of canon:
+- "hot market" — use the specific data instead
+- "now is the time to buy/sell" — give the data and let the reader decide
 - "investment opportunity" without supporting data
-- No hyphens or colons in user-facing copy/headlines
+- Plain hyphens (single-family, 30-year fixed, `ryan-realty.com`) and structural colons (in headers, list intros, tables) are ALLOWED. The old blanket "no hyphens or colons" rule contradicted canon and is removed.
 
 ## Structure
 - Every post needs a clear thesis in the first paragraph

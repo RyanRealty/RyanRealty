@@ -93,7 +93,7 @@ node .claude/skills/skyslope-form-compliance/scripts/execute-plan.mjs tmp/skyslo
 node .claude/skills/skyslope-form-compliance/scripts/verify-fc.mjs <GUID>
 ```
 
-**Step 5 (execute) is a LIVE mutation. It never runs without Matt's explicit approval of the dry-run plan. Silence is not approval. A successful build is not approval. See CLAUDE.md §0.5 Draft-First-Commit-Last.**
+**Step 5 (execute) is a LIVE mutation on the brokerage's compliance records. It never runs without Matt's explicit approval of the dry-run plan. Silence is not approval. A successful build is not approval. This is a per-action approval under CLAUDE.md's "Approval Model — confirmed by Matt 2026-07-21" — the analysis/dry-run is autonomous, the irreversible execute is not.**
 
 ### Hard-won executor rules (every one was a live 422 — see [references/sanitize-fixes.md](references/sanitize-fixes.md))
 - **Keep the file extension.** Pull the real ext from `manifest.json` (the SkySlope `name` field drops it; `.htm`/`.eml`/`.docx` matter). A doc absent from the manifest = a SkySlope system marker with no binary → can't rename, skip it.

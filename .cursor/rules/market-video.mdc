@@ -5,13 +5,12 @@ alwaysApply: true
 
 # Video Production — REQUIRED reading
 
-**Before writing any video code, any Remotion composition, any Listing.tsx rewrite, any video synth or render: read these two files.** This is non-negotiable.
+**Before writing any video code, any Remotion composition, any video synth or render: read CLAUDE.md's "Video Build Hard Rules (READ FOURTH)" section.** That is the canonical, repo-local ship-blocker ruleset every video build follows. This is non-negotiable.
 
-## The two files
+## Where the rules live
 
-1. **`video_production_skills/VIDEO_PRODUCTION_SKILL.md`** — the master skill. Hard constraints, creative direction, render pipeline, AI video tier guide, brand rules, common-failure fixes, full Schoolhouse v5 lesson log.
-
-2. **`video_production_skills/VIRAL_VIDEO_CONSTRAINTS.md`** — 30-second quick-reference card. Hard constraints as a pre-render and post-render checklist.
+- **CLAUDE.md → "Video Build Hard Rules"** — the source of truth, always present in this repo: format/length, hook, beats, safe zones, VO, brand, render hygiene, the quality gate.
+- The deeper video skill library (`video_production_skills/VIDEO_PRODUCTION_SKILL.md`, `VIRAL_GUARDRAILS.md`, the format sub-skills) lives on the local render worker / Cowork mount, NOT this deployed repo — load it there for a novel format or edge case. The summary below is the repo-local floor; CLAUDE.md governs.
 
 ## The non-negotiables (summary — full detail in the skill file)
 
@@ -23,7 +22,7 @@ alwaysApply: true
 - **No brand elements in the video frame** (no logo, no "Ryan Realty," no phone, no agent name, no "REPRESENTED BY"). Brokerage attribution lives in the IG caption + bio.
 - **Gimbal/parallax motion on every photo beat.** No static photos.
 - **Three movement types per video minimum.**
-- **Banned words:** stunning, nestled, boasts, gorgeous, breathtaking, must-see, "welcome to your dream home." No em-dashes, no hyphens in prose.
+- **Banned words:** stunning, nestled, boasts, gorgeous, breathtaking, must-see, "welcome to your dream home." No em-dashes, no semicolons. (Plain hyphens are allowed where standard English requires them — single-family, 30-year fixed — per CLAUDE.md brand voice; the old "no hyphens in prose" rule was wrong.)
 - **All numbers carry units.** "$3,025,000" not "3,025,000."
 - **AI photo-to-video is OFF for interiors.** Reserved for aerials and exterior depth shots only, with strict slop checks.
 

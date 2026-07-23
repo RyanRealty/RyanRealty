@@ -52,9 +52,9 @@ Preflight contract applies (mockup + parity.json for surfaces, DAL for data, §0
 ### 5. Verify exhaustively
 tsc, tests, `npm run ci:gates`, real `next build`, rendered-browser pass on every affected surface, mobile and desktop. Matt confirms classes are resolved; he does not find bugs.
 
-### 6. Ship per the approval model
-- Consumer-visible content/UX change → **draft-first**: screenshots + verification trace, wait for Matt's explicit go, then commit + push and watch the deploy to READY.
-- SEO/meta/JSON-LD plumbing, gates, infra, docs → continuous ship once verified: commit + push immediately.
+### 6. Ship per the approval model (2026-07-21)
+- Reversible work — consumer-visible content/UX, SEO/meta/JSON-LD plumbing, gates, infra, docs — is committed and pushed once verified (a UX change carries screenshots + a verification trace), then watch the deploy to READY. Matt reviews after the fact; a bad change gets reverted. No waiting for an explicit go.
+- Per-action approval (every time) only for the four classes: an outbound email/SMS to a real client/lead, publishing a public social post, ad spend, and OAuth grants. A rendered content deliverable (a video in a tracked `public/` path) is shown to Matt before it enters a distribution path.
 - Before any commit: `git status` — other loop sessions share this checkout. Stage ONLY this iteration's files. Never sweep another loop's in-flight work into a commit.
 
 ### 7. Measure
@@ -85,4 +85,4 @@ Check for cross-loop conflicts before picking work: a family Experience is migra
 
 ## Hard rules inherited (non-negotiable)
 
-CLAUDE.md §0 data accuracy (verification trace per figure), §0.5 draft-first for consumer-visible deliverables, brand voice on every client-readable string, design-system components only, no ad-hoc SQL, single-checkout `main`, push immediately after an approved commit.
+CLAUDE.md §0 data accuracy (verification trace per figure), the 2026-07-21 Approval Model (reversible work ships post-hoc; per-action approval only for outbound sends, publishing, ad spend, and OAuth), brand voice on every client-readable string, design-system components only, no ad-hoc SQL, single-checkout `main`, push immediately after commit.
