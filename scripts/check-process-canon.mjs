@@ -20,6 +20,7 @@
  * Usage: node scripts/check-process-canon.mjs
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
+import { join, relative } from 'node:path'
 
 const CANON = 'docs/DEVELOPMENT_PROCESS.md'
 
@@ -59,16 +60,69 @@ for (const ep of ENTRY_POINTS) {
   }
 }
 
-// Rogue-plan check: every docs/plans/*.md basename must appear in the canon.
-let planFiles = []
-try {
-  planFiles = readdirSync('docs/plans').filter((f) => f.endsWith('.md'))
-} catch { /* no plans dir */ }
-for (const f of planFiles) {
-  if (!canon.includes(f)) {
-    fails.push(`docs/plans/${f} is not registered in ${CANON} "Registered plan documents" — add a row (status: open input / record / archive) or do not create rogue plan docs`)
+// --- Rogue-plan check (W13.2: recursive + deletions arm) ---
+// Parse the "Registered plan documents" table's FIRST column (the `Doc` cell) —
+// backticked entries there are registrations; backticks in the Status/description
+// column (cross-references) are NOT. An entry ending in `/` registers a whole
+// PACKAGE directory (every file within is covered).
+function parseRegistry(src) {
+  const start = src.indexOf('## Registered plan documents')
+  const sec = start >= 0 ? src.slice(start).split('\n## ')[0] : ''
+  const files = new Set()
+  const dirs = new Set()
+  for (const line of sec.split('\n')) {
+    if (!line.startsWith('|')) continue
+    const docCell = line.split('|')[1] ?? ''
+    if (/^\s*Doc\s*$/.test(docCell) || /^\s*:?-+:?\s*$/.test(docCell)) continue // header / separator
+    for (const m of docCell.matchAll(/`([^`]+)`/g)) {
+      const e = m[1].trim()
+      if (e.endsWith('/')) dirs.add(e.replace(/\/+$/, ''))
+      else if (e.endsWith('.md')) files.add(e)
+    }
+  }
+  return { files, dirs }
+}
+
+// Recursively list every .md under docs/plans, relative to docs/plans.
+function walkMd(dir, base, out) {
+  let entries
+  try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return }
+  for (const e of entries) {
+    const full = join(dir, e.name)
+    if (e.isDirectory()) walkMd(full, base, out)
+    else if (e.name.endsWith('.md')) out.push(relative(base, full))
   }
 }
+
+const { files: regFiles, dirs: regDirs } = parseRegistry(canon)
+const planMd = []
+walkMd('docs/plans', 'docs/plans', planMd)
+
+// 1. Rogue: every .md must be registered — its own row (basename for a top-level
+//    file; full relative path for a subdir file) OR covered by a registered
+//    package directory. Recursion closes the "hide a rogue plan in a subdir" gap.
+for (const rel of planMd) {
+  const topDir = rel.includes('/') ? rel.split('/')[0] : null
+  const coveredByPackage = topDir != null && regDirs.has(topDir)
+  const registered = regFiles.has(rel) // rel is the basename for top-level files
+  if (!coveredByPackage && !registered) {
+    fails.push(`docs/plans/${rel} is not registered in ${CANON} "Registered plan documents" — add a row, place it inside a registered package directory, or do not create rogue plan docs`)
+  }
+}
+
+// 2. Deletions arm: a registered Doc (file or package dir) that no longer exists
+//    on disk is a stale registration — the registry must track reality.
+for (const f of regFiles) {
+  if (!existsSync(join('docs/plans', f))) {
+    fails.push(`registered plan "${f}" in ${CANON} no longer exists on disk — remove its row or restore the file`)
+  }
+}
+for (const d of regDirs) {
+  if (!existsSync(join('docs/plans', d))) {
+    fails.push(`registered package "${d}/" in ${CANON} no longer exists on disk — remove its row`)
+  }
+}
+const planFiles = planMd // for the summary line below
 
 console.log('Process-canon sync check (G44)')
 console.log('==============================')

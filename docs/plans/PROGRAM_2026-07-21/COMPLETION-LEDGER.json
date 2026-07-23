@@ -888,16 +888,20 @@
       "workstream": "W13",
       "mission": "M6",
       "title": "No new plan files; rogue-plan gate arm fixed (deletions + subdirectories)",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-process-canon.mjs"
+        ],
         "crons": [],
         "tests": [],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "docs/DEVELOPMENT_PROCESS.md"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
+      "proofPath": "check-process-canon.mjs (G44/ci:process-canon) rogue check now RECURSES docs/plans (walkMd) and exempts files inside a registered PACKAGE dir (canon Doc cell ending in /; PROGRAM_2026-07-21/ + ADMIN_REBUILD/ registered). Added the DELETIONS arm: a registered Doc/package missing from disk fails. parseRegistry reads ONLY the first table column, so Status-cell cross-refs (e.g. docs/fub-feature-audit/...) and parent-relative entries (../EXPERIENCE_SYSTEM.md) are handled correctly. Both arms proven to bite (rogue subdir + top-level file; missing registration); no false positive on a registered-package file. plan-doc count 82->125 (recursion sees subdirs).",
+      "verifiedBy": "independent adversarial agent aabcd23c9a0f51c31 \u2014 confirmed recurse arm bites, package exemption scoped to first-column /-entries only (not over-broad, description-cell /-paths do not register), deletions arm bites with NO false positive on the two named real cases (../EXPERIENCE_SYSTEM.md exists, fub-feature-audit cross-ref never enters regFiles), first-column-only parsing is the correctness crux. VERDICT: SOLID.",
       "remaining": "Fix scripts/check-process-canon.mjs: recurse into docs/plans subdirectories for the rogue check, and fail when a canon-registered plan file no longer exists on disk (the deletions arm)."
     },
     {

@@ -82,10 +82,12 @@ A defect that reached Matt or production gets three things, always: (1) the whol
 
 ## Registered plan documents
 
-Everything in `docs/plans/` is registered here. A new file in that directory without a row below fails G44 — plans do not accumulate as rogue process forks; they are inputs to THIS process.
+Everything in `docs/plans/` is registered here. A new file in that directory without a row below fails G44 — plans do not accumulate as rogue process forks; they are inputs to THIS process. The rogue check recurses into subdirectories: a `.md` inside a registered PACKAGE directory (a `Doc` cell ending in `/`) is covered by that package's row; a `.md` in any other subdirectory, or a new top-level file, needs its own row. G44 also fails when a registered `Doc` no longer exists on disk (stale registration).
 
 | Doc | Status |
 |---|---|
+| `PROGRAM_2026-07-21/` | **live** — the RR-PLATFORM-DECISIONS completion program package (master spec, recorded decisions, audits, completion ledger, preserved skills). One of the two sanctioned plan homes; every file within it is covered by this row. |
+| `ADMIN_REBUILD/` | **live** — the admin/CRM rebuild package (specs, audit reports). The second sanctioned plan home; every file within it is covered by this row. |
 | `ultracode-site-consistency-kickoff.md` | executed — birthed this canon (archive) |
 | `site-consistency-audit-2026-06-09.md` | executed 2026-06-09 (record) |
 | `site-consistency-audit-2026-06-04.md`, `site-consistency-audit-2026-06-04-completeness.md` | superseded by 06-09 audit (record) |
