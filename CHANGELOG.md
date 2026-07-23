@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.836.3 (2026-07-23)
+
+### Bug Fixes
+- fix(process): G44 rogue-plan check recurses + fails on deleted registrations (W13.2)
+
+---
+
+
 ## v1.836.2 (2026-07-23)
 
 ### Bug Fixes
