@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.835.2 (2026-07-23)
+
+### Other
+- ci(newsletter): schedule ci:resend-webhook nightly (W9.5)
+
+---
+
+
 ## v1.835.1 (2026-07-23)
 
 ### Maintenance
