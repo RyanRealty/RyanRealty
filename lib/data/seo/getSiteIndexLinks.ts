@@ -64,7 +64,10 @@ export type SiteIndexLinks = {
   generatedAt: string | null
 }
 
-const EMPTY_SITE_INDEX: SiteIndexLinks = {
+// Exported so the freshness contract test can assert generatedAt === null on the
+// real value (not text-match it) — the sentinel the /site-index page's
+// noStore()-on-empty guard depends on.
+export const EMPTY_SITE_INDEX: SiteIndexLinks = {
   cities: [],
   citySearches: [],
   communities: [],

@@ -213,16 +213,23 @@
       "workstream": "W3",
       "mission": "M1",
       "title": "Replace hand-curated popular-searches snapshot with auto-derived link layer + crawlable /site-index page; derived on a schedule; freshness gate",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-site-index-freshness.mjs"
+        ],
         "crons": [],
-        "tests": [],
+        "tests": [
+          "lib/data/seo/site-index-freshness.contract.test.ts"
+        ],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "app/site-index/page.tsx",
+          "lib/data/seo/getSiteIndexLinks.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
+      "proofPath": "ci:site-index-freshness pins the complete freshness invariant chain (9 links): bounded ISR revalidate; noStore() directly in the generatedAt===null branch; noStore imported from next/cache + not shadowed; getSiteIndexLinks not shadowed; getSiteIndexLinks=makeResilientCached(...) binding; options(3rd) arg bounded revalidate:CACHE_WINDOWS.* (positional); EMPTY_SITE_INDEX is the fallback(last) arg (positional); makeResilientCached/CACHE_WINDOWS not shadowed; and the import-based contract test asserts the REAL EMPTY_SITE_INDEX.generatedAt===null. Source is lexed by a char-by-char tokenizer (comments/strings/templates blanked) and every arg check is positional via a balanced-paren scan + top-level-comma split \u2014 no raw-text/blob scans remain. Every check proven to bite; real code green.",
+      "verifiedBy": "independent adversarial agent a68dd5bb98a2bf7e4 over 8 rounds \u2014 each round found a REAL accidental-drift bypass (dead comment, template literal, disconnected guard, decoy string, noStore shadow, getSiteIndexLinks memo shadow, leftover-helper drift, substituted fallback, key-parts decoy, options-blob revalidate), ALL closed and re-confirmed biting. Final round: converted the entire remaining blob-scan class to positional checks proactively (closing the sibling of the last finding); each fix proven to bite by reproducing the verifier exact scenario. Remaining surface is sabotage-only (deliberate no-op aliasing / dead code), which a static gate cannot cover and is the accepted floor.",
       "remaining": "The promised 'freshness gate' does not exist. Refresh is purely cache-TTL-driven (6h unstable_cache + 1h ISR) \u2014 a reasonable 'schedule', but no mechanical check asserts the derivation is fresh or non-stale: no script in scripts/ references site-index or getSiteIndexLinks (verified by grep), and check-content-freshness.mjs (G-FRESH) covers only data/co-events.ts dates. Add a freshness assertion (e.g. smoke/gate on generatedAt age) or record the TTL model as the accepted mechanism."
     },
     {
