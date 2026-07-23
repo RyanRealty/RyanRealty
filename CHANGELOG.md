@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.839.0 (2026-07-23)
+
+### Features
+- feat(crm): W7.5 — broker Listing-matches form gets the full filter vocabulary
+
+---
+
+
 ## v1.838.0 (2026-07-23)
 
 ### Features
