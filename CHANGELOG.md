@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.836.2 (2026-07-23)
+
+### Bug Fixes
+- fix(ci): static-params gate catches one-line empty-stub generateStaticParams
+
+---
+
+
 ## v1.836.1 (2026-07-23)
 
 ### Maintenance
