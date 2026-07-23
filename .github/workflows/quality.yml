@@ -17,6 +17,10 @@ jobs:
       SKYSLOPE_ACCESS_SECRET: ${{ secrets.SKYSLOPE_ACCESS_SECRET }}
       SKYSLOPE_CLIENT_ID: ${{ secrets.SKYSLOPE_CLIENT_ID }}
       SKYSLOPE_CLIENT_SECRET: ${{ secrets.SKYSLOPE_CLIENT_SECRET }}
+      # Full-access Resend key for the webhook-registration check (the account
+      # RESEND_API_KEY is send-only). Until this secret is set, ci:resend-webhook
+      # SKIPS (exit 0) — the step is safe to run before the key is provisioned.
+      RESEND_WEBHOOKS_API_KEY: ${{ secrets.RESEND_WEBHOOKS_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -36,3 +40,9 @@ jobs:
       # Accessibility (pa11y)
       - name: Accessibility (pa11y)
         run: npm run ci:a11y
+
+      # Resend webhook registration (W9.5) — off-chain nightly. Verifies a
+      # webhook targeting the ingest route is registered so bounce suppression
+      # can't silently die. SKIPS cleanly until RESEND_WEBHOOKS_API_KEY is set.
+      - name: Resend webhook registered (ci:resend-webhook)
+        run: npm run ci:resend-webhook

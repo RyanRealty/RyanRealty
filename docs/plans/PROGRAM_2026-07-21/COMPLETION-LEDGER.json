@@ -573,17 +573,20 @@
       "workstream": "W9",
       "mission": "M1",
       "title": "Webhook-registration check \u2014 nightly check against the Resend API",
-      "status": "partial",
+      "status": "blocked:needs-matt",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-resend-webhook.mjs"
+        ],
         "crons": [],
         "tests": [],
         "migrations": [],
         "paths": []
       },
-      "proofPath": "",
+      "proofPath": "ci:resend-webhook gate exists (off-chain, KNOWN_UNWIRED from the secret-less static chain) and is now SCHEDULED nightly in .github/workflows/quality.yml (3:00 UTC), which maps only RESEND_WEBHOOKS_API_KEY. In CI (no .env.local, no RESEND_API_KEY) it skips cleanly (exit 0) until the key is set; the gate BITES loudly (exit 1) when only a send-only key is available or no webhook targets the ingest route (verified: exit 1 with the send-only key present).",
       "verifiedBy": "",
-      "remaining": "The promised 'nightly' execution has no scheduler anywhere verifiable: zero references in .github/workflows/ (grep across all 9 workflows), no vercel.json cron route runs it, and the Claude scheduled-task list contains only 3 unrelated tasks. It runs only if someone invokes it manually. Additionally the check needs a full-access RESEND_WEBHOOKS_API_KEY (the account RESEND_API_KEY is send-only restricted and the script fails by design on it); provisioning of that key in .env.local is unverifiable from the repo. Wire an actual nightly runner (scheduled task or secret-bearing workflow) and confirm the full-access key exists."
+      "remaining": "The promised 'nightly' execution has no scheduler anywhere verifiable: zero references in .github/workflows/ (grep across all 9 workflows), no vercel.json cron route runs it, and the Claude scheduled-task list contains only 3 unrelated tasks. It runs only if someone invokes it manually. Additionally the check needs a full-access RESEND_WEBHOOKS_API_KEY (the account RESEND_API_KEY is send-only restricted and the script fails by design on it); provisioning of that key in .env.local is unverifiable from the repo. Wire an actual nightly runner (scheduled task or secret-bearing workflow) and confirm the full-access key exists.",
+      "mattAction": "Provision RESEND_WEBHOOKS_API_KEY (a full-access Resend key; the account RESEND_API_KEY is send-only) as a GitHub Actions secret, and register a Resend webhook targeting the ingest route. This is a newsletter precondition (04-DECISIONS-RECORDED.md 9.3). Until then the nightly check skips and bounce suppression is unverified."
     },
     {
       "id": "W10.1",
