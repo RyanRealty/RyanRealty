@@ -10,17 +10,26 @@
  * updateTemplateAction) runs subject + body through checkTemplateVoice and
  * refuses to persist a hard fail.
  *
- * The core vocabulary is imported from lib/brand-voice/generated-vocabulary.ts
- * (the in-bundle mirror of the canonical scripts/brand-voice-vocabulary.cjs —
- * see scripts/gen-brand-voice-consumers.mjs), layered with a small set of
- * template-specific extras (hyphenated/negated variants, "introducing", bare
- * "boutique") that are not in the canonical word list. templateVoiceCheck.test.ts
- * asserts this module stays a superset of the canonical list, so the two can
- * never silently drift.
+ * THIN ADAPTER (W11.2): the actual scan (word-boundary matching, the
+ * canonical banned core) delegates to the ONE shared lib/voice/check.ts
+ * checkBrandVoice() — this module layers the template-specific LOCAL_EXTRAS
+ * (hyphenated/negated variants + terms not in the canonical set) on top, and
+ * maps the result back onto the historical `VoiceViolation` /
+ * `VoiceCheckResult` shapes every caller here already expects
+ * (lib/crm/templateValidation.ts, lib/crm/compose-audience.ts).
+ * templateVoiceCheck.test.ts asserts this module's exported banned lists stay
+ * a superset of the canonical vocabulary, so the two can never silently
+ * drift.
+ *
+ * PUNCTUATION_CHARS + BANNED_WORD_STRINGS are imported directly (not just
+ * transitively through lib/voice/check.ts) — scripts/check-voice-vocab-
+ * parity.mjs's CONSUMER_MANIFEST requires this file to import + use the
+ * canonical vocabulary source directly.
  *
  * Pure module — no I/O, no DB, fully unit-tested.
  */
 
+import { checkBrandVoice } from '@/lib/voice/check'
 import { PUNCTUATION_CHARS, BANNED_WORD_STRINGS } from '@/lib/brand-voice/generated-vocabulary'
 
 /** A single brand-voice violation found in a template field. */
@@ -82,6 +91,11 @@ function escapeRegExp(s: string): string {
  * Scan a single field for hard-fail punctuation and banned words.
  * Returns every distinct violation found (the action surfaces all of them so
  * the author fixes the whole field in one pass).
+ *
+ * The canonical core (punctuation + BANNED_WORD_STRINGS) runs through the
+ * shared checkBrandVoice() scanner (allowExclamation:true, matching
+ * TEMPLATE_BANNED_PUNCTUATION's exclusion of "!"); LOCAL_EXTRAS are then
+ * layered on with the same word-boundary matcher.
  */
 export function scanTemplateField(
   field: 'subject' | 'body',
@@ -89,24 +103,17 @@ export function scanTemplateField(
 ): VoiceViolation[] {
   const value = (text ?? '').toString()
   if (!value) return []
-  const violations: VoiceViolation[] = []
-  const seen = new Set<string>()
 
-  for (const ch of TEMPLATE_BANNED_PUNCTUATION) {
-    if (value.includes(ch) && !seen.has(`p:${ch}`)) {
-      seen.add(`p:${ch}`)
-      violations.push({ field, term: ch, kind: 'punctuation' })
-    }
-  }
+  const shared = checkBrandVoice(value, { allowExclamation: true })
+  const violations: VoiceViolation[] = shared.violations.map((v) => ({ field, term: v.term, kind: v.kind }))
 
+  const seenWords = new Set(violations.filter((v) => v.kind === 'word').map((v) => v.term))
   const lower = value.toLowerCase()
-  for (const word of TEMPLATE_BANNED_WORDS) {
-    if (seen.has(`w:${word}`)) continue
-    // Word-boundary match. \b works for alphanumeric edges; for multi-word and
-    // apostrophe/hyphen phrases we anchor on non-letter boundaries.
+  for (const word of LOCAL_EXTRAS) {
+    if (seenWords.has(word)) continue
     const pattern = new RegExp(`(^|[^a-z0-9])${escapeRegExp(word)}([^a-z0-9]|$)`, 'i')
     if (pattern.test(lower)) {
-      seen.add(`w:${word}`)
+      seenWords.add(word)
       violations.push({ field, term: word, kind: 'word' })
     }
   }

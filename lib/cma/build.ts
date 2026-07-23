@@ -44,6 +44,7 @@ import {
 import { resolveDevelopmentOpportunities } from '@/lib/cma/development'
 import { buildCmaMapDataUri } from '@/lib/cma/map'
 import { renderCmaHtml } from '@/lib/cma/render'
+import { checkBrandVoice } from '@/lib/voice/check'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult } from '@/lib/cma/types'
 
 export const CMA_BUILDER_VERSION = 'deterministic-v1 (2026-07-07)'
@@ -265,7 +266,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             `Adversarial audit repair: ${flagged.length} comp(s) flagged by the independent audit were removed and the analysis re-priced on the ${remaining.length}-comp set, then re-audited.`,
           )
           pricing.notes.push(
-            `The comparability narrative reflects the initial review; ${flagged.length} comp(s) it references were subsequently removed on the independent audit's findings and the pricing recomputed on the remaining set.`,
+            `The comparability narrative reflects the initial review. The ${flagged.length} comp(s) it references were subsequently removed on the independent audit's findings, and the pricing recomputed on the remaining set.`,
           )
           audit = await auditCma({ subject, comps: adjusted, excluded: excludedForAudit(), pricing, judgment, market, site })
         }
@@ -347,6 +348,40 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
 
     // 5. Map (best effort — the report ships without it if the key is absent).
     const map = await buildCmaMapDataUri(subject, adjusted)
+
+    // 5.5. Brand-voice hard-fail gate (W11.2 / CLAUDE.md §"Brand Voice") over
+    // every composed PROSE string in the report: the pricing rationale/
+    // narrative notes, the development-opportunities section, and (for the
+    // expired-audit variant) the failure findings, services list, and net-
+    // sheet lines. Every other field in the report is a verified number or a
+    // structured fact, not authored prose, so it is out of scope here.
+    const proseParts: string[] = [
+      ...pricing.notes,
+      pricing.confidenceReason,
+      ...(development
+        ? [development.disclaimer, ...development.items.flatMap((i) => [i.headline, i.detail])]
+        : []),
+      ...(expiredAudit
+        ? [
+            expiredAudit.feeLine,
+            ...expiredAudit.services,
+            ...expiredAudit.findings.flatMap((f) => [f.fact, f.meaning]),
+            ...expiredAudit.netSheet.lines.flatMap((l) => [l.label, l.note ?? '']),
+          ]
+        : []),
+    ].filter(Boolean)
+    // Gate the prose WE author. The LLM comparability narrative (judgment.narrative)
+    // is interpolated into pricing.notes but is excluded from the hard gate — it is
+    // punctuation-sanitized at its source (judge.ts) but not word-sanitized, so
+    // throwing on an LLM word choice would false-positive-break a legitimate build.
+    // (Follow-up: word-sanitize the narrative in judge.ts so it can be gated too.)
+    const authoredProse = judgment?.narrative
+      ? proseParts.join('\n').split(judgment.narrative).join(' ')
+      : proseParts.join('\n')
+    const voice = checkBrandVoice(authoredProse)
+    if (!voice.ok) {
+      throw new Error('CMA prose fails brand voice: ' + voice.violations.map((v) => v.term).join(', '))
+    }
 
     // 6. Render.
     const { html, pageCount } = renderCmaHtml({

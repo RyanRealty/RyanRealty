@@ -29,6 +29,7 @@ import {
 import { getThreadsAccessToken, publishThreadsVideo } from '@/lib/threads'
 import { publishNextdoorPost } from '@/lib/nextdoor'
 import { assertNoDashes, DashViolationError } from '@/lib/punctuation-guard'
+import { checkBrandVoice } from '@/lib/voice/check'
 
 /** Fan-out can exceed 60s when Meta poll finishes slowly or FB reel upload is large. */
 export const maxDuration = 300
@@ -195,6 +196,15 @@ function resolveCaption(body: PublishRequest, platform: Platform): string {
   // Per voice_guidelines.md section 6.1 and CLAUDE.md. Locked 2026-05-15;
   // code-level enforcement re-applied 2026-05-18 (parallel-session regression).
   assertNoDashes(finalCaption, { source: `publish:${platform}:caption` })
+
+  // Brand-voice hard-fail gate (W11.2 / CLAUDE.md §"Brand Voice"). Exclamation
+  // marks are allowed at this boundary (one per piece is fine in a social
+  // caption per voice_guidelines); em-dash/en-dash/semicolon + the banned
+  // word/phrase list are still hard fails.
+  const voice = checkBrandVoice(finalCaption, { allowExclamation: true })
+  if (!voice.ok) {
+    throw new Error('caption fails brand voice: ' + voice.violations.map((v) => v.term).join(', '))
+  }
 
   return finalCaption
 }
@@ -674,7 +684,17 @@ export async function POST(request: NextRequest) {
     const publishTasks: Promise<[Platform, PlatformResult]>[] = platforms.map(
       async (platform) => {
         let result: PlatformResult
-        const caption = resolveCaption(body, platform)
+        // A caption format/voice violation (resolveCaption throws) fails THIS
+        // platform gracefully rather than rejecting the whole Promise.all batch.
+        let caption: string
+        try {
+          caption = resolveCaption(body, platform)
+        } catch (err) {
+          return [
+            platform,
+            { success: false, status: 'failed', error: err instanceof Error ? err.message : 'caption rejected' },
+          ] as [Platform, PlatformResult]
+        }
 
         switch (platform) {
           case 'instagram':

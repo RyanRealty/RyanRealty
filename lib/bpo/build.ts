@@ -38,6 +38,7 @@ import { deriveOpinion } from '@/lib/bpo/opinion'
 import { deriveOfferStrategy } from '@/lib/bpo/offer'
 import { buildBpoRationale } from '@/lib/bpo/narrative'
 import { renderBpoHtml } from '@/lib/bpo/render'
+import { checkBrandVoice } from '@/lib/voice/check'
 import type { CmaBroker } from '@/lib/cma/types'
 import type { BpoBuildInput, BpoBuildResult } from '@/lib/bpo/types'
 
@@ -285,6 +286,19 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
         ? ' An independent adversarial review attacked this analysis and found no material defect.'
         : ` An independent adversarial review recorded ${audit.findings.length} finding(s) for broker review before release.`
       : ' Independent adversarial review was unavailable for this build. Broker review is required before release.'
+
+    // Brand-voice hard-fail gate (W11.2 / CLAUDE.md §"Brand Voice") over the
+    // rationale prose WE author. The LLM comparability narrative
+    // (judgment.narrative) is excluded — it is punctuation-sanitized at its source
+    // (judge.ts) but not word-sanitized, so throwing on an LLM word choice would
+    // false-positive-break a legitimate build. (Follow-up: word-sanitize it in
+    // judge.ts so it can be gated too.)
+    const authoredRationale = judgment?.narrative ? rationale.split(judgment.narrative).join(' ') : rationale
+    const voice = checkBrandVoice(authoredRationale)
+    if (!voice.ok) {
+      throw new Error('BPO prose fails brand voice: ' + voice.violations.map((v) => v.term).join(', '))
+    }
+
     // Development potential — pure function over the verified zone + acreage.
     // A buyer cares about the upside (ADU, second unit, division) as much as a
     // seller does; the same verified registry serves both.

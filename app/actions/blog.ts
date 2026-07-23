@@ -3,6 +3,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
 import { checkAdminAction } from '@/lib/admin/require-admin'
+import { checkBrandVoice } from '@/lib/voice/check'
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -233,6 +234,20 @@ export async function saveBlogPost(input: {
   // the action id could publish arbitrary HTML/JS on the public blog.
   const gate = await checkAdminAction('content.blog')
   if (!gate.ok) return { ok: false, error: gate.error }
+
+  // Brand-voice hard-fail gate (W11.2 / CLAUDE.md §"Brand Voice"): a published
+  // blog post is public copy the CI voice gate never sees (scripts/check-
+  // brand-voice.mjs scopes to app/ and this is a server action, not a page).
+  // Drafts stay work-in-progress and are not gated — only a status:'published'
+  // save is a real send.
+  if (input.status === 'published') {
+    const voice = checkBrandVoice(
+      { subject: [input.title, input.excerpt, input.seoTitle, input.seoDescription].filter(Boolean).join(' '), bodyHtml: input.content },
+      { stripHtml: true },
+    )
+    if (!voice.ok) return { ok: false, error: 'Brand voice: ' + voice.violations.map((v) => v.term).join(', ') }
+  }
+
   const supabase = getServiceSupabase()
   if (!supabase) return { ok: false, error: 'Database not configured' }
 

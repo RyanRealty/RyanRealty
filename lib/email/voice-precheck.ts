@@ -7,77 +7,67 @@
  * so this is a focused runtime hard-fail check run right before send.
  *
  * It mirrors the HARD fails in CLAUDE.md §"Brand Voice" (banned punctuation +
- * the cliché / AI-filler word lists). The banned-word list is imported from
- * lib/brand-voice/generated-vocabulary.ts — the in-bundle mirror of the
- * canonical scripts/brand-voice-vocabulary.cjs (see scripts/gen-brand-voice-
- * consumers.mjs) — so this check can never drift from the canonical source.
+ * the cliché / AI-filler word lists). THIN ADAPTER (W11.2): the actual scan
+ * (word-boundary matching, HTML handling, the canonical banned core) lives in
+ * the ONE shared lib/voice/check.ts checkBrandVoice() — this module just maps
+ * its structured VoiceViolation[] back onto the historical
+ * `{ ok, violations: string[] }` shape every caller here already expects
+ * (app/actions/newsletter.ts, app/actions/contact-newsletter.ts,
+ * app/admin/(protected)/newsletters/actions.ts), so none of them change.
+ *
+ * PUNCTUATION_CHARS is imported directly (not just transitively through
+ * lib/voice/check.ts) to build the human-readable violation labels below —
+ * scripts/check-voice-vocab-parity.mjs's CONSUMER_MANIFEST requires this file
+ * to import + use the canonical vocabulary source directly, so this can never
+ * drift from lib/brand-voice/generated-vocabulary.ts (the in-bundle mirror of
+ * the canonical scripts/brand-voice-vocabulary.cjs).
  */
 
-import { PUNCTUATION_CHARS, BANNED_WORD_STRINGS } from '@/lib/brand-voice/generated-vocabulary'
+import { checkBrandVoice, type VoiceViolation as SharedVoiceViolation } from '@/lib/voice/check'
+import { PUNCTUATION_CHARS } from '@/lib/brand-voice/generated-vocabulary'
 
-// Em-dash (U+2014) and en-dash (U+2013) are banned punctuation in body copy.
-// The exclamation mark is intentionally excluded here: one exclamation per
-// piece is allowed per voice_guidelines, so a blanket hard-fail would over-block.
-const PUNCT_LABELS: Record<string, string> = {
+// Human-readable labels for the hard-fail punctuation chars. Built by
+// iterating the canonical PUNCTUATION_CHARS (rather than hand-listing them)
+// so a future addition to the canonical set gets a sane fallback label ("the
+// char itself") automatically, with no code change required here.
+const PUNCT_LABEL_OVERRIDES: Record<string, string> = {
   '—': 'em dash (—)',
   '–': 'en dash (–)',
   ';': 'semicolon (;)',
 }
-const BANNED_PUNCT: Array<{ label: string; test: (s: string) => boolean }> = PUNCTUATION_CHARS.filter(
-  (ch) => ch !== '!',
-).map((ch) => ({ label: PUNCT_LABELS[ch] ?? ch, test: (s: string) => s.includes(ch) }))
-
-// Real-estate clichés + AI filler + marketing slop + hype that hard-fail a
-// published surface. Canonical source: scripts/brand-voice-vocabulary.cjs.
-const BANNED_WORDS: readonly string[] = BANNED_WORD_STRINGS
+const PUNCT_LABELS: Record<string, string> = Object.fromEntries(
+  PUNCTUATION_CHARS.map((ch) => [ch, PUNCT_LABEL_OVERRIDES[ch] ?? ch]),
+)
 
 export interface VoicePrecheckResult {
   ok: boolean
   violations: string[]
 }
 
-/** Strip HTML tags + decode the few entities the shell emits, to text. */
-function htmlToText(html: string): string {
-  return html
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&middot;/g, '·')
-    .replace(/&amp;/g, '&')
-    .replace(/&nbsp;/g, ' ')
-    // Remaining entities (&bull; &rarr; &#8226; ...) become a space BEFORE the
-    // punctuation scan — otherwise the entity's own semicolon false-fails the
-    // banned-punctuation check on every producer-authored body.
-    .replace(/&#?[a-zA-Z0-9]{2,10};/g, ' ')
-    .replace(/\s+/g, ' ')
-}
-
 /**
  * Check newsletter content (HTML body + optional plain text + subject) for hard
  * brand-voice fails. Returns every violation so the admin can fix before send.
+ *
+ * The exclamation mark is intentionally allowed here (allowExclamation: true):
+ * one exclamation per piece is allowed per voice_guidelines, so a blanket
+ * hard-fail would over-block. bodyHtml is tag-stripped + entity-decoded;
+ * subject/bodyText get the lighter entity clean-up only (matches the prior
+ * behavior, which never ran subject/bodyText through htmlToText).
  */
 export function checkNewsletterVoice(input: {
   subject?: string | null
   bodyHtml?: string | null
   bodyText?: string | null
 }): VoicePrecheckResult {
-  // body_text can carry residual HTML entities when it was auto-generated from
-  // the HTML body — treat entity tokens as the characters they encode, not as
-  // literal ampersand-semicolon punctuation.
-  const bodyTextClean = (input.bodyText ?? '').replace(/&#?[a-zA-Z0-9]{2,10};/g, ' ')
-  const text = [
-    input.subject ?? '',
-    input.bodyHtml ? htmlToText(input.bodyHtml) : '',
-    bodyTextClean,
-  ].join(' \n ')
-  const lower = text.toLowerCase()
-  const violations: string[] = []
-
-  for (const p of BANNED_PUNCT) {
-    if (p.test(text)) violations.push(`banned punctuation: ${p.label}`)
-  }
-  for (const w of BANNED_WORDS) {
-    const re = new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
-    if (re.test(lower)) violations.push(`banned word: "${w}"`)
-  }
+  const shared = checkBrandVoice(
+    { subject: input.subject, bodyHtml: input.bodyHtml, bodyText: input.bodyText },
+    { allowExclamation: true },
+  )
+  const describe = (v: SharedVoiceViolation): string =>
+    v.kind === 'punctuation' ? `banned punctuation: ${PUNCT_LABELS[v.term] ?? v.term}` : `banned word: "${v.term}"`
+  // Dedupe across fields — the prior implementation scanned one combined
+  // string, so the same offending term never appeared twice in the list even
+  // if it occurred in both the subject and the body.
+  const violations = [...new Set(shared.violations.map(describe))]
   return { ok: violations.length === 0, violations }
 }
