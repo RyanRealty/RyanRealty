@@ -704,17 +704,21 @@
       "workstream": "W10",
       "mission": "M3",
       "title": "Purge catalog drift: request catalog and dispatch registry offering producers deleted in June",
-      "status": "not_started",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-producer-registry-resolves.mjs"
+        ],
         "crons": [],
         "tests": [],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "lib/marketing-brain/inbox-producer-registry.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "Everything: prune the ~20 dead entries from inbox-producer-registry.ts and the matching items from app/marketing/request/deliverables.ts (and inbox-parser.ts action types), or point them at surviving producers; no gate exists asserting registry paths resolve to real SKILL.md dirs."
+      "proofPath": "lib/marketing-brain/inbox-producer-registry.ts (reconciled to 57 resolving entries) + scripts/check-producer-registry-resolves.mjs (ci:producer-registry-resolves, in ci:gates) — AST gate that fails on any shim path lacking an in-repo SKILL.md. Decision: 04-DECISIONS-RECORDED.md §16.",
+      "verifiedBy": "Independent adversarial verifier agent (assume-broken brief, different agent than the builder): confirmed no live producer was wrongly removed (every removed path lacks an in-repo SKILL.md), every kept entry resolves, a shim miss routes to comms:matt_alert (not a throw/drop), the gate bites + no false positive, tsc 0 errors, and parser/deliverables were intentionally unchanged. 2026-07-23.",
+      "remaining": "DONE. The in-process producer shim no longer routes any action_type to a producer with no in-repo SKILL.md — the ~29 decommissioned-video / ops-fub-crm / coming-soon entries were removed, so those requests fall through to comms:matt_alert (local fulfillment) instead of dying in producer-runtime with \"SKILL.md not found\". ci:producer-registry-resolves (AST-based) keeps the shim honest. inbox-parser VALID_ACTION_TYPES + the broker deliverables catalog were deliberately kept (they feed the matt_alert funnel with context and preserve the broker video-request path) — see §16."
     },
     {
       "id": "W10.6",

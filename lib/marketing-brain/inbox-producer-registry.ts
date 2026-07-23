@@ -7,36 +7,31 @@
  * exists so the inbox dispatcher can resolve a producer path in-process
  * without parsing the markdown.
  *
- * Sync 2026-05-14. When a producer is added to REGISTRY.md, add a row
- * here too. Drift detection: if the parser emits an action_type that
- * is not a key in this map, the dispatcher routes the inbox event to
- * comms:matt_alert with a "no producer registered" reason.
+ * INVARIANT (enforced by scripts/check-producer-registry-resolves.mjs,
+ * ci:producer-registry-resolves): every path here must resolve to a real
+ * `<path>/SKILL.md` in the DEPLOYED repo — i.e. a producer the cloud
+ * producer-runtime can actually load. A producer whose SKILL.md is NOT in the
+ * repo (the decommissioned video producers, whose `video_production_skills/`
+ * tree lives only on the local render worker — see REGISTRY.md "VIDEO PRODUCERS
+ * DECOMMISSIONED 2026-06-14") must NOT appear here: with no entry, the dispatcher
+ * falls through to comms:matt_alert (resolveProducer → null in inbox-dispatcher),
+ * which is exactly the intended funnel — the broker's video request reaches Matt,
+ * who fulfills it on the local worker. Mapping it to a non-existent path instead
+ * makes producer-runtime die with "SKILL.md not found" and the request is lost.
+ *
+ * Drift detection: if the parser emits an action_type that is not a key in this
+ * map, the dispatcher routes the inbox event to comms:matt_alert with a "no
+ * producer registered" reason. So the video content:* action_types (still valid
+ * in inbox-parser's VALID_ACTION_TYPES, so Matt's alert names the deliverable)
+ * correctly land at matt_alert for local fulfillment.
  */
 
 const PRODUCER_REGISTRY: Record<string, string> = {
-  // Section A — orchestrators
+  // Section A — orchestrators (cloud-runnable only)
   'content:list_kit': 'social_media_skills/list-kit',
-  'content:monthly_market_report': 'video_production_skills/monthly-market-report-orchestrator',
-  'content:listing_launch': 'video_production_skills/listing_launch',
 
-  // Section B — content producers
-  'content:listing_video': 'video_production_skills/listing-tour-video',
-  'content:listing_reel': 'video_production_skills/listing_reveal',
-  'content:market_video': 'video_production_skills/market-data-video',
-  'content:market_data_short': 'video_production_skills/market-data-video',
-  'content:market_youtube_longform': 'video_production_skills/youtube-long-form-market-report',
-  'content:news_clip': 'video_production_skills/news-video',
-  'content:news_video': 'video_production_skills/news-video',
-  'content:neighborhood_tour': 'video_production_skills/neighborhood_tour',
-  'content:area_guide_long': 'video_production_skills/neighborhood_tour',
-  'content:area_guide_short': 'video_production_skills/area_guides',
-  'content:neighborhood_reel': 'video_production_skills/area_guides',
-  'content:market_data_viz': 'video_production_skills/data_viz_video',
-  'content:stats_clip': 'video_production_skills/data_viz_video',
-  'content:avatar_market_update': 'video_production_skills/avatar_market_update',
-  'content:meme_video': 'video_production_skills/meme_content',
-  'content:earth_zoom': 'video_production_skills/earth_zoom',
-  'content:aerial_flyover': 'video_production_skills/google_maps_flyover',
+  // Section B — content producers (flat-design / text; video producers
+  // decommissioned 2026-06-14 → routed to matt_alert by omission)
   'content:blog_post': 'social_media_skills/blog-post',
   'content:seo_blog': 'social_media_skills/blog-post',
   'content:fb_lead_gen_ad': 'social_media_skills/facebook-lead-gen-ad',
@@ -47,13 +42,7 @@ const PRODUCER_REGISTRY: Record<string, string> = {
   'content:feature_sheet': 'social_media_skills/flyer-design',
   'content:ig_carousel': 'social_media_skills/instagram-carousel',
   'content:image_meme': 'social_media_skills/meme_lord',
-  'content:market_stat_card_video': 'video_production_skills/market_report_video',
-  'content:avatar_video': 'video_production_skills/news_video',
-  'content:social_calendar': 'video_production_skills/social_calendar',
   'content:ig_single_post': 'social_media_skills/ig-single-post',
-  'content:coming_soon_teaser': 'social_media_skills/coming-soon-teaser',
-  'content:tiktok_listing_tour': 'video_production_skills/tiktok-listing-tour',
-  'content:yt_longform_walkthrough': 'video_production_skills/youtube-long-form-walkthrough',
   'content:open_house_stories': 'social_media_skills/open-house-stories',
   'content:under_contract_announcement': 'social_media_skills/under-contract-announcement',
   'content:sold_deal_summary': 'social_media_skills/sold-deal-summary',
@@ -82,10 +71,6 @@ const PRODUCER_REGISTRY: Record<string, string> = {
   'ops:meta_resume': 'marketing_brain_skills/producers/ops-meta-ads',
   'ops:meta_audience': 'marketing_brain_skills/producers/ops-meta-ads',
   'ops:meta_creative_swap': 'marketing_brain_skills/producers/ops-meta-ads',
-  'ops:fub_tag_fix': 'marketing_brain_skills/producers/ops-fub-crm',
-  'ops:fub_sequence_change': 'marketing_brain_skills/producers/ops-fub-crm',
-  'ops:fub_task_create': 'marketing_brain_skills/producers/ops-fub-crm',
-  'ops:fub_routing': 'marketing_brain_skills/producers/ops-fub-crm',
   'ops:email_newsletter': 'marketing_brain_skills/producers/ops-email-send',
   'ops:email_blast': 'marketing_brain_skills/producers/ops-email-send',
   'ops:email_template_update': 'marketing_brain_skills/producers/ops-email-send',
