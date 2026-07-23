@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
+import { useRouter } from 'next/navigation'
+import { Bars3Icon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import {
   Sheet,
   SheetContent,
@@ -42,8 +43,23 @@ export default function MobileNav({
   navData: NavData
 }) {
   const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const router = useRouter()
 
   function close() { setOpen(false) }
+
+  // W4.1 — mobile header search. The inline suggest panel is a desktop nicety;
+  // on mobile the full /search page IS the engine, so the drawer's search box
+  // routes there. Keeps search reachable from the DEFAULT-chrome header on every
+  // page at sub-md widths (dashboard, account, auth, feed, legal pages).
+  function submitSearch(e: React.FormEvent) {
+    e.preventDefault()
+    const q = query.trim()
+    trackEvent('nav_interact', { action: 'search_submit', panel: 'search', label: q ? 'query' : 'empty', source: 'mobile' })
+    close()
+    router.push(q ? `/search?q=${encodeURIComponent(q)}` : '/search')
+    setQuery('')
+  }
 
   function handleLinkClick(panel: string, label: string) {
     trackEvent('nav_interact', { action: 'link_click', panel, label, source: 'mobile' })
@@ -84,6 +100,26 @@ export default function MobileNav({
             <XMarkIcon className="h-5 w-5" aria-hidden />
           </button>
         </SheetHeader>
+
+        {/* W4.1 mobile header search — routes to the full /search page. */}
+        <form onSubmit={submitSearch} role="search" className="border-b border-border px-4 py-3">
+          <label htmlFor="mobile-nav-search" className="sr-only">
+            Search homes, neighborhoods, and guides
+          </label>
+          <div className="relative">
+            <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+            <input
+              id="mobile-nav-search"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search homes, areas, guides"
+              autoComplete="off"
+              enterKeyHint="search"
+              className="h-11 w-full rounded-[10px] border border-border bg-muted/40 pl-9 pr-3 text-base text-foreground placeholder:text-muted-foreground focus-visible:border-primary/40 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/25"
+            />
+          </div>
+        </form>
 
         {/* Scrollable nav body */}
         <nav

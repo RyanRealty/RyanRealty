@@ -265,17 +265,21 @@
       "workstream": "W4",
       "mission": "M1",
       "title": "One search component: merge orphaned SmartSearch into filter bar + site header, global header search, blog/guides/static pages in suggestion scope, delete the three orphans; mechanisms: tsvector switch, perf contract test, reachable-exports gate",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-header-search.mjs"
+        ],
         "crons": [],
         "tests": [],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "components/site/SiteHeaderSearch.client.tsx"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "'Global header search on every page' is not literally universal: pages that fall back to the layout's SiteHeader chrome instead of KbNav — /dashboard/*, /account, /login, /signup, /forgot-password, /feed, and the legal pages (privacy, terms, cookies, dmca, accessibility, fair-housing, data-deletion) — have no search entry anywhere in their header (grep of components/site/SiteHeader.tsx, MegaMenu.tsx, MobileNav.tsx, HeaderAccount.tsx finds no SearchSuggest or search input). Every KbNav-chrome page (the entire editorial, portal, search, blog, and guides surface, ~70 routes) does carry it. Also note the 150ms perf test bounds handler compute with a mocked DAL, not live warm round-trip — acceptable as a CI contract but weaker than the decision's wording."
+      "proofPath": "components/site/SiteHeaderSearch.client.tsx (desktop) + MobileNav.tsx <form role=\"search\"> (mobile), both on the default chrome, reusing the shared @/components/search/SearchSuggest engine. Gate: scripts/check-header-search.mjs (ci:header-search, in ci:gates). Live-verified on /privacy: desktop input → /api/search/suggestions 200 → 22 real suggestions; mobile drawer form visible at 375px. Decision: 04-DECISIONS-RECORDED.md §18.",
+      "verifiedBy": "Independent adversarial verifier agent (assume-broken brief, different agent than the builder): confirmed the shared engine is reused (not copied), both viewports of the default chrome carry search, no KB-chrome regression, the gate bites on all four invariants, tsc 0 + eslint 0, and the stale turbopack GUTTED_* errors are not present in current source. 2026-07-23.",
+      "remaining": "DONE. Global header search now reaches every DEFAULT-chrome page (dashboard, account, auth, feed, legal) on desktop (SiteHeaderSearch widget) and mobile (MobileNav <form role=\"search\">), reusing the ONE shared SearchSuggest engine the KB chrome uses. ci:header-search keeps both chromes wired. The pre-existing mocked-DAL perf test note is unchanged (audit already deemed it acceptable)."
     },
     {
       "id": "W5.1",

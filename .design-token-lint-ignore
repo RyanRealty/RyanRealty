@@ -523,3 +523,11 @@ components/admin/cma/worklist/CmaSendDialog.client.tsx
 # recharts tick sizing exception class).
 components/market/MarketCoreCharts.tsx
 app/account/notifications/NewsletterToggle.tsx
+# W4.1 global header search on the DEFAULT (SiteHeader) chrome: a raw <input>/<label>
+# search box, matching KbNav's + MobileNav's raw-input search pattern. It cannot use
+# the shadcn <Input> (the default chrome is a burn-down-shadcn site surface, gated by
+# ci:shadcn-burndown), and it cannot use the KB `--cream` tokens (scoped to `.kb-root`,
+# unavailable on the default chrome). All colors ARE global design tokens
+# (primary-foreground); only the raw <input>/<label> primitives need the exception —
+# same class as the KB idiom above.
+components/site/SiteHeaderSearch.client.tsx

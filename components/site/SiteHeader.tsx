@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { CTAButton, RyanRealtyMark } from '@/components/site/primitives'
 import HeaderAccount from '@/components/site/HeaderAccount'
+import SiteHeaderSearch from '@/components/site/SiteHeaderSearch.client'
 import MobileNav from '@/components/site/MobileNav'
 import MegaMenu from '@/components/site/nav/MegaMenu'
 import { MENU } from '@/lib/site-menu'
@@ -94,6 +95,11 @@ export default async function SiteHeader() {
         <MegaMenu menu={MENU} navData={navData} />
 
         <div className="flex items-center gap-2.5">
+          {/* W4.1 global search — the SAME suggestions engine the KB-nav chrome
+              carries, so pages on the default (SiteHeader) chrome — /dashboard,
+              /account, auth, /feed, the legal pages — reach search too, not just
+              the KB-chrome routes. */}
+          <SiteHeaderSearch />
           {/* Account control: signed-out → "Sign in"; signed-in → account menu with
               paths to saved searches/homes + sign-out (RC7 fix — the header used to
               always say "Sign in", stranding signed-in users). Client island so the
