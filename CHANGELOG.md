@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.851.0 (2026-07-23)
+
+### Features
+- feat(marketing): /marketing/request becomes an authenticated 2nd intake (W10.1)
+
+### Bug Fixes
+- fix(security): /marketing/request form must enforce the sender allowlist (W10.1)
+- fix(cron): promote West Side Meta audience refresh to daily (W1.1)
+
+### Maintenance
+- chore(program): record W13.1 scoping correction (FUB docs are referenced)
+- chore(program): W10.1 -> done (authenticated 2nd intake, allowlist-gated)
+- chore(program): W1.1 -> done (West Side audience daily + flag verified)
+
+---
+
+
 ## v1.850.0 (2026-07-23)
 
 ### Features
