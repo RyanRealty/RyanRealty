@@ -298,7 +298,7 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "Wire a producer of the ?reply=/replyChannel deep link (alert email + broker-cell forward + triage/inbox items) so the recommended reply actually preloads the composer, and run reply-intent classification on inbound email (crm-gmail-sync path) with the same suggested-reply surfacing."
+      "remaining": "The ?reply= producer gap is now CLOSED (shared with W6.4: buildSuggestedReplyLink wired into the inbound-SMS alert email, composer preloads). W5.3 REMAINING: classify inbound EMAIL replies too \u2014 classifyInboundReply is only wired into the Twilio inbound-SMS webhook; the crm-gmail-sync path has no reply-intent hookup, so email replies get no suggested reply / no ?reply= link."
     },
     {
       "id": "W5.5",
@@ -344,16 +344,21 @@
       "workstream": "W6",
       "mission": "M1",
       "title": "Reply intelligence: classify inbound replies; interested \u21d2 task + preloaded recommended reply",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
         "gates": [],
         "crons": [],
-        "tests": [],
+        "tests": [
+          "components/admin/crm/composer-preload.contract.test.ts"
+        ],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "app/api/twilio/inbound-sms/route.ts",
+          "components/admin/crm/composer-preload.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
+      "proofPath": "buildSuggestedReplyLink (composer-preload.ts) emits ?reply=&replyChannel=&replySubject= before the #comms fragment; wired into the inbound-SMS alert email link (route.ts, both branches) with the \u00a70-sanitized recommendedReply; SmsComposer/EmailComposer consume via consumeSuggestedReply->parseSuggestedReply (preload FILLS only, send stays G50-gated). Round-trip contract test pins producer<->consumer; bites on any param drift (3/4 fail). No-reply link byte-identical to the old #comms link. tsc clean.",
+      "verifiedBy": "independent adversarial agent a1ae205af5ec20140 (1 round) \u2014 round-trip non-vacuous + bites, wired end-to-end producer->consumer, \u00a70 sanitize confirmed (no unsanitized reply can reach the URL), no auto-send, no regression. VERDICT: SOLID.",
       "remaining": "Emit the suggested-reply deep link: when a classification carries a recommendedReply, append ?reply=<encoded>&replyChannel=sms to the alert-email link, the broker-cell forward link, and/or the triage-queue deepLink so the existing composer preload fires. Optionally classify email-channel replies now that the email intro channel exists (decision scoped texted prospects, so this is an extension, not the gap)."
     },
     {

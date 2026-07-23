@@ -20,6 +20,7 @@ import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import { hasSellerIntent } from '@/lib/crm/seller-intent'
 import { CRM_MAILBOXES, sendCrmEmail } from '@/lib/crm/gmail'
 import { classifyInboundReply, REPLY_INTENT_LABELS, type ReplyClassification } from '@/lib/crm/reply-intent'
+import { buildSuggestedReplyLink } from '@/components/admin/crm/composer-preload'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
@@ -321,9 +322,17 @@ export async function POST(request: Request) {
       // With a classification, the alert leads with "They said / Suggested
       // reply" so the broker can one-tap copy the draft. Without one, the body
       // is byte-identical to the pre-classifier alert.
+      // Conversation link preloads the composer with the §0-sanitized suggested
+      // reply (?reply=…) when the classifier produced one, so the broker taps the
+      // email link and the SMS composer opens already filled (never sends — G50
+      // suppression still gates the send). No reply -> plain #comms link.
+      const convoLink = buildSuggestedReplyLink(
+        `https://ryan-realty.com/admin/crm/${match.personId}`,
+        replyIntel?.recommendedReply ? { channel: 'sms', body: replyIntel.recommendedReply } : null,
+      )
       const alertBodyText = replyIntel && intentLabel
-        ? `They said: ${body}\n\nIntent: ${intentLabel} (${Math.round(replyIntel.confidence * 100)}% confident)${replyIntel.recommendedReply ? `\nSuggested reply: ${replyIntel.recommendedReply}` : ''}\n\nFrom ${from} to ${to}\nOpen the conversation: https://ryan-realty.com/admin/crm/${match.personId}#comms`
-        : `${body}\n\nFrom ${from} to ${to}\nOpen the conversation: https://ryan-realty.com/admin/crm/${match.personId}#comms`
+        ? `They said: ${body}\n\nIntent: ${intentLabel} (${Math.round(replyIntel.confidence * 100)}% confident)${replyIntel.recommendedReply ? `\nSuggested reply: ${replyIntel.recommendedReply}` : ''}\n\nFrom ${from} to ${to}\nOpen the conversation: ${convoLink}`
+        : `${body}\n\nFrom ${from} to ${to}\nOpen the conversation: ${convoLink}`
       await sendCrmEmail({
         fromMailbox: mailbox.email,
         to: mailbox.email,

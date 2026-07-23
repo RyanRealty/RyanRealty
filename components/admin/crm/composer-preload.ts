@@ -54,6 +54,29 @@ export function parseSuggestedReply(search: string): SuggestedReply | null {
   return { channel, body: body.slice(0, BODY_MAX), subject }
 }
 
+/**
+ * Build a deep link that preloads a suggested reply into the composer — the
+ * PRODUCER side of the parseSuggestedReply contract (round-tripped in the tests).
+ * `path` is the contact URL WITHOUT a hash (absolute for email/SMS alerts, e.g.
+ * https://ryan-realty.com/admin/crm/123). Query goes BEFORE the #comms fragment so
+ * the composer-preload reads it even on clients that keep the hash. With no reply,
+ * returns `${path}#comms` unchanged (byte-identical to the pre-wiring link). Pure.
+ */
+export function buildSuggestedReplyLink(
+  path: string,
+  reply: { channel: 'email' | 'sms'; body: string; subject?: string | null } | null,
+): string {
+  const body = (reply?.body ?? '').trim()
+  if (!reply || !body) return `${path}#comms`
+  const params = new URLSearchParams()
+  params.set('reply', body.slice(0, BODY_MAX))
+  // SMS is the parser's default channel — only email needs the marker.
+  if (reply.channel === 'email') params.set('replyChannel', 'email')
+  const subject = (reply.subject ?? '').trim()
+  if (subject) params.set('replySubject', subject.slice(0, SUBJECT_MAX))
+  return `${path}?${params.toString()}#comms`
+}
+
 /** Remove the reply params from a search string (other params survive). Pure. */
 export function stripSuggestedReplyParams(search: string): string {
   const params = new URLSearchParams(search)
