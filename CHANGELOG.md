@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.835.1 (2026-07-23)
+
+### Maintenance
+- docs(program): record W12.4 out-of-area inventory audit (Burns/Harney) result
+
+---
+
+
 ## v1.835.0 (2026-07-23)
 
 ### Features
