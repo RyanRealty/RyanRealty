@@ -4,6 +4,8 @@ import { SEARCH_PRESETS, getPresetBySlug, type SearchPreset } from '@/lib/search
 import {
   SEARCH_MATRIX_MIN_ACTIVE,
   buildSearchMatrix,
+  cityLowerToSlug,
+  cityPresetPath,
   citySlugToLowerName,
   matrixEmittablePresets,
   matrixPath,
@@ -365,5 +367,51 @@ describe('matrixPath', () => {
     expect(matrixPath('bend', 'awbrey-butte', 'under-1m')).toBe(
       '/homes-for-sale/bend/awbrey-butte/under-1m',
     )
+  })
+})
+
+// ─────────────────── W3.1: city×preset (2-segment) counts ───────────────────
+
+describe('buildSearchMatrix — city×preset counts (W3.1)', () => {
+  const NOW_W31 = new Date('2026-07-23T00:00:00Z')
+  const presets = [preset('under-1m'), preset('with-pool')]
+
+  it('counts city-wide matches per (city, preset), independent of curated geos', () => {
+    const rows = [
+      // both under $1M — one in the curated sub, one in an uncurated subdivision;
+      // BOTH count city-wide (2-segment is city-scoped, not area-scoped).
+      row({ city_lower: 'bend', subdivision_lower: 'test acres', list_price: 500_000, pool_yn: false }),
+      row({ city_lower: 'bend', subdivision_lower: 'random unlisted', list_price: 600_000, pool_yn: false }),
+      row({ city_lower: 'bend', subdivision_lower: null, list_price: 700_000, pool_yn: true }),
+    ]
+    const { countByCityPreset } = buildSearchMatrix(rows, [geo()], { presets, now: NOW_W31 })
+    expect(countByCityPreset.get(cityPresetPath('bend', 'under-1m'))).toBe(3)
+    expect(countByCityPreset.get(cityPresetPath('bend', 'with-pool'))).toBe(1)
+  })
+
+  it('records a VERIFIED zero (0) for a city in inventory with no matching rows → noindex', () => {
+    // Culver has an under-$1M home but NO pool home.
+    const rows = [row({ city_lower: 'culver', list_price: 400_000, pool_yn: false })]
+    const { countByCityPreset } = buildSearchMatrix(rows, [geo()], { presets, now: NOW_W31 })
+    expect(countByCityPreset.get(cityPresetPath('culver', 'with-pool'))).toBe(0)
+    expect(countByCityPreset.get(cityPresetPath('culver', 'under-1m'))).toBe(1)
+    // The one source of truth for BOTH the render noindex and the sitemap omit:
+    expect(shouldNoIndexMatrixCombo(countByCityPreset.get(cityPresetPath('culver', 'with-pool')) ?? null)).toBe(true)
+    expect(shouldNoIndexMatrixCombo(countByCityPreset.get(cityPresetPath('culver', 'under-1m')) ?? null)).toBe(false)
+  })
+
+  it('maps MLS city_lower to the canonical URL slug (la pine → la-pine)', () => {
+    expect(cityLowerToSlug('la pine')).toBe('la-pine')
+    const rows = [row({ city_lower: 'la pine', list_price: 400_000 })]
+    const { countByCityPreset } = buildSearchMatrix(rows, [geo()], { presets, now: NOW_W31 })
+    expect(countByCityPreset.get(cityPresetPath('la-pine', 'under-1m'))).toBe(1)
+  })
+
+  it('a non-serviceable city / non-derivable preset is ABSENT (fail OPEN — never noindex a live page)', () => {
+    const rows = [row({ city_lower: 'bend', list_price: 400_000 })]
+    const { countByCityPreset } = buildSearchMatrix(rows, [geo()], { presets, now: NOW_W31 })
+    // A city not present in the inventory read → absent → unverifiable → fail open.
+    expect(countByCityPreset.get(cityPresetPath('portland', 'under-1m'))).toBeUndefined()
+    expect(shouldNoIndexMatrixCombo(countByCityPreset.get(cityPresetPath('portland', 'under-1m')) ?? null)).toBe(false)
   })
 })

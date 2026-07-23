@@ -15,7 +15,7 @@ import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { getAllNeighborhoodsWithCity } from '@/lib/data'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { subdivisionSitemapUrls } from '@/lib/data/subdivisions/subdivision-index'
-import { getSearchMatrixSitemapEntries } from '@/lib/seo/getSearchMatrixEntries'
+import { getSearchMatrixSitemapEntries, getMatrixCityPresetNoIndex } from '@/lib/seo/getSearchMatrixEntries'
 import { getOutOfAreaCitySitemapEntries } from '@/lib/data/geo/getOutOfAreaCities'
 import { CO_EVENTS } from '@/data/co-events'
 import { CO_VENUES } from '@/data/co-venues'
@@ -311,6 +311,9 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
       // noindex, so submitting them would only trigger "submitted but noindex".
       const presetSlugs = getIndexablePresetSlugs()
       for (const preset of presetSlugs) {
+        // W3.1: skip a {city}/{preset} combo with a VERIFIED zero city-wide count
+        // (§0 — the search page noindexes it too; unknown states fail OPEN).
+        if (await getMatrixCityPresetNoIndex(key, preset)) continue
         dynamicPages.push({
           url: `${baseUrl}/homes-for-sale/${key}/${preset}`,
           lastModified: now,

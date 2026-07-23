@@ -190,17 +190,23 @@
       "workstream": "W3",
       "mission": "M1",
       "title": "Inventory threshold rule — combo joins sitemap at >=1 active listing with depth content; zero-inventory combos render but noindex; gate asserts no zero-count indexable URL",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-sitemap-inventory-gate.mjs"
+        ],
         "crons": [],
-        "tests": [],
+        "tests": [
+          "lib/seo/search-matrix.test.ts"
+        ],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "lib/seo/search-matrix.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "The pre-existing 2-segment /homes-for-sale/{city}/{preset} set (~840 URLs — the 'with-pool-in-Culver class' this decision explicitly targets) is untouched: app/sitemap.ts lines 302-314 still emit EVERY indexable preset for every Central Oregon city with no inventory count check, and 2-segment zero-inventory combos are never noindexed (matrixNoIndex applies only at slug.length >= 3). No CI gate asserts 'no zero-count indexable URL' over the emitted sitemap (check-seo-routes.mjs has no count logic; the only mechanism is the matrix-scope vitest contract). Extend the count-driven emission + zero-count noindex to the 2-segment city×preset scope and add the promised sitemap-level gate."
+      "proofPath": "lib/seo/search-matrix.ts countByCityPreset + getMatrixCityPresetNoIndex, called by app/search/[...slug]/page.tsx (2-segment noindex) + app/sitemap.ts (omit). Mechanism: lib/seo/search-matrix.test.ts (contract, bites) + scripts/check-sitemap-inventory-gate.mjs (ci:sitemap-inventory-gate, AST-asserts both surfaces call the guard, bites). §0: listing_search_mv live — condos=0 active in culver/la-pine/madras/powell-butte/terrebonne, so /homes-for-sale/culver/condos is verified-zero → noindexed + omitted. Decision: 04-DECISIONS-RECORDED.md §19.",
+      "verifiedBy": "Independent adversarial verifier agent (assume-broken brief, different agent than the builder): confirmed the city×preset count is the same tested matcher at coarser grain, verified-zero → noindex + omit while unknown fails open, both consumers call the one guard, the contract test + AST gate each bite, tsc 0, and the §0 live counts (condos=0 in the small cities). 2026-07-23.",
+      "remaining": "DONE. 2-segment /homes-for-sale/{city}/{preset} combos with a VERIFIED zero city-wide active count are now noindexed at render AND omitted from the sitemap, from ONE getSearchMatrix count (countByCityPreset), fail-open on unknown. Derivable presets are count-gated; non-derivable presets unchanged. Pinned by the search-matrix vitest contract + ci:sitemap-inventory-gate (both proven to bite)."
     },
     {
       "id": "W3.2",

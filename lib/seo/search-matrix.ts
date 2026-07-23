@@ -105,6 +105,14 @@ export type MatrixBuildResult = {
    * non-derivable preset) — callers fail OPEN.
    */
   countByPath: Map<string, number>
+  /**
+   * W3.1 — verified CITY-WIDE active count for every (service-area city ×
+   * derivable preset), zeros included, keyed by cityPresetPath. Drives the
+   * 2-segment /homes-for-sale/{city}/{preset} noindex + sitemap emission. A path
+   * absent means unverifiable (city not in inventory or non-derivable preset) —
+   * callers fail OPEN, exactly like countByPath.
+   */
+  countByCityPreset: Map<string, number>
 }
 
 // ───────────────────────── Helpers ─────────────────────────
@@ -117,6 +125,17 @@ export function citySlugToLowerName(citySlug: string): string {
 /** Canonical 3-segment matrix path. */
 export function matrixPath(citySlug: string, areaSlug: string, presetSlug: string): string {
   return `/homes-for-sale/${citySlug}/${areaSlug}/${presetSlug}`
+}
+
+/** Canonical 2-segment city×preset path — /homes-for-sale/{city}/{preset}. */
+export function cityPresetPath(citySlug: string, presetSlug: string): string {
+  return `/homes-for-sale/${citySlug}/${presetSlug}`
+}
+
+/** MLS city_lower ('la pine') -> canonical city slug ('la-pine'). Inverse of
+ *  citySlugToLowerName for the service-area cities (slug = name, spaces→hyphens). */
+export function cityLowerToSlug(cityLower: string): string {
+  return cityLower.trim().toLowerCase().replace(/\s+/g, '-')
 }
 
 const ACTIVE_SET = new Set<string>(PUBLIC_ACTIVE_STATUSES)
@@ -341,7 +360,36 @@ export function buildSearchMatrix(
     }
   }
   entries.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0))
-  return { entries, countByPath }
+
+  // W3.1 — city-wide (city × preset) counts, independent of the curated-geo
+  // buckets above. Initialize 0 for every service-area city present in the
+  // inventory × derivable preset so a VERIFIED zero (city has rows, preset
+  // derivable, no match) is distinguishable from an unverifiable ABSENT (city
+  // not in inventory / non-derivable preset → caller fails OPEN), then count
+  // every matching active row city-wide.
+  const countByCityPreset = new Map<string, number>()
+  const cityLowersSeen = new Set<string>()
+  for (const row of rows) {
+    const cl = (row.city_lower ?? '').trim().toLowerCase()
+    if (cl) cityLowersSeen.add(cl)
+  }
+  for (const cl of cityLowersSeen) {
+    const citySlug = cityLowerToSlug(cl)
+    for (const { preset } of matchers) countByCityPreset.set(cityPresetPath(citySlug, preset.slug), 0)
+  }
+  for (const row of rows) {
+    const cl = (row.city_lower ?? '').trim().toLowerCase()
+    if (!cl) continue
+    const citySlug = cityLowerToSlug(cl)
+    for (const { preset, match } of matchers) {
+      if (match(row)) {
+        const key = cityPresetPath(citySlug, preset.slug)
+        countByCityPreset.set(key, (countByCityPreset.get(key) ?? 0) + 1)
+      }
+    }
+  }
+
+  return { entries, countByPath, countByCityPreset }
 }
 
 /** Absolute sitemap URLs for the emitted set. */

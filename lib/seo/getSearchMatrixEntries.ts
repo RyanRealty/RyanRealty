@@ -43,6 +43,7 @@ import { getSubdivisionMatchNames } from '@/lib/subdivision-aliases'
 import { slugify } from '@/lib/slug'
 import {
   buildSearchMatrix,
+  cityPresetPath,
   citySlugToLowerName,
   matrixPath,
   shouldNoIndexMatrixCombo,
@@ -187,4 +188,41 @@ export async function getMatrixComboNoIndex(
   if (!matrix) return false
   const count = matrix.countByPath.get(matrixPath(city, area, preset))
   return shouldNoIndexMatrixCombo(count ?? null)
+}
+
+/**
+ * W3.1 — the 2-segment /homes-for-sale/{city}/{preset} decision, used by BOTH
+ * the render-time robots tag AND the sitemap emission (one source of truth):
+ *   true  = VERIFIED city-wide zero → noindex the page AND omit it from the
+ *           sitemap (never submit a zero-inventory indexable URL, §0).
+ *   false = >= 1 verified match, OR unverifiable (non-serviceable city /
+ *           non-derivable preset / failed read) → index + emit, failing OPEN so
+ *           a transient read blip never hides a live page.
+ */
+export async function getMatrixCityPresetNoIndex(citySlug: string, presetSlug: string): Promise<boolean> {
+  const city = (citySlug ?? '').trim().toLowerCase()
+  const preset = (presetSlug ?? '').trim().toLowerCase()
+  if (!city || !preset) return false
+  const matrix = await getSearchMatrix()
+  if (!matrix) return false
+  const count = matrix.countByCityPreset.get(cityPresetPath(city, preset))
+  return shouldNoIndexMatrixCombo(count ?? null)
+}
+
+/**
+ * The single render-time noindex decision for a preset search route, across both
+ * the 3-segment {city}/{area}/{preset} (W3.2) and 2-segment {city}/{preset}
+ * (W3.1) scopes. Returns false (index) for a non-preset route or any unknown
+ * state — fail OPEN. Kept here (not inline in the page) so the search route
+ * god-file stays lean and the branch is testable.
+ */
+export async function resolveMatrixNoIndex(
+  slug: string[],
+  presetSlug: string | null,
+  hasInvalidPresetSegment: boolean,
+): Promise<boolean> {
+  if (!presetSlug) return false
+  if (slug.length >= 3 && !hasInvalidPresetSegment) return getMatrixComboNoIndex(slug[0]!, slug[1]!, presetSlug)
+  if (slug.length === 2) return getMatrixCityPresetNoIndex(slug[0]!, presetSlug)
+  return false
 }

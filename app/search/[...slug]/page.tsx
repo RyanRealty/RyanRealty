@@ -67,7 +67,7 @@ import { getBuyingPreferences } from '../../actions/buying-preferences'
 import { getCityBoundary } from '../../actions/cities'
 import { getCommunityBySlug } from '../../actions/communities'
 import { shouldNoIndexSearchVariant } from '../../../lib/seo-routing'
-import { getMatrixComboNoIndex } from '@/lib/seo/getSearchMatrixEntries'
+import { resolveMatrixNoIndex } from '@/lib/seo/getSearchMatrixEntries'
 import { decodeMapPolygon } from '@/lib/map-polygon'
 
 async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {
@@ -197,10 +197,12 @@ export async function generateMetadata({
   // the sitemap (lib/seo/getSearchMatrixEntries.ts) only submits combos with
   // >= 1 verified match AND depth content. Unknown states (failed inventory
   // read, uncurated geo, non-derivable preset, timeout) fail OPEN.
-  const matrixNoIndex =
-    slug.length >= 3 && !!preset && !hasInvalidPresetSegment
-      ? await withTimeout(getMatrixComboNoIndex(slug[0]!, slug[1]!, preset.slug), false, 2500)
-      : false
+  // W3.2 (3-seg) + W3.1 (2-seg) verified-zero-inventory noindex; fail-OPEN.
+  const matrixNoIndex = await withTimeout(
+    resolveMatrixNoIndex(slug, preset?.slug ?? null, hasInvalidPresetSegment),
+    false,
+    2500,
+  )
   return {
     title,
     description: metaDesc,
