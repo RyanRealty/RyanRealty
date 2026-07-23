@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.840.3 (2026-07-23)
+
+### Bug Fixes
+- fix(monitoring): W1.1 — make the West Side audience heartbeat West-Side-specific
+
+---
+
+
 ## v1.840.2 (2026-07-23)
 
 ### Maintenance
