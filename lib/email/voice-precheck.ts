@@ -7,28 +7,29 @@
  * so this is a focused runtime hard-fail check run right before send.
  *
  * It mirrors the HARD fails in CLAUDE.md §"Brand Voice" (banned punctuation +
- * the cliché / AI-filler word lists). It is intentionally a subset — the
- * unambiguous fails — not the full regex pattern set; the canonical source of
- * truth remains scripts/brand-voice-vocabulary.cjs.
+ * the cliché / AI-filler word lists). The banned-word list is imported from
+ * lib/brand-voice/generated-vocabulary.ts — the in-bundle mirror of the
+ * canonical scripts/brand-voice-vocabulary.cjs (see scripts/gen-brand-voice-
+ * consumers.mjs) — so this check can never drift from the canonical source.
  */
 
-// Em-dash (U+2014) and en-dash (U+2013) are banned punctuation in body copy.
-const BANNED_PUNCT: Array<{ label: string; test: (s: string) => boolean }> = [
-  { label: 'em dash (—)', test: (s) => s.includes('—') },
-  { label: 'en dash (–)', test: (s) => s.includes('–') },
-  { label: 'semicolon (;)', test: (s) => /;/.test(s) },
-]
+import { PUNCTUATION_CHARS, BANNED_WORD_STRINGS } from '@/lib/brand-voice/generated-vocabulary'
 
-// Real-estate clichés + AI filler + hype that hard-fail a published surface.
-const BANNED_WORDS = [
-  'stunning', 'breathtaking', 'gorgeous', 'charming', 'pristine', 'nestled',
-  'boasts', 'must-see', 'must see', 'dream home', 'meticulously maintained',
-  "entertainer's dream", 'tucked away', 'hidden gem', 'luxurious',
-  'updated throughout', 'immaculate', 'captivating', 'exquisite',
-  'delve', 'tapestry', 'robust', 'seamless', 'elevate', 'unlock', 'holistic',
-  'bustling', 'eclectic', 'bespoke', 'act fast', "don't miss out",
-  "won't last", 'white glove', 'premier brokerage',
-]
+// Em-dash (U+2014) and en-dash (U+2013) are banned punctuation in body copy.
+// The exclamation mark is intentionally excluded here: one exclamation per
+// piece is allowed per voice_guidelines, so a blanket hard-fail would over-block.
+const PUNCT_LABELS: Record<string, string> = {
+  '—': 'em dash (—)',
+  '–': 'en dash (–)',
+  ';': 'semicolon (;)',
+}
+const BANNED_PUNCT: Array<{ label: string; test: (s: string) => boolean }> = PUNCTUATION_CHARS.filter(
+  (ch) => ch !== '!',
+).map((ch) => ({ label: PUNCT_LABELS[ch] ?? ch, test: (s: string) => s.includes(ch) }))
+
+// Real-estate clichés + AI filler + marketing slop + hype that hard-fail a
+// published surface. Canonical source: scripts/brand-voice-vocabulary.cjs.
+const BANNED_WORDS: readonly string[] = BANNED_WORD_STRINGS
 
 export interface VoicePrecheckResult {
   ok: boolean

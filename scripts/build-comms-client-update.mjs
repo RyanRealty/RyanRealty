@@ -16,24 +16,20 @@ import { mkdir, writeFile, stat } from 'node:fs/promises'
 import { resolve, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(__dirname, '..')
 const PRODUCER = 'comms-client-update'
+const require = createRequire(import.meta.url)
+const VOCAB = require('./brand-voice-vocabulary.cjs')
 
-const BANNED_WORDS = [
-  'stunning','breathtaking','gorgeous','charming','pristine','nestled','boasts',
-  'must-see','dream home','meticulously maintained',"entertainer's dream",
-  'tucked away','hidden gem','truly','spacious','cozy','luxurious',
-  'updated throughout','turnkey','immaculate','captivating','exquisite',
-  'delve','leverage','tapestry','navigate','robust','seamless','comprehensive',
-  'elevate','unlock','holistic','dynamic','vibrant','bustling','eclectic',
-  'curated','bespoke','foster','approximately','roughly','fairly',
-  'act fast',"don't miss out","won't last",'top producing','top 1 percent',
-  'white glove','luxury concierge','premier brokerage','boutique brokerage',
-  'your real estate journey','we are passionate about','we pride ourselves on',
-  'premier','passionate',
-]
+// Core list is the canonical BANNED_WORD_STRINGS from
+// scripts/brand-voice-vocabulary.cjs (never hand-typed here), layered with
+// "passionate" — a comms-specific extra not in the canonical phrase-only
+// "we are passionate about" entry.
+const COMMS_LOCAL_EXTRAS = ['passionate']
+const BANNED_WORDS = [...VOCAB.BANNED_WORD_STRINGS, ...COMMS_LOCAL_EXTRAS]
 
 // Strip non-visible content before brand-voice checking.
 // Removes CSS/JS blocks, HTML comments, and code scaffolding to prevent

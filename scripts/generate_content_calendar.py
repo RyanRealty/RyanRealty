@@ -42,23 +42,27 @@ BRAND_CTA = "Tour link in bio."
 
 # ---------------------------------------------------------------------------
 # Banned-word filter (from VIDEO_PRODUCTION_SKILL.md + CLAUDE.md)
+#
+# Core vocabulary + punctuation come from the canonical scripts/brand-voice-
+# vocabulary.cjs via scripts/_brand_voice_vocab_generated.py (see
+# scripts/gen-brand-voice-consumers.mjs) — never hand-typed here. The three
+# entries below are calendar-specific opening-line phrases the canonical
+# (general prose) list doesn't carry.
 # ---------------------------------------------------------------------------
 
-BANNED_WORDS = [
-    "stunning",
-    "nestled",
-    "boasts",
-    "gorgeous",
-    "breathtaking",
-    "must-see",
-    "must see",
+_SCRIPTS_DIR = str(Path(__file__).resolve().parent)
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
+
+from _brand_voice_vocab_generated import BANNED_WORD_STRINGS, PUNCTUATION_CHARS
+
+CALENDAR_LOCAL_EXTRAS = [
     "welcome to your dream home",
     "worth a serious look",
     "as a bend homeowner",
-    "dream home",
-    # em-dash in prose (not a "word" but we check for it)
-    "—",
 ]
+
+BANNED_WORDS = [*BANNED_WORD_STRINGS, *CALENDAR_LOCAL_EXTRAS, *PUNCTUATION_CHARS]
 
 
 def check_banned_words(text: str, context: str = "") -> None:

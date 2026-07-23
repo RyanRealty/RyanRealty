@@ -32,6 +32,7 @@ import {
   writeGate,
   type FormatName,
 } from './gate-schema.js'
+import { BANNED_WORD_STRINGS as CANONICAL_BANNED_WORDS } from '../lib/brand-voice/generated-vocabulary'
 
 loadEnv({ path: path.resolve(process.cwd(), '.env.local') })
 
@@ -113,69 +114,47 @@ function resolvePaths(slug: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Banned words list (ANTI_SLOP_MANIFESTO Rule 1 + CLAUDE.md banned-words)
+// Banned words list (ANTI_SLOP_MANIFESTO Rule 1/4/11 + CLAUDE.md banned-words)
+//
+// Core vocabulary comes from the canonical scripts/brand-voice-vocabulary.cjs
+// via lib/brand-voice/generated-vocabulary.ts (see scripts/gen-brand-voice-
+// consumers.mjs) — never hand-typed here. LOCAL_EXTRAS below are genuinely
+// video/anti-slop-specific terms the canonical (general prose) list doesn't
+// carry: AI-language tells beyond the canonical AI_FILLER set, video-specific
+// clichés, hook-opening patterns, and the CLAUDE.md §0 video stat-discipline
+// rule that "approximately"/"roughly"/"about" are banned ONLY as a substitute
+// for a real number in VO/captions/on-screen text (contextual check below) —
+// narrower than a blanket ban, and distinct from the canonical VAGUE_QUALIFIERS
+// list, which the 2026-06-02 realism pass emptied out for general prose. Words
+// the canonical source removed as legitimate plain English (spacious, cozy,
+// turnkey, leverage, navigate, comprehensive, foster) are NOT re-added here.
 // ---------------------------------------------------------------------------
 
-const BANNED_WORDS: readonly string[] = [
-  // ANTI_SLOP_MANIFESTO Rule 1
-  'stunning',
-  'nestled',
-  'boasts',
+const LOCAL_EXTRAS: readonly string[] = [
+  // ANTI_SLOP_MANIFESTO Rule 1 — video-specific clichés not in the canonical list
   'coveted',
-  'dream home',
-  'charming',
-  'must-see',
-  'gorgeous',
-  'pristine',
-  'meticulously maintained',
-  'entertainer\'s dream',
   'one-of-a-kind',
-  'truly',
-  'breathtaking',
-  'spacious',
-  'cozy',
-  'luxurious',
-  'updated throughout',
   'a rare opportunity',
   'this won\'t last long',
   'priced to sell',
-  'hidden gem',
-  'tucked away',
-  // ANTI_SLOP_MANIFESTO Rule 11 — AI-language tells
-  'delve',
-  'leverage',
-  'tapestry',
+  // ANTI_SLOP_MANIFESTO Rule 11 — AI-language tells not in the canonical AI_FILLER set
   'underscore',
-  'navigate',
   'embark',
   'myriad',
-  'robust',
-  'seamless',
-  'comprehensive',
   'pivotal',
   'transformative',
-  'elevate',
   'empower',
-  'unlock',
   'unleash',
   'harness',
-  'foster',
   'facilitate',
   'in the realm of',
   'at the intersection of',
   'in this rapidly evolving landscape',
-  // CLAUDE.md banned words (VO, captions, on-screen text)
-  'nestled',
-  'boasts',
-  'charming',
-  'pristine',
-  'meticulously maintained',
-  'entertainer\'s dream',
-  'tucked away',
-  'hidden gem',
+  // CLAUDE.md §0 video stat-discipline — banned ONLY as a substitute for a
+  // real number (contextual check below), not in ordinary prose.
   'approximately',
   'roughly',
-  'about',         // only as a substitute for real number — checked contextually in scan
+  'about',
   // ANTI_SLOP_MANIFESTO Rule 4 — banned opening patterns
   'in today\'s real estate market',
   'have you ever wondered',
@@ -187,6 +166,8 @@ const BANNED_WORDS: readonly string[] = [
   'hey guys',
   'what\'s up',
 ]
+
+const BANNED_WORDS: readonly string[] = [...CANONICAL_BANNED_WORDS, ...LOCAL_EXTRAS]
 
 // Deduplicate
 const BANNED_WORDS_UNIQUE = [...new Set(BANNED_WORDS)]

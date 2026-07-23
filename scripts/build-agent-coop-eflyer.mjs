@@ -18,10 +18,13 @@
 import { mkdir, writeFile, readFile, stat } from 'node:fs/promises'
 import { resolve, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { createRequire } from 'node:module'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '..')
 const PRODUCER = 'agent-coop-eflyer'
+const require = createRequire(import.meta.url)
+const VOCAB = require('./brand-voice-vocabulary.cjs')
 
 function parseArgs(argv) {
   const out = { _: [] }
@@ -38,16 +41,9 @@ function parseArgs(argv) {
   return out
 }
 
-const BANNED_WORDS = [
-  'stunning','breathtaking','gorgeous','charming','pristine','nestled','boasts',
-  'must-see','dream home','meticulously maintained',"entertainer's dream",
-  'tucked away','hidden gem','truly','spacious','cozy','luxurious',
-  'updated throughout','turnkey','immaculate','captivating','exquisite',
-  'delve','leverage','tapestry','navigate','robust','seamless','comprehensive',
-  'elevate','unlock','holistic','dynamic','vibrant','bustling','eclectic',
-  'curated','bespoke','foster','approximately','roughly','fairly',
-  'act fast',"don't miss out","won't last"
-]
+// Canonical BANNED_WORD_STRINGS from scripts/brand-voice-vocabulary.cjs —
+// never hand-typed here.
+const BANNED_WORDS = VOCAB.BANNED_WORD_STRINGS
 
 function checkBannedWords(text) {
   const lower = text.toLowerCase()

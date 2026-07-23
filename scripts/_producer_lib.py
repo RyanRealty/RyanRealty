@@ -34,6 +34,15 @@ import datetime
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
+# Ensure scripts/ is on sys.path so the canonical-vocabulary import below
+# works regardless of how this module was imported (build_*.py already does
+# this before importing _producer_lib, but this module is self-contained too).
+_SCRIPTS_DIR = str(Path(__file__).resolve().parent)
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
+
+from _brand_voice_vocab_generated import BANNED_WORD_STRINGS as _CANONICAL_BANNED_WORDS
+
 
 # ── Rogue-producer guard (deep-audit 2026-05-21 D19) ─────────────────────────
 # Every producer invocation MUST flow through marketing_brain_actions: the
@@ -330,52 +339,40 @@ def write_card_json(out_dir: Path, producer: str, primary_artifact: str, notes: 
 
 # ── Banned-word grep ─────────────────────────────────────────────────────────
 #
-# Canonical source: marketing_brain_skills/brand-voice/voice_guidelines.md
-# §6.2 (banned words), §6.3 (banned phrases), §4.7 (authentic-not-salesy
-# patterns). When this list and voice_guidelines.md disagree, the .md is
-# the source of truth — update both together.
+# Canonical source: scripts/brand-voice-vocabulary.cjs, mirrored into this
+# fleet via scripts/_brand_voice_vocab_generated.py (see
+# scripts/gen-brand-voice-consumers.mjs). When this list and the canonical
+# .cjs disagree, the .cjs is the source of truth — update it, then regenerate.
 #
 # Two-tier classification (revised 2026-05-20 per Matt directive):
 #
-#   HARD_BANNED   — substring match, always a ship-blocker. Real-estate clichés,
-#                   AI filler, marketing slop, hype openings, pandering,
-#                   talking down, fake urgency, salesy script language.
+#   HARD_BANNED   — substring match, always a ship-blocker. The canonical
+#                   BANNED_WORD_STRINGS (real-estate clichés, AI filler,
+#                   marketing slop, hype openings, pandering, fake urgency)
+#                   layered with producer-specific extras below (salesy script
+#                   language + anti-pattern phrases the canonical general-prose
+#                   list doesn't carry).
 #   SOFT_FLAGGED  — substring match, flag for human review. Vague qualifiers
 #                   ("about", "around", "approximately") that have legitimate
 #                   non-hedge uses; the producer or reviewer decides per-case.
+#                   Kept as a separate, softer tier — the canonical source
+#                   removed these from its own banned list entirely (2026-06-02
+#                   realism pass) precisely because a blunt ban over-blocks;
+#                   this tier is this fleet's own human-review compromise, not
+#                   drift from canon.
 #
 # Producers default to checking BOTH tiers (BANNED_WORDS = HARD_BANNED |
 # SOFT_FLAGGED). Call grep_banned_categorized() when you want the split.
 
-HARD_BANNED = {
-    # §6.2 Real-estate clichés
-    "stunning", "breathtaking", "gorgeous", "charming", "pristine", "nestled",
-    "boasts", "must-see", "dream home", "meticulously maintained",
-    "entertainer's dream", "tucked away", "hidden gem", "truly", "spacious",
-    "cozy", "luxurious", "updated throughout", "turnkey", "immaculate",
-    "captivating", "exquisite",
-    # §6.2 AI filler
-    "delve", "leverage", "tapestry", "navigate", "robust", "seamless",
-    "comprehensive", "elevate", "unlock", "holistic", "dynamic", "vibrant",
-    "bustling", "eclectic", "curated", "bespoke", "foster",
-    # §6.3 Hype openings
-    "get ready to fall in love", "you won't believe", "introducing",
-    "stunning new listing",
-    # §6.3 Pandering phrases (full phrase, exact substring)
-    "what a beautiful home", "you have great taste",
+HARD_BANNED = set(_CANONICAL_BANNED_WORDS) | {
+    # §6.3 Hype openings — not in the canonical (general-prose) list
+    "introducing",
+    # §6.3 Pandering phrases — producer-specific, not in canonical
     "i can tell you really care about this",
-    # §6.3 Talking down
-    "don't worry, we will handle everything",
-    "don't worry we will handle everything",
-    "let me explain in simple terms",
-    "i know this seems complicated",
-    # §6.3 Marketing slop
-    "top producing", "top 1 percent", "white glove", "luxury concierge",
-    "premier brokerage", "boutique brokerage", "your real estate journey",
-    "we are passionate about", "we pride ourselves on", "exclusive brokerage",
-    # §6.3 Fake urgency
-    "act fast", "don't miss out", "won't last long", "won't last",
-    # §4.7 Salesy / pandering script language
+    # §6.3 Marketing slop — producer-specific ("exclusive" as a brokerage
+    # descriptor, per CLAUDE.md, not in the canonical word list)
+    "exclusive brokerage",
+    # §4.7 Salesy / pandering script language — producer-specific
     "hope this finds you well", "we'd love to learn more",
     "don't hesitate to reach out", "let's hop on a quick call",
     "let's schedule a quick call", "just touching base",

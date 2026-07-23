@@ -10,14 +10,18 @@
  * updateTemplateAction) runs subject + body through checkTemplateVoice and
  * refuses to persist a hard fail.
  *
- * This is a SELF-CONTAINED runtime list (no dependency on scripts/*.cjs, which
- * is outside the app bundle). The canonical source of truth remains
- * scripts/brand-voice-vocabulary.cjs; templateVoiceCheck.test.ts loads that
- * canonical module and asserts every punctuation hard-fail + banned word it
- * declares is also covered here, so the two can never silently drift.
+ * The core vocabulary is imported from lib/brand-voice/generated-vocabulary.ts
+ * (the in-bundle mirror of the canonical scripts/brand-voice-vocabulary.cjs —
+ * see scripts/gen-brand-voice-consumers.mjs), layered with a small set of
+ * template-specific extras (hyphenated/negated variants, "introducing", bare
+ * "boutique") that are not in the canonical word list. templateVoiceCheck.test.ts
+ * asserts this module stays a superset of the canonical list, so the two can
+ * never silently drift.
  *
  * Pure module — no I/O, no DB, fully unit-tested.
  */
+
+import { PUNCTUATION_CHARS, BANNED_WORD_STRINGS } from '@/lib/brand-voice/generated-vocabulary'
 
 /** A single brand-voice violation found in a template field. */
 export type VoiceViolation = {
@@ -34,109 +38,40 @@ export type VoiceCheckResult =
   | { ok: false; error: string; violations: VoiceViolation[] }
 
 /**
- * Punctuation that hard-fails a save. Mirrors PUNCTUATION in
- * scripts/brand-voice-vocabulary.cjs. The exclamation mark is NOT a hard fail
- * here: voice_guidelines allows one exclamation per piece, and a single "!" in
+ * Punctuation that hard-fails a save. Derived from the canonical
+ * PUNCTUATION_CHARS. The exclamation mark is NOT a hard fail here:
+ * voice_guidelines allows one exclamation per piece, and a single "!" in
  * a short SMS is legitimate, so the gate would over-block. Em/en-dash and
  * semicolon are unconditional hard fails per CLAUDE.md §3.
  */
-export const TEMPLATE_BANNED_PUNCTUATION: readonly string[] = ['—', '–', ';']
+export const TEMPLATE_BANNED_PUNCTUATION: readonly string[] = PUNCTUATION_CHARS.filter((ch) => ch !== '!')
 
 /**
- * Banned words/phrases that hard-fail a save. Mirrors the hard-fail vocabulary
- * in scripts/brand-voice-vocabulary.cjs (BANNED_WORD_STRINGS). Kept lowercase;
- * matching is case-insensitive and word-boundary aware so "boastsworth" or a
- * substring inside an unrelated word does not false-trigger.
+ * Template-specific extras layered on top of the canonical banned-word list:
+ * hyphenated/negated variants and terms not covered by the canonical set but
+ * that fire on template copy in practice (SMS/email specific phrasing).
+ */
+const LOCAL_EXTRAS: readonly string[] = [
+  'white-glove',
+  'do not miss out',
+  'will not last',
+  'you will not believe',
+  'introducing',
+  'boutique',
+]
+
+/**
+ * Banned words/phrases that hard-fail a save. Core list is the canonical
+ * BANNED_WORD_STRINGS from lib/brand-voice/generated-vocabulary.ts (mirrors
+ * scripts/brand-voice-vocabulary.cjs), layered with LOCAL_EXTRAS above. Kept
+ * lowercase; matching is case-insensitive and word-boundary aware so
+ * "boastsworth" or a substring inside an unrelated word does not false-trigger.
  *
  * The parity test asserts this list is a SUPERSET of the canonical
  * BANNED_WORD_STRINGS, so adding a word to the canonical list and not here
  * fails CI.
  */
-export const TEMPLATE_BANNED_WORDS: readonly string[] = [
-  // real-estate clichés
-  'stunning',
-  'breathtaking',
-  'gorgeous',
-  'charming',
-  'pristine',
-  'nestled',
-  'boasts',
-  'must-see',
-  'must see',
-  'dream home',
-  'meticulously maintained',
-  "entertainer's dream",
-  'tucked away',
-  'hidden gem',
-  'truly',
-  'luxurious',
-  'updated throughout',
-  'immaculate',
-  'captivating',
-  'exquisite',
-  // AI filler
-  'delve',
-  'tapestry',
-  'robust',
-  'seamless',
-  'elevate',
-  'unlock',
-  'holistic',
-  'dynamic',
-  'vibrant',
-  'bustling',
-  'eclectic',
-  'curated',
-  'bespoke',
-  // marketing slop
-  'top producing',
-  'top 1 percent',
-  'white glove',
-  'white-glove',
-  'luxury concierge',
-  'premier',
-  'premier brokerage',
-  'boutique brokerage',
-  'your real estate journey',
-  'we are passionate about',
-  'we pride ourselves on',
-  // fake urgency
-  'act fast',
-  'act now',
-  "don't miss out",
-  'do not miss out',
-  "won't last long",
-  "won't last",
-  'will not last',
-  // hype openings
-  'get ready to fall in love',
-  "you won't believe",
-  'you will not believe',
-  'introducing',
-  'stunning new listing',
-  // smallness / headcount positioning
-  'small brokerage',
-  'small team',
-  'small business like ours',
-  'boutique',
-  'three brokers',
-  'team of three',
-  'just the three of us',
-  // local-team filler positioning
-  'from your local team',
-  'guidance from a local team',
-  'guidance from your local team',
-  'honest guidance from a local team',
-  'honest guidance from your local team',
-  'trusted local team',
-  'your trusted',
-  // pandering
-  'what a beautiful home',
-  'you have great taste',
-  'let me explain in simple terms',
-  'i know this seems complicated',
-  'we will handle everything',
-]
+export const TEMPLATE_BANNED_WORDS: readonly string[] = [...BANNED_WORD_STRINGS, ...LOCAL_EXTRAS]
 
 /** Escape a string for safe inclusion in a RegExp source. */
 function escapeRegExp(s: string): string {

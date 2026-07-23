@@ -24,23 +24,21 @@
 import { NextResponse } from 'next/server'
 import { getOrRefreshGoogleBusinessProfileAccessToken } from '@/lib/google-business-profile'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
+import { BANNED_WORD_STRINGS } from '@/lib/brand-voice/generated-vocabulary'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-// Banned vocabulary the brand-voice cron checks GBP posts against. Built
-// from char-code fragments so the brand-voice CI scanner (which scans for
-// literal banned-word matches in source) doesn't double-count this file
-// as authoring banned vocabulary.
-const BANNED_WORDS = [
-  'stunn' + 'ing', 'breathtak' + 'ing', 'gorge' + 'ous', 'char' + 'ming',
-  'prist' + 'ine', 'nest' + 'led', 'boa' + 'sts', 'meticulously maint' + 'ained',
-  'tucked aw' + 'ay', 'hidden g' + 'em', 'turn' + 'key', 'must-s' + 'ee',
-  'must s' + 'ee', 'dream h' + 'ome', 'beauti' + 'ful', 'spac' + 'ious',
-  'co' + 'zy', 'luxur' + 'ious', 'immacul' + 'ate', 'captivat' + 'ing',
-  'exquis' + 'ite',
-]
+// Banned vocabulary the brand-voice cron checks GBP posts against. Sourced
+// from lib/brand-voice/generated-vocabulary.ts (the in-bundle mirror of the
+// canonical scripts/brand-voice-vocabulary.cjs) — no obfuscation needed since
+// this is a real import, not a hand-typed literal list.
+// Monitor-specific extra layered on the generated core (never a re-typed list):
+// the canonical core intentionally relaxed descriptive adjectives, but this
+// GBP-post monitor still flags a bare "beautiful".
+const LOCAL_EXTRAS = ['beautiful'] as const
+const BANNED_WORDS: readonly string[] = [...BANNED_WORD_STRINGS, ...LOCAL_EXTRAS]
 const SCAFFOLD_RE = /\b(POST TYPE|EVENT TYPE|TITLE\s*\/\s*SUMMARY|CTA BUTTON|CTA URL)\s*:/i
 
 async function fetchLivePosts(token: string, accountId: string, locationId: string) {

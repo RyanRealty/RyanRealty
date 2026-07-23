@@ -61,6 +61,7 @@ import {
   applyBiasToOpportunities,
   type PerformanceBiasReport,
 } from './performance-bias'
+import { BANNED_WORDS as GENERATED_BANNED_WORDS } from '@/lib/brand-voice/generated-vocabulary'
 
 // ---------------------------------------------------------------------------
 // Supabase client
@@ -293,48 +294,28 @@ const BANNED_PUNCTUATION = [
   { pattern: /\.\.\.\s*:/g, rule: '§6.1 Banned punctuation: dramatic colon (ellipsis then colon)' },
 ]
 
-/** §6.2 Banned words. */
+/**
+ * §6.2/§6.3 Banned words + phrases. Sourced from the canonical
+ * lib/brand-voice/generated-vocabulary.ts (mirrors scripts/brand-voice-
+ * vocabulary.cjs — see scripts/gen-brand-voice-consumers.mjs) rather than a
+ * hand-typed list. This closes a live bug: the previous hand-typed list here
+ * still hard-banned "about"/"around"/"approximately"/"roughly"/"spacious"/
+ * "cozy"/"turnkey"/"leverage"/"navigate"/"comprehensive"/"foster", all of
+ * which the canonical source un-banned 2026-06-02 as a realism pass (legit
+ * plain English / precise real-estate terms) — that drift rejected legitimate
+ * briefs containing ordinary words like "about". Uses the richer BANNED_WORDS
+ * export (word + category) so the surfaced rule string carries the category,
+ * same as the old per-list breakdown.
+ */
 const BANNED_WORDS: Array<{ word: string; rule: string }> = [
-  // Real estate clichés
-  'stunning', 'breathtaking', 'gorgeous', 'charming', 'pristine', 'nestled',
-  'boasts', 'must-see', 'dream home', 'meticulously maintained',
-  "entertainer's dream", 'tucked away', 'hidden gem', 'truly', 'spacious',
-  'cozy', 'luxurious', 'updated throughout', 'turnkey', 'immaculate',
-  'captivating', 'exquisite',
-  // AI filler
-  'delve', 'leverage', 'tapestry', 'navigate', 'robust', 'seamless',
-  'comprehensive', 'elevate', 'unlock', 'holistic', 'dynamic', 'vibrant',
-  'bustling', 'eclectic', 'curated', 'bespoke', 'foster',
-  // Vague qualifiers
-  'approximately', 'roughly', 'about', 'around', 'fairly', 'somewhat',
-].map((word) => ({
-  word,
-  rule: `§6.2 Banned words: "${word}"`,
-}))
-
-/** §6.3 Banned phrases (substrings, case-insensitive). */
-const BANNED_PHRASES: Array<{ phrase: string; rule: string }> = [
-  { phrase: "get ready to fall in love", rule: '§6.3 Banned phrase: hype opening' },
-  { phrase: "you won't believe", rule: '§6.3 Banned phrase: hype opening' },
-  { phrase: "introducing", rule: '§6.3 Banned phrase: hype opening' },
-  { phrase: "what a beautiful home", rule: '§6.3 Banned phrase: pandering' },
-  { phrase: "you have great taste", rule: '§6.3 Banned phrase: pandering' },
-  { phrase: "don't worry, we will handle", rule: '§6.3 Banned phrase: talking down' },
-  { phrase: "let me explain in simple terms", rule: '§6.3 Banned phrase: talking down' },
-  { phrase: "i know this seems complicated", rule: '§6.3 Banned phrase: talking down' },
-  { phrase: "top producing", rule: '§6.3 Banned phrase: marketing slop' },
-  { phrase: "top 1 percent", rule: '§6.3 Banned phrase: marketing slop' },
-  { phrase: "white glove", rule: '§6.3 Banned phrase: marketing slop' },
-  { phrase: "luxury concierge", rule: '§6.3 Banned phrase: marketing slop' },
-  { phrase: "premier brokerage", rule: '§6.3 Banned phrase: marketing slop' },
-  { phrase: "boutique brokerage", rule: '§6.3 Banned phrase: marketing slop' },
-  { phrase: "your real estate journey", rule: '§6.3 Banned phrase: marketing slop' },
-  { phrase: "we are passionate about", rule: '§6.3 Banned phrase: marketing slop' },
-  { phrase: "we pride ourselves on", rule: '§6.3 Banned phrase: marketing slop' },
-  { phrase: "act fast", rule: '§6.3 Banned phrase: fake urgency' },
-  { phrase: "don't miss out", rule: '§6.3 Banned phrase: fake urgency' },
-  { phrase: "won't last long", rule: '§6.3 Banned phrase: fake urgency' },
-  { phrase: "won't last", rule: '§6.3 Banned phrase: fake urgency' },
+  ...GENERATED_BANNED_WORDS.map(({ word, category }) => ({
+    word,
+    rule: `§6.2 Banned words (${category}): "${word}"`,
+  })),
+  // Brief-specific tells the canonical core doesn't carry (a hype opening + a
+  // pandering phrasing). Layered on the generated core, never a re-typed list.
+  { word: 'introducing', rule: '§6.3 Hype opening: "introducing"' },
+  { word: "don't worry, we will handle", rule: '§6.3 Pandering: "don\'t worry, we will handle…"' },
 ]
 
 /** §6.4 Banned trope patterns. */
@@ -1254,10 +1235,9 @@ export function synthesizeOpportunities(signals: SignalBundle): RankedOpportunit
  * Algorithm:
  * 1. Concatenate hook + (body ?? '') + (cta ?? '') into a single text blob.
  * 2. Check each banned punctuation pattern against the blob.
- * 3. Check each banned word (whole-word, case-insensitive) against the blob.
- * 4. Check each banned phrase (substring, case-insensitive) against the blob.
- * 5. Check each banned trope regex against the blob.
- * 6. Return { passed: violations.length === 0, violations }.
+ * 3. Check each banned word/phrase (whole-word, case-insensitive) against the blob.
+ * 4. Check each banned trope regex against the blob.
+ * 5. Return { passed: violations.length === 0, violations }.
  */
 export function applyBrandVoice(brief: Pick<GeneratedBrief, 'hook' | 'body' | 'cta'>): VoiceValidation {
   const blob = [brief.hook, brief.body ?? '', brief.cta ?? ''].join(' ')
@@ -1272,19 +1252,14 @@ export function applyBrandVoice(brief: Pick<GeneratedBrief, 'hook' | 'body' | 'c
     pattern.lastIndex = 0
   }
 
-  // §6.2 Banned words (whole-word match, case-insensitive)
+  // §6.2/§6.3 Banned words + phrases (whole-word match, case-insensitive).
+  // The canonical list already includes multi-word phrases alongside single
+  // words, so one pass covers both.
   for (const { word, rule } of BANNED_WORDS) {
     // Escape special regex chars in the word
     const escaped = word.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')
     const re = new RegExp(`\\b${escaped}\\b`, 'i')
     if (re.test(blob)) {
-      violations.push(rule)
-    }
-  }
-
-  // §6.3 Banned phrases (substring, case-insensitive)
-  for (const { phrase, rule } of BANNED_PHRASES) {
-    if (blob.toLowerCase().includes(phrase.toLowerCase())) {
       violations.push(rule)
     }
   }

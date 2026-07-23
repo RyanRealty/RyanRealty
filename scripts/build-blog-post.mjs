@@ -27,10 +27,13 @@
 import { writeFile, mkdir } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { createRequire } from 'node:module'
 import { search as assetSearch } from '../lib/asset-library.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '..')
+const require = createRequire(import.meta.url)
+const VOCAB = require('./brand-voice-vocabulary.cjs')
 
 // ---------------------------------------------------------------------------
 // City config — lat/lng for JSON-LD Place, display name, search paths
@@ -99,18 +102,15 @@ const CITY_CONFIG = {
 }
 
 // ---------------------------------------------------------------------------
-// Banned words (from ANTI_SLOP_MANIFESTO.md §1 + CLAUDE.md)
+// Banned words. Core list is the canonical BANNED_WORD_STRINGS from
+// scripts/brand-voice-vocabulary.cjs (never hand-typed here), layered with a
+// few blog-specific clichés the canonical (general) list doesn't carry.
 // ---------------------------------------------------------------------------
-const BANNED_WORDS = [
-  'stunning', 'nestled', 'boasts', 'coveted', 'dream home', 'charming',
-  'must-see', 'gorgeous', 'pristine', 'meticulously maintained',
-  "entertainer's dream", 'one-of-a-kind', 'truly', 'breathtaking',
-  'spacious', 'cozy', 'luxurious', 'updated throughout', 'a rare opportunity',
-  "this won't last long", 'priced to sell', 'hidden gem', 'tucked away',
-  'approximately', 'roughly', 'about', // as substitutes for real numbers
-  'delve', 'leverage', 'tapestry', 'navigate', 'robust', 'seamless',
-  'comprehensive', 'elevate', 'unlock',
+const BLOG_LOCAL_EXTRAS = [
+  'coveted', 'one-of-a-kind', 'a rare opportunity',
+  "this won't last long", 'priced to sell',
 ]
+const BANNED_WORDS = [...VOCAB.BANNED_WORD_STRINGS, ...BLOG_LOCAL_EXTRAS]
 
 function grepBannedWords(text) {
   const hits = []
