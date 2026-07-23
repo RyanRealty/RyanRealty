@@ -247,7 +247,7 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "No generateStaticParams on the search route: /Users/matthewryan/RyanRealty/app/search/[...slug]/page.tsx exports none (grep confirms; ISR revalidate=60 only) and the route sits in the scripts/static-params-baseline.json violators list (19 tracked, baseline dated 2026-07-19) \u2014 i.e. the gate explicitly grandfathers the gap. Top-N city\u00d7preset combos are not pre-rendered at build; implement generateStaticParams for the top combos and remove the route from the baseline."
+      "remaining": "Sort-only preset noindex is done. generateStaticParams remains BLOCKED by build memory: pre-rendering the /search/[...slug] page (a full listing-grid render, many actions + components) OOMs the next build worker even at 10 bare-city params (compiled fine 21s, died in static generation; SIGABRT heap-out-of-memory). The base build has no heap headroom and npm run push uses the same `next build`, so shipping it would break the production build (no-blocked-builds rule). Needs a search-page-weight reduction (lighter build-time render / fewer eager fetches) OR a raised build max-old-space-size before pre-render is viable \u2014 larger than a seam-cleanup pass. Byproduct kept this pass: ci:static-params isEmptyStub now also catches a one-line `return [] }` stub (scripts/check-static-params.mjs)."
     },
     {
       "id": "W4.1",

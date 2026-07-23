@@ -63,7 +63,9 @@ function classify(pagePath) {
   // implementation — finite, enumerable geo sets should be seeded (audit #5).
   // This closes the gate's blind spot: it previously scored `return []` as
   // compliant, so flagship routes never got build-time SSG.
-  const isEmptyStub = /generateStaticParams[\s\S]{0,400}?\breturn\s*\[\s*\]\s*(?:;|\n|\r)/.test(src)
+  // Terminator set includes `}` so a single-line `return [] }` stub is caught too
+  // (not just `return [];` / `return []` + newline).
+  const isEmptyStub = /generateStaticParams[\s\S]{0,400}?\breturn\s*\[\s*\]\s*(?:;|\n|\r|\})/.test(src)
   const hasStaticParams = declaresStaticParams && !isEmptyStub
   return { rel, optOut, hasStaticParams }
 }
