@@ -56,6 +56,55 @@ function calls(sf, name) {
   return found
 }
 
+/**
+ * True if a value derived from `seedFn(...)` actually SHORT-CIRCUITS the
+ * function — i.e. there is an `if (<condition referencing it>) { ... return ... }`.
+ *
+ * Calling the guard and throwing the result away is the evasion this closes: an
+ * adversarial review replaced the real check with
+ *   `await getSession().catch(() => null); const senderEmail = 'anon@example.com'`
+ * and the old "is it called anywhere" assertion still passed while auth was gutted.
+ *
+ * Tracks the binding assigned from seedFn AND any binding whose initializer
+ * references it (so `const email = session?.user?.email` counts as derived).
+ */
+function guardShortCircuits(sf, seedFn) {
+  const derived = new Set()
+
+  const collect = (node) => {
+    if (ts.isVariableDeclaration(node) && node.initializer && ts.isIdentifier(node.name)) {
+      const initText = node.initializer.getText()
+      const seedsFrom =
+        new RegExp(`\\b${seedFn}\\s*\\(`).test(initText) ||
+        [...derived].some((d) => new RegExp(`\\b${d}\\b`).test(initText))
+      if (seedsFrom) derived.add(node.name.text)
+    }
+    ts.forEachChild(node, collect)
+  }
+  collect(sf)
+  if (derived.size === 0) return false
+
+  let guarded = false
+  const visit = (node) => {
+    if (ts.isIfStatement(node)) {
+      const cond = node.expression.getText()
+      const refs = [...derived].some((d) => new RegExp(`\\b${d}\\b`).test(cond))
+      if (refs) {
+        let returns = false
+        const scan = (n) => {
+          if (ts.isReturnStatement(n)) returns = true
+          ts.forEachChild(n, scan)
+        }
+        scan(node.thenStatement)
+        if (returns) guarded = true
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sf)
+  return guarded
+}
+
 /** True if the file inserts directly into marketing_brain_actions (a second queue). */
 function insertsIntoActionsDirectly(sf) {
   let found = false
@@ -89,10 +138,27 @@ if (action) {
       `${ACTION_FILE}: writes to marketing_brain_actions directly — enqueue through dispatchParsedEmail(...) instead so both intakes share one queue writer.`,
     )
   }
-  // (b) auth guard
+  // (b) auth — the session must SHORT-CIRCUIT the write, not merely be fetched.
   if (!calls(action, 'getSession')) {
     problems.push(
       `${ACTION_FILE}: never calls getSession() — a write into the marketing queue must not be anonymous.`,
+    )
+  } else if (!guardShortCircuits(action, 'getSession')) {
+    problems.push(
+      `${ACTION_FILE}: calls getSession() but its result never short-circuits the function — add an \`if (!<session value>) return ...\` before any write, or the auth check is decorative.`,
+    )
+  }
+
+  // (c) authorization — a session alone is not enough. ryan-realty.com has public
+  // self-serve signup, so the form must enforce the SAME sender allowlist the
+  // email door does, and that result must short-circuit too.
+  if (!calls(action, 'isSenderAllowed')) {
+    problems.push(
+      `${ACTION_FILE}: never calls isSenderAllowed() — any public self-signup account could enqueue real work. Enforce the same allowlist the marketing@ inbox enforces.`,
+    )
+  } else if (!guardShortCircuits(action, 'isSenderAllowed')) {
+    problems.push(
+      `${ACTION_FILE}: calls isSenderAllowed() but its result never short-circuits the function — add an \`if (!<decision>.allowed) return ...\` before any write.`,
     )
   }
 }

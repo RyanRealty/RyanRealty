@@ -13,14 +13,23 @@
  *                            written in the present-tense verb form it reads)
  *     -> dispatchParsedEmail(the same queue writer -> marketing_brain_actions)
  *
- * The only difference from the email door is AUTH: the page itself stays public
- * (it is linked from an email signature), but a WRITE requires a signed-in
- * user, so an anonymous visitor cannot enqueue work.
+ * The page itself stays public (it is linked from an email signature), but the
+ * WRITE is gated twice: a signed-in session AND the same sender allowlist the
+ * email door enforces (config/marketing-brain/inbox-senders.json). A session
+ * alone is not enough — this site has public self-serve signup, so "any logged
+ * in user" would let a member of the public enqueue real work. Two intakes, one
+ * queue, one authorization policy.
+ *
+ * Known asymmetry: dispatchParsedEmail stamps generated_by
+ * 'marketing_brain:inbox-poll' on every row, so the action row itself does not
+ * record which door it came from. The `form:` prefix on the intake row's
+ * gmail_message_id is what distinguishes a form request in the audit trail.
  */
 
 import { randomUUID } from 'node:crypto'
 import { getSession } from '@/app/actions/auth'
 import { createServiceClient } from '@/lib/supabase/service'
+import { isSenderAllowed } from '@/lib/marketing-brain/inbox-allowlist'
 import { parseInboxEmail } from '@/lib/marketing-brain/inbox-parser'
 import { dispatchParsedEmail, type InboxEvent } from '@/lib/marketing-brain/inbox-dispatcher'
 
@@ -42,21 +51,35 @@ export async function submitMarketingRequest(
   if (!senderEmail) {
     return { ok: false, error: 'Sign in first so we know who the request is from.' }
   }
+
+  // 2. AUTHORIZATION — being signed in is NOT enough. ryan-realty.com has public
+  // self-serve signup (saved searches / alerts), so "any session" would let any
+  // member of the public enqueue real work, burn an Anthropic call per submit,
+  // and put a producer row in front of Matt. Enforce the SAME allowlist the
+  // email door enforces (config/marketing-brain/inbox-senders.json) so both
+  // intakes share one authorization policy, not just one queue.
+  const allow = isSenderAllowed(senderEmail)
+  if (!allow.allowed) {
+    return {
+      ok: false,
+      error: 'This form is for Ryan Realty staff. Email marketing@ryan-realty.com and the team will pick it up.',
+    }
+  }
+
   const senderName =
     (session?.user as { name?: string | null } | undefined)?.name ?? null
 
   const subject = (input.subject ?? '').trim().slice(0, 300) || 'Marketing request'
   const body = (input.body ?? '').trim()
   if (!body) return { ok: false, error: 'Pick at least one thing before sending.' }
-
-  const supabase = createServiceClient()
   // Synthetic ids: gmail_message_id / gmail_thread_id are NOT NULL on the shared
   // intake table, and a form request has no Gmail thread. The `form:` prefix is
   // what distinguishes a form intake from an email one.
   const formRef = `form:${randomUUID()}`
 
   try {
-    // 2. Intake row — the same table the email door writes.
+    const supabase = createServiceClient()
+    // 3. Intake row — the same table the email door writes.
     const { data: event, error: insertError } = await supabase
       .from('marketing_inbox_events')
       .insert({
@@ -74,7 +97,7 @@ export async function submitMarketingRequest(
       return { ok: false, error: 'Could not record the request. Try again.' }
     }
 
-    // 3. Parse — the same parser the inbox cron runs.
+    // 4. Parse — the same parser the inbox cron runs.
     const parse = await parseInboxEmail({ from: senderEmail, subject, body_text: body })
     await supabase
       .from('marketing_inbox_events')
@@ -90,7 +113,7 @@ export async function submitMarketingRequest(
       })
       .eq('id', event.id)
 
-    // 4. Dispatch — the same writer, so the row is indistinguishable downstream.
+    // 5. Dispatch — the same queue writer the inbox cron uses.
     const dispatch = await dispatchParsedEmail(
       {
         id: event.id,
