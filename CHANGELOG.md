@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.852.0 (2026-07-23)
+
+### Features
+- feat(w10.2): broker content library — durable deliverables, per-broker scope, gate
+
+---
+
+
 ## v1.851.1 (2026-07-23)
 
 ### Maintenance
