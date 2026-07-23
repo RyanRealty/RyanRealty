@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.835.0 (2026-07-23)
+
+### Features
+- feat(crm): emit ?reply= deep link from the inbound-text alert so the composer preloads (W6.4)
+
+---
+
+
 ## v1.834.0 (2026-07-23)
 
 ### Features
