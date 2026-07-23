@@ -697,17 +697,22 @@
       "workstream": "W10",
       "mission": "M3",
       "title": "Bulk approve / bulk reject in the approval queue",
-      "status": "not_started",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-bulk-approval-wired.mjs"
+        ],
         "crons": [],
         "tests": [],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "app/api/admin/approval-queue/bulk-action/route.ts",
+          "app/admin/(protected)/approval-queue/_components/BulkSelection.tsx"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "Everything: multi-select UI in the queue plus a bulk action endpoint/server action."
+      "proofPath": "POST /api/admin/approval-queue/bulk-action (approve_now / reject) guarded by requireAdminRoute('approvals.act') — the same superuser publish gate as the single-row route — with every mutation status-scoped .in('status', ['ready','needs_changes']). UI: BulkSelection.tsx (provider + per-row BulkSelectCheckbox + sticky BulkActionBar), wired into ActionCard.tsx + page.tsx. Gate: scripts/check-bulk-approval-wired.mjs (ci:bulk-approval-wired, in ci:gates) — AST gate proven to bite+restore on 4 failure modes (dropped authz, dropped status-scope, unwired checkbox JSX, unwired bar JSX). Status-scope confirmed against live DB (ready rows affected; executed/in_production rows NOT). Decision: 04-DECISIONS-RECORDED.md §17.",
+      "verifiedBy": "Independent adversarial verifier agent (assume-broken brief, different agent than builder): PASS — authz guard runs before the write and matches the single-row route's approvals.act superuser cap; both mutation branches terminal-protected via .in('status',...); input caps (MAX_BULK 100, non-empty array, required reject reason); full producer->consumer UI wiring with router.refresh + clear + required reject reason; gate is AST-based and in the ci:gates chain; tsc clean. It surfaced one gate-robustness gap (file-level status-scope check would stay GREEN if only ONE branch lost its scope) — closed here per-branch and re-proven to bite. 2026-07-23.",
+      "remaining": "DONE. Multi-select the approval queue and approve/reject a whole selection behind the approvals.act superuser gate; status-scope stops a stale id from re-flipping an already approved/killed/pending row; router.refresh drops flipped rows out of the ready/needs_changes fetch. ci:bulk-approval-wired keeps the path wired producer→consumer."
     },
     {
       "id": "W10.5",
