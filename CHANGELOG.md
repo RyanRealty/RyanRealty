@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.849.0 (2026-07-23)
+
+### Features
+- feat(brand-voice): Orwell advisory reviewer with §0 fact-preservation guard (W11.3)
+
+### Maintenance
+- chore(budget): re-baseline cma+bpo build for W11.3 advisory reviewer wiring
+- chore(governed-send): baseline reviewer.ts Anthropic messages.create (G56)
+- chore(program): W11.3 -> done (Orwell advisory reviewer + §0 fact-guard)
+
+---
+
+
 ## v1.848.1 (2026-07-23)
 
 ### Maintenance
