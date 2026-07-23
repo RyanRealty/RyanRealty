@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.843.0 (2026-07-23)
+
+### Features
+- feat(W10.5): reconcile producer shim to reality + resolve gate
+
+---
+
+
 ## v1.842.0 (2026-07-23)
 
 ### Features
