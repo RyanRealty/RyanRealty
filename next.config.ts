@@ -80,9 +80,16 @@ const nextConfig: NextConfig = {
     ],
     formats: ['image/avif', 'image/webp'],
   },
-  // Prevent Vercel build retries/failures when a few pages exceed 60s prerender window.
-  // Runtime performance is controlled separately via query timeouts and cache.
-  staticPageGenerationTimeout: 180,
+  // Per-page prerender ceiling. Sized for the /sitemap.xml route, which fans out
+  // to many Supabase reads (per-city subdivision-count RPCs + paginated tables)
+  // with a cold cache at build time. Vercel is co-located with Supabase and
+  // finishes well under this; a LOCAL `next build` (the push gate) sees higher
+  // round-trip latency and needs the extra headroom, so the local gate does not
+  // false-fail on a route that deploys fine. Inert on Vercel (no page there
+  // approaches this); runtime perf is controlled separately via query timeouts +
+  // cache. (Follow-up: the sitemap runs the per-city subdivision RPC set twice —
+  // getSearchMatrix + getIndexableSubdivisions — worth deduping.)
+  staticPageGenerationTimeout: 600,
   async headers() {
     return [
       {
