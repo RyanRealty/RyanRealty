@@ -45,6 +45,7 @@ import { resolveDevelopmentOpportunities } from '@/lib/cma/development'
 import { buildCmaMapDataUri } from '@/lib/cma/map'
 import { renderCmaHtml } from '@/lib/cma/render'
 import { checkBrandVoice } from '@/lib/voice/check'
+import { reviewProse } from '@/lib/voice/reviewer'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult } from '@/lib/cma/types'
 
 export const CMA_BUILDER_VERSION = 'deterministic-v1 (2026-07-07)'
@@ -383,6 +384,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       throw new Error('CMA prose fails brand voice: ' + voice.violations.map((v) => v.term).join(', '))
     }
 
+    // 5.6. Advisory Orwell-rules review (W11.3) — runs ALONGSIDE the deterministic
+    // hard-fail gate above, never replacing it. Purely advisory: never throws,
+    // never blocks the build. Attached to the result for the admin review UI.
+    const voiceReview = await reviewProse(authoredProse, { context: 'cma' }).catch(() => null)
+
     // 6. Render.
     const { html, pageCount } = renderCmaHtml({
       subject,
@@ -710,6 +716,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       html,
       citations,
       pageCount,
+      voiceReview,
     }
   } catch (e) {
     const err = e instanceof Error ? e.message : String(e)

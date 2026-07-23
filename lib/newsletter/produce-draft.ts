@@ -35,6 +35,7 @@ import { getCommunityBySlug } from '@/app/actions/communities'
 import { createNewsletterDraft, listNewsletters, setNewsletterCitations, type NewsletterCitationEntry } from '@/lib/data'
 import { htmlToPlainText } from '@/lib/email/prepare'
 import { NEWSLETTER_MARKET_CITY_SLUGS } from '@/lib/data/geo/report-cities'
+import { reviewProse } from '@/lib/voice/reviewer'
 
 const SITE = 'https://ryan-realty.com'
 
@@ -454,6 +455,24 @@ export async function produceNewsletterDraft(createdBy: string | null): Promise<
 
   const bodyHtml = parts.join('\n\n')
   const bodyText = decodeEntitiesForText(htmlToPlainText(bodyHtml))
+
+  // Advisory Orwell-rules review (W11.3) — runs ALONGSIDE the deterministic
+  // brand-voice hard-fail gate (checkNewsletterVoice, applied at SEND time in
+  // app/actions/newsletter.ts), never replacing it. Most of this draft's body
+  // is fixed evergreen section copy (sellersSection/buyersSection) rather than
+  // freshly authored per-issue prose, and ProduceDraftResult has no admin
+  // surface that reads a review field today — LOGGED rather than attached to
+  // the return value (CLAUDE.md ledger W11.3: log when a clean attach point
+  // isn't obvious). Never throws, never blocks the draft write.
+  await reviewProse(bodyText, { context: 'newsletter' })
+    .then((review) => {
+      if (review.ran) {
+        console.log(
+          `[newsletter/produce-draft] advisory voice review: ${review.violations.length} violation(s)${review.rewrite ? ', rewrite available' : ''} (subject: ${monthlyNewsletterSubject(now)})`,
+        )
+      }
+    })
+    .catch(() => {})
 
   // ── Subject + preview (from live data) ──────────────────────────────────────
   const subject = monthlyNewsletterSubject(now)

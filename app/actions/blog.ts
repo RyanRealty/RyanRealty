@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
 import { checkAdminAction } from '@/lib/admin/require-admin'
 import { checkBrandVoice } from '@/lib/voice/check'
+import { reviewProse, type VoiceReview } from '@/lib/voice/reviewer'
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -228,7 +229,7 @@ export async function saveBlogPost(input: {
   status: 'draft' | 'published'
   publishedAt?: string
   authorBrokerId?: string
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<{ ok: boolean; error?: string; voiceReview?: VoiceReview | null }> {
   // In-body auth (RC5 fix): a server action is an independently-invocable POST —
   // the admin layout gate does not run on it. Without this, anyone who extracts
   // the action id could publish arbitrary HTML/JS on the public blog.
@@ -240,16 +241,22 @@ export async function saveBlogPost(input: {
   // brand-voice.mjs scopes to app/ and this is a server action, not a page).
   // Drafts stay work-in-progress and are not gated — only a status:'published'
   // save is a real send.
+  let voiceReview: VoiceReview | null = null
   if (input.status === 'published') {
     const voice = checkBrandVoice(
       { subject: [input.title, input.excerpt, input.seoTitle, input.seoDescription].filter(Boolean).join(' '), bodyHtml: input.content },
       { stripHtml: true },
     )
     if (!voice.ok) return { ok: false, error: 'Brand voice: ' + voice.violations.map((v) => v.term).join(', ') }
+
+    // Advisory Orwell-rules review (W11.3) — runs alongside the hard-fail gate
+    // above, never replacing it. Purely advisory: never throws, never blocks
+    // the publish. Attached to the result for the admin edit UI to surface.
+    voiceReview = await reviewProse(input.content ?? '', { context: 'blog' }).catch(() => null)
   }
 
   const supabase = getServiceSupabase()
-  if (!supabase) return { ok: false, error: 'Database not configured' }
+  if (!supabase) return { ok: false, error: 'Database not configured', voiceReview }
 
   const payload: Record<string, unknown> = {
     slug: input.slug.trim().toLowerCase(),
@@ -270,13 +277,13 @@ export async function saveBlogPost(input: {
   const { error } = await supabase.from('blog_posts').upsert(payload, { onConflict: 'slug' })
   if (error) {
     console.error('[saveBlogPost]', error)
-    return { ok: false, error: error.message }
+    return { ok: false, error: error.message, voiceReview }
   }
   // Revalidate public and admin blog routes after save/update
   const { revalidatePath } = await import('next/cache')
   revalidatePath('/blog')
   revalidatePath('/admin/blog')
-  return { ok: true }
+  return { ok: true, voiceReview }
 }
 
 export async function deleteBlogPost(id: string): Promise<{ ok: boolean; error?: string }> {

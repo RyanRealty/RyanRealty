@@ -39,6 +39,7 @@ import { deriveOfferStrategy } from '@/lib/bpo/offer'
 import { buildBpoRationale } from '@/lib/bpo/narrative'
 import { renderBpoHtml } from '@/lib/bpo/render'
 import { checkBrandVoice } from '@/lib/voice/check'
+import { reviewProse } from '@/lib/voice/reviewer'
 import type { CmaBroker } from '@/lib/cma/types'
 import type { BpoBuildInput, BpoBuildResult } from '@/lib/bpo/types'
 
@@ -298,6 +299,11 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
     if (!voice.ok) {
       throw new Error('BPO prose fails brand voice: ' + voice.violations.map((v) => v.term).join(', '))
     }
+
+    // Advisory Orwell-rules review (W11.3) — runs ALONGSIDE the deterministic
+    // hard-fail gate above, never replacing it. Purely advisory: never throws,
+    // never blocks the build. Attached to the result for the admin review UI.
+    const voiceReview = await reviewProse(authoredRationale, { context: 'bpo' }).catch(() => null)
 
     // Development potential — pure function over the verified zone + acreage.
     // A buyer cares about the upside (ADU, second unit, division) as much as a
@@ -614,6 +620,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       offer,
       html,
       citations,
+      voiceReview,
     }
   } catch (e) {
     const err = e instanceof Error ? e.message : String(e)
