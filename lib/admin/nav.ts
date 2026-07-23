@@ -184,6 +184,7 @@ export const DESTINATIONS: NavDestination[] = [
       { label: 'Guides', href: '/admin/guides', icon: 'files', capability: 'content.guides' },
       { label: 'Geography', href: '/admin/geo', icon: 'map', capability: 'content.communities' },
       { label: 'Media library', href: '/admin/media', icon: 'folder-open', capability: 'content.media' },
+      { label: 'Content library', href: '/admin/content-library', icon: 'folder-open', capability: 'content.view' },
       { label: 'Site pages', href: '/admin/site-pages', icon: 'files', capability: 'content.site' },
       { label: 'Newsletters', href: '/admin/newsletters', icon: 'mail', capability: 'content.marketing' },
       { label: 'Email campaigns', href: '/admin/email/campaigns', icon: 'mail', capability: 'content.marketing' },

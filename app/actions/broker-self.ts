@@ -28,10 +28,18 @@ async function getCurrentBrokerRecord(): Promise<BrokerSelfRow | null> {
   const email = session?.user?.email?.trim()
   if (!email) return null
   const role = await getAdminRoleForEmail(email)
-  if (!role?.brokerId) return null
-  const { getBrokerSelfRecord } = await import('@/lib/data')
-  const data = await getBrokerSelfRecord(role.brokerId)
-  return (data as BrokerSelfRow | null) ?? null
+  const { getBrokerSelfRecord, getBrokerSelfRecordByEmail } = await import('@/lib/data')
+  if (role?.brokerId) {
+    const data = await getBrokerSelfRecord(role.brokerId)
+    if (data) return data as BrokerSelfRow
+  }
+  // A SUPERUSER admin row carries broker_id = NULL (getAdminRoleForEmail
+  // short-circuits before reading admin_roles), so a broker who is also a
+  // superuser — Matt — would otherwise resolve to "no broker record" on every
+  // per-broker surface. Fall back to the address he signs in with.
+  if (!role) return null
+  const byEmail = await getBrokerSelfRecordByEmail(email)
+  return (byEmail as BrokerSelfRow | null) ?? null
 }
 
 export async function getCurrentBrokerForSelfService(): Promise<BrokerSelfRow | null> {

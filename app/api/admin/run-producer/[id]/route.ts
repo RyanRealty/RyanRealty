@@ -20,6 +20,7 @@ import path from 'path'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { persistDeliverable, resolveBrokerSlugForAction } from '@/lib/marketing-brain/deliverable-library'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import {
   classifyProducerFromDisk,
@@ -282,6 +283,38 @@ export async function POST(
 
   if (updateErr) {
     return NextResponse.json({ error: updateErr.message }, { status: 500 })
+  }
+
+  // W10.2 — persist the finished deliverable into the requesting broker's
+  // library so it outlives this run (executor_response alone is not something a
+  // broker can come back to and download). Advisory on purpose: the producer run
+  // already succeeded, so a storage failure is logged, never surfaced as a 500.
+  try {
+    const brokerSlug = await resolveBrokerSlugForAction(id)
+    const persisted = await persistDeliverable({
+      actionId: id,
+      brokerSlug,
+      filename: `${String(row.action_type).replace(/[^a-z0-9]+/gi, '-')}.json`,
+      body: JSON.stringify(
+        {
+          action_type: row.action_type,
+          // deliverable_text is the finished prose the producer actually
+          // wrote — archiving the summary without it stores a description of
+          // a deliverable instead of the deliverable.
+          deliverable_text: updatedEnvelope.deliverable_text,
+          draft_summary: updatedEnvelope.draft_summary,
+          publish_payload: updatedEnvelope.publish_payload,
+          citations: updatedEnvelope.citations,
+          completed_at: updatedEnvelope.completed_at,
+        },
+        null,
+        2,
+      ),
+      contentType: 'application/json',
+    })
+    if (!persisted.ok) console.error('[run-producer] deliverable persist failed:', persisted.error)
+  } catch (err) {
+    console.error('[run-producer] deliverable persist threw:', err)
   }
 
   await service.from('marketing_cost_ledger').insert({

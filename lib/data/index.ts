@@ -347,6 +347,7 @@ export {
   getBrokerForOgBySlug,
   getBlogPostForOgBySlug,
   getBrokerSelfRecord,
+  getBrokerSelfRecordByEmail,
   updateBrokerById,
   getMattBrokerRecord,
 } from '@/lib/data/brokers/getBrokers'

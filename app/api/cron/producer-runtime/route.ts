@@ -32,6 +32,7 @@ import path from 'path'
 import Anthropic from '@anthropic-ai/sdk'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { createServiceClient } from '@/lib/supabase/service'
+import { persistDeliverable, resolveBrokerSlugForAction } from '@/lib/marketing-brain/deliverable-library'
 import {
   classifyProducerFromDisk,
   canCloudComplete,
@@ -335,6 +336,36 @@ export async function GET(request: NextRequest) {
       runCumulativeCostUsd += costUsd
       errors.push({ action_id: row.id, phase: 'status_update', error: 'already_claimed_by_concurrent_run', requires_billing_action: false })
       continue
+    }
+
+    // W10.2 — persist the finished deliverable into the requesting broker's
+    // library. This runner is the CANONICAL execution path (every 30 min in
+    // production), so persistence has to live here and not only behind the
+    // one-shot admin button, or essentially nothing is ever archived.
+    // Advisory: the run already succeeded, so a storage failure is logged.
+    try {
+      const brokerSlug = await resolveBrokerSlugForAction(row.id)
+      const persisted = await persistDeliverable({
+        actionId: row.id,
+        brokerSlug,
+        filename: `${String(row.action_type).replace(/[^a-z0-9]+/gi, '-')}.json`,
+        body: JSON.stringify(
+          {
+            action_type: row.action_type,
+            deliverable_text: updatedEnvelope.deliverable_text,
+            draft_summary: updatedEnvelope.draft_summary,
+            publish_payload: updatedEnvelope.publish_payload,
+            citations: updatedEnvelope.citations,
+            completed_at: updatedEnvelope.completed_at,
+          },
+          null,
+          2,
+        ),
+        contentType: 'application/json',
+      })
+      if (!persisted.ok) console.error(`[producer-runtime] deliverable persist failed for ${row.id}:`, persisted.error)
+    } catch (err) {
+      console.error(`[producer-runtime] deliverable persist threw for ${row.id}:`, err)
     }
 
     await logCost(supabase, row.id, costUsd, {

@@ -104,6 +104,32 @@ export async function getBrokerSelfRecord(brokerId: string): Promise<Record<stri
   return (data ?? null) as Record<string, unknown> | null
 }
 
+/**
+ * Same shape as getBrokerSelfRecord, keyed by login email.
+ *
+ * Needed because a SUPERUSER admin row carries broker_id = NULL (see
+ * getAdminRoleForEmail, which short-circuits on isSuperuserAdmin before it
+ * reads admin_roles). Matt is exactly that: principal broker AND superuser, so
+ * broker-id-based self lookup returns nothing for him and every per-broker
+ * surface tells him he has no broker record. Matching on the address he signs
+ * in with resolves him to his own row.
+ */
+export async function getBrokerSelfRecordByEmail(email: string): Promise<Record<string, unknown> | null> {
+  const trimmed = (email ?? '').trim()
+  if (!trimmed) return null
+  const sb = supabaseAnon()
+  if (!sb) return null
+  const { data } = await sb
+    .from('brokers')
+    .select(
+      'id, slug, display_name, title, bio, phone, email, tagline, social_instagram, social_facebook, social_linkedin, social_youtube, social_tiktok, social_x, license_number'
+    )
+    .ilike('email', trimmed)
+    .eq('is_active', true)
+    .maybeSingle()
+  return (data ?? null) as Record<string, unknown> | null
+}
+
 /** Patch a broker row by id (self-service editor). */
 export async function updateBrokerById(
   id: string,

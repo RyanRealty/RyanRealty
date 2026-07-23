@@ -48,7 +48,7 @@
     "lib/data/crm/getEmailReporting.ts": 686,
     "lib/data/crm/getInboxQueue.ts": 635,
     "lib/data/crm/getLeadSourcesReport.ts": 626,
-    "lib/data/index.ts": 770,
+    "lib/data/index.ts": 771,
     "lib/data/listings/searchListingsAll.ts": 763,
     "lib/data/sync/syncWrites.ts": 1123,
     "lib/expired-owner-lookup.ts": 741,
