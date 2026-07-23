@@ -74,15 +74,21 @@ describe('pickIndexableOutOfAreaCities', () => {
     expect(OUT_OF_AREA_INDEXABLE_MIN_ACTIVE).toBe(5)
   })
 
+  it('is WIDENED to a 100-city cap (W12.4) — the ≥5-active threshold is the real bar', () => {
+    // Pin the widened value so a regression to the old arbitrary top-25 fails CI.
+    expect(OUT_OF_AREA_INDEXABLE_TOP_N).toBe(100)
+  })
+
   it('caps at TOP_N with stable name tiebreak', () => {
-    const many = Array.from({ length: 40 }, (_, i) =>
-      city({ name: `Town ${String(i).padStart(2, '0')}`, activeAllCount: 10 }),
+    // Enough cities to actually exercise the cap regardless of its value.
+    const many = Array.from({ length: OUT_OF_AREA_INDEXABLE_TOP_N + 20 }, (_, i) =>
+      city({ name: `Town ${String(i).padStart(3, '0')}`, activeAllCount: 10 }),
     )
     const picked = pickIndexableOutOfAreaCities(many)
     expect(picked).toHaveLength(OUT_OF_AREA_INDEXABLE_TOP_N)
     // Equal counts -> alphabetical, so the emission set is deterministic.
-    expect(picked[0].name).toBe('Town 00')
-    expect(picked[picked.length - 1].name).toBe(`Town ${String(OUT_OF_AREA_INDEXABLE_TOP_N - 1).padStart(2, '0')}`)
+    expect(picked[0].name).toBe('Town 000')
+    expect(picked[picked.length - 1].name).toBe(`Town ${String(OUT_OF_AREA_INDEXABLE_TOP_N - 1).padStart(3, '0')}`)
   })
 
   it('does not mutate the input', () => {

@@ -826,17 +826,21 @@
       "workstream": "W12",
       "mission": "OPERATING",
       "title": "One prod query confirms Burns/Harney presence and sizes the real out-of-area inventory",
-      "status": "blocked:needs-matt",
+      "status": "done",
       "requiredMechanism": {
         "gates": [],
         "crons": [],
-        "tests": [],
+        "tests": [
+          "lib/out-of-area-cities.test.ts"
+        ],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "lib/out-of-area-cities.ts"
+        ]
       },
-      "proofPath": "RAN 2026-07-22 (audit query vs geo_snapshot_mv, prod): 181 cities >=1 active, 71 >=5, 61 out-of-area >=5; referral tier indexes top 25 by active count. Burns present (6 active, 0 SFR); Hines 3 active (below the 5 threshold); no Harney city key. Recorded in 04-DECISIONS-RECORDED.md section 10.",
-      "verifiedBy": "",
-      "remaining": "Run the documented one-off query against prod geo_snapshot_mv (count out-of-area cities with active_all_count >= 5; confirm whether Burns appears and at what count) and record the result with a verification trace in the program package (04-DECISIONS-RECORDED.md or the W12 lane notes).",
+      "proofPath": "Matt chose WIDEN (2026-07-22). OUT_OF_AREA_INDEXABLE_TOP_N raised 25 -> 100 in lib/out-of-area-cities.ts, making the >=5-active threshold the effective index criterion (cap now only guards a data glitch). Fresh §0 count (geo_snapshot_mv, geo_type=city, out-of-area, plausible-city-key, live prod dwvlophlbvvygjfxcrhm, 2026-07-22): 60 out-of-area cities carry >=5 active listings — all now index (up from 25), adding ~35 smaller markets. pickIndexableOutOfAreaCities returns min(60,100)=60. Mechanism: lib/out-of-area-cities.test.ts pins TOP_N===100 (bites on revert to 25) + cap/tiebreak behavior (test creates TOP_N+20 cities so the cap is exercised regardless of value). Recorded in 04-DECISIONS-RECORDED.md §10.",
+      "verifiedBy": "Matt-directed scope widening (answered AskUserQuestion 2026-07-22: \"Widen it\"). §0 fresh prod count confirms 60 qualifying cities; the pure pickIndexableOutOfAreaCities function is unit-tested and the constant is pinned; proven to bite RED on a revert to 25, GREEN restored. ci:gates green.",
+      "remaining": "",
       "mattAction": "CONFIRM (default yes): the top-25 out-of-area referral scope stands. The query is run + recorded; no widening implied (Burns clears >=5 on non-SFR stock, ~36 smaller markets stay noindex). Only your one-word confirmation remains."
     },
     {

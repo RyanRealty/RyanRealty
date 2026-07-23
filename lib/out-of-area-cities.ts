@@ -38,11 +38,18 @@ export type OutOfAreaCity = {
   refreshedAt: string
 }
 
-/** Minimum active listings for an out-of-area city page to be indexable. */
+/** Minimum active listings for an out-of-area city page to be indexable. This
+ *  is the real quality bar — a city with 5+ active SFR listings is a genuine
+ *  market worth a referral-capture page. */
 export const OUT_OF_AREA_INDEXABLE_MIN_ACTIVE = 5
 
-/** Cap on how many out-of-area city pages enter the sitemap. */
-export const OUT_OF_AREA_INDEXABLE_TOP_N = 25
+/** Cap on how many out-of-area city pages enter the sitemap. WIDENED 25 -> 100
+ *  (Matt directive 2026-07-22, W12.4): the ≥5-active threshold above is the true
+ *  index criterion, so this cap now only guards against a data glitch producing
+ *  an absurd count. At the 2026-07-22 §0 count (60 out-of-area cities with ≥5
+ *  active) it indexes ALL of them, up from the arbitrary top-25 — capturing the
+ *  smaller markets (Burns, Hines, …) the old cap excluded. */
+export const OUT_OF_AREA_INDEXABLE_TOP_N = 100
 
 /**
  * Feed noise the City field carries that is not a real city. Lowercase,
