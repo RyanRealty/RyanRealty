@@ -25,13 +25,13 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "(a) Cadence is WEEKLY (Mondays 14:00 UTC), not the decided daily \u2014 deviation is stated in the Wave C commit but recorded nowhere in docs/plans/PROGRAM_2026-07-21/04-DECISIONS-RECORDED.md. (b) The promised heartbeat coverage is absent: lib/pipeline-heartbeat.ts evaluators cover only sync-delta, search MV, FSBO, expired, saved-search, market-stats \u2014 no audience-push staleness check, and app/api/cron/loop-health-check/route.ts never probes meta_audience_log. (c) META_AUDIENCE_PUSH_ENABLED being on in prod is unverifiable from code (route forces DRY-RUN when unset via lib/meta-env.ts isMetaAudiencePushEnabled) \u2014 the operating verification is still owed."
+      "remaining": "(a) Cadence is WEEKLY (Mondays 14:00 UTC), not the decided daily — deviation is stated in the Wave C commit but recorded nowhere in docs/plans/PROGRAM_2026-07-21/04-DECISIONS-RECORDED.md. (b) The promised heartbeat coverage is absent: lib/pipeline-heartbeat.ts evaluators cover only sync-delta, search MV, FSBO, expired, saved-search, market-stats — no audience-push staleness check, and app/api/cron/loop-health-check/route.ts never probes meta_audience_log. (c) META_AUDIENCE_PUSH_ENABLED being on in prod is unverifiable from code (route forces DRY-RUN when unset via lib/meta-env.ts isMetaAudiencePushEnabled) — the operating verification is still owed."
     },
     {
       "id": "W1.3",
       "workstream": "W1",
       "mission": "M1",
-      "title": "Wire search and scroll-depth events into the first-party event store (mechanism: event-taxonomy contract test, component fires \u2194 ALLOWED_EVENT_TYPES accepts)",
+      "title": "Wire search and scroll-depth events into the first-party event store (mechanism: event-taxonomy contract test, component fires ↔ ALLOWED_EVENT_TYPES accepts)",
       "status": "done",
       "requiredMechanism": {
         "gates": [],
@@ -46,25 +46,29 @@
         ]
       },
       "proofPath": "contract test lib/event-taxonomy.contract.test.ts pins FirstPartyEventType (7) subset of ALLOWED_EVENT_TYPES (9), bites when a client type is added (proven); scroll_depth dual-sinked first-party in ListingTracker.tsx + useEngagementTracking.ts. End-to-end confirmed: producers -> fireFirstPartyEvent (consent-gated) -> /api/visitors/track accepts scroll_depth -> visitor_events.scroll_depth_pct -> consumed per-person by Contact-360 timeline (app/actions/crm.ts) + visitor session detail. GA4 dual-sink intact, no consent bypass, tsc clean.",
-      "verifiedBy": "independent adversarial agent ad1389b0dd041c5b7 \u2014 confirmed test correct+biting+non-vacuous, full producer->consumer path across lanes (2 real per-person consumers), no regression/bypass. VERDICT: SOLID. (browser-live blocked by concurrent dev-server lock on shared .next; verified via biting test + end-to-end code trace.)",
-      "remaining": "The promised event-taxonomy contract test does not exist \u2014 no *.test.* file references ALLOWED_EVENT_TYPES or FirstPartyEventType (verified by repo-wide grep); the only guard is a comment in VisitTracker.tsx ('Must stay a subset of ALLOWED_EVENT_TYPES'), and scripts/check-tracking-policy.mjs (G48) does not cover the taxonomy. Also scroll_depth on listing-detail pages (components/listing/ListingTracker.tsx:56) and the experience engagement hook (components/site/experience/useEngagementTracking.ts:56) still go to GA4 only, so per-person drop-off remains invisible on those surfaces."
+      "verifiedBy": "independent adversarial agent ad1389b0dd041c5b7 — confirmed test correct+biting+non-vacuous, full producer->consumer path across lanes (2 real per-person consumers), no regression/bypass. VERDICT: SOLID. (browser-live blocked by concurrent dev-server lock on shared .next; verified via biting test + end-to-end code trace.)",
+      "remaining": "The promised event-taxonomy contract test does not exist — no *.test.* file references ALLOWED_EVENT_TYPES or FirstPartyEventType (verified by repo-wide grep); the only guard is a comment in VisitTracker.tsx ('Must stay a subset of ALLOWED_EVENT_TYPES'), and scripts/check-tracking-policy.mjs (G48) does not cover the taxonomy. Also scroll_depth on listing-detail pages (components/listing/ListingTracker.tsx:56) and the experience engagement hook (components/site/experience/useEngagementTracking.ts:56) still go to GA4 only, so per-person drop-off remains invisible on those surfaces."
     },
     {
       "id": "W1.4",
       "workstream": "W1",
       "mission": "M1",
-      "title": "SMS click tracking everywhere \u2014 extend short-link instrumentation beyond prospecting (mechanism: governed-send chokepoint W5)",
-      "status": "partial",
+      "title": "SMS click tracking everywhere — extend short-link instrumentation beyond prospecting (mechanism: governed-send chokepoint W5)",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-sms-link-tracking.mjs"
+        ],
         "crons": [],
         "tests": [],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "app/api/cron/crm-sequence-engine/route.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "'Everywhere' is not true yet: the sequence engine sends person-keyed SMS uninstrumented \u2014 app/api/cron/crm-sequence-engine/route.ts:413-414 calls sendSms/sendSmsViaMessagingService directly with the raw merged body (no instrumentSmsLinks in the file; 4 direct provider call sites baselined in governed-send-baseline.json). Route sequence sends through sendGovernedSms or call instrumentSmsLinks there. Raw no-contact group-reply numbers in app/actions/crm.ts:950 also send untracked (unavoidable: no person to key to)."
+      "proofPath": "crm-sequence-engine/route.ts now instruments the sequence SMS body (instrumentSmsLinks, personId=person.id) inside the claimed send block (line 410), immediately before sendSms/sendSmsViaMessagingService (line 412) — so a real send always gets tracked links, no dry-run/quiet-hours/cap/suppression path runs it. Parity confirmed with prospecting/fsbo/send-doc/expired-outreach (all instrument-before-send) and the composer (sendGovernedSms). New gate scripts/check-sms-link-tracking.mjs (ci:sms-link-tracking, in ci:gates after ci:tracking-policy) fails the build if any file with a raw sendSms/sendSmsViaMessagingService lacks instrumentSmsLinks/sendGovernedSms, except 3 documented non-lead-facing EXEMPT files. Gate matches on a comment- AND string-stripped copy (stripNonCode tokenizer) so a commented/TODO mention of the token cannot satisfy it. PROVEN: green baseline; RED when the real instrument call is removed; RED on the old comment-only bypass (real sendSms + `// TODO instrumentSmsLinks(...)` — was PASS pre-harden, now FAIL). Full ci:gates green.",
+      "verifiedBy": "independent adversarial agent a25cf48e6889911e3 (1 round) — VERDICT: SOLID. Confirmed instrument runs only on a real claimed send, shortLinks.ts is a real implementation keying clicks to personId, all 3 EXEMPT entries genuinely non-lead-facing, and the gate bites (removing the call -> exit 1 naming the file; lingering import did NOT satisfy it). Surfaced one robustness weakness: whole-file token match let a COMMENT mention pass — HARDENED post-verify with stripNonCode (comment/string strip) and re-proven RED on that exact bypass.",
+      "remaining": ""
     },
     {
       "id": "W1.5",
@@ -98,7 +102,7 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "Two promised pieces absent: (1) the per-subdivision market_stats_cache backfill \u2014 the page reads getMarketStats({geoType:'subdivision'}) (page.tsx:360-368) but nothing writes subdivision rows (app/api/cron/refresh-market-stats* cover cities+region only; SubdivisionSalesHistory.tsx:11 admits 'null for most plats until the cache backfill lands'); (2) the ci:sitemap-resolvable gate \u2014 absent from package.json ci:gates, scripts/ (only _gsc-sitemap-fix.mjs / seo-gsc-sitemap-submit.mjs exist), and docs/MECHANICAL_GATES.md (zero 'sitemap' mentions)."
+      "remaining": "Two promised pieces absent: (1) the per-subdivision market_stats_cache backfill — the page reads getMarketStats({geoType:'subdivision'}) (page.tsx:360-368) but nothing writes subdivision rows (app/api/cron/refresh-market-stats* cover cities+region only; SubdivisionSalesHistory.tsx:11 admits 'null for most plats until the cache backfill lands'); (2) the ci:sitemap-resolvable gate — absent from package.json ci:gates, scripts/ (only _gsc-sitemap-fix.mjs / seo-gsc-sitemap-submit.mjs exist), and docs/MECHANICAL_GATES.md (zero 'sitemap' mentions)."
     },
     {
       "id": "W2.2",
@@ -120,8 +124,8 @@
         ]
       },
       "proofPath": "ci:sitemap-resolvable pins both 2026-07-21 drift invariants: communities sourced from getAllResortCommunities() (hardcoded list -> RED) and no inline 2-seg /cities emission (any /cities/{city}/{subdivision} -> RED). Green on real sitemap.",
-      "verifiedBy": "independent adversarial agent a7a0e7e179238b824 \u2014 6 rounds, each found a REAL escape: (1) undeclared app/listing/by-address/[...slug] resolver + name-based /cities drift regex; (2) variable-shadow bypass; (3) concat/Array.join/aliased-baseUrl constructions; (4) protocol-relative + no-leading-slash + dot-relative shapes. Final fix = output-based lib/sitemap-guard.ts filterRogueCityUrls() delegating to the WHATWG URL resolver (crawler algorithm), unit-tested against all vectors, wired at both sitemap returns, guard-wiring asserted by the gate. Round 6 probed 26 exotic shapes (Unicode/%2F/backslash/case/scheme/userinfo/fragment) \u2014 no production-reachable escape. VERDICT: SOLID.",
-      "remaining": "The promised '+ gate' does not exist: no gate or contract test pins registry-to-sitemap community parity or the non-emission of the 404-ing family. lib/sitemap.contract.test.ts asserts only legacy-path exclusion (/listings, /agents, /home-valuation); ci:sitemap-resolvable (the verdict-table gate) was never built. The fix itself is by-construction and working \u2014 only the regression guard is missing."
+      "verifiedBy": "independent adversarial agent a7a0e7e179238b824 — 6 rounds, each found a REAL escape: (1) undeclared app/listing/by-address/[...slug] resolver + name-based /cities drift regex; (2) variable-shadow bypass; (3) concat/Array.join/aliased-baseUrl constructions; (4) protocol-relative + no-leading-slash + dot-relative shapes. Final fix = output-based lib/sitemap-guard.ts filterRogueCityUrls() delegating to the WHATWG URL resolver (crawler algorithm), unit-tested against all vectors, wired at both sitemap returns, guard-wiring asserted by the gate. Round 6 probed 26 exotic shapes (Unicode/%2F/backslash/case/scheme/userinfo/fragment) — no production-reachable escape. VERDICT: SOLID.",
+      "remaining": "The promised '+ gate' does not exist: no gate or contract test pins registry-to-sitemap community parity or the non-emission of the 404-ing family. lib/sitemap.contract.test.ts asserts only legacy-path exclusion (/listings, /agents, /home-valuation); ci:sitemap-resolvable (the verdict-table gate) was never built. The fix itself is by-construction and working — only the regression guard is missing."
     },
     {
       "id": "W2.4",
@@ -138,7 +142,7 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "Stats leg is starved: market_stats_cache has no geo_type='subdivision' rows and no writer computes them (no cron/script calls compute_and_cache_period_stats for subdivisions). Schools: no schools section or school cross-link anywhere on the subdivision page. Parent cross-links for plain GIS plats (the majority of 3,213 \u2014 no registry alias) go only to the /communities hub, no parent-city link. Events/HOA/rules curated-content population (26 of 27 files) remains the stated ongoing content job \u2014 unchanged."
+      "remaining": "Stats leg is starved: market_stats_cache has no geo_type='subdivision' rows and no writer computes them (no cron/script calls compute_and_cache_period_stats for subdivisions). Schools: no schools section or school cross-link anywhere on the subdivision page. Parent cross-links for plain GIS plats (the majority of 3,213 — no registry alias) go only to the /communities hub, no parent-city link. Events/HOA/rules curated-content population (26 of 27 files) remains the stated ongoing content job — unchanged."
     },
     {
       "id": "W2.6",
@@ -172,13 +176,13 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "No 'trail' geo_type in boundaries (trail geometry is linework in trail_lines \u2014 decide whether that satisfies the intent or corridors/polygons are wanted); no ODE school-DISTRICT polygons anywhere in boundaries (the only ODE GeoJSON consumer is the video producer scripts/build_school_district_overlay.py, which caches to data/school-districts/ for renders). If attendance areas + trail_lines are accepted as the substance, the residue is the ODE district layer plus recording that call."
+      "remaining": "No 'trail' geo_type in boundaries (trail geometry is linework in trail_lines — decide whether that satisfies the intent or corridors/polygons are wanted); no ODE school-DISTRICT polygons anywhere in boundaries (the only ODE GeoJSON consumer is the video producer scripts/build_school_district_overlay.py, which caches to data/school-districts/ for renders). If attendance areas + trail_lines are accepted as the substance, the residue is the ODE district layer plus recording that call."
     },
     {
       "id": "W3.1",
       "workstream": "W3",
       "mission": "M1",
-      "title": "Inventory threshold rule \u2014 combo joins sitemap at >=1 active listing with depth content; zero-inventory combos render but noindex; gate asserts no zero-count indexable URL",
+      "title": "Inventory threshold rule — combo joins sitemap at >=1 active listing with depth content; zero-inventory combos render but noindex; gate asserts no zero-count indexable URL",
       "status": "partial",
       "requiredMechanism": {
         "gates": [],
@@ -189,7 +193,7 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "The pre-existing 2-segment /homes-for-sale/{city}/{preset} set (~840 URLs \u2014 the 'with-pool-in-Culver class' this decision explicitly targets) is untouched: app/sitemap.ts lines 302-314 still emit EVERY indexable preset for every Central Oregon city with no inventory count check, and 2-segment zero-inventory combos are never noindexed (matrixNoIndex applies only at slug.length >= 3). No CI gate asserts 'no zero-count indexable URL' over the emitted sitemap (check-seo-routes.mjs has no count logic; the only mechanism is the matrix-scope vitest contract). Extend the count-driven emission + zero-count noindex to the 2-segment city\u00d7preset scope and add the promised sitemap-level gate."
+      "remaining": "The pre-existing 2-segment /homes-for-sale/{city}/{preset} set (~840 URLs — the 'with-pool-in-Culver class' this decision explicitly targets) is untouched: app/sitemap.ts lines 302-314 still emit EVERY indexable preset for every Central Oregon city with no inventory count check, and 2-segment zero-inventory combos are never noindexed (matrixNoIndex applies only at slug.length >= 3). No CI gate asserts 'no zero-count indexable URL' over the emitted sitemap (check-seo-routes.mjs has no count logic; the only mechanism is the matrix-scope vitest contract). Extend the count-driven emission + zero-count noindex to the 2-segment city×preset scope and add the promised sitemap-level gate."
     },
     {
       "id": "W3.2",
@@ -206,7 +210,7 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "'Extend depth content to subdivision level' is not done on the rendered pages: existing subdivision descriptions/blurbs are used only as the EMISSION criterion (hasDepthContent in getSearchMatrixEntries.ts). The visible preset depth layer \u2014 editorial intro, preset-scoped FAQ + FAQPage JSON-LD, cross-links \u2014 still renders only on 2-segment city pages: isPresetDepthPage in /Users/matthewryan/RyanRealty/app/search/[...slug]/page.tsx (lines 739-745) requires `!subdivision`, so every 3-segment {city}/{area}/{preset} page renders a bare grid with no depth content (subdivisionBlurb reaches only JSON-LD/share text)."
+      "remaining": "'Extend depth content to subdivision level' is not done on the rendered pages: existing subdivision descriptions/blurbs are used only as the EMISSION criterion (hasDepthContent in getSearchMatrixEntries.ts). The visible preset depth layer — editorial intro, preset-scoped FAQ + FAQPage JSON-LD, cross-links — still renders only on 2-segment city pages: isPresetDepthPage in /Users/matthewryan/RyanRealty/app/search/[...slug]/page.tsx (lines 739-745) requires `!subdivision`, so every 3-segment {city}/{area}/{preset} page renders a bare grid with no depth content (subdivisionBlurb reaches only JSON-LD/share text)."
     },
     {
       "id": "W3.4",
@@ -228,9 +232,9 @@
           "lib/data/seo/getSiteIndexLinks.ts"
         ]
       },
-      "proofPath": "ci:site-index-freshness pins the complete freshness invariant chain (9 links): bounded ISR revalidate; noStore() directly in the generatedAt===null branch; noStore imported from next/cache + not shadowed; getSiteIndexLinks not shadowed; getSiteIndexLinks=makeResilientCached(...) binding; options(3rd) arg bounded revalidate:CACHE_WINDOWS.* (positional); EMPTY_SITE_INDEX is the fallback(last) arg (positional); makeResilientCached/CACHE_WINDOWS not shadowed; and the import-based contract test asserts the REAL EMPTY_SITE_INDEX.generatedAt===null. Source is lexed by a char-by-char tokenizer (comments/strings/templates blanked) and every arg check is positional via a balanced-paren scan + top-level-comma split \u2014 no raw-text/blob scans remain. Every check proven to bite; real code green.",
-      "verifiedBy": "independent adversarial agent a68dd5bb98a2bf7e4 over 8 rounds \u2014 each round found a REAL accidental-drift bypass (dead comment, template literal, disconnected guard, decoy string, noStore shadow, getSiteIndexLinks memo shadow, leftover-helper drift, substituted fallback, key-parts decoy, options-blob revalidate), ALL closed and re-confirmed biting. Final round: converted the entire remaining blob-scan class to positional checks proactively (closing the sibling of the last finding); each fix proven to bite by reproducing the verifier exact scenario. Remaining surface is sabotage-only (deliberate no-op aliasing / dead code), which a static gate cannot cover and is the accepted floor.",
-      "remaining": "The promised 'freshness gate' does not exist. Refresh is purely cache-TTL-driven (6h unstable_cache + 1h ISR) \u2014 a reasonable 'schedule', but no mechanical check asserts the derivation is fresh or non-stale: no script in scripts/ references site-index or getSiteIndexLinks (verified by grep), and check-content-freshness.mjs (G-FRESH) covers only data/co-events.ts dates. Add a freshness assertion (e.g. smoke/gate on generatedAt age) or record the TTL model as the accepted mechanism."
+      "proofPath": "ci:site-index-freshness pins the complete freshness invariant chain (9 links): bounded ISR revalidate; noStore() directly in the generatedAt===null branch; noStore imported from next/cache + not shadowed; getSiteIndexLinks not shadowed; getSiteIndexLinks=makeResilientCached(...) binding; options(3rd) arg bounded revalidate:CACHE_WINDOWS.* (positional); EMPTY_SITE_INDEX is the fallback(last) arg (positional); makeResilientCached/CACHE_WINDOWS not shadowed; and the import-based contract test asserts the REAL EMPTY_SITE_INDEX.generatedAt===null. Source is lexed by a char-by-char tokenizer (comments/strings/templates blanked) and every arg check is positional via a balanced-paren scan + top-level-comma split — no raw-text/blob scans remain. Every check proven to bite; real code green.",
+      "verifiedBy": "independent adversarial agent a68dd5bb98a2bf7e4 over 8 rounds — each round found a REAL accidental-drift bypass (dead comment, template literal, disconnected guard, decoy string, noStore shadow, getSiteIndexLinks memo shadow, leftover-helper drift, substituted fallback, key-parts decoy, options-blob revalidate), ALL closed and re-confirmed biting. Final round: converted the entire remaining blob-scan class to positional checks proactively (closing the sibling of the last finding); each fix proven to bite by reproducing the verifier exact scenario. Remaining surface is sabotage-only (deliberate no-op aliasing / dead code), which a static gate cannot cover and is the accepted floor.",
+      "remaining": "The promised 'freshness gate' does not exist. Refresh is purely cache-TTL-driven (6h unstable_cache + 1h ISR) — a reasonable 'schedule', but no mechanical check asserts the derivation is fresh or non-stale: no script in scripts/ references site-index or getSiteIndexLinks (verified by grep), and check-content-freshness.mjs (G-FRESH) covers only data/co-events.ts dates. Add a freshness assertion (e.g. smoke/gate on generatedAt age) or record the TTL model as the accepted mechanism."
     },
     {
       "id": "W3.5",
@@ -247,7 +251,7 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "Sort-only preset noindex is done. generateStaticParams remains BLOCKED by build memory: pre-rendering the /search/[...slug] page (a full listing-grid render, many actions + components) OOMs the next build worker even at 10 bare-city params (compiled fine 21s, died in static generation; SIGABRT heap-out-of-memory). The base build has no heap headroom and npm run push uses the same `next build`, so shipping it would break the production build (no-blocked-builds rule). Needs a search-page-weight reduction (lighter build-time render / fewer eager fetches) OR a raised build max-old-space-size before pre-render is viable \u2014 larger than a seam-cleanup pass. Byproduct kept this pass: ci:static-params isEmptyStub now also catches a one-line `return [] }` stub (scripts/check-static-params.mjs)."
+      "remaining": "Sort-only preset noindex is done. generateStaticParams remains BLOCKED by build memory: pre-rendering the /search/[...slug] page (a full listing-grid render, many actions + components) OOMs the next build worker even at 10 bare-city params (compiled fine 21s, died in static generation; SIGABRT heap-out-of-memory). The base build has no heap headroom and npm run push uses the same `next build`, so shipping it would break the production build (no-blocked-builds rule). Needs a search-page-weight reduction (lighter build-time render / fewer eager fetches) OR a raised build max-old-space-size before pre-render is viable — larger than a seam-cleanup pass. Byproduct kept this pass: ci:static-params isEmptyStub now also catches a one-line `return [] }` stub (scripts/check-static-params.mjs)."
     },
     {
       "id": "W4.1",
@@ -264,7 +268,7 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "'Global header search on every page' is not literally universal: pages that fall back to the layout's SiteHeader chrome instead of KbNav \u2014 /dashboard/*, /account, /login, /signup, /forgot-password, /feed, and the legal pages (privacy, terms, cookies, dmca, accessibility, fair-housing, data-deletion) \u2014 have no search entry anywhere in their header (grep of components/site/SiteHeader.tsx, MegaMenu.tsx, MobileNav.tsx, HeaderAccount.tsx finds no SearchSuggest or search input). Every KbNav-chrome page (the entire editorial, portal, search, blog, and guides surface, ~70 routes) does carry it. Also note the 150ms perf test bounds handler compute with a mocked DAL, not live warm round-trip \u2014 acceptable as a CI contract but weaker than the decision's wording."
+      "remaining": "'Global header search on every page' is not literally universal: pages that fall back to the layout's SiteHeader chrome instead of KbNav — /dashboard/*, /account, /login, /signup, /forgot-password, /feed, and the legal pages (privacy, terms, cookies, dmca, accessibility, fair-housing, data-deletion) — have no search entry anywhere in their header (grep of components/site/SiteHeader.tsx, MegaMenu.tsx, MobileNav.tsx, HeaderAccount.tsx finds no SearchSuggest or search input). Every KbNav-chrome page (the entire editorial, portal, search, blog, and guides surface, ~70 routes) does carry it. Also note the 150ms perf test bounds handler compute with a mocked DAL, not live warm round-trip — acceptable as a CI contract but weaker than the decision's wording."
     },
     {
       "id": "W5.1",
@@ -298,7 +302,7 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "The ?reply= producer gap is now CLOSED (shared with W6.4: buildSuggestedReplyLink wired into the inbound-SMS alert email, composer preloads). W5.3 REMAINING: classify inbound EMAIL replies too \u2014 classifyInboundReply is only wired into the Twilio inbound-SMS webhook; the crm-gmail-sync path has no reply-intent hookup, so email replies get no suggested reply / no ?reply= link."
+      "remaining": "The ?reply= producer gap is now CLOSED (shared with W6.4: buildSuggestedReplyLink wired into the inbound-SMS alert email, composer preloads). W5.3 REMAINING: classify inbound EMAIL replies too — classifyInboundReply is only wired into the Twilio inbound-SMS webhook; the crm-gmail-sync path has no reply-intent hookup, so email replies get no suggested reply / no ?reply= link."
     },
     {
       "id": "W5.5",
@@ -336,14 +340,14 @@
         ]
       },
       "proofPath": "lib/data/prospecting/get.ts getExpiredOwnershipSince(mls) resolves expired_listings.list_number -> outreach_crm_person_id -> crm_people.custom.customOwnershipSince (fail-soft null -> MLS fallback, no fabrication). Wired at lib/cma/build.ts expired-audit call site. buildFailureFindings ownershipSince made REQUIRED: tsc/ci:commit-compiles fails if the call site drops it (proven: removing it -> TS2345). County-preference test (expired-audit.test.ts) asserts county 2004 over MLS 2014, cites county deed record; bites when forced to MLS path. 9 tests pass.",
-      "verifiedBy": "independent adversarial agent aec56b92ca7c919e0 \u2014 verified resolver query vs schema snapshot (no column mismatch), required-param bite (tsc TS2345), test bite (force-MLS -> W6.2 test fails), \u00a70 no-fabrication + cycle-list-date guard intact. VERDICT: SOLID.",
+      "verifiedBy": "independent adversarial agent aec56b92ca7c919e0 — verified resolver query vs schema snapshot (no column mismatch), required-param bite (tsc TS2345), test bite (force-MLS -> W6.2 test fails), §0 no-fabrication + cycle-list-date guard intact. VERDICT: SOLID.",
       "remaining": "Plumb the county date into the audit build: read customOwnershipSince (or the owner-lookup result) inside buildCma and pass ownershipSince to buildFailureFindings at lib/cma/build.ts:336. The county-preferring logic and its tests already exist; the parameter is simply dead at the call site."
     },
     {
       "id": "W6.4",
       "workstream": "W6",
       "mission": "M1",
-      "title": "Reply intelligence: classify inbound replies; interested \u21d2 task + preloaded recommended reply",
+      "title": "Reply intelligence: classify inbound replies; interested ⇒ task + preloaded recommended reply",
       "status": "done",
       "requiredMechanism": {
         "gates": [],
@@ -357,8 +361,8 @@
           "components/admin/crm/composer-preload.ts"
         ]
       },
-      "proofPath": "buildSuggestedReplyLink (composer-preload.ts) emits ?reply=&replyChannel=&replySubject= before the #comms fragment; wired into the inbound-SMS alert email link (route.ts, both branches) with the \u00a70-sanitized recommendedReply; SmsComposer/EmailComposer consume via consumeSuggestedReply->parseSuggestedReply (preload FILLS only, send stays G50-gated). Round-trip contract test pins producer<->consumer; bites on any param drift (3/4 fail). No-reply link byte-identical to the old #comms link. tsc clean.",
-      "verifiedBy": "independent adversarial agent a1ae205af5ec20140 (1 round) \u2014 round-trip non-vacuous + bites, wired end-to-end producer->consumer, \u00a70 sanitize confirmed (no unsanitized reply can reach the URL), no auto-send, no regression. VERDICT: SOLID.",
+      "proofPath": "buildSuggestedReplyLink (composer-preload.ts) emits ?reply=&replyChannel=&replySubject= before the #comms fragment; wired into the inbound-SMS alert email link (route.ts, both branches) with the §0-sanitized recommendedReply; SmsComposer/EmailComposer consume via consumeSuggestedReply->parseSuggestedReply (preload FILLS only, send stays G50-gated). Round-trip contract test pins producer<->consumer; bites on any param drift (3/4 fail). No-reply link byte-identical to the old #comms link. tsc clean.",
+      "verifiedBy": "independent adversarial agent a1ae205af5ec20140 (1 round) — round-trip non-vacuous + bites, wired end-to-end producer->consumer, §0 sanitize confirmed (no unsanitized reply can reach the URL), no auto-send, no regression. VERDICT: SOLID.",
       "remaining": "Emit the suggested-reply deep link: when a classification carries a recommendedReply, append ?reply=<encoded>&replyChannel=sms to the alert-email link, the broker-cell forward link, and/or the triage-queue deepLink so the existing composer preload fires. Optionally classify email-channel replies now that the email intro channel exists (decision scoped texted prospects, so this is an extension, not the gap)."
     },
     {
@@ -376,7 +380,7 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "Nothing to build \u2014 the decision is self-executing and honored. The open item is Matt's widen-or-not call (the document's operating question 2); if he widens, it is the promised one-constant change in expired-listing-processor.ts + fsbo-detector.ts.",
+      "remaining": "Nothing to build — the decision is self-executing and honored. The open item is Matt's widen-or-not call (the document's operating question 2); if he widens, it is the promised one-constant change in expired-listing-processor.ts + fsbo-detector.ts.",
       "mattAction": "Decide: keep the $500K/SFR/6-city expired+FSBO capture floor, or widen. If widen, it is a one-constant change in lib/expired-listing-processor.ts (MIN_LIST_PRICE / SERVICE_AREA_CITIES) + lib/fsbo-detector.ts (FSBO_MIN_LIST_PRICE / FSBO_SERVICE_AREA_CITIES)."
     },
     {
@@ -394,13 +398,13 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "The /search map split view is not covered: components/search/MapSearchView.tsx renders its own listing cards (lines 245-592) with no ListingCardHideControl and no hidden-exclusion import, so a hidden home still shows on the map list and pins. Browse surfaces outside /search (e.g. /homes-for-sale city pages, /search/[...slug]) also do not apply the exclusion \u2014 SearchResults is imported only by app/search/page.tsx."
+      "remaining": "The /search map split view is not covered: components/search/MapSearchView.tsx renders its own listing cards (lines 245-592) with no ListingCardHideControl and no hidden-exclusion import, so a hidden home still shows on the map list and pins. Browse surfaces outside /search (e.g. /homes-for-sale city pages, /search/[...slug]) also do not apply the exclusion — SearchResults is imported only by app/search/page.tsx."
     },
     {
       "id": "W7.3",
       "workstream": "W7",
       "mission": "M1",
-      "title": "Stitch likes/saves to the person (auth-user\u2192person join, save events to first-party store, surface on lead) \u2014 mechanism: identity-join contract test",
+      "title": "Stitch likes/saves to the person (auth-user→person join, save events to first-party store, surface on lead) — mechanism: identity-join contract test",
       "status": "done",
       "requiredMechanism": {
         "gates": [],
@@ -414,8 +418,8 @@
         ]
       },
       "proofPath": "The person->auth-user or-filter is extracted into pure buildSavedHomesIdentityOrFilter (crm_person_id + fub_person_id.eq.crmId [the leg native leads need] + legacy fub id when differing + normalized quoted emails), byte-identical to the old inline (refactor, no behavior change), wired into getContactSavedHomes .or(). Identity-join contract test (getContactSavedHomes.test.ts) pins all clauses; bites when the fub_person_id.eq.crmId leg is dropped (4/11 fail). tsc + DAL-boundary clean.",
-      "verifiedBy": "independent adversarial agent a2bf1417464d61bbc (1 round) \u2014 confirmed byte-identical or-filter vs HEAD (no regression), wired, test bites on the native-lead leg, bug closed (fub_person_id.eq.crmId is what lets a native lead match visitor_identity_map). VERDICT: SOLID.",
-      "remaining": "The promised identity-join contract test is only half there: lib/data/crm/getContactSavedHomes.test.ts exercises ONLY the pure rollup/union helpers \u2014 the person\u2192auth-user or-filter (getContactSavedHomes.ts:150-160, visitor_identity_map + profiles chain) is inline and untested. The one join contract test that exists (lib/data/crm/getViewedListings.test.ts, buildSessionOrFilter) covers the visitor_sessions chain, not the consumer-store auth-user join. Extract the saved-homes or-filter into a tested pure helper (same pattern as buildSessionOrFilter) to fulfill the stated mechanism."
+      "verifiedBy": "independent adversarial agent a2bf1417464d61bbc (1 round) — confirmed byte-identical or-filter vs HEAD (no regression), wired, test bites on the native-lead leg, bug closed (fub_person_id.eq.crmId is what lets a native lead match visitor_identity_map). VERDICT: SOLID.",
+      "remaining": "The promised identity-join contract test is only half there: lib/data/crm/getContactSavedHomes.test.ts exercises ONLY the pure rollup/union helpers — the person→auth-user or-filter (getContactSavedHomes.ts:150-160, visitor_identity_map + profiles chain) is inline and untested. The one join contract test that exists (lib/data/crm/getViewedListings.test.ts, buildSessionOrFilter) covers the visitor_sessions chain, not the consumer-store auth-user join. Extract the saved-homes or-filter into a tested pure helper (same pattern as buildSessionOrFilter) to fulfill the stated mechanism."
     },
     {
       "id": "W7.5",
@@ -432,7 +436,7 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "'Full consumer filter vocabulary' is not met: the broker form exposes 9 keys while the consumer vocabulary (lib/search-filters.ts LEGACY_FILTER_KEYS + the field registry) spans ~37 keys \u2014 missing maxSqFt, yearBuiltMin/Max, lotAcresMin/Max, neighborhoodSlug, garageMin, keywords, hasPool/hasView/hasWaterfront/hasFireplace/hasGolfCourse, propertySubType, multi-city, and registry fields. Also cleanup: the stale 'cast is a bridge until the action signature widens' comment + `freq as 'daily' | 'weekly'` cast in ContactSendCenter.tsx:249-254 \u2014 the action already types SavedSearchFrequency."
+      "remaining": "'Full consumer filter vocabulary' is not met: the broker form exposes 9 keys while the consumer vocabulary (lib/search-filters.ts LEGACY_FILTER_KEYS + the field registry) spans ~37 keys — missing maxSqFt, yearBuiltMin/Max, lotAcresMin/Max, neighborhoodSlug, garageMin, keywords, hasPool/hasView/hasWaterfront/hasFireplace/hasGolfCourse, propertySubType, multi-city, and registry fields. Also cleanup: the stale 'cast is a bridge until the action signature widens' comment + `freq as 'daily' | 'weekly'` cast in ContactSendCenter.tsx:249-254 — the action already types SavedSearchFrequency."
     },
     {
       "id": "W8.1",
@@ -517,7 +521,7 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "Everything: corpus ingestion, narrative generator with \u00a70 trace + voice gate, and the market_narratives writer."
+      "remaining": "Everything: corpus ingestion, narrative generator with §0 trace + voice gate, and the market_narratives writer."
     },
     {
       "id": "W8.8",
@@ -551,7 +555,7 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "The operating steps: superuser runs the dry-run then the real 'ENROLL' run at /admin/newsletters/enroll, and the first issue goes through the approve-then-drain queue. Whether either has happened lives in prod newsletters/newsletter_recipients rows (off-limits to this audit); no repo ledger evidence of a send exists. The decision doc itself marks this '(S \u2014 it's an operating decision, not code)'.",
+      "remaining": "The operating steps: superuser runs the dry-run then the real 'ENROLL' run at /admin/newsletters/enroll, and the first issue goes through the approve-then-drain queue. Whether either has happened lives in prod newsletters/newsletter_recipients rows (off-limits to this audit); no repo ledger evidence of a send exists. The decision doc itself marks this '(S — it's an operating decision, not code)'.",
       "mattAction": "Run /admin/newsletters/enroll (dry-run, then type ENROLL for real) to enroll past clients + engaged leads + West Side cohort, then approve the first issue in the send queue. Preconditions W9.4 + W9.5 should be green first."
     },
     {
@@ -569,14 +573,14 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "The one-time ops step is unverifiable from code: the route returns skipped=true (never errors) unless GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL/PRIVATE_KEY exist AND the Workspace domain-wide-delegation grant for https://www.googleapis.com/auth/postmaster.readonly is approved (lib/newsletter/postmaster.ts POSTMASTER_SETUP_HINT). No repo evidence confirms the grant or that deliverability_metrics is receiving real rows \u2014 until confirmed, the reputation gate still runs on fallback/no-data, the exact state this decision was meant to end. Verify one prod cron invocation returns ok (not skipped) or check the grant in Google Admin.",
+      "remaining": "The one-time ops step is unverifiable from code: the route returns skipped=true (never errors) unless GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL/PRIVATE_KEY exist AND the Workspace domain-wide-delegation grant for https://www.googleapis.com/auth/postmaster.readonly is approved (lib/newsletter/postmaster.ts POSTMASTER_SETUP_HINT). No repo evidence confirms the grant or that deliverability_metrics is receiving real rows — until confirmed, the reputation gate still runs on fallback/no-data, the exact state this decision was meant to end. Verify one prod cron invocation returns ok (not skipped) or check the grant in Google Admin.",
       "mattAction": "Approve the Google Workspace domain-wide-delegation grant for scope https://www.googleapis.com/auth/postmaster.readonly so /api/cron/postmaster-sync ingests real deliverability data instead of returning skipped=true."
     },
     {
       "id": "W9.5",
       "workstream": "W9",
       "mission": "M1",
-      "title": "Webhook-registration check \u2014 nightly check against the Resend API",
+      "title": "Webhook-registration check — nightly check against the Resend API",
       "status": "blocked:needs-matt",
       "requiredMechanism": {
         "gates": [
@@ -607,7 +611,7 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "Convert /marketing/request from a mailto builder to an authenticated form that writes marketing_brain_actions rows (the 'two intakes, one queue' half of the decision). Confirm the gmail.modify scope was added to the DWD allowlist in Workspace Admin (operating step \u2014 code degrades silently to auth-pending without it, so the wired cron may still be reading nothing)."
+      "remaining": "Convert /marketing/request from a mailto builder to an authenticated form that writes marketing_brain_actions rows (the 'two intakes, one queue' half of the decision). Confirm the gmail.modify scope was added to the DWD allowlist in Workspace Admin (operating step — code degrades silently to auth-pending without it, so the wired cron may still be reading nothing)."
     },
     {
       "id": "W10.2",
@@ -692,7 +696,7 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "The interim piece \u2014 a pre-written caption field for broker share-to-social \u2014 was never added (no caption concept in any Share* component), and there is no broker deliverable surface to share from since W10.2 does not exist. IG auto-posting itself stays deferred per the decision ('revisit after the library operates')."
+      "remaining": "The interim piece — a pre-written caption field for broker share-to-social — was never added (no caption concept in any Share* component), and there is no broker deliverable surface to share from since W10.2 does not exist. IG auto-posting itself stays deferred per the decision ('revisit after the library operates')."
     },
     {
       "id": "W11.1",
@@ -732,7 +736,7 @@
       "id": "W11.3",
       "workstream": "W11",
       "mission": "M4",
-      "title": "Orwell reviewer \u2014 advisory LLM pass on long-form (violations list + rewrite, facts unchanged), non-blocking",
+      "title": "Orwell reviewer — advisory LLM pass on long-form (violations list + rewrite, facts unchanged), non-blocking",
       "status": "not_started",
       "requiredMechanism": {
         "gates": [],
@@ -749,7 +753,7 @@
       "id": "W11.4",
       "workstream": "W11",
       "mission": "M4",
-      "title": "Canon cleanup \u2014 VOICE.md Orwell + never-pander section; delete stale five-attribute SKILL.md model and contradictory cursor blog rules; repoint producer-gate references",
+      "title": "Canon cleanup — VOICE.md Orwell + never-pander section; delete stale five-attribute SKILL.md model and contradictory cursor blog rules; repoint producer-gate references",
       "status": "not_started",
       "requiredMechanism": {
         "gates": [],
@@ -799,8 +803,8 @@
         ]
       },
       "proofPath": "recordReferralReceivable stamps referral:referred-out on crm_people.tags via withReferredOutTag (pure, idempotent, read-modify-write after the receivable+timeline inserts; tag-write failure only warns). VISIBLE: TagChips renders it on the person card (friendly label now resolves). FILTERABLE: migration 20260722235000 registers it in crm_tags (is_active, not is_protected) -> FilterPanel tag dropdown enumerates it (DB-confirmed shows_in_filter_dropdown=true; applied to hosted). Helper test bites when append is broken (2/18 fail).",
-      "verifiedBy": "independent adversarial agent a6bba09dd26ab3800 (2 rounds) \u2014 round 1 found the tag was written+visible but NOT filterable (missing crm_tags taxonomy row); after the migration, round 2 confirmed via live Supabase query the tag enumerates in the FilterPanel dropdown and the written->visible->filterable chain holds end to end. VERDICT: SOLID.",
-      "remaining": "Write a person-level Referred-Out disposition when a handoff is recorded \u2014 either a 'Referred Out' stage in CRM_STAGES or a referral:referred-out tag stamped by recordReferralReceivable \u2014 so the state is visible/filterable on the person record, not only on /admin/crm/referrals via the receivables join."
+      "verifiedBy": "independent adversarial agent a6bba09dd26ab3800 (2 rounds) — round 1 found the tag was written+visible but NOT filterable (missing crm_tags taxonomy row); after the migration, round 2 confirmed via live Supabase query the tag enumerates in the FilterPanel dropdown and the written->visible->filterable chain holds end to end. VERDICT: SOLID.",
+      "remaining": "Write a person-level Referred-Out disposition when a handoff is recorded — either a 'Referred Out' stage in CRM_STAGES or a referral:referred-out tag stamped by recordReferralReceivable — so the state is visible/filterable on the person record, not only on /admin/crm/referrals via the receivables join."
     },
     {
       "id": "W12.4",
@@ -824,7 +828,7 @@
       "id": "P0.3",
       "workstream": "W13",
       "mission": "M1",
-      "title": "Phase 0 gate: ci:sitemap-resolvable \u2014 sitemap-emitted URL family whose resolver can 404 fails CI",
+      "title": "Phase 0 gate: ci:sitemap-resolvable — sitemap-emitted URL family whose resolver can 404 fails CI",
       "status": "done",
       "requiredMechanism": {
         "gates": [
@@ -839,15 +843,15 @@
           "lib/sitemap-guard.ts"
         ]
       },
-      "proofPath": "ci:sitemap-resolvable green on real sitemap (families:24, resolvers:72); bites on: reintroduced /cities/{city}/{subdivision}, hardcoded communities, deleted resolver, deleted by-address route, renamed-var + shadowed-var rogue /cities emissions \u2014 all exit 1.",
-      "verifiedBy": "independent adversarial agent a7a0e7e179238b824 \u2014 6 rounds, each found a REAL escape: (1) undeclared app/listing/by-address/[...slug] resolver + name-based /cities drift regex; (2) variable-shadow bypass; (3) concat/Array.join/aliased-baseUrl constructions; (4) protocol-relative + no-leading-slash + dot-relative shapes. Final fix = output-based lib/sitemap-guard.ts filterRogueCityUrls() delegating to the WHATWG URL resolver (crawler algorithm), unit-tested against all vectors, wired at both sitemap returns, guard-wiring asserted by the gate. Round 6 probed 26 exotic shapes (Unicode/%2F/backslash/case/scheme/userinfo/fragment) \u2014 no production-reachable escape. VERDICT: SOLID.",
+      "proofPath": "ci:sitemap-resolvable green on real sitemap (families:24, resolvers:72); bites on: reintroduced /cities/{city}/{subdivision}, hardcoded communities, deleted resolver, deleted by-address route, renamed-var + shadowed-var rogue /cities emissions — all exit 1.",
+      "verifiedBy": "independent adversarial agent a7a0e7e179238b824 — 6 rounds, each found a REAL escape: (1) undeclared app/listing/by-address/[...slug] resolver + name-based /cities drift regex; (2) variable-shadow bypass; (3) concat/Array.join/aliased-baseUrl constructions; (4) protocol-relative + no-leading-slash + dot-relative shapes. Final fix = output-based lib/sitemap-guard.ts filterRogueCityUrls() delegating to the WHATWG URL resolver (crawler algorithm), unit-tested against all vectors, wired at both sitemap returns, guard-wiring asserted by the gate. Round 6 probed 26 exotic shapes (Unicode/%2F/backslash/case/scheme/userinfo/fragment) — no production-reachable escape. VERDICT: SOLID.",
       "remaining": "Build the general gate: enumerate every URL family app/sitemap.ts emits and prove each resolves (or is covered by a per-family contract test), wired into ci:gates as ci:sitemap-resolvable. Today only subdivision/search-matrix families have contract tests; cities, communities, neighborhoods, ZIP, blog, /oregon/[city] families have no resolver-parity check, so the 2026-07-21 drift class can silently recur."
     },
     {
       "id": "P0.4",
       "workstream": "W13",
       "mission": "M1",
-      "title": "Phase 0: heartbeat cron \u2014 registered pipeline silent past cadence alerts Matt",
+      "title": "Phase 0: heartbeat cron — registered pipeline silent past cadence alerts Matt",
       "status": "done",
       "requiredMechanism": {
         "gates": [],
@@ -863,14 +867,14 @@
         ]
       },
       "proofPath": "evalAudienceSync (lib/pipeline-heartbeat.ts) red when meta_audience_log.ran_at > 8d or null, green within 8d (1-day slack over the weekly cron). Wired as probe #7 in app/api/cron/loop-health-check/route.ts reading meta_audience_log.ran_at (written every run incl dry-run), pushed into the stale-alert pipeline; query error -> probeFailed(red). Test proves it; bites when threshold broken (8->huge -> red-assertion fails). 28 tests pass.",
-      "verifiedBy": "independent adversarial agent a6d112543b1922345 \u2014 confirmed probe correctness, wiring (right table+column vs schema snapshot, written every run, feeds stale-alert, error->red), bite reproduced, no false alarm (8d threshold vs weekly cadence). VERDICT: SOLID.",
-      "remaining": "The verdict's third named example \u2014 audience sync \u2014 is not monitored: grep of lib/pipeline-heartbeat.ts and loop-health-check/route.ts finds no westside/meta-audience probe, and the Wave C crons (meta-westside-audience, westside-cohort-digest, vercel.json lines 212/216) have no staleness coverage. Add heartbeat probes for the audience-sync pipelines (and any cron registered after Wave A)."
+      "verifiedBy": "independent adversarial agent a6d112543b1922345 — confirmed probe correctness, wiring (right table+column vs schema snapshot, written every run, feeds stale-alert, error->red), bite reproduced, no false alarm (8d threshold vs weekly cadence). VERDICT: SOLID.",
+      "remaining": "The verdict's third named example — audience sync — is not monitored: grep of lib/pipeline-heartbeat.ts and loop-health-check/route.ts finds no westside/meta-audience probe, and the Wave C crons (meta-westside-audience, westside-cohort-digest, vercel.json lines 212/216) have no staleness coverage. Add heartbeat probes for the audience-sync pipelines (and any cron registered after Wave A)."
     },
     {
       "id": "W13.1",
       "workstream": "W13",
       "mission": "M6",
-      "title": "CLAUDE.md shrinks \u2014 stale facts out, rules become gates, file converges to canon pointers",
+      "title": "CLAUDE.md shrinks — stale facts out, rules become gates, file converges to canon pointers",
       "status": "partial",
       "requiredMechanism": {
         "gates": [],
@@ -901,14 +905,14 @@
         ]
       },
       "proofPath": "check-process-canon.mjs (G44/ci:process-canon) rogue check now RECURSES docs/plans (walkMd) and exempts files inside a registered PACKAGE dir (canon Doc cell ending in /; PROGRAM_2026-07-21/ + ADMIN_REBUILD/ registered). Added the DELETIONS arm: a registered Doc/package missing from disk fails. parseRegistry reads ONLY the first table column, so Status-cell cross-refs (e.g. docs/fub-feature-audit/...) and parent-relative entries (../EXPERIENCE_SYSTEM.md) are handled correctly. Both arms proven to bite (rogue subdir + top-level file; missing registration); no false positive on a registered-package file. plan-doc count 82->125 (recursion sees subdirs).",
-      "verifiedBy": "independent adversarial agent aabcd23c9a0f51c31 \u2014 confirmed recurse arm bites, package exemption scoped to first-column /-entries only (not over-broad, description-cell /-paths do not register), deletions arm bites with NO false positive on the two named real cases (../EXPERIENCE_SYSTEM.md exists, fub-feature-audit cross-ref never enters regFiles), first-column-only parsing is the correctness crux. VERDICT: SOLID.",
+      "verifiedBy": "independent adversarial agent aabcd23c9a0f51c31 — confirmed recurse arm bites, package exemption scoped to first-column /-entries only (not over-broad, description-cell /-paths do not register), deletions arm bites with NO false positive on the two named real cases (../EXPERIENCE_SYSTEM.md exists, fub-feature-audit cross-ref never enters regFiles), first-column-only parsing is the correctness crux. VERDICT: SOLID.",
       "remaining": "Fix scripts/check-process-canon.mjs: recurse into docs/plans subdirectories for the rogue check, and fail when a canon-registered plan file no longer exists on disk (the deletions arm)."
     },
     {
       "id": "W13.3",
       "workstream": "W13",
       "mission": "M6",
-      "title": "Skills reviewed and streamlined \u2014 five loop skills tracked, stale state stripped, updated to new approval model; retired producer stubs deleted; contradicting cursor rules die",
+      "title": "Skills reviewed and streamlined — five loop skills tracked, stale state stripped, updated to new approval model; retired producer stubs deleted; contradicting cursor rules die",
       "status": "partial",
       "requiredMechanism": {
         "gates": [],

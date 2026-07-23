@@ -26,6 +26,7 @@ import { referencesCmaLink, findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { isArchivedPlaceholder, laHour, inSmsQuietHours, nextSendWindow, renderMerge, type Step } from './helpers'
 import { buildMergeContext } from '@/lib/crm/merge-context'
 import { sendSms, sendSmsViaMessagingService, brokerTwilioNumber, getA2pCampaignStatus } from '@/lib/crm/twilio'
+import { instrumentSmsLinks } from '@/lib/data/crm/shortLinks'
 import { isConditionNode, type AnyStepOrCondition } from '@/lib/crm/sequence-step-schema'
 import { resolveConditionPath } from '@/lib/crm/conditions-eval'
 import { manualEnrollPerson } from '@/lib/crm/enroll'
@@ -399,16 +400,14 @@ export async function GET(request: Request) {
             queuedSms++
             continue
           }
-          // Send from the assigned broker's OWN Twilio line (same model as the
-          // composer) so the lead always sees a consistent caller ID — the
-          // pooled messaging service picks an arbitrary sticky number (this is
-          // how texts went out from the temp 541.224.5025 line, 2026-07-02
-          // fix). MS remains the fallback when no broker line resolves.
+          // Broker's OWN Twilio line for a consistent caller ID (composer model); pooled MS is the fallback.
           const seqFrom = await brokerTwilioNumber(mailbox.slug)
           // Claim the step before the send (at-most-once across a crash).
           const smsClaim = await claimSend('sms')
           if (smsClaim === 'error') { await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log('Sequence SMS claim failed, retrying in 30m'); errored++; continue }
           if (smsClaim === 'claimed') {
+            // W1.4: track sequence-SMS link clicks per person (parity with composer/prospecting sends).
+            body = await instrumentSmsLinks(body, { personId: person.id, broker: mailbox.slug })
             const sent = seqFrom
               ? await sendSms({ from: seqFrom, to: toPhone, body })
               : await sendSmsViaMessagingService({ to: toPhone, body })
