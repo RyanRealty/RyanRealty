@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.848.0 (2026-07-23)
+
+### Features
+- feat(brand-voice): one shared checkBrandVoice on every send path + ci:voice-send-paths (W11.2)
+
+### Maintenance
+- chore(budget): re-baseline social/publish+cma+bpo for W11.2 voice gates
+- chore(program): W11.2 -> done + handoff (shared voice-check on send paths verified)
+
+---
+
+
 ## v1.847.0 (2026-07-23)
 
 ### Features
