@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.834.0 (2026-07-23)
+
+### Features
+- feat(seo): ci:site-index-freshness gate — pin the /site-index derived-link freshness contract (W3.4)
+
+---
+
+
 ## v1.833.0 (2026-07-22)
 
 ### Features
