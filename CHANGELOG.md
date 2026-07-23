@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.845.0 (2026-07-23)
+
+### Features
+- feat(W3.1): noindex + sitemap-omit zero-inventory {city}/{preset} combos
+
+---
+
+
 ## v1.844.0 (2026-07-23)
 
 ### Features
