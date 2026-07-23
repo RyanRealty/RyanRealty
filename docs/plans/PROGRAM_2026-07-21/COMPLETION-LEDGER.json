@@ -981,7 +981,7 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "Execute the shrink: purge FUB-era sections and dead-path citations from CLAUDE.md, delete/archive the ~30 FUB_*.md docs the recorded decision condemned (all still in docs/), convert surviving prose rules to gate pointers. The prepared CONSOLIDATION-LANES.json verdicts have not been acted on."
+      "remaining": "Execute the shrink: purge FUB-era sections and dead-path citations from CLAUDE.md, convert surviving prose rules to gate pointers, and act on the CONSOLIDATION-LANES.json verdicts (11 lanes, analysis already done).  SCOPING CORRECTION (measured 2026-07-23, do NOT skip): the row reads as though the FUB docs can simply be deleted. They cannot. 18 FUB_*.md remain in docs/ and 17 of them are still REFERENCED by other files — FUB_SELLER_WORKFLOW_2026-05-17.md by 25 files, FUB_CRM_FEATURE_SPEC.md by 20, FUB_AUDIT_2026-05-17.md by 8, FUB_UI_SETUP_RUNBOOK.md and FUB_CUSTOM_FIELDS.md by 7 each. A blind delete breaks 100+ references across code, skills, and CLAUDE.md’s own routing table. The real unit is a reference-graph cleanup: repoint or remove each citation FIRST (many live in the CLAUDE.md routing table this same row wants shrunk, so they disappear as part of the shrink; the rest are in skills/ and docs/), THEN archive the files. Needs a mechanism that keeps them from coming back (e.g. a gate asserting no tracked file cites a FUB_*.md path)."
     },
     {
       "id": "W13.2",
