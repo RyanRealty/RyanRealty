@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.836.1 (2026-07-23)
+
+### Maintenance
+- refactor(crm): extract + test the saved-homes identity or-filter (W7.3)
+
+---
+
+
 ## v1.836.0 (2026-07-23)
 
 ### Features
