@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.837.0 (2026-07-23)
+
+### Features
+- feat(crm): W1.4 — sequence-engine SMS gets tracked links + ci:sms-link-tracking gate
+
+---
+
+
 ## v1.836.3 (2026-07-23)
 
 ### Bug Fixes
