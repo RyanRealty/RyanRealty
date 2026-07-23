@@ -757,17 +757,23 @@
       "workstream": "W11",
       "mission": "M4",
       "title": "One generated banned-list source; consumers generated; parity test fails CI on any consumer drift",
-      "status": "not_started",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-voice-vocab-parity.mjs"
+        ],
         "crons": [],
         "tests": [],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "scripts/gen-brand-voice-consumers.mjs",
+          "lib/brand-voice/generated-vocabulary.ts",
+          "scripts/_brand_voice_vocab_generated.py"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "Everything: collapse the ~12 hand-typed lists (generate-briefs.ts, gbp-health-check route, _producer_lib.py, voice-precheck.ts, templateVoiceCheck.ts, plus the copies inventoried in docs/plans/PROGRAM_2026-07-21/audits/brand-voice-enforcement-orwell-rules-migration.json) into generated consumers of brand-voice-vocabulary.cjs, fix the June-relaxed-word drift in generate-briefs.ts and _producer_lib.py, and extend the parity test to fail CI on any consumer drift (today it covers 2 of ~12)."
+      "proofPath": "scripts/brand-voice-vocabulary.cjs stays canonical; scripts/gen-brand-voice-consumers.mjs (--write/--check) generates lib/brand-voice/generated-vocabulary.ts (app-bundle) + scripts/_brand_voice_vocab_generated.py (build_*.py). All ~10 hand-typed consumers (voice-precheck, templateVoiceCheck, generate-briefs, gbp-health-check, preflight, build-blog-post/comms/eflyer, _producer_lib.py, generate_content_calendar.py) now import the generated/canonical source with only explicit LOCAL_EXTRAS. Live drift bugs fixed (generate-briefs no longer rejects \"about\"; _producer_lib no longer hard-bans spacious/turnkey/etc). Gate: scripts/check-voice-vocab-parity.mjs (ci:voice-vocab-parity, in ci:gates) — freshness (gen --check) + per-consumer discipline (TS-compiler AST + Python scan) over all 10 consumers (was 2 of ~12, content-blind). Decision: 04-DECISIONS §21.",
+      "verifiedBy": "Independent adversarial verifier (different agent, assume-broken, behavior-preservation focus): PASS — no regression on any blocking send gate (newsletter/template/producer keep exact return shapes, tsc 0 errors, Python imports resolve); about/spacious/turnkey over-ban drift confirmed fixed, cliches still caught. It found 2 low-severity coverage losses in ADVISORY consumers (gbp 'beautiful', generate-briefs 'introducing' + pandering phrase) + a <=4-word/unused-import gate evasion — ALL fixed here (LOCAL_EXTRAS restored; overlap threshold 5->3; import-usage assertion added) and re-proven to bite. 2026-07-23.",
+      "remaining": "DONE. One generated banned-list source; every consumer imports it (no hand-typed core list); ci:voice-vocab-parity fails CI on any consumer drift (a re-typed core list, a dropped import, or a stale generated artifact) — proven to bite on all three. tsc 0 errors; the June-2026 relaxed-word drift is removed from every consumer."
     },
     {
       "id": "W11.2",
