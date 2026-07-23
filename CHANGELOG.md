@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.841.0 (2026-07-23)
+
+### Features
+- feat(W5.3): classify inbound EMAIL replies + suggested-reply deep link
+
+### Other
+- ci(W9.5): wire durable nightly Resend-webhook check runner
+
+---
+
+
 ## v1.840.3 (2026-07-23)
 
 ### Bug Fixes
