@@ -34,11 +34,9 @@ import { getEventsForMonth } from '@/lib/data/events/getEvents'
 import { getCommunityBySlug } from '@/app/actions/communities'
 import { createNewsletterDraft, listNewsletters, setNewsletterCitations, type NewsletterCitationEntry } from '@/lib/data'
 import { htmlToPlainText } from '@/lib/email/prepare'
+import { NEWSLETTER_MARKET_CITY_SLUGS } from '@/lib/data/geo/report-cities'
 
 const SITE = 'https://ryan-realty.com'
-
-/** The primary cities the newsletter Market section covers (all resolve as cities). */
-const NEWSLETTER_CITY_SLUGS = ['bend', 'redmond', 'sisters', 'sunriver', 'la-pine', 'tumalo']
 
 /** The featured community for the Community section (curated hero lives on its page). */
 const FEATURED_COMMUNITY_SLUG = 'tetherow'
@@ -333,7 +331,7 @@ export async function produceNewsletterDraft(createdBy: string | null): Promise<
   const citations: NewsletterCitation[] = []
 
   // ── Market (per-city meters) ────────────────────────────────────────────────
-  const blocks = await getMarketReportData(NEWSLETTER_CITY_SLUGS)
+  const blocks = await getMarketReportData(NEWSLETTER_MARKET_CITY_SLUGS)
   // Keep only cities with a REAL MoS + verdict — a meter with no MoS can't be drawn.
   const marketCities: MarketCity[] = []
   for (const b of blocks) {

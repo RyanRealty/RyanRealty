@@ -56,6 +56,7 @@ import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 import { getMarketTrend, type MarketTrendPoint } from '@/lib/data/market/getMarketTrend'
 import { buildMarketReportAreas } from '@/lib/data/crm/getContactReportSubscriptions'
 import { hrefForNeighborhoodSlug } from '@/lib/neighborhood-areas'
+import { REPORT_CITY_SLUG_SET } from '@/lib/data/geo/report-cities'
 import { marketVerdict } from '@/lib/market/classify'
 import type { MoSVerdict } from '@/lib/data/types/market'
 import { formatDate } from '@/lib/format/date'
@@ -134,17 +135,6 @@ export type MarketReportAreaBlock = {
   trend?: MarketTrendSummary | null
 }
 
-/** The 7 Central Oregon city slugs the report engine serves as cities. */
-const CITY_SLUGS = new Set<string>([
-  'bend',
-  'redmond',
-  'sisters',
-  'sunriver',
-  'tumalo',
-  'la-pine',
-  'terrebonne',
-])
-
 /**
  * Raw (UNROUNDED) months of supply from an active count and a trailing-12-month
  * close count, per the canonical absorption formula. Pure — exported for unit
@@ -205,7 +195,7 @@ export function classifyMarketVerdict(mos: number | null | undefined): MoSVerdic
  * convention the cache uses for resort communities. Pure — exported for tests.
  */
 export function resolveAreaGeoType(slug: string): 'city' | 'neighborhood' {
-  return CITY_SLUGS.has(slug) ? 'city' : 'neighborhood'
+  return REPORT_CITY_SLUG_SET.has(slug) ? 'city' : 'neighborhood'
 }
 
 /** UTC month name for an ISO date, e.g. "June". Null when unparseable. */
@@ -381,7 +371,7 @@ export function buildAreaBlock(args: {
  * suppression-gated send path.
  */
 export async function getMarketReportData(
-  areaSlugs: string[],
+  areaSlugs: readonly string[],
 ): Promise<MarketReportAreaBlock[]> {
   if (!Array.isArray(areaSlugs) || areaSlugs.length === 0) return []
 

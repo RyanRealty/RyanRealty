@@ -3,6 +3,7 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { slugify, subdivisionEntityKey } from '@/lib/slug'
 import type { CityMarketStats } from '@/app/actions/listings'
+import { MARKET_REPORT_DEFAULT_CITIES } from '@/lib/data/geo/report-cities'
 
 export type MarketGeoType = 'region' | 'city' | 'subdivision' | 'neighborhood'
 export type MarketPeriodType = 'monthly' | 'quarterly' | 'yearly' | 'custom' | 'ytd' | 'weekly' | 'rolling_30d' | 'rolling_90d' | 'rolling_365d'
@@ -210,21 +211,9 @@ export async function populateMarketPulseForCity(cityName: string): Promise<{ ok
  * Populate market_pulse_live for all Central Oregon cities.
  */
 export async function populateAllMarketPulse(): Promise<{ results: Array<{ city: string; ok: boolean; error?: string }> }> {
-  const cities = [
-    'Bend',
-    'Redmond',
-    'Sisters',
-    'Sunriver',
-    'La Pine',
-    'Madras',
-    'Prineville',
-    'Terrebonne',
-    'Tumalo',
-    'Powell Butte',
-    'Crooked River Ranch',
-  ]
+  // The 11-city stat tier from the one report-coverage registry (W8.8).
   const results = []
-  for (const city of cities) {
+  for (const city of MARKET_REPORT_DEFAULT_CITIES) {
     const result = await populateMarketPulseForCity(city)
     results.push({ city, ...result })
   }

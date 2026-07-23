@@ -1,3 +1,5 @@
+import { PRIMARY_CITIES } from '@/lib/data/geo/report-cities'
+
 /** City row for the index page. */
 export type CityForIndex = {
   slug: string
@@ -22,23 +24,14 @@ export type CityDetail = {
   communityCount: number
 }
 
-/** Primary Central Oregon cities to feature at top of /cities (exact display order).
- * Spellings are the canonical MLS `listings.City` values ("La Pine", "Sunriver" —
- * verified against the live table 2026-07-16). The sales-report cards match these
- * against per-city report data with a raw .get() AND render them as labels, so a
- * non-canonical spelling here means permanently-empty cards ("No sales this
- * period") plus "LAPINE"/"SUN RIVER" typos in the UI. */
-export const PRIMARY_CITIES = [
-  'Bend',
-  'Redmond',
-  'La Pine',
-  'Sisters',
-  'Sunriver',
-  'Tumalo',
-  'Crooked River Ranch',
-  'Prineville',
-  'Madras',
-]
+/** Primary Central Oregon cities to feature at top of /cities (exact display
+ *  order). Sourced from the one report-coverage registry (W8.8, imported at the
+ *  top); re-exported here to preserve every existing `@/lib/cities` import path.
+ *  The load-bearing order and canonical MLS `listings.City` spellings ("La Pine",
+ *  "Sunriver") live at the registry definition — a non-canonical spelling
+ *  produces permanently-empty "No sales this period" cards and "LAPINE"/"SUN
+ *  RIVER" UI typos. */
+export { PRIMARY_CITIES }
 
 /** Map primary display name → possible DB/listings name for matching (legacy
  * feed rows occasionally carry "Lapine" / "Sun River"). */

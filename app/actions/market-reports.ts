@@ -517,7 +517,7 @@ const _getSalesReportCardsDataCached = unstable_cache(
  * returns summary data so the reports index can show cards without waiting for weekly generation.
  * Cached 3600s; keyed by city list and current UTC date so each calendar day gets fresh period windows.
  */
-export async function getSalesReportCardsData(cities: string[]): Promise<SalesReportCardData[]> {
+export async function getSalesReportCardsData(cities: readonly string[]): Promise<SalesReportCardData[]> {
   const cityList = [...new Set(cities.map((c) => c.trim()).filter(Boolean))]
   if (cityList.length === 0) return []
   // Include today's UTC date in the key so the 7-day/monthly windows stay aligned.

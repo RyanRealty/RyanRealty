@@ -15,6 +15,7 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import resortCommunities from '@/data/resort-communities.json'
 import { BEND_DISTRICTS } from '@/lib/neighborhood-areas'
+import { REPORT_CITIES } from '@/lib/data/geo/report-cities'
 
 export type ReportFrequency = 'weekly' | 'monthly' | 'quarterly'
 
@@ -35,16 +36,9 @@ export function normalizeReportFrequency(value: unknown): ReportFrequency {
   return value === 'weekly' || value === 'monthly' || value === 'quarterly' ? value : 'monthly'
 }
 
-/** The Central Oregon cities the report engine serves, used as the area floor. */
-const CENTRAL_OREGON_CITIES: MarketReportArea[] = [
-  { slug: 'bend', label: 'Bend' },
-  { slug: 'redmond', label: 'Redmond' },
-  { slug: 'sisters', label: 'Sisters' },
-  { slug: 'sunriver', label: 'Sunriver' },
-  { slug: 'tumalo', label: 'Tumalo' },
-  { slug: 'la-pine', label: 'La Pine' },
-  { slug: 'terrebonne', label: 'Terrebonne' },
-]
+/** The Central Oregon cities the report engine serves, used as the area floor.
+ *  Sourced from the report-coverage registry (W8.8) — this IS the report core. */
+const CENTRAL_OREGON_CITIES: readonly MarketReportArea[] = REPORT_CITIES
 
 type RegistryCommunity = { slug?: unknown; label?: unknown; is_resort?: unknown }
 

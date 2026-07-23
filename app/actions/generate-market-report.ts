@@ -16,15 +16,13 @@ import {
   formatDays,
 } from '@/lib/crm/market-report-email'
 import { sendMarketStatAlertEmail } from '@/lib/market-stat-alert'
+import { REPORT_CITY_SLUGS } from '@/lib/data/geo/report-cities'
 
 const BUCKET = 'banners'
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
-/**
- * City slugs the CRM report engine serves verified verdict blocks for
- * (lib/data/crm/getMarketReportData CITY_SLUGS — the §0-traced cache path).
- */
-const VERDICT_CITY_SLUGS = ['bend', 'redmond', 'sisters', 'sunriver', 'tumalo', 'la-pine', 'terrebonne']
+// City slugs the CRM report engine serves verified verdict blocks for — the
+// report core from the one report-coverage registry (W8.8, §0-traced cache path).
 
 /**
  * Cities with a live /housing-market/<slug> report page (the catch-all's
@@ -252,7 +250,7 @@ export async function generateWeeklyMarketReport(): Promise<
   // simply gets no verdict line, never an invented one).
   let blocksBySlug = new Map<string, MarketReportAreaBlock>()
   try {
-    const blocks = await getVerifiedCityBlocks(VERDICT_CITY_SLUGS)
+    const blocks = await getVerifiedCityBlocks(REPORT_CITY_SLUGS)
     blocksBySlug = new Map(blocks.map((b) => [b.slug, b]))
   } catch (e) {
     // Narrative enrichment is additive — the raw report still publishes.

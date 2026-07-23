@@ -4,20 +4,11 @@ import type {
   ReportMetricsTimeSeriesPoint,
 } from '@/app/actions/reports'
 
-/** Central Oregon cities included in the home page snapshot, market pulse carousel, and default multi-city report pulls. */
-export const MARKET_REPORT_DEFAULT_CITIES = [
-  'Bend',
-  'Redmond',
-  'Sisters',
-  'La Pine',
-  'Sunriver',
-  'Tumalo',
-  'Terrebonne',
-  'Madras',
-  'Prineville',
-  'Powell Butte',
-  'Crooked River Ranch',
-] as const
+/** Central Oregon cities included in the home page snapshot, market pulse
+ *  carousel, and default multi-city report pulls. Sourced from the one
+ *  report-coverage registry (W8.8); re-exported here to preserve every existing
+ *  `@/app/actions/market-report-types` import path. */
+export { MARKET_REPORT_DEFAULT_CITIES } from '@/lib/data/geo/report-cities'
 
 export type CityReportMetrics = {
   city: string

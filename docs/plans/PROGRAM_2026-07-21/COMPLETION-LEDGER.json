@@ -555,17 +555,21 @@
       "workstream": "W8",
       "mission": "M5",
       "title": "One geo registry for report coverage; gate on inline geo lists",
-      "status": "not_started",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-report-geo-registry.mjs"
+        ],
         "crons": [],
         "tests": [],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "lib/data/geo/report-cities.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "Create the single report-coverage geo registry, repoint all five duplicated lists at it, and add the promised gate that fails CI on inline geo lists."
+      "proofPath": "lib/data/geo/report-cities.ts (the one registry) + scripts/check-report-geo-registry.mjs (ci:report-geo-registry, in ci:gates) — AST gate that fails on any array/Set/object literal outside the registry equal to a report tier (7/9/11) in slug, display-name, {value,label}, {name}, or Set form; exempts per-city data tables (lat/lng). Decision: 04-DECISIONS-RECORDED.md §15 + §15a.",
+      "verifiedBy": "4-lens adversarial workflow (separate agents, assume-broken): §0 set-equality (all 8 repoints member-for-member == HEAD, no city added/dropped), newsletter §0 (exactly the original 6, terrebonne not added), consumer integrity (tsc 0 errors, 65 affected tests pass, re-export bindings + readonly widening safe), defeat-the-gate (bites slug/label/{value,label}/{name}/Set; no over-reach; data-table exempt). Two gaps the gate lens found — a {value,label}/{name} bypass and a newsletter order swap — closed and re-proven. 2026-07-23.",
+      "remaining": "DONE. One report-coverage registry (lib/data/geo/report-cities.ts) owns REPORT_CITIES (core 7), MARKET_REPORT_DEFAULT_CITIES (11), PRIMARY_CITIES (9), NEWSLETTER_MARKET_CITY_SLUGS (6). All duplicated report lists repointed (getMarketReportData, compare/VERDICT_CITIES, generate-market-report, getContactReportSubscriptions, produce-draft, market-report-types, lib/cities, market-stats) with every set preserved exactly. ci:report-geo-registry (AST-based) bans re-inlining. The genuinely-different city sets (housing-market page set, pulse tiles, communities, pulse feed, video) are out of scope and correctly NOT flagged."
     },
     {
       "id": "W9.1",

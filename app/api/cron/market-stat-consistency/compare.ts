@@ -27,21 +27,16 @@
  *     months_of_supply uses the canonical 6-month base (§0 formula).
  */
 
+import { REPORT_CITY_LABELS } from '@/lib/data/geo/report-cities'
+
 export const CROSS_PATH_TOLERANCE_PCT = 1
 
 /**
- * The 7 verdict cities — the Central Oregon cities the report engine serves
- * with a market verdict (mirrors CITY_SLUGS in lib/data/crm/getMarketReportData.ts).
+ * The verdict cities — the Central Oregon cities the report engine serves with a
+ * market verdict. IS the report core (W8.8): sourced from the one report-coverage
+ * registry, in canonical label form.
  */
-export const VERDICT_CITIES = [
-  'Bend',
-  'Redmond',
-  'Sisters',
-  'Sunriver',
-  'Tumalo',
-  'La Pine',
-  'Terrebonne',
-] as const
+export const VERDICT_CITIES = REPORT_CITY_LABELS
 
 export type CrossPathFigureName = 'median close price' | 'active count' | 'months of supply'
 
