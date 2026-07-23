@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.845.1 (2026-07-23)
+
+### Maintenance
+- docs(program): record precise §0-scoped subdivision-stats build spec (W2.1/W2.4)
+
+---
+
+
 ## v1.845.0 (2026-07-23)
 
 ### Features
