@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.843.1 (2026-07-23)
+
+### Maintenance
+- chore(W13.3): reconcile loop skills + cursor rules to 2026-07-21 canon
+
+---
+
+
 ## v1.843.0 (2026-07-23)
 
 ### Features
