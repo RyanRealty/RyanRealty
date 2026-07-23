@@ -20,8 +20,8 @@ import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import { hasSellerIntent } from '@/lib/crm/seller-intent'
 import { CRM_MAILBOXES, sendCrmEmail } from '@/lib/crm/gmail'
 import { classifyInboundReply, REPLY_INTENT_LABELS, type ReplyClassification } from '@/lib/crm/reply-intent'
+import { prospectOutreachContext } from '@/lib/crm/prospect-context'
 import { buildSuggestedReplyLink } from '@/components/admin/crm/composer-preload'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -75,55 +75,8 @@ async function isBrokerForwardCell(phone: string): Promise<boolean> {
   return false
 }
 
-/**
- * Is this person a texted prospect (expired-listing / FSBO outreach)? Returns
- * the prospect kind + property address for merge-safe classifier context, or
- * null when the person is not in either pipeline. Gate order: intent tags on
- * crm_people first, then an outreach claim row (expired_listings /
- * fsbo_listings.outreach_crm_person_id), which also supplies the address.
- * Every read fails soft — a query error means "not a prospect" (no classify).
- */
-async function prospectOutreachContext(
-  sb: SupabaseClient,
-  personId: number,
-): Promise<{ kind: 'expired' | 'fsbo' | null; address: string | null } | null> {
-  const { data: person } = await sb
-    .from('crm_people')
-    .select('tags')
-    .eq('id', personId)
-    .maybeSingle()
-  const tags: string[] = Array.isArray(person?.tags) ? (person.tags as string[]) : []
-  const tagKind: 'expired' | 'fsbo' | null = tags.includes('intent:expired-listing')
-    ? 'expired'
-    : tags.includes('intent:fsbo')
-      ? 'fsbo'
-      : null
-
-  const [expired, fsbo] = await Promise.all([
-    sb
-      .from('expired_listings')
-      .select('street_address')
-      .eq('outreach_crm_person_id', personId)
-      .order('outreach_claim_at', { ascending: false, nullsFirst: false })
-      .limit(1)
-      .maybeSingle(),
-    sb
-      .from('fsbo_listings')
-      .select('street_address')
-      .eq('outreach_crm_person_id', personId)
-      .order('outreach_claim_at', { ascending: false, nullsFirst: false })
-      .limit(1)
-      .maybeSingle(),
-  ])
-  const claim = expired.data
-    ? { kind: 'expired' as const, address: (expired.data.street_address as string | null) ?? null }
-    : fsbo.data
-      ? { kind: 'fsbo' as const, address: (fsbo.data.street_address as string | null) ?? null }
-      : null
-
-  if (!tagKind && !claim) return null
-  return { kind: tagKind ?? claim?.kind ?? null, address: claim?.address ?? null }
-}
+// prospectOutreachContext moved to @/lib/crm/prospect-context (W5.3) so the
+// crm-gmail-sync email path can classify inbound EMAIL replies the same way.
 
 export async function POST(request: Request) {
   const verified = await verifiedTwilioParams(request)

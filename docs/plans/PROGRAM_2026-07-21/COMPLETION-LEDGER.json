@@ -299,17 +299,22 @@
       "workstream": "W5",
       "mission": "M1",
       "title": "Recommended replies at the thread: extend AI SMS draft pattern to email and inbound-reply context, preloaded in the composer (broker overrides, no auto-send)",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
         "gates": [],
         "crons": [],
-        "tests": [],
+        "tests": [
+          "lib/crm/email-intent-note.contract.test.ts"
+        ],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "lib/crm/email-intent-note.ts",
+          "lib/crm/prospect-context.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "The ?reply= producer gap is now CLOSED (shared with W6.4: buildSuggestedReplyLink wired into the inbound-SMS alert email, composer preloads). W5.3 REMAINING: classify inbound EMAIL replies too — classifyInboundReply is only wired into the Twilio inbound-SMS webhook; the crm-gmail-sync path has no reply-intent hookup, so email replies get no suggested reply / no ?reply= link."
+      "proofPath": "lib/crm/email-intent-note.contract.test.ts (7 tests, round-trips the ?reply= link through parseSuggestedReply → {channel:email}; wiring block asserts gmail.ts calls classifyInboundEmailReplies + buildEmailIntentNote). Runs via npm run test in .github/workflows/ci.yml. Decision record: docs/plans/PROGRAM_2026-07-21/04-DECISIONS-RECORDED.md §14.",
+      "verifiedBy": "Independent adversarial verifier agent (assume-broken brief, different agent than the builder): confirmed email pass runs on the sync success path + fail-open, scope parity with SMS (prospects only), idempotency + MAX_EMAIL_INTENT_CLASSIFY bound, channel:email deep-link round-trip, and the test bites (email→sms flip goes RED, restored GREEN). 2026-07-23.",
+      "remaining": "DONE. Inbound EMAIL replies from expired/FSBO prospects now get the same reply-intent classification + suggested-reply ?reply=&replyChannel=email deep link the Twilio inbound-SMS webhook produces. prospectOutreachContext extracted to shared lib/crm/prospect-context.ts (both channels); classification wired into lib/crm/gmail.ts syncMailboxWindow (fail-open, inbound-only, bounded LLM fan-out, idempotent via gmail-intent: dedupe_key). Note+link built by pure lib/crm/email-intent-note.ts, gated by the contract test."
     },
     {
       "id": "W5.5",

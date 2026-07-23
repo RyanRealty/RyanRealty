@@ -17,9 +17,13 @@
 
 import { createHash } from 'node:crypto'
 import { google, type gmail_v1 } from 'googleapis'
+import { type SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
-import { CRM_BROKER_BY_EMAIL, type CrmBrokerSlug } from '@/lib/crm/constants'
+import { type CrmBrokerSlug } from '@/lib/crm/constants'
 import { composeOutboundHtml, prepareOutboundEmailBody, type EmailBodyFormat } from '@/lib/crm/email-body'
+import { classifyInboundReply } from '@/lib/crm/reply-intent'
+import { prospectOutreachContext } from '@/lib/crm/prospect-context'
+import { buildEmailIntentNote, emailIntentDedupeKey } from '@/lib/crm/email-intent-note'
 
 // System/notification senders that must never create timeline entries — their
 // mail is platform noise (FUB missed-call alerts, surveys, port updates), not
@@ -119,6 +123,76 @@ export type MailboxSyncResult = {
   error?: string
 }
 
+// W5.3 — bound the LLM cost of the email reply-intent pass per sync invocation.
+// The deterministic fast-path in classifyInboundReply handles most replies for
+// free; this caps the LLM-fallback fan-out so a large backfill page can't run
+// away. Cross-invocation idempotency comes from the gmail-intent dedupe_key.
+const MAX_EMAIL_INTENT_CLASSIFY = 12
+
+/**
+ * Reply-intent enrichment for freshly-synced INBOUND emails — the email-channel
+ * twin of the Twilio inbound-SMS classifier (W5.3). Only prospecting-pipeline
+ * contacts (expired / FSBO, via prospectOutreachContext) are classified, exactly
+ * as the SMS path scopes it. For each classified reply we write a `system`
+ * timeline note carrying the intent + a §0-sanitized suggested reply and a
+ * ?reply=&replyChannel=email deep link, so the broker taps the CRM link and the
+ * EMAIL composer opens pre-filled (never sends — the send stays G50-gated).
+ *
+ * Idempotent: each note is keyed `gmail-intent:<messageKey>:p<personId>` and we
+ * skip any that already exist, so a re-sync of the same window is a no-op.
+ */
+async function classifyInboundEmailReplies(
+  sb: SupabaseClient,
+  inbound: Array<{ personId: number; messageKey: string; body: string | null; subject: string | null }>,
+): Promise<number> {
+  if (!inbound.length) return 0
+  // Dedupe by (messageKey, personId); drop empties — a body is required to classify.
+  const uniq = new Map<string, { personId: number; messageKey: string; body: string; subject: string | null }>()
+  for (const r of inbound) {
+    if (!r.body || !r.body.trim()) continue
+    const key = emailIntentDedupeKey(r.messageKey, r.personId)
+    if (!uniq.has(key)) uniq.set(key, { personId: r.personId, messageKey: r.messageKey, body: r.body, subject: r.subject })
+  }
+  if (!uniq.size) return 0
+
+  // Skip anything already classified in a prior sync (cross-invocation idempotency).
+  const keys = [...uniq.keys()]
+  const { data: existing } = await sb.from('crm_timeline').select('dedupe_key').in('dedupe_key', keys)
+  const already = new Set((existing ?? []).map((e) => e.dedupe_key as string))
+  const pending = [...uniq.entries()].filter(([k]) => !already.has(k))
+  if (!pending.length) return 0
+
+  // Resolve prospect context + display name once per person.
+  const personIds = [...new Set(pending.map(([, v]) => v.personId))]
+  const names = new Map<number, string | null>()
+  const { data: people } = await sb.from('crm_people').select('id, name, first_name, last_name').in('id', personIds)
+  for (const p of people ?? []) {
+    const full = (p.name as string | null)?.trim() || [p.first_name, p.last_name].filter(Boolean).join(' ').trim() || null
+    names.set(p.id as number, full)
+  }
+  const ctx = new Map<number, Awaited<ReturnType<typeof prospectOutreachContext>>>()
+  await Promise.all(personIds.map(async (pid) => { ctx.set(pid, await prospectOutreachContext(sb, pid)) }))
+
+  let classified = 0
+  const notes: Array<Record<string, unknown>> = []
+  for (const [, v] of pending) {
+    if (classified >= MAX_EMAIL_INTENT_CLASSIFY) break
+    const prospect = ctx.get(v.personId)
+    if (!prospect) continue // not a prospecting-pipeline contact → no classification (mirrors SMS)
+    classified++
+    const intel = await classifyInboundReply({
+      body: v.body,
+      context: { kind: prospect.kind, personName: names.get(v.personId) ?? undefined, address: prospect.address ?? undefined },
+    })
+    if (!intel || intel.intent === 'other') continue
+    notes.push(buildEmailIntentNote({ personId: v.personId, messageKey: v.messageKey, subject: v.subject, intel }))
+  }
+  if (notes.length) {
+    await sb.from('crm_timeline').upsert(notes, { onConflict: 'dedupe_key', ignoreDuplicates: true })
+  }
+  return notes.length
+}
+
 /**
  * Process one window of a mailbox. Cursor = gmail internalDate (ms) of the
  * newest fully-processed point, stored in crm_imports (source `gmail:<slug>`).
@@ -154,6 +228,11 @@ export async function syncMailboxWindow(params: {
   let processed = 0
   let matched = 0
   let pagesUsed = 0
+  // W5.3 — inbound emails from prospecting pipelines get a reply-intent pass
+  // after the sync (same enrichment the Twilio inbound-SMS webhook does). We
+  // collect (personId, messageKey, body, subject) here and classify once at the
+  // end so a page's Gmail I/O and the LLM calls don't interleave.
+  const inboundForIntent: Array<{ personId: number; messageKey: string; body: string | null; subject: string | null }> = []
   // carry walk-wide max across resumed invocations (a long mailbox walk spans
   // many invocations; the page token below persists mid-walk progress)
   let maxInternal = Math.max(afterSec * 1000, Number(cursor.max_internal_ms ?? 0))
@@ -222,6 +301,9 @@ export async function syncMailboxWindow(params: {
             source: 'gmail',
             dedupe_key: `gmail:${messageKey}:p${personId}`,
           })
+          if (dir === 'in' && messageKey) {
+            inboundForIntent.push({ personId, messageKey, body, subject })
+          }
         }
       }
       if (rows.length) {
@@ -256,6 +338,15 @@ export async function syncMailboxWindow(params: {
     }
   } catch (e) {
     return { mailbox: mailboxEmail, processed, matched, pagesUsed, done: false, cursorAdvancedTo: null, error: e instanceof Error ? e.message : String(e) }
+  }
+
+  // W5.3 — reply-intent pass over the inbound emails just synced. Fail-open and
+  // strictly additive: any error leaves the timeline rows byte-identical to the
+  // pre-classifier sync. Runs on the success path only (the catch above returns).
+  try {
+    await classifyInboundEmailReplies(sb, inboundForIntent)
+  } catch (err) {
+    console.warn('[gmail-sync] reply-intent classification failed (fail-open)', err)
   }
 
   // Persist progress EVERY invocation: mid-walk runs save the Gmail page
