@@ -803,17 +803,23 @@
       "workstream": "W11",
       "mission": "M4",
       "title": "Orwell reviewer — advisory LLM pass on long-form (violations list + rewrite, facts unchanged), non-blocking",
-      "status": "not_started",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-voice-reviewer.mjs"
+        ],
         "crons": [],
-        "tests": [],
+        "tests": [
+          "lib/voice/reviewer.test.ts"
+        ],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "lib/voice/reviewer.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "The entire reviewer: advisory LLM pass over blog, newsletter, market narratives, and CMA prose that lists violations (stale phrases, long words with replacements, cuttable words, passive voice) then rewrites with facts/numbers/names unchanged, wired non-blocking alongside the deterministic floor."
+      "proofPath": "lib/voice/reviewer.ts reviewProse — advisory, non-blocking LLM pass listing voice violations + a rewrite, with the exported factsPreserved(original, rewrite) §0 guard that NULLS any rewrite dropping a currency/number/percent/year. Degrades to {ran:false} on no-key/empty/error, never throws. Wired advisory (attached to result) at lib/cma/build.ts + lib/bpo/build.ts + app/actions/blog.ts (published), logged at newsletter draft. Gate: scripts/check-voice-reviewer.mjs (ci:voice-reviewer, in ci:gates) — AST-asserts reviewProse CALLS factsPreserved + cma/bpo call reviewProse; proven to bite. LIVE run confirmed: flagged clichés, rewrote them out, kept $725,000 + 38 days. Decision: 04-DECISIONS §24.",
+      "verifiedBy": "Independent adversarial verifier (non-blocking + §0 fact-guard focus): PASS — confirmed reviewProse never throws + every call site is guarded (CMA/BPO build + blog publish never break) + tsc clean + live run preserves facts. Its §0 guard gaps (dropped percent unit, magnitude inflation via substring, and the gate green-passing a present-but-defeated guard) were ALL fixed + re-verified: extractFacts captures the % unit, factsPreserved uses set-membership (catches $1,200->$1,200,000 and 38->380), the gate asserts the rewrite is conditionally gated on the guard result + bites on the defeat, docstring honest that proper-nouns are prompt-only. reviewer.test.ts 11/11. 2026-07-23.",
+      "remaining": "DONE. The advisory Orwell reviewer runs alongside the deterministic floor over CMA/BPO/blog long-form prose, surfaces violations + a fact-safe rewrite (a rewrite that drops a number is auto-discarded, §0), and never blocks a build or publish. ci:voice-reviewer keeps the fact-guard applied + the surfaces wired. W11.5 (batched rewrite of stored copy) can now build on it."
     },
     {
       "id": "W11.4",
