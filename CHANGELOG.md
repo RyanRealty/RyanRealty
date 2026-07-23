@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.840.2 (2026-07-23)
+
+### Maintenance
+- chore(program): W9.4 done — Postmaster DWD grant complete + verified live
+
+---
+
+
 ## v1.840.1 (2026-07-23)
 
 ### Bug Fixes
