@@ -1,4 +1,20 @@
-> **NEWEST, START HERE: the AUDIT-HARDENING block immediately below (2026-07-17 late).** Prior: ONE-NAV + UNIFIED-SEND (2026-07-17 eve), CMA VERSION-CHAIN (2026-07-17 PM), the ADMIN-REBUILD v2 LITMUS block (2026-07-17 AM), then RC1 (2026-07-16).
+> **NEWEST, START HERE: the /goal COMPLETION-RUN block immediately below (2026-07-23).** Prior: AUDIT-HARDENING (2026-07-17 late), ONE-NAV + UNIFIED-SEND (2026-07-17 eve), CMA VERSION-CHAIN (2026-07-17 PM), the ADMIN-REBUILD v2 LITMUS block (2026-07-17 AM), then RC1 (2026-07-16).
+
+# /goal COMPLETION RUN — RR-PLATFORM-DECISIONS ledger (2026-07-23, Opus session)
+
+Driving `docs/plans/PROGRAM_2026-07-21/COMPLETION-LEDGER.json` to mechanically-verified done. **24/50 done** · 12 partial · 10 not_started · 4 blocked:needs-matt. `ci:program-complete` green. Decisions through **§21** in `04-DECISIONS-RECORDED.md`. A SIBLING session is active on this same checkout — rebase before every push.
+
+**Landed this session (origin `955fbdf9`):**
+- **W10.4 done** — bulk approve/reject in the approval queue: `POST /api/admin/approval-queue/bulk-action` (approvals.act guard, per-branch `.in('status',...)`), `BulkSelection.tsx` (provider + checkbox + sticky bar). Gate `ci:bulk-approval-wired` (AST, 5 bite modes). Decision §20.
+- **W11.1 done** — one generated banned-list source: `scripts/gen-brand-voice-consumers.mjs` → `lib/brand-voice/generated-vocabulary.ts` + `scripts/_brand_voice_vocab_generated.py`; all 10 hand-typed consumers rewired; live drift bugs fixed (generate-briefs 'about', _producer_lib spacious/turnkey). Gate `ci:voice-vocab-parity` (freshness + per-consumer discipline, overlap≥3 + import-usage). Decision §21.
+- **Program-wide push unblock** (`b3918404`) — `staticPageGenerationTimeout` 180→600. Local `next build` was timing out on `/sitemap.xml` (local Supabase latency; fine on Vercel), blocking EVERY push. Memory: `reference_sitemap_build_timeout`.
+
+**IN PROGRESS — W11.2** (shared voice-check on send paths + `ci:voice-send-paths`): a Sonnet subagent is building `lib/voice/check.ts` (`checkBrandVoice`, consuming W11.1's generated vocab) + refactoring voice-precheck/templateVoiceCheck into adapters + wiring blog/CMA/BPO/social send paths + the ratchet gate. If this block still says "in progress", W11.2 is unverified/unpushed — check `git status` and the ledger row. Full map: this session's transcript (discovery `tasks/wm8uqesss.output`).
+
+**Next rows:** W11.3/W11.4/W11.5, W10.1/W10.2/W10.3/W10.6, W3.2/W3.5/W5.1/W5.5/W8.1, W8.4-8.7, W13.1. **W2.1/W2.4 (subdivision stats) is §0-CRITICAL** — subdivision names collide across cities; the RPC needs city-qualified non-lossy scoping without duplicating the 400-line aggregation. Dedicated session + per-subdivision §0 verification required. Do NOT ship name-only scoping.
+
+**4 operating items (blocked:needs-matt) — surface to Matt:** W1.1 (West Side Meta audience DARK — open Vercel cron log for meta-westside-audience, share the error), W6.8 (expired/FSBO scope widen? Matt's call), W9.1 (run the newsletter enroll at /admin/newsletters/enroll + approve first issue — code shipped), W9.5 (provision full-access Resend key as GH secret RESEND_WEBHOOKS_API_KEY).
+
 
 # RC5 CLASS FULLY CLOSED — every restricted nav route enforces its cap (2026-07-17 late)
 

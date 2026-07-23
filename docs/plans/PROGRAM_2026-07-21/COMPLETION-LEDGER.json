@@ -780,17 +780,23 @@
       "workstream": "W11",
       "mission": "M4",
       "title": "One shared voice-check function on every send path (blog, CMA/BPO prose, social captions, sequence templates) + ratchet gate on unchecked send paths",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-voice-send-paths.mjs"
+        ],
         "crons": [],
-        "tests": [],
+        "tests": [
+          "lib/voice/check.test.ts"
+        ],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "lib/voice/check.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "Build the one shared voice-check function (both existing runtime checks are separate self-contained lists); add blocking checks to blog publish (saveBlogPost), CMA/BPO prose render, and social caption word-scan; add the promised ratchet gate (ci:email-quality pattern) that fails CI when a send path lacks the check."
+      "proofPath": "lib/voice/check.ts (checkBrandVoice — the ONE shared voice-check, consuming W11.1 generated-vocabulary). voice-precheck.ts + templateVoiceCheck.ts refactored into thin adapters over it (return shapes preserved). Blocking checks wired on every send path: blog saveBlogPost (returns {ok:false} on published), lib/cma/build.ts + lib/bpo/build.ts (throw before render, caught by the outer try/catch), social publish resolveCaption (throw, allowExclamation), and the CRM sequence-template path via templateValidation.ts -> checkTemplateVoice. Gate: scripts/check-voice-send-paths.mjs (ci:voice-send-paths, in ci:gates) — AST-asserts each of the 5 paths binds checkBrandVoice/checkTemplateVoice and gates the send on !ok (return|throw). Decision: 04-DECISIONS §22.",
+      "verifiedBy": "Independent adversarial verifier (different agent, false-positive-risk + behavior-preservation focus): initially FAIL — the adapters + wiring gate were sound, but it PROVED 3 false-positives that would break publishing: a deterministic semicolon literal (cma/build.ts) throwing on the self-repair path, the unsanitized LLM judgment.narrative ('robust'/'truly') throwing on the main CMA/BPO path, and a social caption throw rejecting the whole multi-platform batch. ALL 3 fixed (semicolon->period; LLM narrative excluded from the hard gate so only OUR authored prose is gated; caption fails per-platform gracefully) and re-verified: narrative-exclusion tested (full-prose fails, authored-only passes, our own violations still caught), 78 vitest pass, ci:voice-send-paths 5/5, tsc 0 errors. 2026-07-23.",
+      "remaining": "DONE. One shared checkBrandVoice on every send path (blog, CMA, BPO, social captions, sequence templates); ci:voice-send-paths fails CI when a send path drops the check or stops gating on it — proven to bite. tsc 0 errors; checkBrandVoice unit test (20 cases) + the two adapters keep the existing suites green (78 tests)."
     },
     {
       "id": "W11.3",
