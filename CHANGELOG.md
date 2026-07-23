@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.838.0 (2026-07-23)
+
+### Features
+- feat(search): W7.2 — hide-homes exclusion across every browse surface + AST gate
+
+---
+
+
 ## v1.837.0 (2026-07-23)
 
 ### Features
