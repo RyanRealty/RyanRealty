@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.842.0 (2026-07-23)
+
+### Features
+- feat(W8.8): one report-coverage geo registry + inline-list gate
+
+---
+
+
 ## v1.841.0 (2026-07-23)
 
 ### Features
