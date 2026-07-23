@@ -2,7 +2,15 @@
 
 # /goal COMPLETION RUN — RR-PLATFORM-DECISIONS ledger (2026-07-23, Opus session)
 
-Driving `docs/plans/PROGRAM_2026-07-21/COMPLETION-LEDGER.json` to mechanically-verified done. **26/50 done** · 11 partial · 9 not_started · 4 blocked:needs-matt. `ci:program-complete` green. Decisions through **§23** in `04-DECISIONS-RECORDED.md`. A SIBLING session is active on this same checkout — rebase before every push.
+Driving `docs/plans/PROGRAM_2026-07-21/COMPLETION-LEDGER.json` to mechanically-verified done. **30/50 done** · 10 partial · 7 not_started · 3 blocked:needs-matt. `ci:program-complete` green. Decisions through **§26** in `04-DECISIONS-RECORDED.md`. A SIBLING session may be active on this same checkout — rebase before every push, and do NOT commit while a push is verifying (the pre-push guard aborts with "HEAD moved during verification").
+
+## START HERE if you are a fresh session
+
+1. `git pull --rebase origin main`
+2. Read `docs/plans/PROGRAM_2026-07-21/COMPLETION-LEDGER.json` — the source of truth. Re-verify rows against HEAD before trusting any `done`.
+3. `npm run ci:program-complete` must be green before you start.
+4. Pick the next row from the "REMAINING" list below. The bar for `done` is all four: feature works on the live surface (browser/API/DB, §0 trace on every number) · its named mechanism exists and is wired into `ci:gates`/`vercel.json` · THE GATE BITES (break it → RED → restore → GREEN) · an INDEPENDENT agent told to assume it is broken confirms it. Feature + gate in the SAME commit. Then flip the ledger row and append to `04-DECISIONS-RECORDED.md`.
+5. Push with `npm run push` (never bare `git push` — the pre-push marker). Confirm the origin SHA moved.
 
 **Landed this session (origin `955fbdf9`):**
 - **W10.4 done** — bulk approve/reject in the approval queue: `POST /api/admin/approval-queue/bulk-action` (approvals.act guard, per-branch `.in('status',...)`), `BulkSelection.tsx` (provider + checkbox + sticky bar). Gate `ci:bulk-approval-wired` (AST, 5 bite modes). Decision §20.
@@ -12,7 +20,24 @@ Driving `docs/plans/PROGRAM_2026-07-21/COMPLETION-LEDGER.json` to mechanically-v
 - **W11.2 done** (`df77a22c`) — one shared `lib/voice/check.ts` `checkBrandVoice` on every send path (blog return, CMA/BPO throw, social caption per-platform, sequence templates); `ci:voice-send-paths` gate. voice-precheck + templateVoiceCheck are now adapters over it. Verifier caught 3 production-breaking false positives (semicolon literal + LLM narrative throwing on CMA/BPO, non-graceful social batch-fail) — all fixed. Decision §22.
 - **W11.4 done** (`7ba67c6a`) — voice canon: VOICE.md Orwell + never-pander sections (+ VOICE.md converted to obey its own punctuation rule); retired the five-attribute model → Five Laws; G35 (`validate-producer.mjs`) repointed voice_guidelines.md → VOICE.md; all 51 producers + TEMPLATE now cite VOICE.md (structure-safe INLINE edit — verifier caught a first-pass that split 21 tables/lists). Gate `ci:producer-skills`. Decision §23.
 
-**IN PROGRESS — W11.3** (Orwell advisory LLM reviewer): a Sonnet subagent is building `lib/voice/reviewer.ts` (`reviewProse` + a §0 `factsPreserved` guard that nulls any rewrite dropping a number/fact) + advisory wiring on CMA/BPO/blog/newsletter + `ci:voice-reviewer` gate. If this block still says "in progress", W11.3 is unverified/unpushed — check `git status` + the ledger row. **W11.3 design note:** the "advisory surface" (where the review output goes) was chosen as attach-to-result / log, non-blocking; if Matt wants a dedicated review UI, that's a follow-up. **W11.5 is BLOCKED on W11.3** (batched rewrite pass over stored blog/template copy using the reviewer).
+- **W11.3 done** — `lib/voice/reviewer.ts` `reviewProse`: advisory, non-blocking LLM pass + the §0 `factsPreserved` guard (nulls any rewrite dropping a number; set-membership so magnitude inflation is caught). Wired advisory on CMA/BPO/blog. Gate `ci:voice-reviewer` asserts the guard is applied AND gates the rewrite. Decision §24.
+- **W11.5 done** — `scripts/voice-rewrite-batch.ts` runs the reviewer over published `blog_posts` + `crm_templates` into a review artifact (`out/voice-rewrite-batch/`), READ-ONLY on content. Gate `ci:voice-rewrite-batch` flags any mutator reference (direct/computed/aliased/`.rpc`). Decision §25. **M4 COMPLETE.**
+- **W1.1 done** — West Side Meta audience cron promoted weekly→daily in `vercel.json`; the DARK blocker is resolved (clean run 2026-07-23 with `errors: []`) and `META_AUDIENCE_PUSH_ENABLED` verified ON in prod (32 `dry_run=false` live pushes). West-Side-scoped heartbeat probe + contract test green.
+- **W10.1 done** — `/marketing/request` is now an authenticated SECOND intake ("two intakes, one queue"): session **+** `isSenderAllowed()` allowlist, then `marketing_inbox_events` → `parseInboxEmail` → `dispatchParsedEmail`. Gate `ci:marketing-request-intake` asserts the shared pipeline, no second queue, and that BOTH guards short-circuit. Decision §26. **Security note:** the first pass gated only on "any signed-in session" — the site has public self-serve signup, so anyone could have enqueued work; the allowlist closed it before it landed.
+
+## REMAINING (17 non-blocked) — with the traps already measured
+
+**M1:** W2.1/W2.4 **§0-CRITICAL** (subdivision names collide across cities — Whispering Pines in 4 cities, Deer Park in 3; the RPC scopes name-only, so a fix needs city-qualified non-lossy scoping without duplicating the 400-line aggregation. Do NOT ship name-only scoping) · W2.6 · W2.7 · W3.2 · **W3.5 BLOCKED** (pre-rendering `/search/[...slug]` OOMs the build — SIGABRT heap death even at 10 params; needs page-weight reduction or a raised build heap, else it breaks prod builds) · W5.5 · W8.1.
+**M2:** W5.1 (spec-03 person-workspace + sendDeliverable + tighten G56).
+**M3:** W10.2 (broker library + storage — W10.6 is blocked on it) · W10.3 (re-brand producer) · W10.6.
+**M5:** W8.4–W8.7 (market reports — §0 data-heavy).
+**M6:** W13.1 — **scoping correction:** the FUB docs are NOT deletable as written; 17 of 18 are still referenced (FUB_SELLER_WORKFLOW by 25 files, FUB_CRM_FEATURE_SPEC by 20). Repoint/remove citations first, then archive, plus a gate that keeps FUB paths from returning.
+
+## THE 3 OPERATING ITEMS (blocked:needs-matt — verified against live data, do not fake)
+
+1. **W9.1 newsletter** — 0 issues sent, only 4 recipients (last 2026-07-18). Matt runs ENROLL at `/admin/newsletters/enroll`, then approves the first issue.
+2. **W9.5 Resend** — `RESEND_WEBHOOKS_API_KEY` absent from `.env.local` AND no GitHub secret; `check-resend-webhook.mjs` fails "send-only key cannot list webhooks." Matt provisions a full-access Resend key in both places.
+3. **W6.8 expired/FSBO scope** — no decision recorded. Matt's explicit widen-or-keep call on $500K+/SFR/6 cities (one constant if widened).
 
 **Next rows:** W11.3/W11.4/W11.5, W10.1/W10.2/W10.3/W10.6, W3.2/W3.5/W5.1/W5.5/W8.1, W8.4-8.7, W13.1. **W2.1/W2.4 (subdivision stats) is §0-CRITICAL** — subdivision names collide across cities; the RPC needs city-qualified non-lossy scoping without duplicating the 400-line aggregation. Dedicated session + per-subdivision §0 verification required. Do NOT ship name-only scoping.
 
