@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.840.0 (2026-07-23)
+
+### Features
+- feat(seo): W12.4 — widen out-of-area referral index from top-25 to all ≥5-active
+
+---
+
+
 ## v1.839.0 (2026-07-23)
 
 ### Features
