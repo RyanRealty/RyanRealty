@@ -654,17 +654,21 @@
       "workstream": "W10",
       "mission": "M3",
       "title": "Wire marketing@ inbox cron + confirm Workspace grant; make /marketing/request an authenticated form writing action rows",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-marketing-request-intake.mjs"
+        ],
         "crons": [],
         "tests": [],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "app/marketing/request/actions.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "Convert /marketing/request from a mailto builder to an authenticated form that writes marketing_brain_actions rows (the 'two intakes, one queue' half of the decision). Confirm the gmail.modify scope was added to the DWD allowlist in Workspace Admin (operating step — code degrades silently to auth-pending without it, so the wired cron may still be reading nothing)."
+      "proofPath": "app/marketing/request/actions.ts submitMarketingRequest — the authenticated SECOND intake. Gated TWICE before any write: a signed-in session AND isSenderAllowed() against config/marketing-brain/inbox-senders.json (the same allowlist the marketing@ email door enforces — a session alone is not enough, the site has public self-serve signup). Then the SHARED pipeline: insert into marketing_inbox_events (same table as the Gmail poll, synthetic form: gmail ids) -> parseInboxEmail -> dispatchParsedEmail. No direct marketing_brain_actions insert, so there is exactly one queue. RequestBuilder sends byte-identical subject+body via a Send request button (mailto kept as the signed-out fallback). Gate: scripts/check-marketing-request-intake.mjs (ci:marketing-request-intake, in ci:gates) — AST-asserts the shared parser+dispatcher, no second queue, AND that the session + allowlist results actually SHORT-CIRCUIT the function (not merely that the guards are called). Verified end-to-end against the hosted Supabase pipeline: intake row -> parser mapped to content:monthly_market_report (0.85) -> a real marketing_brain_actions row enqueued (confirmed by id); test rows deleted. That exercised the DB pipeline, not the deployed page (the change was unpushed at verification time). Operating half verified from data: 12 gmail-sourced intake events, latest 2026-07-22 03:00, proving the gmail.modify DWD scope is granted and the inbox cron reads. Decision: 04-DECISIONS.",
+      "verifiedBy": "Independent adversarial verifier: initially FAIL — it confirmed one-queue, form wiring and failure handling, but proved TWO real defects. (1) AUTHORIZATION: the guard only checked for any signed-in session, and ryan-realty.com has public self-serve signup, so any member of the public could enqueue work (an Anthropic call per submit plus a producer row up to the $5/row cap). (2) GATE EVASION: the gate green-passed a GUTTED auth check (getSession called, result discarded, sender hard-coded). BOTH fixed and re-proven — the form now enforces the email door allowlist via isSenderAllowed, and the gate asserts each guard result short-circuits the function (gutted auth -> RED, allowlist removed -> RED, restore -> GREEN). Its two lesser findings fixed too: createServiceClient moved inside the try, and the docstring no longer overclaims. 2026-07-23.",
+      "remaining": "DONE. Two intakes (marketing@ email + the /marketing/request form), one queue, and one authorization policy — the form enforces the same sender allowlist as the inbox. ci:marketing-request-intake fails CI if the form drops the shared pipeline, grows a second queue, or lets either guard stop short-circuiting."
     },
     {
       "id": "W10.2",
