@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getListingTiles, getCityListings, type ListingTile } from '@/lib/data'
 import { tileToCardData } from '@/lib/site/listing-card'
-import VideoListingCard from '@/components/site/VideoListingCard'
+import HideAwareVideoGrid, { type HideAwareVideoItem } from '@/components/site/HideAwareVideoGrid'
 import type { ListingCardData } from '@/components/site/ListingCard'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
@@ -101,9 +101,16 @@ export default async function VideosPage({
   }
   const tiles: ListingTile[] = city ? await getCityListings(city, filter) : await getListingTiles(filter)
 
-  const cards: ListingCardData[] = tiles
-    .map((t) => tileToCardData(t, { kind: 'video', label: 'Video tour' }))
-    .filter((c): c is ListingCardData => c !== null)
+  // Carry BOTH RETS identifiers per item so the hidden-home subtraction matches
+  // whichever the store recorded (dual-key). `cards` is derived from the same
+  // items so the JSON-LD below stays in step with the rendered grid.
+  const videoItems: HideAwareVideoItem[] = tiles
+    .map((t): HideAwareVideoItem | null => {
+      const card = tileToCardData(t, { kind: 'video', label: 'Video tour' })
+      return card ? { card, ListingKey: t.listingKey, ListNumber: t.listNumber } : null
+    })
+    .filter((x): x is HideAwareVideoItem => x !== null)
+  const cards: ListingCardData[] = videoItems.map((v) => v.card)
 
   const lede = city
     ? `Current ${city} listings with a full video tour. Press play and walk the home from anywhere.`
@@ -318,12 +325,8 @@ export default async function VideosPage({
               </h2>
             </div>
 
-            {cards.length > 0 ? (
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-8">
-                {cards.map((card) => (
-                  <VideoListingCard key={card.listingKey} listing={card} />
-                ))}
-              </div>
+            {videoItems.length > 0 ? (
+              <HideAwareVideoGrid items={videoItems} />
             ) : (
               <div className="mt-8 border border-border bg-background p-10 text-center">
                 <p className="font-display text-xl text-foreground">

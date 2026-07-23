@@ -28,11 +28,12 @@ import { cityEntityKey, subdivisionEntityKey, getSubdivisionDisplayName, homesFo
 import { entityKeyToSlug } from '../../../lib/community-slug'
 import { getPresetBySlug, isPresetSlug, resolvePresetYearBuiltMin } from '../../../lib/search-presets'
 import { getPopularSearchesForCity, getAllCityHomesLink } from '../../../lib/popular-searches'
-import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
+import { type ListingCardData } from '@/components/site/ListingCard'
+import HideAwareListingGrid, { type HideAwareItem } from '@/components/search/HideAwareListingGrid'
 import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { MapsLocation01Icon } from '@hugeicons/core-free-icons'
-import { Container, Body, Grid, H1, H2 } from '@/components/site/primitives'
+import { Container, Body, H1, H2 } from '@/components/site/primitives'
 import MarketSnapshot from '@/components/site/MarketSnapshot'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -976,8 +977,9 @@ export default async function SearchPage({
               perPage: perPageParam,
             }}
           />
-          <Grid cols={4} gap="loose" className="mt-2">
-            {listings.map((listing, i) => {
+          {/* HideAwareListingGrid: per-user hidden-home subtraction at the edge of render (W7.2); signed-out sees the full set. */}
+          <HideAwareListingGrid
+            items={listings.map((listing, i): HideAwareItem => {
               const key = (listing.ListNumber ?? listing.ListingKey ?? `listing-${i}`).toString().trim()
               const street = [listing.StreetNumber, listing.StreetName, listing.StreetSuffix].filter(Boolean).join(' ').trim()
               const cityLine = [[listing.City ?? city, 'OR'].filter(Boolean).join(', '), listing.PostalCode].filter(Boolean).join(' ').trim()
@@ -1000,9 +1002,9 @@ export default async function SearchPage({
                 sqft: listing.TotalLivingAreaSqFt ?? null,
                 ...(key && priceChangeKeys.has(key) ? { badge: { kind: 'drop' as const, label: 'Price drop' } } : {}),
               }
-              return <ListingCard key={key} listing={card} />
+              return { card, ListingKey: listing.ListingKey ?? null, ListNumber: listing.ListNumber ?? null }
             })}
-          </Grid>
+          />
         </div>
       )}
 

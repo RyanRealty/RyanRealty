@@ -45,7 +45,7 @@ import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import SearchFilters from '@/components/search/SearchFilters'
 import SearchResults from '@/components/search/SearchResults'
 import MapSearchView from '@/components/search/MapSearchView'
-import SearchMapClustered from '@/components/LazySearchMapClustered'
+import HideAwareSearchMap from '@/components/search/HideAwareSearchMap'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { ResultsStamp } from '@/components/search/ResultsStamp.client'
 import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
@@ -324,7 +324,10 @@ export default async function SearchPage({
       <div className={cn('w-full', isAppFrame && 'flex min-h-0 flex-1 flex-col')}>
         {view === 'map' && (
           <div className="map-search-shell w-full">
-            <SearchMapClustered
+            {/* HideAwareSearchMap subtracts the signed-in user's hidden homes
+                before the pins render (W7.2) — a home hidden on the list/split
+                view does not reappear as a map-only pin. */}
+            <HideAwareSearchMap
               listings={mapListingsWithCoords}
               savedListingKeys={savedKeys}
               likedListingKeys={likedKeys}

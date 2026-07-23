@@ -35,7 +35,7 @@ import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { CTABar } from '@/components/site/CTABar'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { DisplayHeading } from '@/components/site/primitives'
-import ListingCard from '@/components/site/ListingCard'
+import HideAwareListingGrid, { type HideAwareItem } from '@/components/search/HideAwareListingGrid'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
@@ -428,12 +428,18 @@ export default async function PriceDropsCityPage({ params }: Props) {
                   View all Central Oregon
                 </Link>
               </div>
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {drops.map((drop) => {
-                  const card = dropToCardData(drop)
-                  return <ListingCard key={card.listingKey} listing={card} />
-                })}
-              </div>
+              {/* HideAwareListingGrid subtracts the signed-in user's hidden
+                  homes (dual-key: ListingKey + ListNumber) so a home hidden on
+                  /search does not reappear in the city price-drops grid (W7.2).
+                  Keeps the KB grid styling via gridClassName. */}
+              <HideAwareListingGrid
+                gridClassName="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                items={drops.map((drop): HideAwareItem => ({
+                  card: dropToCardData(drop),
+                  ListingKey: drop.listingKey,
+                  ListNumber: drop.listNumber,
+                }))}
+              />
             </div>
           </section>
         )}

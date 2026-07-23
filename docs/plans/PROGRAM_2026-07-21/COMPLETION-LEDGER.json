@@ -388,17 +388,28 @@
       "workstream": "W7",
       "mission": "M1",
       "title": "Build hide-homes: table + tile control + exclusion from results and alert emails",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-hidden-exclusion-surfaces.mjs"
+        ],
         "crons": [],
-        "tests": [],
+        "tests": [
+          "components/search/__tests__/map-search-contracts.test.ts"
+        ],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "components/search/HideAwareListingGrid.tsx",
+          "components/search/HideAwareSearchMap.tsx",
+          "components/site/HideAwareVideoGrid.tsx",
+          "components/search/MapSearchView.tsx",
+          "components/UnifiedMapListingsView.tsx",
+          "components/search/SearchResults.tsx"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "The /search map split view is not covered: components/search/MapSearchView.tsx renders its own listing cards (lines 245-592) with no ListingCardHideControl and no hidden-exclusion import, so a hidden home still shows on the map list and pins. Browse surfaces outside /search (e.g. /homes-for-sale city pages, /search/[...slug]) also do not apply the exclusion — SearchResults is imported only by app/search/page.tsx."
+      "proofPath": "Hidden-homes exclusion covers EVERY browse of for-sale inventory + alert emails: SearchResults (/search grid, pre-existing), MapSearchView (/search split: list+pins+control), HideAwareListingGrid (search/[...slug] grid + both price-drops grids; dual-key ListingKey|ListNumber, gridClassName keeps KB styling), UnifiedMapListingsView (search/[...slug] map/split: ListingTile list + pins + control), HideAwareSearchMap (/search?view=map pin layer), HideAwareVideoGrid (/videos). Alert emails via saved-search-alerts.ts. Out of scope (04-DECISIONS 11): account/* own-data, curated modules (Featured/Similar/Motivated/Golf/lp-bend/OpenHousesGrid preview), hero/context maps (price-drops KbListingMap dots, CityMap/NeighborhoodMap zero-mount). Browser-verified: 96 cards /search split, 18 /homes-for-sale/bend grid, 41 /price-drops, 36 /videos; map surfaces fetch-verified 200 (Maps API absent in preview). Gate ci:hidden-exclusion-surfaces (in ci:gates): AST-parses every app/**/page.tsx with the real TS compiler, collects value imports across import + import() + require + import-equals, resolves each to its canonical file (ts.resolveModuleName + realpath), fails if any resolves to a raw renderer unless the page is curated-allowlisted; plus AST wrapper-integrity. Full ci:gates green.",
+      "verifiedBy": "SEVEN independent adversarial rounds (workflow lenses + solo agents), 2026-07-22. Feature leaks found+fixed R1-R3 (UnifiedMapListingsView map view, /videos, /search?view=map, price-drops grids); completeness sweep CLEAN from R4 on. Gate hardened R4-R7 against ~10 distinct bypass techniques (aliased import, JSX-apostrophe, hardcoded list, from-in-comment, no-space-from, regex-literal, nested-template, unicode-escape, relative-spelling, require()) — each proven RED then GREEN-restore. Root-cause fixes: hand-rolled lexer -> real TS AST; literal-text match -> module resolution; import-only collection -> all mechanisms. Residual (barrel/intermediate indirection) documented out-of-scope by the R6+R7 verifiers, no live leak.",
+      "remaining": ""
     },
     {
       "id": "W7.3",

@@ -34,7 +34,7 @@ import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
 import { listingDetailPath, displaySubdivision } from '@/lib/slug'
 import { CTABar } from '@/components/site/CTABar'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import ListingCard from '@/components/site/ListingCard'
+import HideAwareListingGrid, { type HideAwareItem } from '@/components/search/HideAwareListingGrid'
 import { Badge } from '@/components/ui/badge'
 import {
   Table,
@@ -515,12 +515,11 @@ export default async function PriceDropsRegionPage() {
                   {total} {total === 1 ? 'home' : 'homes'} with a<br />price reduction
                 </h2>
               </div>
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-6">
-                {remainingDrops.map((drop) => {
-                  const card = dropToCardData(drop)
-                  return <ListingCard key={card.listingKey} listing={card} />
-                })}
-              </div>
+              {/* HideAwareListingGrid: per-user hidden-home subtraction (W7.2, dual-key), KB grid styling via gridClassName. */}
+              <HideAwareListingGrid
+                gridClassName="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-6"
+                items={remainingDrops.map((drop): HideAwareItem => ({ card: dropToCardData(drop), ListingKey: drop.listingKey, ListNumber: drop.listNumber }))}
+              />
             </div>
           </section>
         )}

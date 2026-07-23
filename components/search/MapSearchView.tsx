@@ -13,6 +13,8 @@ import type { MapPolygonPoint } from '@/lib/map-polygon'
 import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registry'
 import { GEO_SCOPE_KEYS, geoScopeLabel, stripGeoScope } from '@/components/search/geo-scope'
 import { listingDetailPath, displaySubdivision } from '@/lib/slug'
+import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
+import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hidden-exclusion'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -20,6 +22,7 @@ import { Eyebrow, H3, Body } from '@/components/site/primitives'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
 import SaveListingButton from '@/components/listing/SaveListingButton'
 
 const SearchMapClustered = dynamic(() => import('@/components/SearchMapClustered'), {
@@ -246,6 +249,12 @@ export default function MapSearchView({
   const [totalCount, setTotalCount] = useState(initialTotalCount)
   const [capped, setCapped] = useState(initialCapped)
   const [loading, setLoading] = useState(false)
+  // Per-user hidden homes ("Hide homes I don't want to see"). Same edge-of-
+  // render model as SearchResults: viewport results are SHARED caches, so the
+  // per-user subtraction never touches the fetch — a hidden home is filtered
+  // out of BOTH the card list AND the map pins here, from the signed-in user's
+  // hidden_listings rows. Signed-out users get an empty set (no filtering).
+  const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set())
   const [searchAsMove, setSearchAsMove] = useState(true)
   const [hoveredKey, setHoveredKey] = useState<string | null>(null)
   const [polygon, setPolygon] = useState<MapPolygonPoint[] | null>(initialPolygon)
@@ -449,7 +458,34 @@ export default function MapSearchView({
     }
   }, [])
 
-  const mapListings = useMemo(() => listings.map(toMapListing), [listings])
+  // Load the signed-in user's hidden keys once; fail open (worst case a hidden
+  // home briefly reappears). Membership matches ListingKey OR MLS ListNumber.
+  useEffect(() => {
+    let cancelled = false
+    getHiddenListingKeys()
+      .then((keys) => { if (!cancelled && keys.length > 0) setHiddenKeys(buildHiddenKeySet(keys)) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
+  const onHiddenChange = useCallback((key: string, hidden: boolean) => {
+    setHiddenKeys((prev) => {
+      const next = new Set(prev)
+      if (hidden) next.add(key)
+      else next.delete(key)
+      return next
+    })
+  }, [])
+
+  // The hidden subtraction feeds BOTH renders: the card list slices from it and
+  // the map pins derive from it — a hidden home leaves the list and the map in
+  // lockstep. totalCount stays the shared server number (§0): per-user hiding
+  // must not restate the area count, exactly as SearchResults keeps `total`.
+  const visibleListings = useMemo(
+    () => excludeHiddenListings(listings, hiddenKeys),
+    [listings, hiddenKeys],
+  )
+  const mapListings = useMemo(() => visibleListings.map(toMapListing), [visibleListings])
   const savedSet = useMemo(() => new Set(savedListingKeys), [savedListingKeys])
 
   const countLabel = capped ? `${totalCount.toLocaleString()}+` : totalCount.toLocaleString()
@@ -499,7 +535,7 @@ export default function MapSearchView({
       ) : (
         <>
         <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-          {listings.slice(0, visibleCount).map((l) => {
+          {visibleListings.slice(0, visibleCount).map((l) => {
             const key = rowKey(l)
             const href = listingDetailPath(
               key,
@@ -521,7 +557,9 @@ export default function MapSearchView({
                 key={key}
                 data-listing-key={key}
                 className={cn(
-                  'group relative overflow-hidden rounded-xl bg-card shadow-sm ring-1 transition',
+                  // `group/hide` (named) drives the hover-revealed hide control
+                  // without entangling the card's own unnamed `group` scale hover.
+                  'group group/hide relative overflow-hidden rounded-xl bg-card shadow-sm ring-1 transition',
                   isHovered
                     ? 'shadow-lg ring-2 ring-primary'
                     : 'ring-foreground/10 hover:shadow-md hover:ring-primary/30'
@@ -535,6 +573,15 @@ export default function MapSearchView({
                   aria-label={`${formatCardAddress(l)} — ${formatPrice(l.ListPrice)}`}
                   onFocus={() => onListHover(key)}
                   onBlur={() => onListHover(null)}
+                />
+                {/* Hide control (top-left, clear of the save button at top-right
+                    and the badge now at bottom-left). Optimistically drops the
+                    home from this view AND the map pins via onHiddenChange. */}
+                <ListingCardHideControl
+                  listingKey={key}
+                  addressLine={cardStreet(l)}
+                  onVisibilityChange={onHiddenChange}
+                  className="left-2.5 right-auto top-2.5"
                 />
                 <div className="relative aspect-[4/3] bg-muted">
                   {l.PhotoURL ? (
@@ -551,7 +598,8 @@ export default function MapSearchView({
                     </div>
                   )}
                   {badge ? (
-                    <div className="pointer-events-none absolute left-2.5 top-2.5">
+                    // Bottom-left so it never sits under the top-left hide control.
+                    <div className="pointer-events-none absolute bottom-2.5 left-2.5">
                       <Badge variant="outline" className="bg-card px-2.5 shadow-sm">
                         {badge}
                       </Badge>
@@ -589,7 +637,7 @@ export default function MapSearchView({
             )
           })}
         </div>
-        {listings.length > visibleCount && (
+        {visibleListings.length > visibleCount && (
           <div className="px-4 pb-6">
             <Button
               type="button"

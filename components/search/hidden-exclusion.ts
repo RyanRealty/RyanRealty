@@ -14,11 +14,13 @@
 
 export type HiddenMatchable = {
   ListingKey?: string | null
-  ListNumber?: string | null
+  // MLS ListNumber travels as a string on most rows but as a number on some map
+  // pin rows (ListingForMap); normalizeHiddenKey String()-coerces either.
+  ListNumber?: string | number | null
 }
 
 /** Normalize one stored/incoming key: string-coerce + trim. Empty → ''. */
-export function normalizeHiddenKey(key: string | null | undefined): string {
+export function normalizeHiddenKey(key: string | number | null | undefined): string {
   return String(key ?? '').trim()
 }
 

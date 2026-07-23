@@ -24,6 +24,9 @@ const SearchMapClustered = dynamic(
   }
 )
 import ListingTile, { type ListingTileListing } from '@/components/ListingTile'
+import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
+import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
+import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hidden-exclusion'
 import { MAP_DEFAULT_CENTER } from '@/lib/map-constants'
 import { estimatedMonthlyPayment, formatMonthlyPayment, DEFAULT_DISPLAY_DOWN_PCT, DEFAULT_DISPLAY_RATE, DEFAULT_DISPLAY_TERM_YEARS } from '@/lib/mortgage'
 import type { GetListingsForMapOptions } from '@/app/actions/listings'
@@ -156,6 +159,11 @@ export default function UnifiedMapListingsView({
   const [, setPage] = useState(1)
   const [sort, setSort] = useState<'newest' | 'oldest' | 'price_asc' | 'price_desc'>('newest')
   const [polygonFilter, setPolygonFilter] = useState<MapPolygonPoint[] | null>(initialPolygon)
+  // Per-user hidden homes ("Hide homes I don't want to see"). Same edge-of-render
+  // model as MapSearchView: viewport results are SHARED caches, so the per-user
+  // subtraction never touches the fetch — a hidden home is filtered out of BOTH
+  // the tile list AND the map pins here. Signed-out users get an empty set.
+  const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set())
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -350,7 +358,31 @@ export default function UnifiedMapListingsView({
     loanTermYears: prefs?.loanTermYears ?? DEFAULT_DISPLAY_TERM_YEARS,
   }
 
-  const mapListings: ListingForMap[] = listings.map(toMapListing)
+  // Load the signed-in user's hidden keys once; fail open. Membership matches
+  // ListingKey OR MLS ListNumber (dual-key, via excludeHiddenListings).
+  useEffect(() => {
+    let cancelled = false
+    getHiddenListingKeys()
+      .then((keys) => { if (!cancelled && keys.length > 0) setHiddenKeys(buildHiddenKeySet(keys)) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
+  const onHiddenChange = useCallback((key: string, hidden: boolean) => {
+    setHiddenKeys((prev) => {
+      const next = new Set(prev)
+      if (hidden) next.add(key)
+      else next.delete(key)
+      return next
+    })
+  }, [])
+
+  // The hidden subtraction feeds BOTH renders: the tile list maps from
+  // visibleListings and the map pins derive from it — a hidden home leaves the
+  // list and the map in lockstep (parity with MapSearchView). totalCount stays
+  // the shared server number (§0).
+  const visibleListings = excludeHiddenListings(listings, hiddenKeys)
+  const mapListings: ListingForMap[] = visibleListings.map(toMapListing)
   const hasMore = totalCount > listings.length
 
   return (
@@ -439,7 +471,7 @@ export default function UnifiedMapListingsView({
             ) : (
               <>
                 <ul className="space-y-4">
-                  {listings.map((listing, i) => {
+                  {visibleListings.map((listing, i) => {
                     const key = (listing.ListNumber ?? listing.ListingKey ?? `listing-${i}`).toString().trim()
                     const price = Number(listing.ListPrice ?? 0)
                     const monthly =
@@ -452,7 +484,14 @@ export default function UnifiedMapListingsView({
                           )
                         : null
                     return (
-                      <li key={key} data-listing-key={key}>
+                      // group/hide drives the hover-revealed hide control without
+                      // entangling ListingTile's own group styles.
+                      <li key={key} data-listing-key={key} className="relative group/hide">
+                        <ListingCardHideControl
+                          listingKey={key}
+                          addressLine={[listing.StreetNumber, listing.StreetName].filter(Boolean).join(' ') || undefined}
+                          onVisibilityChange={onHiddenChange}
+                        />
                         <ListingTile
                           listing={listing as ListingTileListing}
                           listingKey={key}

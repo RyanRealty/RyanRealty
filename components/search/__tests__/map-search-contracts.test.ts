@@ -47,8 +47,12 @@ describe('MapSearchView orchestrator', () => {
   const src = readSrc('components/search/MapSearchView.tsx')
 
   it('ONE dataset drives BOTH the list and the map markers', () => {
-    // mapListings is derived from the same `listings` state that the list renders.
-    expect(src).toMatch(/const mapListings = useMemo\(\(\) => listings\.map\(toMapListing\)/)
+    // Both the list and the pins derive from the SAME visibleListings set (the
+    // viewport `listings` minus per-user hidden homes) — one dataset, so a
+    // hidden home leaves the list and the map together (W7.2).
+    expect(src).toMatch(/const visibleListings = useMemo\(\s*\(\) => excludeHiddenListings\(listings, hiddenKeys\)/)
+    expect(src).toMatch(/const mapListings = useMemo\(\(\) => visibleListings\.map\(toMapListing\)/)
+    expect(src).toMatch(/visibleListings\.slice\(0, visibleCount\)\.map/)
   })
 
   it('search-as-you-move: bounds change triggers a debounced viewport refetch', () => {
@@ -79,6 +83,189 @@ describe('MapSearchView orchestrator', () => {
 
   it('renders the search-as-you-move toggle control', () => {
     expect(src).toMatch(/Search as I move the map/)
+  })
+})
+
+describe('hidden homes are excluded from the map split view (W7.2, 2026-07-22)', () => {
+  // The /search split view rendered its OWN cards + pins and never applied the
+  // per-user "Hide homes I don't want to see" subtraction, so a hidden home
+  // still showed on the map list AND as a pin — the feature only worked in the
+  // grid (SearchResults). Contract: MapSearchView filters both renders from the
+  // signed-in user's hidden_listings, and carries the hide control on its cards.
+  const src = readSrc('components/search/MapSearchView.tsx')
+
+  it('imports the shared hidden-exclusion primitives + the hide action + control', () => {
+    expect(src).toMatch(/import \{ getHiddenListingKeys \} from '@\/app\/actions\/hidden-listings'/)
+    expect(src).toMatch(/import \{ buildHiddenKeySet, excludeHiddenListings \} from '@\/components\/search\/hidden-exclusion'/)
+    expect(src).toMatch(/import ListingCardHideControl from '@\/components\/listing\/ListingCardHideControl'/)
+  })
+
+  it('loads the user hidden keys and builds the membership set (fail-open)', () => {
+    expect(src).toMatch(/getHiddenListingKeys\(\)/)
+    expect(src).toMatch(/setHiddenKeys\(buildHiddenKeySet\(keys\)\)/)
+  })
+
+  it('subtracts hidden homes from BOTH the card list and the map pins', () => {
+    // The list slices from visibleListings and the pins map from it — proving a
+    // hidden home cannot survive in either render.
+    expect(src).toMatch(/excludeHiddenListings\(listings, hiddenKeys\)/)
+    expect(src).toMatch(/visibleListings\.slice\(0, visibleCount\)\.map/)
+    expect(src).toMatch(/visibleListings\.map\(toMapListing\)/)
+    // The raw `listings` state must NOT feed the pins directly anymore (that was
+    // the leak). Guard against a regression that re-points mapListings at it.
+    expect(src).not.toMatch(/mapListings = useMemo\(\(\) => listings\.map\(toMapListing\)/)
+  })
+
+  it('renders the hide control wired to the local visibility state', () => {
+    expect(src).toMatch(/<ListingCardHideControl/)
+    expect(src).toMatch(/onVisibilityChange=\{onHiddenChange\}/)
+    // group/hide on the card wrapper drives the hover reveal.
+    expect(src).toMatch(/group group\/hide relative/)
+  })
+})
+
+describe('hidden homes are excluded from the SSR city browse grid too (W7.2, 2026-07-22)', () => {
+  // The other half of the leak: /search/[...slug] (the city/community/preset
+  // browse pages, where every /homes-for-sale/<city> link lands) SSR-rendered a
+  // raw ListingCard grid with NO per-user hidden subtraction, so a home hidden
+  // on /search reappeared there. Contract: that grid now renders through the
+  // client HideAwareListingGrid, which applies the exclusion + carries the hide
+  // control — and it is fed BOTH RETS identifiers so membership matches whether
+  // the store recorded the ListingKey or the MLS ListNumber.
+  const grid = readSrc('components/search/HideAwareListingGrid.tsx')
+  const slug = readSrc('app/search/[...slug]/page.tsx')
+
+  it('the browse grid renders through HideAwareListingGrid, not a raw ListingCard grid', () => {
+    expect(slug).toMatch(/import HideAwareListingGrid, \{ type HideAwareItem \} from '@\/components\/search\/HideAwareListingGrid'/)
+    expect(slug).toMatch(/<HideAwareListingGrid/)
+    // Each item carries BOTH identifiers so the dual-key match works.
+    expect(slug).toMatch(/ListingKey: listing\.ListingKey \?\? null, ListNumber: listing\.ListNumber \?\? null/)
+    // NO raw <ListingCard> element of any shape (the leak). This is the robust
+    // reintroduction guard — a differently-shaped raw grid (different cols/key)
+    // is caught, unlike a signature-specific regex. The ci:hidden-exclusion-
+    // surfaces gate enforces the same invariant across every browse-results page.
+    expect(slug).not.toMatch(/<ListingCard[\s/>]/)
+  })
+
+  it('HideAwareListingGrid loads the user hidden set and subtracts on BOTH keys', () => {
+    expect(grid).toMatch(/getHiddenListingKeys\(\)/)
+    expect(grid).toMatch(/setHiddenKeys\(buildHiddenKeySet\(keys\)\)/)
+    // Dual-key membership: passes ListingKey AND ListNumber to isHiddenListing.
+    expect(grid).toMatch(/isHiddenListing\(\{ ListingKey: it\.ListingKey, ListNumber: it\.ListNumber \}, hiddenKeys\)/)
+    // The filtered set (not the raw items) is what renders.
+    expect(grid).toMatch(/visible\.map\(\(\{ card \}\)/)
+  })
+
+  it('HideAwareListingGrid carries the hover hide control on each card', () => {
+    expect(grid).toMatch(/<ListingCardHideControl/)
+    expect(grid).toMatch(/onVisibilityChange=\{onHiddenChange\}/)
+    expect(grid).toMatch(/relative group\/hide/)
+  })
+})
+
+describe('price-drops browse grids also subtract hidden homes (W7.2, 2026-07-22)', () => {
+  // /price-drops and /price-drops/[city] are nav-linked browse grids of active
+  // price-reduced inventory (functionally a preset search). They rendered a raw
+  // <ListingCard> grid, so a home hidden on /search reappeared there (flagged by
+  // the W7.2 verifier). Both now route through HideAwareListingGrid, keeping the
+  // KB grid styling via gridClassName. The ci:hidden-exclusion-surfaces gate
+  // enforces the no-raw-ListingCard invariant; these pin the dual-key wiring.
+  for (const file of ['app/price-drops/page.tsx', 'app/price-drops/[city]/page.tsx']) {
+    const src = readSrc(file)
+    it(`${file} renders through HideAwareListingGrid with dual-key items and no raw ListingCard`, () => {
+      expect(src).toMatch(/import HideAwareListingGrid, \{ type HideAwareItem \} from '@\/components\/search\/HideAwareListingGrid'/)
+      expect(src).toMatch(/<HideAwareListingGrid/)
+      expect(src).toMatch(/ListingKey: drop\.listingKey/)
+      expect(src).toMatch(/ListNumber: drop\.listNumber/)
+      expect(src).not.toMatch(/<ListingCard[\s/>]/)
+    })
+  }
+})
+
+describe('HideAwareListingGrid keeps a surface\'s own grid styling', () => {
+  const grid = readSrc('components/search/HideAwareListingGrid.tsx')
+  it('supports a gridClassName so the KB price-drops grid layout is preserved', () => {
+    // With gridClassName it wraps in a plain div (not the design-system Grid),
+    // so price-drops keeps its sm/lg/xl column rhythm.
+    expect(grid).toMatch(/gridClassName\?: string/)
+    expect(grid).toMatch(/if \(gridClassName\) return <div className=\{gridClassName\}>\{cards\}<\/div>/)
+  })
+})
+
+describe('the city map/split view (UnifiedMapListingsView) also subtracts hidden homes (W7.2, 2026-07-22)', () => {
+  // The BLOCKER the W7.2 verifier found: /search/[...slug] with view=map|split
+  // early-returns UnifiedMapListingsView (a DIFFERENT component than the /search
+  // MapSearchView that W7.2 first fixed), which rendered a ListingTile list + map
+  // pins with NO hidden subtraction — toggling "Map view" resurfaced a home the
+  // buyer hid in the grid. Contract: it now subtracts from BOTH the tile list and
+  // the pins, and carries the hide control.
+  const src = readSrc('components/UnifiedMapListingsView.tsx')
+
+  it('loads the user hidden set + subtracts on both keys', () => {
+    expect(src).toMatch(/import \{ getHiddenListingKeys \} from '@\/app\/actions\/hidden-listings'/)
+    expect(src).toMatch(/import \{ buildHiddenKeySet, excludeHiddenListings \} from '@\/components\/search\/hidden-exclusion'/)
+    expect(src).toMatch(/setHiddenKeys\(buildHiddenKeySet\(keys\)\)/)
+    expect(src).toMatch(/const visibleListings = excludeHiddenListings\(listings, hiddenKeys\)/)
+  })
+
+  it('BOTH the tile list and the map pins render from the filtered set', () => {
+    expect(src).toMatch(/visibleListings\.map\(\(listing, i\)/) // the <ul> tile list
+    expect(src).toMatch(/const mapListings: ListingForMap\[\] = visibleListings\.map\(toMapListing\)/)
+    // The pins must NOT derive from raw `listings` anymore (that was the leak).
+    expect(src).not.toMatch(/mapListings: ListingForMap\[\] = listings\.map\(toMapListing\)/)
+  })
+
+  it('carries the hover hide control on each tile', () => {
+    expect(src).toMatch(/<ListingCardHideControl/)
+    expect(src).toMatch(/onVisibilityChange=\{onHiddenChange\}/)
+    expect(src).toMatch(/className="relative group\/hide"/)
+  })
+})
+
+describe('the /videos browse grid subtracts hidden homes (W7.2, 2026-07-22)', () => {
+  // /videos renders a browse grid of active for-sale inventory (filtered to homes
+  // with a video tour). It rendered VideoListingCard directly with no exclusion.
+  // Now it routes through HideAwareVideoGrid (dual-key). The page must not import
+  // VideoListingCard as a value anymore (the ci:hidden-exclusion-surfaces gate
+  // enforces that import-level invariant across every browse page).
+  const grid = readSrc('components/site/HideAwareVideoGrid.tsx')
+  const page = readSrc('app/videos/page.tsx')
+
+  it('HideAwareVideoGrid filters on both keys before rendering VideoListingCard', () => {
+    expect(grid).toMatch(/getHiddenListingKeys\(\)/)
+    expect(grid).toMatch(/isHiddenListing\(\{ ListingKey: it\.ListingKey, ListNumber: it\.ListNumber \}, hiddenKeys\)/)
+    expect(grid).toMatch(/visible\.map\(\(\{ card \}\)/)
+  })
+
+  it('the page renders through HideAwareVideoGrid with dual-key items, not a raw VideoListingCard grid', () => {
+    expect(page).toMatch(/import HideAwareVideoGrid, \{ type HideAwareVideoItem \} from '@\/components\/site\/HideAwareVideoGrid'/)
+    expect(page).toMatch(/<HideAwareVideoGrid items=\{videoItems\}/)
+    expect(page).toMatch(/ListingKey: t\.listingKey, ListNumber: t\.listNumber/)
+    expect(page).not.toMatch(/<VideoListingCard/)
+  })
+})
+
+describe('the /search map-only pin layer subtracts hidden homes (W7.2, 2026-07-22)', () => {
+  // The second-round BLOCKER: /search?view=map (map-only) rendered a raw
+  // SearchMapClustered with the server's unfiltered pins — a home hidden on the
+  // list/split view reappeared as a clickable pin. Now the map-only branch
+  // renders HideAwareSearchMap, which subtracts hidden before the pins draw. The
+  // page must not import the pin layer (Lazy)SearchMapClustered directly (the
+  // ci:hidden-exclusion-surfaces gate enforces this at the import level).
+  const wrap = readSrc('components/search/HideAwareSearchMap.tsx')
+  const page = readSrc('app/search/page.tsx')
+
+  it('HideAwareSearchMap filters the pins through excludeHiddenListings', () => {
+    expect(wrap).toMatch(/getHiddenListingKeys\(\)/)
+    expect(wrap).toMatch(/const visible = useMemo\(\(\) => excludeHiddenListings\(listings, hiddenKeys\)/)
+    expect(wrap).toMatch(/<SearchMapClustered\s+listings=\{visible\}/)
+  })
+
+  it('the /search map-only branch renders HideAwareSearchMap, not a raw pin layer', () => {
+    expect(page).toMatch(/import HideAwareSearchMap from '@\/components\/search\/HideAwareSearchMap'/)
+    expect(page).toMatch(/<HideAwareSearchMap/)
+    // The page must not import the raw pin layer directly anymore.
+    expect(page).not.toMatch(/import\s+\w+\s+from '@\/components\/(Lazy)?SearchMapClustered'/)
   })
 })
 
