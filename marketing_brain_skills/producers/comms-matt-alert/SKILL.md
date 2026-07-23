@@ -134,7 +134,7 @@ the last full word before char 60. Log the truncation in `executor_response.warn
 **Step 3.  Voice validation**
 
 Before sending, run the body through the brand-voice checklist from
-`marketing_brain_skills/brand-voice/voice_guidelines.md`:
+`marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`:
 
 Hard-fail checks (stop delivery and return `killed` if any hit):
 - Any banned word (see §6.2 of voice_guidelines.md)
@@ -377,7 +377,7 @@ WHERE id = '<id>';
 ## 10. Related skills and references
 
 **Required reading before executing:**
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice validation rules (§6 banned list, §4 attributes, §11 per-channel calibration)
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice validation rules (§6 banned list, §4 attributes, §11 per-channel calibration)
 - `CLAUDE.md` §0.  Data Accuracy (alerts citing market data must trace to a source)
 - `CLAUDE.md` §0.5.  Draft-First rule does NOT apply to critical/high alerts (they ship immediately); it does apply if this producer is ever extended to publish content
 
@@ -401,7 +401,7 @@ WHERE id = '<id>';
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

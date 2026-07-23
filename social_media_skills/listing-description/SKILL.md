@@ -129,7 +129,7 @@ Before producing any copy:
 - `CLAUDE.md` §0 (Data Accuracy - all property facts trace to MLS data, never invented)
 - `CLAUDE.md` §0.5 (Draft-First, Commit-Last)
 - `design_system/ryan-realty/SKILL.md` (brand register and voice)
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` (full load - listing descriptions are external-facing prose)
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` (full load - listing descriptions are external-facing prose)
 - `marketing_brain_skills/research/tool-inventory.md` (verify Supabase and Spark are reachable)
 - `marketing_brain_skills/research/platform-bible.md` §23 (MLS / COCAR syndication rules)
 - `marketing_brain_skills/research/bend-market-bible.md` §4 (Oregon regulatory environment) and §5 (COCAR MLS rules)
@@ -397,7 +397,7 @@ measured          <- DOM, close price vs list price, showing volume if available
 - `CLAUDE.md` §0 - Data Accuracy (all property facts trace to MLS, never invented)
 - `CLAUDE.md` §0.5 - Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md` - brand voice, banned vocabulary
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` - full load (external-facing prose)
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - full load (external-facing prose)
 - `marketing_brain_skills/research/tool-inventory.md` - tool status
 - `marketing_brain_skills/research/platform-bible.md` - §23 MLS / COCAR syndication rules, §24 real-estate compliance master list
 - `marketing_brain_skills/research/bend-market-bible.md` - §4 regulatory environment (Oregon disclosure, STR ordinance), §5 COCAR MLS rules
@@ -436,7 +436,7 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

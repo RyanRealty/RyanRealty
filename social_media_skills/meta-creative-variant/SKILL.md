@@ -137,7 +137,7 @@ Before generating any copy:
 - `CLAUDE.md` §0 (Data Accuracy - all market stats cited in copy trace to live queries)
 - `CLAUDE.md` §0.5 (Draft-First, Commit-Last)
 - `design_system/ryan-realty/SKILL.md` (brand voice, navy/cream palette, banned vocabulary)
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` (inline rules plus full §6.2 banned list)
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` (inline rules plus full §6.2 banned list)
 - `marketing_brain_skills/research/tool-inventory.md` (Meta API token status before any call)
 - `marketing_brain_skills/research/platform-bible.md` §5 (Facebook Feed ad spec: 125-char primary text, 40-char headline, 40-char description, HOUSING special category, fair housing compliance)
 - `marketing_brain_skills/research/asset-library-map.md` (image asset sourcing hierarchy)
@@ -446,7 +446,7 @@ killed            <- Matt rejects all variants, or any gate fails after 2 auto-f
 - `CLAUDE.md` §0 - Data Accuracy (all stats in copy trace to live queries)
 - `CLAUDE.md` §0.5 - Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md` - brand voice, logo-is-a-closer doctrine, navy/cream palette
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` - inline rules (banned words, punctuation, fake urgency)
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - inline rules (banned words, punctuation, fake urgency)
 - `marketing_brain_skills/research/tool-inventory.md` - Meta API token status
 - `marketing_brain_skills/research/platform-bible.md` - §5 Facebook Feed (ad copy specs: headline 40 chars, primary text 125 chars preview, HOUSING special category, fair housing compliance)
 - `marketing_brain_skills/research/asset-library-map.md` - image asset sourcing hierarchy
@@ -489,7 +489,7 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

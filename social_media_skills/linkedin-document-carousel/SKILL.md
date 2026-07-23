@@ -72,7 +72,7 @@ trace, QA gate, and review surfacing.
 | `CLAUDE.md` "Supabase listings Schema" | Mixed-case column names require double quotes. Re-read before any SQL. |
 | `design_system/ryan-realty/SKILL.md` | Heritage register, navy/cream-only palette, Amboqia/Geist/Azo Sans Medium type tiers, asset cheat sheet. |
 | `design_system/ryan-realty/colors_and_type.css` | Authoritative color + type tokens. |
-| `marketing_brain_skills/brand-voice/voice_guidelines.md` | Banned vocab union; voice attributes; LinkedIn voice register. |
+| `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` | Banned vocab union; voice attributes; LinkedIn voice register. |
 | `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` | Matt's writing fingerprint reference. |
 | `social_media_skills/platform-best-practices/SKILL.md` | 2026 LinkedIn rule layer.  document-post format, cadence, hashtag use. |
 | `social_media_skills/instagram-carousel/SKILL.md` | Persistent-footer + continuity conventions inherited here (footer position, logo discipline, tabular numerals). |
@@ -726,7 +726,7 @@ Comment GUIDE for the full Tumalo brief.
 ## 11. Voice register
 
 LinkedIn carries gravitas. Match the tone of a McKinsey Insights piece.  short paragraphs,
-declarative claims, every claim cited. Reference: `marketing_brain_skills/brand-voice/voice_guidelines.md`.
+declarative claims, every claim cited. Reference: `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.
 
 **Apply:**
 
@@ -928,7 +928,7 @@ WHERE id='<id>';
 - `social_media_skills/platform-best-practices/SKILL.md`.  2026 LinkedIn rule layer
 - `marketing_brain_skills/producers/TEMPLATE.md`.  producer skeleton
 - `marketing_brain_skills/producers/REGISTRY.md`.  Section B row entry
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab union, voice attributes
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab union, voice attributes
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's writing fingerprint
 - `automation_skills/content_engine/SKILL.md`.  content routing bus
 - `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  banned content gate
@@ -942,7 +942,7 @@ WHERE id='<id>';
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

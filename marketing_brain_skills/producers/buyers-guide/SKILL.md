@@ -161,7 +161,7 @@ interface BuyersGuideActionRow {
 
 - `CLAUDE.md` §0, §0.5, brand voice
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `data/resort-communities.json`. The row for `community_slug`
 - `public/lp/<slug>/index.html` (or the dynamic version, if `site-community-page`
   has already ported it). The buyer's guide reuses the same content
@@ -227,7 +227,7 @@ Design system:
 - Image-heavy where possible (sub-neighborhood photos, the signature hole, course aerial)
 
 **Step 6.** Voice-validate all generated body copy. Hard fail on the
-banned-word list (see `voice_guidelines.md`).
+banned-word list (see `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md`).
 
 **Step 7.** Generate the PDF via Puppeteer (Step 4.3 below handles the
 Puppeteer setup script; this step calls it).
@@ -487,7 +487,7 @@ pending -> in_production -> executed (email sent successfully)
 
 - `CLAUDE.md` §0, §0.5
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `data/resort-communities.json`
 - `public/lp/tetherow/index.html`. Content reference for the parallel LP
 - `marketing_brain_skills/research/asset-library-map.md`. Hero + sub-neighborhood photo paths
@@ -526,7 +526,7 @@ pending -> in_production -> executed (email sent successfully)
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

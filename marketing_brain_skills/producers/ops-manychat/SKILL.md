@@ -68,7 +68,7 @@ with `executor_response.flow_id` set after a successful ManyChat API call.
 | `CLAUDE.md` §0.5.  Draft-First, Commit-Last | Show flow config to Matt before sending to ManyChat API. Wait for explicit approval. Outranks all. |
 | `CLAUDE.md` "Voice + content" | Flow messages obey brand voice.  no exclamation marks, no banned vocab, "you/your" subject, warm/direct/honest. |
 | `design_system/ryan-realty/SKILL.md` | Brand register.  message copy reads like Ryan Realty, not generic auto-DM. |
-| `marketing_brain_skills/brand-voice/voice_guidelines.md` | Banned vocab union; voice attributes; phrasing of greetings + closings. |
+| `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` | Banned vocab union; voice attributes; phrasing of greetings + closings. |
 | `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` | Matt's writing fingerprint.  flow copy mirrors this register. |
 | `docs/MARKETING_LEAD_FLOW.md` | FUB webhook contract; tag conventions; conditional logic for seller-intent tagging. |
 | `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md` §2 | Conditional lead-form tag mapping (hot-seller / warm-seller / nurture-only). |
@@ -170,7 +170,7 @@ with `executor_response.error='env_missing'`. Stop.
 
 - `CLAUDE.md` §0.  Data Accuracy
 - `CLAUDE.md` §0.5.  Draft-First, Commit-Last
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `docs/MARKETING_LEAD_FLOW.md`.  FUB webhook contract and tagging conventions
 
 ### Step 4.  Pull the listing record (Supabase, live)
@@ -331,7 +331,7 @@ zero hits, or halt.
 ### Step 7.  Voice gate the flow copy
 
 Grep every `text` and `prompt` and `label` and `options[].label` against the banned vocab
-union in `marketing_brain_skills/brand-voice/voice_guidelines.md` §6. Also grep for:
+union in `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` §6. Also grep for:
 
 - Exclamation marks (banned in flow copy except in user-facing brand assets where also banned).
 - Em-dashes (`. `) in body copy. The default flow uses an em-dash in step 7 (`.  Ryan Realty`)
@@ -434,7 +434,7 @@ delta to `content_performance`.
 | Supabase MCP | Listing lookup + action row transitions | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
 | FUB inbound webhook | Lead delivery target (not called directly.  ManyChat calls it server-side) | `FUB_INBOUND_WEBHOOK_URL`, `FUB_API_KEY` |
 | `lib/manychat.ts` (build if absent) | API wrapper for ManyChat REST calls | repo path |
-| Voice gate grep | banned vocab + punctuation check | `marketing_brain_skills/brand-voice/voice_guidelines.md` §6 |
+| Voice gate grep | banned vocab + punctuation check | `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` §6 |
 
 ---
 
@@ -606,7 +606,7 @@ WHERE id='<id>';
 
 - `CLAUDE.md` §0.  Data Accuracy mandate (outranks everything)
 - `CLAUDE.md` §0.5.  Draft-First, Commit-Last (outranks everything)
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab union, voice
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab union, voice
   attributes
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's writing fingerprint
 - `docs/MARKETING_LEAD_FLOW.md`.  FUB webhook contract, conditional tagging rules
@@ -618,7 +618,7 @@ WHERE id='<id>';
   `lib/followupboss.ts`
 - Supabase MCP.  listings table read + `marketing_brain_actions` write
 - Voice gate grep.  checks every flow message against
-  `marketing_brain_skills/brand-voice/voice_guidelines.md` §6
+  `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` §6
 
 **Sister producers commonly chained with this:**
 
@@ -674,7 +674,7 @@ WHERE id='<id>';
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

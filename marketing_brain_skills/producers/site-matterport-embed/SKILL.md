@@ -162,7 +162,7 @@ Before touching any file:
 - `CLAUDE.md` "Design System v2.  Heritage + Web Registers".  Geist body,
   navy `#102742` primary, cream `#faf8f4` background
 - `design_system/ryan-realty/SKILL.md`.  brand visual system
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab gate
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab gate
 - `marketing_brain_skills/producers/REGISTRY.md`.  Section C row
 
 **Step 3.  Validate the Matterport URL pattern.**
@@ -305,7 +305,7 @@ The only on-page copy this producer introduces:
 - Meta description append: `Includes 3D virtual tour.`
 
 Run these strings through the banned vocab union in
-`marketing_brain_skills/brand-voice/voice_guidelines.md`. The canonical strings
+`marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`. The canonical strings
 above pass. If Matt has overridden via payload (none of the fields above are
 configurable, but if future payload fields are introduced), validate each.
 
@@ -640,7 +640,7 @@ WHERE id='<id>';
 - `CLAUDE.md` "Design System Rules.  MANDATORY".  shadcn/ui only; no raw HTML; no hex
 - `CLAUDE.md` "Design System v2.  Heritage + Web Registers".  navy + cream; Geist body
 - `design_system/ryan-realty/SKILL.md`.  brand visual system
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice enforcement
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice enforcement
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's writing fingerprint
 
 **Sibling site producers:**
@@ -669,7 +669,7 @@ WHERE id='<id>';
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

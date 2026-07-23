@@ -160,7 +160,7 @@ Before writing any prose:
 - `CLAUDE.md` §0 (Data Accuracy - all figures in the narrative trace to payload fields verified by the parent cma producer)
 - `CLAUDE.md` §0.5 (Draft-First, Commit-Last)
 - `design_system/ryan-realty/SKILL.md` (brand voice - Heritage register for CMA prose: formal, direct, trustworthy)
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` (full load - long-form external prose)
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` (full load - long-form external prose)
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md` (§23 compliance rules apply to CMA text)
 - `marketing_brain_skills/research/asset-library-map.md`
@@ -361,7 +361,7 @@ killed            <- if voice/fair-housing gate fails after 2 auto-fixes
 - `CLAUDE.md` §0 - Data Accuracy (all figures trace to payload from parent producer)
 - `CLAUDE.md` §0.5 - Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md` - brand voice (Heritage register: formal, direct)
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` - full load (long-form external)
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - full load (long-form external)
 - `marketing_brain_skills/research/tool-inventory.md` - tool status
 - `marketing_brain_skills/research/platform-bible.md` - §23 MLS syndication, §24 compliance
 - `marketing_brain_skills/research/asset-library-map.md` - asset tracking
@@ -399,7 +399,7 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

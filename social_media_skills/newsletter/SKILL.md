@@ -117,7 +117,7 @@ Before producing any copy:
 - `CLAUDE.md` §0 (Data Accuracy - every market figure traces to a live query)
 - `CLAUDE.md` §0.5 (Draft-First, Commit-Last)
 - `design_system/ryan-realty/SKILL.md` (brand register: navy `#102742`, cream `#faf8f4`, Geist body, Amboqia display)
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` (full load required for long-form)
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` (full load required for long-form)
 - `marketing_brain_skills/research/tool-inventory.md` (API status before any call)
 - `marketing_brain_skills/research/platform-bible.md` §21 (email surface rules)
 - `marketing_brain_skills/research/asset-library-map.md` (asset registration on approval)
@@ -418,7 +418,7 @@ SQL transitions follow the TEMPLATE.md standard.
 - `CLAUDE.md` §0 - Data Accuracy (outranks everything)
 - `CLAUDE.md` §0.5 - Draft-First, Commit-Last (outranks everything)
 - `design_system/ryan-realty/SKILL.md` - brand visual system (v2 two-color palette: navy + cream)
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` - voice enforcement (full load for long-form)
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - voice enforcement (full load for long-form)
 - `marketing_brain_skills/research/tool-inventory.md` - API and tool status before any call
 - `marketing_brain_skills/research/platform-bible.md` - §21 email surface rules (Resend / mail.ryan-realty.com)
 - `marketing_brain_skills/research/asset-library-map.md` - asset registration protocol on approval
@@ -470,7 +470,7 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

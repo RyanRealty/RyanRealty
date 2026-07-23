@@ -67,7 +67,7 @@ are handled by `ops/postcard-print-order/` (TODO) and the FUB inbound webhook re
 | `CLAUDE.md` "Supabase listings Schema" | Mixed-case quoted column names. PostGIS on `"Latitude"` / `"Longitude"`. |
 | `design_system/ryan-realty/SKILL.md` | Heritage register (navy `#102742` monochrome on cream `#faf8f4`), Amboqia display, Geist body, pre-rendered wordmark. |
 | `design_system/ryan-realty/colors_and_type.css` | Authoritative color + type tokens. |
-| `marketing_brain_skills/brand-voice/voice_guidelines.md` | Banned vocab union; voice attributes (honest, transparent, neighborly). |
+| `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` | Banned vocab union; voice attributes (honest, transparent, neighborly). |
 | `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` | Matt's writing fingerprint. |
 | `automation_skills/content_engine/SKILL.md` | Content routing bus.  every `content:*` action dispatches through here. |
 | `video_production_skills/ANTI_SLOP_MANIFESTO.md` | Banned-content gate. No "stunning," no manufactured urgency, no AI-generated property photos. |
@@ -349,7 +349,7 @@ texture. No drop shadow on the wordmark. No drop shadow on the QR.
 - **Sentence case + period.** Not "JUST LISTED" or "Just Listed!".  declarative.
 - **No exclamation marks anywhere on the postcard.**
 - **No "stunning," "must-see," "won't last," "hidden gem,"** any banned-vocab union word.
-  See `marketing_brain_skills/brand-voice/voice_guidelines.md`.
+  See `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.
 
 ---
 
@@ -608,7 +608,7 @@ action, dispatched by the orchestrator AFTER `approved`. This producer does not 
 - `CLAUDE.md` "Voice + content".  phone discipline (direct vs FUB-tracked)
 - `CLAUDE.md` "Supabase listings Schema".  mixed-case quoted columns
 - `design_system/ryan-realty/SKILL.md`.  heritage register
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab + tone
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab + tone
 
 **Sibling producers:**
 - `social_media_skills/flyer-design/SKILL.md`.  print/digital flyer companion (Just Listed,
@@ -645,7 +645,7 @@ action, dispatched by the orchestrator AFTER `approved`. This producer does not 
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

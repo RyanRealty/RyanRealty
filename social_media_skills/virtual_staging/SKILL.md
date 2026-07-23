@@ -113,7 +113,7 @@ Read these before touching any deliverable:
 - `CLAUDE.md` §0 - Data Accuracy. Every claim in the listing context is source-verified.
 - `CLAUDE.md` §0.5 - Draft-First, Commit-Last. Render to `out/`. No commit before Matt approves.
 - `design_system/ryan-realty/SKILL.md` - brand color and type register.
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` - banned phrases for any caption text.
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - banned phrases for any caption text.
 - `video_production_skills/ANTI_SLOP_MANIFESTO.md` - AI disclosure rules for virtual staging.
 
 **Step 3 - Resolve and validate the source photo**
@@ -353,7 +353,7 @@ killed          Matt cancels OR QA fails after 2 auto-iterations
 1. `CLAUDE.md` §0 - Data Accuracy (non-negotiable)
 2. `CLAUDE.md` §0.5 - Draft-First, Commit-Last (non-negotiable)
 3. `design_system/ryan-realty/SKILL.md` - brand visual system
-4. `marketing_brain_skills/brand-voice/voice_guidelines.md` - voice enforcement
+4. `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - voice enforcement
 5. `marketing_brain_skills/research/tool-inventory.md` - Replicate model registry (§5.5), API keys (§4)
 6. `marketing_brain_skills/research/platform-bible.md` - NAR compliance rules for virtual staging disclosure
 7. `marketing_brain_skills/research/asset-library-map.md` - how to register produced images
@@ -406,7 +406,7 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

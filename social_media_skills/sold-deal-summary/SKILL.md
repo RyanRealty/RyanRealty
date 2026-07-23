@@ -65,7 +65,7 @@ PNG.
 | `CLAUDE.md` §0.5.  Draft-First, Commit-Last | Render to `out/`, surface both deliverables, wait for explicit approval. |
 | `CLAUDE.md` "Voice + content".  #RyanRealtyBend HARD RULE | IG caption MUST lead its trailing hashtag block with `#RyanRealtyBend`. LinkedIn body is EXEMPT (LinkedIn doesn't honor hashtags well). |
 | `design_system/ryan-realty/SKILL.md` | Heritage register, navy/cream, type tiers. The IG post inherits S2 conventions. |
-| `marketing_brain_skills/brand-voice/voice_guidelines.md` | Voice attributes, banned vocab union. Applies to BOTH the IG caption AND the LinkedIn body. |
+| `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` | Voice attributes, banned vocab union. Applies to BOTH the IG caption AND the LinkedIn body. |
 | `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` | Matt's writing fingerprint.  terse, useful, no flourish. |
 | `social_media_skills/ig-single-post/SKILL.md` | The S2 Just Sold template renderer. This producer delegates the IG image to it. |
 | `social_media_skills/platform-best-practices/SKILL.md` | 2026 platform rule layer.  LinkedIn native text vs link-post rules; no-hashtag convention. |
@@ -265,7 +265,7 @@ LinkedIn-specific voice rules:
 - NO "Don't miss out!" / "Act now!" / "Won't last long" / urgency framing.
 - NO exclamation marks. NO emoji. NO hashtags.
 - One topic per paragraph; line breaks between paragraphs.
-- Banned vocab union applies per `voice_guidelines.md`.
+- Banned vocab union applies per `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md`.
 
 **Step 8.  Write `citations.json`.** One entry per figure shown in either deliverable.
 
@@ -331,7 +331,7 @@ WHERE id='<action_id>';
 | Supabase MCP | Live data pull from `listings`; action row read + update | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
 | `ig-single-post` skill | S2 template render (delegated) | `social_media_skills/ig-single-post/SKILL.md` |
 | `lib/render-ig-single-post.mjs` | Compositor invoked by `ig-single-post` | repo-local node script |
-| Voice grep | Banned-vocab check against `voice_guidelines.md` §6 union | `marketing_brain_skills/brand-voice/voice_guidelines.md` |
+| Voice grep | Banned-vocab check against `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md` §6 union | `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` |
 | Markdown writer | Write `caption-ig.md` + `linkedin-post.md` | `Write` tool |
 | JSON writer | Write `citations.json` + `scorecard.json` | `Write` tool |
 
@@ -460,8 +460,8 @@ Run before surfacing the draft. Write results to `scorecard.json`. Any `fail` = 
 | 10 | LinkedIn body has no hashtags | Grep returns zero `#` tokens in linkedin-post.md |
 | 11 | LinkedIn body has no image embed | linkedin-post.md is text only |
 | 12 | LinkedIn body word count | 150 ≤ words ≤ 300 |
-| 13 | Banned vocab clean (IG) | Grep `caption-ig.md` against `voice_guidelines.md` §6 union.  zero hits |
-| 14 | Banned vocab clean (LinkedIn) | Grep `linkedin-post.md` against `voice_guidelines.md` §6 union.  zero hits |
+| 13 | Banned vocab clean (IG) | Grep `caption-ig.md` against `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md` §6 union.  zero hits |
+| 14 | Banned vocab clean (LinkedIn) | Grep `linkedin-post.md` against `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md` §6 union.  zero hits |
 | 15 | No "honored to" / "humbled to" / "journey" | Zero hits in either deliverable |
 | 16 | No exclamation marks | Zero hits in either deliverable |
 | 17 | No emoji | Zero emoji in either deliverable |
@@ -531,14 +531,14 @@ Data-accuracy fails (1-6, 18): never auto-fix.  go straight to Matt for resoluti
 - `CLAUDE.md` §0.5.  Draft-First, Commit-Last (outranks everything)
 - `CLAUDE.md` "Voice + content".  #RyanRealtyBend HARD RULE + LinkedIn no-hashtag exception
 - `design_system/ryan-realty/SKILL.md`.  brand visual system
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice enforcement
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice enforcement
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's writing fingerprint
 
 **Format skill delegated to:**
 - `social_media_skills/ig-single-post/SKILL.md`.  S2 Just Sold template renderer
 
 **Capabilities used:**
-- Banned-vocab grep against `marketing_brain_skills/brand-voice/voice_guidelines.md` §6 union
+- Banned-vocab grep against `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` §6 union
 
 **Playbooks and pipeline docs:**
 - `automation_skills/content_engine/SKILL.md`.  content routing bus
@@ -560,7 +560,7 @@ Data-accuracy fails (1-6, 18): never auto-fix.  go straight to Matt for resoluti
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

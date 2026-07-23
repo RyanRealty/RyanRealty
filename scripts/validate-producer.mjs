@@ -53,7 +53,9 @@ const MANDATORY_REFS_BASE = [
   'CLAUDE.md §0',
   'CLAUDE.md §0.5',
   'design_system/ryan-realty/SKILL.md',
-  'voice_guidelines.md',
+  // W11.4: repointed from voice_guidelines.md (now only the mechanical-floor
+  // companion) to VOICE.md — the canonical voice source every producer must cite.
+  'VOICE.md',
   'tool-inventory.md',
   'platform-bible.md',
   'asset-library-map.md',

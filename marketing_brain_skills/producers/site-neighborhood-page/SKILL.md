@@ -132,7 +132,7 @@ Confirm `status` was `pending`. If not, halt silently.
 - `CLAUDE.md` "Design System v2: Heritage + Web Registers": Web register
 - `design_system/ryan-realty/SKILL.md`: color tokens, type families, shadow ladder
 - `design_system/ryan-realty/colors_and_type.css`: CSS variable definitions
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`: voice enforcement
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: voice enforcement
 - `marketing_brain_skills/research/tool-inventory.md`: Supabase and env var status
 - `marketing_brain_skills/research/platform-bible.md`: §24 real-estate compliance
 - `marketing_brain_skills/research/asset-library-map.md`: hero image location confirmation
@@ -205,7 +205,7 @@ contact sheet.
 
 Before generating any file, validate `payload.hero_headline`, `payload.meta_description`,
 `payload.lead_form_cta`, and every body paragraph extracted from the bible against
-`marketing_brain_skills/brand-voice/voice_guidelines.md`:
+`marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`:
 
 Banned words check: stunning, nestled, boasts, charming, pristine, gorgeous, breathtaking,
 must-see, dream home, meticulously maintained, tucked away, hidden gem, truly, spacious,
@@ -478,7 +478,7 @@ measured
 - `CLAUDE.md` "Design System v2: Heritage + Web Registers"
 - `design_system/ryan-realty/SKILL.md`: color tokens, type families, radii
 - `design_system/ryan-realty/colors_and_type.css`: CSS variable definitions
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`: voice enforcement
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: voice enforcement
 - `marketing_brain_skills/research/tool-inventory.md`: API and env var status
 - `marketing_brain_skills/research/platform-bible.md`: §24 compliance
 - `marketing_brain_skills/research/asset-library-map.md`: hero image location
@@ -505,7 +505,7 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

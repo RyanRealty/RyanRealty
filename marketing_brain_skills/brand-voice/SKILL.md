@@ -1,6 +1,6 @@
 ---
 name: ryan-realty-brand-voice
-description: Enforce Ryan Realty brand voice on every piece of marketing content before publish. Use when generating, reviewing, or validating any content for publication including blog posts, social posts on any platform, email, ad copy, listing copy, video voiceover scripts, video on-screen text, flyers, signage, or website copy. Validates against the five voice attributes (trustworthy, honest, knowledgeable, professional, dependable), banned punctuation/words/phrases, and Matt Ryan's canonical writing corpus. Mandatory load for the marketing brain and any subagent generating Ryan Realty content.
+description: Enforce Ryan Realty brand voice on every piece of marketing content before publish. Use when generating, reviewing, or validating any content for publication including blog posts, social posts on any platform, email, ad copy, listing copy, video voiceover scripts, video on-screen text, flyers, signage, or website copy. Validates against the Five Laws in VOICE.md (show it don't say it, a number beats an adjective, talk to a smart adult, the category is not a claim, every number is live and true), banned punctuation/words/phrases, and Matt Ryan's canonical writing corpus. Mandatory load for the marketing brain and any subagent generating Ryan Realty content.
 ---
 
 # Ryan Realty Brand Voice
@@ -24,17 +24,27 @@ If a piece of content is going out under the Ryan Realty name in any medium, thi
 
 ---
 
-## The five voice attributes
+## The Five Laws (canonical)
 
-| Attribute | One-line bar |
-|---|---|
-| **Trustworthy** | Every claim sourced. Never promise outcomes we cannot deliver. |
-| **Honest** | Data drives the verdict. If the data contradicts the story, the story changes. |
-| **Knowledgeable** | Specifics over generalities. Define jargon inline. Cite sources. |
-| **Professional** | Warm but never sloppy. No typos. Visually clean. One exclamation max per piece. |
-| **Dependable** | Never write a CTA we cannot honor. Follow through on every promised cadence. |
+The voice is the Five Laws in `VOICE.md` — the single source of truth. Read it
+first; this skill is workflow on top of it, never a replacement.
 
-Full behavioral rules in `voice_guidelines.md` §4.
+1. **Show it, don't say it.** A virtue you name is a virtue the reader doubts.
+2. **A number beats an adjective.** The stat carries the sentence.
+3. **Talk to a smart adult.** No pandering, no talking down, no filler.
+4. **The category is not a claim.** Naming what we are ("independent brokerage,"
+   "licensed brokers") says nothing.
+5. **Every number is live and true.** Traced to the source of truth, per
+   CLAUDE.md §0.
+
+Then the Orwell rules (`VOICE.md` "The Orwell rules") decide how the sentence
+reads, and the two tests (competitor test, receipt test) decide whether it ships.
+The mechanical floor (`voice_guidelines.md` + `scripts/brand-voice-vocabulary.cjs`)
+is the enforced punctuation/vocabulary layer under all of it.
+
+The older five-attribute model (trustworthy / honest / knowledgeable /
+professional / dependable) is retired: it described a tone instead of naming the
+moves, and Law 1 forbids the site from saying any of those words out loud.
 
 ---
 

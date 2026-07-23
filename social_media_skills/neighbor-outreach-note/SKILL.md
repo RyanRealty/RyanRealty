@@ -68,7 +68,7 @@ job ends at "Matt approves the draft package."
 | `CLAUDE.md` "Voice + content" | Voice rules; FUB-tracked bio phone `541.703.3095`; banned vocab. |
 | `design_system/ryan-realty/SKILL.md` | Heritage register, navy `#102742` on cream `#faf8f4`, Amboqia/Geist, headshots. |
 | `design_system/ryan-realty/colors_and_type.css` | Authoritative color + type tokens. |
-| `marketing_brain_skills/brand-voice/voice_guidelines.md` | Banned vocab union; voice attributes. |
+| `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` | Banned vocab union; voice attributes. |
 | `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` | Matt's writing fingerprint. |
 | `social_media_skills/flyer-design/SKILL.md` | Delegated enclosure flyer render. |
 | `automation_skills/content_engine/SKILL.md` | Content routing bus. Never bypass. |
@@ -234,7 +234,7 @@ calls route through Follow Up Boss for attribution.
 **Voice rules (HARD).** Warm but specific.  sounds genuinely written, not "marketing." "We"
 for brokerage voice (never "I" except in a Matt-authored `custom_message`). Zero exclamation
 marks, em-dashes in body (single greeting em-dash allowed), semicolons, or dramatic colons.
-Zero hits against the banned vocab union in `voice_guidelines.md` §6 (clichés, AI filler,
+Zero hits against the banned vocab union in `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md` §6 (clichés, AI filler,
 hedging, brand-corrosive phrases). Never "off-market".  use "before we officially hit the
 market" (MLS Clear Cooperation). Zero Fair Housing trip phrases ("great for families," "young
 professionals," "walkable to your church," "adult neighborhood," etc.).
@@ -317,7 +317,7 @@ line: "Drop in mailboxes 2-3 days before <expected_active_date_pretty>."
 | `social_media_skills/flyer-design` sub-skill | Enclosure flyer render | `npm run flyer:neighbor-note -- --config <flyer-config.json> --out <flyer.png>` |
 | QR codec | Property URL → print-ready PNG/SVG | Node `qrcode` or `qrencode` CLI |
 | Avery 5160 PDF compositor | Label sheet render | Node `pdfkit` or puppeteer HTML template |
-| Banned-vocab + FH validator | Pre-render grep | `scripts/check-banned-vocab.mjs` against `voice_guidelines.md` §6 union |
+| Banned-vocab + FH validator | Pre-render grep | `scripts/check-banned-vocab.mjs` against `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md` §6 union |
 
 ---
 
@@ -444,7 +444,7 @@ Any `fail` = non-ship.
 |---|---|---|
 | 1 | Address list | `20 <= count <= 40` (or `neighbor_count`), subject parcel excluded, sorted asc by `distance_meters`, CSV header exact `address,city,state,zip,distance_meters` (UTF-8, no BOM) |
 | 2 | Note word count | `50 <= count <= 90` |
-| 3 | Banned vocab clean | Grep note + flyer copy against `voice_guidelines.md` §6.  zero hits |
+| 3 | Banned vocab clean | Grep note + flyer copy against `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md` §6.  zero hits |
 | 4 | Punctuation clean | Zero `!`, zero `;`, zero em-dashes in body (single greeting "Hi neighbor. " allowed) |
 | 5 | Listing agent | Resolved to `matt-ryan` / `paul-stevenson` / `rebecca-peterson`; headshot PNG on disk |
 | 6 | Expected Active in future | `expected_active_date_iso > now()` |
@@ -524,7 +524,7 @@ Producer), row `neighbor-outreach-note`.
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

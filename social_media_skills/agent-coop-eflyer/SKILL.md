@@ -86,7 +86,7 @@ manually managed local agent list. The producer never sends.
 | `CLAUDE.md` "Voice + content".  #RyanRealtyBend HARD RULE | Email body is hashtag-stripping; DO NOT inject `#RyanRealtyBend` into the subject line or body. Email is explicitly exempt. |
 | `design_system/ryan-realty/SKILL.md` | Heritage register, navy/cream palette, Amboqia/Geist type tiers, asset cheat sheet. |
 | `design_system/ryan-realty/colors_and_type.css` | Canonical color tokens and type families. |
-| `marketing_brain_skills/brand-voice/voice_guidelines.md` | Banned vocab union, voice attributes. |
+| `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` | Banned vocab union, voice attributes. |
 | `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` | Matt's writing fingerprint reference. |
 | `automation_skills/content_engine/SKILL.md` | Content routing bus. Every `content:*` action enters through here. |
 | `social_media_skills/platform-best-practices/SKILL.md` | 2026 platform rule layer. Email-specific rules in §"Email". |
@@ -346,7 +346,7 @@ not consumer-aimed sales copy.
 
 ### Banned vocab
 
-Hard-fail if any term from the union in `marketing_brain_skills/brand-voice/voice_guidelines.md`
+Hard-fail if any term from the union in `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 (real-estate clichés, AI filler, vague qualifiers, banned phrases) appears in subject, body,
 headline, pitch, alt text, or compliance line. Run the producer-side grep against that file
 at QA.  do not duplicate the list here (it drifts).
@@ -474,7 +474,7 @@ Run before surfacing. Write results to `out/agent-coop/<slug>/design_scorecard.j
 | # | Check | Pass condition |
 |---|---|---|
 | 1 | Subject line | `length <= 60`, no all-caps run > 4 chars (except NE/NW/SE/SW/MLS), no `!`, em-dash only once as connector |
-| 2 | Banned vocab | Grep subject, pitch, alt text, compliance line against `voice_guidelines.md` union. Zero hits |
+| 2 | Banned vocab | Grep subject, pitch, alt text, compliance line against `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md` union. Zero hits |
 | 3 | Hero photo | Exactly 1200×675 JPEG, < 250 KB, MLS source in `provenance.json`, no AI, no watermark |
 | 4 | Showing link | HEAD returns HTTP 200 |
 | 5 | HTML structure | `max-width:640px` outer table, table-based layout, all CSS inlined except dark-mode `<style>` block |
@@ -548,7 +548,7 @@ The producer transitions:
 - `CLAUDE.md` §0.5.  Draft-First, Commit-Last (outranks everything)
 - `CLAUDE.md` "Voice + content".  hashtag-strip rule for email
 - `design_system/ryan-realty/SKILL.md`.  brand visual system
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice enforcement + banned vocab union
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice enforcement + banned vocab union
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's writing fingerprint
 
 **Format skills delegated to:**
@@ -570,7 +570,7 @@ The producer transitions:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

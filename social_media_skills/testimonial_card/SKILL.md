@@ -118,7 +118,7 @@ WHERE id = '<action_id>' AND status = 'pending';
   and ask whether to use it as-is or trim with ellipsis.
 - `CLAUDE.md` §0.5 - Draft-First, Commit-Last.
 - `design_system/ryan-realty/SKILL.md` - brand visual system.
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` - the voice validation pass at Step 3
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - the voice validation pass at Step 3
   applies to any caption text or attribution line the producer generates, not to the client quote
   itself (clients can use any language they choose).
 
@@ -132,7 +132,7 @@ subject to voice validation:
 3. Any caption text written for the social post that accompanies the card (if requested)
 
 Run `lib/punctuation-guard.ts` `assertNoDashes` on all producer-generated text.
-Run a banned-word grep against `voice_guidelines.md` §6.2 on all producer-generated text.
+Run a banned-word grep against `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md` §6.2 on all producer-generated text.
 
 Banned patterns that would make a testimonial card non-ship:
 - Adding words Matt wrote that were not in the original review (fabrication)
@@ -318,7 +318,7 @@ pending  ->  in_production  ->  ready  ->  approved  ->  executed  ->  measured
 1. `CLAUDE.md` §0 - Data Accuracy (verbatim quote is the data; no editing)
 2. `CLAUDE.md` §0.5 - Draft-First, Commit-Last (non-negotiable)
 3. `design_system/ryan-realty/SKILL.md` - brand visual system
-4. `marketing_brain_skills/brand-voice/voice_guidelines.md` - banned tropes in attribution text; pandering patterns banned in §6.3
+4. `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - banned tropes in attribution text; pandering patterns banned in §6.3
 5. `marketing_brain_skills/research/tool-inventory.md` - Sharp, napi-rs/canvas packages (§3.4), Supabase (§1.4)
 6. `marketing_brain_skills/research/platform-bible.md` - review-content legal guidance; FTC endorsement rules for real estate
 7. `marketing_brain_skills/research/asset-library-map.md` - where testimonial PNGs live after approval
@@ -350,7 +350,7 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

@@ -120,7 +120,7 @@ WHERE id = '<id>' AND status = 'pending';
 - `CLAUDE.md` §0: Data Accuracy (any market stat must trace to a live Supabase query)
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md`: brand register
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`: full banned-word list and neighbor-tone rules
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: full banned-word list and neighbor-tone rules
 - `marketing_brain_skills/research/tool-inventory.md`: Nextdoor API status (currently unset)
 - `marketing_brain_skills/research/platform-bible.md`: §19 Nextdoor surface rules
 - `marketing_brain_skills/research/asset-library-map.md`: image brief context
@@ -408,7 +408,7 @@ measured
 - `CLAUDE.md` §0: Data Accuracy
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md`: brand register
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`: voice enforcement + neighbor-tone rules
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: voice enforcement + neighbor-tone rules
 - `marketing_brain_skills/research/tool-inventory.md`: Nextdoor API status
 - `marketing_brain_skills/research/platform-bible.md`: §19 Nextdoor, §24 compliance
 - `marketing_brain_skills/research/asset-library-map.md`: image brief context
@@ -436,7 +436,7 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

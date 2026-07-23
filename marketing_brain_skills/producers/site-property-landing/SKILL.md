@@ -164,7 +164,7 @@ Before reading the Supabase row:
 - `CLAUDE.md` "Supabase listings Schema".  mixed-case column quoting
 - `design_system/ryan-realty/SKILL.md`.  color tokens, type tiers, asset paths
 - `design_system/ryan-realty/colors_and_type.css`.  CSS variable definitions
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice + banned vocab union
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice + banned vocab union
 - `app/actions/lead-capture.ts`.  server-action signature for the showing form
 - `app/sitemap.ts`.  existing sitemap structure to extend
 - `app/listings/[listingKey]/page.tsx`.  reference for the listing data-pull pattern
@@ -882,7 +882,7 @@ WHERE id='<id>';
 - `CLAUDE.md` "Always push directly to main".  single-checkout exception for site PRs
 - `design_system/ryan-realty/SKILL.md`.  brand register, type tiers, asset paths
 - `design_system/ryan-realty/colors_and_type.css`.  CSS variable tokens
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice attributes + banned vocab union
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice attributes + banned vocab union
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's writing fingerprint
 - `marketing_brain_skills/producers/TEMPLATE.md`.  producer template
 - `marketing_brain_skills/producers/REGISTRY.md`.  Section C entry
@@ -919,7 +919,7 @@ WHERE id='<id>';
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

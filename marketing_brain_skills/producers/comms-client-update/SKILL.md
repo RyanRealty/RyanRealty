@@ -143,7 +143,7 @@ WHERE id = '<id>' AND status = 'pending';
 - `CLAUDE.md` §0: Data Accuracy (market figures verified live)
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md`: brand tone anchors
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`: full voice rules
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: full voice rules
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`: Matt's actual writing; use as tone reference for warmth and brevity
 - `marketing_brain_skills/research/tool-inventory.md`: Resend and FUB env var status
 - `marketing_brain_skills/research/platform-bible.md`: §21 cross-cutting email rules
@@ -485,7 +485,7 @@ measured
 - `CLAUDE.md` §0: Data Accuracy
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md`: brand tone anchors
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`: voice enforcement
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: voice enforcement
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`: Matt's actual writing register
 - `marketing_brain_skills/research/tool-inventory.md`: Resend and FUB env var status
 - `marketing_brain_skills/research/platform-bible.md`: §21 email rules
@@ -515,7 +515,7 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

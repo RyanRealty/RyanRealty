@@ -420,7 +420,7 @@ The renderer **validates** the caption it receives against:
 
 1. `#RyanRealtyBend` is the first hashtag in the trailing block (HARD RULE per CLAUDE.md "Voice
    + content," locked 2026-05-14).
-2. No banned vocab (`marketing_brain_skills/brand-voice/voice_guidelines.md` §6).
+2. No banned vocab (`marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` §6).
 3. No em-dashes, no semicolons in body.
 4. Pattern D captions open with `SWIPE → |`.
 
@@ -712,7 +712,7 @@ Write `out/carousel/<slug>/manifest.json` with:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

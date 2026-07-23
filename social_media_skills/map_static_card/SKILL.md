@@ -373,7 +373,7 @@ pending  ->  in_production  ->  ready  ->  approved  ->  executed  ->  measured
 1. `CLAUDE.md` §0 - Data Accuracy (address and coordinates verified against Supabase)
 2. `CLAUDE.md` §0.5 - Draft-First, Commit-Last (non-negotiable)
 3. `design_system/ryan-realty/SKILL.md` - brand visual system
-4. `marketing_brain_skills/brand-voice/voice_guidelines.md` - voice enforcement for any text
+4. `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - voice enforcement for any text
 5. `marketing_brain_skills/research/tool-inventory.md` - Google Maps API surface (§6), API keys (§4)
 6. `marketing_brain_skills/research/platform-bible.md` - platform specs for map card usage
 7. `marketing_brain_skills/research/asset-library-map.md` - registering output after approval
@@ -410,7 +410,7 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

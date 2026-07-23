@@ -68,7 +68,7 @@ automation.  that's a separate `ops:manychat` action.
 | `CLAUDE.md` "Voice + content".  #RyanRealtyBend HARD RULE | Companion caption emitted alongside the frames must include `#RyanRealtyBend` first in trailing hashtag block. |
 | `design_system/ryan-realty/SKILL.md` | Heritage register: navy `#102742`, cream `#faf8f4`, Amboqia/Geist/Azo Sans Medium type tiers. |
 | `design_system/ryan-realty/colors_and_type.css` | Authoritative color + type tokens. |
-| `marketing_brain_skills/brand-voice/voice_guidelines.md` | Banned vocab union; voice attributes. |
+| `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` | Banned vocab union; voice attributes. |
 | `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` | Matt's writing fingerprint for the caption. |
 | `social_media_skills/ig-single-post/SKILL.md` | S3 Open House feed card spec.  the Stories sequence sits next to S3, not in place of it. |
 | `social_media_skills/instagram-carousel/SKILL.md` | Footer band / safe-zone conventions inherited here. |
@@ -579,7 +579,7 @@ non-ship.
 | 11 | Tabular numerals | Every price / count / day / time / pct has `font-variant-numeric: tabular-nums` |
 | 12 | Data verified | Every figure traces to `citations.json` with source, filter, fetched_at |
 | 13 | Color compliance | Navy `#102742` + cream `#faf8f4` only. No gold. No off-brand hex |
-| 14 | Banned words clean | Grep all on-frame text + caption.md against `voice_guidelines.md` union.  zero hits |
+| 14 | Banned words clean | Grep all on-frame text + caption.md against `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md` union.  zero hits |
 | 15 | No exclamation marks | Zero `!` characters in any rendered text or in caption.md |
 | 16 | No em-dashes / semicolons in body | Zero `. ` or `;` in caption.md body (em-dash allowed only as no-data placeholder, which does not apply here) |
 | 17 | #RyanRealtyBend present | caption.md trailing hashtag block leads with `#RyanRealtyBend` |
@@ -587,7 +587,7 @@ non-ship.
 | 19 | Keyword format | `manychat_keyword` matches `/^[A-Z0-9]{3,20}$/` |
 | 20 | File size | Each PNG < 3 MB; full directory < 25 MB |
 
-Banned-vocab grep covers (from `voice_guidelines.md`): stunning, nestled, charming, pristine,
+Banned-vocab grep covers (from `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md`): stunning, nestled, charming, pristine,
 gorgeous, breathtaking, must-see, dream home, meticulously maintained, entertainer's dream,
 hidden gem, truly, spacious, cozy, luxurious, turnkey, immaculate, premier, luxury, boutique,
 delve, leverage, tapestry, navigate, robust, seamless, comprehensive, elevate, unlock,
@@ -623,7 +623,7 @@ approximately, roughly, about, around, "won't last", "act fast", "don't miss out
 - `CLAUDE.md` §0.5.  Draft-First, Commit-Last (outranks everything)
 - `CLAUDE.md` "Voice + content".  #RyanRealtyBend HARD RULE
 - `design_system/ryan-realty/SKILL.md`.  brand visual system
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice enforcement
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice enforcement
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's writing fingerprint
 
 **Sibling content producers (visual continuity):**
@@ -682,7 +682,7 @@ approximately, roughly, about, around, "won't last", "act fast", "don't miss out
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`

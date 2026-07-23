@@ -49,7 +49,7 @@ reporting or bid analysis. Does NOT produce Meta ad copy (that is `facebook-lead
 - Generating up to 15 RSA headlines (30 chars max each), 4 RSA descriptions (90 chars max each)
 - Generating one PMax asset group (5 headlines, 5 long headlines up to 90 chars, 5 descriptions)
 - Generating 4 sitelinks (25-char title, 2 × 35-char description lines each)
-- Voice-validating every character against `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- Voice-validating every character against `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - Producing `ads-bundle.txt` and `contact-sheet.html` for Matt's review
 - Producing `citations.json` tracing any market figure used in copy to a live Supabase query
 
@@ -122,7 +122,7 @@ Before writing a single word of copy:
 - `CLAUDE.md` §0: Data Accuracy (any market stat in copy must trace to a live query)
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md`: brand register
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`: full banned-word and banned-phrase list
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: full banned-word and banned-phrase list
 - `marketing_brain_skills/research/tool-inventory.md`: check Google Ads env var status
 - `marketing_brain_skills/research/platform-bible.md`: no platform-specific section for Google Ads, but cross-cutting compliance §24 applies
 - `marketing_brain_skills/research/asset-library-map.md`: not required for copy-only builds; note for future PMax image handoff
@@ -408,7 +408,7 @@ measured
 - `CLAUDE.md` §0: Data Accuracy (outranks everything)
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md`: brand visual system
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`: voice enforcement
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: voice enforcement
 - `marketing_brain_skills/research/tool-inventory.md`: API and env var status
 - `marketing_brain_skills/research/platform-bible.md`: compliance cross-cutting §24
 - `marketing_brain_skills/research/asset-library-map.md`: asset reuse context
@@ -439,7 +439,7 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/tool-inventory.md`
 - `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`
