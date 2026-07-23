@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.851.1 (2026-07-23)
+
+### Maintenance
+- docs(handoff): bring the cross-agent handoff current (30/50)
+
+---
+
+
 ## v1.851.0 (2026-07-23)
 
 ### Features
