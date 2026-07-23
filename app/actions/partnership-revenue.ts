@@ -70,20 +70,23 @@ export async function getRevenueDashboardData(): Promise<RevenueDashboardData> {
       .from('partner_referrals')
       .select('estimated_value, lead_source')
       .gte('created_at', startIso),
+    // Repointed off the retired `visits` table (W1.5): count live page-view
+    // events (visitor_events) as the 30-day activity proxy. COUNT-ONLY (head:
+    // true) — a row fetch is silently capped at 1000 by PostgREST, which pinned
+    // this metric at 1000 regardless of real traffic; the exact count does not.
     supabase
-      .from('visits')
-      .select('path')
-      .gte('created_at', startIso),
+      .from('visitor_events')
+      .select('id', { count: 'exact', head: true })
+      .gte('event_at', startIso),
   ])
 
   const revenueRows = (revenueRes.data ?? []) as Array<{ amount?: number; page_cluster?: string | null }>
   const referralRows = (referralsRes.data ?? []) as Array<{ estimated_value?: number | null; lead_source?: string | null }>
-  const visitRows = (visitsRes.data ?? []) as Array<{ path?: string | null }>
 
   const revenueLast30d = revenueRows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0)
   const partnerPipelineValue = referralRows.reduce((sum, row) => sum + (Number(row.estimated_value) || 0), 0)
   const partnerReferralsLast30d = referralRows.length
-  const leadsLast30d = visitRows.length
+  const leadsLast30d = visitsRes.count ?? 0
 
   const leadsBySourceMap = new Map<string, number>()
   for (const row of referralRows) {

@@ -56,28 +56,54 @@ export async function getDashboardLeadData(): Promise<DashboardLeadData> {
   const now = new Date()
   const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
 
+  // Repointed off the retired `visits` table to the live visitor_sessions
+  // pipeline (W1.5): `visits` now only takes a legacy WordPress-beacon trickle,
+  // while real traffic writes to visitor_sessions/visitor_events. Session-level
+  // mapping: created_at -> first_seen_at, user_id -> crm_person_id (an
+  // identified session = a "known user" visit). "Visits" here now counts
+  // sessions — the honest live metric.
   const [totalRes, withUserRes, last24hRes, withUser24hRes, recentRes] = await Promise.all([
-    supabase.from('visits').select('*', { count: 'exact', head: true }),
-    supabase.from('visits').select('*', { count: 'exact', head: true }).not('user_id', 'is', null),
-    supabase.from('visits').select('*', { count: 'exact', head: true }).gte('created_at', dayAgo),
+    supabase.from('visitor_sessions').select('*', { count: 'exact', head: true }),
+    supabase.from('visitor_sessions').select('*', { count: 'exact', head: true }).not('crm_person_id', 'is', null),
+    supabase.from('visitor_sessions').select('*', { count: 'exact', head: true }).gte('first_seen_at', dayAgo),
     supabase
-      .from('visits')
+      .from('visitor_sessions')
       .select('*', { count: 'exact', head: true })
-      .gte('created_at', dayAgo)
-      .not('user_id', 'is', null),
+      .gte('first_seen_at', dayAgo)
+      .not('crm_person_id', 'is', null),
     supabase
-      .from('visits')
-      .select('path, visit_id, user_id, created_at')
-      .order('created_at', { ascending: false })
+      .from('visitor_sessions')
+      .select('landing_page, session_id, crm_person_id, first_seen_at')
+      .order('first_seen_at', { ascending: false })
       .limit(50),
   ])
+
+  const recentVisits = (
+    (recentRes.data ?? []) as Array<{
+      landing_page: string | null
+      session_id: string
+      crm_person_id: number | null
+      first_seen_at: string
+    }>
+  ).map((s) => {
+    // landing_page is a full URL (https://…/path); reduce to the path for display.
+    const raw = s.landing_page ?? '/'
+    let path = raw
+    if (raw.startsWith('http')) { try { path = new URL(raw).pathname } catch { path = raw } }
+    return {
+      path,
+      visit_id: s.session_id,
+      user_id: s.crm_person_id != null ? String(s.crm_person_id) : null,
+      created_at: s.first_seen_at,
+    }
+  })
 
   return {
     totalVisits: totalRes.count ?? 0,
     visitsWithUser: withUserRes.count ?? 0,
     visitsLast24h: last24hRes.count ?? 0,
     visitsWithUserLast24h: withUser24hRes.count ?? 0,
-    recentVisits: (recentRes.data ?? []) as DashboardLeadData['recentVisits'],
+    recentVisits,
   }
 }
 
@@ -518,23 +544,27 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
       pipelineSnapshot,
       bendCtx,
     ] = await Promise.all([
+        // Repointed to visitor_sessions (W1.5): sessions that ENTERED via a
+        // seller page. landing_page is a FULL URL (https://…/sell), so match the
+        // path with %/sell% / %/home-valuation% (not a leading-slash prefix).
         supabase
-          .from('visits')
-          .select('id', { count: 'exact', head: true })
-          .gte('created_at', startIso)
-          .or('path.ilike./sell%,path.ilike./home-valuation%'),
-        // Seller visits attributed to Facebook: utm_source=facebook in path,
-        // an fbclid present (paid clickthroughs auto-tagged by Facebook), or
-        // a referrer host in the Meta family (facebook / instagram / m.me).
+          .from('visitor_sessions')
+          .select('*', { count: 'exact', head: true })
+          .gte('first_seen_at', startIso)
+          .or('landing_page.ilike.%/sell%,landing_page.ilike.%/home-valuation%'),
+        // Seller sessions attributed to Facebook — read the DEDICATED session
+        // columns (utm_source, fbclid, referrer) instead of sniffing the URL:
+        // utm_source=facebook, an fbclid present (paid clickthroughs), or a
+        // referrer host in the Meta family (facebook / instagram / m.me).
         supabase
-          .from('visits')
-          .select('id', { count: 'exact', head: true })
-          .gte('created_at', startIso)
-          .or('path.ilike./sell%,path.ilike./home-valuation%')
+          .from('visitor_sessions')
+          .select('*', { count: 'exact', head: true })
+          .gte('first_seen_at', startIso)
+          .or('landing_page.ilike.%/sell%,landing_page.ilike.%/home-valuation%')
           .or(
             [
-              'path.ilike.%utm_source=facebook%',
-              'path.ilike.%fbclid=%',
+              'utm_source.ilike.facebook',
+              'fbclid.not.is.null',
               'referrer.ilike.%facebook.%',
               'referrer.ilike.%instagram.%',
               'referrer.ilike.%m.me%',

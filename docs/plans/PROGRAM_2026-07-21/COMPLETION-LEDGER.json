@@ -75,17 +75,24 @@
       "workstream": "W1",
       "mission": "M1",
       "title": "Delete legacy visits/trackVisit duplicate path and FUB-era email_campaigns; fold stale FACEBOOK_SELLER_GROWTH_PIPELINE.md into canon",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-no-visits-reads.mjs"
+        ],
         "crons": [],
         "tests": [],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "app/actions/dashboard.ts",
+          "app/actions/partnership-revenue.ts",
+          "app/admin/(protected)/reports/lead-flow/page.tsx",
+          "app/admin/(protected)/reports/traffic-sources/page.tsx"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "Delete or repoint the four `visits` readers (they silently flatline post-2026-07-21); decide + record whether email_campaigns is retired or officially adopted as the native batch-email store; rewrite/fold FACEBOOK_SELLER_GROWTH_PIPELINE.md into canon and fix the CLAUDE.md/AGENTS.md routing entries."
+      "proofPath": "Legacy `visits` retired for reads. Finding: visits is NOT flat-dead (legacy WordPress-beacon trickle, latest 2026-07-22, 8573 rows); real traffic writes visitor_sessions (24536) + visitor_events (44519+). Repointed all 4 readers to the live source at correct grain, §0-verified vs live prod dwvlophlbvvygjfxcrhm: dashboard.ts -> visitor_sessions (created_at->first_seen_at, user_id->crm_person_id; seller-intent landing_page ILIKE %/sell% since landing_page is a FULL URL — 465 seller / 11 FB in 30d; FB via dedicated utm_source/fbclid/referrer; recentVisits maps landing_page->pathname keeping the {path,visit_id,user_id,created_at} shape). partnership-revenue.ts -> visitor_events count (page-view activity proxy). lead-flow -> visitor_events.page_url with new URL().pathname extraction (per-page-view so mid-session LP hits count) matched vs LP path_prefixes. traffic-sources -> visitor_sessions (path:landing_page alias + referrer). Mechanism: gate scripts/check-no-visits-reads.mjs (ci:no-visits-reads, in ci:gates) forbids any .from(visits) read — proven to bite (added a probe read -> RED, restore -> GREEN); no .from(visits) remains in app/lib. email_campaigns ADOPTED (live batch-email store: admin-email.ts writes, getEmailReporting reads) — recorded 04-DECISIONS §12. FB-doc fold reassigned to M6. tsc + full ci:gates green.",
+      "verifiedBy": "Independent adversarial agent a0c216a2920601135 — 2 rounds. Round 1 found 2 real BREAKS via live-DB REST checks my count(*) verification missed: dashboard seller queries kept .select(id) but visitor_sessions has no id column (PostgREST 400 -> count null -> ??0 -> silent 0; correct 469/11), and partnership .select(page_url) was unpaginated (1000-row cap -> leadsLast30d pinned at 1000; true ~42357). Both fixed (id->*, and count-only select id head on visitor_events). Round 2: VERDICT SOLID — REST-confirmed 469/11/42365, tsc clean, no residual .select(id) on visitor_sessions, visitRows fully removed, ci:no-visits-reads bites, git unchanged.",
+      "remaining": ""
     },
     {
       "id": "W2.1",

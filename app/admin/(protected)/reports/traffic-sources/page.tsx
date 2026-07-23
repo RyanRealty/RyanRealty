@@ -158,13 +158,16 @@ async function TrafficSourcesContent({ range }: { range: { startDate: string; en
   // Parallel fetch: GA4 + visits + visitor_sessions + GBP totals.
   const [ga4Result, visits, sessions, gbp] = await Promise.all([
     getGA4Summary(range.startDate, range.endDate),
+    // Repointed off the retired `visits` table to visitor_sessions (W1.5):
+    // referrer lives on the session, and landing_page is the first-touch path.
+    // Aliased `path:landing_page` keeps the VisitRow {path, referrer} shape.
     fetchAllRows<VisitRow>((from, to) =>
       supabase
-        .from('visits')
-        .select('path, referrer')
-        .gte('created_at', sinceIso)
-        .lte('created_at', untilIso)
-        .order('created_at', { ascending: true })
+        .from('visitor_sessions')
+        .select('path:landing_page, referrer')
+        .gte('first_seen_at', sinceIso)
+        .lte('first_seen_at', untilIso)
+        .order('first_seen_at', { ascending: true })
         .range(from, to),
     ),
     fetchAllRows<SessionRow>((from, to) =>
@@ -286,7 +289,7 @@ async function TrafficSourcesContent({ range }: { range: { startDate: string; en
       <DashboardSummaryStrip
         stats={[
           { label: `GA4 sessions (${range.startDate} to ${range.endDate})`, value: formatInt(ga4Sessions), caption: `${formatInt(ga4Users)} unique users` },
-          { label: 'Visits captured', value: formatInt(visitsCount), caption: 'visits table (first-party)' },
+          { label: 'Sessions captured', value: formatInt(visitsCount), caption: 'visitor_sessions (first-party, by landing page)' },
           { label: 'First-touch sessions', value: formatInt(sessions.length), caption: 'visitor_sessions w/ attribution' },
           { label: 'GBP website clicks', value: formatInt(gbpWebsiteClicks), caption: `${formatInt(gbpCallClicks)} calls · ${formatInt(gbpDirectionsClicks)} directions` },
         ]}

@@ -200,16 +200,25 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
     const rows: Array<{ path: string }> = []
     const PAGE = 1000
     for (let from = 0; from < 200_000; from += PAGE) {
+      // Repointed off the retired `visits` table to visitor_events (W1.5) — the
+      // per-page-view source, so mid-session LP hits are counted (a session's
+      // landing_page would miss them). page_url is a full URL; reduce it to a
+      // path so the prefix matching below (row.path.startsWith('/lp/…')) works.
       const { data, error } = await supabase
-        .from('visits')
-        .select('path')
-        .gte('created_at', cutoffIso)
-        .lte('created_at', untilIso)
-        .order('created_at', { ascending: true })
+        .from('visitor_events')
+        .select('page_url')
+        .gte('event_at', cutoffIso)
+        .lte('event_at', untilIso)
+        .order('event_at', { ascending: true })
         .range(from, from + PAGE - 1)
       if (error) break
-      const page = (data ?? []) as Array<{ path: string }>
-      rows.push(...page)
+      const page = (data ?? []) as Array<{ page_url: string | null }>
+      for (const r of page) {
+        const raw = r.page_url ?? ''
+        let path = raw
+        if (raw.startsWith('http')) { try { path = new URL(raw).pathname } catch { path = raw } }
+        if (path) rows.push({ path })
+      }
       if (page.length < PAGE) break
     }
     return rows
