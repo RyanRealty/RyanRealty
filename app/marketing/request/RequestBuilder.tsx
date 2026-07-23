@@ -1,12 +1,18 @@
 'use client'
 
 /**
- * Marketing request builder — a checklist that brokers fill out and click
- * "Build my email." The page emits a mailto: link to marketing@ryan-realty.com
- * with the subject + body pre-populated. The broker hits send in their email
- * client; the marketing inbox handles the rest.
+ * Marketing request builder — a checklist brokers fill out, with TWO ways to
+ * send the same composed request (W10.1 "two intakes, one queue"):
  *
- * No backend writes from this page. No auth gate. Mailto is the contract.
+ *   "Send request"   -> submitMarketingRequest() writes the request straight
+ *                       into the queue (marketing_inbox_events -> the same
+ *                       parser -> the same dispatcher -> marketing_brain_actions).
+ *                       Requires a signed-in user; the write is never anonymous.
+ *   "Build my email" -> the original mailto: fallback to marketing@ryan-realty.com,
+ *                       kept for anyone not signed in or who prefers email.
+ *
+ * Both doors send byte-identical subject + body, so nothing downstream cares
+ * which one the broker used.
  */
 
 import { useMemo, useState } from 'react'
@@ -16,6 +22,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
+import { submitMarketingRequest } from './actions'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { DELIVERABLE_GROUPS, type Deliverable } from './deliverables'
@@ -61,6 +68,11 @@ export default function RequestBuilder() {
   const [market, setMarket] = useState('')
   const [topic, setTopic] = useState('')
   const [details, setDetails] = useState('')
+  // W10.1 second intake: send straight into the queue instead of opening an
+  // email client. Same composed text either way, so the two doors are identical
+  // downstream.
+  const [sendState, setSendState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [sendMessage, setSendMessage] = useState('')
 
   const selectedItems = useMemo<Deliverable[]>(() => {
     const out: Deliverable[] = []
@@ -87,6 +99,28 @@ export default function RequestBuilder() {
     const qs = new URLSearchParams({ subject, body }).toString()
     return `mailto:${INBOX}?${qs}`
   }, [selectedItems, property, market, topic, details])
+
+  const sendRequest = async () => {
+    if (selectedItems.length === 0 || sendState === 'sending') return
+    setSendState('sending')
+    setSendMessage('')
+    try {
+      const result = await submitMarketingRequest({
+        subject: buildSubject(selectedItems),
+        body: buildEmailBody(selectedItems, { property, market, topic, details }),
+      })
+      if (result.ok) {
+        setSendState('sent')
+        setSendMessage('Request sent. The team picks it up from the queue and replies with the draft.')
+      } else {
+        setSendState('error')
+        setSendMessage(result.error)
+      }
+    } catch {
+      setSendState('error')
+      setSendMessage('Could not send. Use "Build my email" instead.')
+    }
+  }
 
   const handleToggle = (id: string) => {
     setChecked((prev) => ({ ...prev, [id]: !prev[id] }))
@@ -121,12 +155,18 @@ export default function RequestBuilder() {
             </ul>
             <Separator className="my-3" />
             <div className="flex flex-wrap items-center gap-3">
-              <Button asChild size="lg">
+              <Button size="lg" onClick={sendRequest} disabled={sendState === "sending" || sendState === "sent"}>
+                {sendState === "sending" ? "Sending..." : sendState === "sent" ? "Sent" : "Send request"}
+              </Button>
+              <Button asChild size="lg" variant="outline">
                 <a href={mailtoHref}>Build my email</a>
               </Button>
               <Button variant="outline" onClick={clearAll}>
                 Clear all
               </Button>
+              {sendMessage ? (
+                <p className={sendState === "error" ? "text-xs text-destructive" : "text-xs text-success"}>{sendMessage}</p>
+              ) : null}
               <p className="text-xs text-muted-foreground">
                 Opens your email client with the request pre-written. You hit send.
               </p>
@@ -228,12 +268,18 @@ export default function RequestBuilder() {
         <Card className="border-primary/30">
           <CardContent className="pt-6">
             <div className="flex flex-wrap items-center gap-3">
-              <Button asChild size="lg">
+              <Button size="lg" onClick={sendRequest} disabled={sendState === "sending" || sendState === "sent"}>
+                {sendState === "sending" ? "Sending..." : sendState === "sent" ? "Sent" : "Send request"}
+              </Button>
+              <Button asChild size="lg" variant="outline">
                 <a href={mailtoHref}>Build my email</a>
               </Button>
               <Button variant="outline" onClick={clearAll}>
                 Clear all
               </Button>
+              {sendMessage ? (
+                <p className={sendState === "error" ? "text-xs text-destructive" : "text-xs text-success"}>{sendMessage}</p>
+              ) : null}
               <p className="text-xs text-muted-foreground">
                 Opens your email client with the request pre-written. You hit send.
               </p>
