@@ -18,6 +18,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import {
   REFERRAL_CANDIDATE_TAG,
   GEO_UNCLASSIFIED_TAG,
+  withReferredOutTag,
 } from '@/lib/referral-geo'
 
 export type ReferralCandidate = {
@@ -163,6 +164,24 @@ export async function recordReferralReceivable(
     source: 'referral-queue',
   })
   if (tlError) console.warn('[recordReferralReceivable] timeline insert failed:', tlError.message)
+
+  // Stamp the person-level Referred-Out disposition so the handoff is visible +
+  // filterable on the person record / smart lists, not only via the receivables
+  // join. Read-modify-write (idempotent via withReferredOutTag). Low-frequency
+  // admin action, so the rare concurrent-tag-write race is acceptable.
+  const { data: personRow, error: readErr } = await sb
+    .from('crm_people')
+    .select('tags')
+    .eq('id', input.personId)
+    .maybeSingle()
+  if (!readErr && personRow) {
+    const current = Array.isArray(personRow.tags) ? (personRow.tags as string[]) : []
+    const next = withReferredOutTag(current)
+    if (next.length !== current.length) {
+      const { error: tagErr } = await sb.from('crm_people').update({ tags: next }).eq('id', input.personId)
+      if (tagErr) console.warn('[recordReferralReceivable] referred-out tag write failed:', tagErr.message)
+    }
+  }
 
   return { ok: true }
 }

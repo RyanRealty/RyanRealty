@@ -4,11 +4,32 @@ import {
   cityFromListingAddress,
   referralIntakeTags,
   geoReferralEnrollBlock,
+  withReferredOutTag,
   REFERRAL_CANDIDATE_TAG,
+  REFERRAL_REFERRED_OUT_TAG,
   GEO_OUT_OF_AREA_TAG,
   GEO_OUT_OF_STATE_TAG,
   GEO_UNCLASSIFIED_TAG,
 } from './referral-geo'
+
+describe('withReferredOutTag (W12.3 person-level Referred-Out disposition)', () => {
+  it('appends the referral:referred-out tag, preserving existing tags', () => {
+    expect(withReferredOutTag([GEO_OUT_OF_AREA_TAG, REFERRAL_CANDIDATE_TAG])).toEqual([
+      GEO_OUT_OF_AREA_TAG,
+      REFERRAL_CANDIDATE_TAG,
+      REFERRAL_REFERRED_OUT_TAG,
+    ])
+  })
+  it('is idempotent — never duplicates, case-insensitive', () => {
+    expect(withReferredOutTag([REFERRAL_REFERRED_OUT_TAG])).toEqual([REFERRAL_REFERRED_OUT_TAG])
+    const mixed = withReferredOutTag(['Referral:Referred-Out'])
+    expect(mixed.filter((t) => t.toLowerCase() === REFERRAL_REFERRED_OUT_TAG)).toHaveLength(1)
+  })
+  it('handles null/undefined/garbage tag arrays', () => {
+    expect(withReferredOutTag(null)).toEqual([REFERRAL_REFERRED_OUT_TAG])
+    expect(withReferredOutTag(undefined)).toEqual([REFERRAL_REFERRED_OUT_TAG])
+  })
+})
 
 describe('classifyPropertyGeo', () => {
   it('classifies service-area cities as local', () => {

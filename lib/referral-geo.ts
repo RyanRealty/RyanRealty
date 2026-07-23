@@ -29,6 +29,25 @@ export type PropertyGeoScope = 'local' | 'out-of-area' | 'out-of-state' | 'unkno
 /** Tag that marks a lead as an out-of-area referral candidate. */
 export const REFERRAL_CANDIDATE_TAG = 'referral:candidate'
 
+/**
+ * Person-level disposition stamped when a referral handoff is recorded
+ * (recordReferralReceivable). Makes "we referred this lead out" visible and
+ * filterable on the person record + smart lists, not only via the
+ * referral_receivables join on /admin/crm/referrals.
+ */
+export const REFERRAL_REFERRED_OUT_TAG = 'referral:referred-out'
+
+/**
+ * Idempotently append the Referred-Out disposition tag. Case-insensitive: if the
+ * person already carries it (any casing), the array is returned unchanged so a
+ * re-recorded handoff never duplicates it. Pure.
+ */
+export function withReferredOutTag(tags: ReadonlyArray<string> | null | undefined): string[] {
+  const arr = Array.isArray(tags) ? tags.filter((t) => typeof t === 'string') : []
+  if (arr.some((t) => t.toLowerCase() === REFERRAL_REFERRED_OUT_TAG)) return [...arr]
+  return [...arr, REFERRAL_REFERRED_OUT_TAG]
+}
+
 /** Geo tags that block auto-enrollment (see geoReferralEnrollBlock). */
 export const GEO_OUT_OF_AREA_TAG = 'geo:out-of-area'
 export const GEO_OUT_OF_STATE_TAG = 'geo:out-of-state'

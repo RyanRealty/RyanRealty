@@ -780,16 +780,22 @@
       "workstream": "W12",
       "mission": "M1",
       "title": "Referral disposition in CRM: referral: tag namespace + Referred-Out disposition + light receivable record (25% inbound fee)",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
         "gates": [],
         "crons": [],
-        "tests": [],
-        "migrations": [],
-        "paths": []
+        "tests": [
+          "lib/referral-geo.test.ts"
+        ],
+        "migrations": [
+          "supabase/migrations/20260722235000_crm_tag_referral_referred_out.sql"
+        ],
+        "paths": [
+          "lib/data/crm/referralReceivables.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
+      "proofPath": "recordReferralReceivable stamps referral:referred-out on crm_people.tags via withReferredOutTag (pure, idempotent, read-modify-write after the receivable+timeline inserts; tag-write failure only warns). VISIBLE: TagChips renders it on the person card (friendly label now resolves). FILTERABLE: migration 20260722235000 registers it in crm_tags (is_active, not is_protected) -> FilterPanel tag dropdown enumerates it (DB-confirmed shows_in_filter_dropdown=true; applied to hosted). Helper test bites when append is broken (2/18 fail).",
+      "verifiedBy": "independent adversarial agent a6bba09dd26ab3800 (2 rounds) \u2014 round 1 found the tag was written+visible but NOT filterable (missing crm_tags taxonomy row); after the migration, round 2 confirmed via live Supabase query the tag enumerates in the FilterPanel dropdown and the written->visible->filterable chain holds end to end. VERDICT: SOLID.",
       "remaining": "Write a person-level Referred-Out disposition when a handoff is recorded \u2014 either a 'Referred Out' stage in CRM_STAGES or a referral:referred-out tag stamped by recordReferralReceivable \u2014 so the state is visible/filterable on the person record, not only on /admin/crm/referrals via the receivables join."
     },
     {
