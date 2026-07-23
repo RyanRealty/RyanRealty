@@ -120,8 +120,22 @@ export function ContactSendCenter(props: {
   const [minBeds, setMinBeds] = useState('')
   const [minBaths, setMinBaths] = useState('')
   const [minSqFt, setMinSqFt] = useState('')
+  const [maxSqFt, setMaxSqFt] = useState('')
+  const [yearBuiltMin, setYearBuiltMin] = useState('')
+  const [yearBuiltMax, setYearBuiltMax] = useState('')
+  const [lotAcresMin, setLotAcresMin] = useState('')
+  const [lotAcresMax, setLotAcresMax] = useState('')
+  const [garageMin, setGarageMin] = useState('')
+  const [keywords, setKeywords] = useState('')
+  const [propSubType, setPropSubType] = useState('')
   const [propType, setPropType] = useState('all')
   const [status, setStatus] = useState<string>('active')
+  // Amenity flags — the same five the consumer /search vocabulary carries.
+  const [hasPool, setHasPool] = useState(false)
+  const [hasView, setHasView] = useState(false)
+  const [hasWaterfront, setHasWaterfront] = useState(false)
+  const [hasFireplace, setHasFireplace] = useState(false)
+  const [hasGolfCourse, setHasGolfCourse] = useState(false)
   const [moreFiltersOpen, setMoreFiltersOpen] = useState(false)
   const [freq, setFreq] = useState<SavedSearchCadence>('weekly')
 
@@ -235,6 +249,27 @@ export function ContactSendCenter(props: {
     if (Number.isFinite(mb) && mb > 0) filters.beds = mb
     if (Number.isFinite(mba) && mba > 0) filters.baths = mba
     if (Number.isFinite(msq) && msq > 0) filters.minSqFt = msq
+    // Full consumer filter vocabulary (parity with /search + /account) so a
+    // broker-built alert can be as precise as a self-serve one (W7.5).
+    const mxsq = num(maxSqFt)
+    const ybmn = num(yearBuiltMin)
+    const ybmx = num(yearBuiltMax)
+    const lamn = Number(lotAcresMin.replace(/[^0-9.]/g, ''))
+    const lamx = Number(lotAcresMax.replace(/[^0-9.]/g, ''))
+    const grg = num(garageMin)
+    if (Number.isFinite(mxsq) && mxsq > 0) filters.maxSqFt = mxsq
+    if (Number.isFinite(ybmn) && ybmn > 0) filters.yearBuiltMin = ybmn
+    if (Number.isFinite(ybmx) && ybmx > 0) filters.yearBuiltMax = ybmx
+    if (Number.isFinite(lamn) && lamn > 0) filters.lotAcresMin = lamn
+    if (Number.isFinite(lamx) && lamx > 0) filters.lotAcresMax = lamx
+    if (Number.isFinite(grg) && grg > 0) filters.garageMin = grg
+    if (keywords.trim()) filters.keywords = keywords.trim()
+    if (propSubType.trim()) filters.propertySubType = propSubType.trim()
+    if (hasPool) filters.hasPool = true
+    if (hasView) filters.hasView = true
+    if (hasWaterfront) filters.hasWaterfront = true
+    if (hasFireplace) filters.hasFireplace = true
+    if (hasGolfCourse) filters.hasGolfCourse = true
     if (propType !== 'all') filters.propertyType = propType
     // 'active' is the feed default — omit it so hashes stay stable with every
     // alert saved before this field existed.
@@ -246,11 +281,10 @@ export function ContactSendCenter(props: {
       return
     }
     run('Listing matches', () =>
-      // The action currently types frequency as daily | weekly; the runtime
-      // value passes through unchanged and the DAL + DB accept all four
-      // cadences, so the cast is a bridge until the action signature widens.
+      // freq is SavedSearchCadence and the action accepts SavedSearchFrequency —
+      // the same four-value union — so it passes straight through (W7.5).
       sendListingMatchesForContactAction(props.personId, JSON.stringify(filters), {
-        frequency: freq as 'daily' | 'weekly',
+        frequency: freq,
       }),
     )
   }
@@ -515,6 +549,38 @@ export function ContactSendCenter(props: {
                     <Input id="sc-sqft" inputMode="numeric" placeholder="1800" value={minSqFt} onChange={(e) => setMinSqFt(e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
+                    <Label htmlFor="sc-maxsqft">Max sqft</Label>
+                    <Input id="sc-maxsqft" inputMode="numeric" placeholder="4000" value={maxSqFt} onChange={(e) => setMaxSqFt(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sc-garage">Min garage</Label>
+                    <Input id="sc-garage" inputMode="numeric" placeholder="2" value={garageMin} onChange={(e) => setGarageMin(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sc-ybmin">Year built (min)</Label>
+                    <Input id="sc-ybmin" inputMode="numeric" placeholder="1990" value={yearBuiltMin} onChange={(e) => setYearBuiltMin(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sc-ybmax">Year built (max)</Label>
+                    <Input id="sc-ybmax" inputMode="numeric" placeholder="2025" value={yearBuiltMax} onChange={(e) => setYearBuiltMax(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sc-lotmin">Lot acres (min)</Label>
+                    <Input id="sc-lotmin" inputMode="decimal" placeholder="0.25" value={lotAcresMin} onChange={(e) => setLotAcresMin(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sc-lotmax">Lot acres (max)</Label>
+                    <Input id="sc-lotmax" inputMode="decimal" placeholder="5" value={lotAcresMax} onChange={(e) => setLotAcresMax(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sc-subtype">Sub-type</Label>
+                    <Input id="sc-subtype" placeholder="e.g. Condominium" value={propSubType} onChange={(e) => setPropSubType(e.target.value)} />
+                  </div>
+                  <div className="col-span-2 space-y-1.5">
+                    <Label htmlFor="sc-keywords">Keywords</Label>
+                    <Input id="sc-keywords" placeholder="shop, ADU, view…" value={keywords} onChange={(e) => setKeywords(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
                     <Label>Home type</Label>
                     <Select value={propType} onValueChange={setPropType}>
                       <SelectTrigger className="w-full">
@@ -543,6 +609,23 @@ export function ContactSendCenter(props: {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="col-span-2 space-y-1.5 pt-1">
+                    <Label>Amenities</Label>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                      {([
+                        ['Pool', hasPool, setHasPool],
+                        ['View', hasView, setHasView],
+                        ['Waterfront', hasWaterfront, setHasWaterfront],
+                        ['Fireplace', hasFireplace, setHasFireplace],
+                        ['Golf course', hasGolfCourse, setHasGolfCourse],
+                      ] as const).map(([label, checked, set]) => (
+                        <label key={label} className="flex items-center gap-2 text-sm text-foreground">
+                          <Checkbox checked={checked} onCheckedChange={(v) => set(v === true)} />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </CollapsibleContent>
