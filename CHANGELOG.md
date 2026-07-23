@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.847.0 (2026-07-23)
+
+### Features
+- feat(brand-voice): one generated banned-list source + all consumers generated + ci:voice-vocab-parity (W11.1)
+
+### Maintenance
+- chore(program): W11.1 -> done (generated banned-list source + parity gate verified)
+- chore(program): W10.4 -> done (bulk approve/reject verified + landed)
+
+---
+
+
 ## v1.846.0 (2026-07-23)
 
 ### Features
