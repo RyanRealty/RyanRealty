@@ -2,10 +2,31 @@ import { describe, it, expect } from 'vitest'
 import {
   rollupSavedHomeRows,
   buildHomesPanelUnion,
+  buildSavedHomesIdentityOrFilter,
   type ConsumerStoreRow,
   type ContactSavedHome,
 } from './getContactSavedHomes'
 import type { ViewedListing } from './getViewedListings'
+
+describe('buildSavedHomesIdentityOrFilter (W7.3 identity-join contract)', () => {
+  it('always matches on crm_person_id AND fub_person_id keyed to the crm id (the leg native leads were missing)', () => {
+    expect(buildSavedHomesIdentityOrFilter(42)).toBe('crm_person_id.eq.42,fub_person_id.eq.42')
+  })
+  it('adds the legacy fub id only when it differs from the crm id (no dup)', () => {
+    expect(buildSavedHomesIdentityOrFilter(42, 900)).toBe('crm_person_id.eq.42,fub_person_id.eq.42,fub_person_id.eq.900')
+    expect(buildSavedHomesIdentityOrFilter(42, 42)).toBe('crm_person_id.eq.42,fub_person_id.eq.42')
+    expect(buildSavedHomesIdentityOrFilter(42, null)).toBe('crm_person_id.eq.42,fub_person_id.eq.42')
+  })
+  it('appends normalized (trimmed, lowercased, non-empty) emails as a quoted in-list', () => {
+    expect(buildSavedHomesIdentityOrFilter(42, null, ['  Jane@X.com ', 'bob@y.com', '', '  '])).toBe(
+      'crm_person_id.eq.42,fub_person_id.eq.42,email.in.("jane@x.com","bob@y.com")',
+    )
+  })
+  it('omits the email clause entirely when no usable email is present', () => {
+    expect(buildSavedHomesIdentityOrFilter(42, null, ['', '   '])).toBe('crm_person_id.eq.42,fub_person_id.eq.42')
+    expect(buildSavedHomesIdentityOrFilter(42, null, [])).toBe('crm_person_id.eq.42,fub_person_id.eq.42')
+  })
+})
 
 function viewed(partial: Partial<ViewedListing>): ViewedListing {
   return {

@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-07-22T02:28:00.551Z",
+  "generatedAt": "2026-07-23T01:26:26.543Z",
   "reason": "Listing-key reads not yet routed through resolveCanonicalListingKey at gate-creation time. NEW unresolved reads fail CI; this list only shrinks.",
   "total": 7,
   "violations": [
     "app/actions/likes.ts:28",
-    "lib/data/crm/getContactSavedHomes.ts:188",
+    "lib/data/crm/getContactSavedHomes.ts:203",
     "lib/data/crm/getViewedListings.ts:175",
     "lib/data/engagement/index.ts:171",
     "lib/data/engagement/index.ts:50",

@@ -401,16 +401,20 @@
       "workstream": "W7",
       "mission": "M1",
       "title": "Stitch likes/saves to the person (auth-user\u2192person join, save events to first-party store, surface on lead) \u2014 mechanism: identity-join contract test",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
         "gates": [],
         "crons": [],
-        "tests": [],
+        "tests": [
+          "lib/data/crm/getContactSavedHomes.test.ts"
+        ],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "lib/data/crm/getContactSavedHomes.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
+      "proofPath": "The person->auth-user or-filter is extracted into pure buildSavedHomesIdentityOrFilter (crm_person_id + fub_person_id.eq.crmId [the leg native leads need] + legacy fub id when differing + normalized quoted emails), byte-identical to the old inline (refactor, no behavior change), wired into getContactSavedHomes .or(). Identity-join contract test (getContactSavedHomes.test.ts) pins all clauses; bites when the fub_person_id.eq.crmId leg is dropped (4/11 fail). tsc + DAL-boundary clean.",
+      "verifiedBy": "independent adversarial agent a2bf1417464d61bbc (1 round) \u2014 confirmed byte-identical or-filter vs HEAD (no regression), wired, test bites on the native-lead leg, bug closed (fub_person_id.eq.crmId is what lets a native lead match visitor_identity_map). VERDICT: SOLID.",
       "remaining": "The promised identity-join contract test is only half there: lib/data/crm/getContactSavedHomes.test.ts exercises ONLY the pure rollup/union helpers \u2014 the person\u2192auth-user or-filter (getContactSavedHomes.ts:150-160, visitor_identity_map + profiles chain) is inline and untested. The one join contract test that exists (lib/data/crm/getViewedListings.test.ts, buildSessionOrFilter) covers the visitor_sessions chain, not the consumer-store auth-user join. Extract the saved-homes or-filter into a tested pure helper (same pattern as buildSessionOrFilter) to fulfill the stated mechanism."
     },
     {

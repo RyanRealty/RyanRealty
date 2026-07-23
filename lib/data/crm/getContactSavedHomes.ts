@@ -131,6 +131,26 @@ export function buildHomesPanelUnion(
 }
 
 /**
+ * person → auth-user or-filter for the visitor_identity_map lookup: matches on
+ * crm_person_id, fub_person_id (both the crm id AND the legacy fub id, since a
+ * FUB-imported person can be keyed either way — this is exactly the leg a native
+ * lead's saved homes were silently missing), and, when known, the person's
+ * normalized emails. PURE, and pinned by the identity-join contract test — the
+ * saved-homes counterpart to buildSessionOrFilter for the viewed-listings chain.
+ */
+export function buildSavedHomesIdentityOrFilter(
+  crmPersonId: number,
+  fubLegacyId?: number | null,
+  emails?: string[],
+): string {
+  const parts = [`crm_person_id.eq.${crmPersonId}`, `fub_person_id.eq.${crmPersonId}`]
+  if (fubLegacyId != null && fubLegacyId !== crmPersonId) parts.push(`fub_person_id.eq.${fubLegacyId}`)
+  const cleanEmails = (emails ?? []).map((e) => e.trim().toLowerCase()).filter(Boolean)
+  if (cleanEmails.length > 0) parts.push(`email.in.(${cleanEmails.map((e) => `"${e}"`).join(',')})`)
+  return parts.join(',')
+}
+
+/**
  * Resolve every auth user_id linked to a CRM person (see identity chain in the
  * file header), then read their likes + saved_listings joined to live tiles.
  * Empty/safe [] on any miss — a contact with no auth account has no consumer
@@ -147,15 +167,10 @@ export async function getContactSavedHomes(params: {
   const sb = createServiceClient()
 
   // ── 1. person → auth user ids ─────────────────────────────────────────────
-  const orFilters = [`crm_person_id.eq.${crmPersonId}`, `fub_person_id.eq.${crmPersonId}`]
-  if (fubLegacyId != null && fubLegacyId !== crmPersonId) orFilters.push(`fub_person_id.eq.${fubLegacyId}`)
-  const cleanEmails = (emails ?? []).map((e) => e.trim().toLowerCase()).filter(Boolean)
-  if (cleanEmails.length > 0) {
-    orFilters.push(`email.in.(${cleanEmails.map((e) => `"${e}"`).join(',')})`)
-  }
+  const orFilter = buildSavedHomesIdentityOrFilter(crmPersonId, fubLegacyId, emails)
 
   const [idmapRes, profileRes] = await Promise.all([
-    sb.from('visitor_identity_map').select('user_id').or(orFilters.join(',')).not('user_id', 'is', null).limit(50),
+    sb.from('visitor_identity_map').select('user_id').or(orFilter).not('user_id', 'is', null).limit(50),
     sb.from('profiles').select('user_id').eq('crm_person_id', crmPersonId).limit(10),
   ])
 
