@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.848.1 (2026-07-23)
+
+### Maintenance
+- chore(program): W11.4 -> done (voice canon reconciled to VOICE.md)
+- docs(voice): W11.4 canon cleanup — VOICE.md Orwell+never-pander, retire five-attribute model, repoint G35 to VOICE.md
+
+---
+
+
 ## v1.848.0 (2026-07-23)
 
 ### Features
