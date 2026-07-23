@@ -20,6 +20,13 @@
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
+import {
+  safeSegment,
+  buildDeliverablePath,
+  pathBelongsToBroker,
+} from '@/lib/marketing-brain/deliverable-path'
+
+export { pathBelongsToBroker, safeSegment } from '@/lib/marketing-brain/deliverable-path'
 
 export const DELIVERABLE_BUCKET = 'marketing-deliverables'
 /** Signed download URLs are short-lived; a library page mints them per render. */
@@ -42,54 +49,17 @@ export interface DeliverableRef {
   createdAt: string | null
 }
 
-/** A slug we are willing to put in an object path. Keeps traversal out. */
-function safeSegment(value: string): string {
-  return (value ?? '')
-    .toLowerCase()
-    .replace(/[^a-z0-9._-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 120)
-}
-
-/** The one place an object path is constructed. Always broker-prefixed. */
-export function deliverablePath(brokerSlug: string, actionId: string, filename: string): string {
-  return `${safeSegment(brokerSlug)}/${safeSegment(actionId)}/${safeSegment(filename)}`
-}
-
 /**
- * True if `path` sits under this broker's prefix.
- *
- * SECURITY: this deliberately compares against a path REBUILT from
- * safeSegment'd parts rather than pattern-matching the caller's string. An
- * earlier version tested `startsWith(prefix) && !includes('..')`, which an
- * adversarial review broke live: Supabase Storage percent-decodes the object
- * key AFTER our check, so `paul-stevenson/%2e%2e/rebecca-peterson/...` passed
- * the guard (no literal `..`, right prefix) and then resolved to another
- * broker's file — a confirmed HTTP 200 on someone else's work product. It also
- * degraded to a wildcard whenever safeSegment(brokerSlug) came out empty
- * (prefix `'/'`, which storage strips). Reconstructing makes both classes
- * unrepresentable: anything that is not exactly `<slug>/<action>/<file>` in
- * canonical form is refused.
+ * The one place an object path is constructed. Always broker-prefixed.
+ * Throws on an unrepresentable segment rather than returning a mangled key —
+ * every caller here has already validated, so reaching the throw is a bug.
  */
-export function pathBelongsToBroker(brokerSlug: string, path: string): boolean {
-  const slug = safeSegment(brokerSlug)
-  if (!slug || typeof path !== 'string' || !path) return false
-  let decoded = path
-  try {
-    // Decode repeatedly: %252e%252e decodes to %2e%2e decodes to ..
-    for (let i = 0; i < 3; i++) {
-      const next = decodeURIComponent(decoded)
-      if (next === decoded) break
-      decoded = next
-    }
-  } catch {
-    return false // malformed encoding is not a path we own
-  }
-  if (decoded !== path) return false // canonical form only — no encoded segments
-  const parts = decoded.split('/')
-  if (parts.length !== 3) return false
-  return deliverablePath(parts[0], parts[1], parts[2]) === decoded && parts[0] === slug
+export function deliverablePath(brokerSlug: string, actionId: string, filename: string): string {
+  const path = buildDeliverablePath(brokerSlug, actionId, filename)
+  if (!path) throw new Error('deliverablePath: unsafe segment')
+  return path
 }
+
 
 /**
  * Whose library does this action's output belong to?
@@ -115,12 +85,34 @@ async function canonicalBrokerSlug(ref: string | null): Promise<string | null> {
   if (!value) return null
   try {
     const supabase = createServiceClient()
-    const column = value.includes('@') ? 'email' : null
-    const { data } = column
-      ? await supabase.from('brokers').select('slug').ilike(column, value).maybeSingle()
-      : await supabase.from('brokers').select('slug').or(`slug.eq.${value},crm_slug.eq.${value}`).maybeSingle()
-    const slug = (data as { slug?: string } | null)?.slug
-    return slug ? safeSegment(slug) : null
+    // NOTE: no ilike here. `value` can be an inbound From: header
+    // (marketing_inbox_events.sender_email), and ilike treats % and _ as
+    // wildcards — 'p%@ryan-realty.com' resolved to paul-stevenson and
+    // '_ebeccapeterson@...' to rebecca-peterson in review, both from addresses
+    // that pass the domain allowlist. Emails are stored lowercase-comparable,
+    // so an exact match on the lowercased value is both safe and correct.
+    // Likewise the slug branch uses two eq filters rather than interpolating
+    // into .or(), whose comma/dot syntax an attacker-shaped value could bend.
+    if (value.includes('@')) {
+      const { data } = await supabase
+        .from('brokers')
+        .select('slug, email')
+        .eq('is_active', true)
+      const match = (data ?? []).find(
+        (b) => ((b as { email?: string }).email ?? '').trim().toLowerCase() === value,
+      ) as { slug?: string } | undefined
+      return match?.slug ? safeSegment(match.slug) : null
+    }
+    const { data } = await supabase
+      .from('brokers')
+      .select('slug, crm_slug')
+      .eq('is_active', true)
+    const hit = (data ?? []).find(
+      (b) =>
+        ((b as { slug?: string }).slug ?? '').toLowerCase() === value ||
+        ((b as { crm_slug?: string }).crm_slug ?? '').toLowerCase() === value,
+    ) as { slug?: string } | undefined
+    return hit?.slug ? safeSegment(hit.slug) : null
   } catch {
     return null
   }
@@ -167,8 +159,15 @@ export async function persistDeliverable(input: {
   contentType?: string
 }): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
   const { actionId, brokerSlug, filename, body } = input
-  if (!actionId || !brokerSlug || !filename) return { ok: false, error: 'actionId, brokerSlug and filename are required' }
-  const path = deliverablePath(brokerSlug, actionId, filename)
+  // Validate the SANITIZED segments, not the raw ones. Checking truthiness of
+  // the inputs first let '!!!' / '-' / ' ' through — they sanitize to '' and
+  // the object landed at bucket root with no broker prefix at all (confirmed
+  // live in review), invisible to every library and listable by anyone whose
+  // slug happened to match the action id.
+  const path = buildDeliverablePath(brokerSlug, actionId, filename)
+  if (!path) {
+    return { ok: false, error: 'actionId, brokerSlug and filename must each contain usable characters' }
+  }
   try {
     const supabase = createServiceClient()
     const { error } = await supabase.storage.from(DELIVERABLE_BUCKET).upload(path, body, {

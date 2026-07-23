@@ -48,6 +48,7 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync, statSync, readdirSy
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createClient } from '@supabase/supabase-js'
+import { loadDeliverablePath } from './lib/deliverable-path-runtime.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(__dirname, '..')
@@ -313,9 +314,73 @@ async function processRow(row) {
     return { id: row.id, ok: false, reason: 'lost_optimistic_lock' }
   }
 
+  // W10.2 — persist the rendered artifact into the requesting broker's content
+  // library. THIS is the runner that finishes video/image/PDF deliverables: both
+  // cloud runners defer visual classes and leave the row in in_production, so
+  // without this the library structurally could never hold the artifacts a
+  // broker actually comes back for. Advisory — the render already succeeded, so
+  // a storage failure is logged, never fatal.
+  try {
+    await persistRenderedDeliverable(row, join(REPO_ROOT, relArtifact), relArtifact)
+  } catch (err) {
+    console.warn(`  ! deliverable library persist skipped: ${err?.message ?? err}`)
+  }
+
   console.log(`  ✓ ${row.id} → ready (awaiting Matt approval; draft-first §0.5)`)
   notifyMattReady(row, relArtifact)
   return { id: row.id, ok: true, artifact: relArtifact }
+}
+
+/**
+ * Upload a rendered artifact to the private marketing-deliverables bucket under
+ * the requesting broker's prefix. Keys are built by the SAME pure module the app
+ * and the gate use (scripts/lib/deliverable-path-runtime.mjs) — re-implementing
+ * safeSegment here would be a second source of truth for a security boundary.
+ */
+async function persistRenderedDeliverable(row, absArtifactPath, relArtifact) {
+  if (!existsSync(absArtifactPath)) return
+  const loaded = await loadDeliverablePath(REPO_ROOT)
+  if (!loaded.ok) {
+    console.warn(`  ! deliverable path module unavailable (${loaded.error}); artifact not archived`)
+    return
+  }
+  const { buildDeliverablePath } = loaded.mod
+
+  // Canonical brokers.slug namespace. assigned_approver holds the CRM slug
+  // ('matt'), so it is resolved through the table rather than used directly.
+  let brokerSlug = 'matthew-ryan'
+  try {
+    const { data: action } = await supabase
+      .from('marketing_brain_actions')
+      .select('assigned_approver')
+      .eq('id', row.id)
+      .maybeSingle()
+    const ref = String(action?.assigned_approver ?? '').trim().toLowerCase()
+    if (ref) {
+      const { data: brokers } = await supabase.from('brokers').select('slug, crm_slug, email').eq('is_active', true)
+      const hit = (brokers ?? []).find(
+        (b) =>
+          String(b.slug ?? '').toLowerCase() === ref ||
+          String(b.crm_slug ?? '').toLowerCase() === ref ||
+          String(b.email ?? '').trim().toLowerCase() === ref,
+      )
+      if (hit?.slug) brokerSlug = hit.slug
+    }
+  } catch {
+    // fall through to the default owner
+  }
+
+  const filename = relArtifact.split('/').pop() ?? 'deliverable'
+  const key = buildDeliverablePath(brokerSlug, row.id, filename)
+  if (!key) {
+    console.warn('  ! artifact filename could not be turned into a safe key; not archived')
+    return
+  }
+  const { error } = await supabase.storage
+    .from('marketing-deliverables')
+    .upload(key, readFileSync(absArtifactPath), { upsert: true })
+  if (error) console.warn(`  ! deliverable library upload failed: ${error.message}`)
+  else console.log(`  ✓ archived to content library: ${key}`)
 }
 
 async function killRow(row, reason) {

@@ -130,6 +130,32 @@ run('broker content library — persistence + isolation (real storage)', () => {
     expect(lib.pathBelongsToBroker(BROKER_A, lib.deliverablePath(BROKER_A, ACTION_ID, FILENAME))).toBe(true)
   })
 
+  it('refuses to WRITE an object whose segments sanitize to nothing', async () => {
+    // REGRESSION (round 2, demonstrated live): persistDeliverable validated the
+    // RAW inputs then built the key from the SANITIZED ones, so '!!!' passed the
+    // truthiness check, sanitized to '', and the object landed at bucket ROOT
+    // with no broker prefix — invisible to every library and listable by anyone
+    // whose slug happened to equal the action id.
+    const lib = await import('./deliverable-library')
+    for (const bad of ['!!!', '..', '.', '-', ' ']) {
+      const res = await lib.persistDeliverable({
+        actionId: bad,
+        brokerSlug: BROKER_A,
+        filename: FILENAME,
+        body: 'should never be written',
+      })
+      expect(res.ok, `persist accepted actionId "${bad}" — it can escape the broker prefix`).toBe(false)
+
+      const res2 = await lib.persistDeliverable({
+        actionId: ACTION_ID,
+        brokerSlug: bad,
+        filename: FILENAME,
+        body: 'should never be written',
+      })
+      expect(res2.ok, `persist accepted brokerSlug "${bad}"`).toBe(false)
+    }
+  })
+
   it('canonicalizes the CRM slug namespace so the broker actually sees the file', async () => {
     // REGRESSION (found against live data, not by reading code): public.brokers
     // carries two namespaces — slug 'matthew-ryan' and crm_slug 'matt'. Every
