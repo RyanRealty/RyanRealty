@@ -16,10 +16,17 @@
  * link does not become a permanent public handle on broker work product.
  */
 
+import { Fragment } from 'react'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getBrokerSelfRecordByEmail } from '@/lib/data'
 import { formatDate } from '@/lib/format/date'
 import { listBrokerDeliverables, signDeliverableDownload } from '@/lib/marketing-brain/deliverable-library'
+import {
+  isShareableToSocial,
+  captionFor,
+  shareableTypeLabel,
+} from '@/lib/marketing-brain/deliverable-share'
+import { DeliverableShareBar } from '@/components/admin/content-library/DeliverableShareBar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -51,11 +58,22 @@ export default async function ContentLibraryPage() {
   // Sign each row for THIS broker. The action takes the PARTS, never a path —
   // the object key is rebuilt server-side from the session's broker slug, so
   // there is no path string in play for a caller to tamper with.
+  //
+  // shareable/caption are computed DEFAULT-DENY from the filename (which encodes
+  // the action type): a CMA, a BPO, or an internal summary is never shareable,
+  // so the share bar cannot expose a client's private pricing document to a
+  // public feed (ci:deliverable-share-safety).
   const rows = await Promise.all(
-    items.map(async (item) => ({
-      ...item,
-      url: brokerSlug ? await signDeliverableDownload(brokerSlug, item.actionId, item.filename) : null,
-    })),
+    items.map(async (item) => {
+      const shareable = isShareableToSocial(item.filename)
+      return {
+        ...item,
+        url: brokerSlug ? await signDeliverableDownload(brokerSlug, item.actionId, item.filename) : null,
+        shareable,
+        caption: shareable ? captionFor(item.filename) : '',
+        typeLabel: shareable ? shareableTypeLabel(item.filename) : '',
+      }
+    }),
   )
 
   return (
@@ -101,6 +119,9 @@ export default async function ContentLibraryPage() {
                       <span className="text-sm text-muted-foreground">Unavailable</span>
                     )}
                   </div>
+                  {row.shareable && (
+                    <DeliverableShareBar caption={row.caption} typeLabel={row.typeLabel} downloadUrl={row.url} />
+                  )}
                 </li>
               ))}
             </ul>
@@ -116,26 +137,39 @@ export default async function ContentLibraryPage() {
               </TableHeader>
               <TableBody>
                 {rows.map((row) => (
-                  <TableRow key={row.path}>
-                    <TableCell className="font-medium">{row.filename}</TableCell>
-                    <TableCell className="tabular-nums text-muted-foreground">
-                      {formatDate(row.createdAt)}
-                    </TableCell>
-                    <TableCell className="tabular-nums text-muted-foreground">
-                      {formatSize(row.sizeBytes)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {row.url ? (
-                        <Button asChild variant="outline" size="sm">
-                          <a href={row.url} download>
-                            Download
-                          </a>
-                        </Button>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">Unavailable</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
+                  <Fragment key={row.path}>
+                    <TableRow>
+                      <TableCell className="font-medium">{row.filename}</TableCell>
+                      <TableCell className="tabular-nums text-muted-foreground">
+                        {formatDate(row.createdAt)}
+                      </TableCell>
+                      <TableCell className="tabular-nums text-muted-foreground">
+                        {formatSize(row.sizeBytes)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {row.url ? (
+                          <Button asChild variant="outline" size="sm">
+                            <a href={row.url} download>
+                              Download
+                            </a>
+                          </Button>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Unavailable</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                    {row.shareable && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="pt-0">
+                          <DeliverableShareBar
+                            caption={row.caption}
+                            typeLabel={row.typeLabel}
+                            downloadUrl={row.url}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Fragment>
                 ))}
               </TableBody>
             </Table>
