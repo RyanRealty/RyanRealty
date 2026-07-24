@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.860.1 (2026-07-24)
+
+### Maintenance
+- chore(program): W2.4 done — schools + parent cross-links verified (38/50)
+
+---
+
+
 ## v1.860.0 (2026-07-24)
 
 ### Features
