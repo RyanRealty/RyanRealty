@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.863.1 (2026-07-24)
+
+### Bug Fixes
+- fix(w8.1): §0 — per-source slug resolution; verifier defects 1-3 + gate hardening
+
+---
+
+
 ## v1.863.0 (2026-07-24)
 
 ### Features
