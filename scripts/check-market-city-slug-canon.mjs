@@ -77,8 +77,26 @@ const walkCity = (n) => {
         `${ROUTE}: citySlugs does not lowercase the city name (no .toLowerCase()). The RPC matches lower("City") = lower(p_geo_slug), so the geo_slug must be the lowercased space form.`,
       )
     }
-    if (/slugify\s*\(/.test(init) || /replace\([^)]*['"]-['"]/.test(init)) {
-      problems.push(`${ROUTE}: citySlugs builds a hyphenated slug — that never matches a multi-word city.`)
+    // Assert the produced slug SHAPE, not a method blacklist. City display names
+    // contain spaces, not hyphens, so the canonical lowercased form never has a
+    // hyphen. Any construct in the initializer that could INTRODUCE one — a '-'
+    // string literal (replace(/ /g,'-'), split(' ').join('-')), slugify, or a
+    // char-code — is banned. An earlier version blacklisted only `slugify` and
+    // `replace(...,'-')` and a review defeated it with replaceAll/split-join.
+    if (/['"]-['"]/.test(init)) {
+      problems.push(
+        `${ROUTE}: citySlugs contains a '-' literal. A hyphen in a city geo_slug never matches a multi-word city (lower("La Pine")="la pine", not "la-pine").`,
+      )
+    }
+    if (/\bslugify\b/.test(init) || /fromCharCode\s*\(\s*45\b/.test(init)) {
+      problems.push(`${ROUTE}: citySlugs uses a slug/hyphen-producing helper — the geo_slug must be lower("City") verbatim.`)
+    }
+    for (const method of ['replace', 'replaceAll', 'split']) {
+      if (new RegExp(`\\.${method}\\s*\\(`).test(init)) {
+        problems.push(
+          `${ROUTE}: citySlugs calls .${method}(...) — string surgery on a city name risks introducing a hyphen or dropping a space. Lowercasing the name is the only transform the RPC accepts.`,
+        )
+      }
     }
   }
   ts.forEachChild(n, walkCity)
