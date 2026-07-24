@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.857.4 (2026-07-24)
+
+### Maintenance
+- docs(program): W2.1/W2.4 — subdivision RPC blast-radius confirmed (6 dependent fns) + §0 ground-truth
+
+---
+
+
 ## v1.857.3 (2026-07-24)
 
 ### Maintenance
