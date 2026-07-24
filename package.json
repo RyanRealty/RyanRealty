@@ -320,6 +320,7 @@
     "ci:cma-rebrand-integrity": "node scripts/check-cma-rebrand-integrity.mjs",
     "ci:deliverable-share-safety": "node scripts/check-deliverable-share-safety.mjs",
     "ci:market-city-slug-canon": "node scripts/check-market-city-slug-canon.mjs",
+    "ci:market-city-mls-canon": "node scripts/check-market-city-mls-canon.mjs",
     "ci:market-narrative-integrity": "node scripts/check-market-narrative-integrity.mjs"
   },
   "dependencies": {

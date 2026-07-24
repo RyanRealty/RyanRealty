@@ -46,3 +46,12 @@ jobs:
       # can't silently die. SKIPS cleanly until RESEND_WEBHOOKS_API_KEY is set.
       - name: Resend webhook registered (ci:resend-webhook)
         run: npm run ci:resend-webhook
+
+      # Market city → MLS-City canonical NAME gate (G57) — off-chain nightly,
+      # DB-dependent like G16. Fails if any city-tier registry NAME
+      # (REPORT_CITIES / MARKET_REPORT_DEFAULT_CITIES / PRIMARY_CITIES) matches no
+      # listings."City" and is not a documented NON_MLS_CITY_EXEMPTIONS entry —
+      # the "Crooked River Ranch"/"Tumalo" permanently-empty-cache §0 class. Uses
+      # the Supabase creds set in this job's env; SKIPS cleanly if they're absent.
+      - name: Market city names are real MLS cities (ci:market-city-mls-canon)
+        run: npm run ci:market-city-mls-canon
