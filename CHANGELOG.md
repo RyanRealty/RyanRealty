@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.863.3 (2026-07-24)
+
+### Bug Fixes
+- fix(w8.1): §0 CRITICAL — stop the rolling refresh writing a non-SFR universe
+
+---
+
+
 ## v1.863.2 (2026-07-24)
 
 ### Bug Fixes
