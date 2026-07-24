@@ -35,8 +35,42 @@ cards directly above an RPC-based table that **disagreed about the same city on 
    allowlist (400 outside `MARKET_REPORT_DEFAULT_CITIES`) + purged 19,467 out-of-area city rows and 198
    orphaned `central_oregon` region rows.
 
+### ROUND 5 RESULT — FAIL, fixed in `ddd9d481` (migration `20260724210000`)
+
+**D1 (HIGH, was my false claim).** `getCityRangeReport.ts` asserted the median "inherits the cache's
+n>=3 gate". It did not — `compute_and_cache_period_stats` computed `median_sale_price` as a bare
+`percentile_cont` with NO sample gate; only its siblings (median_dom/ppsf/sale_to_list) were gated, at
+n>=5. **1,526 cached rows across 34 geos published a median from <3 closings, 907 from a SINGLE sale**,
+mostly with a YoY beside them (`/housing-market/terrebonne` rendered "$709,000 · Homes sold 2 · +6.9%
+YoY"; black butte ranch monthly $88,500 from n=1 at -93.5%). Migration gates all THREE median sites
+(current period + both prior-period baselines, so YoY can't come off a thin baseline either) at n>=3,
+matching the subdivision producer; the 1,526 rows were NULLed. Verified: Terrebonne YTD now renders
+`2 | — | — | —`, Bend (n=856) still $723,500. The docstring records that the claim is true because it
+was MADE true, not inherited.
+
+### STILL OPEN from round 5 — the next session's first work
+- **D2 (MEDIUM)** `/api/reports/export` validates `?city=` but NOT `?subdivision=`, and never checks the
+  pair: `?city=Madras&subdivision=Tetherow` → a workbook labeled "Tetherow, Madras" carrying Bend's
+  Tetherow numbers. Bounded to Central Oregon (no out-of-area reach, no fabrication), but the fix's own
+  comment says the bound must be the registry, not whatever is in the cache.
+- **D3 (MEDIUM)** The export flattens THREE windows into one unlabeled block — chosen period, then
+  `12 Month Sales` (rolling_365d), then `Active Listings`/`Months of Supply` (live pulse, no period,
+  freshness never printed). Terrebonne ships "21 months of supply" inside a 6.8-month window. `/reports`
+  labels these separately ("Live single-family · as of…" vs "Trailing 12 months · …"); the export,
+  rewritten in the same change, does not — and it is the artifact most likely to reach a client
+  detached from the page.
+- **D4 (MEDIUM)** `/communities/vandevert-ranch` renders "0 homes for sale" beside "Median list
+  $3,025,000". `market_pulse_live` has no row for that geo; the fallback chain at
+  `app/communities/[slug]/page.tsx:452` satisfies a LIST-price label from a median SALE price. A median
+  list price cannot exist with zero active listings.
+- **Gate gap worth closing (verifier's own ranking):** `BANNED_WRAPPERS` is a hardcoded 3-string Set and
+  `app/actions/reports.ts` is allowlisted BY PATH, so a NEW wrapper added there calling a banned RPC is
+  invisible once imported elsewhere. That is the ordinary shape of a future feature landing. Derive the
+  list from the module's exports. The other three gaps (destructured `const { rpc }`, `.mjs` in scan
+  roots, files outside app/components/lib) the verifier ranked LOW and I agree.
+
 ### NEXT ACTION
-Run an adversarial round 5 (assume-broken brief) against HEAD. If clean: flip W8.1 to done (-> 40/50) via
+Fix D2/D3/D4 + the wrapper-list gap, then run an adversarial round 6 (assume-broken brief) against HEAD. If clean: flip W8.1 to done (-> 40/50) via
 the scratchpad `apply-w81-flip.mjs` and append `w81-decisions-33.md` as §33. **`requiredMechanism` format:**
 `gates` are SCRIPT PATHS (`scripts/check-no-report-rpc.mjs`), never `ci:` names; every entry is
 `existsSync`-checked. See memory `reference_program_complete_gate_format`.
