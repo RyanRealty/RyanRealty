@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.854.1 (2026-07-24)
+
+### Other
+- harden(w10.6): invert the share gate to a frozen public allowlist; prefix-block CMA relabels
+
+---
+
+
 ## v1.854.0 (2026-07-24)
 
 ### Features
