@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.857.2 (2026-07-24)
+
+### Maintenance
+- docs(program): W2.1/W2.4 — §0 de-risking, subdivision cross-city collision confirmed with live data
+
+---
+
+
 ## v1.857.1 (2026-07-24)
 
 ### Maintenance
