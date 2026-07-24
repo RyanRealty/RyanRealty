@@ -104,6 +104,25 @@ function scan(rel) {
   const sf = ts.createSourceFile(rel, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
   const line = (node) => sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1
 
+  // Pre-pass: identifiers bound to a banned RPC name, so `const N = 'get_city_…'`
+  // followed by `.rpc(N)` is caught rather than read as an opaque identifier.
+  const bannedConstNames = new Set()
+  const collectConsts = (n) => {
+    if (
+      ts.isVariableDeclaration(n) &&
+      ts.isIdentifier(n.name) &&
+      n.initializer &&
+      (ts.isStringLiteral(n.initializer) || ts.isNoSubstitutionTemplateLiteral(n.initializer)) &&
+      BANNED_RPCS.has(n.initializer.text)
+    ) {
+      bannedConstNames.add(n.name.text)
+    }
+    ts.forEachChild(n, (c) => {
+      collectConsts(c)
+    })
+  }
+  collectConsts(sf)
+
   const visit = (node) => {
     // 1. supabase.rpc('get_city_*', …)
     if (
@@ -121,23 +140,74 @@ function scan(rel) {
       }
     }
 
-    // 2. import { getReportMetrics, … } from '@/app/actions/reports'
-    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
-      const spec = node.moduleSpecifier.text
-      if (/(^|\/)app\/actions\/reports$/.test(spec) || spec === '@/app/actions/reports') {
-        const named = node.importClause?.namedBindings
-        if (named && ts.isNamedImports(named)) {
-          for (const el of named.elements) {
-            // propertyName is the ORIGINAL name when aliased (`x as y`).
-            const original = (el.propertyName ?? el.name).text
-            if (BANNED_WRAPPERS.has(original)) {
-              problems.push(
-                `${rel}:${line(el)} imports ${original} from @/app/actions/reports — that wrapper ` +
-                  `calls a raw-\`listings\` RPC. Read the cache instead (getCityRangeReport for the ` +
-                  `/reports table, getCityMarketDetail + getMarketPulse for a single geo).`,
-              )
-            }
+    // 1b. supabase.rpc(CONST) where CONST is a module-level string holding a
+    //     banned name — the indirection a determined bypass reaches for first.
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === 'rpc'
+    ) {
+      const a = node.arguments?.[0]
+      if (a && ts.isIdentifier(a) && bannedConstNames.has(a.text)) {
+        problems.push(
+          `${rel}:${line(node)} calls .rpc(${a.text}) where ${a.text} holds a retired ` +
+            `raw-\`listings\` RPC name. Read the cache instead.`,
+        )
+      }
+    }
+
+    // 2. Any import FORM that pulls a banned wrapper out of app/actions/reports:
+    //    named, aliased, namespace (`import * as R`), or a re-export.
+    const isReportsModule = (spec) =>
+      spec === '@/app/actions/reports' || /(^|\/)app\/actions\/reports$/.test(spec)
+
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier) &&
+      isReportsModule(node.moduleSpecifier.text)
+    ) {
+      const bindings = ts.isImportDeclaration(node)
+        ? node.importClause?.namedBindings
+        : node.exportClause
+      const kind = ts.isImportDeclaration(node) ? 'imports' : 're-exports'
+
+      // `import * as R from '@/app/actions/reports'` — the whole surface, so any
+      // banned member is reachable as R.getReportMetrics(...).
+      if (bindings && ts.isNamespaceImport(bindings)) {
+        problems.push(
+          `${rel}:${line(bindings)} namespace-imports @/app/actions/reports as ` +
+            `'${bindings.name.text}' — that exposes the raw-\`listings\` RPC wrappers. ` +
+            `Import the specific cache DAL you need instead.`,
+        )
+      } else if (bindings && (ts.isNamedImports(bindings) || ts.isNamedExports(bindings))) {
+        for (const el of bindings.elements) {
+          // propertyName is the ORIGINAL name when aliased (`x as y`).
+          const original = (el.propertyName ?? el.name).text
+          if (BANNED_WRAPPERS.has(original)) {
+            problems.push(
+              `${rel}:${line(el)} ${kind} ${original} from @/app/actions/reports — that wrapper ` +
+                `calls a raw-\`listings\` RPC. Read the cache instead (getCityRangeReport for the ` +
+                `/reports table, getCityMarketDetail + getMarketPulse for a single geo).`,
+            )
           }
+        }
+      }
+    }
+
+    // 2b. Dynamic access: `await import('@/app/actions/reports')` and
+    //     `require('@/app/actions/reports')` both hand back the whole module.
+    if (ts.isCallExpression(node)) {
+      const isDynImport = node.expression.kind === ts.SyntaxKind.ImportKeyword
+      const isRequire = ts.isIdentifier(node.expression) && node.expression.text === 'require'
+      if (isDynImport || isRequire) {
+        const spec = firstStringArg(node)
+        if (spec && isReportsModule(spec)) {
+          problems.push(
+            `${rel}:${line(node)} ${isRequire ? 'require()s' : 'dynamically imports'} ` +
+              `@/app/actions/reports — that module's report wrappers call raw-\`listings\` RPCs. ` +
+              `Read the cache instead.`,
+          )
         }
       }
     }

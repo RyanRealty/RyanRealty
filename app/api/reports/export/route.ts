@@ -60,6 +60,12 @@ type ExportFacts = {
  * Resolve one geo's cache rows. A subdivision reads geo_type='subdivision'
  * (market_pulse_live coverage there is sparse, so live fields stay null and
  * render as unavailable rather than borrowing the parent city's numbers).
+ *
+ * SLUG RESOLUTION IS PER-SOURCE, NOT PER-GEO — the same rule getCityRangeRow
+ * documents. A multi-word city keeps its pulse row under 'la pine' and its
+ * market_stats_cache `ytd` row under 'la-pine'; resolving the geo to one slug
+ * drops whichever source uses the other spelling, and an export that prints
+ * "Not available" for a period the cache actually holds is a §0 failure.
  */
 async function loadFacts(
   city: string,
@@ -71,50 +77,43 @@ async function loadFacts(
   const candidates = isSub ? [slugify(subdivision!.trim())] : citySlugCandidates(city)
   const geoLabel = isSub ? `${subdivision!.trim()}, ${city}` : city
 
-  for (const geoSlug of candidates) {
-    const [detail, twelve, pulse, history] = await Promise.all([
-      getCityMarketDetail({ geoType, geoSlug, periodType: period }),
-      period === 'rolling_365d'
-        ? Promise.resolve(null)
-        : getCityMarketDetail({ geoType, geoSlug, periodType: 'rolling_365d' }),
-      getMarketPulse({ geoType, geoSlug }),
-      getPriceHistory(geoType, geoSlug, 'monthly', 12).catch(() => []),
-    ])
-    if (!detail && !pulse && history.length === 0) continue
-    const t12 = period === 'rolling_365d' ? detail : twelve
-    return {
-      geoLabel,
-      periodLabel: RANGE_PERIOD_LABELS[period],
-      periodStart: detail?.periodStart ? String(detail.periodStart).slice(0, 10) : null,
-      periodEnd: detail?.periodEnd ? String(detail.periodEnd).slice(0, 10) : null,
-      medianSalePrice: detail?.medianSalePrice ?? null,
-      soldCount: detail?.soldCount ?? null,
-      medianDom: detail?.medianDom ?? null,
-      medianPricePerSqft: detail?.medianPricePerSqft ?? null,
-      activeCount: pulse?.activeCount ?? null,
-      sales12mo: t12?.soldCount ?? null,
-      monthsOfSupply: pulse?.monthsOfSupply ?? null,
-      trend: history.map((p) => ({
-        month: String(p.periodStart).slice(0, 7),
-        soldCount: p.soldCount ?? null,
-        medianSalePrice: p.medianSalePrice ?? null,
-      })),
-    }
-  }
+  const perCandidate = await Promise.all(
+    candidates.map(async (geoSlug) => {
+      const [detail, twelve, pulse, history] = await Promise.all([
+        getCityMarketDetail({ geoType, geoSlug, periodType: period }),
+        period === 'rolling_365d'
+          ? Promise.resolve(null)
+          : getCityMarketDetail({ geoType, geoSlug, periodType: 'rolling_365d' }),
+        getMarketPulse({ geoType, geoSlug }),
+        getPriceHistory(geoType, geoSlug, 'monthly', 12).catch(() => []),
+      ])
+      return { detail, twelve, pulse, history }
+    }),
+  )
+
+  const detail = perCandidate.find((c) => c.detail)?.detail ?? null
+  const twelve = perCandidate.find((c) => c.twelve)?.twelve ?? null
+  const pulse = perCandidate.find((c) => c.pulse)?.pulse ?? null
+  const history = perCandidate.find((c) => c.history.length > 0)?.history ?? []
+  const t12 = period === 'rolling_365d' ? detail : twelve
 
   return {
     geoLabel,
     periodLabel: RANGE_PERIOD_LABELS[period],
-    periodStart: null,
-    periodEnd: null,
-    medianSalePrice: null,
-    soldCount: null,
-    medianDom: null,
-    medianPricePerSqft: null,
-    activeCount: null,
-    sales12mo: null,
-    monthsOfSupply: null,
-    trend: [],
+    periodStart: detail?.periodStart ? String(detail.periodStart).slice(0, 10) : null,
+    periodEnd: detail?.periodEnd ? String(detail.periodEnd).slice(0, 10) : null,
+    medianSalePrice: detail?.medianSalePrice ?? null,
+    soldCount: detail?.soldCount ?? null,
+    medianDom: detail?.medianDom ?? null,
+    medianPricePerSqft: detail?.medianPricePerSqft ?? null,
+    activeCount: pulse?.activeCount ?? null,
+    sales12mo: t12?.soldCount ?? null,
+    monthsOfSupply: pulse?.monthsOfSupply ?? null,
+    trend: history.map((p) => ({
+      month: String(p.periodStart).slice(0, 7),
+      soldCount: p.soldCount ?? null,
+      medianSalePrice: p.medianSalePrice ?? null,
+    })),
   }
 }
 

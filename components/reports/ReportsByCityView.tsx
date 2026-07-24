@@ -3,6 +3,11 @@
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 import { marketVerdict } from '@/lib/market/classify'
+// Same formatter the headline cards above use. A raw toFixed(1) would print
+// "4.0" for a genuinely-balanced 4.03 — contradicting the "balanced market"
+// verdict beside it AND disagreeing with the card for the same city, which is
+// the exact card-vs-table split W8.1 exists to eliminate.
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -204,7 +209,7 @@ export default function ReportsByCityView({
                     <TableCell className="text-right tabular-nums">
                       {r.monthsOfSupply != null ? (
                         <>
-                          {r.monthsOfSupply.toFixed(1)}
+                          {formatMonthsOfSupply(r.monthsOfSupply)}
                           <span className="ml-1.5 text-xs font-normal text-muted-foreground">
                             {marketVerdict(r.monthsOfSupply).label}
                           </span>

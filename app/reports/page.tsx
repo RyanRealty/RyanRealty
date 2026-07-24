@@ -406,7 +406,7 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
           eyebrow="Central Oregon · Live market data"
           titleTop="Market"
           titleBottom="reports"
-          lead="Real-time market data by city. Add or remove cities and change the time range. Default: last 7 days."
+          lead="Real-time market data by city. Add or remove cities and change the time range. Default: last 30 days."
           videoSrc={null}
           posterSrc="/images/lp/hero-mountain.jpg"
         />

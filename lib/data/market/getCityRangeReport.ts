@@ -78,38 +78,61 @@ function isoDay(v: unknown): string | null {
   return v ? String(v).slice(0, 10) : null
 }
 
-/** One city's range row. Resolves the cache slug by candidates (space first). */
+/**
+ * One city's range row.
+ *
+ * SLUG RESOLUTION IS PER-SOURCE, NOT PER-CITY. A multi-word city does not keep
+ * all of its rows under one spelling: market_pulse_live carries 'la pine' while
+ * the market_stats_cache `ytd` row lives under 'la-pine'. Resolving the city to
+ * ONE slug (first candidate that answers anything) therefore silently drops the
+ * other source — La Pine's year-to-date rendered as em-dashes while the cache
+ * held 44 sales at a $369,950 median. Publishing "no data" for a place that has
+ * data is a §0 failure, so each source is resolved independently: take the first
+ * candidate spelling that actually returns a row for THAT read.
+ *
+ * Single-word cities produce one candidate (spaced === hyphenated), so this
+ * costs nothing for them; multi-word cities issue one extra cached read.
+ */
 export async function getCityRangeRow(
   cityLabel: string,
   period: RangePeriod,
 ): Promise<CityRangeRow | null> {
-  for (const geoSlug of citySlugCandidates(cityLabel)) {
-    const [detail, trailing, pulse] = await Promise.all([
-      getCityMarketDetail({ geoType: 'city', geoSlug, periodType: period }),
-      period === 'rolling_365d'
-        ? Promise.resolve(null)
-        : getCityMarketDetail({ geoType: 'city', geoSlug, periodType: 'rolling_365d' }),
-      getMarketPulse({ geoType: 'city', geoSlug }),
-    ])
-    if (!detail && !pulse) continue
-    // When the chosen period IS rolling_365d, its own row supplies sales-12mo —
-    // never a second read, and never a different number for the same window.
-    const twelve = period === 'rolling_365d' ? detail : trailing
-    return {
-      city: cityLabel,
-      urlSlug: cityUrlSlug(cityLabel),
-      soldCount: toNum(detail?.soldCount),
-      medianSalePrice: toNum(detail?.medianSalePrice),
-      medianDom: toNum(detail?.medianDom),
-      medianPricePerSqft: toNum(detail?.medianPricePerSqft),
-      activeCount: toNum(pulse?.activeCount),
-      sales12mo: toNum(twelve?.soldCount),
-      monthsOfSupply: toNum(pulse?.monthsOfSupply),
-      periodStart: isoDay(detail?.periodStart),
-      periodEnd: isoDay(detail?.periodEnd),
-    }
+  const candidates = citySlugCandidates(cityLabel)
+
+  const perCandidate = await Promise.all(
+    candidates.map(async (geoSlug) => {
+      const [detail, trailing, pulse] = await Promise.all([
+        getCityMarketDetail({ geoType: 'city', geoSlug, periodType: period }),
+        period === 'rolling_365d'
+          ? Promise.resolve(null)
+          : getCityMarketDetail({ geoType: 'city', geoSlug, periodType: 'rolling_365d' }),
+        getMarketPulse({ geoType: 'city', geoSlug }),
+      ])
+      return { detail, trailing, pulse }
+    }),
+  )
+
+  const detail = perCandidate.find((c) => c.detail)?.detail ?? null
+  const pulse = perCandidate.find((c) => c.pulse)?.pulse ?? null
+  const trailing = perCandidate.find((c) => c.trailing)?.trailing ?? null
+  if (!detail && !pulse) return null
+
+  // When the chosen period IS rolling_365d, its own row supplies sales-12mo —
+  // never a second read, and never a different number for the same window.
+  const twelve = period === 'rolling_365d' ? detail : trailing
+  return {
+    city: cityLabel,
+    urlSlug: cityUrlSlug(cityLabel),
+    soldCount: toNum(detail?.soldCount),
+    medianSalePrice: toNum(detail?.medianSalePrice),
+    medianDom: toNum(detail?.medianDom),
+    medianPricePerSqft: toNum(detail?.medianPricePerSqft),
+    activeCount: toNum(pulse?.activeCount),
+    sales12mo: toNum(twelve?.soldCount),
+    monthsOfSupply: toNum(pulse?.monthsOfSupply),
+    periodStart: isoDay(detail?.periodStart),
+    periodEnd: isoDay(detail?.periodEnd),
   }
-  return null
 }
 
 /**

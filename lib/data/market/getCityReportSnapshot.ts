@@ -32,10 +32,11 @@
  * pages read today) and hyphenated ('la-pine') geo_slug spellings (see
  * lib/cma/market.ts). We resolve by candidates, space-separated first.
  *
- * The market-stat-consistency cron cross-checks THIS path against the
+ * The market-stat-consistency cron still cross-checks THIS path against the
  * get_city_period_metrics RPC path daily (|delta| > 1% alerts, the §0
- * reconciliation threshold), so drift between the hub cards and the RPC table
- * below them is caught mechanically, not by a reader.
+ * reconciliation threshold). It no longer guards a rendered RPC table: W8.1
+ * moved the range table below these cards onto the same cache (getCityRangeReport),
+ * so the two agree by construction. The cron now watches the ADMIN-only RPC path.
  *
  * DAL boundary (G1): reads ONLY through other DAL functions. No raw `.from()`.
  */
