@@ -188,6 +188,23 @@ if (doc) {
   if (blank.flatMap((s) => s.rows.map(([, v]) => v)).includes(0)) {
     problems.push(`${DOC_MODULE}: a missing figure rendered as 0 instead of "${doc.NA}".`)
   }
+
+  // The monthly-trend block is the one whose window could be ASSERTED rather
+  // than derived: `.slice(-6)` takes the six most recent CACHED rows, which need
+  // not be the six months just past. A hardcoded "last 6 months" heading over
+  // 2024 rows passes an every-block-has-a-heading check while lying about when.
+  const stale = doc.buildSections(
+    { ...facts, trend: [{ month: '2024-03', soldCount: 1, medianSalePrice: 400000 }] },
+    null,
+  )
+  const trendHeading = stale.find((s) => s.rows.some(([k]) => k === 'Recent Trend'))?.heading
+  if (!trendHeading?.includes('2024-03')) {
+    problems.push(
+      `${DOC_MODULE}: the monthly-trend heading does not name the months its rows actually cover ` +
+        `(got "${trendHeading}" for a single 2024-03 row). Every block derives its window from the ` +
+        `rows it measured; this is the only one that could assert instead.`,
+    )
+  }
 }
 
 // ──────────────────────────────────────────────────────────────────────────

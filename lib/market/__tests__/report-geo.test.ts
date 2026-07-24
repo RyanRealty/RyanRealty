@@ -43,6 +43,9 @@ describe('resolveReportCommunity — the city must actually scope the document',
     expect(resolveReportCommunity('Bend', 'Nowhere Estates')).toBeNull()
     expect(resolveReportCommunity('Bend', '')).toBeNull()
     expect(resolveReportCommunity('Bend', '   ')).toBeNull()
+    // slugify('***') is the literal 'unknown', not '' — the blank guard must read
+    // the RAW input or punctuation-only input slips through as a real slug.
+    expect(resolveReportCommunity('Bend', '***')).toBeNull()
     // A subdivision that exists as a bare cache slug but is NOT registry-placed.
     expect(resolveReportCommunity('Bend', 'Deer Park')).toBeNull()
   })

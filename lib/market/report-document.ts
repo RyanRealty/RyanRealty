@@ -76,6 +76,20 @@ export function liveHeading(f: ReportDocumentFacts): string {
 }
 
 /**
+ * Heading for the monthly-trend block, naming the months the rows ACTUALLY cover
+ * (the same six the line below it lists). Says so plainly when there are none.
+ */
+export function trendWindowHeading(trend: ReportDocumentFacts['trend']): string {
+  const months = trend.slice(-6).map((r) => r.month).filter(Boolean)
+  if (months.length === 0) return 'Monthly closed sales (no monthly rows cached)'
+  const first = months[0]
+  const last = months[months.length - 1]
+  return first === last
+    ? `Monthly closed sales · ${first}`
+    : `Monthly closed sales · ${first} to ${last}`
+}
+
+/**
  * The document body: one labeled block per measured window. Every figure in the
  * document is inside exactly one block, and every block heading names the window
  * its figures were measured over.
@@ -111,7 +125,12 @@ export function buildSections(
       ],
     },
     {
-      heading: 'Monthly closed sales · last 6 months',
+      // The window is DERIVED from the rows, never asserted. `.slice(-6)` takes
+      // the six most recent CACHED monthly rows, which are not necessarily the
+      // six months just past — a geo whose monthly rows stop in 2024 would ship
+      // 2024 figures under a heading claiming the last six months. Every other
+      // block prints the bounds it actually measured; so does this one.
+      heading: trendWindowHeading(f.trend),
       rows: [['Recent Trend', trendLine || NA]],
     },
     {

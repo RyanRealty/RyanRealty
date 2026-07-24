@@ -70,7 +70,12 @@ export function reportCommunitiesInCity(city: string): ReportCommunity[] {
  * still a miss: this never falls back to a name-only match.
  */
 export function resolveReportCommunity(city: string, community: string): ReportCommunity | null {
+  // Guard the RAW input, not the slug. `slugify` returns the literal string
+  // 'unknown' for anything that reduces to empty (lib/slug.ts), never '', so a
+  // `if (!slugify(x)) return null` guard is dead code AND lets `?subdivision=***`
+  // through as the slug 'unknown' — which would resolve if a community were ever
+  // slugged that. Refuse blank input here instead.
+  if (!community?.trim()) return null
   const wanted = slugify(community)
-  if (!wanted) return null
   return reportCommunitiesInCity(city).find((c) => c.slug === wanted || slugify(c.label) === wanted) ?? null
 }

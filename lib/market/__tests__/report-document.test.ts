@@ -4,6 +4,7 @@ import {
   buildSections,
   buildDocumentFilename,
   liveHeading,
+  trendWindowHeading,
   windowText,
   type ReportDocumentFacts,
 } from '../report-document'
@@ -79,6 +80,40 @@ describe('buildSections — every figure states its own window', () => {
     expect(headingOf('Narrative', sections)).toBe('Narrative')
     expect(buildSections(facts, null).at(-1)?.rows[0]?.[1]).toBe('Narrative not available yet.')
     expect(buildSections(facts, 'Inventory rose.').at(-1)?.rows[0]?.[1]).toBe('Inventory rose.')
+  })
+})
+
+describe('trendWindowHeading — the trend block names the months it actually holds', () => {
+  it('spans the months present, not the six just past', () => {
+    // A geo whose cached monthly rows stop in 2024 must not ship 2024 figures
+    // under a heading claiming the last six months.
+    const stale = [
+      { month: '2024-03', soldCount: 1, medianSalePrice: 400000 },
+      { month: '2024-04', soldCount: 3, medianSalePrice: 410000 },
+    ]
+    expect(trendWindowHeading(stale)).toBe('Monthly closed sales · 2024-03 to 2024-04')
+    expect(headingOf('Recent Trend', buildSections({ ...facts, trend: stale }, null))).toBe(
+      'Monthly closed sales · 2024-03 to 2024-04',
+    )
+  })
+
+  it('names the single month when only one row is cached', () => {
+    expect(trendWindowHeading([{ month: '2026-06', soldCount: 6, medianSalePrice: 1 }])).toBe(
+      'Monthly closed sales · 2026-06',
+    )
+  })
+
+  it('says there are none rather than naming a window it does not have', () => {
+    expect(trendWindowHeading([])).toBe('Monthly closed sales (no monthly rows cached)')
+  })
+
+  it('takes only the six most recent when more are cached', () => {
+    const twelve = Array.from({ length: 12 }, (_, i) => ({
+      month: `2026-${String(i + 1).padStart(2, '0')}`,
+      soldCount: 1,
+      medianSalePrice: 1,
+    }))
+    expect(trendWindowHeading(twelve)).toBe('Monthly closed sales · 2026-07 to 2026-12')
   })
 })
 
