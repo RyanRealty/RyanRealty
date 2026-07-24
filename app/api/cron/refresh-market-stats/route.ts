@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { MARKET_REPORT_DEFAULT_CITIES } from '@/app/actions/market-report-types'
-import { slugify } from '@/lib/slug'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const runtime = 'nodejs'
@@ -41,7 +40,16 @@ export async function GET(request: Request) {
     )
   }
 
-  const citySlugs = MARKET_REPORT_DEFAULT_CITIES.map((name) => slugify(name))
+  // §0 data accuracy: compute_and_cache_period_stats matches a city by
+  // `lower("City") = lower(p_geo_slug)` and STORES the row under p_geo_slug
+  // verbatim (migration 20260425090000, lines 263 + 719). listings."City" is
+  // the display value ("La Pine"), so the geo_slug MUST be its lowercased
+  // SPACE form ("la pine") — never slugify() ("la-pine"), which never matches a
+  // multi-word city and wrote stale/empty stubs for La Pine, Powell Butte, and
+  // Crooked River Ranch (single-word cities matched by coincidence). This also
+  // aligns with the in-DB pg_cron writer, which keys on lower("City") too, so
+  // the two writers no longer diverge. ci:market-city-slug-canon holds this.
+  const citySlugs = MARKET_REPORT_DEFAULT_CITIES.map((name) => name.toLowerCase())
 
   // Pull every geo_type='neighborhood' slug from public.boundaries so resort
   // communities (Tetherow, Sunriver, Eagle Crest, Three Rivers, etc.) and Bend

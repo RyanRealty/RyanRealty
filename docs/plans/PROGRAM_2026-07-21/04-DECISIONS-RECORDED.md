@@ -249,3 +249,22 @@ It is NOT a clean extension of W10.5's fix: `FORMAT_ROUTE_MAP`'s miss fallback i
 - **Read-only IS the "reviewed before republish" guarantee.** The batch never writes to the content tables. Verified live: after a run, the reviewed post's `updated_at` was unchanged.
 - **Mechanism.** `scripts/check-voice-rewrite-batch.mjs` (`ci:voice-rewrite-batch`, in `ci:gates`). AST: asserts the batch calls `reviewProse`, writes an artifact, and contains ZERO mutator references. An independent verifier proved three evasions (`.rpc()`, computed `['update']()`, aliased `.update.bind()`); the gate now flags ANY mutator reference — direct, computed, or aliased — plus `.rpc`, and all four are proven to bite.
 - **Verified.** Gate GREEN + bites on all four vectors; live run over published posts produced the artifact (one post flagged 21 violations: stale phrases + cuttable words); nothing written to the DB; `ci:gates-wired` clean.
+
+## §27 — market_stats_cache city slug canonicalization (M5 prerequisite, §0) — 2026-07-24
+
+The `/api/cron/refresh-market-stats` route built city geo_slugs via `slugify(name)` ("la-pine"),
+but `compute_and_cache_period_stats` matches a city by `lower("City") = lower(p_geo_slug)` and stores
+the row under p_geo_slug verbatim. `slugify` never matches a multi-word city, so La Pine, Powell Butte,
+and Crooked River Ranch got stale/empty cache stubs, while the in-DB pg_cron writer (keying on
+`lower("City")`, the space form) wrote the fresh, correct rows — a two-convention split-brain where the
+published number depended on which slug a surface queried. Nothing wrong was published (the read path,
+`citySlugCandidates`, resolves to the space form) but it was a latent §0 hazard and the stub writer ran
+every 6h.
+
+Fix: the route now maps city names via `.toLowerCase()` (space form), matching the RPC and the in-DB
+writer, so the two writers converge. The 36 stale hyphenated city stubs (la-pine / crooked-river-ranch /
+powell-butte, 12 rows each) were deleted; the black-butte-ranch NEIGHBORHOOD row was untouched.
+Mechanism: `ci:market-city-slug-canon` (in `ci:gates`) AST-asserts the city refresh writer lowercases the
+name and never calls slugify — bites on a revert to slugify. Verified live: /cities/la-pine renders
+$415,000 median sale, matching the fresh space-slug cache row. Unblocks W2.6 / W8.4 / W8.5 (the backfill
+and archive would otherwise reproduce the broken stubs).
