@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.853.2 (2026-07-24)
+
+### Bug Fixes
+- fix(w10.2): round 5 — resolve module identity, reject literal-broker fallback, revive render worker
+
+### Other
+- harden(w10.3): gate resolves variable payloads + any numeric writer; fix dead map fallback
+
+---
+
+
 ## v1.853.1 (2026-07-24)
 
 ### Maintenance
