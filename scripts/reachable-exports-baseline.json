@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-22T14:44:32.637Z",
+  "generatedAt": "2026-07-24T18:41:18.431Z",
   "reason": "Pre-gate backlog of components/** and lib/** modules that no file imports. This list may only shrink: wire the module into a surface, mark it \"reachability: entry-point <reason>\" in its first 10 lines, or delete it. New orphans fail the build.",
-  "count": 199,
+  "count": 198,
   "names": [
     "components/ActivityFeedCard.tsx",
     "components/ActivityFeedSlider.tsx",
@@ -124,7 +124,6 @@
     "components/listing/showcase/ShowcaseSimilar.tsx",
     "components/listing/showcase/ShowcaseStickyBar.tsx",
     "components/listing/showcase/ShowcaseVideos.tsx",
-    "components/market-report/MarketPulseSection.tsx",
     "components/neighborhood/NeighborhoodCTA.tsx",
     "components/neighborhood/NeighborhoodHero.tsx",
     "components/neighborhood/NeighborhoodListings.tsx",
