@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.852.2 (2026-07-24)
+
+### Bug Fixes
+- fix(w10.2): one ownership resolver, no unguarded throw, gate covers the writers
+- fix(cma,bpo): publish the Twilio line, never brokers.phone — it holds personal cells
+
+### Maintenance
+- chore(budget): baseline the 3 lines the twilio_number fix added
+
+---
+
+
 ## v1.852.1 (2026-07-24)
 
 ### Bug Fixes
