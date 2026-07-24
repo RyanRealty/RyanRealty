@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.863.7 (2026-07-24)
+
+### Maintenance
+- docs(handoff): round-5 result — n>=3 median gate added; D2/D3/D4 carried forward
+
+---
+
+
 ## v1.863.6 (2026-07-24)
 
 ### Bug Fixes
