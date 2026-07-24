@@ -379,7 +379,7 @@
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "Move the crm_broker_alerts drain off the mac mini (serverless cron sending via Twilio) so alert delivery survives the machine, and build PWA web-push end to end: service worker, push-subscription storage, VAPID send path, broker opt-in UI."
+      "remaining": "SERVERLESS DRAIN DONE 2026-07-24 (leg a): /api/cron/crm-alert-drain (every minute, vercel.json, requireCronAuth) drains crm_broker_alerts via the A2P Twilio Messaging Service, gated on CRM_SMS_ALERTS=twilio; CAS-claim (pending->sending + claimed_at) coexists with the mac-mini relay, no double-texts; broker-phone whitelist gate-pinned on BOTH drainers (check-crm-sms-channel-safety extended, proven to bite); 6 unit tests. Alert delivery now survives the mac mini. RESIDUAL (leg b): PWA web-push end to end — service worker, push-subscription storage table, VAPID keypair (needs env provisioning in Vercel: VAPID_PUBLIC_KEY/VAPID_PRIVATE_KEY), web-push send path folded into the drain, broker opt-in UI in the admin shell. A dedicated build with its own verify."
     },
     {
       "id": "W6.2",
