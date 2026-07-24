@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.855.0 (2026-07-24)
+
+### Features
+- feat(w2.6): backfill market_stats_cache to ten-year monthly depth + depth guard
+
+### Other
+- program(w2.6): flip to done — ten-year market cache depth verified
+
+---
+
+
 ## v1.854.3 (2026-07-24)
 
 ### Bug Fixes
