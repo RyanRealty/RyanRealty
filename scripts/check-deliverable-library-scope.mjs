@@ -197,34 +197,80 @@ function checkStructure() {
       }
     }
 
-    // The guard must be the one the gate actually executes. Calling something
-    // *named* pathBelongsToBroker is not enough: a local definition (or a
-    // shadow) would leave all 28 fixtures passing against the pure module while
-    // the real download path runs unguarded. "Inline the helper, drop the
-    // import" is an ordinary refactor, so this is checked structurally.
-    const libText = lib.getFullText()
-    const importsGuard =
-      /import\s*{[^}]*\bpathBelongsToBroker\b[^}]*}\s*from\s*['"][^'"]*deliverable-path['"]/.test(libText)
-    if (!importsGuard) {
-      problems.push(
-        `${LIB}: does not import pathBelongsToBroker from deliverable-path. The gate executes THAT module's fixtures — a local copy would be unguarded and unverified.`,
-      )
+    // The guard must be THE one the gate executes — the same file, imported
+    // under its own name, never shadowed. Round 5 defeated a regex version three
+    // ways: an aliased import (`buildDeliverablePath as bdp`), a module-scope
+    // `const buildDeliverablePath = () => ...` shadow (the old check matched
+    // only `function`), and a sibling specifier ending in `deliverable-path`
+    // (e.g. `_shim/deliverable-path`) that the loose regex accepted while the
+    // fixtures still ran the real file. All three are ordinary-looking refactors
+    // that leave the download path unguarded. So this is done with the TS
+    // module resolver and full binding analysis, per
+    // reference_code_inspecting_gates_use_ast.
+    const REQUIRED_IMPORTS = ['pathBelongsToBroker', 'buildDeliverablePath', 'safeSegment']
+    const CANON = join(process.cwd(), PURE).replace(/\.ts$/, '')
+    const compilerOptions = {
+      baseUrl: process.cwd(),
+      paths: { '@/*': ['*'] },
+      moduleResolution: ts.ModuleResolutionKind.Bundler ?? ts.ModuleResolutionKind.NodeNext,
     }
-    const importsBuilder =
-      /import\s*{[^}]*\bbuildDeliverablePath\b[^}]*}\s*from\s*['"][^'"]*deliverable-path['"]/.test(libText)
-    if (!importsBuilder) {
-      problems.push(
-        `${LIB}: does not import buildDeliverablePath from deliverable-path — key construction must not be re-implemented locally.`,
-      )
+    /** name -> the resolved absolute module (no ext) it was imported from, and whether aliased. */
+    const importedFrom = new Map()
+    const collectImports = (node) => {
+      if (
+        ts.isImportDeclaration(node) &&
+        node.importClause?.namedBindings &&
+        ts.isNamedImports(node.importClause.namedBindings) &&
+        ts.isStringLiteralLike(node.moduleSpecifier)
+      ) {
+        const spec = node.moduleSpecifier.text
+        const resolved = ts.resolveModuleName(spec, join(process.cwd(), LIB), compilerOptions, ts.sys)
+        const file = resolved.resolvedModule?.resolvedFileName?.replace(/\.tsx?$/, '') ?? null
+        for (const el of node.importClause.namedBindings.elements) {
+          const local = el.name.text
+          const original = el.propertyName?.text ?? local // propertyName set => aliased
+          importedFrom.set(local, { file, spec, original, aliased: Boolean(el.propertyName) })
+        }
+      }
+      ts.forEachChild(node, collectImports)
     }
-    for (const banned of ['pathBelongsToBroker', 'buildDeliverablePath', 'safeSegment']) {
-      const declaresOwn = new RegExp(`(^|\\n)\\s*(export\\s+)?function\\s+${banned}\\b`).test(libText)
-      if (declaresOwn) {
+    collectImports(lib)
+
+    for (const name of REQUIRED_IMPORTS) {
+      const imp = importedFrom.get(name)
+      if (!imp) {
         problems.push(
-          `${LIB}: declares its own ${banned}(...). There must be exactly one implementation, in deliverable-path.ts, because that is the one the gate runs.`,
+          `${LIB}: does not import ${name} from deliverable-path. The gate executes THAT module's fixtures — a local copy would be unguarded and unverified.`,
+        )
+        continue
+      }
+      if (imp.aliased || imp.original !== name) {
+        problems.push(
+          `${LIB}: imports ${name} under an alias. Aliasing lets a local binding of the real name shadow the guard; import it under its own name.`,
+        )
+      }
+      if (imp.file !== CANON) {
+        problems.push(
+          `${LIB}: imports ${name} from '${imp.spec}' which resolves to ${imp.file ?? 'nothing'}, not the canonical ${PURE}. The gate's 28 fixtures run the canonical file; a look-alike would be verified-but-unused.`,
         )
       }
     }
+    // No LOCAL binding of any of the three names — const/let/var/arrow/function
+    // all shadow the import. (v2 checked only `function`.)
+    const walkLocalDecls = (node) => {
+      if (
+        (ts.isFunctionDeclaration(node) || ts.isVariableDeclaration(node)) &&
+        node.name &&
+        ts.isIdentifier(node.name) &&
+        REQUIRED_IMPORTS.includes(node.name.text)
+      ) {
+        problems.push(
+          `${LIB}: declares a local \`${node.name.text}\` that shadows the imported guard. There must be exactly one implementation, in deliverable-path.ts — the file the gate runs.`,
+        )
+      }
+      ts.forEachChild(node, walkLocalDecls)
+    }
+    walkLocalDecls(lib)
 
     const sign = fns.get('signDeliverableDownload')
     if (!sign) {
@@ -348,6 +394,19 @@ function checkStructure() {
           const chain = parts.join(' ')
           const fromSession = SESSION_SOURCES.some((srcName) => chain.includes(srcName))
           const fromRequest = REQUEST_SOURCES.some((r) => new RegExp(`\\b${r}\\b`).test(chain))
+          // B3 (round 5): `broker?.slug ?? 'paul-stevenson'` keeps fromSession
+          // true (the chain still names getBrokerSelfRecordByEmail) yet silently
+          // resolves to a hardcoded OTHER broker for any admin not linked to a
+          // broker record. A broker-slug-shaped string literal anywhere in the
+          // traced value is the `?? fallback` refactor this check exists to
+          // police — reject it. (A literal 'null'/'undefined' fallback is fine;
+          // those are not a broker.)
+          const literalBroker = /['"][a-z]+(?:-[a-z]+)+['"]/.exec(chain)
+          if (literalBroker) {
+            problems.push(
+              `${rel}:${line}: the broker passed to ${n.expression.text}() can resolve to the string literal ${literalBroker[0]} (a fallback like \`?? 'paul-stevenson'\`). That silently reads another broker's library; resolve only from the session.`,
+            )
+          }
           if (!fromSession) {
             problems.push(
               `${rel}:${line}: the broker passed to ${n.expression.text}() does not trace to a session lookup (${SESSION_SOURCES.join(' / ')}). Whose library is this reading?`,
@@ -475,6 +534,23 @@ function checkDataflowAndWiring() {
       if (/assigned_approver/.test(code)) {
         problems.push(
           `${LIB}: reads assigned_approver directly. It is 'matt' on every live row, so this collapses every deliverable onto the principal broker.`,
+        )
+      }
+    }
+  }
+
+  // (B4-spawn, round 5) the render worker must invoke node via process.execPath,
+  // never bare 'node'. It runs from a launchd plist whose PATH has no node, so
+  // spawnSync('node', ...) ENOENT'd every cycle for ~6 weeks and no rendered
+  // artifact ever reached the library. This is the only automated signal that
+  // the visual half of W10.2 can actually run.
+  {
+    const wp = join(process.cwd(), 'scripts/render-worker.mjs')
+    if (existsSync(wp)) {
+      const wt = readFileSync(wp, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+      if (/spawnSync\s*\(\s*['"]node['"]/.test(wt)) {
+        problems.push(
+          "scripts/render-worker.mjs: spawnSync('node', ...) — under launchd's PATH there is no node, so this ENOENTs and no rendered deliverable is ever archived. Use process.execPath.",
         )
       }
     }

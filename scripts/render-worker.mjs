@@ -230,9 +230,13 @@ async function processRow(row) {
     return { id: row.id, ok: true, dryRun: true }
   }
 
-  // Run the REAL generator.
+  // Run the REAL generator. process.execPath, NOT bare 'node': this worker runs
+  // from a launchd plist whose minimal PATH has no node on it, so spawnSync('node')
+  // failed with ENOENT every cycle — silently, for ~6 weeks — and no rendered
+  // artifact ever reached the library. process.execPath is the absolute path of
+  // the node binary already running this script.
   const res = spawnSync(
-    'node',
+    process.execPath,
     [join(REPO_ROOT, 'scripts/run-producer.mjs'), producerKey, payloadPath, '--out', outDir],
     { cwd: REPO_ROOT, stdio: 'inherit', timeout: 15 * 60 * 1000 },
   )
