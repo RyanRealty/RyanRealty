@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.854.2 (2026-07-24)
+
+### Other
+- program(w10.6): flip to done — M3 content studio complete (all six W10 rows)
+
+---
+
+
 ## v1.854.1 (2026-07-24)
 
 ### Other
