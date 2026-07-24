@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.857.1 (2026-07-24)
+
+### Maintenance
+- chore(program): W8.5 done — per-city decade sales archive, live consumer of the W2.6 backfill (36/50)
+
+---
+
+
 ## v1.857.0 (2026-07-24)
 
 ### Features
