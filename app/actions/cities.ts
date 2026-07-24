@@ -177,7 +177,10 @@ async function _getCityBySlugUncached(slug: string): Promise<CityDetail | null> 
     description: db?.description ?? null,
     heroImageUrl: normalizeBannerLikeUrl(db?.hero_image_url ?? null) ?? bannerUrl ?? null,
     activeCount,
-    medianPrice: medianFromRows ?? stats.medianPrice,
+    // §0: both sides are ASKING prices — the snapshot's median of active list
+    // prices, then the pulse's. A closed-sale median can no longer reach this
+    // field: `stats.medianListPrice` is null unless a live pulse row supplied it.
+    medianPrice: medianFromRows ?? stats.medianListPrice,
     avgDom: stats.avgDom ?? null,
     closedLast12Months: stats.closedLast12Months,
     communityCount,

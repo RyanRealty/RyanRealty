@@ -218,7 +218,13 @@ async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetai
     isResort,
     resortContent: comm?.resort_content ?? null,
     activeCount,
-    medianPrice: medianFromRows ?? stats.medianPrice,
+    // §0 ASKING PRICES ONLY. `stats.medianListPrice` is null for every community
+    // whose stats came from the cache (market_pulse_live has no neighborhood or
+    // subdivision rows), so this is the literal-name snapshot median or nothing.
+    // It used to fall through to a median CLOSED SALE price, which the community
+    // page renders under the label "Median list". The alias-aware asking median
+    // for resorts is computed on the page from its own active tiles.
+    medianPrice: medianFromRows ?? stats.medianListPrice,
     avgDom: stats.avgDom ?? null,
     closedLast12Months: stats.closedLast12Months,
     neighborhoodName: comm?.neighborhoods?.name ?? null,

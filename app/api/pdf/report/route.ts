@@ -14,7 +14,10 @@ function buildPdfResponse(
     title: `${geoName} Market Report`,
     geoName,
     period,
-    metrics: {},
+    // This endpoint renders a branded cover with NO figures. Emitting an empty
+    // section list keeps it that way — an unlabeled figure block is exactly what
+    // the ReportSection type exists to prevent.
+    sections: [],
     branding: {
       brokerageName: branding.brokerageName || 'Ryan Realty',
       brokerageLogoUrl: branding.brokerageLogoUrl || null,

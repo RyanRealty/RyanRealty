@@ -95,14 +95,21 @@ export async function getLiveMarketPulse(input: {
   }
 }
 
+/**
+ * Live pulse row -> stats. The pulse is the ASKING side (active inventory), so
+ * it fills the list fields; the closed-sale fields come from the cache row and
+ * stay null when there is none. (§0 price-kind discipline — see CityMarketStats.)
+ */
 function pulseToMarketStats(
   pulse: MarketPulseRow,
   cached: CachedStatRow | null
 ): CityMarketStats {
   return {
     count: pulse.active_count,
-    avgPrice: pulse.avg_list_price,
-    medianPrice: pulse.median_list_price,
+    avgListPrice: pulse.avg_list_price,
+    medianListPrice: pulse.median_list_price,
+    avgSalePrice: cached?.avg_sale_price ?? null,
+    medianSalePrice: cached?.median_sale_price ?? null,
     avgDom: cached?.median_dom ?? null,
     newListingsLast30Days: pulse.new_count_30d,
     pendingCount: pulse.pending_count,
@@ -112,16 +119,25 @@ function pulseToMarketStats(
 
 /**
  * Build CityMarketStats from a cached stat row alone (no pulse).
- * Used for geo_type='neighborhood' resort communities where market_pulse_live
- * doesn't carry rows yet — but market_stats_cache does (populated by the cron).
- * Inventory comes from end_of_period_inventory; price metrics from CLOSED sales
- * in the cached period (median_sale_price reads the period's closed median).
+ *
+ * This is the NORMAL path for a geo_type='neighborhood' resort community, not a
+ * rare fallback: `market_pulse_live` carries no neighborhood or subdivision rows
+ * at all (verified live 2026-07-24 — 17 rows, every one city or region).
+ *
+ * §0: a cache row is entirely the CLOSED side, so both list fields stay null.
+ * They used to be filled from `avg_sale_price` / `median_sale_price`, which is
+ * how a closed-sale median reached a "Median list" label on the community page.
+ * A caller that needs an asking price for one of these geos computes it from the
+ * active tiles it already has (lib/market/tile-medians.ts) — the same set that
+ * produces the active count beside it.
  */
 function cachedToMarketStats(cached: CachedStatRow): CityMarketStats {
   return {
     count: cached.end_of_period_inventory ?? 0,
-    avgPrice: cached.avg_sale_price,
-    medianPrice: cached.median_sale_price,
+    avgListPrice: null,
+    medianListPrice: null,
+    avgSalePrice: cached.avg_sale_price,
+    medianSalePrice: cached.median_sale_price,
     avgDom: cached.median_dom,
     newListingsLast30Days: 0,
     pendingCount: 0,
@@ -228,15 +244,30 @@ async function getQuickCityCount(cityName: string): Promise<CityMarketStats> {
     const tiles = await getCityListingsDAL(cityName, { status: 'active', limit: 5000 })
     return {
       count: tiles.length,
-      avgPrice: null,
-      medianPrice: null,
+      // The asking-price median IS derivable from these very tiles; callers that
+      // want it use medianListPriceOfTiles on their own active set so the count
+      // and the median provably describe the same homes. (§0)
+      avgListPrice: null,
+      medianListPrice: null,
+      avgSalePrice: null,
+      medianSalePrice: null,
       avgDom: null,
       newListingsLast30Days: 0,
       pendingCount: 0,
       closedLast12Months: 0,
     }
   } catch {
-    return { count: 0, avgPrice: null, medianPrice: null, avgDom: null, newListingsLast30Days: 0, pendingCount: 0, closedLast12Months: 0 }
+    return {
+      count: 0,
+      avgListPrice: null,
+      medianListPrice: null,
+      avgSalePrice: null,
+      medianSalePrice: null,
+      avgDom: null,
+      newListingsLast30Days: 0,
+      pendingCount: 0,
+      closedLast12Months: 0,
+    }
   }
 }
 

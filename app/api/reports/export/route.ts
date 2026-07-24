@@ -19,6 +19,21 @@
  * The XLSX "Price Bands" sheet is gone: band histograms exist only in the retired
  * get_city_price_bands RPC, with no cache column, view, or DAL anywhere. A sheet
  * of fabricated bands would be worse than no sheet.
+ *
+ * §0 on the GEO. Both `?city=` and `?subdivision=` are bounded by a registry,
+ * because this route is public, unauthenticated, and stamps the brokerage's name
+ * on what it returns. `city` must be in MARKET_REPORT_DEFAULT_CITIES; a
+ * community must be one the resort registry places IN THAT CITY
+ * (lib/market/report-geo.ts). A registry hit reads the community's
+ * geo_type='neighborhood' cache row — the SAME row /communities/<slug> renders —
+ * so an exported document cannot contradict the page it came from.
+ *
+ * §0 on the WINDOWS. A market document mixes three of them: a chosen
+ * closed-sale period, a trailing-12-month count, and a live inventory snapshot
+ * that has no period at all. Each is emitted as its own labeled block (see
+ * buildSections), in both formats, from one builder. Flattened together they
+ * read as one measurement, which is how a Terrebonne export printed
+ * "21 months of supply" inside a 6.8-month window.
  */
 import { NextResponse } from 'next/server'
 import React from 'react'
@@ -33,34 +48,40 @@ import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 import { citySlugCandidates } from '@/lib/data/market/getCityReportSnapshot'
 import { parseRangePeriod, RANGE_PERIOD_LABELS, type RangePeriod } from '@/lib/market/range-periods'
 import { MARKET_REPORT_DEFAULT_CITIES } from '@/lib/data/geo/report-cities'
-import { slugify } from '@/lib/slug'
+import { reportCommunitiesInCity, resolveReportCommunity } from '@/lib/market/report-geo'
 import { ReportPdfDocument, type ReportPdfData } from '@/lib/pdf/report-pdf'
+import {
+  num,
+  buildDocumentFilename,
+  buildSections,
+  windowText,
+  type ReportDocumentFacts,
+} from '@/lib/market/report-document'
 
 type ExportFormat = 'pdf' | 'xlsx'
 
-/** §0: a figure the cache does not carry is reported as unavailable, never 0. */
-const NA = 'Not available'
-const num = (v: number | null | undefined): number | string => (v == null ? NA : v)
-
-type ExportFacts = {
-  geoLabel: string
-  periodLabel: string
-  periodStart: string | null
-  periodEnd: string | null
-  medianSalePrice: number | null
-  soldCount: number | null
-  medianDom: number | null
-  medianPricePerSqft: number | null
-  activeCount: number | null
-  sales12mo: number | null
-  monthsOfSupply: number | null
-  trend: Array<{ month: string; soldCount: number | null; medianSalePrice: number | null }>
+/**
+ * The geo a document covers, already city-qualified. A community resolves to
+ * geo_type='neighborhood' — the alias-aware row the community page renders —
+ * never geo_type='subdivision', which is literal-name equality and disagrees
+ * with the page. See lib/market/report-geo.ts for the whole argument.
+ */
+type ExportGeo = {
+  geoType: 'city' | 'neighborhood'
+  /** Cache slug spellings to try, in order. */
+  candidates: string[]
+  /** Document title / filename label. */
+  label: string
+  /** Filename stem, already city-qualified. */
+  fileStem: string
+  /** The name market_narratives keys this geo by. */
+  narrativeName: string
+  /** Workbook Summary identity rows — the resolved geo, not the raw query. */
+  identityRows: Array<[string, string]>
 }
 
 /**
- * Resolve one geo's cache rows. A subdivision reads geo_type='subdivision'
- * (market_pulse_live coverage there is sparse, so live fields stay null and
- * render as unavailable rather than borrowing the parent city's numbers).
+ * Resolve one geo's cache rows.
  *
  * EVERY FIGURE IN A DOCUMENT COMES FROM ONE SLUG SPELLING — the same rule
  * getCityRangeRow documents. Mixing spellings field-by-field produced a workbook
@@ -68,22 +89,15 @@ type ExportFacts = {
  * the two spellings measured different geographies. Candidates are tried in
  * order and the FIRST that answers supplies every figure.
  */
-async function loadFacts(
-  city: string,
-  subdivision: string | null | undefined,
-  period: RangePeriod,
-): Promise<ExportFacts> {
-  const isSub = !!subdivision?.trim()
-  const geoType = isSub ? ('subdivision' as const) : ('city' as const)
-  const candidates = isSub ? [slugify(subdivision!.trim())] : citySlugCandidates(city)
-  const geoLabel = isSub ? `${subdivision!.trim()}, ${city}` : city
+async function loadFacts(geo: ExportGeo, period: RangePeriod): Promise<ReportDocumentFacts> {
+  const { geoType } = geo
 
   let detail: Awaited<ReturnType<typeof getCityMarketDetail>> = null
   let twelve: Awaited<ReturnType<typeof getCityMarketDetail>> = null
   let pulse: Awaited<ReturnType<typeof getMarketPulse>> = null
   let history: Awaited<ReturnType<typeof getPriceHistory>> = []
 
-  for (const geoSlug of candidates) {
+  for (const geoSlug of geo.candidates) {
     const [d, t, p, h] = await Promise.all([
       getCityMarketDetail({ geoType, geoSlug, periodType: period }),
       period === 'rolling_365d'
@@ -103,32 +117,35 @@ async function loadFacts(
   }
 
   const t12 = period === 'rolling_365d' ? detail : twelve
+  const day = (v: unknown): string | null => (v ? String(v).slice(0, 10) : null)
 
   return {
-    geoLabel,
-    periodLabel: RANGE_PERIOD_LABELS[period],
-    periodStart: detail?.periodStart ? String(detail.periodStart).slice(0, 10) : null,
-    periodEnd: detail?.periodEnd ? String(detail.periodEnd).slice(0, 10) : null,
+    period: {
+      label: RANGE_PERIOD_LABELS[period],
+      start: day(detail?.periodStart),
+      end: day(detail?.periodEnd),
+    },
     medianSalePrice: detail?.medianSalePrice ?? null,
     soldCount: detail?.soldCount ?? null,
     medianDom: detail?.medianDom ?? null,
     medianPricePerSqft: detail?.medianPricePerSqft ?? null,
-    activeCount: pulse?.activeCount ?? null,
+    // The trailing-12 row's OWN bounds. Printing the chosen period's dates here
+    // would label a 12-month count with a 30-day window.
+    trailing12: {
+      label: RANGE_PERIOD_LABELS.rolling_365d,
+      start: day(t12?.periodStart),
+      end: day(t12?.periodEnd),
+    },
     sales12mo: t12?.soldCount ?? null,
+    activeCount: pulse?.activeCount ?? null,
     monthsOfSupply: pulse?.monthsOfSupply ?? null,
+    liveAsOf: pulse?.refreshedAt ? String(pulse.refreshedAt).slice(0, 10) : null,
     trend: history.map((p) => ({
       month: String(p.periodStart).slice(0, 7),
       soldCount: p.soldCount ?? null,
       medianSalePrice: p.medianSalePrice ?? null,
     })),
   }
-}
-
-/** The window label printed on the document — the cache row's own bounds. */
-function periodText(f: ExportFacts): string {
-  return f.periodStart && f.periodEnd
-    ? `${f.periodLabel} (${f.periodStart} to ${f.periodEnd})`
-    : f.periodLabel
 }
 
 function getSupabaseServiceClient() {
@@ -138,12 +155,16 @@ function getSupabaseServiceClient() {
   return createClient(url, key)
 }
 
-async function getNarrative(city: string, subdivision?: string | null): Promise<string | null> {
+async function getNarrative(geo: ExportGeo): Promise<string | null> {
   const supabase = getSupabaseServiceClient()
   if (!supabase) return null
 
-  const geoType = subdivision?.trim() ? 'subdivision' : 'city'
-  const geoName = subdivision?.trim() ? subdivision.trim() : city.trim()
+  // market_narratives predates the neighborhood routing and stores communities
+  // under geo_type='subdivision' keyed by display name. It currently has zero
+  // writers, so this is a null lookup either way; keeping the historical key
+  // shape means a future writer's rows are found rather than silently missed.
+  const geoType = geo.geoType === 'neighborhood' ? 'subdivision' : 'city'
+  const geoName = geo.narrativeName
   const { data } = await supabase
     .from('market_narratives')
     .select('narrative')
@@ -156,43 +177,21 @@ async function getNarrative(city: string, subdivision?: string | null): Promise<
   return (data as { narrative?: string | null } | null)?.narrative?.trim() ?? null
 }
 
-function buildFilename(city: string, subdivision: string | null | undefined, f: ExportFacts) {
-  const location = subdivision?.trim() ? `${city}-${subdivision}` : city
-  const window = f.periodStart && f.periodEnd ? `${f.periodStart}-to-${f.periodEnd}` : f.periodLabel
-  return `market-report-${location}-${window}`.toLowerCase().replace(/\s+/g, '-')
-}
-
 async function buildPdf(
-  city: string,
-  subdivision: string | null | undefined,
+  geo: ExportGeo,
   period: RangePeriod,
 ): Promise<{ fileName: string; bytes: Uint8Array }> {
   const [brokerage, facts, narrative] = await Promise.all([
     getBrokerageSettings(),
-    loadFacts(city, subdivision, period),
-    getNarrative(city, subdivision),
+    loadFacts(geo, period),
+    getNarrative(geo),
   ])
 
-  const trendLine = facts.trend
-    .slice(-6)
-    .map((row) => `${row.month}: ${row.soldCount ?? 0} sold`)
-    .join(' | ')
-
   const pdfData: ReportPdfData = {
-    title: `${facts.geoLabel} Market Report`,
-    geoName: facts.geoLabel,
-    period: periodText(facts),
-    metrics: {
-      'Median Sale Price': num(facts.medianSalePrice),
-      'Sold Count': num(facts.soldCount),
-      'Median DOM': num(facts.medianDom),
-      'Median Price Per SqFt': num(facts.medianPricePerSqft),
-      'Active Listings': num(facts.activeCount),
-      '12 Month Sales': num(facts.sales12mo),
-      'Months of Supply': num(facts.monthsOfSupply),
-      'Recent Trend': trendLine || NA,
-      Narrative: narrative ?? 'Narrative not available yet.',
-    },
+    title: `${geo.label} Market Report`,
+    geoName: geo.label,
+    period: windowText(facts.period),
+    sections: buildSections(facts, narrative),
     branding: {
       brokerageName: brokerage?.name ?? 'Ryan Realty',
       brokerageLogoUrl: brokerage?.logo_url ?? null,
@@ -203,42 +202,39 @@ async function buildPdf(
   type DocElement = Parameters<typeof renderToBuffer>[0]
   const buffer = await renderToBuffer(doc as DocElement)
   return {
-    fileName: `${buildFilename(city, subdivision, facts)}.pdf`,
+    fileName: `${buildDocumentFilename(geo.fileStem, facts.period)}.pdf`,
     bytes: new Uint8Array(buffer),
   }
 }
 
 async function buildXlsx(
-  city: string,
-  subdivision: string | null | undefined,
+  geo: ExportGeo,
   period: RangePeriod,
 ): Promise<{ fileName: string; bytes: Uint8Array }> {
-  const [facts, narrative] = await Promise.all([
-    loadFacts(city, subdivision, period),
-    getNarrative(city, subdivision),
-  ])
+  const [facts, narrative] = await Promise.all([loadFacts(geo, period), getNarrative(geo)])
 
   const wb = XLSX.utils.book_new()
 
-  const summaryRows = [
-    ['City', city],
-    ['Subdivision', subdivision?.trim() || NA],
-    ['Window', facts.periodLabel],
-    ['Period Start', facts.periodStart ?? NA],
-    ['Period End', facts.periodEnd ?? NA],
-    ['Median Sale Price', num(facts.medianSalePrice)],
-    ['Sold Count', num(facts.soldCount)],
-    ['Median DOM', num(facts.medianDom)],
-    ['Median Price Per SqFt', num(facts.medianPricePerSqft)],
-    ['Active Listings', num(facts.activeCount)],
-    ['12 Month Sales', num(facts.sales12mo)],
-    ['Months of Supply', num(facts.monthsOfSupply)],
-    ['Narrative', narrative ?? 'Narrative not available yet.'],
-    ['Source', 'market_stats_cache + market_pulse_live (Oregon Data Share via Ryan Realty)'],
+  // Same three labeled blocks as the PDF, from the same builder, so the two
+  // formats of ONE document cannot describe their figures differently. Each
+  // block's heading is its own row above its figures. (§0)
+  const summaryRows: Array<Array<string | number>> = [
+    ...geo.identityRows.map(([k, v]) => [k, v] as Array<string | number>),
   ]
+  for (const section of buildSections(facts, narrative)) {
+    summaryRows.push([], [section.heading])
+    for (const [k, v] of section.rows) summaryRows.push([k, v])
+  }
+  summaryRows.push(
+    [],
+    ['Source', 'market_stats_cache + market_pulse_live (Oregon Data Share via Ryan Realty)'],
+  )
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryRows), 'Summary')
 
+  // Header states the window these rows measure: monthly CLOSED sales, so a
+  // reader cannot take the sheet for a listing history. (§0)
   const trendSheetRows = [
+    ['Monthly closed sales'],
     ['Month', 'Sold Count', 'Median Sale Price'],
     ...facts.trend.map((row) => [row.month, num(row.soldCount), num(row.medianSalePrice)]),
   ]
@@ -246,7 +242,7 @@ async function buildXlsx(
 
   const bytes = XLSX.write(wb, { bookType: 'xlsx', type: 'array' }) as ArrayBuffer
   return {
-    fileName: `${buildFilename(city, subdivision, facts)}.xlsx`,
+    fileName: `${buildDocumentFilename(geo.fileStem, facts.period)}.xlsx`,
     bytes: new Uint8Array(bytes),
   }
 }
@@ -277,13 +273,59 @@ export async function GET(request: Request) {
       { status: 400 },
     )
   }
-  const subdivision = searchParams.get('subdivision')?.trim() || null
+  // §0 THE CITY MUST ACTUALLY SCOPE THE DOCUMENT. `subdivision` was validated
+  // by nothing and resolved to a BARE cache slug, so the city above bounded the
+  // TITLE and nothing else: `?city=Madras&subdivision=Tetherow` returned a
+  // branded workbook headed "Tetherow, Madras" carrying Bend's Tetherow numbers.
+  // The registry is the only source that knows which city a community belongs
+  // to, and a community it cannot place is refused rather than guessed at.
+  const requestedCommunity = searchParams.get('subdivision')?.trim() || null
+  const community = requestedCommunity ? resolveReportCommunity(city, requestedCommunity) : null
+  if (requestedCommunity && !community) {
+    const available = reportCommunitiesInCity(city).map((c) => c.label)
+    return NextResponse.json(
+      {
+        error: available.length
+          ? `${requestedCommunity} is not a registered community in ${city}. ${city} communities: ${available.join(', ')}.`
+          : `${city} has no registered communities. Drop the subdivision parameter for a city-wide report.`,
+      },
+      { status: 400 },
+    )
+  }
+
+  const geo: ExportGeo = community
+    ? {
+        // geo_type 'neighborhood' — the alias-aware row the community page
+        // renders. The 'subdivision' row is literal-name equality and publishes
+        // different numbers for the same community over the same window. (W8.1)
+        geoType: 'neighborhood',
+        candidates: [community.slug],
+        label: `${community.label}, ${community.city}`,
+        fileStem: `${community.city}-${community.label}`,
+        narrativeName: community.label,
+        identityRows: [
+          ['City', community.city],
+          ['Community', community.label],
+        ],
+      }
+    : {
+        geoType: 'city',
+        candidates: citySlugCandidates(city),
+        label: city,
+        fileStem: city,
+        narrativeName: city,
+        identityRows: [
+          ['City', city],
+          ['Community', 'City-wide'],
+        ],
+      }
+
   const formatParam = searchParams.get('format')?.toLowerCase()
   const format: ExportFormat = formatParam === 'xlsx' ? 'xlsx' : 'pdf'
   const period = parseRangePeriod(searchParams.get('range'))
 
   try {
-    const built = format === 'xlsx' ? await buildXlsx(city, subdivision, period) : await buildPdf(city, subdivision, period)
+    const built = format === 'xlsx' ? await buildXlsx(geo, period) : await buildPdf(geo, period)
     const contentType =
       format === 'xlsx'
         ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

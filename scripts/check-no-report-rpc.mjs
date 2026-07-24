@@ -17,8 +17,11 @@
  * WHAT IT BANS — outside the allowlist, a file may not:
  *   1. call supabase.rpc('get_city_period_metrics' | 'get_city_price_bands' |
  *      'get_city_metrics_timeseries', …)
- *   2. import getReportMetrics / getReportPriceBands / getReportMetricsTimeSeries
- *      from '@/app/actions/reports' (the wrappers around those RPCs)
+ *   2. import a BANNED WRAPPER from '@/app/actions/reports'. That list is DERIVED
+ *      from the module itself (every exported function that reaches a banned RPC,
+ *      directly or through a private helper), not typed out — because that module
+ *      is allowlisted BY PATH, so a NEW wrapper added there would otherwise call
+ *      the RPC legally at home and then be imported by any public page invisibly.
  *
  * WHO IS ALLOWED (and why each is legitimate, not grandfathered debt):
  *   - app/actions/reports.ts — the wrapper definitions themselves.
@@ -47,11 +50,164 @@ const BANNED_RPCS = new Set([
   'get_city_metrics_timeseries',
 ])
 
-const BANNED_WRAPPERS = new Set([
-  'getReportMetrics',
-  'getReportPriceBands',
-  'getReportMetricsTimeSeries',
-])
+/**
+ * The wrapper module whose exports are derived, not typed out.
+ * (Also the first entry of ALLOWED_PREFIXES — it defines the wrappers.)
+ */
+const WRAPPER_MODULE = 'app/actions/reports.ts'
+
+/**
+ * The three wrappers that existed when this gate was written. They are a FLOOR,
+ * not the list: the real list is derived from the module below. Keeping them
+ * pinned means a refactor that hides the RPC behind an import (making the
+ * derivation see nothing) still can't silently empty the ban.
+ */
+const KNOWN_WRAPPERS = ['getReportMetrics', 'getReportPriceBands', 'getReportMetricsTimeSeries']
+
+/**
+ * Derive every EXPORTED function in `app/actions/reports.ts` that reaches a
+ * banned RPC — directly, or through another function in the same module.
+ *
+ * WHY DERIVED. `app/actions/reports.ts` is allowlisted BY PATH, so nothing in
+ * this gate looks at what it exports. With a hardcoded three-name ban, a NEW
+ * wrapper added to that module — the ordinary shape of a future feature — would
+ * call a banned RPC legally at home and then be imported by any public page
+ * completely invisibly. The ban has to track the module, not a snapshot of it.
+ *
+ * Transitive on purpose: a wrapper that delegates to a private helper
+ * (`async function fetchMetrics() { …rpc('get_city_period_metrics')… }`) reaches
+ * the RPC just as surely as one that calls it inline.
+ */
+function deriveBannedWrappers() {
+  const abs = join(ROOT, WRAPPER_MODULE)
+  if (!existsSync(abs)) {
+    // The module moved or was deleted. Fall back to the floor rather than
+    // silently banning nothing, and say so.
+    return { names: new Set(KNOWN_WRAPPERS), derived: [], note: `${WRAPPER_MODULE} not found` }
+  }
+  const sf = ts.createSourceFile(
+    WRAPPER_MODULE,
+    readFileSync(abs, 'utf8'),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  )
+
+  /** fnName -> { hitsRpc, callees, exported } */
+  const fns = new Map()
+  const ensure = (name) => {
+    if (!fns.has(name)) fns.set(name, { hitsRpc: false, callees: new Set(), exported: false })
+    return fns.get(name)
+  }
+
+  // Module-level identifiers bound to a banned RPC name, so `.rpc(RPC_NAME)`
+  // counts (same indirection the file scanner handles).
+  const bannedConsts = new Set()
+  const collectConsts = (n) => {
+    if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name)) {
+      const v = staticString(n.initializer)
+      if (v && BANNED_RPCS.has(v)) bannedConsts.add(n.name.text)
+    }
+    ts.forEachChild(n, collectConsts)
+  }
+  collectConsts(sf)
+
+  const isExported = (node) =>
+    !!node.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)
+
+  /** Walk one function body, recording the RPCs and functions it reaches. */
+  const walkBody = (body, rec) => {
+    const visit = (n) => {
+      if (ts.isCallExpression(n)) {
+        // `.rpc('get_city_…')` or `.rpc(CONST)`
+        if (ts.isPropertyAccessExpression(n.expression) && n.expression.name.text === 'rpc') {
+          const lit = staticString(n.arguments?.[0])
+          const arg = n.arguments?.[0]
+          if ((lit && BANNED_RPCS.has(lit)) || (arg && ts.isIdentifier(arg) && bannedConsts.has(arg.text))) {
+            rec.hitsRpc = true
+          }
+        }
+        // A call to another function in this module (by bare identifier).
+        if (ts.isIdentifier(n.expression)) rec.callees.add(n.expression.text)
+      }
+      ts.forEachChild(n, visit)
+    }
+    visit(body)
+  }
+
+  const collectFns = (n) => {
+    if (ts.isFunctionDeclaration(n) && n.name && n.body) {
+      const rec = ensure(n.name.text)
+      rec.exported = rec.exported || isExported(n)
+      walkBody(n.body, rec)
+    }
+    // Any `const x = <expr>` binding. The WHOLE initializer is walked, not just
+    // a bare arrow: every wrapper in this module is really
+    // `const _fetch = unstable_cache(async () => { …rpc(…)… }, …)`, so matching
+    // only ArrowFunction/FunctionExpression initializers saw none of them —
+    // caught by the self-test below, which is why it exists.
+    if (ts.isVariableStatement(n)) {
+      for (const d of n.declarationList.declarations) {
+        if (!ts.isIdentifier(d.name) || !d.initializer) continue
+        const rec = ensure(d.name.text)
+        rec.exported = rec.exported || isExported(n)
+        walkBody(d.initializer, rec)
+      }
+    }
+    ts.forEachChild(n, collectFns)
+  }
+  collectFns(sf)
+
+  // Fixed point: a function is tainted if it hits the RPC or calls something tainted.
+  const tainted = new Set()
+  for (const [name, rec] of fns) if (rec.hitsRpc) tainted.add(name)
+  let grew = true
+  while (grew) {
+    grew = false
+    for (const [name, rec] of fns) {
+      if (tainted.has(name)) continue
+      for (const callee of rec.callees) {
+        if (tainted.has(callee)) {
+          tainted.add(name)
+          grew = true
+          break
+        }
+      }
+    }
+  }
+
+  const exported = [...fns].filter(([, r]) => r.exported).map(([n]) => n)
+  const derived = [...tainted].filter((n) => fns.get(n)?.exported).sort()
+  return { names: new Set([...KNOWN_WRAPPERS, ...derived]), derived, exported, note: null }
+}
+
+const wrapperDerivation = deriveBannedWrappers()
+const BANNED_WRAPPERS = wrapperDerivation.names
+
+/**
+ * SELF-TEST on the derivation. A silently-broken AST walk would derive an empty
+ * set and leave only the floor, which is the failure mode this whole change
+ * exists to remove — so prove the walk still works against the wrappers we KNOW
+ * call the RPC. Scoped to the known names that are still exported, so genuinely
+ * retiring one is not a false failure.
+ */
+const derivationProblems = []
+if (wrapperDerivation.note) {
+  derivationProblems.push(
+    `cannot derive the banned-wrapper list: ${wrapperDerivation.note}. ` +
+      `If ${WRAPPER_MODULE} moved, update WRAPPER_MODULE and ALLOWED_PREFIXES together.`,
+  )
+} else {
+  const stillExported = KNOWN_WRAPPERS.filter((n) => wrapperDerivation.exported.includes(n))
+  const missed = stillExported.filter((n) => !wrapperDerivation.derived.includes(n))
+  if (missed.length) {
+    derivationProblems.push(
+      `the banned-wrapper derivation did not detect ${missed.join(', ')} in ${WRAPPER_MODULE}, ` +
+        `but ${missed.length > 1 ? 'those wrappers call' : 'that wrapper calls'} a retired raw-\`listings\` RPC. ` +
+        `The AST walk is broken — fix deriveBannedWrappers(), do not widen KNOWN_WRAPPERS.`,
+    )
+  }
+}
 
 /** Paths permitted to reach the RPC. Prefix-matched against the repo-relative path. */
 const ALLOWED_PREFIXES = [
@@ -290,6 +446,10 @@ for (const rel of files) {
 console.log('Raw-listings report-RPC gate (ci:no-report-rpc)')
 console.log('==============================================')
 console.log(`  scanned ${scanned} source files outside the allowlist (${ALLOWED_PREFIXES.join(', ')})`)
+console.log(
+  `  banned wrappers (derived from ${WRAPPER_MODULE}): ${[...BANNED_WRAPPERS].sort().join(', ')}`,
+)
+problems.unshift(...derivationProblems)
 if (problems.length) {
   for (const p of problems) console.error(`  ✗ ${p}`)
   console.error(`\n\x1b[31m✗ ci:no-report-rpc: ${problems.length} problem(s).\x1b[0m`)

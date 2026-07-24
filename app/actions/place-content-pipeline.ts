@@ -99,10 +99,13 @@ async function generateAndWriteCityContent(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     const stats = await getMarketStatsForCity(cityName)
+    // §0: the blurb says "Median list price", so it reads the LIST field. Null
+    // (no live pulse row for this city) drops the line rather than substituting
+    // the closed-sale median that used to share this field.
     const priceStr =
-      stats.medianPrice != null && Number.isFinite(stats.medianPrice)
+      stats.medianListPrice != null && Number.isFinite(stats.medianListPrice)
         ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(
-            stats.medianPrice
+            stats.medianListPrice
           )
         : null
     const dataBlurb = [

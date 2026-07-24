@@ -182,10 +182,18 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/<CommunityPageTracker/)
     expect(src).toMatch(/<KbSectionTracker pageType="community"/)
     expect(src).toMatch(/<MetadataBlock schemas=\{communitySchemas\}/)
-    // resilient JSON-LD: per-field snapshot/community fallback so the FAQ + Dataset
-    // survive a pulse timeout (field-level pattern carries the extra grounded FAQ
-    // fields pulse alone lacks — soldCount, subdivisions, HOA).
-    expect(src).toMatch(/medianListPrice: pulse\?\.medianListPrice \?\? snapshot/)
+    // resilient JSON-LD, resolved ONCE. The FAQ + Dataset take the same
+    // `medianListPrice` the hero renders (shorthand property), so the structured
+    // data cannot disagree with the page it describes. This replaced a second,
+    // independent fallback chain here that ended at `community.medianPrice` — a
+    // median CLOSED SALE price — which put a sale figure in a list-price field
+    // in the JSON-LD as well as on the page. (§0)
+    expect(src).toMatch(/marketFaqInput: MarketFaqInput = \{[\s\S]*?\n {4}medianListPrice,\n/)
+    expect(src).not.toMatch(/medianListPrice: pulse\?\.medianListPrice \?\? snapshot\?\.medianListPrice \?\? community\.medianPrice/)
+    // and the ONE resolution still degrades pulse -> snapshot, so a pulse
+    // timeout still yields a Dataset rather than a hole.
+    expect(src).toMatch(/pulse\.medianListPrice/)
+    expect(src).toMatch(/snapshot\?\.medianListPrice/)
   })
 
   it('D96 — community resort count + listings are ALIAS-AWARE (Widgi shows ~48, not 0) (§0)', () => {

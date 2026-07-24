@@ -58,6 +58,13 @@ const styles = StyleSheet.create({
     color: BRAND_NAVY,
   },
   body: { fontFamily: 'AzoSans', color: TEXT_PRIMARY },
+  sectionHeading: {
+    fontFamily: 'AzoSans',
+    fontWeight: 'bold',
+    fontSize: 10,
+    color: BRAND_NAVY,
+    marginBottom: 3,
+  },
   footer: {
     position: 'absolute' as const,
     bottom: 30,
@@ -75,11 +82,28 @@ export type ReportBranding = {
   brokerageLogoUrl?: string | null
 }
 
+/**
+ * One labeled block of figures.
+ *
+ * §0: a market document carries figures measured over DIFFERENT windows — a
+ * chosen closed-sale period, a trailing-12-month count, and a live inventory
+ * snapshot that has no period at all. They used to be emitted as one flat
+ * key/value list under a single header, so a Terrebonne export printed
+ * "21 months of supply" inside a 6.8-month window with nothing on the page
+ * saying the two were measured differently. Every block states its own window
+ * in `heading`; a figure without a stated window does not belong in one.
+ */
+export type ReportSection = {
+  heading: string
+  rows: Array<[string, number | string]>
+}
+
 export type ReportPdfData = {
   title: string
   geoName: string
+  /** The document's headline window. Each section restates its own. */
   period: string
-  metrics?: Record<string, number | string>
+  sections?: ReportSection[]
   branding: ReportBranding
 }
 
@@ -99,11 +123,18 @@ export function ReportPdfDocument({ data }: { data: ReportPdfData }) {
           )}
         </View>
         <Text style={styles.title}>{data.title}</Text>
-        <Text style={styles.body}>{data.geoName} — {data.period}</Text>
-        {data.metrics && Object.keys(data.metrics).length > 0 ? (
+        {/* Middle dot, not an em-dash: this is a client-facing document and the
+            brand's place separator is `·` (CLAUDE.md brand voice). */}
+        <Text style={styles.body}>{data.geoName} · {data.period}</Text>
+        {data.sections?.length ? (
           <View style={{ marginTop: 12 }}>
-            {Object.entries(data.metrics).map(([k, v]) => (
-              <Text key={k} style={styles.body}>{k}: {String(v)}</Text>
+            {data.sections.map((section) => (
+              <View key={section.heading} style={{ marginBottom: 10 }}>
+                <Text style={styles.sectionHeading}>{section.heading}</Text>
+                {section.rows.map(([k, v]) => (
+                  <Text key={k} style={styles.body}>{k}: {String(v)}</Text>
+                ))}
+              </View>
             ))}
           </View>
         ) : null}

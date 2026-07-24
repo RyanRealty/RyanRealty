@@ -62,6 +62,7 @@ import { communityImage, cityHero, GOLF_COMMUNITY_IMAGES } from '@/lib/geo-image
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { resortActiveSfrCounts, cityResorts, resortTilesForSlug } from '@/lib/kb/resort-active-counts'
+import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
 import { getDistrictForCity } from '@/data/co-schools'
 import { listingTileHref, homesForSalePath, slugify } from '@/lib/slug'
 import { getCanonicalCityForSubdivision, getAllResortCommunities } from '@/lib/data/communities/registry'
@@ -439,17 +440,35 @@ export default async function CommunityDetailPage({ params }: Props) {
   //   3. else -> the count of the subdivision homes we actually resolved
   //      (community.activeCount is itself boundary-derived and bloated for
   //      oversized polygons, so never trust it for an unreliable boundary).
+  //
+  // §0 PAIRING RULE: the ACTIVE COUNT and the MEDIAN LIST PRICE beside it must
+  // describe the SAME homes, so the branch that picks the count also picks where
+  // the median comes from — never a second, independent chain. The old one ended
+  // at `community.medianPrice`, a median CLOSED SALE price, and three community
+  // pages published it under "Median list". See lib/market/tile-medians.ts.
   const reliableBoundaryCount = boundaryReliable ? boundaryMapData.pins.length : null
-  const activeCount =
+  const activeSet: { count: number; tiles: typeof communityTiles | null; median: number | null } =
     aliasAwareCount != null
-      ? aliasAwareCount
+      ? { count: aliasAwareCount, tiles: resortTiles, median: null }
       : reliableBoundaryCount != null && reliableBoundaryCount > 0
-      ? reliableBoundaryCount
+      ? { count: reliableBoundaryCount, tiles: communityTiles, median: null }
       : communityTiles.length > 0
-      ? communityTiles.length
-      : pulse?.activeCount ?? community.activeCount ?? 0
+      ? { count: communityTiles.length, tiles: communityTiles, median: null }
+      : pulse?.activeCount != null
+      ? { count: pulse.activeCount, tiles: null, median: pulse.medianListPrice }
+      : // Literal-name snapshot: its count and its median are computed from one
+        // active set by the same MV, so they pair honestly even without tiles.
+        { count: snapshot?.activeSfrCount ?? 0, tiles: null, median: snapshot?.medianListPrice ?? null }
 
-  const medianListPrice = pulse?.medianListPrice ?? community.medianPrice ?? snapshot?.medianListPrice ?? null
+  const activeCount = activeSet.count
+  // Zero for sale means there is no asking price to publish: vandevert-ranch
+  // rendered "0 homes for sale" beside a "Median list" figure.
+  const medianListPrice =
+    activeCount <= 0
+      ? null
+      : activeSet.tiles
+      ? medianListPriceOfTiles(activeSet.tiles)
+      : activeSet.median
   // Days: pulse (days-to-pending) for resorts with a pulse row; market_stats_cache
   // (days-on-market) for communities where pulse has no row.
   const medianDays = pulse?.medianDaysToPending ?? stats?.medianDaysOnMarket ?? null
@@ -722,7 +741,10 @@ export default async function CommunityDetailPage({ params }: Props) {
   const marketFaqInput: MarketFaqInput = {
     // Alias-aware active count (the same number the hero shows). (§0 / NWX fix)
     activeCount,
-    medianListPrice: pulse?.medianListPrice ?? snapshot?.medianListPrice ?? community.medianPrice ?? null,
+    // The SAME figure the hero renders, so the FAQ answer and the market Dataset
+    // cannot disagree with the page they sit on. This ran its own chain ending at
+    // a closed-sale median, so the wrong number reached the structured data too.
+    medianListPrice,
     monthsOfSupply: pulse?.monthsOfSupply ?? null,
     // Prefer pulse days-to-pending; fall back to stats cache DOM (12-month rolling).
     medianDaysToPending: pulse?.medianDaysToPending ?? null,

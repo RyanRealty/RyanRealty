@@ -2126,10 +2126,28 @@ export type CityStatusCounts = {
   other: number
 }
 
+/**
+ * Market stats for one geo.
+ *
+ * §0 PRICE-KIND DISCIPLINE. The price fields are named for WHICH price they
+ * measure, and that is not cosmetic. This type carried one ambiguous
+ * `medianPrice`, filled from `market_pulse_live.median_list_price` on one path
+ * and `market_stats_cache.median_sale_price` on another, so it meant "what
+ * sellers ask" or "what buyers paid" depending on which row existed. Consumers
+ * labeled it "Median list" either way. A list figure and a sale figure never
+ * share a field again: a reader that wants one and finds null shows nothing,
+ * not the other one. Enforced by ci:price-kind-purity.
+ */
 export type CityMarketStats = {
   count: number
-  avgPrice: number | null
-  medianPrice: number | null
+  /** Median ASKING price of the active inventory. Null when nothing is for sale. */
+  medianListPrice: number | null
+  /** Mean ASKING price of the active inventory. */
+  avgListPrice: number | null
+  /** Median CLOSED price over the cached period. Never a substitute for a list price. */
+  medianSalePrice: number | null
+  /** Mean CLOSED price over the cached period. */
+  avgSalePrice: number | null
   avgDom: number | null
   newListingsLast30Days: number
   pendingCount: number
