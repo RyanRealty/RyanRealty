@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.857.7 (2026-07-24)
+
+### Bug Fixes
+- fix(market): remove Tumalo + Crooked River Ranch from the /cities + stat city tiers (Matt's call)
+
+### Maintenance
+- docs(program): record Matt's 4 decisions + correct subdivision read-key (verified target set)
+
+---
+
+
 ## v1.857.6 (2026-07-24)
 
 ### Bug Fixes
