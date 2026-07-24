@@ -392,6 +392,31 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     const voiceReview = await reviewProse(authoredProse, { context: 'cma' }).catch(() => null)
 
     // 6. Render.
+    //
+    // renderArgs is EXACTLY what renderCmaHtml receives, minus the two things a
+    // re-brand must not inherit: `broker` (the signature block being replaced)
+    // and `mapDataUri` (~300KB base64 that several select('*') readers would
+    // then pay on every row). Persisting it is what lets W10.3 re-render this
+    // document for a different signing broker with byte-identical numbers,
+    // instead of calling buildCma again — which re-selects comps and re-runs
+    // judgeComps + auditCma, and can therefore change the recommended list
+    // price when only the signer changed (CLAUDE.md section 0).
+    const renderArgs = {
+      subject,
+      comps: adjusted,
+      market,
+      pricing,
+      client: input.client,
+      generatedAtIso,
+      subjectTrace: resolved.trace,
+      compTrace: selection.trace,
+      excludedOutliers: selection.excludedOutliers,
+      sellerImprovementsText: input.sellerImprovementsText ?? null,
+      site,
+      expiredAudit,
+      development,
+    }
+
     const { html, pageCount } = renderCmaHtml({
       subject,
       comps: adjusted,
@@ -677,6 +702,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       comps_count: adjusted.length,
       html_path: `db:cmas.html_content:${slug}`,
       html_content: html,
+      // Stored so this document can later be re-rendered for a different
+      // signing broker without recomputing a single number (W10.3).
+      render_args: renderArgs,
       citations,
       build_summary: buildSummary,
       built_at: generatedAtIso,

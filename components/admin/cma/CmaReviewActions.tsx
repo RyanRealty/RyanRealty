@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/select'
 import {
   rebuildCmaAction,
+  rebrandCmaAction,
   approveCmaAction,
   archiveCmaAction,
   unarchiveCmaAction,
@@ -87,11 +88,27 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
         clientEmail: clientEmail.trim() || null,
         clientPhone: clientPhone.trim() || null,
         priceOverride: override,
-        brokerSlug,
       })
       if (error) toast.error(error)
       else {
         toast.success('Rebuilt. The preview below is the new document.')
+        router.refresh()
+      }
+    })
+  }
+
+  /**
+   * Swap the signature block only. This deliberately does NOT go through
+   * rebuild(): rebuildCmaAction re-selects comparables and re-runs two
+   * Anthropic passes, so routing a broker change through it could move the
+   * recommended list price on a document a seller prices against.
+   */
+  function rebrand() {
+    startTransition(async () => {
+      const { error } = await rebrandCmaAction({ slug: props.slug, brokerSlug })
+      if (error) toast.error(error)
+      else {
+        toast.success('Re-branded. Same numbers, new signature block.')
         router.refresh()
       }
     })
@@ -173,6 +190,19 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
               ))}
             </SelectContent>
           </Select>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-2"
+            disabled={isPending || !isDraft || brokerSlug === (props.brokerSlug ?? '')}
+            onClick={rebrand}
+          >
+            Re-brand for this broker
+          </Button>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Re-renders the signature block. Pricing, comparables and citations stay exactly as built.
+          </p>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="rv-price">Adjust recommended list price</Label>

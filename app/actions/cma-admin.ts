@@ -113,6 +113,33 @@ export type RebuildCmaInput = {
   brokerSlug?: string | null
 }
 
+/**
+ * Re-render a CMA under a different signing broker WITHOUT recomputing numbers.
+ *
+ * This exists because the "Signing broker" select used to call rebuildCmaAction,
+ * which re-selects comparables and re-runs two Anthropic passes — so changing
+ * who signs a client-facing pricing document could change the recommended list
+ * price. Swapping a signature block must never move a number (CLAUDE.md §0).
+ */
+export async function rebrandCmaAction(input: {
+  slug: string
+  brokerSlug: string
+}): Promise<{ data: { slug: string } | null; error: string | null }> {
+  try {
+    if (!(await requireAdmin())) return { data: null, error: 'Unauthorized' }
+    const { rebrandCma } = await import('@/lib/cma/rebrand')
+    const result = await rebrandCma({
+      slug: input.slug.trim().toLowerCase(),
+      brokerSlug: input.brokerSlug.trim(),
+    })
+    if (!result.ok) return { data: null, error: result.message }
+    refresh(result.slug)
+    return { data: { slug: result.slug }, error: null }
+  } catch (err) {
+    return { data: null, error: err instanceof Error ? err.message : 'Re-brand failed' }
+  }
+}
+
 export async function rebuildCmaAction(
   input: RebuildCmaInput,
 ): Promise<{ data: { slug: string } | null; error: string | null }> {
