@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.861.2 (2026-07-24)
+
+### Maintenance
+- docs(program): W8.4/W8.1 execution-ready scope — explore retirement is program-authorized
+
+---
+
+
 ## v1.861.1 (2026-07-24)
 
 ### Maintenance
