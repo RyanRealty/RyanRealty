@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.863.0 (2026-07-24)
+
+### Features
+- feat(w8.1): migrate the export route off the raw-listings RPC + gate the retirement
+
+### Bug Fixes
+- fix(w8.1): §0 — the /reports range table read a different universe than the cards above it
+
+---
+
+
 ## v1.862.2 (2026-07-24)
 
 ### Maintenance
