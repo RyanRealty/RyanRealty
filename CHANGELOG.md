@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.856.0 (2026-07-24)
+
+### Features
+- feat(w8.7): deterministic §0-safe market narrative generator + writer + cron + gate
+
+### Maintenance
+- docs(handoff): 34/50 — W2.6 done, §0 slug fix, phone safety; M5 scoping for resumption
+
+---
+
+
 ## v1.855.0 (2026-07-24)
 
 ### Features
