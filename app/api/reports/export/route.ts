@@ -61,11 +61,11 @@ type ExportFacts = {
  * (market_pulse_live coverage there is sparse, so live fields stay null and
  * render as unavailable rather than borrowing the parent city's numbers).
  *
- * SLUG RESOLUTION IS PER-SOURCE, NOT PER-GEO — the same rule getCityRangeRow
- * documents. A multi-word city keeps its pulse row under 'la pine' and its
- * market_stats_cache `ytd` row under 'la-pine'; resolving the geo to one slug
- * drops whichever source uses the other spelling, and an export that prints
- * "Not available" for a period the cache actually holds is a §0 failure.
+ * EVERY FIGURE IN A DOCUMENT COMES FROM ONE SLUG SPELLING — the same rule
+ * getCityRangeRow documents. Mixing spellings field-by-field produced a workbook
+ * whose Summary sheet (44 sales) contradicted its own Trend sheet (92) because
+ * the two spellings measured different geographies. Candidates are tried in
+ * order and the FIRST that answers supplies every figure.
  */
 async function loadFacts(
   city: string,
@@ -77,24 +77,30 @@ async function loadFacts(
   const candidates = isSub ? [slugify(subdivision!.trim())] : citySlugCandidates(city)
   const geoLabel = isSub ? `${subdivision!.trim()}, ${city}` : city
 
-  const perCandidate = await Promise.all(
-    candidates.map(async (geoSlug) => {
-      const [detail, twelve, pulse, history] = await Promise.all([
-        getCityMarketDetail({ geoType, geoSlug, periodType: period }),
-        period === 'rolling_365d'
-          ? Promise.resolve(null)
-          : getCityMarketDetail({ geoType, geoSlug, periodType: 'rolling_365d' }),
-        getMarketPulse({ geoType, geoSlug }),
-        getPriceHistory(geoType, geoSlug, 'monthly', 12).catch(() => []),
-      ])
-      return { detail, twelve, pulse, history }
-    }),
-  )
+  let detail: Awaited<ReturnType<typeof getCityMarketDetail>> = null
+  let twelve: Awaited<ReturnType<typeof getCityMarketDetail>> = null
+  let pulse: Awaited<ReturnType<typeof getMarketPulse>> = null
+  let history: Awaited<ReturnType<typeof getPriceHistory>> = []
 
-  const detail = perCandidate.find((c) => c.detail)?.detail ?? null
-  const twelve = perCandidate.find((c) => c.twelve)?.twelve ?? null
-  const pulse = perCandidate.find((c) => c.pulse)?.pulse ?? null
-  const history = perCandidate.find((c) => c.history.length > 0)?.history ?? []
+  for (const geoSlug of candidates) {
+    const [d, t, p, h] = await Promise.all([
+      getCityMarketDetail({ geoType, geoSlug, periodType: period }),
+      period === 'rolling_365d'
+        ? Promise.resolve(null)
+        : getCityMarketDetail({ geoType, geoSlug, periodType: 'rolling_365d' }),
+      getMarketPulse({ geoType, geoSlug }),
+      getPriceHistory(geoType, geoSlug, 'monthly', 12).catch(() => []),
+    ])
+    // This candidate answers — commit to it for EVERY figure and stop looking.
+    if (d || p || t || h.length > 0) {
+      detail = d
+      twelve = t
+      pulse = p
+      history = h
+      break
+    }
+  }
+
   const t12 = period === 'rolling_365d' ? detail : twelve
 
   return {

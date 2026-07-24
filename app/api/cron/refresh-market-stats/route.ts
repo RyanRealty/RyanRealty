@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { MARKET_REPORT_DEFAULT_CITIES } from '@/app/actions/market-report-types'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
+import { cacheTag } from '@/lib/data/cache/unstable-cache'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -216,9 +218,20 @@ export async function GET(request: Request) {
     }
   }
 
+  // §0 FRESHNESS: writing market_stats_cache is only half the job — every reader
+  // goes through the DAL's 6-hour `unstable_cache` under the `market` tag, so a
+  // row this run just computed is not visible until that window lapses. Worse, a
+  // null cached while a row was MISSING outlives the row's creation for the full
+  // 6h: that is exactly how La Pine's newly-written YTD row kept rendering as
+  // em-dashes on /reports while the correct numbers sat in the table.
+  // Belt-and-braces — the 6h window still bounds staleness on its own; this asks
+  // for the tagged entries to drop sooner so a refresh is observable promptly.
+  revalidateTag(cacheTag.market, 'max')
+
   return NextResponse.json({
     ok: true,
     ran_at: ranAt,
+    revalidated_tag: cacheTag.market,
     rows_refreshed: {
       rolling: rollingCount,
       monthly: monthlyCount,

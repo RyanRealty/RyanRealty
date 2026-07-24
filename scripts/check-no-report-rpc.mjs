@@ -94,9 +94,11 @@ function firstStringArg(node) {
 
 function scan(rel) {
   const src = readFileSync(join(ROOT, rel), 'utf8')
-  // Cheap pre-filter: if neither an RPC name nor a wrapper name appears anywhere
-  // in the text, the AST cannot contain one either.
-  let touches = false
+  // Cheap pre-filter. It MUST also trip on the bare module specifier: a file can
+  // reach the wrappers without ever spelling one (`import * as R from
+  // '@/app/actions/reports'`, `await import(...)`, `require(...)`), and an
+  // identifier-only pre-filter skipped the AST entirely for those forms.
+  let touches = src.includes('app/actions/reports')
   for (const n of BANNED_RPCS) if (src.includes(n)) touches = true
   for (const n of BANNED_WRAPPERS) if (src.includes(n)) touches = true
   if (!touches) return
@@ -172,9 +174,19 @@ function scan(rel) {
         : node.exportClause
       const kind = ts.isImportDeclaration(node) ? 'imports' : 're-exports'
 
-      // `import * as R from '@/app/actions/reports'` — the whole surface, so any
-      // banned member is reachable as R.getReportMetrics(...).
-      if (bindings && ts.isNamespaceImport(bindings)) {
+      // `export * from '@/app/actions/reports'` — no exportClause at all, so the
+      // named-elements branch below never fires. A barrel doing this re-exports
+      // the wrappers under its OWN specifier, and a consumer importing them from
+      // the barrel is invisible to this gate — the two-hop bypass.
+      if (ts.isExportDeclaration(node) && !node.exportClause) {
+        problems.push(
+          `${rel}:${line(node)} \`export *\` from @/app/actions/reports — that re-exports the ` +
+            `raw-\`listings\` RPC wrappers under this module's name, where nothing can see them. ` +
+            `Re-export the specific cache DAL you mean, or drop the barrel.`,
+        )
+      } else if (bindings && ts.isNamespaceImport(bindings)) {
+        // `import * as R from '@/app/actions/reports'` — the whole surface, so any
+        // banned member is reachable as R.getReportMetrics(...).
         problems.push(
           `${rel}:${line(bindings)} namespace-imports @/app/actions/reports as ` +
             `'${bindings.name.text}' — that exposes the raw-\`listings\` RPC wrappers. ` +

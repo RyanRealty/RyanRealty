@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { MARKET_REPORT_DEFAULT_CITIES } from '@/app/actions/market-report-types'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
+import { cacheTag } from '@/lib/data/cache/unstable-cache'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -86,6 +88,10 @@ export async function GET(request: Request) {
       monthlyCount++
     }
   }
+
+  // §0 FRESHNESS: recomputed rows stay invisible behind the DAL's 6h `market`
+  // cache window until the tag is revalidated. See the sibling refresh route.
+  revalidateTag(cacheTag.market, 'max')
 
   return NextResponse.json({
     ok: true,

@@ -81,40 +81,47 @@ function isoDay(v: unknown): string | null {
 /**
  * One city's range row.
  *
- * SLUG RESOLUTION IS PER-SOURCE, NOT PER-CITY. A multi-word city does not keep
- * all of its rows under one spelling: market_pulse_live carries 'la pine' while
- * the market_stats_cache `ytd` row lives under 'la-pine'. Resolving the city to
- * ONE slug (first candidate that answers anything) therefore silently drops the
- * other source — La Pine's year-to-date rendered as em-dashes while the cache
- * held 44 sales at a $369,950 median. Publishing "no data" for a place that has
- * data is a §0 failure, so each source is resolved independently: take the first
- * candidate spelling that actually returns a row for THAT read.
+ * EVERY FIGURE IN A ROW COMES FROM ONE SLUG SPELLING. Two spellings of a city are
+ * NOT interchangeable sources to be mixed field-by-field. `market_stats_cache`
+ * carried a retired hyphen convention ('la-pine') alongside the canonical
+ * `lower("City")` space form ('la pine'), and for La Pine the hyphen slug also
+ * matched a `boundaries` polygon — so its rows counted only inside the city
+ * limits while the space rows counted the whole MLS city. Taking `soldCount`
+ * from one spelling and `sales12mo` from the other produced a row describing two
+ * different geographies: 44 closings "year to date" beside 58 in the last 90
+ * days, a strict sub-window. An impossible row is a worse §0 failure than a
+ * missing one, so candidate spellings are tried in order and the FIRST one that
+ * answers supplies every field.
  *
- * Single-word cities produce one candidate (spaced === hyphenated), so this
- * costs nothing for them; multi-word cities issue one extra cached read.
+ * The underlying data was repaired at the same time (canonical ytd/quarterly rows
+ * written, the 9 retired-convention city rows dropped), so the canonical spelling
+ * now carries every period and this loop resolves on its first candidate.
+ * `market-report-send-slug.test.ts` pins the no-mixing rule.
  */
 export async function getCityRangeRow(
   cityLabel: string,
   period: RangePeriod,
 ): Promise<CityRangeRow | null> {
-  const candidates = citySlugCandidates(cityLabel)
+  let detail: Awaited<ReturnType<typeof getCityMarketDetail>> = null
+  let trailing: Awaited<ReturnType<typeof getCityMarketDetail>> = null
+  let pulse: Awaited<ReturnType<typeof getMarketPulse>> = null
 
-  const perCandidate = await Promise.all(
-    candidates.map(async (geoSlug) => {
-      const [detail, trailing, pulse] = await Promise.all([
-        getCityMarketDetail({ geoType: 'city', geoSlug, periodType: period }),
-        period === 'rolling_365d'
-          ? Promise.resolve(null)
-          : getCityMarketDetail({ geoType: 'city', geoSlug, periodType: 'rolling_365d' }),
-        getMarketPulse({ geoType: 'city', geoSlug }),
-      ])
-      return { detail, trailing, pulse }
-    }),
-  )
-
-  const detail = perCandidate.find((c) => c.detail)?.detail ?? null
-  const pulse = perCandidate.find((c) => c.pulse)?.pulse ?? null
-  const trailing = perCandidate.find((c) => c.trailing)?.trailing ?? null
+  for (const geoSlug of citySlugCandidates(cityLabel)) {
+    const [d, t, p] = await Promise.all([
+      getCityMarketDetail({ geoType: 'city', geoSlug, periodType: period }),
+      period === 'rolling_365d'
+        ? Promise.resolve(null)
+        : getCityMarketDetail({ geoType: 'city', geoSlug, periodType: 'rolling_365d' }),
+      getMarketPulse({ geoType: 'city', geoSlug }),
+    ])
+    // This candidate answers — commit to it for EVERY field and stop looking.
+    if (d || p || t) {
+      detail = d
+      trailing = t
+      pulse = p
+      break
+    }
+  }
   if (!detail && !pulse) return null
 
   // When the chosen period IS rolling_365d, its own row supplies sales-12mo —
