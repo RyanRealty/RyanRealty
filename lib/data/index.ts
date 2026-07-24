@@ -315,6 +315,16 @@ export type {
 export { getMarketStats } from '@/lib/data/market/getMarketStats'
 export { getCityMarketDetail, getCityMarketDetailByTimeframe } from '@/lib/data/market/getCityMarketDetail'
 export {
+  getCityRangeReport,
+  parseRangePeriod,
+  RANGE_PERIODS,
+  RANGE_PERIOD_LABELS,
+  DEFAULT_RANGE_PERIOD,
+  type RangePeriod,
+  type CityRangeRow,
+  type CityRangeReport,
+} from '@/lib/data/market/getCityRangeReport'
+export {
   getMarketStatsCacheRowForGeo,
   getMarketStatsCacheRowsForGeos,
   getMarketStatsCacheRowForPeriod,

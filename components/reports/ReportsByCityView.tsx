@@ -22,16 +22,15 @@ import {
 } from '@/components/ui/table'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Cancel01Icon } from '@hugeicons/core-free-icons'
-import type { MarketReportData } from '@/app/actions/market-report-types'
+// Pure module on purpose: importing the DAL here would drag next/headers (via
+// the supabase server client) into the client bundle and 500 the page.
+import { RANGE_PERIODS, RANGE_PERIOD_LABELS, type CityRangeReport, type RangePeriod } from '@/lib/market/range-periods'
 
-const RANGE_OPTIONS = [
-  { value: '7', label: 'Last 7 days' },
-  { value: '14', label: 'Last 14 days' },
-  { value: '30', label: 'Last 30 days' },
-] as const
+const RANGE_OPTIONS = RANGE_PERIODS.map((value) => ({ value, label: RANGE_PERIOD_LABELS[value] }))
 
-function formatPrice(n: number): string {
-  if (n === 0) return '—'
+/** §0: a null/zero figure renders as the em-dash placeholder, never a fabricated 0. */
+function formatPrice(n: number | null): string {
+  if (n == null || n === 0) return UNAVAILABLE
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -39,31 +38,45 @@ function formatPrice(n: number): string {
   }).format(n)
 }
 
+/**
+ * The single "unavailable" placeholder. CLAUDE.md bans the em-dash as prose
+ * punctuation but sanctions it as the data placeholder for a figure the cache
+ * does not carry — kept in ONE place so no renderer invents a 0 instead.
+ */
+const UNAVAILABLE = '—'
+
+const fmtInt = (n: number | null): string =>
+  n == null ? UNAVAILABLE : Math.round(n).toLocaleString('en-US')
+
+const fmtDays = (n: number | null): string =>
+  n == null || n <= 0 ? UNAVAILABLE : String(Math.round(n))
+
+const fmtPpsf = (n: number | null): string =>
+  n == null || n <= 0 ? UNAVAILABLE : `$${Math.round(n).toLocaleString('en-US')}`
+
 type Props = {
-  data: MarketReportData
+  data: CityRangeReport
   selectedCities: string[]
   allCities: string[]
-  rangeDays: number
 }
 
 export default function ReportsByCityView({
   data,
   selectedCities,
   allCities,
-  rangeDays,
 }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
   const buildUrl = useCallback(
-    (updates: { cities?: string[]; range?: number }) => {
+    (updates: { cities?: string[]; range?: RangePeriod }) => {
       const params = new URLSearchParams(searchParams?.toString() ?? '')
       if (updates.cities !== undefined) {
         if (updates.cities.length === 0) params.delete('cities')
         else params.set('cities', updates.cities.join(','))
       }
       if (updates.range !== undefined) {
-        params.set('range', String(updates.range))
+        params.set('range', updates.range)
       }
       const q = params.toString()
       return q ? `/housing-market/reports?${q}` : '/housing-market/reports'
@@ -83,23 +96,24 @@ export default function ReportsByCityView({
   }
 
   const setRange = (value: string) => {
-    const days = parseInt(value, 10)
-    if (Number.isFinite(days) && days > 0) router.push(buildUrl({ range: days }))
+    if ((RANGE_PERIODS as readonly string[]).includes(value)) {
+      router.push(buildUrl({ range: value as RangePeriod }))
+    }
   }
 
   const availableToAdd = allCities.filter((c) => !selectedCities.includes(c))
-  const { metricsByCity, periodStart, periodEnd } = data
+  const { rows, period, periodLabel, periodStart, periodEnd } = data
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-sm font-medium text-muted-foreground">Time range</span>
         <Select
-          value={String(rangeDays)}
+          value={period}
           onValueChange={setRange}
         >
           <SelectTrigger className="w-[180px]" size="default">
-            <SelectValue placeholder="Last 7 days" />
+            <SelectValue placeholder={periodLabel} />
           </SelectTrigger>
           <SelectContent>
             {RANGE_OPTIONS.map((opt) => (
@@ -152,11 +166,14 @@ export default function ReportsByCityView({
             Housing market metrics
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            {periodStart} - {periodEnd}. Residential (single-family, condos, townhomes). Real-time data from MLS.
+            {periodLabel}
+            {periodStart && periodEnd ? ` · ${periodStart} to ${periodEnd}` : ''}. Single-family. Sold,
+            median price, days on market, and price per square foot cover the selected window. Active
+            listings and months of supply are live.
           </p>
         </CardHeader>
         <CardContent className="p-0">
-          {metricsByCity.length === 0 ? (
+          {rows.length === 0 ? (
             <p className="p-6 text-center text-sm text-muted-foreground">
               No data for the selected cities and period. Try adding more cities or a different time range.
             </p>
@@ -175,28 +192,26 @@ export default function ReportsByCityView({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {metricsByCity.map(({ city, metrics }) => (
-                  <TableRow key={city} className="border-border/60">
-                    <TableCell className="font-medium">{city}</TableCell>
-                    <TableCell className="text-right tabular-nums">{metrics.sold_count}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatPrice(metrics.median_price)}</TableCell>
+                {rows.map((r) => (
+                  <TableRow key={r.city} className="border-border/60">
+                    <TableCell className="font-medium">{r.city}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fmtInt(r.soldCount)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatPrice(r.medianSalePrice)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fmtDays(r.medianDom)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fmtPpsf(r.medianPricePerSqft)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fmtInt(r.activeCount)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fmtInt(r.sales12mo)}</TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {metrics.median_dom != null && metrics.median_dom > 0 ? Math.round(metrics.median_dom) : '—'}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {metrics.median_ppsf != null && metrics.median_ppsf > 0 ? `$${Math.round(metrics.median_ppsf)}` : '—'}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">{metrics.current_listings}</TableCell>
-                    <TableCell className="text-right tabular-nums">{metrics.sales_12mo}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {metrics.inventory_months != null ? (
+                      {r.monthsOfSupply != null ? (
                         <>
-                          {String(metrics.inventory_months)}
+                          {r.monthsOfSupply.toFixed(1)}
                           <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                            {marketVerdict(metrics.inventory_months).label}
+                            {marketVerdict(r.monthsOfSupply).label}
                           </span>
                         </>
-                      ) : '—'}
+                      ) : (
+                        UNAVAILABLE
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

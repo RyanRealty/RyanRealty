@@ -7,7 +7,7 @@
  *   - export const metadata (canonical + OG + Twitter, /housing-market/reports)
  *   - the page-view tracking trio (getSession + getPersonIdFromCookie +
  *     trackPageViewIfPossible) — unchanged
- *   - ReportsDataSection: getMarketReportData + getReportCities, the verified
+ *   - ReportsDataSection: getCityRangeReport + getReportCities, the verified
  *     Dataset JSON-LD built ONLY from fetched metrics (CLAUDE.md §0 compliance),
  *     and <ReportsByCityView> with all props — Suspense-streamed
  *   - SalesReportsSection: listMarketReports + getSalesReportCardsData +
@@ -32,7 +32,7 @@ import { listMarketReports } from '@/lib/data'
 import { getSalesReportCardsData } from '../actions/market-reports'
 import { getEngagementCountsBatchCached } from '@/app/actions/engagement'
 import { getReportCities } from '@/app/actions/reports'
-import { getMarketReportData } from '@/app/actions/market-report'
+import { getCityRangeReport, parseRangePeriod, type RangePeriod } from '@/lib/data/market/getCityRangeReport'
 import { getMarketPulse } from '@/lib/data'
 import { getCityReportSnapshots, hasReportSignal } from '@/lib/data/market/getCityReportSnapshot'
 import { formatDate } from '@/lib/format/date'
@@ -84,15 +84,12 @@ function parseReportsParams(params: { [key: string]: string | string[] | undefin
     typeof citiesParam === 'string' && citiesParam.trim()
       ? citiesParam.split(',').map((c) => c.trim()).filter(Boolean)
       : [...MARKET_REPORT_DEFAULT_CITIES]
-  const rangeParam = params?.range
-  const rangeStr = typeof rangeParam === 'string' ? rangeParam : Array.isArray(rangeParam) ? rangeParam[0] : undefined
-  const rangeDays = Math.min(30, Math.max(7, parseInt(rangeStr ?? '7', 10) || 7))
-  const end = new Date()
-  const start = new Date(end)
-  start.setDate(start.getDate() - rangeDays)
-  const periodStart = start.toISOString().slice(0, 10)
-  const periodEnd = end.toISOString().slice(0, 10)
-  return { cities, rangeDays, periodStart, periodEnd }
+  // W8.1: ?range= is a market_stats_cache period_type, not a day count. The old
+  // 7/14/30-day windows were computed live over raw listings; the cache holds no
+  // rolling_7d/rolling_14d row, and a 7-day median across these cities ran on
+  // n = 0-5 (one Sunriver sale produced a published "median"). parseRangePeriod
+  // narrows any untrusted value to a period the cache actually populates.
+  return { cities, period: parseRangePeriod(params?.range) }
 }
 
 /** KB skeleton — same shape as the prior shadcn skeleton (heading + subhead +
@@ -180,10 +177,10 @@ const cardRow = (label: string, value: string, sub?: string | null) => (
  * The months-of-supply verdict is computed from the number it sits next to
  * (lib/market/classify, the single threshold source).
  *
- * The range-filtered table below (ReportsDataSection) still reads the
- * get_city_period_metrics RPC over raw listings. That RPC path is the
- * REMAINING consolidation target. The market-stat-consistency cron
- * cross-checks it against this cache path daily and alerts on |delta| > 1%.
+ * The range-filtered table below (ReportsDataSection) now reads the SAME cache,
+ * via getCityRangeReport — W8.1 retired the get_city_period_metrics RPC from
+ * this page. The card and the table therefore agree by construction rather than
+ * by the market-stat-consistency cron catching drift after publication.
  */
 async function CityHeadlineCardsSection({ selectedCities }: { selectedCities: string[] }) {
   // No-signal cities (zero active, zero sales, no median) are dropped rather
@@ -278,17 +275,13 @@ async function CityHeadlineCardsSection({ selectedCities }: { selectedCities: st
  */
 async function ReportsDataSection({
   selectedCities,
-  rangeDays,
-  periodStart,
-  periodEnd,
+  period,
 }: {
   selectedCities: string[]
-  rangeDays: number
-  periodStart: string
-  periodEnd: string
+  period: RangePeriod
 }) {
   const [reportData, allCitiesRes] = await Promise.all([
-    getMarketReportData({ periodStart, periodEnd, cities: selectedCities }),
+    getCityRangeReport(selectedCities, period),
     getReportCities(),
   ])
   const allCities = allCitiesRes.cities ?? []
@@ -296,38 +289,43 @@ async function ReportsDataSection({
   // Build Dataset variableMeasured from the verified fetched data only.
   // We aggregate across cities — each stat gets a label that names the city
   // so the JSON-LD is unambiguous. Only include values that are present and
-  // finite in the fetched metrics (never fabricate or approximate).
+  // finite in the fetched rows (never fabricate or approximate). Every figure
+  // is a market_stats_cache / market_pulse_live column, the same rows the
+  // headline cards above render.
   const datasetVariables: Array<{ name: string; value: string | number; unitText?: string }> = []
-  for (const row of reportData.metricsByCity) {
-    const m = row.metrics
-    if (m.sold_count > 0) {
-      datasetVariables.push({ name: `${row.city} closed sales`, value: m.sold_count })
+  for (const r of reportData.rows) {
+    if ((r.soldCount ?? 0) > 0) {
+      datasetVariables.push({ name: `${r.city} closed sales`, value: r.soldCount as number })
     }
-    if (m.median_price != null && Number.isFinite(m.median_price) && m.median_price > 0) {
-      datasetVariables.push({ name: `${row.city} median sale price`, value: Math.round(m.median_price), unitText: 'USD' })
+    if (r.medianSalePrice != null && r.medianSalePrice > 0) {
+      datasetVariables.push({ name: `${r.city} median sale price`, value: Math.round(r.medianSalePrice), unitText: 'USD' })
     }
-    if (m.median_dom != null && Number.isFinite(m.median_dom) && m.median_dom >= 0) {
-      datasetVariables.push({ name: `${row.city} median days on market`, value: m.median_dom, unitText: 'days' })
+    if (r.medianDom != null && r.medianDom >= 0) {
+      datasetVariables.push({ name: `${r.city} median days on market`, value: r.medianDom, unitText: 'days' })
     }
-    if (m.current_listings > 0) {
-      datasetVariables.push({ name: `${row.city} active listings`, value: m.current_listings })
+    if ((r.activeCount ?? 0) > 0) {
+      datasetVariables.push({ name: `${r.city} active listings`, value: r.activeCount as number })
     }
   }
 
-  const datasetSchema: SchemaInput | null = datasetVariables.length > 0
-    ? {
-        type: 'dataset',
-        name: `Central Oregon real estate market report, ${periodStart} to ${periodEnd}`,
-        description:
-          `Residential home sales and inventory data for Central Oregon cities. ` +
-          `Includes closed sales, median sale price, median days on market, and active listings. ` +
-          `Sourced from Oregon Data Share via Ryan Realty.`,
-        url: `${siteUrl}/housing-market/reports`,
-        temporalCoverage: `${periodStart}/${periodEnd}`,
-        spatialCoverageName: 'Central Oregon, OR',
-        variableMeasured: datasetVariables,
-      }
-    : null
+  // temporalCoverage must describe the window the numbers actually cover — the
+  // cache rows' own bounds, never a window recomputed from today's date.
+  const { periodStart, periodEnd } = reportData
+  const datasetSchema: SchemaInput | null =
+    datasetVariables.length > 0 && periodStart && periodEnd
+      ? {
+          type: 'dataset',
+          name: `Central Oregon real estate market report, ${periodStart} to ${periodEnd}`,
+          description:
+            `Single-family home sales and inventory data for Central Oregon cities. ` +
+            `Includes closed sales, median sale price, median days on market, and active listings. ` +
+            `Sourced from Oregon Data Share via Ryan Realty.`,
+          url: `${siteUrl}/housing-market/reports`,
+          temporalCoverage: `${periodStart}/${periodEnd}`,
+          spatialCoverageName: 'Central Oregon, OR',
+          variableMeasured: datasetVariables,
+        }
+      : null
 
   return (
     <>
@@ -336,7 +334,6 @@ async function ReportsDataSection({
         data={reportData}
         selectedCities={selectedCities}
         allCities={allCities}
-        rangeDays={rangeDays}
       />
     </>
   )
@@ -362,7 +359,7 @@ async function SalesReportsSection() {
 
 export default async function ReportsIndexPage({ searchParams }: PageProps) {
   const params = await searchParams
-  const { cities: selectedCities, rangeDays, periodStart, periodEnd } = parseReportsParams(params ?? null)
+  const { cities: selectedCities, period } = parseReportsParams(params ?? null)
 
   // Session + identity-bridge reads kept (they pin this route's dynamic
   // rendering mode); the FUB page-view mirror they fed was deleted with the
@@ -454,19 +451,14 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
                 <CityHeadlineCardsSection selectedCities={selectedCities} />
               </Suspense>
             </div>
-            {/* Range-filtered detail (7/14/30-day windows). Still fed by the
-                get_city_period_metrics RPC over raw listings: the REMAINING
-                consolidation target of the 2026-07-22 four-paths fix. The
-                market-stat-consistency cron cross-checks this RPC path against
-                the cache path above daily and alerts on |delta| > 1% (§0). */}
+            {/* Range-filtered detail (30d / 90d / YTD / 12mo). W8.1 moved this
+                table off the get_city_period_metrics RPC onto the SAME cache the
+                cards above read, so the two can no longer disagree about a city
+                (they did: Bend read 507 active · MoS 3.9 "seller's" in the card
+                and 984 active · MoS 5.3 "balanced" in the table, §0). */}
             <div className="pt-10">
               <Suspense fallback={<ReportsSkeleton />}>
-                <ReportsDataSection
-                  selectedCities={selectedCities}
-                  rangeDays={rangeDays}
-                  periodStart={periodStart}
-                  periodEnd={periodEnd}
-                />
+                <ReportsDataSection selectedCities={selectedCities} period={period} />
               </Suspense>
             </div>
           </div>
