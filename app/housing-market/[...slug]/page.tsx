@@ -82,6 +82,7 @@ import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
+import { KbTimeframeStats } from '@/components/site/kb/KbTimeframeStats.client'
 import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
 import { KbArticles } from '@/components/site/kb/KbArticles'
 import { KbSell } from '@/components/site/kb/KbSell.client'
@@ -354,12 +355,19 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   const isCity = geoType === 'city'
   const priceHistoryLimit = isCity ? 60 : 24
 
-  const [pulse, priceHistory, citySnapshots, detail, blogPosts] = await Promise.all([
+  const [pulse, priceHistory, citySnapshots, detail, detailYtd, detailRolling, blogPosts] = await Promise.all([
     getMarketPulse({ geoType, geoSlug }).catch(() => null),
     getPriceHistory(geoType, geoSlug, 'monthly', priceHistoryLimit).catch(() => []),
     getMarketPulseCitySnapshots(COMPARISON_CITY_LABELS).catch(() => []),
     isCity
       ? getCityMarketDetail({ geoType, geoSlug, periodType: 'monthly' }).catch(() => null)
+      : Promise.resolve(null),
+    // W8.4 timeframe selector — YTD (default) + rolling 12mo, alongside monthly.
+    isCity
+      ? getCityMarketDetail({ geoType, geoSlug, periodType: 'ytd' }).catch(() => null)
+      : Promise.resolve(null),
+    isCity
+      ? getCityMarketDetail({ geoType, geoSlug, periodType: 'rolling_365d' }).catch(() => null)
       : Promise.resolve(null),
     isCity
       ? getRecentBlogPosts({ limit: 3 }).catch(() => [])
@@ -594,6 +602,17 @@ export default async function HousingMarketGeoPage({ params }: Props) {
               from completePriceMonths via buildYearSeries, same pattern as the
               region and city pages. */}
           <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} />
+
+          {/* W8.4 — canonical report timeframe selector. YTD default; switches to
+              this-month / last-12-months. Every figure is a pre-fetched
+              market_stats_cache row (getCityMarketDetail per period), §0-traced. */}
+          {(detailYtd || detail || detailRolling) ? (
+            <KbTimeframeStats
+              cityName={cityName}
+              periods={{ ytd: detailYtd, monthly: detail, rolling_365d: detailRolling }}
+              initial={detailYtd ? 'ytd' : detail ? 'monthly' : 'rolling_365d'}
+            />
+          ) : null}
 
           {/* Sibling city tiles — other Central Oregon cities for cross-navigation.
               §0: every count is the exact active_count from market_pulse_live. */}
