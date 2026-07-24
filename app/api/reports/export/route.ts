@@ -1,3 +1,25 @@
+/**
+ * /api/reports/export — PDF / XLSX market report download.
+ *
+ * W8.1: reads market_stats_cache + market_pulse_live (the SAME rows the /reports
+ * page and the KB city pages render), not the get_city_period_metrics RPC over raw
+ * `listings`. One generation path means an exported PDF can no longer disagree
+ * with the web page it was exported from.
+ *
+ * §0 on the period. The old contract accepted ARBITRARY ?periodStart/?periodEnd
+ * and computed the window live. The cache holds fixed period_types only, so
+ * honoring an arbitrary window is impossible — and snapping it silently while
+ * still printing the caller's requested dates would label numbers with a window
+ * they do not describe. So the window is now a period_type (?range=), and every
+ * document is labeled with the cache row's OWN period_start/period_end. The
+ * default (rolling_30d) preserves the old default's meaning ("about the last
+ * month"). This endpoint has no in-app callers — it is reachable by direct URL
+ * only — so no UI contract depended on the arbitrary-window form.
+ *
+ * The XLSX "Price Bands" sheet is gone: band histograms exist only in the retired
+ * get_city_price_bands RPC, with no cache column, view, or DAL anywhere. A sheet
+ * of fabricated bands would be worse than no sheet.
+ */
 import { NextResponse } from 'next/server'
 import React from 'react'
 import { renderToBuffer } from '@react-pdf/renderer'
@@ -5,32 +27,102 @@ import * as XLSX from 'xlsx'
 import { createClient } from '@supabase/supabase-js'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { getBrokerageSettings } from '@/app/actions/brokerage'
-import { getReportMetrics, getReportMetricsTimeSeries, getReportPriceBands } from '@/app/actions/reports'
+import { getCityMarketDetail } from '@/lib/data/market/getCityMarketDetail'
+import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
+import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
+import { citySlugCandidates } from '@/lib/data/market/getCityReportSnapshot'
+import { parseRangePeriod, RANGE_PERIOD_LABELS, type RangePeriod } from '@/lib/market/range-periods'
+import { slugify } from '@/lib/slug'
 import { ReportPdfDocument, type ReportPdfData } from '@/lib/pdf/report-pdf'
 
 type ExportFormat = 'pdf' | 'xlsx'
 
-function parseDate(value: string | null): Date | null {
-  if (!value) return null
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return null
-  return d
+/** §0: a figure the cache does not carry is reported as unavailable, never 0. */
+const NA = 'Not available'
+const num = (v: number | null | undefined): number | string => (v == null ? NA : v)
+
+type ExportFacts = {
+  geoLabel: string
+  periodLabel: string
+  periodStart: string | null
+  periodEnd: string | null
+  medianSalePrice: number | null
+  soldCount: number | null
+  medianDom: number | null
+  medianPricePerSqft: number | null
+  activeCount: number | null
+  sales12mo: number | null
+  monthsOfSupply: number | null
+  trend: Array<{ month: string; soldCount: number | null; medianSalePrice: number | null }>
 }
 
-function toIsoDate(date: Date): string {
-  return date.toISOString().slice(0, 10)
+/**
+ * Resolve one geo's cache rows. A subdivision reads geo_type='subdivision'
+ * (market_pulse_live coverage there is sparse, so live fields stay null and
+ * render as unavailable rather than borrowing the parent city's numbers).
+ */
+async function loadFacts(
+  city: string,
+  subdivision: string | null | undefined,
+  period: RangePeriod,
+): Promise<ExportFacts> {
+  const isSub = !!subdivision?.trim()
+  const geoType = isSub ? ('subdivision' as const) : ('city' as const)
+  const candidates = isSub ? [slugify(subdivision!.trim())] : citySlugCandidates(city)
+  const geoLabel = isSub ? `${subdivision!.trim()}, ${city}` : city
+
+  for (const geoSlug of candidates) {
+    const [detail, twelve, pulse, history] = await Promise.all([
+      getCityMarketDetail({ geoType, geoSlug, periodType: period }),
+      period === 'rolling_365d'
+        ? Promise.resolve(null)
+        : getCityMarketDetail({ geoType, geoSlug, periodType: 'rolling_365d' }),
+      getMarketPulse({ geoType, geoSlug }),
+      getPriceHistory(geoType, geoSlug, 'monthly', 12).catch(() => []),
+    ])
+    if (!detail && !pulse && history.length === 0) continue
+    const t12 = period === 'rolling_365d' ? detail : twelve
+    return {
+      geoLabel,
+      periodLabel: RANGE_PERIOD_LABELS[period],
+      periodStart: detail?.periodStart ? String(detail.periodStart).slice(0, 10) : null,
+      periodEnd: detail?.periodEnd ? String(detail.periodEnd).slice(0, 10) : null,
+      medianSalePrice: detail?.medianSalePrice ?? null,
+      soldCount: detail?.soldCount ?? null,
+      medianDom: detail?.medianDom ?? null,
+      medianPricePerSqft: detail?.medianPricePerSqft ?? null,
+      activeCount: pulse?.activeCount ?? null,
+      sales12mo: t12?.soldCount ?? null,
+      monthsOfSupply: pulse?.monthsOfSupply ?? null,
+      trend: history.map((p) => ({
+        month: String(p.periodStart).slice(0, 7),
+        soldCount: p.soldCount ?? null,
+        medianSalePrice: p.medianSalePrice ?? null,
+      })),
+    }
+  }
+
+  return {
+    geoLabel,
+    periodLabel: RANGE_PERIOD_LABELS[period],
+    periodStart: null,
+    periodEnd: null,
+    medianSalePrice: null,
+    soldCount: null,
+    medianDom: null,
+    medianPricePerSqft: null,
+    activeCount: null,
+    sales12mo: null,
+    monthsOfSupply: null,
+    trend: [],
+  }
 }
 
-function getDateRange(startRaw: string | null, endRaw: string | null): { start: string; end: string } {
-  const start = parseDate(startRaw)
-  const end = parseDate(endRaw)
-  if (start && end) return { start: toIsoDate(start), end: toIsoDate(end) }
-
-  const now = new Date()
-  const defaultEnd = new Date(now)
-  const defaultStart = new Date(now)
-  defaultStart.setMonth(defaultStart.getMonth() - 1)
-  return { start: toIsoDate(defaultStart), end: toIsoDate(defaultEnd) }
+/** The window label printed on the document — the cache row's own bounds. */
+function periodText(f: ExportFacts): string {
+  return f.periodStart && f.periodEnd
+    ? `${f.periodLabel} (${f.periodStart} to ${f.periodEnd})`
+    : f.periodLabel
 }
 
 function getSupabaseServiceClient() {
@@ -58,44 +150,41 @@ async function getNarrative(city: string, subdivision?: string | null): Promise<
   return (data as { narrative?: string | null } | null)?.narrative?.trim() ?? null
 }
 
-function buildPdfFilename(city: string, subdivision: string | null | undefined, periodStart: string, periodEnd: string) {
+function buildFilename(city: string, subdivision: string | null | undefined, f: ExportFacts) {
   const location = subdivision?.trim() ? `${city}-${subdivision}` : city
-  return `market-report-${location}-${periodStart}-to-${periodEnd}`.toLowerCase().replace(/\s+/g, '-')
+  const window = f.periodStart && f.periodEnd ? `${f.periodStart}-to-${f.periodEnd}` : f.periodLabel
+  return `market-report-${location}-${window}`.toLowerCase().replace(/\s+/g, '-')
 }
 
 async function buildPdf(
   city: string,
   subdivision: string | null | undefined,
-  periodStart: string,
-  periodEnd: string
+  period: RangePeriod,
 ): Promise<{ fileName: string; bytes: Uint8Array }> {
-  const [brokerage, metricsRes, trendRes, narrative] = await Promise.all([
+  const [brokerage, facts, narrative] = await Promise.all([
     getBrokerageSettings(),
-    getReportMetrics(city, periodStart, periodEnd, null, subdivision),
-    getReportMetricsTimeSeries(city, 12, subdivision),
+    loadFacts(city, subdivision, period),
     getNarrative(city, subdivision),
   ])
 
-  const metrics = metricsRes.data
-  const trendRows = trendRes.data ?? []
-  const trendLine = trendRows
+  const trendLine = facts.trend
     .slice(-6)
-    .map((row) => `${row.month_label}: ${row.sold_count} sold`)
+    .map((row) => `${row.month}: ${row.soldCount ?? 0} sold`)
     .join(' | ')
 
   const pdfData: ReportPdfData = {
-    title: `${subdivision?.trim() ? `${subdivision}, ${city}` : city} Market Report`,
-    geoName: subdivision?.trim() ? `${subdivision}, ${city}` : city,
-    period: `${periodStart} to ${periodEnd}`,
+    title: `${facts.geoLabel} Market Report`,
+    geoName: facts.geoLabel,
+    period: periodText(facts),
     metrics: {
-      'Median Price': metrics?.median_price ?? 'n/a',
-      'Sold Count': metrics?.sold_count ?? 'n/a',
-      'Median DOM': metrics?.median_dom ?? 'n/a',
-      'Median Price Per SqFt': metrics?.median_ppsf ?? 'n/a',
-      'Current Listings': metrics?.current_listings ?? 'n/a',
-      '12 Month Sales': metrics?.sales_12mo ?? 'n/a',
-      'Inventory Months': metrics?.inventory_months ?? 'n/a',
-      'Recent Trend': trendLine || 'n/a',
+      'Median Sale Price': num(facts.medianSalePrice),
+      'Sold Count': num(facts.soldCount),
+      'Median DOM': num(facts.medianDom),
+      'Median Price Per SqFt': num(facts.medianPricePerSqft),
+      'Active Listings': num(facts.activeCount),
+      '12 Month Sales': num(facts.sales12mo),
+      'Months of Supply': num(facts.monthsOfSupply),
+      'Recent Trend': trendLine || NA,
       Narrative: narrative ?? 'Narrative not available yet.',
     },
     branding: {
@@ -108,7 +197,7 @@ async function buildPdf(
   type DocElement = Parameters<typeof renderToBuffer>[0]
   const buffer = await renderToBuffer(doc as DocElement)
   return {
-    fileName: `${buildPdfFilename(city, subdivision, periodStart, periodEnd)}.pdf`,
+    fileName: `${buildFilename(city, subdivision, facts)}.pdf`,
     bytes: new Uint8Array(buffer),
   }
 }
@@ -116,53 +205,42 @@ async function buildPdf(
 async function buildXlsx(
   city: string,
   subdivision: string | null | undefined,
-  periodStart: string,
-  periodEnd: string
+  period: RangePeriod,
 ): Promise<{ fileName: string; bytes: Uint8Array }> {
-  const [metricsRes, bandsRes, trendRes, narrative] = await Promise.all([
-    getReportMetrics(city, periodStart, periodEnd, null, subdivision),
-    getReportPriceBands(city, periodStart, periodEnd, false, subdivision),
-    getReportMetricsTimeSeries(city, 12, subdivision),
+  const [facts, narrative] = await Promise.all([
+    loadFacts(city, subdivision, period),
     getNarrative(city, subdivision),
   ])
 
-  const metrics = metricsRes.data
-  const bands = bandsRes.data
-  const trendRows = trendRes.data ?? []
   const wb = XLSX.utils.book_new()
 
   const summaryRows = [
     ['City', city],
-    ['Subdivision', subdivision?.trim() || 'n/a'],
-    ['Period Start', periodStart],
-    ['Period End', periodEnd],
-    ['Median Price', metrics?.median_price ?? 'n/a'],
-    ['Sold Count', metrics?.sold_count ?? 'n/a'],
-    ['Median DOM', metrics?.median_dom ?? 'n/a'],
-    ['Median Price Per SqFt', metrics?.median_ppsf ?? 'n/a'],
-    ['Current Listings', metrics?.current_listings ?? 'n/a'],
-    ['12 Month Sales', metrics?.sales_12mo ?? 'n/a'],
-    ['Inventory Months', metrics?.inventory_months ?? 'n/a'],
+    ['Subdivision', subdivision?.trim() || NA],
+    ['Window', facts.periodLabel],
+    ['Period Start', facts.periodStart ?? NA],
+    ['Period End', facts.periodEnd ?? NA],
+    ['Median Sale Price', num(facts.medianSalePrice)],
+    ['Sold Count', num(facts.soldCount)],
+    ['Median DOM', num(facts.medianDom)],
+    ['Median Price Per SqFt', num(facts.medianPricePerSqft)],
+    ['Active Listings', num(facts.activeCount)],
+    ['12 Month Sales', num(facts.sales12mo)],
+    ['Months of Supply', num(facts.monthsOfSupply)],
     ['Narrative', narrative ?? 'Narrative not available yet.'],
+    ['Source', 'market_stats_cache + market_pulse_live (Oregon Data Share via Ryan Realty)'],
   ]
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryRows), 'Summary')
 
-  const priceBandRows = [
-    ['Type', 'Band', 'Count'],
-    ...((bands?.sales_by_band ?? []).map((row) => ['Sold', row.band, row.cnt])),
-    ...((bands?.current_listings_by_band ?? []).map((row) => ['Active', row.band, row.cnt])),
-  ]
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(priceBandRows), 'Price Bands')
-
   const trendSheetRows = [
-    ['Month', 'Sold Count', 'Median Price'],
-    ...trendRows.map((row) => [row.month_label, row.sold_count, row.median_price ?? 'n/a']),
+    ['Month', 'Sold Count', 'Median Sale Price'],
+    ...facts.trend.map((row) => [row.month, num(row.soldCount), num(row.medianSalePrice)]),
   ]
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(trendSheetRows), 'Trend')
 
   const bytes = XLSX.write(wb, { bookType: 'xlsx', type: 'array' }) as ArrayBuffer
   return {
-    fileName: `${buildPdfFilename(city, subdivision, periodStart, periodEnd)}.xlsx`,
+    fileName: `${buildFilename(city, subdivision, facts)}.xlsx`,
     bytes: new Uint8Array(bytes),
   }
 }
@@ -176,10 +254,10 @@ export async function GET(request: Request) {
   const subdivision = searchParams.get('subdivision')?.trim() || null
   const formatParam = searchParams.get('format')?.toLowerCase()
   const format: ExportFormat = formatParam === 'xlsx' ? 'xlsx' : 'pdf'
-  const { start, end } = getDateRange(searchParams.get('periodStart'), searchParams.get('periodEnd'))
+  const period = parseRangePeriod(searchParams.get('range'))
 
   try {
-    const built = format === 'xlsx' ? await buildXlsx(city, subdivision, start, end) : await buildPdf(city, subdivision, start, end)
+    const built = format === 'xlsx' ? await buildXlsx(city, subdivision, period) : await buildPdf(city, subdivision, period)
     const contentType =
       format === 'xlsx'
         ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
