@@ -33,6 +33,21 @@ describe('deliverable share-to-social safety (W10.6)', () => {
     }
   })
 
+  it('blocks a VERSIONED or suffixed CMA/BPO relabel (prefix denylist)', () => {
+    // A demonstrated leak: the exact-match denylist let content:cma_v2 through.
+    // The repo already versions CMA methodology, so this is an ordinary refactor.
+    for (const t of [
+      'content:cma_v2',
+      'content-cma-v2.json',
+      'content:cma_expired',
+      'content-cma-expired.json',
+      'content:bpo_v3',
+      'content-bpo-final.json',
+    ]) {
+      expect(isShareableToSocial(t), `${t} must not be shareable`).toBe(false)
+    }
+  })
+
   it('default-denies an unknown or empty type', () => {
     expect(isShareableToSocial('content:brand_new_unknown')).toBe(false)
     expect(isShareableToSocial('')).toBe(false)

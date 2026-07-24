@@ -71,9 +71,14 @@ export function shareKeyOf(value: string): string {
 export function isShareableToSocial(actionTypeOrFilename: string): boolean {
   const key = shareKeyOf(actionTypeOrFilename)
   if (!key) return false
-  if (NEVER_SHAREABLE_PREFIXES.some((p) => (p.endsWith('-') ? key.startsWith(p) : key === p))) {
-    return false
-  }
+  // Denylist match is PREFIX, not exact: `content-cma` blocks not only itself
+  // but `content-cma-v2` and `content-cma-expired` — a versioned relabel of a
+  // CMA cannot slip past defense-in-depth. Entries already ending in `-`
+  // (comms-, ops-, ...) are prefixes as written.
+  const denied = NEVER_SHAREABLE_PREFIXES.some((p) =>
+    p.endsWith('-') ? key.startsWith(p) : key === p || key.startsWith(`${p}-`),
+  )
+  if (denied) return false
   return SHAREABLE_TYPE_KEYS.includes(key)
 }
 

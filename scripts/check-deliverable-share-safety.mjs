@@ -35,10 +35,46 @@ async function checkBehavior() {
     problems.push(`${MODULE}: could not be executed for the safety check — ${loaded.error}`)
     return
   }
-  const { isShareableToSocial, captionFor } = loaded.mod
+  const { isShareableToSocial, captionFor, SHAREABLE_TYPE_KEYS } = loaded.mod
   if (typeof isShareableToSocial !== 'function' || typeof captionFor !== 'function') {
     problems.push(`${MODULE}: must export isShareableToSocial and captionFor.`)
     return
+  }
+
+  // THE INVARIANT (inverted from a known-private enumeration — round W10.6-verify).
+  // Enumerating private types can never be complete: a NEW private deliverable
+  // (content:seller_net_sheet — a confidential client financial doc named in
+  // CLAUDE.md) added to the allowlist leaked past the old gate. So instead pin
+  // the allowlist to a FROZEN known-public set defined HERE, in the gate. Any
+  // key added to the module's allowlist now fails CI until a reviewer also edits
+  // this set — a deliberate, reviewed act, not a reflexive one-liner. This set
+  // must contain ONLY types that are safe to broadcast to a public feed; never
+  // add a client document (cma/bpo/net_sheet), a lead-gen ad, or internal comms.
+  const FROZEN_PUBLIC_KEYS = new Set([
+    'content-blog-post',
+    'content-market-report-blog',
+    'content-market-data-short',
+    'content-ig-carousel',
+    'content-linkedin-doc-carousel',
+    'content-listing-reel',
+    'content-listing-image',
+    'content-just-listed-flyer',
+    'content-news-clip',
+    'content-sold-deal-summary',
+    'content-newsletter',
+    'content-gbp-post',
+    'content-list-kit',
+  ])
+  if (!Array.isArray(SHAREABLE_TYPE_KEYS)) {
+    problems.push(`${MODULE}: does not export SHAREABLE_TYPE_KEYS as an array — the gate cannot pin the allowlist.`)
+  } else {
+    for (const key of SHAREABLE_TYPE_KEYS) {
+      if (!FROZEN_PUBLIC_KEYS.has(key)) {
+        problems.push(
+          `${MODULE}: SHAREABLE_TYPE_KEYS contains '${key}', which is NOT in the gate's frozen known-public set. If this is genuinely public content, add it to FROZEN_PUBLIC_KEYS in ${'scripts/check-deliverable-share-safety.mjs'} in the same change — that two-place edit is the review checkpoint that keeps a client document off a public feed.`,
+        )
+      }
+    }
   }
 
   // MUST be false — private client docs and internal content, in both the
