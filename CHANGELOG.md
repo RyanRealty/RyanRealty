@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.857.6 (2026-07-24)
+
+### Bug Fixes
+- fix(market): registry-spelling canon — Tumalo + Crooked River Ranch are not MLS cities (§0) + G57 gate
+
+---
+
+
 ## v1.857.5 (2026-07-24)
 
 ### Maintenance
