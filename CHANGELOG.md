@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.863.8 (2026-07-24)
+
+### Bug Fixes
+- fix(w8.1): §0 round 6 — the export's city never scoped it, and a sale median wore a list label
+
+---
+
+
 ## v1.863.7 (2026-07-24)
 
 ### Maintenance
