@@ -110,11 +110,11 @@ describe('nav generator projects the capability map', () => {
 })
 
 describe('shell projection (one nav source for every surface)', () => {
-  it('renders the D9.2 budget: 38 superuser items, 21 broker items (Wave D added the CRM Referrals child; was 37/20 after spec 07 folded 3 expired/FSBO nav children into 1 Prospecting hub)', () => {
+  it('renders the D9.2 budget: 39 superuser items, 22 broker items (W10.2 added the Content library nav item, capability content.view, granted to both roles, so both counts rose one from 38/21; Wave D had added the CRM Referrals child; was 37/20 after spec 07 folded 3 expired/FSBO nav children into 1 Prospecting hub)', () => {
     const count = (role: AdminRoleType) =>
       toShellSections(buildNav(ctx(role))).reduce((n, s) => n + s.items.length, 0)
-    expect(count('superuser')).toBe(38)
-    expect(count('broker')).toBe(21)
+    expect(count('superuser')).toBe(39)
+    expect(count('broker')).toBe(22)
   })
 
   it('leaf destinations render as single items; hubs as their children', () => {
