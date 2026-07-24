@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.852.1 (2026-07-24)
+
+### Bug Fixes
+- fix(w10.2): make the library guard true, and make the gate prove it by running it
+
+---
+
+
 ## v1.852.0 (2026-07-23)
 
 ### Features
