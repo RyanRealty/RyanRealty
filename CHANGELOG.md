@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.858.0 (2026-07-24)
+
+### Features
+- feat(w2.1/w2.4): per-subdivision market stats — producer + consumer + gate
+
+---
+
+
 ## v1.857.7 (2026-07-24)
 
 ### Bug Fixes
