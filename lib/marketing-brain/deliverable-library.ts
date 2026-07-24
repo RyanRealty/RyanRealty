@@ -26,7 +26,7 @@ import {
   pathBelongsToBroker,
 } from '@/lib/marketing-brain/deliverable-path'
 
-export { pathBelongsToBroker, safeSegment } from '@/lib/marketing-brain/deliverable-path'
+export { pathBelongsToBroker, safeSegment, buildDeliverablePath } from '@/lib/marketing-brain/deliverable-path'
 
 export const DELIVERABLE_BUCKET = 'marketing-deliverables'
 /** Signed download URLs are short-lived; a library page mints them per render. */
@@ -49,16 +49,6 @@ export interface DeliverableRef {
   createdAt: string | null
 }
 
-/**
- * The one place an object path is constructed. Always broker-prefixed.
- * Throws on an unrepresentable segment rather than returning a mangled key —
- * every caller here has already validated, so reaching the throw is a bug.
- */
-export function deliverablePath(brokerSlug: string, actionId: string, filename: string): string {
-  const path = buildDeliverablePath(brokerSlug, actionId, filename)
-  if (!path) throw new Error('deliverablePath: unsafe segment')
-  return path
-}
 
 
 /**
@@ -72,75 +62,27 @@ export function deliverablePath(brokerSlug: string, actionId: string, filename: 
  * Never throws.
  */
 /**
- * public.brokers carries TWO slug namespaces: `slug` ('matthew-ryan') and
- * `crm_slug` ('matt'). Different producers hand us different ones —
- * marketing_brain_actions.assigned_approver is the CRM namespace, while the
- * library surface reads brokers.slug. Storing under whichever string arrived
- * would split one broker's library across two prefixes and show them an empty
- * page, so every identifier is canonicalized to brokers.slug before it is ever
- * used as a path segment. Returns null when the reference matches no broker.
+ * Whose library does this action's output belong to?
+ *
+ * Delegates to public.resolve_deliverable_broker_slug — ONE implementation,
+ * because there are two callers in two runtimes: this module and the plain-.mjs
+ * render worker. Round 3 of review found them disagreeing: the app resolved the
+ * intake sender first, the worker read only assigned_approver (which is 'matt'
+ * on every live row), so every visual deliverable Paul or Rebecca requested
+ * landed in Matt's library while their own page read "Nothing here yet."
+ *
+ * The function returns the canonical brokers.slug namespace, never crm_slug.
+ * Never throws.
  */
-async function canonicalBrokerSlug(ref: string | null): Promise<string | null> {
-  const value = (ref ?? '').trim().toLowerCase()
-  if (!value) return null
-  try {
-    const supabase = createServiceClient()
-    // NOTE: no ilike here. `value` can be an inbound From: header
-    // (marketing_inbox_events.sender_email), and ilike treats % and _ as
-    // wildcards — 'p%@ryan-realty.com' resolved to paul-stevenson and
-    // '_ebeccapeterson@...' to rebecca-peterson in review, both from addresses
-    // that pass the domain allowlist. Emails are stored lowercase-comparable,
-    // so an exact match on the lowercased value is both safe and correct.
-    // Likewise the slug branch uses two eq filters rather than interpolating
-    // into .or(), whose comma/dot syntax an attacker-shaped value could bend.
-    if (value.includes('@')) {
-      const { data } = await supabase
-        .from('brokers')
-        .select('slug, email')
-        .eq('is_active', true)
-      const match = (data ?? []).find(
-        (b) => ((b as { email?: string }).email ?? '').trim().toLowerCase() === value,
-      ) as { slug?: string } | undefined
-      return match?.slug ? safeSegment(match.slug) : null
-    }
-    const { data } = await supabase
-      .from('brokers')
-      .select('slug, crm_slug')
-      .eq('is_active', true)
-    const hit = (data ?? []).find(
-      (b) =>
-        ((b as { slug?: string }).slug ?? '').toLowerCase() === value ||
-        ((b as { crm_slug?: string }).crm_slug ?? '').toLowerCase() === value,
-    ) as { slug?: string } | undefined
-    return hit?.slug ? safeSegment(hit.slug) : null
-  } catch {
-    return null
-  }
-}
-
 export async function resolveBrokerSlugForAction(actionId: string): Promise<string> {
   if (!actionId) return FALLBACK_BROKER_SLUG
   try {
     const supabase = createServiceClient()
-    const { data: event } = await supabase
-      .from('marketing_inbox_events')
-      .select('sender_email')
-      .eq('action_row_id', actionId)
-      .maybeSingle()
-
-    const byEmail = await canonicalBrokerSlug(event?.sender_email ?? null)
-    if (byEmail) return byEmail
-
-    const { data: action } = await supabase
-      .from('marketing_brain_actions')
-      .select('assigned_approver')
-      .eq('id', actionId)
-      .maybeSingle()
-
-    const byApprover = await canonicalBrokerSlug(action?.assigned_approver ?? null)
-    if (byApprover) return byApprover
-
-    return FALLBACK_BROKER_SLUG
+    const { data, error } = await supabase.rpc('resolve_deliverable_broker_slug', {
+      p_action_id: actionId,
+    })
+    if (error || typeof data !== 'string' || !data) return FALLBACK_BROKER_SLUG
+    return safeSegment(data) || FALLBACK_BROKER_SLUG
   } catch {
     return FALLBACK_BROKER_SLUG
   }
@@ -234,8 +176,16 @@ export async function signDeliverableDownload(
   filename: string,
 ): Promise<string | null> {
   const slug = safeSegment(brokerSlug)
-  if (!slug || !safeSegment(actionId) || !safeSegment(filename)) return null
-  const path = deliverablePath(slug, actionId, filename)
+  // buildDeliverablePath, NOT deliverablePath: the latter THROWS, and a
+  // truthy safeSegment() is not the same thing as a representable key. A
+  // 125-character filename sanitizes to a truthy 120-char segment that is not
+  // equal to its input, so the builder refuses it while the old truthiness
+  // pre-check passed — the throw then escaped this function, out through the
+  // page's Promise.all, and 500'd the whole library for that broker (one
+  // stray object took every good deliverable down with it). Refuse by
+  // returning null, the way every other failure here does.
+  const path = buildDeliverablePath(slug, actionId, filename)
+  if (!path) return null
   if (!pathBelongsToBroker(slug, path)) return null
   try {
     const supabase = createServiceClient()

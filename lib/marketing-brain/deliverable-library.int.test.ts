@@ -127,7 +127,7 @@ run('broker content library — persistence + isolation (real storage)', () => {
     expect(lib.pathBelongsToBroker('!!!', `${BROKER_A}/${ACTION_ID}/${FILENAME}`)).toBe(false)
     expect(lib.pathBelongsToBroker('', `/${BROKER_A}/${ACTION_ID}/${FILENAME}`)).toBe(false)
     // sanity: the owning broker's own canonical path still passes
-    expect(lib.pathBelongsToBroker(BROKER_A, lib.deliverablePath(BROKER_A, ACTION_ID, FILENAME))).toBe(true)
+    expect(lib.pathBelongsToBroker(BROKER_A, (lib.buildDeliverablePath(BROKER_A, ACTION_ID, FILENAME) as string))).toBe(true)
   })
 
   it('refuses to WRITE an object whose segments sanitize to nothing', async () => {
@@ -145,6 +145,8 @@ run('broker content library — persistence + isolation (real storage)', () => {
         body: 'should never be written',
       })
       expect(res.ok, `persist accepted actionId "${bad}" — it can escape the broker prefix`).toBe(false)
+      // ok:false is also what an upload ERROR returns, so pin the reason.
+      if (!res.ok) expect(res.error).toMatch(/usable characters/i)
 
       const res2 = await lib.persistDeliverable({
         actionId: ACTION_ID,
@@ -153,7 +155,16 @@ run('broker content library — persistence + isolation (real storage)', () => {
         body: 'should never be written',
       })
       expect(res2.ok, `persist accepted brokerSlug "${bad}"`).toBe(false)
+      if (!res2.ok) expect(res2.error).toMatch(/usable characters/i)
     }
+
+    // and nothing landed at bucket ROOT, which is where an unvalidated key goes
+    const { createServiceClient } = await import('@/lib/supabase/service')
+    const { data: rootObjects } = await createServiceClient()
+      .storage.from(lib.DELIVERABLE_BUCKET)
+      .list('', { limit: 100 })
+    const strays = (rootObjects ?? []).filter((o) => o.name.endsWith('.json') || o.name === FILENAME)
+    expect(strays.map((o) => o.name), 'objects written to bucket root with no broker prefix').toEqual([])
   })
 
   it('canonicalizes the CRM slug namespace so the broker actually sees the file', async () => {
@@ -163,7 +174,7 @@ run('broker content library — persistence + isolation (real storage)', () => {
     // library page reads brokers.slug. Returning the raw approver piled every
     // deliverable into `matt/`, a prefix no login can read.
     const { createServiceClient } = await import('@/lib/supabase/service')
-    const { resolveBrokerSlugForAction } = await import('./deliverable-library')
+    const { resolveBrokerSlugForAction, FALLBACK_BROKER_SLUG: FALLBACK_SLUG } = await import('./deliverable-library')
     const supabase = createServiceClient()
 
     const { data: inserted, error } = await supabase
@@ -177,7 +188,7 @@ run('broker content library — persistence + isolation (real storage)', () => {
         action_type: 'analyze:test',
         target: 'test:w10.2',
         assigned_producer: 'test',
-        assigned_approver: 'matt',
+        assigned_approver: 'paul',
         status: 'pending',
       })
       .select('id')
@@ -186,8 +197,13 @@ run('broker content library — persistence + isolation (real storage)', () => {
     if (error || !inserted) throw new Error(`could not seed action row: ${error?.message}`)
     try {
       const slug = await resolveBrokerSlugForAction(inserted.id as string)
-      expect(slug).toBe('matthew-ryan')
-      expect(slug).not.toBe('matt')
+      // Assert a NON-fallback broker on purpose. The previous version seeded
+      // 'matt' and asserted 'matthew-ryan' — which is FALLBACK_BROKER_SLUG, so
+      // the test passed even with every database read throwing. Seeding 'paul'
+      // means only a working crm_slug -> slug resolution can satisfy it.
+      expect(slug).toBe('paul-stevenson')
+      expect(slug).not.toBe('paul')
+      expect(slug).not.toBe(FALLBACK_SLUG)
     } finally {
       await supabase.from('marketing_brain_actions').delete().eq('id', inserted.id)
     }
@@ -195,7 +211,7 @@ run('broker content library — persistence + isolation (real storage)', () => {
 
   it('keeps the bucket private — signed serves it, unsigned does not', async () => {
     const lib = await import('./deliverable-library')
-    const path = lib.deliverablePath(BROKER_A, ACTION_ID, FILENAME)
+    const path = (lib.buildDeliverablePath(BROKER_A, ACTION_ID, FILENAME) as string)
 
     // Positive first, so a non-200 below cannot be explained by "the object
     // isn't there" — the original test could not tell those apart.

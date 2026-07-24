@@ -187,6 +187,35 @@ function checkStructure() {
       }
     }
 
+    // The guard must be the one the gate actually executes. Calling something
+    // *named* pathBelongsToBroker is not enough: a local definition (or a
+    // shadow) would leave all 28 fixtures passing against the pure module while
+    // the real download path runs unguarded. "Inline the helper, drop the
+    // import" is an ordinary refactor, so this is checked structurally.
+    const libText = lib.getFullText()
+    const importsGuard =
+      /import\s*{[^}]*\bpathBelongsToBroker\b[^}]*}\s*from\s*['"][^'"]*deliverable-path['"]/.test(libText)
+    if (!importsGuard) {
+      problems.push(
+        `${LIB}: does not import pathBelongsToBroker from deliverable-path. The gate executes THAT module's fixtures — a local copy would be unguarded and unverified.`,
+      )
+    }
+    const importsBuilder =
+      /import\s*{[^}]*\bbuildDeliverablePath\b[^}]*}\s*from\s*['"][^'"]*deliverable-path['"]/.test(libText)
+    if (!importsBuilder) {
+      problems.push(
+        `${LIB}: does not import buildDeliverablePath from deliverable-path — key construction must not be re-implemented locally.`,
+      )
+    }
+    for (const banned of ['pathBelongsToBroker', 'buildDeliverablePath', 'safeSegment']) {
+      const declaresOwn = new RegExp(`(^|\\n)\\s*(export\\s+)?function\\s+${banned}\\b`).test(libText)
+      if (declaresOwn) {
+        problems.push(
+          `${LIB}: declares its own ${banned}(...). There must be exactly one implementation, in deliverable-path.ts, because that is the one the gate runs.`,
+        )
+      }
+    }
+
     const sign = fns.get('signDeliverableDownload')
     if (!sign) {
       problems.push(`${LIB}: does not export signDeliverableDownload(...).`)
@@ -256,8 +285,123 @@ function checkStructure() {
   }
 }
 
+
+// ══════════════════════ C. DATAFLOW + WIRING (round 3) ═══════════════════════
+// Round 3 demonstrated three GREEN evasions that structure alone cannot see:
+//   (c) `.list(slug, …)` -> `.list('', …)` — a one-character diff that returns
+//       every broker's objects.
+//   (d) persistDeliverable calling buildDeliverablePath and DISCARDING the
+//       result — the old check asked whether the call happened, not whether its
+//       value was used.
+//   (B4) commenting out all three persistence call sites left the gate GREEN,
+//       so BL-5 ("visual deliverables never reach the library") could regress
+//       with no mechanical signal at all.
+function checkDataflowAndWiring() {
+  const lib = parse(LIB)
+  if (lib) {
+    const fns = exportedFns(lib)
+
+    // (c) every .list(...) inside a scoped read must pass a BINDING, never a
+    // literal, and that binding must derive from the brokerSlug parameter.
+    for (const [name, fn] of fns) {
+      if (!fn.body) continue
+      const params = paramNames(fn)
+      const walk = (n) => {
+        if (
+          ts.isCallExpression(n) &&
+          ts.isPropertyAccessExpression(n.expression) &&
+          n.expression.name.text === 'list'
+        ) {
+          const arg0 = n.arguments[0]
+          const line = lib.getLineAndCharacterOfPosition(n.getStart()).line + 1
+          if (!arg0) {
+            problems.push(`${LIB}:${line}: ${name} calls .list() with no prefix — that lists the whole bucket.`)
+          } else if (ts.isStringLiteralLike(arg0)) {
+            problems.push(
+              `${LIB}:${line}: ${name} calls .list('${arg0.text}') with a literal prefix. A read must be scoped to the caller's broker, not a constant — .list('') returns every broker's objects.`,
+            )
+          } else if (ts.isIdentifier(arg0) || ts.isTemplateExpression(arg0)) {
+            const text = arg0.getText()
+            if (params.length && !params.some((p) => text.includes(p)) && !/slug/i.test(text)) {
+              problems.push(
+                `${LIB}:${line}: ${name} lists prefix \`${text}\`, which does not derive from \`${params[0]}\`. Every bucket read must be scoped to the broker the caller named.`,
+              )
+            }
+          }
+        }
+        ts.forEachChild(n, walk)
+      }
+      walk(fn.body)
+    }
+
+    // (d) persistDeliverable must USE the built path, not merely call the builder.
+    const persist = fns.get('persistDeliverable')
+    if (persist?.body) {
+      const src = persist.body.getText()
+      const assigns = /(?:const|let)\s+(\w+)\s*=\s*buildDeliverablePath\s*\(/.exec(src)
+      if (!assigns) {
+        problems.push(
+          `${LIB}: persistDeliverable does not assign buildDeliverablePath(...) to a binding — calling it and discarding the result leaves the key unvalidated.`,
+        )
+      } else {
+        const v = assigns[1]
+        const guarded = new RegExp(`if\\s*\\(\\s*!${v}\\s*\\)`).test(src)
+        if (!guarded) {
+          problems.push(
+            `${LIB}: persistDeliverable never checks \`if (!${v})\` — buildDeliverablePath returns null for an unrepresentable segment, and an unchecked null becomes an object at bucket root with no broker prefix.`,
+          )
+        }
+        if (!new RegExp(`upload\\(\\s*${v}\\b`).test(src)) {
+          problems.push(
+            `${LIB}: persistDeliverable does not upload to \`${v}\` — the validated path must be the one written.`,
+          )
+        }
+      }
+    }
+  }
+
+  // (B4) every runner that finishes a producer must archive its output.
+  const WRITERS = [
+    ['app/api/cron/producer-runtime/route.ts', 'persistDeliverable'],
+    ['app/api/admin/run-producer/[id]/route.ts', 'persistDeliverable'],
+    ['scripts/render-worker.mjs', 'persistRenderedDeliverable'],
+  ]
+  for (const [rel, fnName] of WRITERS) {
+    const p = join(process.cwd(), rel)
+    if (!existsSync(p)) {
+      problems.push(`${rel}: not found — a producer runner moved; re-point this gate.`)
+      continue
+    }
+    const text = readFileSync(p, 'utf8')
+    // strip comments so a commented-out call cannot satisfy the check
+    const code = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+    if (!new RegExp(`\\b${fnName}\\s*\\(`).test(code)) {
+      problems.push(
+        `${rel}: never calls ${fnName}(...). This runner finishes producers, so its output would never reach any broker's library — exactly the regression that left the bucket empty.`,
+      )
+    }
+    // Ownership must come from the ONE shared resolver: either the SQL function
+    // directly (the .mjs worker cannot import TypeScript) or the exported
+    // wrapper around it. What is banned is a third, local reading of
+    // assigned_approver — that is what misfiled every non-Matt deliverable.
+    const usesSharedResolver =
+      /resolve_deliverable_broker_slug/.test(code) || /resolveBrokerSlugForAction\s*\(/.test(code)
+    if (!usesSharedResolver) {
+      problems.push(
+        `${rel}: does not resolve ownership through resolve_deliverable_broker_slug (or resolveBrokerSlugForAction). A second implementation of "whose deliverable is this" already sent every non-Matt visual deliverable to the wrong library.`,
+      )
+    }
+    if (/assigned_approver/.test(code)) {
+      problems.push(
+        `${rel}: reads assigned_approver directly. It is 'matt' on every live row, so this resolves every deliverable to the principal broker. Use the shared resolver.`,
+      )
+    }
+  }
+}
+
 await checkBehavior()
 checkStructure()
+checkDataflowAndWiring()
 
 console.log('Broker deliverable-library scoping gate (ci:deliverable-library-scope)')
 console.log('=====================================================================')

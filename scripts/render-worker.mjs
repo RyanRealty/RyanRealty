@@ -346,28 +346,18 @@ async function persistRenderedDeliverable(row, absArtifactPath, relArtifact) {
   }
   const { buildDeliverablePath } = loaded.mod
 
-  // Canonical brokers.slug namespace. assigned_approver holds the CRM slug
-  // ('matt'), so it is resolved through the table rather than used directly.
+  // ONE implementation of ownership, shared with the app: the SQL function
+  // resolves the intake sender first, then the approver in either slug
+  // namespace, then falls back to the principal broker. Reading
+  // assigned_approver directly here (as this worker used to) sent every
+  // non-Matt visual deliverable to Matt's library — assigned_approver is
+  // 'matt' on every live row.
   let brokerSlug = 'matthew-ryan'
   try {
-    const { data: action } = await supabase
-      .from('marketing_brain_actions')
-      .select('assigned_approver')
-      .eq('id', row.id)
-      .maybeSingle()
-    const ref = String(action?.assigned_approver ?? '').trim().toLowerCase()
-    if (ref) {
-      const { data: brokers } = await supabase.from('brokers').select('slug, crm_slug, email').eq('is_active', true)
-      const hit = (brokers ?? []).find(
-        (b) =>
-          String(b.slug ?? '').toLowerCase() === ref ||
-          String(b.crm_slug ?? '').toLowerCase() === ref ||
-          String(b.email ?? '').trim().toLowerCase() === ref,
-      )
-      if (hit?.slug) brokerSlug = hit.slug
-    }
+    const { data, error } = await supabase.rpc('resolve_deliverable_broker_slug', { p_action_id: row.id })
+    if (!error && typeof data === 'string' && data) brokerSlug = data
   } catch {
-    // fall through to the default owner
+    // fall through to the principal broker
   }
 
   const filename = relArtifact.split('/').pop() ?? 'deliverable'

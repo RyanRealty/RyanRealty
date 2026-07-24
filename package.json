@@ -402,6 +402,7 @@
     "tesseract.js": "^7.0.0",
     "tweetsodium": "^0.0.4",
     "typescript": "^5",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "esbuild": "^0.25.0"
   }
 }
