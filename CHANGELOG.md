@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.862.2 (2026-07-24)
+
+### Maintenance
+- refactor(w8.1): delete the dead getMarketSnapshot RPC subtree (step 1 of the raw-listings-RPC retirement)
+
+---
+
+
 ## v1.862.1 (2026-07-24)
 
 ### Maintenance
