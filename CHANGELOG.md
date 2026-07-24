@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.861.0 (2026-07-24)
+
+### Features
+- feat(w5.5): serverless crm_broker_alerts drain — alert delivery survives the mac mini
+
+---
+
+
 ## v1.860.1 (2026-07-24)
 
 ### Maintenance
