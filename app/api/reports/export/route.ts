@@ -32,6 +32,7 @@ import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 import { citySlugCandidates } from '@/lib/data/market/getCityReportSnapshot'
 import { parseRangePeriod, RANGE_PERIOD_LABELS, type RangePeriod } from '@/lib/market/range-periods'
+import { MARKET_REPORT_DEFAULT_CITIES } from '@/lib/data/geo/report-cities'
 import { slugify } from '@/lib/slug'
 import { ReportPdfDocument, type ReportPdfData } from '@/lib/pdf/report-pdf'
 
@@ -255,7 +256,27 @@ export async function GET(request: Request) {
   if (rl.limited) return rl.response
 
   const { searchParams } = new URL(request.url)
-  const city = searchParams.get('city')?.trim() || 'Bend'
+
+  // §0 GEO ALLOWLIST. `city` used to be unvalidated and flowed straight into a
+  // market_stats_cache lookup, so ANY slug in that table could be exported under
+  // the Ryan Realty source line — including the ~175 non-canonical city slugs the
+  // retired `backfill_rolling` wrote with NO PropertyType/property_sub_type filter.
+  // `?city=Central Point` returned a branded workbook reading 367 sales against an
+  // SFR truth of 272 (+35%), labeled SFR-only. This route is public and
+  // unauthenticated (rate-limited only), so the bound has to be the report
+  // registry, not "whatever happens to be in the cache".
+  const requestedCity = searchParams.get('city')?.trim()
+  const city = requestedCity
+    ? MARKET_REPORT_DEFAULT_CITIES.find((c) => c.toLowerCase() === requestedCity.toLowerCase())
+    : 'Bend'
+  if (!city) {
+    return NextResponse.json(
+      {
+        error: `Unsupported city. This report covers: ${MARKET_REPORT_DEFAULT_CITIES.join(', ')}.`,
+      },
+      { status: 400 },
+    )
+  }
   const subdivision = searchParams.get('subdivision')?.trim() || null
   const formatParam = searchParams.get('format')?.toLowerCase()
   const format: ExportFormat = formatParam === 'xlsx' ? 'xlsx' : 'pdf'
