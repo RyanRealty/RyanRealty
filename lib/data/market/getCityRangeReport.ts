@@ -28,13 +28,26 @@
  *   Sales (12 mo)   -> market_stats_cache.sold_count                     (rolling_365d)
  *   Months of supply-> market_pulse_live.months_of_supply                (canonical /6)
  *
- * The median is CLOSE-based and inherits the cache's n>=3 gate (the ODS rule in
- * compute_and_cache_period_stats): a period with fewer than three closings stores
- * NULL rather than a "median" from one sale. The retired RPC had no such gate and
- * was publishing, e.g., a $885,000 Sunriver "median" computed from a single sale
- * in the 7-day window. Short windows are gone for the same reason: the cache holds
- * no rolling_7d/rolling_14d row, and a 7-day median across these cities runs on
- * n = 0-5.
+ * The median is CLOSE-based and gated at n>=3: a period with fewer than three
+ * closings stores NULL rather than a "median" from one sale.
+ *
+ * CORRECTION (2026-07-24): an earlier version of this comment claimed the cache
+ * already enforced that gate. It did not. compute_and_cache_period_stats computed
+ * median_sale_price as a bare percentile_cont with no sample gate at all — only its
+ * SIBLING statistics (median_dom, ppsf, sale_to_list) were gated, at n>=5. So the
+ * replacement carried the same hole the retired RPC was condemned for, and 1,526
+ * cached rows across 34 geos held a median computed from one or two closings, 907
+ * of them from a SINGLE sale (Terrebonne YTD published $708,500 from n=2 beside a
+ * +6.9% YoY; Black Butte Ranch monthly, $88,500 from n=1, -93.5% YoY). Migration
+ * 20260724210000 added the gate at all three sites that derive a median from
+ * "ClosePrice" — the current period and both prior-period baselines, so a YoY
+ * delta can never be derived from a 1-2 sale comparison either — and the stored
+ * rows were cleared. The claim is now true because it was made true, not because
+ * it was inherited.
+ *
+ * Short windows are gone for a related reason: the cache holds no
+ * rolling_7d/rolling_14d row, and a 7-day median across these cities runs on
+ * n = 0-5, so most of them would be NULL under the gate anyway.
  *
  * NEVER aggregates raw `listings`. NEVER fabricates a figure — a missing cache row
  * yields null fields and the renderer shows an em-dash.
