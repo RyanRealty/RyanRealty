@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.863.6 (2026-07-24)
+
+### Bug Fixes
+- fix(w8.1): §0 — the n>=3 median gate I claimed existed did not; add it
+
+---
+
+
 ## v1.863.5 (2026-07-24)
 
 ### Maintenance
