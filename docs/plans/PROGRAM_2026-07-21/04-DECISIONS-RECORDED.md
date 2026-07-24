@@ -388,3 +388,33 @@ junk cases. Independent adversarial verifier: PASS with zero defects — recompu
 all 100 registry pairs, verified no sub-threshold claim can render, cross-links land on the correct
 school pages, and the W2.1 stats leg is unregressed. W2.1 + W2.4 are both done; the subdivision surface
 now carries stats, sales history, schools, and parent links end to end.
+
+## §32 — W8.4 canonical /housing-market/[geo] report: timeframe selector + explore retired (M5) — 2026-07-24
+
+Two atomic legs, both live on the pre-generated geo report. LEG A — TIMEFRAME SELECTOR: the city-scope
+report gains a YTD-default period selector (this-month / last-12-months). The server pre-fetches all
+three market_stats_cache rows through one DAL helper, `getCityMarketDetailByTimeframe`, which fans out
+to the cached `getCityMarketDetail` per period (each keeps its own cache entry + tag, each self-catches
+to null); the client `KbTimeframeStats` only formats + swaps the displayed block — it never computes or
+fetches. §0 is exact and live: /housing-market/bend YTD renders $721,000 / 846 sold / 96.6% sale-to-list
+/ Hot, matching the bend·city·ytd cache row (median 720500 → $721,000) to the dollar; monthly and
+rolling_365d each trace to their own period row (not the YTD values re-labeled), and a null field renders
+the em-dash placeholder rather than a fabricated 0.
+
+LEG B — RETIRE EXPLORE: the custom date-range/property-type/price-band explore tool (the 924-line
+ExploreClient behind /reports/explore, re-exported at /housing-market/explore) is removed. Both routes
+now 308-redirect to /housing-market (verified live: 308 → /housing-market 200); the explore pages,
+ExploreClient, its loading state, and the explore-only HousingWireMarketContextCard are deleted and
+imported by nothing; ~11 inbound links across app/ + components/ + lib/ (sitemap, llms.txt, reports
+index, GeoMarketOverview, MarketPulseCarousel, lib/slug.ts reportsExploreYtdPath, site-menu, site-nav,
+lead-landing-content) now point at the canonical /housing-market/[geo] report or /subdivisions/[slug].
+This is the program-authorized M5 "retire explore" move — it also removes the public custom-filter
+consumers of the three get_city_period_metrics RPCs, teeing up the W8.1 admin-only decision.
+
+Mechanism: `ci:no-explore-route` (in ci:gates) — no app/**/explore report page may exist, both routes
+must redirect, and no source file may link the retired routes. Proven to bite: RED on re-adding an
+explore page.tsx, RED on re-adding a `/housing-market/explore` link to a lib/ source file, GREEN after
+each restore. The fetch extraction into the DAL helper minimized leg A's growth on the frozen p2.2
+god-file; the residual +15 was re-baselined as a single hand-edited entry (not a whole-baseline rewrite,
+which would have absorbed an unrelated in-flight breach), so the file-size gate still bites past 884 and
+on every other frozen file. Independent adversarial verifier: PASS on all 5 attack vectors, re-verified against the fetch->DAL refactor commit. §0 is exact for bend and redmond across all three periods (each panel binds its own market_stats_cache row, proven by the YTD-vs-monthly inventory split), null fields render the em-dash, both explore routes 308-redirect with every file deleted and imported by nothing, and ci:no-explore-route bit RED on both a re-added explore page and a re-added link then GREEN on restore. The one observation (a 1-unit cross-tab inventory difference) traces to the pre-existing 6h market_stats_cache window, not a §0 violation and not introduced by W8.4..

@@ -535,17 +535,27 @@
       "workstream": "W8",
       "mission": "M5",
       "title": "/housing-market/[geo] canonical pre-generated report (YTD default, timeframe selector); explore page retired",
-      "status": "not_started",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-no-explore-route.mjs"
+        ],
         "crons": [],
-        "tests": [],
+        "tests": [
+          "components/search/__tests__/search-suggest-contract.test.ts",
+          "lib/site/chrome-routes.test.ts"
+        ],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "app/housing-market/[...slug]/page.tsx",
+          "components/site/kb/KbTimeframeStats.client.tsx",
+          "lib/data/market/getCityMarketDetail.ts",
+          "next.config.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "SCOPED + PROGRAM-AUTHORIZED 2026-07-24 (the program spec M5 itself directs \"retire explore\" — not a fresh Matt fork). Execution-ready, two atomic legs: (A) TIMEFRAME SELECTOR — /housing-market/[...slug] city scope already renders the canonical report (KbMarketHud + narratives(W8.7) + archive(W8.5) + FAQ). Add a YTD-default period selector: server pre-fetches getCityMarketDetail for {ytd, monthly, rolling_365d} (3 cheap market_stats_cache reads, all periods exist), a client selector swaps the displayed stat block (no searchParams/no static-param change). §0: each period traces to its cache row. (B) RETIRE EXPLORE — /housing-market/explore re-exports the 924-line /reports/explore ExploreClient (custom date-range + property-type + price-band filters over the get_city_period_metrics RPC). Redirect both routes to /housing-market (the geo hub) in next.config, repoint ~10 inbound links (app/sitemap.ts, app/llms.txt/route.ts, app/housing-market/page.tsx, app/reports/page.tsx + ReportsIndexContent, components/geo-page/GeoMarketOverview.tsx, components/market-report/MarketPulseCarousel.tsx, lib/slug.ts, lib/lead-landing-content.ts, lib/site-menu.ts), delete the explore pages + ExploreClient, add ci:no-explore-route (bans app/**/explore/ report routes) — proven RED then GREEN. This is the SAME retirement that unblocks W8.1: it removes the public custom-filter consumers of the 3 RPCs (get_city_period_metrics/price_bands/timeseries). Residual RPC consumers after explore retires = the ADMIN CustomReportBuilder + analytics + market-report.ts(singular) + home.ts + export route — those either migrate to the fixed-period cache or the RPC stays admin-only (W8.1 decision at that point)."
+      "proofPath": "LIVE (both legs): (A) /housing-market/bend §timeframe renders YTD $721,000 / 846 sold / 96.6% STL / Hot — exact to market_stats_cache bend/city/ytd (median 720500 → $721,000); monthly + rolling_365d props each map to their own getCityMarketDetail(period) cache row (never YTD re-labeled); null fields render em-dash, never fabricated. (B) /reports/explore AND /housing-market/explore both HTTP 308 → /housing-market 200; explore page files + ExploreClient + HousingWireMarketContextCard deleted (imported by nothing); ~11 inbound links repointed to /housing-market/[geo] or /subdivisions/[slug]; zero source links to the retired routes. GATE: ci:no-explore-route GREEN; RED on re-adding a page.tsx AND on re-adding a link, GREEN restored.",
+      "verifiedBy": "Independent adversarial agent (opus), PASS on all 5 attack vectors, re-verified against HEAD 2abd78d8 (the fetch->DAL refactor confirmed behavior-preserving). §0: every rendered figure equals its market_stats_cache row for bend + redmond across ytd/monthly/rolling_365d — Bend YTD $721,000/846/16d/$386/96.6%/down1.7%/473/Hot EXACT, and each panel binds its OWN period (YTD inventory 176 vs monthly/rolling 177 proves no re-label); a real tab-click swap showed monthly $770,000/111 and rolling $725,000/1651, each its own row. la-pine null fields render em-dash, never 0, never cross-period. Explore retired: both routes 308->/housing-market 200; 5 files + ExploreClient + HousingWireMarketContextCard deleted and imported by nothing; ~11 links repointed (0 quote-anchored source links to the retired routes); reportsExploreYtdPath + buildExploreHref resolve to live 200s. Gate: ci:no-explore-route in ci:gates chain, RED on a re-added explore page AND on a re-added link, GREEN after each restore. 15/15 guard tests pass; sitemap-resolvable + reachable-exports GREEN; tsc clean of real source errors (only stale .next generated validator). Lone observation (Bend monthly inventory 474 vs current 473) traced to the pre-existing 6h market_stats_cache window shared by every surface — a real prior cached value, not fabricated, not introduced by W8.4.",
+      "remaining": ""
     },
     {
       "id": "W8.5",
