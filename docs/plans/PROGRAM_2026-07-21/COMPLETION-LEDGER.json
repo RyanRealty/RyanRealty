@@ -560,17 +560,27 @@
       "workstream": "W8",
       "mission": "M5",
       "title": "Mohtashami corpus + narrative generation; market_narratives gets its writer",
-      "status": "not_started",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
-        "crons": [],
-        "tests": [],
+        "gates": [
+          "scripts/check-market-narrative-integrity.mjs"
+        ],
+        "crons": [
+          "app/api/cron/generate-market-narratives/route.ts"
+        ],
+        "tests": [
+          "lib/data/market/market-narrative.test.ts",
+          "lib/data/market/marketNarrativeWrites.int.test.ts"
+        ],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "lib/data/market/market-narrative.ts",
+          "lib/data/market/marketNarrativeWrites.ts"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "Everything: corpus ingestion, narrative generator with §0 trace + voice gate, and the market_narratives writer."
+      "proofPath": "DEMONSTRATED end-to-end against the live DB. The generator (lib/data/market/market-narrative.ts, buildMarketNarrative) is DETERMINISTIC — it interpolates ONLY a market_stats_cache row's own values, so §0 holds by construction; the Mohtashami framing is applied as analytical METHOD (MoS as the demand/supply balance, price+DOM+inventory read together), not reproduced text. Writer (marketNarrativeWrites.ts) reads the real cache row + market_pulse_live MoS and upserts public.market_narratives with generated_from_stats_id linking to the source. LIVE §0 TRACE — stored Bend/monthly/2026-06-01 narrative (generated_from_stats_id=11a42359-18be-4ba7-b746-5a12129e8851, the exact cache id): 'closed 183 sales in June 2026, median $725,000, ↑4.6% YoY; sold for 97.0% of asking' where 97.0 = avg_sale_to_list_ratio 0.96968×100 (NOT the raw-fraction '1.0%' that a prior build shipped), '$403/sqft', '470 homes', '3.9 months of supply, a seller's market' (≤4, verdict consistent) — every number equals its cache field formatted. THE GATE BITES: ci:market-narrative-integrity esbuild-executes the generator over fixtures; reverting pctFromRatio→pct1 turns check D RED ('sale-to-list 1% outside 50-150% band'), removing int() comma-grouping turns check E + A RED ('107'/'5' split) — both restored to GREEN. The int test asserts the stored sale-to-list == ratio*100 explicitly (reintroducing the pct1 bug flips it to a real failure at line 77; it was vacuous before). Cron generate-market-narratives is registered in vercel.json (15 8 * * *, after the stats refresh) and fail-closes via requireCronAuth. SLUG SAFETY: the writer's lower(City) space-form slug hits the real 121-row series ('la pine' 121 rows vs 1 stray 'la-pine'), so multi-word cities carry data; zero-sales geos hit the skip guard (no invented narrative). Across all 1,195 non-null city rows avg_sale_to_list_ratio ∈ [0.726, 1.178] (fraction everywhere), so no untested geo can produce an out-of-band scaled percent.",
+      "verifiedBy": "independent adversarial agent (opus, told to assume broken) — PASS on all 6 attack items: live-DB §0 hand-trace exact, gate bite-tested RED→GREEN on two independent breaks, int test proven non-vacuous (reintroduced bug → FAIL), cron wiring + auth confirmed, writer correctness confirmed, slug-space-form resolves real data with no silent-empty miss.",
+      "remaining": ""
     },
     {
       "id": "W8.8",

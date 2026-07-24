@@ -268,3 +268,37 @@ Mechanism: `ci:market-city-slug-canon` (in `ci:gates`) AST-asserts the city refr
 name and never calls slugify — bites on a revert to slugify. Verified live: /cities/la-pine renders
 $415,000 median sale, matching the fresh space-slug cache row. Unblocks W2.6 / W8.4 / W8.5 (the backfill
 and archive would otherwise reproduce the broken stubs).
+
+## §28 — W8.7 deterministic §0-safe market-narrative generation + the market_narratives writer (M5) — 2026-07-24
+
+The decision asked for the Mohtashami corpus applied to narrative generation, and for `market_narratives`
+to get its writer. Built as a DETERMINISTIC generator, not an LLM: `lib/data/market/market-narrative.ts`
+`buildMarketNarrative(stats)` interpolates ONLY a `market_stats_cache` row's own values, so §0 (every
+published number traces to a verified source) holds BY CONSTRUCTION — an LLM narrative can drift or
+fabricate a figure; a template over the source row cannot. The Mohtashami framing is applied as analytical
+METHOD (months of supply as the demand/supply balance, price + days-on-market + inventory read together,
+buyer/seller outlook from the direction of those three), never reproduced text. The writer
+(`marketNarrativeWrites.ts`) reads the real cache row + `market_pulse_live` months-of-supply and upserts
+`public.market_narratives`, with `generated_from_stats_id` linking each narrative back to the exact cache
+row it was built from. Cron `generate-market-narratives` (vercel.json, 15 8 * * *, after the 07:00 stats
+refresh) fans it out over every report city + region.
+
+The §0 hazard this closes: sale-to-list is stored as a FRACTION (0.9697), and a first build shipped it as
+"sold for 1.0% of asking" by formatting the raw fraction. Fix: `pctFromRatio` (×100). Two mechanisms now
+bite the CLASS, not just the instance — the gate `ci:market-narrative-integrity` (in `ci:gates`)
+esbuild-EXECUTES the generator over fixtures and adds a plausibility band (check D: sale-to-list outside
+50-150% is a scale bug even though the mis-scaled value "traces") plus a comma-grouping check (E), and the
+producer→consumer int test asserts the stored sale-to-list == `ratio*100` explicitly (the old test was
+vacuous — it stripped every % before checking). Both were bite-tested: reverting the fix turns the gate
+RED and fails the int test; restoring returns GREEN. `supplyVerdict` delegates to the canonical
+`marketVerdict()` (`ci:market-formula`), and a null MoS makes NO market-direction claim.
+
+Verified live end-to-end by an independent adversarial agent (assume-broken): the stored Bend/2026-06-01
+narrative reads "median $725,000, 183 sales, sold for 97.0% of asking (=0.96968×100), $403/sqft, 470
+homes, 3.9 months of supply, a seller's market" — every number equal to its cache field formatted,
+`generated_from_stats_id` = the exact source row. The writer's `lower(City)` space-form slug hits the real
+121-row historical series (not the stray hyphen stubs), and zero-sales geos hit the skip guard (no invented
+narrative). Also reconciled a pre-existing RED that had blocked every commit repo-wide: the admin nav D9.2
+budget test (`lib/admin/capabilities.test.ts`) had been failing since W10.2 shipped the "Content library"
+nav item (capability `content.view`, granted to both roles) without bumping the 38/21 count — corrected to
+the verified 39/22.
