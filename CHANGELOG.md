@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.853.0 (2026-07-24)
+
+### Features
+- feat(w10.3): re-brand a CMA by re-rendering, so swapping the signer cannot move a price
+
+### Bug Fixes
+- fix(w10.2): round 4 — kill the truncation collision, real dataflow gate, full-envelope archive
+
+### Maintenance
+- chore(budget): baseline lib/cma/build.ts +28 for W10.3 renderArgs capture
+
+---
+
+
 ## v1.852.2 (2026-07-24)
 
 ### Bug Fixes
