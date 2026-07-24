@@ -36,7 +36,10 @@ const InputSchema = z.object({
   geoType: z.enum(['region', 'city', 'community', 'neighborhood', 'zip', 'subdivision']),
   geoSlug: z.string().min(1).max(120),
   periodType: z.enum(['rolling_30d', 'rolling_90d', 'rolling_365d', 'monthly', 'ytd']).default('monthly'),
-  limit: z.number().int().min(1).max(120).default(24),
+  // Max 180 (15 years of monthly rows) so the W8.5 decade archive can read the
+  // full backfilled series (121+ rows and growing) without dropping the oldest
+  // month. Every other caller passes <=60; raising the cap is inert for them.
+  limit: z.number().int().min(1).max(180).default(24),
 })
 
 type Row = {

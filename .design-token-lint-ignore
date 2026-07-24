@@ -531,3 +531,9 @@ app/account/notifications/NewsletterToggle.tsx
 # (primary-foreground); only the raw <input>/<label> primitives need the exception —
 # same class as the KB idiom above.
 components/site/SiteHeaderSearch.client.tsx
+# W8.5 city sales archive (2026-07-24): the per-year decade table on
+# /housing-market/reports/archive/[city]. Same KB idiom as SubdivisionSalesHistory
+# (a raw aggregate <table> with KB inline styles) — new site surfaces use the KB
+# design system, not shadcn (ci:shadcn-burndown), so the only design-system-
+# compliant table here is a raw one. ODS §5-4 aggregate-only; no shadcn import.
+components/reports/CityArchiveSection.tsx
