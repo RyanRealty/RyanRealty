@@ -73,6 +73,10 @@
       "schedule": "30 8 * * *"
     },
     {
+      "path": "/api/cron/crm-alert-drain",
+      "schedule": "* * * * *"
+    },
+    {
       "path": "/api/cron/refresh-market-stats-monthly-recompute",
       "schedule": "0 4 * * 0"
     },

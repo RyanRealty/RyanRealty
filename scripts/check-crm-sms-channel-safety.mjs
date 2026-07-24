@@ -66,6 +66,27 @@ if (relay && !/BROKER_PHONES/.test(relay)) {
   )
 }
 
+// ── 2b. the SERVERLESS drain must carry the same whitelist (W5.5) ────────────
+// The drain route must gate every send on isBrokerPhone from alert-drain-core —
+// the same backstop, off the mac mini. A drain that sends without the whitelist
+// reintroduces the incident class serverlessly.
+const DRAIN = 'app/api/cron/crm-alert-drain/route.ts'
+const drain = read(DRAIN)
+if (drain) {
+  if (!/isBrokerPhone/.test(drain) || !/alert-drain-core/.test(drain)) {
+    fails.push(
+      `${DRAIN}: must import and apply isBrokerPhone from lib/crm/alert-drain-core ` +
+        `(the broker-phone whitelist) before any send.`,
+    )
+  }
+  if (!/refuseAlert|NON_BROKER_REFUSAL/.test(drain)) {
+    fails.push(
+      `${DRAIN}: a non-broker to_phone must be terminally refused (refuseAlert / ` +
+        `NON_BROKER_REFUSAL), never left pending or sent.`,
+    )
+  }
+}
+
 // ── 3. do-not-call must suppress SMS (TCPA: a text is a call) ────────────────
 const suppress = read(SUPPRESS)
 const dncLine = suppress.match(/contact:do-not-call'[^\n]*channels:\s*\[([^\]]*)\]/)
