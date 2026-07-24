@@ -28,13 +28,23 @@ import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import ts from 'typescript'
 
-const ROUTE = 'app/api/cron/refresh-market-stats/route.ts'
+// BOTH writers that build city geo entries for compute_and_cache_period_stats.
+// The fix was first applied to only one; the weekly monthly-recompute cron had
+// the identical slugify bug and would have re-created the stale stubs. Every
+// writer is checked, so the two lanes cannot diverge again.
+const ROUTES = [
+  'app/api/cron/refresh-market-stats/route.ts',
+  'app/api/cron/refresh-market-stats-monthly-recompute/route.ts',
+]
 const problems = []
 
+for (const ROUTE of ROUTES) checkRoute(ROUTE)
+
+function checkRoute(ROUTE) {
 const p = join(process.cwd(), ROUTE)
 if (!existsSync(p)) {
-  console.error(`✗ ci:market-city-slug-canon: ${ROUTE} not found — re-point this gate.`)
-  process.exit(1)
+  problems.push(`${ROUTE}: not found — a city stats writer moved; re-point this gate.`)
+  return
 }
 const src = readFileSync(p, 'utf8')
 const sf = ts.createSourceFile(ROUTE, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
@@ -105,6 +115,7 @@ walkCity(sf)
 if (!cityMapChecked) {
   problems.push(`${ROUTE}: no \`citySlugs\` binding found — this gate can no longer see how city slugs are built.`)
 }
+} // end checkRoute
 
 console.log('Market city-slug canonical form gate (ci:market-city-slug-canon)')
 console.log('================================================================')

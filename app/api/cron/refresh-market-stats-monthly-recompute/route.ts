@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { MARKET_REPORT_DEFAULT_CITIES } from '@/app/actions/market-report-types'
-import { slugify } from '@/lib/slug'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const runtime = 'nodejs'
@@ -39,7 +38,12 @@ export async function GET(request: Request) {
     )
   }
 
-  const citySlugs = MARKET_REPORT_DEFAULT_CITIES.map((name) => slugify(name))
+  // §0: compute_and_cache_period_stats matches a city by lower("City")=lower(p_geo_slug)
+  // and stores verbatim, so the geo_slug MUST be the lowercased SPACE form
+  // (lower("City")), never slugify() (which never matches a multi-word city and
+  // wrote stale stubs for La Pine/Powell Butte/Crooked River Ranch). Same as the
+  // sibling refresh-market-stats route. ci:market-city-slug-canon holds both.
+  const citySlugs = MARKET_REPORT_DEFAULT_CITIES.map((name) => name.toLowerCase())
 
   // All geos: cities + region
   const geoEntries: Array<{ geo_type: string; geo_slug: string }> = [
