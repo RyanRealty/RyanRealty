@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.856.1 (2026-07-24)
+
+### Maintenance
+- chore(program): W8.7 done — deterministic §0-safe market narrative generator + writer (35/50)
+
+---
+
+
 ## v1.856.0 (2026-07-24)
 
 ### Features
