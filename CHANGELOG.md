@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.862.1 (2026-07-24)
+
+### Maintenance
+- docs(program): W8.4 done — canonical /housing-market/[geo] timeframe selector + explore retired (39/50)
+
+---
+
+
 ## v1.862.0 (2026-07-24)
 
 ### Features
