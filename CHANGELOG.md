@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.863.4 (2026-07-24)
+
+### Bug Fixes
+- fix(w8.1): §0 — geo-allowlist the public export; purge the backfill_rolling residue
+
+---
+
+
 ## v1.863.3 (2026-07-24)
 
 ### Bug Fixes
