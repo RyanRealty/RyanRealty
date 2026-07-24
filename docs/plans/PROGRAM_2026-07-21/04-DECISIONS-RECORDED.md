@@ -366,3 +366,25 @@ cited static gate didn't exist was fixed by building `ci:subdivision-stats-integ
 city+name scoping, writer slugify keying, consumer ytd period — proven RED on de-scoping city and on
 flipping the period). W2.4 keeps an honest residual (schools section, plat parent cross-links, curated
 events/HOA) — its stats leg is complete.
+
+## §31 — W2.4 MPC parity completes: schools + parent cross-links (M1) — 2026-07-24
+
+The last two MPC-parity legs on /subdivisions/[slug]. SCHOOLS: `get_subdivision_schools` RPC returns
+the modal school per level from the subdivision's OWN listings' MLS school fields (city+SubdivisionName
+scoped, aggregate-only); the DAL's pure `applySchoolThreshold` claims a school ONLY when >=70% of >=10
+listings agree. The §0 case for the threshold is real and live: Rivers Edge Village's elementary splits
+691/1164 (59.4%) across an attendance boundary and is OMITTED, while its high school (Summit High,
+1100/1106 = 99.5%) renders with a verified /schools/summit-high cross-link. A clean 50.0% split
+(Sunrise Village elementary) and masked MLS junk ('********' districts) are likewise never published — a
+wrong school claim is worse than none. PARENT CROSS-LINKS: plain GIS plats derive their parent city as
+the modal city of their own in-boundary listings (strict majority) into breadcrumb + JSON-LD; a plat
+with no matching listings honestly renders no crumb rather than a guess; registry plats keep their
+resort link. Events/HOA render only-where-curated — no curated source exists, so nothing renders,
+which is what the decision says.
+
+Mechanism: `ci:subdivision-stats-integrity` extended (page must call getSubdivisionSchools AND render
+the section — proven RED on removal) + 5 unit tests pinning the threshold on the real mixed-split and
+junk cases. Independent adversarial verifier: PASS with zero defects — recomputed every claim across
+all 100 registry pairs, verified no sub-threshold claim can render, cross-links land on the correct
+school pages, and the W2.1 stats leg is unregressed. W2.1 + W2.4 are both done; the subdivision surface
+now carries stats, sales history, schools, and parent links end to end.

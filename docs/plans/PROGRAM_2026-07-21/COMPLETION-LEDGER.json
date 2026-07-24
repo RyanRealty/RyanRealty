@@ -159,17 +159,31 @@
       "workstream": "W2",
       "mission": "M1",
       "title": "MPC parity: subdivision pages gain sales history, stats, schools, parent cross-links; events/HOA/rules only where curated",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
-        "crons": [],
-        "tests": [],
-        "migrations": [],
-        "paths": []
+        "gates": [
+          "scripts/check-subdivision-stats-integrity.mjs"
+        ],
+        "crons": [
+          "app/api/cron/refresh-subdivision-stats/route.ts"
+        ],
+        "tests": [
+          "lib/data/subdivisions/getSubdivisionSchools.test.ts",
+          "lib/data/market/subdivision-stats.int.test.ts"
+        ],
+        "migrations": [
+          "supabase/migrations/20260724040000_get_subdivision_schools.sql",
+          "supabase/migrations/20260724030000_compute_subdivision_period_stats.sql"
+        ],
+        "paths": [
+          "lib/data/subdivisions/getSubdivisionSchools.ts",
+          "app/subdivisions/[slug]/SubdivisionSchools.tsx",
+          "app/subdivisions/[slug]/page.tsx"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "STATS LEG COMPLETE 2026-07-24 (shared with W2.1, which is done): per-subdivision stats live via compute_subdivision_period_stats + refresh-subdivision-stats cron + ci:subdivision-stats-integrity; sales history live. RESIDUAL for MPC parity: (1) schools section / school cross-link on the subdivision page (none exists — no KbSchools or school link in app/subdivisions/[slug]/page.tsx); (2) parent cross-links for plain GIS plats (registry plats link their parent resort, but non-registry plats have no parent link); (3) events/HOA/rules only-where-curated (no curated source wired). Each is a page-section build with its own §0/data sourcing."
+      "proofPath": "DEMONSTRATED live, all four MPC-parity legs. SALES HISTORY + STATS: shared with W2.1 (done — per-subdivision ytd stats via compute_subdivision_period_stats, §0-verified exact). SCHOOLS (built this pass): get_subdivision_schools RPC returns modal school per level from the subdivision's OWN listings' MLS fields, city+SubdivisionName scoped; applySchoolThreshold (pure, unit-tested) claims a school ONLY at >=70% of >=10 agreement — the real mixed splits are OMITTED (Rivers Edge elementary 691/1164=59.4%, NWX middle 55.8%, Eagle Crest high 55.2%, and a clean 50.0% split at Sunrise Village all correctly absent) while true assignments render with /schools/[slug] cross-links (Summit High 1100/1106=99.5% on rivers-edge-village, link verified to the real school page). Junk MLS values ('********' districts, n<=6) drop out of the >=10 floor. PARENT CROSS-LINKS (built this pass): plain GIS plats derive their parent city as the MODAL city of their own in-boundary listings (strict >50% majority) and link it in breadcrumb + JSON-LD — verified live (1880-ranch + 1925-townhomes carry /cities/bend, independently confirmed as their true city; 27-elm-phase-1 with zero matching listings honestly renders NO crumb rather than a guess); registry plats keep the parent-resort link (rivers-edge-village -> /communities/rivers-edge). EVENTS/HOA/RULES only-where-curated: no curated source exists, so nothing renders — per the decision's own wording. MECHANISMS BITE: ci:subdivision-stats-integrity (in ci:gates) extended to require the page calls getSubdivisionSchools AND renders <SubdivisionSchools> — proven RED on removing the render, GREEN restored; 5 unit tests pin the threshold on the REAL mixed-split and junk cases.",
+      "verifiedBy": "independent adversarial agent (opus, assume-broken) — PASS, zero defects: recomputed every school claim from raw listings across ALL 100 registry pairs (no sub-threshold claim ever renders, no junk clears, RPC == independent recompute exactly), cross-links land on the correct school pages, plain-plat city crumbs independently confirmed correct with honest fail-soft, gate bites RED->GREEN (byte-identical restore), W2.1 stats leg unregressed (strip still renders, int test 2/2).",
+      "remaining": ""
     },
     {
       "id": "W2.6",
