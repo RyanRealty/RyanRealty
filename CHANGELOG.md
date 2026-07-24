@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.857.5 (2026-07-24)
+
+### Maintenance
+- docs(program): W2.1/W2.4 — CORRECT the subdivision read-key (scope note was wrong; would silently fail)
+
+---
+
+
 ## v1.857.4 (2026-07-24)
 
 ### Maintenance
