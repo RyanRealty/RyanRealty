@@ -418,7 +418,7 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
         <section className="section" id="reports-cta" aria-label="Explore and search">
           <div className="wrap">
             <div className="flex flex-wrap items-center gap-3 py-2">
-              <Link href="/housing-market/explore" className="btn alt">
+              <Link href="/housing-market" className="btn alt">
                 Explore market data <span className="arr">→</span>
               </Link>
               <Link

@@ -91,7 +91,6 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     { url: `${baseUrl}/housing-market`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${baseUrl}/housing-market/central-oregon`, lastModified: now, changeFrequency: 'weekly', priority: 0.65 },
     { url: `${baseUrl}/housing-market/reports`, lastModified: now, changeFrequency: 'daily', priority: 0.65 },
-    { url: `${baseUrl}/housing-market/explore`, lastModified: now, changeFrequency: 'weekly', priority: 0.55 },
     // Per-city market pages (mirror the generateStaticParams list in
     // app/housing-market/[...slug]/page.tsx) — the section's main organic
     // asset; without these entries they were crawl-discovery only.

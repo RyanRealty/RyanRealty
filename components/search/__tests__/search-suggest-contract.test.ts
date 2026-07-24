@@ -31,7 +31,7 @@ const FULL_FIXTURE: SearchSuggestionsResult = {
   ],
   zips: [{ postalCode: '97703', city: 'Bend', count: 88, href: '/homes-for-sale?postalCode=97703' }],
   brokers: [{ label: 'Matt Ryan', href: '/team/matt-ryan' }],
-  reports: [{ label: 'Market report · Bend', href: '/reports/explore?city=Bend' }],
+  reports: [{ label: 'Market report · Bend', href: '/housing-market/bend' }],
   pages: [{ label: 'Sell your home', href: '/sell', kind: 'page' }],
 }
 

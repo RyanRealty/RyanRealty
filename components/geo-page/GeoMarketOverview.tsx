@@ -35,9 +35,9 @@ type Props = {
   salesHistory?: YearSeriesPoint[]
   /** e.g. /reports/city/Bend */
   fullReportHref: string
-  /** Year-to-date report for this place (reports/explore?city=X&start=YTD&end=today). When set, shown as primary CTA. */
+  /** Year-to-date report for this place (housing-market/<city>). When set, shown as primary CTA. */
   ytdReportHref?: string | null
-  /** e.g. /reports/explore */
+  /** e.g. /housing-market/<city> */
   exploreHref?: string
   /** For analytics, e.g. "city_market_stats" */
   trackContext: string
@@ -60,7 +60,7 @@ export default function GeoMarketOverview({
   salesHistory = [],
   fullReportHref,
   ytdReportHref,
-  exploreHref = '/housing-market/explore',
+  exploreHref = '/housing-market',
   trackContext,
 }: Props) {
   const fallbackSeries = priceHistory.map((point) => ({

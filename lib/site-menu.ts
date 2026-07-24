@@ -240,7 +240,7 @@ export const MENU: MenuEntry[] = [
         links: [
           { label: 'Market overview', href: '/housing-market' },
           { label: 'Latest market report', href: '/housing-market/reports' },
-          { label: 'Explore reports', href: '/housing-market/explore' },
+          { label: 'Explore reports', href: '/housing-market' },
           { label: 'Recent activity', href: '/activity' },
           { label: 'Price drops', href: '/price-drops' },
           { label: 'Neighborhood guides', href: '/area-guides' },

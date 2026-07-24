@@ -35,7 +35,7 @@ export default function ReportsIndexContent({ reports, salesCards }: Props) {
         className="mt-2 bg-accent text-primary hover:bg-accent/90 shadow-sm"
         onClick={() => trackEvent('view_market_report', { context: 'reports_index_explore' })}
       >
-        <Link href="/housing-market/explore">
+        <Link href="/housing-market">
           Explore market data
           <span aria-hidden>→</span>
         </Link>

@@ -68,7 +68,7 @@ const FAMILIES = [
   { id: 'parks', roots: ['parks'], resolvers: ['app/parks/page.tsx', 'app/parks/[slug]/page.tsx'] },
   { id: 'price-drops', roots: ['price-drops'], resolvers: ['app/price-drops/page.tsx', 'app/price-drops/[city]/page.tsx'] },
   { id: 'motivated-sellers', roots: ['motivated-sellers'], resolvers: ['app/motivated-sellers/page.tsx', 'app/motivated-sellers/[city]/page.tsx'] },
-  { id: 'housing-market', roots: ['housing-market'], resolvers: ['app/housing-market/page.tsx', 'app/housing-market/[...slug]/page.tsx', 'app/housing-market/reports/page.tsx', 'app/housing-market/reports/[slug]/page.tsx', 'app/housing-market/explore/page.tsx', 'app/housing-market/central-oregon/page.tsx'] },
+  { id: 'housing-market', roots: ['housing-market'], resolvers: ['app/housing-market/page.tsx', 'app/housing-market/[...slug]/page.tsx', 'app/housing-market/reports/page.tsx', 'app/housing-market/reports/[slug]/page.tsx', 'app/housing-market/central-oregon/page.tsx'] },
   { id: 'central-oregon', roots: ['central-oregon'], resolvers: ['app/central-oregon/events/page.tsx', 'app/central-oregon/events/[slug]/page.tsx', 'app/central-oregon/venues/page.tsx', 'app/central-oregon/venues/[slug]/page.tsx', 'app/central-oregon/trails/page.tsx', 'app/central-oregon/trails/[slug]/page.tsx', 'app/central-oregon/golf/[slug]/page.tsx'] },
   { id: 'site-index', roots: ['site-index'], resolvers: ['app/site-index/page.tsx'] },
   // sell/buy intent LPs resolve through the [intent] dynamic route, which

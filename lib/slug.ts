@@ -117,15 +117,11 @@ export function cityNeighborhoodPath(citySlug: string, neighborhoodSlug: string)
  * Use for "View year-to-date report" from city/community/neighborhood market overview.
  */
 export function reportsExploreYtdPath(city: string, subdivision?: string | null): string {
-  const now = new Date()
-  const start = `${now.getFullYear()}-01-01`
-  const end = now.toISOString().slice(0, 10)
-  const params = new URLSearchParams()
-  params.set('city', city.trim())
-  if (subdivision?.trim()) params.set('subdivision', subdivision.trim())
-  params.set('start', start)
-  params.set('end', end)
-  return `/reports/explore?${params.toString()}`
+  // W8.4: the custom explore tool is retired; route to the canonical pre-generated
+  // report. A subdivision goes to its /subdivisions page, otherwise the city report
+  // (which carries the YTD-default timeframe selector).
+  if (subdivision?.trim()) return `/subdivisions/${slugify(subdivision.trim())}`
+  return `/housing-market/${slugify(city.trim())}`
 }
 
 /** Entity key for a subdivision (e.g. city "Bend", subdivision "Sunriver" -> "bend:sunriver"). */

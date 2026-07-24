@@ -39,12 +39,9 @@ function formatPeriodLabel(start: string, end: string): string {
   }
 }
 
-function buildExploreHref(city: string, periodStart: string, periodEnd: string): string {
-  const params = new URLSearchParams()
-  params.set('city', city)
-  params.set('start', periodStart)
-  params.set('end', periodEnd)
-  return `/reports/explore?${params.toString()}`
+function buildExploreHref(city: string): string {
+  // W8.4: retired the custom explore tool — link the canonical city report.
+  return `/housing-market/${city.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`
 }
 
 const CHART_COLORS = {
@@ -196,7 +193,7 @@ export default function MarketPulseCarousel({
                 Housing Market Report
               </H2>
               <p className="mt-2 text-muted-foreground">
-                Residential home sales by city. Click a card to open the report generator with that city and year-to-date range.
+                Residential home sales by city. Click a card to open that city.s market report.
               </p>
             </>
           ) : (
@@ -205,7 +202,7 @@ export default function MarketPulseCarousel({
                 Browse by city
               </h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Same residential scope as the snapshot above (no land or manufactured). Each card shows active inventory for that city. Open the report tool to change dates or add communities.
+                Same residential scope as the snapshot above (no land or manufactured). Each card shows active inventory for that city. Click a card to open that city.s full market report.
               </p>
             </>
           )}
@@ -247,7 +244,7 @@ export default function MarketPulseCarousel({
               className="flex gap-4 overflow-x-auto pb-2 scroll-smooth no-scrollbar [scroll-snap-type:x_mandatory]"
             >
               {metricsByCity.map((city) => {
-                const exploreHref = buildExploreHref(city.city, periodStart, periodEnd)
+                const exploreHref = buildExploreHref(city.city)
                 return (
                   <div
                     key={city.city}
@@ -333,7 +330,7 @@ export default function MarketPulseCarousel({
 
           <div className="mt-8 flex justify-center">
             <Button variant="outline" size="default" className="group" asChild>
-              <Link href="/reports/explore" className="gap-2">
+              <Link href="/housing-market/reports" className="gap-2">
                 Explore full reports
                 <HugeiconsIcon icon={ArrowRight01Icon} className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Link>

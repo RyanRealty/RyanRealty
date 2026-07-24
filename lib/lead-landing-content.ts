@@ -254,7 +254,7 @@ export const BUY_INTENT_PAGES: Record<string, LeadLandingConfig> = {
     imageAlt: 'Modern home exterior and neighborhood street view',
     primaryCtaLabel: 'Get my investment strategy call',
     secondaryCtaLabel: 'View market reports',
-    secondaryCtaHref: '/reports/explore',
+    secondaryCtaHref: '/housing-market',
     trustBullets: [
       'Data first buy box planning',
       'Neighborhood and inventory intelligence',

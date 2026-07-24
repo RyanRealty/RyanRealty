@@ -114,7 +114,7 @@ export async function GET() {
 ## Market Data
 - Housing market hub: ${SITE_URL}/housing-market
 - Market reports: ${SITE_URL}/reports
-- Market explorer: ${SITE_URL}/reports/explore${reportLines}
+- Market reports: ${SITE_URL}/housing-market${reportLines}
 
 ## Local Areas
 - Cities: ${SITE_URL}/cities

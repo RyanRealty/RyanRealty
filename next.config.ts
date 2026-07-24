@@ -176,7 +176,12 @@ const nextConfig: NextConfig = {
       { source: '/agents', destination: '/team', permanent: true },
       { source: '/agents/:slug', destination: '/team/:slug', permanent: true },
       { source: '/reports', destination: '/housing-market/reports', permanent: true },
-      { source: '/reports/explore', destination: '/housing-market/explore', permanent: true },
+      // W8.4: the custom-filter explore tool is retired in favor of the
+      // pre-generated /housing-market/[geo] reports (with the timeframe selector).
+      // Both explore routes redirect to the housing-market hub. ci:no-explore-route
+      // enforces the retirement.
+      { source: '/reports/explore', destination: '/housing-market', permanent: true },
+      { source: '/housing-market/explore', destination: '/housing-market', permanent: true },
       { source: '/reports/:slug/:geoName', destination: '/housing-market/reports/:slug/:geoName', permanent: true },
       // Single-segment report (e.g. /reports/weekly-2026-05-24) had no rule, so it
       // and /housing-market/reports/:slug both returned 200 = duplicate content.

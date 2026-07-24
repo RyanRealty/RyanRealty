@@ -366,7 +366,6 @@ export default async function HousingMarketHubPage() {
             {[
               { href: '/housing-market/central-oregon', label: 'Central Oregon region report' },
               { href: '/housing-market/reports', label: 'Market report index' },
-              { href: '/housing-market/explore', label: 'Open data explorer' },
               { href: '/cities', label: 'All Central Oregon cities' },
               { href: '/communities', label: 'Communities and neighborhoods' },
               { href: '/homes-for-sale', label: 'Browse homes for sale' },
