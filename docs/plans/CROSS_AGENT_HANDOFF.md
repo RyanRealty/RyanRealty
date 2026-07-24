@@ -1,4 +1,78 @@
-> **NEWEST, START HERE: the /goal COMPLETION-RUN block immediately below (2026-07-23).** Prior: AUDIT-HARDENING (2026-07-17 late), ONE-NAV + UNIFIED-SEND (2026-07-17 eve), CMA VERSION-CHAIN (2026-07-17 PM), the ADMIN-REBUILD v2 LITMUS block (2026-07-17 AM), then RC1 (2026-07-16).
+> **NEWEST, START HERE: the W8.4 + W8.1 MARKET-REPORT block immediately below (2026-07-24).** Prior: the /goal COMPLETION-RUN block (2026-07-23), AUDIT-HARDENING (2026-07-17 late), ONE-NAV + UNIFIED-SEND (2026-07-17 eve), CMA VERSION-CHAIN (2026-07-17 PM), the ADMIN-REBUILD v2 LITMUS block (2026-07-17 AM), then RC1 (2026-07-16).
+
+
+# W8.4 + W8.1 MARKET REPORTS — 2026-07-24 (Opus session), HEAD `11d84e06`
+
+**Ledger 39/50.** `ci:program-complete` green. Decisions through §32.
+
+## W8.4 — DONE (flipped, §32 recorded)
+Timeframe selector on the canonical `/housing-market/[geo]` report (`KbTimeframeStats`, YTD default,
+30d/90d/YTD/12mo) + the custom-filter explore tool retired (both routes 308 -> `/housing-market`, gated by
+`ci:no-explore-route`). Independently verified PASS.
+
+## W8.1 — BUILT AND PUSHED, **NOT FLIPPED**. Run round 5 before flipping.
+"One generation path": every public market number reads `market_stats_cache` / `market_pulse_live`.
+Public RPC census is ZERO, held by `ci:no-report-rpc` (AST, 19 violation forms proven RED). Admin
+custom-report tools + the `market-stat-consistency` monitor keep the RPC legitimately (path allowlist).
+
+This was scoped as architecture cleanup and became a §0 correctness fix: `/reports` rendered cache-based
+cards directly above an RPC-based table that **disagreed about the same city on one screen** (Bend: card
+507 active / MoS 3.9 "seller's" vs table 984 / 5.3 "balanced"). They now agree by construction.
+
+### FOUR adversarial rounds, four FAILs, four real defects. Two I introduced while fixing the previous one.
+1. **R1** — slug resolution returned on the first candidate that answered *anything*, so multi-word cities
+   published em-dashes for periods the cache held (La Pine hid 44 YTD sales).
+2. **R2** — the per-source fix caused **mixed-geography rows**. `boundaries` stored `la-pine` (the only
+   hyphenated city polygon), so that spelling scoped to city limits while `la pine` counted the whole MLS
+   city; mixing fields published 44 sold "YTD" beside 58 in the last 90 days. Fixed: ONE spelling supplies
+   every field, plus a DB repair (canonical ytd/quarterly written, 9 hyphen rows dropped).
+3. **R3** — **`backfill_rolling` writes a non-SFR universe** (no `PropertyType='A'`, no `property_sub_type`,
+   no polygon) into rows labeled SFR-only. The `revalidateTag` I had just added forced readers to sample
+   that corrupt window and pin it 6h: Bend published 2,819 twelve-month sales vs a true 1,657. Fixed: Step 1
+   of the refresh cron now calls `compute_and_cache_period_stats` per geo (36-72s vs a 300s budget).
+4. **R4** — the old writer's residue was still publishable: `/api/reports/export` took `?city=` unvalidated,
+   so `?city=Central Point` returned a branded workbook with 367 sales vs 272 SFR truth. Fixed: geo
+   allowlist (400 outside `MARKET_REPORT_DEFAULT_CITIES`) + purged 19,467 out-of-area city rows and 198
+   orphaned `central_oregon` region rows.
+
+### NEXT ACTION
+Run an adversarial round 5 (assume-broken brief) against HEAD. If clean: flip W8.1 to done (-> 40/50) via
+the scratchpad `apply-w81-flip.mjs` and append `w81-decisions-33.md` as §33. **`requiredMechanism` format:**
+`gates` are SCRIPT PATHS (`scripts/check-no-report-rpc.mjs`), never `ci:` names; every entry is
+`existsSync`-checked. See memory `reference_program_complete_gate_format`.
+
+### Carried forward, NOT fixed (all stated in commit `0c6eb71f`)
+- **`compute_and_cache_period_stats` never writes `methodology_version`/`methodology` on upsert** — a row
+  inherits a label the measurer never asserted. That is the mechanism that let the residue look
+  authoritative. Wants a migration.
+- **Gate gaps**: destructured `const { rpc } = supabase`; a NEW wrapper added to `app/actions/reports.ts`
+  (banned list is three fixed names); `.mjs`/`.js` inside the scan roots.
+- **`envelopePeriod`** can print one header window when rows disagree on `period_start` (a timed-out cron
+  could produce that).
+- **Doc drift**: `docs/DATABASE_FOR_AI_AGENTS.md` still describes the retired `backfill_rolling` path;
+  CLAUDE.md says methodology `v4-2026-05-15`, the DB says `v3-2026-05-07`.
+- **Pre-existing/unrelated**: `bend-undesignated` fails every refresh run (no rows in
+  `neighborhood_subdivisions`) — non-fatal, lands in `failed_geos`.
+
+### Production data changed (all recomputable via `compute_and_cache_period_stats`)
+Canonical `ytd`+`quarterly` rows written for `la pine` and `powell butte`; 9 hyphenated city rows deleted;
+19,467 out-of-service-area city rows + 198 `region/central_oregon` rows deleted; the refresh cron run
+several times (normal operation).
+
+### Working-tree note — a CONCURRENT session shares this checkout
+It owns uncommitted edits to `app/search/[...slug]/page.tsx`, `lib/site/preset-faq.ts`, `package.json`
+(its `ci:search-preset-depth` entry) and the untracked `scripts/check-search-preset-depth.mjs`. Do NOT
+commit or revert them. `npm run push` needs a clean tree: back them up, `git checkout --` the tracked
+three, move the untracked one aside, push, then restore byte-identical (verify md5). Its
+`app/search/[...slug]/page.tsx` breaches `ci:file-size-budget` (+26) — theirs to resolve, not a blocker.
+
+### Open rows after W8.1
+W8.6 (audience selector on the market-report send engine — scoped; **building is fine, SENDING to real
+people is per-action approval**), W5.1, W13.1, W2.7, W3.2/W3.5 (concurrent session's lane), W5.5 leg-b.
+Blocked on Matt: W6.8, W9.1, W9.5.
+
+---
+
 
 # /goal COMPLETION RUN — RR-PLATFORM-DECISIONS ledger (2026-07-23, Opus session)
 
