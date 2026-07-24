@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.860.0 (2026-07-24)
+
+### Features
+- feat(w2.4): subdivision schools section + plat parent cross-links — MPC parity residual
+
+---
+
+
 ## v1.859.1 (2026-07-24)
 
 ### Maintenance
