@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.862.0 (2026-07-24)
+
+### Features
+- feat(w8.4b): retire the custom explore tool — canonical /housing-market/[geo] reports stand alone
+- feat(w8.4a): timeframe selector on the canonical /housing-market/[geo] report
+
+### Maintenance
+- refactor(w8.4a): extract timeframe fetch into a DAL helper; re-baseline page +15
+
+---
+
+
 ## v1.861.2 (2026-07-24)
 
 ### Maintenance
