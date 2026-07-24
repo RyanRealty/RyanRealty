@@ -65,7 +65,7 @@ import {
   getMarketPulse,
   getPriceHistory,
   getMarketPulseCitySnapshots,
-  getCityMarketDetail,
+  getCityMarketDetailByTimeframe,
   getRecentBlogPosts,
 } from '@/lib/data'
 import { buildMarketFaq } from '@/lib/site/market-faq'
@@ -355,24 +355,21 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   const isCity = geoType === 'city'
   const priceHistoryLimit = isCity ? 60 : 24
 
-  const [pulse, priceHistory, citySnapshots, detail, detailYtd, detailRolling, blogPosts] = await Promise.all([
+  // W8.4 timeframe selector — YTD default + trailing month + rolling 12mo; one
+  // DAL helper fans out to the cached getCityMarketDetail per period (city only,
+  // never rejects — each period self-catches to null).
+  const [pulse, priceHistory, citySnapshots, timeframes, blogPosts] = await Promise.all([
     getMarketPulse({ geoType, geoSlug }).catch(() => null),
     getPriceHistory(geoType, geoSlug, 'monthly', priceHistoryLimit).catch(() => []),
     getMarketPulseCitySnapshots(COMPARISON_CITY_LABELS).catch(() => []),
-    isCity
-      ? getCityMarketDetail({ geoType, geoSlug, periodType: 'monthly' }).catch(() => null)
-      : Promise.resolve(null),
-    // W8.4 timeframe selector — YTD (default) + rolling 12mo, alongside monthly.
-    isCity
-      ? getCityMarketDetail({ geoType, geoSlug, periodType: 'ytd' }).catch(() => null)
-      : Promise.resolve(null),
-    isCity
-      ? getCityMarketDetail({ geoType, geoSlug, periodType: 'rolling_365d' }).catch(() => null)
-      : Promise.resolve(null),
+    isCity ? getCityMarketDetailByTimeframe(geoType, geoSlug) : Promise.resolve(null),
     isCity
       ? getRecentBlogPosts({ limit: 3 }).catch(() => [])
       : Promise.resolve([] as Awaited<ReturnType<typeof getRecentBlogPosts>>),
   ])
+  const detailYtd = timeframes?.ytd ?? null
+  const detail = timeframes?.monthly ?? null
+  const detailRolling = timeframes?.rolling_365d ?? null
 
   // Unknown-geo guard: a URL with NO pulse row and NO price history is not a
   // place we cover — 404 instead of rendering confident fallback copy
@@ -603,9 +600,8 @@ export default async function HousingMarketGeoPage({ params }: Props) {
               region and city pages. */}
           <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} />
 
-          {/* W8.4 — canonical report timeframe selector. YTD default; switches to
-              this-month / last-12-months. Every figure is a pre-fetched
-              market_stats_cache row (getCityMarketDetail per period), §0-traced. */}
+          {/* W8.4 timeframe selector — YTD default; each period is a pre-fetched
+              market_stats_cache row (§0-traced, formats only). */}
           {(detailYtd || detail || detailRolling) ? (
             <KbTimeframeStats
               cityName={cityName}

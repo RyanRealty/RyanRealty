@@ -110,3 +110,23 @@ export const getCityMarketDetail = makeResilientCached(
   },
   null,
 )
+
+/**
+ * The three timeframe rows the KbTimeframeStats selector renders (W8.4): YTD
+ * (default), trailing month, and rolling 12 months — each the most-recent
+ * market_stats_cache row for its period_type. Fans out to the cached
+ * getCityMarketDetail so every period keeps its own cache entry + tag; a null
+ * period (no cache row) renders as em-dash, never fabricated. Any transient DB
+ * error on one period resolves that slot to null — the others still render.
+ */
+export async function getCityMarketDetailByTimeframe(
+  geoType: GetCityMarketDetailInput['geoType'],
+  geoSlug: string,
+): Promise<{ ytd: MarketDetail | null; monthly: MarketDetail | null; rolling_365d: MarketDetail | null }> {
+  const [ytd, monthly, rolling_365d] = await Promise.all([
+    getCityMarketDetail({ geoType, geoSlug, periodType: 'ytd' }).catch(() => null),
+    getCityMarketDetail({ geoType, geoSlug, periodType: 'monthly' }).catch(() => null),
+    getCityMarketDetail({ geoType, geoSlug, periodType: 'rolling_365d' }).catch(() => null),
+  ])
+  return { ytd, monthly, rolling_365d }
+}
