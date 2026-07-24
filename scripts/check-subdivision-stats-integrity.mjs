@@ -119,6 +119,28 @@ if (!existsSync(PAGE)) {
   } else if (objArgProp(subCall, 'periodType') !== 'ytd') {
     problems.push(`subdivision getMarketStats periodType is "${objArgProp(subCall, 'periodType')}", must be "ytd" (the populated, ODS-safe period)`)
   }
+
+  // ── 4. Schools section (W2.4 MPC parity): the page must fetch the
+  //      §0-thresholded schools AND render the section. ──
+  const schoolCalls = findCalls(sf, (call) => ts.isIdentifier(call.expression) && call.expression.text === 'getSubdivisionSchools')
+  if (schoolCalls.length === 0) {
+    problems.push('subdivision page does not call getSubdivisionSchools (W2.4 schools leg unwired)')
+  }
+  let rendersSchools = false
+  ;(function walkJsx(node) {
+    if (
+      (ts.isJsxSelfClosingElement(node) && node.tagName.getText() === 'SubdivisionSchools') ||
+      (ts.isJsxOpeningElement(node) && node.tagName.getText() === 'SubdivisionSchools')
+    ) {
+      rendersSchools = true
+    }
+    node.forEachChild((c) => {
+      walkJsx(c)
+    })
+  })(sf)
+  if (!rendersSchools) {
+    problems.push('subdivision page does not render <SubdivisionSchools> (W2.4 schools section missing)')
+  }
 }
 
 console.log('Subdivision stats integrity gate (ci:subdivision-stats-integrity)')

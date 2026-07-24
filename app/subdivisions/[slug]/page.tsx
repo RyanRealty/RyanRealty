@@ -34,6 +34,8 @@ import {
 import { isSubdivisionIndexable } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { getSubdivisionSalesHistory } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
 import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
+import { getSubdivisionSchools } from '@/lib/data/subdivisions/getSubdivisionSchools'
+import { SubdivisionSchools } from './SubdivisionSchools'
 import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
@@ -221,8 +223,25 @@ export default async function SubdivisionPage({ params }: Props) {
 
   // ── Name + city display ───────────────────────────────────────────────────
   const displayName = registryMatch?.canonicalName ?? slugToTitle(slug)
-  const cityName = registryMatch?.city ?? 'Central Oregon'
-  const citySlug = registryMatch?.citySlug ?? null
+  // Parent city for plain GIS plats (W2.4 parent cross-link): the MODAL city
+  // among the plat's own in-boundary listings, already fetched — derived from
+  // data, never guessed (§0). Claimed only when a strict majority agrees.
+  const tileCityCounts = new Map<string, { citySlug: string | null; n: number }>()
+  for (const t of mapTiles) {
+    if (!t.city) continue
+    const cur = tileCityCounts.get(t.city) ?? { citySlug: t.citySlug ?? null, n: 0 }
+    cur.n += 1
+    if (!cur.citySlug && t.citySlug) cur.citySlug = t.citySlug
+    tileCityCounts.set(t.city, cur)
+  }
+  const modalTileCity = [...tileCityCounts.entries()].sort((a, b) => b[1].n - a[1].n)[0]
+  const tileTotal = [...tileCityCounts.values()].reduce((s, v) => s + v.n, 0)
+  const derivedPlatCity =
+    modalTileCity && tileTotal > 0 && modalTileCity[1].n / tileTotal > 0.5
+      ? { city: modalTileCity[0], citySlug: modalTileCity[1].citySlug }
+      : null
+  const cityName = registryMatch?.city ?? derivedPlatCity?.city ?? 'Central Oregon'
+  const citySlug = registryMatch?.citySlug ?? derivedPlatCity?.citySlug ?? null
   const resortLabel = registryMatch?.resortLabel ?? null
   const resortSlug = registryMatch?.resortSlug ?? null
 
@@ -357,7 +376,7 @@ export default async function SubdivisionPage({ params }: Props) {
   // RPC (fails soft to [] until the migration is applied); stats = the
   // market_stats_cache geo_type='subdivision' row when one exists (most plats
   // have none until the cache backfill — the section feature-detects both).
-  const [salesHistory, subdivisionStats] = await Promise.all([
+  const [salesHistory, subdivisionStats, subdivisionSchools] = await Promise.all([
     withTimeoutFallback(getSubdivisionSalesHistory(slug), [], 4500, 'sub:sales-history'),
     withTimeoutFallback(
       // ytd is the stable subdivision stat period (refresh-subdivision-stats writes
@@ -368,6 +387,17 @@ export default async function SubdivisionPage({ params }: Props) {
       4500,
       'sub:market-stats',
     ),
+    // Schools (W2.4 MPC parity): city+SubdivisionName scoped modal assignment
+    // from the subdivision's OWN listings, §0-thresholded (>=70% of >=10 agree).
+    // Registry-only — a GIS plat has no exact (city, name) identity to scope on.
+    registryMatch
+      ? withTimeoutFallback(
+          getSubdivisionSchools(registryMatch.city, registryMatch.canonicalName),
+          [],
+          4500,
+          'sub:schools',
+        )
+      : Promise.resolve([]),
   ])
 
   // ── JSON-LD ───────────────────────────────────────────────────────────────
@@ -377,7 +407,13 @@ export default async function SubdivisionPage({ params }: Props) {
       items: [
         { name: 'Home', url: '/' },
         { name: 'Communities', url: '/communities' },
-        ...(resortSlug ? [{ name: resortLabel ?? displayName, url: `/communities/${resortSlug}` }] : []),
+        // Parent cross-link (W2.4): resort when registry-matched, else the
+        // derived parent city for plain GIS plats.
+        ...(resortSlug
+          ? [{ name: resortLabel ?? displayName, url: `/communities/${resortSlug}` }]
+          : citySlug
+            ? [{ name: cityName, url: `/cities/${citySlug}` }]
+            : []),
         { name: displayName, url: `/subdivisions/${slug}` },
       ],
     },
@@ -403,7 +439,13 @@ export default async function SubdivisionPage({ params }: Props) {
         trail={[
           { label: 'Home', href: '/' },
           { label: 'Communities', href: '/communities' },
-          ...(resortSlug ? [{ label: resortLabel ?? displayName, href: `/communities/${resortSlug}` }] : []),
+          // Parent cross-link (W2.4): resort for registry plats, derived city
+          // for plain GIS plats (modal city of the plat's own listings).
+          ...(resortSlug
+            ? [{ label: resortLabel ?? displayName, href: `/communities/${resortSlug}` }]
+            : citySlug
+              ? [{ label: cityName, href: `/cities/${citySlug}` }]
+              : []),
           { label: displayName },
         ]}
       />
@@ -471,6 +513,10 @@ export default async function SubdivisionPage({ params }: Props) {
           history={salesHistory}
           stats={subdivisionStats}
         />
+        {/* Assigned schools (W2.4 MPC parity) — §0-thresholded modal assignment
+            from this subdivision's own listings; renders null when no level
+            clears the >=70%-of->=10 majority. */}
+        <SubdivisionSchools displayName={displayName} schools={subdivisionSchools} />
         <KbSell
           data={{
             medianListPrice: null,
