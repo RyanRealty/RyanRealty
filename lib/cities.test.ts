@@ -156,12 +156,22 @@ describe('cities', () => {
   })
 
   describe('PRIMARY_CITIES', () => {
-    it('has 9 cities', () => {
-      expect(PRIMARY_CITIES).toHaveLength(9)
+    // 7 as of 2026-07-24: 'Tumalo' + 'Crooked River Ranch' were removed because
+    // neither is a distinct MLS listings."City" value (Tumalo files under Bend,
+    // CRR under Terrebonne, by SubdivisionName) so their /cities pages were
+    // permanently empty. Both now redirect (next.config.ts). See G57
+    // ci:market-city-mls-canon + lib/data/geo/report-cities.ts.
+    it('has 7 cities', () => {
+      expect(PRIMARY_CITIES).toHaveLength(7)
     })
 
     it('starts with Bend', () => {
       expect(PRIMARY_CITIES[0]).toBe('Bend')
+    })
+
+    it('does not list Tumalo or Crooked River Ranch (not MLS cities)', () => {
+      expect(PRIMARY_CITIES).not.toContain('Tumalo')
+      expect(PRIMARY_CITIES).not.toContain('Crooked River Ranch')
     })
   })
 })

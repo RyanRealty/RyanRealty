@@ -71,20 +71,20 @@ export const NEWSLETTER_MARKET_CITY_SLUGS: readonly string[] = [
 ]
 
 /**
- * Wider stat tier (11, display names) — the home-page snapshot, market-pulse
+ * Wider stat tier (9, display names) — the home-page snapshot, market-pulse
  * carousel, listing-video geos, the /reports page, and the refresh-market-stats
- * crons. A SUPERSET of the report core with the outer-county cities (Madras,
- * Prineville, Powell Butte, Crooked River Ranch). Deliberately DISTINCT from the
- * report core — folding it in would drop those 4 cities from the stat crons.
+ * crons. Adds the outer-county cities (Madras, Prineville, Powell Butte) to most
+ * of the report core.
  *
- * NOT every entry is a distinct MLS `listings."City"` value: `Tumalo` (0 rows;
- * files under Bend) and `Crooked River Ranch` (0 rows; live inventory files under
- * Terrebonne, historical under the now-dead "Crooked River" string) each match
- * nothing, so their city cache + /cities page are permanently empty. They are
- * kept for coverage/identity and recorded in `NON_MLS_CITY_EXEMPTIONS` below. The
- * stat crons that consume this list lower()-key on the name, so those two write
- * empty stubs rather than a wrong number (§0-latent). See `ci:market-city-mls-canon`
- * (G57), which fails CI if any entry here matches no `City` and is not exempted.
+ * Every entry is a real MLS `listings."City"` value (verified live 2026-07-24).
+ * `Tumalo` and `Crooked River Ranch` were REMOVED here 2026-07-24 (Matt's call):
+ * neither is a distinct MLS city — Tumalo files under Bend, CRR under Terrebonne,
+ * by SubdivisionName — so each produced a permanently-empty city cache stub. CRR
+ * now redirects to /communities/crooked-river-ranch; Tumalo already redirects to
+ * /cities/bend (both in next.config.ts). `ci:market-city-mls-canon` (G57) fails
+ * CI if any entry here matches no `City` and is not exempted. (Tumalo still
+ * appears in REPORT_CITIES + NEWSLETTER_MARKET_CITY_SLUGS — separate literals,
+ * left as-is here; its exemption below still covers those.)
  */
 export const MARKET_REPORT_DEFAULT_CITIES = [
   'Bend',
@@ -92,27 +92,26 @@ export const MARKET_REPORT_DEFAULT_CITIES = [
   'Sisters',
   'La Pine',
   'Sunriver',
-  'Tumalo',
   'Terrebonne',
   'Madras',
   'Prineville',
   'Powell Butte',
-  'Crooked River Ranch',
 ] as const
 
 /**
- * The /cities feature tier (9, display names, EXACT display order) — the
+ * The /cities feature tier (7, display names, EXACT display order) — the
  * top-of-/cities cards, sales-report card routing, and the map pins
  * (`lib/map-constants.ts` order matches this). A distinct set from the report
  * core and the stat tier; order is load-bearing (map pins + card order).
  *
- * Spellings are the MLS `listings."City"` values EXCEPT `Tumalo` and `Crooked
- * River Ranch`, which match 0 rows — exactly the "non-canonical spelling →
- * permanently-empty card" case, but INTRINSIC here, not a typo: neither is a
- * distinct MLS city (Tumalo → Bend, CRR → Terrebonne, by SubdivisionName). Today
- * `/cities/tumalo` 307-redirects to /cities/bend and `/cities/crooked-river-ranch`
- * 404s (no `geo_snapshot_mv` row). Both are documented in `NON_MLS_CITY_EXEMPTIONS`
- * below; `ci:market-city-mls-canon` (G57) enforces the rest.
+ * Every entry is a real MLS `listings."City"` value. `Tumalo` and `Crooked River
+ * Ranch` were REMOVED 2026-07-24 (Matt's call) — neither is a distinct MLS city,
+ * so their /cities pages were permanently empty. `/cities/crooked-river-ranch`
+ * now redirects to /communities/crooked-river-ranch and `/cities/tumalo` to
+ * /cities/bend (next.config.ts). (The /cities index `FEATURED_CITY_SLUGS` cards
+ * and the `lib/map-constants.ts` pins are separate literals and still list both,
+ * now leading to those redirects.) `ci:market-city-mls-canon` (G57) enforces
+ * that every remaining name matches a real `City`.
  */
 export const PRIMARY_CITIES = [
   'Bend',
@@ -120,27 +119,31 @@ export const PRIMARY_CITIES = [
   'La Pine',
   'Sisters',
   'Sunriver',
-  'Tumalo',
-  'Crooked River Ranch',
   'Prineville',
   'Madras',
 ] as const
 
 /**
  * City-tier registry NAMES that are deliberately NOT distinct MLS
- * `listings."City"` values. Every OTHER name across REPORT_CITIES /
- * MARKET_REPORT_DEFAULT_CITIES / PRIMARY_CITIES lower()-matches a real `City`
- * with live inventory (Bend, Redmond, Sisters, Sunriver, La Pine, Terrebonne,
- * Madras, Prineville, Powell Butte — all verified live 2026-07-24). These two do
- * not, and by the MLS's own filing convention never will: each community's
- * listings file under a PARENT city plus a `SubdivisionName`.
+ * `listings."City"` values but still appear in a gate-checked registry. Every
+ * OTHER name across REPORT_CITIES / MARKET_REPORT_DEFAULT_CITIES / PRIMARY_CITIES
+ * lower()-matches a real `City` with live inventory (Bend, Redmond, Sisters,
+ * Sunriver, La Pine, Terrebonne, Madras, Prineville, Powell Butte — all verified
+ * live 2026-07-24).
+ *
+ * `Crooked River Ranch` used to live here too, but on 2026-07-24 (Matt's call) it
+ * was REMOVED from MARKET_REPORT_DEFAULT_CITIES + PRIMARY_CITIES and its `/cities`
+ * URL now redirects to `/communities/crooked-river-ranch` — its real, live surface
+ * (Terrebonne + `SubdivisionName` ~ 'Crooked River Ranch' / 'Crr%'). It no longer
+ * appears in any gate-checked registry, so it needs no exemption. `Tumalo` was
+ * removed from those two tiers as well, but STILL appears in REPORT_CITIES (the
+ * report core) + NEWSLETTER_MARKET_CITY_SLUGS, so it stays exempted here.
  *
  * Why EXEMPTED, not ALIASED to the parent city: `compute_and_cache_period_stats`
- * keys a city on `lower("City") = lower(p_geo_slug)`, so aliasing "Crooked River
- * Ranch" to "Terrebonne" for the cache would publish ALL of Terrebonne's stats
- * under the CRR label (and all of Bend's under Tumalo) — a §0 MISATTRIBUTION, far
- * worse than an honest empty. A community's correct market surface is
- * subdivision/community-scoped, not city-scoped.
+ * keys a city on `lower("City") = lower(p_geo_slug)`, so aliasing "Tumalo" to
+ * "Bend" for the cache would publish ALL of Bend's stats under the Tumalo label —
+ * a §0 MISATTRIBUTION, far worse than an honest empty. A community's correct
+ * market surface is subdivision/community-scoped, not city-scoped.
  *
  * `ci:market-city-mls-canon` (G57, nightly — reads live Supabase) enforces:
  *   • a city-tier name matching 0 `City` rows AND not exempted here → FAIL
@@ -149,13 +152,6 @@ export const PRIMARY_CITIES = [
  *     rows → FAIL (the "the real listings live here" claim must stay true)
  *
  * Verified live 2026-07-24 (§0, PostgREST exact count):
- *   Crooked River Ranch — `City` rows = 0. Historical rows filed as City="Crooked
- *     River" (3,256 rows, all Closed/Expired/Canceled ≤ 2019). LIVE inventory
- *     files under City="Terrebonne", `SubdivisionName` ~ 'Crooked River Ranch' /
- *     'Crr%' (51 active SFR; closes through Jul 2026; ZIP 97760). Its `/cities`
- *     page 404s; its live surface is `/communities/crooked-river-ranch` (which
- *     today matches only the LITERAL "Crooked River Ranch" subdivision, not every
- *     'Crr%' variant — a separate undercount to close).
  *   Tumalo — `City` rows = 0. LIVE inventory files under City="Bend",
  *     `SubdivisionName` ~ 'Tumalo Heights' / 'Tumalo Rim'. `/cities/tumalo`
  *     307-redirects to `/cities/bend` (next.config.ts). No aggregated Tumalo
@@ -175,12 +171,6 @@ export const NON_MLS_CITY_EXEMPTIONS: Readonly<
     }
   >
 > = {
-  'Crooked River Ranch': {
-    reason: 'Rural planned community in Terrebonne; its own-City string ("Crooked River") went dead in 2019.',
-    mlsCity: 'Terrebonne',
-    subdivisionMatch: ['Crooked River Ranch', 'Crr%'],
-    servedAt: '/communities/crooked-river-ranch',
-  },
   Tumalo: {
     reason: 'Bend-area community; the MLS files it under Bend by SubdivisionName, never as its own City.',
     mlsCity: 'Bend',

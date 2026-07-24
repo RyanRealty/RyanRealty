@@ -149,6 +149,13 @@ const nextConfig: NextConfig = {
       // 404'd. Send it to Bend rather than dead-end. Temporary (307) in case
       // Tumalo gets its own data + page later.
       { source: '/cities/tumalo', destination: '/cities/bend', permanent: false },
+      // /cities/crooked-river-ranch likewise has no geo_snapshot_mv row (CRR is
+      // not a distinct MLS city — its listings file under Terrebonne by
+      // SubdivisionName) so the page 404'd. Send it to its real, live community
+      // surface instead of dead-ending. Temporary (307) in case CRR gets its own
+      // city data + page later. Removed from the city tiers 2026-07-24 — see
+      // lib/data/geo/report-cities.ts NON_MLS_CITY_EXEMPTIONS.
+      { source: '/cities/crooked-river-ranch', destination: '/communities/crooked-river-ranch', permanent: false },
       // /sold is linked from the site footer ("Sold data") but had no route -> 404
       // on every page. Point it at the sold-listings view (search filtered to
       // closed). Caught by the new check-internal-links gate.
