@@ -266,7 +266,12 @@ export async function getCmaBrokerBySlugOrEmail(opts: {
 }): Promise<Record<string, unknown> | null> {
   const sb = client()
   if (!sb) return null
-  const cols = 'id, slug, display_name, title, license_number, email, phone, photo_url, is_active'
+  // twilio_number is the PUBLISHABLE line. `phone` is NOT safe to render: for
+  // Paul and Rebecca it currently holds the same value as forward_to_cell,
+  // i.e. their personal cell. A CMA is a client-facing document, so the
+  // signature block must render the business line the main number routes to.
+  const cols =
+    'id, slug, display_name, title, license_number, email, twilio_number, photo_url, is_active'
   if (opts.slug?.trim()) {
     const { data } = await sb.from('brokers').select(cols).eq('slug', opts.slug.trim()).eq('is_active', true).maybeSingle()
     if (data) return data as Record<string, unknown>
@@ -284,7 +289,7 @@ export async function listActiveBrokersForCma(): Promise<Array<Record<string, un
   if (!sb) return []
   const { data } = await sb
     .from('brokers')
-    .select('id, slug, display_name, title, license_number, email, phone, photo_url')
+    .select('id, slug, display_name, title, license_number, email, twilio_number, photo_url')
     .eq('is_active', true)
     .order('sort_order', { ascending: true })
   return (data ?? []) as Array<Record<string, unknown>>

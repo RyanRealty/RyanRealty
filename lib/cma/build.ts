@@ -64,7 +64,12 @@ async function resolveBroker(input: CmaBuildInput): Promise<CmaBroker> {
       title: (row.title as string) || 'Broker',
       licenseNumber: (row.license_number as string | null) ?? null,
       email: (row.email as string | null) ?? null,
-      phone: (row.phone as string | null) ?? null,
+      // twilio_number, never `phone`: for Paul and Rebecca the `phone` column
+      // holds the same value as forward_to_cell — their personal cell — and a
+      // CMA is a client-facing document. The Twilio line is what the main
+      // business number routes to, and it forwards to the broker's cell, so
+      // the client still reaches them. renderCmaHtml formats it dotted.
+      phone: (row.twilio_number as string | null) ?? null,
       photoUrl: (row.photo_url as string | null) ?? null,
     }
   }

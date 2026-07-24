@@ -59,7 +59,9 @@ async function resolveBroker(input: BpoBuildInput): Promise<CmaBroker> {
       title: (row.title as string) || 'Broker',
       licenseNumber: (row.license_number as string | null) ?? null,
       email: (row.email as string | null) ?? null,
-      phone: (row.phone as string | null) ?? null,
+      // twilio_number, never `phone` — see lib/cma/build.ts. A BPO is a
+      // client-facing valuation document and `phone` holds personal cells.
+      phone: (row.twilio_number as string | null) ?? null,
       photoUrl: (row.photo_url as string | null) ?? null,
     }
   }
