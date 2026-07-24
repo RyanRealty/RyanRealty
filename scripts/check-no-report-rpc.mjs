@@ -135,6 +135,32 @@ function deriveBannedWrappers() {
     visit(body)
   }
 
+  /**
+   * `export { _fetchReportMetrics as getCityMetricsForPage }` — an export
+   * statement, with no `export` modifier anywhere near the declaration. Missing
+   * this left open EXACTLY the hole the derivation was written to close: the
+   * alias is a real public export of this module, reaches the RPC through the
+   * local binding, and a public page could import it with the gate green.
+   * The alias inherits the local's taint through `callees`.
+   */
+  const collectExportClauses = (n) => {
+    if (
+      ts.isExportDeclaration(n) &&
+      !n.moduleSpecifier && // `export {…} from '…'` re-exports ANOTHER module
+      n.exportClause &&
+      ts.isNamedExports(n.exportClause)
+    ) {
+      for (const el of n.exportClause.elements) {
+        const local = (el.propertyName ?? el.name).text
+        const exposed = el.name.text
+        const rec = ensure(exposed)
+        rec.exported = true
+        if (local !== exposed) rec.callees.add(local)
+      }
+    }
+    ts.forEachChild(n, collectExportClauses)
+  }
+
   const collectFns = (n) => {
     if (ts.isFunctionDeclaration(n) && n.name && n.body) {
       const rec = ensure(n.name.text)
@@ -157,6 +183,7 @@ function deriveBannedWrappers() {
     ts.forEachChild(n, collectFns)
   }
   collectFns(sf)
+  collectExportClauses(sf)
 
   // Fixed point: a function is tainted if it hits the RPC or calls something tainted.
   const tainted = new Set()

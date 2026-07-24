@@ -203,30 +203,101 @@ function parse(rel) {
   return { src, sf: ts.createSourceFile(rel, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX) }
 }
 
+/**
+ * Statically resolve an expression to a string when it provably is one — a
+ * literal, `'subdivision' as const`, a parenthesized form, a concatenation, or
+ * an identifier bound to one of those at module scope.
+ *
+ * Matching a bare StringLiteral was not enough: `const LEGACY_GEO =
+ * 'subdivision' as const` followed by `geoType: LEGACY_GEO` put the export back
+ * on the literal-name row — 9 sold / $2,600,000 against the page's 18 /
+ * $1,414,000 — with this gate green. One `const` is the first thing anyone
+ * reaches for.
+ */
+function staticString(node, consts) {
+  if (!node) return null
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text
+  if (ts.isParenthesizedExpression(node)) return staticString(node.expression, consts)
+  if (ts.isAsExpression(node) || ts.isTypeAssertionExpression?.(node)) return staticString(node.expression, consts)
+  if (ts.isIdentifier(node) && consts?.has(node.text)) return consts.get(node.text)
+  if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.PlusToken) {
+    const l = staticString(node.left, consts)
+    const r = staticString(node.right, consts)
+    return l != null && r != null ? l + r : null
+  }
+  return null
+}
+
+/** Module-scope identifiers bound to a statically-known string. */
+function stringConsts(sf) {
+  const consts = new Map()
+  const walk = (n) => {
+    if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name)) {
+      const v = staticString(n.initializer, consts)
+      if (v != null) consts.set(n.name.text, v)
+    }
+    ts.forEachChild(n, walk)
+  }
+  walk(sf)
+  return consts
+}
+
+/**
+ * Every module the exported document is actually assembled in. Scanning ONLY
+ * the route file meant moving the geo builder one file sideways evaded the
+ * check entirely.
+ */
+const GEO_BUILD_SCOPE = [ROUTE, DOC_MODULE, GEO_MODULE]
+
+for (const rel of GEO_BUILD_SCOPE) {
+  const f = parse(rel)
+  if (!f) continue
+  const consts = stringConsts(f.sf)
+  const line = (n) => f.sf.getLineAndCharacterOfPosition(n.getStart(f.sf)).line + 1
+  const visit = (n) => {
+    if (ts.isPropertyAssignment(n) && ts.isIdentifier(n.name) && n.name.text === 'geoType') {
+      if (staticString(n.initializer, consts) === 'subdivision') {
+        problems.push(
+          `${rel}:${line(n)} builds a geo with geoType 'subdivision'. That is ` +
+            `literal-SubdivisionName equality; /communities/<slug> reads geo_type='neighborhood' ` +
+            `(alias-aware), and the two publish different numbers for the same community over the ` +
+            `same window (Tetherow YTD: 9 sold/$2,600,000 vs 18/$1,414,000).`,
+        )
+      }
+    }
+    ts.forEachChild(n, visit)
+  }
+  visit(f.sf)
+}
+
 const route = parse(ROUTE)
 if (route) {
   let callsResolver = false
   let refusesUnresolved = false
-  let buildSectionsCalls = 0
-  const subdivisionGeoLines = []
+  let pdfUsesBuilder = false
+  let xlsxUsesBuilder = false
 
   const line = (n) => route.sf.getLineAndCharacterOfPosition(n.getStart(route.sf)).line + 1
+  const isBuildSectionsCall = (n) =>
+    n && ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === 'buildSections'
+
   const visit = (n) => {
     if (ts.isCallExpression(n) && ts.isIdentifier(n.expression)) {
       if (n.expression.text === 'resolveReportCommunity') callsResolver = true
-      if (n.expression.text === 'buildSections') buildSectionsCalls++
     }
-    // A `geoType: 'subdivision'` anywhere in this route means the export is back
-    // on the literal-name row the community page does not use.
+    // USED, not merely called. Counting call sites let a hand-built flat bag
+    // ship beside one discarded buildSections() result.
+    //   PDF:  `sections: buildSections(...)`
     if (
       ts.isPropertyAssignment(n) &&
       ts.isIdentifier(n.name) &&
-      n.name.text === 'geoType' &&
-      ts.isStringLiteral(n.initializer) &&
-      n.initializer.text === 'subdivision'
+      n.name.text === 'sections' &&
+      isBuildSectionsCall(n.initializer)
     ) {
-      subdivisionGeoLines.push(line(n))
+      pdfUsesBuilder = true
     }
+    //   XLSX: `for (const section of buildSections(...))`
+    if (ts.isForOfStatement(n) && isBuildSectionsCall(n.expression)) xlsxUsesBuilder = true
     // The refusal branch: `if (requestedCommunity && !community) return 400`.
     if (ts.isIfStatement(n) && /!\s*community/.test(n.expression.getText(route.sf))) {
       if (/status:\s*400/.test(n.thenStatement.getText(route.sf))) refusesUnresolved = true
@@ -234,6 +305,7 @@ if (route) {
     ts.forEachChild(n, visit)
   }
   visit(route.sf)
+  void line
 
   if (!callsResolver) {
     problems.push(
@@ -247,17 +319,17 @@ if (route) {
         `would silently answer a different question than the caller asked.`,
     )
   }
-  for (const l of subdivisionGeoLines) {
+  if (!pdfUsesBuilder) {
     problems.push(
-      `${ROUTE}:${l} builds a geo with geoType: 'subdivision'. That is literal-SubdivisionName ` +
-        `equality; /communities/<slug> reads geo_type='neighborhood' (alias-aware), and the two ` +
-        `publish different numbers for the same community over the same window.`,
+      `${ROUTE}: the PDF's \`sections\` is not the RESULT of buildSections(). Both formats must ` +
+        `render from the one builder, or the two formats of one document can label figures differently.`,
     )
   }
-  if (buildSectionsCalls < 2) {
+  if (!xlsxUsesBuilder) {
     problems.push(
-      `${ROUTE}: buildSections() is called ${buildSectionsCalls}x — both the PDF and the XLSX must ` +
-        `render from the one builder, or the two formats of one document can label figures differently.`,
+      `${ROUTE}: the XLSX Summary sheet does not iterate buildSections(). A hand-assembled sheet ` +
+        `can flatten the three windows back into one unlabeled block (the D3 defect) while the PDF ` +
+        `stays correct.`,
     )
   }
 }

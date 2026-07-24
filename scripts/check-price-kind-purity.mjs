@@ -108,23 +108,61 @@ function scanFile(rel) {
   const line = (n) => sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1
   const isContract = CONTRACT_FILES.includes(rel)
 
-  const visit = (node) => {
-    // RULE 1 — cross-kind assignment in an object literal.
+  /**
+   * Every syntactic form that BINDS a name to a value. Rule 1 used to inspect
+   * object-literal properties only, which missed the shape the D4 fix itself
+   * ships in — `const medianListPrice = …` on the community page. Swapping that
+   * one line to a sale median republished a closed median in the hero, the FAQ
+   * text and the JSON-LD with the gate still green. A gate blind to the form its
+   * own subject is written in is not a gate.
+   */
+  const bindings = (node) => {
+    // `{ medianListPrice: <expr> }` — object literal / returned object.
     if (ts.isPropertyAssignment(node) && node.initializer) {
-      const name = ts.isIdentifier(node.name) || ts.isStringLiteral(node.name) ? node.name.text : null
-      if (name) {
-        const want = LIST_FIELDS.test(name) ? 'list' : SALE_FIELDS.test(name) ? 'sale' : null
-        if (want) {
-          const got = kindOf(src, node.initializer)
-          if (got && got !== want) {
-            problems.push(
-              `${rel}:${line(node)} \`${name}\` is a ${want.toUpperCase()} price field but is ` +
-                `assigned from a ${got.toUpperCase()} price source. A median asking price and a ` +
-                `median closed price are different numbers about different homes — publish the ` +
-                `one the label promises, or publish nothing.`,
-            )
-          }
-        }
+      const n = ts.isIdentifier(node.name) || ts.isStringLiteral(node.name) ? node.name.text : null
+      return n ? [{ name: n, expr: node.initializer, where: node }] : []
+    }
+    // `const medianListPrice = <expr>` / `let … =` — including the page-level
+    // resolution every community surface reads from.
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
+      return [{ name: node.name.text, expr: node.initializer, where: node }]
+    }
+    // `<Comp medianListPrice={<expr>} />`
+    if (
+      ts.isJsxAttribute(node) &&
+      ts.isIdentifier(node.name) &&
+      node.initializer &&
+      ts.isJsxExpression(node.initializer) &&
+      node.initializer.expression
+    ) {
+      return [{ name: node.name.text, expr: node.initializer.expression, where: node }]
+    }
+    // `x.medianListPrice = <expr>` / `medianListPrice = <expr>` — reassignment.
+    if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
+      const l = node.left
+      const n = ts.isIdentifier(l)
+        ? l.text
+        : ts.isPropertyAccessExpression(l) && ts.isIdentifier(l.name)
+          ? l.name.text
+          : null
+      return n ? [{ name: n, expr: node.right, where: node }] : []
+    }
+    return []
+  }
+
+  const visit = (node) => {
+    // RULE 1 — cross-kind binding, in ANY form that names a price field.
+    for (const { name, expr, where } of bindings(node)) {
+      const want = LIST_FIELDS.test(name) ? 'list' : SALE_FIELDS.test(name) ? 'sale' : null
+      if (!want) continue
+      const got = kindOf(src, expr)
+      if (got && got !== want) {
+        problems.push(
+          `${rel}:${line(where)} \`${name}\` is a ${want.toUpperCase()} price field but is ` +
+            `assigned from a ${got.toUpperCase()} price source. A median asking price and a ` +
+            `median closed price are different numbers about different homes — publish the ` +
+            `one the label promises, or publish nothing.`,
+        )
       }
     }
 
