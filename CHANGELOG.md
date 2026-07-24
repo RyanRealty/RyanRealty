@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.859.0 (2026-07-24)
+
+### Features
+- feat(w2.1/w2.4): ci:subdivision-stats-integrity static gate — the wiring guard the int test can't cover in secret-less CI
+
+---
+
+
 ## v1.858.0 (2026-07-24)
 
 ### Features
