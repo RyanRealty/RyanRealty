@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.863.5 (2026-07-24)
+
+### Maintenance
+- docs(handoff): W8.4 done + W8.1 built-not-flipped, with the four-round defect trail
+
+---
+
+
 ## v1.863.4 (2026-07-24)
 
 ### Bug Fixes
