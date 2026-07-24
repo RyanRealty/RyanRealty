@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.861.1 (2026-07-24)
+
+### Maintenance
+- docs(program): W5.5 leg a recorded — serverless alert drain shipped; PWA push is the residual
+
+---
+
+
 ## v1.861.0 (2026-07-24)
 
 ### Features
