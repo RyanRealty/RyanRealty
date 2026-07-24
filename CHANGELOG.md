@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.857.3 (2026-07-24)
+
+### Maintenance
+- docs(program): W2.1/W2.4 — subdivision stats leg fully designed + scale-sized (1,143 subs)
+
+---
+
+
 ## v1.857.2 (2026-07-24)
 
 ### Maintenance
