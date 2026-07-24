@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.857.0 (2026-07-24)
+
+### Features
+- feat(w8.5): per-city decade sales archive — the live consumer of the W2.6 monthly-cache backfill
+
+---
+
+
 ## v1.856.1 (2026-07-24)
 
 ### Maintenance
