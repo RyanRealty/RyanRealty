@@ -675,34 +675,59 @@
       "workstream": "W10",
       "mission": "M3",
       "title": "Broker content library: broker-visible surface over finished deliverables persisted to storage, with download and per-broker filtering",
-      "status": "not_started",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
-        "crons": [],
-        "tests": [],
-        "migrations": [],
-        "paths": []
+        "gates": [
+          "scripts/check-deliverable-library-scope.mjs"
+        ],
+        "crons": [
+          "/api/cron/producer-runtime"
+        ],
+        "tests": [
+          "lib/marketing-brain/deliverable-library.int.test.ts"
+        ],
+        "migrations": [
+          "supabase/migrations/20260723190000_marketing_deliverables_bucket.sql",
+          "supabase/migrations/20260724010000_resolve_deliverable_broker_slug.sql"
+        ],
+        "paths": [
+          "lib/marketing-brain/deliverable-library.ts",
+          "lib/marketing-brain/deliverable-path.ts",
+          "app/admin/(protected)/content-library/page.tsx"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "Everything: storage persistence for finished deliverables, the broker-visible surface, download, and per-broker filtering. (W10 was Phase 4 in the execution order; Phases 0-3 are what shipped.)"
+      "proofPath": "DEMONSTRATED: resolve_deliverable_broker_slug returned paul-stevenson, rebecca-peterson, and matthew-ryan (fallback) for seeded live action rows; /admin/content-library returned HTTP 200 with no library content to an unauthenticated request; the integration test lib/marketing-brain/deliverable-library.int.test.ts passed 6/6 and runs in CI (vitest lib/** glob, .husky/pre-commit, ci.yml:46); ci:deliverable-library-scope runs in ci:gates, exits 0 at rest over 28 executed fixtures, and went RED then GREEN under all round-1..5 evasions (cross-broker %2e%2e traversal, safeSegment truncation collision, aliased-import/local-shadow, sibling _shim specifier, page ?? literal fallback, unscoped reader, literal owner at persist, spawnSync node). Storage holds 400 text deliverable objects all under matthew-ryan/ (verified: every archived action has zero intake rows and a single approver, so matthew-ryan is correct, not a resolver collapse). RESIDUAL, NOT CLOSED (spawned as a separate task): no rendered artifact (mp4/png/pdf) has reached the library because the render path fails UPSTREAM at producer-mapping in run-producer.mjs (content:news_clip unmapped, site:cta_update wrongly deferred), not in W10.2 scoping code; the render-worker spawn fix (process.execPath) is in place but not yet observed emitting an artifact. Contrived-only gate residuals (namespace-import shadow, dead-resolver reduction) are hardening nice-to-haves that no ordinary refactor produces.",
+      "verifiedBy": "independent adversarial workflow, 6 rounds (rounds 1-5 FAIL -> fixed -> round 6 PASS)",
+      "remaining": ""
     },
     {
       "id": "W10.3",
       "workstream": "W10",
       "mission": "M3",
       "title": "Re-brand step: one parameterized 'render for broker X' pass using the brokers table",
-      "status": "not_started",
+      "status": "done",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-cma-rebrand-integrity.mjs",
+          "scripts/check-broker-published-phone.mjs"
+        ],
         "crons": [],
-        "tests": [],
-        "migrations": [],
-        "paths": []
+        "tests": [
+          "lib/cma/rebrand.int.test.ts",
+          "lib/cma/rebrand.render.test.ts"
+        ],
+        "migrations": [
+          "supabase/migrations/20260724020000_deliverable_render_args.sql"
+        ],
+        "paths": [
+          "lib/cma/rebrand.ts",
+          "app/actions/cma-admin.ts",
+          "components/admin/cma/CmaReviewActions.tsx"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "Everything. The G45 freeze that blocked adding this producer was lifted 2026-07-21 (see W10.7), so it is unblocked but unbuilt."
+      "proofPath": "DEMONSTRATED: swapping the signing broker RE-RENDERS rather than REBUILDS, so no figure can move. An independent no-normalization raw diff of renderCmaHtml under two brokers (market context + two comps) showed every differing line is broker identity and the currency-token multiset is byte-identical; renderCmaHtml reads broker in only four presentation sections and never in any numeric section (exhaustive grep). lib/cma/rebrand.ts imports/calls none of buildCma/judgeComps/auditCma/selectComps and writes only html_content/broker_id/broker_slug/pdf_path. rebrand.render.test.ts (3) + rebrand.int.test.ts (4 refusal cases) pass live. ci:cma-rebrand-integrity is in ci:gates and went RED then GREEN under: brokerSlug back into rebuildCmaAction (inline AND extracted-const payload), import buildCma, write recommended_list via any writer, and deleting the rebrand path. The signature block renders twilio_number, never brokers.phone (ci:broker-published-phone, bites 4/4), so a re-brand to Paul or Rebecca cannot print a personal cell. render_args jsonb persists on every new build; the 192 pre-existing CMAs have render_args NULL and correctly hit the no_render_args refusal (rebuild once) rather than a silent rebuild.",
+      "verifiedBy": "independent adversarial agent, 1 round PASS + F1/F2/F4 hardening",
+      "remaining": ""
     },
     {
       "id": "W10.4",
