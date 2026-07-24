@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.854.0 (2026-07-24)
+
+### Features
+- feat(w10.6): broker share-to-social with a default-deny caption, never leaking a CMA
+
+---
+
+
 ## v1.853.3 (2026-07-24)
 
 ### Other
