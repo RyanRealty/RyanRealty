@@ -69,6 +69,10 @@
       "schedule": "15 8 * * *"
     },
     {
+      "path": "/api/cron/refresh-subdivision-stats",
+      "schedule": "30 8 * * *"
+    },
+    {
       "path": "/api/cron/refresh-market-stats-monthly-recompute",
       "schedule": "0 4 * * 0"
     },

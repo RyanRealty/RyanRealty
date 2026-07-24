@@ -360,7 +360,10 @@ export default async function SubdivisionPage({ params }: Props) {
   const [salesHistory, subdivisionStats] = await Promise.all([
     withTimeoutFallback(getSubdivisionSalesHistory(slug), [], 4500, 'sub:sales-history'),
     withTimeoutFallback(
-      getMarketStats({ geoType: 'subdivision', geoSlug: slug }),
+      // ytd is the stable subdivision stat period (refresh-subdivision-stats writes
+      // geo_slug = slugify(alias) = this route slug). Default rolling_90d is too thin
+      // for a single subdivision (ODS near-individual risk).
+      getMarketStats({ geoType: 'subdivision', geoSlug: slug, periodType: 'ytd' }),
       null,
       4500,
       'sub:market-stats',
