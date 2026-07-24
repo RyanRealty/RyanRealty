@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.863.2 (2026-07-24)
+
+### Bug Fixes
+- fix(w8.1): §0 — one spelling per row; repair the split-slug cache; close gate bypasses
+
+---
+
+
 ## v1.863.1 (2026-07-24)
 
 ### Bug Fixes
