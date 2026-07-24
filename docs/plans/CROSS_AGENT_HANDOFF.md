@@ -25,13 +25,44 @@ Driving `docs/plans/PROGRAM_2026-07-21/COMPLETION-LEDGER.json` to mechanically-v
 - **W1.1 done** — West Side Meta audience cron promoted weekly→daily in `vercel.json`; the DARK blocker is resolved (clean run 2026-07-23 with `errors: []`) and `META_AUDIENCE_PUSH_ENABLED` verified ON in prod (32 `dry_run=false` live pushes). West-Side-scoped heartbeat probe + contract test green.
 - **W10.1 done** — `/marketing/request` is now an authenticated SECOND intake ("two intakes, one queue"): session **+** `isSenderAllowed()` allowlist, then `marketing_inbox_events` → `parseInboxEmail` → `dispatchParsedEmail`. Gate `ci:marketing-request-intake` asserts the shared pipeline, no second queue, and that BOTH guards short-circuit. Decision §26. **Security note:** the first pass gated only on "any signed-in session" — the site has public self-serve signup, so anyone could have enqueued work; the allowlist closed it before it landed.
 
-## REMAINING (17 non-blocked) — with the traps already measured
+## M3 CONTENT STUDIO — COMPLETE (all six W10 rows done, 2026-07-24, origin `6661f653`+)
+
+Each independently adversarially verified before flip. Ledger 30 → 33/50.
+- **W10.2 done** — broker content library. 6 verification rounds (each found real defects: a live
+  %2e%2e cross-broker read serving another broker's bytes, a truncation key-collision overwriting
+  deliverables, a two-implementation ownership split misfiling every non-Matt deliverable, an unguarded
+  throw 500ing the page, and gate evasions). Ownership is now ONE SQL fn `resolve_deliverable_broker_slug`
+  both runtimes call. Gate `ci:deliverable-library-scope` EXECUTES 28 fixtures + resolves module identity
+  via ts.resolveModuleName (regex was defeatable). **Residual (spawned as a task):** visual deliverables
+  never archive — upstream producer-mapping bug in run-producer.mjs, not W10.2 scoping.
+- **W10.3 done** — CMA re-brand by RE-RENDER, so swapping the signing broker cannot move the recommended
+  list price (it used to route through rebuildCmaAction→buildCma, re-running comp selection + 2 Anthropic
+  passes). render_args jsonb migration; gate `ci:cma-rebrand-integrity`. Proven by a no-normalization
+  two-broker render diff (every differing line is broker identity, currency multiset byte-identical).
+- **W10.6 done** — broker share-to-social, DEFAULT-DENY: a client's CMA (361 in the library) can never
+  reach a public feed. Gate `ci:deliverable-share-safety` EXECUTES the allowlist and pins it to a FROZEN
+  known-public set (verifier caught that a known-private ENUMERATION leaked a new net-sheet type; inverted).
+- **Twilio-line phone safety** (`61a2e459`) — CMA/BPO render `twilio_number`, never `brokers.phone` (which
+  holds Paul's/Rebecca's personal CELL). Gate `ci:broker-published-phone`. Nothing had leaked (all CMAs
+  are Matt's) but W10.3's re-brand would have printed a cell on the first Paul/Rebecca CMA.
+
+## REMAINING (14 non-blocked) — with the traps already measured
 
 **M1:** W2.1/W2.4 **§0-CRITICAL** (subdivision names collide across cities — Whispering Pines in 4 cities, Deer Park in 3; the RPC scopes name-only, so a fix needs city-qualified non-lossy scoping without duplicating the 400-line aggregation. Do NOT ship name-only scoping) · W2.6 · W2.7 · W3.2 · **W3.5 BLOCKED** (pre-rendering `/search/[...slug]` OOMs the build — SIGABRT heap death even at 10 params; needs page-weight reduction or a raised build heap, else it breaks prod builds) · W5.5 · W8.1.
 **M2:** W5.1 (spec-03 person-workspace + sendDeliverable + tighten G56).
-**M3:** W10.2 (broker library + storage — W10.6 is blocked on it) · W10.3 (re-brand producer) · W10.6.
-**M5:** W8.4–W8.7 (market reports — §0 data-heavy).
+**M5:** W8.4–W8.7 (market reports — §0 data-heavy). **BLOCKED on a prerequisite (P0):** `market_stats_cache`
+  is written under TWO live conventions by TWO crons — `refresh-market-stats` (daily, HYPHEN via
+  slugify(MARKET_REPORT_DEFAULT_CITIES)) and the in-DB pg_cron `refresh_current_period_stats()` (SPACE).
+  For la pine / crooked river ranch / powell butte the SPACE rows are fresh+complete (329) and the HYPHEN
+  rows are stale 12-row stubs frozen 2026-07-21 (the RPC fails for these 3 cities). Read path resolves to
+  SPACE so nothing wrong is PUBLISHED today — latent-only. Fix needs a canonical-convention decision
+  (SPACE recommended by the data; the earlier "hyphen" advice was WRONG), a writer change on
+  refresh-market-stats, a delete of the 3 stale stubs (NOT black-butte-ranch — that hyphen row is a real
+  neighborhood), and a gate preventing recurrence. Touches 2 production crons + read path + a live RPC —
+  a deliberate focused pass. Fully root-caused in the completion-ledger W8.5 remaining + session tasks.
 **M6:** W13.1 — **scoping correction:** the FUB docs are NOT deletable as written; 17 of 18 are still referenced (FUB_SELLER_WORKFLOW by 25 files, FUB_CRM_FEATURE_SPEC by 20). Repoint/remove citations first, then archive, plus a gate that keeps FUB paths from returning.
+
+**Adjacent bug spawned as a task (not a ledger row):** the render worker's producer-mapping — `content:news_clip` unmapped and `site:cta_update` wrongly deferred in run-producer.mjs — so no video/image/PDF deliverable has ever archived. render-worker.mjs was ALSO dead ~6 weeks on `spawnSync('node')` ENOENT under launchd (fixed to process.execPath, gated).
 
 ## THE 3 OPERATING ITEMS (blocked:needs-matt — verified against live data, do not fake)
 
