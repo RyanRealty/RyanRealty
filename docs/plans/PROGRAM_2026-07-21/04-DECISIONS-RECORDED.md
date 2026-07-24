@@ -302,3 +302,38 @@ narrative). Also reconciled a pre-existing RED that had blocked every commit rep
 budget test (`lib/admin/capabilities.test.ts`) had been failing since W10.2 shipped the "Content library"
 nav item (capability `content.view`, granted to both roles) without bumping the 38/21 count — corrected to
 the verified 39/22.
+
+## §29 — W8.5 per-city decade sales archive (M5): the live consumer of the W2.6 cache backfill — 2026-07-24
+
+W2.6 backfilled a decade of monthly `market_stats_cache` rows (121 per report city, 2016-07 → present,
+byte-verified vs raw SFR listings). Those rows were orphaned — no live surface read past ~month 60. W8.5
+is the CONSUMER that lights them up: `/housing-market/reports/archive/[city]` (a static route,
+`generateStaticParams` over the `REPORT_CITIES` registry, placed under the canonical `/housing-market/reports`
+namespace because bare `/reports/*` 308-redirects there) renders per-year aggregate statistics through
+`getCityArchive`.
+
+§0 decision — SINGLE SOURCE, so every figure reconciles by construction. The archive reads ONE monthly-cache
+series (`getPriceHistory`) and aggregates per year: homes sold = the exact Σ of monthly `sold_count` (a
+per-month closed count, so the annual sum is additive and exact). The price column deliberately does NOT
+fabricate an "annual median" — a median of monthly medians is not a true annual median. It shows the RANGE of
+the year's monthly medians (each itself a verified aggregate). A month below `MONTHLY_VOLUME_FLOOR` (3
+closings) is kept out of the range, so a 1-2 sale month's near-individual "median" can never surface as a
+published statistic (ODS §5-4 A.4 aggregate-only; §7-3 source line on the section). The hyphen report slug
+(la-pine) resolves to the space-form cache slug (la pine) — the W2.6/§27 trap.
+
+Data-completeness fix the integration test caught: `getPriceHistory`'s zod `limit` cap was 120, but a report
+city already has 121 monthly rows, so the archive silently dropped the oldest month (2016-07) and undercounted
+2016. Raised the cap 120 → 180 (15-year headroom); every other caller passes ≤ 60, so the change is inert for
+them. Labeling fix an adversarial verifier caught: `complete` is now based on all-12-cache-rows-present, not
+months-carrying-a-median, so a finished past year with a zero-sale month (e.g. Terrebonne 2024, all 12 rows,
+4 dead months) reads complete instead of a misleading "(through 8 months)"; only genuinely partial 2016
+(6 months) and the current year carry the flag.
+
+Mechanism (un-fakeable producer→consumer, in CI via `lib/**/*.test.ts`): `city-archive-depth.int.test.ts`
+hits the live DB through the archive's OWN DAL and turns RED on a limit regression (24 months = 2 years), a
+slug regression (la-pine stays hyphenated → empty), or a broken homesSold aggregation (reconciled against an
+independent cache Σ). The prior W2.6 test only queried the raw table, so this closes the "page ignores the
+deep cache" gap. `getCityArchive.test.ts` pins the pure aggregation. Wiring auto-covered by `ci:page-dal`
+(imports `@/lib/data/*`) + `ci:static-params` (exports `generateStaticParams`). Verified live: Bend 2016-2026
+renders, 2024 = 1,540 sold / $680,000-$797,000 (= the cache row exactly); independent adversarial agent PASS
+on all six attack dimensions.

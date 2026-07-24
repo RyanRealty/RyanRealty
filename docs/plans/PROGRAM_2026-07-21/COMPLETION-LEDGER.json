@@ -526,17 +526,24 @@
       "workstream": "W8",
       "mission": "M5",
       "title": "Ten-year back-generation: monthly cache backfill to earliest verified data + per-city archive pages",
-      "status": "not_started",
+      "status": "done",
       "requiredMechanism": {
         "gates": [],
         "crons": [],
-        "tests": [],
+        "tests": [
+          "lib/data/market/getCityArchive.test.ts",
+          "lib/data/market/city-archive-depth.int.test.ts"
+        ],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "lib/data/market/getCityArchive.ts",
+          "app/housing-market/reports/archive/[city]/page.tsx",
+          "components/reports/CityArchiveSection.tsx"
+        ]
       },
-      "proofPath": "",
-      "verifiedBy": "",
-      "remaining": "Everything: earliest-CloseDate depth query, monthly cache backfill to it, and per-city archive pages gated on real sales volume."
+      "proofPath": "DEMONSTRATED live end-to-end. The DATA leg landed in W2.6 (scripts/backfill-market-history.mjs, 121 monthly market_stats_cache rows per report city, 2016-07 -> present, byte-verified vs raw SFR listings). W8.5 is the live CONSUMER: /housing-market/reports/archive/[city] (static, generateStaticParams over the REPORT_CITIES registry) reads the full monthly series via getCityArchive and renders per-year aggregates. SINGLE SOURCE so every figure reconciles by construction: homes sold = exact Σ of monthly sold_count (a per-month closed count); the price column is the RANGE of the year's monthly medians (never a median-of-medians masquerading as an annual median); a month below MONTHLY_VOLUME_FLOOR (3) is kept out of the range so a 1-2 sale near-individual price never surfaces (ODS §5-4 A.4 aggregate-only; §7-3 source line on the section). Resolves the hyphen report slug (la-pine) to the space-form cache slug (la pine) — the W2.6/§27 trap. LIVE §0 TRACE (rendered = hand-recompute from the cache): Bend 2024 = 1,540 sold, $680,000-$797,000; 2016 = 1,275 (FULL 6-month total — the getPriceHistory limit 120->180 bump was load-bearing, a 120 cap dropped the oldest row 2016-07 and undercounted the year); Terrebonne 2017 correctly excludes a 1-sale $102,000 month from the range, 2026 shows '—' where no month cleared the floor. THE MECHANISM BITES (verified RED->GREEN): city-archive-depth.int.test.ts hits the live DB through the archive's OWN DAL and fails on (i) getPriceHistory limit regressed to 24 ('only covers 3 years'), (ii) slug left hyphenated ('did not resolve to the space-form slug'), (iii) any homesSold miscount (reconciliation vs an independent cache Σ). getCityArchive.test.ts pins the pure aggregation (exact sums, volume floor, honest range, and complete = all-12-cache-rows so a finished year with a zero-sale month is not mislabeled in-progress). Both run in CI (lib/**/*.test.ts). Wiring auto-covered by ci:page-dal + ci:static-params.",
+      "verifiedBy": "independent adversarial agent (opus, assume-broken) — PASS on all 6 attack items: §0 hand-trace exact on all 7 report cities (rendered == recomputed cache), int test proven to bite all 3 regressions RED->GREEN, ODS aggregate-only + volume floor confirmed on a real sparse city (Terrebonne 1-sale months excluded), sparse/edge geos honest (Tumalo empty state, bad slug notFound), getPriceHistory cap change safe for all other callers, full 7-city reconciliation exact incl. the 2016 partial year.",
+      "remaining": ""
     },
     {
       "id": "W8.6",
