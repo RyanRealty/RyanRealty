@@ -337,3 +337,32 @@ deep cache" gap. `getCityArchive.test.ts` pins the pure aggregation. Wiring auto
 (imports `@/lib/data/*`) + `ci:static-params` (exports `generateStaticParams`). Verified live: Bend 2016-2026
 renders, 2024 = 1,540 sold / $680,000-$797,000 (= the cache row exactly); independent adversarial agent PASS
 on all six attack dimensions.
+
+## §30 — W2.1 subdivision light-up: the stats leg ships (M1) — 2026-07-24
+
+Matt directed "DO SUBDIVISION." The threshold/sales-history/noindex/sitemap legs were already live;
+the starved stats leg is now built as a dedicated producer→consumer unit. Producer:
+`public.compute_subdivision_period_stats` — a NEW focused SECURITY DEFINER function, NOT a patch to the
+shared 400-line `compute_and_cache_period_stats` (whose subdivision branch scopes name-only via
+`initcap(p_geo_slug)` and would merge same-named subdivisions across cities — Deer Park exists in
+Sunriver AND Bend, DRRH in Bend AND La Pine). The new function scopes by `"City"=p_city AND
+"SubdivisionName"=p_subdivision_name` (exact, non-lossy), uses the canonical SFR methodology
+byte-faithful to the shared RPC (percentile_cont, >=5 DOM/ratio/ppsf thresholds), and adds an ODS >=3
+median gate — a subdivision median over 1-2 sales is a near-individual price and stores NULL instead.
+
+Writer `refreshSubdivisionStats` iterates data/resort-communities.json, keys each row
+`geo_slug=slugify(alias)` — exactly the `/subdivisions/[slug]` route slug, so write-key == read-key by
+construction — and runs from the `refresh-subdivision-stats` cron (vercel.json 08:30 UTC,
+requireCronAuth). Consumer reads `getMarketStats({geoType:'subdivision', periodType:'ytd'})` (default
+rolling_90d was unpopulated and ODS-thin). Backfilled 100 registry subdivisions, 43 with ytd sales.
+
+§0 verified by an independent adversarial agent (PASS, all 8 attack vectors): stored == manual
+recompute EXACT on all checked subdivisions (Eagle Crest 37/$890,000 … sparse Sunrise Village
+3/$1,300,000; 43/43 with-sales rows reconcile); the cross-city merge provably absent (Deer Park stores
+7, not the merged 8); all 17 thin rows NULL medians; 100/100 slugs match; consumer renders the stored
+numbers ($935,000/14 on rivers-edge-village). Mechanisms bite: the real-DB int test went RED on a
+corrupted median and GREEN after the producer restored the exact value; the verifier's finding that the
+cited static gate didn't exist was fixed by building `ci:subdivision-stats-integrity` (AST: producer
+city+name scoping, writer slugify keying, consumer ytd period — proven RED on de-scoping city and on
+flipping the period). W2.4 keeps an honest residual (schools section, plat parent cross-links, curated
+events/HOA) — its stats leg is complete.
