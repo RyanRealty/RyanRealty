@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.854.3 (2026-07-24)
+
+### Bug Fixes
+- fix(market): the SECOND city-stats writer had the same slug bug — fix + gate both lanes
+- fix(market): canonical city slug in stats refresh — kill the two-convention split-brain (§0)
+
+### Maintenance
+- docs(handoff): M3 complete (33/50); M5 blocked on the market-cache convention prereq
+
+### Other
+- harden(market): city-slug gate asserts slug SHAPE, not a method blacklist
+
+---
+
+
 ## v1.854.2 (2026-07-24)
 
 ### Other
