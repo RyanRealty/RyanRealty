@@ -45,9 +45,17 @@ type StoredRenderArgs = Omit<RenderCmaArgs, 'broker' | 'mapDataUri'>
  */
 function mapFromRenderedHtml(html: string | null): string | null {
   if (!html) return null
-  const m = /<img[^>]+src="(data:image\/[a-z]+;base64,[^"]+)"[^>]*class="[^"]*cma-map/.exec(html)
-    ?? /class="[^"]*cma-map[^"]*"[^>]*src="(data:image\/[a-z]+;base64,[^"]+)"/.exec(html)
-  return m?.[1] ?? null
+  // renderCmaHtml emits `<img class="map-img" src="data:..." alt="Comparable sales map" />`
+  // (lib/cma/render.ts). An earlier version of this regex searched for a
+  // `cma-map` class that the renderer never emits, so the fallback silently
+  // never fired and a Maps outage dropped the map page. Match the real markup:
+  // the img with class map-img OR the "Comparable sales map" alt text.
+  const byClass = /<img\b[^>]*\bclass="[^"]*\bmap-img\b[^"]*"[^>]*\bsrc="(data:image\/[a-z]+;base64,[^"]+)"/i.exec(html)
+    ?? /<img\b[^>]*\bsrc="(data:image\/[a-z]+;base64,[^"]+)"[^>]*\bclass="[^"]*\bmap-img\b/i.exec(html)
+  if (byClass) return byClass[1]
+  const byAlt = /<img\b[^>]*\bsrc="(data:image\/[a-z]+;base64,[^"]+)"[^>]*\balt="Comparable sales map"/i.exec(html)
+    ?? /<img\b[^>]*\balt="Comparable sales map"[^>]*\bsrc="(data:image\/[a-z]+;base64,[^"]+)"/i.exec(html)
+  return byAlt?.[1] ?? null
 }
 
 export async function rebrandCma(input: { slug: string; brokerSlug: string }): Promise<RebrandResult> {

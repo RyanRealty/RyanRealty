@@ -84,23 +84,28 @@ if (rebrand) {
     }
   }
 
-  // the update object must not carry a numeric column
+  // F2 (round W10.3-verify): a numeric column must not be written, no matter
+  // WHICH function writes it. The old check only matched
+  // /^update\w*RowFieldsBySlug$/, so writing recommended_list via
+  // upsertCmaRowBySlug(...) or a new patchCmaNumbers(...) evaded it. rebrand.ts
+  // has no legitimate reason to name a numeric column as an object KEY (pricing
+  // flows through render_args as a spread, never as explicit columns), so ANY
+  // object literal passed to ANY call that carries a numeric column key is a
+  // violation.
   const walkUpdate = (n) => {
-    if (
-      ts.isCallExpression(n) &&
-      ts.isIdentifier(n.expression) &&
-      /^update\w*RowFieldsBySlug$/.test(n.expression.text)
-    ) {
-      const arg = n.arguments[1]
-      if (arg && ts.isObjectLiteralExpression(arg)) {
+    if (ts.isCallExpression(n)) {
+      for (const arg of n.arguments) {
+        if (!arg || !ts.isObjectLiteralExpression(arg)) continue
         for (const prop of arg.properties) {
           const key = prop.name && (ts.isIdentifier(prop.name) || ts.isStringLiteralLike(prop.name))
             ? prop.name.text
             : null
           if (key && NUMERIC_COLUMNS.includes(key)) {
             const line = rebrand.getLineAndCharacterOfPosition(prop.getStart()).line + 1
+            const callee = ts.isIdentifier(n.expression) ? n.expression.text
+              : ts.isPropertyAccessExpression(n.expression) ? n.expression.name.text : 'a call'
             problems.push(
-              `${REBRAND}:${line}: the re-brand writes \`${key}\`. Only presentation may change — writing a figure means the numbers moved when only the signer did.`,
+              `${REBRAND}:${line}: the re-brand writes \`${key}\` via ${callee}(...). Only presentation may change — writing a figure means the numbers moved when only the signer did.`,
             )
           }
         }
@@ -118,21 +123,43 @@ if (rebrand) {
 // ── 3: the broker select must not route into a rebuild ───────────────────────
 const component = parse(COMPONENT)
 if (component) {
+  // F1 (round W10.3-verify): the old check only inspected rebuildCmaAction's
+  // argument when it was an inline OBJECT LITERAL, so
+  // `const payload = { slug, brokerSlug }; rebuildCmaAction(payload)` — an
+  // ordinary "extract the payload" refactor — flowed the broker straight back
+  // into the rebuild and stayed GREEN. So resolve the reachable payload: map
+  // every local binding to its initializer, then for the rebuildCmaAction
+  // argument, expand it transitively and flag if `brokerSlug` appears as a key
+  // or a referenced identifier anywhere in that expansion.
+  const initByName = new Map()
+  const collect = (n) => {
+    if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer) {
+      initByName.set(n.name.text, n.initializer.getText())
+    }
+    ts.forEachChild(n, collect)
+  }
+  collect(component)
+
+  const mentionsBroker = (text, depth = 0, seen = new Set()) => {
+    if (!text || depth > 6) return false
+    if (/\bbrokerSlug\b/.test(text)) return true
+    for (const id of text.match(/[A-Za-z_$][\w$]*/g) ?? []) {
+      if (seen.has(id)) continue
+      seen.add(id)
+      const init = initByName.get(id)
+      if (init && mentionsBroker(init, depth + 1, seen)) return true
+    }
+    return false
+  }
+
   const walk = (n) => {
     if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === 'rebuildCmaAction') {
       const arg = n.arguments[0]
-      if (arg && ts.isObjectLiteralExpression(arg)) {
-        for (const prop of arg.properties) {
-          const key = prop.name && (ts.isIdentifier(prop.name) || ts.isStringLiteralLike(prop.name))
-            ? prop.name.text
-            : null
-          if (key === 'brokerSlug') {
-            const line = component.getLineAndCharacterOfPosition(prop.getStart()).line + 1
-            problems.push(
-              `${COMPONENT}:${line}: passes \`brokerSlug\` into rebuildCmaAction. That re-selects comparables and re-runs two Anthropic passes, so changing the signing broker can change the recommended list price. Use rebrandCmaAction — it re-renders only.`,
-            )
-          }
-        }
+      if (arg && mentionsBroker(arg.getText())) {
+        const line = component.getLineAndCharacterOfPosition(n.getStart()).line + 1
+        problems.push(
+          `${COMPONENT}:${line}: the payload to rebuildCmaAction reaches \`brokerSlug\`. That re-selects comparables and re-runs two Anthropic passes, so changing the signing broker can change the recommended list price. Route the broker through rebrandCmaAction — it re-renders only.`,
+        )
       }
     }
     ts.forEachChild(n, walk)
