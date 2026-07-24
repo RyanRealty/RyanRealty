@@ -349,18 +349,12 @@ export async function GET(request: NextRequest) {
         actionId: row.id,
         brokerSlug,
         filename: `${String(row.action_type).replace(/[^a-z0-9]+/gi, '-')}.json`,
-        body: JSON.stringify(
-          {
-            action_type: row.action_type,
-            deliverable_text: updatedEnvelope.deliverable_text,
-            draft_summary: updatedEnvelope.draft_summary,
-            publish_payload: updatedEnvelope.publish_payload,
-            citations: updatedEnvelope.citations,
-            completed_at: updatedEnvelope.completed_at,
-          },
-          null,
-          2,
-        ),
+        // The WHOLE envelope, not a hand-picked subset. Different action types
+        // carry their output under different keys — content:cma rows put it in
+        // cma_slug/preview_url, not deliverable_text — so a fixed key list
+        // archived 397 of 402 finished rows as all-null (round 4). Persist
+        // everything the producer returned and let the reader pick.
+        body: JSON.stringify({ action_type: row.action_type, ...updatedEnvelope }, null, 2),
         contentType: 'application/json',
       })
       if (!persisted.ok) console.error(`[producer-runtime] deliverable persist failed for ${row.id}:`, persisted.error)

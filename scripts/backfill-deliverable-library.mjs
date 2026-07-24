@@ -73,11 +73,20 @@ let failed = 0
 
 for (const row of rows) {
   const env = row.executor_response ?? {}
-  // Only archive rows that actually carry output. A deferral envelope is not a
-  // deliverable, and writing one would put an empty file in a broker's library.
-  const hasOutput =
-    env.deliverable_text || env.draft_summary || env.publish_payload || env.draft_path
-  if (!hasOutput) {
+  // A deferral envelope is not a deliverable; anything else with real content is.
+  // The old test looked at four fixed keys, so it skipped content:cma rows whose
+  // output lives in cma_slug/preview_url (round 4). Treat a row as archivable if
+  // it carries ANY content-bearing key beyond pure dispatch bookkeeping.
+  const BOOKKEEPING = new Set([
+    'dispatch_status', 'queued_at', 'ready_for_runtime', 'runtime_invocation_command',
+    'runtime_invocation_command_alt', 'deferred_to_local_render', 'needs_render',
+    'output_class', 'triggered_by', 'model', 'input_tokens', 'output_tokens', 'cost_usd',
+    'completed_at', 'action_phase',
+  ])
+  const isDeferral =
+    env.deferred_to_local_render === true || env.dispatch_status === 'queued_by_admin'
+  const contentKeys = Object.keys(env).filter((k) => !BOOKKEEPING.has(k) && env[k] != null)
+  if (isDeferral || contentKeys.length === 0) {
     skipped++
     continue
   }
@@ -102,17 +111,7 @@ for (const row of rows) {
   }
 
   const body = JSON.stringify(
-    {
-      action_type: row.action_type,
-      status_at_backfill: row.status,
-      deliverable_text: env.deliverable_text ?? null,
-      draft_summary: env.draft_summary ?? null,
-      publish_payload: env.publish_payload ?? null,
-      draft_path: env.draft_path ?? null,
-      citations: env.citations ?? [],
-      completed_at: env.completed_at ?? null,
-      backfilled: true,
-    },
+    { action_type: row.action_type, status_at_backfill: row.status, backfilled: true, ...env },
     null,
     2,
   )

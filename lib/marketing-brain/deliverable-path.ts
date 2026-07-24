@@ -34,20 +34,39 @@
  * Dots are allowed INSIDE a segment (report.v2.json is a legitimate filename)
  * but a segment made only of dots is traversal and is refused outright.
  */
+export const MAX_SEGMENT_LENGTH = 120
+
 export function safeSegment(value: string): string {
   const cleaned = (value ?? '')
     .toLowerCase()
     .replace(/[^a-z0-9._-]+/g, '-')
     .replace(/^-+|-+$/g, '')
-    .slice(0, 120)
   // '.', '..', '...' — traversal in every filesystem that matters.
   if (/^\.+$/.test(cleaned)) return ''
+  // NOT truncated. An earlier version did `.slice(0, 120)` here, which made
+  // safeSegment LOSSY: 'x'.repeat(121)+'-VERSION-A.mp4' and the '-VERSION-B'
+  // sibling both collapsed to the same 120 characters, so buildDeliverablePath
+  // returned one key for two different deliverables and the upsert destroyed
+  // the first. segmentsAreSafe could not see it either, because it compares
+  // safeSegment(p) to p — already-truncated input is idempotent, so the check
+  // tested idempotence rather than fidelity. Length is now enforced as a
+  // refusal in segmentsAreSafe, where an over-long name is rejected outright
+  // instead of silently aliasing onto someone else's object.
   return cleaned
 }
 
 /** True when every segment survived sanitization intact. */
 export function segmentsAreSafe(parts: readonly string[]): boolean {
-  return parts.length > 0 && parts.every((p) => typeof p === 'string' && p.length > 0 && safeSegment(p) === p)
+  return (
+    parts.length > 0 &&
+    parts.every(
+      (p) =>
+        typeof p === 'string' &&
+        p.length > 0 &&
+        p.length <= MAX_SEGMENT_LENGTH &&
+        safeSegment(p) === p,
+    )
+  )
 }
 
 /**

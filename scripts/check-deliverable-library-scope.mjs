@@ -40,6 +40,7 @@
  */
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { execFileSync } from 'node:child_process'
 import ts from 'typescript'
 import { loadDeliverablePath } from './lib/deliverable-path-runtime.mjs'
 
@@ -153,6 +154,15 @@ async function checkBehavior() {
     ['matthew-ryan !== matt', pathBelongsToBroker('matthew-ryan', 'matt/b/f'), false],
     // a non-canonical spelling of a key we DO own is still refused
     ['rejects uppercase key', pathBelongsToBroker('a', 'A/B/F'), false],
+
+    // LOSSY TRUNCATION (round 4, demonstrated): safeSegment used to .slice(0,120),
+    // so two different long filenames produced ONE key and the upsert destroyed
+    // the first deliverable. segmentsAreSafe could not see it — comparing
+    // safeSegment(p) to an already-truncated p tests idempotence, not fidelity.
+    ['over-long segment refused', buildDeliverablePath('a', 'b', 'y'.repeat(125)), null],
+    ['121-char + suffix refused', buildDeliverablePath('a', 'b', 'x'.repeat(121) + '-A.mp4'), null],
+    ['exactly 120 still allowed', buildDeliverablePath('a', 'b', 'z'.repeat(120)), 'a/b/' + 'z'.repeat(120)],
+    ['long action id refused', buildDeliverablePath('a', 'c'.repeat(130), 'f.json'), null],
   ]
 
   for (const [label, actual, expected] of cases) {
@@ -253,17 +263,106 @@ function checkStructure() {
     }
   }
 
-  const page = parse(PAGE)
-  if (page) {
-    const src = page.getFullText()
-    if (!src.includes('requireAdminPage(')) {
-      problems.push(`${PAGE}: does not call requireAdminPage(...) — the library surface would be open.`)
+  // B1 (round 4): the old check was two src.includes greps against ONE hardcoded
+  // page path, so `const brokerSlug = sp.broker ?? broker?.slug` satisfied both
+  // while letting ?broker=paul-stevenson render another broker's library — and a
+  // SECOND page importing the library was invisible entirely. Now every consumer
+  // under app/ is found and its broker argument is traced to a session binding.
+  const CONSUMER_FNS = ['listBrokerDeliverables', 'signDeliverableDownload']
+  const SESSION_SOURCES = ['getBrokerSelfRecordByEmail', 'getCurrentBrokerForSelfService']
+  const REQUEST_SOURCES = ['searchParams', 'params', 'headers', 'cookies', 'request', 'req']
+
+  let consumerFiles = []
+  try {
+    consumerFiles = execFileSync(
+      'grep',
+      ['-rl', '--include=*.ts', '--include=*.tsx', '-e', 'marketing-brain/deliverable-library', 'app'],
+      { cwd: process.cwd(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+    )
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean)
+  } catch (err) {
+    // grep exits 1 for "no matches" — that is a legitimate empty result. Any
+    // other failure is OUR bug, and must not masquerade as a finding: a bare
+    // catch here previously swallowed a ReferenceError and reported
+    // "no surface imports the deliverable library", which was false.
+    if (err?.status !== 1) {
+      problems.push(`ci:deliverable-library-scope: consumer scan failed to run — ${String(err?.message ?? err).slice(0, 200)}`)
     }
-    const sessionDerived =
-      /getBrokerSelfRecordByEmail\s*\(\s*ctx\.email/.test(src) || src.includes('getCurrentBrokerForSelfService(')
-    if (!sessionDerived) {
-      problems.push(`${PAGE}: does not resolve the broker from the session identity — whose library is it showing?`)
+    consumerFiles = []
+  }
+  if (!consumerFiles.length) {
+    problems.push('app/: no surface imports the deliverable library — the feature is unreachable.')
+  }
+
+  for (const rel of consumerFiles) {
+    const sf = parse(rel)
+    if (!sf) continue
+    const src = sf.getFullText()
+
+    // Only READ surfaces need the admin capability gate. The two producer
+    // runners import the WRITE path (persistDeliverable) and authenticate on
+    // their own terms — requireCronAuth for the cron, getAdminRoleForEmail for
+    // the one-shot route — so demanding requireAdminPage of them is wrong.
+    const isReadConsumer = CONSUMER_FNS.some((fn) => new RegExp(`\\b${fn}\\s*\\(`).test(src))
+    if (isReadConsumer && !/requireAdminPage\s*\(|requireAdminAction\s*\(/.test(src)) {
+      problems.push(`${rel}: reads the deliverable library without requireAdminPage/requireAdminAction — the surface would be open.`)
     }
+
+    // Map local bindings -> their initializer text, so a broker argument can be traced.
+    const initByName = new Map()
+    const collect = (n) => {
+      if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer) {
+        initByName.set(n.name.text, n.initializer.getText())
+      }
+      ts.forEachChild(n, collect)
+    }
+    collect(sf)
+
+    const walk = (n) => {
+      if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && CONSUMER_FNS.includes(n.expression.text)) {
+        const arg0 = n.arguments[0]
+        const line = sf.getLineAndCharacterOfPosition(n.getStart()).line + 1
+        if (!arg0) {
+          problems.push(`${rel}:${line}: ${n.expression.text}() called with no broker.`)
+        } else {
+          // Resolve the binding TRANSITIVELY. One hop is not enough: the real
+          // page goes brokerSlug -> `broker?.slug ?? null` -> broker ->
+          // `getBrokerSelfRecordByEmail(ctx.email)`, so a single-hop check
+          // reported a false positive on correct code.
+          const argText = arg0.getText()
+          const seen = new Set()
+          const parts = []
+          const expand = (text, depth) => {
+            if (!text || depth > 6) return
+            parts.push(text)
+            for (const id of text.match(/[A-Za-z_$][\w$]*/g) ?? []) {
+              if (seen.has(id)) continue
+              seen.add(id)
+              const init = initByName.get(id)
+              if (init) expand(init, depth + 1)
+            }
+          }
+          expand(argText, 0)
+          const chain = parts.join(' ')
+          const fromSession = SESSION_SOURCES.some((srcName) => chain.includes(srcName))
+          const fromRequest = REQUEST_SOURCES.some((r) => new RegExp(`\\b${r}\\b`).test(chain))
+          if (!fromSession) {
+            problems.push(
+              `${rel}:${line}: the broker passed to ${n.expression.text}() does not trace to a session lookup (${SESSION_SOURCES.join(' / ')}). Whose library is this reading?`,
+            )
+          }
+          if (fromRequest) {
+            problems.push(
+              `${rel}:${line}: the broker passed to ${n.expression.text}() derives from request input (searchParams/params/headers/cookies). A caller could then name ANY broker — e.g. ?broker=paul-stevenson.`,
+            )
+          }
+        }
+      }
+      ts.forEachChild(n, walk)
+    }
+    walk(sf)
   }
 
   const actions = parse(ACTIONS, { required: false })
@@ -360,6 +459,27 @@ function checkDataflowAndWiring() {
     }
   }
 
+  // (B2, round 4) the LIBRARY's own resolver was never checked, so
+  // resolveBrokerSlugForAction could be reduced to `return FALLBACK_BROKER_SLUG`
+  // — restoring the round-3 defect verbatim — with the gate green.
+  {
+    const p = join(process.cwd(), LIB)
+    if (existsSync(p)) {
+      const raw = readFileSync(p, 'utf8')
+      const code = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+      if (!/resolve_deliverable_broker_slug/.test(code)) {
+        problems.push(
+          `${LIB}: resolveBrokerSlugForAction does not call the shared SQL resolver. A local re-implementation is how the app and the render worker came to disagree about who owns a deliverable.`,
+        )
+      }
+      if (/assigned_approver/.test(code)) {
+        problems.push(
+          `${LIB}: reads assigned_approver directly. It is 'matt' on every live row, so this collapses every deliverable onto the principal broker.`,
+        )
+      }
+    }
+  }
+
   // (B4) every runner that finishes a producer must archive its output.
   const WRITERS = [
     ['app/api/cron/producer-runtime/route.ts', 'persistDeliverable'],
@@ -375,6 +495,16 @@ function checkDataflowAndWiring() {
     const text = readFileSync(p, 'utf8')
     // strip comments so a commented-out call cannot satisfy the check
     const code = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+    // the brokerSlug handed to the persist call must be a BINDING produced by
+    // the shared resolver, not a string literal. `await resolveBrokerSlugForAction(id)`
+    // followed by `brokerSlug: 'matthew-ryan'` satisfied a presence-of-call check
+    // while misfiling every deliverable.
+    const literalOwner = /brokerSlug:\s*['"][a-z-]+['"]/.exec(code)
+    if (literalOwner) {
+      problems.push(
+        `${rel}: passes a literal broker (${literalOwner[0]}) to the persist call. Ownership must come from the shared resolver binding, or every deliverable files under one broker.`,
+      )
+    }
     if (!new RegExp(`\\b${fnName}\\s*\\(`).test(code)) {
       problems.push(
         `${rel}: never calls ${fnName}(...). This runner finishes producers, so its output would never reach any broker's library — exactly the regression that left the bucket empty.`,

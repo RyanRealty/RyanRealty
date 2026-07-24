@@ -295,21 +295,8 @@ export async function POST(
       actionId: id,
       brokerSlug,
       filename: `${String(row.action_type).replace(/[^a-z0-9]+/gi, '-')}.json`,
-      body: JSON.stringify(
-        {
-          action_type: row.action_type,
-          // deliverable_text is the finished prose the producer actually
-          // wrote — archiving the summary without it stores a description of
-          // a deliverable instead of the deliverable.
-          deliverable_text: updatedEnvelope.deliverable_text,
-          draft_summary: updatedEnvelope.draft_summary,
-          publish_payload: updatedEnvelope.publish_payload,
-          citations: updatedEnvelope.citations,
-          completed_at: updatedEnvelope.completed_at,
-        },
-        null,
-        2,
-      ),
+      // Whole envelope — a fixed key list dropped content:cma output (round 4).
+        body: JSON.stringify({ action_type: row.action_type, ...updatedEnvelope }, null, 2),
       contentType: 'application/json',
     })
     if (!persisted.ok) console.error('[run-producer] deliverable persist failed:', persisted.error)

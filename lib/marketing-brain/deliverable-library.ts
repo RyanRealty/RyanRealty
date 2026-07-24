@@ -176,14 +176,12 @@ export async function signDeliverableDownload(
   filename: string,
 ): Promise<string | null> {
   const slug = safeSegment(brokerSlug)
-  // buildDeliverablePath, NOT deliverablePath: the latter THROWS, and a
-  // truthy safeSegment() is not the same thing as a representable key. A
-  // 125-character filename sanitizes to a truthy 120-char segment that is not
-  // equal to its input, so the builder refuses it while the old truthiness
-  // pre-check passed — the throw then escaped this function, out through the
-  // page's Promise.all, and 500'd the whole library for that broker (one
-  // stray object took every good deliverable down with it). Refuse by
-  // returning null, the way every other failure here does.
+  // buildDeliverablePath, NOT a throwing builder: a truthy safeSegment() is not
+  // the same thing as a representable key, so the old truthiness pre-check let
+  // input through that the builder then rejected — and the throw escaped this
+  // function, out through the page's Promise.all, and 500'd the whole library
+  // for that broker (one stray object took every good deliverable with it).
+  // Refuse by returning null, the way every other failure here does.
   const path = buildDeliverablePath(slug, actionId, filename)
   if (!path) return null
   if (!pathBelongsToBroker(slug, path)) return null
