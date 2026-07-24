@@ -107,6 +107,45 @@ describe('getCityRangeRow — one spelling supplies every field', () => {
     expect(row!.medianSalePrice).toBeNull()
   })
 
+  /**
+   * The EXACT shape that shipped and had to be rolled back: the canonical space
+   * spelling answers PARTIALLY (it has the trailing-365 row and the pulse, but no
+   * `ytd` row, because the ytd writer had keyed on the hyphen), while the hyphen
+   * spelling holds a polygon-scoped `ytd`. A per-source merge takes soldCount=44
+   * from the hyphen and sales12mo=179 from the space row and publishes 44 closings
+   * "year to date" beside 58 in the last 90 days. The earlier cases pass under
+   * that regression because their first candidate answers fully — this one is the
+   * headline defect, so it must fail loudly if the merge ever returns.
+   */
+  it('first candidate answering PARTIALLY still supplies every field (the shipped defect)', async () => {
+    detailMock.mockImplementation(({ geoSlug, periodType }: { geoSlug: string; periodType: string }) => {
+      // Space spelling: trailing year only — NO ytd row.
+      if (geoSlug === SPACE && periodType === 'rolling_365d') {
+        return Promise.resolve({ soldCount: 179, medianSalePrice: 405000, periodStart: '2025-07-24', periodEnd: '2026-07-24' })
+      }
+      if (geoSlug === SPACE) return Promise.resolve(null)
+      // Hyphen spelling: the polygon-scoped ytd row.
+      if (geoSlug === HYPHEN && periodType === 'ytd') {
+        return Promise.resolve({ soldCount: 44, medianSalePrice: 369950, periodStart: '2026-01-01', periodEnd: '2026-07-24' })
+      }
+      return Promise.resolve(null)
+    })
+    pulseMock.mockImplementation(({ geoSlug }: { geoSlug: string }) =>
+      Promise.resolve(geoSlug === SPACE ? { activeCount: 170, monthsOfSupply: 11.33 } : null),
+    )
+
+    const row = await getCityRangeRow('La Pine', 'ytd')
+    expect(row).not.toBeNull()
+    // Committed to the space spelling: its trailing year and pulse render, and the
+    // hyphen's 44 must NOT appear as this row's YTD.
+    expect(row!.sales12mo).toBe(179)
+    expect(row!.activeCount).toBe(170)
+    expect(row!.soldCount).toBeNull()
+    expect(row!.medianSalePrice).toBeNull()
+    // Guard the impossible-row signature directly.
+    expect(row!.soldCount).not.toBe(44)
+  })
+
   it('returns null when no spelling answers', async () => {
     detailMock.mockResolvedValue(null)
     pulseMock.mockResolvedValue(null)

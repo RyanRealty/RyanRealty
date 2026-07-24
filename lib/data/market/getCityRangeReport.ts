@@ -96,7 +96,7 @@ function isoDay(v: unknown): string | null {
  * The underlying data was repaired at the same time (canonical ytd/quarterly rows
  * written, the 9 retired-convention city rows dropped), so the canonical spelling
  * now carries every period and this loop resolves on its first candidate.
- * `market-report-send-slug.test.ts` pins the no-mixing rule.
+ * `lib/data/market/city-range-slug.test.ts` pins the no-mixing rule.
  */
 export async function getCityRangeRow(
   cityLabel: string,

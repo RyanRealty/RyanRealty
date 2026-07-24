@@ -36,7 +36,7 @@
  * Exit 0 = no public surface reads the raw-listings report RPCs.
  */
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
-import { join, relative } from 'node:path'
+import { join, relative, dirname } from 'node:path'
 import ts from 'typescript'
 
 const ROOT = process.cwd()
@@ -84,23 +84,52 @@ function walk(dir, out) {
   return out
 }
 
-/** The literal text of a call's first argument, when it is a plain string. */
-function firstStringArg(node) {
-  const a = node.arguments?.[0]
-  if (!a) return null
-  if (ts.isStringLiteral(a) || ts.isNoSubstitutionTemplateLiteral(a)) return a.text
+/**
+ * Statically resolve a node to a string when it provably is one: a literal, a
+ * template with no substitutions, or a concatenation/template whose every part is
+ * itself statically resolvable. `'get_city_' + 'period_metrics'` and
+ * `` `get_city_${'period'}_metrics` `` both resolve; anything depending on a
+ * runtime value returns null (the honest boundary of an AST-only gate).
+ */
+function staticString(node) {
+  if (!node) return null
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text
+  if (ts.isParenthesizedExpression(node)) return staticString(node.expression)
+  if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.PlusToken) {
+    const l = staticString(node.left)
+    const r = staticString(node.right)
+    return l != null && r != null ? l + r : null
+  }
+  if (ts.isTemplateExpression(node)) {
+    let out = node.head.text
+    for (const span of node.templateSpans) {
+      const part = staticString(span.expression)
+      if (part == null) return null
+      out += part + span.literal.text
+    }
+    return out
+  }
   return null
+}
+
+/** The statically-known text of a call's first argument, if any. */
+function firstStringArg(node) {
+  return staticString(node.arguments?.[0])
 }
 
 function scan(rel) {
   const src = readFileSync(join(ROOT, rel), 'utf8')
-  // Cheap pre-filter. It MUST also trip on the bare module specifier: a file can
-  // reach the wrappers without ever spelling one (`import * as R from
-  // '@/app/actions/reports'`, `await import(...)`, `require(...)`), and an
-  // identifier-only pre-filter skipped the AST entirely for those forms.
-  let touches = src.includes('app/actions/reports')
+  // Cheap pre-filter. It must trip on the module specifier too — a file can reach
+  // the wrappers without ever spelling one (`import * as R`, `await import(...)`,
+  // `require(...)`). `actions/reports` (not the @/-prefixed form) so a RELATIVE
+  // specifier like '../actions/reports' also trips it: app/reports/page.tsx
+  // already imports a sibling action that way, so relative is house style here.
+  let touches = src.includes('actions/reports')
   for (const n of BANNED_RPCS) if (src.includes(n)) touches = true
   for (const n of BANNED_WRAPPERS) if (src.includes(n)) touches = true
+  // A concatenated/templated RPC name never appears whole in the source, so also
+  // wake up for the shared prefix every banned RPC starts with.
+  if (src.includes('get_city_')) touches = true
   if (!touches) return
 
   const sf = ts.createSourceFile(rel, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
@@ -110,14 +139,19 @@ function scan(rel) {
   // followed by `.rpc(N)` is caught rather than read as an opaque identifier.
   const bannedConstNames = new Set()
   const collectConsts = (n) => {
+    // `const N = 'get_city_…'`
+    if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name)) {
+      const v = staticString(n.initializer)
+      if (v && BANNED_RPCS.has(v)) bannedConstNames.add(n.name.text)
+    }
+    // `let N: string; … N = 'get_city_…'` — declaration-only binding, assigned later.
     if (
-      ts.isVariableDeclaration(n) &&
-      ts.isIdentifier(n.name) &&
-      n.initializer &&
-      (ts.isStringLiteral(n.initializer) || ts.isNoSubstitutionTemplateLiteral(n.initializer)) &&
-      BANNED_RPCS.has(n.initializer.text)
+      ts.isBinaryExpression(n) &&
+      n.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+      ts.isIdentifier(n.left)
     ) {
-      bannedConstNames.add(n.name.text)
+      const v = staticString(n.right)
+      if (v && BANNED_RPCS.has(v)) bannedConstNames.add(n.left.text)
     }
     ts.forEachChild(n, (c) => {
       collectConsts(c)
@@ -160,8 +194,19 @@ function scan(rel) {
 
     // 2. Any import FORM that pulls a banned wrapper out of app/actions/reports:
     //    named, aliased, namespace (`import * as R`), or a re-export.
-    const isReportsModule = (spec) =>
-      spec === '@/app/actions/reports' || /(^|\/)app\/actions\/reports$/.test(spec)
+    // Resolve relative specifiers against the file's own directory so
+    // '../actions/reports' from app/reports/page.tsx is recognised as the same
+    // module as '@/app/actions/reports'. A bare-suffix match alone let every
+    // relative import through — the single most likely accidental bypass, since
+    // sibling actions are already imported relatively in that directory.
+    const isReportsModule = (spec) => {
+      if (spec === '@/app/actions/reports') return true
+      if (spec.startsWith('.')) {
+        const resolved = join(dirname(rel), spec).replace(/\\/g, '/')
+        return /(^|\/)app\/actions\/reports$/.test(resolved)
+      }
+      return /(^|\/)app\/actions\/reports$/.test(spec)
+    }
 
     if (
       (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&

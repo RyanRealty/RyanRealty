@@ -14,8 +14,8 @@ export const maxDuration = 300
  *
  * Refreshes market_stats_cache for all Central Oregon geos. Runs every 6 hours.
  *
- * Step 1 — Hot rolling windows (fast, set-based via backfill_rolling):
- *   rolling_30d, rolling_90d, rolling_365d
+ * Step 1 — Rolling windows via compute_and_cache_period_stats (SFR-only):
+ *   rolling_30d, rolling_90d, rolling_365d for every geo
  *
  * Step 2 — Current month (full 30-column row via compute_and_cache_period_stats):
  *   Each city + region
@@ -83,11 +83,12 @@ export async function GET(request: Request) {
   ]
 
   let rollingCount = 0
+  const failedRolling: Array<{ period_type: string; geo_slug: string; error: string }> = []
   let monthlyCount = 0
   let quarterlyCount = 0
   let ytdCount = 0
 
-  // ── Step 1: Rolling windows (backfill_rolling) ───────────────────────────
+  // ── Step 1: Rolling windows ──────────────────────────────────────────────
   // Compute period_start dates in JS — Supabase RPC args are values, not SQL expressions.
   function daysAgo(n: number): string {
     const d = new Date()
@@ -101,36 +102,42 @@ export async function GET(request: Request) {
     { period_type: 'rolling_365d', period_start: daysAgo(365) },
   ]
 
+  // §0 METHODOLOGY: every rolling row goes through compute_and_cache_period_stats,
+  // the SAME function that writes monthly/quarterly/ytd here and every row the
+  // in-DB refresh_current_period_stats() writes.
+  //
+  // This used to call `backfill_rolling` for city + region (set-based, faster) and
+  // the per-geo RPC only for neighborhoods. That was a §0 defect: backfill_rolling
+  // filters ONLY StandardStatus='Closed' + CloseDate-in-window + ClosePrice>=1000 —
+  // it has no PropertyType='A', no property_sub_type='Single Family Residence', no
+  // polygon, and no OnMarketDate check. It therefore wrote ALL-property-type counts
+  // into rows whose methodology_version still read "SFR-only", and its upsert omits
+  // methodology + period_end, so the row also kept a window it never measured.
+  // Bend's twelve-month sales published 2,819 against a true SFR 1,657 — 70% high —
+  // beside an SFR-only months-of-supply from the pulse, i.e. one row built from two
+  // different property universes. That is the exact defect class W8.1 exists to
+  // remove, so the fast path is retired rather than papered over.
+  //
+  // period_end is passed explicitly (matching refresh_current_period_stats) so the
+  // stored window is the one actually measured.
+  const todayIso = new Date().toISOString().slice(0, 10)
+
   for (const { period_type, period_start } of rollingWindows) {
-    const { data, error } = await supabase.rpc('backfill_rolling', {
-      p_period_type: period_type,
-      p_period_start: period_start,
-    })
-
-    if (error) {
-      console.error(`[refresh-market-stats] backfill_rolling ${period_type} error:`, error.message)
-      return NextResponse.json(
-        { ok: false, error: `backfill_rolling(${period_type}): ${error.message}` },
-        { status: 500 }
-      )
-    }
-    rollingCount += typeof data === 'number' ? data : 1
-
-    // backfill_rolling only handles city + region (it GROUPs BY listings.City).
-    // For neighborhoods (resort communities + Bend districts), call the per-geo RPC.
-    for (const slug of neighborhoodSlugs) {
-      const { error: nErr } = await supabase.rpc('compute_and_cache_period_stats', {
-        p_geo_type: 'neighborhood',
-        p_geo_slug: slug,
+    for (const { geo_type, geo_slug } of geoEntries) {
+      const { error } = await supabase.rpc('compute_and_cache_period_stats', {
+        p_geo_type: geo_type,
+        p_geo_slug: geo_slug,
         p_period_type: period_type,
         p_period_start: period_start,
+        p_period_end: todayIso,
       })
-      if (nErr) {
+      if (error) {
         console.error(
-          `[refresh-market-stats] compute_and_cache_period_stats ${period_type} neighborhood/${slug} error:`,
-          nErr.message
+          `[refresh-market-stats] compute_and_cache_period_stats ${period_type} ${geo_type}/${geo_slug} error:`,
+          error.message
         )
-        // Non-fatal: log and continue so one bad neighborhood doesn't break the whole cron
+        // Non-fatal: log and continue so one bad geo doesn't break the whole cron.
+        failedRolling.push({ period_type, geo_slug, error: error.message })
       } else {
         rollingCount++
       }
@@ -150,7 +157,7 @@ export async function GET(request: Request) {
   // Fixed 2026-05-22 alongside the deep-audit D1 follow-up — the old
   // early-return pattern caused quarterly + ytd to stop refreshing entirely
   // once any geo in monthly errored, leaving them 6+ days stale.
-  const failedGeos: Array<{ period_type: string; geo_slug: string; error: string }> = []
+  const failedGeos: Array<{ period_type: string; geo_slug: string; error: string }> = [...failedRolling]
 
   for (const { geo_type, geo_slug } of geoEntries) {
     const { error } = await supabase.rpc('compute_and_cache_period_stats', {
