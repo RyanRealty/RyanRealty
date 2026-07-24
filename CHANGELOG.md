@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.859.1 (2026-07-24)
+
+### Maintenance
+- chore(program): W2.1 done — subdivision stats leg shipped + verified (37/50)
+
+---
+
+
 ## v1.859.0 (2026-07-24)
 
 ### Features
