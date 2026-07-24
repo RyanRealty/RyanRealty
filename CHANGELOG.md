@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.853.1 (2026-07-24)
+
+### Maintenance
+- test(w10.3): prove a re-brand preserves every figure at the render level
+
+---
+
+
 ## v1.853.0 (2026-07-24)
 
 ### Features
