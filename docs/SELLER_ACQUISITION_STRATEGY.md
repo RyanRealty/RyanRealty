@@ -173,7 +173,7 @@ Seller LP: /lp/seller-home-value OR /home-valuation OR /sell/valuation
   ↓
 Lead capture → FUB person created (via canonicallyTagLead, server-side)
   ↓
-FUB Action Plan: 10-touch / 60-day seller workflow (per docs/FUB_SELLER_WORKFLOW_2026-05-17.md)
+FUB Action Plan: 10-touch / 60-day seller workflow (per docs/archive/fub-era/README.md)
   ↓
 Day 1: instant email + SMS with valuation range + Matt intro
 Day 3: detailed CMA delivered (Matt or designated broker)

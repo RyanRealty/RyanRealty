@@ -21,7 +21,7 @@ The shared mechanics (SMS template, stage change as trigger, plan cadence, pause
 
 ## Related docs
 
-- `docs/FUB_SELLER_WORKFLOW_2026-05-17.md` original master spec
+- `docs/archive/fub-era/README.md` original master spec
 - `docs/MARKETING_LEAD_FLOW.md` lead flow architecture
 - `out/fub-optimization/PLANS_CONTENT.md` full text of all 49 plan touches
 - `out/fub-optimization/AUTOMATIONS_2_DECISION.md` trigger architecture decision

@@ -323,7 +323,7 @@ Every contact in FUB carries tags + a Background brief that tell you exactly wha
 
 - **Tag taxonomy + build logic**: [`scripts/westside-bend-build-fub-import.mjs`](../../scripts/westside-bend-build-fub-import.mjs) (`deriveTags` function)
 - **Background brief generator**: [`scripts/lib/westside-broker-brief.mjs`](../../scripts/lib/westside-broker-brief.mjs)
-- **Action plan canonical spec**: [`docs/FUB_SELLER_WORKFLOW_2026-05-17.md`](../FUB_SELLER_WORKFLOW_2026-05-17.md)
-- **Compliance exclude group**: [`docs/FUB_SMART_LISTS_STARTER_PACK.md`](../FUB_SMART_LISTS_STARTER_PACK.md) §Mandatory excludes
+- **Action plan canonical spec**: [`docs/archive/fub-era/README.md`](../docs/archive/fub-era/README.md)
+- **Compliance exclude group**: [`docs/archive/fub-era/README.md`](../docs/archive/fub-era/README.md) §Mandatory excludes
 - **TCPA litigator handling**: [`.claude/projects/.../memory/reference_tcpa_litigator_handling.md`](../../.claude/projects/-Users-matthewryan-RyanRealty/memory/reference_tcpa_litigator_handling.md)
 - **Smart list UI setup**: [`docs/broker-runbooks/westside-fub-smart-lists-setup.md`](westside-fub-smart-lists-setup.md)

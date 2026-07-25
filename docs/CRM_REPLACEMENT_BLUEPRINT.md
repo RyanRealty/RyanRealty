@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-09
 **Status:** DRAFT — pending Matt's review. Nothing in this document has been built or changed. All FUB API calls made for this review were read-only GETs.
-**Method:** Live read-only sweep of the FUB account via `api.followupboss.com/v1` (raw responses archived at `scratch/fub-feature-audit/raw/`), full codebase integration inventory, and the May 2026 audit trail (`docs/FUB_AUDIT_2026-05-17.md`, `docs/FUB_LEAD_WORKFLOW_LIVE_AUDIT_2026-05-29.md`).
+**Method:** Live read-only sweep of the FUB account via `api.followupboss.com/v1` (raw responses archived at `scratch/fub-feature-audit/raw/`), full codebase integration inventory, and the May 2026 audit trail (`docs/archive/fub-era/README.md`, `docs/archive/fub-era/README.md`).
 
 ---
 
@@ -392,5 +392,5 @@ Savings ~$1,800–2,000/yr at list price. The build cost is the real investment;
 - Live API sweep 2026-06-09: `scratch/fub-feature-audit/sweep.mjs` → `scratch/fub-feature-audit/raw/*.json` (33 endpoints, all GET)
 - Per-plan enrollment + stage distribution + compliance counts: inline Node pulls this session (AP69 total=3/running=0, AP71 total=3/running=0, stages and tags as tabled in §2)
 - Codebase inventory: Explore-agent sweep this session (3 client libs, 20 cron routes, 12+ entry points, 10 Supabase tables, 42 scripts, tag taxonomy)
-- Configured-state history: `docs/FUB_AUDIT_2026-05-17.md`, `docs/FUB_SELLER_WORKFLOW_2026-05-17.md`, `docs/FUB_LEAD_WORKFLOW_LIVE_AUDIT_2026-05-29.md`, `docs/HANDOFF_FUB_SMART_LIST_WIRING_2026-05-27.md`
-- FUB API restriction (no POST emails/textMessages for integrations): `docs/FUB_SELLER_WORKFLOW_2026-05-17.md` + memory `reference_fub_texting_phone_sent`
+- Configured-state history: `docs/archive/fub-era/README.md`, `docs/archive/fub-era/README.md`, `docs/archive/fub-era/README.md`, `docs/archive/fub-era/README.md`
+- FUB API restriction (no POST emails/textMessages for integrations): `docs/archive/fub-era/README.md` + memory `reference_fub_texting_phone_sent`

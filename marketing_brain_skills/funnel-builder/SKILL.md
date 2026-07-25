@@ -53,7 +53,7 @@ above everything.
 | FB ad spec | `social_media_skills/facebook-lead-gen-ad/SKILL.md` | Lead-form template, creative spec, FUB webhook |
 | FB pipeline (live wiring) | `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md` | Meta -> site -> CAPI -> FUB, env vars |
 | Competitor design recon | `marketing_brain_skills/competitor-design-recon/SKILL.md` | Adapt a proven layout, don't invent one |
-| FUB seller workflow (LOCKED) | `docs/FUB_SELLER_WORKFLOW_2026-05-17.md` | Tag schema, 10-touch cadence, API constraint |
+| FUB seller workflow (LOCKED) | `docs/archive/fub-era/README.md` | Tag schema, 10-touch cadence, API constraint |
 | Lead-flow detail | `docs/MARKETING_LEAD_FLOW.md` | Per-path lead creation + dedup |
 
 Producer freeze (G45): this is a recipe the live agent loads. Do **not** add a row to
@@ -169,7 +169,7 @@ The winning angle becomes the single idea that the ad, LP, and CRM all carry.
 - **Form fields:** the minimum that still qualifies (address + timeline + contact). Each
   field justified. Honor known-visitor prefill (`app/actions/fub-identity-bridge.ts`).
 
-### C) The CRM follow-up (architecture: `docs/FUB_SELLER_WORKFLOW_2026-05-17.md`)
+### C) The CRM follow-up (architecture: `docs/archive/fub-era/README.md`)
 **Hard constraint:** FUB blocks `POST /v1/emails` and `/v1/textMessages` for integrations.
 Our code only **tags, assigns, sets custom fields, creates tasks, fires events** — the
 actual emails/SMS fire from FUB's own action-plan engine, triggered by a FUB Automation
@@ -248,6 +248,6 @@ approval. A finished build is not approval.
 ## See also
 - `social_media_skills/facebook-lead-gen-ad/SKILL.md` — the ad producer this composes
 - `marketing_brain_skills/brand-voice/VOICE.md` — the voice this enforces
-- `docs/FUB_SELLER_WORKFLOW_2026-05-17.md` — the CRM architecture this wires
+- `docs/archive/fub-era/README.md` — the CRM architecture this wires
 - `app/lp/seller-home-value/` — the LP scaffold this reuses
 - `marketing_brain_skills/produce/SKILL.md` — the action-row protocol for the audit trail

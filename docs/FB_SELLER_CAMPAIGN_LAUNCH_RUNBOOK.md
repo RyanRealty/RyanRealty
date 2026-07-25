@@ -153,7 +153,7 @@ Lesson logged in `.auto-memory/memory_marketing_brain_decisions.md`: **always ch
 - Strategy: [`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`](FB_SELLER_CAMPAIGN_PLAYBOOK.md)
 - End-to-end pipeline: [`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`](FACEBOOK_SELLER_GROWTH_PIPELINE.md)
 - Lead flow (path-by-path): [`docs/MARKETING_LEAD_FLOW.md`](MARKETING_LEAD_FLOW.md)
-- FUB workflow: [`docs/FUB_SELLER_WORKFLOW_2026-05-17.md`](FUB_SELLER_WORKFLOW_2026-05-17.md)
+- FUB workflow: [`docs/archive/fub-era/README.md`](docs/archive/fub-era/README.md)
 - Weekly review cadence: [`docs/MARKETING_ANALYTICS_PLAYBOOK.md`](MARKETING_ANALYTICS_PLAYBOOK.md)
 - GA4 instrumentation contract: [`marketing_brain_skills/tools_registry/ga4-instrumentation/SKILL.md`](../marketing_brain_skills/tools_registry/ga4-instrumentation/SKILL.md)
 - Skill: [`facebook-seller-growth`](~/.claude/skills/facebook-seller-growth/) (weekly optimization routine)
