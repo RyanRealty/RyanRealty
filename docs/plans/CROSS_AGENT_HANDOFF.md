@@ -1,29 +1,30 @@
-> **NEWEST, START HERE: COMPETE CLOSEOUT 2026-07-24 night (Cursor).** Prior: FIVE-LANE RECOVERY, SESSION-END, W8.1 ROUND-6.
+> **NEWEST, START HERE: KEEP-GOING 2026-07-25 morning (Cursor).** Prior: COMPETE CLOSEOUT, FIVE-LANE RECOVERY, W8.1 ROUND-6.
 
-# COMPETE CLOSEOUT — 2026-07-24 night. `main` @ see git. Ledger **44/50**.
+# KEEP-GOING — 2026-07-25 morning. `main` @ `818c281a` (+ changelog). Ledger **44/50** (partials not flipped).
 
 ## Master goal
-Close every unblocked ledger row. Independent verifiers required for done.
+Close every unblocked ledger row. Independent verifiers required for done. Do not flip partials without verifier.
 
-## Shipped this compete session
-- **W8.6 done** — verifier `a0ee03f2` (bulk market-report → newsletter ledger)
-- **W2.7 done** — verifier `a0ee03f2` (school_district + trail_lines decision)
-- **W3.2 done** — verifier `a5da1c8e` (3-segment preset depth + ci:search-preset-depth)
-- **W3.5 done** — verifier `a5da1c8e` (generateStaticParams SITE_CITY_SLUGS + NEXT_PHASE thinning; build 528/528)
-- W13.1 citation ratchet **55→47**; trail decision in DATABASE_FOR_AI_AGENTS.md
-- VerifiedBy stamped on W5.1 chokepoint / W5.5 leg-b / W13.1 archive slices (rows stay partial)
+## Shipped since last handoff
+- **W5.1 progress (still partial):** G56 burn complete (`ci:deliverable-send-chokepoint` bypass sites 0); `build_state` + `person_id` migration applied on hosted (`20260725150000`); ContactSendCenter/BPO worklist routed through `sendDeliverable`; CMA `reviewUrl` from slug + `build_state` chips.
+- **W13.1 progress (still partial):** citation ratchet **47→32** (`aafa906a`).
+- **W8.1 progress (still partial):** soft-404 chip FIXED (`818c281a` / `d20d6937`) — housing-market community geos use bare neighborhood/subdivision cache slugs. Zip days-to-pending + community meta counts appear fixed earlier.
 
 ## Still open (4 partial + 2 blocked)
 | Row | Why still open |
 |---|---|
-| **W5.1** | Chokepoint verified. Spec-03 rest: person-workspace DAL/Suspense rebuild, collapse `mobile-detail.tsx` fork (SendPanel already shared), build_state chips, line-count burn |
-| **W5.5** | Leg-b verified. Needs Matt: device opt-in on /admin/settings; `CRM_SMS_ALERTS=twilio` flip |
-| **W8.1** | Public RPC gated (`ci:no-report-rpc` green). Round-6 chips remain (MoS email base / resort-registry city / cache TTL drift) — several marked Matt-decides |
-| **W13.1** | Archive+gate verified; CONSOLIDATION-LANES.json still open |
+| **W5.1** | Collapse `mobile-detail` fork, Suspense/cached person-workspace fetch, page line-count |
+| **W5.5** | Needs Matt: device opt-in on /admin/settings; `CRM_SMS_ALERTS=twilio` flip |
+| **W8.1** | Matt-decides: MoS 12mo vs 6mo for resorts in outbound email, resort-registry city mismatches, cache TTL drift |
+| **W13.1** | `CONSOLIDATION-LANES.json` verdicts + CLAUDE shrink |
 | **W9.1 / W9.5** | `blocked:needs-matt` (enroll+first send; Resend webhook registration with full-access key) |
+
+## Skills read
+None novel this turn beyond prior.
 
 ## Do not
 - Self-verify builder work without an independent agent
+- Flip any ledger row to done without independent `verifiedBy`
 - Flip W9.* without Matt operating
 
 
