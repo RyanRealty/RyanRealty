@@ -25,7 +25,18 @@ import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 
 export type BoundaryGeoJSONInput = {
-  geoType: 'city' | 'neighborhood' | 'subdivision' | 'park' | 'school'
+  /**
+   * Must stay in sync with the boundaries_geo_type_check CHECK constraint
+   * (supabase/migrations/20260724223000_boundaries_geo_type_school_district.sql)
+   * and DECLARED_GEO_TYPES in scripts/check-boundary-provenance.mjs.
+   *
+   * `school` = Deschutes County GIS ATTENDANCE areas (one per school).
+   * `school_district` = Oregon Dept of Education DISTRICT polygons (W2.7).
+   * There is deliberately no `trail`: trail geometry is authoritative linework
+   * in public.trail_lines, and a trail polygon could only be a corridor we
+   * buffered ourselves.
+   */
+  geoType: 'city' | 'neighborhood' | 'subdivision' | 'park' | 'school' | 'school_district'
   geoSlug: string
 }
 
@@ -44,6 +55,12 @@ function cacheTags(
 ): string[] {
   if (geoType === 'city') return [cacheTag.city(geoSlug), 'boundaries']
   if (geoType === 'neighborhood') return [cacheTag.neighborhood(geoSlug), 'boundaries']
+  // school / school_district slugs overlap city slugs ('redmond', 'sisters',
+  // 'culver'), so scope their tag by geoType — a city revalidation must not
+  // silently drop a district polygon and vice versa.
+  if (geoType === 'school' || geoType === 'school_district') {
+    return [`${geoType}:${geoSlug}`, 'boundaries']
+  }
   return [cacheTag.community(geoSlug), 'boundaries']
 }
 

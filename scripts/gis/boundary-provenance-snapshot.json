@@ -1,0 +1,61 @@
+{
+  "note": "Provenance snapshot of public.boundaries — the input to ci:boundary-provenance (scripts/check-boundary-provenance.mjs). OBSERVATIONS ONLY: the POLICY (which geo_types may exist, which publishers count as authoritative, the non-official ratchet caps) lives in the gate script, so refreshing this file can never loosen the policy. Refresh with: node scripts/gis/import-ode-school-districts.mjs --snapshot",
+  "query": "select geo_type, source, count(*) from public.boundaries group by 1,2 -- read here via PostgREST select=geo_type,source (paged 1000); publisher = source split on ' — ' / ' (' / ';'",
+  "generatedAt": "2026-07-25T01:36:43.905Z",
+  "totalRows": 3312,
+  "geoTypes": {
+    "city": {
+      "rows": 10,
+      "publishers": {
+        "TIGER/Line 2024 Census Designated Places": 3,
+        "TIGER/Line 2024 Incorporated Places": 7
+      }
+    },
+    "neighborhood": {
+      "rows": 28,
+      "publishers": {
+        "City of Bend GIS": 14,
+        "Deschutes County GIS Subdivisions": 1,
+        "Ryan Realty spatial discovery v6": 12,
+        "county_plat_union": 1
+      }
+    },
+    "park": {
+      "rows": 18,
+      "publishers": {
+        "OpenStreetMap contributors": 12,
+        "Oregon State Parks": 6
+      }
+    },
+    "school": {
+      "rows": 37,
+      "publishers": {
+        "Deschutes County GIS": 37
+      }
+    },
+    "school_district": {
+      "rows": 6,
+      "publishers": {
+        "Oregon Department of Education": 6
+      }
+    },
+    "subdivision": {
+      "rows": 3213,
+      "publishers": {
+        "Deschutes County GIS Subdivisions": 3213
+      }
+    }
+  },
+  "publishers": {
+    "City of Bend GIS": 14,
+    "Deschutes County GIS": 37,
+    "Deschutes County GIS Subdivisions": 3214,
+    "OpenStreetMap contributors": 12,
+    "Oregon Department of Education": 6,
+    "Oregon State Parks": 6,
+    "Ryan Realty spatial discovery v6": 12,
+    "TIGER/Line 2024 Census Designated Places": 3,
+    "TIGER/Line 2024 Incorporated Places": 7,
+    "county_plat_union": 1
+  }
+}

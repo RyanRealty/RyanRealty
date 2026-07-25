@@ -1,0 +1,49 @@
+{
+  "note": "Provenance snapshot of public.boundaries — the input to ci:boundary-provenance (scripts/check-boundary-provenance.mjs). OBSERVATIONS ONLY: the POLICY (which geo_types may exist, which publishers count as authoritative) lives in the gate script so a data refresh cannot loosen it. Refresh with: node scripts/gis/import-ode-school-districts.mjs --snapshot",
+  "query": "select geo_type, count(*) rows, array_agg(distinct source) from public.boundaries group by geo_type -- read here via PostgREST select=geo_type,source (paged 1000), publisher = source split on ' — ' / ' (' / ';'",
+  "generatedAt": "2026-07-25T01:35:47.878Z",
+  "totalRows": 3312,
+  "geoTypes": {
+    "city": {
+      "rows": 10,
+      "publishers": [
+        "TIGER/Line 2024 Census Designated Places",
+        "TIGER/Line 2024 Incorporated Places"
+      ]
+    },
+    "neighborhood": {
+      "rows": 28,
+      "publishers": [
+        "City of Bend GIS",
+        "Deschutes County GIS Subdivisions",
+        "Ryan Realty spatial discovery v6",
+        "county_plat_union"
+      ]
+    },
+    "park": {
+      "rows": 18,
+      "publishers": [
+        "OpenStreetMap contributors",
+        "Oregon State Parks"
+      ]
+    },
+    "school": {
+      "rows": 37,
+      "publishers": [
+        "Deschutes County GIS"
+      ]
+    },
+    "school_district": {
+      "rows": 6,
+      "publishers": [
+        "Oregon Department of Education"
+      ]
+    },
+    "subdivision": {
+      "rows": 3213,
+      "publishers": [
+        "Deschutes County GIS Subdivisions"
+      ]
+    }
+  }
+}
