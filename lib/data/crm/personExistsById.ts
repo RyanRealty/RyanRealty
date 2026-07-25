@@ -9,7 +9,21 @@ import { createServiceClient } from '@/lib/supabase/service'
  * DAL boundary (G1): the raw .from('crm_people') read lives here.
  */
 export async function personExistsById(personId: number): Promise<boolean> {
-  if (!Number.isInteger(personId) || personId <= 0) return false
+  const state = await personExistenceById(personId)
+  return state === 'exists'
+}
+
+/**
+ * Tri-state variant for callers that must NOT fail closed on a transient read
+ * error. The sendDeliverable chokepoint treats 'unknown' as pass-through: the
+ * send engines below each resolve the person again and refuse on their own if
+ * it is missing, so refusing here on a Supabase blip would block a legitimate
+ * send with a misleading "not found".
+ */
+export async function personExistenceById(
+  personId: number,
+): Promise<'exists' | 'missing' | 'unknown'> {
+  if (!Number.isInteger(personId) || personId <= 0) return 'missing'
   const sb = createServiceClient()
   const { data, error } = await sb
     .from('crm_people')
@@ -19,7 +33,7 @@ export async function personExistsById(personId: number): Promise<boolean> {
     .maybeSingle()
   if (error) {
     console.error('[personExistsById]', error.message)
-    return false
+    return 'unknown'
   }
-  return Boolean(data)
+  return data ? 'exists' : 'missing'
 }

@@ -28,8 +28,8 @@
  * deliverable-send action directly instead of calling this.
  */
 
-import { createServiceClient } from '@/lib/supabase/service'
 import { requireCrmAccess, requirePersonInScope, type CrmAccess } from '@/app/actions/crm'
+import { personExistenceById } from '@/lib/data/crm/personExistsById'
 import { withSendIdempotency } from '@/lib/crm/idempotency'
 import {
   runSendDeliverable,
@@ -98,13 +98,12 @@ const dispatch: SendDeliverableDeps<CrmAccess>['dispatch'] = {
 }
 
 async function personExists(personId: number): Promise<boolean> {
-  const sb = createServiceClient()
-  const { data, error } = await sb.from('crm_people').select('id').eq('id', personId).maybeSingle()
-  // Fail OPEN on a read error: the engines below each resolve the person again
-  // and refuse on their own if it is missing. Refusing here on a transient
-  // Supabase blip would block a legitimate send with a misleading "not found".
-  if (error) return true
-  return Boolean(data)
+  // Fail OPEN on a read error ('unknown'): the engines below each resolve the
+  // person again and refuse on their own if it is missing. Refusing here on a
+  // transient Supabase blip would block a legitimate send with a misleading
+  // "not found". Read lives in lib/data (DAL boundary).
+  const state = await personExistenceById(personId)
+  return state !== 'missing'
 }
 
 const deps: SendDeliverableDeps<CrmAccess> = {
