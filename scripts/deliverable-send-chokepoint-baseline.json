@@ -1,7 +1,4 @@
 {
   "$comment": "Ratchet baseline for check-deliverable-send-chokepoint.mjs (RULE B). Each key is a file that imports a deliverable-send ENGINE directly instead of calling sendDeliverable (app/actions/send-deliverable.ts); the value is the number of such imports. Counts may only SHRINK. Route the surface through sendDeliverable and regenerate with: node scripts/check-deliverable-send-chokepoint.mjs --write-baseline. NEVER hand-add an entry or bump a count.",
-  "files": {
-    "app/admin/(protected)/bpo/page.tsx": 1,
-    "components/admin/crm/ContactSendCenter.tsx": 4
-  }
+  "files": {}
 }

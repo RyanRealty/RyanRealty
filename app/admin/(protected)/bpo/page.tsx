@@ -12,7 +12,8 @@ import { requireAdminPage } from '@/lib/admin/require-admin'
 import { listBposForAdmin, getBpoWorklistRowById } from '@/lib/data/bpo/reads'
 import type { BpoPosture, BpoStatusFilter, BpoWorklistFilters } from '@/lib/data/bpo/reads'
 import { finalizeBpoAction } from '@/app/actions/bpo-admin'
-import { prepareBpoSendPreviewAction, sendBpoForContactAction, sendBpoTestAction } from '@/app/actions/contact-bpo'
+import { prepareBpoSendPreviewAction, sendBpoTestAction } from '@/app/actions/contact-bpo'
+import { sendBpoDeliverable } from '@/app/actions/send-deliverable'
 import { BpoBoard } from '@/components/admin/bpo/worklist/BpoBoard.client'
 
 export const dynamic = 'force-dynamic'
@@ -74,7 +75,7 @@ export default async function AdminBpoWorklistPage({
         totalPages={totalPages}
         detail={detail}
         prepareSendAction={prepareBpoSendPreviewAction}
-        sendAction={sendBpoForContactAction}
+        sendAction={sendBpoDeliverable}
         sendTestAction={sendBpoTestAction}
         finalizeAction={finalizeBpoAction}
       />

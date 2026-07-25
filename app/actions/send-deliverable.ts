@@ -67,7 +67,11 @@ const dispatch: SendDeliverableDeps<CrmAccess>['dispatch'] = {
     const slug = (input.ref ?? '').trim()
     if (!slug) return { ok: false, error: 'Pick a final price opinion to send' }
     const includeOfferStrategy = input.override?.includeOfferStrategy === true
-    return sendBpoForContactAction(input.personId, slug, includeOfferStrategy)
+    const subject = str(input.override, 'subject')
+    const bodyText = str(input.override, 'bodyText')
+    const composeOverride =
+      subject || bodyText ? { subject: subject ?? undefined, bodyText: bodyText ?? undefined } : undefined
+    return sendBpoForContactAction(input.personId, slug, includeOfferStrategy, composeOverride)
   },
 
   async market_report(input): Promise<DeliverableDispatchResult> {
@@ -133,4 +137,34 @@ export async function sendDeliverableForPerson(
 ): Promise<{ ok: boolean; error?: string }> {
   const r = await sendDeliverable({ personId, kind, idempotencyKey })
   return r.ok ? { ok: true } : { ok: false, error: r.error }
+}
+
+/**
+ * BPO worklist send shape (`BpoBoard` / `BpoSendDialog`). Keeps that surface
+ * from importing the engine directly — every real send still claims the
+ * deliverable ledger. Client-side retries should pass a stable key later;
+ * a fresh UUID here is still at-most-once for that one call.
+ */
+export async function sendBpoDeliverable(
+  personId: number,
+  slug: string,
+  includeOfferStrategy: boolean,
+  override?: { subject?: string | null; bodyText?: string | null },
+): Promise<{ ok: true; transport: 'gmail' | 'resend' } | { ok: false; error: string }> {
+  const r = await sendDeliverable({
+    personId,
+    kind: 'bpo',
+    ref: slug,
+    idempotencyKey: crypto.randomUUID(),
+    override: {
+      includeOfferStrategy,
+      ...(override?.subject ? { subject: override.subject } : {}),
+      ...(override?.bodyText ? { bodyText: override.bodyText } : {}),
+    },
+  })
+  // Transport is decided inside the BPO engine; the chokepoint result shape
+  // does not surface it. Worklist UI only needs a success discriminant.
+  return r.ok
+    ? { ok: true, transport: 'resend' }
+    : { ok: false, error: r.error ?? 'Send failed' }
 }

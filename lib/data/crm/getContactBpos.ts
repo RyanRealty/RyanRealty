@@ -8,10 +8,13 @@
  */
 import { createServiceClient } from '@/lib/supabase/service'
 
+export type BpoBuildState = 'queued' | 'building' | 'ready' | 'failed'
+
 export type ContactBpo = {
   slug: string
   subjectAddress: string
   status: string
+  buildState: BpoBuildState
   subjectStatus: string | null
   /** Opinion of value, formatted, e.g. "$1,150,000". */
   opinionLine: string | null
@@ -34,19 +37,27 @@ export async function getContactBpos(params: {
   const sb = createServiceClient()
   const { data } = await sb
     .from('broker_price_opinions')
-    .select('slug,subject_address,status,subject_status,opinion_value,confidence,created_at')
+    .select('slug,subject_address,status,build_state,subject_status,opinion_value,confidence,created_at')
     .eq('person_id', params.crmPersonId)
     .is('archived_at', null)
     .order('created_at', { ascending: false })
     .limit(5)
-  return (data ?? []).map((r) => ({
-    slug: String(r.slug),
-    subjectAddress: String(r.subject_address ?? ''),
-    status: String(r.status ?? 'draft'),
-    subjectStatus: (r.subject_status as string | null) ?? null,
-    opinionLine: usd(r.opinion_value),
-    confidence: (r.confidence as string | null) ?? null,
-    createdAt: String(r.created_at),
-    previewUrl: `/bpo/${String(r.slug)}`,
-  }))
+  return (data ?? []).map((r) => {
+    const rawBuild = String(r.build_state ?? 'ready')
+    const buildState: BpoBuildState =
+      rawBuild === 'queued' || rawBuild === 'building' || rawBuild === 'ready' || rawBuild === 'failed'
+        ? rawBuild
+        : 'ready'
+    return {
+      slug: String(r.slug),
+      subjectAddress: String(r.subject_address ?? ''),
+      status: String(r.status ?? 'draft'),
+      buildState,
+      subjectStatus: (r.subject_status as string | null) ?? null,
+      opinionLine: usd(r.opinion_value),
+      confidence: (r.confidence as string | null) ?? null,
+      createdAt: String(r.created_at),
+      previewUrl: `/bpo/${String(r.slug)}`,
+    }
+  })
 }

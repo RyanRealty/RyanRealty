@@ -47,11 +47,8 @@ import { hasNarrowingFilter } from '@/lib/search-filters'
 import { PROPERTY_TYPES } from '@/lib/property-type'
 import type { ContactBpo } from '@/lib/data/crm/getContactBpos'
 import type { ContactCma } from '@/lib/data/crm/getContactCmas'
-import { sendBpoForContactAction } from '@/app/actions/contact-bpo'
-import { sendCmaForContactAction } from '@/app/actions/contact-cma'
-import { sendMarketReportNowAction } from '@/app/actions/crm-send-now'
+import { sendDeliverable } from '@/app/actions/send-deliverable'
 import { setReportSubscriptionAction } from '@/app/actions/crm-report-subscriptions'
-import { sendListingMatchesForContactAction } from '@/app/actions/contact-listing-matches'
 
 type Area = { slug: string; label: string }
 
@@ -88,18 +85,35 @@ export function ContactSendCenter(props: {
 }) {
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
+  /** Per-flow idempotency keys — stable across retries of THIS attempt; cleared on success. */
   const nlKeyRef = useRef('')
+  const cmaKeyRef = useRef('')
+  const bpoKeyRef = useRef('')
+  const reportKeyRef = useRef('')
+  const listingsKeyRef = useRef('')
+
+  function claimKey(ref: { current: string }): string {
+    if (!ref.current) ref.current = crypto.randomUUID()
+    return ref.current
+  }
 
   const finalBpos = useMemo(() => props.bpos.filter((b) => b.status === 'final'), [props.bpos])
   const finalCmas = useMemo(
     () => props.cmas.filter((c) => c.status === 'finalized' || c.status === 'delivered'),
     [props.cmas],
   )
-  // In-flight story: drafts awaiting review + builds still running, so the CMA
-  // tab never claims "no CMA" while one is minutes from ready (the kick-off
-  // worker texts the broker on ready; this is orientation, not live progress).
+  // In-flight story: builds still running (build_state) + drafts awaiting
+  // review, so the CMA tab never claims "no CMA" while one is minutes from
+  // ready (the kick-off worker texts the broker on ready).
   const pendingCmas = useMemo(
-    () => props.cmas.filter((c) => c.status !== 'finalized' && c.status !== 'delivered'),
+    () =>
+      props.cmas.filter(
+        (c) =>
+          c.buildState === 'queued' ||
+          c.buildState === 'building' ||
+          c.buildState === 'failed' ||
+          (c.status !== 'finalized' && c.status !== 'delivered'),
+      ),
     [props.cmas],
   )
 
@@ -188,12 +202,30 @@ export function ContactSendCenter(props: {
 
   function sendBpo() {
     if (!bpoSlug) return
-    run('Price opinion', () => sendBpoForContactAction(props.personId, bpoSlug, bpoFull))
+    run('Price opinion', async () => {
+      const key = claimKey(bpoKeyRef)
+      const r = await sendDeliverable({
+        personId: props.personId,
+        kind: 'bpo',
+        ref: bpoSlug,
+        idempotencyKey: key,
+        override: { includeOfferStrategy: bpoFull },
+      })
+      if (r.ok) bpoKeyRef.current = ''
+      return r.ok ? { ok: true, message: 'Price opinion sent.' } : { ok: false, error: r.error }
+    })
   }
   function sendCma() {
     if (!cmaSlug) return
     run('CMA', async () => {
-      const r = await sendCmaForContactAction(cmaSlug)
+      const key = claimKey(cmaKeyRef)
+      const r = await sendDeliverable({
+        personId: props.personId,
+        kind: 'cma',
+        ref: cmaSlug,
+        idempotencyKey: key,
+      })
+      if (r.ok) cmaKeyRef.current = ''
       return r.ok ? { ok: true, message: 'CMA sent.' } : { ok: false, error: r.error }
     })
   }
@@ -203,10 +235,15 @@ export function ContactSendCenter(props: {
       return
     }
     run('Market report', async () => {
-      const fd = new FormData()
-      areas.forEach((a) => fd.append('areas', a))
-      const r = await sendMarketReportNowAction(props.personId, fd)
+      const key = claimKey(reportKeyRef)
+      const r = await sendDeliverable({
+        personId: props.personId,
+        kind: 'market_report',
+        idempotencyKey: key,
+        override: { areas },
+      })
       if (!r.ok) return { ok: false, error: r.error }
+      reportKeyRef.current = ''
       if (subscribe) {
         const sub = await setReportSubscriptionAction(props.personId, { areas, frequency: 'monthly', isActive: true })
         if (!sub.ok) {
@@ -280,13 +317,18 @@ export function ContactSendCenter(props: {
       toast.error('Add a city, subdivision, price, beds, or another filter so the search is not the whole MLS.')
       return
     }
-    run('Listing matches', () =>
-      // freq is SavedSearchCadence and the action accepts SavedSearchFrequency —
-      // the same four-value union — so it passes straight through (W7.5).
-      sendListingMatchesForContactAction(props.personId, JSON.stringify(filters), {
-        frequency: freq,
-      }),
-    )
+    run('Listing matches', async () => {
+      const key = claimKey(listingsKeyRef)
+      const r = await sendDeliverable({
+        personId: props.personId,
+        kind: 'listing_matches',
+        idempotencyKey: key,
+        // freq is SavedSearchCadence — same four-value union as SavedSearchFrequency (W7.5).
+        override: { filtersJson: JSON.stringify(filters), frequency: freq },
+      })
+      if (r.ok) listingsKeyRef.current = ''
+      return r.ok ? { ok: true, message: 'Listing matches sent.' } : { ok: false, error: r.error }
+    })
   }
 
   return (
@@ -367,21 +409,26 @@ export function ContactSendCenter(props: {
           <TabsContent value="cma" className="space-y-3 pt-3">
             {pendingCmas.length > 0 ? (
               <div className="space-y-1.5">
-                {pendingCmas.map((c) => (
-                  <div key={c.slug} className="flex items-center justify-between gap-2 rounded-lg border border-border px-2.5 py-2">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-foreground" title={c.subjectAddress}>{c.subjectAddress}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {c.status === 'building' ? 'Building — you get a text when it is ready' : 'Draft — review it, then it becomes sendable'}
-                      </p>
+                {pendingCmas.map((c) => {
+                  const building = c.buildState === 'queued' || c.buildState === 'building'
+                  const failed = c.buildState === 'failed'
+                  const statusLine = building
+                    ? 'Building — you get a text when it is ready'
+                    : failed
+                      ? 'Build failed — open the CMA admin page to retry'
+                      : 'Draft — review it, then it becomes sendable'
+                  return (
+                    <div key={c.slug} className="flex items-center justify-between gap-2 rounded-lg border border-border px-2.5 py-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-foreground" title={c.subjectAddress}>{c.subjectAddress}</p>
+                        <p className="text-xs text-muted-foreground">{statusLine}</p>
+                      </div>
+                      {!building ? (
+                        <a href={c.reviewUrl} className="shrink-0 text-xs font-medium text-primary hover:underline">Review</a>
+                      ) : null}
                     </div>
-                    {c.status !== 'building' ? (
-                      // Broker review = the authed admin CMA page (works for every
-                      // draft; previewUrl is NULL on builder-built rows).
-                      <a href={`/admin/cmas/${c.slug}`} className="shrink-0 text-xs font-medium text-primary hover:underline">Review</a>
-                    ) : null}
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             ) : null}
             {finalCmas.length === 0 ? (

@@ -54,8 +54,10 @@ describe('broker Listing-matches form carries the full consumer filter vocabular
 })
 
 describe('the stale frequency cast is gone (W7.5 cleanup)', () => {
-  it('passes freq straight through — the action accepts SavedSearchFrequency', () => {
-    expect(src).toMatch(/frequency: freq,/)
+  it('passes freq straight through sendDeliverable — no cast bridge', () => {
+    // Routed via sendDeliverable override (G56 burn); freq is still uncast.
+    expect(src).toMatch(/frequency:\s*freq/)
+    expect(src).toMatch(/sendDeliverable\(/)
     // The old "cast is a bridge" comment + `freq as 'daily' | 'weekly'` are gone.
     expect(src).not.toMatch(/freq as 'daily' \| 'weekly'/)
     expect(src).not.toMatch(/cast is a bridge until the action signature widens/)

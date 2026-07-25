@@ -27,6 +27,13 @@ const STATUS_LABEL: Record<string, string> = {
   delivered: 'Sent',
 }
 
+const BUILD_LABEL: Record<string, string> = {
+  queued: 'Queued',
+  building: 'Building',
+  ready: 'Ready',
+  failed: 'Build failed',
+}
+
 export function ContactCmaCard(props: {
   cmas: ContactCma[]
   /** Bound sendCmaForm(personId, fd) — posts deliveryId=slug. */
@@ -57,6 +64,10 @@ export function ContactCmaCard(props: {
       <CardContent className="space-y-2.5">
         {props.cmas.map((c) => {
           const sendable = c.status === 'finalized' || c.status === 'delivered'
+          const building = c.buildState === 'queued' || c.buildState === 'building'
+          const badgeLabel = building
+            ? (BUILD_LABEL[c.buildState] ?? c.buildState)
+            : (STATUS_LABEL[c.status] ?? c.status)
           return (
             <div key={c.slug} className="rounded-lg border border-border p-2.5">
               <div className="flex items-start justify-between gap-2">
@@ -66,17 +77,17 @@ export function ContactCmaCard(props: {
                     {c.valueLine ? `${c.valueLine} · ` : ''}{fmtDate(c.createdAt)}
                   </p>
                 </div>
-                <Badge variant={c.status === 'delivered' ? 'secondary' : 'outline'} className={cn('shrink-0 text-xs', c.status === 'finalized' && 'border-success text-success')}>
-                  {STATUS_LABEL[c.status] ?? c.status}
+                <Badge variant={c.status === 'delivered' ? 'secondary' : 'outline'} className={cn('shrink-0 text-xs', c.status === 'finalized' && !building && 'border-success text-success')}>
+                  {badgeLabel}
                 </Badge>
               </div>
               <div className="mt-2 flex items-center gap-2">
-                {c.previewUrl ? (
+                {!building ? (
                   <Button asChild type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                    <a href={c.previewUrl} target="_blank" rel="noopener noreferrer">Review</a>
+                    <a href={c.reviewUrl}>Review</a>
                   </Button>
                 ) : null}
-                {sendable ? (
+                {sendable && !building ? (
                   <Button
                     type="button"
                     size="sm"
