@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.865.1 (2026-07-25)
+
+### Maintenance
+- docs(handoff): five-lane recovery complete — ledger mechanisms + proofs filled, rows await independent verifier
+
+---
+
+
 ## v1.865.0 (2026-07-25)
 
 ### Features
