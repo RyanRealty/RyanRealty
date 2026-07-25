@@ -343,7 +343,8 @@
     "auth:capture": "node scripts/_auth-capture.mjs",
     "auth:verify": "node scripts/_auth-capture.mjs --verify",
     "setup:browsers": "npx playwright install --with-deps chromium",
-    "setup:cloud": "bash scripts/cloud-setup.sh"
+    "setup:cloud": "bash scripts/cloud-setup.sh",
+    "secrets:pack": "node scripts/secrets-pack.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",

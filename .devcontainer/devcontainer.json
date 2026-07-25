@@ -1,0 +1,58 @@
+{
+  "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.schema.json",
+  "name": "Ryan Realty — multi-agent dev box",
+
+  // Node 20 matches the workstation this replaced (v20.19.6). Pinning avoids a
+  // silent major bump changing behaviour under 8,000+ tracked files.
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:20",
+
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11",
+      "installTools": true
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/git-lfs:1": {}
+  },
+
+  // The repo is ~791MB tracked, and node_modules + .next add ~5GB on top.
+  // 32GB storage is the floor; 64GB if video renders land here.
+  "hostRequirements": {
+    "cpus": 8,
+    "memory": "32gb",
+    "storage": "64gb"
+  },
+
+  // Secrets come from Codespaces repository secrets, never from a committed
+  // .env.local. lib/platform/env.mjs prefers real env vars, so scripts behave
+  // identically here and on the Mac that used to run them.
+  "containerEnv": {
+    "NEXT_TELEMETRY_DISABLED": "1",
+    "PUPPETEER_SKIP_DOWNLOAD": "1"
+  },
+
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": { "label": "Next dev server", "onAutoForward": "notify" }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropic.claude-code",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ms-python.python"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "editor.formatOnSave": true
+      }
+    }
+  },
+
+  "remoteUser": "node"
+}
