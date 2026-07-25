@@ -70,6 +70,25 @@ import { getCommunityBySlug } from '../../actions/communities'
 import { shouldNoIndexSearchVariant } from '../../../lib/seo-routing'
 import { resolveMatrixNoIndex } from '@/lib/seo/getSearchMatrixEntries'
 import { decodeMapPolygon } from '@/lib/map-polygon'
+import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
+
+/**
+ * True during `next build` static generation. The search page's eager fan-out
+ * (listings + banner mint + related searches + price-change keys) OOMs the
+ * build worker when generateStaticParams pre-renders even 10 bare-city paths
+ * (W3.5). Thin the fan-out in that phase; runtime / ISR keep the full path.
+ */
+const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build'
+
+/**
+ * Pre-render the 10 SITE_CITY_SLUGS bare-city routes. The full
+ * {city}/{area}/{preset} matrix is thousands of paths — on-demand via
+ * dynamicParams + ISR (revalidate=60). Empty stub banned by ci:static-params.
+ */
+export async function generateStaticParams(): Promise<Array<{ slug: string[] }>> {
+  return SITE_CITY_SLUGS.map((city) => ({ slug: [city] }))
+}
+export const dynamicParams = true
 
 async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {
   return Promise.race([
@@ -319,7 +338,10 @@ export default async function SearchPage({
   const ROWS = 3
   const defaultPageSize = columns * ROWS
   const perPageParam = sp.perPage ?? String(defaultPageSize)
-  const pageSize = Math.min(100, Math.max(1, parseInt(perPageParam, 10) || defaultPageSize))
+  const requestedPageSize = Math.min(100, Math.max(1, parseInt(perPageParam, 10) || defaultPageSize))
+  // Build thinning (W3.5): cap card count during static generation so the
+  // worker can finish SITE_CITY_SLUGS without heap death. Runtime unchanged.
+  const pageSize = IS_PRODUCTION_BUILD ? Math.min(requestedPageSize, 12) : requestedPageSize
   const page = Math.max(1, parseInt(sp.page ?? '1', 10) || 1)
   const offset = (page - 1) * pageSize
   const initialPolygon = decodeMapPolygon(sp.poly)
@@ -477,7 +499,10 @@ export default async function SearchPage({
       { listings: [], totalCount: 0, degraded: true },
       LISTINGS_FETCH_TIMEOUT_MS,
     ),
-    withTimeout(getListingKeysWithRecentPriceChange(), new Set<string>()),
+    // Build thinning (W3.5): price-change keys are map-view chrome only.
+    IS_PRODUCTION_BUILD
+      ? Promise.resolve(new Set<string>())
+      : withTimeout(getListingKeysWithRecentPriceChange(), new Set<string>()),
     withTimeout(getSession(), null, 600),
     withTimeout(getResortEntityKeys(), new Set<string>()),
   ])
@@ -546,7 +571,18 @@ export default async function SearchPage({
     city
       ? await Promise.all([
           withTimeout(getBestListingHeroForGeography(city, decodedSubdivision ?? null), null, 1500),
-          withTimeout(getOrCreatePlaceBanner(entityType, entityKey, bannerSearchQuery), { url: null, attribution: null }, 1500),
+          // Build thinning (W3.5): never mint banners during static generation
+          // (getOrCreatePlaceBanner can write). Read-only URL lookup only.
+          IS_PRODUCTION_BUILD
+            ? withTimeout(getBannerUrl(entityType, entityKey), null, 800).then((url) => ({
+                url,
+                attribution: null,
+              }))
+            : withTimeout(
+                getOrCreatePlaceBanner(entityType, entityKey, bannerSearchQuery),
+                { url: null, attribution: null },
+                1500,
+              ),
         ])
       : [null, { url: null, attribution: null }]
   // Prefer curated Central Oregon lifestyle image over generic Unsplash/AI banner
@@ -716,7 +752,9 @@ export default async function SearchPage({
   const relatedAllHomes = relatedCitySlug ? getAllCityHomesLink(relatedCitySlug) : null
   // Live-derived links ranked by actual active-tile counts (W3.4); the static
   // snapshot survives only as the resilience fallback when derivation is empty.
-  const relatedDerived = relatedCitySlug
+  // Build thinning (W3.5): skip the live popular-search derivation during
+  // static generation; the static snapshot fallback below still fills the rail.
+  const relatedDerived = relatedCitySlug && !IS_PRODUCTION_BUILD
     ? (await getDerivedPopularSearches(relatedCitySlug, 12)).filter((l) => l.href !== searchPagePath).slice(0, 8)
     : []
   const relatedSearches = relatedDerived.length > 0
