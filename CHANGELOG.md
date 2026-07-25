@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.863.11 (2026-07-25)
+
+### Maintenance
+- docs(handoff): round-6 result — FAIL, the verifier defeated all three gates I shipped
+
+---
+
+
 ## v1.863.10 (2026-07-25)
 
 ### Bug Fixes
