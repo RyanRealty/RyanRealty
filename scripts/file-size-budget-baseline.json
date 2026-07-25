@@ -24,7 +24,7 @@
     "app/cities/[slug]/page.tsx": 696,
     "app/communities/[slug]/page.tsx": 1035,
     "app/dashboard/marketing/page.tsx": 1163,
-    "app/housing-market/[...slug]/page.tsx": 888,
+    "app/housing-market/[...slug]/page.tsx": 894,
     "app/lp/bend/page.tsx": 1047,
     "app/lp/buyer-listing-alerts/page.tsx": 783,
     "app/lp/central-oregon-golf/page.tsx": 1461,
