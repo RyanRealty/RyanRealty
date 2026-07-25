@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.869.1 (2026-07-25)
+
+### Maintenance
+- docs(cloud): Claude Code cloud environment configuration
+
+---
+
+
 ## v1.869.0 (2026-07-25)
 
 ### Features
