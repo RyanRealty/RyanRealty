@@ -41,6 +41,7 @@ import { buildMarketFaq } from '@/lib/site/market-faq'
 import {
   buildPresetFaq,
   getAdjacentPriceBandLinks,
+  getParentCityPresetLink,
   getSamePresetCityLinks,
   isSortOnlyPreset,
 } from '@/lib/site/preset-faq'
@@ -731,32 +732,51 @@ export default async function SearchPage({
   // buildMarketFaq so the visible numbers and the markup never diverge. Every
   // figure is null-guarded (no invented stats, CLAUDE.md §0).
   const isPlainCityPage = !!(city && !subdivision && !preset)
-  // Preset-page SEO depth (Family 3). The indexable /homes-for-sale/[city]/[preset]
-  // pages get destination-page depth: an honest editorial intro, a preset-scoped
-  // FAQ (+ FAQPage JSON-LD via FAQBlock), and cross-links. Gated to the CLEAN
-  // canonical render: no subdivision segment, no user filter/sort/page params
+  // Preset-page SEO depth (Family 3). The indexable preset pages get
+  // destination-page depth: an honest editorial intro, a preset-scoped FAQ
+  // (+ FAQPage JSON-LD via FAQBlock), and cross-links. W3.2 extends this to the
+  // 3-segment {city}/{area}/{preset} matrix pages, which are emitted to the
+  // sitemap (getSearchMatrixEntries) and until now rendered a bare grid.
+  //
+  // Gated to the CLEAN canonical render: no user filter/sort/page params
   // (shouldNoIndexSearchVariant, those variants are noindex and their counts
   // would not match the preset copy), not a sort-only preset (a pure re-order of
   // the city page carries no segment of its own), and not a degraded fetch (a
   // timed-out count must never produce "none on the market" copy, CLAUDE.md §0).
   const isPresetDepthPage = !!(
     city &&
-    !subdivision &&
     preset &&
     !isSortOnlyPreset(preset) &&
     !shouldNoIndexSearchVariant(sp)
   )
+  // The area this render is scoped to. CLAUDE.md §0: `totalCount` below is
+  // area-scoped on a 3-segment page, so the depth copy must name the AREA, not
+  // the city — buildPresetFaq keys every segment-level sentence off this.
+  const presetAreaLabel = subdivision ? placeName : null
   const cityPulse = (isPlainCityPage || isPresetDepthPage) && relatedCitySlug
     ? await getMarketPulse({ geoType: 'city', geoSlug: relatedCitySlug }).catch(() => null)
     : null
   const cityMarketFaq = isPlainCityPage && city ? buildMarketFaq(city, cityPulse) : null
   const presetDepth =
     isPresetDepthPage && city && preset && !listingsResult.degraded
-      ? buildPresetFaq(city, preset, totalCount, cityPulse)
+      ? buildPresetFaq(city, preset, totalCount, cityPulse, presetAreaLabel)
       : null
-  const presetBandLinks = isPresetDepthPage && city && preset ? getAdjacentPriceBandLinks(city, preset.slug) : []
+  const presetBandLinks =
+    isPresetDepthPage && city && preset
+      ? getAdjacentPriceBandLinks(
+          city,
+          preset.slug,
+          subdivision ? { slug: subdivision, label: placeName } : null,
+        )
+      : []
+  // On an area page the useful next search is one step WIDER (same preset,
+  // whole parent city); sideways "other cities" links belong to city pages.
   const presetCityLinks =
-    isPresetDepthPage && preset && relatedCitySlug ? getSamePresetCityLinks(preset, relatedCitySlug) : []
+    isPresetDepthPage && preset && relatedCitySlug
+      ? subdivision && city
+        ? [getParentCityPresetLink(city, preset)]
+        : getSamePresetCityLinks(preset, relatedCitySlug)
+      : []
 
   // Path-derived filters for the guest listing-alert capture. On this route the
   // city/subdivision/preset live in the slug (not the query string), so the
@@ -1058,7 +1078,13 @@ export default async function SearchPage({
           )}
           {presetCityLinks.length > 0 && (
             <div className="mt-5">
-              <Body size="small">{preset ? `${preset.shortLabel} in other cities` : 'In other cities'}</Body>
+              <Body size="small">
+                {subdivision
+                  ? 'Widen the search'
+                  : preset
+                    ? `${preset.shortLabel} in other cities`
+                    : 'In other cities'}
+              </Body>
               <div className="mt-2.5 flex flex-wrap gap-2.5">
                 {presetCityLinks.map((l) => (
                   <Link

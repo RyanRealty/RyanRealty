@@ -262,6 +262,19 @@ export function buildPresetFaq(
   preset: SearchPreset,
   totalCount: number,
   cityPulse: MarketFaqInput | null,
+  /**
+   * W3.2 — the AREA this render is scoped to (subdivision / neighborhood /
+   * resort display name) on a 3-segment {city}/{area}/{preset} page. Null on a
+   * plain 2-segment city preset page.
+   *
+   * CLAUDE.md §0, the whole reason this parameter exists: `totalCount` is the
+   * count of THIS search, which on a 3-segment page is scoped to the AREA, not
+   * the city. Naming the city next to an area-scoped count would put a true
+   * number beside the wrong place — the exact narrative-vs-data mismatch §0
+   * forbids. Every segment-level sentence below names `place`; the city-level
+   * pulse stats stay explicitly labeled as city-wide.
+   */
+  areaLabel?: string | null,
 ): PresetFaqResult | null {
   if (isSortOnlyPreset(preset)) return null
   const copy = PRESET_COPY[preset.slug]
@@ -272,12 +285,19 @@ export function buildPresetFaq(
   const label = asOfLabel(cityPulse?.refreshedAt)
   const asOf = label ? ` as of ${label}` : ''
 
+  // The place `totalCount` actually covers. Short form for prose; qualified
+  // form ("Tetherow, Bend") for the search-definition answer so an area name
+  // is never ambiguous across cities.
+  const area = areaLabel?.trim() || null
+  const place = area ?? city
+  const placeQualified = area ? `${area}, ${city}` : city
+
   // ── Intro (2-3 sentences) ────────────────────────────────────────────────
   const sentences: string[] = []
   sentences.push(
     count === 0
-      ? `No ${copy.plural} are ${clause} in ${city} right now, but inventory changes daily.`
-      : `${count.toLocaleString('en-US')} ${count === 1 ? copy.singular : copy.plural} ${count === 1 ? 'is' : 'are'} ${clause} in ${city} right now.`,
+      ? `No ${copy.plural} are ${clause} in ${place} right now, but inventory changes daily.`
+      : `${count.toLocaleString('en-US')} ${count === 1 ? copy.singular : copy.plural} ${count === 1 ? 'is' : 'are'} ${clause} in ${place} right now.`,
   )
   const character = cityCharacterSentence(city)
   if (character) sentences.push(character)
@@ -298,16 +318,16 @@ export function buildPresetFaq(
   const faqs: MarketFaqItem[] = []
 
   faqs.push({
-    question: copy.countQuestion ? copy.countQuestion(city) : `How many ${copy.plural} are for sale in ${city}?`,
+    question: copy.countQuestion ? copy.countQuestion(place) : `How many ${copy.plural} are for sale in ${place}?`,
     answer:
       count === 0
         ? `None right now. Inventory updates throughout the day, so check back or save this search to get an alert when one hits the market.`
-        : `There ${count === 1 ? 'is' : 'are'} ${count.toLocaleString('en-US')} ${count === 1 ? copy.singular : copy.plural} ${clause} in ${city} right now, based on live MLS data.`,
+        : `There ${count === 1 ? 'is' : 'are'} ${count.toLocaleString('en-US')} ${count === 1 ? copy.singular : copy.plural} ${clause} in ${place} right now, based on live MLS data.`,
   })
 
   faqs.push({
     question: 'What does this search include?',
-    answer: copy.criteria(city),
+    answer: copy.criteria(placeQualified),
   })
 
   if (cityPulse?.medianListPrice != null && cityPulse.medianListPrice > 0) {
@@ -327,7 +347,7 @@ export function buildPresetFaq(
   return {
     intro,
     faqs: faqs.slice(0, 4),
-    faqTitle: `Questions about ${copy.plural} in ${city}`,
+    faqTitle: `Questions about ${copy.plural} in ${place}`,
   }
 }
 
@@ -348,12 +368,22 @@ const PRICE_BAND_LADDER = [
 ] as const
 
 /**
- * Adjacent price bands in the SAME city (e.g. under-750k -> under-600k +
+ * Adjacent price bands in the SAME place (e.g. under-750k -> under-600k +
  * under-1m). Empty for non-price presets.
+ *
+ * W3.2: on a 3-segment {city}/{area}/{preset} page, pass `area` so the neighbor
+ * bands stay INSIDE the subdivision ({city}/{area}/{neighbor}). Dropping the
+ * area segment here would bounce a visitor from Tetherow's under-$750K page to
+ * all of Bend's, which is a different search than the one they are reading.
  */
-export function getAdjacentPriceBandLinks(city: string, presetSlug: string): PresetCrossLink[] {
+export function getAdjacentPriceBandLinks(
+  city: string,
+  presetSlug: string,
+  area?: { slug: string; label: string } | null,
+): PresetCrossLink[] {
   const idx = PRICE_BAND_LADDER.indexOf(presetSlug as (typeof PRICE_BAND_LADDER)[number])
   if (idx === -1) return []
+  const base = homesForSalePath(city)
   const links: PresetCrossLink[] = []
   for (const neighborIdx of [idx - 1, idx + 1]) {
     const slug = PRICE_BAND_LADDER[neighborIdx]
@@ -361,11 +391,23 @@ export function getAdjacentPriceBandLinks(city: string, presetSlug: string): Pre
     const neighbor = getPresetBySlug(slug)
     if (!neighbor) continue
     links.push({
-      href: `${homesForSalePath(city)}/${neighbor.slug}`,
-      label: `${neighbor.shortLabel} in ${city}`,
+      href: area ? `${base}/${area.slug}/${neighbor.slug}` : `${base}/${neighbor.slug}`,
+      label: `${neighbor.shortLabel} in ${area?.label ?? city}`,
     })
   }
   return links
+}
+
+/**
+ * The one-step-wider search for a 3-segment area page: the same preset across
+ * the whole parent city. Replaces the "same preset in other cities" rail on
+ * area pages, where the nearest useful next search is up, not sideways.
+ */
+export function getParentCityPresetLink(city: string, preset: SearchPreset): PresetCrossLink {
+  return {
+    href: `${homesForSalePath(city)}/${preset.slug}`,
+    label: `${preset.shortLabel} in ${city}`,
+  }
 }
 
 /**
