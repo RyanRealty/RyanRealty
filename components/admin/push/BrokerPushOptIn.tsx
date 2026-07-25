@@ -19,6 +19,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { formatDate } from '@/lib/format/date'
 
 interface Device {
   endpoint: string
@@ -206,7 +207,7 @@ export default function BrokerPushOptIn() {
                 <li key={d.endpoint} className="tabular-nums">
                   {d.label ?? 'Device'}
                   {d.endpoint === thisEndpoint ? ' (this device)' : ''}
-                  {d.last_success_at ? ` · last alert ${new Date(d.last_success_at).toLocaleDateString('en-US')}` : ''}
+                  {d.last_success_at ? ` · last alert ${formatDate(d.last_success_at)}` : ''}
                 </li>
               ))}
             </ul>
