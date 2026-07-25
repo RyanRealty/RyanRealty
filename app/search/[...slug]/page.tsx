@@ -70,23 +70,10 @@ import { getCommunityBySlug } from '../../actions/communities'
 import { shouldNoIndexSearchVariant } from '../../../lib/seo-routing'
 import { resolveMatrixNoIndex } from '@/lib/seo/getSearchMatrixEntries'
 import { decodeMapPolygon } from '@/lib/map-polygon'
-import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
+import { generateStaticParams as buildSearchStaticParams, IS_PRODUCTION_BUILD } from './search-static'
 
-/**
- * True during `next build` static generation. The search page's eager fan-out
- * (listings + banner mint + related searches + price-change keys) OOMs the
- * build worker when generateStaticParams pre-renders even 10 bare-city paths
- * (W3.5). Thin the fan-out in that phase; runtime / ISR keep the full path.
- */
-const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build'
-
-/**
- * Pre-render the 10 SITE_CITY_SLUGS bare-city routes. The full
- * {city}/{area}/{preset} matrix is thousands of paths — on-demand via
- * dynamicParams + ISR (revalidate=60). Empty stub banned by ci:static-params.
- */
-export async function generateStaticParams(): Promise<Array<{ slug: string[] }>> {
-  return SITE_CITY_SLUGS.map((city) => ({ slug: [city] }))
+export async function generateStaticParams() {
+  return buildSearchStaticParams()
 }
 export const dynamicParams = true
 
@@ -339,8 +326,6 @@ export default async function SearchPage({
   const defaultPageSize = columns * ROWS
   const perPageParam = sp.perPage ?? String(defaultPageSize)
   const requestedPageSize = Math.min(100, Math.max(1, parseInt(perPageParam, 10) || defaultPageSize))
-  // Build thinning (W3.5): cap card count during static generation so the
-  // worker can finish SITE_CITY_SLUGS without heap death. Runtime unchanged.
   const pageSize = IS_PRODUCTION_BUILD ? Math.min(requestedPageSize, 12) : requestedPageSize
   const page = Math.max(1, parseInt(sp.page ?? '1', 10) || 1)
   const offset = (page - 1) * pageSize
@@ -499,7 +484,6 @@ export default async function SearchPage({
       { listings: [], totalCount: 0, degraded: true },
       LISTINGS_FETCH_TIMEOUT_MS,
     ),
-    // Build thinning (W3.5): price-change keys are map-view chrome only.
     IS_PRODUCTION_BUILD
       ? Promise.resolve(new Set<string>())
       : withTimeout(getListingKeysWithRecentPriceChange(), new Set<string>()),
@@ -571,8 +555,6 @@ export default async function SearchPage({
     city
       ? await Promise.all([
           withTimeout(getBestListingHeroForGeography(city, decodedSubdivision ?? null), null, 1500),
-          // Build thinning (W3.5): never mint banners during static generation
-          // (getOrCreatePlaceBanner can write). Read-only URL lookup only.
           IS_PRODUCTION_BUILD
             ? withTimeout(getBannerUrl(entityType, entityKey), null, 800).then((url) => ({
                 url,
@@ -752,8 +734,6 @@ export default async function SearchPage({
   const relatedAllHomes = relatedCitySlug ? getAllCityHomesLink(relatedCitySlug) : null
   // Live-derived links ranked by actual active-tile counts (W3.4); the static
   // snapshot survives only as the resilience fallback when derivation is empty.
-  // Build thinning (W3.5): skip the live popular-search derivation during
-  // static generation; the static snapshot fallback below still fills the rail.
   const relatedDerived = relatedCitySlug && !IS_PRODUCTION_BUILD
     ? (await getDerivedPopularSearches(relatedCitySlug, 12)).filter((l) => l.href !== searchPagePath).slice(0, 8)
     : []
@@ -770,26 +750,15 @@ export default async function SearchPage({
   // buildMarketFaq so the visible numbers and the markup never diverge. Every
   // figure is null-guarded (no invented stats, CLAUDE.md §0).
   const isPlainCityPage = !!(city && !subdivision && !preset)
-  // Preset-page SEO depth (Family 3). The indexable preset pages get
-  // destination-page depth: an honest editorial intro, a preset-scoped FAQ
-  // (+ FAQPage JSON-LD via FAQBlock), and cross-links. W3.2 extends this to the
-  // 3-segment {city}/{area}/{preset} matrix pages, which are emitted to the
-  // sitemap (getSearchMatrixEntries) and until now rendered a bare grid.
-  //
-  // Gated to the CLEAN canonical render: no user filter/sort/page params
-  // (shouldNoIndexSearchVariant, those variants are noindex and their counts
-  // would not match the preset copy), not a sort-only preset (a pure re-order of
-  // the city page carries no segment of its own), and not a degraded fetch (a
-  // timed-out count must never produce "none on the market" copy, CLAUDE.md §0).
+  // Preset-page SEO depth (Family 3 / W3.2): city AND {city}/{area}/{preset} pages.
+  // Clean canonical only — no sort-only, no noindex variants, no degraded counts.
   const isPresetDepthPage = !!(
     city &&
     preset &&
     !isSortOnlyPreset(preset) &&
     !shouldNoIndexSearchVariant(sp)
   )
-  // The area this render is scoped to. CLAUDE.md §0: `totalCount` below is
-  // area-scoped on a 3-segment page, so the depth copy must name the AREA, not
-  // the city — buildPresetFaq keys every segment-level sentence off this.
+  // §0: area-scoped totalCount must name the area, not the city.
   const presetAreaLabel = subdivision ? placeName : null
   const cityPulse = (isPlainCityPage || isPresetDepthPage) && relatedCitySlug
     ? await getMarketPulse({ geoType: 'city', geoSlug: relatedCitySlug }).catch(() => null)
@@ -807,8 +776,6 @@ export default async function SearchPage({
           subdivision ? { slug: subdivision, label: placeName } : null,
         )
       : []
-  // On an area page the useful next search is one step WIDER (same preset,
-  // whole parent city); sideways "other cities" links belong to city pages.
   const presetCityLinks =
     isPresetDepthPage && preset && relatedCitySlug
       ? subdivision && city
