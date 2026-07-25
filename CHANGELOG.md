@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.866.0 (2026-07-25)
+
+### Features
+- feat(w3.5): generateStaticParams for SITE_CITY_SLUGS + build thinning
+- feat(w3.2): render preset depth on 3-segment {city}/{area}/{preset} pages
+
+### Bug Fixes
+- fix(w3.5): extract search-static helpers; rebaseline file-size after depth+SSG
+
+### Maintenance
+- chore(ledger): W8.6+W2.7 done (independent verifier a0ee03f2); W3.2/W3.5 mechanisms; verifiedBy on shipped slices
+- docs(w13.1+w2.7): burn FUB citation ratchet 55→47; record trail_lines decision
+
+---
+
+
 ## v1.865.1 (2026-07-25)
 
 ### Maintenance
