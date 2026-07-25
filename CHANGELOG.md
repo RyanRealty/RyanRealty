@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.868.0 (2026-07-25)
+
+### Features
+- feat(vm-parity): run everything on a cloud VM, no Mac mini
+
+---
+
+
 ## v1.867.2 (2026-07-25)
 
 ### Maintenance
