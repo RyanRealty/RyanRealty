@@ -57,7 +57,13 @@ export type CommunityDetail = {
   boundaryGeojson: unknown
   isResort: boolean
   resortContent: Record<string, unknown> | null
-  activeCount: number
+  /** THIS community's active SFR count, or null when no community-scoped row
+   *  exists. NEVER the parent city's count: it used to fall through to
+   *  getQuickCityCount(city), so /communities/three-rivers (no geo_snapshot row)
+   *  published "1000 homes for sale in Three Rivers" — Bend's 1,014 active,
+   *  clipped by the PostgREST 1000-row cap — and /communities/sunriver published
+   *  121 (all of Sunriver city) beside a body showing 102. (§0) */
+  activeCount: number | null
   medianPrice: number | null
   avgDom: number | null
   closedLast12Months: number

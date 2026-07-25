@@ -173,7 +173,18 @@ async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetai
     getCommunityDetailByName(subdivision),
     getGeoSnapshot({ geoType: 'community', geoKey }),
   ])
-  const activeCount = snapshot?.activeSfrCount ?? stats.count
+  // §0 THE PUBLISHED COUNT IS THIS COMMUNITY'S, OR NOTHING.
+  // `stats.count` degrades to getQuickCityCount(city) — the WHOLE CITY's active
+  // listings — when a community has no cache row. Publishing that as the
+  // community's count is a misattribution, and it shipped: /communities/three-rivers
+  // has no geo_snapshot row, so its meta description read "1000 homes for sale in
+  // Three Rivers" (Bend's 1,014 active, clipped by the PostgREST 1000-row cap),
+  // and /communities/sunriver read 121 (all of Sunriver city) against a body
+  // showing 102. The city figure is still useful as a SIGNAL that the slug names
+  // a real place — the junk-slug guard below uses it for exactly that — but it is
+  // never published.
+  const activeCount = snapshot?.activeSfrCount ?? null
+  const anyInventorySignal = snapshot?.activeSfrCount ?? stats.count
   const medianFromRows =
     snapshot?.medianListPrice != null ? Math.round(snapshot.medianListPrice) : null
   const comm = communityRow as {
@@ -194,7 +205,7 @@ async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetai
   // (city, subdivision) string with NONE of those is a fabricated page (e.g.
   // "Industrial, Madras Oregon" from an MLS subdivision artifact). Return null so
   // the page notFound()s instead of rendering invented content.
-  if (activeCount <= 0 && !comm && !snapshot && !isResort) {
+  if (anyInventorySignal <= 0 && !comm && !snapshot && !isResort) {
     return null
   }
 

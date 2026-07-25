@@ -1,5 +1,163 @@
-> **NEWEST, START HERE: the W8.1 ROUND-6 block immediately below (2026-07-24 late).** Prior: the W8.4 + W8.1 MARKET-REPORT block (2026-07-24), the /goal COMPLETION-RUN block (2026-07-23), AUDIT-HARDENING (2026-07-17 late), ONE-NAV + UNIFIED-SEND (2026-07-17 eve), CMA VERSION-CHAIN (2026-07-17 PM), the ADMIN-REBUILD v2 LITMUS block (2026-07-17 AM), then RC1 (2026-07-16).
+> **NEWEST, START HERE: the SESSION-END block immediately below (2026-07-24 night).** Prior: W8.1 ROUND-6 (2026-07-24 late), the W8.4 + W8.1 MARKET-REPORT block (2026-07-24), the /goal COMPLETION-RUN block (2026-07-23), AUDIT-HARDENING (2026-07-17 late), ONE-NAV + UNIFIED-SEND (2026-07-17 eve), CMA VERSION-CHAIN (2026-07-17 PM), the ADMIN-REBUILD v2 LITMUS block (2026-07-17 AM), then RC1 (2026-07-16).
 
+
+# SESSION END — 2026-07-24 night. HEAD `3e2640da`. Ledger **40/50**.
+
+## READ THIS FIRST: THE WORKING TREE IS DIRTY AND DOES NOT COMPILE
+
+A 5-lane parallel workflow was building ledger rows when the Claude Code process
+exited. All five agents were killed MID-EDIT. **Their partial, UNVERIFIED work is
+still sitting uncommitted in the working tree**, and `npx tsc --noEmit` currently
+reports 6 errors, all of them theirs.
+
+Nothing in that pile has been reviewed, tested, or verified by anyone. Do not
+assume any of it works. Do not commit it wholesale.
+
+### The 6 live compile errors, by owner
+
+```
+app/api/push/subscribe/route.ts(85,5)                  W5.5  broker slug type
+lib/newsletter/market-report-bulk.contract.test.ts:242  W8.6  tuple index
+lib/newsletter/market-report-bulk.contract.test.ts:258  W8.6  tuple index
+lib/newsletter/produce-draft.ts(514,23)                 W8.6  Cannot find name 'bend'
+lib/newsletter/produce-draft.ts(514,31)                 W8.6  Cannot find name 'bend'
+lib/newsletter/produce-draft.ts(515,60)                 W8.6  Cannot find name 'bend'
+```
+
+`lib/newsletter/produce-draft.ts` is the dangerous one: a TRACKED file on the live
+newsletter path, left referencing an identifier that does not exist. If the whole
+tree gets committed, the newsletter build breaks. `git checkout -- lib/newsletter/produce-draft.ts`
+restores it if the W8.6 lane is abandoned.
+
+### What each killed lane left behind (all UNVERIFIED)
+
+| Lane | Row | Untracked | Modified (tracked) |
+|---|---|---|---|
+| **W8.6** bulk market-report audience | not_started | `lib/newsletter/market-report-audience.ts`, `market-report-bulk.ts`, `market-report-bulk.contract.test.ts`, `scripts/check-market-report-bulk-ledger.mjs`, `app/admin/(protected)/crm/settings/market-reports/{BulkSendForm.tsx,actions.ts}` | `market-reports/page.tsx`, **`lib/newsletter/produce-draft.ts` (BROKEN)** |
+| **W2.7** GIS polygons | partial | `scripts/gis/`, `data/boundary-geo-types.json`, `scripts/check-boundary-provenance.mjs`, migration `20260724223000_boundaries_geo_type_school_district.sql` | `lib/data/geo/getBoundaryGeoJSON.ts` |
+| **W13.1** CLAUDE.md shrink | partial | `docs/archive/fub-era/` | `CLAUDE.md` + ~24 `docs/*.md` |
+| **W5.5** PWA web-push | partial | `app/api/push/`, `components/admin/push/`, migration `20260724230000_web_push_broker_channel.sql`, `scripts/check-web-push-durable.mjs` | `lib/crm/broker-alerts.ts`, `app/api/cron/crm-alert-drain/route.ts`, `app/admin/(protected)/settings/page.tsx` |
+| **W5.1** unified sendDeliverable | partial | `app/actions/send-deliverable.ts`, `lib/crm/send-deliverable{,.test,.int.test}.ts`, `scripts/check-deliverable-send-chokepoint.mjs`, `scripts/deliverable-send-chokepoint-baseline.json` | `app/admin/(protected)/crm/[id]/{form-actions.ts,page.tsx}` |
+
+**MIGRATIONS: two new migration files exist on disk and were NOT applied to hosted
+Supabase.** Check before assuming either is live.
+
+### To resume the workflow rather than redo it
+`Workflow({scriptPath: "~/.claude/projects/-Users-matthewryan-RyanRealty/30b59e80-6f4d-4b54-bfdb-a398c33f0915/workflows/scripts/ledger-close-open-rows-wf_21a87f1f-9ce.js", resumeFromRunId: "wf_21a87f1f-9ce"})`
+Completed agent() calls replay from cache. **Read the run's `journal.jsonl` FIRST** —
+no agent got as far as a verifier, so every lane is build-phase-incomplete.
+
+### ALSO uncommitted: a DIFFERENT human session's work — do not touch
+`app/search/[...slug]/page.tsx`, `lib/site/preset-faq.ts`, `package.json`'s
+`ci:search-preset-depth` entry, `scripts/check-search-preset-depth.mjs`.
+On rebase: back the tracked ones up, `git checkout --` them, rebase, reapply —
+and for `package.json` reapply their two lines onto the NEW committed base, never
+restore a stale merged copy.
+
+### And MY unfinished M3 work (compiles clean, uncommitted, ready to commit)
+`app/actions/communities.ts` + `lib/communities.ts` + `app/communities/[slug]/page.tsx`:
+community meta descriptions no longer publish a count. See "M3" below.
+
+---
+
+## SHIPPED AND PUSHED THIS SESSION (7 commits, `331f52cb..3e2640da`)
+
+**Round 6 of W8.1 ran and FAILED**, which is the session's headline. I fixed
+D2/D3/D4 + the wrapper gap, found a fifth defect doing it, shipped three gates —
+and an independent verifier **defeated all three gates** by writing code that
+committed each defect while every gate stayed GREEN. Every hole was the same
+mistake: the gate checked only the syntactic shape its own fix happened to use.
+That lesson is now memory `feedback_gate_written_by_the_fixer`.
+
+- `723dfa63` — **D2** the export's `?city=` bounded the TITLE and nothing else
+  (`?city=Madras&subdivision=Tetherow` shipped a branded workbook headed
+  "Tetherow, Madras" with Bend's numbers); **D5** (found this round) the export
+  read the literal-name `subdivision` row while the page reads the alias-aware
+  `neighborhood` row — Tetherow YTD 9 sold/$2.6M vs 18/$1,414,000, Black Butte
+  Ranch 0 vs 17, Sunriver 0 vs 43; **D3** three windows in one unlabeled block;
+  **D4** a closed-sale median published under "Median list" on three live pages.
+- `248b7d1f` — the three gate holes the verifier walked through.
+- `705b4715` — trend block asserted a window it had not checked; a dead guard.
+- `b03b5b34` — **§0, the most serious.** A cache slug is not a geography: 13 slugs
+  exist under more than one `geo_type`, `sunriver` under three, and
+  `getMarketStatsCacheRowForGeo` filtered slug+period only. `/communities/sunriver`
+  was served the CITY row — 124 twelve-month sales, 93.2% sale-to-list for all of
+  Sunriver — as the community's own figures in the hero, the FAQ prose and the
+  JSON-LD. Now reads 93 / 93.5%. `geoType` is REQUIRED on both cache readers,
+  passed at all 11 call sites. Gate `ci:market-cache-geo-scope`.
+- `e8839207` — **W6.8 → done (40/50).** Matt answered KEEP scope; it was four
+  copies of the constants held together by "must match … exactly" comments, two of
+  them feeding an EXTERNAL Zillow query. Now one module. Gate `ci:capture-scope`,
+  which deliberately does NOT pin the values so widening stays one line.
+- `3e2640da` — **§0, two public surfaces published unsold-inventory age as market
+  speed.** `/zip` fed active-tile median DOM into "Pending in N days" (97703: 62
+  against a real 15) in the hero, the HUD and the SELL panel; `/housing-market`'s
+  comparison column headed "Days to pending" rendered `median_active_dom` —
+  Sisters 85 vs a real 16, Bend 57 vs 15. Gate `ci:days-to-pending-source`.
+
+New gates, all wired into `ci:gates`, all proven to bite then restored:
+`ci:market-cache-geo-scope` · `ci:capture-scope` · `ci:days-to-pending-source`,
+plus hardening of `ci:report-export-geo`, `ci:price-kind-purity`, `ci:no-report-rpc`.
+
+## A FALSE CLAIM OF MINE, CORRECTED
+Commit `723dfa63` says caldera-springs, sunriver and three-rivers all render no
+median list after D4. **Wrong for Sunriver** — it renders $660,000 beside 102
+active, which is CORRECT behaviour, but the sentence asserted the opposite.
+
+## M3, uncommitted but complete and compiling
+Community `<meta description>` published a count that was not the community's:
+`community.activeCount` fell through to the parent CITY's active count whenever a
+community had no cache row, so `/communities/three-rivers` read **"1000 homes for
+sale in Three Rivers"** (Bend's 1,014, clipped by the PostgREST 1000-row cap) and
+`/communities/sunriver` read 121 (all of Sunriver city) against a body showing
+102. Even where the source was right it disagreed with the body (tetherow 25 vs
+45, black-butte-ranch 1 vs 3), because the body renders the alias-aware count.
+Fixed at the DATA (`activeCount` is community-scoped or null; the city figure is
+kept only as a junk-slug SIGNAL) and the count is gone from the description.
+Computing it in `generateMetadata` was rejected — that path was deliberately made
+fast after the SEO-58 streamed-chunk incident. **No gate yet. Needs one.**
+
+## STILL OPEN (ledger 40/50 · 7 partial + 1 not_started · 2 blocked)
+
+Open rows: **W2.7 · W3.2 · W3.5 · W5.1 · W5.5 · W8.1 · W8.6 · W13.1**.
+Blocked on Matt: **W9.1** (he runs newsletter enroll + first send manually),
+**W9.5** (register the Resend webhook with the now-provisioned full-access key).
+
+W3.2 and W3.5 both live in `app/search/[...slug]/page.tsx` — **the other session's
+file**. Do not start them until that lane lands. W3.5 is additionally blocked by a
+build OOM: pre-rendering that route SIGABRTs the build worker even at 10 params.
+
+### §0 findings still unfixed, ranked
+1. **MoS verdict base.** `lib/data/crm/getMarketReportData.ts:150` classifies a
+   12-month-base months-of-supply against thresholds CLAUDE.md §0 defines for
+   `active/(closed_6mo/6)`. Cities take the 6-month pulse and are safe; the ~14
+   resort communities are not. Five of thirteen cities FLIP verdict between the
+   bases (camp sherman balanced→buyer's, redmond balanced→seller's,
+   madras/sunriver/metolius buyer's→balanced). This one goes to named recipients
+   4×/day with a verdict word, so it is the most dangerous open item.
+2. **Registry cities contradict the MLS.** Caldera Springs is registry-Sunriver,
+   MLS-Bend, so its page publishes 0 active while the index card shows 32 /
+   $2,082,000. Same class as CRR/Tumalo. Blast radius spans 6+ registry consumers.
+3. **H4 cache drift, KNOWN-NOT-FIXED.** The export and the community page read the
+   same row through two independently-expiring `unstable_cache` entries
+   (`market-detail-v1`, `market-stats-v2`, both 6h). Observed 33 vs 31 twelve-month
+   Tetherow sales, converging minutes later. The header comment in
+   `app/api/reports/export/route.ts` claiming the two "can no longer disagree" is
+   **still overstated** — true of scope and geography, not of time.
+4. `/housing-market/<city>/<community>` queries `geo_slug='city:community'`, a key
+   shape with ZERO rows. Cosmetic (no links, not in sitemap) but live.
+5. `/api/pdf/report` takes an arbitrary `?geoName=` on a branded document and its
+   GET has no rate limit.
+6. `compute_and_cache_period_stats` never stamps `methodology_version` on upsert.
+7. A DAILY 23:45Z writer to `market_stats_cache` appears in no cron registry
+   anyone could find, and never invalidates the cache tag. Identify it before
+   trusting any TTL argument.
+
+## W8.1 IS STILL `partial` — DO NOT FLIP IT
+`ci:program-complete` requires an INDEPENDENT `verifiedBy`, and round 6's findings
+were open when this was written. The next round must be run by an agent told to
+assume the work is broken, and it must attack the gates in every syntactic form,
+not just the one the fix used.
 
 # W8.1 ROUND 6 — FAIL, then fixed. HEAD `b03b5b34`. W8.1 STILL `partial`.
 

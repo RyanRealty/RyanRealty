@@ -204,10 +204,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const community = await getCommunityBySlug(slug)
   if (!community) notFound()
-  const desc =
-    community.activeCount > 0
-      ? `${community.activeCount} homes for sale in ${community.name}. Live single-family market stats, open houses, and recent activity for ${community.name} in ${community.city}, OR, from a local brokerage.`
-      : `Explore ${community.name} in ${community.city}, OR. Live single-family market data and recent activity from a local brokerage.`
+  // §0 NO COUNT IN THE META DESCRIPTION. This is what Google shows in search
+  // results, and the number it carried was not this community's. It came from
+  // `community.activeCount`, which fell through to the parent CITY's active
+  // count whenever a community had no cache row — /communities/three-rivers read
+  // "1000 homes for sale in Three Rivers" (Bend's 1,014, clipped by the
+  // PostgREST 1000-row cap) and /communities/sunriver read 121 (all of Sunriver
+  // city) against a body showing 102. Even where the source was right it
+  // disagreed with the page: tetherow 25 vs 45, black-butte-ranch 1 vs 3,
+  // because the body renders the alias-aware count and this did not.
+  //
+  // Computing the alias-aware count HERE was rejected: generateMetadata was
+  // deliberately made fast (a pre-aggregated snapshot replaced a 3,000-row
+  // listings scan) after a slow one pushed the <title> and JSON-LD into a
+  // streamed chunk that landed after Lighthouse measured the page — the
+  // SEO-58 incident. The body and the Dataset JSON-LD still carry the honest
+  // figure for readers and for machines.
+  const desc = `Homes for sale in ${community.name}, ${community.city}, OR. Live single-family market stats, open houses, and recent activity from a local brokerage.`
 
   // OG image: use the community's curated KB hero photo when one exists, else the
   // generic branded card. Both paths are absolute at render time via pageMetadata.
