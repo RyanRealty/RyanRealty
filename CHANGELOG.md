@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.870.0 (2026-07-25)
+
+### Features
+- feat(cursor): environment.json so Cursor cloud agents run this repo
+
+---
+
+
 ## v1.869.1 (2026-07-25)
 
 ### Maintenance
