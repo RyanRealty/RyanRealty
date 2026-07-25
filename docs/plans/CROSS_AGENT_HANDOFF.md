@@ -1,4 +1,32 @@
-> **NEWEST, START HERE: the FIVE-LANE RECOVERY block immediately below (2026-07-24 late night, Cursor).** Prior: the SESSION-END block (2026-07-24 night — now RESOLVED), W8.1 ROUND-6 (2026-07-24 late), the W8.4 + W8.1 MARKET-REPORT block (2026-07-24), the /goal COMPLETION-RUN block (2026-07-23), AUDIT-HARDENING (2026-07-17 late), ONE-NAV + UNIFIED-SEND (2026-07-17 eve), CMA VERSION-CHAIN (2026-07-17 PM), the ADMIN-REBUILD v2 LITMUS block (2026-07-17 AM), then RC1 (2026-07-16).
+> **NEWEST, START HERE: COMPETE CLOSEOUT 2026-07-24 night (Cursor).** Prior: FIVE-LANE RECOVERY, SESSION-END, W8.1 ROUND-6.
+
+# COMPETE CLOSEOUT — 2026-07-24 night. `main` @ see git. Ledger **44/50**.
+
+## Master goal
+Close every unblocked ledger row. Independent verifiers required for done.
+
+## Shipped this compete session
+- **W8.6 done** — verifier `a0ee03f2` (bulk market-report → newsletter ledger)
+- **W2.7 done** — verifier `a0ee03f2` (school_district + trail_lines decision)
+- **W3.2 done** — verifier `a5da1c8e` (3-segment preset depth + ci:search-preset-depth)
+- **W3.5 done** — verifier `a5da1c8e` (generateStaticParams SITE_CITY_SLUGS + NEXT_PHASE thinning; build 528/528)
+- W13.1 citation ratchet **55→47**; trail decision in DATABASE_FOR_AI_AGENTS.md
+- VerifiedBy stamped on W5.1 chokepoint / W5.5 leg-b / W13.1 archive slices (rows stay partial)
+
+## Still open (4 partial + 2 blocked)
+| Row | Why still open |
+|---|---|
+| **W5.1** | Chokepoint verified. Spec-03 rest: person-workspace DAL/Suspense rebuild, collapse `mobile-detail.tsx` fork (SendPanel already shared), build_state chips, line-count burn |
+| **W5.5** | Leg-b verified. Needs Matt: device opt-in on /admin/settings; `CRM_SMS_ALERTS=twilio` flip |
+| **W8.1** | Public RPC gated (`ci:no-report-rpc` green). Round-6 chips remain (MoS email base / resort-registry city / cache TTL drift) — several marked Matt-decides |
+| **W13.1** | Archive+gate verified; CONSOLIDATION-LANES.json still open |
+| **W9.1 / W9.5** | `blocked:needs-matt` (enroll+first send; Resend webhook registration with full-access key) |
+
+## Do not
+- Self-verify builder work without an independent agent
+- Flip W9.* without Matt operating
+
+
 
 
 # FIVE-LANE RECOVERY — 2026-07-24 late night (Cursor). `main` @ `8aca3b42`, deployed READY. Ledger 40/50.

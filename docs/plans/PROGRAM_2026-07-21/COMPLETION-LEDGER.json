@@ -259,7 +259,7 @@
       "workstream": "W3",
       "mission": "M1",
       "title": "Emit the 3-segment matrix for the curated geo set; extend depth content to subdivision level",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
         "gates": [
           "scripts/check-search-preset-depth.mjs"
@@ -275,8 +275,8 @@
         ]
       },
       "proofPath": "commit a119c9f7: isPresetDepthPage no longer excludes subdivision; buildPresetFaq takes areaLabel; neighbor bands stay in-area; ci:search-preset-depth AST gate bites on !subdivision. 17 preset-faq tests green.",
-      "verifiedBy": "",
-      "remaining": "Build shipped. Needs independent verifiedBy before done."
+      "verifiedBy": "a5da1c8e-4ff1-4560-af02-0968d51fb4a6 — PASS: no !subdivision in depth gate; area place wired + city context labeled; ci:search-preset-depth green and bites; 17 preset-faq tests green.",
+      "remaining": ""
     },
     {
       "id": "W3.4",
@@ -307,7 +307,7 @@
       "workstream": "W3",
       "mission": "M1",
       "title": "Sort-only presets noindexed; pre-render top-N combos via generateStaticParams",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
         "gates": [
           "scripts/check-static-params.mjs"
@@ -321,8 +321,8 @@
         ]
       },
       "proofPath": "commit fd02e7bf: generateStaticParams returns SITE_CITY_SLUGS (10); dynamicParams true; build thinning under NEXT_PHASE; package.json build pins NODE_OPTIONS=8192. Production build completed 528/528 static pages without OOM. Search removed from static-params baseline (18 violators).",
-      "verifiedBy": "",
-      "remaining": "Bare-city top-N SSG shipped. Full {city}/{area}/{preset} matrix remains on-demand (by design — matrix SSG would re-OOM). Needs independent verifiedBy. Optional: expand top-N presets once more weight comes out of the page."
+      "verifiedBy": "a5da1c8e-4ff1-4560-af02-0968d51fb4a6 — PASS: GSP returns 10 SITE_CITY_SLUGS; thinning is NEXT_PHASE-gated at 4 sites; ci:static-params green and bites empty stub; matrix stays on-demand by design.",
+      "remaining": ""
     },
     {
       "id": "W4.1",
