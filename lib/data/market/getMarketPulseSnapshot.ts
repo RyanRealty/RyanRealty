@@ -21,11 +21,15 @@ export type MarketPulseSnapshot = {
   sold_count_30d: number
   new_count_7d: number
   median_active_dom: number | null
+  /** Median days LIST->PENDING for homes that went under contract. A different
+   *  population from median_active_dom (unsold inventory age), and much smaller:
+   *  Sisters 16 vs 85, Bend 15 vs 57 (live 2026-07-24). (§0) */
+  median_days_to_pending: number | null
   updated_at: string | null
 }
 
 const COLUMNS =
-  'geo_slug, geo_label, active_count, median_list_price, months_of_supply, market_health_label, sold_count_30d, new_count_7d, median_active_dom, updated_at'
+  'geo_slug, geo_label, active_count, median_list_price, months_of_supply, market_health_label, sold_count_30d, new_count_7d, median_active_dom, median_days_to_pending, updated_at'
 
 function toSnapshot(d: Record<string, unknown>): MarketPulseSnapshot {
   return {
@@ -38,6 +42,7 @@ function toSnapshot(d: Record<string, unknown>): MarketPulseSnapshot {
     sold_count_30d: Number(d.sold_count_30d ?? 0),
     new_count_7d: Number(d.new_count_7d ?? 0),
     median_active_dom: d.median_active_dom != null ? Number(d.median_active_dom) : null,
+    median_days_to_pending: d.median_days_to_pending != null ? Number(d.median_days_to_pending) : null,
     updated_at: (d.updated_at as string | null) ?? null,
   }
 }

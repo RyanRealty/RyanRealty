@@ -247,7 +247,15 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     new30: newLast30Days,
     medianList: medianListPrice,
     saleToList: null,
-    daysToPending: medianDom,
+    // §0 `medianDom` is the median days CURRENTLY-ACTIVE listings have been on
+    // market, NOT days-to-pending. Feeding it here rendered "Pending in 62 days"
+    // on 97703 where Bend's real median-to-pending is 15 — a 3-5x overstatement
+    // of market speed. They are different populations: the homes that sell fast
+    // leave the active set, so active DOM is systematically larger. No
+    // market_pulse_live row exists at ZIP scope (city and region only), so the
+    // honest figure is the active one, under its own label.
+    daysToPending: null,
+    medianDomActive: medianDom,
     monthsSupply: null,
     trend: cityPriceHist
       .slice(-13)
@@ -368,7 +376,8 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           data={{
             activeCount: activeCount > 0 ? activeCount : null,
             medianListPrice,
-            medianDaysToPending: medianDom,
+            medianDaysToPending: null,
+            medianDomActive: medianDom,
           }}
           eyebrow={`${zip} · ${area} · Oregon`}
           titleTop="Homes for sale in"
@@ -422,7 +431,8 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
         <KbSell
           data={{
             medianListPrice,
-            medianDaysToPending: medianDom,
+            medianDaysToPending: null,
+            medianDomActive: medianDom,
             soldCount30d: null,
           }}
           eyebrow={`Sell in ${area}`}

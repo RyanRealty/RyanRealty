@@ -95,6 +95,11 @@ export function KbSell({ data, eyebrow = 'Sell with us' }: { data: KbSellData; e
                 <div className="n mono-num">{data.medianDaysToPending} days</div>
                 <div className="l">Median to pending</div>
               </div>
+            ) : data.medianDomActive != null ? (
+              <div className="d">
+                <div className="n mono-num">{data.medianDomActive} days</div>
+                <div className="l">Median on market · active</div>
+              </div>
             ) : null}
             {data.soldCount30d != null ? (
               <div className="d">

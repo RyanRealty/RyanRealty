@@ -134,6 +134,7 @@ export function KbMarketHud({
   if (data.saleToList != null) kpis.push({ val: `${data.saleToList.toFixed(1)}%`, lbl: 'Sale to list' })
   if (data.daysToPending != null) kpis.push({ val: `${Math.round(data.daysToPending)} days`, lbl: 'Median to pending' })
   else if (data.medianDom12mo != null) kpis.push({ val: `${Math.round(data.medianDom12mo)} days`, lbl: 'Median on market · 12 mo' })
+  else if (data.medianDomActive != null) kpis.push({ val: `${Math.round(data.medianDomActive)} days`, lbl: 'Median on market · active' })
   if (data.monthsSupply != null) kpis.push({ val: `${formatMonthsOfSupply(data.monthsSupply)} mo`, lbl: 'Months of supply' })
 
   return (

@@ -47,6 +47,7 @@ export type PulseRegionSnapshot = {
   sold_count_30d: number
   new_count_7d: number
   median_active_dom: number | null
+  median_days_to_pending: number | null
   updated_at: string | null
 }
 
@@ -318,6 +319,7 @@ async function _getCitySnapshotsUncached(cityLabels: string[]): Promise<PulseCit
       sold_count_30d: Number((d.sold_count_30d as number | null) ?? 0),
       new_count_7d: Number((d.new_count_7d as number | null) ?? 0),
       median_active_dom: d.median_active_dom != null ? Number(d.median_active_dom) : null,
+      median_days_to_pending: d.median_days_to_pending != null ? Number(d.median_days_to_pending) : null,
       updated_at: (d.updated_at as string | null) ?? null,
     }))
     .filter((row) => row.active_count > 0)

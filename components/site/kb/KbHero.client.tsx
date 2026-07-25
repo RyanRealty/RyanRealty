@@ -264,6 +264,11 @@ export function KbHero({
                     {' '}
                     Pending in <b>{data.medianDaysToPending} days</b>.
                   </>
+                ) : data.medianDomActive != null ? (
+                  <>
+                    {' '}
+                    On market a median of <b>{data.medianDomActive} days</b>.
+                  </>
                 ) : null}
               </>
             )}

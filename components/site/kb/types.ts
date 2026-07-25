@@ -5,7 +5,14 @@
 export interface KbHeroData {
   activeCount: number | null
   medianListPrice: number | null
+  /** Median days from list to PENDING, for homes that went under contract.
+   *  market_pulse_live only. Never the days-on-market of unsold inventory —
+   *  those are different populations and the second is systematically larger,
+   *  because the homes that sell fast leave the active set. (§0) */
   medianDaysToPending: number | null
+  /** Median days CURRENTLY-ACTIVE listings have been on market. A measure of how
+   *  long unsold homes have been sitting, rendered under its own label. */
+  medianDomActive?: number | null
 }
 
 export interface KbTownItem {
@@ -30,7 +37,10 @@ export interface KbCommunityItem {
 
 export interface KbSellData {
   medianListPrice: number | null
+  /** market_pulse_live only — see KbHeroData.medianDaysToPending. */
   medianDaysToPending: number | null
+  /** Median days on market of CURRENTLY-ACTIVE inventory, own label. */
+  medianDomActive?: number | null
   soldCount30d: number | null
 }
 
@@ -91,6 +101,13 @@ export interface KbMarketData {
    *  fields carry those). (§0) */
   sold12mo?: number | null
   medianDom12mo?: number | null
+  /** Median days on market of the CURRENTLY-ACTIVE inventory — a distinct
+   *  population from both of the above. /zip fed this number into
+   *  `daysToPending`, so ZIP pages rendered "Pending in 62 days" where the real
+   *  Bend median-to-pending is 15: a 3-5x overstatement of market speed in a
+   *  hero line and in Dataset JSON-LD. It now has its own field and its own
+   *  label. (§0) */
+  medianDomActive?: number | null
   trend: { label: string; value: number }[]
   byTown: { name: string; median: number }[]
   countyMedian: number | null

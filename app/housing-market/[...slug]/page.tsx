@@ -720,7 +720,11 @@ export default async function HousingMarketGeoPage({ params }: Props) {
       activeCount: s.active_count,
       medianListPrice: s.median_list_price,
       monthsOfSupply: s.months_of_supply,
-      medianDaysToPending: s.median_active_dom,
+      // §0 the column header reads "Days to pending", so it gets the real
+      // to-pending median. It used to get median_active_dom — the age of UNSOLD
+      // inventory — which overstated market speed 3-5x (Sisters 85 vs 16 real,
+      // Bend 57 vs 15, live 2026-07-24). Different populations entirely.
+      medianDaysToPending: s.median_days_to_pending,
     }))
 
   // -------------------------------------------------------------------------
