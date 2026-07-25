@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.867.1 (2026-07-25)
+
+### Bug Fixes
+- fix(w8.1): resolve housing-market community geos to bare cache slugs
+- fix(w8.1): resolve housing-market community geos to bare cache slugs
+
+### Maintenance
+- chore(w13.1): burn FUB citation ratchet further
+
+---
+
+
 ## v1.867.0 (2026-07-25)
 
 ### Features
