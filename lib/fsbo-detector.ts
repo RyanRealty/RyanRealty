@@ -50,14 +50,9 @@ const APIFY_ZILLOW_ACTOR_ID = 'maxcopell~zillow-scraper'
  * resort community); we capture Sunriver inventory via the Bend feed since
  * Sunriver shares the 97707 ZIP and shows up under nearby Bend queries.
  */
-export const FSBO_SERVICE_AREA_CITIES = [
-  'Bend',
-  'Redmond',
-  'Sisters',
-  'Sunriver',
-  'Tumalo',
-  'La Pine',
-] as const
+import { CAPTURE_MIN_LIST_PRICE, CAPTURE_SERVICE_AREA_CITIES } from '@/lib/prospecting/capture-scope'
+
+export const FSBO_SERVICE_AREA_CITIES = CAPTURE_SERVICE_AREA_CITIES
 
 /**
  * Zillow FSBO search URL per city. The maxcopell~zillow-scraper actor (v0.0.74,
@@ -92,9 +87,10 @@ function zillowFsboSearchUrl(citySlugPath: string, usersSearchTerm: string, regi
       isZillowPreview: { value: false },
       isAuction: { value: false },
       isForSaleForeclosure: { value: false },
-      // Keep in sync with FSBO_MIN_LIST_PRICE below (declared after this map
-      // builds — the code-side price filter remains the source of truth).
-      price: { min: 500_000 },
+      // The SAME constant the code-side filter uses. This value is sent to
+      // Zillow, so a drift here would fetch a population the local filter then
+      // rejects (or, worse, admit one it should not have seen).
+      price: { min: CAPTURE_MIN_LIST_PRICE },
     },
     isListVisible: true,
     isMapVisible: true,
@@ -111,7 +107,7 @@ const ZILLOW_CITY_URLS: Record<(typeof FSBO_SERVICE_AREA_CITIES)[number], string
   'La Pine': zillowFsboSearchUrl('la-pine-or', 'La Pine, OR', ZILLOW_CITY_REGIONS['La Pine']),
 }
 
-export const FSBO_MIN_LIST_PRICE = 500_000
+export const FSBO_MIN_LIST_PRICE = CAPTURE_MIN_LIST_PRICE
 
 /** Where a normalized FSBO listing came from. */
 export type FsboSource = 'zillow' | 'craigslist'

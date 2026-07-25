@@ -49,17 +49,14 @@ import {
 // the target sequence from the intent:expired-listing tag through the
 // UI-configurable crm_automation_rules table. No hard-coded plan id needed here.
 import { sendExpiredAlertEmail } from '@/lib/expired-alert'
+import { CAPTURE_MIN_LIST_PRICE, CAPTURE_SERVICE_AREA_CITIES } from '@/lib/prospecting/capture-scope'
 
-export const SERVICE_AREA_CITIES = [
-  'Bend',
-  'Redmond',
-  'Sisters',
-  'Sunriver',
-  'Tumalo',
-  'La Pine',
-] as const
-
-export const MIN_LIST_PRICE = 500_000
+// Capture scope is defined ONCE, in lib/prospecting/capture-scope.ts (Matt's
+// locked W6.8 decision: $500K+, SFR, six cities). These aliases keep the
+// existing import names working. ci:capture-scope fails the build if the values
+// are spelled out again anywhere in the prospecting path.
+export const SERVICE_AREA_CITIES = CAPTURE_SERVICE_AREA_CITIES
+export const MIN_LIST_PRICE = CAPTURE_MIN_LIST_PRICE
 
 interface ExpiredListingRow {
   ListingKey: string
