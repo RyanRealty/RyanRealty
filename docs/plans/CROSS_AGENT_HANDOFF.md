@@ -1,7 +1,51 @@
-> **NEWEST, START HERE: the SESSION-END block immediately below (2026-07-24 night).** Prior: W8.1 ROUND-6 (2026-07-24 late), the W8.4 + W8.1 MARKET-REPORT block (2026-07-24), the /goal COMPLETION-RUN block (2026-07-23), AUDIT-HARDENING (2026-07-17 late), ONE-NAV + UNIFIED-SEND (2026-07-17 eve), CMA VERSION-CHAIN (2026-07-17 PM), the ADMIN-REBUILD v2 LITMUS block (2026-07-17 AM), then RC1 (2026-07-16).
+> **NEWEST, START HERE: the FIVE-LANE RECOVERY block immediately below (2026-07-24 late night, Cursor).** Prior: the SESSION-END block (2026-07-24 night — now RESOLVED), W8.1 ROUND-6 (2026-07-24 late), the W8.4 + W8.1 MARKET-REPORT block (2026-07-24), the /goal COMPLETION-RUN block (2026-07-23), AUDIT-HARDENING (2026-07-17 late), ONE-NAV + UNIFIED-SEND (2026-07-17 eve), CMA VERSION-CHAIN (2026-07-17 PM), the ADMIN-REBUILD v2 LITMUS block (2026-07-17 AM), then RC1 (2026-07-16).
 
 
-# SESSION END — 2026-07-24 night. HEAD `3e2640da`. Ledger **40/50**.
+# FIVE-LANE RECOVERY — 2026-07-24 late night (Cursor). `main` @ `8aca3b42`, deployed READY. Ledger 40/50.
+
+**The killed-agent pile described in the block below is RESOLVED.** All five lanes
+were reviewed, fixed, tested, committed per lane, pushed, and prod-verified this
+session (9 commits, `16e81386..8aca3b42`, Vercel READY on `8aca3b4`):
+
+- **W8.6** `d2c6d173` — bulk market-report audience through the newsletter ledger.
+  Fixed the `produce-draft.ts` bend-lookup break + the contract-test mock typing.
+  `ci:market-report-bulk-ledger` wired + green.
+- **W2.7** `eba7bd15` — school-district geo_type + ODE importer + `ci:boundary-provenance`.
+  **Both "unapplied" migrations were in fact ALREADY APPLIED on hosted** (verified
+  against the live schema; files are idempotent — no drift).
+- **W5.1** `dc7b71c6` — sendDeliverable chokepoint; 30 tests green incl. live
+  double-tap ledger int test; `ci:deliverable-send-chokepoint` wired. Person-existence
+  read moved behind the DAL boundary (tri-state, fail-open preserved).
+- **W5.5** `59bbc9b8` — web-push channel. VAPID keys PROVISIONED in Vercel prod +
+  `.env.local`. `.gitignore` fixed (`public/sw*` was swallowing the hand-authored
+  `public/sw.js`). PROD-VERIFIED: `ryan-realty.com/sw.js` 200, subscribe 403
+  unauth (fail-closed), drain cron returns the new `push` block outside the SMS gate.
+- **W13.1** `3acb922c` — 20 FUB-era docs bannered + archived index; NEW
+  `ci:claude-canon` gate (era ratchet, canon purity, 55-file citation ratchet, dead
+  links, retired tokens) — proven to bite before landing.
+
+**Ledger rows updated** (`COMPLETION-LEDGER.json`): mechanisms + proofPaths filled;
+all five stay **partial** because `ci:program-complete` requires an INDEPENDENT
+verifiedBy and this session finished the builds — the finisher cannot self-verify.
+Per-row `remaining` names exactly what a verifier must check. W8.1 also untouched
+for the same reason. **Next session's cheapest win: run an independent verifier
+over W8.6 / W2.7 / W5.5 / W5.1 / W13.1 and flip the earned ones.**
+
+**Build note:** `next build` at default heap dies SIGABRT (the W3.5 OOM, known) —
+`NODE_OPTIONS=--max-old-space-size=8192 npm run push` works. The committed tree
+(without the other session's search-page edits) builds and deploys fine on Vercel.
+
+**Still uncommitted, still the other session's — DO NOT COMMIT:**
+`app/search/[...slug]/page.tsx`, `lib/site/preset-faq.ts`, `package.json`'s
+`ci:search-preset-depth` entry, untracked `scripts/check-search-preset-depth.mjs`.
+The committed `package.json` deliberately excludes their entry.
+
+Skills/refs read: `docs/DATABASE_FOR_AI_AGENTS.md`, `.cursor/rules/*` (deploy-verify,
+production-parity, supabase-migrations-auto), `scripts/check-program-complete.mjs`.
+
+---
+
+# SESSION END — 2026-07-24 night. HEAD `3e2640da`. Ledger **40/50**. *(RESOLVED — see the recovery block above)*
 
 ## READ THIS FIRST: THE WORKING TREE IS DIRTY AND DOES NOT COMPILE
 
