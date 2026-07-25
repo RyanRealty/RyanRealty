@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.867.2 (2026-07-25)
+
+### Maintenance
+- docs(ledger): W5.1 G56 burn + W8.1 soft-404 + W13.1 citation remaining
+
+---
+
+
 ## v1.867.1 (2026-07-25)
 
 ### Bug Fixes
