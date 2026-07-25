@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.866.1 (2026-07-25)
+
+### Maintenance
+- docs(ledger): W3.2+W3.5 done (verifier a5da1c8e); compete closeout handoff — 44/50
+
+---
+
+
 ## v1.866.0 (2026-07-25)
 
 ### Features
