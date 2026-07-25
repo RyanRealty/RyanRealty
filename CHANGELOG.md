@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.869.0 (2026-07-25)
+
+### Features
+- feat(devcontainer): multi-agent Codespaces dev box
+
+---
+
+
 ## v1.868.0 (2026-07-25)
 
 ### Features
