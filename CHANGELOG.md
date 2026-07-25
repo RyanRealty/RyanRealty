@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.870.1 (2026-07-25)
+
+### Maintenance
+- docs(cloud): fix the env-var format bug and add the repo-specific risks
+
+---
+
+
 ## v1.870.0 (2026-07-25)
 
 ### Features
