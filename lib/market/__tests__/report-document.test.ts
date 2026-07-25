@@ -83,6 +83,40 @@ describe('buildSections — every figure states its own window', () => {
   })
 })
 
+describe('live-inventory block — "not published here" is not "missing"', () => {
+  const noCoverage: ReportDocumentFacts = {
+    ...facts,
+    activeCount: null,
+    monthsOfSupply: null,
+    liveAsOf: null,
+    livePublishedAtScope: false,
+  }
+
+  it('says live inventory is city-scope only, rather than printing two blanks', () => {
+    // market_pulse_live has no neighborhood rows, so every community export
+    // shipped "Active Listings: Not available / Months of Supply: Not available"
+    // with no date — which reads as a data outage on a branded document.
+    expect(liveHeading(noCoverage)).toBe('Live single-family inventory (published at city scope only)')
+    const sections = buildSections(noCoverage, null)
+    const live = sections.find((s) => /live/i.test(s.heading))
+    expect(live?.rows.map(([k]) => k)).toEqual(['Active Listings'])
+    expect(live?.rows[0]?.[1]).toContain('community page')
+  })
+
+  it('never borrows the chosen period as the live window', () => {
+    expect(liveHeading(noCoverage)).not.toContain('Last 30 days')
+    expect(liveHeading(noCoverage)).not.toContain('2026-06-24')
+  })
+
+  it('still prints the real snapshot when the scope DOES publish it', () => {
+    expect(liveHeading({ ...facts, livePublishedAtScope: true })).toBe(
+      'Live single-family inventory (as of 2026-07-24)',
+    )
+    // Absent flag behaves as before — city exports are unchanged.
+    expect(liveHeading(facts)).toBe('Live single-family inventory (as of 2026-07-24)')
+  })
+})
+
 describe('trendWindowHeading — the trend block names the months it actually holds', () => {
   it('spans the months present, not the six just past', () => {
     // A geo whose cached monthly rows stop in 2024 must not ship 2024 figures

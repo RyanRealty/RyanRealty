@@ -173,6 +173,9 @@ if (doc) {
         `(got "${trailing}"). A 12-month count under a 30-day header is the D3 defect.`,
     )
   }
+  // NOTE: the assertion below must stay tight. The temptation, when a relabel
+  // makes it fail, is to loosen the pattern — which re-admits "Months of Supply:
+  // 21" under "Last 30 days", the exact defect it exists to block.
   if (!live || !/live/i.test(live) || live.includes('2026-06-24') || live.includes(facts.period.label)) {
     problems.push(
       `${DOC_MODULE}: months of supply / active listings must be labeled as a LIVE snapshot with ` +
@@ -187,6 +190,25 @@ if (doc) {
   const blank = doc.buildSections({ ...facts, monthsOfSupply: null, activeCount: null }, null)
   if (blank.flatMap((s) => s.rows.map(([, v]) => v)).includes(0)) {
     problems.push(`${DOC_MODULE}: a missing figure rendered as 0 instead of "${doc.NA}".`)
+  }
+
+  // A geo where live inventory is not published at all must SAY so, and must not
+  // print a bare "Not available" pair that reads as a data outage on a branded
+  // document. It must also still be recognisable as the live block.
+  const noLive = doc.buildSections(
+    { ...facts, activeCount: null, monthsOfSupply: null, liveAsOf: null, livePublishedAtScope: false },
+    null,
+  )
+  const noLiveHeading = noLive.find((s) => /live/i.test(s.heading))?.heading
+  if (!noLiveHeading || !/scope|not published/i.test(noLiveHeading)) {
+    problems.push(
+      `${DOC_MODULE}: a geo with no live-inventory coverage must say so in the heading ` +
+        `(got "${noLiveHeading}"). market_pulse_live has no neighborhood rows, so every community ` +
+        `export shipped an undated "Not available" pair that reads as an outage.`,
+    )
+  }
+  if (noLiveHeading && (noLiveHeading.includes(facts.period.label) || noLiveHeading.includes('2026-06-24'))) {
+    problems.push(`${DOC_MODULE}: the no-coverage live heading borrowed the chosen period's window.`)
   }
 
   // The monthly-trend block is the one whose window could be ASSERTED rather

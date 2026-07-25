@@ -21,8 +21,28 @@ export type MarketStatsCacheRow = {
   methodology_version?: string | null
 }
 
-/** Latest market_stats_cache row for one geo+period. */
+/**
+ * Latest market_stats_cache row for one geo+period.
+ *
+ * §0 `geoType` IS REQUIRED, and that is not defensive typing. A cache slug is
+ * NOT unique on its own: 13 slugs exist under more than one geo_type, and
+ * `sunriver` exists under THREE (city, neighborhood, subdivision). Filtering on
+ * slug + period alone and taking `order(period_end desc).limit(1)` therefore
+ * returned whichever geography happened to have the fresher row.
+ *
+ * It was picking the wrong one live: `/communities/sunriver` asks for the
+ * COMMUNITY and was served the CITY row — 124 twelve-month sales and a 93.2%
+ * sale-to-list ratio for all of Sunriver, rendered as the community's own
+ * figures beside neighborhood-scoped numbers on the same page. The other 12
+ * collisions resolved to `neighborhood` only by accident of which row was
+ * written last, so every one of them was one cron run away from the same
+ * misattribution.
+ *
+ * A caller that asks for a geo_type with no row now gets null, and shows
+ * nothing — the §0 outcome. It never gets a different geography's numbers.
+ */
 export async function getMarketStatsCacheRowForGeo(options: {
+  geoType: 'city' | 'neighborhood' | 'subdivision' | 'region' | 'zip'
   geoSlug: string
   periodType?: string
   columns?: string
@@ -35,6 +55,7 @@ export async function getMarketStatsCacheRowForGeo(options: {
   const { data } = await sb
     .from('market_stats_cache')
     .select(columns)
+    .eq('geo_type', options.geoType)
     .eq('geo_slug', options.geoSlug)
     .eq('period_type', options.periodType ?? 'rolling_365d')
     .order('period_end', { ascending: false })
@@ -166,6 +187,15 @@ export async function getMarketPulseRowForGeo(options: {
 
 /** Many geos at once: returns one row (latest period_end) per geo_slug. */
 export async function getMarketStatsCacheRowsForGeos(options: {
+  /**
+   * §0 REQUIRED — a slug does not identify a geography on its own. 13 slugs
+   * exist under more than one geo_type. `/lp/tetherow`'s peer comparison asks
+   * for ['tetherow','pronghorn','broken-top','caldera-springs','sunriver'] and,
+   * unfiltered, could pull the CITY Sunriver row (124 twelve-month sales, all
+   * of Sunriver) into a table of resort COMMUNITIES on a lead-capture page.
+   * Every caller passes one homogeneous set, so this costs nothing to state.
+   */
+  geoType: 'city' | 'neighborhood' | 'subdivision' | 'region' | 'zip'
   geoSlugs: string[]
   periodType?: string
   columns?: string
@@ -179,6 +209,7 @@ export async function getMarketStatsCacheRowsForGeos(options: {
   let q = sb
     .from('market_stats_cache')
     .select(columns)
+    .eq('geo_type', options.geoType)
     .in('geo_slug', options.geoSlugs)
     .eq('period_type', options.periodType ?? 'rolling_365d')
   q = options.orderBy

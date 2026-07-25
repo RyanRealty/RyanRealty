@@ -153,6 +153,7 @@ async function fetchTetherowMarketStats(): Promise<MarketCacheRow | null> {
     void createServiceClient
     const { getMarketStatsCacheRowForGeo } = await import('@/lib/data')
     const data = await getMarketStatsCacheRowForGeo({
+      geoType: 'neighborhood',
       geoSlug: 'tetherow',
       periodType: 'rolling_365d',
       columns:

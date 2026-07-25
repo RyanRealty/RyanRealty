@@ -103,7 +103,16 @@ async function loadFacts(geo: ExportGeo, period: RangePeriod): Promise<ReportDoc
       period === 'rolling_365d'
         ? Promise.resolve(null)
         : getCityMarketDetail({ geoType, geoSlug, periodType: 'rolling_365d' }),
-      getMarketPulse({ geoType, geoSlug }),
+      // market_pulse_live carries city and region rows ONLY — no neighborhood or
+      // subdivision rows exist (verified live 2026-07-24: 17 rows). For a
+      // community this call is a guaranteed miss, so it is not made; the live
+      // block then states plainly that live inventory is not published at this
+      // scope rather than printing an undated "Not available" pair that reads
+      // like a data outage. Filling it from the cache row's
+      // `end_of_period_inventory` was considered and REJECTED: that is a
+      // period-end count, and putting it under a heading that says "live" would
+      // be a new scope-vs-label defect of exactly the kind W8.1 removes.
+      geoType === 'city' ? getMarketPulse({ geoType, geoSlug }) : Promise.resolve(null),
       getPriceHistory(geoType, geoSlug, 'monthly', 12).catch(() => []),
     ])
     // This candidate answers — commit to it for EVERY figure and stop looking.
@@ -140,6 +149,9 @@ async function loadFacts(geo: ExportGeo, period: RangePeriod): Promise<ReportDoc
     activeCount: pulse?.activeCount ?? null,
     monthsOfSupply: pulse?.monthsOfSupply ?? null,
     liveAsOf: pulse?.refreshedAt ? String(pulse.refreshedAt).slice(0, 10) : null,
+    // Whether live inventory is published AT THIS SCOPE at all, as opposed to
+    // published-and-missing. The document says which.
+    livePublishedAtScope: geoType === 'city',
     trend: history.map((p) => ({
       month: String(p.periodStart).slice(0, 7),
       soldCount: p.soldCount ?? null,

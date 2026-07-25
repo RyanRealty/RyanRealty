@@ -61,6 +61,7 @@ async function loadBendKpis(): Promise<Kpis | null> {
   void createServiceClient
   const { getMarketStatsCacheRowForGeo } = await import('@/lib/data')
   const data = await getMarketStatsCacheRowForGeo({
+    geoType: 'city',
     geoSlug: 'bend',
     periodType: 'rolling_365d',
   })
@@ -113,6 +114,8 @@ async function loadBendCommunitiesIndex(): Promise<CommunityKpiCard[]> {
     void createServiceClient
     const { getMarketStatsCacheRowsForGeos } = await import('@/lib/data')
     const kpiRows = await getMarketStatsCacheRowsForGeos({
+      // Resort/area community cards — the alias-aware neighborhood rows.
+      geoType: 'neighborhood',
       geoSlugs: slugs.map((s) => s.geo_slug ?? s.slug),
       periodType: 'rolling_365d',
     })
@@ -222,6 +225,7 @@ async function loadPeerCities(): Promise<PeerKpiRow[]> {
   void createServiceClient
   const { getMarketStatsCacheRowsForGeos } = await import('@/lib/data')
   const data = await getMarketStatsCacheRowsForGeos({
+    geoType: 'city',
     geoSlugs: ['bend', 'redmond', 'sisters', 'la-pine', 'terrebonne'],
     periodType: 'rolling_365d',
     columns:

@@ -221,7 +221,7 @@ export default async function CityDetailPage({ params }: Props) {
   ] = await Promise.all([
     withTimeoutFallback(getMarketPulse({ geoType: 'city', geoSlug }), null, 3500, 'city:pulse'),
     withTimeoutFallback(getRegionPulse(), null, 3000, 'city:regionPulse'),
-    withTimeoutFallback(getMarketStatsCacheRowForGeo({ geoSlug }), null, 3000, 'city:mktStats'),
+    withTimeoutFallback(getMarketStatsCacheRowForGeo({ geoType: 'city', geoSlug }), null, 3000, 'city:mktStats'),
     withTimeoutFallback(getPriceHistory('city', geoSlug, 'monthly', 60), [], 4500, 'city:priceHistory'),
     withTimeoutFallback(getCommunitiesForIndex(), [], 3500, 'city:communities'),
     // getBendNeighborhoodLedger (listing_tile_mv), not getBendNeighborhoodStats

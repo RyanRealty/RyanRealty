@@ -52,6 +52,15 @@ export type ReportDocumentFacts = {
   activeCount: number | null
   monthsOfSupply: number | null
   liveAsOf: string | null
+  /**
+   * Whether live inventory is published AT THIS GEO SCOPE at all.
+   * `market_pulse_live` holds city and region rows only, so for a community the
+   * answer is no — a different statement from "we tried and the figure was
+   * missing", and the document must not conflate them. Every community export
+   * shipped an undated "Active Listings: Not available / Months of Supply: Not
+   * available" pair, which reads as a data outage on a branded PDF.
+   */
+  livePublishedAtScope?: boolean
   trend: Array<{ month: string; soldCount: number | null; medianSalePrice: number | null }>
 }
 
@@ -70,6 +79,9 @@ export function windowText(w: ReportWindow): string {
  * prevent, so the missing case is stated out loud rather than left blank.
  */
 export function liveHeading(f: ReportDocumentFacts): string {
+  if (f.livePublishedAtScope === false) {
+    return 'Live single-family inventory (published at city scope only)'
+  }
   return f.liveAsOf
     ? `Live single-family inventory (as of ${f.liveAsOf})`
     : 'Live single-family inventory (refresh time unavailable)'
@@ -119,10 +131,16 @@ export function buildSections(
     },
     {
       heading: liveHeading(f),
-      rows: [
-        ['Active Listings', num(f.activeCount)],
-        ['Months of Supply', num(f.monthsOfSupply)],
-      ],
+      rows:
+        f.livePublishedAtScope === false
+          ? // Say why the figures are absent instead of printing two blanks.
+            // Pointing at the surface that DOES carry them is the honest move:
+            // /communities/<slug> publishes an alias-aware active count.
+            [['Active Listings', 'See the community page for current inventory']]
+          : [
+              ['Active Listings', num(f.activeCount)],
+              ['Months of Supply', num(f.monthsOfSupply)],
+            ],
     },
     {
       // The window is DERIVED from the rows, never asserted. `.slice(-6)` takes

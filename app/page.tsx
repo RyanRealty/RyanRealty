@@ -93,7 +93,7 @@ export default async function Home() {
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
     getListingTiles({ status: 'active', propertyType: 'A', limit: 3000 }).catch(() => []),
-    getMarketStatsCacheRowForGeo({ geoSlug: 'central-oregon' }).catch(() => null),
+    getMarketStatsCacheRowForGeo({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => null),
     getPriceHistory('region', 'central-oregon', 'monthly', 60).catch(() => []),
   ])
 

@@ -112,6 +112,7 @@ export async function fetchTetherowKpi(): Promise<TetherowKpi | null> {
     void createServiceClient
     const { getMarketStatsCacheRowForGeo } = await import('@/lib/data')
     const data = await getMarketStatsCacheRowForGeo({
+      geoType: 'neighborhood',
       geoSlug: tetherowConfig.geo_slug,
       periodType: 'rolling_365d',
       columns:
@@ -258,6 +259,9 @@ export async function fetchTetherowPeerComparison(): Promise<TetherowPeerRow[]> 
     const allSlugs = [tetherowConfig.geo_slug, ...peers]
     const { getMarketStatsCacheRowsForGeos } = await import('@/lib/data')
     const data = await getMarketStatsCacheRowsForGeos({
+      // Resort COMMUNITIES. Without this, 'sunriver' resolves to the CITY row and
+      // all of Sunriver appears as a peer community's numbers. (§0)
+      geoType: 'neighborhood',
       geoSlugs: allSlugs,
       periodType: 'rolling_365d',
       columns:

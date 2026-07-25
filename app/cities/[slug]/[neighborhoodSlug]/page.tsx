@@ -176,7 +176,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   ] = await Promise.all([
     withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), null, 3500, 'nbh:pulse'),
     withTimeoutFallback(getMarketStats({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug, periodType: 'rolling_365d' }), null, 3500, 'nbh:stats'),
-    withTimeoutFallback(getMarketStatsCacheRowForGeo({ geoSlug: boundaryNeighborhoodSlug }), null, 3000, 'nbh:mktStats'),
+    withTimeoutFallback(getMarketStatsCacheRowForGeo({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), null, 3000, 'nbh:mktStats'),
     withTimeoutFallback(getRegionPulse(), null, 3000, 'nbh:regionPulse'),
     withTimeoutFallback(getPriceHistory('neighborhood', boundaryNeighborhoodSlug, 'monthly', 60), [], 4500, 'nbh:priceHistory'),
     withTimeoutFallback(getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), { polygon: null, pins: [] }, 4500, 'nbh:boundary'),

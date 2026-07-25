@@ -315,7 +315,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     // has no neighborhood rows) — the verified source for days-on-market +
     // median sold when the pulse band would otherwise show dashes.
     withTimeoutFallback(getMarketStats({ geoType: 'neighborhood', geoSlug: neighborhoodSlug, periodType: 'rolling_365d' }), null, 3500, 'comm:stats'),
-    withTimeoutFallback(getMarketStatsCacheRowForGeo({ geoSlug: neighborhoodSlug }), null, 3000, 'comm:mktStats'),
+    withTimeoutFallback(getMarketStatsCacheRowForGeo({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }), null, 3000, 'comm:mktStats'),
     withTimeoutFallback(getRegionPulse(), null, 3000, 'comm:regionPulse'),
     withTimeoutFallback(getPriceHistory('neighborhood', neighborhoodSlug, 'monthly', 60), [], 4500, 'comm:priceHistory'),
     withTimeoutFallback(getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }), { polygon: null, pins: [] }, 4500, 'comm:boundary'),

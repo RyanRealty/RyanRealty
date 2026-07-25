@@ -211,6 +211,7 @@ const _fetchReportMetricsTimeSeries = unstable_cache(
         : slugify(city.trim())
       const { getMarketStatsCacheRowsForGeos } = await import('@/lib/data')
       const cacheRows = await getMarketStatsCacheRowsForGeos({
+        geoType: 'city',
         geoSlugs: [geoSlug],
         periodType: 'monthly',
         columns: 'geo_slug, period_start, period_end, sold_count, median_sale_price',
