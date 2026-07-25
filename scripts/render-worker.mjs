@@ -43,7 +43,7 @@
  * ENV: reads .env.local for NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.
  */
 
-import { spawnSync, execFileSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { readFileSync, existsSync, writeFileSync, mkdirSync, statSync, readdirSync, rmSync } from 'node:fs'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -151,7 +151,7 @@ async function logFailure(actionId, producerSlug, phase, message) {
  * Messages app (text-only — attachments fail silently, see memory). Never throws:
  * a notification failure must not block or unwind the ready flip.
  */
-function notifyMattReady(row, relArtifact) {
+async function notifyMattReady(row, relArtifact) {
   try {
     const to = env.TWILIO_FORWARD_MATT || '+15412136706'
     const reason = row.generation_reason || ''
@@ -168,16 +168,11 @@ function notifyMattReady(row, relArtifact) {
       `Approve: ${site}/admin/approval-queue`,
     ].filter(Boolean)
     const body = lines.join('\n')
-    const script = `
-      on run {targetPhone, msgBody}
-        tell application "Messages"
-          set targetService to 1st account whose service type = iMessage
-          set targetBuddy to participant targetPhone of targetService
-          send msgBody to targetBuddy
-        end tell
-      end run`
-    execFileSync('osascript', ['-e', script, to, body], { timeout: 30000 })
-    console.log(`  ✓ notified Matt (iMessage → ${to})`)
+    // Cross-platform: Twilio → email → stdout. The old osascript/Messages path
+    // only worked on the Mac mini, which is no longer a workstation.
+    const { notify } = await import('../lib/platform/notify.mjs')
+    const res = await notify({ to, body, subject: `Draft ready: ${kind}` })
+    console.log(`  ✓ notified Matt (${res.channel} → ${to})`)
   } catch (e) {
     console.warn(`  ! notify failed (non-blocking): ${e.message}`)
   }
@@ -331,7 +326,7 @@ async function processRow(row) {
   }
 
   console.log(`  ✓ ${row.id} → ready (awaiting Matt approval; draft-first §0.5)`)
-  notifyMattReady(row, relArtifact)
+  await notifyMattReady(row, relArtifact)
   return { id: row.id, ok: true, artifact: relArtifact }
 }
 

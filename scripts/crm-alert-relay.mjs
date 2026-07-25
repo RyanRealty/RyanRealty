@@ -15,29 +15,35 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+
 import { createClient } from '@supabase/supabase-js';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
-const env = {};
-for (const line of fs.readFileSync(path.join(ROOT, '.env.local'), 'utf8').split('\n')) {
-  const i = line.indexOf('=');
-  if (i > 0 && !line.startsWith('#')) env[line.slice(0, i).trim()] = line.slice(i + 1).trim();
-}
+// Env resolution must survive a cloud VM, which has no .env.local — its secrets
+// arrive as real environment variables. Real env always wins; the file is an
+// optional local convenience. A hard read here used to throw on the VM.
+const env = { ...process.env };
+try {
+  for (const line of fs.readFileSync(path.join(ROOT, '.env.local'), 'utf8').split('\n')) {
+    const i = line.indexOf('=');
+    if (i > 0 && !line.startsWith('#')) {
+      const k = line.slice(0, i).trim();
+      if (env[k] === undefined) env[k] = line.slice(i + 1).trim();
+    }
+  }
+} catch { /* no .env.local — expected on the VM */ }
 const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 const TW_AUTH = { Authorization: 'Basic ' + Buffer.from(`${env.TWILIO_ACCOUNT_SID}:${env.TWILIO_AUTH_TOKEN}`).toString('base64') };
 const SITE = 'https://ryan-realty.com';
 
-function sendIMessage(to, body) {
-  const script = `
-    on run {targetPhone, msgBody}
-      tell application "Messages"
-        set targetService to 1st account whose service type = iMessage
-        set targetBuddy to participant targetPhone of targetService
-        send msgBody to targetBuddy
-      end tell
-    end run`;
-  execFileSync('osascript', ['-e', script, to, body], { timeout: 30000 });
+// Fallback channel when Twilio is unavailable. Was osascript → Messages.app,
+// which only ran on the Mac mini. Now email/stdout via the platform shim, so
+// the relay behaves identically on Linux. Broker-only — BROKER_PHONES below is
+// still the hard backstop that refuses any non-broker number.
+async function sendFallback(to, body) {
+  const { notify } = await import('../lib/platform/notify.mjs');
+  const res = await notify({ to, body, subject: 'Ryan Realty broker alert' });
+  if (!res.ok) throw new Error(`fallback notify failed via ${res.channel}`);
 }
 
 async function sendTwilioSms(to, body) {
@@ -88,9 +94,9 @@ if (pending?.length) {
     try {
       const to = a.to_phone.startsWith('+') ? a.to_phone : `+1${a.to_phone.replace(/\D/g, '').slice(-10)}`;
       if (useTwilio) await sendTwilioSms(to, a.body);
-      else sendIMessage(to, a.body);
-      await sb.from('crm_broker_alerts').update({ status: 'sent', channel: useTwilio ? 'twilio-sms' : 'imessage', sent_at: new Date().toISOString() }).eq('id', a.id);
-      console.log(`sent #${a.id} → ${a.broker} via ${useTwilio ? 'twilio' : 'imessage'}`);
+      else await sendFallback(to, a.body);
+      await sb.from('crm_broker_alerts').update({ status: 'sent', channel: useTwilio ? 'twilio-sms' : 'fallback', sent_at: new Date().toISOString() }).eq('id', a.id);
+      console.log(`sent #${a.id} → ${a.broker} via ${useTwilio ? 'twilio' : 'fallback'}`);
     } catch (e) {
       // Transient failures (osascript ETIMEDOUT, Twilio 5xx) get retried on the
       // next 45s run; only after 3 attempts does the row go terminally failed.
