@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.863.9 (2026-07-25)
+
+### Bug Fixes
+- fix(w8.1): derive the trend block's window; guard the raw community input
+- fix(gates): round-6 verifier defeated all three W8.1 gates — close the evasion paths
+
+---
+
+
 ## v1.863.8 (2026-07-24)
 
 ### Bug Fixes
