@@ -20,7 +20,8 @@ import {
   updateCrmStageAction,
 } from '@/app/actions/crm'
 import { adminAssignSavedSearchAction, adminDeleteSavedSearchAction } from '@/app/actions/newsletter'
-import { startCmaForContactAction, sendCmaForContactAction } from '@/app/actions/contact-cma'
+import { startCmaForContactAction } from '@/app/actions/contact-cma'
+import { sendDeliverable } from '@/app/actions/send-deliverable'
 import { startBpoForContactAction } from '@/app/actions/contact-bpo'
 import { setReportSubscriptionAction } from '@/app/actions/crm-report-subscriptions'
 
@@ -76,9 +77,29 @@ export async function startCmaForm(personId: number): Promise<void> {
       : `${BASE}/${personId}?error=${encodeURIComponent(`CMA not started — ${r.error}`)}`,
   )
 }
+/**
+ * The double-submit window for a plain <form action> send. A client-mounted
+ * panel supplies a durable per-intent uuid; a server-rendered form has no
+ * client key, so the wrapper derives one from (person, document, 30 s bucket).
+ * That collapses a genuine double-click into one send while leaving a
+ * deliberate re-send half a minute later free to go through.
+ */
+const FORM_SEND_WINDOW_MS = 30_000
+function formSendKey(personId: number, ref: string): string {
+  return `form:${personId}:${ref}:${Math.floor(Date.now() / FORM_SEND_WINDOW_MS)}`
+}
+
 export async function sendCmaForm(personId: number, formData: FormData): Promise<void> {
   const deliveryId = String(formData.get('deliveryId') ?? '')
-  const r = await sendCmaForContactAction(deliveryId)
+  // Routed through THE unified deliverable chokepoint (spec 03 §6.1) — uniform
+  // auth, at-most-once, one error vocabulary. The CMA engine's own suppression
+  // and approval gates still run inside it.
+  const r = await sendDeliverable({
+    personId,
+    kind: 'cma',
+    ref: deliveryId,
+    idempotencyKey: String(formData.get('idempotencyKey') ?? '').trim() || formSendKey(personId, deliveryId),
+  })
   redirect(
     r.ok
       ? `${BASE}/${personId}?flash=${encodeURIComponent('CMA sent.')}`

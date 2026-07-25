@@ -49,7 +49,7 @@ import { ContactCmaCard } from '@/components/admin/crm/ContactCmaCard'
 import { ContactBpoCard } from '@/components/admin/crm/ContactBpoCard'
 import { getContactProspectStory } from '@/lib/data/crm/getContactProspectStory'
 import { ContactProspectHistoryCard } from '@/components/admin/crm/ContactProspectHistoryCard'
-import { sendNewsletterToContactAction } from '@/app/actions/contact-newsletter'
+import { sendDeliverableForPerson } from '@/app/actions/send-deliverable'
 import { getContactListingAlerts } from '@/lib/data/crm/getContactListingAlerts'
 import { ContactListingAlertsPanel } from '@/components/admin/crm/ContactListingAlertsPanel'
 import { getContactCollaborators } from '@/lib/data/crm/getContactCollaborators'
@@ -453,7 +453,7 @@ export default async function ConsoleLeadPage({
       bpoGenerateAction={startBpoForm.bind(null, person.id)}
       newsletterSubscribed={contactMemberships.newsletter.subscribed}
       latestNewsletter={latestNewsletter ? { subject: latestNewsletter.subject, status: latestNewsletter.status, sentAt: latestNewsletter.sentAt } : null}
-      newsletterSendAction={sendNewsletterToContactAction.bind(null, person.id)}
+      newsletterSendAction={sendDeliverableForPerson.bind(null, person.id, 'newsletter')}
     />
   )
 
