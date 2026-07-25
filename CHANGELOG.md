@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.865.0 (2026-07-25)
+
+### Features
+- feat(w5.5): broker web-push channel — durable alerts without SMS dependency
+- feat(w5.1): unified sendDeliverable chokepoint — one governed path for deliverable sends
+- feat(w2.7): school-district boundaries — ODE importer + provenance gate
+- feat(w8.6): bulk market-report audience — preview/queue through the newsletter ledger
+
+### Bug Fixes
+- fix(w5.1): move the person-existence read behind the DAL boundary (tri-state, fail-open preserved)
+- fix(w5.5): pin timeZone on the device last-alert date (hydration-safety gate)
+
+### Maintenance
+- chore: wire the five lane gates into ci:gates
+- docs(w13.1): archive the FUB era + make CLAUDE.md canon mechanically honest
+
+---
+
+
 ## v1.864.0 (2026-07-25)
 
 ### Features
