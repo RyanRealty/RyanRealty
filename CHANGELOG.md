@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.864.0 (2026-07-25)
+
+### Features
+- feat(w6.8): capture scope becomes one constant — ledger row done (40/50)
+
+### Bug Fixes
+- fix(§0): two public surfaces published unsold-inventory age as "days to pending"
+
+### Maintenance
+- chore: re-baseline housing-market page (+4, the days-to-pending §0 comment)
+- docs(handoff): session end — dirty tree from 5 killed agents; M3 meta-count fix
+
+---
+
+
 ## v1.863.11 (2026-07-25)
 
 ### Maintenance
