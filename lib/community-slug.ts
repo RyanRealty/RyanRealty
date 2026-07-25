@@ -17,7 +17,8 @@ export function communityPagePath(city: string, subdivision: string): string {
  * city-prefixed "bend-tetherow" format used by generic subdivisions.
  * This map lets parseCommunitySlug resolve bare slugs to their city.
  */
-const RESORT_SLUG_TO_CITY: Record<string, string> = {
+/** Exported for housing-market geo resolution (bare resort slug -> neighborhood cache). */
+export const RESORT_SLUG_TO_CITY: Record<string, string> = {
   tetherow:           'Bend',
   'broken-top':       'Bend',
   pronghorn:          'Bend',

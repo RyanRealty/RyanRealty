@@ -60,6 +60,7 @@
 
 import type { Metadata } from 'next'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
+import { RESORT_SLUG_TO_CITY } from '@/lib/community-slug'
 import { notFound } from 'next/navigation'
 import {
   getMarketPulse,
@@ -150,14 +151,15 @@ function unslug(value: string): string {
 
 /**
  * Resolve the DAL geo_type for the catch-all slug.
- * - 1-segment slug:  /housing-market/<city>            → 'city'
- * - 2-segment slug:  /housing-market/<city>/<community>→ 'subdivision'
+ * - 1-segment: /housing-market/<city> -> city / bare city slug
+ * - 2-segment: /housing-market/<city>/<community>
+ *     resort/area community -> neighborhood / bare community slug
+ *     other MLS subdivisions -> subdivision / bare community slug
  *
- * market_pulse_live uses 'subdivision' for community rows and the geo_slug
- * format is "<city>:<community>" for subdivisions.
+ * Never use "city:community". That shape has zero cache rows (W8.1 soft-404 chip).
  */
 function resolveGeo(slug: string[]): {
-  geoType: 'city' | 'subdivision'
+  geoType: 'city' | 'neighborhood' | 'subdivision'
   geoSlug: string
   citySlug: string
   communitySlug: string | null
@@ -173,10 +175,14 @@ function resolveGeo(slug: string[]): {
   const geoName = communityName ?? cityName
 
   if (communitySlug) {
+    // Resort/area communities are neighborhood/<bare-slug> in the cache
+    // (docs/DATABASE_FOR_AI_AGENTS.md). Other MLS subdivisions use
+    // subdivision/<bare-slug>. Never "city:community": that shape has zero rows
+    // and soft-404d every 2-segment path (W8.1).
+    const isResort = Boolean(RESORT_SLUG_TO_CITY[communitySlug])
     return {
-      geoType: 'subdivision',
-      // market_pulse_live uses "<city>:<community>" for subdivision rows.
-      geoSlug: `${citySlug}:${communitySlug}`,
+      geoType: isResort ? 'neighborhood' : 'subdivision',
+      geoSlug: communitySlug,
       citySlug,
       communitySlug,
       cityName,
@@ -362,7 +368,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
     getMarketPulse({ geoType, geoSlug }).catch(() => null),
     getPriceHistory(geoType, geoSlug, 'monthly', priceHistoryLimit).catch(() => []),
     getMarketPulseCitySnapshots(COMPARISON_CITY_LABELS).catch(() => []),
-    isCity ? getCityMarketDetailByTimeframe(geoType, geoSlug) : Promise.resolve(null),
+    getCityMarketDetailByTimeframe(geoType, geoSlug),
     isCity
       ? getRecentBlogPosts({ limit: 3 }).catch(() => [])
       : Promise.resolve([] as Awaited<ReturnType<typeof getRecentBlogPosts>>),
