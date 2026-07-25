@@ -7,6 +7,7 @@ import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { BROKER_HEADSHOTS } from '@/components/admin/crm/inbox/mobile/mobile-data'
 import MySettingsForm from './MySettingsForm'
 import MobileSettingsScreen from './MobileSettingsScreen'
+import BrokerPushOptIn from '@/components/admin/push/BrokerPushOptIn'
 import pkg from '@/package.json'
 
 export const metadata = { title: 'My settings | Admin' }
@@ -98,6 +99,9 @@ export default async function MySettingsPage() {
             gmailSignatureSyncedAt={broker.gmail_signature_synced_at ?? null}
           />
         )}
+
+        {/* W5.5 leg b — the durable web-push channel opt-in, next to the SMS toggle. */}
+        <BrokerPushOptIn />
       </main>
     </>
   )

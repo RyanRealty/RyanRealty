@@ -118,6 +118,26 @@ export async function queueReturnVisitAlert(params: {
   }
 }
 
+/**
+ * Does this broker have at least one live web-push device? (W5.5 leg b.)
+ * Read here rather than imported from app/api/push/_lib/store to keep the
+ * queue module free of a route-tree dependency; the shape is one boolean.
+ */
+async function brokerHasActivePushDevice(broker: string): Promise<boolean> {
+  try {
+    const sb = createServiceClient()
+    const { data } = await sb
+      .from('push_subscriptions')
+      .select('id')
+      .eq('broker', broker)
+      .is('disabled_at', null)
+      .limit(1)
+    return (data ?? []).length > 0
+  } catch {
+    return false
+  }
+}
+
 export async function queueBrokerAlert(params: {
   broker: string | null | undefined
   personId: number
@@ -130,12 +150,21 @@ export async function queueBrokerAlert(params: {
     const toPhone = ALERT_PHONE_BY_BROKER[broker]
     if (!toPhone) return false
 
-    // Per-broker SMS opt-in — default OFF (Matt 2026-06-28). The mac-mini poller
-    // texts every crm_broker_alerts row, so an opted-out broker is gated HERE at
-    // queue time. Email + dashboard alert paths are separate and unaffected. (Ops
-    // health alerts use queueBrokerHealthAlert and are intentionally NOT gated.)
+    // Per-broker SMS opt-in — default OFF (Matt 2026-06-28). Both SMS drainers
+    // (the mac-mini relay, scripts/crm-alert-relay.mjs:75, and the serverless
+    // drain's listPendingAlerts) select status='pending', so an opted-out broker
+    // is gated HERE at queue time. Email + dashboard alert paths are separate and
+    // unaffected. (Ops health alerts use queueBrokerHealthAlert and are NOT gated.)
+    //
+    // W5.5 leg b: SMS opt-out used to mean NO row at all, which silently killed
+    // web push for that broker too (Paul and Rebecca, brokers.notify_sms = false).
+    // A broker with a registered push device now still gets the alert — queued as
+    // status 'push_only', a status NEITHER SMS drainer selects, so it can only
+    // ever leave as a notification. No new text can escape through this path.
     const tel = await getBrokerTelephony()
-    if (!tel.bySlug[broker as keyof typeof tel.bySlug]?.smsOptIn) return false
+    const smsOptIn = Boolean(tel.bySlug[broker as keyof typeof tel.bySlug]?.smsOptIn)
+    const pushOptIn = smsOptIn ? false : await brokerHasActivePushDevice(broker)
+    if (!smsOptIn && !pushOptIn) return false
 
     // dedupe gate — first writer wins
     const { error: dedupeErr } = await sb.from('crm_timeline').insert({
@@ -154,6 +183,7 @@ export async function queueBrokerAlert(params: {
       to_phone: toPhone,
       body: params.body.slice(0, 600),
       person_id: params.personId,
+      status: smsOptIn ? 'pending' : 'push_only',
     })
     return true
   } catch (err) {

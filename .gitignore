@@ -50,9 +50,13 @@ supabase/.temp
 /tmp/
 tmp/
 
-# Serwist
+# Serwist (generated workers stay untracked...)
 public/sw*
 public/swe-worker*
+# ...but the hand-authored web-push worker is SOURCE, not build output (W5.5).
+# If Serwist is ever enabled it claims this filename — fold the push listeners
+# into that build and re-ignore.
+!public/sw.js
 
 # typescript
 *.tsbuildinfo

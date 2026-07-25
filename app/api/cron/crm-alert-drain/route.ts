@@ -15,6 +15,7 @@ import {
   refuseAlert,
   reclaimStaleSending,
 } from '@/lib/data/crm/brokerAlertDrain'
+import { drainWebPush } from '@/app/api/push/_lib/deliver'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -35,8 +36,15 @@ export const maxDuration = 60
  * to_phone is refused terminally, never sent.
  *
  * Gated on CRM_SMS_ALERTS='twilio' (the existing cutover flag): when unset the
- * route no-ops and the mac-mini relay keeps sole ownership. ?dry=1 reports the
- * would-send batch without claiming or sending (live verification, §0-safe).
+ * SMS half no-ops and the mac-mini relay keeps sole ownership. ?dry=1 reports
+ * the would-send batch without claiming or sending (live verification, §0-safe).
+ *
+ * WEB PUSH (W5.5 leg b) runs FIRST and is deliberately OUTSIDE the
+ * CRM_SMS_ALERTS gate: it is the durable channel, so it must keep delivering
+ * whichever way the SMS cutover flag is set, and it claims its own column
+ * (crm_broker_alerts.pushed_at) rather than the SMS `status` machine so the two
+ * channels can never consume each other's rows. Both properties are pinned by
+ * scripts/check-web-push-durable.mjs.
  *
  * Schedule: every minute (vercel.json). Auth: Bearer $CRON_SECRET.
  */
@@ -47,15 +55,26 @@ export async function GET(request: Request) {
   const url = new URL(request.url)
   const dry = url.searchParams.get('dry') === '1'
 
+  // Durable channel first, and never behind the SMS flag.
+  const push = dry ? { mode: 'dry' as const } : await drainWebPush()
+
   if (process.env.CRM_SMS_ALERTS !== 'twilio') {
-    return NextResponse.json({ ok: true, mode: 'noop', reason: 'CRM_SMS_ALERTS != twilio (mac-mini relay owns delivery)' })
+    return NextResponse.json({
+      ok: true,
+      mode: 'noop',
+      reason: 'CRM_SMS_ALERTS != twilio (mac-mini relay owns SMS delivery)',
+      push,
+    })
   }
 
   const accountSid = process.env.TWILIO_ACCOUNT_SID
   const authToken = process.env.TWILIO_AUTH_TOKEN
   const serviceSid = process.env.TWILIO_MESSAGING_SERVICE_SID
   if (!accountSid || !authToken || !serviceSid) {
-    return NextResponse.json({ ok: false, error: 'twilio env missing' }, { status: 500 })
+    // The web-push pass already ran and is independent of Twilio — report it
+    // even on the SMS-side failure, so a dark push channel is never hidden
+    // behind an unrelated 500.
+    return NextResponse.json({ ok: false, error: 'twilio env missing', push }, { status: 500 })
   }
 
   const whitelist = brokerPhoneSet({
@@ -75,6 +94,7 @@ export async function GET(request: Request) {
         broker: a.broker,
         would: isBrokerPhone(a.to_phone, whitelist) ? 'send' : 'refuse:non-broker',
       })),
+      push,
     })
   }
 
@@ -117,5 +137,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, mode: 'drain', sent, refused, retried, failed, reclaimed })
+  return NextResponse.json({ ok: true, mode: 'drain', sent, refused, retried, failed, reclaimed, push })
 }
