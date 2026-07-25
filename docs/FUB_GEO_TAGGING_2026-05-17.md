@@ -1,3 +1,6 @@
+<!-- FUB-ERA-ARCHIVED -->
+> **ARCHIVED. Follow Up Boss era. Do not build against this document.** FUB was decommissioned 2026-06-24: `getFubApiKey()` in `lib/crm/fub-env.ts` returns `undefined`, so every FUB API path no-ops, and `sendEvent()` in `lib/followupboss.ts` writes natively to `public.crm_people` instead of POSTing to Follow Up Boss. The live system is the in-house CRM (`/admin/crm`, `lib/crm/`, the `crm-*` crons in `vercel.json`). Index and full trace: `docs/archive/fub-era/README.md`.
+
 # FUB Lead Geo-Tagging Pipeline
 
 **Status:** Built 2026-05-17. Phase 1 in execution, Phase 2 awaiting Phase 1 completion.

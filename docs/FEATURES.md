@@ -130,7 +130,7 @@ Add `SPARK_API_KEY` to `.env.local` (and Vercel) when you have it; then you can 
 ### 4.1 Follow Up Boss (FUB)
 
 - **Purpose:** CRM; track signed-in users and listing/page views.
-- **Setup:** `FOLLOWUPBOSS_API_KEY` (and optional `FOLLOWUPBOSS_SYSTEM`, `FOLLOWUPBOSS_SYSTEM_KEY`). See `docs/FOLLOWUPBOSS-SETUP.md`.
+- **Status: DECOMMISSIONED 2026-06-24.** `getFubApiKey()` in `lib/crm/fub-env.ts` returns `undefined`, so `FOLLOWUPBOSS_API_KEY` is inert and no FUB API call fires. `sendEvent()` in `lib/followupboss.ts` writes to `public.crm_people` instead. The behavior described below now happens in the in-house CRM. Historical setup docs: `docs/archive/fub-era/README.md`.
 - **Behavior:** On Google sign-in, person is found or created in FUB and a **Registration** event is sent. While signed in: **Viewed Property** (listing views), **Viewed Page** (e.g. search pages). Listing inquiry forms (Schedule showing, Ask a question) submit to FUB via `submitListingInquiry` and are stored in `listing_inquiries`.
 
 ### 4.2 Spark (MLS)

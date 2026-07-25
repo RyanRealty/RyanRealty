@@ -135,8 +135,7 @@ _Placeholder. Wave assignments are spec'd in section 16 (batch 4). Each wave map
 | Design system CSS | `/tmp/ryan-design-extract/ryan-realty-design-system/project/colors_and_type.css` |
 | Brand assets | `/tmp/ryan-design-extract/ryan-realty-design-system/project/assets/` |
 | Agent rules | `/Users/matthewryan/RyanRealty/CLAUDE.md` |
-| FUB custom fields | `/Users/matthewryan/RyanRealty/docs/FUB_CUSTOM_FIELDS.md` |
-| FUB setup | `/Users/matthewryan/RyanRealty/docs/FOLLOWUPBOSS-SETUP.md` |
+| CRM (in-house; Follow Up Boss decommissioned 2026-06-24) | `/Users/matthewryan/RyanRealty/lib/crm/` + `/Users/matthewryan/RyanRealty/docs/archive/fub-era/README.md` for the FUB-era history |
 | Auth & CRM | `/Users/matthewryan/RyanRealty/docs/AUTH_AND_CRM.md` |
 | Data architecture plan | `/Users/matthewryan/RyanRealty/docs/plans/data-architecture-plan.md` |
 | Master plan (gaps/waves) | `/Users/matthewryan/RyanRealty/docs/plans/master-plan.md` |
@@ -184,7 +183,7 @@ The website generates revenue through four mechanisms. A fifth (vendor marketpla
 
 **2. Seller representation (listing).** Matt represents sellers with a listing agreement. Commission is typically 2.5–3% of the sale price, paid from proceeds at close. The website's job is to produce seller leads: homeowners who request a valuation, subscribe to market reports, or contact Matt directly to discuss listing their home. Seller leads are the highest-value lead category per transaction.
 
-**3. Lead generation for the brokerage pipeline.** Both buyer and seller leads flow through Follow Up Boss (FUB) as the CRM of record. The website fires FUB events: Registration, Viewed Property, Viewed Page, Saved Property, Property Inquiry, Visited Website (return visit after 24h+). [discovery 01: Lead Routing & FUB] Lead scoring uses behavior-based points with weekly decay; lead tiers are cold, warm, hot, very_hot. [discovery 01: Lead Routing & FUB, FUB_CUSTOM_FIELDS.md]
+**3. Lead generation for the brokerage pipeline.** Both buyer and seller leads flow through the in-house CRM (`public.crm_people`; Follow Up Boss was decommissioned 2026-06-24 — this paragraph predates the cutover and the event vocabulary survives in `lib/followupboss.ts` `sendEvent()`, which now writes natively). The website fires events: Registration, Viewed Property, Viewed Page, Saved Property, Property Inquiry, Visited Website (return visit after 24h+). [discovery 01: Lead Routing & FUB] Lead scoring uses behavior-based points with weekly decay; lead tiers are cold, warm, hot, very_hot. [discovery 01: Lead Routing & FUB; custom-field research archived at `docs/archive/fub-era/README.md`]
 
 **4. Display ad revenue (Google AdSense at MVP).** Matt identified display ads as a third revenue stream [Matt 2026-04-25; discovery 01: Monetization]. The correct model is Google AdSense with standard IAB display slots on informational pages, lazy-loaded, with reserved ad space so CLS = 0. Facebook Audience Network (FAN) is a potential supplementary channel at launch, primarily for mobile; evaluate at launch. Wave-2 path: when monthly sessions reach the Mediavine threshold (~50K), migrate from AdSense to Mediavine for higher CPMs. NO native sponsorship, NO preferred lenders, NO title companies, NO mortgage brokers — Matt corrected the model 2026-04-25. See section 1.4.3 for slot inventory and placement rules. [chat 2026-04-25]
 
@@ -282,7 +281,7 @@ If 20% of qualified seller leads convert to a signed listing agreement, and 80% 
 At $750,000 median purchase, 2.75% commission: $20,625 per closed buyer transaction
 If 20% of qualified buyer leads close (over 12-month cycle, industry midpoint): effective value per qualified buyer lead = $20,625 × 0.20 = **$4,125 per qualified buyer lead** (ESTIMATE).
 
-Note: buyer lead cycle is longer than seller lead cycle (6–18 months from first contact to close for relocators). Lead scoring decay and engagement scoring in FUB are critical to maintaining pipeline quality over that window. [discovery 01: Lead Routing & FUB, FUB_CUSTOM_FIELDS.md: `engagement_streak_days`, `last_active_date`]
+Note: buyer lead cycle is longer than seller lead cycle (6–18 months from first contact to close for relocators). Lead scoring decay and engagement scoring in the CRM are critical to maintaining pipeline quality over that window. [discovery 01: Lead Routing & FUB; field research (`engagement_streak_days`, `last_active_date`) archived at `docs/archive/fub-era/README.md`]
 
 **Conversion funnel mapped to features:**
 

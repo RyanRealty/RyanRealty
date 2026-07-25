@@ -46,8 +46,7 @@ Last curated: 2026-04-21 (governance purge ch.3). Obsolete/snapshot docs moved t
 - `GTM_ANALYTICS_SETUP.md` — GTM/GA4 env-only setup and dataLayer event/trigger reference (merged doc)
 
 ### Integrations
-- `FOLLOWUPBOSS-SETUP.md` — FUB CRM integration
-- `FUB_CUSTOM_FIELDS.md` — FUB custom field configuration
+- Follow Up Boss was decommissioned 2026-06-24. The whole FUB-era doc cluster is archived — see `archive/fub-era/README.md` for the index and what replaced it. Do not build against those files.
 - `GOOGLE_MAPS_SETUP.md` — Google Maps API setup
 - `GOOGLE_ADS_SETUP.md` — Google Ads / conversion setup
 - `GOOGLE_SETUP.md` — where to find each Google ID and verification checklist (merged doc)

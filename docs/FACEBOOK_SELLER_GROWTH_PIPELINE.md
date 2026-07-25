@@ -714,6 +714,6 @@ Sorted by ROI, highest-impact first. Items shipped in iteration 2 are crossed ou
 - **FUB Custom Audience export script** — `scripts/export-fub-custom-audience.mjs` ships hashed-PII CSVs for Meta upload. `--mode lookalike-seed` (4,964 rows from current FUB) seeds the LAL; `--mode suppression` (6,000 rows) becomes the Exclusion on every prospecting ad set.
 - Skill — `.claude/skills/facebook-seller-growth/SKILL.md` (canonical routine for cloud + local Claude runs)
 - Learnings — `.claude/skills/facebook-seller-growth/LEARNINGS.md` (one entry per cycle)
-- FUB integration — `docs/FOLLOWUPBOSS-SETUP.md`
+- CRM integration — the in-house CRM (`lib/crm/`, `/admin/crm`). Follow Up Boss was decommissioned 2026-06-24; its setup doc is archived, see `docs/archive/fub-era/README.md`
 - Admin dashboard — `docs/ADMIN_DASHBOARD.md`
 - Cross-agent handoff — `docs/plans/CROSS_AGENT_HANDOFF.md`

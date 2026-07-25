@@ -1,3 +1,6 @@
+<!-- FUB-ERA-ARCHIVED -->
+> **ARCHIVED. Follow Up Boss era. Do not build against this document.** FUB was decommissioned 2026-06-24: `getFubApiKey()` in `lib/crm/fub-env.ts` returns `undefined`, so every FUB API path no-ops, and `sendEvent()` in `lib/followupboss.ts` writes natively to `public.crm_people` instead of POSTing to Follow Up Boss. The live system is the in-house CRM (`/admin/crm`, `lib/crm/`, the `crm-*` crons in `vercel.json`). Index and full trace: `docs/archive/fub-era/README.md`.
+
 # Follow Up Boss (FUB) — Complete Feature & UI Specification
 
 > **Purpose.** This is the authoritative, build-ready specification of every feature and UI surface in Follow Up Boss as used by Ryan Realty, reverse-engineered from 79 annotated production screenshots (captured 2026-06-30, stored in `FUB SCREENS`). It is the source of truth for building the Ryan Realty in-house CRM to full FUB parity. Every module, screen, panel, field, column, button, filter, status, modal, and workflow that appears in the screenshots is documented here, with inferred behavior clearly marked. Where the screenshots did not capture a feature directly, the expected behavior is reconstructed from FUB's known product design and is flagged `(inferred)`.

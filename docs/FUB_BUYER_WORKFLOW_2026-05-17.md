@@ -1,3 +1,6 @@
+<!-- FUB-ERA-ARCHIVED -->
+> **ARCHIVED. Follow Up Boss era. Do not build against this document.** FUB was decommissioned 2026-06-24: `getFubApiKey()` in `lib/crm/fub-env.ts` returns `undefined`, so every FUB API path no-ops, and `sendEvent()` in `lib/followupboss.ts` writes natively to `public.crm_people` instead of POSTing to Follow Up Boss. The live system is the in-house CRM (`/admin/crm`, `lib/crm/`, the `crm-*` crons in `vercel.json`). Index and full trace: `docs/archive/fub-era/README.md`.
+
 # Ryan Realty — Buyer Lead Workflow (Locked Spec)
 
 > **⚠️ SUPERSEDED (2026-07-08).** Same status as `docs/FUB_SELLER_WORKFLOW_2026-05-17.md` — the FUB-native execution model here (Action Plans, FUB automation rules) was replaced by the in-house CRM (`lib/crm/enroll.ts`, sends via Twilio + Gmail DWD) starting 2026-06-10; FUB API access was decommissioned 2026-06-24. Cadence research and template copy remain a valid reference. Live sequence: Supabase `crm_sequences` id 2 (Buyer Master) — currently 3 of the original steps, same T+5d cutoff gap as the seller sequence.

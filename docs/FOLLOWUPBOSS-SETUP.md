@@ -1,3 +1,6 @@
+<!-- FUB-ERA-ARCHIVED -->
+> **ARCHIVED. Follow Up Boss era. Do not build against this document.** FUB was decommissioned 2026-06-24: `getFubApiKey()` in `lib/crm/fub-env.ts` returns `undefined`, so every FUB API path no-ops, and `sendEvent()` in `lib/followupboss.ts` writes natively to `public.crm_people` instead of POSTing to Follow Up Boss. The live system is the in-house CRM (`/admin/crm`, `lib/crm/`, the `crm-*` crons in `vercel.json`). Index and full trace: `docs/archive/fub-era/README.md`.
+
 # FollowUp Boss integration
 
 When someone signs in with **Google** on your site, the app looks them up in Follow Up Boss by email and sends a **Registration** event so they’re created (or updated) and tracked as coming from your website. While they’re signed in, we also send **Viewed Property** (each listing they open) and **Viewed Page** (city/community search pages) so you can see what they’re looking at in FUB.

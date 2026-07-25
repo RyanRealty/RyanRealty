@@ -1,3 +1,6 @@
+<!-- FUB-ERA-ARCHIVED -->
+> **ARCHIVED. Follow Up Boss era. Do not build against this document.** FUB was decommissioned 2026-06-24: `getFubApiKey()` in `lib/crm/fub-env.ts` returns `undefined`, so every FUB API path no-ops, and `sendEvent()` in `lib/followupboss.ts` writes natively to `public.crm_people` instead of POSTing to Follow Up Boss. The live system is the in-house CRM (`/admin/crm`, `lib/crm/`, the `crm-*` crons in `vercel.json`). Index and full trace: `docs/archive/fub-era/README.md`.
+
 # FUB Lead Workflow — Live Audit & Per-Lead Flow Documentation
 
 > **⚠️ SUPERSEDED (2026-07-08).** This audit describes the FUB Automations 2.0-era architecture, which was replaced by the in-house CRM engine (`lib/crm/enroll.ts` + `lib/crm/sequence-engine`) starting 2026-06-10; FUB API sending was decommissioned entirely 2026-06-24. For current lead-flow behavior, trace `lib/crm/enroll.ts`, `app/api/cron/crm-auto-enroll/route.ts`, and `app/api/cron/crm-sequence-engine/route.ts` directly, or run `node scripts/crm-e2e-verify.mjs` for a live health check.
