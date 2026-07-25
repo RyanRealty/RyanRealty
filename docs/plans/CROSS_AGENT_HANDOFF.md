@@ -1,4 +1,117 @@
-> **NEWEST, START HERE: the W8.4 + W8.1 MARKET-REPORT block immediately below (2026-07-24).** Prior: the /goal COMPLETION-RUN block (2026-07-23), AUDIT-HARDENING (2026-07-17 late), ONE-NAV + UNIFIED-SEND (2026-07-17 eve), CMA VERSION-CHAIN (2026-07-17 PM), the ADMIN-REBUILD v2 LITMUS block (2026-07-17 AM), then RC1 (2026-07-16).
+> **NEWEST, START HERE: the W8.1 ROUND-6 block immediately below (2026-07-24 late).** Prior: the W8.4 + W8.1 MARKET-REPORT block (2026-07-24), the /goal COMPLETION-RUN block (2026-07-23), AUDIT-HARDENING (2026-07-17 late), ONE-NAV + UNIFIED-SEND (2026-07-17 eve), CMA VERSION-CHAIN (2026-07-17 PM), the ADMIN-REBUILD v2 LITMUS block (2026-07-17 AM), then RC1 (2026-07-16).
+
+
+# W8.1 ROUND 6 — FAIL, then fixed. HEAD `b03b5b34`. W8.1 STILL `partial`.
+
+**Ledger 39/50, unchanged.** `ci:program-complete` green. Do NOT flip W8.1: findings from the
+round-6 verifier were open when this block was written, five are handed off as task chips, and
+`ci:program-complete` requires an INDEPENDENT `verifiedBy` that no one has given.
+
+## What round 6 was, and why it failed
+
+Round 5 had left D2/D3/D4 open. I fixed them (`723dfa63`) and found a fifth, D5, doing it. Then an
+independent verifier told to assume the work was broken **defeated all three gates I had just
+shipped** — writing code that commits each defect with every gate GREEN. The holes were in the
+gates, not the fixes. That is the round's real lesson: **a gate written by the same session that
+wrote the fix tends to check the shape the fix happens to use.**
+
+## SHIPPED (4 commits, all pushed, each fix + its gate in one commit)
+
+**`723dfa63` — the four defects.**
+- **D2** the export validated `?city=` but not `?subdivision=`, and cache slugs carry no city, so
+  `?city=Madras&subdivision=Tetherow` shipped a branded workbook headed "Tetherow, Madras" with
+  Bend's numbers. Both params now resolve through `lib/market/report-geo.ts` against the registry.
+- **D5** (new this round) for a registered community the export read `geo_type='subdivision'`
+  (literal name) while the page reads `'neighborhood'` (alias-aware): Tetherow YTD 9 sold/$2.6M
+  exported vs 18/$1,414,000 on the page; Black Butte Ranch 0 vs 17; Sunriver 0 vs 43.
+- **D3** three windows in one unlabeled block. Now three labeled blocks from ONE pure builder
+  (`lib/market/report-document.ts`) both formats render from.
+- **D4** `CityMarketStats.medianPrice` was price-kind ambiguous. Because `market_pulse_live` has NO
+  neighborhood or subdivision rows, the closed-sale branch was the ORDINARY path for a community, and
+  three pages published a sale median under "Median list" (caldera-springs $1,400,000, sunriver
+  $865,000, three-rivers $637,500). A page now derives its asking median from the SAME tiles that
+  produced its active count.
+
+**`248b7d1f` — the gates the verifier defeated.** `ci:price-kind-purity` inspected only object-literal
+properties, so it was blind to `const medianListPrice = …` — the shape the D4 fix itself ships in.
+`ci:report-export-geo` matched only a bare string literal (`const LEGACY_GEO = 'subdivision' as const`
+evaded it), scanned only the route file, and counted `buildSections()` calls rather than uses.
+`ci:no-report-rpc` derived exports from `export` modifiers only, so
+`export { _fetchReportMetrics as getCityMetricsForPage }` created a public wrapper onto the banned RPC
+that a public page imported, green — the exact hole the derivation had been added to close one commit
+earlier.
+
+**`705b4715`** — the trend block asserted "last 6 months" over whatever monthly rows were cached (now
+derived: `Monthly closed sales · 2026-05 to 2026-07`); `resolveReportCommunity`'s blank guard was dead
+code because `slugify` returns `'unknown'`, never `''`.
+
+**`b03b5b34` — §0, and the most serious of the four commits.** A cache slug is not a geography: 13
+slugs exist under more than one `geo_type` and `sunriver` under THREE.
+`getMarketStatsCacheRowForGeo` filtered slug + period only, so **`/communities/sunriver` was served
+the CITY row** — 124 twelve-month sales and 93.2% sale-to-list for all of Sunriver, published as the
+community's own figures in the hero, the FAQ prose and the Dataset JSON-LD. `geoType` is now REQUIRED
+on both cache readers, passed at all 11 call sites (each verified to still resolve a real row). Live
+after: 93 sold · 93.5% · 34 days, its own rows. Gate `ci:market-cache-geo-scope`. The same commit
+stops every community export shipping an undated "Not available" inventory pair.
+
+## NEW GATES (all wired into `ci:gates`, all proven to bite then restored)
+
+`ci:report-export-geo` (EXECUTES both pure modules against live-defect fixtures; 10 bite modes) ·
+`ci:price-kind-purity` (cross-kind binding in ANY form + no ambiguous price field on the contract) ·
+`ci:market-cache-geo-scope` (every `market_stats_cache` READ constrains `geo_type`) · plus the
+derived-wrapper hardening in `ci:no-report-rpc`.
+
+## MY OWN FALSE CLAIM, corrected
+
+Commit `723dfa63` says caldera-springs, sunriver and three-rivers all render no median list after the
+D4 fix. **Wrong for Sunriver** — it renders $660,000 beside 102 active, which is CORRECT behaviour (a
+real asking median from 102 alias-matched tiles), but the verification sentence asserted the opposite.
+Same class of false claim as the five rounds before it.
+
+## OPEN — five task chips spawned, none started
+
+A completeness critic over five parallel investigations found these. Ranked by danger to a licensed
+broker, with the critic's safe application order noted:
+
+1. **MoS base in outbound market email** (chip). `getMarketReportData.ts:150` classifies a
+   12-month-base MoS against thresholds §0 defines for a 6-month base. Cities take the 6-month pulse
+   so they are safe; the ~14 resort communities are not. 5 of 13 cities FLIP verdict between the two
+   bases (camp sherman balanced->buyer's, redmond balanced->seller's, madras/sunriver/metolius
+   buyer's->balanced). Goes to named recipients 4x/day with a verdict word. **Matt decides.**
+2. **Resort-registry cities contradict the MLS** (chip). Caldera Springs is registry-Sunriver but
+   MLS-Bend, so its page publishes 0 active while the index card shows 32 / $2,082,000. Same class as
+   CRR/Tumalo. Blast radius spans 6+ registry consumers. **Matt decides.**
+3. **`/zip` publishes active DOM as "Pending in N days"** (chip). 48-72 days rendered where Bend's
+   real median-to-pending is 15 — a 3-5x overstatement in a hero line and in Dataset JSON-LD, on every
+   ZIP in the sitemap. `/zip` is the ONLY surface that substitutes; six others read the pulse.
+4. **Community meta vs body counts** (chip). ~13 pages contradict themselves (tetherow 25 vs 45,
+   sunriver 43 vs 102); three reportedly render "1000 homes for sale", which smells like the
+   PostgREST row cap. Cheapest honest fix is removing the count from the meta description.
+5. **`/housing-market/<city>/<community>` + two soft-404 siblings** (chip). Asks the cache for
+   `geo_slug='city:community'`, a shape with ZERO rows. Ranked cosmetic (no links, not in sitemap).
+
+Also open from earlier rounds and still true: `/api/pdf/report` takes an arbitrary `?geoName=` and its
+GET has no rate limit (chip); `compute_and_cache_period_stats` never stamps `methodology_version`
+(chip); `envelopePeriod` can print one header window when rows disagree; doc drift in
+`docs/DATABASE_FOR_AI_AGENTS.md` (retired `backfill_rolling`) and CLAUDE.md's methodology version.
+
+**Known and NOT fixed — H4 cache drift.** The export and the community page read the same cache row
+through two independently-expiring `unstable_cache` entries (`market-detail-v1`, `market-stats-v2`,
+both 6h). Observed live: 33 vs 31 twelve-month Tetherow sales, converging minutes later. Row alignment
+does not align caches, so the header comment in `app/api/reports/export/route.ts` claiming the two
+"can no longer disagree" is **still overstated** — it is true of scope and geography, not of time.
+Either collapse the readers onto one DAL function or soften the comment to name the bound. The
+investigation also reports a DAILY 23:45Z writer to `market_stats_cache` that is in no cron registry
+anyone could find and never invalidates the tag — worth identifying before trusting any TTL argument.
+
+## WORKING-TREE NOTE — a CONCURRENT session shares this checkout
+
+It owns uncommitted `app/search/[...slug]/page.tsx`, `lib/site/preset-faq.ts`, its `package.json`
+`ci:search-preset-depth` entry, and untracked `scripts/check-search-preset-depth.mjs`. Do NOT commit
+or revert them. `npm run push` verifies against the materialized HEAD tree, so a dirty tree is fine —
+but a REBASE is not: back the three tracked files up, `git checkout --` them, rebase, then reapply.
+For `package.json`, reapply their two lines onto the NEW committed base rather than restoring a stale
+merged copy. Their `app/search/[...slug]/page.tsx` breaches `ci:file-size-budget` (+26) — theirs.
 
 
 # W8.4 + W8.1 MARKET REPORTS — 2026-07-24 (Opus session), HEAD `11d84e06`
