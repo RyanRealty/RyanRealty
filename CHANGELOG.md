@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.867.0 (2026-07-25)
+
+### Features
+- feat(w5.1): burn deliverable-send bypasses to zero; add build_state schema
+
+---
+
+
 ## v1.866.1 (2026-07-25)
 
 ### Maintenance
