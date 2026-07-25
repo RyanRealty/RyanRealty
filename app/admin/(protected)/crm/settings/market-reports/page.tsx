@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/format/date'
+import BulkSendForm from './BulkSendForm'
 
 export const metadata = { title: 'Market-report subscribers | CRM settings' }
 export const dynamic = 'force-dynamic'
@@ -35,6 +36,13 @@ export default async function CrmMarketReportSubscribersPage() {
   const subscribers = await getMarketReportSubscribers(scope)
 
   const activeCount = subscribers.filter((s) => s.isActive).length
+  // The subscribable-area registry drives BOTH the "areas in this report" picker
+  // and the "subscribed to" audience filter, so a bulk send can only ever name an
+  // area the cache actually reports on.
+  const areaOptions = buildMarketReportAreas().map((a) => ({ slug: a.slug, label: a.label }))
+  // Bulk send reaches the company-wide book, so only a superuser gets the control
+  // (the server actions enforce the same bar; this just hides a dead button).
+  const canBulkSend = access.role === 'superuser'
 
   return (
     <SettingsSubpageShell
@@ -52,6 +60,8 @@ export default async function CrmMarketReportSubscribersPage() {
           size="default"
         />
       </Card>
+
+      {canBulkSend ? <BulkSendForm areaOptions={areaOptions} /> : null}
 
       <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <span>

@@ -28,7 +28,7 @@ import 'server-only'
  *   - createNewsletterDraft + updateNewsletter → the draft writer + citations set
  */
 
-import { getMarketReportData } from '@/lib/data/crm/getMarketReportData'
+import { getMarketReportData, type MarketReportAreaBlock } from '@/lib/data/crm/getMarketReportData'
 import { getRecentBlogPosts } from '@/lib/data/blog/getRecentBlogPosts'
 import { getEventsForMonth } from '@/lib/data/events/getEvents'
 import { getCommunityBySlug } from '@/app/actions/communities'
@@ -68,7 +68,7 @@ function escapeHtml(s: string): string {
  * without this the text/plain part ships literal "&bull;" strings (and the
  * entity semicolons false-fail the R-1 punctuation check).
  */
-function decodeEntitiesForText(s: string): string {
+export function decodeEntitiesForText(s: string): string {
   return s
     .replace(/&bull;/g, '•')
     .replace(/&middot;/g, '·')
@@ -113,7 +113,7 @@ function arrowPositionPct(mos: number): number {
   return Math.round((1 - clamped / 12) * 100)
 }
 
-type MarketCity = {
+export type MarketCity = {
   slug: string
   areaLabel: string
   monthsOfSupply: number
@@ -145,7 +145,7 @@ function cityMeterRow(c: MarketCity): string {
   </tr></table></td></tr></table></a>`
 }
 
-function marketSection(cities: MarketCity[], intro: string): string {
+export function marketSection(cities: MarketCity[], intro: string): string {
   return `<!-- ============ THE MARKET ============ -->
   <tr><td style="padding:34px 34px 0;">
     <table width="100%"><tr>
@@ -161,6 +161,77 @@ function marketSection(cities: MarketCity[], intro: string): string {
     <a href="${SITE}/housing-market" style="display:inline-block;background:${NAVY};color:${CREAM};font-size:13px;font-weight:700;letter-spacing:.08em;text-decoration:none;padding:13px 22px;margin-top:20px;">SEE THE FULL MARKET &rarr;</a>
     <a href="${SITE}/reports" style="color:${NAVY};font-size:13px;font-weight:600;margin-left:8px;">or get it monthly</a>
   </td></tr>`
+}
+
+/**
+ * Map §0-verified area blocks to renderable meter rows + their citation trace.
+ * Pure. Blocks with no real months-of-supply or no verdict are DROPPED, never
+ * filled: a meter is drawn from a real absorption rate or it is not drawn.
+ *
+ * Shared by the monthly curation draft and the market-report bulk send
+ * (lib/newsletter/market-report-bulk) so both issue types render the market
+ * section from ONE generation path with ONE citation shape.
+ */
+export function marketCitiesFromBlocks(
+  blocks: MarketReportAreaBlock[],
+  fetchedAt: string,
+): { cities: MarketCity[]; citations: NewsletterCitation[] } {
+  const cities: MarketCity[] = []
+  const citations: NewsletterCitation[] = []
+  for (const b of blocks) {
+    if (b.monthsOfSupply == null || b.marketVerdict == null) continue
+    cities.push({
+      slug: b.slug,
+      areaLabel: b.areaLabel,
+      monthsOfSupply: b.monthsOfSupply,
+      verdict: b.marketVerdict,
+      medianPrice: b.medianPrice,
+    })
+    citations.push({
+      figure: `${b.areaLabel} months of supply`,
+      source: 'getMarketReportData',
+      filter: `${b.slug} · ${b.source}`,
+      value: b.monthsOfSupply,
+      fetched_at: fetchedAt,
+    })
+    citations.push({
+      figure: `${b.areaLabel} market verdict`,
+      source: 'getMarketReportData',
+      filter: `${b.slug} · derived from monthsOfSupply`,
+      value: b.marketVerdict,
+      fetched_at: fetchedAt,
+    })
+    if (b.medianPrice != null) {
+      citations.push({
+        figure: `${b.areaLabel} median sale price`,
+        source: 'getMarketReportData',
+        filter: `${b.slug} · trailing 12mo closed`,
+        value: b.medianPrice,
+        fetched_at: fetchedAt,
+      })
+    }
+  }
+  return { cities, citations }
+}
+
+/**
+ * Intro line for the market section, built ONLY from live figures. Multi-area
+ * copy leads with Bend's median when Bend is in the set, else a plain count
+ * sentence. A single-area send reads as a single-area sentence rather than
+ * "across the 1 areas". No invented number in any branch.
+ */
+export function marketIntroLine(cities: MarketCity[], noun: 'cities' | 'areas' = 'cities'): string {
+  if (cities.length === 1) {
+    const only = cities[0]!
+    return only.medianPrice != null
+      ? `Here is where ${only.areaLabel} stands today. The median home closed at ${currencyRounded(only.medianPrice)}.`
+      : `Here is where ${only.areaLabel} stands today.`
+  }
+  const bend = cities.find((c) => c.slug === 'bend')
+  if (bend && bend.medianPrice != null) {
+    return `Across the ${cities.length} ${noun} we cover, the median home in Bend closed at ${currencyRounded(bend.medianPrice)}. They are not one market.`
+  }
+  return `Across the ${cities.length} ${noun} we cover, no two are the same market.`
 }
 
 /** Evergreen For Sellers copy. No market number (adapted from approved email.html). */
@@ -333,55 +404,19 @@ export async function produceNewsletterDraft(createdBy: string | null): Promise<
 
   // ── Market (per-city meters) ────────────────────────────────────────────────
   const blocks = await getMarketReportData(NEWSLETTER_MARKET_CITY_SLUGS)
-  // Keep only cities with a REAL MoS + verdict — a meter with no MoS can't be drawn.
-  const marketCities: MarketCity[] = []
-  for (const b of blocks) {
-    if (b.monthsOfSupply == null || b.marketVerdict == null) continue
-    marketCities.push({
-      slug: b.slug,
-      areaLabel: b.areaLabel,
-      monthsOfSupply: b.monthsOfSupply,
-      verdict: b.marketVerdict,
-      medianPrice: b.medianPrice,
-    })
-    citations.push({
-      figure: `${b.areaLabel} months of supply`,
-      source: 'getMarketReportData',
-      filter: `${b.slug} · ${b.source}`,
-      value: b.monthsOfSupply,
-      fetched_at: fetchedAt,
-    })
-    citations.push({
-      figure: `${b.areaLabel} market verdict`,
-      source: 'getMarketReportData',
-      filter: `${b.slug} · derived from monthsOfSupply`,
-      value: b.marketVerdict,
-      fetched_at: fetchedAt,
-    })
-    if (b.medianPrice != null) {
-      citations.push({
-        figure: `${b.areaLabel} median sale price`,
-        source: 'getMarketReportData',
-        filter: `${b.slug} · trailing 12mo closed`,
-        value: b.medianPrice,
-        fetched_at: fetchedAt,
-      })
-    }
-  }
+  // Keep only cities with a REAL MoS + verdict — a meter with no MoS can't be
+  // drawn. Extracted so the market-report bulk send renders from the SAME
+  // builder + the same citation shape (W8.6).
+  const market = marketCitiesFromBlocks(blocks, fetchedAt)
+  const marketCities = market.cities
+  citations.push(...market.citations)
 
   if (marketCities.length === 0) {
     return { ok: false, error: 'no_market_data' }
   }
 
-  // Intro built ONLY from live figures. Lead with Bend's median when present,
-  // else a plain count-of-cities sentence. No invented number.
-  const bend = marketCities.find((c) => c.slug === 'bend')
-  let intro: string
-  if (bend && bend.medianPrice != null) {
-    intro = `Across the ${marketCities.length} cities we cover, the median home in Bend closed at ${currencyRounded(bend.medianPrice)}. They are not one market.`
-  } else {
-    intro = `Across the ${marketCities.length} cities we cover, no two are the same market.`
-  }
+  // Intro built ONLY from live figures. No invented number.
+  const intro = marketIntroLine(marketCities)
 
   // ── Worth Reading (blog) ────────────────────────────────────────────────────
   const rawPosts = await getRecentBlogPosts({ limit: 3 })
@@ -476,6 +511,7 @@ export async function produceNewsletterDraft(createdBy: string | null): Promise<
 
   // ── Subject + preview (from live data) ──────────────────────────────────────
   const subject = monthlyNewsletterSubject(now)
+  const bend = marketCities.find((c) => c.slug === 'bend')
   const previewText = bend && bend.medianPrice != null
     ? `The median home in Bend closed at ${currencyRounded(bend.medianPrice)}. Where every city sits, buyer to seller.`
     : `Where each Central Oregon city sits this month, buyer to seller.`
