@@ -1,8 +1,8 @@
 /**
  * Owner-lookup helpers for the expired-listings workflow.
  *
- * Per docs/FUB_AGENT_LINK_AND_EXPIRED_LP_RESEARCH_2026-05-17.md + Matt's
- * 2026-05-17 expired listings directive: when a listing goes
+ * Per Matt's 2026-05-17 expired listings directive (research archived at
+ * docs/archive/fub-era/README.md): when a listing goes
  * Expired/Withdrawn/Canceled, we need to surface the OWNER so Matt can
  * reach out.
  *

@@ -90,8 +90,8 @@ export async function saveExpiredPartialAddress(params: {
  * source:expired-lp + the expired-listing intent tag so they get the
  * full seller workflow PLUS a broker priority alert.
  *
- * Per docs/FUB_BUYER_WORKFLOW_2026-05-17.md mirror + research from
- * docs/FUB_AGENT_LINK_AND_EXPIRED_LP_RESEARCH_2026-05-17.md task 2.
+ * Expired-LP intake mirrors the seller path. Research that drove voice +
+ * content: docs/archive/fub-era/README.md.
  */
 export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Promise<ExpiredLPResult> {
   try {

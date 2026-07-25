@@ -16,7 +16,7 @@
  *
  * Idempotent — if the person already has the canonical tags, no-op writes.
  *
- * Per `docs/FUB_OPTIMIZATION_AUDIT_2026-05-17.md` §1 + §13.
+ * Tagging rules originated in the FUB era — see docs/archive/fub-era/README.md.
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -135,12 +135,11 @@ async function recordAssignment(params: {
  *      ones may show up):
  *      test record - delete, test-delete-me
  *
- * Per docs/FUB_OPTIMIZATION_AUDIT_2026-05-17 §7 + Matt 2026-05-17 realtor
- * directive. Tagging them `audience:seller` or `audience:buyer` would
- * trigger the FUB automation rule which would enroll them in the master
- * workflow and start blasting emails. The action plans themselves should
- * ALSO exclude these tags (Matt configures the audience filter in FUB UI),
- * but the belt-and-suspenders approach is to skip applying the canonical
+ * Per Matt 2026-05-17 realtor directive (FUB-era archive:
+ * docs/archive/fub-era/README.md). Tagging them `audience:seller` or
+ * `audience:buyer` would enroll them in the master workflow and start
+ * blasting emails. Sequences should ALSO exclude these tags, but the
+ * belt-and-suspenders approach is to skip applying the canonical
  * audience tag in the first place.
  */
 const HARD_STOP_TAGS = new Set([

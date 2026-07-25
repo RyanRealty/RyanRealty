@@ -9,11 +9,11 @@ Both can happen in any order. Lists with filters set but no import yet just show
 
 ## Why this is a UI runbook (not a script)
 
-`scripts/westside-bend-fub-smart-lists.mjs --apply` PUTs `{ conditions: { all, none } }` against `/v1/smartLists/{id}` and gets HTTP 200, but the conditions never persist. `GET /v1/smartLists/{id}` returns only `id, created, name, isFub2, description, defaultSmartListId` — no `conditions`, `criteria`, `filters`, `rules`, `filter`, `query`, `definition`, `segments`, or `tags` field is exposed. Every `GET /v1/people?smartListId=N` returns all 13,278 people, confirming the filter never applied. This matches the prior finding in [docs/FUB_CLEANUP_FINAL_2026-05-17.md](../FUB_CLEANUP_FINAL_2026-05-17.md): "POST /v1/smartLists returns 500 — undocumented schema issue. Smart lists also have to be built in the UI." The FUB API can create + rename smart lists but cannot set filter conditions. Don't waste another session on this.
+`scripts/westside-bend-fub-smart-lists.mjs --apply` PUTs `{ conditions: { all, none } }` against `/v1/smartLists/{id}` and gets HTTP 200, but the conditions never persist. `GET /v1/smartLists/{id}` returns only `id, created, name, isFub2, description, defaultSmartListId` — no `conditions`, `criteria`, `filters`, `rules`, `filter`, `query`, `definition`, `segments`, or `tags` field is exposed. Every `GET /v1/people?smartListId=N` returns all 13,278 people, confirming the filter never applied. This matches the prior finding in [docs/archive/fub-era/README.md](../archive/fub-era/README.md): "POST /v1/smartLists returns 500 — undocumented schema issue. Smart lists also have to be built in the UI." The FUB API can create + rename smart lists but cannot set filter conditions. Don't waste another session on this.
 
 ## Mandatory realtor + compliance excludes — every list below except the two "industry" lists
 
-Per Matt's 2026-05-17 directive ([docs/FUB_SMART_LISTS_STARTER_PACK.md](../FUB_SMART_LISTS_STARTER_PACK.md)), every smart list MUST exclude:
+Per Matt's 2026-05-17 directive ([docs/archive/fub-era/README.md](../archive/fub-era/README.md)), every smart list MUST exclude:
 
 - tag `industry:realtor`
 - tag `Realtor`

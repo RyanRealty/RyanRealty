@@ -388,8 +388,8 @@ function buildLeadTags(lead: ParsedLead, brokerSlug: BrokerSlug): string[] {
   else if (lead.buySellIntent === 'both') tags.push('Intent: Buying + Selling')
   else if (lead.buySellIntent === 'exploring') tags.push('Intent: Exploring')
 
-  // Canonical kebab-case namespaced tier tags per
-  // docs/FUB_SELLER_WORKFLOW_2026-05-17.md §4:
+  // Canonical kebab-case namespaced tier tags (FUB-era cadence research;
+  // see docs/archive/fub-era/README.md):
   //   seller:hot, seller:warm, seller:nurture
   //   buyer:hot, buyer:warm, buyer:nurture
   if (lead.possibleRealtor) {

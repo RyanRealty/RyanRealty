@@ -14,7 +14,7 @@
  * Cost: ~$0.005 per geocode call (Google's standard rate). Single LP submission
  * is roughly $0.005. Bulk-tagging 3K leads is ~$15.
  *
- * Spec: docs/FUB_GEO_TAGGING_2026-05-17.md
+ * Spec history: docs/archive/fub-era/README.md (geo-tagging).
  */
 
 import { createClient } from '@supabase/supabase-js'

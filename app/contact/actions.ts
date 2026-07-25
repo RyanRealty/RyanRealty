@@ -140,8 +140,8 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
   await sendContactNotification({ name, email, phone, inquiryType, message }).catch(() => {})
 
   // Canonical tagging — apply audience:* + source:* + broker:* + round-robin
-  // assignment to whatever FUB person sendEvent just touched. Fire-and-forget
-  // so it doesn't block the response. Per docs/FUB_OPTIMIZATION_AUDIT_2026-05-17.md §1.
+  // assignment to whatever CRM person sendEvent just touched. Fire-and-forget
+  // so it doesn't block the response. (FUB-era tagging rules: docs/archive/fub-era/README.md)
   // after() keeps the serverless function alive until tagging/assignment/enroll/
   // backfill finish — a bare fire-and-forget IIFE can be frozen on return, which
   // dropped contact leads into FUB unassigned + un-enrolled.

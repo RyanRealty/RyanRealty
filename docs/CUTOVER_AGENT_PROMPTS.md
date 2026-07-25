@@ -146,20 +146,22 @@ Summarize as a checklist with PASS/FAIL and one line on anything that failed.
 
 ---
 
-## 3) FUB NURTURE LOOP — close FUNNEL-04 (run AFTER cutover is verified)
+## 3) FUB NURTURE LOOP — close FUNNEL-04 (HISTORICAL — FUB decommissioned 2026-06-24)
+
+> **Superseded.** Follow Up Boss is gone. Live nurture is the in-house CRM
+> (`lib/crm/enroll.ts`, `/admin/crm/sequences`). FUB-era specs: `docs/archive/fub-era/README.md`.
+> The prompt below is kept only as the cutover-era record of what FUNNEL-04 asked for.
 
 ```
 You are fixing the most important gap in Ryan Realty's lead system: seller leads are
 TAGGED in Follow Up Boss but never enrolled in any follow-up. A committed audit
-(docs/FUB_LEAD_WORKFLOW_LIVE_AUDIT_2026-05-29.md) shows 3,492 people tagged
+(archived under docs/archive/fub-era/README.md) shows 3,492 people tagged
 `audience:seller` with the master action plan at contactsRunningCount: 0 — it has
 NEVER run. Your job: make new seller leads auto-enroll going forward, then help me
 decide what to do with the backlog. Work in the Follow Up Boss web UI.
 
 FIRST, READ THE LOCKED SPEC (do not invent cadence, names, or tags):
-- docs/FUB_UI_SETUP_RUNBOOK.md  (step-by-step UI build)
-- docs/FUB_SELLER_WORKFLOW_2026-05-17.md  (the canonical 10-touch master plan, pause
-  rules, tier branching, round-robin)
+- docs/archive/fub-era/README.md  (FUB-era UI setup + seller workflow archive)
 Key facts from the spec:
 - Canonical tags: audience:seller, seller:hot|warm|nurture, source:seller-lp,
   broker:matt|rebecca.
@@ -180,7 +182,7 @@ STEP 1 — AUDIT (report before changing anything):
 
 STEP 2 — BUILD/ACTIVATE THE FORWARD-LOOKING LOOP (safe — affects only new leads):
 - If missing or incomplete, build the "Seller Lead — Master Workflow" action plan
-  EXACTLY per docs/FUB_SELLER_WORKFLOW_2026-05-17.md (10-touch cadence, pause-on-reply,
+  EXACTLY per the archived seller workflow (10-touch cadence, pause-on-reply,
   tier skip rules). Do not improvise copy — use the spec's templates.
 - Build/activate the "Seller LP -> Master Workflow" automation rule: trigger when tag
   `audience:seller` is added -> action: enroll in "Seller Lead — Master Workflow".

@@ -120,7 +120,7 @@ The repo has **no** rent capability and `listings` is sales-only (no lease comps
 Currently the calculator's CTAs link to `/contact` (which already captures a lead). Upgrade to a richer, optional inline capture that carries the deal context:
 
 1. A server action (model it on `app/lp/seller-home-value/actions.ts`) triggered by "Email me this analysis" / "Have an agent review this deal." It posts a FUB **event** via `@/lib/followupboss` (the lib wraps person create/dedup, tagging, assignment, and the `isHardStopped()` compliance check).
-2. **Tags** (namespaced schema per `docs/FUB_SELLER_WORKFLOW_2026-05-17.md`): `audience:investor` + `source:rental-calculator` + `broker:{slug}`.
+2. **Tags** (namespaced schema; FUB-era origin in `docs/archive/fub-era/README.md`): `audience:investor` + `source:rental-calculator` + `broker:{slug}`.
 3. **Custom fields:** analyzed address / MLS#, purchase price, projected monthly cash flow, cap rate, cash-on-cash — so the agent opens the lead knowing the deal.
 4. **Routing:** default Matt (`FUB_USER_MATT = 1`); honor the `?agent=` cookie via `readAttributedAgentServer()`.
 5. Keep it **optional** — the calculator stays fully usable with no email.

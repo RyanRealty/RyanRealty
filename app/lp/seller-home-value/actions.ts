@@ -243,8 +243,8 @@ async function recordSellerAssignment(params: {
 /**
  * Submit the dedicated seller landing page form.
  *
- * Per docs/FUB_SELLER_WORKFLOW_2026-05-17.md (locked 2026-05-17):
- *  1. Resolve or create FUB person (email match > cookie > new)
+ * Seller LP intake (archive: docs/archive/fub-era/README.md; live: lib/crm/enroll.ts):
+ *  1. Resolve or create CRM person (email match > cookie > new)
  *  2. Round-robin assign to Matt or Rebecca via public.marketing_assignments
  *  3. Apply canonical kebab-case namespaced tags:
  *       audience:seller + seller:{tier} + source:seller-lp + broker:{slug}
@@ -453,7 +453,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     // If this person carries do_not_email / Bounced / Unsubscribed /
     // compliance:hard-stop, DO NOT apply audience:seller — that tag triggers
     // the FUB automation rule which would enroll them in the action plan and
-    // start blasting emails. See docs/FUB_OPTIMIZATION_AUDIT_2026-05-17 §7.
+    // start blasting emails. Hard-stop gate: docs/archive/fub-era/README.md.
     const hardStopped = fubPersonId ? await isHardStopped(fubPersonId) : false
     if (hardStopped) {
       console.warn(`[seller-lp] person ${fubPersonId} is compliance hard-stopped, skipping workflow enrollment`)

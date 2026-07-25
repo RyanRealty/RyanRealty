@@ -43,7 +43,7 @@ example_outputs:
 **Read these BEFORE writing any expired-listing copy:**
 
 1. `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`. Especially §4.7.
-2. `docs/FUB_AGENT_LINK_AND_EXPIRED_LP_RESEARCH_2026-05-17.md` task 2. Sentiments to address + reference URLs.
+2. `docs/archive/fub-era/README.md`. FUB-era research that drove LP voice + sentiments (archived, not a build target).
 3. `CLAUDE.md` §0.3. Banned words, em-dashes, etc.
 
 **Hard rules for THIS producer specifically:**
@@ -277,7 +277,7 @@ WHERE id='<id>';
 - `marketing_brain_skills/producers/ops-email-send/SKILL.md`. For outbound delivery once audit is approved
 - `marketing_brain_skills/producers/comms-matt-alert/SKILL.md`. Fires when the detection cron creates a new FUB record so Matt sees it immediately
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` §4.7. Voice rules this producer is gated against
-- `docs/FUB_AGENT_LINK_AND_EXPIRED_LP_RESEARCH_2026-05-17.md`. Research that drove the LP voice + content
+- `docs/archive/fub-era/README.md`. FUB-era research that drove the LP voice + content
 - `app/lp/expired-listing/page.tsx`. Live LP source
 - `app/api/cron/detect-expired-listings/route.ts`. Hourly cron that creates FUB records + alerts Matt
 - `public.expired_listing_intake` Supabase table. Dedupe + audit trail

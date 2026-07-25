@@ -116,8 +116,9 @@ async function recordBuyerAssignment(params: {
 /**
  * Submit the dedicated buyer landing page form.
  *
- * Per docs/FUB_BUYER_WORKFLOW_2026-05-17.md:
- *  1. Resolve or create FUB person (email match > cookie > new)
+ * Buyer LP intake (cadence research from the FUB era lives in
+ * docs/archive/fub-era/README.md; live path is in-house CRM):
+ *  1. Resolve or create CRM person (email match > cookie > new)
  *  2. Round-robin assign to Matt or Rebecca via marketing_assignments
  *  3. Apply canonical tags: audience:buyer + buyer:tier + source:buyer-lp + broker:slug
  *  4. Write 5 custom fields (budget min/max, search areas, beds min, timeline)
@@ -278,7 +279,7 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
 
     // ─── Compliance gate ───────────────────────────────────────────────────
     // Skip workflow enrollment if person carries hard-stop tags.
-    // See docs/FUB_OPTIMIZATION_AUDIT_2026-05-17 §7.
+    // Hard-stop tags: docs/archive/fub-era/README.md (compliance gate).
     const hardStopped = fubPersonId ? await isHardStopped(fubPersonId) : false
     if (hardStopped) {
       console.warn(`[buyer-lp] person ${fubPersonId} is compliance hard-stopped, skipping workflow enrollment`)
