@@ -204,22 +204,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const community = await getCommunityBySlug(slug)
   if (!community) notFound()
-  // §0 NO COUNT IN THE META DESCRIPTION. This is what Google shows in search
-  // results, and the number it carried was not this community's. It came from
-  // `community.activeCount`, which fell through to the parent CITY's active
-  // count whenever a community had no cache row — /communities/three-rivers read
-  // "1000 homes for sale in Three Rivers" (Bend's 1,014, clipped by the
-  // PostgREST 1000-row cap) and /communities/sunriver read 121 (all of Sunriver
-  // city) against a body showing 102. Even where the source was right it
-  // disagreed with the page: tetherow 25 vs 45, black-butte-ranch 1 vs 3,
-  // because the body renders the alias-aware count and this did not.
-  //
-  // Computing the alias-aware count HERE was rejected: generateMetadata was
-  // deliberately made fast (a pre-aggregated snapshot replaced a 3,000-row
-  // listings scan) after a slow one pushed the <title> and JSON-LD into a
-  // streamed chunk that landed after Lighthouse measured the page — the
-  // SEO-58 incident. The body and the Dataset JSON-LD still carry the honest
-  // figure for readers and for machines.
+  // §0 NO COUNT HERE: `activeCount` fell through to the parent CITY's, so
+  // three-rivers read "1000 homes for sale" (Bend's, row-capped) and sunriver 121
+  // vs a body showing 102. Re-deriving it here is out (the SEO-58 incident).
   const desc = `Homes for sale in ${community.name}, ${community.city}, OR. Live single-family market stats, open houses, and recent activity from a local brokerage.`
 
   // OG image: use the community's curated KB hero photo when one exists, else the
