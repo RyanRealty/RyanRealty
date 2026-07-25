@@ -31,6 +31,16 @@
  *      #C8A864, #F2EBDD) may appear in CLAUDE.md only on lines that say so
  *      ("retired"), never as a value to use.
  *
+ *   6. CLAUDE.md MAY ONLY SHRINK (W13.1). The file is loaded into every session,
+ *      so every paragraph is a permanent tax on every agent's context. The
+ *      2026-07-25 shrink cut it 39.8% (14,010 -> 8,440 words) by removing
+ *      duplication and dead pointers, NOT rules. This ratchet freezes that win:
+ *      the byte budget may only go DOWN. Measured in bytes, not lines, because
+ *      re-wrapping prose changes the line count without changing the content.
+ *      A genuinely new rule belongs in the doc it governs with a pointer here;
+ *      if a rule truly must live in CLAUDE.md, remove an equivalent weight of
+ *      duplication and refresh with --write-baseline.
+ *
  * Wired into ci:gates. Referenced by CLAUDE.md "Mechanical guardrails" and
  * docs/archive/fub-era/README.md.
  */
@@ -137,25 +147,32 @@ for (const f of CANON_DOCS) {
 }
 
 const nonCanonCiting = citing.filter((f) => !CANON_DOCS.includes(f)).sort()
+const claudeBytes = Buffer.byteLength(readFileSync(path.join(ROOT, 'CLAUDE.md')))
 if (WRITE_BASELINE) {
   writeFileSync(
     BASELINE_PATH,
     JSON.stringify(
       {
         note:
-          'Ratchet for ci:claude-canon check 3: tracked files still citing a FUB-era doc path. May only SHRINK — remove citations, then refresh with node scripts/check-claude-canon.mjs --write-baseline. Never regenerate to admit a new citation.',
+          'Ratchets for ci:claude-canon. `files` (check 3): tracked files still citing a FUB-era doc path. `claudeBytes` (check 6): the size of CLAUDE.md. BOTH may only SHRINK — remove citations / remove duplication, then refresh with node scripts/check-claude-canon.mjs --write-baseline. Never regenerate to admit a new citation or a bigger CLAUDE.md.',
         generatedAt: new Date().toISOString(),
+        claudeBytes,
         files: nonCanonCiting,
       },
       null,
       2,
     ) + '\n',
   )
-  console.log(`baseline written: ${nonCanonCiting.length} file(s) still cite a FUB-era doc.`)
+  console.log(
+    `baseline written: ${nonCanonCiting.length} file(s) still cite a FUB-era doc; CLAUDE.md ${claudeBytes} bytes.`,
+  )
 }
 let baseline = []
+let baselineBytes = null
 try {
-  baseline = JSON.parse(readFileSync(path.join(ROOT, BASELINE_PATH), 'utf8')).files ?? []
+  const parsed = JSON.parse(readFileSync(path.join(ROOT, BASELINE_PATH), 'utf8'))
+  baseline = parsed.files ?? []
+  baselineBytes = typeof parsed.claudeBytes === 'number' ? parsed.claudeBytes : null
 } catch {
   failures.push(`${BASELINE_PATH} is missing or unreadable. Generate it: node scripts/check-claude-canon.mjs --write-baseline`)
 }
@@ -191,11 +208,24 @@ lines.forEach((line, i) => {
   }
 })
 
+// ── 6. CLAUDE.md size ratchet (may only shrink) ──────────────────────────────
+if (baselineBytes === null && !WRITE_BASELINE) {
+  failures.push(
+    `${BASELINE_PATH} has no claudeBytes budget. Record it: node scripts/check-claude-canon.mjs --write-baseline`,
+  )
+} else if (baselineBytes !== null && claudeBytes > baselineBytes) {
+  failures.push(
+    `CLAUDE.md grew to ${claudeBytes} bytes, over its ${baselineBytes}-byte budget (+${claudeBytes - baselineBytes}). ` +
+      `This file loads into EVERY session — it may only shrink. Put the new rule in the doc that owns the surface and ` +
+      `leave a pointer here, or remove an equal weight of duplication and refresh with --write-baseline.`,
+  )
+}
+
 // ── verdict ──────────────────────────────────────────────────────────────────
 console.log('CLAUDE.md canon gate (ci:claude-canon)')
 console.log('======================================')
 console.log(
-  `era docs on disk: ${FUB_ERA_DOCS.filter((f) => existsSync(path.join(ROOT, f))).length}/${FUB_ERA_DOCS.length} · citing files (ratchet): ${nonCanonCiting.length}/${baseline.length} · CLAUDE.md links checked: dead ${deadLinks.size}`,
+  `era docs on disk: ${FUB_ERA_DOCS.filter((f) => existsSync(path.join(ROOT, f))).length}/${FUB_ERA_DOCS.length} · citing files (ratchet): ${nonCanonCiting.length}/${baseline.length} · CLAUDE.md links checked: dead ${deadLinks.size} · CLAUDE.md ${claudeBytes}/${baselineBytes ?? '—'} bytes`,
 )
 if (failures.length > 0) {
   console.error(`\n✗ ci:claude-canon — ${failures.length} failure(s):`)

@@ -1,6 +1,7 @@
 {
-  "note": "Ratchet for ci:claude-canon check 3: tracked files still citing a FUB-era doc path. May only SHRINK — remove citations, then refresh with node scripts/check-claude-canon.mjs --write-baseline. Never regenerate to admit a new citation.",
-  "generatedAt": "2026-07-25T14:50:54.238Z",
+  "note": "Ratchets for ci:claude-canon. `files` (check 3): tracked files still citing a FUB-era doc path. `claudeBytes` (check 6): the size of CLAUDE.md. BOTH may only SHRINK — remove citations / remove duplication, then refresh with node scripts/check-claude-canon.mjs --write-baseline. Never regenerate to admit a new citation or a bigger CLAUDE.md.",
+  "generatedAt": "2026-07-25T20:35:52.876Z",
+  "claudeBytes": 62208,
   "files": [
     ".tmp_env/fub-setup/03-bulk-tag-migration.mjs",
     ".tmp_env/fub-setup/04-build-master-workflow.mjs",
