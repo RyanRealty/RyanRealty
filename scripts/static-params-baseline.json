@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-19T05:12:30.793Z",
+  "generatedAt": "2026-07-25T04:29:28.960Z",
   "reason": "Pre-Wave-3 snapshot of dynamic routes without generateStaticParams. New violations fail CI; existing ones are tracked until Wave 3 migration.",
-  "total": 19,
+  "total": 18,
   "violators": [
     "app/blog/[slug]/page.tsx",
     "app/buy/[intent]/page.tsx",
@@ -17,7 +17,6 @@
     "app/reports/[slug]/[geoName]/page.tsx",
     "app/reports/[slug]/page.tsx",
     "app/reports/sales/[city]/[period]/page.tsx",
-    "app/search/[...slug]/page.tsx",
     "app/sell/[intent]/page.tsx",
     "app/subdivisions/[slug]/page.tsx",
     "app/team/[slug]/edit/page.tsx",

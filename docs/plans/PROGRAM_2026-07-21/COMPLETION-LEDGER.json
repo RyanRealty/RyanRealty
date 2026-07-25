@@ -211,7 +211,7 @@
       "workstream": "W2",
       "mission": "M1",
       "title": "Park / school-district / trail GIS polygons as new boundaries geo_types (county + ODE, authoritative only)",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
         "gates": [
           "scripts/check-boundary-provenance.mjs"
@@ -223,12 +223,13 @@
         ],
         "paths": [
           "scripts/gis/import-ode-school-districts.mjs",
-          "data/boundary-geo-types.json"
+          "data/boundary-geo-types.json",
+          "docs/DATABASE_FOR_AI_AGENTS.md"
         ]
       },
-      "proofPath": "commit eba7bd15 (main, deployed 8aca3b4). geo_type 'school_district' live on hosted (migration applied; 6 ODE district polygons in boundaries with named authoritative source + ST_MakeValid repair trace). ci:boundary-provenance wired into ci:gates and green against live data. getBoundaryGeoJSON serves the new geo_type with cache tags that cannot collide with 'school' slugs.",
-      "verifiedBy": "",
-      "remaining": "ODE school-DISTRICT layer SHIPPED 2026-07-24 (6 districts imported, provenance gate green). Still open: (1) the 'trail' geo_type call — decide whether trail_lines linework satisfies the intent or corridor polygons are wanted, and record the call; (2) independent verifiedBy on the shipped district layer (finisher = cursor session, cannot self-verify)."
+      "proofPath": "school_district: commit eba7bd15 + live 6 ODE rows. Trail decision recorded in ci:boundary-provenance BANNED_GEO_TYPES.trail + docs/DATABASE_FOR_AI_AGENTS.md (trail_lines, 18 rows). Park geo_type already present. Independent adversarial verify 2026-07-24.",
+      "verifiedBy": "a0ee03f2-669c-4c74-904a-1a090773819b — W2.7 PASS: school_district live (6 ODE rows, provenance gate), trail intentionally banned from boundaries in favor of trail_lines; ledger remaining about trail is stale.",
+      "remaining": ""
     },
     {
       "id": "W3.1",
@@ -260,15 +261,22 @@
       "title": "Emit the 3-segment matrix for the curated geo set; extend depth content to subdivision level",
       "status": "partial",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-search-preset-depth.mjs"
+        ],
         "crons": [],
-        "tests": [],
+        "tests": [
+          "lib/site/preset-faq.test.ts"
+        ],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "app/search/[...slug]/page.tsx",
+          "lib/site/preset-faq.ts"
+        ]
       },
-      "proofPath": "",
+      "proofPath": "commit a119c9f7: isPresetDepthPage no longer excludes subdivision; buildPresetFaq takes areaLabel; neighbor bands stay in-area; ci:search-preset-depth AST gate bites on !subdivision. 17 preset-faq tests green.",
       "verifiedBy": "",
-      "remaining": "'Extend depth content to subdivision level' is not done on the rendered pages: existing subdivision descriptions/blurbs are used only as the EMISSION criterion (hasDepthContent in getSearchMatrixEntries.ts). The visible preset depth layer — editorial intro, preset-scoped FAQ + FAQPage JSON-LD, cross-links — still renders only on 2-segment city pages: isPresetDepthPage in /Users/matthewryan/RyanRealty/app/search/[...slug]/page.tsx (lines 739-745) requires `!subdivision`, so every 3-segment {city}/{area}/{preset} page renders a bare grid with no depth content (subdivisionBlurb reaches only JSON-LD/share text)."
+      "remaining": "Build shipped. Needs independent verifiedBy before done."
     },
     {
       "id": "W3.4",
@@ -301,15 +309,20 @@
       "title": "Sort-only presets noindexed; pre-render top-N combos via generateStaticParams",
       "status": "partial",
       "requiredMechanism": {
-        "gates": [],
+        "gates": [
+          "scripts/check-static-params.mjs"
+        ],
         "crons": [],
         "tests": [],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "app/search/[...slug]/page.tsx",
+          "package.json"
+        ]
       },
-      "proofPath": "",
+      "proofPath": "commit fd02e7bf: generateStaticParams returns SITE_CITY_SLUGS (10); dynamicParams true; build thinning under NEXT_PHASE; package.json build pins NODE_OPTIONS=8192. Production build completed 528/528 static pages without OOM. Search removed from static-params baseline (18 violators).",
       "verifiedBy": "",
-      "remaining": "Sort-only preset noindex is done. generateStaticParams remains BLOCKED by build memory: pre-rendering the /search/[...slug] page (a full listing-grid render, many actions + components) OOMs the next build worker even at 10 bare-city params (compiled fine 21s, died in static generation; SIGABRT heap-out-of-memory). The base build has no heap headroom and npm run push uses the same `next build`, so shipping it would break the production build (no-blocked-builds rule). Needs a search-page-weight reduction (lighter build-time render / fewer eager fetches) OR a raised build max-old-space-size before pre-render is viable — larger than a seam-cleanup pass. Byproduct kept this pass: ci:static-params isEmptyStub now also catches a one-line `return [] }` stub (scripts/check-static-params.mjs)."
+      "remaining": "Bare-city top-N SSG shipped. Full {city}/{area}/{preset} matrix remains on-demand (by design — matrix SSG would re-OOM). Needs independent verifiedBy. Optional: expand top-N presets once more weight comes out of the page."
     },
     {
       "id": "W4.1",
@@ -354,8 +367,8 @@
         ]
       },
       "proofPath": "commits dc7b71c6 + DAL fix (main, deployed 8aca3b4). The unified sendDeliverable chokepoint is live: one action, real auth guards, at-most-once via crm_idempotency_keys claim/release (live double-tap integration test green), closed error vocabulary, dispatch table pinned against DELIVERABLE_KINDS. ci:deliverable-send-chokepoint wired + green, direct-send callsites frozen at baseline. person-existence read moved behind the DAL boundary (tri-state, fail-open preserved).",
-      "verifiedBy": "",
-      "remaining": "sendDeliverable chokepoint + idempotency store SHIPPED 2026-07-24 (with independent-verification pending, finisher = cursor session). The REST of spec-03 core is untouched: person-workspace rebuild (40-55-query force-dynamic fan-out into cached DAL + streamed Suspense), SendPanel converging the three dialogs, delete the mobile-detail.tsx fork, build_state polling chips + inline preview/approve, pay the crm/[id] 743-line baseline down. Optional: burn the G56 61-site baseline toward \"any unrouted send fails CI\"."
+      "verifiedBy": "a0ee03f2-669c-4c74-904a-1a090773819b — W5.1 chokepoint PASS: AST gate green, 29 unit + live double-tap int green, crm/[id] wired through sendDeliverable; 5 baseline bypasses still frozen.",
+      "remaining": "Chokepoint VERIFIED. Spec-03 rest open: person-workspace rebuild (cached DAL + streamed Suspense), collapse mobile-detail.tsx into one responsive tree (SendPanel already shared), build_state polling chips + inline preview/approve, pay crm/[id] line-count down, optional G56 burn."
     },
     {
       "id": "W5.3",
@@ -405,8 +418,8 @@
         ]
       },
       "proofPath": "commits 59bbc9b8 + 2 gate fixes (main, deployed 8aca3b4 READY). PROD VERIFIED 2026-07-24: https://ryan-realty.com/sw.js serves 200 (the .gitignore Serwist glob that swallowed it is fixed); /api/push/subscribe fails closed (403 unauth); authorized crm-alert-drain probe returns the new push block ({mode:\"idle\", subscriptions:0}) proving the drain runs OUTSIDE the CRM_SMS_ALERTS gate. VAPID keypair provisioned in Vercel production. Migration applied on hosted (push_subscriptions + broker_alerts status \"push_only\"). ci:web-push-durable wired + green; crypto unit tests green.",
-      "verifiedBy": "",
-      "remaining": "Leg b (web push) SHIPPED end to end 2026-07-24. Residue: (1) no broker has opted a real device in yet — first live push delivery unproven until Matt/a broker taps the opt-in card on /admin/settings; (2) independent verifiedBy (finisher = cursor session); (3) leg-a flag flip (CRM_SMS_ALERTS=twilio) still parked with the mac-mini relay owning SMS."
+      "verifiedBy": "a0ee03f2-669c-4c74-904a-1a090773819b — W5.5 PASS leg-b: gate+crypto tests green; prod sw.js 200; subscribe/test 403; authorized drain returns push block outside SMS gate (idle, 0 subs).",
+      "remaining": "Leg b infra VERIFIED. Still open (needs Matt / ops): (1) first real device opt-in on /admin/settings so a live push delivery is proven; (2) leg-a flag flip CRM_SMS_ALERTS=twilio (mac-mini relay currently owns SMS)."
     },
     {
       "id": "W6.2",
@@ -619,7 +632,7 @@
       "workstream": "W8",
       "mission": "M5",
       "title": "Bulk + individual sends: audience selector on the send engine reusing the newsletter delivery ledger",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
         "gates": [
           "scripts/check-market-report-bulk-ledger.mjs"
@@ -635,9 +648,9 @@
           "app/admin/(protected)/crm/settings/market-reports/BulkSendForm.tsx"
         ]
       },
-      "proofPath": "commit d2c6d173 (main, deployed 8aca3b4 READY 2026-07-24). Audience selector (subscribers / past clients / active leads) + preview-before-queue on /admin/crm/settings/market-reports, superuser-gated; every bulk send routes through the newsletter queue delivery ledger (suppressions + idempotency + audit hold). ci:market-report-bulk-ledger wired into ci:gates and green; contract tests green (produce-draft bend-lookup break and the mock typing the killed builder left were fixed in the same commit). SENDING to real people remains per-action approval.",
-      "verifiedBy": "",
-      "remaining": "BUILD COMPLETE + shipped 2026-07-24 (cursor session, resumed from the killed claude-code builder). Residue is verification only: an INDEPENDENT verifier (not the cursor finisher) must review the audience resolution + ledger routing and set verifiedBy — ci:program-complete requires it before this row flips to done."
+      "proofPath": "commit d2c6d173 (main, deployed 8aca3b4 READY 2026-07-24). Audience selector (subscribers / past clients / active leads) + preview-before-queue on /admin/crm/settings/market-reports, superuser-gated; every bulk send routes through the newsletter queue delivery ledger (suppressions + idempotency + audit hold). ci:market-report-bulk-ledger wired into ci:gates and green; contract tests green (produce-draft bend-lookup break and the mock typing the killed builder left were fixed in the same commit). SENDING to real people remains per-action approval. Independent adversarial verify 2026-07-24 (assume-broken). Audience kinds are report-subscribers|newsletter-segment|crm-tag|explicit.",
+      "verifiedBy": "a0ee03f2-669c-4c74-904a-1a090773819b — W8.6 PASS: AST gate green, 19 contract tests green, bulk lane imports ledger enqueue only, produce-draft bend break gone; proofPath audience labels imprecise but kinds are wired+exhaustive.",
+      "remaining": ""
     },
     {
       "id": "W8.7",
@@ -1115,9 +1128,9 @@
           "scripts/claude-canon-baseline.json"
         ]
       },
-      "proofPath": "commit 3acb922c (main, deployed 8aca3b4). All 20 FUB-era docs carry the line-1 decommission banner + archive index at docs/archive/fub-era/; MASTER_SPEC’s two lingering citations repointed; CLAUDE.md dead paths + drifted cron cadences fixed. NEW GATE ci:claude-canon wired into ci:gates: era inventory may only shrink, canon docs cite zero FUB paths, 55-file citation ratchet, every CLAUDE.md link resolves, no retired v1 token resurfaces unmarked. Proven to bite on a canon citation AND a dead link before landing.",
-      "verifiedBy": "",
-      "remaining": "FUB archive + canon gate SHIPPED 2026-07-24. Still open: (1) the CONSOLIDATION-LANES.json verdicts (11 lanes) — the prose-rules-to-gate-pointers conversion beyond the FUB purge was not fully executed by the killed builder; (2) burning the 55-file citation ratchet down; (3) independent verifiedBy on the shipped slice (finisher = cursor session)."
+      "proofPath": "commit 3acb922c (main, deployed 8aca3b4). All 20 FUB-era docs carry the line-1 decommission banner + archive index at docs/archive/fub-era/; MASTER_SPEC’s two lingering citations repointed; CLAUDE.md dead paths + drifted cron cadences fixed. NEW GATE ci:claude-canon wired into ci:gates: era inventory may only shrink, canon docs cite zero FUB paths, 55-file citation ratchet, every CLAUDE.md link resolves, no retired v1 token resurfaces unmarked. Proven to bite on a canon citation AND a dead link before landing. Citation ratchet 47 after burn commit 5f666ae2.",
+      "verifiedBy": "a0ee03f2-669c-4c74-904a-1a090773819b — W13.1 archive+gate PASS: 20/20 era markers, ci:claude-canon green; consolidation lanes not claimed done.",
+      "remaining": "Archive+gate VERIFIED. Citation ratchet burned 55→47 (2026-07-24). Still open: CONSOLIDATION-LANES.json verdicts (duplicate/dead rule files), further citation burn, CLAUDE.md prose→gate-pointer shrink beyond FUB purge."
     },
     {
       "id": "W13.2",
