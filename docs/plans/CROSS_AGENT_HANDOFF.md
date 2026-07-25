@@ -1,4 +1,59 @@
-> **NEWEST, START HERE: KEEP-GOING 2026-07-25 morning (Cursor).** Prior: COMPETE CLOSEOUT, FIVE-LANE RECOVERY, W8.1 ROUND-6.
+> **NEWEST, START HERE: UNBLOCKED-WORK PASS 2026-07-25 (Claude Code, cloud).** Prior: KEEP-GOING, COMPETE CLOSEOUT, FIVE-LANE RECOVERY, W8.1 ROUND-6.
+
+# UNBLOCKED-WORK PASS — 2026-07-25 (Claude Code, cloud container)
+
+Branch `claude/does-this-work-ykjunh` (cloud session; trunk-only does not apply here —
+the harness pins this session to a feature branch + PR). Ledger still **44/50**; nothing
+flipped, because the builder cannot self-verify.
+
+## Shipped
+- **W13.1 CLAUDE.md shrink — DONE** (`82ab1be`). 14,010→8,440 words, 102KB→61KB (**-39.8%**).
+  No durable rule dropped. Removed: banned-word lists duplicated 4×, VO settings 2×,
+  caption/safe-zone rules 2×, the video rules split across two top-level sections, and a live
+  **contradiction** (Data Access Discipline forbade `information_schema`; the Supabase section
+  told you to query it first, with an example). Sections renumbered 0–9 so gates citing
+  "CLAUDE.md §0" still resolve. **New mechanism:** `ci:claude-canon` check 6 — a shrink-only
+  **byte** budget for CLAUDE.md (bytes, not lines: rewrapping changes lines, not content).
+  Proven to bite before landing.
+- **W5.1 page line-count — DONE** (`91e5421`). `crm/[id]/page.tsx` 742→630; new
+  `./person-view-model.ts` holds every pure page→props mapping. Fetches stayed in the route so
+  `ci:page-dal` keeps passing. file-size baseline 743→631, shrink-only.
+
+## Two things the next session needs to know
+
+**1. `ci:gates` cannot complete in a fresh cloud container.** `node_modules` starts absent, and
+`npm ci` refuses because **package-lock.json is out of sync with package.json** (lockfile has
+esbuild 0.27.3, package.json wants 0.25.12). Installing via
+`npm install --no-save --no-package-lock` works but resolves different transitive versions, which
+makes `ci:commit-compiles` fail on 6 googleapis/gtoken duplicate-type errors in
+`lib/marketing-brain/inbox-*.ts` + `lib/newsletter/postmaster.ts`, and 5 vitest tests fail in
+`lib/meta/audience*.test.ts` + `lib/crm/market-report-email.test.ts`. **All of these reproduce
+identically on clean HEAD in that container** (verified by stashing) — they are environment
+artifacts, not repo regressions. 65 gates ran; zero `✗`; the only stop was commit-compiles.
+**Someone should resync the lockfile on a machine that can (`npm install`, commit the lock).**
+
+**2. The CONSOLIDATION-LANES verdicts must NOT be blind-executed.** The 11 lanes recommend
+deleting **1,631 files / 278,598 lines**. Lane `docs-plans` carries `files_to_keep: 0`, which
+would delete `COMPLETION-LEDGER.json` itself (read by `check-program-complete.mjs:33`) and
+`docs/fub-crm-spec/crm-screens.json` (read by `ci:crm-screen-parity`) — breaking two gates and
+destroying this program's own audit trail. They need a triaged, gate-aware batch plan
+(`06-DELETION-MANIFEST.md` has the safety map) and Matt's explicit go.
+
+## Still open on the two rows
+- **W13.1** — the lanes verdicts (above).
+- **W5.1** — (a) collapse the `mobile-detail` fork into one responsive tree (spec-03 RC3): a real
+  rebuild of Matt's daily-driver surface, needs visual verification in an authenticated browser
+  this session had no way to do. (b) Suspense/cached person-workspace fetch: still
+  `force-dynamic` + one ~31-call `Promise.all`; splitting an identity core from cached regions
+  means wiring `revalidateTag`, and wrong cache keys on a CRM surface risk stale or
+  cross-contact data.
+
+## Do not
+- Flip any ledger row without an independent `verifiedBy` — this session was the builder.
+- Trust a bare `EXIT=$?` after a piped/compound shell command; it reports the last command's
+  status, not npm's. That mistake produced a false "gates green" reading early in this session.
+
+
 
 # KEEP-GOING — 2026-07-25 morning. `main` @ `818c281a` (+ changelog). Ledger **44/50** (partials not flipped).
 
