@@ -1,7 +1,6 @@
 // @no-parity — internal admin surface, no public mockup contract
 import { notFound, redirect } from 'next/navigation'
-import { formatDate } from '@/lib/format/date'
-import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
+import { CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import {
   getCrmAccess,
   getCrmEmailTemplates,
@@ -22,7 +21,6 @@ import { getContactReportSubscription, listAvailableMarketReportAreas } from '@/
 import { getCrmFieldDefinitions } from '@/lib/data/crm/getCrmFieldDefinitions'
 import CustomFieldsPanel from '@/components/admin/crm/CustomFieldsPanel'
 import { OwnedHomeCard } from '@/components/admin/crm/OwnedHomeCard'
-import { timelineEmailBody } from '@/lib/crm/email-body'
 import { renderCrmMerge } from '@/lib/crm/merge'
 import { buildMergeContext } from '@/lib/crm/merge-context'
 import { getSignatureForMailbox } from '@/lib/crm/email-signature'
@@ -67,10 +65,20 @@ import { CmaKickoffMount } from '@/components/admin/crm/CmaKickoffMount'
 // §25 Mobile Contact Detail (mapping + assembly colocated in mobile-detail.tsx)
 import { MobileLeadDetail } from './mobile-detail'
 // §07 three-column desktop rebuild (CRM_BUILD_MISSION screen: person-detail-desktop)
-import { PersonSidebar, type SidebarData } from '@/components/admin/crm/person-detail/PersonSidebar'
-import { PersonCenterColumn, type TimelineItem } from '@/components/admin/crm/person-detail/PersonCenterColumn'
+import { PersonSidebar } from '@/components/admin/crm/person-detail/PersonSidebar'
+import { PersonCenterColumn } from '@/components/admin/crm/person-detail/PersonCenterColumn'
 import { PersonRightRail } from '@/components/admin/crm/person-detail/PersonRightRail'
-import { getPersonDetailExtras, mergeTagOptions } from '@/lib/data/crm/getPersonDetailExtras'
+import { getPersonDetailExtras } from '@/lib/data/crm/getPersonDetailExtras'
+// Pure page→props mapping (spec-03 W5.1): keeps this route file an assembly shell.
+import {
+  usd,
+  describeSearch,
+  buildEmailEngagement,
+  buildTimelineItems,
+  buildSidebarData,
+  resolveDisplayName,
+  resolveInquiryDate,
+} from './person-view-model'
 import { getCrmSources } from '@/lib/data/crm/getCrmSources'
 import { listActiveSequences } from '@/lib/crm/enroll'
 // §25.9 mobile Calendar tab (P2-4): real appointments + create sheet config
@@ -83,34 +91,6 @@ export const metadata = { title: 'Lead · Console' }
 export const dynamic = 'force-dynamic'
 
 const BASE = '/admin/crm'
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-function usd(n: number | null | undefined): string | null {
-  if (typeof n !== 'number' || !Number.isFinite(n)) return null
-  return `$${(Math.round(n / 1000) * 1000).toLocaleString('en-US')}`
-}
-function describeSearch(filters: Record<string, unknown> | null): string {
-  if (!filters) return 'Saved search'
-  const f = filters as Record<string, unknown>
-  const num = (v: unknown) => (typeof v === 'number' ? v : typeof v === 'string' && v.trim() && !Number.isNaN(Number(v)) ? Number(v) : null)
-  const parts: string[] = []
-  const where = (f.city ?? f.neighborhood ?? f.subdivision ?? f.area ?? f.location) as string | undefined
-  if (where) parts.push(String(where))
-  const min = num(f.minPrice ?? f.priceMin ?? f.min_price)
-  const max = num(f.maxPrice ?? f.priceMax ?? f.max_price)
-  if (min && max) parts.push(`${usd(min)}–${usd(max)}`)
-  else if (max) parts.push(`up to ${usd(max)}`)
-  else if (min) parts.push(`${usd(min)}+`)
-  const beds = num(f.beds ?? f.minBeds ?? f.bedrooms)
-  if (beds) parts.push(`${beds}+ bd`)
-  const baths = num(f.baths ?? f.minBaths ?? f.bathrooms)
-  if (baths) parts.push(`${baths}+ ba`)
-  const type = (f.propertyType ?? f.type ?? f.homeType) as string | undefined
-  if (type) parts.push(String(type))
-  return parts.length ? parts.join(' · ') : 'All listings'
-}
-
-
 
 export default async function ConsoleLeadPage({
   params,
@@ -293,127 +273,35 @@ export default async function ConsoleLeadPage({
   // (client imports of the crm.ts actions), no page-level wrappers needed.
 
   const webEvents = full.timeline.filter((t) => t.kind === 'web_event').slice(0, 6)
-  // Inquiry date for the Info tab "Inquiries" section — when the lead was created.
-  const inquiryDate = (() => {
-    const created = full.timeline.find((t) => t.kind === 'lead_created')?.ts ?? null
-    return created ? formatDate(created, { month: 'short', day: 'numeric' }) : null
-  })()
-  // Display name: many imported leads have a placeholder name like
-  // "Lead someone@example.com". Strip the "Lead " prefix so the header shows the
-  // address cleanly instead of the ugly placeholder, and drop the duplicate email
-  // line when the name already IS the email.
-  const rawName = person.name ?? `Contact #${person.id}`
-  const nameIsPlaceholderEmail = /^lead\s+\S+@\S+$/i.test(rawName)
-  const displayName = nameIsPlaceholderEmail ? rawName.replace(/^lead\s+/i, '') : rawName
+  const inquiryDate = resolveInquiryDate(full.timeline)
+  const displayName = resolveDisplayName(person.name, person.id)
   const openTasks = full.tasks.filter((t) => !t.completed_at)
   const customEntries = Object.entries(person.custom ?? {}).filter(([, v]) => v !== null && v !== '' && v !== undefined)
-
-  const emailEngagement: Record<string, { opens: number; lastOpen: string | null; clicks: number }> = {}
-  for (const t of full.timeline) {
-    if (t.kind !== 'email_open' && t.kind !== 'email_click') continue
-    const pl = (t.payload ?? {}) as { label?: string }
-    const key = (pl.label ?? t.title ?? '').trim()
-    if (!key) continue
-    const e = (emailEngagement[key] ??= { opens: 0, lastOpen: null, clicks: 0 })
-    if (t.kind === 'email_open') { e.opens++; if (!e.lastOpen || t.ts > e.lastOpen) e.lastOpen = t.ts }
-    else e.clicks++
-  }
-
+  const emailEngagement = buildEmailEngagement(full.timeline)
   const latestWeb = webEvents[0] ?? null
 
   const hasAlerts = Boolean(flash || sendError || full.suppressions.length > 0)
 
   /* ── §07 three-column desktop assembly ─────────────────────────────────────
-     Left sidebar (§07a) + center timeline (§07b) + right rail (§7c.8). */
+     Left sidebar (§07a) + center timeline (§07b) + right rail (§7c.8).
+     Both prop bundles are pure mappings — see ./person-view-model.ts. */
 
-  function fmtAgoLong(iso: string | null): string | null {
-    if (!iso) return null
-    const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400_000)
-    if (days <= 0) return 'today'
-    if (days === 1) return 'a day ago'
-    if (days < 30) return `${days} days ago`
-    const months = Math.round(days / 30)
-    return months === 1 ? 'a month ago' : `${months} months ago`
-  }
-  function fmtPhoneParen(d: string): string {
-    return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : d
-  }
+  const personExtra = person as unknown as { created_at?: string | null }
 
-  const lastComm = conversation.items[0]?.ts ?? null
-  const addr0 = (Array.isArray(person.addresses) ? person.addresses[0] : null) as Record<string, unknown> | null
-  const sidebarAddress = addr0
-    ? {
-        street: String(addr0.street ?? addr0.address1 ?? ''),
-        city: String(addr0.city ?? ''),
-        state: String(addr0.state ?? ''),
-        zip: String(addr0.zip ?? addr0.code ?? addr0.postal_code ?? ''),
-      }
-    : null
-
-  const SOURCE_PRESETS = ['Google', 'Zillow', 'Realtor.com', 'Import', 'Referral', 'Ryan-Realty.com', 'inbound-call', 'Expired Listing Cron', 'FSBO']
-  const personExtra = person as unknown as { price?: number | null; timeframe?: string | null; lender_name?: string | null; pond_id?: number | null; created_at?: string | null }
-
-  const sidebarData: SidebarData = {
-    personId: person.id,
-    name: displayName,
-    firstName: person.first_name ?? null,
-    lastName: (person as unknown as { last_name?: string | null }).last_name ?? null,
-    pictureUrl: person.picture_url,
-    lastCommunicationLabel: lastComm ? `Last communication ${fmtAgoLong(lastComm)}` : null,
-    phones: full.contactPoints
-      .filter((c) => c.kind === 'phone')
-      .map((c) => ({
-        value: c.value,
-        label: c.label && c.label.trim() ? c.label : 'Mobile',
-        bad: c.status === 'bad',
-        isPrimary: !!c.is_primary,
-        display: fmtPhoneParen(c.value),
-      })),
-    emails: full.contactPoints
-      .filter((c) => c.kind === 'email')
-      .map((c) => ({ value: c.value, isPrimary: !!c.is_primary, status: c.status ?? 'active' })),
-    address: sidebarAddress,
-    relationships: relationships.map((r) => ({ relatedPersonId: r.relatedPersonId, name: r.name, label: r.label })),
-    stage: person.stage,
-    stageOptions: [...CRM_STAGES],
-    assignedBroker: person.assigned_broker,
-    brokerOptions: CRM_BROKERS.map((b) => ({ value: b, label: CRM_BROKER_DISPLAY[b] })),
+  const sidebarData = buildSidebarData({
+    person: person as unknown as Record<string, unknown> & { id: number },
+    displayName,
+    contactPoints: full.contactPoints,
+    relationships,
     pondOptions: detailExtras.pondOptions,
-    pondId: personExtra.pond_id ?? null,
-    actingBroker: crmAccess.brokerSlug ?? null,
-    source: person.source,
-    sourceOptions: [...new Set([...(person.source ? [person.source] : []), ...SOURCE_PRESETS])],
-    sourceRecency: fmtAgoLong(personExtra.created_at ?? null),
-    price: typeof personExtra.price === 'number' ? personExtra.price : personExtra.price ? Number(personExtra.price) : null,
-    timeframe: personExtra.timeframe ?? null,
-    tags: Array.isArray(person.tags) ? person.tags : [],
-    tagOptions: mergeTagOptions(detailExtras.tagOptions, person.tags),
+    tagOptions: detailExtras.tagOptions,
     campaigns: contactMemberships.sequences.filter((s) => s.enrolled).map((s) => s.name),
-    lenderName: personExtra.lender_name ?? null,
-    background: person.background,
-    socialLinks: [],
-    groups: [],
+    actingBroker: crmAccess.brokerSlug ?? null,
     canDelete: crmAccess.role === 'superuser',
-  }
+    lastCommunicationAt: conversation.items[0]?.ts ?? null,
+  })
 
-  const timelineItems: TimelineItem[] = full.timeline
-    .filter((t) => t.kind !== 'email_open' && t.kind !== 'email_click' && t.kind !== 'sms_click')
-    .map((t) => {
-      const eng = emailEngagement[(t.title ?? '').trim()]
-      return {
-        id: t.id,
-        kind: t.kind,
-        ts: t.ts,
-        title: t.title,
-        body: t.body ? timelineEmailBody(t.body) : null,
-        broker: t.broker,
-        source: t.source,
-        starred: Boolean(t.starred),
-        payload: (t.payload ?? {}) as Record<string, unknown>,
-        opens: t.kind === 'email_out' ? eng?.opens : undefined,
-        clicks: t.kind === 'email_out' ? eng?.clicks : undefined,
-      }
-    })
+  const timelineItems = buildTimelineItems(full.timeline, emailEngagement)
 
   /* Mobile Comms-tab composer — same send action + recipients as the desktop
      center column, so a reply from the phone goes out from the business line
