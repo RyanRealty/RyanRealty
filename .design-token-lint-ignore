@@ -96,6 +96,10 @@ app/actions/generate-market-report.ts
 app/admin/(protected)/audit-log/page.tsx
 app/admin/(protected)/crm/page.tsx
 app/admin/(protected)/crm/[id]/page.tsx
+# W5.1 RC3 (2026-07-26): layout moved out of the ignored page into PersonWorkspace*
+components/admin/crm/person-detail/PersonWorkspace.tsx
+components/admin/crm/person-detail/PersonWorkspaceBody.tsx
+components/admin/crm/person-detail/PersonWorkspaceSkeleton.tsx
 app/admin/(protected)/email/campaigns/page.tsx
 app/admin/(protected)/expired-listings/page.tsx
 app/admin/(protected)/geo/AssignCommunity.tsx
