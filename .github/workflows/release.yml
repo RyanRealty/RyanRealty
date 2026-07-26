@@ -97,29 +97,14 @@ jobs:
             NOTES="${NOTES}\n### Other\n${OTHER}\n"
           fi
 
-          # Write to file for the release body
+          # Release body only — do not mutate CHANGELOG.md on main (see next step).
           echo -e "$NOTES" > /tmp/release-notes.md
-
-          # Prepend to CHANGELOG.md
-          if [ -f CHANGELOG.md ]; then
-            echo -e "# Changelog\n\n${NOTES}\n---\n" > /tmp/new-changelog.md
-            # Remove the first "# Changelog" line from existing file
-            tail -n +2 CHANGELOG.md >> /tmp/new-changelog.md
-            mv /tmp/new-changelog.md CHANGELOG.md
-          else
-            echo -e "# Changelog\n\n${NOTES}" > CHANGELOG.md
-          fi
-
           echo "notes_file=/tmp/release-notes.md" >> $GITHUB_OUTPUT
 
-      - name: Commit changelog
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md
-          git diff --cached --quiet || git commit -m "chore: update changelog"
-          git push
-
+      # Do NOT commit CHANGELOG.md back to main. Each "chore: update changelog"
+      # push used to trigger a full Vercel production build (~478 times in July
+      # 2026). Release notes live on the GitHub Release; vercel.json
+      # ignoreCommand also skips docs/changelog-only diffs as a belt-and-suspenders.
       - name: Create tag and release
         run: |
           NEW_VERSION="${{ steps.version.outputs.new_version }}"

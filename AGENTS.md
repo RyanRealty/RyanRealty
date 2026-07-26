@@ -44,9 +44,18 @@ Matt alternates between **Claude Code** and **Cursor**. Both are the same repo a
 ### Ship discipline (non-negotiable)
 
 1. **No saved-but-unpushed work on `main`.** If you commit, you **push to `origin/main` in the same session** (resolve rebase/stash conflicts yourself). Do not end with `main` ahead of `origin/main` unless the network failed — and then say that explicitly; do not call the work “live.”
-2. **Production follows Git.** Pushing `main` triggers Vercel production; “shipped” means remote `main` is updated and, when app code changed, the production deploy is **READY** (see `.cursor/rules/deploy-verify-before-done.mdc`).
+2. **Production follows Git.** Pushing `main` triggers Vercel production when the diff affects the Next app; “shipped” means remote `main` is updated and, when app code changed, the production deploy is **READY** (see `.cursor/rules/deploy-verify-before-done.mdc`). Docs/skills/changelog-only pushes are skipped by `scripts/vercel-ignore-build.mjs` (`vercel.json` → `ignoreCommand`).
 3. **No hanging migrations.** New files under `supabase/migrations/` are not real until they run on **hosted** Supabase. Apply them in the **same delivery effort** as the code that needs them — never “commit now, migrate later” (`.cursor/rules/supabase-migrations-auto.mdc`, `.cursor/rules/production-parity.mdc`).
 4. **Trunk only — `main` and nothing else.** Do not create local or remote feature branches, release branches, or PR flows for routine work. Do not use **`git worktree`** on this repo (no second checkouts, no parallel trees on disk). One working copy, one branch: **`main`**, always tracking **`origin/main`** after pull/push. If a stray branch or worktree appears, delete it and return to a single clean `main` before doing more work.
+
+### Cost-aware push (still trunk-only)
+
+July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Keep trunk-only / no worktrees; change *when* you open a push:
+
+1. **Runtime changes** (`app/`, `components/`, `lib/`, `public/` used by the app, `package.json` / lockfile, `next.config.*`, `vercel.json`, `supabase/migrations/`) → finish the task, **one commit**, `NODE_OPTIONS=--max-old-space-size=8192 npm run push`, then `npm run deploy:verify` when the user-facing app changed.
+2. **Docs / skills / rules / plans / handoffs only** → **batch into one commit** in the session, then push once. Local `npm run push` already skips `next build` for non-buildable diffs; Vercel skips the remote build via `ignoreCommand`. Do not drip many docs commits that each burn local `ci:gates`.
+3. **Do not push mid-thought.** Commit locally while iterating if you need a restore point; push when the unit of work is coherent. Never leave the session with unpushed commits on `main`.
+4. **Release / changelog:** GitHub Releases carry the notes. Do not expect (or recreate) a `chore: update changelog` commit on `main` — that path burned hundreds of full production builds.
 
 ### What the other environment should read
 

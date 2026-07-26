@@ -890,10 +890,9 @@ writer never adopted the string. That gap is a tracked defect, not a doc error.
 - **No partial answers.** On status questions, go all the way to the exact answer.
 - **Trunk-only.** Always push directly to `main`. No `git worktree`, no extra local or remote
   branches, no feature branches unless explicitly asked — one checkout, `main` only.
-- **Same pipeline as Cursor.** Matt switches between Claude Code and Cursor on one repo. Before
-  work: `git pull --rebase origin main`. After every commit: **push immediately** — no "saved
-  locally" commits. Migrations apply to hosted Supabase in the same delivery as the code that
-  depends on them. See [`AGENTS.md`](AGENTS.md) and `.cursor/rules/production-parity.mdc`.
+- **Same pipeline as Cursor.** Pull `--rebase` before work. Push when a unit of work is done
+  (batch docs; runtime + `deploy:verify`). No unpushed `main` at session end. See
+  [`AGENTS.md`](AGENTS.md) Cost-aware push and `.cursor/rules/production-parity.mdc`.
 - **Never ask Matt to run anything manually.** All git operations, terminal commands, and
   deployments are yours. Matt never touches the terminal.
 - **Proactively clear git locks.** Check for and remove a stale `.git/index.lock` before any git
