@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.871.0 (2026-07-26)
+
+### Features
+- feat(crm): single PersonWorkspace tree + Suspense; close ledger honesty gaps
+
+### Bug Fixes
+- fix(ci): point lead-command-center parity at PersonWorkspaceBody
+- fix(ci): ignore PersonWorkspace in design-token ratchet after RC3 move
+
+---
+
+
 ## v1.870.2 (2026-07-26)
 
 ### Bug Fixes
