@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.870.2 (2026-07-26)
+
+### Bug Fixes
+- fix(ci): correct the stale esbuild pin that breaks npm ci on every branch
+
+### Maintenance
+- docs(ledger): record 4 independent verifier verdicts; 0 rows flip
+- docs(ledger): record W13.1 shrink + W5.1 line-count; flag two blockers
+- refactor(w5.1): extract the person-workspace view model; burn the page ratchet
+- docs(w13.1): execute the CLAUDE.md shrink; ratchet it shrink-only
+
+---
+
+
 ## v1.870.1 (2026-07-25)
 
 ### Maintenance
