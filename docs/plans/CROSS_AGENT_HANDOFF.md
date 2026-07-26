@@ -1,3 +1,26 @@
+> **NEWEST, START HERE: VERCEL COST OPS 2026-07-26 (Cursor).** Prior: REMAINING-TASKS PASS.
+
+# Current — Vercel cost / agent loop (2026-07-26)
+
+| Field | Value |
+|---|---|
+| Surface | Cursor |
+| Time | 2026-07-26 morning PT |
+| `main` @ | (push in flight — see git log after push) |
+| Done | Shipped `ignoreCommand` + `scripts/vercel-ignore-build.mjs`; stopped `release.yml` from committing `chore: update changelog` to main; AGENTS.md Cost-aware push + CLAUDE.md pointer |
+| Next | Matt dashboard: build machine off turbo if willing, spend alerts, preview deploys off for non-main, Observability sampling, Image Optimization review |
+| Blockers | None for repo path; dashboard knobs are Matt-only |
+| Skills read | deployments-cicd (skim); no Supabase skill needed |
+
+## Shipped this session
+- `654890ad` / `0946dc41` — skip Vercel builds for docs/changelog/skills-only diffs via `vercel.json` `ignoreCommand`
+- `7dc62548` — release workflow no longer pushes changelog commits; agent ship docs updated
+
+## Agent default
+Trunk-only, no worktrees. Batch docs pushes; push runtime promptly + `deploy:verify`. Expect ~60% of July-style commits to skip remote Next builds once ignore is live.
+
+---
+
 > **NEWEST, START HERE: REMAINING-TASKS PASS 2026-07-26 (Cursor).** Prior: UNBLOCKED-WORK, KEEP-GOING.
 
 # REMAINING-TASKS PASS — 2026-07-26 (Cursor)
