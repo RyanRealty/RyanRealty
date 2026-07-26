@@ -5,9 +5,9 @@
 | Field | Value |
 |---|---|
 | Surface | Cursor |
-| Time | 2026-07-26 morning PT |
-| `main` @ | (see SHA after push — cost ops + worktree policy) |
-| Done | `ignoreCommand` + stop changelog→main; worktrees **allowed** with anti-strand rules in AGENTS.md / always-merge-to-main.mdc; `scripts/worktree-hygiene.mjs` + `npm run wt:status` |
+| Time | 2026-07-26 ~07:40 PT |
+| `main` @ | `fdb3444d` (cost ops + worktree policy on origin/main) |
+| Done | `ignoreCommand` live in `vercel.json` + `scripts/vercel-ignore-build.mjs`; release.yml no longer commits CHANGELOG to main; AGENTS cost-aware/batch-push; worktrees allowed with anti-strand rules + `wt:status` |
 | Next | Matt dashboard: disable preview deploys for non-main (or accept cost), spend alerts, consider build machine off `turbo`, Observability sampling |
 | Blockers | None for repo path |
 | Skills read | deployments-cicd (skim) |
