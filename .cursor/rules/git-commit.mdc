@@ -47,11 +47,13 @@ SKIP_DB_GUARD=1 git push         # skip migration drift check only
 ```
 
 ## Branch strategy
-- **`main` only.** Pushing to `main` triggers a Vercel production deploy.
-- No feature branches, no PRs, **no `git worktree`** — one checkout, one branch. Pre-commit hook at `.git/hooks/pre-commit` rejects commits on any other branch. See `.cursor/rules/always-merge-to-main.mdc`.
+- **Production is `main`.** Pushing to `main` triggers a Vercel production deploy (docs-only commits may skip via `ignoreCommand`).
+- **Worktrees allowed** for parallel agents / experiments — name `wt/<topic>-YYYYMMDD`, merge back to `main` or record in `CROSS_AGENT_HANDOFF.md` before stopping. See `.cursor/rules/always-merge-to-main.mdc` and **AGENTS.md → Worktrees**.
+- Prefer not pushing `wt/*` to `origin` (preview deploys cost Build CPU) unless another machine must continue the branch.
+- No PRs for routine agent work.
 
 ## Do NOT
 - Commit `.env.local` or any file containing secrets
 - Force push to `main`
-- Create extra branches or **`git worktree`** checkouts for this repo (trunk-only; see `AGENTS.md`)
+- Leave valued work only on an unpushed worktree with no handoff entry
 - Leave the working tree dirty before switching tasks — always commit or stash

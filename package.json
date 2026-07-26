@@ -345,7 +345,8 @@
     "setup:browsers": "npx playwright install --with-deps chromium",
     "setup:cloud": "bash scripts/cloud-setup.sh",
     "secrets:pack": "node scripts/secrets-pack.mjs",
-    "ci:person-workspace-single-tree": "node scripts/check-person-workspace-single-tree.mjs"
+    "ci:person-workspace-single-tree": "node scripts/check-person-workspace-single-tree.mjs",
+    "wt:status": "node scripts/worktree-hygiene.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",

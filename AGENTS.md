@@ -43,19 +43,34 @@ Matt alternates between **Claude Code** and **Cursor**. Both are the same repo a
 
 ### Ship discipline (non-negotiable)
 
-1. **No saved-but-unpushed work on `main`.** If you commit, you **push to `origin/main` in the same session** (resolve rebase/stash conflicts yourself). Do not end with `main` ahead of `origin/main` unless the network failed — and then say that explicitly; do not call the work “live.”
+1. **Production truth is `origin/main`.** Finished work must land on `main` and be pushed in the same session (resolve rebase/stash conflicts yourself). Do not end with valued work only on a local branch/worktree unless it is recorded in `docs/plans/CROSS_AGENT_HANDOFF.md`. Network failure is the only excuse for “not live yet” — say that explicitly.
 2. **Production follows Git.** Pushing `main` triggers Vercel production when the diff affects the Next app; “shipped” means remote `main` is updated and, when app code changed, the production deploy is **READY** (see `.cursor/rules/deploy-verify-before-done.mdc`). Docs/skills/changelog-only pushes are skipped by `scripts/vercel-ignore-build.mjs` (`vercel.json` → `ignoreCommand`).
 3. **No hanging migrations.** New files under `supabase/migrations/` are not real until they run on **hosted** Supabase. Apply them in the **same delivery effort** as the code that needs them — never “commit now, migrate later” (`.cursor/rules/supabase-migrations-auto.mdc`, `.cursor/rules/production-parity.mdc`).
-4. **Trunk only — `main` and nothing else.** Do not create local or remote feature branches, release branches, or PR flows for routine work. Do not use **`git worktree`** on this repo (no second checkouts, no parallel trees on disk). One working copy, one branch: **`main`**, always tracking **`origin/main`** after pull/push. If a stray branch or worktree appears, delete it and return to a single clean `main` before doing more work.
+4. **Default on `main`; worktrees allowed with anti-strand rules.** Day-to-day edits stay on `main` in the primary checkout. Use linked worktrees for parallel agents, long experiments, or cloud isolation — never as a silent parking lot. Do not open PRs for routine work. See **Worktrees** below.
 
-### Cost-aware push (still trunk-only)
+### Cost-aware push (main + worktrees)
 
-July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Keep trunk-only / no worktrees; change *when* you open a push:
+July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change *when* and *what* you push:
 
-1. **Runtime changes** (`app/`, `components/`, `lib/`, `public/` used by the app, `package.json` / lockfile, `next.config.*`, `vercel.json`, `supabase/migrations/`) → finish the task, **one commit**, `NODE_OPTIONS=--max-old-space-size=8192 npm run push`, then `npm run deploy:verify` when the user-facing app changed.
-2. **Docs / skills / rules / plans / handoffs only** → **batch into one commit** in the session, then push once. Local `npm run push` already skips `next build` for non-buildable diffs; Vercel skips the remote build via `ignoreCommand`. Do not drip many docs commits that each burn local `ci:gates`.
-3. **Do not push mid-thought.** Commit locally while iterating if you need a restore point; push when the unit of work is coherent. Never leave the session with unpushed commits on `main`.
-4. **Release / changelog:** GitHub Releases carry the notes. Do not expect (or recreate) a `chore: update changelog` commit on `main` — that path burned hundreds of full production builds.
+1. **Runtime changes** (`app/`, `components/`, `lib/`, `public/` used by the app, `package.json` / lockfile, `next.config.*`, `vercel.json`, `supabase/migrations/`) → finish the task, **one commit on `main`**, `NODE_OPTIONS=--max-old-space-size=8192 npm run push`, then `npm run deploy:verify` when the user-facing app changed.
+2. **Docs / skills / rules / plans / handoffs only** → **batch into one commit**, then push once. Local `npm run push` already skips `next build` for non-buildable diffs; Vercel skips the remote build via `ignoreCommand`. Do not drip many docs commits that each burn local `ci:gates`.
+3. **Do not push mid-thought.** Commit locally while iterating if you need a restore point; push when the unit of work is coherent.
+4. **Release / changelog:** GitHub Releases carry the notes. Do not recreate a `chore: update changelog` commit on `main` — that path burned hundreds of full production builds.
+5. **Worktree branches:** keep them **local** until merge time. Pushing `wt/*` to `origin` creates Vercel **preview** builds (extra Build CPU) unless previews are disabled in the project dashboard. Prefer merge → push `main` only.
+
+### Worktrees (allowed — design against stranded work)
+
+**When to stay on `main`:** single-agent bugfix, small feature, docs, anything that should be production within the hour.
+
+**When to use a worktree:** two agents editing disjoint areas; a long experiment that would block `main`; Cursor ↔ Claude Code isolation; cloud agent checkouts.
+
+**Anti-strand rules (mandatory):**
+
+1. Branch name: `wt/<topic>-YYYYMMDD` (or harness names like `claude/…` — still merge or handoff before stop).
+2. Path: sibling dir such as `../RyanRealty-wt-<topic>` — not nested inside the primary tree.
+3. Session end: **merge/rebase into `main` + `npm run push`**, **or** write branch + absolute path + next step into `docs/plans/CROSS_AGENT_HANDOFF.md` Current block (and push that handoff on `main`).
+4. Cleanup when merged: delete branch, `git worktree remove <path>`, `git worktree prune`. Run `node scripts/worktree-hygiene.mjs` at session start/end.
+5. Never leave the only copy of valued commits in an unpushed worktree with no handoff line.
 
 ### What the other environment should read
 
@@ -366,19 +381,23 @@ git commit -m "feat: <short description of what was done>"
 git push origin main
 ```
 
-## CRITICAL: Push to Main (trunk only)
+## CRITICAL: Ship on `main` (worktrees are temporary)
 
-**Always push directly to `main`.** Do NOT create feature branches. Do NOT create pull requests. Do NOT add **`git worktree`** checkouts for this project. Push to `main` and let CI validate. The orchestrator and task registry handle coordination — extra branches or worktrees are forbidden overhead and hide state from the other tool.
+**Production deploys from `main` only.** Routine work: commit on `main` and `npm run push`. Worktrees/branches are fine for isolation — merge them before you stop, or hand them off in `CROSS_AGENT_HANDOFF.md`. Do not open PRs for routine work. Do not leave unfinished valued work only on a local branch.
 
 ```bash
-# CORRECT
-git push origin main
+# DEFAULT
+NODE_OPTIONS=--max-old-space-size=8192 npm run push   # from main
 
-# WRONG — do not do this
-git checkout -b feat/some-branch
-git push origin feat/some-branch
-gh pr create
-git worktree add ../RyanRealty-side feature/foo
+# WORKTREE (isolation) — then merge back
+git worktree add -b wt/crm-mobile-20260726 ../RyanRealty-wt-crm-mobile main
+# …work in the other checkout…
+# on main: git merge wt/crm-mobile-20260726 && npm run push
+# git worktree remove ../RyanRealty-wt-crm-mobile && git branch -d wt/crm-mobile-20260726
+
+# WRONG — strand work
+# push a long-lived feature branch and walk away with no handoff
+# open a PR for routine agent work and forget it
 ```
 
 ## Production parity (code + database + Vercel)

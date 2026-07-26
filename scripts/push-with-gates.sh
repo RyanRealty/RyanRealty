@@ -18,8 +18,8 @@
 #   - foreign working-tree state cannot fail or green-wash the chain
 #   - the marker certifies precisely the pushed tree
 # This is a throwaway/reusable VERIFICATION sandbox, not a development
-# worktree — the "no git worktree" rule targets where code changes happen;
-# no code is ever authored or committed here (same spirit as G46's
+# worktree — development worktrees are allowed (see AGENTS.md) but must not
+# strand work; no code is authored here (same spirit as G46's
 # `git archive | tar -x` materialization, just incremental + buildable).
 #
 # Knobs:

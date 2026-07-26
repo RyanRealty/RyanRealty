@@ -1,23 +1,25 @@
-> **NEWEST, START HERE: VERCEL COST OPS 2026-07-26 (Cursor).** Prior: REMAINING-TASKS PASS.
+> **NEWEST, START HERE: VERCEL COST + WORKTREE OPS 2026-07-26 (Cursor).** Prior: REMAINING-TASKS.
 
-# Current — Vercel cost / agent loop (2026-07-26)
+# Current — Vercel cost / worktrees / agent loop (2026-07-26)
 
 | Field | Value |
 |---|---|
 | Surface | Cursor |
 | Time | 2026-07-26 morning PT |
-| `main` @ | (push in flight — see git log after push) |
-| Done | Shipped `ignoreCommand` + `scripts/vercel-ignore-build.mjs`; stopped `release.yml` from committing `chore: update changelog` to main; AGENTS.md Cost-aware push + CLAUDE.md pointer |
-| Next | Matt dashboard: build machine off turbo if willing, spend alerts, preview deploys off for non-main, Observability sampling, Image Optimization review |
-| Blockers | None for repo path; dashboard knobs are Matt-only |
-| Skills read | deployments-cicd (skim); no Supabase skill needed |
+| `main` @ | (see SHA after push — cost ops + worktree policy) |
+| Done | `ignoreCommand` + stop changelog→main; worktrees **allowed** with anti-strand rules in AGENTS.md / always-merge-to-main.mdc; `scripts/worktree-hygiene.mjs` + `npm run wt:status` |
+| Next | Matt dashboard: disable preview deploys for non-main (or accept cost), spend alerts, consider build machine off `turbo`, Observability sampling |
+| Blockers | None for repo path |
+| Skills read | deployments-cicd (skim) |
 
-## Shipped this session
-- `654890ad` / `0946dc41` — skip Vercel builds for docs/changelog/skills-only diffs via `vercel.json` `ignoreCommand`
-- `7dc62548` — release workflow no longer pushes changelog commits; agent ship docs updated
+## Default agent loop
+1. Prefer `main`. Worktree only for parallel/long/cloud isolation (`wt/<topic>-YYYYMMDD`).
+2. Batch docs; push runtime + `deploy:verify`. Keep `wt/*` local until merge (previews cost Build CPU).
+3. Session end: merge to `main` + push, or handoff branch path in this file. Run `npm run wt:status`.
 
-## Agent default
-Trunk-only, no worktrees. Batch docs pushes; push runtime promptly + `deploy:verify`. Expect ~60% of July-style commits to skip remote Next builds once ignore is live.
+## Shipped SHAs (local → origin on push)
+- ignoreCommand + release changelog stop + AGENTS cost-aware (prior commits)
+- worktree policy + hygiene script (this commit)
 
 ---
 

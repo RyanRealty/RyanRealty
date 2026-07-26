@@ -1,17 +1,30 @@
 ---
-description: Main only — no feature branches, no git worktrees; ship on trunk (aligns with AGENTS.md).
+description: Production ships on main; worktrees allowed with anti-strand rules (aligns with AGENTS.md).
 alwaysApply: true
 ---
 
-# Trunk workflow (main only)
+# Trunk + worktrees (anti-strand)
 
-This repository uses a **single branch (`main`)** and a **single working checkout**. No parallel git state.
+**Production truth is `origin/main`.** Verified work must land on `main` and be pushed so CI and Vercel production can run.
 
-Verified work belongs on **`main`** and must be **pushed** so CI and Vercel can run.
+## Default
 
-- Follow **AGENTS.md**: push directly to `main`, do not open PRs for routine work, do not leave finished changes stranded on a branch.
-- **Do not use `git worktree add`** (or any second checkout path) for RyanRealty work — no extra working trees; they leave work “hanging” where the other tool cannot see it.
-- **Do not create local or remote feature branches** for routine work. If a branch was created by mistake, merge/rebase into `main`, push, then delete the branch locally and on `origin`.
-- If you ever used a local branch for safety, **merge or rebase into `main` and push** immediately; do not treat the branch as the source of truth.
+- Day-to-day work stays on **`main`** in the primary checkout (`/Users/matthewryan/RyanRealty`).
+- Push finished units with `NODE_OPTIONS=--max-old-space-size=8192 npm run push`.
+- Do **not** open PRs for routine work. Do **not** use a long-lived release branch.
 
-Do **not** use a separate “release branch” model. See also `.cursor/rules/production-parity.mdc` and `.cursor/rules/deploy-verify-before-done.mdc`.
+## Worktrees are allowed when they help
+
+Use a linked worktree for parallel agents, long experiments, or cloud-agent isolation — **not** as a place to abandon unfinished work.
+
+Required anti-strand rules (see **AGENTS.md → Worktrees**):
+
+1. Name branches `wt/<agent-or-topic>-YYYYMMDD` (example: `wt/crm-mobile-20260726`).
+2. Prefer **local-only** branches until ready to merge. Pushing a branch to `origin` triggers Vercel **preview** builds unless previews are disabled in the dashboard — that burns Build CPU.
+3. Before ending a session: either **merge/rebase into `main` + push `main`**, or record the branch + path + intent in `docs/plans/CROSS_AGENT_HANDOFF.md` Current block, and push the branch only if another machine must continue it.
+4. When done: merge to `main`, push `main`, delete the branch locally (and on `origin` if it was pushed), `git worktree remove <path>`, `git worktree prune`.
+5. Never leave the only copy of valued work in an unpushed worktree with no handoff entry.
+
+## Failure mode this rule prevents
+
+Matt previously forbade worktrees because unfinished work got stranded off `main` and the other tool could not see it. Worktrees are fine; **invisible unfinished work is not**.
