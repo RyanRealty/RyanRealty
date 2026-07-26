@@ -14,7 +14,7 @@
     "app/actions/sync-spark.ts": 1377,
     "app/actions/tc-envelopes.ts": 761,
     "app/admin/(protected)/broker-dashboard/page.tsx": 733,
-    "app/admin/(protected)/crm/[id]/page.tsx": 631,
+    "app/admin/(protected)/crm/[id]/page.tsx": 65,
     "app/admin/(protected)/crm/inbox/page.tsx": 608,
     "app/admin/(protected)/deals/page.tsx": 659,
     "app/admin/(protected)/reports/lead-flow/page.tsx": 663,

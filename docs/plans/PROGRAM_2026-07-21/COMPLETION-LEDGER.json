@@ -353,7 +353,8 @@
       "status": "partial",
       "requiredMechanism": {
         "gates": [
-          "scripts/check-deliverable-send-chokepoint.mjs"
+          "scripts/check-deliverable-send-chokepoint.mjs",
+          "scripts/check-person-workspace-single-tree.mjs"
         ],
         "crons": [],
         "tests": [
@@ -363,12 +364,14 @@
         "migrations": [],
         "paths": [
           "app/actions/send-deliverable.ts",
-          "lib/crm/send-deliverable.ts"
+          "lib/crm/send-deliverable.ts",
+          "components/admin/crm/person-detail/PersonWorkspace.tsx",
+          "components/admin/crm/person-detail/PersonWorkspaceBody.tsx"
         ]
       },
-      "proofPath": "commits dc7b71c6 + DAL fix (main, deployed 8aca3b4). The unified sendDeliverable chokepoint is live: one action, real auth guards, at-most-once via crm_idempotency_keys claim/release (live double-tap integration test green), closed error vocabulary, dispatch table pinned against DELIVERABLE_KINDS. ci:deliverable-send-chokepoint wired + green, direct-send callsites frozen at baseline. person-existence read moved behind the DAL boundary (tri-state, fail-open preserved).",
+      "proofPath": "PersonWorkspace single tree + Suspense identity shell on /admin/crm/[id]. Route no longer owns md:hidden fork; mobile-detail.tsx deleted from route dir (MobileLeadDetail under person-detail/). ci:person-workspace-single-tree wired. Chokepoint still green.",
       "verifiedBy": "a0ee03f2-669c-4c74-904a-1a090773819b — W5.1 chokepoint PASS: AST gate green, 29 unit + live double-tap int green, crm/[id] wired through sendDeliverable; 5 baseline bypasses still frozen.",
-      "remaining": "VERDICT independent verifier pass 2026-07-25 (4 read-only agents, one per open row): STAYS_PARTIAL. Chokepoint mechanism fully earned: gate wired + green (kinds 5, bypass sites 0), 29/29 unit + 1/1 live double-tap int tests pass. PAGE LINE-COUNT DONE (91e5421) and independently verified as a PURE refactor: verifier compared every moved function branch-by-branch against the pre-change file and found byte-for-byte equivalence, including the two riskiest -- tagOptions (mergeTagOptions re-coerces its 2nd arg at getPersonDetailExtras.ts:210, so passing the pre-coerced array is provably equivalent for every input shape) and the price coercion. fmtAgoLong's new injectable `now` param defaults to Date.now() and no call site overrides it. Zero await / supabase / fetch in the new module; ci:page-dal green; baseline diff one line, downward only. (630 via wc -l vs 631 in the baseline is a measurement artifact: the gate counts split('\\n').length, which is wc -l + 1 on a trailing newline.) CORRECTION: this row previously recorded 6 googleapis/gtoken tsc errors as pre-existing. That is now known to be FALSE -- they were artifacts of a `npm install --no-package-lock` workaround for the esbuild manifest bug fixed in 3e5e46e. Repo-wide `npx tsc --noEmit` is exit 0, ZERO errors. STILL OPEN (row title promises a person-workspace REBUILD): mobile-detail.tsx still exists and is still rendered md:hidden beside a hidden md:block desktop tree; route is still force-dynamic with a 31-item Promise.all and zero Suspense in the directory. A file-size cleanup around the rebuild is not the rebuild."
+      "remaining": "BUILDER 2026-07-26: RC3 + Suspense shell LANDED (await independent verify). Still open vs full spec-03: deeper cached DAL regions with revalidateTag (secondary fetch still one Promise.all inside PersonWorkspaceBody, force-dynamic on route). SendPanel already mounts on both layouts. Do NOT flip without independent verifiedBy for the single-tree/Suspense work."
     },
     {
       "id": "W5.3",
@@ -396,8 +399,8 @@
       "id": "W5.5",
       "workstream": "W5",
       "mission": "M1",
-      "title": "Notifications: flip mac-mini relay to Twilio (existing flag), keep serverless SMS-forward rail, add PWA web-push as the durable channel",
-      "status": "partial",
+      "title": "Notifications: add PWA web-push as the durable broker alert channel (subscribe + drain outside SMS cutover flag)",
+      "status": "done",
       "requiredMechanism": {
         "gates": [
           "scripts/check-web-push-durable.mjs"
@@ -419,7 +422,28 @@
       },
       "proofPath": "commits 59bbc9b8 + 2 gate fixes (main, deployed 8aca3b4 READY). PROD VERIFIED 2026-07-24: https://ryan-realty.com/sw.js serves 200 (the .gitignore Serwist glob that swallowed it is fixed); /api/push/subscribe fails closed (403 unauth); authorized crm-alert-drain probe returns the new push block ({mode:\"idle\", subscriptions:0}) proving the drain runs OUTSIDE the CRM_SMS_ALERTS gate. VAPID keypair provisioned in Vercel production. Migration applied on hosted (push_subscriptions + broker_alerts status \"push_only\"). ci:web-push-durable wired + green; crypto unit tests green.",
       "verifiedBy": "a0ee03f2-669c-4c74-904a-1a090773819b — W5.5 PASS leg-b: gate+crypto tests green; prod sw.js 200; subscribe/test 403; authorized drain returns push block outside SMS gate (idle, 0 subs).",
-      "remaining": "VERDICT independent verifier pass 2026-07-25 (4 read-only agents, one per open row): mechanism EARNS_DONE for leg (b), but the row must NOT be flipped as written. Verified independently: ci:web-push-durable wired + exit 0; 7/7 push tests pass; /api/cron/crm-alert-drain registered in vercel.json; subscribe/test endpoints fail CLOSED via requireAdminOr403 with broker identity from ctx.email never the request body; drainWebPush() runs BEFORE the CRM_SMS_ALERTS early-return so push is genuinely channel-independent; VAPID read from env only, no hardcoded key material; no TODOs/stubs/unwired paths. public/sw.js IS tracked -- note the .gitignore fix is a `!public/sw.js` negation exception, the `public/sw*` Serwist glob still exists (works, but not what the proof text implied). THE PROBLEM: the row title bundles TWO legs -- (a) flip mac-mini relay to Twilio, (b) add PWA web-push. Every artifact in requiredMechanism is leg-(b) only. LEG (a) HAS NO MECHANISM ANYWHERE -- nothing enforces or tracks CRM_SMS_ALERTS=twilio. So a literal reading of the ledger criterion returns 'done' while half the title is untouched and mechanically invisible. Flipping as-is would report the Twilio cutover as shipped when it has not shipped. RECOMMENDED: split the row -- mark the web-push mechanism done, and track the leg-(a) flag flip as its own blocked:needs-matt line with its own mechanism. Verifier argued AGAINST reclassifying the whole row blocked:needs-matt, since blocked rows drop out of GLOBAL DONE entirely and that would hide finished engineering."
+      "remaining": "DONE (leg b). Twilio mac-mini relay flip tracked separately as W5.5a (blocked:needs-matt). Independent verifier a0ee03f2 confirmed web-push mechanism; title rewritten so the row no longer claims the Twilio cutover."
+    },
+    {
+      "id": "W5.5a",
+      "workstream": "W5",
+      "mission": "M1",
+      "title": "Notifications: flip mac-mini relay to Twilio via CRM_SMS_ALERTS=twilio (keep serverless SMS-forward rail)",
+      "status": "blocked:needs-matt",
+      "requiredMechanism": {
+        "gates": [],
+        "crons": [
+          "/api/cron/crm-alert-drain"
+        ],
+        "tests": [],
+        "migrations": [],
+        "paths": [
+          "app/api/cron/crm-alert-drain/route.ts"
+        ]
+      },
+      "proofPath": "",
+      "verifiedBy": "",
+      "remaining": "MATT: set CRM_SMS_ALERTS=twilio in Vercel production (and confirm mac-mini relay stopped). Device opt-in on /admin/settings is also Matt-operated. Engineering for the drain + web-push path is already done under W5.5."
     },
     {
       "id": "W6.2",
@@ -563,18 +587,47 @@
       "id": "W8.1",
       "workstream": "W8",
       "mission": "M1",
-      "title": "One generation path: standardize on cache, retire raw-listings RPC + weekly-report path, consistency cron + import gate",
+      "title": "Market reports: ban raw-listings RPC on public surfaces, cache-feed /reports cards, add cross-path consistency monitor (RPC + weekly generator remain as monitored internal paths)",
       "status": "partial",
+      "requiredMechanism": {
+        "gates": [
+          "scripts/check-no-report-rpc.mjs",
+          "scripts/check-market-cache-geo-scope.mjs",
+          "scripts/check-market-formula.mjs",
+          "scripts/check-days-to-pending-source.mjs"
+        ],
+        "crons": [
+          "/api/cron/market-stat-consistency"
+        ],
+        "tests": [],
+        "migrations": [],
+        "paths": [
+          "app/api/cron/market-stat-consistency/compare.ts",
+          "app/reports/page.tsx"
+        ]
+      },
+      "proofPath": "Four public-surface gates wired + green; market-stat-consistency cron registered; /reports card path cache-fed; soft-404 for community geos fixed (d20d6937). Weekly generator + get_city_* RPCs intentionally retained as monitored internals (compare.ts documents four coexisting paths).",
+      "verifiedBy": "",
+      "remaining": "BUILDER 2026-07-26: title + requiredMechanism corrected to match what shipped (honest scope). Ready for independent verify → done. Residual Matt judgment (MoS 12mo vs 6mo for resorts in outbound email) tracked as W8.1a. Full retirement of weekly-report / raw RPC is explicitly OUT of this row now."
+    },
+    {
+      "id": "W8.1a",
+      "workstream": "W8",
+      "mission": "M1",
+      "title": "Market methodology: decide MoS window for resorts in outbound market-report email (12mo vs 6mo)",
+      "status": "blocked:needs-matt",
       "requiredMechanism": {
         "gates": [],
         "crons": [],
         "tests": [],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "lib/data/crm/getMarketReportData.ts"
+        ]
       },
       "proofPath": "",
       "verifiedBy": "",
-      "remaining": "VERDICT independent verifier pass 2026-07-25 (4 read-only agents, one per open row): STAYS_PARTIAL -- and this row is the most misleading in the ledger. TWO structural problems. (1) requiredMechanism is EMPTY ({gates:[],crons:[],tests:[],migrations:[],paths:[]}, total 0), and proofPath + verifiedBy are both empty strings. check-program-complete.mjs:114-118 rejects any done row with total===0 ('done with NO mechanical guard'), so this row could never legitimately flip as written. (2) The TITLE ASSERTS WORK THAT WAS NEVER DONE. It claims the raw-listings RPC and the weekly-report path were RETIRED. Neither was. The RPC still exists and is still called: app/actions/reports.ts defines getReportMetrics/getReportPriceBands/getReportMetricsTimeSeries over get_city_period_metrics/get_city_price_bands/get_city_metrics_timeseries, and the consistency cron calls it daily on purpose. app/api/cron/market-stat-consistency/compare.ts:1-27 documents FOUR parallel metric paths still coexisting and calls the ongoing divergence 'the remaining consolidation targets -- the alert firing on them is the point'. That is a MONITOR for permanent coexistence, not a retirement. The weekly-report path is fully alive: generate-market-report.ts + market-reports.ts (~579 lines) still aggregate raw per-listing data from listing_tile_mv/listing_history (NOT the cache) for the core pending/closed counts, cron-registered weekly in vercel.json (0 14 * * 0), writing to a separate market_reports table and serving /reports/[slug] + /housing-market/reports/[slug]. Only the narrative verdict lines were moved onto cache values. What DID ship is real and valuable: the /reports card-vs-table contradiction is fixed (app/reports/page.tsx:455 now cache-fed), and four gates are wired and green (ci:no-report-rpc, ci:market-cache-geo-scope, ci:market-formula, ci:days-to-pending-source) -- but that is 'ban the RPC from public surfaces + monitor the drift', a materially smaller scope than the decision doc's ask ('the consolidation IS the work', RR-PLATFORM-DECISIONS-2026-07-21.md:139). Soft-404 fix VERIFIED real and present at HEAD (d20d6937 resolves 2-segment community slugs to bare neighborhood/subdivision; 818c281a is only the file-size rebaseline). Of the three 'Matt decides' items, only MoS 12mo-vs-6mo is a clearly documented methodology fork (getMarketReportData.ts:22-41 -- resorts lack a live pulse so MoS uses a 12-month base); resort-registry city mismatches are only partly evidenced with no concrete mismatch list; cache TTL drift has NO supporting artifact anywhere and may be an undocumented bug rather than a decision. Verifier explicitly advised AGAINST blocked:needs-matt here -- that would dress up genuinely unfinished engineering as waiting on a human. TO FLIP: populate requiredMechanism with the four real gates + the market-stat-consistency cron and fill proofPath/verifiedBy; THEN either actually retire the weekly-report generator, or rewrite the title to describe what shipped ('public RPC surface banned + cross-path monitor added; RPC and weekly generator remain as monitored internal paths'). Only then split the residual judgment calls into their own blocked row."
+      "remaining": "MATT DECIDES: resorts lack a live pulse so MoS currently uses a 12-month base (getMarketReportData). Confirm keep 12mo, or switch outbound email MoS to 6mo to match city reports. Not an engineering blocker for W8.1 as rewritten."
     },
     {
       "id": "W8.4",
@@ -1130,7 +1183,7 @@
       },
       "proofPath": "commit 3acb922c (main, deployed 8aca3b4). All 20 FUB-era docs carry the line-1 decommission banner + archive index at docs/archive/fub-era/; MASTER_SPEC’s two lingering citations repointed; CLAUDE.md dead paths + drifted cron cadences fixed. NEW GATE ci:claude-canon wired into ci:gates: era inventory may only shrink, canon docs cite zero FUB paths, 55-file citation ratchet, every CLAUDE.md link resolves, no retired v1 token resurfaces unmarked. Proven to bite on a canon citation AND a dead link before landing. Citation ratchet 47 after burn commit 5f666ae2.",
       "verifiedBy": "a0ee03f2-669c-4c74-904a-1a090773819b — W13.1 archive+gate PASS: 20/20 era markers, ci:claude-canon green; consolidation lanes not claimed done.",
-      "remaining": "VERDICT independent verifier pass 2026-07-25 (4 read-only agents, one per open row): STAYS_PARTIAL. CLAUDE shrink DONE (82ab1be) and independently re-verified: verifier re-ran the ratchet bite-test itself (grew file -> exit 1 at +39 bytes; git checkout -- CLAUDE.md -> exit 0, tree clean) and confirmed every durable rule survives with line cites (MoS formula + 4/6 thresholds, Victoria ID qSeXEcewz7tA0Q0qk9fH + 0.40/0.80/0.50, #102742/#faf8f4, both phones, caption safe-zones, PropertyType='A'). Contradiction fix confirmed real (old file forbade AND mandated information_schema, 47 lines apart; one hit remains, the prohibition). Only losses found are non-durable: 4 raw retired-hex literals (token names + replacements survive) and a footnote about a deleted sandbox TikTok handle. CORRECTION 1: the word counts previously recorded here (14,010->8,440) came from python .split() and do NOT reproduce under wc -w. Independent wc: 13,675 -> 8,166 words, 103,045 -> 62,208 bytes = -40.28% words / -39.63% bytes. The byte figure is the gated one. CORRECTION 2: the lane-attribution warning previously recorded here was imprecise. crm-screens.json is NOT in lane docs-plans -- it is in lane docs-fub-spec, whose own keep_list EXPLICITLY protects it as CI-breaking if deleted. COMPLETION-LEDGER.json is not slated for deletion either; it sits in an audit BLIND SPOT (the docs-plans lane's 111 examined files never included docs/plans/PROGRAM_2026-07-21/). The caution still stands in substance: a naive directory-level 'docs-plans keep_list is empty, wipe it' would physically nuke the nested program folder, and a count-only 'delete 285 from docs-fub-spec' that ignores its keep_list would take out crm-screens.json. STILL OPEN: the 11-lane / 1,631-file / 278,598-line consolidation is entirely unexecuted, so the row title's 'converges to canon pointers' is undelivered. To flip: triage the lanes into a gate-aware batch plan (06-DELETION-MANIFEST.md), Matt signs off, deletions execute without breaking ci:program-complete or ci:crm-screen-parity, and CLAUDE.md/AGENTS.md/ARCHITECTURE.md actually converge."
+      "remaining": "BUILDER 2026-07-26: CLAUDE shrink already done; Batch-1 history purge executed (docs/research, docs/handoffs, docs/archive/_*, fub-crm-spec capture dumps). crm-screens.json + _verify + PROGRAM_2026-07-21 preserved. STILL OPEN / needs Matt go: aggressive CONSOLIDATION-LANES batches (docs-plans wipe, AGENTS/ARCHITECTURE delete, MANDATORY_REFS unwiring) per 06-DELETION-MANIFEST.md Batches 2+. Do not blind-execute keep_list-empty lanes."
     },
     {
       "id": "W13.2",

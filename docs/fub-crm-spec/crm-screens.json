@@ -6,7 +6,7 @@
   {
     "id": "person-detail-desktop",
     "specRef": "docs/fub-crm-spec/07a-person-detail-sidebar-and-inline-edit.md",
-    "route": "app/admin/(protected)/crm/[id]/page.tsx",
+    "route": "components/admin/crm/person-detail/PersonWorkspaceBody.tsx",
     "status": "done",
     "requiredComponents": [
       "PersonSidebar",
@@ -24,7 +24,7 @@
   {
     "id": "person-detail-mobile",
     "specRef": "docs/fub-crm-spec/25-mobile-contact-detail.md",
-    "route": "app/admin/(protected)/crm/[id]/mobile-detail.tsx",
+    "route": "components/admin/crm/person-detail/MobileLeadDetail.tsx",
     "status": "done",
     "requiredComponents": [
       "MobileContactDetail",

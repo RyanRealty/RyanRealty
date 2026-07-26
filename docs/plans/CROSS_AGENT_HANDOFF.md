@@ -1,3 +1,28 @@
+> **NEWEST, START HERE: REMAINING-TASKS PASS 2026-07-26 (Cursor).** Prior: UNBLOCKED-WORK, KEEP-GOING.
+
+# REMAINING-TASKS PASS — 2026-07-26 (Cursor)
+
+`main` about to ship person-workspace rebuild + ledger honesty + Batch-1 doc purge.
+
+## Shipped this session
+- **W5.1**: RC3 + Suspense — deleted route `mobile-detail.tsx`; `PersonWorkspace` owns md fork; page is identity shell + Suspense; new `ci:person-workspace-single-tree`. Stays **partial** until independent verify (deeper cache tags still open).
+- **W5.5**: title rewritten to web-push only → **done** (prior verifier). Twilio cutover split to **W5.5a** `blocked:needs-matt`.
+- **W8.1**: title + requiredMechanism rewritten to honest shipped scope (4 gates + consistency cron). Stays **partial** for independent verify. MoS Matt chip → **W8.1a** blocked.
+- **W13.1**: Batch-1 history purge (research/handoffs/archive_*/fub capture dumps). Aggressive lanes still need Matt go.
+
+## Still open
+| Row | Status |
+|---|---|
+| W5.1 | partial — needs independent verify of single-tree/Suspense; optional deeper cache |
+| W8.1 | partial — needs independent verify of rewritten scope |
+| W13.1 | partial — Matt go on Batches 2+ |
+| W5.5a / W8.1a / W9.1 / W9.5 | blocked:needs-matt |
+
+## Skills read
+using-superpowers; crm-e2e (skim); spec-03; 06-DELETION-MANIFEST.
+
+---
+
 > **NEWEST, START HERE: UNBLOCKED-WORK PASS 2026-07-25 (Claude Code, cloud).** Prior: KEEP-GOING, COMPETE CLOSEOUT, FIVE-LANE RECOVERY, W8.1 ROUND-6.
 
 # UNBLOCKED-WORK PASS — 2026-07-25 (Claude Code, cloud container)

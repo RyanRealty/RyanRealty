@@ -23,16 +23,21 @@ import { readFileSync } from 'node:fs'
 /** SHIPPED — file must exist and contain every marker (regexes). */
 const SHIPPED = [
   {
-    id: 'M1 contact detail — §25 layout wired at <md + ?view=mobile',
-    // Route consolidation 2026-07-15: the Lead Command Center moved from
-    // app/admin/console/leads/[id]/ into (protected)/crm/[id]/ (same files,
-    // new segment) so the duplicated console layout could be deleted.
+    id: 'M1 contact detail — §25 layout wired via PersonWorkspace + Suspense',
+    // W5.1 / spec-03 RC3 (2026-07-26): route is an identity shell; the single
+    // responsive tree lives in PersonWorkspace (mobile + desktop). Mobile
+    // markers moved off the forked crm/[id]/mobile-detail.tsx path.
     file: 'app/admin/(protected)/crm/[id]/page.tsx',
-    must: [/MobileLeadDetail/, /view === 'mobile'/, /md:hidden/],
+    must: [/PersonWorkspaceBody/, /Suspense/, /view/],
+  },
+  {
+    id: 'M1 contact detail — PersonWorkspace owns md fork + ?view=mobile',
+    file: 'components/admin/crm/person-detail/PersonWorkspace.tsx',
+    must: [/forceMobile/, /md:hidden/, /hidden md:block/],
   },
   {
     id: 'M1 contact detail — tab components composed',
-    file: 'app/admin/(protected)/crm/[id]/mobile-detail.tsx',
+    file: 'components/admin/crm/person-detail/MobileLeadDetail.tsx',
     must: [/MobileInfoTab/, /MobileCommsTab/, /MobileHomesTab/, /MobileNotesTab/, /MobileCalendarTab/],
   },
   {
