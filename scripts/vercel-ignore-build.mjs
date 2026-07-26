@@ -41,17 +41,22 @@ const SKIP_EXACT = new Set([
 const SKIP_SUFFIXES = ['.md', '.mdc', '.png', '.jpg', '.jpeg', '.webp', '.gif']
 
 function changedFiles() {
-  // Vercel sets VERCEL_GIT_PREVIOUS_SHA when available; fall back to HEAD^ .
+  // Vercel often uses a shallow clone. Prefer VERCEL_GIT_PREVIOUS_SHA; if it is
+  // missing, inspect only the tip commit via diff-tree (works at depth=1).
+  // Falling back to HEAD^ used to throw on shallow clones → we returned null
+  // → exit 1 → every docs push still burned a full production build.
   const prev = (process.env.VERCEL_GIT_PREVIOUS_SHA || '').trim()
-  const range = prev ? `${prev}...HEAD` : 'HEAD^...HEAD'
   try {
-    const out = execSync(`git diff --name-only ${range}`, {
+    const cmd = prev
+      ? `git diff --name-only ${prev}...HEAD`
+      : 'git diff-tree --no-commit-id --name-only -r HEAD'
+    const out = execSync(cmd, {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     })
     return out.split('\n').map((s) => s.trim()).filter(Boolean)
   } catch {
-    // First deploy / shallow clone / missing parent → always build.
+    // First deploy / corrupt git state → always build.
     return null
   }
 }
