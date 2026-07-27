@@ -6,7 +6,7 @@
 |---|---|
 | Surface | Cursor |
 | Time | 2026-07-27 ~04:45 PT |
-| `main` @ | `d9889dd2` (tip); feature `eff7136c`; runtime READY `@ a7d28343` |
+| `main` @ | `f01a279e` (tip); feature `eff7136c`; runtime READY `@ a7d28343` |
 | Done | W5.1 engineering: critical-path SendPanel/conversation vs nested Suspense homes/engagement/mobile homes+calendar regions (uncached). Gates updated (single-tree, crm-mobile-track, screen-parity alsoRoutes). `deploy:verify` READY for `a7d28343`. Companion: jefferson-county-fair dates nulled for content-freshness. |
 | Next | Independent read-only verifier for W5.1 must say FLIP_DONE before ledger flip (Task agents were resource_exhausted this session). Optional later: tagged `revalidateTag` DAL if proven safe. |
 | Blockers | W5.1 stays **partial** until independent `verifiedBy` |
