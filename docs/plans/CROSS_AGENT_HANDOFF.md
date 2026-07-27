@@ -6,7 +6,7 @@
 |---|---|
 | Surface | Cursor |
 | Time | 2026-07-27 ~08:57 PT |
-| `main` @ | (this push; was ahead with `3bbe3d89` ignoreCommand) |
+| `main` @ | `5496c04b` (includes prior ignoreCommand commit) |
 | Program ledger | **47/52 done** (`COMPLETION-LEDGER.json`). **W8.1 is DONE** — independent verifier `7fa0eacc-2914-4515-9432-c75f3813893e`. |
 | Done (this tip) | W8.1 adversarial verify → FLIP_DONE. Four gates green + in `ci:gates`; consistency cron registered; weekly gen + `get_city_*` RPCs retained; soft-404 bare-slug fix present; `/reports` cache-fed. |
 | Next / open | **W13.1** partial — needs Matt go on Batches 2+ (do not blind-delete). No other unblocked program partials. |
