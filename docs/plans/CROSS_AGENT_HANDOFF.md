@@ -1,17 +1,17 @@
-> **NEWEST, START HERE: BL-015 COMPLETE 2026-07-27 (Cursor).** Prior: listing hero map toggle.
+> **NEWEST, START HERE: W13.1 BATCH-1 CLOSEOUT 2026-07-27 (Cursor).** Prior: BL-015 + listing hero map.
 
-# Current — BL-015 search/city/community path optimization (2026-07-27)
+# Current — W13.1 Batch-1 leftovers purged (2026-07-27)
 
 | Field | Value |
 |---|---|
 | Surface | Cursor |
-| Time | 2026-07-27 ~09:20 PT |
-| `main` @ | `2c67580c` |
-| Done | **BL-015 complete** — already satisfied in code (no runtime diff). Evidence: tile/map via `TILE_MV_SELECT_COLUMNS` / DAL `getListingTiles` (no `details` JSONB); list+count via `Promise.all` in `getListingsWithAdvanced` + combined `count:'exact'` in `searchListingsAll`; geocode capped `MAX_GEOCODE_BATCH=10`. Gates: `npm run build` exit 0, `npm run test` 3625/319 green. |
-| Next | Orchestrator: **BL-016** (reporting, cache/historical) or **BL-018** (cleanup/verify). Program ledger still owns W13.1 / blocked Matt rows. |
-| Blocked | None for BL-015 |
-| Orchestrator leftovers | **BL-016 / BL-018** open (`BL-015` done) |
-| Skills read | (orchestrator + data-architecture plan Phase 7; DAL boundary preserved) |
+| Time | 2026-07-27 ~09:25 PT |
+| `main` @ | *(tip after this push — includes `2418806a` Batch-1)* |
+| Program ledger | **47/52 done**. **W13.1 stays partial** — Batch-1 complete; Batches 2–6 need Matt go. |
+| Done (this tip) | Finished Batch-1 leftovers in `2418806a`: 71 files deleted (`marketing-brain`, `avatar-market-channel`, `site-audit`, `broker-runbooks`, `transaction-coordinator`, `fub-crm-spec` prose + verification-raw). Kept `crm-screens.json` + `_verify` + `archive/fub-era` + PROGRAM. Gates: `ci:claude-canon`, `ci:program-complete`, `ci:crm-screen-parity` green; citation ratchet →12. |
+| Next / open | **W13.1** Matt-go list in ledger `remaining`. Do not wipe `docs/plans`. Do not delete AGENTS/ARCHITECTURE without explicit go. Orchestrator: BL-016 / BL-018. |
+| Blocked | **W5.5a**, **W8.1a**, **W9.1**, **W9.5** (`blocked:needs-matt`) |
+| Skills read | `06-DELETION-MANIFEST.md`; CONSOLIDATION-LANES summary |
 
 ## Default agent loop
 1. Prefer `main`. Worktree only for parallel/long/cloud isolation (`wt/<topic>-YYYYMMDD`).
@@ -19,6 +19,8 @@
 3. Session end: merge to `main` + push, or handoff branch path in this file. Run `npm run wt:status`.
 
 ---
+
+> **PRIOR: BL-015 COMPLETE 2026-07-27 (Cursor).** See git log `2c67580c`.
 
 > **NEWEST, START HERE: LISTING HERO MAP TOGGLE 2026-07-27 (Cursor).** Prior: blocked-rows ops.
 
