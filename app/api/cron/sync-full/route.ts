@@ -84,11 +84,12 @@ export async function GET(request: Request) {
     )
   }
 
-  // Reporting phase hook: refresh pulse and current stats after sync work.
+  // Reporting phase hook: refresh pulse (city + community) and current stats after sync.
   try {
     const supabase = createServiceClient()
     await Promise.all([
       supabase.rpc('refresh_market_pulse'),
+      supabase.rpc('refresh_community_market_pulse'),
       supabase.rpc('refresh_current_period_stats'),
     ])
   } catch (error) {

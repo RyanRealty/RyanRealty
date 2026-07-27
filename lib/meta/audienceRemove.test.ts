@@ -135,6 +135,7 @@ describe('removeFromCrmAudience -- live path (flag set + dryRun:false)', () => {
 
   it('falls back to dry when creds are missing even with the flag + dryRun:false', async () => {
     delete process.env.META_USER_ACCESS_TOKEN
+    delete process.env.META_USER_ACCESS_TOKEN_USER
     const fetchSpy = vi.fn()
     const out = await removeFromCrmAudience([1], {
       dryRun: false,

@@ -1009,7 +1009,7 @@
       "priority": "medium",
       "category": "data",
       "source": "docs/plans/data-architecture-plan.md",
-      "status": "open",
+      "status": "complete",
       "owner": "reporting",
       "files": [
         "supabase/migrations/*",
@@ -1022,7 +1022,32 @@
       ],
       "dependsOn": [
         "BL-015"
-      ]
+      ],
+      "completedAt": "2026-07-27",
+      "completionEvidence": {
+        "verified": "Phase 8+9 implemented and verified live on hosted Supabase 2026-07-27",
+        "currentPeriodRefreshAfterSync": [
+          "run_post_sync_pipeline (pg_cron every 15 min): refresh_market_pulse + refresh_community_market_pulse + refresh_current_period_stats",
+          "lib/sync/deltaSync.ts calls refresh_market_pulse + refresh_community_market_pulse after delta",
+          "app/api/cron/sync-full/route.ts calls both pulse RPCs + refresh_current_period_stats"
+        ],
+        "communityPulseRows": {
+          "migration": "supabase/migrations/20260727180000_bl016_community_pulse_and_yearly.sql (+ hosted apply via MCP)",
+          "rpc": "refresh_community_market_pulse()",
+          "live": "market_pulse_live geo_type=neighborhood: 28 rows (2026-07-27); city=16 region=1",
+          "sample": "tetherow active_count=25 MoS=7.89; eagle-crest active=84 MoS=12.60",
+          "note": "bend-undesignated has no neighborhood_subdivisions aliases; yearly skipped for that slug"
+        },
+        "yearlyHistorical": {
+          "rpc": "refresh_historical_yearly_stats(p_years_back)",
+          "live": "period_type=yearly for 2024/2025/2026: 16 city + 27 neighborhood + 1 region each year (132 rows)",
+          "sample": "tetherow yearly sold_count 40/39/19 across 2024-2026"
+        },
+        "docsUpdated": [
+          "docs/DATABASE_FOR_AI_AGENTS.md — pulse now city+region+neighborhood",
+          "docs/plans/data-architecture-plan.md Phase 8-9 checklist"
+        ]
+      }
     },
     {
       "id": "BL-017",

@@ -1,3 +1,26 @@
+> **NEWEST, START HERE: BL-016 COMPLETE — ORCHESTRATOR 49/49 2026-07-27 (Cursor).** Prior: BL-018.
+
+# Current — Orchestrator BL-016 closed; 49/49 (2026-07-27)
+
+| Field | Value |
+|---|---|
+| Surface | Cursor |
+| Time | 2026-07-27 ~10:35 PT |
+| `main` @ | *(tip after this push)* |
+| Orchestrator | **49/49 complete.** BL-016 closed. No open orchestrator tasks. |
+| Done | BL-016 Phase 8/9: community pulse + yearly historical. Hosted migration applied. `refresh_community_market_pulse` → 28 neighborhood rows in `market_pulse_live`. Yearly cache 2024–2026 for region + 16 cities + 27 neighborhoods. Wired into `run_post_sync_pipeline`, deltaSync, sync-full. Docs: DATABASE_FOR_AI_AGENTS + data-architecture-plan. Evidence in `task-registry.json` → `BL-016.completionEvidence`. |
+| Next | Program ledger blocked rows (W5.5a / W8.1a / W9.1 / W9.5) need Matt. Do not invent Matt go for W13.1 Batches 2–6. |
+| Blocked | **W5.5a**, **W8.1a**, **W9.1**, **W9.5** |
+| Residual | `bend-undesignated` has no `neighborhood_subdivisions` aliases (yearly skipped). Some Vitest flakes unrelated to BL-016 (CRM email host, Meta audience fetch mocks). |
+| Skills read | docs/DATABASE_FOR_AI_AGENTS.md; data-architecture rules |
+
+## Default agent loop
+1. Prefer `main`. Worktree only for parallel/long/cloud isolation (`wt/<topic>-YYYYMMDD`).
+2. Batch docs; push runtime + `deploy:verify`. Keep `wt/*` local until merge.
+3. Session end: merge to `main` + push, or handoff branch path in this file.
+
+---
+
 > **NEWEST, START HERE: BL-018 COMPLETE 2026-07-27 (Cursor).** Prior: W13.1 Batch-1.
 
 # Current — Orchestrator BL-018 closed (2026-07-27)

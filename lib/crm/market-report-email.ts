@@ -49,7 +49,10 @@ import type {
 import type { MoSVerdict } from '@/lib/data/types/market'
 
 const MUTED = EMAIL_BODY_MUTED
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+// Outbound email CTAs always use the public canonical host — never the
+// Vercel preview/prod deployment URL from NEXT_PUBLIC_SITE_URL (local .env
+// often points at ryanrealty.vercel.app and would poison CRM email links).
+const SITE_URL = 'https://ryan-realty.com'
 
 export interface RenderMarketReportEmailInput {
   /** Recipient first name (or full name); blank/absent uses a neutral greeting. */

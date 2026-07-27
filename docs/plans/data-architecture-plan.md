@@ -743,9 +743,11 @@ Phases must execute in this order (later phases depend on earlier ones):
 - Listing detail optimization
 - Search + city + community optimization
 
-**Phase 8-9: Cache and historical data** (depends on Phase 2)
-- Populate community-level stats
-- Backfill historical years
+**Phase 8-9: Cache and historical data** (depends on Phase 2) — **VERIFIED 2026-07-27 via BL-016**
+- [x] Populate community-level pulse (`refresh_community_market_pulse` → 28 neighborhood rows in `market_pulse_live`)
+- [x] Current-period cache refresh after sync (`run_post_sync_pipeline` every 15 min + delta/full hooks)
+- [x] Backfill historical years (`period_type='yearly'` for 2024–2026: region + 16 cities + 27 neighborhoods)
+- Evidence: `docs/plans/task-registry.json` → `BL-016.completionEvidence`
 
 **Phase 10-11: CMA and reports** (depends on Phase 1 for ClosePrice)
 - CMA engine improvements

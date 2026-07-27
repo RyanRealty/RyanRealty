@@ -17,7 +17,7 @@
 | **Market report for a city** (Bend, Redmond, Sisters…) | `market_stats_cache WHERE geo_type='city' AND geo_slug=<slugified-city>` | `period_type`, `sold_count`, `median_sale_price`, `median_dom` | ≤ 6h |
 | **Market report for a resort community** (Tetherow, Sunriver, Eagle Crest, Pronghorn, …) | `market_stats_cache WHERE geo_type='neighborhood' AND geo_slug=<bare-slug>` — see §3a for the 14 valid slugs | same | ≤ 6h |
 | **Market report for a Bend neighborhood** (Awbrey Butte, Larkspur, …) | `market_stats_cache WHERE geo_type='neighborhood' AND geo_slug='bend-<slug>'` | same | ≤ 6h |
-| **Live active/pending inventory** for cities + region | `market_pulse_live WHERE geo_type IN ('city','region') AND property_type='A'` | `active_count`, `pending_count`, `months_of_supply` | ≤ 10–15 min |
+| **Live active/pending inventory** for cities + region + neighborhoods | `market_pulse_live WHERE geo_type IN ('city','region','neighborhood') AND property_type='A'` | `active_count`, `pending_count`, `months_of_supply` | ≤ 10–15 min |
 | **Property details for one listing** | `listings WHERE "ListingKey" = ?` (note: PascalCase columns MUST be double-quoted — see §4) | every Spark MLS field | ≤ 10 min |
 | **Active listings in a community** | `listings WHERE "SubdivisionName" = ANY(<aliases from neighborhood_subdivisions>) AND "StandardStatus" IN ('Active','Coming Soon','Active Under Contract')` | see §3a for the aliases | ≤ 10 min |
 | **Comparable sales (CMA)** | `listings WHERE "StandardStatus"='Closed' AND "CloseDate" >= ... AND <filters>` | `"ClosePrice"`, `close_price_per_sqft`, `sale_to_list_ratio`, `days_to_pending` | ≤ 10 min |
@@ -52,7 +52,7 @@
                 │  public.market_pulse_live               │
                 │  ONE row per (geo_type, geo_slug,       │
                 │  property_type)                         │
-                │  city + region only today               │
+                │  city + region + neighborhoods          │
                 │  active/pending/new counts, MoS, etc.   │
                 └─────────────────────────────────────────┘
 
@@ -84,7 +84,7 @@ GEOGRAPHY SOURCE-OF-TRUTH (manually curated, rarely changes):
 **Three things to internalize:**
 
 1. **`listings`** is raw + heavy. Never `SELECT *` on it. Use the cache tables for any aggregation.
-2. **`market_pulse_live`** is fast-moving inventory snapshots (refreshed every 10 min by the Spark sync). It currently only carries city + region rows — NOT neighborhoods.
+2. **`market_pulse_live`** is fast-moving inventory snapshots (refreshed every 10–15 min). City + region via `refresh_market_pulse()`; neighborhood (14 resorts + Bend districts) via `refresh_community_market_pulse()` (BL-016).
 3. **`market_stats_cache`** is period-anchored historical analytics (refreshed every 6 hours by `/api/cron/refresh-market-stats`). It carries every level: city, region, neighborhood (resort communities + Bend districts), subdivision.
 
 ---
@@ -132,7 +132,7 @@ GEOGRAPHY SOURCE-OF-TRUTH (manually curated, rarely changes):
 
 | Table | Rows | Purpose |
 |---|---|---|
-| **`public.market_pulse_live`** | 17 | **Live inventory snapshot**. ONE row per `(geo_type, geo_slug, property_type)`. 29 columns: active_count, pending_count, new_count_7d/30d, median_list_price, months_of_supply, absorption_rate_pct, market_health_score, etc. **Refreshed by `refresh_market_pulse()` on every sync (~10 min freshness).** Today carries city + region only (not neighborhoods). |
+| **`public.market_pulse_live`** | ~45 | **Live inventory snapshot**. ONE row per `(geo_type, geo_slug, property_type)`. 29 columns: active_count, pending_count, new_count_7d/30d, median_list_price, months_of_supply, absorption_rate_pct, market_health_score, etc. **City/region:** `refresh_market_pulse()`. **Neighborhoods:** `refresh_community_market_pulse()` (BL-016). ~10–15 min freshness via post-sync pipeline. |
 | **`public.market_stats_cache`** | 4,367 | **Period-anchored historical analytics**. ONE row per `(geo_type, geo_slug, period_type, period_start)`. ~40 columns: sold_count, median_sale_price, avg_sale_price, median_dom, percentile_25/50/75 speed, median_ppsf, sale_to_list_ratio, market_health_score, end_of_period_inventory, YoY + MoM deltas, dom_distribution jsonb, price_band_counts jsonb, etc. **Refreshed by `/api/cron/refresh-market-stats` every 6 hours.** Carries city + region + neighborhood (resort + Bend districts) levels. |
 | `public.market_narratives` | 0 | AI-generated long-form market commentary tied to a stats row. |
 | `public.cache_methodology_definitions` | 2 | **Audit trail for every cache row.** Each version (`v3-2026-05-07`, `v4-2026-05-15`) documents the geography rule, property-type filter, manual overrides. **Every cache row carries `methodology_version` so you can trace what produced it.** |
@@ -474,7 +474,7 @@ The boundary-map pins + "homes for sale" cards need the set of listings physical
 
 ```
 */10 * * * *   /api/cron/sync-delta           Spark → listings (incremental sync)
-                                              + calls refresh_market_pulse() (city + region only)
+                                              + calls refresh_market_pulse() + refresh_community_market_pulse()
 */5 * * * *    /api/cron/sync-history-terminal Spark history sync for terminal listings
 0 2 * * 0      /api/cron/sync-full            Sunday 2am full re-sync
 0 */6 * * *    /api/cron/refresh-market-stats Every 6 hours — backfill_rolling for cities,
