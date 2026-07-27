@@ -1,11 +1,21 @@
 'use client'
 
 import Image from 'next/image'
-import { useState, useRef } from 'react'
+import dynamic from 'next/dynamic'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import type { ListingPhoto } from '@/lib/data/types/listing'
 import type { VideoEmbed } from '@/lib/data/types/video'
 import { PhotoGalleryLightbox } from '@/components/site/PhotoGalleryLightbox'
+import { Button } from '@/components/ui/button'
+import { buildListingHeroStaticMapUrl } from '@/lib/listing-hero-static-map'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { MapsLocation01Icon, Cancel01Icon } from '@hugeicons/core-free-icons'
+
+const ListingHeroMapClient = dynamic(() => import('./ListingHeroMap.client'), {
+  ssr: false,
+  loading: () => <div aria-hidden className="h-full w-full animate-pulse bg-muted" />,
+})
 
 /**
  * ListingHero — full-bleed KB (kinetic-brutalist) hero for the listing detail page.
@@ -42,6 +52,9 @@ type Props = {
   beds?: number | null
   baths?: number | null
   sqft?: number | null
+  /** Listing coordinates — enables the bottom-left map thumb + expand toggle. */
+  lat?: number | null
+  lng?: number | null
   className?: string
 }
 
@@ -84,14 +97,52 @@ function formatPrice(p: number): string {
   return `$${p.toLocaleString('en-US')}`
 }
 
-export function ListingHero({ photos, videos, addressLine, price, beds, baths, sqft, className }: Props) {
+export function ListingHero({
+  photos,
+  videos,
+  addressLine,
+  price,
+  beds,
+  baths,
+  sqft,
+  lat = null,
+  lng = null,
+  className,
+}: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [isMuted, setIsMuted] = useState(true)
   const [isPaused, setIsPaused] = useState(false)
+  const [mapOpen, setMapOpen] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const total = photos.length
 
-  if (total === 0 && videos.length === 0) return null
+  const hasCoords =
+    lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)
+  const staticMapUrl = hasCoords ? buildListingHeroStaticMapUrl(lat, lng) : null
+  const canShowMap = hasCoords && Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim())
+
+  const closeMap = useCallback(() => setMapOpen(false), [])
+  const toggleMap = useCallback(() => setMapOpen((open) => !open), [])
+
+  useEffect(() => {
+    if (!mapOpen) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') closeMap()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [mapOpen, closeMap])
+
+  // Pause autoplay video while the map covers the hero.
+  useEffect(() => {
+    if (!mapOpen || !videoRef.current) return
+    videoRef.current.pause()
+    setIsPaused(true)
+  }, [mapOpen])
+
+  // Coords alone still render the hero so the map thumb works when photos
+  // have not loaded yet (or the listing has no media).
+  if (total === 0 && videos.length === 0 && !canShowMap) return null
 
   const altBase = addressLine ? `Photo of ${addressLine}` : 'Listing photo'
   const heroVideo = videos.find((v) => v.embedType === 'iframe' || v.embedType === 'video-tag') ?? null
@@ -138,7 +189,7 @@ export function ListingHero({ photos, videos, addressLine, price, beds, baths, s
         }}
       >
         {/* Media layer — video or photo, full-bleed object-cover */}
-        {hasVideo && heroVideo ? (
+        {!mapOpen && hasVideo && heroVideo ? (
           <VideoLayer
             video={heroVideo}
             posterUrl={photos[0]?.url}
@@ -146,7 +197,8 @@ export function ListingHero({ photos, videos, addressLine, price, beds, baths, s
             videoRef={videoRef}
             onTap={toggleMute}
           />
-        ) : photos[0] ? (
+        ) : null}
+        {!mapOpen && !hasVideo && photos[0] ? (
           <button
             type="button"
             onClick={() => setOpenIndex(0)}
@@ -165,7 +217,15 @@ export function ListingHero({ photos, videos, addressLine, price, beds, baths, s
           </button>
         ) : null}
 
+        {/* Expanded map fills the hero image space */}
+        {mapOpen && hasCoords ? (
+          <div className="absolute inset-0 z-10" role="region" aria-label="Property location map">
+            <ListingHeroMapClient lat={lat!} lng={lng!} />
+          </div>
+        ) : null}
+
         {/* Gradient scrim — same gradient as kb.css .hero-photo::after */}
+        {!mapOpen ? (
         <div
           aria-hidden
           style={{
@@ -176,8 +236,10 @@ export function ListingHero({ photos, videos, addressLine, price, beds, baths, s
             pointerEvents: 'none',
           }}
         />
+        ) : null}
 
         {/* Overlay text — address + price + key stats, cream on navy scrim */}
+        {!mapOpen ? (
         <div
           className="listing-hero-overlay"
           style={{
@@ -186,7 +248,13 @@ export function ListingHero({ photos, videos, addressLine, price, beds, baths, s
             right: 0,
             bottom: 0,
             zIndex: 3,
-            padding: 'clamp(18px,3vw,40px) clamp(18px,3.5vw,56px) clamp(22px,3.5vw,48px)',
+            paddingTop: 'clamp(18px,3vw,40px)',
+            paddingRight: 'clamp(18px,3.5vw,56px)',
+            paddingBottom: 'clamp(22px,3.5vw,48px)',
+            // Leave room for the bottom-left map thumb (80px + gutters).
+            paddingLeft: canShowMap
+              ? 'clamp(108px, 14vw, 140px)'
+              : 'clamp(18px,3.5vw,56px)',
             color: 'var(--cream, #faf8f4)',
           }}
         >
@@ -275,11 +343,12 @@ export function ListingHero({ photos, videos, addressLine, price, beds, baths, s
             ) : null}
           </div>
         </div>
+        ) : null}
 
         {/* Video mute + pause affordances. WCAG 2.2.2 requires a way to stop
             motion that autoplays longer than 5s — mute alone doesn't satisfy
             that (design-audit P2, accessibility). */}
-        {hasVideo ? (
+        {!mapOpen && hasVideo ? (
           <div
             style={{
               position: 'absolute',
@@ -338,6 +407,69 @@ export function ListingHero({ photos, videos, addressLine, price, beds, baths, s
               {isMuted ? <UnmuteIcon /> : <MuteIcon />}
               {isMuted ? 'Unmute' : 'Mute'}
             </button>
+          </div>
+        ) : null}
+
+        {/* Bottom-left map thumb / clear control */}
+        {canShowMap ? (
+          <div
+            className="absolute bottom-4 left-4 z-20 flex items-end gap-2"
+          >
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              onClick={toggleMap}
+              aria-pressed={mapOpen}
+              aria-label={mapOpen ? 'Hide map and show photos' : 'Show map of this home'}
+              className={cn(
+                'relative h-20 w-20 overflow-hidden rounded-xl border-2 p-0 shadow-md',
+                'border-primary-foreground/80 bg-card hover:bg-card',
+                'focus-visible:ring-ring',
+                mapOpen && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
+              )}
+            >
+              {staticMapUrl && !mapOpen ? (
+                // eslint-disable-next-line @next/next/no-img-element -- Static Maps URL; not in next/image remotePatterns
+                <img
+                  src={staticMapUrl}
+                  alt=""
+                  width={80}
+                  height={80}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
+              ) : (
+                <span className="flex h-full w-full flex-col items-center justify-center gap-1 bg-card text-primary">
+                  <HugeiconsIcon
+                    icon={mapOpen ? Cancel01Icon : MapsLocation01Icon}
+                    className="size-6"
+                    aria-hidden
+                  />
+                  <span className="text-xs font-semibold uppercase tracking-wide">
+                    {mapOpen ? 'Photos' : 'Map'}
+                  </span>
+                </span>
+              )}
+              {!mapOpen && staticMapUrl ? (
+                <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-primary/80 py-0.5 text-center text-xs font-semibold uppercase tracking-wide text-primary-foreground">
+                  Map
+                </span>
+              ) : null}
+            </Button>
+            {mapOpen ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={closeMap}
+                aria-label="Show photos"
+                className="h-11 min-w-11 shadow-md"
+              >
+                Show photos
+              </Button>
+            ) : null}
           </div>
         ) : null}
       </div>

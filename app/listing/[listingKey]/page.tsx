@@ -397,6 +397,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
       beds={listing.beds}
       baths={listing.baths}
       sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
+      lat={listing.lat}
+      lng={listing.lng}
     />
   )
 

@@ -1,18 +1,16 @@
-> **NEWEST, START HERE: BLOCKED-ROWS OPS PASS 2026-07-27 (Cursor).** Prior: W13.1 BATCH-1 CLOSEOUT.
+> **NEWEST, START HERE: LISTING HERO MAP TOGGLE 2026-07-27 (Cursor).** Prior: blocked-rows ops.
 
-# Current — W5.5a / W8.1a / W9.1 / W9.5 independent checks (2026-07-27)
+# Current — Listing detail hero map affordance (2026-07-27)
 
 | Field | Value |
 |---|---|
 | Surface | Cursor |
 | Time | 2026-07-27 ~09:20 PT |
-| `main` @ | `9614acc7` |
-| Program ledger | **47/52 done**. Four rows still `blocked:needs-matt` after independent checks — none flipped (no invented Matt yes). |
-| Done (this tip) | Evidence + exact Matt steps in each row `remaining`/`proofPath`. W8.1a brief in `04-DECISIONS-RECORDED.md` §33 (recommend keep 12mo; not locked). Confirmed: prod lacks `CRM_SMS_ALERTS`; web-push drain outside SMS gate; cohort enroll 5328 on 2026-07-23; no `RESEND_WEBHOOKS_API_KEY` in Vercel/local; send-only key cannot list webhooks; `gh` absent on this machine. |
-| Per-row Matt one-liners | **W5.5a:** Set Vercel Production `CRM_SMS_ALERTS=twilio`, unload mac-mini crm-alert-relay, Enable push on /admin/settings. **W8.1a:** Reply `keep 12mo` (recommended) or `switch resorts to 6mo`. **W9.1:** Skip enroll (done); approve+send first Bend Brief after W9.5 green. **W9.5:** Full-access Resend key as `RESEND_WEBHOOKS_API_KEY` (Vercel+GH) + register webhook → `/api/webhooks/resend`. |
-| Next / open | **W13.1** partial — Matt go on Batches 2+. |
-| Blocked | **W5.5a**, **W8.1a**, **W9.1**, **W9.5** |
-| Skills read | (ops verify only) |
+| `main` @ | *(this push tip)* |
+| Done | Listing hero bottom-left Google Static Maps thumb; click expands interactive Maps JS into hero; toggle / Show photos / Esc returns to media. Wired `lat`/`lng` from listing page. |
+| Next | Optional polish: hide redundant Show photos chip on mobile when PHOTOS icon is enough |
+| Blocked | None for this feature |
+| Skills read | `.claude/skills/frontend-design/SKILL.md`; design-system rules |
 
 ## Default agent loop
 1. Prefer `main`. Worktree only for parallel/long/cloud isolation (`wt/<topic>-YYYYMMDD`).
