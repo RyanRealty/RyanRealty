@@ -1,3 +1,28 @@
+> **NEWEST, START HERE: W5.1 SUSPENSE REGIONS 2026-07-27 (Cursor).** Prior: VERCEL COST / WORKTREES.
+
+# Current — W5.1 person-workspace Suspense regions (2026-07-27)
+
+| Field | Value |
+|---|---|
+| Surface | Cursor |
+| Time | 2026-07-27 ~04:45 PT |
+| `main` @ | `d9889dd2` (tip); feature `eff7136c`; runtime READY `@ a7d28343` |
+| Done | W5.1 engineering: critical-path SendPanel/conversation vs nested Suspense homes/engagement/mobile homes+calendar regions (uncached). Gates updated (single-tree, crm-mobile-track, screen-parity alsoRoutes). `deploy:verify` READY for `a7d28343`. Companion: jefferson-county-fair dates nulled for content-freshness. |
+| Next | Independent read-only verifier for W5.1 must say FLIP_DONE before ledger flip (Task agents were resource_exhausted this session). Optional later: tagged `revalidateTag` DAL if proven safe. |
+| Blockers | W5.1 stays **partial** until independent `verifiedBy` |
+| Skills read | spec-03 (RC3/§5 fetch); crm-e2e skim |
+
+## Shipped SHAs
+- `eff7136c` feat(crm): stream person-workspace secondary Suspense regions
+- `a7d28343` chore(content): null past jefferson county fair dates
+
+## Default agent loop
+1. Prefer `main`. Worktree only for parallel/long/cloud isolation (`wt/<topic>-YYYYMMDD`).
+2. Batch docs; push runtime + `deploy:verify`. Keep `wt/*` local until merge (previews cost Build CPU).
+3. Session end: merge to `main` + push, or handoff branch path in this file. Run `npm run wt:status`.
+
+---
+
 > **NEWEST, START HERE: VERCEL COST + WORKTREE OPS 2026-07-26 (Cursor).** Prior: REMAINING-TASKS.
 
 # Current — Vercel cost / worktrees / agent loop (2026-07-26)
