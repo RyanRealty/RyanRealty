@@ -11,8 +11,8 @@ export const CONTENT_HERO_IMAGES = {
   // ─── BROKERAGE PAGES ───────────────────────────────────────────────
   /** About: the Ryan Realty Bend office interior */
   about: '/images/office/ryan-realty-bend-office-interior-01.jpg',
-  /** Team: Matt, Paul, and Rebecca group portrait */
-  team: '/images/team.webp',
+  /** Team: Old Mill District drone (roster photos live in KbTeam below) */
+  team: '/images/hero/hero-old-mill-master-4k.jpg',
   /** Contact: Three Sisters at sunrise — approachable Cascade scene */
   contact: '/images/kb/three-sisters-sunrise.jpg',
   /** Reviews: Drake Park + the Deschutes, downtown Bend community */

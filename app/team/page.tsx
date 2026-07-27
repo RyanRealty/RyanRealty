@@ -47,7 +47,7 @@ export const metadata: Metadata = pageMetadata({
   description:
     'Work directly with a Ryan Realty broker in Bend, Oregon. Cinematic video, 3D tours, and data-backed pricing on every Central Oregon listing, from first call to closing.',
   path: '/team',
-  ogImage: '/images/team.webp',
+  ogImage: '/images/hero/hero-old-mill-master-4k.jpg',
   keywords: [
     'Ryan Realty team',
     'Bend Oregon real estate brokers',
@@ -182,9 +182,8 @@ export default async function TeamPage() {
           lead="No hand-offs, no transaction desk, no junior agent learning on your deal."
           showSearch={false}
           videoSrc={null}
-          posterSrc="/images/team.webp"
-          posterAlt="Ryan Realty brokers Matt Ryan, Paul Stevenson, and Rebecca Peterson"
-          // Hero uses the broker group portrait (not the misfiled office asset).
+          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterAlt="Old Mill District, Bend, Oregon"
         />
         <KbAbout
           eyebrow="The team"
