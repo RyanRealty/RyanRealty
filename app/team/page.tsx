@@ -184,6 +184,7 @@ export default async function TeamPage() {
           videoSrc={null}
           posterSrc="/images/team.webp"
           posterAlt="Ryan Realty brokers Matt Ryan, Paul Stevenson, and Rebecca Peterson"
+          // Hero uses the broker group portrait (not the misfiled office asset).
         />
         <KbAbout
           eyebrow="The team"
@@ -220,3 +221,4 @@ export default async function TeamPage() {
     </main>
   )
 }
+
