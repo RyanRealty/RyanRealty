@@ -6,7 +6,7 @@
 |---|---|
 | Surface | Cursor |
 | Time | 2026-07-27 ~09:20 PT |
-| `main` @ | *(this commit after push)* |
+| `main` @ | `2c67580c` |
 | Done | **BL-015 complete** — already satisfied in code (no runtime diff). Evidence: tile/map via `TILE_MV_SELECT_COLUMNS` / DAL `getListingTiles` (no `details` JSONB); list+count via `Promise.all` in `getListingsWithAdvanced` + combined `count:'exact'` in `searchListingsAll`; geocode capped `MAX_GEOCODE_BATCH=10`. Gates: `npm run build` exit 0, `npm run test` 3625/319 green. |
 | Next | Orchestrator: **BL-016** (reporting, cache/historical) or **BL-018** (cleanup/verify). Program ledger still owns W13.1 / blocked Matt rows. |
 | Blocked | None for BL-015 |
