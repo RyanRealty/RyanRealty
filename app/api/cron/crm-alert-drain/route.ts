@@ -38,6 +38,7 @@ export const maxDuration = 60
  * Gated on CRM_SMS_ALERTS='twilio' (the existing cutover flag): when unset the
  * SMS half no-ops and the mac-mini relay keeps sole ownership. ?dry=1 reports
  * the would-send batch without claiming or sending (live verification, §0-safe).
+ * W5.5a cutover 2026-07-27: Production env must be exactly `twilio` (not empty).
  *
  * WEB PUSH (W5.5 leg b) runs FIRST and is deliberately OUTSIDE the
  * CRM_SMS_ALERTS gate: it is the durable channel, so it must keep delivering
