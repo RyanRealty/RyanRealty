@@ -49,9 +49,6 @@ import type {
 import type { MoSVerdict } from '@/lib/data/types/market'
 
 const MUTED = EMAIL_BODY_MUTED
-// Outbound email CTAs always use the public canonical host — never the
-// Vercel preview/prod deployment URL from NEXT_PUBLIC_SITE_URL (local .env
-// often points at ryanrealty.vercel.app and would poison CRM email links).
 const SITE_URL = 'https://ryan-realty.com'
 
 export interface RenderMarketReportEmailInput {

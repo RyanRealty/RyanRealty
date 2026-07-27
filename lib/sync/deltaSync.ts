@@ -592,10 +592,7 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
   else if (truncated) console.warn(`[deltaSync] TRUNCATED at MAX_PAGES; cursor -> ${nextCursor ?? '(unchanged)'} (not now()).`)
 
   // Refresh market pulse (non-critical). City/region + community neighborhoods (BL-016).
-  try {
-    await sb.rpc('refresh_market_pulse')
-    await sb.rpc('refresh_community_market_pulse')
-  } catch { /* non-critical */ }
+  try { await sb.rpc('refresh_market_pulse'); await sb.rpc('refresh_community_market_pulse') } catch { /* non-critical */ }
 
   // Expired-listing pipeline over anything that just went terminal (soft-fail).
   let expired: ExpiredStats | null = null
