@@ -7,7 +7,7 @@
     "dev:unix": "next dev",
     "install:macos": "PUPPETEER_SKIP_DOWNLOAD=1 npm ci",
     "restart": "npm run dev",
-    "build": "NODE_OPTIONS=--max-old-space-size=8192 next build",
+    "build": "NODE_OPTIONS=--max-old-space-size=6144 next build",
     "build:clean-local": "powershell -ExecutionPolicy Bypass -Command \"if (Test-Path '.next/dev') { Remove-Item -Recurse -Force '.next/dev' }\" && next build",
     "push": "sh scripts/push-with-gates.sh",
     "gates:stamp": "node scripts/stamp-gates-marker.mjs",
