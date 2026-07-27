@@ -350,7 +350,7 @@
       "workstream": "W5",
       "mission": "M2",
       "title": "Ship spec-03: person-workspace rebuild + single sendDeliverable action + governed-send chokepoint (SendPanel converges the three dialogs); mechanism: chokepoint CI gate",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
         "gates": [
           "scripts/check-deliverable-send-chokepoint.mjs",
@@ -370,8 +370,8 @@
         ]
       },
       "proofPath": "PersonWorkspace single tree + Suspense identity shell on /admin/crm/[id]. Nested Suspense regions: PersonHomesRegion, PersonEngagementRegion, PersonMobileHomesRegion, PersonMobileCalendarRegion (eff7136c). Route force-dynamic kept+documented (auth-scoped CRM; no revalidateTag yet). ci:person-workspace-single-tree asserts regions. Chokepoint bypass sites 0. SendPanel (ContactSendCenter) on mobile+desktop. Production READY a7d28343 (includes content-freshness companion).",
-      "verifiedBy": "a0ee03f2-669c-4c74-904a-1a090773819b — W5.1 chokepoint PASS only. Suspense-region / single-tree work NOT independently verified yet (2026-07-27 builder session: Task verifier agents resource_exhausted).",
-      "remaining": "BUILDER 2026-07-27: nested Suspense secondary regions LANDED (eff7136c); force-dynamic retained on purpose. STILL OPEN: (1) independent verifiedBy for RC3+Suspense+regions → then FLIP_DONE; (2) optional deeper tagged DAL + revalidateTag / drop force-dynamic per spec-03 §5 (deferred: cross-contact cache risk). Do NOT flip without independent verifier saying FLIP_DONE."
+      "verifiedBy": "c7e4a91b-2f83-4d60-b1e5-9a0c6f48d2e7 — independent adversarial verifier 2026-07-27. FLIP_DONE: (1) page.tsx identity shell + Suspense, no md fork; (2) crm/[id]/mobile-detail.tsx absent; (3) PersonWorkspace owns forceMobile + md:hidden/hidden md:block, MobileLeadDetail under person-detail/; (4) nested Suspense streams homes/engagement/mobile calendar; ContactSendCenter + getContactConversation on critical path; (5) ci:person-workspace-single-tree in ci:gates, exit 0; (6) ci:crm-mobile-track + ci:crm-screen-parity green; (7) ci:deliverable-send-chokepoint bypass sites 0; (8) no person-scoped unstable_cache/revalidateTag on person page path (vocab caches only); (9) force-dynamic retained with auth rationale. Prod alias READY @ a7d28343; eff7136c ancestor.",
+      "remaining": ""
     },
     {
       "id": "W5.3",
