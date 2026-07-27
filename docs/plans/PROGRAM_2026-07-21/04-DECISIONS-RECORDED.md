@@ -418,3 +418,20 @@ each restore. The fetch extraction into the DAL helper minimized leg A's growth 
 god-file; the residual +15 was re-baselined as a single hand-edited entry (not a whole-baseline rewrite,
 which would have absorbed an unrelated in-flight breach), so the file-size gate still bites past 884 and
 on every other frozen file. Independent adversarial verifier: PASS on all 5 attack vectors, re-verified against the fetch->DAL refactor commit. §0 is exact for bend and redmond across all three periods (each panel binds its own market_stats_cache row, proven by the YTD-vs-monthly inventory split), null fields render the em-dash, both explore routes 308-redirect with every file deleted and imported by nothing, and ci:no-explore-route bit RED on both a re-added explore page and a re-added link then GREEN on restore. The one observation (a 1-unit cross-tab inventory difference) traces to the pre-existing 6h market_stats_cache window, not a §0 violation and not introduced by W8.4..
+
+
+## §33 — W8.1a MoS window for resorts in outbound market-report email (OPEN — needs Matt)
+
+**Status:** recommendation only. Not locked. No code change until Matt speaks.
+
+**Code cites (`lib/data/crm/getMarketReportData.ts`):**
+- Cities: live `market_pulse_live.monthsOfSupply` wins when present (cache-computed on a **6-month** close base: `active / (closed_6mo / 6)`).
+- Resorts: no live pulse row, so MoS is computed from `market_stats_cache` `period_type='rolling_365d'` via `soldLast12mo / 12` (`rawMonthsOfSupply` / `computeMonthsOfSupply`). Thresholds unchanged (≤4 seller · 4–6 balanced · ≥6 buyer).
+
+**Why 12mo is the current default for resorts:** slow-turnover communities (Pronghorn / Crosswater / Vandevert and peers) often lack a meaningful 6-month close base; DATABASE_FOR_AI_AGENTS documents rolling_365d as the stable window for those geos. A forced 6mo base can swing MoS / verdict on sparse closes.
+
+**Options for Matt:**
+1. **KEEP 12mo (recommended)** — leave resort outbound-email MoS on `rolling_365d`. Cities stay on live 6mo pulse. Document the dual base in the email footer/methodology line if needed.
+2. **SWITCH resorts to 6mo** — compute from `rolling_180d` (or sold6mo) when the cache row exists; fall back to 12mo when closes are too thin. Engineering implements only after spoken yes.
+
+**ONE-LINER:** Reply `keep 12mo` or `switch resorts to 6mo`.

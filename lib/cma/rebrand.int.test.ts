@@ -31,7 +31,8 @@ config({ path: '.env.local' })
 const HAVE_DB = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL)
 const run = HAVE_DB ? describe : describe.skip
 
-const STAMP = process.env.VITEST_WORKER_ID ?? '0'
+// Unique per process so parallel agent vitest runs cannot collide on cmas_slug_key.
+const STAMP = `${process.env.VITEST_WORKER_ID ?? '0'}-${process.pid}-${Date.now().toString(36)}`
 const SLUG_NO_ARGS = `zz-test-rebrand-noargs-${STAMP}`
 const SLUG_LOCKED = `zz-test-rebrand-locked-${STAMP}`
 
@@ -46,24 +47,25 @@ run('CMA re-brand — refusal contract (real DB)', () => {
 
   async function seed(slug: string, extra: Record<string, unknown>) {
     const { createServiceClient } = await import('@/lib/supabase/service')
-    const { error } = await createServiceClient()
-      .from('cmas')
-      .insert({
-        slug,
-        doc_type: 'cma',
-        subject_address: '1 Test Way, Bend, OR 97701',
-        html_path: `db:cmas.html_content:${slug}`,
-        html_content: '<html><body>seed</body></html>',
-        broker_slug: 'matthew-ryan',
-        recommended_list: 750000,
-        status: 'draft',
-        ...extra,
-      })
+    const sb = createServiceClient()
+    // Idempotent cleanup for leftover rows from a killed prior run with the same stamp.
+    await sb.from('cmas').delete().eq('slug', slug)
+    const { error } = await sb.from('cmas').insert({
+      slug,
+      doc_type: 'cma',
+      subject_address: '1 Test Way, Bend, OR 97701',
+      html_path: `db:cmas.html_content:${slug}`,
+      html_content: '<html><body>seed</body></html>',
+      broker_slug: 'matthew-ryan',
+      recommended_list: 750000,
+      status: 'draft',
+      ...extra,
+    })
     if (error) throw new Error(`seed failed for ${slug}: ${error.message}`)
     seeded.push(slug)
   }
 
-  it('refuses a document that predates render_args instead of rebuilding it', async () => {
+  it('refuses a document that predates render_args instead of rebuilding it', { timeout: 20_000 }, async () => {
     await seed(SLUG_NO_ARGS, { render_args: null })
     const { rebrandCma } = await import('./rebrand')
     const res = await rebrandCma({ slug: SLUG_NO_ARGS, brokerSlug: 'paul-stevenson' })

@@ -22,7 +22,7 @@ config({ path: '.env.local' })
 const HAVE_DB = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL)
 const run = HAVE_DB ? describe : describe.skip
 
-const STAMP = process.env.VITEST_WORKER_ID ?? '0'
+const STAMP = `${process.env.VITEST_WORKER_ID ?? '0'}-${process.pid}-${Date.now().toString(36)}`
 const NEW_EMAIL = `nl-oneoff-new-${STAMP}@test.invalid`
 const OPTOUT_EMAIL = `nl-oneoff-optout-${STAMP}@test.invalid`
 
@@ -57,7 +57,7 @@ run('one-off bulk send — S-10 opt-out protection (real DB)', () => {
       .single()
     if (nlErr || !nl) throw new Error(`seed newsletter failed: ${nlErr?.message}`)
     newsletterId = nl.id as string
-  })
+  }, 20_000)
 
   afterAll(async () => {
     if (!sb) return
@@ -67,9 +67,9 @@ run('one-off bulk send — S-10 opt-out protection (real DB)', () => {
       await sb.from('newsletters').delete().eq('id', newsletterId)
     }
     await sb.from('newsletter_subscribers').delete().in('email', [NEW_EMAIL, OPTOUT_EMAIL])
-  })
+  }, 20_000)
 
-  it('enrolls + queues a new address but skips a prior opt-out', async () => {
+  it('enrolls + queues a new address but skips a prior opt-out', { timeout: 20_000 }, async () => {
     const { enqueueNewsletterToEmails } = await import('@/lib/newsletter/send-queue')
     const res = await enqueueNewsletterToEmails(newsletterId, [NEW_EMAIL, OPTOUT_EMAIL])
 
@@ -105,7 +105,7 @@ run('one-off bulk send — S-10 opt-out protection (real DB)', () => {
     expect(emails).not.toContain(OPTOUT_EMAIL)
   })
 
-  it('returns all_opted_out when every address previously unsubscribed', async () => {
+  it('returns all_opted_out when every address previously unsubscribed', { timeout: 20_000 }, async () => {
     // The newsletter is now status 'sending' from the first send; a fresh draft is
     // needed for a clean CAS lock. Reuse the seeded opt-out as the sole recipient.
     const { data: nl2, error } = await sb
