@@ -12,6 +12,13 @@ import { PersonWorkspaceBody } from '@/components/admin/crm/person-detail/Person
 import { PersonWorkspaceSkeleton } from '@/components/admin/crm/person-detail/PersonWorkspaceSkeleton'
 
 export const metadata = { title: 'Lead · Console' }
+/**
+ * force-dynamic tradeoff (spec-03 §5 asked to drop it):
+ * CRM person pages are auth-scoped and mutation-heavy. Keeping force-dynamic
+ * avoids accidental shared/cross-contact cache while identity + SendPanel still
+ * paint first and secondary panels stream under nested Suspense (uncached
+ * request-scoped DAL — no revalidateTag until tag invalidation is proven safe).
+ */
 export const dynamic = 'force-dynamic'
 
 /**

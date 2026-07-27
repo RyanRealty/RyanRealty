@@ -36,9 +36,19 @@ const SHIPPED = [
     must: [/forceMobile/, /md:hidden/, /hidden md:block/],
   },
   {
-    id: 'M1 contact detail — tab components composed',
+    id: 'M1 contact detail — tab components composed (info/comms/notes + streamed slot tabs)',
     file: 'components/admin/crm/person-detail/MobileLeadDetail.tsx',
-    must: [/MobileInfoTab/, /MobileCommsTab/, /MobileHomesTab/, /MobileNotesTab/, /MobileCalendarTab/],
+    must: [/MobileInfoTab/, /MobileCommsTab/, /MobileNotesTab/, /homesTab/, /calendarTab/],
+  },
+  {
+    id: 'M1 contact detail — streamed Homes tab region',
+    file: 'components/admin/crm/person-detail/PersonMobileHomesRegion.tsx',
+    must: [/MobileHomesTab/, /buildHomesPanelUnion/],
+  },
+  {
+    id: 'M1 contact detail — streamed Calendar tab region',
+    file: 'components/admin/crm/person-detail/PersonMobileCalendarRegion.tsx',
+    must: [/MobileCalendarTab/, /getAppointmentsForPerson/],
   },
   {
     id: 'M1 interactivity — pickers + add contact point (§23.8/§25.5)',

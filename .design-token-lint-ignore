@@ -100,6 +100,11 @@ app/admin/(protected)/crm/[id]/page.tsx
 components/admin/crm/person-detail/PersonWorkspace.tsx
 components/admin/crm/person-detail/PersonWorkspaceBody.tsx
 components/admin/crm/person-detail/PersonWorkspaceSkeleton.tsx
+components/admin/crm/person-detail/PersonRegionSkeleton.tsx
+components/admin/crm/person-detail/PersonHomesRegion.tsx
+components/admin/crm/person-detail/PersonEngagementRegion.tsx
+components/admin/crm/person-detail/PersonMobileHomesRegion.tsx
+components/admin/crm/person-detail/PersonMobileCalendarRegion.tsx
 app/admin/(protected)/email/campaigns/page.tsx
 app/admin/(protected)/expired-listings/page.tsx
 app/admin/(protected)/geo/AssignCommunity.tsx

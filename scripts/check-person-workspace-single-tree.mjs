@@ -34,6 +34,18 @@ for (const re of [/forceMobile/, /md:hidden/, /hidden md:block/]) {
   if (!re.test(wsSrc)) fails.push(`${workspace}: missing ${re}`)
 }
 
+const body = 'components/admin/crm/person-detail/PersonWorkspaceBody.tsx'
+const bodySrc = readFileSync(body, 'utf8')
+for (const re of [
+  /PersonHomesRegion/,
+  /PersonEngagementRegion/,
+  /PersonMobileHomesRegion/,
+  /PersonMobileCalendarRegion/,
+  /<Suspense/,
+]) {
+  if (!re.test(bodySrc)) fails.push(`${body}: missing streamed region ${re}`)
+}
+
 const mobile = 'components/admin/crm/person-detail/MobileLeadDetail.tsx'
 if (!existsSync(mobile)) fails.push(`${mobile}: missing (mobile tabs live here under PersonWorkspace)`)
 
@@ -42,5 +54,5 @@ if (fails.length) {
   for (const f of fails) console.error(`  ✗ ${f}`)
   process.exit(1)
 }
-console.log('ci:person-workspace-single-tree OK — one PersonWorkspace tree, Suspense identity shell')
+console.log('ci:person-workspace-single-tree OK — one PersonWorkspace tree, Suspense identity + secondary regions')
 process.exit(0)

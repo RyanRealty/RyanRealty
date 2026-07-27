@@ -13,14 +13,12 @@ import type { ConversationMessage } from '@/lib/data/crm/getContactConversation'
 import type { EmailEngagement } from '@/components/admin/crm/ConversationFeed'
 import type { ContactRelationship } from '@/lib/data/crm/getContactRelationships'
 import type { ContactCollaborator } from '@/lib/data/crm/getContactCollaborators'
-import type { ViewedListing } from '@/lib/data/crm/getViewedListings'
+import type { ReactNode } from 'react'
 import { MobileContactDetail } from '@/components/admin/crm/mobile/MobileContactDetail'
 import { MobileInfoTab, type MobilePickersData } from '@/components/admin/crm/mobile/MobileInfoTab'
 import { MobileActivityTab, type MobileActivityRow } from '@/components/admin/crm/mobile/MobileActivityTab'
 import { MobileCommsTab } from '@/components/admin/crm/mobile/MobileCommsTab'
-import { MobileHomesTab } from '@/components/admin/crm/mobile/MobileHomesTab'
 import { MobileNotesTab } from '@/components/admin/crm/mobile/MobileNotesTab'
-import { MobileCalendarTab } from '@/components/admin/crm/mobile/MobileCalendarTab'
 import type {
   MobilePhoneEntry,
   MobileEmailEntry,
@@ -30,7 +28,6 @@ import type {
   MobileRecentMessage,
 } from '@/components/admin/crm/mobile/MobileInfoTab'
 import type { MobileNote } from '@/components/admin/crm/mobile/MobileNotesTab'
-import type { MobileTask, MobileApptData } from '@/components/admin/crm/mobile/MobileCalendarTab'
 
 function fmtPhone(d: string): string {
   return d.length === 10 ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}` : d
@@ -89,26 +86,22 @@ export interface MobileLeadDetailProps {
   emailEngagement: Record<string, EmailEngagement>
   relationships: ContactRelationship[]
   collaborators: ContactCollaborator[]
-  viewedListings: ViewedListing[]
   /** §28 mobile-pickers data (mobile-calendar-tasks sibling slice, M7):
       account sources · ponds · active automations + this contact's
       enrollments · the acting broker (Me row + Currently banner). */
   pickers: MobilePickersData
-  /** §25.9 Calendar tab — the contact's appointments + create-sheet config
-      (P2-4 closure: the "Add Appointment or Task" row has a real
-      appointment branch). */
-  appointments: MobileApptData
+  /** Streamed Homes tab (Suspense region — viewed/saved union). */
+  homesTab: ReactNode
+  /** Streamed Calendar tab (Suspense region — appointments + create sheet). */
+  calendarTab: ReactNode
   /** iMessage-style SMS composer for the Comms tab (pinned bottom). Built in
       page.tsx so it shares the exact send action + recipients as desktop. */
-  smsComposer: React.ReactNode
+  smsComposer: ReactNode
   /** THE SendPanel (Pain #4) — the same ContactSendCenter element the desktop
       rail mounts, so phones finally have the send domain (audited RC3 gap).
       Rendered at the top of the Info tab. */
-  sendCenter?: React.ReactNode
+  sendCenter?: ReactNode
   addNoteAction: (formData: FormData) => Promise<void>
-  addTaskAction: (formData: FormData) => Promise<void>
-  createAppointmentAction: (formData: FormData) => Promise<{ ok: boolean; error?: string; id?: number }>
-  updateAppointmentAction: (id: number, formData: FormData) => Promise<{ ok: boolean; error?: string }>
   /** §25.5 interactivity (pickers + add contact point) */
   assignBrokerAction: (formData: FormData) => Promise<void>
   updateStageAction: (formData: FormData) => Promise<void>
@@ -129,15 +122,12 @@ export function MobileLeadDetail({
   emailEngagement,
   relationships,
   collaborators,
-  viewedListings,
   pickers,
-  appointments,
+  homesTab,
+  calendarTab,
   smsComposer,
   sendCenter,
   addNoteAction,
-  addTaskAction,
-  createAppointmentAction,
-  updateAppointmentAction,
   assignBrokerAction,
   updateStageAction,
   addTagAction,
@@ -201,9 +191,6 @@ export function MobileLeadDetail({
       broker: t.broker,
       avatarUrl: BROKER_HEADSHOTS[t.broker ?? 'matt'] ?? null,
     }))
-  const tasks: MobileTask[] = full.tasks.map((t) => ({
-    id: t.id, name: t.name, type: t.type, due_at: t.due_at, completed_at: t.completed_at,
-  }))
 
   // Punch #5 Activity tab — the same kinds the desktop center column's
   // Activity filter shows (web_event/stage_change/system/lead_created/task),
@@ -306,7 +293,7 @@ export function MobileLeadDetail({
           composer={smsComposer}
         />
       }
-      homesTab={<MobileHomesTab listings={viewedListings} />}
+      homesTab={homesTab}
       notesTab={
         <MobileNotesTab
           personId={person.id}
@@ -315,17 +302,7 @@ export function MobileLeadDetail({
           addNoteAction={addNoteAction}
         />
       }
-      calendarTab={
-        <MobileCalendarTab
-          personId={person.id}
-          personName={displayName}
-          tasks={tasks}
-          appointments={appointments}
-          addTaskAction={addTaskAction}
-          createAppointmentAction={createAppointmentAction}
-          updateAppointmentAction={updateAppointmentAction}
-        />
-      }
+      calendarTab={calendarTab}
     />
   )
 }

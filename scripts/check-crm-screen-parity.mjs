@@ -77,25 +77,33 @@ for (const s of screens) {
   }
 
   // status === 'done' — enforce proof.
-  const routeAbs = s.route ? resolve(ROOT, s.route) : null
-  if (!s.route || !existsSync(routeAbs)) {
-    problems.push(`[${id}] status=done but route file missing: ${s.route ?? '(none declared)'}`)
-    continue
+  // `alsoRoutes` (optional): companion modules that own streamed/split pieces of
+  // the same screen (e.g. Suspense regions). A required component may appear in
+  // the primary `route` OR any alsoRoutes file.
+  const routeList = [
+    s.route,
+    ...(Array.isArray(s.alsoRoutes) ? s.alsoRoutes : []),
+  ].filter(Boolean)
+  const sources = []
+  for (const rel of routeList) {
+    const abs = resolve(ROOT, rel)
+    if (!existsSync(abs)) {
+      problems.push(`[${id}] status=done but route file missing: ${rel}`)
+      continue
+    }
+    sources.push(readFileSync(abs, 'utf8'))
   }
-  const src = readFileSync(routeAbs, 'utf8')
+  if (sources.length === 0) continue
+  const src = sources.join('\n')
 
   const required = Array.isArray(s.requiredComponents) ? s.requiredComponents : []
   if (required.length === 0) {
     problems.push(`[${id}] status=done but requiredComponents is empty — list the components its spec (${s.specRef ?? '?'}) requires`)
   }
   for (const name of required) {
-    // Imported or referenced as a JSX/identifier in the route file.
-    const importedOrUsed =
-      new RegExp(`\\b${name}\\b`).test(src) && /import|from\s+['"]/.test(src)
     if (!new RegExp(`\\b${name}\\b`).test(src)) {
       problems.push(`[${id}] status=done but route does not reference required component "${name}" (spec: ${s.specRef ?? '?'})`)
     }
-    void importedOrUsed
   }
 
   const verifyAbs = s.verify ? resolve(ROOT, s.verify) : null
