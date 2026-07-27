@@ -129,7 +129,55 @@ describe('buildAreaBlock', () => {
     expect(block!.href).toBe('/cities/bend')
   })
 
-  it('builds a community block, computing MoS from rolling_365d (no pulse row)', () => {
+  it('builds a community block with live pulse MoS (W8.1a: resorts use 6mo like cities)', () => {
+    const block = buildAreaBlock({
+      slug: 'tetherow',
+      geoType: 'neighborhood',
+      detail: {
+        medianSalePrice: 1700000,
+        soldCount: 31,
+        medianDom: 26,
+        yoyMedianPriceDeltaPct: -28.04,
+        marketHealthLabel: 'Cool',
+        endOfPeriodInventory: 28,
+        updatedAt: '2026-06-25T00:00:00Z',
+      },
+      // Live 6-month pulse MoS (active / (closed_6mo / 6)) — not 28/(31/12)=10.84
+      pulse: { activeCount: 25, monthsOfSupply: 7.5, refreshedAt: '2026-07-27T12:00:00Z' },
+    })
+    expect(block).not.toBeNull()
+    expect(block!.activeListings).toBe(25)
+    expect(block!.monthsOfSupply).toBe(7.5)
+    expect(block!.soldLast12mo).toBe(31) // volume line stays rolling_365d
+    expect(block!.marketVerdict).toBe('buyers')
+    expect(block!.source).toBe('market_pulse_live')
+    expect(block!.href).toBe('/communities/tetherow')
+  })
+
+  it('falls back to rolling_365d MoS for a community when pulse MoS is null (sparse closes)', () => {
+    const block = buildAreaBlock({
+      slug: 'pronghorn',
+      geoType: 'neighborhood',
+      detail: {
+        medianSalePrice: 2100000,
+        soldCount: 12,
+        medianDom: 40,
+        yoyMedianPriceDeltaPct: null,
+        marketHealthLabel: 'Cool',
+        endOfPeriodInventory: 16,
+        updatedAt: '2026-06-25T00:00:00Z',
+      },
+      pulse: { activeCount: 16, monthsOfSupply: null, refreshedAt: '2026-07-27T12:00:00Z' },
+    })
+    expect(block).not.toBeNull()
+    expect(block!.activeListings).toBe(16)
+    expect(block!.monthsOfSupply).toBe(16) // 16 / (12/12)
+    expect(block!.marketVerdict).toBe('buyers')
+    // Live active still stamps pulse as source even when MoS falls back.
+    expect(block!.source).toBe('market_pulse_live')
+  })
+
+  it('computes community MoS from rolling_365d when there is no pulse row at all', () => {
     const block = buildAreaBlock({
       slug: 'tetherow',
       geoType: 'neighborhood',
@@ -147,9 +195,8 @@ describe('buildAreaBlock', () => {
     expect(block).not.toBeNull()
     expect(block!.activeListings).toBe(28)
     expect(block!.monthsOfSupply).toBe(10.84) // 28 / (31/12), two-decimal precision (MR-1)
-    expect(block!.marketVerdict).toBe('buyers') // derived from raw 10.84
+    expect(block!.marketVerdict).toBe('buyers')
     expect(block!.source).toBe('market_stats_cache:rolling_365d')
-    expect(block!.href).toBe('/communities/tetherow')
   })
 
   it('omits an area with no usable cache data (returns null, never fabricates)', () => {

@@ -1,18 +1,38 @@
-> **NEWEST, START HERE: BL-016 COMPLETE — ORCHESTRATOR 49/49 2026-07-27 (Cursor).** Prior: BL-018.
+> **NEWEST, START HERE: W8.1a DONE + W9.5 gap narrowed 2026-07-27 (Cursor).** Prior: W5.5a Twilio.
 
-# Current — Orchestrator BL-016 closed; 49/49 (2026-07-27)
+# Current — W8.1a closed; W9.5 not VERIFIED (2026-07-27)
 
 | Field | Value |
 |---|---|
 | Surface | Cursor |
-| Time | 2026-07-27 ~10:35 PT |
-| `main` @ | `a57cadb5` (BL-016 feature: `c8550021`) |
-| Orchestrator | **49/49 complete.** BL-016 closed. No open orchestrator tasks. |
-| Done | BL-016 Phase 8/9: community pulse + yearly historical. Hosted migration applied. `refresh_community_market_pulse` → 28 neighborhood rows in `market_pulse_live`. Yearly cache 2024–2026 for region + 16 cities + 27 neighborhoods. Wired into `run_post_sync_pipeline`, deltaSync, sync-full. Docs: DATABASE_FOR_AI_AGENTS + data-architecture-plan. Evidence in `task-registry.json` → `BL-016.completionEvidence`. |
-| Next | Program ledger blocked rows (W5.5a / W8.1a / W9.1 / W9.5) need Matt. Do not invent Matt go for W13.1 Batches 2–6. |
-| Blocked | **W5.5a**, **W8.1a**, **W9.1**, **W9.5** |
-| Residual | `bend-undesignated` has no `neighborhood_subdivisions` aliases (yearly skipped). Some Vitest flakes unrelated to BL-016 (CRM email host, Meta audience fetch mocks). |
-| Skills read | docs/DATABASE_FOR_AI_AGENTS.md; data-architecture rules |
+| Time | 2026-07-27 ~16:35 PT |
+| `main` @ | (this tip — push after) |
+| Done | **W8.1a done.** Matt `switch resorts to 6mo`: CRM market-report email now uses neighborhood `market_pulse_live` MoS (6mo) for resorts, same as cities. Sparse null-MoS falls back to rolling_365d. §33 LOCKED. |
+| W9.5 | **NOT done.** `check-resend-webhook.mjs` FAIL: no `RESEND_WEBHOOKS_API_KEY` (Vercel + local). Webhook itself looks live (`RESEND_WEBHOOK_SECRET` in Vercel; `email_events` delivered/open/click today). Exact gap = full-access list key only — do not re-register webhook. |
+| Next | Matt: add `RESEND_WEBHOOKS_API_KEY` → re-run check. Then **W9.1** (approve+send first Bend Brief). **W13.1** stays partial (Batches 2–6 need Matt go). |
+| Blocked | **W9.1**, **W9.5** |
+| Skills read | database-canonical-reference (pulse/neighborhood MoS) |
+
+## Default agent loop
+1. Prefer `main`. Worktree only for parallel/long/cloud isolation (`wt/<topic>-YYYYMMDD`).
+2. Batch docs; push runtime + `deploy:verify`. Keep `wt/*` local until merge.
+3. Session end: merge to `main` + push, or handoff branch path in this file.
+
+---
+
+> **NEWEST, START HERE: W5.5a DONE — Twilio SMS cutover live 2026-07-27 (Cursor).** Prior: BL-016 / orchestrator 49/49.
+
+# Current — W5.5a closed (2026-07-27)
+
+| Field | Value |
+|---|---|
+| Surface | Cursor |
+| Time | 2026-07-27 ~12:40 PT |
+| `main` @ | `d5e41012` (cutover rebuild) + ledger/handoff tip |
+| Done | **W5.5a done.** Production `CRM_SMS_ALERTS=twilio`. Deploy READY. Dry-run `mode:"dry"` (not noop). Relay LaunchAgent not loaded. |
+| Next | Matt chip: **keep 12mo (W8.1a)** or go **W9.5**. Remaining blocked: **W8.1a**, **W9.1**, **W9.5**. Do not invent Matt go for W13.1 Batches 2–6. |
+| Blocked | **W8.1a**, **W9.1**, **W9.5** |
+| Skills read | (W5.5a closeout — deploy verify + cron dry-run) |
 
 ## Default agent loop
 1. Prefer `main`. Worktree only for parallel/long/cloud isolation (`wt/<topic>-YYYYMMDD`).

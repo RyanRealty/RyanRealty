@@ -10,35 +10,29 @@
  *
  * Source of every block:
  *   - Period-anchored historical analytics: `market_stats_cache` (6h freshness)
- *     read through `getCityMarketDetail` at `period_type='rolling_365d'`. This
- *     is the trailing-12-month window — the most stable, seasonality-neutral
- *     base for the months-of-supply absorption rate, and it is populated for
- *     every subscribable area (cities AND resort communities).
- *   - Live inventory (cities only): `market_pulse_live` (10-15 min) read through
- *     `getMarketPulse`. Carries the cache-computed `monthsOfSupply` and the
+ *     read through `getCityMarketDetail` at `period_type='rolling_365d'`. Trailing
+ *     12-month window for median price, DOM, YoY, and the email's "homes sold"
+ *     line — populated for every subscribable area (cities AND resorts).
+ *   - Live inventory + MoS (cities AND resort neighborhoods): `market_pulse_live`
+ *     (10-15 min) via `getMarketPulse`. Carries cache-computed `monthsOfSupply`
+ *     on the canonical 6-month close base (`active / (closed_6mo / 6)`) plus
  *     current `activeCount`. When present it is the authoritative live MoS and
- *     overrides the historical-derived figure.
+ *     overrides any historical-derived figure. Neighborhoods are filled by
+ *     `refresh_community_market_pulse` (BL-016 / docs/DATABASE_FOR_AI_AGENTS.md §3a).
  *
- * Months of supply (CLAUDE.md §0): MoS = active / (closed_6mo / 6). With a
- * trailing-12-month close count the monthly close rate is `sold12mo / 12`, so
- * MoS = active / (sold12mo / 12). This is mathematically identical to the
- * 6-month form (sold6mo/6) under a steady close rate, and uses a REAL 12-month
- * count rather than an estimated 6-month one. Thresholds: <= 4 sellers,
- * 4-6 balanced, >= 6 buyers. The returned `marketVerdict` is computed FROM the
- * returned `monthsOfSupply`, so the verdict can never contradict the number.
+ * Months of supply (CLAUDE.md §0): MoS = active / (closed_6mo / 6). Thresholds:
+ * <= 4 sellers, 4-6 balanced, >= 6 buyers. The returned `marketVerdict` is
+ * computed FROM the returned `monthsOfSupply`, so the verdict can never
+ * contradict the number.
  *
- * Two MoS bases, and how the displayed numbers self-reconcile: for CITIES the
- * live `market_pulse_live.monthsOfSupply` wins when present. That figure is the
- * canonical absorption rate computed by the cache on a 6-MONTH close base
- * (active / (closed_6mo / 6)). The `soldLast12mo` we ALSO return is the trailing
- * 12-month close count (the historical-cache figure, used as the email's "homes
- * sold" line). So for a city, `monthsOfSupply` is NOT `activeListings /
- * (soldLast12mo / 12)` unless the close pace was steady across the year. This is
- * intentional: the live 6-month MoS is the fresher, seasonally-current
- * absorption signal (10-15 min vs 6h), while the 12-month sold count is the more
- * stable volume figure. For RESORT COMMUNITIES (no live pulse) MoS IS computed
- * from `soldLast12mo` via `computeMonthsOfSupply`, so there the two reconcile
- * exactly: monthsOfSupply == activeListings / (soldLast12mo / 12).
+ * W8.1a (Matt 2026-07-27: "switch resorts to 6mo"): cities and resorts both
+ * prefer live pulse MoS (6-month base) when the row exists. `soldLast12mo`
+ * remains the trailing-12-month close count for the email volume line, so
+ * `monthsOfSupply` need not equal `activeListings / (soldLast12mo / 12)` —
+ * same city pattern, now applied to resorts. When pulse MoS is null (sparse
+ * slow-turnover geos with zero recent closes), fall back to computing MoS from
+ * the rolling_365d sold count via `rawMonthsOfSupply` so the email still has a
+ * real figure rather than a blank.
  *
  * Slug resolution: the subscribable areas (lib/data/crm/getContactReportSubscriptions
  * buildMarketReportAreas) are the 7 Central Oregon cities + the 14 resort
@@ -291,7 +285,7 @@ export function buildAreaBlock(args: {
     endOfPeriodInventory: number | null
     updatedAt: string | null
   } | null
-  /** From getMarketPulse (cities only); null for communities or on miss. */
+  /** From getMarketPulse (cities + resort neighborhoods); null on miss. */
   pulse: {
     activeCount: number
     monthsOfSupply: number | null
@@ -323,14 +317,14 @@ export function buildAreaBlock(args: {
     return null
   }
 
-  // MoS: prefer the cache-computed live figure (cities; a 6-month absorption
-  // base) else compute from the trailing-12mo absorption rate (resort
-  // communities). For a city the live 6-month MoS therefore need not equal
-  // activeListings / (soldLast12mo / 12) — see the module docstring "Two MoS
-  // bases" note. The verdict derives from the RAW (unrounded) figure while the
-  // number shown is rounded to one decimal, so a true 4.04 bins as balanced (not
-  // seller's) and a true 5.96 as balanced (not buyer's) — the pill can never
-  // contradict the underlying absorption rate.
+  // MoS: prefer the cache-computed live figure (cities + resorts; canonical
+  // 6-month absorption base per W8.1a). Fall back to trailing-12mo absorption
+  // only when pulse MoS is unavailable (sparse slow-turnover geos). Live
+  // 6-month MoS need not equal activeListings / (soldLast12mo / 12) — see the
+  // module docstring. The verdict derives from the RAW (unrounded) figure while
+  // the number shown is rounded to one decimal, so a true 4.04 bins as balanced
+  // (not seller's) and a true 5.96 as balanced (not buyer's) — the pill can
+  // never contradict the underlying absorption rate.
   const liveMos = pulse ? toNum(pulse.monthsOfSupply) : null
   const rawMos = liveMos != null ? liveMos : rawMonthsOfSupply(activeListings, soldLast12mo)
   // Keep two-decimal precision so the display can stay consistent with the
@@ -363,9 +357,9 @@ export function buildAreaBlock(args: {
  * Fetch the §0-accurate market blocks for a contact's subscribed areas.
  *
  * For each slug: resolve geo_type, pull the trailing-12-month historical row
- * (getCityMarketDetail at rolling_365d) and — for cities — the live pulse
- * (getMarketPulse). Areas with no cache data are OMITTED. The result preserves
- * input order, de-duped by slug.
+ * (getCityMarketDetail at rolling_365d) and the live pulse (getMarketPulse —
+ * cities and resort neighborhoods). Areas with no cache data are OMITTED. The
+ * result preserves input order, de-duped by slug.
  *
  * The send engine (Phase B) calls this, then renderMarketReportEmail, then the
  * suppression-gated send path.
@@ -392,11 +386,9 @@ export async function getMarketReportData(
 
       const [detail, pulse, trendPoints] = await Promise.all([
         getCityMarketDetail({ geoType, geoSlug: slug, periodType: 'rolling_365d' }),
-        // market_pulse_live carries city + region only — skip the lookup for
-        // resort communities (geo_type='neighborhood'), which never have a row.
-        geoType === 'city'
-          ? getMarketPulse({ geoType: 'city', geoSlug: slug })
-          : Promise.resolve(null),
+        // W8.1a: live pulse for cities AND resort neighborhoods (6-month MoS).
+        // Neighborhood rows come from refresh_community_market_pulse (BL-016).
+        getMarketPulse({ geoType, geoSlug: slug }),
         // Monthly series for the email charts + month-over-month context.
         // Resilient-cached with an [] fallback — a miss never blocks the block.
         getMarketTrend(geoType, slug, 12),
