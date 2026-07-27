@@ -6,7 +6,7 @@
 |---|---|
 | Surface | Cursor |
 | Time | 2026-07-27 ~09:35 PT |
-| `main` @ | `1e340f34` (Batch-1 deletion: `2418806a`) |
+| `main` @ | `8f2084f4` (Batch-1 deletion: `2418806a`) |
 | Program ledger | **47/52 done**. **W13.1 stays partial** — Batch-1 complete; Batches 2–6 need Matt go. No FLIP_DONE (consolidation incomplete). |
 | Done | Finished Batch-1 leftovers (`2418806a`): 71 files deleted — `docs/marketing-brain`, `avatar-market-channel`, `site-audit`, `broker-runbooks`, `transaction-coordinator`, `fub-crm-spec` prose + verification-raw. Kept `crm-screens.json` + `_verify` + `archive/fub-era` + PROGRAM. Gates green; citation ratchet →12. |
 | Matt go still required | (1) Batch 2 `docs/plans` wipe — forbidden without go; (2) Batch 3 MANDATORY_REFS + research bibles; (3) Batch 4 `video_production_skills` routing; (4) Batch 5 AGENTS/ARCHITECTURE/`.cursor/rules`; (5) Batch 6 shelved LOOP skills; (6) `docs/FUB_*.md` era inventory delete; (7) `fub-feature-audit` + `fub-crm-analysis`; (8) soft top-level docs — keep EXPERIENCE_SYSTEM + TC_OREGON (live-canon). |
