@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-04-22",
+  "lastUpdated": "2026-07-27",
   "source": "PRODUCT_SPEC_V2.md",
   "phases": [
     {
@@ -967,7 +967,7 @@
       "priority": "high",
       "category": "performance",
       "source": "docs/plans/data-architecture-plan.md",
-      "status": "open",
+      "status": "complete",
       "owner": "engagement",
       "files": [
         "app/actions/listings.ts",
@@ -982,7 +982,26 @@
       ],
       "dependsOn": [
         "BL-014"
-      ]
+      ],
+      "completedAt": "2026-07-27",
+      "completionEvidence": {
+        "verified": "already satisfied in code; no runtime diff required",
+        "tileMapNoDetails": [
+          "lib/listing-tile-projections.ts TILE_MV_SELECT_COLUMNS excludes details JSONB",
+          "app/actions/listings.ts LISTING_BOUNDS_SELECT flat columns; getListingsInBounds uses DAL getListingTiles",
+          "app/actions/cities.ts + communities.ts tile paths use getListingTiles/getCommunityListings (listing_tile_mv)"
+        ],
+        "listCountParallelOrCombined": [
+          "getListingsWithAdvanced Promise.all([getListings, countPromise])",
+          "searchListingsAll select(..., { count: exact }) combined rows+total"
+        ],
+        "geocodeBounded": "app/actions/geocode.ts MAX_GEOCODE_BATCH = 10",
+        "gates": {
+          "buildExit": 0,
+          "testExit": 0,
+          "tests": "3625 passed / 319 files"
+        }
+      }
     },
     {
       "id": "BL-016",

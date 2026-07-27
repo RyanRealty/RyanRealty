@@ -1,3 +1,25 @@
+> **NEWEST, START HERE: BL-015 COMPLETE 2026-07-27 (Cursor).** Prior: listing hero map toggle.
+
+# Current — BL-015 search/city/community path optimization (2026-07-27)
+
+| Field | Value |
+|---|---|
+| Surface | Cursor |
+| Time | 2026-07-27 ~09:20 PT |
+| `main` @ | *(this commit after push)* |
+| Done | **BL-015 complete** — already satisfied in code (no runtime diff). Evidence: tile/map via `TILE_MV_SELECT_COLUMNS` / DAL `getListingTiles` (no `details` JSONB); list+count via `Promise.all` in `getListingsWithAdvanced` + combined `count:'exact'` in `searchListingsAll`; geocode capped `MAX_GEOCODE_BATCH=10`. Gates: `npm run build` exit 0, `npm run test` 3625/319 green. |
+| Next | Orchestrator: **BL-016** (reporting, cache/historical) or **BL-018** (cleanup/verify). Program ledger still owns W13.1 / blocked Matt rows. |
+| Blocked | None for BL-015 |
+| Orchestrator leftovers | **BL-016 / BL-018** open (`BL-015` done) |
+| Skills read | (orchestrator + data-architecture plan Phase 7; DAL boundary preserved) |
+
+## Default agent loop
+1. Prefer `main`. Worktree only for parallel/long/cloud isolation (`wt/<topic>-YYYYMMDD`).
+2. Batch docs; push runtime + `deploy:verify`. Keep `wt/*` local until merge (previews cost Build CPU). Docs/skills-only pushes should skip Vercel via `ignoreCommand`.
+3. Session end: merge to `main` + push, or handoff branch path in this file. Run `npm run wt:status`.
+
+---
+
 > **NEWEST, START HERE: LISTING HERO MAP TOGGLE 2026-07-27 (Cursor).** Prior: blocked-rows ops.
 
 # Current — Listing detail hero map affordance (2026-07-27)
