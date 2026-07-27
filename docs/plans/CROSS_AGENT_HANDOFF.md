@@ -6,7 +6,7 @@
 |---|---|
 | Surface | Cursor |
 | Time | 2026-07-27 ~07:43 PT |
-| `main` @ | `5e5677df` (`origin/main` tip after `docs(w5.1): flip ledger to done after independent verify`) |
+| `main` @ | `6deea678` (`origin/main` tip; parent `5e5677df` W5.1 ledger flip) |
 | Program ledger | **46/52 done** (`COMPLETION-LEDGER.json`). **W5.1 is DONE** — independent verifier `c7e4a91b-2f83-4d60-b1e5-9a0c6f48d2e7`. |
 | Done (this tip) | W5.1 ledger flip to done after adversarial verify. Cost-control path already live: `ignoreCommand` + no changelog commits on `main`. |
 | Next / open | **W8.1** partial — needs independent verify flip. **W13.1** partial — Matt go on Batches 2+. |
