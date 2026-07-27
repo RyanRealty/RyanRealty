@@ -40,6 +40,16 @@ const SKIP_EXACT = new Set([
 
 const SKIP_SUFFIXES = ['.md', '.mdc', '.png', '.jpg', '.jpeg', '.webp', '.gif']
 
+// Preview / non-production: always skip. Pushing wt/* or cloud branches to
+// GitHub used to start a full Turbo Preview build (extra Build CPU on top of
+// production). Production keeps the docs/skills path filter below.
+// Belt-and-suspenders with project setting previewDeploymentsDisabled=true.
+const vercelEnv = (process.env.VERCEL_ENV || '').trim()
+if (vercelEnv && vercelEnv !== 'production') {
+  console.log(`[vercel-ignore-build] SKIP — non-production env (${vercelEnv})`)
+  process.exit(0)
+}
+
 function changedFiles() {
   // Vercel often uses a shallow clone. Prefer VERCEL_GIT_PREVIOUS_SHA; if it is
   // missing, inspect only the tip commit via diff-tree (works at depth=1).
