@@ -5,13 +5,36 @@
 | Field | Value |
 |---|---|
 | Surface | Cursor |
-| Time | 2026-07-27 ~10:00 PT |
-| `main` @ | *(tip after this push — includes BL-018 evidence)* |
-| Orchestrator | **BL-018 complete.** Only **BL-016** left open (Phase 8/9 cache + historical). |
-| Done | BL-018 Phase 12+13 cleanup/verify: already satisfied in code. Evidence in `task-registry.json` (`completionEvidence`). Gates: seo-routes, no-report-rpc, breadcrumb, legacy-redirects, ai-crawler/structured-data, price-kind-purity, build+test (3625). Prod TTFB spot-checks under budget. Phase 13 checklist marked verified in `data-architecture-plan.md`. Docs-only; no `deploy:verify`. |
-| Next | **BL-016** (reporting): current-period cache refresh after sync, community pulse rows, yearly historical rows. Do not invent Matt go for W13.1 Batches 2–6. |
+| Time | 2026-07-27 ~10:10 PT |
+| `main` @ | `f94bcf67` (BL-018 evidence: `2f1d22b9`) |
+| Orchestrator | **BL-018 done.** Only **BL-016** open (Phase 8/9 cache + historical). 48/49 complete. |
+| Done | BL-018 Phase 12+13: already satisfied in code. Evidence in `task-registry.json` → `completionEvidence`. Gates + build/test (3625) + prod TTFB/URL spot-checks. Checklist marked in `data-architecture-plan.md`. Docs-only push (no `deploy:verify` for this task). |
+| Next | **BL-016** (reporting). Do not invent Matt go for W13.1 Batches 2–6. |
 | Blocked | **W5.5a**, **W8.1a**, **W9.1**, **W9.5** |
-| Skills read | (orchestrator closeout; no domain skill load) |
+| Skills read | (orchestrator closeout) |
+
+## Default agent loop
+1. Prefer `main`. Worktree only for parallel/long/cloud isolation (`wt/<topic>-YYYYMMDD`).
+2. Batch docs; push runtime + `deploy:verify`. Keep `wt/*` local until merge.
+3. Session end: merge to `main` + push, or handoff branch path in this file.
+
+---
+
+> **NEWEST, START HERE: W13.1 BATCH-1 ON ORIGIN 2026-07-27 (Cursor).** Prior: listing hero map / blocked-rows.
+
+# Current — W13.1 Batch-1 leftovers purged (2026-07-27)
+
+| Field | Value |
+|---|---|
+| Surface | Cursor |
+| Time | 2026-07-27 ~09:35 PT |
+| `main` @ | `8f2084f4` (Batch-1 deletion: `2418806a`) |
+| Program ledger | **47/52 done**. **W13.1 stays partial** — Batch-1 complete; Batches 2–6 need Matt go. No FLIP_DONE (consolidation incomplete). |
+| Done | Finished Batch-1 leftovers (`2418806a`): 71 files deleted — `docs/marketing-brain`, `avatar-market-channel`, `site-audit`, `broker-runbooks`, `transaction-coordinator`, `fub-crm-spec` prose + verification-raw. Kept `crm-screens.json` + `_verify` + `archive/fub-era` + PROGRAM. Gates green; citation ratchet →12. |
+| Matt go still required | (1) Batch 2 `docs/plans` wipe — forbidden without go; (2) Batch 3 MANDATORY_REFS + research bibles; (3) Batch 4 `video_production_skills` routing; (4) Batch 5 AGENTS/ARCHITECTURE/`.cursor/rules`; (5) Batch 6 shelved LOOP skills; (6) `docs/FUB_*.md` era inventory delete; (7) `fub-feature-audit` + `fub-crm-analysis`; (8) soft top-level docs — keep EXPERIENCE_SYSTEM + TC_OREGON (live-canon). |
+| Next | Orchestrator BL-016 / BL-018. Do not invent Matt approval for high-blast deletions. |
+| Blocked | **W5.5a**, **W8.1a**, **W9.1**, **W9.5** |
+| Skills read | `06-DELETION-MANIFEST.md`; CONSOLIDATION-LANES summary |
 
 ## Default agent loop
 1. Prefer `main`. Worktree only for parallel/long/cloud isolation (`wt/<topic>-YYYYMMDD`).
