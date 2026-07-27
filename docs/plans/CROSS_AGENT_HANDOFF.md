@@ -6,7 +6,7 @@
 |---|---|
 | Surface | Cursor |
 | Time | 2026-07-27 ~10:35 PT |
-| `main` @ | *(tip after this push)* |
+| `main` @ | `a57cadb5` (BL-016 feature: `c8550021`) |
 | Orchestrator | **49/49 complete.** BL-016 closed. No open orchestrator tasks. |
 | Done | BL-016 Phase 8/9: community pulse + yearly historical. Hosted migration applied. `refresh_community_market_pulse` → 28 neighborhood rows in `market_pulse_live`. Yearly cache 2024–2026 for region + 16 cities + 27 neighborhoods. Wired into `run_post_sync_pipeline`, deltaSync, sync-full. Docs: DATABASE_FOR_AI_AGENTS + data-architecture-plan. Evidence in `task-registry.json` → `BL-016.completionEvidence`. |
 | Next | Program ledger blocked rows (W5.5a / W8.1a / W9.1 / W9.5) need Matt. Do not invent Matt go for W13.1 Batches 2–6. |
