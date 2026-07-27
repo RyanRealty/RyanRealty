@@ -369,9 +369,9 @@
           "components/admin/crm/person-detail/PersonWorkspaceBody.tsx"
         ]
       },
-      "proofPath": "PersonWorkspace single tree + Suspense identity shell on /admin/crm/[id]. Route no longer owns md:hidden fork; mobile-detail.tsx deleted from route dir (MobileLeadDetail under person-detail/). ci:person-workspace-single-tree wired. Chokepoint still green.",
-      "verifiedBy": "a0ee03f2-669c-4c74-904a-1a090773819b — W5.1 chokepoint PASS: AST gate green, 29 unit + live double-tap int green, crm/[id] wired through sendDeliverable; 5 baseline bypasses still frozen.",
-      "remaining": "BUILDER 2026-07-26: RC3 + Suspense shell LANDED (await independent verify). Still open vs full spec-03: deeper cached DAL regions with revalidateTag (secondary fetch still one Promise.all inside PersonWorkspaceBody, force-dynamic on route). SendPanel already mounts on both layouts. Do NOT flip without independent verifiedBy for the single-tree/Suspense work."
+      "proofPath": "PersonWorkspace single tree + Suspense identity shell on /admin/crm/[id]. Nested Suspense regions: PersonHomesRegion, PersonEngagementRegion, PersonMobileHomesRegion, PersonMobileCalendarRegion (eff7136c). Route force-dynamic kept+documented (auth-scoped CRM; no revalidateTag yet). ci:person-workspace-single-tree asserts regions. Chokepoint bypass sites 0. SendPanel (ContactSendCenter) on mobile+desktop. Production READY a7d28343 (includes content-freshness companion).",
+      "verifiedBy": "a0ee03f2-669c-4c74-904a-1a090773819b — W5.1 chokepoint PASS only. Suspense-region / single-tree work NOT independently verified yet (2026-07-27 builder session: Task verifier agents resource_exhausted).",
+      "remaining": "BUILDER 2026-07-27: nested Suspense secondary regions LANDED (eff7136c); force-dynamic retained on purpose. STILL OPEN: (1) independent verifiedBy for RC3+Suspense+regions → then FLIP_DONE; (2) optional deeper tagged DAL + revalidateTag / drop force-dynamic per spec-03 §5 (deferred: cross-contact cache risk). Do NOT flip without independent verifier saying FLIP_DONE."
     },
     {
       "id": "W5.3",
