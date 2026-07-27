@@ -15,6 +15,7 @@
 ## Shipped SHAs
 - `eff7136c` feat(crm): stream person-workspace secondary Suspense regions
 - `a7d28343` chore(content): null past jefferson county fair dates
+- `d9889dd2` docs(w5.1): ledger remaining/proof updated; status stays partial
 
 ## Default agent loop
 1. Prefer `main`. Worktree only for parallel/long/cloud isolation (`wt/<topic>-YYYYMMDD`).
