@@ -1,3 +1,24 @@
+> **NEWEST, START HERE: LISTING HERO MAP TOGGLE 2026-07-27 (Cursor).**
+
+# Current — Listing detail hero map affordance (2026-07-27)
+
+| Field | Value |
+|---|---|
+| Surface | Cursor |
+| Time | 2026-07-27 ~09:30 PT |
+| `main` @ | `782dd9f3` |
+| Done | Listing hero bottom-left Google Static Maps thumb; click expands Maps JS into hero; toggle / Show photos / Esc returns to media. Commit `2f6035c8`. |
+| Next | Optional: simplify mobile clear control |
+| Blocked | None for this feature |
+| Skills read | frontend-design SKILL.md |
+
+## Default agent loop
+1. Prefer `main`. Worktree only for parallel/long/cloud isolation.
+2. Batch docs; push runtime + `deploy:verify`.
+3. Session end: merge to `main` + push, or handoff branch path here.
+
+---
+
 > **NEWEST, START HERE: BLOCKED-ROWS OPS 2026-07-27 (Cursor).** Prior: W13.1 BATCH-1 CLOSEOUT.
 
 # Current — W5.5a / W8.1a / W9.1 / W9.5 evidence pass (2026-07-27)
