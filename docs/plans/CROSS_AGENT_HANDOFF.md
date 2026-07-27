@@ -6,7 +6,7 @@
 |---|---|
 | Surface | Cursor |
 | Time | 2026-07-27 ~16:35 PT |
-| `main` @ | (this tip — push after) |
+| `main` @ | `7a39df78` |
 | Done | **W8.1a done.** Matt `switch resorts to 6mo`: CRM market-report email now uses neighborhood `market_pulse_live` MoS (6mo) for resorts, same as cities. Sparse null-MoS falls back to rolling_365d. §33 LOCKED. |
 | W9.5 | **NOT done.** `check-resend-webhook.mjs` FAIL: no `RESEND_WEBHOOKS_API_KEY` (Vercel + local). Webhook itself looks live (`RESEND_WEBHOOK_SECRET` in Vercel; `email_events` delivered/open/click today). Exact gap = full-access list key only — do not re-register webhook. |
 | Next | Matt: add `RESEND_WEBHOOKS_API_KEY` → re-run check. Then **W9.1** (approve+send first Bend Brief). **W13.1** stays partial (Batches 2–6 need Matt go). |
