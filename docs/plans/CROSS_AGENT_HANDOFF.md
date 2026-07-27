@@ -1,18 +1,18 @@
-> **NEWEST, START HERE: W8.1 FLIP DONE 2026-07-27 (Cursor).** Prior: PROGRAM LEDGER REALITY.
+> **NEWEST, START HERE: W13.1 BATCH-1 CLOSEOUT 2026-07-27 (Cursor).** Prior: W8.1 FLIP DONE.
 
-# Current — W8.1 verified done (2026-07-27)
+# Current — W13.1 Batch-1 leftovers purged (2026-07-27)
 
 | Field | Value |
 |---|---|
 | Surface | Cursor |
-| Time | 2026-07-27 ~08:57 PT |
-| `main` @ | `5496c04b` (includes prior ignoreCommand commit) |
-| Program ledger | **47/52 done** (`COMPLETION-LEDGER.json`). **W8.1 is DONE** — independent verifier `7fa0eacc-2914-4515-9432-c75f3813893e`. |
-| Done (this tip) | W8.1 adversarial verify → FLIP_DONE. Four gates green + in `ci:gates`; consistency cron registered; weekly gen + `get_city_*` RPCs retained; soft-404 bare-slug fix present; `/reports` cache-fed. |
-| Next / open | **W13.1** partial — needs Matt go on Batches 2+ (do not blind-delete). No other unblocked program partials. |
+| Time | 2026-07-27 ~09:05 PT |
+| `main` @ | *(this push tip — see git log)* |
+| Program ledger | **47/52 done**. **W13.1 stays partial** (Batch-1 done; Batches 2–6 + era inventory need Matt go). |
+| Done (this tip) | Finished Batch-1 leftovers: 71 files deleted (`marketing-brain`, `avatar-market-channel`, `site-audit`, `broker-runbooks`, `transaction-coordinator`, `fub-crm-spec` prose + verification-raw). Kept `crm-screens.json` + `_verify` + `archive/fub-era` + PROGRAM. `ci:claude-canon` / `ci:program-complete` / `ci:crm-screen-parity` green; citation ratchet 35→12. |
+| Next / open | **W13.1** Matt go list in ledger `remaining`. Do not wipe `docs/plans`, do not delete AGENTS/ARCHITECTURE without explicit go. |
 | Blocked | **W5.5a**, **W8.1a**, **W9.1**, **W9.5** (`blocked:needs-matt`) |
 | Orchestrator leftovers | **BL-015 / BL-016 / BL-018** in `task-registry.json` (not in program ledger) |
-| Skills read | (W8.1 independent verify only) |
+| Skills read | `06-DELETION-MANIFEST.md`; CONSOLIDATION-LANES summary; deslop (skim) |
 
 ## Default agent loop
 1. Prefer `main`. Worktree only for parallel/long/cloud isolation (`wt/<topic>-YYYYMMDD`).

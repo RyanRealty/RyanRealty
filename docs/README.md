@@ -72,20 +72,10 @@ Last curated: 2026-04-21 (governance purge ch.3). Obsolete/snapshot docs moved t
 - `skyslope-forms-transaction-workbook.xlsx` — transaction workbook
 - `skyslope-pdf-ai-research.md` — PDF processing research
 - `prompts/skyslope-forms-pdf-and-brief-comprehensive-handoff.md` — active agent handoff prompt
-- `transaction-coordinator/SkySlope_Oregon_Compliance_Guide.docx` — Oregon compliance guide
 
 ## Archive
 
-Historical snapshots and superseded docs live in `docs/archive/`:
-
-- `_audit-2025-03-12/` — March 2025 codebase + performance audits
-- `_audit-2026-04/` — April 2026 audits (consolidated, sync, UI goals, lead capture)
-- `_briefs-completed/` — completed fix briefs (ClosePrice, sync data completeness)
-- `_plans-completed/` — completed phase briefs + superseded roadmaps (Phase 0, Launch checklist, Spark replication roadmap + spec)
-- `_stale-refs/` — docs that drifted from code reality (URL_ARCHITECTURE, NEXT_SESSION_BRIEF, DOCUMENTATION_INDEX, SUPABASE_AUTH_URLS, WHAT_I_NEED_TO_COMPLETE, SUPABASE_SCHEMA, older Spark field maps, etc.)
-- `_generated-artifacts/` — machine-generated inventory reports (SkySlope folder audits, Gmail deep dive)
-
-Archive is read-only historical context. Never cite an archived doc as current state — always verify against code + live rules.
+Historical FUB-era inventory index: `docs/archive/fub-era/README.md`. The era docs themselves remain at their original `docs/FUB_*.md` paths (marker-bannered; inventory may only shrink via `ci:claude-canon`). Never cite an archived/era doc as current state — always verify against code + live rules.
 
 ## Contributing
 

@@ -441,9 +441,9 @@
           "app/api/cron/crm-alert-drain/route.ts"
         ]
       },
-      "proofPath": "",
+      "proofPath": "INDEPENDENT CHECK 2026-07-27 (Cursor): `npx vercel env ls production` + `vercel env pull` — CRM_SMS_ALERTS is ABSENT from Vercel Production (only local `.env.local:254` = twilio on the mac-mini host). Live prod drain `GET /api/cron/crm-alert-drain` with CRON_SECRET → `{ok:true, mode:\"noop\", reason:\"CRM_SMS_ALERTS != twilio (mac-mini relay owns SMS delivery)\", push:{mode:\"idle\", subscriptions:0, …}}` — proves web-push runs OUTSIDE the SMS gate and SMS serverless half is still noop. `BrokerPushOptIn` mounted at `app/admin/(protected)/settings/page.tsx` + `components/admin/push/BrokerPushOptIn.tsx`. `push_subscriptions` count = 0 (no broker device opted in yet). Did NOT set the Vercel env (Matt ops).",
       "verifiedBy": "",
-      "remaining": "MATT: set CRM_SMS_ALERTS=twilio in Vercel production (and confirm mac-mini relay stopped). Device opt-in on /admin/settings is also Matt-operated. Engineering for the drain + web-push path is already done under W5.5."
+      "remaining": "STILL BLOCKED (Matt ops). Engineering ready; prod SMS cutover flag NOT set.\n\nEXACT VERCEL STEPS:\n1. Vercel → project `ryanrealty` → Settings → Environment Variables → Add New.\n2. Key `CRM_SMS_ALERTS` · Value `twilio` · Environment: Production only (do not invent Preview/Dev unless you want preview drains to text).\n3. Save. Redeploy production (or wait for next deploy) so the cron runtime picks up the var.\n4. Verify: `curl -H \"Authorization: Bearer $CRON_SECRET\" \"https://ryan-realty.com/api/cron/crm-alert-drain?dry=1\"` should return `mode:\"dry\"` (not `noop`) with a pending would-send list.\n5. Stop mac-mini relay so it cannot race the serverless drain: `launchctl unload ~/Library/LaunchAgents/com.ryanrealty.crm-alert-relay.plist` (confirm with `launchctl list | grep crm-alert`).\n6. Device opt-in: open https://ryan-realty.com/admin/settings signed in as a broker → use BrokerPushOptIn (Enable on this device). Today `push_subscriptions=0`.\n\nONE-LINER FOR MATT: Set Vercel Production `CRM_SMS_ALERTS=twilio`, unload the mac-mini crm-alert-relay LaunchAgent, then Enable push on /admin/settings."
     },
     {
       "id": "W6.2",
@@ -625,9 +625,9 @@
           "lib/data/crm/getMarketReportData.ts"
         ]
       },
-      "proofPath": "",
+      "proofPath": "Code cites (2026-07-27): `lib/data/crm/getMarketReportData.ts` lines 11–41 + 326–335 — cities prefer `market_pulse_live.monthsOfSupply` (6-month close base); resorts (no live pulse) compute MoS from `soldLast12mo` via `rawMonthsOfSupply` / `computeMonthsOfSupply` on `rolling_365d`. Decision doc `04-DECISIONS-RECORDED.md` §33 records the one-screen brief + RECOMMEND keep 12mo; NOT locked — no code change.",
       "verifiedBy": "",
-      "remaining": "MATT DECIDES: resorts lack a live pulse so MoS currently uses a 12-month base (getMarketReportData). Confirm keep 12mo, or switch outbound email MoS to 6mo to match city reports. Not an engineering blocker for W8.1 as rewritten."
+      "remaining": "STILL BLOCKED (Matt chip). Decision brief written in 04-DECISIONS-RECORDED.md §33. RECOMMENDATION: KEEP 12mo for resort outbound-email MoS (slow-turnover resorts + no live pulse; matches DATABASE_FOR_AI_AGENTS slow-turnover guidance). OPTION B: switch resorts to rolling_180d / sold6mo÷6 for parity with city live MoS (needs cache row availability check first).\n\nONE-LINER FOR MATT: Reply `keep 12mo` (recommended) or `switch resorts to 6mo` — engineering implements only after that spoken yes."
     },
     {
       "id": "W8.4",
@@ -1183,7 +1183,7 @@
       },
       "proofPath": "commit 3acb922c (main, deployed 8aca3b4). All 20 FUB-era docs carry the line-1 decommission banner + archive index at docs/archive/fub-era/; MASTER_SPEC’s two lingering citations repointed; CLAUDE.md dead paths + drifted cron cadences fixed. NEW GATE ci:claude-canon wired into ci:gates: era inventory may only shrink, canon docs cite zero FUB paths, 55-file citation ratchet, every CLAUDE.md link resolves, no retired v1 token resurfaces unmarked. Proven to bite on a canon citation AND a dead link before landing. Citation ratchet 47 after burn commit 5f666ae2.",
       "verifiedBy": "a0ee03f2-669c-4c74-904a-1a090773819b — W13.1 archive+gate PASS: 20/20 era markers, ci:claude-canon green; consolidation lanes not claimed done.",
-      "remaining": "BUILDER 2026-07-26: CLAUDE shrink already done; Batch-1 history purge executed (docs/research, docs/handoffs, docs/archive/_*, fub-crm-spec capture dumps). crm-screens.json + _verify + PROGRAM_2026-07-21 preserved. STILL OPEN / needs Matt go: aggressive CONSOLIDATION-LANES batches (docs-plans wipe, AGENTS/ARCHITECTURE delete, MANDATORY_REFS unwiring) per 06-DELETION-MANIFEST.md Batches 2+. Do not blind-execute keep_list-empty lanes."
+      "remaining": "BUILDER 2026-07-27: Batch-1 COMPLETE (prior + leftovers). Deleted this tip: docs/marketing-brain, avatar-market-channel, site-audit, broker-runbooks, transaction-coordinator, fub-crm-spec/*.md + verification-raw*.json (71 files). Kept crm-screens.json + _verify + archive/fub-era + PROGRAM. Citation ratchet 35→12. STILL NEEDS MATT GO (do not invent approval): (1) Batch 2 docs/plans wipe — FORBIDDEN without go, would kill COMPLETION-LEDGER; (2) Batch 3 MANDATORY_REFS unwiring + research bibles delete; (3) Batch 4 video_production_skills routing purge; (4) Batch 5 AGENTS.md/ARCHITECTURE.md/.cursor/rules delete + CLAUDE collapse; (5) Batch 6 shelved LOOP skills; (6) FUB_*.md era inventory delete (20 files — ratchet allows shrink but archive README says keep until citation cleanup); (7) docs/fub-feature-audit + fub-crm-analysis trees; (8) soft top-level docs (CONSOLE_KIT, DATA_ACCESS_LAYER, etc.) — EXPERIENCE_SYSTEM + TC_OREGON are live-canon registered, do not delete. Row stays partial until consolidation complete per title + independent FLIP_DONE."
     },
     {
       "id": "W13.2",
