@@ -10,9 +10,9 @@
 | Metric | Value |
 |--------|-------|
 | Total tasks | 49 |
-| Complete | 47 (96%) |
+| Complete | 48 (98%) |
 | In progress | 0 |
-| Open (ready) | 2 |
+| Open (ready) | 1 |
 | Blocked | 0 |
 
 ## Phase Progress
@@ -32,26 +32,23 @@
 | content | 2/2 complete | 0 open |
 | qa | 2/2 complete | 0 open |
 | performance | 1/1 complete | 0 open |
-| shared | 3/4 complete | 1 open |
+| shared | 4/4 complete | 0 open |
 
 ## Current Priorities
 
-1. **BL-018**: Phase 12 and 13 cleanup and full verification (high priority, owner: shared)
-2. **BL-016**: Phase 8 and 9 refresh cache and historical coverage (medium priority, owner: reporting)
+1. **BL-016**: Phase 8 and 9 refresh cache and historical coverage (medium priority, owner: reporting)
 
 
 
 ## Open Backlog by Category
 
 | data | 1 items |
-| qa | 1 items |
 
 ---
 
 ## Recommended Next Actions
 
-1. **BL-018 — Phase 12 and 13 cleanup and full verification**: Legacy stats fallbacks are removed from public paths
-2. **BL-016 — Phase 8 and 9 refresh cache and historical coverage**: Current-period cache refresh runs after sync
+1. **BL-016 — Phase 8 and 9 refresh cache and historical coverage**: Current-period cache refresh runs after sync
 
 ---
 

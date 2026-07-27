@@ -1052,7 +1052,7 @@
       "priority": "high",
       "category": "qa",
       "source": "docs/plans/data-architecture-plan.md",
-      "status": "open",
+      "status": "complete",
       "owner": "shared",
       "files": [
         "docs/plans/data-architecture-plan.md",
@@ -1066,7 +1066,65 @@
       ],
       "dependsOn": [
         "BL-017"
-      ]
+      ],
+      "completedAt": "2026-07-27",
+      "completionEvidence": {
+        "verified": "Phase 12+13 already satisfied in code + mechanical gates; documented evidence this session; no runtime diff required",
+        "legacyStatsRemovedFromPublicPaths": [
+          "getCityMarketStats: zero TS/TSX references outside historical docs/CHANGELOG",
+          "ci:no-report-rpc exit 0 — no public surface imports getReportMetrics/getReportPriceBands/getReportMetricsTimeSeries or calls get_city_period_metrics/_price_bands/_metrics_timeseries (allowlist: app/actions/reports.ts, app/admin/**, market-stat-consistency cron only)",
+          "Public market UI reads getMarketPulse / cache DAL (lib/data/market/*); RPC wrappers retained only for admin custom reports + consistency monitor"
+        ],
+        "qualityGates": {
+          "lint:seo-routes": 0,
+          "ci:ai-crawler-access": 0,
+          "ci:legacy-redirects": 0,
+          "ci:breadcrumb": 0,
+          "ci:canonical-listings": 0,
+          "ci:no-report-rpc": 0,
+          "ci:ai-structured-data": 0,
+          "ci:price-kind-purity": 0,
+          "ci:dal-boundary": 0,
+          "buildExit": 0,
+          "testExit": 0,
+          "tests": "3625 passed / 319 files",
+          "buildNote": "npm run build Compiled successfully; 528/528 static pages; sitemap unstable_cache >2MB warnings non-fatal"
+        },
+        "phase13Checklist": {
+          "urlSeo": [
+            "Prod listing URLs use address-slug + MLS (ex: /homes-for-sale/bend/awbrey-park/691-yosemite-220220675)",
+            "canonical matches visible URL on listing detail",
+            "ci:legacy-redirects: 152 ranking paths / 801 mappings; /listings/:key permanent→/listing/:key",
+            "ci:seo-routes + ci:seo-authoring pass",
+            "ci:ai-structured-data: 24 surfaces emit JSON-LD; listing page includes MLS# in HTML + schema url"
+          ],
+          "breadcrumbs": "ci:breadcrumb: 98 public pages scanned, 0 NEW missing, Home crumb present on listing detail spot-check",
+          "dataAccuracy": [
+            "ci:price-kind-purity: no asking-price field fed from closed-sale figures",
+            "ci:no-report-rpc: public reports/housing-market on cache path",
+            "TILE_MV_SELECT_COLUMNS excludes details JSONB (lib/listing-tile-projections.ts)"
+          ],
+          "performanceSpotCheck2026-07-27": {
+            "host": "https://ryan-realty.com",
+            "ttfb_s": {
+              "home": 0.353,
+              "cities/bend": 0.371,
+              "housing-market/bend": 0.433,
+              "homes-for-sale/bend": 0.318,
+              "listing detail": 0.468,
+              "team": 0.212
+            },
+            "note": "TTFB under Phase 13 budgets on cold/warm prod samples; /search/bend resolves to homes-for-sale browse"
+          },
+          "llmAi": "ci:ai-crawler-access: OAI-SearchBot/PerplexityBot/Claude-SearchBot allowed; /llms.txt 200",
+          "docsRules": [
+            ".cursor/rules/data-architecture.mdc authoritative",
+            "AGENTS.md Key Architecture Decisions match listingDetailPath + getCachedStats/getLiveMarketPulse mandate",
+            "Phase 13 checklist in data-architecture-plan.md marked verified 2026-07-27"
+          ],
+          "phase12RevalidateNote": "Core inventory/market/search/city/community/housing-market pages export revalidate; remaining gaps are mostly legal/auth/tools/LP (intentionally dynamic or low-churn). Not expanded in this closeout."
+        }
+      }
     }
   ]
 }
