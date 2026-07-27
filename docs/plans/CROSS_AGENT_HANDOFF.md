@@ -1,25 +1,22 @@
-> **NEWEST, START HERE: W5.1 SUSPENSE REGIONS 2026-07-27 (Cursor).** Prior: VERCEL COST / WORKTREES.
+> **NEWEST, START HERE: PROGRAM LEDGER REALITY 2026-07-27 (Cursor).** Prior: W5.1 SUSPENSE, VERCEL COST.
 
-# Current — W5.1 person-workspace Suspense regions (2026-07-27)
+# Current — Program ledger + tip (2026-07-27)
 
 | Field | Value |
 |---|---|
 | Surface | Cursor |
-| Time | 2026-07-27 ~04:45 PT |
-| `main` @ | `f01a279e` (tip); feature `eff7136c`; runtime READY `@ a7d28343` |
-| Done | W5.1 engineering: critical-path SendPanel/conversation vs nested Suspense homes/engagement/mobile homes+calendar regions (uncached). Gates updated (single-tree, crm-mobile-track, screen-parity alsoRoutes). `deploy:verify` READY for `a7d28343`. Companion: jefferson-county-fair dates nulled for content-freshness. |
-| Next | Independent read-only verifier for W5.1 must say FLIP_DONE before ledger flip (Task agents were resource_exhausted this session). Optional later: tagged `revalidateTag` DAL if proven safe. |
-| Blockers | W5.1 stays **partial** until independent `verifiedBy` |
-| Skills read | spec-03 (RC3/§5 fetch); crm-e2e skim |
-
-## Shipped SHAs
-- `eff7136c` feat(crm): stream person-workspace secondary Suspense regions
-- `a7d28343` chore(content): null past jefferson county fair dates
-- `d9889dd2` docs(w5.1): ledger remaining/proof updated; status stays partial
+| Time | 2026-07-27 ~07:43 PT |
+| `main` @ | `5e5677df` (`origin/main` tip after `docs(w5.1): flip ledger to done after independent verify`) |
+| Program ledger | **46/52 done** (`COMPLETION-LEDGER.json`). **W5.1 is DONE** — independent verifier `c7e4a91b-2f83-4d60-b1e5-9a0c6f48d2e7`. |
+| Done (this tip) | W5.1 ledger flip to done after adversarial verify. Cost-control path already live: `ignoreCommand` + no changelog commits on `main`. |
+| Next / open | **W8.1** partial — needs independent verify flip. **W13.1** partial — Matt go on Batches 2+. |
+| Blocked | **W5.5a**, **W8.1a**, **W9.1**, **W9.5** (`blocked:needs-matt`) |
+| Orchestrator leftovers | **BL-015 / BL-016 / BL-018** in `task-registry.json` (not in program ledger) |
+| Skills read | (handoff sync only) |
 
 ## Default agent loop
 1. Prefer `main`. Worktree only for parallel/long/cloud isolation (`wt/<topic>-YYYYMMDD`).
-2. Batch docs; push runtime + `deploy:verify`. Keep `wt/*` local until merge (previews cost Build CPU).
+2. Batch docs; push runtime + `deploy:verify`. Keep `wt/*` local until merge (previews cost Build CPU). Docs/skills-only pushes should skip Vercel via `ignoreCommand`.
 3. Session end: merge to `main` + push, or handoff branch path in this file. Run `npm run wt:status`.
 
 ---
