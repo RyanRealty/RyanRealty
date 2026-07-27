@@ -588,7 +588,7 @@
       "workstream": "W8",
       "mission": "M1",
       "title": "Market reports: ban raw-listings RPC on public surfaces, cache-feed /reports cards, add cross-path consistency monitor (RPC + weekly generator remain as monitored internal paths)",
-      "status": "partial",
+      "status": "done",
       "requiredMechanism": {
         "gates": [
           "scripts/check-no-report-rpc.mjs",
@@ -607,8 +607,8 @@
         ]
       },
       "proofPath": "Four public-surface gates wired + green; market-stat-consistency cron registered; /reports card path cache-fed; soft-404 for community geos fixed (d20d6937). Weekly generator + get_city_* RPCs intentionally retained as monitored internals (compare.ts documents four coexisting paths).",
-      "verifiedBy": "",
-      "remaining": "BUILDER 2026-07-26: title + requiredMechanism corrected to match what shipped (honest scope). Ready for independent verify → done. Residual Matt judgment (MoS 12mo vs 6mo for resorts in outbound email) tracked as W8.1a. Full retirement of weekly-report / raw RPC is explicitly OUT of this row now."
+      "verifiedBy": "7fa0eacc-2914-4515-9432-c75f3813893e — independent adversarial verifier 2026-07-27: all 4 named gate files exist + wired in ci:gates; ran GREEN (ci:no-report-rpc, ci:market-cache-geo-scope, ci:market-formula, ci:days-to-pending-source); cron /api/cron/market-stat-consistency in vercel.json (40 14 * * *) + route.ts + compare.ts (four coexisting paths documented); ci:cron-registered GREEN; generateWeeklyMarketReport + get_city_* RPCs still present (reports.ts allowlisted, migrations intact; title correctly does NOT claim retirement); soft-404 bare-slug resolveGeo still in housing-market/[...slug]/page.tsx (d20d6937); /reports uses getCityReportSnapshots + getCityRangeReport (cache DAL). VERDICT: FLIP_DONE.",
+      "remaining": "DONE. Public raw-RPC ban gated; /reports cache-fed; consistency cron monitors coexisting internal RPC + weekly generator paths. MoS resort-window judgment is W8.1a (blocked:needs-matt). Full RPC/weekly retirement remains explicitly OUT of this row."
     },
     {
       "id": "W8.1a",

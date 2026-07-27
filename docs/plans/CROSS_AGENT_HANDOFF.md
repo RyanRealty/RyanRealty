@@ -1,18 +1,18 @@
-> **NEWEST, START HERE: PROGRAM LEDGER REALITY 2026-07-27 (Cursor).** Prior: W5.1 SUSPENSE, VERCEL COST.
+> **NEWEST, START HERE: W8.1 FLIP DONE 2026-07-27 (Cursor).** Prior: PROGRAM LEDGER REALITY.
 
-# Current — Program ledger + tip (2026-07-27)
+# Current — W8.1 verified done (2026-07-27)
 
 | Field | Value |
 |---|---|
 | Surface | Cursor |
-| Time | 2026-07-27 ~07:43 PT |
-| `main` @ | `f8f8c756` |
-| Program ledger | **46/52 done** (`COMPLETION-LEDGER.json`). **W5.1 is DONE** — independent verifier `c7e4a91b-2f83-4d60-b1e5-9a0c6f48d2e7`. |
-| Done (this tip) | W5.1 ledger flip to done after adversarial verify. Cost-control path already live: `ignoreCommand` + no changelog commits on `main`. |
-| Next / open | **W8.1** partial — needs independent verify flip. **W13.1** partial — Matt go on Batches 2+. |
+| Time | 2026-07-27 ~08:57 PT |
+| `main` @ | (this push; was ahead with `3bbe3d89` ignoreCommand) |
+| Program ledger | **47/52 done** (`COMPLETION-LEDGER.json`). **W8.1 is DONE** — independent verifier `7fa0eacc-2914-4515-9432-c75f3813893e`. |
+| Done (this tip) | W8.1 adversarial verify → FLIP_DONE. Four gates green + in `ci:gates`; consistency cron registered; weekly gen + `get_city_*` RPCs retained; soft-404 bare-slug fix present; `/reports` cache-fed. |
+| Next / open | **W13.1** partial — needs Matt go on Batches 2+ (do not blind-delete). No other unblocked program partials. |
 | Blocked | **W5.5a**, **W8.1a**, **W9.1**, **W9.5** (`blocked:needs-matt`) |
 | Orchestrator leftovers | **BL-015 / BL-016 / BL-018** in `task-registry.json` (not in program ledger) |
-| Skills read | (handoff sync only) |
+| Skills read | (W8.1 independent verify only) |
 
 ## Default agent loop
 1. Prefer `main`. Worktree only for parallel/long/cloud isolation (`wt/<topic>-YYYYMMDD`).
