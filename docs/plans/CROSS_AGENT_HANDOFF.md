@@ -6,7 +6,7 @@
 |---|---|
 | Surface | Cursor |
 | Time | 2026-07-27 ~09:20 PT |
-| `main` @ | (this tip after push) |
+| `main` @ | `9614acc7` |
 | Program ledger | **47/52 done**. Four rows still `blocked:needs-matt` after independent checks — none flipped (no invented Matt yes). |
 | Done (this tip) | Evidence + exact Matt steps in each row `remaining`/`proofPath`. W8.1a brief in `04-DECISIONS-RECORDED.md` §33 (recommend keep 12mo; not locked). Confirmed: prod lacks `CRM_SMS_ALERTS`; web-push drain outside SMS gate; cohort enroll 5328 on 2026-07-23; no `RESEND_WEBHOOKS_API_KEY` in Vercel/local; send-only key cannot list webhooks; `gh` absent on this machine. |
 | Per-row Matt one-liners | **W5.5a:** Set Vercel Production `CRM_SMS_ALERTS=twilio`, unload mac-mini crm-alert-relay, Enable push on /admin/settings. **W8.1a:** Reply `keep 12mo` (recommended) or `switch resorts to 6mo`. **W9.1:** Skip enroll (done); approve+send first Bend Brief after W9.5 green. **W9.5:** Full-access Resend key as `RESEND_WEBHOOKS_API_KEY` (Vercel+GH) + register webhook → `/api/webhooks/resend`. |
