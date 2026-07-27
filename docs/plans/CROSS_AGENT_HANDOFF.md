@@ -1,3 +1,26 @@
+> **NEWEST, START HERE: BLOCKED-ROWS OPS 2026-07-27 (Cursor).** Prior: W13.1 BATCH-1 CLOSEOUT.
+
+# Current — W5.5a / W8.1a / W9.1 / W9.5 evidence pass (2026-07-27)
+
+| Field | Value |
+|---|---|
+| Surface | Cursor |
+| Time | 2026-07-27 ~09:30 PT |
+| `main` @ | *(tip after this push — includes `9614acc7` blocked-rows evidence)* |
+| Program ledger | **47/52 done**. Four rows still `blocked:needs-matt` — none flipped (no invented Matt yes). W13.1 stays partial (Batch-1 done). |
+| Done (this tip) | Independent checks + exact Matt steps in ledger `remaining`/`proofPath`. §33 MoS brief (recommend keep 12mo). Prod lacks `CRM_SMS_ALERTS`; web-push outside SMS gate; cohort enroll 5328 on 2026-07-23; no `RESEND_WEBHOOKS_API_KEY` (send-only key cannot list webhooks); `gh` absent. |
+| Matt one-liners | **W5.5a:** Set Vercel Production `CRM_SMS_ALERTS=twilio`, unload mac-mini crm-alert-relay, Enable push on /admin/settings. **W8.1a:** Reply `keep 12mo` or `switch resorts to 6mo`. **W9.1:** Skip enroll (done); approve+send first Bend Brief after W9.5. **W9.5:** Full-access Resend key as `RESEND_WEBHOOKS_API_KEY` (Vercel+GH) + register webhook → `/api/webhooks/resend`. |
+| Next / open | Matt ops on the four blocked rows. **W13.1** Batches 2+. |
+| Blocked | **W5.5a**, **W8.1a**, **W9.1**, **W9.5** |
+| Skills read | (ops verify only) |
+
+## Default agent loop
+1. Prefer `main`. Worktree only for parallel/long/cloud isolation (`wt/<topic>-YYYYMMDD`).
+2. Batch docs; push runtime + `deploy:verify`. Keep `wt/*` local until merge (previews cost Build CPU). Docs/skills-only pushes should skip Vercel via `ignoreCommand`.
+3. Session end: merge to `main` + push, or handoff branch path in this file. Run `npm run wt:status`.
+
+---
+
 > **NEWEST, START HERE: W13.1 BATCH-1 CLOSEOUT 2026-07-27 (Cursor).** Prior: BL-015 + listing hero map.
 
 # Current — W13.1 Batch-1 leftovers purged (2026-07-27)
