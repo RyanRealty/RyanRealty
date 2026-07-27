@@ -380,7 +380,8 @@ export default async function TeamMemberPage({ params }: Props) {
             : ''}
           lead={heroLead}
           videoSrc={null}
-          posterSrc="/images/office/ryan-realty-bend-office-interior-02.jpg"
+          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
+          posterAlt="Old Mill District, Bend, Oregon"
           portraitSrc={headshotSrc}
           showSearch={false}
         />

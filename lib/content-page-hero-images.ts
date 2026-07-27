@@ -9,10 +9,10 @@
 
 export const CONTENT_HERO_IMAGES = {
   // ─── BROKERAGE PAGES ───────────────────────────────────────────────
-  /** About: the Ryan Realty Bend office — the people, not a stock drone */
+  /** About: the Ryan Realty Bend office interior */
   about: '/images/office/ryan-realty-bend-office-interior-01.jpg',
-  /** Team: the Ryan Realty office (second angle) */
-  team: '/images/office/ryan-realty-bend-office-interior-02.jpg',
+  /** Team: Matt, Paul, and Rebecca group portrait */
+  team: '/images/team.webp',
   /** Contact: Three Sisters at sunrise — approachable Cascade scene */
   contact: '/images/kb/three-sisters-sunrise.jpg',
   /** Reviews: Drake Park + the Deschutes, downtown Bend community */

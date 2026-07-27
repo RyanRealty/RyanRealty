@@ -6,7 +6,7 @@
 |---|---|
 | Surface | Cursor |
 | Time | 2026-07-27 ~09:20 PT |
-| `main` @ | *(this push tip)* |
+| `main` @ | `2f6035c8` |
 | Done | Listing hero bottom-left Google Static Maps thumb; click expands interactive Maps JS into hero; toggle / Show photos / Esc returns to media. Wired `lat`/`lng` from listing page. |
 | Next | Optional polish: hide redundant Show photos chip on mobile when PHOTOS icon is enough |
 | Blocked | None for this feature |
