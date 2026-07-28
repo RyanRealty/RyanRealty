@@ -167,6 +167,9 @@ const nextConfig: NextConfig = {
       { source: '/homes-for-sale/in/listing/:listingKey', destination: '/homes-for-sale/listing/:listingKey', permanent: true },
       { source: '/homes-for-sale/in/:path*', destination: '/homes-for-sale/:path*', permanent: true },
       { source: '/home-valuation', destination: '/sell/valuation', permanent: true },
+      // Content hub: editorial lives on /blog. Keep /area-guides as the geo hub.
+      { source: '/guides', destination: '/blog', permanent: true },
+      { source: '/guides/:slug', destination: '/blog/:slug', permanent: true },
       // /sell/plan retired 2026-06-04: orphan legacy page (sitemap-only, zero inbound
       // links) carrying an unsourced market stat (CLAUDE.md §0). Superseded by the
       // contracted /sell hub. 301 so any held position transfers rather than 404s.

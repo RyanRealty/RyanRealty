@@ -22,7 +22,7 @@ const NAV_FILE = join(__dirname, '..', 'lib', 'site-nav.ts')
 // Every top-level section that must be reachable from the site navigation.
 const REQUIRED_HREFS = [
   '/homes-for-sale',
-  '/search',
+  '/homes-for-sale?view=map',
   '/open-houses',
   '/communities',
   '/cities',

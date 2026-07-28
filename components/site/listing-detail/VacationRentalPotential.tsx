@@ -23,6 +23,8 @@ type Props = {
 }
 
 export function VacationRentalPotential({ projection, className }: Props) {
+  if (projection == null) return null
+
   return (
     <section className={cn('section', className)}>
       <div className="sec-head">

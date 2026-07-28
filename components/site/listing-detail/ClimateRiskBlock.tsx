@@ -90,6 +90,9 @@ export function ClimateRiskBlock({ risk, className }: Props) {
   const hasAnyScore =
     risk != null && [risk.flood, risk.wildfire, risk.heat, risk.drought].some((s) => s != null)
 
+  // Hide empty teaser CTAs (IA plan). Only render when real scores exist.
+  if (!hasAnyScore) return null
+
   return (
     <section className={cn('section', className)}>
       <div className="sec-head">

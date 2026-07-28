@@ -139,7 +139,7 @@ export const MENU: MenuEntry[] = [
         heading: 'Browse',
         links: [
           { label: 'All homes for sale', href: '/homes-for-sale' },
-          { label: 'Map search', href: '/search' },
+          { label: 'Map search', href: '/homes-for-sale?view=map' },
           { label: 'Open houses', href: '/open-houses' },
           { label: 'New this week', href: bendPreset('new-listings') },
           { label: 'Price drops', href: '/price-drops' },

@@ -95,6 +95,24 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .topbar.scrolled a, .kb-root .topbar.scrolled .menu-btn{text-shadow:none;}
 .kb-root .nav-link{display:none;font-size:.9rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;}
 @media(min-width:880px){.kb-root .nav-link{display:inline;}}
+.kb-root .nav-about{display:none;position:relative;}
+@media(min-width:880px){.kb-root .nav-about{display:inline-flex;align-items:center;}}
+.kb-root .nav-about-trigger{
+  background:transparent;border:0;padding:0;cursor:pointer;font:inherit;
+  color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.45);
+}
+.kb-root .topbar.scrolled .nav-about-trigger{text-shadow:none;}
+.kb-root .nav-about-menu{
+  display:none;position:absolute;top:calc(100% + 10px);left:50%;transform:translateX(-50%);
+  min-width:11.5rem;padding:10px 0;background:var(--navy);border:1px solid var(--cream-12);
+  box-shadow:0 12px 28px rgba(0,0,0,.28);z-index:60;
+}
+.kb-root .nav-about-menu.open{display:flex;flex-direction:column;gap:2px;}
+.kb-root .nav-about-menu a{
+  display:block;padding:8px 16px;font-size:.78rem;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--cream);text-shadow:none;white-space:nowrap;
+}
+.kb-root .nav-about-menu a:hover{background:var(--cream-12);}
 .kb-root .menu-btn{
   font-size:.92rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
   color:#fff;background:none;border:0;cursor:pointer;font-family:inherit;text-shadow:0 1px 6px rgba(0,0,0,.45);
@@ -1366,6 +1384,7 @@ html.lenis, html.lenis body{height:auto;}
 /* Testimonials — compact "Recent reviews" card grid (replaces the single
    oversized auto-cycling plate). Hard-edged cards on cream, navy stars. */
 .kb-root .kb-reviews-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;}
+.kb-root .kb-reviews-actions{display:flex;flex-wrap:wrap;gap:14px;align-items:center;}
 .kb-root .kb-reviews-all{align-self:flex-end;font-size:.82rem;font-weight:600;color:var(--navy);text-decoration:none;border-bottom:1px solid var(--navy);padding-bottom:2px;white-space:nowrap;transition:opacity .15s ease;}
 .kb-root .kb-reviews-all:hover{opacity:.6;}
 .kb-root .kb-reviews-all .arr{margin-left:4px;}

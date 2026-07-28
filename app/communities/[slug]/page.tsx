@@ -91,7 +91,6 @@ import { KbActivity } from '@/components/site/kb/KbActivity.client'
 import { KbArticles } from '@/components/site/kb/KbArticles'
 import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
 import { KbTeam } from '@/components/site/kb/KbTeam.client'
-import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbBuyCta } from '@/components/site/kb/KbBuyCta.client'
 import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
 import { KbSchools } from '@/components/site/kb/KbSchools'
@@ -1015,13 +1014,6 @@ export default async function CommunityDetailPage({ params }: Props) {
             </div>
           </div>
         ) : null}
-        <KbSell
-          data={{
-            medianListPrice,
-            medianDaysToPending: pulse?.medianDaysToPending ?? null,
-            soldCount30d: pulse?.closedLast30Days ?? null,
-          }}
-        />
         {faqs.length > 0 ? (
           <section id="faq" aria-label={`${community.name} real estate questions`}>
             <FAQBlock items={faqs} eyebrow="Common questions" title={`${community.name} real estate questions`} />

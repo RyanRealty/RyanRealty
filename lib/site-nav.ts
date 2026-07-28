@@ -78,7 +78,7 @@ export const PRIMARY_NAV: NavGroup[] = [
     href: '/homes-for-sale',
     children: [
       { href: '/homes-for-sale', label: 'All homes for sale' },
-      { href: '/search', label: 'Map search' },
+      { href: '/homes-for-sale?view=map', label: 'Map search' },
       { href: '/open-houses', label: 'Open houses' },
       { href: '/price-drops', label: 'Price drops' },
       { href: '/lp/buyer-listing-alerts', label: 'Get listing alerts' },
@@ -147,7 +147,7 @@ export const FOOTER_NAV: FooterGroup[] = [
     heading: 'Search',
     links: [
       { href: '/homes-for-sale', label: 'Homes for sale' },
-      { href: '/search', label: 'Map search' },
+      { href: '/homes-for-sale?view=map', label: 'Map search' },
       { href: '/open-houses', label: 'Open houses' },
       { href: '/compare', label: 'Compare listings' },
       { href: '/homes-for-sale?status=Sold', label: 'Sold homes' },
@@ -233,4 +233,165 @@ export const LEGAL_LINKS: NavLink[] = [
   // internal-link layer). Registry entry so both footers render it from the
   // same source instead of hand-appending the link.
   { href: '/site-index', label: 'Site index' },
+]
+
+// ─── KB chrome SSOT (KbNav + KbFooter) ────────────────────────────────────────
+
+/** Canonical map entry — never bare `/search` (that 301s to homes-for-sale). */
+export const MAP_SEARCH: NavLink = {
+  href: '/homes-for-sale?view=map',
+  label: 'Map search',
+}
+
+/** Global chrome valuation CTA — form page, not the ad LP. */
+export const VALUATION_FORM: NavLink = {
+  href: '/sell/valuation',
+  label: "What's my home worth",
+}
+
+/** Ad-funnel LP only — never use in KbNav / KbFooter / SiteHeader chrome. */
+export const VALUATION_LP: NavLink = {
+  href: '/lp/seller-home-value',
+  label: "What's my home worth",
+}
+
+/** Always-visible KB top bar links (About is rendered with a dropdown separately). */
+export const KB_TOP_LINKS: NavLink[] = [
+  { href: '/homes-for-sale', label: 'Homes' },
+  { href: '/communities', label: 'Communities' },
+  { href: '/cities', label: 'Cities' },
+  { href: '/sell', label: 'Sell' },
+  { href: '/about', label: 'About' },
+]
+
+/** About dropdown children (also mirrored under Menu+ Company). */
+export const KB_ABOUT_DROPDOWN: NavLink[] = [
+  { href: '/team', label: 'Team' },
+  { href: '/reviews', label: 'Reviews' },
+  { href: '/contact', label: 'Contact' },
+]
+
+/**
+ * Menu+ overlay groups. Company sits second so mobile trust pages appear near
+ * the top of the overlay (IA plan Phase 1).
+ */
+export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
+  {
+    title: 'Buy',
+    links: [
+      { href: '/homes-for-sale', label: 'Search homes' },
+      MAP_SEARCH,
+      { href: '/communities', label: 'Communities' },
+      { href: '/cities', label: 'Cities' },
+      { href: '/open-houses', label: 'Open houses' },
+      { href: '/price-drops', label: 'Price drops' },
+      { href: '/our-homes', label: 'Our listings' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { href: '/about', label: 'About' },
+      { href: '/team', label: 'Our team' },
+      { href: '/reviews', label: 'Reviews' },
+      { href: '/contact', label: 'Contact' },
+      { href: '/join', label: 'Join the team' },
+    ],
+  },
+  {
+    title: 'Sell',
+    links: [
+      { href: '/sell', label: 'Sell your home' },
+      VALUATION_FORM,
+      { href: '/motivated-sellers', label: 'Sell on a deadline' },
+    ],
+  },
+  {
+    title: 'Market',
+    links: [
+      { href: '/housing-market', label: 'Housing market' },
+      { href: '/area-guides', label: 'Area guides' },
+      { href: '/schools', label: 'Schools' },
+      { href: '/parks', label: 'Parks' },
+      { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
+    ],
+  },
+  {
+    title: 'Learn',
+    links: [
+      { href: '/blog', label: 'Blog' },
+      { href: '/faq', label: 'FAQ' },
+      { href: '/videos', label: 'Videos' },
+      { href: '/guides', label: 'Buyer and seller guides' },
+      { href: '/resources', label: 'Resources' },
+    ],
+  },
+  {
+    title: 'Things to do',
+    links: [
+      { href: '/central-oregon/events', label: 'Events' },
+      { href: '/central-oregon/venues', label: 'Live music & shows' },
+      { href: '/central-oregon/trails', label: 'Trails' },
+      { href: '/lp/central-oregon-golf', label: 'Golf' },
+    ],
+  },
+  {
+    title: 'Your account',
+    links: [
+      { href: '/account', label: 'Saved homes and searches' },
+      { href: '/login', label: 'Sign in' },
+    ],
+  },
+]
+
+/** KB footer columns (Explore / Communities / lifestyle stay hand-curated geos). */
+export const KB_FOOTER_COLUMNS: FooterGroup[] = [
+  {
+    heading: 'Explore',
+    links: [
+      { href: '/cities/bend', label: 'Bend homes' },
+      { href: '/cities/redmond', label: 'Redmond homes' },
+      { href: '/cities/sisters', label: 'Sisters homes' },
+      { href: '/cities/sunriver', label: 'Sunriver homes' },
+      { href: '/cities/la-pine', label: 'La Pine homes' },
+      { href: '/cities/terrebonne', label: 'Terrebonne homes' },
+    ],
+  },
+  {
+    heading: 'Communities',
+    links: [
+      { href: '/communities/tetherow', label: 'Tetherow' },
+      { href: '/communities/broken-top', label: 'Broken Top' },
+      { href: '/communities/northwest-crossing', label: 'NorthWest Crossing' },
+      { href: '/communities/caldera-springs', label: 'Caldera Springs' },
+    ],
+  },
+  {
+    heading: 'Central Oregon',
+    links: [
+      { href: '/central-oregon/events', label: 'Events' },
+      { href: '/central-oregon/venues', label: 'Live music & shows' },
+      { href: '/central-oregon/trails', label: 'Trails' },
+      { href: '/lp/central-oregon-golf', label: 'Golf' },
+    ],
+  },
+  {
+    heading: 'Buyers',
+    links: [
+      { href: '/homes-for-sale', label: 'Browse homes' },
+      { href: '/housing-market', label: 'The market' },
+      { href: '/about', label: 'About' },
+      { href: '/team', label: 'The team' },
+      { href: '/reviews', label: 'Reviews' },
+      { href: '/contact', label: 'Contact' },
+    ],
+  },
+  {
+    heading: 'Sellers',
+    links: [
+      VALUATION_FORM,
+      { href: '/sell', label: 'Sell your home' },
+      { href: '/housing-market', label: 'Market reports' },
+    ],
+  },
 ]

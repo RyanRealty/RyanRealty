@@ -190,12 +190,12 @@ export default function MobileNav({
         {/* Pinned CTAs */}
         <div className="flex flex-col gap-2 border-t border-border px-5 py-5">
           <CTAButton
-            href="/lp/seller-home-value"
+            href="/sell/valuation"
             tone="primary"
             size="md"
             className="w-full whitespace-nowrap"
           >
-            What&apos;s my home worth?
+            What&apos;s my home worth
           </CTAButton>
           <CTAButton
             href="/login"

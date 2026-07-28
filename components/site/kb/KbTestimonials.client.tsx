@@ -58,9 +58,14 @@ export function KbTestimonials({ reviews }: { reviews: KbReview[] }) {
             <span className="sec-index">Google reviews</span>
             <h2 className="sec-title display">In their words</h2>
           </div>
-          <a className="kb-reviews-all" href={GOOGLE_URL} target="_blank" rel="noopener">
-            Read all on Google <span className="arr">→</span>
-          </a>
+          <div className="kb-reviews-actions">
+            <a className="kb-reviews-all" href="/reviews">
+              Read all reviews <span className="arr">→</span>
+            </a>
+            <a className="kb-reviews-all" href={GOOGLE_URL} target="_blank" rel="noopener">
+              Google <span className="arr">→</span>
+            </a>
+          </div>
         </div>
 
         <div className="kb-reviews-grid">

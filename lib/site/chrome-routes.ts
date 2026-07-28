@@ -51,7 +51,11 @@ export const KB_ROUTES: RegExp[] = [
   /^\/tools\/[^/]+$/,
   /^\/videos$/,
   /^\/zip\/[^/]+$/,
+  /^\/central-oregon\/(venues|trails|events|golf)(\/[^/]+)?$/,
+  /^\/luxury-homes-bend$/,
+  /^\/oregon\/[^/]+$/,
 ]
+
 
 /**
  * True on routes that carry their own chrome (or none) and must therefore SHOW
@@ -74,6 +78,7 @@ export function shouldHideDefaultChrome(pathname: string | null | undefined): bo
   if (pathname === "/housing-market") return true
   if (/^\/housing-market\/[^/]+$/.test(pathname)) return true // 1-segment: region, city reports, explore, reports
   if (/^\/housing-market\/reports\/[^/]+$/.test(pathname)) return true // /housing-market/reports/<slug> detail
+  if (/^\/housing-market\/reports\/archive\/[^/]+$/.test(pathname)) return true
   // Listing detail. The canonical browser URL is /homes-for-sale/<city>/<address>
   // (or /homes-for-sale/listing/<key>), which rewrites to app/listing/* — the KB
   // shell. Match the listing-detail slug shapes (last segment ends in a -<5+ digit

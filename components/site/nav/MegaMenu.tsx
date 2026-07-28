@@ -497,13 +497,13 @@ function SellPanel({
             Get a free valuation from a local broker, without the high pressure.
           </p>
           <CTAButton
-            href="/lp/seller-home-value"
+            href="/sell/valuation"
             tone="primary"
             size="sm"
             className="mt-4 w-full"
-            onClick={() => onLinkClick(panel, 'Free home valuation')}
+            onClick={() => onLinkClick(panel, "What's my home worth")}
           >
-            Free home valuation
+            What&apos;s my home worth
           </CTAButton>
           <p className="mt-2 text-center text-[12px] text-muted-foreground">
             No obligation. No pressure.

@@ -6,109 +6,34 @@ import { useRouter } from 'next/navigation'
 import { CONTACT } from '@/lib/brand/contact'
 import { useSessionUser } from '@/lib/hooks/useSessionUser'
 import {
+  KB_ABOUT_DROPDOWN,
+  KB_MENU_GROUPS,
+  KB_TOP_LINKS,
+  VALUATION_FORM,
+} from '@/lib/site-nav'
+import {
   SearchSuggestPanel,
   flattenSuggestions,
   useSearchSuggest,
   type SuggestItem,
 } from '@/components/search/SearchSuggest'
 
-// ONE coherent nav that navigates the WHOLE site. The top bar shows the key
-// destinations; the overlay is a comprehensive grouped directory (every real
-// page is reachable). All REAL routes — no in-page anchors.
-const LINKS = [
-  // "Homes" (not "Search") — aligned with the portal chrome's primary nav so
-  // the vocabulary survives the editorial<->portal seam (design-audit P1).
-  { href: '/homes-for-sale', label: 'Homes' },
-  { href: '/communities', label: 'Communities' },
-  { href: '/cities', label: 'Cities' },
-  { href: '/sell', label: 'Sell' },
-  // design-audit NAV-4: "Account" as a top-level marketing tab read oddly and
-  // clashed with the search chrome's "Sign in". The auth entry now lives in the
-  // topbar CTA cluster (Sign in) + the overlay's "Your account" group, matching
-  // the search header so the affordance is identical across the seam.
-]
-
-const MENU_GROUPS: { title: string; links: { href: string; label: string }[] }[] = [
-  {
-    title: 'Buy',
-    links: [
-      { href: '/homes-for-sale', label: 'Search homes' },
-      { href: '/search', label: 'Map search' },
-      { href: '/communities', label: 'Communities' },
-      { href: '/cities', label: 'Cities' },
-      { href: '/open-houses', label: 'Open houses' },
-      { href: '/price-drops', label: 'Price drops' },
-      { href: '/our-homes', label: 'Our listings' },
-    ],
-  },
-  {
-    title: 'Sell',
-    links: [
-      { href: '/sell', label: 'Sell your home' },
-      { href: '/sell/valuation', label: "What's my home worth" },
-      { href: '/motivated-sellers', label: 'Sell on a deadline' },
-    ],
-  },
-  {
-    title: 'Market & area',
-    links: [
-      { href: '/housing-market', label: 'Housing market' },
-      { href: '/area-guides', label: 'Area guides' },
-      { href: '/schools', label: 'Schools' },
-      { href: '/parks', label: 'Parks' },
-      { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
-    ],
-  },
-  {
-    title: 'Things to do',
-    links: [
-      { href: '/central-oregon/events', label: 'Events' },
-      { href: '/central-oregon/venues', label: 'Live music & shows' },
-      { href: '/central-oregon/trails', label: 'Trails' },
-      { href: '/lp/central-oregon-golf', label: 'Golf' },
-    ],
-  },
-  {
-    title: 'Company',
-    links: [
-      { href: '/blog', label: 'Guides and blog' },
-      { href: '/reviews', label: 'Reviews' },
-      { href: '/about', label: 'About' },
-      { href: '/team', label: 'Our team' },
-      { href: '/contact', label: 'Contact' },
-    ],
-  },
-  {
-    // The account system (saved homes, searches, alerts) was unreachable from
-    // this menu — the only sign-in affordance lived on the portal chrome
-    // (design-audit navigation finding).
-    title: 'Your account',
-    links: [
-      { href: '/account', label: 'Saved homes and searches' },
-      { href: '/login', label: 'Sign in' },
-    ],
-  },
-]
-
 /**
  * KB top bar — transparent over the hero, flips to solid navy past the hero.
- * Horizontal wordmark (whitened over the photo via CSS filter). The menu overlay
- * is a comprehensive grouped directory. Replaces the default site chrome on KB.
+ * Structure from lib/site-nav.ts (KB_TOP_LINKS / KB_MENU_GROUPS). About carries
+ * a lightweight Team / Reviews / Contact dropdown for trust findability.
  */
 export function KbNav({ solid = false }: { solid?: boolean } = {}) {
   const bar = useRef<HTMLElement>(null)
   const [open, setOpen] = useState(false)
-  // RC7: signed-in visitors got only "Sign in" here, stranding them from their
-  // saved homes/searches. When signed in, the auth affordance links to /account.
+  const [aboutOpen, setAboutOpen] = useState(false)
   const sessionUser = useSessionUser()
   const signedIn = Boolean(sessionUser)
   const overlayRef = useRef<HTMLDivElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const aboutWrapRef = useRef<HTMLDivElement>(null)
 
-  // W4.1 global search — the ONE suggestions engine (SearchSuggest), reachable
-  // from every page that carries the KB nav. Entry point only: the fetch,
-  // flatten, and panel all live in components/search/SearchSuggest.
   const router = useRouter()
   const [query, setQuery] = useState('')
   const [highlight, setHighlight] = useState(-1)
@@ -117,8 +42,6 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
   const { suggestions, loading: suggestLoading } = useSearchSuggest(query)
   const suggestItems = flattenSuggestions(suggestions)
 
-  // Close the overlay AND clear the search state, so a reopen never shows a
-  // stale query or a stale keyboard highlight.
   const closeOverlay = useCallback(() => {
     setOpen(false)
     setQuery('')
@@ -135,8 +58,6 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
 
   const onSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape' && query) {
-      // First Escape clears the query; a second one (empty query) falls
-      // through to the overlay's own Escape-to-close handler.
       e.stopPropagation()
       setQuery('')
       setHighlight(-1)
@@ -166,8 +87,6 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
   }
 
   useEffect(() => {
-    // Solid mode: always-navy bar for hero-less surfaces (e.g. /search) that can't
-    // take the full kb-root shell. No transparent-over-hero state, no scroll listener.
     if (solid) return
     const onScroll = () => {
       if (!bar.current) return
@@ -178,21 +97,27 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
     return () => window.removeEventListener('scroll', onScroll)
   }, [solid])
 
-  // Focus management: opening the overlay left focus on the trigger button
-  // behind it, so Tab walked a keyboard user out of the (invisible) overlay
-  // into the page content underneath, and closing never returned focus to
-  // where the user was (design-audit P2, accessibility). Move focus into
-  // the overlay on open, trap Tab within it while open, restore focus to
-  // the trigger on close.
+  useEffect(() => {
+    if (!aboutOpen) return
+    const onDoc = (e: MouseEvent) => {
+      if (!aboutWrapRef.current?.contains(e.target as Node)) setAboutOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setAboutOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDoc)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [aboutOpen])
+
   const hasOpenedRef = useRef(false)
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
-    // Skip the very first (mount) run — only move focus on an actual
-    // open/close transition, never steal it from the page on initial load.
     if (open) {
       hasOpenedRef.current = true
-      // Opened from the topbar Search affordance: put the caret straight into
-      // the search field. Opened as the menu: focus the close control.
       if (openViaSearchRef.current) searchInputRef.current?.focus()
       else closeBtnRef.current?.focus()
       openViaSearchRef.current = false
@@ -233,17 +158,42 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
           <img className="logo-img" src="/images/brand/logo-horizontal-navy-transparent.png" alt="Ryan Realty" />
         </Link>
         <nav className="nav-right">
-          {LINKS.map((l) => (
-            <a key={l.href} className="nav-link" href={l.href}>
-              {l.label}
-            </a>
-          ))}
-          {/* design-audit NAV-4/NAV-5/CNV-5: persistent conversion + auth CTAs in
-              the topbar (matching the search chrome), so the seller money action
-              and sign-in are one tap from every KB page, not buried in the menu. */}
-          {/* W4.1: global search entry — opens the overlay with the caret in
-              the search field. Hidden on small screens like the nav links
-              (the overlay's search field covers mobile via Menu). */}
+          {KB_TOP_LINKS.map((l) =>
+            l.href === '/about' ? (
+              <div className="nav-about" key={l.href} ref={aboutWrapRef}>
+                <button
+                  type="button"
+                  className="nav-link nav-about-trigger"
+                  aria-expanded={aboutOpen}
+                  aria-haspopup="true"
+                  aria-controls="about-dropdown"
+                  onClick={() => setAboutOpen((v) => !v)}
+                  onMouseEnter={() => setAboutOpen(true)}
+                >
+                  {l.label}
+                </button>
+                <div
+                  id="about-dropdown"
+                  className={`nav-about-menu${aboutOpen ? ' open' : ''}`}
+                  role="menu"
+                  onMouseLeave={() => setAboutOpen(false)}
+                >
+                  <a href="/about" role="menuitem" onClick={() => setAboutOpen(false)}>
+                    About Ryan Realty
+                  </a>
+                  {KB_ABOUT_DROPDOWN.map((d) => (
+                    <a key={d.href} href={d.href} role="menuitem" onClick={() => setAboutOpen(false)}>
+                      {d.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <a key={l.href} className="nav-link" href={l.href}>
+                {l.label}
+              </a>
+            )
+          )}
           <button
             type="button"
             className="nav-link menu-btn"
@@ -258,10 +208,17 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
           <a className="nav-signin" href={signedIn ? '/account' : '/login'}>
             {signedIn ? 'My account' : 'Sign in'}
           </a>
-          <Link className="nav-cta" href="/sell/valuation">
-            What’s my home worth
+          <Link className="nav-cta" href={VALUATION_FORM.href}>
+            {VALUATION_FORM.label}
           </Link>
-          <button ref={triggerRef} className="menu-btn" onClick={() => setOpen(true)} aria-expanded={open} aria-controls="menu-overlay" aria-label="Open menu">
+          <button
+            ref={triggerRef}
+            className="menu-btn"
+            onClick={() => setOpen(true)}
+            aria-expanded={open}
+            aria-controls="menu-overlay"
+            aria-label="Open menu"
+          >
             Menu +
           </button>
         </nav>
@@ -275,9 +232,6 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
             Close ×
           </button>
         </div>
-        {/* W4.1 global search — one field, every suggestion category the
-            backend returns (addresses, cities, communities, neighborhoods,
-            zips, agents, reports, pages). KB idiom: real input, kb.css vars. */}
         <div role="search" className="relative mt-7 w-full">
           <input
             id="kb-nav-search"
@@ -311,11 +265,11 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
           )}
         </div>
         <nav className="menu-nav menu-grid">
-          {MENU_GROUPS.map((g) => (
+          {KB_MENU_GROUPS.map((g) => (
             <div className="menu-group" key={g.title}>
               <h3 className="menu-group-title">{g.title}</h3>
               {g.links.map((l) => (
-                <a key={l.href} href={l.href} onClick={closeOverlay}>
+                <a key={`${g.title}-${l.href}`} href={l.href} onClick={closeOverlay}>
                   {l.label}
                 </a>
               ))}
@@ -323,8 +277,8 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
           ))}
         </nav>
         <div className="menu-cta-row">
-          <Link className="nav-cta" href="/sell/valuation" onClick={closeOverlay}>
-            What’s my home worth
+          <Link className="nav-cta" href={VALUATION_FORM.href} onClick={closeOverlay}>
+            {VALUATION_FORM.label}
           </Link>
           <a className="nav-signin overlay" href={signedIn ? '/account' : '/login'} onClick={closeOverlay}>
             {signedIn ? 'My account' : 'Sign in'}

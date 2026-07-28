@@ -6,7 +6,7 @@ import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { kbMoneyFull, type KbTownItem } from './types'
 import { CONTACT, BRAND, BROKERS } from '@/lib/brand/contact'
-import { LEGAL_LINKS } from '@/lib/site-nav'
+import { KB_FOOTER_COLUMNS, LEGAL_LINKS, VALUATION_FORM } from '@/lib/site-nav'
 
 /**
  * KB footer — dual-audience close + full sitemap. Per-town inventory fine print
@@ -75,8 +75,8 @@ export function KbFooter({
                 {/* "What's my home worth" lands on the valuation FORM, not the
                     /sell marketing page (design-audit P2 — the promise must
                     match the page). */}
-                <Link href="/sell/valuation" className="btn">
-                  {"What's my home worth"} <span className="arr">→</span>
+                <Link href={VALUATION_FORM.href} className="btn">
+                  {VALUATION_FORM.label} <span className="arr">→</span>
                 </Link>
                 <a href="/homes-for-sale" className="btn ghost">
                   Browse homes
@@ -101,41 +101,16 @@ export function KbFooter({
               <a href="https://youtube.com/@ryanrealtybend">YouTube</a>
             </div>
           </div>
-          <nav className="foot-col" aria-label="Explore">
-            <h3>Explore</h3>
-            <Link href="/cities/bend">Bend homes</Link>
-            <Link href="/cities/redmond">Redmond homes</Link>
-            <Link href="/cities/sisters">Sisters homes</Link>
-            <Link href="/cities/sunriver">Sunriver homes</Link>
-            <Link href="/cities/la-pine">La Pine homes</Link>
-            <Link href="/cities/terrebonne">Terrebonne homes</Link>
-          </nav>
-          <nav className="foot-col" aria-label="Communities">
-            <h3>Communities</h3>
-            <Link href="/communities/tetherow">Tetherow</Link>
-            <Link href="/communities/broken-top">Broken Top</Link>
-            <Link href="/communities/northwest-crossing">NorthWest Crossing</Link>
-            <Link href="/communities/caldera-springs">Caldera Springs</Link>
-          </nav>
-          <nav className="foot-col" aria-label="Explore Central Oregon">
-            <h3>Central Oregon</h3>
-            <Link href="/central-oregon/events">Events</Link>
-            <Link href="/central-oregon/venues">Live music {'&'} shows</Link>
-            <Link href="/central-oregon/trails">Trails</Link>
-            <a href="/lp/central-oregon-golf">Golf</a>
-          </nav>
-          <nav className="foot-col" aria-label="Buyers">
-            <h3>Buyers</h3>
-            <a href="/homes-for-sale">Browse homes</a>
-            <Link href="/housing-market">The market</Link>
-            <Link href="/team">The team</Link>
-          </nav>
-          <nav className="foot-col" aria-label="Sellers">
-            <h3>Sellers</h3>
-            <Link href="/sell/valuation">What&rsquo;s my home worth</Link>
-            <Link href="/sell">Sell your home</Link>
-            <Link href="/housing-market">Market reports</Link>
-          </nav>
+          {KB_FOOTER_COLUMNS.map((col) => (
+            <nav className="foot-col" aria-label={col.heading} key={col.heading}>
+              <h3>{col.heading}</h3>
+              {col.links.map((link) => (
+                <Link key={col.heading + '-' + link.href} href={link.href}>
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          ))}
         </div>
         <div className="foot-bottom">
           <p>&copy; 2026 {BRAND.legalName} · Principal Broker Matt Ryan · Licensed in Oregon · Equal Housing Opportunity</p>

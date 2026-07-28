@@ -452,6 +452,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       {/* D77 — Wave 3 minimums for Showcase parity. Each component
           takes data as a prop and renders a "request a report" CTA
           when data is null. No fake numbers. */}
+      {/* Climate / STR / CMA only mount when real data exists (components return null otherwise). */}
       <ClimateRiskBlock risk={null} />
       <VacationRentalPotential projection={null} />
       <TransparentCMASummary cma={null} />

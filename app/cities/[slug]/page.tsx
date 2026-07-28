@@ -49,6 +49,7 @@ import { buildYearSeries } from '@/lib/kb/year-series'
 import { assignNeighborhoodPhotos } from '@/lib/kb/neighborhood-photos'
 import { resortActiveSfrCounts, resortLabelToSlug, cityResorts } from '@/lib/kb/resort-active-counts'
 import { listingTileHref, slugify } from '@/lib/slug'
+import { getPlaceLinks } from '@/lib/place-links'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
@@ -387,7 +388,7 @@ export default async function CityDetailPage({ params }: Props) {
   const golfCommunityItems: KbTownItem[] = cityResorts(slug)
     .map((c) => ({
       name: c.label,
-      href: `/communities/${c.slug}`,
+      href: getPlaceLinks({ type: 'community', slug: c.slug, citySlug: slug }).placeUrl,
       activeCount: resortSfrCounts.get(c.slug) ?? communitySfrBySlug.get(c.slug) ?? 0,
       medianPrice: null,
       img: RESORT_IMG[c.slug] ?? commImgBySlug.get(c.slug) ?? commImgByName.get(c.label.toLowerCase().trim()) ?? '',
@@ -412,7 +413,11 @@ export default async function CityDetailPage({ params }: Props) {
         name: c.subdivision,
         activeCount,
         town: cityName,
-        href: `/communities/${c.slug}`,
+        href: getPlaceLinks({
+          type: 'community',
+          slug: resortSlug ?? c.slug,
+          citySlug: slug,
+        }).placeUrl,
         img,
         video: cv?.video ? { url: cv.video, embedType: 'video-tag' as const } : null,
       }
@@ -586,29 +591,9 @@ export default async function CityDetailPage({ params }: Props) {
           posterSrc={heroPosterSrc}
           mediaCaption={mediaCaption}
         />
-        {aboutParagraphs.length > 0 ? (
-          <KbAbout eyebrow={`${cityName} · Oregon`} heading={`Living in ${cityName}`} paragraphs={aboutParagraphs} facts={aboutFacts} />
-        ) : null}
-        {/* Flow: lead with the MARKET (credibility) → the homes → a live price
-            ticker → the map → drill-down (neighborhoods/communities) → this-week
-            (open houses) → live activity → guides → explore out. */}
-        <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} byTownKind="neighborhood" />
-        {/* Tabbed core-chart module — the ONE chart component used everywhere.
-            Sits under the HUD (the KPI grid + verdict stay above); renders
-            nothing when no series is chartable, never an empty chart. (§0) */}
-        {coreCharts ? (
-          <section className="section" aria-label={`${cityName} market trend charts`}>
-            <div className="wrap py-10 sm:py-14">
-              <MarketCoreCharts data={coreCharts} heading={`${cityName} market trends`} />
-            </div>
-          </section>
-        ) : null}
+        {/* Inventory first (shared place template with community pages). */}
         <KbFeatured items={featuredItems} eyebrow={`${cityName} · For sale`} />
         <KbTicker items={tickerItems} />
-        {/* totalActive/subtitle describe the PLOTTED set now, not the
-            polygon-clipped pulse count — mapTiles filters by the MLS City
-            field (rural addresses often carry "Bend"), so the two counts
-            legitimately differ and used to contradict each other (P2). */}
         <KbListingMap
           geojson={mapGeo}
           totalActive={mapFeatures.length}
@@ -619,6 +604,17 @@ export default async function CityDetailPage({ params }: Props) {
           title={`Homes in\n${cityName}`}
           subtitle={`Every active single-family listing with a ${cityName} address, on the real terrain. Click any dot for the price, the beds, and the street.`}
         />
+        {aboutParagraphs.length > 0 ? (
+          <KbAbout eyebrow={`${cityName} · Oregon`} heading={`Living in ${cityName}`} paragraphs={aboutParagraphs} facts={aboutFacts} />
+        ) : null}
+        <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} byTownKind="neighborhood" />
+        {coreCharts ? (
+          <section className="section" aria-label={`${cityName} market trend charts`}>
+            <div className="wrap py-10 sm:py-14">
+              <MarketCoreCharts data={coreCharts} heading={`${cityName} market trends`} />
+            </div>
+          </section>
+        ) : null}
         <KbExploreTowns
           towns={bendNeighborhoodItems}
           eyebrow={`${cityName} · Neighborhoods`}

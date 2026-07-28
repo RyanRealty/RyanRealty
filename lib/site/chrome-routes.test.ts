@@ -60,4 +60,22 @@ describe("shouldHideDefaultChrome", () => {
       expect(re.source.endsWith("$"), re.source).toBe(true)
     }
   })
+
+  it("HIDES chrome on central-oregon lifestyle, luxury, oregon, and market archive", () => {
+    for (const path of [
+      "/central-oregon/venues",
+      "/central-oregon/venues/old-mill-district",
+      "/central-oregon/trails",
+      "/central-oregon/events",
+      "/central-oregon/golf/tetherow",
+      "/luxury-homes-bend",
+      "/oregon/medford",
+      "/housing-market/reports/archive/bend",
+    ]) {
+      expect(shouldHideDefaultChrome(path), path).toBe(true)
+    }
+    for (const path of ["/central-oregon", "/oregon", "/luxury-homes-bend/extra"]) {
+      expect(shouldHideDefaultChrome(path), path).toBe(false)
+    }
+  })
 })
