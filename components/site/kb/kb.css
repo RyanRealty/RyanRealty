@@ -108,11 +108,13 @@ html.lenis, html.lenis body{height:auto;}
   box-shadow:0 12px 28px rgba(0,0,0,.28);z-index:60;
 }
 .kb-root .nav-about-menu.open{display:flex;flex-direction:column;gap:2px;}
+@layer base{
 .kb-root .nav-about-menu a{
   display:block;padding:8px 16px;font-size:.78rem;font-weight:600;letter-spacing:.06em;
   text-transform:uppercase;color:var(--cream);text-shadow:none;white-space:nowrap;
 }
 .kb-root .nav-about-menu a:hover{background:var(--cream-12);}
+}
 .kb-root .menu-btn{
   font-size:.92rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
   color:#fff;background:none;border:0;cursor:pointer;font-family:inherit;text-shadow:0 1px 6px rgba(0,0,0,.45);
