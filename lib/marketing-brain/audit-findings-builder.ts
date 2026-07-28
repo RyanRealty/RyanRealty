@@ -120,34 +120,24 @@ export interface AuditFindingsPayload {
  */
 const EXISTING_PRODUCER_MAP: Partial<Record<Topic, Partial<Record<Format, string>>>> = {
   listing: {
-    reel: 'video_production_skills/listing_reveal',
-    long_video: 'video_production_skills/listing-tour-video',
     carousel: 'social_media_skills/instagram-carousel',
     single_image: 'social_media_skills/flyer-design',
     blog: 'social_media_skills/blog-post',
   },
   market_data: {
-    reel: 'video_production_skills/market-data-video',
-    long_video: 'video_production_skills/youtube-long-form-market-report',
     carousel: 'social_media_skills/instagram-carousel',
     blog: 'social_media_skills/blog-post',
   },
   national_housing_news: {
-    reel: 'video_production_skills/news-video',
-    long_video: 'video_production_skills/news-video',
     blog: 'social_media_skills/blog-post',
   },
   national_economy: {
     blog: 'social_media_skills/blog-post',
-    reel: 'video_production_skills/news-video',
   },
   local_community: {
-    reel: 'video_production_skills/weekend-events-video',
     blog: 'social_media_skills/blog-post',
   },
   lifestyle_bend: {
-    reel: 'video_production_skills/area_guides',
-    long_video: 'video_production_skills/neighborhood_tour',
   },
   buyer_education: {
     blog: 'social_media_skills/blog-post',
@@ -156,7 +146,6 @@ const EXISTING_PRODUCER_MAP: Partial<Record<Topic, Partial<Record<Format, string
     blog: 'social_media_skills/blog-post',
   },
   behind_scenes: {
-    reel: 'video_production_skills/listing_reveal',
   },
   recap_highlight: {
     carousel: 'social_media_skills/instagram-carousel',
@@ -182,9 +171,11 @@ function deriveProposedProducer(topic: Topic, format: Format): {
   action_type: string
 } {
   const skill_name = `${topic.replace(/_/g, '-')}-${format}`
+  // W13.1: video producers decommissioned; propose social_media path for
+  // non-video, and a matt-alert placeholder for video formats (local worker).
   const isVideo = format === 'reel' || format === 'long_video' || format === 'live'
   const path = isVideo
-    ? `video_production_skills/${skill_name}/`
+    ? `marketing_brain_skills/producers/comms-matt-alert/`
     : `social_media_skills/${skill_name}/`
   const action_type = `content:${topic}_${format}`
   return { skill_name, path, action_type }

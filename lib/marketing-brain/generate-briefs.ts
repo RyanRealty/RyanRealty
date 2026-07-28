@@ -2399,27 +2399,28 @@ const FORMAT_ROUTE_MAP: Record<string, { action_type: string; producer: string }
   fb_ad: { action_type: 'content:fb_ad', producer: 'social_media_skills/facebook-lead-gen-ad' },
   fb_ad_creative: { action_type: 'content:fb_lead_gen_ad', producer: 'social_media_skills/facebook-lead-gen-ad' },
 
-  // Organic short-form video (30-45s vertical)
-  market_data_short: { action_type: 'content:market_data_short', producer: 'video_production_skills/market-data-video' },
-  market_data_video: { action_type: 'content:market_data_short', producer: 'video_production_skills/market-data-video' },
-  market_video: { action_type: 'content:market_video', producer: 'video_production_skills/market-data-video' },
-  market_data_viz: { action_type: 'content:market_data_viz', producer: 'video_production_skills/data_viz_video' },
-  stats_clip: { action_type: 'content:stats_clip', producer: 'video_production_skills/data_viz_video' },
-  meme_video: { action_type: 'content:meme_video', producer: 'video_production_skills/meme_content' },
-  neighborhood_reel: { action_type: 'content:neighborhood_reel', producer: 'video_production_skills/area_guides' },
-  area_guide_short: { action_type: 'content:area_guide_short', producer: 'video_production_skills/area_guides' },
-  news_clip: { action_type: 'content:news_clip', producer: 'video_production_skills/news-video' },
-  news_video: { action_type: 'content:news_video', producer: 'video_production_skills/news-video' },
-  avatar_market_update: { action_type: 'content:avatar_market_update', producer: 'video_production_skills/avatar_market_update' },
+  // Organic short-form video — decommissioned 2026-06-14; route to Matt alert
+// (local Remotion worker). W13.1 Batch 4: no video_production_skills/* SKILL.md.
+  market_data_short: { action_type: 'content:market_data_short', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+  market_data_video: { action_type: 'content:market_data_short', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+  market_video: { action_type: 'content:market_video', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+  market_data_viz: { action_type: 'content:market_data_viz', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+  stats_clip: { action_type: 'content:stats_clip', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+  meme_video: { action_type: 'content:meme_video', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+  neighborhood_reel: { action_type: 'content:neighborhood_reel', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+  area_guide_short: { action_type: 'content:area_guide_short', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+  news_clip: { action_type: 'content:news_clip', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+  news_video: { action_type: 'content:news_video', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+  avatar_market_update: { action_type: 'content:avatar_market_update', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
 
   // Listing-specific
-  listing_reel: { action_type: 'content:listing_reel', producer: 'video_production_skills/listing_reveal' },
-  listing_video: { action_type: 'content:listing_video', producer: 'video_production_skills/listing-tour-video' },
+  listing_reel: { action_type: 'content:listing_reel', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+  listing_video: { action_type: 'content:listing_video', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
 
   // Long-form video
-  market_youtube_longform: { action_type: 'content:market_youtube_longform', producer: 'video_production_skills/youtube-long-form-market-report' },
-  neighborhood_tour: { action_type: 'content:neighborhood_tour', producer: 'video_production_skills/neighborhood_tour' },
-  area_guide_long: { action_type: 'content:area_guide_long', producer: 'video_production_skills/neighborhood_tour' },
+  market_youtube_longform: { action_type: 'content:market_youtube_longform', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+  neighborhood_tour: { action_type: 'content:neighborhood_tour', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+  area_guide_long: { action_type: 'content:area_guide_long', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
 
   // Static + carousels
   ig_carousel: { action_type: 'content:ig_carousel', producer: 'social_media_skills/instagram-carousel' },
@@ -2434,8 +2435,8 @@ const FORMAT_ROUTE_MAP: Record<string, { action_type: string; producer: string }
 
   // Orchestrators
   list_kit: { action_type: 'content:list_kit', producer: 'social_media_skills/list-kit' },
-  monthly_market_report: { action_type: 'content:monthly_market_report', producer: 'video_production_skills/monthly-market-report-orchestrator' },
-  listing_launch: { action_type: 'content:listing_launch', producer: 'video_production_skills/listing_launch' },
+  monthly_market_report: { action_type: 'content:monthly_market_report', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+  listing_launch: { action_type: 'content:listing_launch', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
 
   // GBP
   gbp_post: { action_type: 'ops:gbp_post', producer: 'marketing_brain_skills/producers/ops-reputation' },
@@ -2475,8 +2476,8 @@ const FORMAT_ROUTE_MAP: Record<string, { action_type: string; producer: string }
   comms_stakeholder_summary: { action_type: 'comms:stakeholder_summary', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
 
   // Legacy aliases
-  ig_reel: { action_type: 'content:market_data_short', producer: 'video_production_skills/market-data-video' },
-  tiktok_reel: { action_type: 'content:market_data_short', producer: 'video_production_skills/market-data-video' },
+  ig_reel: { action_type: 'content:market_data_short', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+  tiktok_reel: { action_type: 'content:market_data_short', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
 }
 
 /**
