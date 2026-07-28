@@ -33,6 +33,7 @@ import {
 } from './get'
 import { resolveDocsBatch, resolveComplianceBatch } from './batch'
 import { getProspectEngagement } from './engagement'
+import { blockAllChannels } from './types'
 import type { ProspectComplianceState, ProspectDocState, ProspectKind, ProspectListFilters, ProspectListResult, ProspectRow, ProspectStatusFilter, ProspectSummary } from './types'
 
 type RawRow = Record<string, unknown>
@@ -45,7 +46,10 @@ const FAILSAFE_COMPLIANCE: ProspectComplianceState = {
   offMarket: false,
   suppressedSms: true,
   noPhone: true,
+  noEmail: true,
   reasons: ['compliance unresolved'],
+  channels: blockAllChannels('Compliance unresolved'),
+  allChannelsBlocked: true,
 }
 
 const EMPTY_SUMMARY: ProspectSummary = {

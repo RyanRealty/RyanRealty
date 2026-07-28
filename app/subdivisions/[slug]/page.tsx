@@ -24,7 +24,7 @@
 
 import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
-import { slugify } from '@/lib/slug'
+import { slugify, subdivisionListingsPath } from '@/lib/slug'
 import { getCommunityListings } from '@/app/actions/communities'
 import {
   getGeoBoundaryMapData,
@@ -494,7 +494,13 @@ export default async function SubdivisionPage({ params }: Props) {
         ) : null}
         {/* Featured homes grid — shown when listings exist; graceful empty state otherwise. */}
         {featuredItems.length > 0 ? (
-          <KbFeatured items={featuredItems} eyebrow={`${displayName} · For sale`} />
+          <KbFeatured
+            items={featuredItems}
+            eyebrow={`${displayName} · For sale`}
+            viewAllHref={subdivisionListingsPath(cityName, displayName)}
+            viewAllLabel={`See every ${displayName} home for sale`}
+            totalCount={activeCount || null}
+          />
         ) : (
           <section className="section">
             <div className="wrap" style={{ textAlign: 'center', padding: '2.5rem 0' }}>

@@ -45,7 +45,7 @@ import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
 import { communityImage, cityHero } from '@/lib/geo-images'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { buildYearSeries } from '@/lib/kb/year-series'
-import { slugify, listingTileHref } from '@/lib/slug'
+import { slugify, listingTileHref, subdivisionListingsPath } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
@@ -508,7 +508,15 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           eyebrow={`${neighborhood.name} · The market`}
           chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
         />
-        <KbFeatured items={featuredItems} eyebrow={`${neighborhood.name} · For sale`} />
+        {/* The grid caps at 12 tiles — reach the rest of THIS neighborhood's
+            inventory, not the site-wide search. */}
+        <KbFeatured
+          items={featuredItems}
+          eyebrow={`${neighborhood.name} · For sale`}
+          viewAllHref={subdivisionListingsPath(cityName, neighborhood.name)}
+          viewAllLabel={`See every ${neighborhood.name} home for sale`}
+          totalCount={activeCount || null}
+        />
         <KbTicker items={tickerItems} />
         <KbListingMap
           geojson={mapGeo}

@@ -48,7 +48,7 @@ import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { assignNeighborhoodPhotos } from '@/lib/kb/neighborhood-photos'
 import { resortActiveSfrCounts, resortLabelToSlug, cityResorts } from '@/lib/kb/resort-active-counts'
-import { listingTileHref, slugify } from '@/lib/slug'
+import { homesForSalePath, listingTileHref, slugify } from '@/lib/slug'
 import { getPlaceLinks } from '@/lib/place-links'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
@@ -592,7 +592,9 @@ export default async function CityDetailPage({ params }: Props) {
           mediaCaption={mediaCaption}
         />
         {/* Inventory first (shared place template with community pages). */}
-        <KbFeatured items={featuredItems} eyebrow={`${cityName} · For sale`} />
+        {/* The grid caps at 12 tiles, so the footer link must reach the REST of this
+            city's inventory. activeCount is the pulse figure the hero already states. */}
+        <KbFeatured items={featuredItems} eyebrow={`${cityName} · For sale`} viewAllHref={homesForSalePath(cityName)} viewAllLabel={`See every ${cityName} home for sale`} totalCount={activeCount || null} />
         <KbTicker items={tickerItems} />
         <KbListingMap
           geojson={mapGeo}

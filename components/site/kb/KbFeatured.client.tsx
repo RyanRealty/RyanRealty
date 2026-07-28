@@ -15,7 +15,27 @@ import { useInViewAutoplay } from './use-in-view-autoplay'
  * hover / keyboard focus, and reverts to the photo otherwise. One video plays at
  * a time. Only the active tile mounts its video.
  */
-export function KbFeatured({ items, eyebrow = 'Featured homes' }: { items: KbFeaturedItem[]; eyebrow?: string }) {
+export function KbFeatured({
+  items,
+  eyebrow = 'Featured homes',
+  viewAllHref = '/homes-for-sale',
+  viewAllLabel = 'Browse homes',
+  totalCount = null,
+}: {
+  items: KbFeaturedItem[]
+  eyebrow?: string
+  /**
+   * Where "see everything for sale here" goes. Defaults to the site-wide search.
+   * Every geography mount (city / neighborhood / subdivision / community) passes
+   * its OWN scoped URL: the featured grid shows at most 12 tiles, so without a
+   * scoped destination a Bend page dead-ends at 12 of ~400 homes with no way
+   * through to the rest (Brain Dump 2, 2026-07-28).
+   */
+  viewAllHref?: string
+  viewAllLabel?: string
+  /** Active listing count for this geography — renders as the real number. */
+  totalCount?: number | null
+}) {
   const root = useRef<HTMLElement>(null)
   const { inViewKey, register } = useInViewAutoplay()
   const [hovered, setHovered] = useState<string | null>(null)
@@ -154,8 +174,11 @@ export function KbFeatured({ items, eyebrow = 'Featured homes' }: { items: KbFea
           })}
         </div>
         <div className="lst-foot">
-          <a href="/homes-for-sale" className="btn alt">
-            Browse homes <span className="arr">→</span>
+          <a href={viewAllHref} className="btn alt">
+            {totalCount != null && totalCount > shown.length
+              ? `See all ${totalCount.toLocaleString('en-US')} homes for sale`
+              : viewAllLabel}{' '}
+            <span className="arr">→</span>
           </a>
         </div>
       </div>

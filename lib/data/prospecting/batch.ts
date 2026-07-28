@@ -14,7 +14,19 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { slugifyAddress } from '@/lib/cma/address-slug'
 import { TAG_CHANNEL } from '@/lib/crm/suppressions'
-import { expectedDocTypeFor, hasSendablePhone, mergeChannelSentState, type ProspectComplianceState, type ProspectDocState, type ProspectKind } from './types'
+import {
+  blockAllChannels,
+  expectedDocTypeFor,
+  hasSendableEmail,
+  hasSendablePhone,
+  mergeChannelSentState,
+  PROSPECT_CHANNELS,
+  type ProspectChannel,
+  type ProspectChannelBlocks,
+  type ProspectComplianceState,
+  type ProspectDocState,
+  type ProspectKind,
+} from './types'
 
 type Sb = ReturnType<typeof createServiceClient>
 type RawRow = Record<string, unknown>
@@ -154,13 +166,36 @@ export async function resolveDocsBatch(
 
 // ── Compliance, batched ─────────────────────────────────────────────────────
 
-// Derived from the ONE suppression mapping (M9) — every tag that blocks SMS (an
-// 'all'- or 'sms'-scoped channel) is an SMS hard stop here. Never hand-copy this
-// set: a drift between the two lists is exactly the 2026-06-16 do-not-call → SMS
-// incident. lower-cased to match the case-insensitive tag scan below.
-const HARD_STOP_TAGS = new Set(
-  TAG_CHANNEL.filter((m) => m.channels.includes('all') || m.channels.includes('sms')).map((m) => m.tag.toLowerCase()),
-)
+// Derived from the ONE suppression mapping (M9) — per CHANNEL, never a single
+// merged set. Never hand-copy these: a drift between the two lists is exactly
+// the 2026-06-16 do-not-call → SMS incident. Lower-cased to match the
+// case-insensitive tag scan below.
+function tagsBlocking(channel: ProspectChannel): Set<string> {
+  return new Set(
+    TAG_CHANNEL.filter((m) => m.channels.includes('all') || m.channels.includes(channel)).map((m) =>
+      m.tag.toLowerCase(),
+    ),
+  )
+}
+const TAGS_BY_CHANNEL: Record<ProspectChannel, Set<string>> = {
+  sms: tagsBlocking('sms'),
+  email: tagsBlocking('email'),
+  call: tagsBlocking('call'),
+}
+
+/** Broker-facing reason for a tag, so the ribbon names the actual condition. */
+const TAG_REASON: Record<string, string> = {
+  'compliance:hard-stop': 'Compliance hard stop',
+  'contact:do-not-call': 'On the do-not-call registry',
+  'contact:do-not-text': 'Asked not to be texted',
+  do_not_email: 'Asked not to be emailed',
+  unsubscribed: 'Unsubscribed from email',
+  bounced: 'Email bounced',
+  complained: 'Marked an email as spam',
+}
+function reasonForTag(tag: string): string {
+  return TAG_REASON[tag] ?? `Tag: ${tag}`
+}
 
 // Defense-in-depth (review F5): a structured skip-trace flag that names a
 // dangerous condition blocks a send even if the writer forgot to also flip the
@@ -227,24 +262,45 @@ export async function resolveComplianceBatch(
     }
   }
 
-  // ── Batch the suppression read: crm_suppressions + crm_people.tags for all persons.
+  // ── Batch the suppression read: crm_suppressions + crm_people.tags for all
+  // persons, resolved PER CHANNEL. A do-not-call contact blocks sms + call and
+  // leaves email open; collapsing these into one set is the bug this replaces.
   const personIds = [...new Set(rows.map(personIdOf).filter((p): p is number => p != null))]
-  const suppressedPersons = new Set<number>()
+  const blockedByChannel: Record<ProspectChannel, Map<number, string>> = {
+    sms: new Map(),
+    email: new Map(),
+    call: new Map(),
+  }
   let suppressionReadFailed = false
   if (personIds.length > 0) {
     const [supRows, peopleRows] = await Promise.all([
-      sb.from('crm_suppressions').select('person_id, channel').in('person_id', personIds).in('channel', ['all', 'sms']),
+      sb
+        .from('crm_suppressions')
+        .select('person_id, channel, reason')
+        .in('person_id', personIds)
+        .in('channel', ['all', 'sms', 'email', 'call']),
       sb.from('crm_people').select('id, tags').in('id', personIds),
     ])
     if (supRows.error || peopleRows.error) {
-      // Fail-closed: mark every resolvable person suppressed.
+      // Fail-closed: every resolvable person is blocked on every channel.
       suppressionReadFailed = true
       console.error('[prospecting] resolveComplianceBatch suppression read failed:', supRows.error?.message ?? peopleRows.error?.message)
     } else {
-      for (const s of supRows.data ?? []) suppressedPersons.add(Number(s.person_id))
+      for (const s of supRows.data ?? []) {
+        const pid = Number(s.person_id)
+        const ch = String(s.channel ?? '')
+        const why = `Opt-out on file (${String(s.reason ?? ch)})`
+        for (const c of PROSPECT_CHANNELS) {
+          if (ch === 'all' || ch === c) if (!blockedByChannel[c].has(pid)) blockedByChannel[c].set(pid, why)
+        }
+      }
       for (const p of peopleRows.data ?? []) {
+        const pid = Number(p.id)
         const tags = ((p.tags as string[] | undefined) ?? []).map((t) => t.toLowerCase())
-        if (tags.some((t) => HARD_STOP_TAGS.has(t))) suppressedPersons.add(Number(p.id))
+        for (const c of PROSPECT_CHANNELS) {
+          const hit = tags.find((t) => TAGS_BY_CHANNEL[c].has(t))
+          if (hit && !blockedByChannel[c].has(pid)) blockedByChannel[c].set(pid, reasonForTag(hit))
+        }
       }
     }
   }
@@ -257,12 +313,27 @@ export async function resolveComplianceBatch(
     const persistedHardStop = (raw.compliance_hard_stop as boolean | null) === true
     const flags = Array.isArray(raw.compliance_flags) ? (raw.compliance_flags as unknown[]).map((f) => String(f)) : []
 
-    const suppressedSms =
-      suppressionReadFailed && personId != null
-        ? true
-        : personId != null && suppressedPersons.has(personId)
-    const flagHardStop = flags.some((f) => DANGEROUS_FLAGS.has(f.toLowerCase()))
-    const hardStop = persistedHardStop || suppressedSms || flagHardStop
+    const dangerousFlag = flags.find((f) => DANGEROUS_FLAGS.has(f.toLowerCase())) ?? null
+    // A dangerous skip-trace flag (litigator / deceased / DNC) and the persisted
+    // compliance_hard_stop column are BOTH all-channel conditions.
+    const allChannelReason = persistedHardStop
+      ? 'Compliance hard stop on the record'
+      : dangerousFlag
+        ? `Skip-trace flag: ${dangerousFlag}`
+        : suppressionReadFailed && personId != null
+          ? 'Compliance check unavailable'
+          : null
+
+    const blockFor = (c: ProspectChannel) => {
+      const why = personId != null ? (blockedByChannel[c].get(personId) ?? null) : null
+      return { blocked: why != null, reason: why }
+    }
+    const channels: ProspectChannelBlocks = allChannelReason
+      ? blockAllChannels(allChannelReason)
+      : { sms: blockFor('sms'), email: blockFor('email'), call: blockFor('call') }
+
+    const suppressedSms = channels.sms.blocked
+    const hardStop = channels.sms.blocked
 
     // Relist match (in memory).
     const numKey = streetNumber(street)
@@ -277,15 +348,38 @@ export async function resolveComplianceBatch(
 
     const offMarket = kind === 'fsbo' ? ((raw.status as string | null) ?? 'active') !== 'active' : false
     const noPhone = !hasSendablePhone((raw.contact_phone as string | null) ?? null)
+    const noEmail = !hasSendableEmail((raw.contact_email as string | null) ?? null)
+    // A missing address is a reachability gap, not a compliance decision — but
+    // the channel is still closed, so the map has to say so.
+    if (noPhone) {
+      for (const c of ['sms', 'call'] as ProspectChannel[]) {
+        if (!channels[c].blocked) channels[c] = { blocked: true, reason: 'No phone on file' }
+      }
+    }
+    if (noEmail && !channels.email.blocked) channels.email = { blocked: true, reason: 'No email on file' }
+
+    const allChannelsBlocked = PROSPECT_CHANNELS.every((c) => channels[c].blocked)
 
     const reasons: string[] = []
-    if (hardStop) reasons.push('Hard stop — do not contact')
+    if (allChannelsBlocked) reasons.push('No open channel — do not contact')
+    for (const c of PROSPECT_CHANNELS) {
+      if (channels[c].blocked && channels[c].reason) reasons.push(`${c.toUpperCase()}: ${channels[c].reason}`)
+    }
     if (relisted) reasons.push('Relisted in MLS')
     if (offMarket) reasons.push('Off market')
-    if (noPhone) reasons.push('No phone on file')
-    for (const f of flags) reasons.push(`Flag: ${f}`)
 
-    out.set(id, { hardStop, flags, relisted, offMarket, suppressedSms, noPhone, reasons })
+    out.set(id, {
+      hardStop,
+      flags,
+      relisted,
+      offMarket,
+      suppressedSms,
+      noPhone,
+      noEmail,
+      reasons,
+      channels,
+      allChannelsBlocked,
+    })
   }
 
   return out

@@ -30,7 +30,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { enrollProspectInDripAction } from '@/app/actions/prospecting'
-import type { ProspectDetail } from '@/lib/data/prospecting/types'
+import { PROSPECT_CHANNELS, type ProspectDetail } from '@/lib/data/prospecting/types'
 import { ProspectComplianceRibbon } from './ProspectComplianceRibbon.client'
 import { ProspectDocPill } from './ProspectDocPill.client'
 import { ProspectMap } from './ProspectMap.client'
@@ -71,8 +71,10 @@ export function ProspectDetailPanel({
   const [enrolling, startEnroll] = useTransition()
 
   // Display-only gating — the server action re-runs every guard at click time.
-  const dripBlockedReason = detail.compliance.hardStop
-    ? 'Hard-stopped contact. Never enroll.'
+  // A drip touches every channel it is configured for, so it needs an open
+  // channel — not merely an unblocked SMS one.
+  const dripBlockedReason = detail.compliance.allChannelsBlocked
+    ? 'No open channel. Never enroll.'
     : detail.drip.enrolled
       ? `Already in ${detail.drip.sequenceName ?? 'the drip workflow'}.`
       : detail.personId == null
@@ -96,11 +98,13 @@ export function ProspectDetailPanel({
   }
 
   const showRibbon =
-    detail.compliance.hardStop ||
+    detail.compliance.allChannelsBlocked ||
     detail.compliance.relisted ||
     detail.compliance.offMarket ||
-    detail.compliance.noPhone ||
-    detail.compliance.suppressedSms
+    PROSPECT_CHANNELS.some((c) => detail.compliance.channels[c].blocked)
+
+  const canOpenSend =
+    !detail.compliance.relisted && !detail.compliance.offMarket && !detail.compliance.allChannelsBlocked
 
   const hasEngagement =
     detail.engagement.reportViews > 0 ||
@@ -236,7 +240,7 @@ export function ProspectDetailPanel({
           <Button variant="outline" className="h-11 flex-1" onClick={() => onBuild(detail.id)}>
             Retry build
           </Button>
-        ) : detail.doc.state === 'ready' && detail.sendable ? (
+        ) : detail.doc.state === 'ready' && canOpenSend ? (
           <Button className="h-11 flex-1" onClick={onOpenSend}>
             Send intro
           </Button>

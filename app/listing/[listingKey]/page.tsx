@@ -17,7 +17,7 @@ import { fetchNearbyTiles } from '@/lib/kb/fetch-nearby-tiles'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingShareSummary } from '@/lib/share-metadata'
-import { listingDetailPath } from '@/lib/slug'
+import { homesForSalePath, listingDetailPath, subdivisionListingsPath } from '@/lib/slug'
 import type { BreadcrumbNavItem } from '@/components/site/BreadcrumbNav'
 import { ListingDetailShell } from '@/components/site/listing-detail/ListingDetailShell'
 import { ListingHero } from '@/components/site/listing-detail/ListingHero'
@@ -251,6 +251,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
           name: listing.city ?? listing.citySlug,
         }
       : null
+  const featuredGeoName = marketGeo?.name ?? listing.city ?? 'Nearby'
+  const featuredViewAllHref = marketGeo && marketGeo.geoType !== 'city' ? subdivisionListingsPath(listing.city, marketGeo.name) : homesForSalePath(listing.city)
 
   // Every arm is timeout-guarded (not just .catch): the listing page is the #1
   // ad-landing surface, and an unbounded pooler stall on any of these used to
@@ -584,12 +586,10 @@ export default async function ListingDetailPage({ params }: PageProps) {
           main={main}
           sidebar={sidebar}
         />
-        {/* "Similar homes" = the canonical full-width featured-homes rail the
-            city/community pages use, scoped to THIS listing's subdivision /
-            neighborhood (falling back to the city). Renders nothing when the
-            area has no other active inventory. */}
+        {/* "Similar homes" = the canonical featured rail scoped to THIS listing's
+            subdivision/neighborhood (city fallback), footer-linked to the rest. */}
         {featuredItems.length > 0 ? (
-          <KbFeatured items={featuredItems} eyebrow={`${marketGeo?.name ?? listing.city ?? 'Nearby'} · For sale`} />
+          <KbFeatured items={featuredItems} eyebrow={`${featuredGeoName} · For sale`} viewAllHref={featuredViewAllHref} viewAllLabel={`See every ${featuredGeoName} home for sale`} />
         ) : null}
         <KbFooter towns={[]} listingKey={listing.listingKey} />
       </SmoothScrollProvider>

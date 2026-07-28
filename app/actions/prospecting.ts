@@ -412,9 +412,9 @@ export async function sendProspectingEmailIntro(
     if (prospect.compliance.offMarket) {
       return { ok: false, error: 'This FSBO is off market. Not sendable.', code: 'off-market' }
     }
-    if (prospect.compliance.hardStop) {
-      return { ok: false, error: 'Hard-stop contact (litigator / TCPA / deceased flag). Do not contact.', code: 'hard-stop' }
-    }
+    // The EMAIL channel's own block, never the SMS `hardStop` — a do-not-call
+    // contact is legally emailable. See docs/plans/PROSPECT_TO_CMA_AND_SITE_IA_2026-07-28.md.
+    if (prospect.compliance.channels.email.blocked) return { ok: false, error: `Email blocked: ${prospect.compliance.channels.email.reason ?? 'opt-out on file'}.`, code: 'hard-stop' }
     if (prospect.compliance.relisted) {
       return { ok: false, error: 'This property has re-listed (Active/Pending). Soliciting a listed property is not allowed.', code: 'relisted' }
     }

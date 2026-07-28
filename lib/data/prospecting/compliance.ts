@@ -13,7 +13,17 @@ import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { isSuppressed } from '@/lib/crm/suppressions'
-import { hasSendablePhone, type ComplianceFlag, type ProspectComplianceState, type ProspectKind } from './types'
+import {
+  blockAllChannels,
+  hasSendableEmail,
+  hasSendablePhone,
+  PROSPECT_CHANNELS,
+  type ComplianceFlag,
+  type ProspectChannel,
+  type ProspectChannelBlocks,
+  type ProspectComplianceState,
+  type ProspectKind,
+} from './types'
 
 // ── Hard stop ────────────────────────────────────────────────────────────────
 
@@ -130,6 +140,7 @@ export async function isFsboRelistedNow(prospect: {
 // ── Assembled compliance state ──────────────────────────────────────────────
 
 export interface ProspectComplianceInput {
+  contact_email?: string | null
   compliance_hard_stop: boolean | null
   /** compliance_flags jsonb column — an array of strings at rest. */
   compliance_flags: unknown
@@ -163,6 +174,24 @@ export async function resolveComplianceState(
   const { hardStop, suppressedSms } = await computeHardStop(personId, prospect.compliance_hard_stop === true)
   const flags = toFlags(prospect.compliance_flags)
 
+  // Per-channel resolution (see types.ts ProspectComplianceState). The email
+  // channel gets its OWN live suppression read — a do-not-call contact is
+  // blocked for sms/call and stays open for email.
+  let emailBlockReason: string | null = null
+  let callBlockReason: string | null = null
+  if (personId != null) {
+    try {
+      const [em, call] = await Promise.all([isSuppressed(personId, 'email'), isSuppressed(personId, 'call')])
+      emailBlockReason = em.suppressed ? (em.reasons[0] ?? 'Opt-out on file') : null
+      callBlockReason = call.suppressed ? (call.reasons[0] ?? 'Opt-out on file') : null
+    } catch (e) {
+      // Fail CLOSED, matching computeHardStop.
+      console.error('[prospecting] per-channel suppression check threw, fail-closed:', e instanceof Error ? e.message : e)
+      emailBlockReason = 'Compliance check unavailable'
+      callBlockReason = 'Compliance check unavailable'
+    }
+  }
+
   const relisted =
     kind === 'expired'
       ? await isRelistedNow({
@@ -174,13 +203,31 @@ export async function resolveComplianceState(
 
   const offMarket = kind === 'fsbo' ? (prospect.status ?? 'active') !== 'active' : false
   const noPhone = !hasSendablePhone(prospect.contact_phone)
+  const noEmail = !hasSendableEmail(prospect.contact_email ?? null)
+
+  const channels: ProspectChannelBlocks = prospect.compliance_hard_stop === true
+    ? blockAllChannels('Compliance hard stop on the record')
+    : {
+        sms: { blocked: hardStop, reason: hardStop ? 'Blocked for SMS' : null },
+        email: { blocked: emailBlockReason != null, reason: emailBlockReason },
+        call: { blocked: callBlockReason != null, reason: callBlockReason },
+      }
+  if (noPhone) {
+    for (const c of ['sms', 'call'] as ProspectChannel[]) {
+      if (!channels[c].blocked) channels[c] = { blocked: true, reason: 'No phone on file' }
+    }
+  }
+  if (noEmail && !channels.email.blocked) channels.email = { blocked: true, reason: 'No email on file' }
+
+  const allChannelsBlocked = PROSPECT_CHANNELS.every((c) => channels[c].blocked)
 
   const reasons: string[] = []
-  if (hardStop) reasons.push('Hard stop — do not contact')
+  if (allChannelsBlocked) reasons.push('No open channel — do not contact')
+  for (const c of PROSPECT_CHANNELS) {
+    if (channels[c].blocked && channels[c].reason) reasons.push(`${c.toUpperCase()}: ${channels[c].reason}`)
+  }
   if (relisted) reasons.push('Relisted in MLS')
   if (offMarket) reasons.push('Off market')
-  if (noPhone) reasons.push('No phone on file')
-  for (const f of flags) reasons.push(`Flag: ${f}`)
 
-  return { hardStop, flags, relisted, offMarket, suppressedSms, noPhone, reasons }
+  return { hardStop, flags, relisted, offMarket, suppressedSms, noPhone, noEmail, reasons, channels, allChannelsBlocked }
 }

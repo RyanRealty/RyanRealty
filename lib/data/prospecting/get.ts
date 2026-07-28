@@ -14,7 +14,7 @@ import { getBpoListingCyclesByAddress } from '@/lib/data/bpo/reads'
 import { getProspectDripState } from './drip'
 import { resolveDocsBatch, resolveComplianceBatch } from './batch'
 import { getProspectEngagement, EMPTY_ENGAGEMENT, type ProspectEngagementKey } from './engagement'
-import { isUndefinedColumnError, type ProspectComplianceState, type ProspectDetail, type ProspectDocState, type ProspectKind, type ProspectPriceCycle, type ProspectRow } from './types'
+import { blockAllChannels, isUndefinedColumnError, type ProspectComplianceState, type ProspectDetail, type ProspectDocState, type ProspectKind, type ProspectPriceCycle, type ProspectRow } from './types'
 
 // Fail-closed default when the batch somehow omits a row (it never should — it
 // iterates every input — but the read must never send an unclassified row).
@@ -25,7 +25,10 @@ const FAILSAFE_COMPLIANCE: ProspectComplianceState = {
   offMarket: false,
   suppressedSms: true,
   noPhone: true,
+  noEmail: true,
   reasons: ['compliance unresolved'],
+  channels: blockAllChannels('Compliance unresolved'),
+  allChannelsBlocked: true,
 }
 
 type Sb = ReturnType<typeof createServiceClient>

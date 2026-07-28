@@ -865,7 +865,13 @@ export default async function CommunityDetailPage({ params }: Props) {
             for sale" but a mobile buyer scrolled 10+ viewports of amenities and
             membership tables before seeing a single home. Order now: homes →
             map → market → resort depth. */}
-        <KbFeatured items={featuredItems} eyebrow={`${community.name} · For sale`} />
+        <KbFeatured
+          items={featuredItems}
+          eyebrow={`${community.name} · For sale`}
+          viewAllHref={homesForSalePath(cityName, community.name)}
+          viewAllLabel={`See every ${community.name} home for sale`}
+          totalCount={activeCount || null}
+        />
         <KbTicker items={tickerItems} />
         {/* Fix 3: Visible freshness signal — "Market data updated [Month Year]" crawled
             by search engines as a freshness signal and surfaced near the stats.

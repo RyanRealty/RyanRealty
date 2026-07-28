@@ -31,6 +31,7 @@ import {
   getPriceHistory,
 } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { homesForSalePath } from '@/lib/slug'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
@@ -396,7 +397,13 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           chartScopeLabel={`${cityName} (city)`}
         />
 
-        <KbFeatured items={featuredItems} eyebrow={`${zip} · For sale`} />
+        <KbFeatured
+          items={featuredItems}
+          eyebrow={`${zip} · For sale`}
+          viewAllHref={homesForSalePath(cityName)}
+          viewAllLabel={`See every ${cityName} home for sale`}
+          totalCount={activeCount || null}
+        />
 
         <KbListingMap
           geojson={mapGeo}

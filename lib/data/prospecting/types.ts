@@ -58,12 +58,37 @@ export interface ProspectEngagement {
   lastActivityAt: string | null
 }
 
+export type ProspectChannel = 'sms' | 'email' | 'call'
+
+export const PROSPECT_CHANNELS: readonly ProspectChannel[] = ['sms', 'email', 'call']
+
+/** One channel's block decision plus the reason to show the broker. */
+export interface ProspectChannelBlock {
+  blocked: boolean
+  /** Broker-facing reason, e.g. 'On the do-not-call registry'. Null when open. */
+  reason: string | null
+}
+
+export type ProspectChannelBlocks = Record<ProspectChannel, ProspectChannelBlock>
+
 /**
- * Fail-closed compliance view for a prospect. `hardStop` is the union of the
- * live tag read and the persisted flag. `reasons` is the human-readable list of
- * why a row is not sendable (rendered as compliance chips).
+ * Fail-closed compliance view for a prospect.
+ *
+ * `channels` is the authoritative per-channel picture and the ONLY thing the UI
+ * should read. A contact on the do-not-call registry is blocked for SMS + call
+ * (TCPA treats a text as a call) while email stays open — collapsing that into
+ * one "hard stop" boolean is what painted every row a red do-not-contact wall
+ * and hid a legitimately emailable lead (Brain Dump 2, 2026-07-28).
+ *
+ * `hardStop` keeps its ORIGINAL meaning byte-for-byte so no existing send gate
+ * loosens: the COMPLIANCE-only SMS block (live tag read ∪ persisted flag ∪
+ * dangerous skip-trace flag). It deliberately excludes reachability — a row with
+ * no phone was never "hard stopped" and still is not. `channels.sms.blocked` is
+ * the broader display truth (compliance OR no phone on file), which is why the
+ * two are not interchangeable. New code reads `channels`.
  */
 export interface ProspectComplianceState {
+  /** Compliance-only SMS/call block. Excludes reachability — see the note above. */
   hardStop: boolean
   flags: ComplianceFlag[]
   /** Now Active/Pending/Coming-Soon in MLS — never solicit an on-market listing. */
@@ -73,7 +98,28 @@ export interface ProspectComplianceState {
   /** Live isSuppressed(personId,'sms') result. */
   suppressedSms: boolean
   noPhone: boolean
+  noEmail: boolean
   reasons: string[]
+  /** Per-channel block map — read this, not `hardStop`. */
+  channels: ProspectChannelBlocks
+  /** Every channel blocked. The ONLY state that means "do not contact". */
+  allChannelsBlocked: boolean
+}
+
+/** Channels still open for outreach, in preference order (email, sms, call). */
+export function openChannels(compliance: {
+  channels: ProspectChannelBlocks
+}): ProspectChannel[] {
+  return (['email', 'sms', 'call'] as ProspectChannel[]).filter((c) => !compliance.channels[c].blocked)
+}
+
+/** Build a uniformly-blocked channel map — the fail-closed default. */
+export function blockAllChannels(reason: string): ProspectChannelBlocks {
+  return {
+    sms: { blocked: true, reason },
+    email: { blocked: true, reason },
+    call: { blocked: true, reason },
+  }
 }
 
 export interface ProspectRow {

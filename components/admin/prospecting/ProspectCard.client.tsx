@@ -21,7 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import type { ProspectRow } from '@/lib/data/prospecting/types'
+import { openChannels, PROSPECT_CHANNELS, type ProspectRow } from '@/lib/data/prospecting/types'
 import { ProspectComplianceRibbon } from './ProspectComplianceRibbon.client'
 import { ProspectDocPill } from './ProspectDocPill.client'
 import { formatPrice, formatShortDate } from './format'
@@ -41,12 +41,20 @@ export function ProspectCard({
   pendingBuild?: boolean
   pendingSend?: boolean
 }) {
+  // The ribbon speaks per channel now, so it renders whenever there is anything
+  // to say — a closed channel or a market-status caveat. It self-hides when
+  // every channel is open and the property is still off market.
   const showRibbon =
-    row.compliance.hardStop ||
+    row.compliance.allChannelsBlocked ||
     row.compliance.relisted ||
     row.compliance.offMarket ||
-    row.compliance.noPhone ||
-    row.compliance.suppressedSms
+    PROSPECT_CHANNELS.some((c) => row.compliance.channels[c].blocked)
+
+  // A doc-ready row is sendable when ANY outreach channel is still open — not
+  // only SMS. `row.sendable` remains the strict SMS-gated flag the send action
+  // enforces; blocking the whole CTA on it hid every do-not-call lead that was
+  // perfectly emailable (Brain Dump 2, 2026-07-28).
+  const canOpenSend = !row.compliance.relisted && !row.compliance.offMarket && !row.compliance.allChannelsBlocked
 
   const hasEngagement =
     row.engagement.reportViews > 0 ||
@@ -145,14 +153,14 @@ export function ProspectCard({
               'Retry build'
             )}
           </Button>
-        ) : row.doc.state === 'ready' && row.sendable ? (
+        ) : row.doc.state === 'ready' && canOpenSend ? (
           <Button className="h-11 w-full" disabled={pendingSend} onClick={() => onSend(row.id)}>
             {pendingSend ? (
               <span className="flex items-center gap-1.5">
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Sending…
               </span>
             ) : (
-              'Send intro'
+              `Send intro by ${openChannels(row.compliance)[0] === 'email' ? 'email' : 'text'}`
             )}
           </Button>
         ) : row.doc.state === 'sent' ? (

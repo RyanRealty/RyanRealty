@@ -104,6 +104,7 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 | `crm-attribution-coverage-2026-06-24.md` | **live** — attribution coverage map |
 | `crm-completion-spec-2026-06-25.md` | **live** — CRM completion plan |
 | `crm-golive-execution-2026-06-25.md` | **live** — CRM go-live execution log |
+| `PROSPECT_TO_CMA_AND_SITE_IA_2026-07-28.md` | **live** — Brain Dump 2: prospecting → CMA → measurement workflow, and the public-site IA/density pass |
 | `CROSS_AGENT_HANDOFF.md` | session-continuity (required agent handoff protocol) |
 | `CRM_BUILD_MISSION.md` | **live** — CRM delivery mission |
 | `DELTA_SYNC_UNIFICATION_HANDOFF.md` | **open input** — delta-sync unification cutover handoff |

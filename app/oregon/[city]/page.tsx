@@ -24,6 +24,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getListingTiles } from '@/lib/data'
+import { homesForSalePath } from '@/lib/slug'
 import {
   getOutOfAreaCity,
   getIndexableOutOfAreaCities,
@@ -217,7 +218,13 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
         />
 
         {featuredItems.length > 0 ? (
-          <KbFeatured items={featuredItems} eyebrow={`${city.name} · For sale`} />
+          <KbFeatured
+            items={featuredItems}
+            eyebrow={`${city.name} · For sale`}
+            viewAllHref={homesForSalePath(city.name)}
+            viewAllLabel={`See every ${city.name} home for sale`}
+            totalCount={city.activeAllCount ?? null}
+          />
         ) : null}
 
         {/* Referral capture — geo:out-of-area, nothing auto-sends. */}
