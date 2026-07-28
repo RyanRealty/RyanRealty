@@ -111,6 +111,33 @@ explore-towns → testimonials → team → sell → FAQ → footer.
 (featured/ticker/map) fires before any orientation, and the seller CTA (`KbSell`)
 sits 18 sections deep, below testimonials and team.
 
+### B-4 · Listing detail ships its whole body TWICE in production — CONFIRMED, P0
+
+Measured live on `https://ryan-realty.com/listing/220224941` (and the pretty
+`/homes-for-sale/...` URL, which delegates to the same page):
+
+| | count |
+|---|---|
+| `main.kb-root` in the **server HTML** | 1 |
+| `main.kb-root` in the **live DOM** | **2** |
+| every section `<h2>` | **2 each** (9 distinct → 18 nodes) |
+| orphaned `body > div[id^="S:"]` containers | **2** (`S:0`, `S:1`) |
+| total DOM nodes | 2,002 |
+
+One copy is visible inside `#main-content`; the second is a full duplicate stranded
+in a React streaming container at the end of `<body>`. It persists after
+`document.readyState === 'complete'` plus a 4-second wait, so it is not a mid-stream
+snapshot artifact.
+
+**Not CSP** — ruled out directly: `script-src` includes `'unsafe-inline'` and
+`window.$RC` (React's completeBoundary) is defined. The Suspense boundaries simply
+never complete, so both the in-place content and the streamed copy remain.
+
+This is the #1 ad-landing surface. It roughly doubles DOM nodes and client-component
+instances, which lands on LCP and INP. Needs its own investigation — likely the
+interaction between the page's Suspense usage and `SmoothScrollProvider` /
+`loading.tsx`. **Do not attribute it to a cause until traced.**
+
 ### B-3 · Listing detail renders three permanently-empty sections — CONFIRMED
 `app/listing/[listingKey]/page.tsx:455-457`:
 ```
@@ -242,9 +269,35 @@ video → **sell CTA** → articles → testimonials → team → FAQ → footer
 neighborhood, subdivision, and community.
 
 ### B2 · Listing detail IA
-Resolve the three `null` sections. Reorder around buyer decision sequence: hero →
-price/CTA → specs → description → tour → map/location → neighborhood market → schools
-+ parks → history → payment + rental → attribution → broker CTA → nearby for sale.
+
+**Climate risk — DONE 2026-07-28, retired.** Matt's call. It was never a no-op: the
+null branch shipped a fixed paragraph naming FEMA / Deschutes County WUI / NOAA
+sources it never queried, identical on every listing. Zillow dropped climate scores
+too. Component, mount, parity entry and both copies deleted; the D77 contract test now
+asserts it is ABSENT so it cannot return.
+
+**Vacation-rental potential — keep the component, wire it, do not teaser it.** Bend is
+the strongest STR market in Oregon and Sunriver / Tetherow / Caldera buyers ask this
+first, so the section earns its place. But it needs a real projection: nightly rate,
+occupancy, and gross yield from an actual source, plus the city's STR permit status
+for that address (Bend caps permits by density, which is the single fact that decides
+whether the pro-forma is even legal). Until that source exists it renders nothing,
+which is the correct behaviour — unlike climate, it returns `null` rather than
+inventing sourcing. Ship it when the data lands, never before.
+
+**Transparent CMA summary — highest-value of the three, and we already own the data.**
+This is the Zillow-beater: a Zestimate is a black box, and we can show the actual comps
+with the actual adjustments. It should read from our own CMA engine keyed to the
+listing address, render the recommended range and the comps that produced it, and link
+to the full report. It should ship AFTER A5 (the comp rework) so the first thing a
+buyer sees is a defensible number, not a city-wide average.
+
+**Section order** — reorder around buyer decision sequence: hero → price/CTA → specs →
+description → tour → map/location → neighborhood market → schools + parks → history →
+payment + rental → CMA summary → attribution → broker CTA → nearby for sale.
+
+**B4 above (duplicate DOM) blocks the rest of this item** — reordering a page that
+renders twice just reorders it twice.
 
 ### B3 · Navigation
 One IA covering brokerage/about, buy, sell, market, tools, communities. The About
