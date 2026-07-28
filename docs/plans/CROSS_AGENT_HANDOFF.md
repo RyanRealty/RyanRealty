@@ -6,7 +6,7 @@
 |---|---|
 | Surface | Cursor |
 | Time | 2026-07-27 ~17:05 PT |
-| `main` @ | (docs tip after this push) |
+| `main` @ | `b58651d4` |
 | Done | **W9.5 done.** Root cause was `.env.local` missing `=` (`RESEND_WEBHOOKS_API_KEY` glued to value). Fixed locally. Check EXIT 0. Resend UI: key named RESEND_WEBHOOKS_API_KEY = Full access. Vercel: var present Production+Preview (not Development). |
 | Next | **W9.1** (approve+send first Bend Brief). Optional: add `RESEND_WEBHOOKS_API_KEY` to Vercel Development + GitHub Actions secret for nightly CI bite. |
 | Blocked | **W9.1** |
