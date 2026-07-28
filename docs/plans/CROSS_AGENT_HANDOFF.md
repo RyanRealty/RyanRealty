@@ -1,3 +1,24 @@
+> **NEWEST, START HERE: W9.5 VERIFIED DONE 2026-07-27 (Cursor).** Prior: W8.1a.
+
+# Current — W9.5 closed (2026-07-27)
+
+| Field | Value |
+|---|---|
+| Surface | Cursor |
+| Time | 2026-07-27 ~17:05 PT |
+| `main` @ | (docs tip after this push) |
+| Done | **W9.5 done.** Root cause was `.env.local` missing `=` (`RESEND_WEBHOOKS_API_KEY` glued to value). Fixed locally. Check EXIT 0. Resend UI: key named RESEND_WEBHOOKS_API_KEY = Full access. Vercel: var present Production+Preview (not Development). |
+| Next | **W9.1** (approve+send first Bend Brief). Optional: add `RESEND_WEBHOOKS_API_KEY` to Vercel Development + GitHub Actions secret for nightly CI bite. |
+| Blocked | **W9.1** |
+| Skills read | (W9.5 verify — browser + check script) |
+
+## Default agent loop
+1. Prefer `main`. Worktree only for parallel/long/cloud isolation (`wt/<topic>-YYYYMMDD`).
+2. Batch docs; push runtime + `deploy:verify`. Keep `wt/*` local until merge.
+3. Session end: merge to `main` + push, or handoff branch path in this file.
+
+---
+
 > **NEWEST, START HERE: W8.1a DONE + W9.5 gap narrowed 2026-07-27 (Cursor).** Prior: W5.5a Twilio.
 
 # Current — W8.1a closed; W9.5 not VERIFIED (2026-07-27)
