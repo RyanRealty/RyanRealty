@@ -155,11 +155,66 @@ Audit `lib/cma/pricing.ts`, `expired-audit.ts`, `audit.ts`, and the BPO path for
 divergence. Collapse to one function, one contract, one set of adjustments. Any
 intentional difference becomes a documented parameter, not a second code path.
 
-### A5 · Comp selection rework *(blocked on Matt's answers — see below)*
-Add distance-first tiering: subject lat/lng → radius bands → neighborhood polygon →
-subdivision → zip → city, with the radius as the primary constraint rather than an
-afterthought. Record every filter in the trace (already the pattern) so `citations.json`
-still traces per §0.
+### A5 · Comp selection rework — **spec locked 2026-07-28 from appraisal standards**
+
+Matt asked for the professional answer rather than a preference. The research says the
+radius-first design I first proposed is **wrong**, so it is discarded.
+
+**What the standards actually say**
+
+- **There is no proximity rule.** USPAP sets none. Fannie Mae B4-1.3-08 requires comps
+  from the subject's *market area* "(including subdivision or project) … when possible
+  and must be used in certain instances," and requires distance to be *reported*
+  ("1.75 miles NW"), never capped.
+- **The 1-mile/5-mile rule was retired with UAD.** It survives only as a soft lender
+  overlay (~1 urban / ~2 suburban / ~5 rural). It is a guideline, not a standard, and a
+  circular boundary does not describe any real neighborhood.
+- **The governing test is buyer substitution:** would a typical buyer have considered
+  this property *instead of* the subject? Market areas are bounded by physical barriers
+  (freeway, river) and price/character segments — which is exactly Matt's "across a
+  major divide" exclusion, so the two agree.
+- **Competing-neighborhood comps are allowed but must be disclosed**, with the
+  neighborhood differences addressed and the selection explained.
+- **Recency:** minimum 3 closed sales within **12 months**; anything **older than 6
+  months requires an explanation**. Market-trend analysis uses a 12-month look-back.
+- **Size:** the ±25% GLA band is the accepted convention — beyond it you cross into a
+  different buyer pool and price tier. Our current ±25% is already correct; the
+  `city-24mo-wide` tier's ±35% is outside the norm and must carry the same disclosure.
+- **Bracketing** is the quality marker: the set should straddle the subject on GLA
+  rather than sit entirely above or below it.
+
+**The design that follows — market-area first, distance as disclosure**
+
+Replace the four radius-free tiers with:
+
+| tier | area | window | disclosure |
+|---|---|---|---|
+| 1 | same subdivision | ≤ 6 mo | none |
+| 2 | same Bend neighborhood polygon | ≤ 6 mo | none |
+| 3 | same subdivision / neighborhood | 6–12 mo | "older comp" note per comp |
+| 4 | adjacent competing neighborhood, same side of every divide | ≤ 12 mo | competing-neighborhood note + difference explained |
+| 5 | city-wide | ≤ 12 mo | only when tiers 1–4 yield < 3; every comp flagged |
+
+Beyond 12 months only with a written justification, never silently.
+
+**Hard exclusions, applied at every tier (Matt 2026-07-28):**
+1. **Across a major divide** — US-97 / the Bend Parkway, and the Deschutes River. Never
+   crossed regardless of distance.
+2. **Different zoning or lot character** — acreage vs in-town lot, or a different zoning
+   designation, excluded at any distance.
+
+**Data we already hold:** `data/bend/bend-neighborhood-polygons.json` — 23
+non-overlapping polygons built from the **City of Bend GIS neighborhood mesh**. Subject
+and comp both resolve by point-in-polygon, so market-area matching uses authoritative
+boundaries rather than an approximated circle. The divide rule rides on a
+neighbour-pair adjacency table marking which pairs are split by the Parkway or the
+river — no hand-drawn geometry (GIS-authoritative-only rule).
+
+**Every comp additionally records** straight-line distance in miles + direction, per
+Fannie Mae, into the trace and `citations.json` (§0).
+
+Sources: Fannie Mae Selling Guide B4-1.3-08 *Comparable Sales*; Sacramento Appraisal
+Blog, *The myth of the one-mile radius*; RealVals appraisal comparable guidelines.
 
 ### A6 · Current photos on CMAs
 Trace the photo source in `lib/cma/build.ts` / `subject.ts`. The subject photo must
@@ -202,19 +257,13 @@ single lever for the KB surfaces.
 
 ---
 
-## Open question for Matt — comp selection rules (A5)
+## Comp selection — resolved 2026-07-28
 
-Matt asked to be queried on this. Answers needed before A5 ships:
-
-1. **Radius.** Hard mile cap for a Bend comp (0.5 / 1 / 2 miles), and does it change
-   for rural/acreage subjects?
-2. **Neighborhood boundary.** Should a comp be required to sit inside the same
-   neighborhood polygon when the subject is inside one, with radius as the fallback?
-3. **Recency.** Max age of a closed sale (6 / 12 months) before it is excluded rather
-   than merely down-weighted?
-4. **Sqft band.** Current is ±25% widening to ±35%. Tighter?
-5. **Never-comp rules.** Cross-highway, cross-river, different school attendance area,
-   different zoning — any hard exclusions regardless of distance?
+Matt's direction: research the professional standard rather than pick a preference.
+Done; the answer is in A5 above and the radius-first approach is dropped. Matt
+separately confirmed two hard exclusions: **across a major divide** and **different
+zoning / lot character**. He did NOT select school attendance area, so it is not a
+selection rule.
 
 ---
 
