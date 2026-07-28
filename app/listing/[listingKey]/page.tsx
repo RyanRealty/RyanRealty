@@ -35,7 +35,6 @@ import { PropertyHistory } from '@/components/site/listing-detail/PropertyHistor
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import ListingBrokerCTA from '@/components/site/listing-detail/ListingBrokerCTA.client'
-import { ClimateRiskBlock } from '@/components/site/listing-detail/ClimateRiskBlock'
 import { VacationRentalPotential } from '@/components/site/listing-detail/VacationRentalPotential'
 import { TransparentCMASummary } from '@/components/site/listing-detail/TransparentCMASummary'
 import { PhotoGalleryLightbox as _PhotoGalleryLightboxImport } from '@/components/site/PhotoGalleryLightbox'
@@ -454,7 +453,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
       {/* D77 — Wave 3 minimums for Showcase parity. Each component
           takes data as a prop and renders a "request a report" CTA
           when data is null. No fake numbers. */}
-      <ClimateRiskBlock risk={null} />
       <VacationRentalPotential projection={null} />
       <TransparentCMASummary cma={null} />
     </>

@@ -131,7 +131,6 @@
     "components/geo-page/ListingBarCard.tsx": 1,
     "components/layout/ContentPageHero.tsx": 1,
     "components/legal/EqualHousing.tsx": 1,
-    "components/listing/ClimateRisk.tsx": 1,
     "components/listing/InvestmentAnalysis.tsx": 1,
     "components/listing/ListingCardHideControl.tsx": 1,
     "components/listing/ListingCtaSidebar.tsx": 1,
@@ -200,7 +199,6 @@
     "components/site/golf/GolfCommunityCards.tsx": 2,
     "components/site/golf/GolfCtaBand.tsx": 1,
     "components/site/golf/GolfStatBand.tsx": 1,
-    "components/site/listing-detail/ClimateRiskBlock.tsx": 1,
     "components/site/listing-detail/ListingAgentCard.tsx": 1,
     "components/site/listing-detail/ListingHero.tsx": 2,
     "components/site/listing-detail/MortgageCalculator.tsx": 1,
@@ -229,5 +227,5 @@
     "components/tc/pdf-sign/SignaturePad.tsx": 4,
     "components/tc/pdf-sign/pdf-pages.tsx": 1
   },
-  "note": "Pre-existing design-token debt, grandfathered by the G26 ratchet (scripts/lint-design-tokens.js --ratchet). Total must monotonically DECREASE toward 0 — never add to it. New debt fails CI. Regenerate after cleaning a file with: npm run ci:design-tokens -- --write-baseline."
+  "note": "Pre-existing design-token debt, grandfathered by the G26 ratchet (scripts/lint-design-tokens.js --ratchet). Total must monotonically DECREASE toward 0 \u2014 never add to it. New debt fails CI. Regenerate after cleaning a file with: npm run ci:design-tokens -- --write-baseline."
 }

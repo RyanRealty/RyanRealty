@@ -48,9 +48,12 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/of\s+\{count\}/)
   })
 
-  it('D77 — listing-detail page imports the three Showcase-parity components', () => {
+  it('D77 — listing-detail page imports the Showcase-parity components', () => {
     const src = readSrc('app/listing/[listingKey]/page.tsx')
-    expect(src).toMatch(/import\s*\{\s*ClimateRiskBlock\s*\}/)
+    // Climate risk retired 2026-07-28 (Matt). Its null branch shipped a fixed
+    // paragraph citing FEMA/WUI/NOAA sources it never queried, identical on every
+    // listing — a §0 violation. Zillow dropped climate scores too.
+    expect(src).not.toMatch(/ClimateRiskBlock/)
     expect(src).toMatch(/import\s*\{\s*VacationRentalPotential\s*\}/)
     expect(src).toMatch(/import\s*\{\s*TransparentCMASummary\s*\}/)
   })

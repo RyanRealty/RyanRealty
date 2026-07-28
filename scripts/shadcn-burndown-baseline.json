@@ -149,7 +149,6 @@
     "components/layout/FooterCtaButtons.tsx",
     "components/listing/AgentCard.tsx",
     "components/listing/AreaMarketContext.tsx",
-    "components/listing/ClimateRisk.tsx",
     "components/listing/DemandIndicators.tsx",
     "components/listing/InvestmentAnalysis.tsx",
     "components/listing/LikeButton.tsx",

@@ -81,7 +81,6 @@
     "components/listing/AgentCard.tsx",
     "components/listing/AreaMarketContext.tsx",
     "components/listing/BackToSearchLink.tsx",
-    "components/listing/ClimateRisk.tsx",
     "components/listing/DemandIndicators.tsx",
     "components/listing/InvestmentAnalysis.tsx",
     "components/listing/LeadPaintNotice.tsx",
