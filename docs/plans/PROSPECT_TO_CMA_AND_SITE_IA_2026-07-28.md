@@ -111,32 +111,46 @@ explore-towns → testimonials → team → sell → FAQ → footer.
 (featured/ticker/map) fires before any orientation, and the seller CTA (`KbSell`)
 sits 18 sections deep, below testimonials and team.
 
-### B-4 · Listing detail ships its whole body TWICE in production — CONFIRMED, P0
+### B-4 · EVERY page ships its whole body twice — CONFIRMED site-wide, open
 
-Measured live on `https://ryan-realty.com/listing/220224941` (and the pretty
-`/homes-for-sale/...` URL, which delegates to the same page):
+Not listing-specific. Every route renders its full body once visibly inside
+`#main-content` and once more as an orphaned, `hidden` React streaming container
+(`body > div[id^="S:"]`) that is never reclaimed.
 
-| | count |
-|---|---|
-| `main.kb-root` in the **server HTML** | 1 |
-| `main.kb-root` in the **live DOM** | **2** |
-| every section `<h2>` | **2 each** (9 distinct → 18 nodes) |
-| orphaned `body > div[id^="S:"]` containers | **2** (`S:0`, `S:1`) |
-| total DOM nodes | 2,002 |
+Measured in the live DOM after `readyState === 'complete'`:
 
-One copy is visible inside `#main-content`; the second is a full duplicate stranded
-in a React streaming container at the end of `<body>`. It persists after
-`document.readyState === 'complete'` plus a 4-second wait, so it is not a mid-stream
-snapshot artifact.
+| route | total nodes | orphaned | wasted |
+|---|---|---|---|
+| `/cities/bend` | 3,328 | 1,436 | **43%** |
+| `/listing/220224941` | 2,109 | 820 | **39%** |
+| `/faq` | 1,042 | 324 | **31%** |
 
-**Not CSP** — ruled out directly: `script-src` includes `'unsafe-inline'` and
-`window.$RC` (React's completeBoundary) is defined. The Suspense boundaries simply
-never complete, so both the in-place content and the streamed copy remain.
+Each orphan holds a complete `main.kb-root` — nav, page body, footer.
+Reproduces on production (`ryan-realty.com`) and locally, and persists after load
+completes plus a 4-second wait, so it is not a mid-stream snapshot.
 
-This is the #1 ad-landing surface. It roughly doubles DOM nodes and client-component
-instances, which lands on LCP and INP. Needs its own investigation — likely the
-interaction between the page's Suspense usage and `SmoothScrollProvider` /
-`loading.tsx`. **Do not attribute it to a cause until traced.**
+**Ruled out, with evidence — do not re-test these:**
+- *CSP.* `script-src` carries `'unsafe-inline'` and `window.$RC` is defined, so
+  React's runtime loaded and its inline scripts are allowed.
+- *`loading.tsx`.* `/faq` has none and still orphans 324 nodes.
+- *`SmoothScrollProvider`.* It renders `<>{children}</>` and touches no DOM structure.
+- *The RSC flight payload.* An earlier "content appears twice in the HTML" reading was
+  partly this — one copy is the normal `self.__next_f` payload. The duplication in the
+  **DOM** is separate and real.
+
+**Still open:** the completion script `$RC("B:0","S:0")` *is* emitted in the served
+HTML, alongside one `<template id="B:0">` and one `<!--$?-->` marker — so React
+intends to reclaim the container and does not. Root cause untraced. Next step is to
+determine why the boundary marker is unresolvable by the time that inline script runs.
+
+**Severity, stated honestly:** the orphans are `hidden`, so they never paint and their
+client components never hydrate. The cost is HTML transfer bytes, DOM node count and
+memory — not double JS execution. (This corrects an earlier note in this doc claiming
+it doubles client-component instances.) It is still worth fixing: ~40% of every
+page's DOM is dead weight, and excessive DOM size is a direct Lighthouse penalty.
+
+**Do not attempt a fix without tracing the cause first** — this touches every page on
+the site.
 
 ### B-3 · Listing detail renders three permanently-empty sections — CONFIRMED
 `app/listing/[listingKey]/page.tsx:455-457`:
