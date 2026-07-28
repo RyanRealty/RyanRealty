@@ -143,7 +143,6 @@ export async function getGuideBySlug(slug: string): Promise<GuideRow | null> {
 /**
  * Get published guides filtered by city name.
  * Returns DB guides first; falls back to generated guides if none exist.
- * Used by CityClusterNav for topic-cluster interlinking.
  */
 async function _getGuidesByCityUncached(city: string): Promise<GuideRow[]> {
   if (!city?.trim()) return []

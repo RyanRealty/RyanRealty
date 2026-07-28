@@ -1,16 +1,16 @@
-> **NEWEST, START HERE: W13.1 Batches 2–5 executed 2026-07-27 (Cursor).** Prior: W9.5.
+> **NEWEST, START HERE: Site IA navigation overhaul shipped 2026-07-27 (Cursor).** Prior: W13.1.
 
-# Current — W13.1 batches 2–5 (2026-07-27)
+# Current — Site IA / KB nav overhaul (2026-07-27)
 
 | Field | Value |
 |---|---|
 | Surface | Cursor |
-| Time | 2026-07-27 ~18:40 PT |
-| `main` @ | `9e67a697` (batches 2–5 + ledger + handoff; origin/main) |
-| Done | **W13.1 still partial.** Matt GO all batches + ensure-not-using. **B2** selective docs/plans purge (49 dead; kept PROGRAM/ADMIN_REBUILD/handoff/registry/live). **B3** research/strategy/tools_registry deleted + MANDATORY_REFS unwired. **B4** video routes → matt-alert; captions kept. **B5** ARCHITECTURE.md only deleted; CLAUDE/AGENTS/.cursor/rules kept. **B6 skipped** (loop skills still gated by W13.3). |
-| Next | Optional: FUB era docs / CLAUDE shrink / soft top-level docs. Product next: **W9.1**. |
-| Blocked | **W9.1**. W13.1 remaining is optional consolidation, not Batch 2–6. |
-| Skills read | `06-DELETION-MANIFEST.md`, COMPLETION-LEDGER W13.1 |
+| Time | 2026-07-27 ~22:15 PT |
+| `main` @ | *(update after push — look for `feat(nav):` / `fix(nav):` tip)* |
+| Done | **Public IA nav overhaul.** About in KbNav primary + Team/Reviews/Contact dropdown; Company second in Menu+ (Join restored); KbFooter trust links; SSOT in `lib/site-nav.ts` (`KB_*`, `MAP_SEARCH`, `VALUATION_FORM`); Map → `/homes-for-sale?view=map`; chrome worth → `/sell/valuation`; Learn orphans restored; city inventory-first + community CTA trim; chrome-routes gaps; `getPlaceLinks`; listing Climate/STR null gates; `/guides` → `/blog` (pages removed, next.config 301s kept). Screenshots: `out/ia-nav/`. |
+| Next | Optional CRM Safari PWA polish (separate). Product: **W9.1**. |
+| Blocked | **W9.1** (approve+send Bend Brief). |
+| Skills read | Plan `site_ia_navigation_overhaul_870ef0e5`; design-system / brand voice via gates |
 
 ## Default agent loop
 1. Prefer `main`. Worktree only for parallel/long/cloud isolation (`wt/<topic>-YYYYMMDD`).
