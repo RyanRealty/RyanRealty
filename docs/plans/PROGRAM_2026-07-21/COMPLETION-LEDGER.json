@@ -803,15 +803,17 @@
       "title": "Webhook-registration check — nightly check against the Resend API",
       "status": "done",
       "requiredMechanism": {
-        "gates": [
-          "scripts/check-resend-webhook.mjs"
-        ],
+        "gates": [],
         "crons": [],
         "tests": [],
         "migrations": [],
-        "paths": []
+        "paths": [
+          "scripts/check-resend-webhook.mjs",
+          ".github/workflows/quality.yml",
+          "package.json"
+        ]
       },
-      "proofPath": "ci:resend-webhook gate exists (off-chain, KNOWN_UNWIRED from the secret-less static chain) and is now SCHEDULED nightly in .github/workflows/quality.yml (3:00 UTC), which maps only RESEND_WEBHOOKS_API_KEY. In CI (no .env.local, no RESEND_API_KEY) it skips cleanly (exit 0) until the key is set; the gate BITES loudly (exit 1) when only a send-only key is available or no webhook targets the ingest route (verified: exit 1 with the send-only key present).",
+      "proofPath": "Off-chain nightly: npm run ci:resend-webhook (scripts/check-resend-webhook.mjs) scheduled in .github/workflows/quality.yml (KNOWN_UNWIRED from secret-less ci:gates). Live verify 2026-07-27: EXIT 0 against Full-access RESEND_WEBHOOKS_API_KEY; webhook enabled at https://ryan-realty.com/api/webhooks/resend.",
       "verifiedBy": "VERIFIED 2026-07-27 ~17:05 PT (Cursor): (1) Chrome Resend API Keys — key named RESEND_WEBHOOKS_API_KEY shows Permission Full access. (2) .env.local NAME present after fix (was missing = between name and value); length nonzero. (3) node scripts/check-resend-webhook.mjs EXIT 0 OK — enabled webhook https://ryan-realty.com/api/webhooks/resend covering delivered/opened/clicked/bounced/complained (unsubscribed WARN only). (4) Vercel Project Settings env + vercel env ls: RESEND_WEBHOOKS_API_KEY present Production+Preview (not Development).",
       "remaining": "",
       "mattAction": ""
