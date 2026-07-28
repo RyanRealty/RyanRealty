@@ -65,7 +65,6 @@ const ROOT = path.resolve(
 )
 const REGISTRY_PATH = path.join(ROOT, 'docs', 'plans', 'task-registry.json')
 const REPORT_PATH = path.join(ROOT, 'docs', 'plans', 'continuous-improvement.md')
-const HANDOFF_TEMPLATE_PATH = path.join(ROOT, 'docs', 'plans', 'task-handoff-template.md')
 
 // ---------------------------------------------------------------------------
 // Registry I/O

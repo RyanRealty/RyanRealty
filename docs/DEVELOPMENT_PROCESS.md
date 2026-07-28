@@ -84,60 +84,38 @@ A defect that reached Matt or production gets three things, always: (1) the whol
 
 Everything in `docs/plans/` is registered here. A new file in that directory without a row below fails G44 — plans do not accumulate as rogue process forks; they are inputs to THIS process. The rogue check recurses into subdirectories: a `.md` inside a registered PACKAGE directory (a `Doc` cell ending in `/`) is covered by that package's row; a `.md` in any other subdirectory, or a new top-level file, needs its own row. G44 also fails when a registered `Doc` no longer exists on disk (stale registration).
 
+W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated session handoffs, and executed CRM/westside/streamline records. Kept PROGRAM + ADMIN_REBUILD packages, CROSS_AGENT_HANDOFF, task-registry, GLOBAL_SKILLS_REGISTRY, continuous-improvement, master-plan, data-architecture-plan, and plans still marked live/open.
+
 | Doc | Status |
 |---|---|
 | `PROGRAM_2026-07-21/` | **live** — the RR-PLATFORM-DECISIONS completion program package (master spec, recorded decisions, audits, completion ledger, preserved skills). One of the two sanctioned plan homes; every file within it is covered by this row. |
 | `ADMIN_REBUILD/` | **live** — the admin/CRM rebuild package (specs, audit reports). The second sanctioned plan home; every file within it is covered by this row. |
-| `ultracode-site-consistency-kickoff.md` | executed — birthed this canon (archive) |
-| `site-consistency-audit-2026-06-09.md` | executed 2026-06-09 (record) |
-| `site-consistency-audit-2026-06-04.md`, `site-consistency-audit-2026-06-04-completeness.md` | superseded by 06-09 audit (record) |
-| `SITE_AUDIT_2026-06-03.md` | superseded (record) |
-| `master-plan.md`, `PRODUCT_SPEC_V2.md`, `INDEX_MASTER_DEAL_PIPELINE.md`, `USER_JOURNEYS.md`, `data-architecture-plan.md`, `continuous-improvement.md`, `phase-0-brief.md`, `phase-1-brief.md`, `phase-2-brief.md`, `phase-3-brief.md`, `phase-4-brief.md`, `phase-5-brief.md`, `phase-6-brief.md` | superseded by this canon (archive) |
+| `master-plan.md`, `data-architecture-plan.md`, `continuous-improvement.md` | superseded by this canon for process authority; still on disk as orchestrate/ownership reference inputs (W13.1 keep) |
 | `money-path-contract-plan-2026-06-04.md` | open input — feed into the loop's backlog |
-| `cma-accuracy-pipeline-2026-07-11.md` | record — CMA/BPO accuracy pipeline progress log (work in flight 2026-07-11) |
-| `COMING_SOON_SQL_FOLLOWUP.md` | open input — SQL-layer residue from the 2026-07-21 Coming Soon public-exposure fix (app layer shipped + gated by G-COMINGSOON) |
-| `../EXPERIENCE_SYSTEM.md` | **live canon** — six page archetypes, route map, shared module kit, engagement telemetry spec, never-regress mechanics. Orchestrator for the Wave 3 UX rebuild. |
-| `KB_SITE_CONVERSION_GOAL.md` | **live** — whole-site KB (kinetic-brutalist) conversion goal, wave plan, and progress log (Phase 9+). |
-| `PAGE_REVIEW_REDESIGN_RUNBOOK.md` | **live** — render-don't-read page-review + redesign runbook (six-phase per-page loop, brutalist QA rubric, market-chart honesty spec, per-page competitor bars). Active page-class backlog. |
-| `PAID_ADS_PLAN.md`, `ADS_CREATIVE_DIRECTION.md`, `ADS_BRIEFS.md`, `ADS_BUYER_SCRIPT.md`, `ADS_FOOTAGE_PLAN.md`, `ADS_PRO_EXAMPLES.md`, `ADS_GO_LIVE.md` | **live** — paid-ads program (one premium buyer ad): Meta plan, creative North Star, copy-ready briefs, buyer script v3 ("A Tuesday", broker-free), footage sourcing + the two costed gap clips, pro swipe file, and the go-live runbook. |
-| `TC_ARCHITECTURE_REVIEW.md` | **live** — senior-engineer deep dive on the Vault transaction-coordination (`tc_*`) system: architecture overview, ranked problem areas (C1-C4 critical), phased refactor strategy, target architecture + code. The build-out backlog. |
-| `TC_BUILDOUT_HANDOFF.md` | **paused 2026-06-24** — resume point for the TC build-out: what's done (C4 + §5.1 FSM + H4 tests + H5 schema), the 3 Matt-gated migrations, the next code-only increments, and Phase 1+. Read to pick up cold. |
-| `twilio-cutover-2026-06-24.md` | **live** — Twilio cutover from Follow Up Boss: live-verified audit (8 subsystems), the broker→Twilio→cell model, per-wave build plan + progress log. The active cutover backlog. |
-| `crm-attribution-coverage-2026-06-24.md` | **live** — per-channel broker-attribution + open/deliver/bounce tracking coverage map (newsletter, market report, saved-search alert, CMA) for the CRM record-card cutover; names each send-path chokepoint to route through `attributeOutbound`/`attributeUrl`. |
-| `crm-completion-spec-2026-06-25.md` | **live** — the canonical CRM completion plan (locked scope, bulletproof bar, 9-wave build sequence) reconciled against `docs/fub-feature-audit/FUB_FEATURE_AUDIT.md`. The HOW to the audit's WHAT. Active build backlog. |
-| `crm-golive-execution-2026-06-25.md` | **live** — execution log for the CRM go-live wave (Wave 6 automation engine, FUB §8.5 parity, trigger/condition/analytics build). Tracks per-deliverable status against `crm-completion-spec`. |
-| `RENTAL_CALCULATOR_BUILD_PROMPT.md` | executed (record) |
-| `SKYSLOPE_COMPLIANCE_HANDOFF_2026-05-28.md` | ops record (not site process) |
-| `CROSS_AGENT_HANDOFF.md`, `SESSION_HANDOFF_2026-06-01.md`, `SESSION_HANDOFF_2026-06-01_PARTB.md`, `task-handoff-template.md` | session-continuity records |
-| `ADMIN_CURATION_TO_BAR.md`, `HANDOFF-cma-form-twilio-2026-06-13.md`, `HANDOFF_CRM_SESSION_2026-06-12.md`, `HANDOFF_HEATH_LP_2026-06-13.md`, `NEXT_SESSION_START_HERE_2026-06-13.md` | parallel-session records (archive) |
-| `CRM_BUILD_MISSION.md` | **live** — CRM delivery mission: locked §07 person-detail parity gap list, delivery order, CI override authorization, per-deliverable status log |
-| `CRM_FUB_ASSOCIATION_AND_ACTIVITY_2026-06-29.md` | research record — FUB association + activity parity analysis feeding crm-completion-spec (archive) |
-| `CRM_AUDIT_2026-07-02.md` | **live** — DESKTOP adversarial CRM audit ledger (production-ready-bar pass); findings feed the closure slices (record) |
-| `DELTA_SYNC_UNIFICATION_HANDOFF.md` | **open input** — delta-sync lane unification (audit #1b): the dormant unified core `lib/sync/deltaSync.ts` + its tests + anti-fork gate are landed; this is the mandatory shadow-run + cutover handoff. Feed into the loop's backlog. |
-| `CRM_AUDIT_MOBILE_2026-07-02.md` | **live** — MOBILE adversarial CRM audit ledger (390x844, post-punch-list); P0/P1 fixed in-slice except P1-6 signature wire-up (record) |
-| `CRM_PRODUCTION_SIGNOFF_2026-07-02.md` | executed — independent CRM production sign-off verification pass (record) |
-| `WESTSIDE_DATA_SWEEP_2026-07-02.md` | executed — westside-import data-quality sweep (995 flags, 114 Hoffman-pattern, DIAL-verified) (record) |
-| `WESTSIDE_PARCEL_STRIP_2026-07-02.md` | executed — westside wrong-household parcel strip (67 stripped, 8 skipped, full backup + one-command restore) (record) |
-| `EMAIL_SEND_AUDIT_2026-07-02.md` | open input — email-send audit: FUB/Beacon via Gmail sends the 'archived' emails, not the CRM; awaits Matt revoking FUB access before the 48-row cleanup (record) |
-| `CRM_FUB_MOBILE_UI_AUDIT_2026-06-29.md` | research record — FUB mobile UI parity audit (archive) |
-| `CRM_MUTATION_AUDIT_2026-06-29.md` | research record — CRM mutation coverage audit 2026-06-29 (archive) |
-| `FUB_CUTOVER_READINESS_2026-06-29.md` | research record — FUB cutover readiness gate assessment (archive) |
-| `FUB_PARITY_COMPOSER_GROUP_MMS_2026-06-29.md` | research record — FUB composer + group + MMS parity spec (archive) |
-| `HANDOFF_2026-06-28.md`, `HANDOFF_CRM_FUB_UI_2026-06-29.md` | session-continuity records |
-| `SUBDIVISION_SEO_BATCH2_2026-06-29.md` | executed — subdivision SEO batch 2 (record) |
-| `TWILIO_FEATURE_RESEARCH_2026-06-29.md` | research record — Twilio feature coverage analysis (archive) |
-| `CONTACT_HEADER_REDESIGN_2026-06-30.md` | open input — contact header redesign spec, feed into Experience loop |
+| `cma-accuracy-pipeline-2026-07-11.md` | record — CMA/BPO accuracy pipeline progress log |
+| `COMING_SOON_SQL_FOLLOWUP.md` | open input — SQL-layer residue from the 2026-07-21 Coming Soon public-exposure fix |
+| `../EXPERIENCE_SYSTEM.md` | **live canon** — six page archetypes, route map, shared module kit, engagement telemetry spec |
+| `KB_SITE_CONVERSION_GOAL.md` | **live** — whole-site KB conversion goal |
+| `PAGE_REVIEW_REDESIGN_RUNBOOK.md` | **live** — page-review + redesign runbook |
+| `PAID_ADS_PLAN.md`, `ADS_CREATIVE_DIRECTION.md`, `ADS_BRIEFS.md`, `ADS_BUYER_SCRIPT.md`, `ADS_FOOTAGE_PLAN.md`, `ADS_PRO_EXAMPLES.md`, `ADS_GO_LIVE.md` | **live** — paid-ads program |
+| `TC_ARCHITECTURE_REVIEW.md` | **live** — Vault TC architecture backlog |
+| `TC_BUILDOUT_HANDOFF.md` | **paused 2026-06-24** — TC build-out resume point |
+| `twilio-cutover-2026-06-24.md` | **live** — Twilio cutover backlog |
+| `crm-attribution-coverage-2026-06-24.md` | **live** — attribution coverage map |
+| `crm-completion-spec-2026-06-25.md` | **live** — CRM completion plan |
+| `crm-golive-execution-2026-06-25.md` | **live** — CRM go-live execution log |
+| `CROSS_AGENT_HANDOFF.md` | session-continuity (required agent handoff protocol) |
+| `CRM_BUILD_MISSION.md` | **live** — CRM delivery mission |
+| `DELTA_SYNC_UNIFICATION_HANDOFF.md` | **open input** — delta-sync unification cutover handoff |
+| `CRM_AUDIT_2026-07-02.md` | **live** — desktop CRM audit ledger |
+| `CRM_AUDIT_MOBILE_2026-07-02.md` | **live** — mobile CRM audit ledger |
+| `EMAIL_SEND_AUDIT_2026-07-02.md` | open input — email-send audit |
+| `CONTACT_HEADER_REDESIGN_2026-06-30.md` | open input — contact header redesign |
 | `GLOBAL_SKILLS_REGISTRY.md` | tool index (live reference) |
-| `SAVED_SEARCH_MASTER_GOAL.md` | **live** — saved-search + market-report subscription system: end-state definition, W1-W5 workstream plan, email open/click tracking requirement, ship gates |
-| `LIFECYCLE_WORKFLOWS_MASTER_GOAL.md` | **live** — Expired→CMA auto-build + review/send, newsletter monthly draft + visual approval + gradual delivery, subscriptions hub E2E, unified brutalist email shell: W1-W5 workstream plan, hard constraints, ship gates |
-| `WESTSIDE_HOMEOWNER_ENRICHMENT_PLAN.md` | executed — westside homeowner enrichment plan (record) |
-| `HANDOFF-newsletter.md`, `HANDOFF-content-engine.md` | session-continuity records |
-| `HANDOFF_CRM_STREAMLINE_2026-07-03.md` | session-continuity record |
-| `CRM_STAGES_AUTOMATION_2026-07-03.md`, `CRM_TAG_SMARTLIST_STREAMLINE_PLAN_2026-07-03.md`, `CRM_STREAMLINE_PLAN_V2_2026-07-03.md`, `CRM_STREAMLINE_AUDIT_PROMPT.md` | CRM streamline plans 2026-07-03 (record) |
-| `CRM_STREAMLINE_AUDIT_FINDINGS_2026-07-03.md`, `CRM_STREAMLINE_V2_AUDIT_FINDINGS_2026-07-03.md`, `CRM_STREAMLINE_EXECUTION_LOG_2026-07-03.md` | CRM streamline audit + execution records 2026-07-03 (record) |
-| `EXPIRED_WORKFLOW_AUDIT_2026-07-03.md` | executed — expired-listing workflow audit (record) |
-| `ADMIN_CONSOLIDATION_MASTER_GOAL.md` | **live** — admin consolidation to broker workflows: ~40 routes → 5-8 job areas, unified alert model, editable criteria, market-report email rebuild, delivery observability, guided help system: P0/WS1-WS5/P2 plan, ship gates |
-| `ADMIN_CONSOLIDATION_AUDIT.md` | **live** — Phase 0 findings: per-route disposition (keep/merge/cut), consolidated IA contract, severity punch list |
+| `SAVED_SEARCH_MASTER_GOAL.md` | **live** — saved-search + market-report subscriptions |
+| `LIFECYCLE_WORKFLOWS_MASTER_GOAL.md` | **live** — lifecycle workflows master goal |
+| `ADMIN_CONSOLIDATION_MASTER_GOAL.md` | **live** — admin consolidation master goal |
+| `ADMIN_CONSOLIDATION_AUDIT.md` | **live** — admin consolidation Phase 0 findings |
 | `task-registry.json` | live registry (non-md, exempt) |
 
 ## Changelog
