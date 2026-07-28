@@ -136,15 +136,7 @@ const CHECKS = [
       'ZIP pages MUST emit a Place entity + market Dataset via MetadataBlock so AI\n' +
       '  engines can surface ZIP-level market statistics as structured claims.',
   },
-  {
-    file: 'app/guides/[slug]/page.tsx',
-    label: 'guides: Article (BlogPosting) — no fabricated FAQPage',
-    all: ['generateBlogSchema'],
-    why:
-      'Guide pages MUST emit Article/BlogPosting JSON-LD (generateBlogSchema) with\n' +
-      '  real title/dates. A hard-coded FAQPage with Q&As that do not appear on the\n' +
-      '  rendered page violates Google policy and the no-fabrication rule.',
-  },
+  // /guides permanently redirects to /blog — Article schema lives on app/blog/[slug].
   {
     file: 'components/landing/LeadLandingPage.tsx',
     label: 'lead LPs: FAQPage from visible config.faq',
