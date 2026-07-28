@@ -70,7 +70,6 @@ are handled by `ops/postcard-print-order/` (TODO) and the FUB inbound webhook re
 | `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` | Banned vocab union; voice attributes (honest, transparent, neighborly). |
 | `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` | Matt's writing fingerprint. |
 | `automation_skills/content_engine/SKILL.md` | Content routing bus.  every `content:*` action dispatches through here. |
-| `video_production_skills/ANTI_SLOP_MANIFESTO.md` | Banned-content gate. No "stunning," no manufactured urgency, no AI-generated property photos. |
 | `marketing_brain_skills/producers/TEMPLATE.md` | Producer skeleton (10 sections). |
 | `marketing_brain_skills/producers/REGISTRY.md` | Section B row pointer. |
 
@@ -630,7 +629,6 @@ action, dispatched by the orchestrator AFTER `approved`. This producer does not 
 
 **Playbooks and pipeline docs:**
 - `automation_skills/content_engine/SKILL.md`.  content routing bus
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  banned-content gate
 - `marketing_brain_skills/producers/TEMPLATE.md`.  producer skeleton
 - `marketing_brain_skills/producers/REGISTRY.md`.  Section B row
 
@@ -646,14 +644,8 @@ action, dispatched by the orchestrator AFTER `approved`. This producer does not 
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ## Content-producer additional references
 
 - `automation_skills/content_engine/SKILL.md`
 - `social_media_skills/platform-best-practices/SKILL.md`
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
-- `video_production_skills/VIRAL_GUARDRAILS.md`

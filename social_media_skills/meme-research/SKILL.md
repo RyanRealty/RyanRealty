@@ -13,7 +13,6 @@ This skill complements the meme producers (`meme_lord`, `meme_content`). Per CLA
 2. `design_system/ryan-realty/SKILL.md` — brand register
 3. `marketing_brain_skills/brand-voice/voice_guidelines.md` — voice rules
 4. `social_media_skills/platform-best-practices/SKILL.md` — platform rule layer
-5. `video_production_skills/ANTI_SLOP_MANIFESTO.md` — banned content
 6. This skill — humor pattern library
 
 Without a researched humor library, meme producers either invent jokes that don't land (per Matt 2026-05-19: "There needs to be a thorough understanding of real estate memes... dedicated agent that researches this and understands the humor, scrapes every meme, understands why it's funny") or recycle generic AI-template humor that signals slop.

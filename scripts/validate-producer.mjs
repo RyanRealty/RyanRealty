@@ -3,7 +3,7 @@
  * validate-producer.mjs
  *
  * Validates a producer SKILL.md against every gate defined in
- * marketing_brain_skills/research/AUTONOMOUS_PIPELINE_BRIEF.md §7.5.
+ * producer TEMPLATE + REGISTRY (W13.1: research brief deleted).
  *
  * Usage:
  *   node scripts/validate-producer.mjs <path-to-SKILL.md>
@@ -56,19 +56,16 @@ const MANDATORY_REFS_BASE = [
   // W11.4: repointed from voice_guidelines.md (now only the mechanical-floor
   // companion) to VOICE.md — the canonical voice source every producer must cite.
   'VOICE.md',
-  'tool-inventory.md',
-  'platform-bible.md',
-  'asset-library-map.md',
-  // bend-market-bible.md is listed in §7.5 gate 4 as the 8th reference.
-  'bend-market-bible.md',
+  // W13.1 Batch 3: research bibles (tool-inventory / platform-bible /
+  // asset-library-map / bend-market-bible) deleted; citations unwired.
 ]
 
 // Additional 4 refs required for content producers (Sections A and B).
 const MANDATORY_REFS_CONTENT = [
   'content_engine/SKILL.md',
   'platform-best-practices/SKILL.md',
-  'ANTI_SLOP_MANIFESTO.md',
-  'VIRAL_GUARDRAILS.md',
+  // W13.1 Batch 3: ANTI_SLOP_MANIFESTO.md + VIRAL_GUARDRAILS.md were already
+  // absent on disk; drop the string gate so producers stop citing ghosts.
 ]
 
 // Canonical platform enum. Fallback hard-coded list per §7.5 gate 9.

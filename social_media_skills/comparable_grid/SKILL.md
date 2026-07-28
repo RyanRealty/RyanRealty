@@ -146,7 +146,6 @@ WHERE "MlsId" = ANY(ARRAY['<mls_1>', '<mls_2>', ...])
 If any comp is not found as Closed, exclude it and log the exclusion in `citations.json`.
 
 If `comp_mls_ids` was NOT provided, auto-select using this query. Adjust thresholds based on
-local Bend market data from `marketing_brain_skills/research/bend-market-bible.md`:
 
 ```sql
 SELECT "MlsId", "ClosePrice", "CloseDate", "TotalLivingAreaSqFt", price_per_sqft,
@@ -326,14 +325,8 @@ pending  ->  in_production  ->  ready  ->  approved  ->  executed  ->  measured
 2. `CLAUDE.md` §0.5 - Draft-First, Commit-Last (non-negotiable)
 3. `design_system/ryan-realty/SKILL.md` - brand visual system
 4. `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - voice enforcement
-5. `marketing_brain_skills/research/tool-inventory.md` - Supabase, Spark API, Sharp
-6. `marketing_brain_skills/research/platform-bible.md` - CMA and comp disclosure requirements
-7. `marketing_brain_skills/research/asset-library-map.md` - asset registration
-8. `marketing_brain_skills/research/bend-market-bible.md` - Bend comp selection norms (typical search radius, price band)
 9. `automation_skills/content_engine/SKILL.md` - content routing
 10. `social_media_skills/platform-best-practices/SKILL.md` - 2026 platform rule layer
-11. `video_production_skills/ANTI_SLOP_MANIFESTO.md` - authenticity gate; no fabricated comp data
-12. `video_production_skills/VIRAL_GUARDRAILS.md` - visual hierarchy for carousel slides
 
 **Related producers:**
 - `marketing_brain_skills/producers/cma/SKILL.md` - primary delegator; comparable_grid is often a slide within the CMA
@@ -358,10 +351,6 @@ What would make this 10x better:
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ---
 

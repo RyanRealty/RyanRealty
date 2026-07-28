@@ -92,7 +92,6 @@ manually managed local agent list. The producer never sends.
 | `social_media_skills/platform-best-practices/SKILL.md` | 2026 platform rule layer. Email-specific rules in §"Email". |
 | `social_media_skills/flyer-design/SKILL.md` | Print flyer compositor patterns (PDF rendering pipeline). |
 | `social_media_skills/ig-single-post/SKILL.md` | Listing-agent headshot resolution and brand footer conventions. |
-| `video_production_skills/ANTI_SLOP_MANIFESTO.md` | Banned content gate. |
 | `marketing_brain_skills/producers/TEMPLATE.md` | Producer template. |
 | `marketing_brain_skills/producers/REGISTRY.md` | Section B row for this producer. |
 
@@ -558,7 +557,6 @@ The producer transitions:
 **Playbooks and pipeline docs:**
 - `automation_skills/content_engine/SKILL.md`.  content routing bus
 - `social_media_skills/platform-best-practices/SKILL.md`.  email-specific platform rule layer
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  banned content gate
 
 **Registry entry:**
 - `marketing_brain_skills/producers/REGISTRY.md`.  Section B (Content Producer), row `agent-coop-eflyer`
@@ -571,14 +569,8 @@ The producer transitions:
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ## Content-producer additional references
 
 - `automation_skills/content_engine/SKILL.md`
 - `social_media_skills/platform-best-practices/SKILL.md`
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
-- `video_production_skills/VIRAL_GUARDRAILS.md`

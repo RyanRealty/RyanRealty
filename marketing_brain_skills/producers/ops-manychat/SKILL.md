@@ -74,7 +74,6 @@ with `executor_response.flow_id` set after a successful ManyChat API call.
 | `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md` §2 | Conditional lead-form tag mapping (hot-seller / warm-seller / nurture-only). |
 | `marketing_brain_skills/producers/TEMPLATE.md` | Producer skeleton.  section order and status flow SQL. |
 | `marketing_brain_skills/producers/REGISTRY.md` | Section D row pointer. |
-| `video_production_skills/ANTI_SLOP_MANIFESTO.md` | Banned content gate.  applies to flow messages just like captions. |
 
 ---
 
@@ -640,7 +639,6 @@ WHERE id='<id>';
 
 **Banned content gate:**
 
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  applies to flow message copy
 
 **Registry entry:**
 
@@ -675,7 +673,3 @@ WHERE id='<id>';
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`

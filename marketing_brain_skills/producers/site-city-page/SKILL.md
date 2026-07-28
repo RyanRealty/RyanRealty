@@ -75,7 +75,6 @@ The city page links to those, doesn't substitute for them.
 - JSON-LD `City` (or `Place`) + `RealEstateAgent` schemas with full geo + areaServed coordinates
 - ISR config: `export const revalidate = 21600` (6 hours)
 - Live Supabase data: city-wide market_stats_cache, active inventory, recent closings, peer-city comparison
-- Static config from `data/resort-communities.json` (the city row + all communities it contains) + `marketing_brain_skills/research/bend-market-bible.md` (the city overview, neighborhood roster, demographics, schools, employer base)
 - Map: city-wide Google Static Map at zoom 11-12 with named landmarks pinned
 - Tile grid of every named resort community + neighborhood inside the city, each linking to its own LP (or "coming soon" if not built yet)
 - Top-of-the-funnel KPIs: city-wide median, sold count, DOM, active inventory
@@ -91,7 +90,6 @@ The city page links to those, doesn't substitute for them.
 - Per-community pages (use `site-community-page`)
 - Per-neighborhood pages (use `site-neighborhood-page`)
 - Per-listing pages (use `site-listing-page`)
-- Editing the city's static content in `bend-market-bible.md` (manual research producer)
 - City government info pages (we link to the city's official site)
 - Tourist/visitor info content (out of scope --EMDASH-- this is a real-estate LP)
 
@@ -160,9 +158,7 @@ interface SiteCityPageActionRow {
 **Step 2.** Load mandatory references:
 - `CLAUDE.md` §0, §0.5, design system, brand voice
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/research/bend-market-bible.md` (especially for Bend; for other cities, look for sister bibles or surface "research needed" to Matt)
 - `data/resort-communities.json` --EMDASH-- read every community where `city == payload.city_slug`
-- `marketing_brain_skills/research/asset-library-map.md` --EMDASH-- for hero image (the canonical Old Mill District hero is the default for Bend)
 
 **Step 3.** Verify the city has a boundary polygon:
 
@@ -277,7 +273,6 @@ Page structure (rich, similar to community page):
 
 1. **Topbar** (inherited from layout)
 2. **Sticky scroll CTA** ("Browse Bend homes" or "What's my Bend home worth?")
-3. **Hero** with the canonical city hero image (Old Mill for Bend; per-city defaults in resort-communities.json or asset-library-map.md). Eyebrow "<City>, Oregon". H1 with dynamic-month-year. Subhead with the headline figure. Four-stat bar.
 4. **About <City>** --EMDASH-- rich SEO + AEO overview. 5-7 paragraphs covering: what makes the city distinct, geography, climate (honest disclosure on wildfire smoke + winter), economy, population, schools, the relocation pitch. Right column: sticky "City at a glance" panel.
 5. **The market right now** --EMDASH-- full KPI grid: active, pending, median, DOM, S/L, $/sqft, YoY momentum, price-tier distribution
 6. **Resort communities inside <City>** --EMDASH-- tile grid linking to every `/lp/<community>/` page. Photo, name, price tier, sold count badge per community.
@@ -287,7 +282,6 @@ Page structure (rich, similar to community page):
 10. **City vs peer cities comparison** --EMDASH-- table of Bend vs Redmond vs Sisters vs La Pine
 11. **Active inventory** featured grid (12 cards) with showing CTAs
 12. **Schools** section with the Bend-La Pine district overview + per-area assignment table
-13. **What's happening in <City>** --EMDASH-- major dev news, market events, climate notes (sourced from bend-market-bible.md)
 14. **Pipeline** --EMDASH-- major construction projects, zoning changes, master-plan amendments
 15. **Buyer track** (three cards: showing, alerts, guide) --EMDASH-- same pattern as community pages
 16. **CMA seller form** (FUB tagged `city:bend`)
@@ -403,9 +397,7 @@ Same as community-page: pending → in_production → ready → approved → exe
 - `CLAUDE.md` "Design System Rules: MANDATORY" + "Design System v2"
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/bend-market-bible.md` (for Bend specifically)
 - `data/resort-communities.json` (all rows for the target city)
-- `marketing_brain_skills/research/asset-library-map.md`
 - `public/lp/tetherow/index.html` (visual exemplar)
 - `app/sitemap.ts`
 
@@ -430,7 +422,6 @@ Same as community-page: pending → in_production → ready → approved → exe
 
 ## 11. Tool gap suggestions
 
-1. **Per-city market bibles.** Today bend-market-bible.md is the only deep city reference. Sister bibles for Redmond, Sisters, La Pine would unblock 5+ more city pages.
 
 2. **Embedded video tour of the city.** The hero could autoplay a 30-second drone reel of the city. Generated via the `neighborhood_tour` producer at the city scope.
 
@@ -448,9 +439,5 @@ Same as community-page: pending → in_production → ready → approved → exe
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md` (for Bend)
 - `data/resort-communities.json`
 - `marketing_brain_skills/producers/site-community-page/SKILL.md` (Tier 2 child producer)

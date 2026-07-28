@@ -319,14 +319,8 @@ pending  ->  in_production  ->  ready  ->  approved  ->  executed  ->  measured
 2. `CLAUDE.md` §0.5 - Draft-First, Commit-Last (non-negotiable)
 3. `design_system/ryan-realty/SKILL.md` - brand visual system
 4. `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - banned tropes in attribution text; pandering patterns banned in §6.3
-5. `marketing_brain_skills/research/tool-inventory.md` - Sharp, napi-rs/canvas packages (§3.4), Supabase (§1.4)
-6. `marketing_brain_skills/research/platform-bible.md` - review-content legal guidance; FTC endorsement rules for real estate
-7. `marketing_brain_skills/research/asset-library-map.md` - where testimonial PNGs live after approval
-8. `marketing_brain_skills/research/bend-market-bible.md` - local context for reviewer attributions
 9. `automation_skills/content_engine/SKILL.md` - content routing
 10. `social_media_skills/platform-best-practices/SKILL.md` - 2026 platform rule layer (4:5 is peak IG engagement format)
-11. `video_production_skills/ANTI_SLOP_MANIFESTO.md` - no fake or fabricated social proof; AI-generated testimonial text is absolutely banned
-12. `video_production_skills/VIRAL_GUARDRAILS.md` - quote card cover discipline: the first 0.5 s must communicate the value, not be decorative
 
 **Related producers:**
 - `marketing_brain_skills/producers/ops-reputation/SKILL.md` - pulls GBP reviews that feed into testimonial card payloads
@@ -351,10 +345,6 @@ What would make this 10x better:
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ---
 

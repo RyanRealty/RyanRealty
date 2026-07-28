@@ -99,7 +99,6 @@ interface ClientUpdatePayload {
 
   // comms:past_client_touch
   client_address?: string;           // full street address of their former home
-  neighborhood_slug?: string;        // from bend-market-bible.md §1
   last_sale_date?: string;           // YYYY-MM-DD
   last_sale_price?: number;          // in dollars
 }
@@ -145,10 +144,6 @@ WHERE id = '<id>' AND status = 'pending';
 - `design_system/ryan-realty/SKILL.md`: brand tone anchors
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: full voice rules
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`: Matt's actual writing; use as tone reference for warmth and brevity
-- `marketing_brain_skills/research/tool-inventory.md`: Resend and FUB env var status
-- `marketing_brain_skills/research/platform-bible.md`: §21 cross-cutting email rules
-- `marketing_brain_skills/research/asset-library-map.md`: not required for text emails
-- `marketing_brain_skills/research/bend-market-bible.md`: §1 for past-client touch neighborhood context
 
 **Step 3: Pull listing data (client_weekly and client_milestone)**
 
@@ -487,10 +482,6 @@ measured
 - `design_system/ryan-realty/SKILL.md`: brand tone anchors
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: voice enforcement
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`: Matt's actual writing register
-- `marketing_brain_skills/research/tool-inventory.md`: Resend and FUB env var status
-- `marketing_brain_skills/research/platform-bible.md`: §21 email rules
-- `marketing_brain_skills/research/asset-library-map.md`: not required for text emails
-- `marketing_brain_skills/research/bend-market-bible.md`: §1 for past-client neighborhood context
 
 **Related producers:**
 - `marketing_brain_skills/producers/ops-email-send/SKILL.md`: bulk marketing email (different use case)
@@ -516,10 +507,6 @@ What would make this 10x better:
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ---
 

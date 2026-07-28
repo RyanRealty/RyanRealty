@@ -46,7 +46,6 @@ mobile and print. This skill is the hard standard for flyer composition quality 
 1. `design_system/ryan-realty/SKILL.md`.  **authoritative** colors + typography (flyers count as print/postcard-class collateral; v2 palette: navy `#102742`, cream `#faf8f4`, sand `#e8e2d4`.  no gold)
 2. `video_production_skills/brand_assets/SKILL.md`.  light editorial register, hierarchy, negative space
 3. `video_production_skills/VIDEO_PRODUCTION_SKILL.md` §5.  brand colors, banned words (video forbids Butcher; flyers follow static rules below)
-4. `video_production_skills/ANTI_SLOP_MANIFESTO.md` (authenticity + no fake claims)
 5. `CLAUDE.md` §0 (data accuracy / verification trace)
 6. **[`social_media_skills/platform-best-practices/SKILL.md`](../platform-best-practices/SKILL.md)**.  2026 platform rule layer. Cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + Ryan Realty application matrix. Per CLAUDE.md "Skill self-binding (2026-05-13)", mandatory for every Ryan Realty content piece.
 
@@ -318,10 +317,6 @@ current session.
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ---
 
@@ -375,5 +370,3 @@ Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated
 
 - `automation_skills/content_engine/SKILL.md`
 - `social_media_skills/platform-best-practices/SKILL.md`
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
-- `video_production_skills/VIRAL_GUARDRAILS.md`

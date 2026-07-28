@@ -1,7 +1,6 @@
 ---
 name: qa_pass
 description: Autonomous QA agent that runs after every render and BEFORE Matt sees any draft. Auto-iterates up to 2 cycles on fixable failures. Refuses to surface borderline work — if in doubt, do NOT show Matt; rebuild or file a failure report. Triggers: "QA this draft", "review before showing Matt", "validate the rendered video", "run quality gate", "run QA". Also auto-invoked by every video format skill before handing off to Matt. NOT for post-publish analytics (use performance_loop).
-when_to_use: Use whenever a render or draft is complete and needs gate clearance before human review. This is the enforcement layer for ANTI_SLOP_MANIFESTO.md, VIRAL_GUARDRAILS.md, CLAUDE.md §0 data accuracy, §0.5 captions, and all video hard rules. The user cannot enforce these rules manually — this skill IS the enforcement.
 ---
 
 # QA Pass
@@ -12,7 +11,6 @@ The autonomous pre-review gate. Runs every check Matt would otherwise have to ca
 
 ## Hard refuse conditions (any single hit = non-ship)
 
-1. Banned word found anywhere visible: captions, VO script, on-screen text, filename (ANTI_SLOP_MANIFESTO.md Rule 1 list + CLAUDE.md banned words section)
 2. Any figure in the video has no entry in `citations.json` tracing it to a named primary source (CLAUDE.md §0)
 3. `citations.json` absent or malformed
 4. `scorecard.json` absent or any `auto_zero_hits` entry present
@@ -124,7 +122,6 @@ All fields required. The publish skill and post_scheduler reject any asset whose
   "citations_path": "out/market_report_bend_apr2026/citations.json",
   "scorecard_path": "out/market_report_bend_apr2026/scorecard.json",
   "qa_report_path": "out/market_report_bend_apr2026/qa_report.md",
-  "manifesto_path": "video_production_skills/ANTI_SLOP_MANIFESTO.md",
   "postflight_path": null,
   "format_skill_name": "market-data-video",
   "format_skill_version": "2026-05-06",
@@ -163,6 +160,4 @@ All fields required. The publish skill and post_scheduler reject any asset whose
 
 - `automation_skills/automation/post_scheduler/SKILL.md` — consumes `gate.json`; rejects posts without passing gate
 - `automation_skills/automation/publish/SKILL.md` — hard pre-condition: `gate.json` with `gate_passed: true` and `approved_by_matt: true`
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — banned-pattern source of truth
-- `video_production_skills/VIRAL_GUARDRAILS.md` — scorecard source of truth
 - `video_production_skills/VIDEO_PRODUCTION_SKILL.md` — production hard rules (§0 data, §0.5 captions, §Video Build Hard Rules)

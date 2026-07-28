@@ -88,8 +88,6 @@ This producer MUST load in order before executing:
 4. `marketing_brain_skills/brand-voice/SKILL.md` + `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md` - voice enforcement
 5. `automation_skills/content_engine/SKILL.md` - routing bus
 6. `social_media_skills/platform-best-practices/SKILL.md` - 2026 platform rule layer
-7. `video_production_skills/ANTI_SLOP_MANIFESTO.md` - banned content gate
-8. `video_production_skills/VIRAL_GUARDRAILS.md` - scorecard + format minimums
 
 ---
 
@@ -299,12 +297,6 @@ Every run of this producer MUST load all of the following before generating any 
 
 - automation_skills/content_engine/SKILL.md - routing and approval bus
 - social_media_skills/platform-best-practices/SKILL.md - channel rule layer
-- video_production_skills/ANTI_SLOP_MANIFESTO.md - banned content gate
-- video_production_skills/VIRAL_GUARDRAILS.md - scorecard and format minimums
 
 ### Tier 5 - Reference documents
 
-- tool-inventory.md - approved API and tool inventory
-- platform-bible.md - platform-specific posting rules
-- asset-library-map.md - asset paths and naming conventions
-- bend-market-bible.md - Central Oregon market data conventions

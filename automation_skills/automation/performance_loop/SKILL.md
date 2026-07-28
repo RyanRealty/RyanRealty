@@ -308,7 +308,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS platform_baselines_unique_idx
 
 ## Anti-slop guardrails
 
-References: `video_production_skills/ANTI_SLOP_MANIFESTO.md`
 
 - **Rule 5 — No engagement-bait optimization.** Step 3 de-ranks any high-score post with zero
   FUB lead capture. The system optimizes for lead generation, not vanity engagement.

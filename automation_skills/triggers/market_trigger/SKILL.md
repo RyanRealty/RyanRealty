@@ -291,7 +291,6 @@ CREATE INDEX IF NOT EXISTS market_trigger_cooldowns_lookup_idx
 
 ## Anti-slop guardrails
 
-References: `video_production_skills/ANTI_SLOP_MANIFESTO.md`
 
 - **CLAUDE.md data accuracy rule — primary enforcement point.** No content job fires without
   a written verification trace (Step 5). Every figure in the job payload must trace to a specific
@@ -394,5 +393,4 @@ Body: { metric: 'median_close_price', geo_slug: 'bend', skip_cooldown: true }
 - `automation_skills/automation/repurpose_engine/SKILL.md` — makes 8 variants of market video
 - `video_production_skills/data_viz_video/SKILL.md` — video composition for market metrics
 - `video_production_skills/avatar_market_update/SKILL.md` — talking-head market update
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — accuracy and voice rules
 - CLAUDE.md — data accuracy verification mandate (root rule)

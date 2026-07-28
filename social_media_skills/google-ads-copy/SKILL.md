@@ -45,7 +45,6 @@ reporting or bid analysis. Does NOT produce Meta ad copy (that is `facebook-lead
 ### In scope
 
 - `content:google_ads_copy`: full RSA + PMax asset group + sitelinks copy bundle
-- Pulling the current SEO target query set from `marketing_brain_skills/strategy/Q3-2026-strategy.md` §SEO strategy
 - Generating up to 15 RSA headlines (30 chars max each), 4 RSA descriptions (90 chars max each)
 - Generating one PMax asset group (5 headlines, 5 long headlines up to 90 chars, 5 descriptions)
 - Generating 4 sitelinks (25-char title, 2 × 35-char description lines each)
@@ -123,24 +122,16 @@ Before writing a single word of copy:
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md`: brand register
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: full banned-word and banned-phrase list
-- `marketing_brain_skills/research/tool-inventory.md`: check Google Ads env var status
-- `marketing_brain_skills/research/platform-bible.md`: no platform-specific section for Google Ads, but cross-cutting compliance §24 applies
-- `marketing_brain_skills/research/asset-library-map.md`: not required for copy-only builds; note for future PMax image handoff
-- `marketing_brain_skills/research/bend-market-bible.md`: §1 neighborhood names, §10 competitor brokerage names
 - `automation_skills/content_engine/SKILL.md`: routing context
 - `social_media_skills/platform-best-practices/SKILL.md`: §21 cross-cutting compliance
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`: banned-content gate (applies to all copy surfaces)
-- `video_production_skills/VIRAL_GUARDRAILS.md`: not a video, but the banned-word §12 still applies
 
 **Step 3: Pull target queries from Q3-2026 strategy**
 
-Read `marketing_brain_skills/strategy/Q3-2026-strategy.md` §SEO strategy. Extract the
 ranked target query list. If the payload provides `target_queries`, use those directly
 (the brain populated them from the strategy doc). If the file does not yet exist (Phase
 5B has not completed), surface a blocked message to Matt and set `status='killed'`:
 
 ```
-BLOCKED: marketing_brain_skills/strategy/Q3-2026-strategy.md not found.
 Phase 5B must complete the strategy doc before google-ads-copy can execute.
 Action row killed.
 ```
@@ -409,14 +400,8 @@ measured
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md`: brand visual system
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: voice enforcement
-- `marketing_brain_skills/research/tool-inventory.md`: API and env var status
-- `marketing_brain_skills/research/platform-bible.md`: compliance cross-cutting §24
-- `marketing_brain_skills/research/asset-library-map.md`: asset reuse context
-- `marketing_brain_skills/research/bend-market-bible.md`: neighborhood names, competitor names
 - `automation_skills/content_engine/SKILL.md`: content routing
 - `social_media_skills/platform-best-practices/SKILL.md`: 2026 platform rule layer
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`: banned-content gate
-- `video_production_skills/VIRAL_GUARDRAILS.md`: scorecard format minimums
 
 **Ops producer that uploads the approved bundle:**
 - `marketing_brain_skills/producers/ops-google-ads/SKILL.md`
@@ -440,10 +425,6 @@ What would make this 10x better:
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ---
 

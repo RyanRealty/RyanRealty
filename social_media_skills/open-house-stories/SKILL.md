@@ -73,7 +73,6 @@ automation.  that's a separate `ops:manychat` action.
 | `social_media_skills/ig-single-post/SKILL.md` | S3 Open House feed card spec.  the Stories sequence sits next to S3, not in place of it. |
 | `social_media_skills/instagram-carousel/SKILL.md` | Footer band / safe-zone conventions inherited here. |
 | `social_media_skills/platform-best-practices/SKILL.md` | 2026 Stories rule layer.  sticker zones, swipe-through timing, story-set cadence. |
-| `video_production_skills/ANTI_SLOP_MANIFESTO.md` | Banned content gate (applies to static frames too). |
 | `automation_skills/content_engine/SKILL.md` | Content routing bus. |
 | `marketing_brain_skills/producers/TEMPLATE.md` | Producer template. |
 | `marketing_brain_skills/producers/REGISTRY.md` | Section B row pointer. |
@@ -605,7 +604,6 @@ approximately, roughly, about, around, "won't last", "act fast", "don't miss out
 | Listing not eligible | `StandardStatus` is `Pending`, `Closed`, `Cancelled`, or `Expired` | Surface to Matt with the current status. Open houses do not promote on non-active listings. Set `status='killed'` if confirmed. |
 | Broker not resolved | `ListAgentEmail` doesn't map to matt-ryan / paul-stevenson / rebecca-peterson | Surface to Matt to confirm broker identity. Do not guess. |
 | Photo download failure | Any photo URL returns non-200 or local path doesn't exist | Surface to caller with the specific photo. Do not substitute or skip.  the missing photo could be the lead. |
-| AI-generated property photo detected | `provenance.json` source flagged AI | Hard fail per `video_production_skills/ANTI_SLOP_MANIFESTO.md`. Do not render. |
 | Font missing | Amboqia / Geist / Azo Sans Medium not on disk | Stop. Report the specific missing file path. Do not ship with system fonts. |
 | Banned vocab in caption | Grep hit in caption.md | Stop. Re-write the caption clause. Re-validate. |
 | Exclamation mark on frame or in caption | QA check 15 fails | Stop. Re-write the offending text. Re-render the frame. |
@@ -641,7 +639,6 @@ approximately, roughly, about, around, "won't last", "act fast", "don't miss out
 - `automation_skills/content_engine/SKILL.md`.  content routing bus; all `content:*` actions
   dispatch through here
 - `social_media_skills/platform-best-practices/SKILL.md`.  2026 platform rule layer
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  banned content gate
 - `marketing_brain_skills/producers/TEMPLATE.md`.  producer template
 
 **Related ops actions:**
@@ -656,7 +653,6 @@ approximately, roughly, about, around, "won't last", "act fast", "don't miss out
 
 ## 12. What not to do
 
-1. **Never use AI-generated property photos.** Hard fail per `ANTI_SLOP_MANIFESTO.md`.
 2. **Never substitute fonts.** If Amboqia, Geist, or Azo Sans Medium isn't on disk, stop.
 3. **Never invent or pad photos.** If `payload.photos.length < 4`, surface.  don't reuse
    frame 2's photo as frame 3.
@@ -683,14 +679,8 @@ approximately, roughly, about, around, "won't last", "act fast", "don't miss out
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ## Content-producer additional references
 
 - `automation_skills/content_engine/SKILL.md`
 - `social_media_skills/platform-best-practices/SKILL.md`
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
-- `video_production_skills/VIRAL_GUARDRAILS.md`

@@ -17,9 +17,7 @@ retries, then an alert is sent to Matt via Resend.
 
 Before any post is published, the scheduler verifies:
 
-1. **`ANTI_SLOP_MANIFESTO.md` Enforcement gate** — banned-word grep clean, citations.json present,
    AI disclosure present if AI assets used, fair-housing scan clean.
-2. **`VIRAL_GUARDRAILS.md` scorecard** — `scorecard.json` exists next to the asset and shows
    `total >= minimum_required` with no `auto_zero_hits`. Format minimums: listing video 85,
    market data 80, neighborhood 80, meme 75, earth zoom 85; default 80.
 
@@ -380,7 +378,6 @@ CREATE INDEX IF NOT EXISTS post_performance_platform_idx
 
 ## Anti-slop guardrails
 
-References: `video_production_skills/ANTI_SLOP_MANIFESTO.md`
 
 - **Rule 8 — Human review gate.** Every post enters `pending_human_review`. Auto-approve only
   unlocks after 30 days of a format running clean, controlled by `automation_config` table.

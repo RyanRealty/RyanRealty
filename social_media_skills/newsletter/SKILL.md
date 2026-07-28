@@ -44,7 +44,6 @@ appears unless a specific broker transaction is featured.
 - One HTML email per calendar month, approximately 600-900 words
 - Market snapshot section (median price, months of supply, days on market for Bend SFR)
 - Featured listing or recent sale section (one property, data verified against Supabase)
-- Neighborhood spotlight section (one neighborhood from bend-market-bible.md §1)
 - Community event or local news item (sourced from local press or Matt's input)
 - Plain-text fallback (all links spelled out, no HTML formatting)
 - Asset library registration after Matt's approval
@@ -63,7 +62,6 @@ appears unless a specific broker transaction is featured.
 
 | action_type | payload fields required | notes |
 |---|---|---|
-| `content:newsletter` | `month_label`, `neighborhood_slug`, optional `featured_listing_key` | `month_label` e.g. "May 2026"; `neighborhood_slug` matches bend-market-bible.md §1 slugs |
 
 ### Payload schema
 
@@ -118,10 +116,6 @@ Before producing any copy:
 - `CLAUDE.md` §0.5 (Draft-First, Commit-Last)
 - `design_system/ryan-realty/SKILL.md` (brand register: navy `#102742`, cream `#faf8f4`, Geist body, Amboqia display)
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` (full load required for long-form)
-- `marketing_brain_skills/research/tool-inventory.md` (API status before any call)
-- `marketing_brain_skills/research/platform-bible.md` §21 (email surface rules)
-- `marketing_brain_skills/research/asset-library-map.md` (asset registration on approval)
-- `marketing_brain_skills/research/bend-market-bible.md` §1 (neighborhood spotlight content)
 
 **Step 3 - Pull and verify market data from Supabase**
 
@@ -183,7 +177,6 @@ Resolve listing agent from `public.brokers` to determine whose transaction this 
 
 **Step 5 - Pull neighborhood spotlight content**
 
-Read the matching section from `marketing_brain_skills/research/bend-market-bible.md`. Pull current price range from Supabase `market_stats_cache` filtered to that neighborhood's subdivision aliases (from `neighborhood_subdivisions` table). Do not use the bible's prices verbatim - re-verify live.
 
 ```sql
 SELECT ns.neighborhood_slug, ns.subdivision_name
@@ -419,16 +412,10 @@ SQL transitions follow the TEMPLATE.md standard.
 - `CLAUDE.md` §0.5 - Draft-First, Commit-Last (outranks everything)
 - `design_system/ryan-realty/SKILL.md` - brand visual system (v2 two-color palette: navy + cream)
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - voice enforcement (full load for long-form)
-- `marketing_brain_skills/research/tool-inventory.md` - API and tool status before any call
-- `marketing_brain_skills/research/platform-bible.md` - §21 email surface rules (Resend / mail.ryan-realty.com)
-- `marketing_brain_skills/research/asset-library-map.md` - asset registration protocol on approval
-- `marketing_brain_skills/research/bend-market-bible.md` - neighborhood spotlight source data
 
 **Pipeline docs:**
 - `automation_skills/content_engine/SKILL.md` - content routing; all content:* actions go through here
 - `social_media_skills/platform-best-practices/SKILL.md` - 2026 platform rule layer
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` - banned content gate (applies to all copy)
-- `video_production_skills/VIRAL_GUARDRAILS.md` - scorecard and format minimums
 
 **Related producers:**
 - `marketing_brain_skills/producers/ops-email-send/SKILL.md` - operational email sends (not monthly newsletters)
@@ -471,7 +458,3 @@ What would make this 10x better:
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`

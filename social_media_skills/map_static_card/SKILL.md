@@ -115,7 +115,6 @@ WHERE id = '<action_id>' AND status = 'pending';
   listing row exactly. Never display an address derived from LLM recall.
 - `CLAUDE.md` §0.5 - Draft-First, Commit-Last.
 - `design_system/ryan-realty/SKILL.md` - navy `#102742`, cream `#faf8f4`, Geist for address label.
-- `marketing_brain_skills/research/maps-api-enablement-log.md` - Static Maps and Geocoding are
   confirmed enabled per this log. Routes API is enabled. Places (New) propagated 2026-05-17.
 
 **Step 3 - Resolve the map center**
@@ -153,7 +152,6 @@ LIMIT 1;
 ```
 
 If the neighborhood centroid is not in Supabase, use a known Bend neighborhood coordinates
-lookup from `marketing_brain_skills/research/bend-market-bible.md` as a fallback. Document
 the fallback in `citations.json`.
 
 **Step 4 - Fetch the map tile**
@@ -284,7 +282,6 @@ WHERE id = '<action_id>';
 | Sharp (Node) | PNG composite: address bar, wordmark overlay | `scripts/composite-social-assets.mjs` |
 | `design_system/ryan-realty/assets/brand/logo-blue.png` | Wordmark | local file |
 
-**API cost context** (from `maps-api-enablement-log.md` and `tool-inventory.md` §6):
 
 | API | Cost | Free tier |
 |---|---|---|
@@ -362,7 +359,6 @@ pending  ->  in_production  ->  ready  ->  approved  ->  executed  ->  measured
 | Listing not in Supabase | 0 rows from query | Surface to Matt with the MLS ID. |
 | Map tile is blank (tiny file) | PNG file size < 5 KB | Likely API quota hit or wrong center. Log and surface. |
 | GOOGLE_MAPS_API_KEY missing | 400 from Static Maps | Report: "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY not in .env.local." |
-| Neighborhood centroid not in Supabase | 0 rows from neighborhood_subdivisions | Fall back to bend-market-bible.md neighborhood coordinates. Document fallback in citations.json. |
 
 ---
 
@@ -374,17 +370,10 @@ pending  ->  in_production  ->  ready  ->  approved  ->  executed  ->  measured
 2. `CLAUDE.md` §0.5 - Draft-First, Commit-Last (non-negotiable)
 3. `design_system/ryan-realty/SKILL.md` - brand visual system
 4. `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - voice enforcement for any text
-5. `marketing_brain_skills/research/tool-inventory.md` - Google Maps API surface (§6), API keys (§4)
-6. `marketing_brain_skills/research/platform-bible.md` - platform specs for map card usage
-7. `marketing_brain_skills/research/asset-library-map.md` - registering output after approval
-8. `marketing_brain_skills/research/bend-market-bible.md` - Bend neighborhood centroids and context
 9. `automation_skills/content_engine/SKILL.md` - content routing
 10. `social_media_skills/platform-best-practices/SKILL.md` - 2026 platform rule layer
-11. `video_production_skills/ANTI_SLOP_MANIFESTO.md` - authenticity gate; address must match listing
-12. `video_production_skills/VIRAL_GUARDRAILS.md` - location slides: specific place name increases engagement
 
 **API enablement source:**
-- `marketing_brain_skills/research/maps-api-enablement-log.md` - Static Maps enabled (pre-existing),
   Geocoding enabled 2026-05-17, Places (New) enabled 2026-05-17. Keys in `.env.local` confirmed active.
 
 **Related producers:**
@@ -411,10 +400,6 @@ What would make this 10x better:
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ---
 

@@ -3,7 +3,6 @@ name: site-neighborhood-page
 description: >
   Scaffolds or updates the canonical per-neighborhood landing page at
   /neighborhoods/<slug> on ryan-realty.com. Sources neighborhood facts from
-  bend-market-bible.md, wires JSON-LD Place schema, lead-capture form, dynamic
   active-listing grid, and canonical hero image. Opens a GitHub PR for Matt to merge.
 action_types:
   - site:neighborhood_page_create
@@ -30,7 +29,6 @@ example_outputs: []
 fact-rich body in Geist, a dynamic active-listing grid wired to Supabase, a
 lead-capture form wired to `app/actions/lead-capture.ts`, the canonical Old Mill
 District hero image, and JSON-LD `Place` + `RealEstateListing` structured data.
-All shadcn/ui components. Every copy claim traces to `bend-market-bible.md` or a
 live Supabase query. Opens a PR on a feature branch for Matt to merge.
 
 Does NOT edit the global `/sell`, `/buy`, or homepage (that is `site-edit`).
@@ -50,7 +48,6 @@ without a neighborhood context).
 - `site:neighborhood_page_create`: net-new page at `app/neighborhoods/<slug>/page.tsx`
 - `site:neighborhood_page_update`: update copy, stats, or schema on an existing page
 - Adding or refreshing the route in `app/sitemap.ts`
-- JSON-LD `Place` schema with neighborhood-level `geo` coordinates from `bend-market-bible.md`
 - Dynamic active-listing grid (server component that queries Supabase `listings` at render time)
 - Lead-capture form wired to `app/actions/lead-capture.ts`
 - Canonical hero image: `design_system/ryan-realty/assets/hero/banner-1024x576-gbp.jpg` as the section header
@@ -78,7 +75,6 @@ without a neighborhood context).
 ```typescript
 interface SiteNeighborhoodPagePayload {
   neighborhood_slug: string;       // e.g. 'nw-crossing' | 'old-bend' | 'tetherow'
-                                   // must match a §1.x section slug in bend-market-bible.md
   neighborhood_name: string;       // Display name, e.g. 'NW Crossing'
   hero_headline: string;           // Amboqia H1: direct, no clichés, sentence case
                                    // e.g. 'NW Crossing real estate: facts and active listings'
@@ -133,10 +129,6 @@ Confirm `status` was `pending`. If not, halt silently.
 - `design_system/ryan-realty/SKILL.md`: color tokens, type families, shadow ladder
 - `design_system/ryan-realty/colors_and_type.css`: CSS variable definitions
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: voice enforcement
-- `marketing_brain_skills/research/tool-inventory.md`: Supabase and env var status
-- `marketing_brain_skills/research/platform-bible.md`: §24 real-estate compliance
-- `marketing_brain_skills/research/asset-library-map.md`: hero image location confirmation
-- `marketing_brain_skills/research/bend-market-bible.md`: §1 for the target neighborhood
 - `app/actions/lead-capture.ts`: read before implementing the lead form
 
 **Step 3: Route check (create vs. update)**
@@ -153,9 +145,7 @@ Action row killed.
 For `site:neighborhood_page_update`: confirm the file DOES exist. If missing, set
 `status='killed'` and suggest `site:neighborhood_page_create` instead.
 
-**Step 4: Load neighborhood facts from bend-market-bible.md**
 
-Open `marketing_brain_skills/research/bend-market-bible.md` and read the §1.x
 subsection matching `payload.neighborhood_slug`. Extract:
 - Typical price range and the source citation
 - Dominant home types
@@ -479,10 +469,6 @@ measured
 - `design_system/ryan-realty/SKILL.md`: color tokens, type families, radii
 - `design_system/ryan-realty/colors_and_type.css`: CSS variable definitions
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: voice enforcement
-- `marketing_brain_skills/research/tool-inventory.md`: API and env var status
-- `marketing_brain_skills/research/platform-bible.md`: §24 compliance
-- `marketing_brain_skills/research/asset-library-map.md`: hero image location
-- `marketing_brain_skills/research/bend-market-bible.md`: §1 neighborhood facts
 - `app/actions/lead-capture.ts`: read before implementing lead form
 - `app/sell/page.tsx`: server-component pattern reference
 - `app/sitemap.ts`: sitemap structure to extend
@@ -506,10 +492,6 @@ What would make this 10x better:
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ---
 

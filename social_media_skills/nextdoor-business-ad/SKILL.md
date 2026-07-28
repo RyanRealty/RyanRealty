@@ -30,7 +30,6 @@ headline, call-to-action label, and a suggested image brief for Matt to source o
 approve. The publish step is manual: Matt pastes the draft into the Nextdoor Business
 dashboard. No Nextdoor API call is made by this producer because
 `NEXTDOOR_CLIENT_ID`, `NEXTDOOR_CLIENT_SECRET`, and `NEXTDOOR_REDIRECT_URI` are
-unset per `marketing_brain_skills/research/env-manifest.md`.
 
 Does NOT post to Nextdoor (API not wired; see §9 failure modes). Does NOT produce
 Meta, Google, or any other paid-ad copy. Does NOT write organic neighborhood posts
@@ -47,7 +46,6 @@ Meta, Google, or any other paid-ad copy. Does NOT write organic neighborhood pos
 ### In scope
 
 - `content:nextdoor_business_ad`: sponsored post or local awareness ad copy bundle
-- Targeting Bend neighborhoods listed in `marketing_brain_skills/research/bend-market-bible.md` §1
 - Post body (up to 500 chars for sponsored posts; 280 chars for awareness ads)
 - Headline (under 60 chars)
 - CTA label (up to 20 chars)
@@ -73,7 +71,6 @@ Meta, Google, or any other paid-ad copy. Does NOT write organic neighborhood pos
 
 ```typescript
 interface NextdoorBusinessAdPayload {
-  target_neighborhoods: string[];   // from bend-market-bible.md §1 slugs
                                     // e.g. ['nw_crossing', 'old_bend', 'tetherow']
   ad_type: 'sponsored_post' | 'local_awareness';
   campaign_goal: 'seller_leads' | 'brand_awareness';
@@ -121,19 +118,12 @@ WHERE id = '<id>' AND status = 'pending';
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md`: brand register
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: full banned-word list and neighbor-tone rules
-- `marketing_brain_skills/research/tool-inventory.md`: Nextdoor API status (currently unset)
-- `marketing_brain_skills/research/platform-bible.md`: §19 Nextdoor surface rules
-- `marketing_brain_skills/research/asset-library-map.md`: image brief context
-- `marketing_brain_skills/research/bend-market-bible.md`: §1 for each target neighborhood facts
 - `automation_skills/content_engine/SKILL.md`: routing context
 - `social_media_skills/platform-best-practices/SKILL.md`: §19 Nextdoor + §24 compliance
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`: banned-content gate (applies to all copy)
-- `video_production_skills/VIRAL_GUARDRAILS.md`: banned-word check §12
 
 **Step 3: Load neighborhood facts**
 
 For each neighborhood in `payload.target_neighborhoods`, read the relevant §1.x
-subsection of `marketing_brain_skills/research/bend-market-bible.md`. Extract:
 - Typical price range (note the source and its date; re-verify before use)
 - Key amenities to reference as neighborhood anchors
 - HOA reality (relevant for seller content)
@@ -409,14 +399,8 @@ measured
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md`: brand register
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: voice enforcement + neighbor-tone rules
-- `marketing_brain_skills/research/tool-inventory.md`: Nextdoor API status
-- `marketing_brain_skills/research/platform-bible.md`: §19 Nextdoor, §24 compliance
-- `marketing_brain_skills/research/asset-library-map.md`: image brief context
-- `marketing_brain_skills/research/bend-market-bible.md`: §1 neighborhood facts
 - `automation_skills/content_engine/SKILL.md`: routing context
 - `social_media_skills/platform-best-practices/SKILL.md`: 2026 platform rules
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`: banned-content gate
-- `video_production_skills/VIRAL_GUARDRAILS.md`: banned-word check
 
 **Registry entry:**
 - `marketing_brain_skills/producers/REGISTRY.md`: Section B, row `nextdoor-business-ad`
@@ -437,10 +421,6 @@ What would make this 10x better:
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ---
 

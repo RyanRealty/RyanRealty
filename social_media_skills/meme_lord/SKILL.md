@@ -35,7 +35,6 @@ A piece of content that ships without consulting BOTH of these is non-compliant.
 
 ---
 
-**Read `video_production_skills/ANTI_SLOP_MANIFESTO.md` before invoking this skill. The manifesto is the ship gate. This skill enforces Rule 9 (no AI humor), Rule 11 (Matt's voice), Rule 12 (brand visuals), and Rule 13 (Oregon broker compliance, Fair Housing) at every step.**
 
 **MANDATORY.  Read `humor_calibration.md` and `humor_patterns.md` before generating any meme concept.** These two files are the humor quality gate. The calibration doc teaches what's funny vs. corny (based on deep study of @thebrokeagent and viral RE meme accounts). The patterns doc has 35+ proven concept structures categorized by humor type. If a generated concept doesn't match the quality bar in those docs, it doesn't ship. Previous output was "corny as hell".  these files exist to fix that.
 
@@ -394,7 +393,6 @@ The `performance_loop` automation skill ingests this weekly to score template pe
 
 ## Sources used to build this skill
 
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` (the ship gate)
 - `video_production_skills/meme_content/SKILL.md` (sister skill, video format)
 - Live web check on @thebrokeagent (545K), @zillowgonewild (2.2M), @therealestatememes (20K), @re_memes (31K), Derrick Gregory (April 2026)
 - CLAUDE.md (data verification rules, design system, voice rules)
@@ -410,10 +408,6 @@ Last reviewed: 2026-04-26.
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ---
 
@@ -467,5 +461,3 @@ Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated
 
 - `automation_skills/content_engine/SKILL.md`
 - `social_media_skills/platform-best-practices/SKILL.md`
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
-- `video_production_skills/VIRAL_GUARDRAILS.md`

@@ -136,13 +136,9 @@ WHERE id = '<id>' AND status = 'pending';
 - `design_system/ryan-realty/SKILL.md`: brand context (for framing findings)
 - `marketing_brain_skills/brand-voice/voice_guidelines.md`: findings are internal, but all
   quoted competitor copy must be clearly attributed and not misrepresented
-- `marketing_brain_skills/research/tool-inventory.md`: Apify status (§1.6 Apify section);
   verify `APIFY_API_TOKEN` is set
-- `marketing_brain_skills/research/platform-bible.md`: platform-specific engagement norms
   used as comparison benchmarks
-- `marketing_brain_skills/research/asset-library-map.md`: not required for analysis; note
   that any competitor screenshots are for internal analysis only, never published
-- `marketing_brain_skills/research/bend-market-bible.md`: §10 for the competitor brokerage
   roster and context; §1 for neighborhood context when analyzing listing inventory
 
 Read `marketing_brain_skills/competitor-recon/SKILL.md` for the 10 competitor slugs,
@@ -300,7 +296,6 @@ WHERE "ListOfficeName" ILIKE '%<brokerage_name_fragment>%'
 GROUP BY "ListAgentEmail", "ListAgentFullName", "ListOfficeName";
 ```
 
-Use the brokerage name keywords from `marketing_brain_skills/research/bend-market-bible.md`
 §10 (top brokerage offices). Never guess the brokerage name; use the exact MLS office
 name strings confirmed in that section.
 
@@ -463,10 +458,8 @@ WHERE id = '<id>';
 | tool | purpose | env var / path |
 |---|---|---|
 | Supabase MCP | `competitor_intel` reads; `marketing_decisions` writes; `marketing_brain_actions` updates | `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
-| Apify MCP (`mcp__Apify__call-actor`) | Ad-hoc real-time scrape if `competitor_intel` data is stale by more than 7 days and `analysis_scope='ads'` | `APIFY_API_TOKEN` (via tool-inventory.md §1.6) |
 | `marketing_brain_skills/competitor-recon/SKILL.md` | Slug registry, Apify actor IDs, row taxonomy, SERP query list | read-only reference |
 
-**Apify actors available (from tool-inventory.md §1.6):**
 - `compass/Google-Maps-Reviews-Scraper`: GMB reviews
 - `apify/google-search-scraper`: SERP positions
 - `apify/instagram-profile-scraper`: IG profile + posts
@@ -552,10 +545,6 @@ No `ready` or `approved` states. No draft surface to Matt from this producer.
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last (no published output)
 - `design_system/ryan-realty/SKILL.md`: brand context for framing findings
 - `marketing_brain_skills/brand-voice/voice_guidelines.md`: all quoted text properly attributed
-- `marketing_brain_skills/research/tool-inventory.md`: Apify §1.6, env var status
-- `marketing_brain_skills/research/platform-bible.md`: platform benchmarks for comparison
-- `marketing_brain_skills/research/asset-library-map.md`: competitor screenshots are for internal analysis only
-- `marketing_brain_skills/research/bend-market-bible.md`: §10 brokerage roster; §1 neighborhood context
 
 **Sister skill (data collection):**
 - `marketing_brain_skills/competitor-recon/SKILL.md`: weekly Apify scrape; feeds `competitor_intel`
@@ -583,10 +572,6 @@ What would make this 10x better:
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ---
 

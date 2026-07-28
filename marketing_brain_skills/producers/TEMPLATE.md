@@ -115,8 +115,6 @@ Before touching any deliverable, read the tier references that apply to this pro
 **Tier 2 — every content producer (every `content:*` action_type):**
 - `automation_skills/content_engine/SKILL.md` — routing bus
 - `social_media_skills/platform-best-practices/SKILL.md` — platform rule layer
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — banned content gate
-- `video_production_skills/VIRAL_GUARDRAILS.md` — scorecard + format minimums
 - [`video_production_skills/viral-playbook/SKILL.md`](../../video_production_skills/viral-playbook/SKILL.md) — what's working NOW (2026 formats, hooks, hold rules, growth mechanics). Load before deciding WHAT to make.
 
 **Tier 3 — every video / animated producer:**
@@ -333,8 +331,6 @@ WHERE id='<id>';
 **Tier 2 — every content producer:**
 - `automation_skills/content_engine/SKILL.md` — content routing; all content actions go through here
 - `social_media_skills/platform-best-practices/SKILL.md` — 2026 platform rule layer
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — banned content gate
-- `video_production_skills/VIRAL_GUARDRAILS.md` — scorecard + format minimums
 - `video_production_skills/viral-playbook/SKILL.md` — what's working NOW (2026 formats, hooks, hold rules, growth mechanics)
 
 **Tier 3 — every video / animated producer (locked 2026-05-20):**

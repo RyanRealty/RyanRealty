@@ -1,14 +1,12 @@
 ---
 name: feedback_loop
 description: Use this skill whenever the user says "no, change [X]", "redo this", "this isn't right", "I don't like the [X]", "next time do [Y]", "update the workflow", "make this a permanent rule", "remember not to [X]", "keep doing [Y] going forward", "always do", "never do", "add this as a rule", or "this keeps happening". Also auto-invoked by content_engine when a draft is rejected. Captures Matt's rejections and change requests as permanent rules in the originating skill's "Lessons learned" section. NOT for mid-build iteration on a single draft — only for final rejections of a rendered or delivered output.
-when_to_use: Also fires when Matt says "always do", "never do", "add this as a rule", "this keeps happening", or when content_engine registers a rejected draft. If the same rule hits 3 or more distinct skills, promotes to ANTI_SLOP_MANIFESTO.md or VIRAL_GUARDRAILS.md — the mechanism for the whole system to evolve and get smarter over time.
 ---
 
 # Feedback Loop
 
 ## What it is
 
-The self-evolving rule engine. When Matt rejects a rendered output or requests a permanent change, this skill extracts an actionable rule, writes it into the originating skill's `## Lessons learned` section, logs it to Supabase, and — if the same pattern hits 3+ distinct skills — promotes it to a project-level hard rule in `ANTI_SLOP_MANIFESTO.md` or `VIRAL_GUARDRAILS.md`. Future invocations of every updated skill read the lessons and adapt.
 
 ## When NOT to invoke
 
@@ -29,8 +27,6 @@ The self-evolving rule engine. When Matt rejects a rendered output or requests a
 1. **Receive inputs:** `rejection_reason` (Matt's words verbatim), `originating_skill` (which skill produced the output), `asset_path`, `render_metadata` (scorecard, citations, format).
 
 2. **Parse rejection.** Extract one actionable rule from Matt's words. Map to scope:
-   - Voice/language/content violation → candidate for `ANTI_SLOP_MANIFESTO.md`
-   - Format/timing/score violation → candidate for `VIRAL_GUARDRAILS.md`
    - Skill-specific fix → stays in the originating skill only
 
 3. **Open originating `SKILL.md`.** Locate or create `## Lessons learned` section at the end of the file.
@@ -94,8 +90,6 @@ having count(*) >= 1
 ```
 
 Promotion target:
-- Content / voice / language → `video_production_skills/ANTI_SLOP_MANIFESTO.md` (new line in relevant section)
-- Format / timing / scoring → `video_production_skills/VIRAL_GUARDRAILS.md` (new line in relevant section)
 - Workflow / data accuracy → `CLAUDE.md` top section (rare — only for systemic failures)
 
 ## Examples — feedback to rule
@@ -116,7 +110,5 @@ Promotion target:
 
 ## See also
 
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — destination for promoted content/voice rules
-- `video_production_skills/VIRAL_GUARDRAILS.md` — destination for promoted format/scoring rules
 - `automation_skills/automation/content_engine/` — invokes this skill on draft rejection
 - `automation_skills/automation/performance_loop/` — surfaces patterns from post-performance data that may trigger rule updates

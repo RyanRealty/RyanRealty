@@ -193,7 +193,6 @@ In order:
 5. `design_system/ryan-realty/SKILL.md` --EMDASH-- color tokens, type families, shadow ladder, radii
 6. `design_system/ryan-realty/colors_and_type.css` --EMDASH-- CSS variable definitions
 7. `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` --EMDASH-- voice enforcement (the hard fail list)
-8. `marketing_brain_skills/research/asset-library-map.md` --EMDASH-- hero asset paths
 9. `data/resort-communities.json` --EMDASH-- find the row for `payload.community_slug`
 10. `public/lp/tetherow/index.html` --EMDASH-- visual + content reference (2,495 lines, the gold-standard exemplar)
 11. `app/sitemap.ts` --EMDASH-- sitemap structure to extend
@@ -835,13 +834,10 @@ measured
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` --EMDASH-- voice enforcement
 - `automation_skills/content_engine/SKILL.md` --EMDASH-- content routing bus
 - `social_media_skills/platform-best-practices/SKILL.md` --EMDASH-- 2026 platform rule layer for the on-page CTAs
-- `marketing_brain_skills/research/asset-library-map.md` --EMDASH-- hero asset paths
-- `marketing_brain_skills/research/bend-market-bible.md` --EMDASH-- community fact references where the data is sparse in resort-communities.json
 - `data/resort-communities.json` --EMDASH-- the canonical community config
 - `public/lp/tetherow/index.html` --EMDASH-- the visual + content exemplar (gold standard)
 - `app/sitemap.ts` --EMDASH-- sitemap structure to extend
 - `app/actions/lead-capture.ts` --EMDASH-- FUB lead routing (CMA + buyer forms)
-- `marketing_brain_skills/research/platform-bible.md` §24 --EMDASH-- fair housing + real estate compliance
 
 **Sibling producers in the same tier system:**
 
@@ -884,10 +880,6 @@ What would make this skill 10x better:
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 - `automation_skills/content_engine/SKILL.md`
 - `social_media_skills/platform-best-practices/SKILL.md`
 - `data/resort-communities.json`

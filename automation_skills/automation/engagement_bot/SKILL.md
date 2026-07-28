@@ -275,7 +275,6 @@ CREATE TABLE IF NOT EXISTS engagement_templates (
 
 ## Anti-slop guardrails
 
-References: `video_production_skills/ANTI_SLOP_MANIFESTO.md`
 
 - **NOT autonomous.** Zero replies without Matt's explicit approval. This is the primary safeguard.
 - **No demographic screening.** Classification never uses author name, handle appearance, profile
@@ -374,5 +373,4 @@ bulk-send is ever available.
 
 - `automation_skills/automation/post_scheduler/SKILL.md` — `post_queue` join for context
 - `automation_skills/automation/performance_loop/SKILL.md` — engagement rate feeds scoring
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — voice and content rules
 - `app/api/fub/` — existing FUB integration in repo

@@ -143,7 +143,6 @@ provide a Matterport model ID."
 **Step 4 - Source from Matterport (if source_type="matterport")**
 
 The Matterport API returns scan data including a 2D floor plan export. Per
-`marketing_brain_skills/research/tool-inventory.md`, Matterport API access is not yet provisioned
 with a stored key. If a Matterport model ID is provided:
 
 1. Check `.env.local` for `MATTERPORT_SDK_KEY` or `MATTERPORT_TOKEN`.
@@ -323,14 +322,8 @@ pending  ->  in_production  ->  ready  ->  approved  ->  executed  ->  measured
 2. `CLAUDE.md` §0.5 - Draft-First, Commit-Last (non-negotiable)
 3. `design_system/ryan-realty/SKILL.md` - brand visual system
 4. `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - voice enforcement
-5. `marketing_brain_skills/research/tool-inventory.md` - Spark API (§2.7), Sharp (§3.4), packages (§3.1)
-6. `marketing_brain_skills/research/platform-bible.md` - platform requirements for floor plan usage
-7. `marketing_brain_skills/research/asset-library-map.md` - asset registration after approval
-8. `marketing_brain_skills/research/bend-market-bible.md` - listing context
 9. `automation_skills/content_engine/SKILL.md` - content routing
 10. `social_media_skills/platform-best-practices/SKILL.md` - 2026 platform rule layer
-11. `video_production_skills/ANTI_SLOP_MANIFESTO.md` - authenticity gate for any generated image
-12. `video_production_skills/VIRAL_GUARDRAILS.md` - cover-image scroll-stop discipline
 
 **Related producers:**
 - `social_media_skills/flyer-design/SKILL.md` - floor plan PNG is a secondary asset on listing flyers
@@ -355,10 +348,6 @@ What would make this 10x better:
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ---
 

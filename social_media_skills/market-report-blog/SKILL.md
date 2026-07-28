@@ -131,10 +131,6 @@ Before producing any copy or data pull:
 - `CLAUDE.md` §0.5 (Draft-First, Commit-Last)
 - `design_system/ryan-realty/SKILL.md` (brand register, voice, fonts)
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` (full load - 1500-2500 word long-form)
-- `marketing_brain_skills/research/tool-inventory.md` (verify Supabase and WordPress env vars set)
-- `marketing_brain_skills/research/platform-bible.md` §22 (AgentFire Blog rules)
-- `marketing_brain_skills/research/asset-library-map.md` (featured image registration)
-- `marketing_brain_skills/research/bend-market-bible.md` §1 (neighborhood context for any neighborhood references)
 - `social_media_skills/blog-post/SKILL.md` (sibling skill - inherit SEO spec §3 fully)
 - `video_production_skills/market-data-video/SKILL.md` §22 (data dictionary for market_stats_cache and market_pulse_live columns)
 
@@ -536,17 +532,11 @@ measured
 - `CLAUDE.md` §0.5 - Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md` - brand visual and voice system
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - full load (1500-2500 word long-form)
-- `marketing_brain_skills/research/tool-inventory.md` - tool and env var status
-- `marketing_brain_skills/research/platform-bible.md` - §22 AgentFire Blog surface rules, §24 compliance
-- `marketing_brain_skills/research/asset-library-map.md` - featured image registration (§8 AgentFire WP media library)
-- `marketing_brain_skills/research/bend-market-bible.md` - neighborhood data for the neighborhood breakdown section
 
 **Sibling and delegating producers:**
 - `social_media_skills/blog-post/SKILL.md` - sibling (shorter general posts; inherit SEO spec §3)
 - `automation_skills/content_engine/SKILL.md` - content routing
 - `social_media_skills/platform-best-practices/SKILL.md` - 2026 platform rule layer
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` - banned content gate
-- `video_production_skills/VIRAL_GUARDRAILS.md` - scorecard and format minimums
 - `video_production_skills/market-data-video/SKILL.md` §22 - canonical data dictionary (all column names)
 - `video_production_skills/youtube-long-form-market-report/SKILL.md` - companion video (same data)
 - `video_production_skills/monthly-market-report-orchestrator/SKILL.md` - calling orchestrator
@@ -572,10 +562,6 @@ What would make this 10x better:
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ---
 

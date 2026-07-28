@@ -10,7 +10,6 @@ description: Schedules and publishes posts to IG, FB, TikTok, YouTube, LinkedIn,
 A thin wrapper around the Buffer Publish API that lets the autonomous content engine fire one
 HTTP call per asset and have it land on every connected channel. Buffer handles each platform's
 quirks (token refresh, image/video specs, hashtag rendering, scheduling windows). The wrapper
-enforces our pre-publish gate (`ANTI_SLOP_MANIFESTO.md` + `VIRAL_GUARDRAILS.md` scorecard)
 before any post leaves the building.
 
 This skill is an alternative to `post_scheduler/`. Use Buffer when:
@@ -29,10 +28,8 @@ Use the native `post_scheduler/` when:
 
 Before any Buffer API call, verify:
 
-1. **`ANTI_SLOP_MANIFESTO.md` enforcement** — banned-word grep clean, citations.json present
    if claims are made, AI disclosure pill present if AI assets used, fair-housing language
    scan clean, ElevenLabs (not generic TTS) for any VO.
-2. **`VIRAL_GUARDRAILS.md` scorecard** — `scorecard.json` next to the asset, `total >=`
    format minimum (listing 85, market 80, neighborhood 80, meme 75, earth-zoom 85, default
    80), zero `auto_zero_hits`.
 3. **`docs/MASTER_SPEC.md` data-accuracy check** — every stat in the caption traces to

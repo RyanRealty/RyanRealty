@@ -161,10 +161,6 @@ Before writing any prose:
 - `CLAUDE.md` §0.5 (Draft-First, Commit-Last)
 - `design_system/ryan-realty/SKILL.md` (brand voice - Heritage register for CMA prose: formal, direct, trustworthy)
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` (full load - long-form external prose)
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md` (§23 compliance rules apply to CMA text)
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md` §4 (Oregon disclosure requirements)
 - `marketing_brain_skills/producers/cma/SKILL.md` (parent producer - understand the full CMA structure)
 
 **Step 3 - Validate all figures in the payload**
@@ -212,7 +208,6 @@ Purpose: Set up the comp analysis by describing the subject property factually. 
 
 Structure:
 1. Physical description: beds, baths, square footage, lot size, year built, garage - one sentence, factual, no adjectives
-2. Subdivision and location: name the subdivision, proximity to key Bend amenities (use bend-market-bible.md §1 for the correct neighborhood descriptors for this area)
 3. Listing history: brief factual note on prior MLS activity if present in `subject_listing_history`
 4. Seller improvements: if `seller_improvements` is provided, list the improvements factually. Every improvement mentioned must be from the seller-provided notes. Do not add improvements not documented. Prefix with "Per the seller, improvements include:"
 5. What makes comp selection appropriate: one sentence connecting the subject's physical profile to the comp filter criteria
@@ -234,7 +229,6 @@ Structure:
 
 Length: 100-150 words. Placed on the final page.
 
-Required language per Oregon law and professional standards (bend-market-bible.md §4):
 
 "This Comparative Market Analysis is prepared by [Broker Name], [Title], Oregon License #[Number], of Ryan Realty, and is provided for informational purposes only. It is not a formal appraisal and does not constitute an opinion of value under the Uniform Standards of Professional Appraisal Practice (USPAP). Market conditions, property features, and comparable data change frequently. Ryan Realty makes no warranty, express or implied, regarding the accuracy of this analysis. This analysis should not be relied upon as a substitute for a qualified appraisal by a state-certified or licensed appraiser. [Broker Name] is a licensed Oregon real estate broker, not a state-certified appraiser. Data sourced from the MLS of Central Oregon (COCAR) and the Supabase ryan-realty-platform database. Market data current as of [fetched_at date]."
 
@@ -349,7 +343,6 @@ killed            <- if voice/fair-housing gate fails after 2 auto-fixes
 |---|---|---|
 | Payload figures inconsistent with Supabase | Market stats delta >1% | Surface to parent cma producer. Use the more recent timestamp. Do not proceed until resolved. |
 | Voice gate fails | Banned word or punctuation in draft | Rewrite and re-validate. Max 2 auto-iterations. After 2 failures, surface the specific failure to the parent cma producer which surfaces to Matt. |
-| Fair-housing gate fails | Protected-class language detected | Rewrite immediately. If the neighborhood descriptor in bend-market-bible.md §1 itself contains borderline language, use only the physical/geographic facts (lot size, trail proximity, school name) and omit the characterization. |
 | Seller improvement not verifiable | Improvement in seller_notes but not in MLS data | Use "Per the seller:" prefix. Do not present seller claims as verified facts. Surface the gap in the narrative draft with a [UNVERIFIED - per seller only] tag for Matt to confirm. |
 | Disclosure language outdated | Oregon OAR changes post-2026-05-17 | Surface to Matt if there is reason to believe OAR 863-015-0215 has been updated. Do not modify the disclosure without Matt's confirmation. |
 
@@ -362,17 +355,11 @@ killed            <- if voice/fair-housing gate fails after 2 auto-fixes
 - `CLAUDE.md` §0.5 - Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md` - brand voice (Heritage register: formal, direct)
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - full load (long-form external)
-- `marketing_brain_skills/research/tool-inventory.md` - tool status
-- `marketing_brain_skills/research/platform-bible.md` - §23 MLS syndication, §24 compliance
-- `marketing_brain_skills/research/asset-library-map.md` - asset tracking
-- `marketing_brain_skills/research/bend-market-bible.md` - §4 Oregon regulatory environment
 - `marketing_brain_skills/producers/cma/SKILL.md` - parent producer (delegator)
 
 **Pipeline:**
 - `automation_skills/content_engine/SKILL.md` - content routing
 - `social_media_skills/platform-best-practices/SKILL.md` - 2026 platform rule layer
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` - banned content gate
-- `video_production_skills/VIRAL_GUARDRAILS.md` - scorecard and format minimums
 
 **Oregon legal authority:**
 - OAR 863-015-0215 (license disclosure in real estate advertising)
@@ -400,10 +387,6 @@ What would make this 10x better:
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ---
 

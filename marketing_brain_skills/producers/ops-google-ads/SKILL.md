@@ -137,14 +137,9 @@ If not `pending`, halt silently. Another agent claimed the row.
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last (explicit approval required before API call)
 - `design_system/ryan-realty/SKILL.md`: brand context (for rationale surface message tone)
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: voice for surface message text
-- `marketing_brain_skills/research/tool-inventory.md`: Google Ads API env var status
-- `marketing_brain_skills/research/platform-bible.md`: not directly applicable; note for future
-- `marketing_brain_skills/research/asset-library-map.md`: not applicable for ops actions
-- `marketing_brain_skills/research/bend-market-bible.md`: not directly applicable for budget ops
 
 **Step 3: Check env var availability**
 
-Required env vars per `marketing_brain_skills/research/env-manifest.md`:
 - `GOOGLE_ADS_CLIENT_ID`
 - `GOOGLE_ADS_CLIENT_SECRET`
 - `GOOGLE_ADS_REFRESH_TOKEN`
@@ -489,10 +484,6 @@ killed          <- env vars missing, campaign not found,
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md`: brand context for surface message tone
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: voice for surface messages
-- `marketing_brain_skills/research/tool-inventory.md`: Google Ads env var status
-- `marketing_brain_skills/research/platform-bible.md`: platform compliance cross-reference
-- `marketing_brain_skills/research/asset-library-map.md`: not required for budget ops
-- `marketing_brain_skills/research/bend-market-bible.md`: context for keyword decisions
 
 **Sister producer:**
 - `marketing_brain_skills/producers/ops-meta-ads/SKILL.md`: same approval model for Meta
@@ -523,10 +514,6 @@ What would make this 10x better:
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ---
 

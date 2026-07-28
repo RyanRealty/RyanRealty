@@ -28,7 +28,6 @@ For purely **proposing** content, use `marketing_brain_skills/run/` (the brain c
 |---|---|
 | `CLAUDE.md` §0.  Data Accuracy | Every metric we surface traces to a platform API source |
 | `marketing_brain_skills/producers/REGISTRY.md` Section D + E | Producers that write `executor_response.published_posts` |
-| `marketing_brain_skills/tools_registry/meta-graph/SKILL.md` | Auth + endpoint patterns for the live measurement path |
 | `lib/marketing-brain/measurement-loop.ts` | The implementation |
 | `supabase/migrations/*content_performance*` (schema lives in an earlier migration) | The output table |
 
@@ -168,6 +167,5 @@ curl -H "Authorization: Bearer $CRON_SECRET" \
 ## Related skills
 
 - `marketing_brain_skills/run/`.  the cycle that generates the briefs being measured
-- `marketing_brain_skills/tools_registry/meta-graph/`.  the live measurement API
 - `marketing_brain_skills/audit-findings/PROTOCOL.md`.  `existing_producers_validated` uses this data
 - `marketing_brain_skills/producers/*/SKILL.md`.  producers MUST write the published_posts contract

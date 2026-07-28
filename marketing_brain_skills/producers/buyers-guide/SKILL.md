@@ -490,7 +490,6 @@ pending -> in_production -> executed (email sent successfully)
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `data/resort-communities.json`
 - `public/lp/tetherow/index.html`. Content reference for the parallel LP
-- `marketing_brain_skills/research/asset-library-map.md`. Hero + sub-neighborhood photo paths
 
 **Producers this integrates with:**
 
@@ -527,15 +526,9 @@ pending -> in_production -> executed (email sent successfully)
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 - `data/resort-communities.json`
 
 ## Content-producer additional references
 
 - `automation_skills/content_engine/SKILL.md`
 - `social_media_skills/platform-best-practices/SKILL.md`
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
-- `video_production_skills/VIRAL_GUARDRAILS.md`

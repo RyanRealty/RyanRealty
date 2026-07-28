@@ -72,10 +72,8 @@ they must look like they came from a design studio, not a template app.
    primary source. One-line verification trace per figure before the carousel ships.
 2. **`CLAUDE.md` §"Draft-First, Commit-Last"**.  render to `out/`, show Matt, wait for explicit
    approval. Never commit or post a carousel before Matt signs off.
-3. **`video_production_skills/ANTI_SLOP_MANIFESTO.md`**.  banned-content gate. Applies to all
    static content, not just video. AI-generated property photos, generic stock, cliché copy,
    manufactured urgency.  all ship-blockers.
-4. **`video_production_skills/VIRAL_GUARDRAILS.md`**.  cover frame must function as a scroll-stop
    within 0.5 seconds. Treat slide 1 like a video hook: specific number, place name, or claim.
 5. **`/design_system/ryan-realty/SKILL.md`**.  the primary brand skill. Two registers (heritage
    vs. web), type decision tree, asset cheat sheet, color rules. Load this before any layout work.
@@ -493,7 +491,6 @@ If Amboqia fails to load at render time, stop. A Playfair fallback carousel does
 
 ## Photo rules
 
-1. **No AI-generated property photos.** Per `ANTI_SLOP_MANIFESTO.md`: AI fakes are a ship-blocker.
    Photos must come from the verified listing photo set (Spark/MLS) or Matt-approved media.
 2. **Listing carousels: minimum 4 distinct hero shots.** Hero exterior + interior alternates
    (kitchen, living, primary suite, rear/patio). Never fill slides by duplicating a photo.
@@ -583,7 +580,6 @@ non-ship until resolved.
 
 ## Anti-slop / banned content
 
-Full authority: `video_production_skills/ANTI_SLOP_MANIFESTO.md`. The following apply to all
 carousel copy.  captions, slide text, kickers, attribution lines:
 
 **Banned words (zero tolerance.  any hit is a non-ship):**
@@ -700,8 +696,6 @@ Write `out/carousel/<slug>/manifest.json` with:
 - `social_media_skills/flyer-design/SKILL.md`.  single-image static flyers
 - `video_production_skills/listing-tour-video/SKILL.md`.  full listing video production
 - `video_production_skills/news-video/SKILL.md`.  news clip format
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  content quality gate (authoritative)
-- `video_production_skills/VIRAL_GUARDRAILS.md`.  cover frame virality spec
 - `automation_skills/content_engine/SKILL.md`.  content scheduling and publishing pipeline
 - `design_system/ryan-realty/SKILL.md`.  brand system (authoritative)
 
@@ -713,10 +707,6 @@ Write `out/carousel/<slug>/manifest.json` with:
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ---
 

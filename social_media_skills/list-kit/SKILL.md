@@ -111,7 +111,6 @@ read from a single source pull, not from memory, a brief, or prior chat turns.
 | `social_media_skills/ig-single-post/SKILL.md` | Single-image post sub-skill.  S1-S10 templates. |
 | `social_media_skills/platform-best-practices/SKILL.md` | 2026 platform rule layer. Mandatory per CLAUDE.md "Skill self-binding." |
 | `video_production_skills/asset-library/SKILL.md` | Asset registration at kit close. |
-| `video_production_skills/ANTI_SLOP_MANIFESTO.md` | Banned-content gate. |
 
 ---
 
@@ -631,7 +630,6 @@ pending → in_production → ready → approved → executed → measured
 1. **Never fabricate property facts.** If `BedroomsTotal` is null, show `. ` on the deliverable.
    Do not guess from photos or square footage.
 2. **Never use AI-generated property photos.** Every photo comes from `"PhotoURL"`. Per
-   `ANTI_SLOP_MANIFESTO.md`: ship-blocker.
 3. **Never deliver a partial kit silently.** All 6 deliverable groups ship together. If one
    fails, fix it or surface it.  do not ship 5 of 6 and call it done.
 4. **Never push without Matt's approval.** A successful render, a passing QA gate, a complete
@@ -711,14 +709,8 @@ pending → in_production → ready → approved → executed → measured
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ## Content-producer additional references
 
 - `automation_skills/content_engine/SKILL.md`
 - `social_media_skills/platform-best-practices/SKILL.md`
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
-- `video_production_skills/VIRAL_GUARDRAILS.md`

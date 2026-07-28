@@ -308,7 +308,6 @@ CREATE INDEX IF NOT EXISTS trend_candidates_week_score_idx
 
 ## Anti-slop guardrails
 
-References: `video_production_skills/ANTI_SLOP_MANIFESTO.md`
 
 - **Rule 3 — No contradictions.** Any trend whose narrative contradicts current `market_pulse_live`
   data gets `market_alignment = 0` and will not make the top 10.
@@ -425,4 +424,3 @@ DELETE FROM trend_candidates WHERE week_of = date_trunc('week', now());
 - `video_production_skills/social_calendar/SKILL.md` — reads `trend_candidates` on Mondays
 - `video_production_skills/meme_content/SKILL.md` — produces meme content from selected trends
 - `automation_skills/triggers/market_trigger/SKILL.md` — market data used for alignment check
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — content quality and fair housing rules

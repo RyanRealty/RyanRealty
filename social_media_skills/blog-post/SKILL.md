@@ -215,7 +215,6 @@ Validate every JSON-LD block against [Google's Rich Results Test](https://search
 
 ### 3.12 Tone + voice
 - **Authoritative but accessible**.  Matt is a licensed principal broker; the post should sound like a knowledgeable local expert, not a generic content mill.
-- **Banned words** (per `ANTI_SLOP_MANIFESTO.md` §1): stunning, nestled, boasts, charming, pristine, gorgeous, breathtaking, must-see, dream home, meticulously maintained, entertainer's dream, tucked away, hidden gem, truly, spacious, cozy, luxurious, updated throughout. No em-dashes. No semicolons. No "approximately/roughly/about" as a substitute for the actual number.
 - **Numbers carry units** always: "$699,000" not "$699,000.00", "46 days" not "46d", "98.5%" not ".985".
 
 ---
@@ -333,7 +332,6 @@ All 800×1200 px, pure white bg, identical head height, natural color. Specs in 
 - `video_production_skills/youtube-long-form-market-report/SKILL.md`.  the long-form video this post embeds
 - `video_production_skills/market-data-video/SKILL.md`.  short-form companion + canonical data dictionary (every figure in this blog post traces back to a column documented there)
 - `video_production_skills/media-sourcing/SKILL.md`.  choose hero image source (asset library, Unsplash, Shutterstock, Imagen, Nano Banana, Grok Imagine, etc.). Locked default for blog hero: chart screenshot from the YouTube long-form OR a generated cover card from Imagen 4 / Nano Banana 2.
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  banned content rules (canonical)
 - `video_production_skills/AGENT_HANDOFF.md`.  confirms AgentFire WP is the production blog destination
 - `social_media_skills/facebook-lead-gen-ad/SKILL.md`.  paired ad sub-skill
 - WordPress REST API: https://developer.wordpress.org/rest-api/reference/posts/
@@ -347,10 +345,6 @@ All 800×1200 px, pure white bg, identical head height, natural color. Specs in 
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ---
 
@@ -368,5 +362,3 @@ Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated
 
 - `automation_skills/content_engine/SKILL.md`
 - `social_media_skills/platform-best-practices/SKILL.md`
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
-- `video_production_skills/VIRAL_GUARDRAILS.md`

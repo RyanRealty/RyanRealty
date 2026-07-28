@@ -159,7 +159,6 @@ Before pulling any data:
 - `design_system/ryan-realty/SKILL.md`.  heritage register (the photos and prose carry the brand here; no on-canvas typography)
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab union
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's writing fingerprint (Marketplace prose mirrors GBP response register: direct, factual, neutral, no clichés)
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  banned content gate
 - `marketing_brain_skills/producers/TEMPLATE.md`.  producer skeleton
 
 Note: do NOT load `social_media_skills/platform-best-practices/SKILL.md` for this producer.  that file's IG/TikTok/YouTube rules don't apply to Marketplace, which is a closer-to-Craigslist marketplace format with its own conventions (no hashtags, no emoji, plain prose, photo-first).
@@ -619,7 +618,6 @@ WHERE id = '<id>';
 - `design_system/ryan-realty/SKILL.md`.  brand register (Marketplace is voice-first, not visual; SKILL grounds the prose tone)
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab union
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's writing fingerprint (Marketplace prose mirrors GBP register)
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  banned content gate
 
 **Capabilities used inside this producer:**
 
@@ -663,7 +661,3 @@ WHERE id = '<id>';
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`

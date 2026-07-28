@@ -8,8 +8,6 @@ description: >
 
 # TikTok Platform Playbook.  Ryan Realty
 
-**Pair-required:** `video_production_skills/VIRAL_GUARDRAILS.md` (hook spec + qualified-view threshold),
-`video_production_skills/ANTI_SLOP_MANIFESTO.md` (banned patterns).
 
 ---
 
@@ -68,7 +66,6 @@ A view counts toward the distribution signal only if the viewer watched at least
 All hook engineering targets this 5-second hold.
 **Source:** Virvid (https://virvid.ai/blog/tiktok-algorithm-2026-explained).
 
-Cross-reference: `video_production_skills/VIRAL_GUARDRAILS.md` §2a.  the frame-by-frame
 hook spec is calibrated against this threshold (motion by frame 12 / 0.4s, content by
 frame 30 / 1.0s, payoff by 2.0s, viewer confirmation by 3.0s, qualified-view hold at 5.0s).
 
@@ -275,10 +272,8 @@ See `video_production_skills/VIDEO_PRODUCTION_SKILL.md` for full production spec
 
 Hooks that contain a **number, a place name, a contradicting claim, or a visual surprise**
 outperform generic hooks by 2.2x on 3-second retention.
-**Source:** VIRAL_GUARDRAILS.md §2a, TTS Vibes (https://insights.ttsvibes.com/tiktok-first-3-seconds-hook-retention-rate/).
 
 **Banned openings:** logo, brokerage name, "Hey everyone," "Today I want to talk about,"
-slow boundary draw, agent intro, black title card. See ANTI_SLOP_MANIFESTO.md.
 
 ### 4b. Pattern interrupts
 
@@ -440,7 +435,6 @@ identify which sound/hashtag combinations are gaining volume.
 **Metric:** Completion rate. **Expected lift:** +8-15% CR. **Lead time:** Immediate.
 Review every video that clears 10K views for frame-0 composition. Motion by 0.4s,
 text by 1.0s. Any video without both fails the hook spec.
-**Source:** VIRAL_GUARDRAILS.md §2a.
 
 ### 8.2 Switch from generic to specific numbers in caption
 **Metric:** Views (FYP distribution). **Expected lift:** +20-40% initial pool engagement.

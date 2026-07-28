@@ -195,7 +195,6 @@ CREATE TABLE IF NOT EXISTS thumbnail_jobs (
 
 ## Anti-slop guardrails
 
-References: `video_production_skills/ANTI_SLOP_MANIFESTO.md`
 
 - **Rule 1 — No banned words** in any generated caption or VO copy: `stunning`, `nestled`,
   `boasts`, `gorgeous`, `breathtaking`, `must-see`. Enforced at `repurpose_engine` copy step.
@@ -287,4 +286,3 @@ individually. Rejected posts set `post_queue.review_status = 'rejected'` and nev
 - `video_production_skills/listing_reveal/SKILL.md` — listing reveal video composition
 - `video_production_skills/earth_zoom/SKILL.md` — earth zoom opener composition
 - `video_production_skills/social_calendar/SKILL.md` — weekly calendar context
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — content quality rules

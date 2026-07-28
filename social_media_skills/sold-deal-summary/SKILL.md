@@ -70,7 +70,6 @@ PNG.
 | `social_media_skills/ig-single-post/SKILL.md` | The S2 Just Sold template renderer. This producer delegates the IG image to it. |
 | `social_media_skills/platform-best-practices/SKILL.md` | 2026 platform rule layer.  LinkedIn native text vs link-post rules; no-hashtag convention. |
 | `automation_skills/content_engine/SKILL.md` | Content routing bus. |
-| `video_production_skills/ANTI_SLOP_MANIFESTO.md` | Banned content gate.  applies to text as well as visual. |
 | `marketing_brain_skills/producers/TEMPLATE.md` | Producer skeleton. |
 | `marketing_brain_skills/producers/REGISTRY.md` | Section B row pointer. |
 
@@ -544,7 +543,6 @@ Data-accuracy fails (1-6, 18): never auto-fix.  go straight to Matt for resoluti
 - `automation_skills/content_engine/SKILL.md`.  content routing bus
 - `social_media_skills/platform-best-practices/SKILL.md`.  2026 platform rule layer (LinkedIn
   native-text + no-hashtag convention, IG hashtag-first convention)
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  banned content gate
 - `social_media_skills/list-kit/SKILL.md`.  orchestrator that may call this producer at the
   end of a listing's lifecycle
 
@@ -561,14 +559,8 @@ Data-accuracy fails (1-6, 18): never auto-fix.  go straight to Matt for resoluti
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ## Content-producer additional references
 
 - `automation_skills/content_engine/SKILL.md`
 - `social_media_skills/platform-best-practices/SKILL.md`
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
-- `video_production_skills/VIRAL_GUARDRAILS.md`

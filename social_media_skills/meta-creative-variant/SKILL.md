@@ -138,10 +138,6 @@ Before generating any copy:
 - `CLAUDE.md` §0.5 (Draft-First, Commit-Last)
 - `design_system/ryan-realty/SKILL.md` (brand voice, navy/cream palette, banned vocabulary)
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` (inline rules plus full §6.2 banned list)
-- `marketing_brain_skills/research/tool-inventory.md` (Meta API token status before any call)
-- `marketing_brain_skills/research/platform-bible.md` §5 (Facebook Feed ad spec: 125-char primary text, 40-char headline, 40-char description, HOUSING special category, fair housing compliance)
-- `marketing_brain_skills/research/asset-library-map.md` (image asset sourcing hierarchy)
-- `marketing_brain_skills/research/bend-market-bible.md` §4 (fair housing, Oregon disclosure)
 - `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md` (live seller-funnel pipeline: CAPI, FUB wiring, campaign structure, approved budget bands, weekly optimization loop)
 - `docs/MARKETING_LEAD_FLOW.md` (webhook path, FUB dedup, lead routing detail)
 - `automation_skills/content_engine/SKILL.md` (content routing)
@@ -162,7 +158,6 @@ Extract:
 - Campaign objective and optimization goal
 - Targeting summary (city geo, age range, interests)
 
-Note: Special Ad Category HOUSING restricts the targeting fields available. The variants must be compliant with this constraint. Do not generate copy that would violate Meta's housing ad policy by targeting or excluding based on demographics. Per platform-bible.md §5 Facebook Feed: the HOUSING special ad category must be declared on every real estate ad set; age, gender, and zip-code targeting restrictions apply.
 
 **Step 4 - Pull fresh market context if not in payload**
 
@@ -226,7 +221,6 @@ Voice rules for paid-ad copy (from voice_guidelines.md and ANTI_SLOP_MANIFESTO):
 - Phone format if used: 541.213.6706 (dotted). Bio phone for ads: 541.703.3095 (FUB-tracked)
 - No emoji in headlines or primary text
 
-Fair housing rules for HOUSING category ads (from platform-bible.md §5 and bend-market-bible.md §4):
 - No demographic language in copy or image concepts
 - No neighborhood descriptors that map to protected-class composition
 - No language suggesting preference for buyer or seller demographic profiles
@@ -236,7 +230,6 @@ Fair housing rules for HOUSING category ads (from platform-bible.md §5 and bend
 
 **Step 7 - Image concept resolution**
 
-For each variant's image concept, check the asset library first (per asset-library-map.md §16 reuse contract):
 
 1. Query `data/asset-library/manifest.json` for existing assets matching the concept
 2. If found: reference the asset path and confirm the license is current
@@ -447,18 +440,12 @@ killed            <- Matt rejects all variants, or any gate fails after 2 auto-f
 - `CLAUDE.md` §0.5 - Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md` - brand voice, logo-is-a-closer doctrine, navy/cream palette
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - inline rules (banned words, punctuation, fake urgency)
-- `marketing_brain_skills/research/tool-inventory.md` - Meta API token status
-- `marketing_brain_skills/research/platform-bible.md` - §5 Facebook Feed (ad copy specs: headline 40 chars, primary text 125 chars preview, HOUSING special category, fair housing compliance)
-- `marketing_brain_skills/research/asset-library-map.md` - image asset sourcing hierarchy
-- `marketing_brain_skills/research/bend-market-bible.md` - §4 Oregon regulatory environment, §5 COCAR rules
 - `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md` - live seller-funnel pipeline (read before any Meta campaign work)
 - `docs/MARKETING_LEAD_FLOW.md` - lead routing detail (webhook, FUB dedup)
 
 **Pipeline:**
 - `automation_skills/content_engine/SKILL.md` - content routing
 - `social_media_skills/platform-best-practices/SKILL.md` - 2026 Meta algorithm context
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` - banned content gate
-- `video_production_skills/VIRAL_GUARDRAILS.md` - scorecard and format minimums
 
 **Downstream:**
 - `marketing_brain_skills/producers/ops-meta-ads/SKILL.md` - executes the creative swap (matt-explicit gate)
@@ -490,10 +477,6 @@ What would make this 10x better:
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ---
 

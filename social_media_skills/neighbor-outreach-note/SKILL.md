@@ -72,7 +72,6 @@ job ends at "Matt approves the draft package."
 | `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` | Matt's writing fingerprint. |
 | `social_media_skills/flyer-design/SKILL.md` | Delegated enclosure flyer render. |
 | `automation_skills/content_engine/SKILL.md` | Content routing bus. Never bypass. |
-| `video_production_skills/ANTI_SLOP_MANIFESTO.md` | Banned-content gate. |
 | `marketing_brain_skills/producers/TEMPLATE.md` + `REGISTRY.md` | Producer skeleton + Section B row. |
 
 ---
@@ -512,7 +511,6 @@ Producer), row `neighbor-outreach-note`.
 7. **Never insert Fair Housing trip phrases.** QA #11 catches; never bypass.
 8. **Never deviate from brand visuals.** No gold (`#D4AF37`, `#C8A864`); no re-typeset wordmark
    (`logo-blue.png` only); no system-font fallback; no AI-generated property photos (hero comes
-   from `"PhotoURL"`; AI fakes are ship-blockers per ANTI_SLOP_MANIFESTO.md).
 9. **Never inherit numbers from prior chat, briefs, or other agent sessions.** Pull fresh from
    Supabase this session. Never auto-publish.  approval gate is `matt-review-draft`; silence is
    not approval, a passing QA gate is not approval.
@@ -525,14 +523,8 @@ Producer), row `neighbor-outreach-note`.
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ## Content-producer additional references
 
 - `automation_skills/content_engine/SKILL.md`
 - `social_media_skills/platform-best-practices/SKILL.md`
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
-- `video_production_skills/VIRAL_GUARDRAILS.md`

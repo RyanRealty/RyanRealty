@@ -114,7 +114,6 @@ Read these before touching any deliverable:
 - `CLAUDE.md` §0.5 - Draft-First, Commit-Last. Render to `out/`. No commit before Matt approves.
 - `design_system/ryan-realty/SKILL.md` - brand color and type register.
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - banned phrases for any caption text.
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` - AI disclosure rules for virtual staging.
 
 **Step 3 - Resolve and validate the source photo**
 
@@ -141,13 +140,11 @@ Validate the source image:
 
 The virtual staging model landscape changes frequently. Before calling Replicate:
 
-1. Check `marketing_brain_skills/research/tool-inventory.md` §5.5 for any Ryan Realty-verified model.
 2. If no verified model is listed, search `https://replicate.com/explore?query=virtual-staging`
    for the highest-rated model that accepts an image input and returns a furnished-room PNG.
 3. Document the chosen model slug, version, and the date in `citations.json` so future runs can
    verify the model still exists.
 
-The `REPLICATE_API_TOKEN` env var is confirmed active (see `tool-inventory.md` §4).
 
 **Step 5 - Call Replicate**
 
@@ -354,14 +351,8 @@ killed          Matt cancels OR QA fails after 2 auto-iterations
 2. `CLAUDE.md` §0.5 - Draft-First, Commit-Last (non-negotiable)
 3. `design_system/ryan-realty/SKILL.md` - brand visual system
 4. `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - voice enforcement
-5. `marketing_brain_skills/research/tool-inventory.md` - Replicate model registry (§5.5), API keys (§4)
-6. `marketing_brain_skills/research/platform-bible.md` - NAR compliance rules for virtual staging disclosure
-7. `marketing_brain_skills/research/asset-library-map.md` - how to register produced images
-8. `marketing_brain_skills/research/bend-market-bible.md` - listing context for staging style decisions
 9. `automation_skills/content_engine/SKILL.md` - content routing; this producer is invoked from here
 10. `social_media_skills/platform-best-practices/SKILL.md` - 2026 platform rule layer
-11. `video_production_skills/ANTI_SLOP_MANIFESTO.md` - AI disclosure requirements for virtually staged images
-12. `video_production_skills/VIRAL_GUARDRAILS.md` - cover image scroll-stop discipline
 
 **Related producers:**
 
@@ -388,7 +379,6 @@ following rules are non-negotiable at Ryan Realty:
    unfurnished photo. Always preserve the source image at `out/virtual_staging/<slug>/source-*.jpg`.
 
 Legal citation: NAR Code of Ethics Standard of Practice 12-10 (misrepresentation of property).
-For Oregon-specific rules, consult `marketing_brain_skills/research/platform-bible.md`
 real-estate-compliance section before any unusual staging request.
 
 ## 12. Tool gap suggestions
@@ -407,7 +397,3 @@ What would make this 10x better:
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`

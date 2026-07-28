@@ -130,10 +130,6 @@ Before producing any copy:
 - `CLAUDE.md` §0.5 (Draft-First, Commit-Last)
 - `design_system/ryan-realty/SKILL.md` (brand register and voice)
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` (full load - listing descriptions are external-facing prose)
-- `marketing_brain_skills/research/tool-inventory.md` (verify Supabase and Spark are reachable)
-- `marketing_brain_skills/research/platform-bible.md` §23 (MLS / COCAR syndication rules)
-- `marketing_brain_skills/research/bend-market-bible.md` §4 (Oregon regulatory environment) and §5 (COCAR MLS rules)
-- `marketing_brain_skills/research/asset-library-map.md` (asset registration on approval)
 
 **Step 3 - Pull property data from Supabase**
 
@@ -180,7 +176,6 @@ Length target: 800-950 characters (max 1000 per COCAR field limit).
 Structure:
 1. Opening sentence: one specific factual detail that differentiates this property. Not a generic statement. Lead with a physical fact (the view, the acreage, the garage, the school, the trail access).
 2. Property description body: beds, baths, sqft, lot size, year built, key features from seller_notes (if verified against MLS data). Two to three sentences maximum.
-3. Neighborhood or location context: one sentence citing a specific amenity or proximity (use bend-market-bible.md §1 for the correct descriptors for this neighborhood).
 4. Close: one sentence about the listing status or opportunity. No urgency language ("act fast", "won't last", "don't miss out").
 
 Voice rules for Public Remarks (mandatory):
@@ -196,7 +191,6 @@ Scan all three deliverables (Public Remarks, Private Remarks, Showing Instructio
 
 Oregon extends protection to: marital status, source of income, sexual orientation, gender identity.
 
-Per bend-market-bible.md §4 (regulatory environment) and COCAR rules §5:
 
 Prohibited phrases (hard fail - rewrite immediately):
 - Any neighborhood descriptor referencing the demographic composition of residents
@@ -217,7 +211,6 @@ Per Oregon Administrative Rule OAR 863-015-0215 and COCAR policy:
 - Do not state specific commission rates or cooperative compensation in Public Remarks (per NAR settlement compliance 2025 onward).
 - Clear Cooperation Policy: if the listing is being publicly marketed (IG, Facebook, flyers, signs), it must be in the COCAR MLS within one business day. Surface this timing constraint to Matt in the contact sheet if the listing status is Coming Soon.
 
-Per bend-market-bible.md §4 - also verify:
 - No statement about STR eligibility unless verified against Bend's STR ordinance (Bend Municipal Code 4.50). Do not claim "STR-eligible" without confirmation.
 - No claims about school district boundaries that the producer cannot verify from Bend-La Pine Schools attendance area data.
 
@@ -398,10 +391,6 @@ measured          <- DOM, close price vs list price, showing volume if available
 - `CLAUDE.md` §0.5 - Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md` - brand voice, banned vocabulary
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - full load (external-facing prose)
-- `marketing_brain_skills/research/tool-inventory.md` - tool status
-- `marketing_brain_skills/research/platform-bible.md` - §23 MLS / COCAR syndication rules, §24 real-estate compliance master list
-- `marketing_brain_skills/research/bend-market-bible.md` - §4 regulatory environment (Oregon disclosure, STR ordinance), §5 COCAR MLS rules
-- `marketing_brain_skills/research/asset-library-map.md` - asset registration
 
 **Fair housing authority:**
 - Fair Housing Act 42 U.S.C. § 3604 (federal protected classes)
@@ -412,8 +401,6 @@ measured          <- DOM, close price vs list price, showing volume if available
 **Related producers:**
 - `automation_skills/content_engine/SKILL.md` - content routing
 - `social_media_skills/platform-best-practices/SKILL.md` - 2026 platform rule layer
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` - banned content gate
-- `video_production_skills/VIRAL_GUARDRAILS.md` - scorecard and format minimums
 - `video_production_skills/listing-tour-video/SKILL.md` - video VO uses different copy than MLS remarks
 - `social_media_skills/flyer-design/SKILL.md` - flyer copy shares the same fact-base but different length/format
 - `social_media_skills/list-kit/SKILL.md` - list-kit orchestrator calls this producer as one of its outputs
@@ -437,10 +424,6 @@ What would make this 10x better:
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md`
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 
 ---
 

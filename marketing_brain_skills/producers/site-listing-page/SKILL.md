@@ -167,7 +167,6 @@ interface SiteListingPageActionRow {
 
 **Step 2.** Load mandatory references:
 - `CLAUDE.md` §0, §0.5, design system, brand voice
-- `marketing_brain_skills/research/platform-bible.md` §24 --EMDASH-- real-estate compliance (IDX, fair housing, NAR)
 - `data/resort-communities.json` --EMDASH-- for parent community linking
 - The parent community route file IF the listing is inside one of our tracked resort communities
 
@@ -424,7 +423,6 @@ Same as `site-community-page`: pending → in_production → ready → approved 
 **Required reading:**
 
 - `CLAUDE.md` §0, §0.5
-- `marketing_brain_skills/research/platform-bible.md` §24 --EMDASH-- IDX + fair housing + NAR compliance (NON-NEGOTIABLE)
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `data/resort-communities.json`
@@ -470,9 +468,5 @@ Same as `site-community-page`: pending → in_production → ready → approved 
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `marketing_brain_skills/research/tool-inventory.md`
-- `marketing_brain_skills/research/platform-bible.md` §24 (IDX/fair housing/NAR compliance)
-- `marketing_brain_skills/research/asset-library-map.md`
-- `marketing_brain_skills/research/bend-market-bible.md`
 - `data/resort-communities.json`
 - `docs/DATABASE_FOR_AI_AGENTS.md`

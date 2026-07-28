@@ -225,7 +225,9 @@ export async function GET(request: NextRequest) {
         .insert({
           action_type: 'strategy:revision_proposal',
           target: proposalTarget,
-          assigned_producer: 'marketing_brain_skills/strategy/revision-proposer',
+          // W13.1: strategy/revision-proposer never existed on disk; route to
+          // Matt alert so the proposal is not stuck in skill_load forever.
+          assigned_producer: 'marketing_brain_skills/producers/comms-matt-alert',
           status: 'ready',
           generation_reason: `North-star gap ${northStarGap.toFixed(1)}% for ${monthLabel} (target ${northStarTarget}, actual ${northStarActual}). Threshold: ${PROPOSAL_THRESHOLD_PCT}%.`,
           payload: {

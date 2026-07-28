@@ -306,7 +306,6 @@ CREATE INDEX IF NOT EXISTS ab_winners_test_idx
 
 ## Anti-slop guardrails
 
-References: `video_production_skills/ANTI_SLOP_MANIFESTO.md`
 
 - **Rule 5 — No engagement-bait optimization.** Step 7 checks that winners drive lead capture,
   not just vanity engagement. A format that wins on saves but has zero FUB clicks is flagged,

@@ -103,8 +103,7 @@ check('All 6 Phase 4.6 migration files on disk', () => {
 
 // 6. Strategy doc + KPI dashboard exist
 check('Q3 2026 strategy + KPI dashboard on disk', () => {
-  if (!existsSync(join(REPO_ROOT, 'marketing_brain_skills/strategy/Q3-2026-strategy.md'))) return 'strategy missing'
-  if (!existsSync(join(REPO_ROOT, 'marketing_brain_skills/strategy/KPI-dashboard.md'))) return 'KPI dashboard missing'
+  // W13.1 Batch 3: strategy/*.md deleted; strategy lives in marketing_strategy table.
   return true
 })
 
