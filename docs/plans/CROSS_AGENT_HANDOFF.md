@@ -6,7 +6,7 @@
 |---|---|
 | Surface | Cursor |
 | Time | 2026-07-27 ~22:15 PT |
-| `main` @ | *(update after push — look for `feat(nav):` / `fix(nav):` tip)* |
+| `main` @ | `fbb5d429` (`fbb5d429c958…` on origin/main) |
 | Done | **Public IA nav overhaul.** About in KbNav primary + Team/Reviews/Contact dropdown; Company second in Menu+ (Join restored); KbFooter trust links; SSOT in `lib/site-nav.ts` (`KB_*`, `MAP_SEARCH`, `VALUATION_FORM`); Map → `/homes-for-sale?view=map`; chrome worth → `/sell/valuation`; Learn orphans restored; city inventory-first + community CTA trim; chrome-routes gaps; `getPlaceLinks`; listing Climate/STR null gates; `/guides` → `/blog` (pages removed, next.config 301s kept). Screenshots: `out/ia-nav/`. |
 | Next | Optional CRM Safari PWA polish (separate). Product: **W9.1**. |
 | Blocked | **W9.1** (approve+send Bend Brief). |
