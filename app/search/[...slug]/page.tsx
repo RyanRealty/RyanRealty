@@ -1036,9 +1036,8 @@ export default async function SearchPage({
       )}
 
       {/* Below-fold SEO depth. Results + filters stay the only above-fold job. */}
-      <div id="search-seo" className="mt-12">
       {isPlainCityPage && (
-        <section className="mt-12">
+        <section id="search-seo" className="mt-12">
           <MarketSnapshot citySlug={relatedCitySlug!} cityName={city!} />
         </section>
       )}
@@ -1132,7 +1131,6 @@ export default async function SearchPage({
           </div>
         </section>
       )}
-      </div>
       </Container>
       <div className="kb-root">
         <KbFooter towns={[]} />
