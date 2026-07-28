@@ -2399,8 +2399,7 @@ const FORMAT_ROUTE_MAP: Record<string, { action_type: string; producer: string }
   fb_ad: { action_type: 'content:fb_ad', producer: 'social_media_skills/facebook-lead-gen-ad' },
   fb_ad_creative: { action_type: 'content:fb_lead_gen_ad', producer: 'social_media_skills/facebook-lead-gen-ad' },
 
-  // Organic short-form video — decommissioned 2026-06-14; route to Matt alert
-// (local Remotion worker). W13.1 Batch 4: no video_production_skills/* SKILL.md.
+  // Organic short-form video → Matt alert (decommissioned; W13.1 Batch 4).
   market_data_short: { action_type: 'content:market_data_short', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
   market_data_video: { action_type: 'content:market_data_short', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
   market_video: { action_type: 'content:market_video', producer: 'marketing_brain_skills/producers/comms-matt-alert' },

@@ -1,3 +1,24 @@
+> **NEWEST, START HERE: W13.1 Batches 2–5 executed 2026-07-27 (Cursor).** Prior: W9.5.
+
+# Current — W13.1 batches 2–5 (2026-07-27)
+
+| Field | Value |
+|---|---|
+| Surface | Cursor |
+| Time | 2026-07-27 ~18:40 PT |
+| `main` @ | batches `a9978ce8`/`e51c5841`/`038c6c06`/`b312f8db` + ledger `b7c69d37` (push tip next) |
+| Done | **W13.1 still partial.** Matt GO all batches + ensure-not-using. **B2** selective docs/plans purge (49 dead; kept PROGRAM/ADMIN_REBUILD/handoff/registry/live). **B3** research/strategy/tools_registry deleted + MANDATORY_REFS unwired. **B4** video routes → matt-alert; captions kept. **B5** ARCHITECTURE.md only deleted; CLAUDE/AGENTS/.cursor/rules kept. **B6 skipped** (loop skills still gated by W13.3). |
+| Next | Optional: FUB era docs / CLAUDE shrink / soft top-level docs. Product next: **W9.1**. |
+| Blocked | **W9.1**. W13.1 remaining is optional consolidation, not Batch 2–6. |
+| Skills read | `06-DELETION-MANIFEST.md`, COMPLETION-LEDGER W13.1 |
+
+## Default agent loop
+1. Prefer `main`. Worktree only for parallel/long/cloud isolation (`wt/<topic>-YYYYMMDD`).
+2. Batch docs; push runtime + `deploy:verify`. Keep `wt/*` local until merge.
+3. Session end: merge to `main` + push, or handoff branch path in this file.
+
+---
+
 > **NEWEST, START HERE: W9.5 VERIFIED DONE 2026-07-27 (Cursor).** Prior: W8.1a.
 
 # Current — W9.5 closed (2026-07-27)
