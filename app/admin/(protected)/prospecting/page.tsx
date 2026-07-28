@@ -8,8 +8,9 @@
  */
 
 import { requireAdminPage } from '@/lib/admin/require-admin'
-import { listProspects, getProspectDetail } from '@/lib/data'
-import type { ProspectKind, ProspectListFilters, ProspectStatusFilter } from '@/lib/data/prospecting/types'
+import { listProspects } from '@/lib/data'
+import { PROSPECT_SORT_KEYS } from '@/lib/data/prospecting/types'
+import type { ProspectKind, ProspectListFilters, ProspectSortKey, ProspectStatusFilter, SortDir } from '@/lib/data/prospecting/types'
 import {
   approveProspectDoc,
   buildProspectDoc,
@@ -54,11 +55,21 @@ export default async function ProspectingPage({
   const page = Math.max(1, Number(str(sp.page) ?? '1') || 1)
   const pageSize = 24
 
+  // Sort is URL state so it survives refresh/share/back and so the server orders
+  // the WHOLE matching set, not just the page being rendered.
+  const sortRaw = str(sp.sort)
+  const sort: ProspectSortKey = PROSPECT_SORT_KEYS.includes(sortRaw as ProspectSortKey)
+    ? (sortRaw as ProspectSortKey)
+    : 'date'
+  const dir: SortDir = str(sp.dir) === 'asc' ? 'asc' : 'desc'
+
   const filters: ProspectListFilters = {
     kind,
     q: str(sp.q) ?? null,
     city: str(sp.city) ?? null,
     status,
+    sort,
+    dir,
     minPrice: numOrNull(sp.minPrice),
     maxPrice: numOrNull(sp.maxPrice),
     dateAfter: str(sp.dateAfter) ?? null,
@@ -68,8 +79,6 @@ export default async function ProspectingPage({
   }
 
   const result = await listProspects(filters)
-  const openId = str(sp.id)
-  const detail = openId ? await getProspectDetail(kind, openId) : null
   const totalPages = Math.max(1, Math.ceil(result.total / pageSize))
 
   return (
@@ -90,7 +99,6 @@ export default async function ProspectingPage({
         cities={result.cities}
         page={result.page}
         totalPages={totalPages}
-        detail={detail}
         buildAction={buildProspectDoc}
         prepareSendAction={prepareProspectSend}
         sendIntroAction={sendProspectingIntro}

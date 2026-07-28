@@ -34,7 +34,7 @@ import {
 import { resolveDocsBatch, resolveComplianceBatch } from './batch'
 import { getProspectEngagement } from './engagement'
 import { blockAllChannels } from './types'
-import type { ProspectComplianceState, ProspectDocState, ProspectKind, ProspectListFilters, ProspectListResult, ProspectRow, ProspectStatusFilter, ProspectSummary } from './types'
+import type { ProspectComplianceState, ProspectDocState, ProspectKind, ProspectListFilters, ProspectListResult, ProspectRow, ProspectSortKey, ProspectStatusFilter, ProspectSummary, SortDir } from './types'
 
 type RawRow = Record<string, unknown>
 
@@ -146,6 +146,65 @@ function computeSummary(classified: Array<{ bucket: Bucket }>): ProspectSummary 
   return summary
 }
 
+/** Doc states ranked so "audit" sorts as progress: none < building < failed < ready < sent. */
+const DOC_RANK: Record<ProspectDocState['state'], number> = {
+  none: 0,
+  building: 1,
+  failed: 2,
+  ready: 3,
+  sent: 4,
+}
+
+type Classified = { skeleton: ProspectRowSkeleton; sendable: boolean; bucket: Bucket }
+
+/**
+ * In-memory sort over the classified set. Nulls always sink to the bottom
+ * regardless of direction — a row with no price or no audit is the least useful
+ * thing to look at, so it should never win the first screen just because the
+ * sort flipped. Ties break on the kind's own date so the order is stable.
+ */
+function sortClassified(rows: Classified[], key: ProspectSortKey, dir: SortDir): void {
+  const mul = dir === 'asc' ? 1 : -1
+  const dateOf = (s: ProspectRowSkeleton) => (s.kind === 'expired' ? s.expiredAt : s.detectedAt) ?? ''
+  const textOf = (s: ProspectRowSkeleton): string | null => {
+    if (key === 'owner') return s.ownerName
+    if (key === 'city') return s.city
+    return s.fullAddress ?? s.streetAddress
+  }
+  const numOf = (c: Classified): number | null => {
+    if (key === 'price') return c.skeleton.listPrice
+    if (key === 'recommended') {
+      const d = c.skeleton.doc
+      return d.state === 'ready' || d.state === 'sent' ? d.recommendedList : null
+    }
+    if (key === 'audit') return DOC_RANK[c.skeleton.doc.state]
+    return null
+  }
+
+  rows.sort((a, b) => {
+    let cmp = 0
+    if (key === 'date') {
+      cmp = dateOf(a.skeleton).localeCompare(dateOf(b.skeleton))
+    } else if (key === 'owner' || key === 'city' || key === 'address') {
+      const av = textOf(a.skeleton)
+      const bv = textOf(b.skeleton)
+      if (!av && !bv) cmp = 0
+      else if (!av) return 1
+      else if (!bv) return -1
+      else cmp = av.localeCompare(bv, 'en-US', { sensitivity: 'base', numeric: true })
+    } else {
+      const av = numOf(a)
+      const bv = numOf(b)
+      if (av == null && bv == null) cmp = 0
+      else if (av == null) return 1
+      else if (bv == null) return -1
+      else cmp = av - bv
+    }
+    if (cmp !== 0) return cmp * mul
+    return dateOf(b.skeleton).localeCompare(dateOf(a.skeleton))
+  })
+}
+
 const STATUS_TO_BUCKET: Partial<Record<ProspectStatusFilter, Bucket>> = {
   sendable: 'sendable',
   'needs-audit': 'needs-audit',
@@ -215,6 +274,8 @@ export async function listProspects(filters: ProspectListFilters): Promise<Prosp
 
   const wantBucket = filters.status ? STATUS_TO_BUCKET[filters.status] : undefined
   const filtered = wantBucket ? classified.filter((c) => c.bucket === wantBucket) : classified
+
+  sortClassified(filtered, filters.sort ?? 'date', filters.dir ?? 'desc')
 
   const total = filtered.length
   const from = (page - 1) * pageSize

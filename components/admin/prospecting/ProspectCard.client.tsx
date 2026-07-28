@@ -28,14 +28,16 @@ import { formatPrice, formatShortDate } from './format'
 
 export function ProspectCard({
   row,
-  onOpenDetail,
+  detailHref,
   onBuild,
   onSend,
   pendingBuild,
   pendingSend,
 }: {
   row: ProspectRow
-  onOpenDetail: (id: string) => void
+  /** The prospect's own page. A real href, so it opens in a tab, shares, and
+   *  survives a refresh — the `?id=` drawer this replaces did none of that. */
+  detailHref: string
   onBuild: (id: string) => void
   onSend: (id: string) => void
   pendingBuild?: boolean
@@ -69,20 +71,15 @@ export function ProspectCard({
   return (
     <Card className="p-4">
       <div className="flex items-start justify-between gap-3">
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => onOpenDetail(row.id)}
-          className="h-auto min-w-0 flex-1 flex-col items-start justify-start gap-0 rounded-none p-0 text-left font-normal hover:bg-transparent"
-        >
-          <span className="w-full truncate text-sm font-semibold text-foreground">
+        <Link href={detailHref} className="min-w-0 flex-1">
+          <span className="block w-full truncate text-sm font-semibold text-foreground">
             {row.ownerName ?? 'Owner unknown'}
           </span>
-          <span className="w-full truncate text-sm text-muted-foreground">
+          <span className="block w-full truncate text-sm text-muted-foreground">
             {row.fullAddress ?? row.streetAddress ?? '—'}
             {row.city ? ` · ${row.city}` : ''}
           </span>
-        </Button>
+        </Link>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button size="icon-sm" variant="ghost" aria-label="More actions for this prospect">
@@ -90,7 +87,9 @@ export function ProspectCard({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => onOpenDetail(row.id)}>Review</DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={detailHref}>Review</Link>
+            </DropdownMenuItem>
             {crmHref ? (
               <DropdownMenuItem asChild>
                 <Link href={crmHref}>Open in CRM</Link>

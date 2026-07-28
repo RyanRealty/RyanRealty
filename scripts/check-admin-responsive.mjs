@@ -43,8 +43,17 @@ function violationsIn(src) {
   const hits = []
 
   // 1. A table with no mobile treatment anywhere in the file.
+  //
+  // Any `<bp>:hidden` card list paired with a `hidden <bp>:block` table counts,
+  // for sm/md/lg/xl alike. The breakpoint the table appears at is the SWITCH
+  // POINT, and a LARGER one is strictly safer: `hidden lg:block` keeps the table
+  // off every phone AND every tablet, where `hidden md:block` shows it at 768px.
+  // Accepting only sm/md rejected the more mobile-friendly choice and pushed
+  // authors toward the weaker one (found building the prospecting worklist,
+  // 2026-07-28).
   if (/<table[\s>]|<Table[\s>]/.test(src)) {
-    const hasMobileFallback = /md:hidden|sm:hidden|hidden\s+md:block|hidden\s+sm:block|overflow-x-auto|overflow-auto/.test(src)
+    const hasMobileFallback =
+      /(sm|md|lg|xl):hidden|hidden\s+(sm|md|lg|xl):block|hidden\s+(sm|md|lg|xl):table|overflow-x-auto|overflow-auto/.test(src)
     if (!hasMobileFallback) hits.push('table-no-mobile-fallback')
   }
 

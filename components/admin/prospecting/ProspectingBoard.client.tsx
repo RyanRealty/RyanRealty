@@ -3,15 +3,15 @@
 /**
  * ProspectingBoard — the stateful client container for /admin/prospecting.
  *
- * Composes the presentational pieces (filters · card worklist · ?id= detail
- * drawer · send dialog) and wires the server actions passed down from the page.
- * The detail drawer is URL-driven (`?id=`, the DealDetailModal pattern) so it is
- * shareable + back-button-closable; the send dialog is client state fed by the
- * `prepareSendAction` server call so the preview always matches what the server
- * would compose.
+ * Composes the filter bar, the sortable worklist and the send dialog, and wires
+ * the server actions passed down from the page. Sorting is URL state
+ * (`?sort=&dir=`) so it survives refresh/share/back and is resolved server-side
+ * over the whole set; the send dialog is client state fed by `prepareSendAction`
+ * so the preview always matches what the server would compose.
  *
- * ONE responsive tree (spec §8): the card grid reflows and the detail becomes a
- * bottom Sheet on phones / an in-flow side panel on desktop — no md:hidden twin.
+ * The review detail is a REAL ROUTE (/admin/prospecting/<kind>/<id>), not a
+ * `?id=` drawer. The drawer looked like a dead end — it dimmed the page and
+ * offered nothing actionable (Brain Dump 2, 2026-07-28).
  */
 
 import { useCallback, useState, useTransition } from 'react'
@@ -26,18 +26,17 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
-import { KpiStrip } from '@/components/console/KpiStrip'
 import type {
-  ProspectDetail,
   ProspectKind,
   ProspectListFilters,
   ProspectRow,
+  ProspectSortKey,
   ProspectSummary,
   SendIntroResult,
+  SortDir,
 } from '@/lib/data/prospecting/types'
 import { ProspectFilters } from './ProspectFilters.client'
-import { ProspectCard } from './ProspectCard.client'
-import { ProspectDetailDrawer } from './ProspectDetailDrawer.client'
+import { ProspectTable } from './ProspectTable.client'
 import { ProspectSendDialog, type ProspectSendContext } from './ProspectSendDialog.client'
 
 type Actions = {
@@ -64,7 +63,6 @@ export function ProspectingBoard({
   cities,
   page,
   totalPages,
-  detail,
   buildAction,
   prepareSendAction,
   sendIntroAction,
@@ -79,7 +77,6 @@ export function ProspectingBoard({
   cities: string[]
   page: number
   totalPages: number
-  detail: ProspectDetail | null
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -100,8 +97,20 @@ export function ProspectingBoard({
     [pathname, router, searchParams],
   )
 
-  const openDetail = useCallback((id: string) => withParam((p) => p.set('id', id)), [withParam])
-  const closeDetail = useCallback(() => withParam((p) => p.delete('id')), [withParam])
+  // Sorting is a URL concern so it survives a refresh, a share and the back
+  // button, and so the server sorts the WHOLE set rather than the visible page.
+  const sortHref = useCallback(
+    (key: ProspectSortKey, nextDir: SortDir) => {
+      const p = new URLSearchParams(searchParams.toString())
+      p.set('sort', key)
+      p.set('dir', nextDir)
+      p.delete('page')
+      return `${pathname}?${p.toString()}`
+    },
+    [pathname, searchParams],
+  )
+
+  const detailHref = useCallback((row: ProspectRow) => `${basePath}/${row.kind}/${encodeURIComponent(row.id)}`, [basePath])
 
   const handleBuild = useCallback(
     (id: string) => {
@@ -171,16 +180,16 @@ export function ProspectingBoard({
 
   return (
     <div className="space-y-4">
-      <KpiStrip
-        items={[
-          { label: 'Total', value: summary.total },
-          { label: 'Ready to send', value: summary.sendable },
-          { label: 'Needs audit', value: summary.needsAudit },
-          { label: 'Sent', value: summary.sent },
-          { label: 'Excluded', value: summary.excluded },
-          { label: 'No phone', value: summary.noPhone },
-        ]}
-      />
+      {/* One quiet line instead of six oversized KPI cards. The six numbers ate
+          ~430px before a single lead was visible; the same counts now live in the
+          status filter chips right below, where they are also actionable. */}
+      <p className="text-sm text-muted-foreground">
+        <span className="font-medium text-foreground tabular-nums">{summary.total}</span>{' '}
+        {kind === 'expired' ? 'expired listings' : 'FSBOs'} ·{' '}
+        <span className="font-medium text-foreground tabular-nums">{summary.sendable}</span> ready to send ·{' '}
+        <span className="font-medium text-foreground tabular-nums">{summary.needsAudit}</span> need an audit ·{' '}
+        <span className="tabular-nums">{summary.sent}</span> sent
+      </p>
 
       <ProspectFilters filters={filters} cities={cities} basePath={basePath} />
 
@@ -193,19 +202,17 @@ export function ProspectingBoard({
               </p>
             </Card>
           ) : (
-            <div className="grid gap-3 md:grid-cols-2">
-              {rows.map((row) => (
-                <ProspectCard
-                  key={row.id}
-                  row={row}
-                  onOpenDetail={openDetail}
-                  onBuild={handleBuild}
-                  onSend={openSend}
-                  pendingBuild={busyBuild === row.id}
-                  pendingSend={busySendPrep === row.id}
-                />
-              ))}
-            </div>
+            <ProspectTable
+              rows={rows}
+              sort={filters.sort ?? 'date'}
+              dir={filters.dir ?? 'desc'}
+              hrefFor={sortHref}
+              detailHref={detailHref}
+              onBuild={handleBuild}
+              onSend={openSend}
+              pendingBuildId={busyBuild}
+              pendingSendId={busySendPrep}
+            />
           )}
 
           {totalPages > 1 ? (
@@ -235,14 +242,6 @@ export function ProspectingBoard({
           ) : null}
         </div>
 
-        <ProspectDetailDrawer
-          detail={detail}
-          open={Boolean(detail)}
-          onClose={closeDetail}
-          onBuild={handleBuild}
-          onSend={openSend}
-          onOpenSend={() => detail && openSend(detail.id)}
-        />
       </div>
 
       <ProspectSendDialog

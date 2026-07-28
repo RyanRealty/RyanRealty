@@ -233,11 +233,44 @@ export type ProspectStatusFilter =
   | 'excluded'
   | 'no-phone'
 
+/**
+ * Sortable worklist columns. Sorting runs in memory over the already-classified
+ * set (the prospect universe is ~200 rows/kind) so `recommended` and `audit` —
+ * which live on the resolved doc, not on a table column — sort exactly like the
+ * database-backed ones.
+ *
+ * Engagement is deliberately NOT sortable: it is read for the visible page only
+ * (spec §7), so an "activity" sort would rank the page against itself and quietly
+ * lie about the other 180 rows.
+ */
+export type ProspectSortKey =
+  | 'owner'
+  | 'address'
+  | 'city'
+  | 'price'
+  | 'date'
+  | 'recommended'
+  | 'audit'
+
+export const PROSPECT_SORT_KEYS: readonly ProspectSortKey[] = [
+  'owner',
+  'address',
+  'city',
+  'price',
+  'date',
+  'recommended',
+  'audit',
+]
+
+export type SortDir = 'asc' | 'desc'
+
 export interface ProspectListFilters {
   kind: ProspectKind
   q?: string | null
   city?: string | null
   status?: ProspectStatusFilter
+  sort?: ProspectSortKey
+  dir?: SortDir
   minPrice?: number | null
   maxPrice?: number | null
   /** expired_at / detected_at window (ISO date, inclusive). */
