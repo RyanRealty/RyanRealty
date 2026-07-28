@@ -149,12 +149,13 @@ export const CO_EVENTS: CoEvent[] = [
     lat: 44.0333,
     lng: -121.2872,
     recurrence: 'Annually, late July',
-    nextConfirmedDate: '2026-07-24',
-    endDate: '2026-07-26',
+    // 2026 edition (Jul 24–26) has passed; 2027 dates not yet confirmed on balloonsoverbend.com.
+    nextConfirmedDate: null,
+    endDate: null,
     priceInfo: 'Free morning launches',
     organizer: 'Lay It Out Events',
     officialUrl: 'https://balloonsoverbend.com/',
-    lastVerified: '2026-07-03',
+    lastVerified: '2026-07-27',
     blurb:
       'Hot air balloons lift off over Bend on summer mornings, with a family street fair and a ticketed Night Glow that lights up the balloons after dark. The morning launches are free to watch from the fields on the east side of town.',
   },
