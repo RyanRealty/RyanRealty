@@ -82,7 +82,6 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     { url: `${baseUrl}/site-index`, lastModified: now, changeFrequency: 'daily', priority: 0.5 },
     { url: `${baseUrl}${teamPath()}`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${baseUrl}/blog`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
-    { url: `${baseUrl}/guides`, lastModified: now, changeFrequency: 'weekly', priority: 0.65 },
     { url: `${baseUrl}/central-oregon/events`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${baseUrl}/central-oregon/venues`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${baseUrl}/central-oregon/trails`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
@@ -557,20 +556,7 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
       })
     }
 
-    // Guides — paginate
-    const guides = await fetchAllRows<{ slug: string; published_at?: string | null; updated_at?: string | null }>(
-      supabase, 'guides', 'slug, published_at, updated_at',
-      (q) => q.eq('status', 'published'),
-    )
-
-    for (const g of guides) {
-      dynamicPages.push({
-        url: `${baseUrl}/guides/${g.slug}`,
-        lastModified: g.updated_at ? new Date(g.updated_at) : g.published_at ? new Date(g.published_at) : now,
-        changeFrequency: 'monthly',
-        priority: 0.65,
-      })
-    }
+    // /guides permanently redirects to /blog — do not emit a guides URL family.
 
     // Market reports — restored 2026-06-01 (the HTTP 500 was jsdom failing to
     // load in serverless; fixed in lib/sanitize.ts, pages now 200).

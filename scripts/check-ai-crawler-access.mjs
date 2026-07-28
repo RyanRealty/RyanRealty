@@ -68,8 +68,7 @@ if (!existsSync(ROBOTS)) {
 const REQUIRED_LLMS_MARKERS = [
   { marker: '/blog', why: 'blog family (dynamic post list via getRecentBlogPosts)' },
   { marker: 'getRecentBlogPosts', why: 'dynamic blog wiring' },
-  { marker: '/guides', why: 'guides family' },
-  { marker: 'getPublishedGuides', why: 'dynamic guides wiring' },
+  { marker: 'getPublishedGuides', why: 'guides content still listed via DAL (URLs redirect/canonical to /blog)' },
   { marker: '/housing-market/reports/', why: 'market-report detail family' },
   { marker: 'listMarketReports', why: 'dynamic reports wiring' },
   { marker: '/tools/mortgage-calculator', why: 'tools family' },

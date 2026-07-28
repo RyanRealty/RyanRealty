@@ -62,7 +62,7 @@ const FAMILIES = [
   { id: 'oregon', roots: ['oregon'], resolvers: ['app/oregon/[city]/page.tsx'] },
   { id: 'zip', roots: ['zip'], resolvers: ['app/zip/[zip]/page.tsx'] },
   { id: 'blog', roots: ['blog'], resolvers: ['app/blog/page.tsx', 'app/blog/[slug]/page.tsx'] },
-  { id: 'guides', roots: ['guides'], resolvers: ['app/guides/page.tsx', 'app/guides/[slug]/page.tsx'] },
+  // /guides permanently redirects to /blog (next.config) — do not emit a guides family.
   { id: 'team', roots: ['team'], resolvers: ['app/team/page.tsx', 'app/team/[slug]/page.tsx'] },
   { id: 'schools', roots: ['schools'], resolvers: ['app/schools/page.tsx', 'app/schools/[slug]/page.tsx'] },
   { id: 'parks', roots: ['parks'], resolvers: ['app/parks/page.tsx', 'app/parks/[slug]/page.tsx'] },

@@ -52,7 +52,7 @@ const resources = [
   {
     title: 'Area guides',
     description: 'Neighborhood and relocation guides for buyers planning a move.',
-    href: '/guides',
+    href: '/area-guides',
   },
   {
     title: 'Property comparison',

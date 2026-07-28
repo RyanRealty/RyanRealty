@@ -1,7 +1,7 @@
 {
   "generatedAt": "2026-06-09T00:00:00.000Z",
   "reason": "Snapshot of pre-DAL pages. The gate fails only on NEW violations beyond this baseline. Each line should disappear as Wave 3 page migrations route pages through @/lib/data/. Removed: app/agents/* (paths no longer exist on disk), app/blog/*, app/guides/page.tsx (repointed to @/lib/data in this pass).",
-  "total": 82,
+  "total": 81,
   "violators": [
     "app/accessibility/page.tsx",
     "app/account/buying-preferences/page.tsx",
@@ -36,7 +36,6 @@
     "app/faq/page.tsx",
     "app/feed/page.tsx",
     "app/forgot-password/page.tsx",
-    "app/guides/[slug]/page.tsx",
     "app/home-valuation/page.tsx",
     "app/housing-market/[...slug]/page.tsx",
     "app/housing-market/central-oregon/page.tsx",

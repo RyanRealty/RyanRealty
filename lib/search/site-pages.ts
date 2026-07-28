@@ -30,7 +30,7 @@ export const SITE_PAGES: SitePageEntry[] = [
   { label: 'Market reports', href: '/reports', keywords: ['market', 'report', 'data'] },
   { label: 'Area guides', href: '/area-guides', keywords: ['area', 'guide', 'neighborhood'] },
   { label: 'Guides and blog', href: '/blog', keywords: ['blog', 'articles', 'news'] },
-  { label: 'Buyer and seller guides', href: '/guides', keywords: ['guide', 'buyer', 'seller'] },
+  { label: 'Buyer and seller guides', href: '/blog', keywords: ['guide', 'buyer', 'seller'] },
   { label: 'Schools', href: '/schools', keywords: ['school', 'district', 'education'] },
   { label: 'Parks', href: '/parks', keywords: ['park', 'outdoors'] },
   { label: 'Trails', href: '/central-oregon/trails', keywords: ['trail', 'hike', 'hiking'] },

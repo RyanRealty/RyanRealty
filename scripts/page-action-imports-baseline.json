@@ -1,7 +1,7 @@
 {
   "generatedAt": "2026-07-22T12:45:17.013Z",
   "reason": "Audit #4: pages importing read symbols from app/actions instead of @/lib/data. Ratchet — may only shrink as reads migrate to the DAL.",
-  "total": 315,
+  "total": 313,
   "violations": [
     "app/about/page.tsx :: getCitiesForIndex <- @/app/actions/cities",
     "app/account/buying-preferences/page.tsx :: getBuyingPreferences <- @/app/actions/buying-preferences",
@@ -255,8 +255,6 @@
     "app/dashboard/marketing/page.tsx :: getSession <- @/app/actions/auth",
     "app/dev/components/page.tsx :: getCrmAccess <- @/app/actions/crm",
     "app/feed/page.tsx :: getCentralOregonVideosHubListings <- ../actions/videos",
-    "app/guides/[slug]/page.tsx :: getPersonIdFromCookie <- @/app/actions/identity-bridge",
-    "app/guides/[slug]/page.tsx :: getSession <- @/app/actions/auth",
     "app/listing/by-key/[listingKey]/page.tsx :: getListingByKey <- @/app/actions/listings",
     "app/listing/by-key/[listingKey]/page.tsx :: getListingDetailData <- @/app/actions/listing-detail",
     "app/lp/sell-your-home/page.tsx :: getPersonIdFromCookie <- @/app/actions/identity-bridge",

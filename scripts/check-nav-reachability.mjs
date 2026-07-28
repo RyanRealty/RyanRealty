@@ -34,7 +34,6 @@ const REQUIRED_HREFS = [
   '/about',
   '/contact',
   '/blog',
-  '/guides',
   '/faq',
   '/privacy',
   '/terms',

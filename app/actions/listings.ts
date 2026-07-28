@@ -521,7 +521,7 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
   // Static pages first (highest intent: "sell" -> /sell), then guides, then blog.
   const pages: SearchSuggestionPage[] = [
     ...searchSitePages(q, 5).map((p) => ({ label: p.label, href: p.href, kind: 'page' as const })),
-    ...contentTitles.guides.map((g) => ({ label: g.title, href: `/guides/${encodeURIComponent(g.slug)}`, kind: 'guide' as const })),
+    ...contentTitles.guides.map((g) => ({ label: g.title, href: `/blog/${encodeURIComponent(g.slug)}`, kind: 'guide' as const })),
     ...contentTitles.blog.map((b) => ({ label: b.title, href: `/blog/${encodeURIComponent(b.slug)}`, kind: 'blog' as const })),
   ].slice(0, 8)
 

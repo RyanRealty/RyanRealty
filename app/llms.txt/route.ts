@@ -36,7 +36,7 @@ export async function GET() {
   // published yet, or the resilient-cache fallback) leaves no dangling blank line.
   const lines = (items: string[]) => (items.length ? '\n' + items.join('\n') : '')
   const blogLines = lines(posts.map((p) => `- ${p.title}: ${SITE_URL}/blog/${p.slug}`))
-  const guideLines = lines(guides.map((g) => `- ${g.title}: ${SITE_URL}/guides/${g.slug}`))
+  const guideLines = lines(guides.map((g) => `- ${g.title}: ${SITE_URL}/blog/${g.slug}`))
   const reportLines = lines(
     reports.map((r) => `- ${r.title}: ${SITE_URL}/housing-market/reports/${r.slug}`)
   )
@@ -143,7 +143,7 @@ export async function GET() {
 - Central Oregon hiking & mountain-bike trails: ${SITE_URL}/central-oregon/trails${trailLines}
 
 ## Guides
-- All guides: ${SITE_URL}/guides${guideLines}
+- All guides: ${SITE_URL}/blog${guideLines}
 
 ## Blog
 - All posts: ${SITE_URL}/blog${blogLines}

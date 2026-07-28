@@ -217,7 +217,7 @@ export const MENU: MenuEntry[] = [
       {
         heading: 'Seller resources',
         links: [
-          { label: 'Seller guides', href: '/guides' },
+          { label: 'Seller guides', href: '/blog' },
           { label: 'Our current listings', href: '/our-homes' },
           { label: 'Market reports', href: '/housing-market/reports' },
         ],
@@ -266,12 +266,12 @@ export const MENU: MenuEntry[] = [
   },
   {
     label: 'Guides',
-    href: '/guides',
+    href: '/blog',
     columns: [
       {
         heading: 'Guides & answers',
         links: [
-          { label: 'Buyer and seller guides', href: '/guides' },
+          { label: 'Buyer and seller guides', href: '/blog' },
           { label: 'Blog', href: '/blog' },
           { label: 'Frequently asked questions', href: '/faq' },
         ],
@@ -290,7 +290,7 @@ export const MENU: MenuEntry[] = [
       title: 'Guides, tools, and answers',
       body: 'Free home tools plus buyer and seller guides.',
       ctaLabel: 'Browse guides',
-      ctaHref: '/guides',
+      ctaHref: '/blog',
     },
   },
   {

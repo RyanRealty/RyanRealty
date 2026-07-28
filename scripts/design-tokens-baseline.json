@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-07-26T13:48:57.891Z",
-  "total": 318,
+  "total": 317,
   "byFile": {
     "app/actions/auto-response.ts": 3,
     "app/admin/(protected)/analytics/_components/CityReportSection.tsx": 3,
@@ -59,7 +59,6 @@
     "app/faq/FaqAccordion.tsx": 1,
     "app/faq/page.tsx": 1,
     "app/forgot-password/page.tsx": 2,
-    "app/guides/[slug]/page.tsx": 1,
     "app/housing-market/loading.tsx": 1,
     "app/housing-market/og/[...slug]/route.tsx": 2,
     "app/listing/[listingKey]/loading.tsx": 2,

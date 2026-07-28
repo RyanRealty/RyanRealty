@@ -236,7 +236,7 @@ export default async function SiteIndexPage() {
               { href: '/open-houses', label: 'Open houses' },
               { href: '/price-drops', label: 'Price drops' },
               { href: '/sell/valuation', label: 'Home valuation' },
-              { href: '/guides', label: 'Guides' },
+              { href: '/blog', label: 'Blog & guides' },
               { href: '/blog', label: 'Blog' },
             ].map((hub) => (
               <li key={hub.href}>

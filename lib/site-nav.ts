@@ -110,10 +110,10 @@ export const PRIMARY_NAV: NavGroup[] = [
   },
   {
     label: 'Guides',
-    href: '/guides',
+    href: '/blog',
     children: [
       { href: '/blog', label: 'Blog' },
-      { href: '/guides', label: 'Buyer and seller guides' },
+      { href: '/blog', label: 'Buyer and seller guides' },
       { href: '/central-oregon/events', label: 'Central Oregon events' },
       { href: '/central-oregon/venues', label: 'Live music & shows' },
       { href: '/resources', label: 'Resources' },
@@ -209,7 +209,6 @@ export const FOOTER_NAV: FooterGroup[] = [
     heading: 'Learn',
     links: [
       { href: '/blog', label: 'Blog' },
-      { href: '/guides', label: 'Guides' },
       { href: '/central-oregon/events', label: 'Central Oregon events' },
       { href: '/central-oregon/venues', label: 'Live music & shows' },
       { href: '/videos', label: 'Video tours' },
@@ -322,7 +321,6 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
       { href: '/blog', label: 'Blog' },
       { href: '/faq', label: 'FAQ' },
       { href: '/videos', label: 'Videos' },
-      { href: '/guides', label: 'Buyer and seller guides' },
       { href: '/resources', label: 'Resources' },
     ],
   },
