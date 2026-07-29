@@ -120,6 +120,12 @@ const REPORT_GROUPS: ReportGroup[] = [
         desc: 'Sent-email log and open, click, and bounce rates from the unified email-events store.',
       },
       {
+        href: '/admin/reports/cma-performance',
+        icon: '📄',
+        title: 'CMA send performance',
+        desc: 'Per-document opens, clicks and report views for every CMA, audit and BPO, with the built to sent to opened funnel.',
+      },
+      {
         href: '/admin/analytics/meta-health',
         icon: '📣',
         title: 'Meta health',

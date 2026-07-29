@@ -157,6 +157,32 @@ const cachedEngagementFsbo = unstable_cache(computeEngagement, ['prospecting-eng
   tags: ['prospecting:engagement:fsbo'],
 })
 
+// Generic doc-engagement cache. Same computation, its own tag — the CMA
+// performance report needs per-document engagement for docs that are NOT
+// prospects (a CMA built for a walk-in seller has no expired/fsbo row), so it
+// cannot borrow either prospecting tag without polluting their invalidation.
+const cachedEngagementDoc = unstable_cache(computeEngagement, ['doc-engagement-v1'], {
+  revalidate: 60,
+  tags: ['cma:engagement'],
+})
+
+/**
+ * Per-document engagement for any bounded set of `/cma/<slug>` documents,
+ * prospect-linked or not. Same bounded-read contract as the prospecting
+ * variant: callers pass the visible page's keys, never the whole table.
+ */
+export async function getDocEngagement(keys: ProspectEngagementKey[]): Promise<ProspectEngagementMap> {
+  if (keys.length === 0) return {}
+  try {
+    return await cachedEngagementDoc(keys)
+  } catch (e) {
+    console.error('[cma] getDocEngagement failed:', e instanceof Error ? e.message : e)
+    const fallback: ProspectEngagementMap = {}
+    for (const k of keys) fallback[k.id] = EMPTY_ENGAGEMENT
+    return fallback
+  }
+}
+
 /**
  * Per-doc engagement for a bounded set of prospects (spec §7). Callers pass
  * the visible page's doc keys — never the whole table. Engagement is a
