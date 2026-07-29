@@ -323,27 +323,31 @@ Full detail lives in the code; highlights that matter for the gap analysis:
   `laundryFeatures` registers 0 options (dead); stale docs (`docs/ADVANCED_SEARCH.md`,
   `DATABASE_FOR_AI_AGENTS.md` §2h still describe superseded architecture); registry says
   88 while the contract doc reportedly says 89 — reconcile.
-- **Data on disk — audited, three buckets (n=1000 active rows, 2026-07-29).**
-  `listings.details` carries ~600 RESO keys, but key-presence ≠ value-presence:
-  1. **Real values, shippable now:** `PreviousListPrice` 43% · `VirtualToursCount>0`
-     19% · `VideosCount>0` 12.1% · `FloorPlansCount>0` 11.9% · `BodyType` 8.9%
-     (manufactured segment) · `IrrigationWaterRightsAcres` 4.6% (land/farm segment).
-  2. **Feed-masked (`********`):** `Zoning`, `ZoningDescription`, `Topography`,
-     `WaterBodyName`, `GreenBuildingVerificationType`, `PublicSurveyTownship` are ~98%
-     present but 100% masked — **by the Spark feed's field-level permissions, not by
-     us** (our own redaction list `PRIVATE_DETAIL_KEYS` in
-     [`lib/listing-mapper.ts`](../../lib/listing-mapper.ts) covers only 11 confidential
-     keys; the mapper's `toText`/`toBool` already scrub `/^\*+$/`). `listing_private`
-     does not carry them either — verified by join. BodyType's partial masking shows
-     the feed masks vary per row.
-  3. **Absent entirely (key never sent or always empty):** ADU (YN/Type/SqFt/
-     Permitted), Short Term Rental Permit YN, CC&R's YN, Flood, Government Overlay,
-     Easements, Irrigation District, Building Permit #, `PropertyCondition`,
-     `PetsAllowed`, `Possession`, `Furnished`, `Elevation`, `Vegetation`,
-     `RoomsDescription`, `FrontageType`, `RoadResponsibility`, `YearBuiltEffective`,
-     `MainLevelBedrooms/Bathrooms`, `StartShowingDate` — all 0/1000.
-  Buckets 2+3 collapse into **one consolidated field-access request to ORE/FBS**
-  (exact list in Phase 1.2).
+- **Data availability — CORRECTED by live Spark probes (2026-07-29, rev 2.1).** The
+  stored `listings.details` column is NOT the feed. Two live API calls with our own
+  credentials (`_expand=CustomFields`) proved:
+  1. **The entire Flexmls field dictionary is available to us TODAY** through the
+     Spark `CustomFields` expansion — verified with real values on active listings:
+     `Accessory Dwelling Unit YN`, `Short Term Rental Permit YN`, `CC&R's YN = "Yes"`,
+     `Zoning = "RM"`, `Flood`, `Government Overlay`, plus every teardown group (Rooms,
+     Green Building Verification, Showing Requirements, Documents, …). **Our sync
+     never requests it** — [`lib/sync/deltaSync.ts`](../../lib/sync/deltaSync.ts)
+     expands `Photos` only. The earlier "absent from feed / masked by feed" conclusion
+     came from auditing our stored copy; wrong method, corrected here.
+  2. **Standard-field masks are real but mostly moot:** SF `Zoning`/`Topography`/
+     `WaterBodyName`/`GreenBuildingVerificationType`/`PublicSurveyTownship` return
+     `********` at the SF level, but Zoning/Green/Flood/Gov-Overlay all arrive with
+     real values inside CustomFields. `ZoningDescription` is real even at the SF level
+     ("RM", "A-1" observed live). Whether Topography/WaterBodyName have CF mirrors
+     gets verified during the ingest build (they did not appear on the probe listing,
+     which had no water/topo data to report).
+  3. **Stored-copy coverage for the already-synced scalars** (n=1000 active):
+     `PreviousListPrice` 43% · `VirtualToursCount>0` 19% · `VideosCount>0` 12.1% ·
+     `FloorPlansCount>0` 11.9% · `BodyType` 8.9% · `IrrigationWaterRightsAcres` 4.6%.
+  **Compliance requirement discovered by the same probe:** CustomFields carries
+  confidential data (`Owner Name`, `Phone to Show Number`, escrow officer). The CF
+  ingest MUST extend the `PRIVATE_DETAIL_KEYS` redaction to the CF spellings and
+  divert them to `listing_private` before anything lands in the anon-readable column.
 - **Instrumentation gap (baseline query 2026-07-29):** `user_events` last 30 days =
   1,224 events across 139 sessions, but only two types fire (`page_view` 1,154,
   `listing_view` 70). **Zero search events** — filter applies, map draws, saves, and
@@ -442,20 +446,27 @@ the numbers; §0 rule stands for any future field: no filter ships that matches 
    Each lands as: MV column (where not already exposed) + registry entry with `voice`
    synonyms + All-Filters sheet render (automatic) + saved-search whitelist (automatic
    via `ALL_SEARCH_URL_PARAMS`).
-2. **One consolidated field-access request to ORE/FBS** (broker ask, Matt sends —
-   draft the email from this list). Two sub-lists:
-   *Unmask on our existing feed role* (present but `********`): Zoning,
-   ZoningDescription, Topography, WaterBodyName, GreenBuildingVerificationType (+
-   Green* family), PublicSurveySection/Township/Range.
-   *Add to the feed* (never sent): Accessory Dwelling Unit YN/Type/SqFt/Permitted YN,
-   Short Term Rental Permit YN, CC&R's YN, Flood, Government Overlay, Easements,
-   Irrigation District, Building Permit YN/#, PropertyCondition, MainLevelBedrooms/
-   Bathrooms. **ADU + STR-permit are the headline asks** — Matt already runs a "Bend
-   ADUs under 1M" Flexmls subscription our engine cannot express. Until granted, interim
-   proxies: keyword-search `public_remarks` for ADU/STR phrasing (ships day one — the
-   keywords filter already exists), Bend STR-permit open data overlay, FEMA NFHL for
-   flood. A backfill re-pull is required after any grant (masks are baked into stored
-   rows).
+2. **CustomFields ingest — the headline tranche, fully in our control (rev 2.1
+   correction: NO external request needed).** Live probes proved the whole Flexmls
+   dictionary — ADU YN/Type/SqFt/Permitted, STR Permit YN, CC&R's YN, Zoning, Flood,
+   Government Overlay, Easements, Irrigation District, Rooms, Green certs — arrives on
+   our existing credentials via `_expand=CustomFields`, which the sync never requests
+   (`deltaSync.ts` expands Photos only). Work items:
+   (a) extend the delta sync to request + store CustomFields (flattened into `details`
+   under their CF names, or a sibling jsonb column — decide at build);
+   (b) **extend the privacy redaction first**: CF carries Owner Name, Phone to Show
+   Number, escrow officer — add CF spellings to `PRIVATE_DETAIL_KEYS` and divert to
+   `listing_private`, mirrored in the SQL `rr_private_keys()`; a CF ingest without
+   this is a §0-class privacy regression and must not ship;
+   (c) backfill re-pull for on-market rows (bounded: ~10K listings), then promote to
+   `listing_search_mv` + registry: **`adu` boolean, `strPermit` boolean, `ccrs`
+   boolean, `zoning` text, `flood` multi, `governmentOverlay` multi, `easements`
+   multi, `irrigationDistrict` text, `roomsList` multi** with a coverage stamp each;
+   (d) "Bend ADUs under 1M" becomes expressible — recreate it as the first in-house
+   broker alert (Phase 3 tie-in).
+   Only remaining external question: whether SF-masked `Topography`/`WaterBodyName`
+   have CF mirrors — checked during (a) with one probe on a waterfront listing; only
+   if absent does a narrow ORE/FBS ask exist.
 3. **Sold-search depth.** Route closed searches through the same registry pipeline: add
    close-date window, sold-price range, buyer-financing, concessions, sold-$/sqft
    (columns already exist: `buyer_financing`, `concessions_amount`,
@@ -473,10 +484,12 @@ the numbers; §0 rule stands for any future field: no filter ships that matches 
 
 **Phase 1 acceptance:** (a) every ship-now-tranche filter returns correct, non-zero
 result sets in prod matching a hand-checked MLS pull for one fixture query each;
-(b) voice parser resolves ≥2 natural phrasings per new filter; (c) the ORE/FBS request
-email is drafted with both sub-lists and sits in Matt's approval queue; (d) sold-search
-depth: a closed search with close-date window + sold-price range + financing filter
-returns rows and is registry-driven; (e) coverage gate wired into `ci:gates`.
+(b) voice parser resolves ≥2 natural phrasings per new filter; (c) CustomFields ingest
+live with the privacy diversion verified (zero confidential CF keys reachable via the
+anon key — checked by an automated probe), and `adu=true` returns real listings in
+prod; (d) sold-search depth: a closed search with close-date window + sold-price range
++ financing filter returns rows and is registry-driven; (e) coverage gate wired into
+`ci:gates`.
 
 ### Phase 2 — Map parity-plus (the map IS the search)
 
@@ -644,7 +657,7 @@ search volume. Every phase ships its measurement stamp per THE LOOP.
 | Phase | Size | Dependency |
 |---|---|---|
 | 0 Foundation | S–M | none |
-| 1 Filter depth | M (mechanical after contract) + feed-gap unknowns | 0 |
+| 1 Filter depth | M (mechanical after contract; CustomFields ingest incl. privacy diversion) | 0 |
 | 2 Map | M–L (PostGIS path, named areas) | 0 |
 | 3 Alerts | M–L (event engine) | 1 (fields), 2 (areas in alerts) |
 | 4 Portal | M | 3 |
@@ -652,11 +665,10 @@ search volume. Every phase ships its measurement stamp per THE LOOP.
 
 First three loop iterations: **(1)** Phase 0 complete (UI unification, `?poly=`,
 registry reconcile, instrumentation, docs) — everything after depends on it; **(2)**
-Phase 2 items 1–2 (radius + server-side polygon — biggest visible capability jump) +
-draft and queue the ORE/FBS field request (Phase 1.2, one email); **(3)** Phase 1
-ship-now tranche (the audited table: media-presence flags, previous-list-price,
-body type, irrigation acres, spa/fencing/carport/stories/fireplaces/warranty/
-walk-score/photo-count) + the coverage gate.
+Phase 1.2 CustomFields ingest (privacy diversion first, then ADU/STR/zoning/flood/
+CC&R filters — the single highest-value unlock, zero external dependency); **(3)**
+Phase 2 items 1–2 (radius + server-side polygon) + the Phase 1 ship-now scalar
+tranche + the coverage gate.
 
 ---
 
@@ -665,10 +677,10 @@ walk-score/photo-count) + the coverage gate.
 1. **Sold-data exposure** (Phase 1.3) — **default: registered-user gate.** ODS puts
    sold-data display in VOW territory ([reference_ods_rules]); registration also feeds
    the CRM. Build the gate, revisit public exposure only with compliance sign-off.
-2. **Feed-gap path** (Phase 1.2) — **default: send the ORE/FBS request immediately AND
-   ship the keyword-proxy filters the same week.** The ask costs one email; the proxy
-   costs nothing (keywords filter exists). Whichever lands first wins; the audit showed
-   the unmask sub-list may be a permissions flip, not a data build.
+2. **Feed-gap path** (Phase 1.2) — **RESOLVED rev 2.1: no external request.** Live
+   probes proved every headline field arrives via `_expand=CustomFields` on our
+   existing credentials; the work is our own sync + privacy diversion + backfill. The
+   only conditional ask left is Topography/WaterBodyName if they lack CF mirrors.
 3. **Named areas** (Phase 2.4) — **default: broker-authored first, 30 days, then open
    to signed-in users.** Gets the SEO landing surfaces and Matt's three Flexmls
    overlays live immediately; consumer creation follows once save/edit UX survives real
