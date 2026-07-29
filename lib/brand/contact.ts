@@ -56,8 +56,17 @@ export const BRAND = {
     linkedin: 'https://www.linkedin.com/company/ryan-realty-llc-bend-oregon',
     pinterest: 'https://www.pinterest.com/ryanrealtybend',
     threads: 'https://www.threads.net/@ryanrealtybend',
+    /** Google Business Profile — canonical Maps URL (cid form, stable).
+     *  Resolved via Places API 2026-07-29: placeId ChIJfVsN4o3IuFQR7KJXpmn9L5k.
+     *  Closes the entity loop for the brand SERP (westside backlog #3). */
+    googleBusinessProfile: 'https://maps.google.com/?cid=11038319841912529644',
   },
 } as const
+
+/** Direct "leave a review" URL for the GBP listing — use in review-request
+ *  emails/SMS (one tap to the review box, no searching). */
+export const GBP_REVIEW_URL =
+  'https://search.google.com/local/writereview?placeid=ChIJfVsN4o3IuFQR7KJXpmn9L5k'
 
 /** Ordered social-profile URL list for JSON-LD `sameAs` (byte-identical to the
  *  prior hardcoded SAME_AS array). */

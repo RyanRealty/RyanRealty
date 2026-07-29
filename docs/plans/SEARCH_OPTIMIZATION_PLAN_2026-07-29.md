@@ -1,9 +1,12 @@
 # Search Optimization Plan — Flexmls teardown → ryan-realty.com search parity-plus
 
-**Date:** 2026-07-29 · **Status:** research + plan, no code yet · **Owner:** search/site
+**Date:** 2026-07-29 (rev 2, same day — upgraded to execution grade: coverage audits run,
+baseline stamped, acceptance criteria + UX spec added, decisions converted to
+recommendations) · **Status:** execution-ready plan, no code yet · **Owner:** search/site
 **Sources:** live walkthrough of Flexmls Web (ore.flexmls.com, Matt's account, 2026-07-29) ·
-full codebase inventory (agent sweep, same day) · `listings.details` jsonb key audit (one
-`-- audit:` query over 40 active rows, 2026-07-29).
+full codebase inventory (agent sweep, same day) · coverage audits over live `listings`
+(key presence n=40; per-field coverage + value profiles n=1000 active; mask forensics
+joined to `listing_private`) · baseline queries over `listing_alerts` + `user_events`.
 
 Matt's directive: review how Flexmls uses the map to generate saved searches / listing
 emails to clients, expose ALL filters for super-granular results, and produce the plan that
@@ -320,16 +323,32 @@ Full detail lives in the code; highlights that matter for the gap analysis:
   `laundryFeatures` registers 0 options (dead); stale docs (`docs/ADVANCED_SEARCH.md`,
   `DATABASE_FOR_AI_AGENTS.md` §2h still describe superseded architecture); registry says
   88 while the contract doc reportedly says 89 — reconcile.
-- **Data on disk:** `listings.details` jsonb carries the full RESO payload (~600 keys
-  verified live — incl. `Zoning`, `GreenBuildingVerificationType`+family,
-  `IrrigationWaterRightsAcres`, `RoomsList`, `OtherStructures`, `MainLevelBedrooms/
-  Bathrooms`, `PublicSurveySection/Township/Range`, `Elevation`, `Topography`,
-  `Vegetation`, `PropertyCondition`, `PetsAllowed`, `Possession`, `DistanceTo*`,
-  `MLSAreaMajor/Minor`, `WaterBodyName`, `FrontageType`, media counts, every timestamp).
-  **Absent from the 40-row sample:** the ORE custom fields — ADU (YN/Type/SqFt/Permitted),
-  Short Term Rental Permit YN, CC&R's YN, Flood, Government Overlay, Easements,
-  Irrigation District, Building Permit #. These are Flexmls local fields that may not
-  flow through our replication feed → **feed-gap investigation required** (Phase 1 item).
+- **Data on disk — audited, three buckets (n=1000 active rows, 2026-07-29).**
+  `listings.details` carries ~600 RESO keys, but key-presence ≠ value-presence:
+  1. **Real values, shippable now:** `PreviousListPrice` 43% · `VirtualToursCount>0`
+     19% · `VideosCount>0` 12.1% · `FloorPlansCount>0` 11.9% · `BodyType` 8.9%
+     (manufactured segment) · `IrrigationWaterRightsAcres` 4.6% (land/farm segment).
+  2. **Feed-masked (`********`):** `Zoning`, `ZoningDescription`, `Topography`,
+     `WaterBodyName`, `GreenBuildingVerificationType`, `PublicSurveyTownship` are ~98%
+     present but 100% masked — **by the Spark feed's field-level permissions, not by
+     us** (our own redaction list `PRIVATE_DETAIL_KEYS` in
+     [`lib/listing-mapper.ts`](../../lib/listing-mapper.ts) covers only 11 confidential
+     keys; the mapper's `toText`/`toBool` already scrub `/^\*+$/`). `listing_private`
+     does not carry them either — verified by join. BodyType's partial masking shows
+     the feed masks vary per row.
+  3. **Absent entirely (key never sent or always empty):** ADU (YN/Type/SqFt/
+     Permitted), Short Term Rental Permit YN, CC&R's YN, Flood, Government Overlay,
+     Easements, Irrigation District, Building Permit #, `PropertyCondition`,
+     `PetsAllowed`, `Possession`, `Furnished`, `Elevation`, `Vegetation`,
+     `RoomsDescription`, `FrontageType`, `RoadResponsibility`, `YearBuiltEffective`,
+     `MainLevelBedrooms/Bathrooms`, `StartShowingDate` — all 0/1000.
+  Buckets 2+3 collapse into **one consolidated field-access request to ORE/FBS**
+  (exact list in Phase 1.2).
+- **Instrumentation gap (baseline query 2026-07-29):** `user_events` last 30 days =
+  1,224 events across 139 sessions, but only two types fire (`page_view` 1,154,
+  `listing_view` 70). **Zero search events** — filter applies, map draws, saves, and
+  alert signups are untracked. "Optimized" cannot be measured until this is fixed
+  (Phase 0.5).
 
 ---
 
@@ -384,33 +403,59 @@ stamps close each phase. **No code in this doc — each phase becomes loop itera
    wrong. Delete or backfill `laundryFeatures`.
 4. **Docs debt:** rewrite `docs/ADVANCED_SEARCH.md`, fix `DATABASE_FOR_AI_AGENTS.md` §2h
    (saved_searches → listing_alerts).
-5. **Gate:** extend the existing parity/registry tests — a search-filter component that
+5. **Instrument search.** New `user_events` types: `search_filter_apply` (payload:
+   changed params), `search_map_draw` (shape type), `search_save`, `alert_create`,
+   `search_zero_results`. Fired from the shared filter components so both routes emit
+   identically.
+6. **Gate:** extend the existing parity/registry tests — a search-filter component that
    does not source the registry fails CI; `?poly=` round-trip gets a test.
+
+**Phase 0 acceptance:** (a) the SEO route renders the identical registry sheet —
+`AdvancedSearchFilters.tsx` deleted or reduced to a wrapper; (b) drawing a polygon on
+`/homes-for-sale`, reloading, and sharing the URL reproduces the exact shape + results;
+(c) registry count matches the contract doc and `laundryFeatures` resolved either way;
+(d) `search_filter_apply` events visible in `user_events` from both routes in prod;
+(e) both stale docs corrected.
 
 ### Phase 1 — Filter depth: close the dictionary gap (super-granular results)
 
-Principle (§0): **a filter ships only after a coverage audit** — count of on-market rows
-carrying the field, distinct values, noise rate. No filter that matches nothing.
+The coverage audit is **done** (2026-07-29, n=1000 active; §2). The backlog below carries
+the numbers; §0 rule stands for any future field: no filter ships that matches nothing.
 
-1. **Promote from `details` jsonb into `listing_search_mv` + registry** (data already on
-   disk, verified): Zoning + ZoningDescription (text/keyword) · Green
-   verification family (boolean + multi) · IrrigationWaterRightsAcres (range) ·
-   RoomsList/RoomType (multi: Office, Primary-on-main already partially covered —
-   MainLevelBedrooms/Bathrooms as "primary on main" hard signal) · OtherStructures values
-   we don't map yet (Airplane Hangar, Arena, Corral(s), Poultry Coop…) · PropertyCondition
-   · PetsAllowed · Possession · Furnished · Elevation (range) · Topography · Vegetation ·
-   WaterBodyName (named-water search: "on the Deschutes") · FrontageType /
-   RoadResponsibility · BodyType (manufactured) · Section/Township/Range (land buyers) ·
-   media-presence flags (has floor plan, has video, photo count ≥ N) · YearBuiltEffective
-   · Spa/fencing/carport scalars already in `listings` but absent from the registry.
-2. **Feed-gap investigation** for ORE custom fields absent from the payload sample: ADU
-   (YN/Type/SqFt/Permitted), Short Term Rental Permit YN, CC&R's YN, Flood, Government
-   Overlay, Easements, Irrigation District, Building Permit YN/#. Action: pull one known
-   ADU/STR listing via the Spark API and diff fields; if the feed omits them, request the
-   fields from ORE/FBS (broker data-license ask) or derive proxies (e.g. STR permit from
-   city open data; flood from FEMA layers we can host). **ADU and STR-permit search are
-   high-value Bend differentiators — Matt already runs a "Bend ADUs under 1M"
-   subscription in Flexmls; our own engine cannot express it today.**
+1. **Ship-now tranche (real values verified in `details` / `listings`):**
+
+   | Filter | Source | Coverage | Registry type |
+   |---|---|---|---|
+   | Has virtual tour ≥, has video, has floor plan | `VirtualToursCount/VideosCount/FloorPlansCount` | 19% / 12.1% / 11.9% | boolean ×3 |
+   | Previous list price (price-cut depth) | `PreviousListPrice` | 43% | derived range (supplements existing `priceReduced`) |
+   | Manufactured body type | `BodyType` | 8.9% | multi (Single/Double/Triple Wide, Park Model) |
+   | Irrigation acres | `IrrigationWaterRightsAcres` | 4.6% (land/farm segment) | range |
+   | Spa/hot tub | `listings.spa_yn` (already promoted) | promoted col | boolean |
+   | Fencing | `listings.fencing` | promoted col | multi |
+   | Carport | `listings.carport_yn/spaces` | promoted col | boolean+range |
+   | Total parking | `listings.parking_total` | promoted col | range |
+   | Stories | `listings.stories_total` | promoted col | range (complements `levels`) |
+   | Fireplaces count | `listings.fireplaces_total` | promoted col | range |
+   | Home warranty | `listings.home_warranty_yn` | promoted col | boolean |
+   | Walk score | `listings.walk_score` | promoted col | range |
+   | Photo count ≥ N | `listings.photos_count` | promoted col | range |
+   Each lands as: MV column (where not already exposed) + registry entry with `voice`
+   synonyms + All-Filters sheet render (automatic) + saved-search whitelist (automatic
+   via `ALL_SEARCH_URL_PARAMS`).
+2. **One consolidated field-access request to ORE/FBS** (broker ask, Matt sends —
+   draft the email from this list). Two sub-lists:
+   *Unmask on our existing feed role* (present but `********`): Zoning,
+   ZoningDescription, Topography, WaterBodyName, GreenBuildingVerificationType (+
+   Green* family), PublicSurveySection/Township/Range.
+   *Add to the feed* (never sent): Accessory Dwelling Unit YN/Type/SqFt/Permitted YN,
+   Short Term Rental Permit YN, CC&R's YN, Flood, Government Overlay, Easements,
+   Irrigation District, Building Permit YN/#, PropertyCondition, MainLevelBedrooms/
+   Bathrooms. **ADU + STR-permit are the headline asks** — Matt already runs a "Bend
+   ADUs under 1M" Flexmls subscription our engine cannot express. Until granted, interim
+   proxies: keyword-search `public_remarks` for ADU/STR phrasing (ships day one — the
+   keywords filter already exists), Bend STR-permit open data overlay, FEMA NFHL for
+   flood. A backfill re-pull is required after any grant (masks are baked into stored
+   rows).
 3. **Sold-search depth.** Route closed searches through the same registry pipeline: add
    close-date window, sold-price range, buyer-financing, concessions, sold-$/sqft
    (columns already exist: `buyer_financing`, `concessions_amount`,
@@ -425,6 +470,13 @@ carrying the field, distinct values, noise rate. No filter that matches nothing.
 6. **Gate:** registry↔MV column existence check (already exists via tests) + a new
    coverage gate: every registry field must prove ≥1 live match at ship time or carry an
    explicit `coverageNote`.
+
+**Phase 1 acceptance:** (a) every ship-now-tranche filter returns correct, non-zero
+result sets in prod matching a hand-checked MLS pull for one fixture query each;
+(b) voice parser resolves ≥2 natural phrasings per new filter; (c) the ORE/FBS request
+email is drafted with both sub-lists and sits in Matt's approval queue; (d) sold-search
+depth: a closed search with close-date window + sold-price range + financing filter
+returns rows and is registry-driven; (e) coverage gate wired into `ci:gates`.
 
 ### Phase 2 — Map parity-plus (the map IS the search)
 
@@ -454,6 +506,14 @@ carrying the field, distinct values, noise rate. No filter that matches nothing.
    new data).
 7. **Gate:** polygon/radius results must equal the PostGIS predicate result on a fixture
    set (no Node-side approximation drift); map-path E2E in the preview harness.
+
+**Phase 2 acceptance:** (a) radius drag shows a live distance readout and the result
+count matches `ST_DWithin` exactly on 3 fixture circles; (b) a 3-shape search (2
+include + 1 exclude) returns the set-algebra-correct rows and survives URL round-trip;
+(c) a signed-in user can save, rename, re-use, and delete a named area, and an alert
+scoped to that area fires only inside it; (d) one broker-authored public area renders
+as an indexed landing page with correct counts; (e) the 500-row split-view cap is gone
+or demonstrably unhittable (server-side predicate + exact count).
 
 ### Phase 3 — Alerts engine parity-plus (saved searches → listing emails)
 
@@ -490,6 +550,14 @@ carrying the field, distinct values, noise rate. No filter that matches nothing.
    drop, pending, BOM, sold, OH), exactly the toggled event types fire, once, per
    recipient, respecting cadence + compliance stops.
 
+**Phase 3 acceptance:** (a) the contract test in item 9 green in CI; (b) a real alert
+on a drawn area delivers a price-change event end to end (prod listing mutation →
+rendered email → click recorded → CRM person timeline shows it); (c) preview-mode queue
+holds a send until approved in the admin hub and releases on approval; (d) a
+two-recipient alert delivers to both with independent unsubscribe tokens; (e) Matt's 7
+Flexmls subscriptions re-created (imported or by hand) and running in-house with him as
+sender.
+
 ### Phase 4 — Portal experience (the consumer side of subscriptions)
 
 1. Fold alerts, saved searches, saved homes, hidden homes, named areas, and the
@@ -499,6 +567,11 @@ carrying the field, distinct values, noise rate. No filter that matches nothing.
    portal has none of this; it's our differentiation with the in-house CRM.
 3. Broker-view of a client's portal ("work on behalf of" equivalent): admin impersonation
    of the search context, writing action rows through the CRM.
+
+**Phase 4 acceptance:** a signed-in client can, from one surface: see every alert with
+its event toggles, pause/edit cadence, see "new since last visit" per saved search,
+manage named areas, and see their own activity; Matt can open any client's view
+read-only from the CRM person page.
 
 ### Phase 5 — Beyond Flexmls (leads we extend)
 
@@ -513,6 +586,59 @@ carrying the field, distinct values, noise rate. No filter that matches nothing.
   40-preset matrix (e.g. `adu`, `str-permit`, `owner-will-carry`, `single-level`,
   `on-the-river`) — gated by the same ≥1-verified-match rule.
 
+### Target UX spec (the "and UI" half — binding for every phase)
+
+The standard is the site's north star (5-second ooh test), not Flexmls's UI — theirs is
+a pro tool; ours must feel like the best consumer product in the market while carrying
+pro-grade depth. Spec:
+
+- **Layout:** map-first split stays the default on desktop (`/homes-for-sale`); list is
+  a mode, not a separate page. Mobile: full-bleed map with a draggable bottom sheet for
+  results (the pattern the KB/CRM mobile work already established with
+  `--crm-dock-offset` — reuse the inset machinery). One persistent top bar: location
+  omnibox · 4 primary chips (Price, Beds/Baths, Type, Status) · "All filters (N)" ·
+  Save. Nothing else. Every other control lives in the sheet or on the map.
+- **All-Filters sheet:** keeps the registry-driven category groups, gains (a) a
+  "find a filter" typeahead over labels + voice synonyms (Flexmls's one great disclosure
+  idea), (b) sticky live count ("Show 214 homes") which we already compute, (c) an
+  "active filters" chip row at top with one-tap remove, (d) zero-result guard — if the
+  count hits 0 the sheet highlights which filter(s) zeroed it (compute by dropping each
+  active filter once; cheap against the MV).
+- **Map:** draw button exposes rectangle / circle-with-live-radius / freeform; drawn
+  shapes get a floating pill (rename → becomes a named area · exclude toggle · delete).
+  Boundary-snap: tapping a neighborhood/subdivision label chip-ifies that boundary as
+  geography. Layers control: listings, drawn shapes, boundaries, (later) flood/UGB/
+  zoning. Hover/tap a boundary shows count + median from `listing_tile_mv`.
+- **Beds/baths get max bounds** in the chip popover (range, not min-only) — the DAL
+  already supports it.
+- **Save affordance:** saving from the bar captures filters + shapes + named areas; the
+  dialog offers alert cadence + event toggles inline (one motion from search to
+  subscription, Flexmls's best flow, minus the modal maze).
+- **Voice/NL:** the mic stays on the omnibox; every Phase-1 field gets synonyms the day
+  it ships (acceptance-gated).
+- **Performance budget:** filter apply → results paint < 800 ms p75 (MV query + cache);
+  map pan → pin refresh < 500 ms p75. Regressions fail the perf check in the E2E
+  harness.
+- **Mockup discipline:** the redesigned surface gets a `ui_kits/homes-for-sale/` mockup
+  + `parity.json` so the mockup-parity gate owns it (§6 of CLAUDE.md).
+
+### Measurement baseline (stamped 2026-07-29) + targets
+
+| Metric | Baseline (30d) | Source | Target 90d post-Phase-3 |
+|---|---|---|---|
+| Search events tracked | **0** (untracked) | `user_events` | full funnel visible (Phase 0.5) |
+| Sessions | 139 | `user_events` | n/a (growth loop owns traffic) |
+| Listing views | 70 | `user_events` | 3× per-session listing-view rate |
+| Active listing alerts | **5** (2 user / 3 broker) | `listing_alerts` | 50 active; ≥50% user-origin |
+| Distinct alert emails | 4 | `listing_alerts` | 40 |
+| Alerts created / 30d | 6 | `listing_alerts` | 20/30d |
+| Matt's subscriptions in-house | 0 of 7 (all still in Flexmls) | Flexmls hub | 7 of 7 (Phase 3 acceptance e) |
+| Zero-result searches | unmeasured | — | measured, < 10% of applies |
+
+The honest read: search usage is near-zero today, so the plan's payoff metric is
+**alert creation and alert-driven return visits** (the compounding asset), not raw
+search volume. Every phase ships its measurement stamp per THE LOOP.
+
 ### Sequencing + effort (loop iterations, not calendar promises)
 
 | Phase | Size | Dependency |
@@ -524,23 +650,32 @@ carrying the field, distinct values, noise rate. No filter that matches nothing.
 | 4 Portal | M | 3 |
 | 5 Extensions | rolling | per-item |
 
-Suggested first three loop iterations: **(1)** Phase 0 items 1–3 in one pass; **(2)**
-Phase 2 items 1–2 (radius + server-side polygon — biggest visible capability jump);
-**(3)** Phase 1 item 1 first tranche (zoning, rooms/primary-on-main, water body,
-media-presence, condition) + coverage gate.
+First three loop iterations: **(1)** Phase 0 complete (UI unification, `?poly=`,
+registry reconcile, instrumentation, docs) — everything after depends on it; **(2)**
+Phase 2 items 1–2 (radius + server-side polygon — biggest visible capability jump) +
+draft and queue the ORE/FBS field request (Phase 1.2, one email); **(3)** Phase 1
+ship-now tranche (the audited table: media-presence flags, previous-list-price,
+body type, irrigation acres, spa/fencing/carport/stories/fireplaces/warranty/
+walk-score/photo-count) + the coverage gate.
 
 ---
 
-## 5. Decisions needed from Matt
+## 5. Decisions — recommendations with defaults (override, don't answer)
 
-1. **Sold-data exposure** (Phase 1.3): registered-user VOW area vs public — ODS rules
-   push toward registered. Which gate do we want?
-2. **Feed-gap escalation** (Phase 1.2): if ADU/STR-permit/CC&R fields aren't in our
-   feed, do we ask FBS/ORE for them (broker data request) or build proxies first?
-3. **Named-areas surface** (Phase 2.4): consumer-facing from day one, or broker-authored
-   only until the UX proves out?
-4. **Import from Flexmls** (Phase 3.8): worth the Spark API investigation now, or
-   re-create the 7 subscriptions by hand post-Phase-3?
+1. **Sold-data exposure** (Phase 1.3) — **default: registered-user gate.** ODS puts
+   sold-data display in VOW territory ([reference_ods_rules]); registration also feeds
+   the CRM. Build the gate, revisit public exposure only with compliance sign-off.
+2. **Feed-gap path** (Phase 1.2) — **default: send the ORE/FBS request immediately AND
+   ship the keyword-proxy filters the same week.** The ask costs one email; the proxy
+   costs nothing (keywords filter exists). Whichever lands first wins; the audit showed
+   the unmask sub-list may be a permissions flip, not a data build.
+3. **Named areas** (Phase 2.4) — **default: broker-authored first, 30 days, then open
+   to signed-in users.** Gets the SEO landing surfaces and Matt's three Flexmls
+   overlays live immediately; consumer creation follows once save/edit UX survives real
+   use.
+4. **Flexmls import** (Phase 3.8) — **default: re-create the 7 subscriptions by hand.**
+   Seven rows do not justify a Spark saved-search API investigation; timebox the API
+   check to one hour during Phase 3 only if it's free along the way.
 
 ## 6. Source trace
 
@@ -554,5 +689,14 @@ media-presence, condition) + coverage gate.
 - Codebase: agent sweep 2026-07-29 over `app/search/*`, `lib/search/field-registry.ts`,
   `lib/data/listings/searchListingsAll.ts`, `supabase/migrations/2026071*`,
   `app/actions/saved-search-alerts.ts`, `lib/search-filters.ts`, `next.config.ts`.
-- DB: `docs/DATABASE_SCHEMA_SNAPSHOT.md` (listings columns) + one `-- audit:` sample of
-  `details` jsonb keys over 40 active rows (2026-07-29).
+- DB: `docs/DATABASE_SCHEMA_SNAPSHOT.md` (listings columns) + four `-- audit:` queries
+  (2026-07-29): key presence n=40 · per-field coverage n=1000 active (batches 1–2) ·
+  value profiles n=500 (exposed the `********` feed masks) · mask forensics joined to
+  `listing_private` n=1000 (zoning/topography/water-body/green/township = 0 real
+  values; BodyType 89, PreviousListPrice 430, IrrigationWaterRightsAcres 46 real).
+- Baseline: `listing_alerts` (6 rows, 5 active: 2 user / 3 broker; 4 distinct emails)
+  and `user_events` 30-day profile (1,224 events / 139 sessions; types: page_view
+  1,154, listing_view 70; zero search events) — queried 2026-07-29.
+- Redaction forensics: `PRIVATE_DETAIL_KEYS` + `redactPublicDetails()` in
+  `lib/listing-mapper.ts` (11 keys only) — proves the `********` masks originate in the
+  Spark feed, not our sync.
