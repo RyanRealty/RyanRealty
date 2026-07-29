@@ -1,3 +1,50 @@
+> **NEWEST, START HERE: Brain Dump 2 — prospecting/CMA workflow + site IA (2026-07-28, Claude Code).** Prior: Site IA nav overhaul.
+
+# Current — Brain Dump 2 (2026-07-28)
+
+| Field | Value |
+|---|---|
+| Surface | Claude Code |
+| Time | 2026-07-28 |
+| `main` @ | `9ba9df6f` pushed; ONE commit staged-not-committed (see Blocked) |
+| Plan | [`docs/plans/PROSPECT_TO_CMA_AND_SITE_IA_2026-07-28.md`](PROSPECT_TO_CMA_AND_SITE_IA_2026-07-28.md) — 18 items from Matt's brain dump, each with the evidence measured rather than assumed |
+
+## Done and verified live on production
+
+| Item | Commit | Evidence |
+|---|---|---|
+| **A0 per-channel compliance** | `0e31564b` | The board stamped "Compliance hold + Suppressed" on nearly every row and removed the send action. Live audit: 0/196 rows carry `compliance_hard_stop`, only 1/75 persons has a suppression row, but **54/75 carry `contact:do-not-call`** from the skip-trace DNC read. That correctly blocks SMS + voice under TCPA and **not** email — the bug was collapsing it into one boolean, which also gated the EMAIL rail on the SMS decision. Now per-channel. Production went from 0 send buttons to **34**. `hardStop` keeps its original meaning so no gate loosened. |
+| **B0 geography-scoped view-all** | `0e31564b` | `KbFeatured` caps at 12 tiles and its footer link went to the site-wide search. Now scoped on city / neighborhood / subdivision / community / zip / oregon-city / listing. Live: Bend "See all 494 homes for sale" → `/homes-for-sale/bend`, Tetherow 45, Awbrey Butte 63. |
+| **B2 climate risk retired** | `38e16413` | Not a no-op: `risk` was hardcoded null and the null branch shipped a fixed paragraph citing FEMA / Deschutes County WUI / NOAA sources it never queried, identical on every listing. §0 violation on the #1 ad-landing surface. Both component copies + parity entry deleted; D77 contract test now asserts ABSENT. |
+| **A1/A2 one sortable list + real detail pages** | `2ae5fd13` | Two-column card grid replaced by one table: thumbnail · owner · address · city · was-listed · off-market · **recommended** · audit · reachable · activity. Sort is URL state resolved server-side over the whole set. Address is a real `<Link>` to `/admin/prospecting/<kind>/<id>`; the dead-end `?id=` drawer is deleted. Six KPI cards → one line (~430px reclaimed). Live: sorted by recommended desc → $3,010,000 down, 24 rows, 24 thumbs, 30 detail links. |
+| **B1 city funnel order** | `763f0999` | The seller CTA sat 18 sections deep, below testimonials, team, AND the explore-other-cities exits. Live on production: `sell` now 10 of 15, `nearby` (exits) last before FAQ. Inventory deliberately stays on top — burying it is the documented design-audit P1 regression. |
+| **A7 CMA send performance** | `ebb98060` | New `/admin/reports/cma-performance`, linked from the analytics catalog. Per document: opens, clicks, report views, last activity, plus built→sent→opened→viewed funnel. Engagement computed over the FULL set, not the page — a rate needs one denominator. **It immediately surfaced the real bottleneck: 206 documents built, 4 sent, and `expired_listings`/`fsbo_listings` have ZERO outreach stamps on either channel.** |
+| **A5 comp selection** | `9ba9df6f` | Researched, not guessed (Matt: "you must do research"). USPAP sets no proximity rule; Fannie Mae B4-1.3-08 requires the MARKET AREA and requires distance be *reported* with a direction, never capped; the 1-mile rule was retired with UAD. So: polygon-first, not radius. Measured before: max **21.18 / 19.93 / 18.36 / 14.37 miles** on 4 real Bend subjects, 29-45 of 50 candidates over 2 mi. After: every comp within **1.95 mi**, avg ~1.0. Lot character (acreage vs in-town) is a hard exclusion per Matt. |
+
+## Build infrastructure fixed along the way
+
+Production deploys were broken before any of this. `/sitemap.xml` exceeded the 600s prerender timeout and retried 3× (~30 min on one route), which canceled builds and meant `2ae5fd13` never even got a build created.
+- `07a1c4d4` — `getSearchMatrixInventory` cached the ENTIRE on-market row set: measured **2,029,486 bytes**, over Next's 2MB data-cache ceiling, so the write failed every time and every call re-ran a paginated scan inside a sitemap loop. Cache boundary moved to the derived matrix: **39,369 bytes**.
+- `79a810f8` — `staticPageGenerationTimeout` 600 → 1800. Buys room, **is not the fix**; the fix is splitting `/sitemap.xml` into a sitemap index. That instruction is in the config comment.
+
+## Blocked — ONE commit staged, not committed
+
+The **valuation-engine gate** (A4) is written, verified both directions, and staged, but the pre-commit hook fails. `lib/cma/build.ts` (cma + expired-audit) and `lib/bpo/build.ts` already share `selectComps` + `adjustComps` + `computePricing`; `scripts/check-valuation-engine.mjs` locks that as **G16** and is wired into `ci:gates`. It passes clean and fails correctly when a local `function computePricing` is injected.
+
+**Why it will not commit:** 19 `.int.test.ts` failures, ALL pure 30s timeouts with zero assertion failures. Cause verified, not assumed — `pg_stat_activity` showed **45 of 52 connections active** while two Vercel production builds ran concurrently doing full sitemap scans. The same test files passed 15 minutes earlier. **Retry `git add -A && git commit` once builds are idle; do not bypass the hook.**
+
+## Not started
+
+A3 lead dashboard rollup · B2 listing IA (the two remaining null sections: vacation-rental needs a real projection + Bend STR permit status; transparent-CMA should read our own engine and ship AFTER A5) · B3 nav overhaul · B4 desktop density · the site-wide duplicate DOM · the sitemap index split.
+
+**B-4 duplicate DOM is the highest-value open item.** Every route ships its body twice — once visible, once as an orphaned hidden React streaming container. `/cities/bend` 1,436 orphaned nodes of 3,328 (**43%**), `/listing` 39%, `/faq` 31%. Ruled out with evidence (do not re-test): CSP, `loading.tsx`, `SmoothScrollProvider`, the RSC flight payload. Still open: `$RC("B:0","S:0")` IS emitted alongside a `<template id="B:0">`, so React intends to reclaim it and doesn't. Orphans are `hidden` so they never hydrate — cost is bytes/nodes, not double JS.
+
+## Open for Matt, not silently actioned
+
+21 of 211 CMAs were built before the 2026-07-10 most-recent-listing fix and store rendered HTML, so they can still carry old photos. They do not self-heal. **Not bulk-rebuilt** — a rebuild re-runs pricing and can move the recommended number on a document already sent. Those need individual rebuilds with the new number reviewed.
+
+---
+
 > **NEWEST, START HERE: Site IA navigation overhaul shipped 2026-07-27 (Cursor).** Prior: W13.1.
 
 # Current — Site IA / KB nav overhaul (2026-07-27)

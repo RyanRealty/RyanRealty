@@ -22,10 +22,12 @@ export type BrandCardCta = {
   label: string
   /** Internal destination — relative path or absolute URL. */
   href: string
-  /** GA4 event name fired on click. */
+  /** GA4 event name fired on click. NOTE: conversion events that mean "the
+   * visitor submitted a form" (valuation_requested, generate_lead) are NOT
+   * allowed here — a CTA click is an anchor click, not a conversion (§0). */
   event:
     | 'click_cta'
-    | 'valuation_requested'
+    | 'cma_anchor_click'
     | 'newsletter_signup'
     | 'play_video'
     | 'contact_agent_click'
@@ -94,7 +96,7 @@ export const BRAND_CARDS: BrandCardDefinition[] = [
     cta: {
       label: 'Get my valuation',
       href: '/sell/valuation',
-      event: 'valuation_requested',
+      event: 'cma_anchor_click',
     },
   },
   {

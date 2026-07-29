@@ -398,14 +398,16 @@ export async function createCmaRequest(
     // so ad-blocked clients still register a conversion. No cookies access
     // here (this lib is also called from cron paths); the client_id falls
     // back to a fresh uuid which still counts as a session-less conversion
-    // tied to the right event taxonomy. NOT fired for broker kick-offs — a
-    // broker tapping "Build CMA" in the CRM is not a visitor conversion, and
-    // fabricating one would corrupt the ad-attribution numbers (§0).
-    if (requestSource !== 'crm-kickoff') void fireGa4Event({
+    // tied to the right event taxonomy. ONLY fired for genuine visitor
+    // submissions (the two LPs) — broker kick-offs and cron builds are not
+    // visitor conversions, and fabricating one corrupts ad attribution (§0).
+    // Verified 2026-07-28: cron/rebuild paths had inflated GA4 to 90
+    // valuation_requested/90d against ~10 real submissions.
+    if (requestSource === 'seller-lp' || requestSource === 'fsbo-lp') void fireGa4Event({
       eventName: 'valuation_requested',
       eventParams: {
         cma_slug: slug,
-        lp_variant: requestSource === 'expired-listing-cron' ? 'expired-listing-cron' : 'seller-home-value',
+        lp_variant: requestSource === 'fsbo-lp' ? 'fsbo' : 'seller-home-value',
         broker_slug: broker.slug,
         lead_classification: input.leadClassification ?? undefined,
         lead_type: 'seller',

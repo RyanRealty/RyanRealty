@@ -26,6 +26,7 @@ export type EventName =
   | 'email_agent'
   | 'call_initiated'
   | 'cma_downloaded'
+  | 'cma_anchor_click'
   | 'valuation_requested'
   | 'sign_up'
   | 'open_house_rsvp'
