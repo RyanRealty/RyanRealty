@@ -29,6 +29,8 @@
  */
 
 import { cache } from 'react'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
+import { cacheTag } from '@/lib/data/cache/unstable-cache'
 import {
   getSearchMatrixInventory,
   getSubdivisionLifetimeCounts,
@@ -48,11 +50,15 @@ import {
   matrixPath,
   shouldNoIndexMatrixCombo,
   type MatrixBuildResult,
+  type MatrixEntry,
   type MatrixGeo,
 } from './search-matrix'
 
 /** Batch width for the per-city subdivision RPC (matches app/sitemap.ts). */
 const SUBDIVISION_RPC_BATCH = 6
+
+/** Same 1-hour TTL the raw inventory read used to carry. */
+const MATRIX_CACHE_SECONDS = 3600
 
 async function buildSubdivisionGeos(descriptionKeys: ReadonlySet<string>): Promise<MatrixGeo[]> {
   const citySlugs = [...CENTRAL_OREGON_CITY_SLUGS]
@@ -94,10 +100,56 @@ async function buildSubdivisionGeos(descriptionKeys: ReadonlySet<string>): Promi
 }
 
 /**
- * Assemble the full matrix once per render (React cache) on top of the
- * hourly-cached DAL reads. Returns null when the inventory read failed.
+ * The matrix, serialized for the data cache.
+ *
+ * unstable_cache round-trips through JSON, so the two `Map`s have to travel as
+ * entry arrays and be rehydrated on read. Wrapping the built matrix (a few KB of
+ * path→count) instead of the raw inventory rows (~2.3MB) is the whole point:
+ * the raw set is over Next's 2MB ceiling and could never be stored, so it
+ * re-fetched on every single call and stalled production builds (2026-07-28).
+ */
+type SerializedMatrix = {
+  entries: MatrixEntry[]
+  countByPath: Array<[string, number]>
+  countByCityPreset: Array<[string, number]>
+}
+
+async function buildSerializedMatrix(): Promise<SerializedMatrix | null> {
+  const built = await assembleSearchMatrix()
+  if (!built) return null
+  return {
+    entries: built.entries,
+    countByPath: [...built.countByPath],
+    countByCityPreset: [...built.countByCityPreset],
+  }
+}
+
+// Same TTL + invalidation tag the raw inventory read used to carry, so refresh
+// behaviour is unchanged — only WHAT is stored changed. `null` fallback keeps
+// the fail-OPEN contract: a failed read must never read as "zero inventory".
+const cachedSerializedMatrix = makeResilientCached<[], SerializedMatrix | null>(
+  buildSerializedMatrix,
+  ['search-matrix-built-v1'],
+  { revalidate: MATRIX_CACHE_SECONDS, tags: [cacheTag.listings] },
+  null,
+)
+
+/**
+ * The matrix for this render: one data-cache read, rehydrated, memoized per
+ * request by React `cache()`. Returns null when the inventory read failed.
  */
 const getSearchMatrix = cache(async (): Promise<MatrixBuildResult | null> => {
+  const s = await cachedSerializedMatrix()
+  if (!s) return null
+  return {
+    entries: s.entries,
+    countByPath: new Map(s.countByPath),
+    countByCityPreset: new Map(s.countByCityPreset),
+  }
+})
+
+/** The uncached assembly — inventory + geos → matrix. Runs on a cache miss only. */
+const assembleSearchMatrix = async (): Promise<MatrixBuildResult | null> => {
   const [inventory, neighborhoods, descriptionKeys] = await Promise.all([
     getSearchMatrixInventory(),
     getMatrixNeighborhoods(),
@@ -141,7 +193,7 @@ const getSearchMatrix = cache(async (): Promise<MatrixBuildResult | null> => {
   geos.push(...(await buildSubdivisionGeos(descKeySet)))
 
   return buildSearchMatrix(inventory, geos)
-})
+}
 
 export type MatrixSitemapEntry = {
   url: string

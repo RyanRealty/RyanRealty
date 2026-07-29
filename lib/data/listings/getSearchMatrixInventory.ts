@@ -98,13 +98,31 @@ async function fetchSearchMatrixInventory(): Promise<SearchMatrixInventoryRow[]>
  * The one aggregate inventory read: every public on-market row in the
  * Central Oregon service area, slim columns only. `null` = read failed
  * (callers fail open); an array is authoritative.
+ *
+ * DELIBERATELY NOT unstable_cache'd. This row set is ~2.3MB, over Next's 2MB
+ * data-cache ceiling, so every write attempt failed with "items over 2MB can
+ * not be cached" — the entry never populated, every call re-ran the paginated
+ * scan, and a production build spent minutes looping on it while emitting that
+ * error every 2-3 seconds (found 2026-07-28, it was stalling deploys).
+ *
+ * The cache boundary moved DOWNSTREAM to the derived matrix in
+ * lib/seo/getSearchMatrixEntries.ts, which is a few KB of path→count instead of
+ * every listing row. Callers that need the raw rows get one read per request
+ * (React `cache()` memoizes within a request); nothing re-reads it per lookup.
+ *
+ * If you are tempted to wrap this again: check the payload size first.
  */
-export const getSearchMatrixInventory = makeResilientCached<[], SearchMatrixInventoryRow[] | null>(
-  fetchSearchMatrixInventory,
-  ['search-matrix-inventory-v1'],
-  { revalidate: MATRIX_CACHE_SECONDS, tags: [cacheTag.listings] },
-  null,
-)
+export async function getSearchMatrixInventory(): Promise<SearchMatrixInventoryRow[] | null> {
+  try {
+    return await fetchSearchMatrixInventory()
+  } catch (e) {
+    // Fail OPEN, matching the previous makeResilientCached fallback: a failed
+    // read must never be mistaken for "zero inventory" (that would noindex live
+    // pages and empty the sitemap).
+    console.error('[getSearchMatrixInventory] read failed:', e instanceof Error ? e.message : e)
+    return null
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Subdivision lifetime counts (the D1 browse-URL persistence threshold input)
