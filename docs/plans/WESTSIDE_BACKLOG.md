@@ -40,9 +40,28 @@ Century West, Southwest Bend, Old Bend). Adjustable; per-neighborhood rows retai
 | 4b | **Redirect consolidation** — geography legacy URLs retargeted to canonical community pages (+ dead `/broken-top` revived); overrides live in the generator so regen can't clobber | GSC: legacy URLs ranking pos 4–24 while canonical pages sat at 26–52 | Consolidates authority behind the pages that convert | S | SHIPPED |
 | 4c | ~~Build /luxury page~~ **SCOPE CORRECTED + SHIPPED 2026-07-28**: `/luxury-homes-bend` already exists and is indexed (crawled 6/30) — the gap was equity: the legacy `/luxury-homes-bend-oregon` URL dumped onto generic `/homes-for-sale`. Retargeted (`84368798`). Remaining lever: internal links to it from money surfaces. | GSC + urlInspection | Existing indexed page starts receiving its legacy equity | S | SHIPPED |
 | 5 | **Fix crawl-budget starvation** — 10,744 submitted / 60 indexed (0.6%). First tranche SHIPPED 2026-07-28 (`84368798`): per-class child sitemaps at `/sitemaps/{core,geo,listings,matrix,content}.xml` (measured: core 159 · geo 2,564 · **listings 7,621** · matrix 266 · content 56 — the starved mass is listing details, not permutations), submitted to GSC individually. Next tranche once per-class indexed counts land (~2 weeks): prune whichever class Google ignores, add hub→tail internal links. | GSC sitemaps.list + urlInspection 2026-07-28 | Multiplies every other SEO item | M | IN PROGRESS |
-| 6 | **Competitor digital teardown** (Cascade Hasson, Stellar, Harcourts Garner, RE/MAX Key, Bend Premier): what ranks, what captures, review velocity | Top-5 set derived from closed production above | Informs next backlog revision | M | SHIP-NOW (analysis) |
+| 6 | ~~Competitor digital teardown~~ **DONE 2026-07-29** — see "Teardown findings" below. Headline: the machine is agent-team review mass (Ladd Group 5.0×266 vs our 25), not websites (all five are commodity IDX portals) and not office GBP (Cascade Hasson runs $354M on 12 office reviews). | Places API + browser teardowns 2026-07-29 | Produced items 9–10 | M | DONE |
+| 9 | **Review-velocity engine** — post-close + past-client review-request sequence (email/SMS with the GBP link), tracked in CRM. We are 5.0×25; Bend Premier 4.9×78; Ladd Group 5.0×266. Nearest target: pass 78. Build is reversible work; STARTING sends is approval-class. | Places API counts 2026-07-29 | Local pack + referral trust compounding; the one lever the data says correlates with production | M | BUILD-NOW, sends QUEUE-FOR-APPROVAL |
+| 10 | **Luxury page internal links** — /luxury-homes-bend is indexed but outranked by our own sitemap page; link it from money surfaces (communities index, city pages, footer) | GSC + urlInspection 2026-07-28 | Completes 4c | S | SHIP-NOW |
 | 7 | **Paid Social scale decision** — 107 sessions → 52 keyEvents (best conversion ratio of any channel) | GA4 channels table | Spend change | — | QUEUE-FOR-APPROVAL |
 | 8 | **Start expired-listing sends** — sequences built, sends never started (market-report funnel audit) | 44 expired + 14 FSBO prospects added in 30d | First-mover on listable inventory | — | QUEUE-FOR-APPROVAL |
+
+## Teardown findings (2026-07-29, verified)
+
+GBP via Places API (rating × reviews): Cascade Hasson SIR office 4.3×12 · Stellar 4.7×27 ·
+RE/MAX Key 4.1×27 · Harcourts Garner 4.1×22 · Bend Premier 4.9×78 · **Ryan Realty 5.0×25** ·
+**Ladd Group (top producer team) 5.0×266**.
+
+Homepage teardowns (browser, Cloudflare-bypassed): all five run commodity IDX portals —
+valuation CTA + search + GA, one JSON-LD block, no neighborhood architecture (Bend Premier: 0
+neighborhood links), Cascade Hasson has no blog in nav. Cascade Hasson + Stellar + Garner run
+Meta pixels; Bend Premier does not.
+
+Conclusions: (1) production rides agent-team brands and review mass, not brokerage websites;
+(2) our site is already structurally ahead once the index problem resolves; (3) review
+velocity is the highest-correlation lever we do not run — no review-request automation exists
+anywhere in our CRM (verified by code search); (4) listing-side gravity (Cascade 140 west-side
+list sides) is what compounds — our wedge is the built-but-unstarted expired/FSBO outreach.
 
 ## Blind spots
 

@@ -148,6 +148,10 @@ export const FOOTER_NAV: FooterGroup[] = [
     links: [
       { href: '/homes-for-sale', label: 'Homes for sale' },
       { href: '/homes-for-sale?view=map', label: 'Map search' },
+      // Sitewide internal link to the indexed-but-underlinked luxury page —
+      // GSC was ranking /sitemap/ for "luxury homes bend" while this page sat
+      // with no inbound links from money surfaces (westside backlog #10).
+      { href: '/luxury-homes-bend', label: 'Luxury homes in Bend' },
       { href: '/open-houses', label: 'Open houses' },
       { href: '/compare', label: 'Compare listings' },
       { href: '/homes-for-sale?status=Sold', label: 'Sold homes' },
@@ -377,6 +381,10 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
     heading: 'Buyers',
     links: [
       { href: '/homes-for-sale', label: 'Browse homes' },
+      // Sitewide link to the indexed-but-underlinked luxury page (westside
+      // backlog #10) — this is the LIVE footer; SiteFooter carries the same
+      // link but renders display:none behind the chrome toggle.
+      { href: '/luxury-homes-bend', label: 'Luxury homes' },
       { href: '/housing-market', label: 'The market' },
       { href: '/about', label: 'About' },
       { href: '/team', label: 'The team' },
