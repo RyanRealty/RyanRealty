@@ -1,0 +1,286 @@
+{
+  "version": "1.0.0",
+  "name": "buyer-journey-e2e",
+  "target": "https://ryan-realty.com",
+  "verifier": "qa/buyer-journey/verify.mjs",
+  "identity": {
+    "email_pattern": "^matt\\+buyertest-\\d{8}@ryan-realty\\.com$",
+    "note": "Plus-alias of matt@ryan-realty.com so delivery is verifiable in a real inbox. Fresh browser profile (no matt@ admin session). All sends go ONLY to this address."
+  },
+  "results_schema": {
+    "manifest_version": "must equal this file's version",
+    "run_id": "YYYYMMDD-HHMM",
+    "started_at": "ISO timestamp",
+    "finished_at": "ISO timestamp",
+    "identity": { "email": "the test email actually used" },
+    "steps": [
+      {
+        "id": "manifest step id",
+        "status": "pass | fail",
+        "evidence": "object holding every key named in the step's evidence_required; *_file keys are paths relative to results.json, *_count keys are numbers, *_ms keys are numbers, *_confirmed keys are boolean true, *_query_output keys hold the raw SQL result pasted verbatim",
+        "notes": "free text"
+      }
+    ],
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "P0 | P1 | P2 | P3",
+        "title": "one line",
+        "repro": "exact steps",
+        "screenshot_file": "path",
+        "status": "open | fixed | reported",
+        "fix_commit": "sha (required when status=fixed)",
+        "retested_steps": ["step ids re-run after the fix (required when status=fixed)"]
+      }
+    ]
+  },
+  "findings_policy": {
+    "P0": "blocks the journey or shows wrong data — must be fixed and retested before the run can pass",
+    "P1": "broken feature with a workaround — must be fixed and retested before the run can pass",
+    "P2": "friction or slowness — report only",
+    "P3": "polish — report only"
+  },
+  "sql_note": "All tables used here (crm_people, saved_listings, saved_searches, cmas, email_events, crm_timeline) use lowercase column names — no mixed-case quoting needed. Run every query fresh in this session and paste the raw output into the *_query_output evidence key. Filters must target the test identity only.",
+  "steps": [
+    {
+      "id": "entry-attribution",
+      "phase": "1-entry",
+      "action": "Start from a public touchpoint (Google Business Profile, Instagram bio link, or a live ad landing page). Click through to the site. Sign up as the test identity.",
+      "assertions": [
+        "A crm_people row exists for the test email with non-null source",
+        "SQL: select id, source, source_url, created_at from crm_people where emails::text ilike '%buyertest%' and deleted = false"
+      ],
+      "evidence_required": [
+        "entry_url",
+        "crm_person_id",
+        "source_value",
+        "crm_person_query_output",
+        "signup_screenshot_file"
+      ]
+    },
+    {
+      "id": "search-riverwest",
+      "phase": "2-search",
+      "action": "Search homes in RiverWest (Bend). Spot-check 3 result listings against their detail pages: each must actually be in RiverWest.",
+      "assertions": [
+        "Results match the geography",
+        "Search results render in under 2 seconds"
+      ],
+      "evidence_required": [
+        "search_url",
+        "results_count",
+        "verified_listing_keys",
+        "geo_accuracy_confirmed",
+        "load_ms",
+        "search_screenshot_file"
+      ],
+      "evidence_max": { "load_ms": 2000 }
+    },
+    {
+      "id": "search-old-bend",
+      "phase": "2-search",
+      "action": "Search homes in Old Bend. Spot-check 3 result listings against their detail pages: each must actually be in Old Bend.",
+      "assertions": [
+        "Results match the geography",
+        "Search results render in under 2 seconds"
+      ],
+      "evidence_required": [
+        "search_url",
+        "results_count",
+        "verified_listing_keys",
+        "geo_accuracy_confirmed",
+        "load_ms",
+        "search_screenshot_file"
+      ],
+      "evidence_max": { "load_ms": 2000 }
+    },
+    {
+      "id": "search-multifamily-bend",
+      "phase": "2-search",
+      "action": "Search multi-family properties in Bend. Spot-check 3 result listings against their detail pages: each must be multi-family and in Bend.",
+      "assertions": [
+        "Results match property type and geography",
+        "Search results render in under 2 seconds"
+      ],
+      "evidence_required": [
+        "search_url",
+        "results_count",
+        "verified_listing_keys",
+        "geo_accuracy_confirmed",
+        "load_ms",
+        "search_screenshot_file"
+      ],
+      "evidence_max": { "load_ms": 2000 }
+    },
+    {
+      "id": "search-multifamily-redmond",
+      "phase": "2-search",
+      "action": "Search multi-family properties in Redmond. Spot-check 3 result listings against their detail pages: each must be multi-family and in Redmond.",
+      "assertions": [
+        "Results match property type and geography",
+        "Search results render in under 2 seconds"
+      ],
+      "evidence_required": [
+        "search_url",
+        "results_count",
+        "verified_listing_keys",
+        "geo_accuracy_confirmed",
+        "load_ms",
+        "search_screenshot_file"
+      ],
+      "evidence_max": { "load_ms": 2000 }
+    },
+    {
+      "id": "favorite-homes",
+      "phase": "3-favorites",
+      "action": "Like/save at least 3 homes per search, 12+ total, from the search result and detail pages.",
+      "assertions": [
+        "SQL: select count(*) from saved_listings where user_id = '<site user uuid for the test identity>'"
+      ],
+      "evidence_required": [
+        "site_user_id",
+        "saved_listings_count",
+        "saved_listings_query_output"
+      ],
+      "evidence_min": { "saved_listings_count": 12 }
+    },
+    {
+      "id": "save-searches",
+      "phase": "4-saved-searches",
+      "action": "Save all four searches with the exact criteria used in phase 2.",
+      "assertions": [
+        "SQL: select id, name, filters, result_count from saved_searches where user_id = '<site user uuid>'"
+      ],
+      "evidence_required": [
+        "saved_searches_count",
+        "saved_search_names",
+        "saved_searches_query_output"
+      ],
+      "evidence_min": { "saved_searches_count": 4 }
+    },
+    {
+      "id": "dashboard-persistence",
+      "phase": "5-dashboard",
+      "action": "Open the buyer dashboard. Confirm all saved homes and all four saved searches appear with correct criteria. Hard-refresh and confirm nothing is lost or duplicated.",
+      "assertions": [
+        "Dashboard state matches the database state recorded in phases 3-4"
+      ],
+      "evidence_required": [
+        "dashboard_screenshot_file",
+        "favorites_visible_count",
+        "searches_visible_count",
+        "refresh_persistence_confirmed"
+      ],
+      "evidence_min": { "favorites_visible_count": 12, "searches_visible_count": 4 }
+    },
+    {
+      "id": "cma-request",
+      "phase": "6-cma",
+      "action": "Request a CMA from the site as the test buyer (from a saved home or the dashboard). Confirm the system generates it.",
+      "assertions": [
+        "SQL: select id, slug, client_email, status, delivered_at, html_path from cmas where lower(client_email) like '%buyertest%' order by created_at desc"
+      ],
+      "evidence_required": [
+        "request_screenshot_file",
+        "cma_slug",
+        "cma_row_query_output"
+      ]
+    },
+    {
+      "id": "cma-delivery",
+      "phase": "6-cma",
+      "action": "Confirm the CMA email arrives at the test inbox.",
+      "assertions": [
+        "SQL: select event, subject, occurred_at from email_events where lower(recipient_email) like '%buyertest%' order by occurred_at"
+      ],
+      "evidence_required": [
+        "email_received_confirmed",
+        "email_events_query_output",
+        "cma_email_screenshot_file"
+      ]
+    },
+    {
+      "id": "cma-clickthrough-tracking",
+      "phase": "6-cma",
+      "action": "Open the CMA link from the email and read every page. rr-doc-tracker.js on /cma/[slug] posts to /api/track/e/* which upserts crm_timeline. Verify the view/click events landed against the test person.",
+      "assertions": [
+        "SQL: select id, ts, kind, title from crm_timeline where person_id = <crm_person_id> order by ts desc"
+      ],
+      "evidence_required": [
+        "viewed_all_pages_confirmed",
+        "timeline_rows_count",
+        "timeline_query_output"
+      ],
+      "evidence_min": { "timeline_rows_count": 1 }
+    },
+    {
+      "id": "cma-figure-verification",
+      "phase": "6-cma",
+      "action": "S0 data accuracy: trace every number displayed in the CMA to the live database. Write one verification line per figure to a trace file next to results.json.",
+      "assertions": [
+        "Every displayed figure has a source query whose fresh result equals the displayed value"
+      ],
+      "evidence_required": [
+        "figures_total_count",
+        "figures_unverified_count",
+        "verification_trace_file"
+      ],
+      "evidence_min": { "figures_total_count": 1 },
+      "evidence_exact": { "figures_unverified_count": 0 }
+    },
+    {
+      "id": "market-reports-create",
+      "phase": "7-market-reports",
+      "action": "Create a market report on the fly for each of the four saved-search geographies (RiverWest, Old Bend, multi-family Bend, multi-family Redmond). Record which table the surface actually writes.",
+      "assertions": [
+        "Four reports exist and are addressable by URL"
+      ],
+      "evidence_required": [
+        "reports_created_count",
+        "report_urls",
+        "creation_query_output"
+      ],
+      "evidence_min": { "reports_created_count": 4 }
+    },
+    {
+      "id": "market-reports-delivery-tracking",
+      "phase": "7-market-reports",
+      "action": "Send all four reports to the test email. Confirm all four arrive, click through each, and verify send + click tracking rows (email_events and/or crm_timeline) for the test identity.",
+      "assertions": [
+        "SQL: select event, subject, occurred_at from email_events where lower(recipient_email) like '%buyertest%' order by occurred_at"
+      ],
+      "evidence_required": [
+        "reports_received_count",
+        "report_click_rows_count",
+        "tracking_query_output",
+        "report_email_screenshot_file"
+      ],
+      "evidence_min": { "reports_received_count": 4, "report_click_rows_count": 4 }
+    },
+    {
+      "id": "backoffice-integrity",
+      "phase": "8-backoffice",
+      "action": "Confirm exactly one crm_people row exists for the test identity (no duplicates) and its timeline holds the journey's events.",
+      "assertions": [
+        "SQL: select count(*) from crm_people where emails::text ilike '%buyertest%' and deleted = false"
+      ],
+      "evidence_required": [
+        "crm_people_rows_count",
+        "event_history_query_output"
+      ],
+      "evidence_exact": { "crm_people_rows_count": 1 }
+    },
+    {
+      "id": "cleanup",
+      "phase": "8-backoffice",
+      "action": "Tag or delete the test lead, its saved data, and its events so analytics and lead counts stay clean. Record exactly what was done.",
+      "assertions": [
+        "Test data cannot pollute lead counts or analytics"
+      ],
+      "evidence_required": [
+        "cleanup_action",
+        "cleanup_confirmed"
+      ]
+    }
+  ]
+}
