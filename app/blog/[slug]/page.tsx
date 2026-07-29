@@ -18,6 +18,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { getBlogPostBySlug, getRelatedBlogPosts } from '@/lib/data'
+import { matchGeoLinksForPost } from '@/lib/blog-geo-links'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { generateBlogSchema, generateBreadcrumbSchema } from '@/lib/structured-data'
@@ -256,6 +257,29 @@ export default async function BlogPostPage({ params }: PageProps) {
                   This article is being updated.
                 </p>
               )}
+
+              {/* Community cross-links (westside backlog #2): posts that rank
+                  for a community query must pass authority + readers to the
+                  community page, where inventory and lead capture live.
+                  Structural, registry-driven — see lib/blog-geo-links.ts. */}
+              {matchGeoLinksForPost(post).map((geo) => (
+                <Link
+                  key={geo.slug}
+                  href={geo.href}
+                  className="mt-8 block px-6 py-5"
+                  style={{ border: EDGE_NAVY, background: CREAM }}
+                >
+                  <span className="block" style={{ color: NAVY_70, fontSize: '.78rem', fontWeight: 500, letterSpacing: '.04em', textTransform: 'uppercase' }}>
+                    On the market now
+                  </span>
+                  <span className="mt-1 block" style={{ color: NAVY, fontFamily: AMBOQIA, fontSize: '1.35rem' }}>
+                    {geo.anchor.charAt(0).toUpperCase() + geo.anchor.slice(1)} →
+                  </span>
+                  <span className="mt-1 block" style={{ color: NAVY_70, fontSize: '.95rem' }}>
+                    Live inventory, market stats, and recent sales in {geo.label}, {geo.city}.
+                  </span>
+                </Link>
+              ))}
 
               {/* Tags — plain metadata labels, not styled as clickable filters
                   (design-audit #150: these previously matched the clickable
