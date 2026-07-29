@@ -16,9 +16,27 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from '@/components/ui/checkbox'
 
-type Props = { user: boolean }
+type Props = {
+  user: boolean
+  /**
+   * Server-resolved geography for the current page, in CANONICAL filter keys.
+   *
+   * The pathname alone cannot tell a subdivision from a neighborhood from a
+   * preset: /homes-for-sale/bend/river-west, /bend/west-hills and
+   * /bend/multi-family are the same shape but resolve to a neighborhood, a
+   * subdivision, and a preset. Deriving `subdivision` from the second segment
+   * (the old behavior) stored `river-west` / `multi-family`, and the alert
+   * matcher compares subdivision against SubdivisionName — which matches ZERO
+   * rows for both, so those saved searches silently never fired an alert.
+   *
+   * The page already resolves the segment; it passes the answer down here.
+   * Surfaces that are purely query-param driven (/search) omit it and keep the
+   * pathname fallback below.
+   */
+  pathFilters?: Record<string, unknown>
+}
 
-export default function SaveSearchButton({ user }: Props) {
+export default function SaveSearchButton({ user, pathFilters }: Props) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [open, setOpen] = useState(false)
@@ -44,10 +62,14 @@ export default function SaveSearchButton({ user }: Props) {
    */
   function buildFilters(): Record<string, unknown> {
     const raw: Record<string, unknown> = {}
-    const parts = pathname?.split('/').filter(Boolean) ?? []
-    if (parts[0] === 'search' || parts[0] === 'homes-for-sale') {
-      if (parts[1]) raw.city = decodeURIComponent(parts[1]).trim()
-      if (parts[2]) raw.subdivision = decodeURIComponent(parts[2])
+    if (pathFilters) {
+      Object.assign(raw, pathFilters)
+    } else {
+      const parts = pathname?.split('/').filter(Boolean) ?? []
+      if (parts[0] === 'search' || parts[0] === 'homes-for-sale') {
+        if (parts[1]) raw.city = decodeURIComponent(parts[1]).trim()
+        if (parts[2]) raw.subdivision = decodeURIComponent(parts[2])
+      }
     }
     for (const key of SAVED_SEARCH_QUERY_KEYS) {
       if (SAVED_SEARCH_ARRAY_QUERY_KEYS.has(key)) {

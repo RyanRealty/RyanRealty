@@ -373,7 +373,24 @@ describe('slug search page: guest save + reachable map-move (2026-06-09)', () =>
   })
 
   it('keeps the signed-in save-search button', () => {
-    expect(slug).toMatch(/<SaveSearchButton user=\{!!session\?\.user\} \/>/)
+    expect(slug).toMatch(/<SaveSearchButton user=\{!!session\?\.user\}/)
+  })
+
+  it('hands the save-search button SERVER-RESOLVED geography, not the raw pathname', () => {
+    // The button cannot tell a subdivision from a neighborhood from a preset by
+    // looking at the URL: /bend/river-west, /bend/west-hills and
+    // /bend/multi-family are the same shape. It used to call every second
+    // segment `subdivision`, which the alert matcher compares against
+    // SubdivisionName — zero rows for a neighborhood or a preset, so the saved
+    // search silently never fired an alert. The page resolves the segment
+    // already; it must pass the answer down.
+    expect(slug).toMatch(/pathFilters=\{savedSearchPathFilters\}/)
+    expect(slug).toMatch(/savedSearchPathFilters\.neighborhoodSlug\s*=/)
+    // A real subdivision carries its DISPLAY NAME (SubdivisionName holds
+    // "West Hills", never the "west-hills" slug).
+    expect(slug).toMatch(/savedSearchPathFilters\.subdivision = resolved\.subdivisionDisplayName/)
+    // A preset contributes its real filter params (multi-family -> propertyType).
+    expect(slug).toMatch(/resolved\.preset\?\.params/)
   })
 
   it('links into the search-as-you-move map via view=split', () => {
