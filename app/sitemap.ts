@@ -66,8 +66,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 /**
  * Build the complete list of sitemap URLs. Called once per chunk request.
  * In production with caching (revalidate: 3600), this is efficient enough.
+ *
+ * Exported for the per-class child sitemaps at /sitemaps/[cls] (westside
+ * backlog #5) — same URL universe, bucketed by lib/data/sitemap/classify.ts,
+ * so GSC reports indexed counts per class. The monolith at /sitemap.xml
+ * stays authoritative and unchanged.
  */
-async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.Sitemap> {
+export async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.Sitemap> {
   // Sanctioned 2-segment /cities/{a}/{b} paths (from the neighborhoods table);
   // filterRogueCityUrls drops any 2-seg /cities URL not in this set before serve.
   const allowedNeighborhoodPaths = new Set<string>()

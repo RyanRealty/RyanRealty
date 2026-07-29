@@ -306,6 +306,10 @@ async function main() {
     '/brasada-ranch-central-oregon': '/communities/brasada-ranch',
     // Google still serves bare /broken-top (GSC pos 24); it 404s without this.
     '/broken-top': '/communities/broken-top',
+    // /luxury-homes-bend exists and is indexed, but the legacy luxury URL was
+    // dumping its equity on generic /homes-for-sale while Google ranked our
+    // sitemap page for "luxury homes bend" (144 imp, 0 clicks).
+    '/luxury-homes-bend-oregon': '/luxury-homes-bend',
   }
   Object.assign(map, OVERRIDES)
 
