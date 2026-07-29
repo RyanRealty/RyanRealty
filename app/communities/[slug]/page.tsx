@@ -325,23 +325,15 @@ export default async function CommunityDetailPage({ params }: Props) {
     withTimeoutFallback(getOpenHousesWithListings({ city: cityName }), [], 3500, 'comm:openHouses'),
     withTimeoutFallback(getActivityFeedWithFallbackMulti({ cities: [cityName], limit: 8 }), [], 3500, 'comm:activity'),
     withTimeoutFallback(getCommunityListings(cityName, community.subdivision, 14), [], 4500, 'comm:featured'),
-    // Uncapped active SFR tiles for EVERY MLS city this community lists under —
-    // the source for the alias-aware resort count (so the hero number matches
-    // the DB, not the literal-name undercount). registry mls_cities covers
-    // communities whose MLS City differs from the registry city (Caldera
-    // Springs lists under Bend, Black Butte Ranch under its own name) — the
-    // registry-city-only pull rendered "0 homes for sale" against 31 real
-    // (2026-07-29 audit). Only needed when this community is a resort. (§0)
+    // Uncapped active SFR tiles for EVERY MLS city this community lists under
+    // (registry mls_cities): Caldera lists under Bend, BBR under its own name —
+    // the registry-city-only pull rendered 0 of 31 real homes (2026-07-29). (§0)
     isResortInCity
       ? withTimeoutFallback(
           Promise.all(
-            [...new Set([cityName, ...(registryEntry?.mls_cities ?? [])])].map((c) =>
-              fetchAllCityActiveSfr(c),
-            ),
+            [...new Set([cityName, ...(registryEntry?.mls_cities ?? [])])].map((c) => fetchAllCityActiveSfr(c)),
           ).then((sets) => sets.flat()),
-          [],
-          9000,
-          'comm:citySfr',
+          [], 9000, 'comm:citySfr',
         )
       : Promise.resolve([] as Awaited<ReturnType<typeof getListingTiles>>),
     // Rich, verified resort/golf/master-planned content (amenities, drive times,
@@ -566,12 +558,9 @@ export default async function CommunityDetailPage({ params }: Props) {
     }))
   const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
 
-  // Polygon: the authoritative resort plat union (getResortBoundaryGeoJSON)
-  // ALWAYS draws when present — it is the county-GIS TRUE footprint, immune to
-  // the oversized-hull problem. The unreliable-boundary baseline only gates the
-  // STORED boundary polygon (the hull that over-matched). The old ordering
-  // nulled BOTH for baseline slugs, so caldera-springs/crosswater/BBR shipped a
-  // map with no boundary despite a verified plat union (2026-07-29). (§0)
+  // Polygon: the county plat union (TRUE footprint) ALWAYS draws when present;
+  // the unreliable-hull baseline gates ONLY the stored polygon. The old order
+  // nulled both for baseline slugs — mapless caldera/crosswater/BBR (2026-07-29).
   const polygonGeometry = resortBoundary ?? (boundaryReliable ? boundaryMapData.polygon : null) ?? null
   const mapPolygons = polygonGeometry
     ? {
@@ -875,10 +864,8 @@ export default async function CommunityDetailPage({ params }: Props) {
           posterAlt={`${community.name} in ${cityName}, Oregon`}
           mediaCaption={mediaCaption}
         />
-        {/* Overview directly after the hero (Matt, 2026-07-29 — supersedes the
-            earlier inventory-first order): the reader gets WHAT this community
-            is before the listings. Order: hero → overview → homes → map →
-            market. */}
+        {/* Overview directly after the hero (Matt 2026-07-29, supersedes the
+            inventory-first order): hero → overview → homes → map → market. */}
         <KbResortOverview
           content={richContent}
           name={community.name}
@@ -932,9 +919,8 @@ export default async function CommunityDetailPage({ params }: Props) {
           // this community has no active listings (empty geojson features). (§0)
           centerLonLat={registryEntry?.center_lon_lat ?? undefined}
         />
-        {/* ONE market section (Matt, 2026-07-29): the tabbed core charts render
-            INSIDE the HUD section instead of a second, separately-headed
-            "market trends" section stacked underneath it. */}
+        {/* ONE market section (Matt 2026-07-29): core charts render INSIDE the
+            HUD section, not a second stacked headed section. */}
         <KbMarketHud
           data={marketData}
           eyebrow={`${community.name} · The market`}
