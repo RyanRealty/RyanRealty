@@ -230,6 +230,8 @@ Then stop. Do not commit. Wait for Matt's explicit approval.
 
 `content:expired-listing-audit` uses `matt-review-draft` per the standard content engine flow. Draft lands in `public/expired-listings/<slug>/audit.html`. Matt approves, then ops-email-send takes over for delivery.
 
+**FIRST-TOUCH RULE (Matt, 2026-07-29, permanent): the FIRST outbound message to an expired-listing owner is ALWAYS sent manually by Matt.** The pipeline prepares everything — audit, draft message, contact record — and stages the first touch as a ready-to-send draft in the CRM, never an automated send. Follow-up sequence enrollment begins only AFTER Matt's manual first send opens the thread. No cron, producer, or sequence engine may deliver touch #1 to an expired owner.
+
 The LP itself (`/lp/expired-listing`) is web-published once. Updates go through the standard draft-first commit-last workflow per CLAUDE.md §0.5.
 
 ---
