@@ -1,0 +1,22 @@
+-- Index list_number on the tile MV source.
+--
+-- Saved homes, liked homes and recently-viewed store a key that may be either a
+-- ListingKey OR an MLS ListNumber (listing URLs carry the ListNumber), so
+-- getListingsByKeys / getHomeTileRowsByKeys in app/actions/listings.ts query
+-- BOTH forms in parallel and merge. `listing_key` has a unique index;
+-- `list_number` had none, so that half of every lookup sequentially scanned the
+-- entire source table.
+--
+-- Measured on production for a 12-key saved-homes lookup:
+--   before: Parallel Seq Scan on listing_tile_mv_src, 593,866 rows removed by
+--           filter, Execution Time 62,033 ms
+--   after:  Index Scan using listing_tile_mv_list_number, Execution Time 32 ms
+-- /account (the signed-in hub, where /dashboard redirects) went from ~24 s on
+-- skeleton loaders to ~0.9 s.
+--
+-- Applied to production with CREATE INDEX CONCURRENTLY on 2026-07-29 so the
+-- build could not block the MV refresh job; this file records it for parity.
+-- CONCURRENTLY cannot run inside a transaction — if this migration is replayed
+-- through a transactional runner, the plain form below is the intended result.
+CREATE INDEX IF NOT EXISTS listing_tile_mv_list_number
+  ON public.listing_tile_mv_src USING btree (list_number);
