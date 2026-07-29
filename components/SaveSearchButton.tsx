@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { createSavedSearch } from '@/app/actions/saved-searches'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
 import { normalizeSavedSearchFilters } from '@/lib/search-filters'
+import { buildSavedSearchPathFilters, type SavedSearchPathContext } from '@/lib/search/saved-search-path-filters'
 import {
   SAVED_SEARCH_QUERY_KEYS,
   SAVED_SEARCH_ARRAY_QUERY_KEYS,
@@ -19,7 +20,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 type Props = {
   user: boolean
   /**
-   * Server-resolved geography for the current page, in CANONICAL filter keys.
+   * Server-resolved geography for the current page (the RESOLVED slug, not the
+   * raw URL). Converted to canonical filter keys by buildSavedSearchPathFilters.
    *
    * The pathname alone cannot tell a subdivision from a neighborhood from a
    * preset: /homes-for-sale/bend/river-west, /bend/west-hills and
@@ -33,10 +35,11 @@ type Props = {
    * Surfaces that are purely query-param driven (/search) omit it and keep the
    * pathname fallback below.
    */
-  pathFilters?: Record<string, unknown>
+  pathContext?: SavedSearchPathContext
 }
 
-export default function SaveSearchButton({ user, pathFilters }: Props) {
+export default function SaveSearchButton({ user, pathContext }: Props) {
+  const pathFilters = pathContext ? buildSavedSearchPathFilters(pathContext) : undefined
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [open, setOpen] = useState(false)

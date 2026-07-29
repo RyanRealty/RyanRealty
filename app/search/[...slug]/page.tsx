@@ -18,7 +18,6 @@ import { getBannerUrl, getOrCreatePlaceBanner, getBannerSearchQuery } from '../.
 import { shareDescription, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '../../../lib/share-metadata'
 import { getBestListingHeroForGeography } from '../../actions/photo-classification'
 import SaveSearchButton from '../../../components/SaveSearchButton'
-import { buildSavedSearchPathFilters } from '@/lib/search/saved-search-path-filters'
 // design-audit NAV-1: KbNav comes from app/search/layout.tsx; these scrolling
 // branches render a KbFooter so MLS reciprocity + legal survive the SiteFooter
 // suppression on /homes-for-sale/** (lib/site/chrome-routes.ts).
@@ -318,18 +317,6 @@ export default async function SearchPage({
   // the subdivision-name match, so the page serves the full neighborhood (e.g.
   // Mountain View, Awbrey Butte) in ~4ms instead of the slow advanced RPC.
   const neighborhood = resolved.neighborhoodName ?? undefined
-
-  // Geography for "Save this search", in canonical filter keys. Derived from
-  // the RESOLVED segment, never the raw pathname — see the helper for why.
-  const savedSearchPathFilters = buildSavedSearchPathFilters({
-    city,
-    citySlug: slug[0],
-    subdivisionSlug: resolved.subdivisionSlug,
-    subdivisionDisplayName: resolved.subdivisionDisplayName,
-    neighborhoodName: resolved.neighborhoodName,
-    preset: resolved.preset,
-  })
-
   const hasFilterOnly = !city && hasFilterOnlySearch(sp)
   const presetLabel = !city ? getPresetSearchLabel(sp) : null
 
@@ -985,7 +972,7 @@ export default async function SearchPage({
             perPage={perPageParam}
           />
         </Suspense>
-        <SaveSearchButton user={!!session?.user} pathFilters={savedSearchPathFilters} />
+        <SaveSearchButton user={!!session?.user} pathContext={{ ...resolved, city, citySlug: slug[0] }} />
       </div>
 
       {/* 4 + 5. Listings grid (design-system ListingCard) + sort/pagination toolbar. */}

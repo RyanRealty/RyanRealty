@@ -19,7 +19,7 @@ type Preset = (typeof SEARCH_PRESETS)[number] | null | undefined
  * The search page resolves the segment already, so it passes the resolved
  * values here instead of the button guessing from the URL.
  */
-export function buildSavedSearchPathFilters(input: {
+export type SavedSearchPathContext = {
   /** Resolved city DISPLAY name (e.g. "Bend"). */
   city: string | null | undefined
   /** First URL segment (e.g. "bend") — the neighborhood slug is prefixed with it. */
@@ -32,7 +32,9 @@ export function buildSavedSearchPathFilters(input: {
   neighborhoodName: string | null | undefined
   /** Set when the segment resolved to a search preset. */
   preset: Preset
-}): Record<string, unknown> {
+}
+
+export function buildSavedSearchPathFilters(input: SavedSearchPathContext): Record<string, unknown> {
   const filters: Record<string, unknown> = {}
   if (input.city) filters.city = input.city
 

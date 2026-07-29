@@ -384,10 +384,13 @@ describe('slug search page: guest save + reachable map-move (2026-06-09)', () =>
     // SubdivisionName — zero rows for a neighborhood or a preset, so the saved
     // search silently never fired an alert. The page resolves the segment
     // already; it must pass the answer down.
-    expect(slug).toMatch(/pathFilters=\{savedSearchPathFilters\}/)
-    expect(slug).toMatch(/buildSavedSearchPathFilters\(\{/)
-    expect(slug).toMatch(/neighborhoodName: resolved\.neighborhoodName/)
-    expect(slug).toMatch(/preset: resolved\.preset/)
+    // The page hands the RESOLVED slug context down; the button converts it
+    // through the shared helper rather than reading the URL itself.
+    expect(slug).toMatch(/pathContext=\{\{ \.\.\.resolved, city, citySlug: slug\[0\] \}\}/)
+    const button = readSrc('components/SaveSearchButton.tsx')
+    expect(button).toMatch(/buildSavedSearchPathFilters\(pathContext\)/)
+    // The pathname fallback may only apply when no resolved context was given.
+    expect(button).toMatch(/if \(pathFilters\) \{/)
   })
 
   it('the saved-search geography helper emits canonical keys, never a bare slug', () => {
