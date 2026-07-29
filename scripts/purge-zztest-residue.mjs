@@ -37,26 +37,18 @@
  * real client record. The default is a dry run precisely so that claim can be
  * re-checked before anything is removed.
  */
-import { readFileSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
+import { loadEnv } from '../lib/platform/env.mjs'
 
 const APPLY = process.argv.includes('--apply')
 
-function loadEnv() {
-  const raw = readFileSync(new URL('../.env.local', import.meta.url), 'utf8')
-  return Object.fromEntries(
-    raw
-      .split('\n')
-      .filter((l) => l.includes('=') && !l.trimStart().startsWith('#'))
-      .map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1).trim()]),
-  )
-}
-
-const env = loadEnv()
-const url = env.NEXT_PUBLIC_SUPABASE_URL
-const key = env.SUPABASE_SERVICE_ROLE_KEY
+// loadEnv() populates process.env from .env.local when present and degrades to
+// env-only on a cloud VM, where that file does not exist (ci:vm-parity).
+await loadEnv()
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+const key = process.env.SUPABASE_SERVICE_ROLE_KEY
 if (!url || !key) {
-  console.error('Missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY in .env.local')
+  console.error('Missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY (env or .env.local)')
   process.exit(2)
 }
 const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
