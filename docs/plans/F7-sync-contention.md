@@ -26,6 +26,41 @@
 > refreshed_at` column defeats the row-diff that makes `REFRESH ... CONCURRENTLY`
 > incremental.
 
+> ### Measured again at apply time (2026-07-29 ~20:30Z) — WORSE than the diagnosis above
+>
+> `cron.job_run_details` for jobid 151 (`refresh_dal_mvs_15min`), last 24h:
+>
+> | runs | failed | avg | max | duty cycle |
+> |---|---|---|---|---|
+> | 95 | **72 (76%)** | 580.8s | 601.4s | **63.9%** |
+>
+> The job does not merely run long, it **mostly fails**, every failure pinned at
+> the 600s statement timeout. So the database spends 64% of its time on work that
+> is then discarded. Consequence found by checking the stamp directly:
+> `max(refreshed_at)` on `listing_tile_mv` was **172 minutes old** while the job
+> was nominally running every 15 minutes. Search pages were serving listing data
+> up to ~3 hours stale, with nothing surfacing that fact — the same silent-
+> staleness class as the 2026-07-16 incident.
+>
+> **Immediate mitigation applied** (reversible, one call): cadence halved from
+> `5,20,35,50` to `5,35` via `select cron.alter_job(151, schedule => '5,35 * * * *')`.
+> Since 76% of runs were already being thrown away, this discards almost no real
+> refresh work and returns roughly half the database's capacity. It does NOT fix
+> the timeout: each run still rewrites all 593,890 rows and still exceeds 600s.
+> Only removing the `now()` column makes the refresh incremental (seconds, not
+> minutes), which is what the staged migration does.
+>
+> **Why the migration was still not applied from this session:** it is one ~8
+> minute transaction, and the Supabase MCP connector demonstrably times out on
+> far smaller DDL against this exact table (a single index build on
+> `listing_tile_mv_src` timed out twice earlier in the same session and had to be
+> done with `CREATE INDEX CONCURRENTLY`). Pushing an 8-minute transaction through
+> that connector would abort and change nothing. It needs a channel that can hold
+> a long transaction (Supabase dashboard SQL editor, or a one-shot `pg_cron` job),
+> which is an operator action.
+
+
+
 # F7 — search pages degrade to 20-50s while background sync runs
 
 Status: diagnosed, migration written, **not applied**.
