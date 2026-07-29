@@ -93,14 +93,38 @@ run_chain_and_build() {
 }
 
 # ---------------------------------------------------------------------------
+# do_push — git push with EXPLICIT exit-code propagation, loud either way.
+# The final push must not rely on `set -e` falling off the end of the script:
+# a signal trap (INT/TERM) fired mid-push resumes execution past the last
+# command and exits 0, and any future line added after a bare `git push`
+# silently absorbs its status. A rejected push reported as a green
+# `npm run push` (observed 2026-07-29, non-fast-forward on main) means the
+# commit never deploys while every log line says gates passed — so the
+# verdict line and exit code are stated explicitly, never inherited.
+# ---------------------------------------------------------------------------
+do_push() {
+  set +e
+  git push "$@"
+  push_rc=$?
+  set -e
+  if [ "$push_rc" -ne 0 ]; then
+    echo "" >&2
+    echo "✗ git push FAILED (exit $push_rc) — NOTHING landed on the remote." >&2
+    echo "  Non-fast-forward? git fetch + rebase onto the remote branch, then re-run: npm run push" >&2
+    exit "$push_rc"
+  fi
+  echo "✓ git push OK"
+}
+
+# ---------------------------------------------------------------------------
 # In-place fallback (old behavior): chain sees the shared working tree.
 # ---------------------------------------------------------------------------
 if [ "$PUSH_GATES_IN_PLACE" = "1" ]; then
   echo "push: PUSH_GATES_IN_PLACE=1 — verifying the shared working tree (foreign session state CAN fail gates here)."
   run_chain_and_build "$REPO_ROOT"
   node scripts/stamp-gates-marker.mjs
-  git push "$@"
-  exit $?
+  do_push "$@"
+  exit 0
 fi
 
 # ---------------------------------------------------------------------------
@@ -175,4 +199,4 @@ if [ "$CUR" != "$SHA" ]; then
   exit 3
 fi
 
-git push "$@"
+do_push "$@"
