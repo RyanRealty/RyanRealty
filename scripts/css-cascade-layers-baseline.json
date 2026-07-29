@@ -3,14 +3,14 @@
   "offenders": [
     "components/admin/help/help-driver.css:32 .driver-popover-navigation-btns button",
     "components/site/kb/kb.css:76 .kb-root .topbar a",
-    "components/site/kb/kb.css:508 .kb-root .menu-grid a",
-    "components/site/kb/kb.css:607 .kb-root .mkt-toggle button",
-    "components/site/kb/kb.css:629 .kb-root .foot-contact a, .kb-root .foot-contact span",
-    "components/site/kb/kb.css:631 .kb-root .foot-social a",
-    "components/site/kb/kb.css:633 .kb-root .foot-col a",
-    "components/site/kb/kb.css:634 .kb-root .foot-col a:hover, .kb-root .foot-contact a:hover, .kb-root .foot-socia",
-    "components/site/kb/kb.css:661 .kb-root .proof-team-head a",
-    "components/site/kb/kb.css:662 .kb-root .proof-team-head a:hover",
-    "components/site/kb/kb.css:1627 .kb-root .comm-str-text a"
+    "components/site/kb/kb.css:509 .kb-root .menu-grid a",
+    "components/site/kb/kb.css:608 .kb-root .mkt-toggle button",
+    "components/site/kb/kb.css:630 .kb-root .foot-contact a, .kb-root .foot-contact span",
+    "components/site/kb/kb.css:632 .kb-root .foot-social a",
+    "components/site/kb/kb.css:634 .kb-root .foot-col a",
+    "components/site/kb/kb.css:635 .kb-root .foot-col a:hover, .kb-root .foot-contact a:hover, .kb-root .foot-socia",
+    "components/site/kb/kb.css:662 .kb-root .proof-team-head a",
+    "components/site/kb/kb.css:663 .kb-root .proof-team-head a:hover",
+    "components/site/kb/kb.css:1628 .kb-root .comm-str-text a"
   ]
 }
