@@ -1,30 +1,60 @@
-> **STATUS: DIAGNOSED, NOT APPLIED — awaiting Matt's go-ahead and a maintenance window.**
+> **STATUS: APPLIED TO PRODUCTION 2026-07-29 ~22:5x UTC — swap committed, measured, gated.**
 >
-> The proposed DDL now lives beside this doc as
-> [`F7-proposed-migration-listing-tile-mv.sql`](F7-proposed-migration-listing-tile-mv.sql).
-> It is deliberately NOT in `supabase/migrations/`, because an unapplied
-> migration there fails `ci:migration-drift` (the gate correctly refuses a
-> migration whose tables are absent from the prod snapshot) and would block
-> every unrelated push.
+> Channel that worked: a self-unscheduling pg_cron one-shot whose FIRST
+> statements are `select cron.unschedule(...)` then
+> `set local statement_timeout = '1800s'` — the set-local-first pattern was
+> PROVEN by a probe (pg_sleep(630) survived past the 600s barrier) before the
+> second attempt. Attempt 1 (timeout set inside the function) died at exactly
+> 600.0s and rolled back atomically; no blackout either way, readers keep the
+> old view until commit.
 >
-> **Why it was not applied autonomously.** It recreates the materialized view
-> behind every search page, it has never been executed in any environment, and
-> applying it naively blanks search results for roughly eight minutes. The
-> `_v2`-alongside-then-rename swap in its header is the right procedure but is
-> itself untested here. That is an operational decision with a customer-visible
-> blast radius, so it belongs to Matt, not to an agent.
+> | metric | before | after |
+> |---|---|---|
+> | refresh outcome (24h) | 72 of 95 runs FAILED at 600s | succeeds |
+> | rows written per refresh | ~593,890 (full rewrite) | **~70** (real deltas) |
+> | first post-fix refresh | — | 362.8s (cold diff) |
+> | steady-state refresh (measured 23:05Z run) | 580.8s avg, mostly FAILING | tile 389.6s / 4-MV chain 478.7s, SUCCEEDS |
+> | autovacuums | 1,168 (one per rewrite) | 1 |
+> | data staleness observed | 172 min | stamped 23:00:02Z |
+> | indexes on the MV | 12 (incl. a never-scanned GIST) | 11 (GIST dropped, evidence in 20260729231500) |
 >
-> **To apply:** move the file into `supabase/migrations/`, run the swap
-> procedure in its header during a quiet window, then
-> `npm run ci:data-access -- --refresh` so the snapshot catches up and the drift
-> gate clears.
+> Honest residual: the duration win is modest because REFRESH CONCURRENTLY
+> still RE-RUNS the full MV query (589K-row scan + 594K tsvector builds) to
+> compute its diff — the now() fix eliminated the WRITE side (594K-row
+> delete+insert, 12-index maintenance, vacuum-per-run), which is what starved
+> readers and failed runs. Cutting the remaining ~390s read cost is an
+> instance-size / query-cost question (2 cores, 1GB shared_buffers), not an MV
+> hygiene one. Telemetry proof: the first pipeline run after the
+> clock_timestamp() fix recorded 37.5s against a 37.5s wall clock.
 >
-> **Independently re-verified before staging** (not just agent-reported):
-> `listing_tile_mv_src` shows `n_tup_ins` 689,514,161 against 593,890 live rows
-> = **1,161 implied full rewrites** with 1,168 autovacuums, while the control MV
-> `listing_boundary_xref_mv_src` (no `now()` column) shows **1.3**. The `now() AS
-> refreshed_at` column defeats the row-diff that makes `REFRESH ... CONCURRENTLY`
-> incremental.
+> Also fixed while in here: `run_post_sync_pipeline` telemetry recorded every
+> duration as 0.000000 (`now()` is transaction-fixed); its 9 timing call sites
+> now use `clock_timestamp()`. New gate `ci:mv-determinism` fails any NEW
+> migration whose materialized view body contains a volatile time/random
+> function — the class, not the instance. The migration lives at
+> `supabase/migrations/20260729193000_...` and matches production.
+
+> ### Apply attempt 1 (2026-07-29 21:00Z) — FAILED at the documented trap, rolled back clean
+>
+> The swap ran as a one-shot pg_cron job calling one plpgsql function. It died at
+> exactly **600.0s** ("canceling statement due to statement timeout", mid
+> `create index listing_tile_mv_list_number`) — the migration's own section-8
+> warning in action: the timer is armed when the enclosing statement starts, so
+> `set_config('statement_timeout', ...)` INSIDE the function cannot extend it.
+> The transaction rolled back atomically; verified afterwards: 593,876 rows, 12
+> indexes, both views, the now() column still present, site serving normally
+> throughout (864ms-2.6s page loads mid-rebuild, no blackout — readers keep the
+> old view until commit, so the 8-minute-blackout fear in the earlier banner was
+> wrong for the single-transaction form).
+>
+> Retry in progress with two changes: (1) an empirical PROBE first — a pg_cron
+> command of `unschedule-self; set local statement_timeout='700s';
+> select pg_sleep(630)` proves or disproves that the set-local-first pattern
+> extends the budget before betting another 10-minute build on it; (2) the job
+> unschedules itself as its FIRST statement so it can fire exactly once, and the
+> swap is wrapped in `_f7_swap_guarded()` which no-ops if the column is already
+> gone. If the probe fails, fallback is a temporary role-level timeout window or
+> a decomposed per-statement build, chosen on the probe evidence.
 
 > ### Measured again at apply time (2026-07-29 ~20:30Z) — WORSE than the diagnosis above
 >

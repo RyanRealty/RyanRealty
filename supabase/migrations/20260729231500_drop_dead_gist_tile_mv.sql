@@ -1,0 +1,18 @@
+-- Drop listing_tile_mv_active_geo (F7 follow-up, 2026-07-29).
+--
+-- Evidence, both halves required before removal:
+--   1. pg_stat_user_indexes: idx_scan = 0 — never read once across a stats
+--      window in which the busiest index on the same MV logged 25,415,099
+--      scans and the QUIETEST kept index logged 25.
+--   2. Zero code consumers: no PostGIS predicate (ST_Within / ST_DWithin /
+--      ST_MakePoint) targets listing_tile_mv anywhere in lib/ or app/ — the
+--      map path reads the lat/lng btrees (listing_tile_mv_active_latlng,
+--      1,718 scans) and polygon work goes through listing_boundary_xref_mv.
+--
+-- Cost of keeping it: a GIST over a geometry expression is among the most
+-- expensive indexes to build on a full rebuild and adds maintenance to every
+-- incremental refresh. Contrast: the GIN full-text index showed only 33 scans
+-- but STAYS — searchSuggestTiles.ts and searchListingsAll.ts query
+-- search_vector through it, which is why scan counts alone never justify a
+-- drop. Applied to production 2026-07-29 23:0x UTC.
+drop index if exists public.listing_tile_mv_active_geo;
