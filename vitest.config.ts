@@ -1,9 +1,39 @@
 import { defineConfig } from 'vitest/config'
 import path from 'path'
 
+// Integration tests (*.int.test.ts) hit live Supabase. Run fully parallel they
+// saturate the connection pool and die on 10s hook timeouts even though each
+// test passes in isolation (observed 2026-07-28: 12 int files, ~20 spurious
+// fails per pre-commit run). They get their own project: capped workers +
+// timeouts sized to real DB latency. Unit tests keep full parallelism.
+const INT_INCLUDE = ['lib/**/*.int.test.ts']
+
 export default defineConfig({
   test: {
     environment: 'node',
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          exclude: ['**/node_modules/**', '**/dist/**', ...INT_INCLUDE],
+          sequence: { groupOrder: 0 },
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'int',
+          include: INT_INCLUDE,
+          // Serial: even 3 concurrent int files contend enough to flake
+          // (cma-kickoff passes in 10s alone, fails at 74s under load).
+          maxWorkers: 1,
+          hookTimeout: 30_000,
+          testTimeout: 120_000,
+          sequence: { groupOrder: 1 },
+        },
+      },
+    ],
     include: [
       'lib/**/*.test.ts',
       'lib/**/*.test.tsx',
