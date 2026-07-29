@@ -89,7 +89,21 @@ const nextConfig: NextConfig = {
   // approaches this); runtime perf is controlled separately via query timeouts +
   // cache. (Follow-up: the sitemap runs the per-city subdivision RPC set twice —
   // getSearchMatrix + getIndexableSubdivisions — worth deduping.)
-  staticPageGenerationTimeout: 600,
+  //
+  // Raised 600 -> 1800 on 2026-07-28. The comment above ("inert on Vercel") is no
+  // longer true: /sitemap.xml outgrew 600s on Vercel and the build log showed
+  //   Failed to build /sitemap.xml/route ... took more than 600 seconds.
+  //   Retrying again shortly. (attempt 1 of 3)
+  // Three attempts x 600s is ~30 minutes on one route, which is why production
+  // deploys stalled and two were canceled. Same shape as the earlier 180 -> 600
+  // raise. This buys room; it is NOT the fix.
+  //
+  // THE REAL FIX is to split /sitemap.xml into a sitemap index of chunks
+  // (Next `generateSitemaps`), so no single route does thousands of URLs and
+  // ~2.4MB of XML in one prerender. Tracked in the plan doc. Until then, do not
+  // let this number quietly absorb further growth — if it needs raising again,
+  // split the sitemap instead.
+  staticPageGenerationTimeout: 1800,
   async headers() {
     return [
       {
