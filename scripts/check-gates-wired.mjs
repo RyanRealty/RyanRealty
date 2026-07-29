@@ -66,6 +66,7 @@ const NOT_A_GATE = new Set([
 const KNOWN_UNWIRED = new Map([
   ['ci:data-access', 'G16 regenerates the schema snapshot from LIVE Supabase (needs DB creds); run via `npm run ci:data-access` locally + nightly, not the secret-less static ci:gates chain'],
   ['ci:resend-webhook', 'needs a Resend secret; off-chain nightly like G16 — run locally/nightly, never in the secret-less static chain'],
+  ['ci:community-alias-cities', 'needs live Supabase (asserts registry mls_cities coverage vs actual MLS City spellings); runs inside the ci:data-access chain, same cadence as G16'],
 ])
 
 // ---- Check 1: ci:* SCRIPT orphans ----

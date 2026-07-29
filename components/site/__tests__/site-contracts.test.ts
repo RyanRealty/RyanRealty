@@ -214,8 +214,13 @@ describe('design directive contracts', () => {
     const src = readSrc('app/communities/[slug]/page.tsx')
     expect(src).toMatch(/UNRELIABLE_BOUNDARY_SLUGS/)
     expect(src).toMatch(/isBoundaryReliable\(slug\)/)
-    // an unreliable boundary draws NO polygon
-    expect(src).toMatch(/!boundaryReliable\s*\n?\s*\?\s*null/)
+    // 2026-07-29 (Matt): the county plat union — the TRUE footprint — ALWAYS
+    // draws when present; the unreliable-hull baseline gates ONLY the stored
+    // boundary polygon. The old ordering nulled both for baseline slugs, so
+    // caldera-springs/crosswater/BBR shipped maps with no boundary at all.
+    expect(src).toMatch(
+      /resortBoundary \?\? \(boundaryReliable \? boundaryMapData\.polygon : null\) \?\? null/,
+    )
   })
 
   it('D99 — Market HUD does not pair a median-SALE delta with the median-LIST headline (§0)', () => {

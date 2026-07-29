@@ -325,11 +325,24 @@ export default async function CommunityDetailPage({ params }: Props) {
     withTimeoutFallback(getOpenHousesWithListings({ city: cityName }), [], 3500, 'comm:openHouses'),
     withTimeoutFallback(getActivityFeedWithFallbackMulti({ cities: [cityName], limit: 8 }), [], 3500, 'comm:activity'),
     withTimeoutFallback(getCommunityListings(cityName, community.subdivision, 14), [], 4500, 'comm:featured'),
-    // Uncapped active SFR tiles for the city — the source for the alias-aware
-    // resort count (so the hero number matches the city ledger, not the
-    // literal-name undercount). Only needed when this community is a resort. (§0)
+    // Uncapped active SFR tiles for EVERY MLS city this community lists under —
+    // the source for the alias-aware resort count (so the hero number matches
+    // the DB, not the literal-name undercount). registry mls_cities covers
+    // communities whose MLS City differs from the registry city (Caldera
+    // Springs lists under Bend, Black Butte Ranch under its own name) — the
+    // registry-city-only pull rendered "0 homes for sale" against 31 real
+    // (2026-07-29 audit). Only needed when this community is a resort. (§0)
     isResortInCity
-      ? withTimeoutFallback(fetchAllCityActiveSfr(cityName), [], 6000, 'comm:citySfr')
+      ? withTimeoutFallback(
+          Promise.all(
+            [...new Set([cityName, ...(registryEntry?.mls_cities ?? [])])].map((c) =>
+              fetchAllCityActiveSfr(c),
+            ),
+          ).then((sets) => sets.flat()),
+          [],
+          9000,
+          'comm:citySfr',
+        )
       : Promise.resolve([] as Awaited<ReturnType<typeof getListingTiles>>),
     // Rich, verified resort/golf/master-planned content (amenities, drive times,
     // golf course, membership, builders) from data/resort-community-<slug>.json —
@@ -553,12 +566,13 @@ export default async function CommunityDetailPage({ params }: Props) {
     }))
   const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
 
-  // Polygon: draw ONLY a reliable boundary. Prefer the authoritative resort plat
-  // union (getResortBoundaryGeoJSON), else the boundary polygon. An unreliable /
-  // oversized boundary draws NOTHING (pins only). (preserved from prior page)
-  const polygonGeometry = !boundaryReliable
-    ? null
-    : resortBoundary ?? boundaryMapData.polygon ?? null
+  // Polygon: the authoritative resort plat union (getResortBoundaryGeoJSON)
+  // ALWAYS draws when present — it is the county-GIS TRUE footprint, immune to
+  // the oversized-hull problem. The unreliable-boundary baseline only gates the
+  // STORED boundary polygon (the hull that over-matched). The old ordering
+  // nulled BOTH for baseline slugs, so caldera-springs/crosswater/BBR shipped a
+  // map with no boundary despite a verified plat union (2026-07-29). (§0)
+  const polygonGeometry = resortBoundary ?? (boundaryReliable ? boundaryMapData.polygon : null) ?? null
   const mapPolygons = polygonGeometry
     ? {
         type: 'FeatureCollection' as const,
@@ -861,10 +875,24 @@ export default async function CommunityDetailPage({ params }: Props) {
           posterAlt={`${community.name} in ${cityName}, Oregon`}
           mediaCaption={mediaCaption}
         />
-        {/* Inventory FIRST (design-audit P1): the page is titled "<name> homes
-            for sale" but a mobile buyer scrolled 10+ viewports of amenities and
-            membership tables before seeing a single home. Order now: homes →
-            map → market → resort depth. */}
+        {/* Overview directly after the hero (Matt, 2026-07-29 — supersedes the
+            earlier inventory-first order): the reader gets WHAT this community
+            is before the listings. Order: hero → overview → homes → map →
+            market. */}
+        <KbResortOverview
+          content={richContent}
+          name={community.name}
+          postsBySlug={amenityPosts}
+          aliases={registryEntry?.subdivision_aliases ?? []}
+        />
+        {richContent ? null : aboutParagraphs.length > 0 ? (
+          <KbAbout
+            eyebrow={communityLabel}
+            heading={`Living in ${community.name}`}
+            paragraphs={aboutParagraphs}
+            facts={aboutFacts}
+          />
+        ) : null}
         <KbFeatured
           items={featuredItems}
           eyebrow={`${community.name} · For sale`}
@@ -904,41 +932,24 @@ export default async function CommunityDetailPage({ params }: Props) {
           // this community has no active listings (empty geojson features). (§0)
           centerLonLat={registryEntry?.center_lon_lat ?? undefined}
         />
+        {/* ONE market section (Matt, 2026-07-29): the tabbed core charts render
+            INSIDE the HUD section instead of a second, separately-headed
+            "market trends" section stacked underneath it. */}
         <KbMarketHud
           data={marketData}
           eyebrow={`${community.name} · The market`}
           chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
-        />
-        {/* Tabbed core-chart module — one chart component everywhere. Sits under
-            the HUD KPI grid; renders nothing when no series is chartable. (§0) */}
-        {coreCharts ? (
-          <section className="section" aria-label={`${community.name} market trend charts`}>
-            <div className="wrap py-10 sm:py-14">
+        >
+          {coreCharts ? (
+            <div className="pt-10" aria-label={`${community.name} market trend charts`}>
               <MarketCoreCharts
                 data={coreCharts}
                 heading={`${community.name} market trends`}
                 scopeLabel={coreChartsScopeLabel}
               />
             </div>
-          </section>
-        ) : null}
-        {/* Rich resort/golf/master-planned depth (overview · amenities · golf ·
-            membership · builders) — null when no config. When present it carries the
-            overview, so the thin data-driven About is suppressed to avoid duplication. */}
-        <KbResortOverview
-          content={richContent}
-          name={community.name}
-          postsBySlug={amenityPosts}
-          aliases={registryEntry?.subdivision_aliases ?? []}
-        />
-        {!richContent && aboutParagraphs.length > 0 ? (
-          <KbAbout
-            eyebrow={communityLabel}
-            heading={`Living in ${community.name}`}
-            paragraphs={aboutParagraphs}
-            facts={aboutFacts}
-          />
-        ) : null}
+          ) : null}
+        </KbMarketHud>
         <KbCommunities communities={communityItems} eyebrow={`${cityName} · Communities`} />
         {/* Per-location area guide video — self-hides when this community has no
             approved guide video. Sits after the communities rail, before the

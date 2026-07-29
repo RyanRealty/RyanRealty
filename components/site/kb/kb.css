@@ -186,7 +186,10 @@ html.lenis, html.lenis body{height:auto;}
 }
 .kb-root .hero-tag .dot{width:7px;height:7px;border-radius:50%;background:var(--cream);}
 .kb-root .hero-h{
-  font-size:clamp(2.4rem,8.5vw,7rem);
+  /* Was clamp(2.4rem,8.5vw,7rem) — a 112px desktop H1 Matt flagged as
+     oversized (2026-07-29). 76px cap keeps the display face dominant without
+     the headline swallowing the viewport. */
+  font-size:clamp(2.2rem,6.5vw,4.75rem);
   margin:0 0 2px;
 }
 .kb-root .hero-h .ln{display:block;line-height:.96;}

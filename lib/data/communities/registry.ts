@@ -42,6 +42,12 @@ export type ResortCommunityEntry = {
   broad_radius_km: number
   center_lon_lat: [number, number]
   subdivision_aliases: string[]
+  /** MLS `City` spellings that carry this community's active listings when they
+   *  differ from the registry city (e.g. Caldera Springs lists under Bend, Black
+   *  Butte Ranch under its own city name). The community page must pull tiles
+   *  for the registry city PLUS these, or alias matching sees zero homes.
+   *  Verified 2026-07-29 audit sweep; gated by check-community-alias-cities. */
+  mls_cities?: string[]
   sub_neighborhoods: SubNeighborhood[]
   child_count: number
   character?: string | null

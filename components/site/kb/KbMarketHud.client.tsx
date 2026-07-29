@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { gsap } from 'gsap'
@@ -41,9 +41,16 @@ export function KbMarketHud({
   chartScopeLabel,
   asOf,
   byTownKind = 'town',
+  children,
 }: {
   data: KbMarketData
   eyebrow?: string
+  /**
+   * Extra market modules (e.g. the tabbed MarketCoreCharts) rendered INSIDE
+   * this section, after the HUD grid — one "market" section per page instead
+   * of two stacked, separately-headed sections (Matt, 2026-07-29).
+   */
+  children?: ReactNode
   /**
    * When the trend chart shows a DIFFERENT geography than the section (e.g. a
    * community page whose own neighborhood sales are too sparse, so the chart falls
@@ -271,6 +278,7 @@ export function KbMarketHud({
         <p className="mkt-fine">
           Live single-family figures from the regional MLS. Months of supply is active inventory divided by the homes closed in the last 6 months, then divided by 6. Four months or less is a seller&rsquo;s market, four to six is balanced, six or more is a buyer&rsquo;s market. Sale to list compares the final sale price to the asking price. Median to pending is days from listing to an accepted offer.
         </p>
+        {children}
       </div>
     </section>
   )

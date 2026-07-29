@@ -85,7 +85,7 @@
     "ci:governed-send:baseline": "node scripts/check-governed-send.mjs --write-baseline",
     "ci:deliverable-send-chokepoint": "node scripts/check-deliverable-send-chokepoint.mjs",
     "ci:deliverable-send-chokepoint:baseline": "node scripts/check-deliverable-send-chokepoint.mjs --write-baseline",
-    "ci:data-access": "node scripts/check-data-access.mjs",
+    "ci:data-access": "node scripts/check-data-access.mjs && npm run ci:community-alias-cities",
     "ci:data-access:refresh": "node scripts/check-data-access.mjs --refresh",
     "ci:sync-cursor": "node scripts/check-sync-cursor.mjs",
     "ci:auth-redirect": "node scripts/check-auth-redirect.mjs",
@@ -348,7 +348,8 @@
     "setup:cloud": "bash scripts/cloud-setup.sh",
     "secrets:pack": "node scripts/secrets-pack.mjs",
     "ci:person-workspace-single-tree": "node scripts/check-person-workspace-single-tree.mjs",
-    "wt:status": "node scripts/worktree-hygiene.mjs"
+    "wt:status": "node scripts/worktree-hygiene.mjs",
+    "ci:community-alias-cities": "node scripts/check-community-alias-cities.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",

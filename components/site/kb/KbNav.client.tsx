@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import { CONTACT } from '@/lib/brand/contact'
 import { useSessionUser } from '@/lib/hooks/useSessionUser'
 import {
-  KB_ABOUT_DROPDOWN,
   KB_MENU_GROUPS,
   KB_TOP_LINKS,
   VALUATION_FORM,
@@ -20,19 +19,18 @@ import {
 
 /**
  * KB top bar — transparent over the hero, flips to solid navy past the hero.
- * Structure from lib/site-nav.ts (KB_TOP_LINKS / KB_MENU_GROUPS). About carries
- * a lightweight Team / Reviews / Contact dropdown for trust findability.
+ * Structure from lib/site-nav.ts (KB_TOP_LINKS / KB_MENU_GROUPS). Every top
+ * link is a plain link (About's dropdown removed per Matt, 2026-07-29); deep
+ * destinations live in the MENU overlay + footer.
  */
 export function KbNav({ solid = false }: { solid?: boolean } = {}) {
   const bar = useRef<HTMLElement>(null)
   const [open, setOpen] = useState(false)
-  const [aboutOpen, setAboutOpen] = useState(false)
   const sessionUser = useSessionUser()
   const signedIn = Boolean(sessionUser)
   const overlayRef = useRef<HTMLDivElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
-  const aboutWrapRef = useRef<HTMLDivElement>(null)
 
   const router = useRouter()
   const [query, setQuery] = useState('')
@@ -97,22 +95,6 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
     return () => window.removeEventListener('scroll', onScroll)
   }, [solid])
 
-  useEffect(() => {
-    if (!aboutOpen) return
-    const onDoc = (e: MouseEvent) => {
-      if (!aboutWrapRef.current?.contains(e.target as Node)) setAboutOpen(false)
-    }
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setAboutOpen(false)
-    }
-    document.addEventListener('mousedown', onDoc)
-    window.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onDoc)
-      window.removeEventListener('keydown', onKey)
-    }
-  }, [aboutOpen])
-
   const hasOpenedRef = useRef(false)
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
@@ -158,42 +140,13 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
           <img className="logo-img" src="/images/brand/logo-horizontal-navy-transparent.png" alt="Ryan Realty" />
         </Link>
         <nav className="nav-right">
-          {KB_TOP_LINKS.map((l) =>
-            l.href === '/about' ? (
-              <div className="nav-about" key={l.href} ref={aboutWrapRef}>
-                <button
-                  type="button"
-                  className="nav-link nav-about-trigger"
-                  aria-expanded={aboutOpen}
-                  aria-haspopup="true"
-                  aria-controls="about-dropdown"
-                  onClick={() => setAboutOpen((v) => !v)}
-                  onMouseEnter={() => setAboutOpen(true)}
-                >
-                  {l.label}
-                </button>
-                <div
-                  id="about-dropdown"
-                  className={`nav-about-menu${aboutOpen ? ' open' : ''}`}
-                  role="menu"
-                  onMouseLeave={() => setAboutOpen(false)}
-                >
-                  <a href="/about" role="menuitem" onClick={() => setAboutOpen(false)}>
-                    About Ryan Realty
-                  </a>
-                  {KB_ABOUT_DROPDOWN.map((d) => (
-                    <a key={d.href} href={d.href} role="menuitem" onClick={() => setAboutOpen(false)}>
-                      {d.label}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <a key={l.href} className="nav-link" href={l.href}>
-                {l.label}
-              </a>
-            )
-          )}
+          {/* About is a PLAIN LINK (Matt, 2026-07-29 — dropdown removed). Its
+              former destinations stay reachable via the MENU overlay + footer. */}
+          {KB_TOP_LINKS.map((l) => (
+            <a key={l.href} className="nav-link" href={l.href}>
+              {l.label}
+            </a>
+          ))}
           <button
             type="button"
             className="nav-link menu-btn"

@@ -1,851 +1,870 @@
 {
-  "version": "v2-2026-05-15",
-  "source": "Spark MLS API spatial discovery + Matt-approved manual overrides",
-  "verification_trace": "Each child verified ≥80% of its listings inside parent's broad area (per-parent radius 2-6km). Sunriver center hardcoded to 43.875,-121.450 (Matt-approved 2026-05-15). 'The Highlands at Broken Top' assigned to Broken Top via name-override (Matt-approved). 5 unassigned variants (River Forest Acres, North Rim, Skyline, Wildflower, Rock Ridge) are outside any resort community — they remain stand-alone subdivisions using SubdivisionName text equality. v2 patch (Matt 2026-05-15): Crosswater trimmed to 4 aliases (was 9). Vandevert Ranch promoted to own parent (single name). Three Rivers added as new parent (11 children). Kitty Hawk stays under Sunriver per closest-parent rule. 2026-06-27: 4 communities appended by hand from live MLS subdivision data — Mt Bachelor Village, Inn of the 7th Mountain, River's Edge, Mountain High. Method: exact MLS SubdivisionName match; center_lon_lat = centroid of that subdivision's listing coordinates (avg Latitude/Longitude over all listings, authoritative MLS data, 2026-06-27).",
-  "generated_at": "2026-06-27",
-  "communities": [
+ "version": "v2-2026-05-15",
+ "source": "Spark MLS API spatial discovery + Matt-approved manual overrides",
+ "verification_trace": "Each child verified \u226580% of its listings inside parent's broad area (per-parent radius 2-6km). Sunriver center hardcoded to 43.875,-121.450 (Matt-approved 2026-05-15). 'The Highlands at Broken Top' assigned to Broken Top via name-override (Matt-approved). 5 unassigned variants (River Forest Acres, North Rim, Skyline, Wildflower, Rock Ridge) are outside any resort community \u2014 they remain stand-alone subdivisions using SubdivisionName text equality. v2 patch (Matt 2026-05-15): Crosswater trimmed to 4 aliases (was 9). Vandevert Ranch promoted to own parent (single name). Three Rivers added as new parent (11 children). Kitty Hawk stays under Sunriver per closest-parent rule. 2026-06-27: 4 communities appended by hand from live MLS subdivision data \u2014 Mt Bachelor Village, Inn of the 7th Mountain, River's Edge, Mountain High. Method: exact MLS SubdivisionName match; center_lon_lat = centroid of that subdivision's listing coordinates (avg Latitude/Longitude over all listings, authoritative MLS data, 2026-06-27). | mls_cities added 2026-07-29: per-community MLS City spellings carrying active alias listings (audit sweep, Supabase listings); communities whose MLS City differs from the registry city were rendering 0 homes.",
+ "generated_at": "2026-06-27",
+ "communities": [
+  {
+   "slug": "tetherow",
+   "label": "Tetherow",
+   "city": "Bend",
+   "city_slug": "bend",
+   "is_resort": true,
+   "broad_radius_km": 4.0,
+   "center_lon_lat": [
+    -121.3599,
+    44.0306
+   ],
+   "subdivision_aliases": [
+    "Tetherow",
+    "Sunrise Village",
+    "Westbrook Meadows",
+    "Braeburn",
+    "1st On The Hillsites",
+    "Lodges at Bachelor V",
+    "Triple",
+    "Campbell Road",
+    "Roald West"
+   ],
+   "sub_neighborhoods": [
     {
-      "slug": "tetherow",
-      "label": "Tetherow",
-      "city": "Bend",
-      "city_slug": "bend",
-      "is_resort": true,
-      "broad_radius_km": 4.0,
-      "center_lon_lat": [
-        -121.3599,
-        44.0306
-      ],
-      "subdivision_aliases": [
-        "Tetherow",
-        "Sunrise Village",
-        "Westbrook Meadows",
-        "Braeburn",
-        "1st On The Hillsites",
-        "Lodges at Bachelor V",
-        "Triple",
-        "Campbell Road",
-        "Roald West"
-      ],
-      "sub_neighborhoods": [
-        {
-          "slug": "heath",
-          "name": "Heath",
-          "type": "Single-family golf homes",
-          "hoa_annual_estimate": 2244,
-          "hoa_sub_quarterly": 195,
-          "hoa_master_annual": 1464,
-          "hoa_manager": "TOA (Tetherow Owners Association)",
-          "lot_size_note": "Golf-frontage ½-acre and larger lots",
-          "character": "Original Tetherow phase. Established build-out feel. Direct course frontage on the McLay Kidd holes. Heath sits on the north side of Tetherow Phase 1, anchored by Hosmer Lake Drive and Cartwright.",
-          "description": "Original Tetherow phase. Single-family golf homes on ½-acre and larger lots fronting the McLay Kidd course. Established built-out feel.",
-          "image_hint": "Heath at Tetherow course-frontage exterior — hand-pick from a Hosmer Lake or Cartwright MLS photo set",
-          "mls_aliases": [
-            "Tetherow"
-          ],
-          "boundary_centroid": {
-            "lat": 44.0335,
-            "lng": -121.359,
-            "note": "Approximated from Tetherow Phase 1 polygon centroid (Deschutes County GIS) shifted slightly north toward Hosmer Lake Dr. No Heath-specific recorded plat polygon exists; Heath addresses fall within the Tetherow Phase 1 boundary."
-          },
-          "data_thin_note": "MLS does not tag Heath separately. SubdivisionName is always 'Tetherow'. Page uses parent Tetherow stats with a footnote."
-        }
-      ],
-      "child_count": 8,
-      "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
-        "children_with_pct": [
-          {
-            "name": "Sunrise Village",
-            "pct_inside": 99.7
-          },
-          {
-            "name": "Westbrook Meadows",
-            "pct_inside": 99.6
-          },
-          {
-            "name": "Braeburn",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "1st On The Hillsites",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Lodges at Bachelor V",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Triple",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Campbell Road",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Roald West",
-            "pct_inside": 100.0
-          }
-        ]
-      }
-    },
-    {
-      "slug": "broken-top",
-      "label": "Broken Top",
-      "city": "Bend",
-      "city_slug": "bend",
-      "is_resort": true,
-      "broad_radius_km": 3.5,
-      "center_lon_lat": [
-        -121.3493,
-        44.0433
-      ],
-      "subdivision_aliases": [
-        "Broken Top",
-        "Golden Butte",
-        "Parks At Broken Top",
-        "Overturf Butte",
-        "The Highlands at Broken Top"
-      ],
-      "child_count": 4,
-      "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
-        "children_with_pct": [
-          {
-            "name": "Golden Butte",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Parks At Broken Top",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Overturf Butte",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "The Highlands at Broken Top",
-            "pct_inside": 100.0
-          }
-        ]
-      }
-    },
-    {
-      "slug": "eagle-crest",
-      "label": "Eagle Crest",
-      "city": "Redmond",
-      "city_slug": "redmond",
-      "is_resort": true,
-      "broad_radius_km": 6.0,
-      "center_lon_lat": [
-        -121.2759,
-        44.2674
-      ],
-      "subdivision_aliases": [
-        "Eagle Crest",
-        "Ridge At Eagle Crest",
-        "Cline Falls Oasis",
-        "Coppermill",
-        "Cline Falls Mob Park"
-      ],
-      "child_count": 4,
-      "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
-        "children_with_pct": [
-          {
-            "name": "Ridge At Eagle Crest",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Cline Falls Oasis",
-            "pct_inside": 98.1
-          },
-          {
-            "name": "Coppermill",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Cline Falls Mob Park",
-            "pct_inside": 100.0
-          }
-        ]
-      }
-    },
-    {
-      "slug": "pronghorn",
-      "label": "Pronghorn",
-      "city": "Bend",
-      "city_slug": "bend",
-      "is_resort": true,
-      "broad_radius_km": 3.0,
-      "center_lon_lat": [
-        -121.1714,
-        44.1911
-      ],
-      "subdivision_aliases": [
-        "Pronghorn"
-      ],
-      "child_count": 0,
-      "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
-        "children_with_pct": []
-      }
-    },
-    {
-      "slug": "caldera-springs",
-      "label": "Caldera Springs",
-      "city": "Sunriver",
-      "city_slug": "sunriver",
-      "is_resort": true,
-      "broad_radius_km": 4.0,
-      "center_lon_lat": [
-        -121.4351,
-        43.8505
-      ],
-      "subdivision_aliases": [
-        "Caldera Springs"
-      ],
-      "child_count": 0,
-      "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test. Corrected 2026-06-27: removed Powder Village Condo (condo community, PropertyType=A avg close $288K, geographically adjacent but distinct), Business Park, Sunriver Business Pa (commercial, 0 active SFR), Compound Condominium (0 active SFR). These were incorrectly assigned by spatial proximity; they are Sunriver-area subdivisions, not Caldera Springs residential phases. Caldera Springs = 29 active SFR, avg list $2.05M (verified live MLS 2026-06-27).",
-        "children_with_pct": []
-      }
-    },
-    {
-      "slug": "sunriver",
-      "label": "Sunriver",
-      "city": "Sunriver",
-      "city_slug": "sunriver",
-      "is_resort": true,
-      "broad_radius_km": 5.0,
-      "center_lon_lat": [
-        -121.45,
-        43.875
-      ],
-      "subdivision_aliases": [
-        "Sunriver",
-        "The Ridge",
-        "StoneTH",
-        "Deer Park",
-        "Mtn Village East",
-        "River Village",
-        "Fairway Crest Village",
-        "Forest Park",
-        "Meadow Village",
-        "Overlook Park",
-        "Mtn Village West",
-        "Tennis Village",
-        "Meadow House",
-        "Fairway Vill Condo",
-        "Fremont Crossing",
-        "Abbot House Condo",
-        "Kitty Hawk",
-        "Quelah Condos",
-        "WildflS",
-        "Polehouse",
-        "Aquila Lodges",
-        "Fairway Island",
-        "Cluster Court",
-        "Skypark",
-        "Mtn View Lodge",
-        "Ranch Cabins",
-        "SkylinC",
-        "Quelah Estates",
-        "Aspen Meadows",
-        "Camp Abbot Hangars",
-        "Sunriver Lodge"
-      ],
-      "child_count": 31,
-      "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
-        "children_with_pct": [
-          {
-            "name": "The Ridge",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "StoneTH",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Deer Park",
-            "pct_inside": 98.7
-          },
-          {
-            "name": "Mtn Village East",
-            "pct_inside": 99.7
-          },
-          {
-            "name": "River Village",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Fairway Crest Village",
-            "pct_inside": 99.5
-          },
-          {
-            "name": "Forest Park",
-            "pct_inside": 99.5
-          },
-          {
-            "name": "Meadow Village",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Overlook Park",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Mtn Village West",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Tennis Village",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Meadow House",
-            "pct_inside": 96.6
-          },
-          {
-            "name": "Fairway Vill Condo",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Fremont Crossing",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Abbot House Condo",
-            "pct_inside": 98.0
-          },
-          {
-            "name": "Kitty Hawk",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Quelah Condos",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "WildflS",
-            "pct_inside": 97.2
-          },
-          {
-            "name": "Polehouse",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Aquila Lodges",
-            "pct_inside": 89.3
-          },
-          {
-            "name": "Fairway Island",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Cluster Court",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Skypark",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Mtn View Lodge",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Ranch Cabins",
-            "pct_inside": 95.0
-          },
-          {
-            "name": "SkylinC",
-            "pct_inside": 95.0
-          },
-          {
-            "name": "Quelah Estates",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Aspen Meadows",
-            "pct_inside": 81.2
-          },
-          {
-            "name": "Pace Estate",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Camp Abbot Hangars",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Sunriver Lodge",
-            "pct_inside": 100.0
-          }
-        ]
-      }
-    },
-    {
-      "slug": "awbrey-glen",
-      "label": "Awbrey Glen",
-      "city": "Bend",
-      "city_slug": "bend",
-      "is_resort": true,
-      "broad_radius_km": 3.0,
-      "center_lon_lat": [
-        -121.3532,
-        44.0838
-      ],
-      "subdivision_aliases": [
-        "Awbrey Glen",
-        "Shevlin Bluffs",
-        "Shevlin Estates",
-        "Awbrey Court",
-        "Shevlin Court",
-        "The Farm"
-      ],
-      "child_count": 5,
-      "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
-        "children_with_pct": [
-          {
-            "name": "Shevlin Bluffs",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Shevlin Estates",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Awbrey Court",
-            "pct_inside": 95.5
-          },
-          {
-            "name": "Shevlin Court",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "The Farm",
-            "pct_inside": 100.0
-          }
-        ]
-      }
-    },
-    {
-      "slug": "northwest-crossing",
-      "label": "NorthWest Crossing",
-      "city": "Bend",
-      "city_slug": "bend",
-      "is_resort": true,
-      "broad_radius_km": 4.0,
-      "center_lon_lat": [
-        -121.3525,
-        44.0611
-      ],
-      "subdivision_aliases": [
-        "NorthWest Crossing",
-        "Skyliner Summit",
-        "Shevlin Ridge",
-        "Westside Pines",
-        "Westside Meadows",
-        "Valhalla Heights",
-        "Treeline Phase 1",
-        "Outcrop"
-      ],
-      "child_count": 7,
-      "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
-        "children_with_pct": [
-          {
-            "name": "Skyliner Summit",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Shevlin Ridge",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Westside Pines",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Westside Meadows",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Valhalla Heights",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Treeline Phase 1",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Outcrop",
-            "pct_inside": 100.0
-          }
-        ]
-      }
-    },
-    {
-      "slug": "crosswater",
-      "label": "Crosswater",
-      "city": "Sunriver",
-      "city_slug": "sunriver",
-      "is_resort": true,
-      "broad_radius_km": 4.0,
-      "center_lon_lat": [
-        -121.4482,
-        43.8514
-      ],
-      "subdivision_aliases": [
-        "Crosswater",
-        "Osprey Pointe Condo",
-        "Pace Estate",
-        "Lisle Acres"
-      ],
-      "child_count": 3,
-      "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
-        "children_with_pct": [
-          {
-            "name": "Osprey Pointe Condo",
-            "pct_inside": 100.0,
-            "note": "Matt-curated 2026-05-15"
-          },
-          {
-            "name": "Pace Estate",
-            "pct_inside": 100.0,
-            "note": "Matt-curated 2026-05-15"
-          },
-          {
-            "name": "Lisle Acres",
-            "pct_inside": 100.0,
-            "note": "Matt-curated 2026-05-15"
-          }
-        ],
-        "matt_directive_2026_05_15": "Crosswater is its own specific community. Osprey Pointe Condo, Pace Estate, Lisle Acres are part of Crosswater. Oww/DrrhTrs/Deschutes River Recreation Homesites are NOT Crosswater — they are Three Rivers."
-      }
-    },
-    {
-      "slug": "black-butte-ranch",
-      "label": "Black Butte Ranch",
-      "city": "Sisters",
-      "city_slug": "sisters",
-      "is_resort": true,
-      "broad_radius_km": 5.0,
-      "center_lon_lat": [
-        -121.6564,
-        44.3642
-      ],
-      "subdivision_aliases": [
-        "Black Butte Ranch",
-        "Bbr",
-        "South Meadow",
-        "Glaze Meadow Homesite Section",
-        "Country House Condo"
-      ],
-      "child_count": 4,
-      "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
-        "children_with_pct": [
-          {
-            "name": "Bbr",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "South Meadow",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Glaze Meadow Homesite Section",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Country House Condo",
-            "pct_inside": 100.0
-          }
-        ]
-      }
-    },
-    {
-      "slug": "brasada-ranch",
-      "label": "Brasada Ranch",
-      "city": "Powell Butte",
-      "city_slug": "powell-butte",
-      "is_resort": true,
-      "broad_radius_km": 5.0,
-      "center_lon_lat": [
-        -121.0389,
-        44.162
-      ],
-      "subdivision_aliases": [
-        "Brasada Ranch",
-        "Powell Butte View"
-      ],
-      "child_count": 1,
-      "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
-        "children_with_pct": [
-          {
-            "name": "Powell Butte View",
-            "pct_inside": 89.7
-          }
-        ]
-      }
-    },
-    {
-      "slug": "widgi-creek",
-      "label": "Widgi Creek",
-      "city": "Bend",
-      "city_slug": "bend",
-      "is_resort": true,
-      "broad_radius_km": 3.0,
-      "center_lon_lat": [
-        -121.3851,
-        44.0053
-      ],
-      "subdivision_aliases": [
-        "Widgi Creek",
-        "PointsWest",
-        "Elkai Woods",
-        "Milepost 1"
-      ],
-      "child_count": 5,
-      "verification": {
-        "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
-        "children_with_pct": [
-          {
-            "name": "Inn Of The 7th",
-            "pct_inside": 99.7
-          },
-          {
-            "name": "7th Mtn Golf Village",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "PointsWest",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Elkai Woods",
-            "pct_inside": 100.0
-          },
-          {
-            "name": "Milepost 1",
-            "pct_inside": 100.0
-          }
-        ]
-      }
-    },
-    {
-      "slug": "vandevert-ranch",
-      "label": "Vandevert Ranch",
-      "city": "Bend",
-      "city_slug": "bend",
-      "is_resort": true,
-      "broad_radius_km": 2.0,
-      "center_lon_lat": [
-        -121.443611,
-        43.837479
-      ],
-      "subdivision_aliases": [
-        "Vandevert Ranch"
-      ],
-      "child_count": 0,
-      "verification": {
-        "method": "Single-name community (matches Pronghorn pattern). Centroid from 71 MLS listings tagged 'Vandevert Ranch'.",
-        "children_with_pct": [],
-        "matt_directive_2026_05_15": "Vandevert Ranch is its own specific community, not a Crosswater child."
-      }
-    },
-    {
-      "slug": "three-rivers",
-      "label": "Three Rivers",
-      "city": "Bend",
-      "city_slug": "bend",
-      "is_resort": false,
-      "broad_radius_km": 5.0,
-      "center_lon_lat": [
-        -121.4715,
-        43.8336
-      ],
-      "subdivision_aliases": [
-        "Oww",
-        "DrrhTrs",
-        "River Meadows",
-        "Sun Dance",
-        "Deschutes River Recreation Homesites",
-        "Drrh Trs",
-        "Deschutes Pines",
-        "Blissful Acres",
-        "Fountainbleau",
-        "Swarens Fancher",
-        "OWW2"
-      ],
-      "child_count": 11,
-      "verification": {
-        "method": "Spark /listings/nearby scan from composite center, ≥60% inside-test, Sunriver/Crosswater/Caldera/Vandevert subs excluded per Matt directive",
-        "children_with_pct": [
-          {
-            "name": "Oww",
-            "pct_inside": 100.0,
-            "total": 976
-          },
-          {
-            "name": "DrrhTrs",
-            "pct_inside": 81.0,
-            "total": 877
-          },
-          {
-            "name": "River Meadows",
-            "pct_inside": 100.0,
-            "total": 589
-          },
-          {
-            "name": "Sun Dance",
-            "pct_inside": 99.0,
-            "total": 140
-          },
-          {
-            "name": "Deschutes River Recreation Homesites",
-            "pct_inside": 66.0,
-            "total": 297
-          },
-          {
-            "name": "Drrh Trs",
-            "pct_inside": 80.0,
-            "total": 205
-          },
-          {
-            "name": "Deschutes Pines",
-            "pct_inside": 100.0,
-            "total": 16
-          },
-          {
-            "name": "Blissful Acres",
-            "pct_inside": 100.0,
-            "total": 14
-          },
-          {
-            "name": "Fountainbleau",
-            "pct_inside": 100.0,
-            "total": 7
-          },
-          {
-            "name": "Swarens Fancher",
-            "pct_inside": 100.0,
-            "total": 6
-          },
-          {
-            "name": "OWW2",
-            "pct_inside": 100.0,
-            "total": 7
-          }
-        ],
-        "matt_directive_2026_05_15": "Three Rivers gets its own area report, but it will not include Vandevert Ranch, Crosswater, or Caldera Springs."
-      }
-    },
-    {
-      "slug": "mt-bachelor-village",
-      "label": "Mt Bachelor Village",
-      "city": "Bend",
-      "city_slug": "bend",
-      "is_resort": true,
-      "broad_radius_km": 2.0,
-      "center_lon_lat": [
-        -121.336,
-        44.0331
-      ],
-      "subdivision_aliases": [
-        "Mt Bachelor Village"
-      ],
-      "child_count": 0,
-      "verification": {
-        "method": "Subdivision_aliases = exact name-match core + obvious phase aliases confirmed <0.5km from centroid (live MLS, 2026-06-27). Nearby but separate subdivisions are intentionally EXCLUDED (a radius over-includes neighbors). Full boundary-based multi-subdivision assignment (closest-parent + >=80%-inside, like Tetherow) is deferred to the registry generation script for any of these that genuinely span more subdivisions (e.g. Mountain High golf area).",
-        "children_with_pct": []
-      }
-    },
-    {
-      "slug": "inn-of-the-7th-mountain",
-      "label": "Inn of the 7th Mountain",
-      "city": "Bend",
-      "city_slug": "bend",
-      "is_resort": true,
-      "broad_radius_km": 2.0,
-      "center_lon_lat": [
-        -121.3887,
-        44.0009
-      ],
-      "subdivision_aliases": [
-        "Inn Of The 7th",
-        "7th Mtn Golf Village"
-      ],
-      "child_count": 0,
-      "verification": {
-        "method": "Subdivision_aliases = exact name-match core + obvious phase aliases confirmed <0.5km from centroid (live MLS, 2026-06-27). Nearby but separate subdivisions are intentionally EXCLUDED (a radius over-includes neighbors). Full boundary-based multi-subdivision assignment (closest-parent + >=80%-inside, like Tetherow) is deferred to the registry generation script for any of these that genuinely span more subdivisions (e.g. Mountain High golf area).",
-        "children_with_pct": []
-      }
-    },
-    {
-      "slug": "rivers-edge",
-      "label": "Rivers Edge",
-      "city": "Bend",
-      "city_slug": "bend",
-      "is_resort": true,
-      "broad_radius_km": 2.0,
-      "center_lon_lat": [
-        -121.3137,
-        44.0799
-      ],
-      "subdivision_aliases": [
-        "Rivers Edge Village",
-        "Phase 5 Rivers Edge"
-      ],
-      "child_count": 0,
-      "verification": {
-        "method": "Subdivision_aliases = exact name-match core + obvious phase aliases confirmed <0.5km from centroid (live MLS, 2026-06-27). Nearby but separate subdivisions are intentionally EXCLUDED (a radius over-includes neighbors). Full boundary-based multi-subdivision assignment (closest-parent + >=80%-inside, like Tetherow) is deferred to the registry generation script for any of these that genuinely span more subdivisions (e.g. Mountain High golf area).",
-        "children_with_pct": []
-      }
-    },
-    {
-      "slug": "mountain-high",
-      "label": "Mountain High",
-      "city": "Bend",
-      "city_slug": "bend",
-      "is_resort": true,
-      "broad_radius_km": 2.0,
-      "center_lon_lat": [
-        -121.3048,
-        44.0053
-      ],
-      "subdivision_aliases": [
-        "Mtn High"
-      ],
-      "child_count": 0,
-      "verification": {
-        "method": "Subdivision_aliases = exact name-match core + obvious phase aliases confirmed <0.5km from centroid (live MLS, 2026-06-27). Nearby but separate subdivisions are intentionally EXCLUDED (a radius over-includes neighbors). Full boundary-based multi-subdivision assignment (closest-parent + >=80%-inside, like Tetherow) is deferred to the registry generation script for any of these that genuinely span more subdivisions (e.g. Mountain High golf area).",
-        "children_with_pct": []
-      }
-    },
-    {
-      "slug": "crooked-river-ranch",
-      "label": "Crooked River Ranch",
-      "city": "Terrebonne",
-      "city_slug": "terrebonne",
-      "is_resort": false,
-      "broad_radius_km": 3.0,
-      "center_lon_lat": [
-        -121.2811,
-        44.4268
-      ],
-      "subdivision_aliases": [
-        "Crooked River Ranch"
-      ],
-      "verification": {
-        "method": "Exact MLS SubdivisionName match; centroid from listing coords (live MLS 2026-06-27). Large rural planned community (Terrebonne), not a resort (is_resort=false)."
-      }
+     "slug": "heath",
+     "name": "Heath",
+     "type": "Single-family golf homes",
+     "hoa_annual_estimate": 2244,
+     "hoa_sub_quarterly": 195,
+     "hoa_master_annual": 1464,
+     "hoa_manager": "TOA (Tetherow Owners Association)",
+     "lot_size_note": "Golf-frontage \u00bd-acre and larger lots",
+     "character": "Original Tetherow phase. Established build-out feel. Direct course frontage on the McLay Kidd holes. Heath sits on the north side of Tetherow Phase 1, anchored by Hosmer Lake Drive and Cartwright.",
+     "description": "Original Tetherow phase. Single-family golf homes on \u00bd-acre and larger lots fronting the McLay Kidd course. Established built-out feel.",
+     "image_hint": "Heath at Tetherow course-frontage exterior \u2014 hand-pick from a Hosmer Lake or Cartwright MLS photo set",
+     "mls_aliases": [
+      "Tetherow"
+     ],
+     "boundary_centroid": {
+      "lat": 44.0335,
+      "lng": -121.359,
+      "note": "Approximated from Tetherow Phase 1 polygon centroid (Deschutes County GIS) shifted slightly north toward Hosmer Lake Dr. No Heath-specific recorded plat polygon exists; Heath addresses fall within the Tetherow Phase 1 boundary."
+     },
+     "data_thin_note": "MLS does not tag Heath separately. SubdivisionName is always 'Tetherow'. Page uses parent Tetherow stats with a footnote."
     }
-  ]
+   ],
+   "child_count": 8,
+   "verification": {
+    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+    "children_with_pct": [
+     {
+      "name": "Sunrise Village",
+      "pct_inside": 99.7
+     },
+     {
+      "name": "Westbrook Meadows",
+      "pct_inside": 99.6
+     },
+     {
+      "name": "Braeburn",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "1st On The Hillsites",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Lodges at Bachelor V",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Triple",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Campbell Road",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Roald West",
+      "pct_inside": 100.0
+     }
+    ]
+   }
+  },
+  {
+   "slug": "broken-top",
+   "label": "Broken Top",
+   "city": "Bend",
+   "city_slug": "bend",
+   "is_resort": true,
+   "broad_radius_km": 3.5,
+   "center_lon_lat": [
+    -121.3493,
+    44.0433
+   ],
+   "subdivision_aliases": [
+    "Broken Top",
+    "Golden Butte",
+    "Parks At Broken Top",
+    "Overturf Butte",
+    "The Highlands at Broken Top"
+   ],
+   "child_count": 4,
+   "verification": {
+    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+    "children_with_pct": [
+     {
+      "name": "Golden Butte",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Parks At Broken Top",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Overturf Butte",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "The Highlands at Broken Top",
+      "pct_inside": 100.0
+     }
+    ]
+   }
+  },
+  {
+   "slug": "eagle-crest",
+   "label": "Eagle Crest",
+   "city": "Redmond",
+   "city_slug": "redmond",
+   "is_resort": true,
+   "broad_radius_km": 6.0,
+   "center_lon_lat": [
+    -121.2759,
+    44.2674
+   ],
+   "subdivision_aliases": [
+    "Eagle Crest",
+    "Ridge At Eagle Crest",
+    "Cline Falls Oasis",
+    "Coppermill",
+    "Cline Falls Mob Park"
+   ],
+   "child_count": 4,
+   "verification": {
+    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+    "children_with_pct": [
+     {
+      "name": "Ridge At Eagle Crest",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Cline Falls Oasis",
+      "pct_inside": 98.1
+     },
+     {
+      "name": "Coppermill",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Cline Falls Mob Park",
+      "pct_inside": 100.0
+     }
+    ]
+   }
+  },
+  {
+   "slug": "pronghorn",
+   "label": "Pronghorn",
+   "city": "Bend",
+   "city_slug": "bend",
+   "is_resort": true,
+   "broad_radius_km": 3.0,
+   "center_lon_lat": [
+    -121.1714,
+    44.1911
+   ],
+   "subdivision_aliases": [
+    "Pronghorn"
+   ],
+   "child_count": 0,
+   "verification": {
+    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+    "children_with_pct": []
+   }
+  },
+  {
+   "slug": "caldera-springs",
+   "label": "Caldera Springs",
+   "city": "Sunriver",
+   "city_slug": "sunriver",
+   "is_resort": true,
+   "broad_radius_km": 4.0,
+   "center_lon_lat": [
+    -121.4351,
+    43.8505
+   ],
+   "subdivision_aliases": [
+    "Caldera Springs"
+   ],
+   "child_count": 0,
+   "verification": {
+    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test. Corrected 2026-06-27: removed Powder Village Condo (condo community, PropertyType=A avg close $288K, geographically adjacent but distinct), Business Park, Sunriver Business Pa (commercial, 0 active SFR), Compound Condominium (0 active SFR). These were incorrectly assigned by spatial proximity; they are Sunriver-area subdivisions, not Caldera Springs residential phases. Caldera Springs = 29 active SFR, avg list $2.05M (verified live MLS 2026-06-27).",
+    "children_with_pct": []
+   },
+   "mls_cities": [
+    "Bend"
+   ]
+  },
+  {
+   "slug": "sunriver",
+   "label": "Sunriver",
+   "city": "Sunriver",
+   "city_slug": "sunriver",
+   "is_resort": true,
+   "broad_radius_km": 5.0,
+   "center_lon_lat": [
+    -121.45,
+    43.875
+   ],
+   "subdivision_aliases": [
+    "Sunriver",
+    "The Ridge",
+    "StoneTH",
+    "Deer Park",
+    "Mtn Village East",
+    "River Village",
+    "Fairway Crest Village",
+    "Forest Park",
+    "Meadow Village",
+    "Overlook Park",
+    "Mtn Village West",
+    "Tennis Village",
+    "Meadow House",
+    "Fairway Vill Condo",
+    "Fremont Crossing",
+    "Abbot House Condo",
+    "Kitty Hawk",
+    "Quelah Condos",
+    "WildflS",
+    "Polehouse",
+    "Aquila Lodges",
+    "Fairway Island",
+    "Cluster Court",
+    "Skypark",
+    "Mtn View Lodge",
+    "Ranch Cabins",
+    "SkylinC",
+    "Quelah Estates",
+    "Aspen Meadows",
+    "Camp Abbot Hangars",
+    "Sunriver Lodge"
+   ],
+   "child_count": 31,
+   "verification": {
+    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+    "children_with_pct": [
+     {
+      "name": "The Ridge",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "StoneTH",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Deer Park",
+      "pct_inside": 98.7
+     },
+     {
+      "name": "Mtn Village East",
+      "pct_inside": 99.7
+     },
+     {
+      "name": "River Village",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Fairway Crest Village",
+      "pct_inside": 99.5
+     },
+     {
+      "name": "Forest Park",
+      "pct_inside": 99.5
+     },
+     {
+      "name": "Meadow Village",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Overlook Park",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Mtn Village West",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Tennis Village",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Meadow House",
+      "pct_inside": 96.6
+     },
+     {
+      "name": "Fairway Vill Condo",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Fremont Crossing",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Abbot House Condo",
+      "pct_inside": 98.0
+     },
+     {
+      "name": "Kitty Hawk",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Quelah Condos",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "WildflS",
+      "pct_inside": 97.2
+     },
+     {
+      "name": "Polehouse",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Aquila Lodges",
+      "pct_inside": 89.3
+     },
+     {
+      "name": "Fairway Island",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Cluster Court",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Skypark",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Mtn View Lodge",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Ranch Cabins",
+      "pct_inside": 95.0
+     },
+     {
+      "name": "SkylinC",
+      "pct_inside": 95.0
+     },
+     {
+      "name": "Quelah Estates",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Aspen Meadows",
+      "pct_inside": 81.2
+     },
+     {
+      "name": "Pace Estate",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Camp Abbot Hangars",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Sunriver Lodge",
+      "pct_inside": 100.0
+     }
+    ]
+   },
+   "mls_cities": [
+    "Sunriver",
+    "Bend"
+   ]
+  },
+  {
+   "slug": "awbrey-glen",
+   "label": "Awbrey Glen",
+   "city": "Bend",
+   "city_slug": "bend",
+   "is_resort": true,
+   "broad_radius_km": 3.0,
+   "center_lon_lat": [
+    -121.3532,
+    44.0838
+   ],
+   "subdivision_aliases": [
+    "Awbrey Glen",
+    "Shevlin Bluffs",
+    "Shevlin Estates",
+    "Awbrey Court",
+    "Shevlin Court",
+    "The Farm"
+   ],
+   "child_count": 5,
+   "verification": {
+    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+    "children_with_pct": [
+     {
+      "name": "Shevlin Bluffs",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Shevlin Estates",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Awbrey Court",
+      "pct_inside": 95.5
+     },
+     {
+      "name": "Shevlin Court",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "The Farm",
+      "pct_inside": 100.0
+     }
+    ]
+   }
+  },
+  {
+   "slug": "northwest-crossing",
+   "label": "NorthWest Crossing",
+   "city": "Bend",
+   "city_slug": "bend",
+   "is_resort": true,
+   "broad_radius_km": 4.0,
+   "center_lon_lat": [
+    -121.3525,
+    44.0611
+   ],
+   "subdivision_aliases": [
+    "NorthWest Crossing",
+    "Skyliner Summit",
+    "Shevlin Ridge",
+    "Westside Pines",
+    "Westside Meadows",
+    "Valhalla Heights",
+    "Treeline Phase 1",
+    "Outcrop"
+   ],
+   "child_count": 7,
+   "verification": {
+    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+    "children_with_pct": [
+     {
+      "name": "Skyliner Summit",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Shevlin Ridge",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Westside Pines",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Westside Meadows",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Valhalla Heights",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Treeline Phase 1",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Outcrop",
+      "pct_inside": 100.0
+     }
+    ]
+   }
+  },
+  {
+   "slug": "crosswater",
+   "label": "Crosswater",
+   "city": "Sunriver",
+   "city_slug": "sunriver",
+   "is_resort": true,
+   "broad_radius_km": 4.0,
+   "center_lon_lat": [
+    -121.4482,
+    43.8514
+   ],
+   "subdivision_aliases": [
+    "Crosswater",
+    "Osprey Pointe Condo",
+    "Pace Estate",
+    "Lisle Acres"
+   ],
+   "child_count": 3,
+   "verification": {
+    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+    "children_with_pct": [
+     {
+      "name": "Osprey Pointe Condo",
+      "pct_inside": 100.0,
+      "note": "Matt-curated 2026-05-15"
+     },
+     {
+      "name": "Pace Estate",
+      "pct_inside": 100.0,
+      "note": "Matt-curated 2026-05-15"
+     },
+     {
+      "name": "Lisle Acres",
+      "pct_inside": 100.0,
+      "note": "Matt-curated 2026-05-15"
+     }
+    ],
+    "matt_directive_2026_05_15": "Crosswater is its own specific community. Osprey Pointe Condo, Pace Estate, Lisle Acres are part of Crosswater. Oww/DrrhTrs/Deschutes River Recreation Homesites are NOT Crosswater \u2014 they are Three Rivers."
+   },
+   "mls_cities": [
+    "Bend",
+    "Sunriver"
+   ]
+  },
+  {
+   "slug": "black-butte-ranch",
+   "label": "Black Butte Ranch",
+   "city": "Sisters",
+   "city_slug": "sisters",
+   "is_resort": true,
+   "broad_radius_km": 5.0,
+   "center_lon_lat": [
+    -121.6564,
+    44.3642
+   ],
+   "subdivision_aliases": [
+    "Black Butte Ranch",
+    "Bbr",
+    "South Meadow",
+    "Glaze Meadow Homesite Section",
+    "Country House Condo"
+   ],
+   "child_count": 4,
+   "verification": {
+    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+    "children_with_pct": [
+     {
+      "name": "Bbr",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "South Meadow",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Glaze Meadow Homesite Section",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Country House Condo",
+      "pct_inside": 100.0
+     }
+    ]
+   },
+   "mls_cities": [
+    "Black Butte Ranch",
+    "Sisters"
+   ]
+  },
+  {
+   "slug": "brasada-ranch",
+   "label": "Brasada Ranch",
+   "city": "Powell Butte",
+   "city_slug": "powell-butte",
+   "is_resort": true,
+   "broad_radius_km": 5.0,
+   "center_lon_lat": [
+    -121.0389,
+    44.162
+   ],
+   "subdivision_aliases": [
+    "Brasada Ranch",
+    "Powell Butte View"
+   ],
+   "child_count": 1,
+   "verification": {
+    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+    "children_with_pct": [
+     {
+      "name": "Powell Butte View",
+      "pct_inside": 89.7
+     }
+    ]
+   }
+  },
+  {
+   "slug": "widgi-creek",
+   "label": "Widgi Creek",
+   "city": "Bend",
+   "city_slug": "bend",
+   "is_resort": true,
+   "broad_radius_km": 3.0,
+   "center_lon_lat": [
+    -121.3851,
+    44.0053
+   ],
+   "subdivision_aliases": [
+    "Widgi Creek",
+    "PointsWest",
+    "Elkai Woods",
+    "Milepost 1"
+   ],
+   "child_count": 5,
+   "verification": {
+    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+    "children_with_pct": [
+     {
+      "name": "Inn Of The 7th",
+      "pct_inside": 99.7
+     },
+     {
+      "name": "7th Mtn Golf Village",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "PointsWest",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Elkai Woods",
+      "pct_inside": 100.0
+     },
+     {
+      "name": "Milepost 1",
+      "pct_inside": 100.0
+     }
+    ]
+   }
+  },
+  {
+   "slug": "vandevert-ranch",
+   "label": "Vandevert Ranch",
+   "city": "Bend",
+   "city_slug": "bend",
+   "is_resort": true,
+   "broad_radius_km": 2.0,
+   "center_lon_lat": [
+    -121.443611,
+    43.837479
+   ],
+   "subdivision_aliases": [
+    "Vandevert Ranch"
+   ],
+   "child_count": 0,
+   "verification": {
+    "method": "Single-name community (matches Pronghorn pattern). Centroid from 71 MLS listings tagged 'Vandevert Ranch'.",
+    "children_with_pct": [],
+    "matt_directive_2026_05_15": "Vandevert Ranch is its own specific community, not a Crosswater child."
+   }
+  },
+  {
+   "slug": "three-rivers",
+   "label": "Three Rivers",
+   "city": "Bend",
+   "city_slug": "bend",
+   "is_resort": false,
+   "broad_radius_km": 5.0,
+   "center_lon_lat": [
+    -121.4715,
+    43.8336
+   ],
+   "subdivision_aliases": [
+    "Oww",
+    "DrrhTrs",
+    "River Meadows",
+    "Sun Dance",
+    "Deschutes River Recreation Homesites",
+    "Drrh Trs",
+    "Deschutes Pines",
+    "Blissful Acres",
+    "Fountainbleau",
+    "Swarens Fancher",
+    "OWW2"
+   ],
+   "child_count": 11,
+   "verification": {
+    "method": "Spark /listings/nearby scan from composite center, \u226560% inside-test, Sunriver/Crosswater/Caldera/Vandevert subs excluded per Matt directive",
+    "children_with_pct": [
+     {
+      "name": "Oww",
+      "pct_inside": 100.0,
+      "total": 976
+     },
+     {
+      "name": "DrrhTrs",
+      "pct_inside": 81.0,
+      "total": 877
+     },
+     {
+      "name": "River Meadows",
+      "pct_inside": 100.0,
+      "total": 589
+     },
+     {
+      "name": "Sun Dance",
+      "pct_inside": 99.0,
+      "total": 140
+     },
+     {
+      "name": "Deschutes River Recreation Homesites",
+      "pct_inside": 66.0,
+      "total": 297
+     },
+     {
+      "name": "Drrh Trs",
+      "pct_inside": 80.0,
+      "total": 205
+     },
+     {
+      "name": "Deschutes Pines",
+      "pct_inside": 100.0,
+      "total": 16
+     },
+     {
+      "name": "Blissful Acres",
+      "pct_inside": 100.0,
+      "total": 14
+     },
+     {
+      "name": "Fountainbleau",
+      "pct_inside": 100.0,
+      "total": 7
+     },
+     {
+      "name": "Swarens Fancher",
+      "pct_inside": 100.0,
+      "total": 6
+     },
+     {
+      "name": "OWW2",
+      "pct_inside": 100.0,
+      "total": 7
+     }
+    ],
+    "matt_directive_2026_05_15": "Three Rivers gets its own area report, but it will not include Vandevert Ranch, Crosswater, or Caldera Springs."
+   },
+   "mls_cities": [
+    "Bend",
+    "La Pine"
+   ]
+  },
+  {
+   "slug": "mt-bachelor-village",
+   "label": "Mt Bachelor Village",
+   "city": "Bend",
+   "city_slug": "bend",
+   "is_resort": true,
+   "broad_radius_km": 2.0,
+   "center_lon_lat": [
+    -121.336,
+    44.0331
+   ],
+   "subdivision_aliases": [
+    "Mt Bachelor Village"
+   ],
+   "child_count": 0,
+   "verification": {
+    "method": "Subdivision_aliases = exact name-match core + obvious phase aliases confirmed <0.5km from centroid (live MLS, 2026-06-27). Nearby but separate subdivisions are intentionally EXCLUDED (a radius over-includes neighbors). Full boundary-based multi-subdivision assignment (closest-parent + >=80%-inside, like Tetherow) is deferred to the registry generation script for any of these that genuinely span more subdivisions (e.g. Mountain High golf area).",
+    "children_with_pct": []
+   }
+  },
+  {
+   "slug": "inn-of-the-7th-mountain",
+   "label": "Inn of the 7th Mountain",
+   "city": "Bend",
+   "city_slug": "bend",
+   "is_resort": true,
+   "broad_radius_km": 2.0,
+   "center_lon_lat": [
+    -121.3887,
+    44.0009
+   ],
+   "subdivision_aliases": [
+    "Inn Of The 7th",
+    "7th Mtn Golf Village"
+   ],
+   "child_count": 0,
+   "verification": {
+    "method": "Subdivision_aliases = exact name-match core + obvious phase aliases confirmed <0.5km from centroid (live MLS, 2026-06-27). Nearby but separate subdivisions are intentionally EXCLUDED (a radius over-includes neighbors). Full boundary-based multi-subdivision assignment (closest-parent + >=80%-inside, like Tetherow) is deferred to the registry generation script for any of these that genuinely span more subdivisions (e.g. Mountain High golf area).",
+    "children_with_pct": []
+   }
+  },
+  {
+   "slug": "rivers-edge",
+   "label": "Rivers Edge",
+   "city": "Bend",
+   "city_slug": "bend",
+   "is_resort": true,
+   "broad_radius_km": 2.0,
+   "center_lon_lat": [
+    -121.3137,
+    44.0799
+   ],
+   "subdivision_aliases": [
+    "Rivers Edge Village",
+    "Phase 5 Rivers Edge"
+   ],
+   "child_count": 0,
+   "verification": {
+    "method": "Subdivision_aliases = exact name-match core + obvious phase aliases confirmed <0.5km from centroid (live MLS, 2026-06-27). Nearby but separate subdivisions are intentionally EXCLUDED (a radius over-includes neighbors). Full boundary-based multi-subdivision assignment (closest-parent + >=80%-inside, like Tetherow) is deferred to the registry generation script for any of these that genuinely span more subdivisions (e.g. Mountain High golf area).",
+    "children_with_pct": []
+   }
+  },
+  {
+   "slug": "mountain-high",
+   "label": "Mountain High",
+   "city": "Bend",
+   "city_slug": "bend",
+   "is_resort": true,
+   "broad_radius_km": 2.0,
+   "center_lon_lat": [
+    -121.3048,
+    44.0053
+   ],
+   "subdivision_aliases": [
+    "Mtn High"
+   ],
+   "child_count": 0,
+   "verification": {
+    "method": "Subdivision_aliases = exact name-match core + obvious phase aliases confirmed <0.5km from centroid (live MLS, 2026-06-27). Nearby but separate subdivisions are intentionally EXCLUDED (a radius over-includes neighbors). Full boundary-based multi-subdivision assignment (closest-parent + >=80%-inside, like Tetherow) is deferred to the registry generation script for any of these that genuinely span more subdivisions (e.g. Mountain High golf area).",
+    "children_with_pct": []
+   }
+  },
+  {
+   "slug": "crooked-river-ranch",
+   "label": "Crooked River Ranch",
+   "city": "Terrebonne",
+   "city_slug": "terrebonne",
+   "is_resort": false,
+   "broad_radius_km": 3.0,
+   "center_lon_lat": [
+    -121.2811,
+    44.4268
+   ],
+   "subdivision_aliases": [
+    "Crooked River Ranch"
+   ],
+   "verification": {
+    "method": "Exact MLS SubdivisionName match; centroid from listing coords (live MLS 2026-06-27). Large rural planned community (Terrebonne), not a resort (is_resort=false)."
+   }
+  }
+ ]
 }
