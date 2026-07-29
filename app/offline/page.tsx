@@ -3,9 +3,11 @@
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 import { H1 } from '@/components/site/primitives'
+import SiteFooter from '@/components/site/SiteFooter'
 
 export default function OfflinePage() {
   return (
+    <>
     <main id="main-content" className="mx-auto max-w-md px-4 py-16 text-center">
       <H1 className="text-2xl text-primary">You&apos;re offline</H1>
       <p className="mt-4 text-muted-foreground">
@@ -30,5 +32,7 @@ export default function OfflinePage() {
         </Link>
       </p>
     </main>
+    <SiteFooter />
+    </>
   )
 }

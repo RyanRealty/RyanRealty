@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { unsubscribeNewsletterByToken } from '@/lib/data'
 import { Button } from '@/components/ui/button'
 import { H1 } from '@/components/site/primitives'
+import SiteFooter from '@/components/site/SiteFooter'
 
 /**
  * Unsubscribe confirmation for the Ryan Realty newsletter. The token link at
@@ -41,6 +42,7 @@ export default async function UnsubscribeNewsletterPage({
 
   if (isDone) {
     return (
+      <>
       <main className="bg-background">
         <div className="mx-auto flex max-w-xl flex-col items-start gap-4 px-4 py-16 sm:px-6">
           <H1 className="text-2xl">You’re unsubscribed</H1>
@@ -53,11 +55,14 @@ export default async function UnsubscribeNewsletterPage({
           </Button>
         </div>
       </main>
+      <SiteFooter />
+      </>
     )
   }
 
   if (hasToken) {
     return (
+      <>
       <main className="bg-background">
         <div className="mx-auto flex max-w-xl flex-col items-start gap-4 px-4 py-16 sm:px-6">
           <H1 className="text-2xl">Unsubscribe from the Ryan Realty newsletter?</H1>
@@ -69,10 +74,13 @@ export default async function UnsubscribeNewsletterPage({
           </form>
         </div>
       </main>
+      <SiteFooter />
+      </>
     )
   }
 
   return (
+    <>
     <main className="bg-background">
       <div className="mx-auto flex max-w-xl flex-col items-start gap-4 px-4 py-16 sm:px-6">
         <H1 className="text-2xl">Manage newsletter</H1>
@@ -85,5 +93,7 @@ export default async function UnsubscribeNewsletterPage({
         </Button>
       </div>
     </main>
+    <SiteFooter />
+    </>
   )
 }

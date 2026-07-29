@@ -11,6 +11,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import ComponentGalleryClient from './ComponentGalleryClient'
+import SiteFooter from '@/components/site/SiteFooter'
 
 export const metadata: Metadata = {
   title: 'Component gallery',
@@ -23,5 +24,10 @@ export const metadata: Metadata = {
 export default async function ComponentGalleryPage() {
   const access = await getCrmAccess()
   if (!access) notFound()
-  return <ComponentGalleryClient />
+  return (
+    <>
+      <ComponentGalleryClient />
+      <SiteFooter />
+    </>
+  )
 }

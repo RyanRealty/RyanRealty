@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import LoginForm from '@/components/auth/LoginForm'
 import { H1 } from '@/components/site/primitives'
+import SiteFooter from '@/components/site/SiteFooter'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -23,6 +24,7 @@ export default async function LoginPage({ searchParams }: Props) {
   const nextPath = next && next.startsWith('/') ? next : '/account'
 
   return (
+    <>
     <main className="mx-auto flex min-h-[60vh] max-w-md flex-col justify-center px-4 py-16">
       {/* No re-typeset wordmark here — the global SiteHeader above already
           carries the real Amboqia wordmark; re-rendering "Ryan Realty" in
@@ -48,5 +50,7 @@ export default async function LoginPage({ searchParams }: Props) {
         </Link>
       </p>
     </main>
+    <SiteFooter />
+    </>
   )
 }

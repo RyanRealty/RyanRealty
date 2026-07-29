@@ -38,12 +38,16 @@ export default function HideOnLP({ children }: { children: React.ReactNode }) {
 /**
  * HideChrome — like HideOnLP, but ALSO hides on the homepage "/". The homepage
  * is the kinetic-brutalist design and carries its own chrome (KbNav + the KB
- * footer section), so the default SiteHeader / SiteFooter would double up.
+ * footer section), so the default SiteHeader would double up.
  *
- * Use this ONLY for the header + footer. Everything else the layout wraps in
- * HideOnLP (the site-wide JSON-LD, VisitTracker, auth bridges, skip-link) MUST
- * keep running on the homepage — it is the highest-traffic page — so those stay
- * on plain HideOnLP, which does NOT hide "/".
+ * Use this ONLY for the header. SiteFooter no longer routes through this gate:
+ * it used to, which shipped a hidden 48-link <footer> in the HTML of every
+ * KB/LP/admin page. The footer is now rendered server-side by exactly the
+ * routes that show it (enforced by scripts/check-default-chrome-footer.mjs).
+ * Everything else the layout wraps in HideOnLP (the site-wide JSON-LD,
+ * VisitTracker, auth bridges, skip-link) MUST keep running on the homepage —
+ * it is the highest-traffic page — so those stay on plain HideOnLP, which does
+ * NOT hide "/".
  *
  * The route predicate lives in @/lib/site/chrome-routes (pure, unit-tested).
  *

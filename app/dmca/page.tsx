@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { H1, H2 } from '@/components/site/primitives'
+import SiteFooter from '@/components/site/SiteFooter'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -23,6 +24,7 @@ export const metadata: Metadata = {
 
 export default function DMCAPage() {
   return (
+    <>
     <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
       <H1 className="text-2xl tracking-tight text-primary">DMCA Policy</H1>
       <p className="mt-2 text-sm text-muted-foreground">Digital Millennium Copyright Act notice and takedown procedure</p>
@@ -75,5 +77,7 @@ export default function DMCAPage() {
         <Link href="/" className="text-accent-foreground underline hover:no-underline">Back to home</Link>
       </p>
     </main>
+    <SiteFooter />
+    </>
   )
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import SiteFooter from '@/components/site/SiteFooter'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -46,6 +47,7 @@ export default async function BrokerSelfEditPage({ params }: Props) {
   }
 
   return (
+    <>
     <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
       {/* heading-display-ok: internal broker self-service tool, noindex */}
       <h1 className="text-3xl font-semibold text-foreground">Edit your profile</h1>
@@ -92,5 +94,7 @@ export default async function BrokerSelfEditPage({ params }: Props) {
         <Button type="submit">Save profile</Button>
       </form>
     </main>
+    <SiteFooter />
+    </>
   )
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { H1 } from '@/components/site/primitives'
+import SiteFooter from '@/components/site/SiteFooter'
 
 // @data-free static legal/policy page, no DAL access needed. @no-parity no mockup contract.
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -103,6 +104,7 @@ const COOKIES: CookieRow[] = [
 
 export default function CookiePolicyPage() {
   return (
+    <>
     <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
       <H1 className="text-2xl tracking-tight text-primary">Cookie policy</H1>
       <p className="mt-2 text-sm text-muted-foreground">Last updated: June 1, 2026</p>
@@ -186,5 +188,7 @@ export default function CookiePolicyPage() {
         </p>
       </section>
     </main>
+    <SiteFooter />
+    </>
   )
 }

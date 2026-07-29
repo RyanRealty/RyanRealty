@@ -88,6 +88,8 @@ import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
 import { KbArticles } from '@/components/site/kb/KbArticles'
 import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
+// SiteFooter: legacy 2-seg branch only; root layout no longer ships it globally (G58).
+import SiteFooter from '@/components/site/SiteFooter'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import '@/components/site/kb/kb.css'
@@ -758,6 +760,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   )
 
   return (
+    <>
     <main className="min-h-screen bg-background">
 
       {/* AI-citability structured data: breadcrumb + webPage + Dataset.
@@ -889,5 +892,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
       />
 
     </main>
+    <SiteFooter />
+    </>
   )
 }

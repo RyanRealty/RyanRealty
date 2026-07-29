@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import SignupForm from '@/components/auth/SignupForm'
 import { H1 } from '@/components/site/primitives'
+import SiteFooter from '@/components/site/SiteFooter'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -23,6 +24,7 @@ export default async function SignupPage({ searchParams }: Props) {
   const nextPath = next && next.startsWith('/') ? next : '/account'
 
   return (
+    <>
     <main className="mx-auto flex min-h-[60vh] max-w-md flex-col justify-center px-4 py-16">
       {/* No re-typeset wordmark — see the matching comment on app/login/page.tsx. */}
       <div className="rounded-xl border border-border bg-card p-8 shadow-sm">
@@ -44,5 +46,7 @@ export default async function SignupPage({ searchParams }: Props) {
         </Link>
       </p>
     </main>
+    <SiteFooter />
+    </>
   )
 }

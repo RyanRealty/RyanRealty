@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { H1 } from '@/components/site/primitives'
+import SiteFooter from '@/components/site/SiteFooter'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -22,6 +23,7 @@ export default async function AuthErrorPage({ searchParams }: Props) {
         ? `/login?next=${encodeURIComponent(next)}`
         : '/login'
   return (
+    <>
     <main className="mx-auto max-w-lg px-4 py-16 text-center">
       <H1 className="text-xl text-foreground">Sign-in issue</H1>
       <p className="mt-2 text-muted-foreground">
@@ -45,5 +47,7 @@ export default async function AuthErrorPage({ searchParams }: Props) {
         </Link>
       </div>
     </main>
+    <SiteFooter />
+    </>
   )
 }

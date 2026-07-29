@@ -1,6 +1,9 @@
 /**
  * chrome-routes — the single source of truth for which routes suppress the
- * default site chrome (SiteHeader + SiteFooter). Pure functions of the pathname,
+ * default site chrome. The client gate (HideChrome) applies this to SiteHeader
+ * only; SiteFooter is rendered server-side by exactly the routes where this
+ * predicate is false (enforced by scripts/check-default-chrome-footer.mjs), so
+ * hidden footer HTML never ships. Pure functions of the pathname,
  * with NO client/next dependencies, so they can be unit-tested and reused by both
  * the client gate (components/layout/HideOnLP.tsx → HideChrome) and any future
  * server-side check.

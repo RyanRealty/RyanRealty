@@ -22,6 +22,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { verifyDeliveryToken } from '@/lib/cma-delivery-tokens'
 
 import { SendCmaButton } from './SendCmaButton'
+import SiteFooter from '@/components/site/SiteFooter'
 
 export const dynamic = 'force-dynamic'
 export const metadata = {
@@ -75,6 +76,7 @@ export default async function CmaDraftReviewPage({
   const verification = verifyDeliveryToken(id, tokenStr ?? null)
   if (!verification.ok) {
     return (
+      <>
       <main className="mx-auto max-w-xl px-6 py-16">
         {/* heading-display-ok: internal broker-only tool, noindex */}
         <h1 className="text-2xl font-semibold text-primary">Link not valid</h1>
@@ -83,6 +85,8 @@ export default async function CmaDraftReviewPage({
           Have the broker request a fresh link from the admin queue.
         </p>
       </main>
+      <SiteFooter />
+      </>
     )
   }
 
@@ -108,6 +112,7 @@ export default async function CmaDraftReviewPage({
   }
 
   return (
+    <>
     <main className="mx-auto max-w-3xl px-6 py-12 sm:py-16">
       <header className="mb-8">
         <p className="text-xs font-semibold uppercase tracking-wider text-primary/70">
@@ -230,6 +235,8 @@ export default async function CmaDraftReviewPage({
         )}
       </section>
     </main>
+    <SiteFooter />
+    </>
   )
 }
 

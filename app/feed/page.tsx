@@ -4,6 +4,7 @@ import { VideoFeedClient, type VideoFeedItem } from '@/components/site/VideoFeed
 import { listingDetailPath } from '@/lib/slug'
 import { normalizeEmbed } from '@/lib/video-embed'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import SiteFooter from '@/components/site/SiteFooter'
 
 /** Drop MLS placeholder tokens (N/A) and collapse whitespace in an address. */
 function cleanAddress(raw: string | null): string {
@@ -85,6 +86,7 @@ export default async function FeedPage({
 
   if (items.length === 0) {
     return (
+      <>
       <main className="flex min-h-screen items-center justify-center bg-primary px-6 text-center text-primary-foreground">
         <div>
           <h1 className="font-display text-3xl">No video tours yet</h1>
@@ -93,13 +95,18 @@ export default async function FeedPage({
           </p>
         </div>
       </main>
+      <SiteFooter />
+      </>
     )
   }
 
   return (
+    <>
     <main className="bg-primary">
       <KbSectionTracker pageType="feed" />
       <VideoFeedClient items={items} startKey={startKey} />
     </main>
+    <SiteFooter />
+    </>
   )
 }

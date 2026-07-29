@@ -2,6 +2,9 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getProfile } from '@/app/actions/profile'
 import DashboardShell from '@/components/dashboard/DashboardShell'
+// Default-chrome footer. The root layout no longer renders SiteFooter globally —
+// routes that show it render it themselves (scripts/check-default-chrome-footer.mjs).
+import SiteFooter from '@/components/site/SiteFooter'
 
 export default async function DashboardLayout({
   children,
@@ -19,6 +22,7 @@ export default async function DashboardLayout({
   const firstName = displayName
 
   return (
+    <>
     <DashboardShell
       user={{
         id: session.user.id,
@@ -29,5 +33,7 @@ export default async function DashboardLayout({
     >
       {children}
     </DashboardShell>
+      <SiteFooter />
+    </>
   )
 }

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { deactivateListingAlertByToken } from '@/lib/data'
 import { Button } from '@/components/ui/button'
 import { H1 } from '@/components/site/primitives'
+import SiteFooter from '@/components/site/SiteFooter'
 
 /**
  * Unsubscribe confirmation for listing alerts (the token link at the bottom of
@@ -38,6 +39,7 @@ export default async function UnsubscribeAlertsPage({
   const cleanToken = (token ?? '').trim()
 
   return (
+    <>
     <main className="bg-background">
       <div className="mx-auto flex max-w-xl flex-col items-start gap-4 px-4 py-16 sm:px-6">
         {isDone ? (
@@ -75,5 +77,7 @@ export default async function UnsubscribeAlertsPage({
         )}
       </div>
     </main>
+    <SiteFooter />
+    </>
   )
 }

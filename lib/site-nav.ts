@@ -94,7 +94,6 @@ export const PRIMARY_NAV: NavGroup[] = [
     children: [
       { href: '/housing-market', label: 'Market overview' },
       { href: '/housing-market/reports', label: 'Market reports' },
-      { href: '/housing-market', label: 'Explore reports' },
       { href: '/activity', label: 'Recent activity' },
       { href: '/price-drops', label: 'Price drops' },
     ],
@@ -187,7 +186,6 @@ export const FOOTER_NAV: FooterGroup[] = [
     links: [
       { href: '/housing-market', label: 'Market overview' },
       { href: '/housing-market/reports', label: 'Market reports' },
-      { href: '/housing-market', label: 'Explore reports' },
       { href: '/activity', label: 'Recent activity' },
     ],
   },

@@ -13,6 +13,7 @@
 import type { Metadata } from 'next'
 import RequestBuilder from './RequestBuilder'
 import { H1 } from '@/components/site/primitives'
+import SiteFooter from '@/components/site/SiteFooter'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 
@@ -32,6 +33,7 @@ export default async function MarketingRequestPage() {
   await Promise.all([getSession(), getPersonIdFromCookie()])
 
   return (
+    <>
     <main className="min-h-screen bg-background">
       <section className="border-b border-border bg-card">
         <div className="mx-auto max-w-3xl px-6 py-12">
@@ -65,5 +67,7 @@ export default async function MarketingRequestPage() {
         </div>
       </section>
     </main>
+    <SiteFooter />
+    </>
   )
 }

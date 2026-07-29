@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { H1 } from '@/components/site/primitives'
+import SiteFooter from '@/components/site/SiteFooter'
 import { CONTACT } from '@/lib/brand/contact'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -28,6 +29,7 @@ const UL_CLASS = 'mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground'
 
 export default function PrivacyPage() {
   return (
+    <>
     <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
       <H1 className="text-2xl tracking-tight text-primary">Privacy & cookies</H1>
       <p className="mt-2 text-sm text-muted-foreground">Last updated: June 1, 2026</p>
@@ -181,5 +183,7 @@ export default function PrivacyPage() {
         </p>
       </section>
     </main>
+    <SiteFooter />
+    </>
   )
 }

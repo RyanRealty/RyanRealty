@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm'
 import { H1 } from '@/components/site/primitives'
+import SiteFooter from '@/components/site/SiteFooter'
 
 export const metadata: Metadata = {
   title: 'Reset Password',
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
 
 export default function ForgotPasswordPage() {
   return (
+    <>
     <main className="mx-auto flex min-h-[60vh] max-w-md flex-col justify-center px-4 py-16">
       <div className="rounded-xl border border-border bg-card p-8 shadow-sm">
         <div className="mb-6 flex justify-center">
@@ -30,5 +32,7 @@ export default function ForgotPasswordPage() {
         </p>
       </div>
     </main>
+    <SiteFooter />
+    </>
   )
 }
