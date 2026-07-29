@@ -81,6 +81,11 @@ consumer, client, lead, or public audience.
 - Trusting CountUp targets, chart values, or pill text that came from memory, prior chats, or
   another AI system.
 - Using "about," "roughly," or "approximately" as a substitute for pulling the actual data.
+- **Invented timelines, forecasts, and estimates (Matt, 2026-07-29).** A date ("~Aug 11"), a
+  duration ("multi-quarter"), or an impact estimate ("90-150 clicks/mo") is a NUMBER and §0
+  applies in full: it needs a named basis or it does not ship. When the honest basis is a
+  condition, write the condition ("when GSC reports per-class indexed counts"), never a
+  date pulled from convention. General-knowledge folklore stated as fact is fabrication.
 - Shipping when any stat has a question mark next to it in the source trace.
 - Letting narrative voice override data. If the data contradicts the pre-written story, the
   story changes, not the data.
