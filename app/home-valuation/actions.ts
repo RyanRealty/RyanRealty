@@ -13,6 +13,7 @@ import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { headers } from 'next/headers'
+import { after } from 'next/server'
 
 const source = (process.env.NEXT_PUBLIC_SITE_URL ?? 'ryan-realty.com').replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase()
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -197,6 +198,49 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
     console.warn('[valuation] canonical tagging failed (non-blocking):', err)
   }
 
+  // Everything below is POST-RESPONSE work. It used to run inline, so the
+  // browser sat on "Sending…" until the CMA compute + a 500-row city fetch +
+  // a PDF render + two email sends finished. Measured on production:
+  // 20s, 77s, and one submit that never returned inside 150s — the seller sees
+  // a hung form, gives up, and re-submits (which is how this audit produced
+  // duplicate leads). The lead is already durably inserted and captured into
+  // the CRM above, so we answer the browser now and finish the rest with
+  // after(), which runs once the response has been flushed.
+  const eventId = generateEventId()
+  after(async () => {
+    try {
+      await runValuationFollowUp({
+        email, name, phone, city, state, street, postalCode, fullAddress,
+        capturedPersonId, eventId,
+      })
+    } catch (err) {
+      console.warn('[valuation] post-response follow-up failed:', err)
+    }
+  })
+  return { success: true, cmaSent: false, eventId }
+}
+
+/**
+ * Post-response work for a valuation request: the broker alert, the auto-CMA
+ * build + send, the acknowledgment email, and the ad-platform conversion
+ * pixels. Never called on the request path — see after() above. The lead insert
+ * and CRM capture stay inline, because those must be durable before the seller
+ * is told the request was received.
+ */
+async function runValuationFollowUp(ctx: {
+  email: string
+  name: string
+  phone: string
+  city: string
+  state: string
+  street: string
+  postalCode: string
+  fullAddress: string
+  capturedPersonId: number | null
+  eventId: string
+}): Promise<void> {
+  const { email, name, phone, city, state, street, postalCode, fullAddress, capturedPersonId, eventId } = ctx
+
   if (ADMIN_EMAIL) {
     await sendEmail({
       to: ADMIN_EMAIL,
@@ -231,7 +275,7 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
         // the leadSuppressed short-circuit above, so the auto-CMA send is gated
         // in its own enclosing scope. No crm_person_id here, gate by email.
         if ((await isSuppressedByEmail(email, 'email')).suppressed) {
-          return { success: true, cmaSent: false, eventId: generateEventId() }
+          return
         }
         void createServiceClient
         const { getPropertyById, getCityListings: getCityListingsDAL } = await import('@/lib/data')
@@ -330,7 +374,6 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
   // Seller leads (valuation requests) are the highest-intent funnel entry,
   // so they carry the highest value per event. Meta's bid algorithm uses
   // this to push budget toward seller-acquisition campaigns.
-  const eventId = generateEventId()
   await fetch(`${siteUrl}/api/meta-capi`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -368,5 +411,5 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
     },
   })
 
-  return { success: true, cmaSent, eventId }
+  void cmaSent
 }
