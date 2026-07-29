@@ -57,6 +57,19 @@ valuation CTA + search + GA, one JSON-LD block, no neighborhood architecture (Be
 neighborhood links), Cascade Hasson has no blog in nav. Cascade Hasson + Stellar + Garner run
 Meta pixels; Bend Premier does not.
 
+Sweep completed 2026-07-29 (second pass — paid + Zillow):
+- **Meta Ad Library, active ads naming each office:** RE/MAX Key ~89 · Garner ~89 · Cascade
+  Hasson ~43 · Bend Premier ~15 · Stellar ~2 · Ryan Realty ~1. Cascade's ads are almost all
+  AGENT-level (Cyndi Robertson promoting every listing + SOLDs; Ladd Group funneling a luxury
+  development into their own capture domain bendpropertysource.com; one corporate ad total).
+  **Nobody runs seller-intent ads in Bend — every ad is buyer/listing promotion. The seller
+  funnel is an uncontested paid flank** (input to item 7's ~Aug 11 spend call).
+- **Zillow (Bend agent directory):** top profiles run 187–653 reviews — High Desert Realty
+  team 5.0×653 (1,175 Bend sales), Jenn Schaake/Cascade Hasson 5.0×238, Glennon/Knightsbridge
+  5.0×187, Frazier/eXp 5.0×194. Review mass on Zillow dwarfs GBP; buyer-lead flow follows it.
+- **Not swept (no compliant path):** competitor SEO rank footprint (no rank API; scraping
+  Google is gated) and logged-in social analytics. Named blind spots, not estimates.
+
 Conclusions: (1) production rides agent-team brands and review mass, not brokerage websites;
 (2) our site is already structurally ahead once the index problem resolves; (3) review
 velocity is the highest-correlation lever we do not run — no review-request automation exists
