@@ -323,28 +323,33 @@ Full detail lives in the code; highlights that matter for the gap analysis:
   `laundryFeatures` registers 0 options (dead); stale docs (`docs/ADVANCED_SEARCH.md`,
   `DATABASE_FOR_AI_AGENTS.md` §2h still describe superseded architecture); registry says
   88 while the contract doc reportedly says 89 — reconcile.
-- **Data availability — CORRECTED by live Spark probes (2026-07-29, rev 2.1).** The
-  stored `listings.details` column is NOT the feed. Two live API calls with our own
-  credentials (`_expand=CustomFields`) proved:
-  1. **The entire Flexmls field dictionary is available to us TODAY** through the
-     Spark `CustomFields` expansion — verified with real values on active listings:
-     `Accessory Dwelling Unit YN`, `Short Term Rental Permit YN`, `CC&R's YN = "Yes"`,
-     `Zoning = "RM"`, `Flood`, `Government Overlay`, plus every teardown group (Rooms,
-     Green Building Verification, Showing Requirements, Documents, …). **Our sync
-     never requests it** — [`lib/sync/deltaSync.ts`](../../lib/sync/deltaSync.ts)
-     expands `Photos` only. The earlier "absent from feed / masked by feed" conclusion
-     came from auditing our stored copy; wrong method, corrected here.
-  2. **Standard-field masks are real but mostly moot:** SF `Zoning`/`Topography`/
-     `WaterBodyName`/`GreenBuildingVerificationType`/`PublicSurveyTownship` return
-     `********` at the SF level, but Zoning/Green/Flood/Gov-Overlay all arrive with
-     real values inside CustomFields. `ZoningDescription` is real even at the SF level
-     ("RM", "A-1" observed live). Whether Topography/WaterBodyName have CF mirrors
-     gets verified during the ingest build (they did not appear on the probe listing,
-     which had no water/topo data to report).
-  3. **Stored-copy coverage for the already-synced scalars** (n=1000 active):
-     `PreviousListPrice` 43% · `VirtualToursCount>0` 19% · `VideosCount>0` 12.1% ·
-     `FloorPlansCount>0` 11.9% · `BodyType` 8.9% · `IrrigationWaterRightsAcres` 4.6%.
-  **Compliance requirement discovered by the same probe:** CustomFields carries
+- **Data availability — the three-layer truth (rev 2.2, all layers verified).**
+  **Layer 1 — already on disk AND mostly already searchable (the bulk of the
+  dictionary):** the RESO multi-select categories live as structured feature objects
+  in `details`, one field per record, and the MV's 36 arrays + 88-field registry
+  already serve them. Verified n=1000 active: LotFeatures 779 · InteriorFeatures 551 ·
+  SecurityFeatures 527 · OtherStructures 337 · CommunityFeatures 319 — including
+  `Short Term Rentals Allowed` true on 88 and `Not Allowed` on 67, meaning the
+  existing `strAllowed` filter works TODAY. Roughly 34 of the ~45 Flexmls categories
+  are in this layer. The gap for these is exposure/UX, not data.
+  **Layer 2 — in the feed but not in our DB (CustomFields-only):** verified 0/1000
+  structured in `details`: ADU YN/Type/SqFt/Permitted, Short Term Rental **Permit** YN
+  (distinct from the community allowed-flag), CC&R's YN, Zoning (SF-masked), Flood,
+  Government Overlay, Easements, Irrigation District, Rooms, Documents, Power
+  Production, Green verification. Live Spark probes with our credentials
+  (`_expand=CustomFields`) returned all of these with real values:
+  `Accessory Dwelling Unit YN`, `Short Term Rental Permit YN`, `CC&R's YN = "Yes"`,
+  `Zoning = "RM"`, `Flood`, `Government Overlay` observed live. **Our sync never
+  requests the expansion** — [`lib/sync/deltaSync.ts`](../../lib/sync/deltaSync.ts)
+  expands `Photos` only. `ZoningDescription` is real even at the SF level ("RM",
+  "A-1"); whether Topography/WaterBodyName have CF mirrors gets one probe during the
+  ingest build.
+  **Layer 3 — remarks text:** STR phrasing appears in 156/1000 rows, CC&R in 50 —
+  keyword-searchable today as the interim for Layer-2 fields.
+  Stored-scalar coverage (n=1000): `PreviousListPrice` 43% · `VirtualToursCount>0`
+  19% · `VideosCount>0` 12.1% · `FloorPlansCount>0` 11.9% · `BodyType` 8.9% ·
+  `IrrigationWaterRightsAcres` 4.6%.
+  **Compliance requirement discovered by the CF probe:** CustomFields carries
   confidential data (`Owner Name`, `Phone to Show Number`, escrow officer). The CF
   ingest MUST extend the `PRIVATE_DETAIL_KEYS` redaction to the CF spellings and
   divert them to `listing_private` before anything lands in the anon-readable column.
