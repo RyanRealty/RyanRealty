@@ -25,9 +25,9 @@
       "kind": "internal",
       "reason": "Internal: weekly pipeline digest to the broker (or the admin-configured Weekly Report Recipients from Company Settings — staff addresses the owner adds, not leads). Same allowlisted site; line shifted when recipients were wired to crm_company_settings (§15 slice). Line re-synced in the audit cron-auth consolidation."
     },
-    "app/home-valuation/actions.ts:201": {
+    "app/home-valuation/actions.ts:245": {
       "kind": "internal",
-      "reason": "Internal: new-lead notification to ADMIN_EMAIL (the brokerage), not the lead. The two LEAD-facing sends in this action (auto-CMA + acknowledgment) are gated by isSuppressedByEmail. Permanently allowlisted."
+      "reason": "Internal: new-lead notification to ADMIN_EMAIL (the brokerage), not the lead. The two LEAD-facing sends in this action (auto-CMA + acknowledgment) are gated by isSuppressedByEmail. Permanently allowlisted. Line re-keyed 201->245 when the seller-facing hang fix moved the post-response work (broker alert, auto-CMA, acknowledgment) out of the request path into runValuationFollowUp + after() (buyer-journey audit 2026-07-29). Same internal ADMIN_EMAIL send, same recipient; the two LEAD-facing sends in that function remain gated by isSuppressedByEmail."
     },
     "lib/deploy-health-alert.ts:53": {
       "kind": "internal",
