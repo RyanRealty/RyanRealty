@@ -384,7 +384,7 @@ function compCardsAndTablePage(a: RenderCmaArgs): PageDef {
       ${ph ? `<img class="ph" src="${esc(ph)}" alt="${esc(c.address)}" />` : '<div class="ph-missing">No MLS photo on file</div>'}
       <div class="body">
         <div class="addr">${esc(c.address)}</div>
-        <div class="stats">${int(c.beds)} bd · ${dec(c.baths, 0)} ba · ${int(c.sqft)} sf${c.lotAcres != null ? ` · ${dec(c.lotAcres, 2)} ac` : ''}${c.yearBuilt ? ` · ${c.yearBuilt}` : ''}</div>
+        <div class="stats">${int(c.beds)} bd · ${dec(c.baths, 0)} ba · ${int(c.sqft)} sf${c.lotAcres != null ? ` · ${dec(c.lotAcres, 2)} ac` : ''}${c.yearBuilt ? ` · ${c.yearBuilt}` : ''}${c.proximity ? ` · ${esc(c.proximity)}` : ''}${c.competingArea ? ` · ${esc(c.competingArea)} (competing area)` : ''}</div>
         <div class="price">${usd(c.closePrice)} <span class="when">${monthYear(c.closeDate)}${c.daysToOffer != null ? ` · ${int(c.daysToOffer)}d to offer` : ''}</span></div>
       </div>
     </div>`

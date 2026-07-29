@@ -56,6 +56,10 @@ export interface CmaComp {
   daysToOffer: number | null
   domTotal: number | null
   selectionTier: string
+  /** "1.75 miles NW" — Fannie Mae B4-1.3-08 requires distance + direction be reported. */
+  proximity?: string | null
+  /** Set when the comp came from a competing market area; the render must disclose it. */
+  competingArea?: string | null
 }
 
 export interface CmaAdjustedComp extends CmaComp {

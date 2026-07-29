@@ -1,15 +1,42 @@
 /**
- * CMA comp selection — tiered widening per the CMA producer skill (step 4):
- * subdivision first (24 months), then same-zip, then city, loosening the
- * sqft band last. Stops at the first tier stack that yields >= MIN_COMPS,
- * caps at MAX_COMPS ordered by similarity, drops $/sqft outliers beyond two
- * standard deviations when enough comps remain.
+ * CMA comp selection — MARKET-AREA FIRST, distance as disclosure.
+ *
+ * Rewritten 2026-07-28 against the appraisal standards rather than a preference
+ * (Matt: "you must do research"). The prior ladder was subdivision -> zip ->
+ * CITY -> city-wide-wider, with no geographic constraint at all; subdivision is
+ * frequently null and zip is coarse, so most subjects fell through to "anywhere
+ * in Bend". That is exactly the "comps way too far away and in neighborhoods not
+ * even really in the same area" complaint.
+ *
+ * What the standards actually say (see docs/plans/
+ * PROSPECT_TO_CMA_AND_SITE_IA_2026-07-28.md §A5 for sources):
+ *   - USPAP sets NO proximity rule. Fannie Mae B4-1.3-08 requires comps from the
+ *     subject's MARKET AREA and requires distance to be REPORTED with a
+ *     direction, never capped. The 1-mile/5-mile rule was retired with UAD.
+ *   - Competing-neighborhood comps are permitted but must be DISCLOSED, with the
+ *     differences addressed.
+ *   - Recency: at least 3 closed within 12 months; anything over 6 months old
+ *     requires an explanation.
+ *   - Size: the +/-25% GLA band is the accepted convention; wider crosses into a
+ *     different buyer pool and gets the same disclosure treatment.
+ *
+ * So the ladder is now subdivision -> same GIS neighborhood polygon -> same area
+ * but older -> competing neighborhood (flagged) -> city-wide (flagged, last
+ * resort). Hard exclusions apply at EVERY tier per Matt: lot character (acreage
+ * vs in-town lot) is never comparable regardless of distance.
  */
 
 import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data'
 import type { CmaListingRow } from '@/lib/data'
 import type { CmaComp, CmaSubject } from '@/lib/cma/types'
 import { saneYearBuilt } from '@/lib/cma/subject'
+import {
+  distanceMiles,
+  lotCharacterCompatible,
+  marketAreaName,
+  proximityLabel,
+  resolveMarketArea,
+} from '@/lib/cma/market-area'
 
 export const MIN_COMPS = 3
 export const TARGET_COMPS = 6
@@ -98,40 +125,70 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
   const tiersUsed: string[] = []
   const byKey = new Map<string, CmaComp>()
 
-  // Acreage comparability: only constrain lot size when the subject is on acreage.
+  // Lot-character band for the QUERY. The in-memory lotCharacterCompatible check
+  // is the authoritative exclusion (it also rejects an in-town lot for an acreage
+  // subject and vice versa); this just narrows the pull when the subject is on
+  // acreage so the 50-row cap is not spent on incomparable stock.
   const lotMin = subject.lotAcres != null && subject.lotAcres >= 1 ? +(subject.lotAcres * 0.4).toFixed(2) : null
   const lotMax = subject.lotAcres != null && subject.lotAcres >= 1 ? +(subject.lotAcres * 2.5).toFixed(2) : null
 
-  const tiers: Array<{
+  // The subject's GIS market area, when it sits inside one. Null is a legitimate
+  // answer (rural, or a city with no mesh) — those subjects fall back to distance.
+  const subjectArea = resolveMarketArea(subject.latitude, subject.longitude)
+  const subjectAreaName = marketAreaName(subjectArea)
+  const subjectPoint = { lat: subject.latitude, lng: subject.longitude }
+  trace.push(
+    subjectArea
+      ? `Subject market area: ${subjectAreaName} (City of Bend GIS neighborhood mesh, point-in-polygon).`
+      : 'Subject is outside every mapped neighborhood polygon — comps fall back to distance from the subject.',
+  )
+
+  type Tier = {
     name: string
     subdivisionIlike?: string | null
-    postalCode?: string | null
     monthsBack: number
     sqftBand: number
-    useLot: boolean
-  }> = [
-    { name: 'subdivision-24mo', subdivisionIlike: subject.subdivision, monthsBack: 24, sqftBand: 0.25, useLot: true },
-    { name: 'zip-12mo', postalCode: subject.postalCode, monthsBack: 12, sqftBand: 0.25, useLot: true },
-    { name: 'city-12mo', monthsBack: 12, sqftBand: 0.25, useLot: true },
-    { name: 'city-24mo-wide', monthsBack: 24, sqftBand: 0.35, useLot: false },
+    /** Restrict to the subject's own GIS market area. */
+    sameArea: boolean
+    /** Allow a different market area, DISCLOSED on every comp it yields. */
+    competing: boolean
+    /** Hard cap in miles for the fallback tiers, so "city" never means "anywhere". */
+    maxMiles: number | null
+  }
+
+  const tiers: Tier[] = [
+    // 1-2. Same market area, recent. Fannie Mae's "same market area when possible".
+    { name: 'subdivision-6mo', subdivisionIlike: subject.subdivision, monthsBack: 6, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: null },
+    { name: 'neighborhood-6mo', monthsBack: 6, sqftBand: 0.25, sameArea: true, competing: false, maxMiles: null },
+    // 3. Same area, older. Over 6 months requires an explanation, which the trace carries.
+    { name: 'neighborhood-12mo', monthsBack: 12, sqftBand: 0.25, sameArea: true, competing: false, maxMiles: null },
+    // 4. Competing market area — permitted, but disclosed and distance-bounded.
+    { name: 'competing-area-12mo', monthsBack: 12, sqftBand: 0.25, sameArea: false, competing: true, maxMiles: 2 },
+    // 5. Last resort. Still bounded — the old ladder ended at "anywhere in the city".
+    { name: 'citywide-12mo', monthsBack: 12, sqftBand: 0.35, sameArea: false, competing: true, maxMiles: 5 },
   ]
+
+  let excludedLotCharacter = 0
+  let excludedDistance = 0
+  let excludedArea = 0
 
   for (const tier of tiers) {
     if (tier.name.startsWith('subdivision') && !tier.subdivisionIlike) continue
-    if (tier.name.startsWith('zip') && !tier.postalCode) continue
+    // The polygon tiers are meaningless without a resolved subject area.
+    if (tier.sameArea && !subjectArea) continue
     const sqftMin = Math.round(sqft * (1 - tier.sqftBand))
     const sqftMax = Math.round(sqft * (1 + tier.sqftBand))
     const closeDateGte = isoMonthsAgo(tier.monthsBack)
     const rows = await selectCmaCompsPool({
       cityIlike: subject.city,
       subdivisionIlike: tier.subdivisionIlike ?? null,
-      postalCode: tier.postalCode ?? null,
+      postalCode: null,
       closeDateGte,
       sqftMin,
       sqftMax,
-      lotMin: tier.useLot ? lotMin : null,
-      lotMax: tier.useLot ? lotMax : null,
-      limit: 50,
+      lotMin,
+      lotMax,
+      limit: 100,
     })
     let added = 0
     for (const row of rows) {
@@ -139,16 +196,57 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
       if (!comp) continue
       if (subject.listingKey && comp.listingKey === subject.listingKey) continue
       if (subject.streetAddress && comp.address.toLowerCase() === subject.streetAddress.toLowerCase()) continue
-      if (!byKey.has(comp.listingKey)) {
-        byKey.set(comp.listingKey, comp)
-        added++
+      if (byKey.has(comp.listingKey)) continue
+
+      // HARD EXCLUSION at every tier (Matt 2026-07-28): acreage and in-town lots
+      // are different products with different buyer pools, at any distance.
+      if (!lotCharacterCompatible(subject.lotAcres, comp.lotAcres)) {
+        excludedLotCharacter++
+        continue
       }
+
+      const compArea = resolveMarketArea(comp.latitude, comp.longitude)
+      if (tier.sameArea && compArea !== subjectArea) {
+        excludedArea++
+        continue
+      }
+
+      const miles = distanceMiles(subjectPoint, { lat: comp.latitude, lng: comp.longitude })
+      if (tier.maxMiles != null && miles != null && miles > tier.maxMiles) {
+        excludedDistance++
+        continue
+      }
+
+      // Distance + direction on EVERY comp — Fannie Mae requires it reported.
+      comp.proximity = proximityLabel(subjectPoint, { lat: comp.latitude, lng: comp.longitude })
+      // Disclose a competing market area rather than quietly blending it in.
+      comp.competingArea =
+        tier.competing && compArea && compArea !== subjectArea ? marketAreaName(compArea) : null
+
+      byKey.set(comp.listingKey, comp)
+      added++
     }
     trace.push(
-      `Tier ${tier.name}: listings WHERE StandardStatus ILIKE '%Closed%' AND PropertyType='A' AND ClosePrice>0 AND CloseDate>='${closeDateGte}' AND City ILIKE '${subject.city}'${tier.subdivisionIlike ? ` AND SubdivisionName ILIKE '${tier.subdivisionIlike}'` : ''}${tier.postalCode ? ` AND PostalCode='${tier.postalCode}'` : ''} AND TotalLivingAreaSqFt BETWEEN ${sqftMin} AND ${sqftMax}${tier.useLot && lotMin != null ? ` AND lot_size_acres BETWEEN ${lotMin} AND ${lotMax}` : ''}. Returned ${rows.length} rows, ${added} new comps.`,
+      `Tier ${tier.name}: listings WHERE StandardStatus ILIKE '%Closed%' AND PropertyType='A' AND ClosePrice>0 AND CloseDate>='${closeDateGte}' AND City ILIKE '${subject.city}'${tier.subdivisionIlike ? ` AND SubdivisionName ILIKE '${tier.subdivisionIlike}'` : ''} AND TotalLivingAreaSqFt BETWEEN ${sqftMin} AND ${sqftMax}${lotMin != null ? ` AND lot_size_acres BETWEEN ${lotMin} AND ${lotMax}` : ''}` +
+        `${tier.sameArea ? ` AND market area = ${subjectAreaName}` : ''}${tier.maxMiles != null ? ` AND distance <= ${tier.maxMiles} miles` : ''}. Returned ${rows.length} rows, ${added} new comps.`,
     )
     if (added > 0) tiersUsed.push(tier.name)
     if (byKey.size >= TARGET_COMPS) break
+  }
+
+  if (excludedLotCharacter > 0) {
+    trace.push(`Excluded ${excludedLotCharacter} comp(s) on lot character (acreage vs in-town lot is not comparable at any distance).`)
+  }
+  if (excludedArea > 0) trace.push(`Excluded ${excludedArea} comp(s) outside the subject's market area.`)
+  if (excludedDistance > 0) trace.push(`Excluded ${excludedDistance} comp(s) beyond the tier's distance bound.`)
+
+  const usedOlder = tiersUsed.some((t) => t.includes('12mo'))
+  if (usedOlder) {
+    trace.push('Comps older than 6 months were used because the 6-month set did not reach the minimum — Fannie Mae B4-1.3-08 requires this be stated.')
+  }
+  const competingCount = [...byKey.values()].filter((c) => c.competingArea).length
+  if (competingCount > 0) {
+    trace.push(`${competingCount} comp(s) come from a COMPETING market area and are labeled as such on the report, per Fannie Mae B4-1.3-08.`)
   }
 
   let comps = Array.from(byKey.values())
