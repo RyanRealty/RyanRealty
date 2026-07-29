@@ -86,12 +86,20 @@ const CAPS = {
  * Flatten the grouped backend result into ONE ordered list. Every category the
  * backend returns is represented here — a category missing from this function
  * is a rendering bug (contract-tested).
+ *
+ * Ordering contract (buyer-journey audit F6, 2026-07-29): NAMED PLACES rank
+ * above street addresses — neighborhoods, cities, subdivisions, THEN
+ * addresses, THEN zips (brokers / reports / pages trail as before). The old
+ * addresses-first order buried a matched neighborhood under up to 17 street
+ * addresses that merely contained the query words. A buyer typing a place
+ * name wants the place. Backend best-match order inside each group is
+ * preserved untouched.
  */
 export function flattenSuggestions(s: SearchSuggestionsResult | null): SuggestItem[] {
   if (!s) return []
   const items: SuggestItem[] = []
-  for (const a of (s.addresses ?? []).slice(0, CAPS.addresses)) {
-    items.push({ kind: 'address', label: a.label, href: a.href })
+  for (const n of (s.neighborhoods ?? []).slice(0, CAPS.neighborhoods)) {
+    items.push({ kind: 'neighborhood', label: n.neighborhoodName, sublabel: n.cityName, href: n.href })
   }
   for (const c of (s.cities ?? []).slice(0, CAPS.cities)) {
     items.push({
@@ -112,8 +120,8 @@ export function flattenSuggestions(s: SearchSuggestionsResult | null): SuggestIt
       subdivisionName: sub.subdivisionName,
     })
   }
-  for (const n of (s.neighborhoods ?? []).slice(0, CAPS.neighborhoods)) {
-    items.push({ kind: 'neighborhood', label: n.neighborhoodName, sublabel: n.cityName, href: n.href })
+  for (const a of (s.addresses ?? []).slice(0, CAPS.addresses)) {
+    items.push({ kind: 'address', label: a.label, href: a.href })
   }
   for (const z of (s.zips ?? []).slice(0, CAPS.zips)) {
     items.push({

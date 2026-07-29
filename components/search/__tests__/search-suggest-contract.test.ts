@@ -5,9 +5,12 @@
  *    (SearchSuggestionsResult keys) is rendered by flattenSuggestions —
  *    addresses included (the "3480" class the old inline dropdown dropped).
  *    A category added to the backend without a flatten branch fails here.
- * 2. Structured fields: city / subdivision / zip picks carry the structured
+ * 2. Ordering: named places (neighborhoods, cities, subdivisions) flatten
+ *    ABOVE addresses, then zips (reversal of the original addresses-first
+ *    contract — see the comment on the ordering test).
+ * 3. Structured fields: city / subdivision / zip picks carry the structured
  *    fields the filter bar needs to apply filters in place.
- * 3. Merge lock: both live consumers (SearchFilters + KbNav) import the shared
+ * 4. Merge lock: both live consumers (SearchFilters + KbNav) import the shared
  *    engine — no re-forked inline dropdowns.
  */
 import { describe, expect, it } from 'vitest'
@@ -54,10 +57,38 @@ describe('flattenSuggestions category coverage', () => {
     }
   })
 
-  it('addresses flatten first — the "3480" class is visible at the top', () => {
+  /**
+   * ORDERING REVERSAL (2026-07-29). This block used to lock "addresses flatten
+   * first". That contract made a matched named place invisible: typing
+   * "river west" on production showed the River West NEIGHBORHOOD ~17 items
+   * down, buried under street addresses that merely contained those words
+   * (buyer-journey audit F6, 2026-07-29). A buyer typing a place name wants
+   * the place. Ordering reversal approved by Matt's execute-everything
+   * directive same day. New locked order: named places (neighborhoods,
+   * cities, subdivisions) → addresses → zips → brokers → reports → pages.
+   * Addresses stay covered (test above) — the "3480" class still renders,
+   * it just no longer outranks a place match. Backend best-match order
+   * inside each group is untouched.
+   */
+  it('named places flatten first — neighborhoods, cities, subdivisions, THEN addresses, THEN zips', () => {
     const items = flattenSuggestions(FULL_FIXTURE)
+    expect(items.map((i) => i.kind)).toEqual([
+      'neighborhood',
+      'city',
+      'subdivision',
+      'address',
+      'zip',
+      'broker',
+      'report',
+      'page',
+    ])
     expect(items[0]).toMatchObject({
-      kind: 'address',
+      kind: 'neighborhood',
+      label: 'Mountain View',
+      href: '/cities/bend/mountain-view',
+    })
+    // The "3480" class is still rendered — below places, never dropped.
+    expect(items.find((i) => i.kind === 'address')).toMatchObject({
       label: '3480 NW Colver Cir, Bend, OR, 97703',
       href: '/listing/220100001',
     })
