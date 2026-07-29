@@ -18,6 +18,7 @@ import { getBannerUrl, getOrCreatePlaceBanner, getBannerSearchQuery } from '../.
 import { shareDescription, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '../../../lib/share-metadata'
 import { getBestListingHeroForGeography } from '../../actions/photo-classification'
 import SaveSearchButton from '../../../components/SaveSearchButton'
+import { buildSavedSearchPathFilters } from '@/lib/search/saved-search-path-filters'
 // design-audit NAV-1: KbNav comes from app/search/layout.tsx; these scrolling
 // branches render a KbFooter so MLS reciprocity + legal survive the SiteFooter
 // suppression on /homes-for-sale/** (lib/site/chrome-routes.ts).
@@ -318,37 +319,16 @@ export default async function SearchPage({
   // Mountain View, Awbrey Butte) in ~4ms instead of the slow advanced RPC.
   const neighborhood = resolved.neighborhoodName ?? undefined
 
-  /**
-   * Geography for "Save this search", in CANONICAL filter keys.
-   *
-   * The button used to re-derive this from the pathname and label EVERY second
-   * segment `subdivision`. The alert matcher compares subdivision against
-   * SubdivisionName, so a neighborhood (`river-west`) or a preset
-   * (`multi-family`) matched zero rows and the alert never fired — silently,
-   * forever. Resolution already happened above, so pass the answer instead:
-   *
-   *   neighborhood → neighborhoodSlug `<citySlug>-<slug>`, the form the RPC's
-   *     boundary scope expects (verified: 'bend-river-west' → 49 actives,
-   *     'river-west' → 0)
-   *   subdivision  → the DISPLAY NAME, which is what SubdivisionName holds
-   *     (the slug loses the space in multi-word names like "West Hills")
-   *   preset       → its real filter params (multi-family → propertyType)
-   */
-  const savedSearchPathFilters: Record<string, unknown> = {}
-  if (city) savedSearchPathFilters.city = city
-  if (resolved.neighborhoodName && resolved.subdivisionSlug) {
-    const citySlugForNeighborhood = (slug[0] ?? '').toLowerCase().trim()
-    savedSearchPathFilters.neighborhoodSlug = citySlugForNeighborhood
-      ? `${citySlugForNeighborhood}-${resolved.subdivisionSlug}`
-      : resolved.subdivisionSlug
-  } else if (resolved.subdivisionDisplayName) {
-    savedSearchPathFilters.subdivision = resolved.subdivisionDisplayName
-  }
-  if (resolved.preset?.params) {
-    for (const [key, value] of Object.entries(resolved.preset.params)) {
-      if (value != null) savedSearchPathFilters[key] = value
-    }
-  }
+  // Geography for "Save this search", in canonical filter keys. Derived from
+  // the RESOLVED segment, never the raw pathname — see the helper for why.
+  const savedSearchPathFilters = buildSavedSearchPathFilters({
+    city,
+    citySlug: slug[0],
+    subdivisionSlug: resolved.subdivisionSlug,
+    subdivisionDisplayName: resolved.subdivisionDisplayName,
+    neighborhoodName: resolved.neighborhoodName,
+    preset: resolved.preset,
+  })
 
   const hasFilterOnly = !city && hasFilterOnlySearch(sp)
   const presetLabel = !city ? getPresetSearchLabel(sp) : null

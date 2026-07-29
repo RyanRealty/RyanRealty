@@ -385,12 +385,21 @@ describe('slug search page: guest save + reachable map-move (2026-06-09)', () =>
     // search silently never fired an alert. The page resolves the segment
     // already; it must pass the answer down.
     expect(slug).toMatch(/pathFilters=\{savedSearchPathFilters\}/)
-    expect(slug).toMatch(/savedSearchPathFilters\.neighborhoodSlug\s*=/)
+    expect(slug).toMatch(/buildSavedSearchPathFilters\(\{/)
+    expect(slug).toMatch(/neighborhoodName: resolved\.neighborhoodName/)
+    expect(slug).toMatch(/preset: resolved\.preset/)
+  })
+
+  it('the saved-search geography helper emits canonical keys, never a bare slug', () => {
+    const helper = readSrc('lib/search/saved-search-path-filters.ts')
+    // A neighborhood carries the prefixed slug the RPC boundary scope keys on.
+    expect(helper).toMatch(/filters\.neighborhoodSlug/)
+    expect(helper).toMatch(/\$\{citySlug\}-\$\{input\.subdivisionSlug\}/)
     // A real subdivision carries its DISPLAY NAME (SubdivisionName holds
     // "West Hills", never the "west-hills" slug).
-    expect(slug).toMatch(/savedSearchPathFilters\.subdivision = resolved\.subdivisionDisplayName/)
+    expect(helper).toMatch(/filters\.subdivision = input\.subdivisionDisplayName/)
     // A preset contributes its real filter params (multi-family -> propertyType).
-    expect(slug).toMatch(/resolved\.preset\?\.params/)
+    expect(helper).toMatch(/input\.preset\?\.params/)
   })
 
   it('links into the search-as-you-move map via view=split', () => {
