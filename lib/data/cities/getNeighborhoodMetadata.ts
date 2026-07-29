@@ -4,6 +4,7 @@
  * Reads from the `neighborhoods` table. Lives behind the DAL boundary.
  */
 
+import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
 
 export type NeighborhoodLite = { id: string; name: string; slug: string }
@@ -40,20 +41,45 @@ export async function getNeighborhoodBySlugInCity(
   return (data ?? null) as NeighborhoodFull | null
 }
 
-/** Search neighborhoods by name ilike (with embedded cities join). */
-export async function searchNeighborhoodsByName(
-  pattern: string,
-  limit = 15
-): Promise<Array<{ name?: string | null; slug?: string | null; cities?: { slug?: string | null; name?: string | null } | null }>> {
-  const sb = supabaseAnon()
-  if (!sb) return []
-  const { data } = await sb
-    .from('neighborhoods')
-    .select('name, slug, cities(slug, name)')
-    .ilike('name', `%${pattern}%`)
-    .limit(Math.min(Math.max(limit, 1), 50))
-  return (data ?? []) as Array<{ name?: string | null; slug?: string | null; cities?: { slug?: string | null; name?: string | null } | null }>
+export type NeighborhoodDirectoryRow = {
+  neighborhoodName: string
+  neighborhoodSlug: string
+  cityName: string
+  citySlug: string
 }
+
+/**
+ * Every neighborhood flattened with its city, cached for an hour.
+ *
+ * Replaces the per-keystroke `name ILIKE '%<q>%'` search the autocomplete used
+ * to run (searchNeighborhoodsByName). That query could only match the exact
+ * spacing a buyer happened to type — "RiverWest" found nothing. The table is
+ * tiny (13 rows) and rarely changes, so one cached read serves every keystroke
+ * and the match itself runs in memory via lib/search/neighborhood-match.
+ *
+ * Rows missing a name, slug, or city join are dropped: a suggestion without
+ * both slugs cannot build a working /cities/<city>/<neighborhood> href.
+ */
+export const getNeighborhoodDirectory = unstable_cache(
+  async (): Promise<NeighborhoodDirectoryRow[]> => {
+    const rows = await getAllNeighborhoodsWithCity()
+    const out: NeighborhoodDirectoryRow[] = []
+    for (const r of rows) {
+      const city = Array.isArray(r.cities) ? r.cities[0] : r.cities
+      const neighborhoodName = (r.name ?? '').trim()
+      const neighborhoodSlug = (r.slug ?? '').trim()
+      const cityName = (city?.name ?? '').trim()
+      const citySlug = (city?.slug ?? '').trim()
+      if (!neighborhoodName || !neighborhoodSlug || !cityName || !citySlug) continue
+      out.push({ neighborhoodName, neighborhoodSlug, cityName, citySlug })
+    }
+    return out
+  },
+  ['neighborhood-directory-v1'],
+  // Matches the sibling city-neighborhood slug map in app/actions/listings.ts:
+  // same table, same 1h window, same 'neighborhoods' invalidation tag.
+  { revalidate: 3600, tags: ['neighborhoods'] }
+)
 
 /** All neighborhoods with embedded city (name + slug) join — used by content refresh. */
 export async function getAllNeighborhoodsWithCity(): Promise<

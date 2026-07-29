@@ -1,6 +1,5 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import {
   sendEvent,
@@ -13,18 +12,12 @@ import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { backfillSessionToFub } from '@/lib/visitor-backfill'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
+import { recordMarketingAssignment } from '@/lib/data/crm/recordMarketingAssignment'
 import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
 import { resolveLeadSource, resolvePaidAttributionTags } from '@/lib/crm/lead-source'
 import { cookies, headers } from 'next/headers'
 
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-
-function getServiceSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) return null
-  return createClient(url, key)
-}
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
@@ -259,22 +252,20 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
         .catch((e) => console.warn('[expired-lp] instant auto-enroll failed:', e))
 
       // Mirror the canonical assignment ledger row used by the gold-standard
-      // seller LP. Dashboards (Conversions broker split, Funnel step 6) read
-      // from marketing_assignments — without this row the lead never shows
-      // up in the broker-attribution view.
-      const supabase = getServiceSupabase()
-      if (supabase) {
-        const { error: insertError } = await supabase.from('marketing_assignments').insert({
-          audience: 'seller',
-          broker: assignment.broker,
-          fub_user_id: assignment.userId,
-          fub_person_id: fubPersonId,
-          source: 'expired-lp',
-          tier: 'hot',
-        })
-        if (insertError) {
-          console.warn('[expired-lp] marketing_assignments insert failed:', insertError.message)
-        }
+      // seller LP. Upsert, not insert (F8): a repeat submission from the same
+      // owner refreshes the one row for this person + audience + source.
+      // (The dashboards this used to feed now read getLeadIntake instead; the
+      // ledger is a write-only broker-attribution audit trail.)
+      const assignRes = await recordMarketingAssignment({
+        audience: 'seller',
+        broker: assignment.broker,
+        fubUserId: assignment.userId,
+        fubPersonId,
+        source: 'expired-lp',
+        tier: 'hot',
+      })
+      if (!assignRes.ok) {
+        console.warn('[expired-lp] marketing_assignments upsert failed:', assignRes.error)
       }
 
       // Queue a CMA for the property — same as the seller + FSBO LP and the

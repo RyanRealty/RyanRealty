@@ -12,7 +12,8 @@
  *   2. `source:<path>` tag
  *   3. `broker:<slug>` tag (from round-robin assignment)
  *   4. PUT assignedUserId on the person
- *   5. Insert row in marketing_assignments ledger
+ *   5. Upsert row in marketing_assignments ledger (one row per
+ *      person + audience + source — see lib/data/crm/recordMarketingAssignment.ts)
  *
  * Idempotent — if the person already has the canonical tags, no-op writes.
  *
@@ -93,6 +94,12 @@ async function pickBroker(audience: LeadAudience, _tier: 'hot' | 'warm' | 'nurtu
   return { broker, userId: FUB_USER_ID_BY_BROKER[broker] ?? FUB_USER_MATT }
 }
 
+/**
+ * Ledger write. Goes through the DAL upsert (F8) so a lead that re-touches the
+ * same door — a saved search fired twelve times, a form re-submitted — refreshes
+ * the ONE row for its (person, audience, source) grain instead of stacking a new
+ * row per event. Non-blocking: the result is logged, never thrown.
+ */
 async function recordAssignment(params: {
   audience: LeadAudience
   broker: BrokerSlug
@@ -101,17 +108,17 @@ async function recordAssignment(params: {
   source: LeadSource
   tier: 'hot' | 'warm' | 'nurture'
 }): Promise<void> {
-  const supabase = getServiceSupabase()
-  if (!supabase) return
   try {
-    await supabase.from('marketing_assignments').insert({
+    const { recordMarketingAssignment } = await import('@/lib/data/crm/recordMarketingAssignment')
+    const res = await recordMarketingAssignment({
       audience: params.audience,
       broker: params.broker,
-      fub_user_id: params.userId,
-      fub_person_id: params.fubPersonId,
+      fubUserId: params.userId,
+      fubPersonId: params.fubPersonId,
       source: params.source,
       tier: params.tier,
     })
+    if (!res.ok) console.warn('[canonical-lead-tagger] assignment ledger write failed:', res.error)
   } catch {
     // non-blocking
   }

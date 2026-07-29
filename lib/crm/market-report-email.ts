@@ -10,7 +10,8 @@
  * What the rebuild adds over the v1 text-only stat sheet:
  *   - A hero headline carrying the ONE story of the period (biggest verified
  *     signal across the subscribed areas — YoY move, market verdict, or the
- *     median itself). Never an invented narrative.
+ *     median itself). Never an invented narrative, and never a YoY move drawn
+ *     from a sample too thin to mean anything (see HEADLINE_MIN_SOLD_COUNT).
  *   - Every stat ships WITH context: vs the prior month (from the monthly
  *     cache series), vs last year (the cache's own YoY column), and a
  *     plain-English "what this means for you" line driven by the canonical
@@ -46,7 +47,31 @@ import type {
   MarketReportAreaBlock,
   MarketTrendSummary,
 } from '@/lib/data/crm/getMarketReportData'
-import type { MoSVerdict } from '@/lib/data/types/market'
+import {
+  domDeltaPhrase,
+  formatCount,
+  formatCurrencyRounded,
+  formatDays,
+  formatMomPct,
+  formatMonths,
+  formatYoy,
+  inventoryDeltaPhrase,
+  meaningLine,
+  verdictLabel,
+} from './market-report-format'
+
+// Public surface preserved after the 2026-07-29 formatter extraction —
+// app/actions/generate-market-report.ts and the test suite import these from
+// this module.
+export {
+  formatCurrencyRounded,
+  formatDays,
+  formatYoy,
+  formatMomPct,
+  formatMonths,
+  verdictLabel,
+  meaningLine,
+}
 
 const MUTED = EMAIL_BODY_MUTED
 const SITE_URL = 'https://ryan-realty.com'
@@ -91,86 +116,6 @@ function firstName(name: string | null | undefined): string {
 }
 
 /**
- * Round to the nearest thousand and format as $XXX,000. Pure. Returns the
- * em-dash data placeholder (allowed for "unavailable") when the value is null.
- */
-export function formatCurrencyRounded(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return '—'
-  const rounded = Math.round(value / 1000) * 1000
-  return '$' + rounded.toLocaleString('en-US')
-}
-
-/** Integer + " days" (e.g. "38 days"). Em-dash placeholder when unavailable. */
-export function formatDays(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return '—'
-  return `${Math.round(value)} days`
-}
-
-/** One-decimal signed-arrow YoY: "↑ 2.1% YoY" / "↓ 1.4% YoY" / flat. Em-dash when null. */
-export function formatYoy(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return '—'
-  const rounded = Math.round(value * 10) / 10
-  if (rounded === 0) return 'flat YoY'
-  const arrow = rounded > 0 ? '↑' : '↓'
-  return `${arrow} ${Math.abs(rounded).toFixed(1)}% YoY`
-}
-
-/** One-decimal signed-arrow month change: "↑ 2.2% vs May" / "flat vs May". */
-export function formatMomPct(value: number | null | undefined, prevMonth: string | null): string {
-  if (value == null || !Number.isFinite(value) || !prevMonth) return '—'
-  const rounded = Math.round(value * 10) / 10
-  if (rounded === 0) return `flat vs ${prevMonth}`
-  const arrow = rounded > 0 ? '↑' : '↓'
-  return `${arrow} ${Math.abs(rounded).toFixed(1)}% vs ${prevMonth}`
-}
-
-/** Months of supply + " months". One decimal, except within the narrow bands
- *  around the 4.0 / 6.0 verdict thresholds, where a second decimal is shown so
- *  the printed number can never appear to contradict the verdict pill (a true
- *  4.04 shows "4.04 months" next to "balanced market", not "4.0 months"). */
-export function formatMonths(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return '—'
-  // INCLUSIVE band edges: a true 4.05 classifies balanced (4.05 > 4) but
-  // (4.05).toFixed(1) floating-point-rounds DOWN to "4.0" — printing
-  // "Balanced market · 4.0 months" is the exact verdict-vs-number
-  // contradiction §0 rule 5 bans. Bend hit this live on 2026-07-16.
-  const nearThreshold = (value >= 3.95 && value <= 4.05) || (value >= 5.95 && value <= 6.05)
-  return `${value.toFixed(nearThreshold ? 2 : 1)} months`
-}
-
-/** Plain-language verdict phrase (sentence case, no hype). */
-export function verdictLabel(verdict: MoSVerdict | null | undefined): string {
-  switch (verdict) {
-    case 'sellers':
-      return "Seller's market"
-    case 'balanced':
-      return 'Balanced market'
-    case 'buyers':
-      return "Buyer's market"
-    default:
-      return '—'
-  }
-}
-
-/**
- * The plain-English "what this means for you" line, driven strictly by the
- * canonical months-of-supply verdict (≤4 sellers, 4–6 balanced, ≥6 buyers).
- * Exported so the copy is unit-testable against the banned-vocabulary list.
- */
-export function meaningLine(verdict: MoSVerdict | null | undefined): string | null {
-  switch (verdict) {
-    case 'sellers':
-      return 'Supply is tight relative to demand, so well priced homes are drawing attention quickly and sellers hold the leverage.'
-    case 'balanced':
-      return 'Supply and demand are close to even, so realistic pricing matters more than timing for both sides.'
-    case 'buyers':
-      return 'There are more homes for sale than current demand is absorbing, which gives buyers room to negotiate on price and terms.'
-    default:
-      return null
-  }
-}
-
-/**
  * Build the subject line. The subject carries the period's ONE verified story
  * (the same deterministic headline the hero shows) — "Bend home prices are
  * down 1.2% from a year ago" earns the open that "Bend market update" never
@@ -188,30 +133,90 @@ export function buildSubject(areas: MarketReportAreaBlock[]): string {
 }
 
 /**
+ * Minimum trailing-12-month closed-sale count before an area's YoY median move
+ * is allowed to carry the hero headline and the subject line.
+ *
+ * WHY THIS EXISTS. A cited figure can still be a bad headline. On 2026-07-29 a
+ * real lead received the subject "Old Bend home prices are down 17.1% from a
+ * year ago". The number was exact — market_stats_cache yoy_median_price_delta_pct
+ * for bend-old-bend rolling_365d is -17.0558 — but it rested on sold_count = 15
+ * for the whole trailing year, three of them in the last 90 days. The same
+ * geography's yearly series reads -38.8% (2024), +8.4% (2025), -23.1% (2026).
+ * No housing market moves like that. That is which individual houses happened
+ * to close, promoted to a confident claim in a stranger's inbox.
+ *
+ * WHY 30. A median is a positional statistic: with n = 15 the printed figure IS
+ * the 8th sale, so one unusual property swings it by six figures, and the YoY
+ * delta compounds that instability across two such samples. Thirty is the
+ * conventional floor where a sample median stops tracking individual
+ * transactions, it is the level local-MLS practice already uses to suppress
+ * small-geography stats, and over a trailing year it means the median rests on
+ * at least ~2.5 closes a month rather than a scatter of isolated sales. Old
+ * Bend's 15 fails it by half. A city like Bend (1,657 trailing closes) clears it
+ * by 55x, so the floor never touches the areas that carry real signal.
+ *
+ * LIMIT OF THIS CHECK. soldLast12mo counts the CURRENT window only, so it is a
+ * proxy for the prior-year window the YoY also depends on. The cache does not
+ * expose that second count. A thin prior-year window is therefore still
+ * possible above the floor, which is a reason the floor is not lower.
+ *
+ * SCOPE. This gates the HEADLINE only. A thin area still renders its full block
+ * in the body with its figures and its §0 trace intact. The claim just does not
+ * get to speak for the whole email.
+ */
+export const HEADLINE_MIN_SOLD_COUNT = 30
+
+/**
+ * Whether an area's YoY median move is solid enough to be the one story of the
+ * period. Pure, exported for tests.
+ */
+export function yoyCanCarryHeadline(
+  area: Pick<MarketReportAreaBlock, 'yoyPct' | 'soldLast12mo'>,
+): boolean {
+  if (area.yoyPct == null || !Number.isFinite(area.yoyPct)) return false
+  if (area.soldLast12mo == null || !Number.isFinite(area.soldLast12mo)) return false
+  return area.soldLast12mo >= HEADLINE_MIN_SOLD_COUNT
+}
+
+/**
  * The hero headline — the ONE story of the period. Deterministic priority over
  * verified figures only (never an invented narrative): the area with the
- * largest YoY median move tells the price story; else the market verdict; else
- * the median itself. Sentence case, no colon, no hyphen (brand headline rule).
+ * largest YoY median move tells the price story, PROVIDED its sample clears
+ * HEADLINE_MIN_SOLD_COUNT; else the market verdict; else the median itself.
+ * Sentence case, no colon, no hyphen (brand headline rule).
  */
 export function buildHeadline(areas: MarketReportAreaBlock[]): string {
   if (areas.length === 0) return 'Where your market stands'
 
-  // The area with the largest verified YoY move carries the story.
+  // The area with the largest verified YoY move carries the story — but only
+  // among areas whose closed-sale count clears the floor. A thin-sample area is
+  // treated exactly as an area with no YoY at all: skipped for the price story,
+  // still rendered in full in the body below.
   let lead: MarketReportAreaBlock = areas[0]
+  let leadYoyMagnitude: number | null = null
   for (const a of areas) {
-    const cur = lead.yoyPct != null && Number.isFinite(lead.yoyPct) ? Math.abs(lead.yoyPct) : -1
-    const cand = a.yoyPct != null && Number.isFinite(a.yoyPct) ? Math.abs(a.yoyPct) : -1
-    if (cand > cur) lead = a
+    if (!yoyCanCarryHeadline(a)) continue
+    const cand = Math.abs(a.yoyPct as number)
+    if (leadYoyMagnitude == null || cand > leadYoyMagnitude) {
+      lead = a
+      leadYoyMagnitude = cand
+    }
   }
 
-  const yoy = lead.yoyPct != null && Number.isFinite(lead.yoyPct) ? Math.round(lead.yoyPct * 10) / 10 : null
-  if (yoy != null && Math.abs(yoy) >= 0.1) {
-    const dir = yoy > 0 ? 'up' : 'down'
-    return `${lead.areaLabel} home prices are ${dir} ${Math.abs(yoy).toFixed(1)}% from a year ago`
-  }
-  if (yoy != null) {
+  // leadYoyMagnitude is null (not falsy-checked) because a flat 0.0% move is a
+  // real, reportable story.
+  if (leadYoyMagnitude != null) {
+    const yoy = Math.round((lead.yoyPct as number) * 10) / 10
+    if (Math.abs(yoy) >= 0.1) {
+      const dir = yoy > 0 ? 'up' : 'down'
+      return `${lead.areaLabel} home prices are ${dir} ${Math.abs(yoy).toFixed(1)}% from a year ago`
+    }
     return `${lead.areaLabel} home prices are holding steady year over year`
   }
+
+  // No area's price move is headline-grade. Fall through to the next priority
+  // against the first subscribed area, exactly as this function already did
+  // when no area carried a YoY at all.
   if (lead.marketVerdict != null && lead.monthsOfSupply != null) {
     const v = verdictLabel(lead.marketVerdict).toLowerCase()
     return `${lead.areaLabel} is a ${v} with ${formatMonths(lead.monthsOfSupply)} of supply`
@@ -220,30 +225,6 @@ export function buildHeadline(areas: MarketReportAreaBlock[]): string {
     return `The ${lead.areaLabel} median sale price now sits at ${formatCurrencyRounded(lead.medianPrice)}`
   }
   return `Where the ${lead.areaLabel} market stands`
-}
-
-/** Whole number with comma separators. Em-dash when unavailable. */
-function formatCount(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return '—'
-  return Math.round(value).toLocaleString('en-US')
-}
-
-/** Signed whole-count delta phrase: "12 more than May" / "8 fewer than May". */
-function inventoryDeltaPhrase(delta: number | null, prevMonth: string | null): string | null {
-  if (delta == null || !Number.isFinite(delta) || !prevMonth) return null
-  const n = Math.round(Math.abs(delta))
-  if (n === 0) return `unchanged from ${prevMonth}`
-  return `${n.toLocaleString('en-US')} ${delta > 0 ? 'more' : 'fewer'} than ${prevMonth}`
-}
-
-/** Signed day-delta phrase: "3 days faster than May" / "2 days slower than May". */
-function domDeltaPhrase(delta: number | null, prevMonth: string | null): string | null {
-  if (delta == null || !Number.isFinite(delta) || !prevMonth) return null
-  const n = Math.round(Math.abs(delta))
-  if (n === 0) return `even with ${prevMonth}`
-  const word = n === 1 ? 'day' : 'days'
-  // A lower DOM month over month means homes sold faster.
-  return `${n} ${word} ${delta < 0 ? 'faster' : 'slower'} than ${prevMonth}`
 }
 
 /** How many points in the trend carry a non-null value for the metric. */
@@ -543,8 +524,7 @@ export function renderMarketReportEmail(
 
   traces.push({
     figure: `Headline "${headline}"`,
-    source:
-      'derived from the verified area blocks below (largest YoY move leads), no independent figure',
+    source: `derived from the verified area blocks below (largest YoY move leads, only among areas with at least ${HEADLINE_MIN_SOLD_COUNT} closed sales in the trailing 12 months), no independent figure`,
   })
 
   // Raw for the preheader (the shell escapes it), escaped inline for the body.

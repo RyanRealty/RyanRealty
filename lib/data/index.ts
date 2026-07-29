@@ -397,9 +397,9 @@ export {
   getNeighborhoodNameById,
   getAllNeighborhoodsWithCity,
   updateNeighborhoodById,
-  searchNeighborhoodsByName,
+  getNeighborhoodDirectory,
 } from '@/lib/data/cities/getNeighborhoodMetadata'
-export type { NeighborhoodLite, NeighborhoodFull } from '@/lib/data/cities/getNeighborhoodMetadata'
+export type { NeighborhoodLite, NeighborhoodFull, NeighborhoodDirectoryRow } from '@/lib/data/cities/getNeighborhoodMetadata'
 
 // Sync pipeline writes (Spark delta + history backfill)
 export {

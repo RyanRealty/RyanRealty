@@ -1,6 +1,5 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import {
   sendEvent,
@@ -12,6 +11,7 @@ import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { backfillSessionToFub } from '@/lib/visitor-backfill'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
+import { recordMarketingAssignment } from '@/lib/data/crm/recordMarketingAssignment'
 import { upsertListingAlert } from '@/lib/data/leads/listingAlerts'
 import { buildBuyerAlertFilterSets } from './alert-filters'
 import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
@@ -53,13 +53,6 @@ export type BuyerLPResult =
   | { success: true; eventId: string; classification: 'hot' | 'warm' | 'nurture' | 'unknown'; alreadyKnown: boolean; assignedBroker: BrokerSlug | null }
   | { success: false; error: string }
 
-function getServiceSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) return null
-  return createClient(url, key)
-}
-
 function classifyTimeline(t: BuyerLPTimeline | undefined): {
   classification: 'hot' | 'warm' | 'nurture' | 'unknown'
   tierTag: string
@@ -100,17 +93,17 @@ async function recordBuyerAssignment(params: {
   tier: 'hot' | 'warm' | 'nurture' | 'unknown'
   source: string
 }): Promise<void> {
-  const supabase = getServiceSupabase()
-  if (!supabase) return
-  const { error } = await supabase.from('marketing_assignments').insert({
+  // Upsert, not insert (F8): a repeat submission from the same person through
+  // the same door refreshes the one ledger row for that grain.
+  const res = await recordMarketingAssignment({
     audience: 'buyer',
     broker: params.broker,
-    fub_user_id: params.userId,
-    fub_person_id: params.fubPersonId,
+    fubUserId: params.userId,
+    fubPersonId: params.fubPersonId,
     source: params.source,
     tier: params.tier === 'unknown' ? 'nurture' : params.tier,
   })
-  if (error) console.warn('[buyer-lp] marketing_assignments insert failed:', error.message)
+  if (!res.ok) console.warn('[buyer-lp] marketing_assignments upsert failed:', res.error)
 }
 
 /**

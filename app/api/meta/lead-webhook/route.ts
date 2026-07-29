@@ -7,6 +7,7 @@ import { getMetaPageToken } from '@/lib/meta-env'
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
 import { normalizeAgentSlug, brokerSlugFromText, FUB_USER_ID_BY_BROKER, type BrokerSlug } from '@/lib/agent-attribution'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
+import { recordMarketingAssignment } from '@/lib/data/crm/recordMarketingAssignment'
 
 export const runtime = 'nodejs'
 
@@ -568,20 +569,20 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
       console.warn(
         `[lead-webhook] native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId} (broker ${brokerSlug})`,
       )
-      if (supabase && (native.created || native.personId > 0)) {
-        await supabase
-          .from('marketing_assignments')
-          .insert({
-            audience: parsed.audience === 'buyer' ? 'buyer' : 'seller',
-            broker: brokerSlug,
-            fub_user_id: null,
-            fub_person_id: null,
-            source: 'meta-lead-form',
-            tier: parsed.intent === 'hot' || parsed.intent === 'warm' ? parsed.intent : 'nurture',
-          })
-          .then(({ error }) => {
-            if (error) console.warn('[lead-webhook] native marketing_assignments insert failed:', error.message)
-          })
+      if (native.personId > 0) {
+        // Upsert on (person, audience, source) — F8; a Meta 5xx retry of the same
+        // leadgen_id now refreshes one row instead of stacking. Also carries the
+        // resolved ids: it sent fub_person_id AND fub_user_id null before, and
+        // fub_user_id is NOT NULL, so the fallback row never actually landed.
+        const assignRes = await recordMarketingAssignment({
+          audience: parsed.audience === 'buyer' ? 'buyer' : 'seller',
+          broker: brokerSlug,
+          fubUserId: brokerFubUserId,
+          fubPersonId: native.personId,
+          source: 'meta-lead-form',
+          tier: parsed.intent === 'hot' || parsed.intent === 'warm' ? parsed.intent : 'nurture',
+        })
+        if (!assignRes.ok) console.warn('[lead-webhook] native ledger upsert failed:', assignRes.error)
       }
     } catch (e) {
       console.error('[lead-webhook] native fallback failed:', e)
@@ -594,17 +595,16 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
   // assigned_broker (covers the reuse path). Record the assignment ledger row
   // for the audit trail like the seller-LP path.
   console.log(`[lead-webhook] Person ${personId} assigned to broker ${brokerSlug}`)
-  if (supabase) {
-    const { error: assignErr } = await supabase.from('marketing_assignments').insert({
-      audience: parsed.audience === 'buyer' ? 'buyer' : 'seller',
-      broker: brokerSlug,
-      fub_user_id: brokerFubUserId,
-      fub_person_id: personId,
-      source: 'meta-lead-form',
-      tier: parsed.intent === 'hot' || parsed.intent === 'warm' ? parsed.intent : 'nurture',
-    })
-    if (assignErr) console.warn('[lead-webhook] marketing_assignments insert failed:', assignErr.message)
-  }
+  // Upsert, not insert (F8): a repeat ad lead refreshes the one ledger row.
+  const assignRes = await recordMarketingAssignment({
+    audience: parsed.audience === 'buyer' ? 'buyer' : 'seller',
+    broker: brokerSlug,
+    fubUserId: brokerFubUserId,
+    fubPersonId: personId,
+    source: 'meta-lead-form',
+    tier: parsed.intent === 'hot' || parsed.intent === 'warm' ? parsed.intent : 'nurture',
+  })
+  if (!assignRes.ok) console.warn('[lead-webhook] marketing_assignments upsert failed:', assignRes.error)
 
   // (Context note already written natively by createLeadContact's
   // enrichNativeLead originNote.)

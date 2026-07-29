@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-07-22T14:42:22.413Z
+**Generated:** 2026-07-29T19:05:52.331Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -59,7 +59,7 @@ One row per MLS-history event for a listing. snake_case columns; `listing_key` r
 | `sort_order` | integer | no | 0 |
 | `created_at` | timestamp with time zone | no | now() |
 
-### `listings` · **rows ≈ 593,604**
+### `listings` · **rows ≈ 650,297**
 
 Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case columns** — `"ListingKey"`, `"StreetNumber"`, `"StreetName"`, `"ListPrice"`, `"StandardStatus"`, `"Latitude"`, `"Longitude"`, etc. The `details` jsonb column carries the raw RETS payload. **Never aggregate from this table at request time** — use `listing_tile_mv` / `market_pulse_live` / `market_stats_cache`.
 
@@ -303,7 +303,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 594,352**
+### `listing_tile_mv` · **rows ≈ 593,831**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -348,7 +348,7 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `search_vector` | tsvector | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `similar_listings_mv` · **rows ≈ 18,939**
+### `similar_listings_mv` · **rows ≈ 18,960**
 
 (anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).
 
@@ -376,7 +376,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `rates` | jsonb | yes |  |
 | `superseded_by` | text | yes |  |
 
-### `market_pulse_live` · **rows ≈ 17**
+### `market_pulse_live` · **rows ≈ 45**
 
 10–15 minute freshness. Per-geo current snapshot. Keyed by (geo_type, geo_slug). Columns include `active_count`, `median_list_price`, `new_count_7d`, `price_reduction_share`, `sold_count_30d`, `months_of_supply`, `median_days_to_pending`, `updated_at`. **DAL:** `getMarketPulse({geoType, geoSlug})` (cache key `market-pulse-v3`).
 
@@ -417,7 +417,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 29,734**
+### `market_stats_cache` · **rows ≈ 11,747**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -593,7 +593,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 181**
+### `cmas` · **rows ≈ 215**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -634,6 +634,12 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `build_error` | text | yes |  |
 | `price_override` | integer | yes |  |
 | `doc_type` | text | no | 'cma'::text |
+| `render_args` | jsonb | yes |  |
+| `person_id` | bigint | yes |  |
+| `build_state` | text | no | 'ready'::text |
+| `build_started_at` | timestamp with time zone | yes |  |
+| `build_finished_at` | timestamp with time zone | yes |  |
+| `build_idempotency_key` | text | yes |  |
 
 ### `content_performance` · **rows ≈ 6**
 
@@ -672,7 +678,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 173**
+### `expired_listings` · **rows ≈ 199**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -731,7 +737,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_email_claim_at` | timestamp with time zone | yes |  |
 | `outreach_email_idempotency_key` | text | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 532**
+### `marketing_brain_actions` · **rows ≈ 579**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -801,7 +807,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `related_campaign` | text | yes |  |
 | `related_post_id` | text | yes |  |
 
-### `saved_listings` · **rows ≈ 3**
+### `saved_listings` · **rows ≈ 4**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -1237,6 +1243,11 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `offer_strategy` | jsonb | yes |  |
 | `last_sent_at` | timestamp with time zone | yes |  |
 | `sent_count` | integer | no | 0 |
+| `render_args` | jsonb | yes |  |
+| `build_state` | text | no | 'ready'::text |
+| `build_started_at` | timestamp with time zone | yes |  |
+| `build_finished_at` | timestamp with time zone | yes |  |
+| `build_idempotency_key` | text | yes |  |
 
 ### `broker_stats`
 
@@ -1540,6 +1551,10 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `sent_at` | timestamp with time zone | yes |  |
 | `error` | text | yes |  |
 | `attempts` | integer | no | 0 |
+| `claimed_at` | timestamp with time zone | yes |  |
+| `pushed_at` | timestamp with time zone | yes |  |
+| `push_attempts` | integer | no | 0 |
+| `push_result` | text | yes |  |
 
 ### `crm_bulk_jobs`
 
@@ -3507,6 +3522,12 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `endpoint` | text | no |  |
 | `keys` | jsonb | no |  |
 | `created_at` | timestamp with time zone | no | now() |
+| `broker` | text | yes |  |
+| `label` | text | yes |  |
+| `created_by_email` | text | yes |  |
+| `last_success_at` | timestamp with time zone | yes |  |
+| `failure_count` | integer | no | 0 |
+| `disabled_at` | timestamp with time zone | yes |  |
 
 ### `referral_receivables`
 

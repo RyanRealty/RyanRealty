@@ -377,17 +377,19 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
   const qLower = q.toLowerCase()
   // DAL: address/locality rows come from the listing_tile_mv tsvector GIN index
   // (searchListingSuggestTiles) — the ILIKE five-column OR scan is retired.
-  const { searchListingSuggestTiles, searchBrokersByDisplayName, searchNeighborhoodsByName, searchSiteContentTitles } =
+  const { searchListingSuggestTiles, searchBrokersByDisplayName, getNeighborhoodDirectory, searchSiteContentTitles } =
     await import('@/lib/data')
   const { searchSitePages } = await import('@/lib/search/site-pages')
-  const [searchTiles, brokerRows, neighborhoodRowsData, contentTitles] = await Promise.all([
+  const { matchNeighborhoodEntries } = await import('@/lib/search/neighborhood-match')
+  const [searchTiles, brokerRows, neighborhoodDirectory, contentTitles] = await Promise.all([
     searchListingSuggestTiles(q, 250),
     searchBrokersByDisplayName(q, 10),
-    searchNeighborhoodsByName(q, 15),
+    // Cached full directory (13 rows) + in-memory normalized match, NOT a
+    // per-keystroke ILIKE: "RiverWest" has to find "River West".
+    getNeighborhoodDirectory(),
     searchSiteContentTitles(q, 5),
   ])
   const brokersRes = { data: brokerRows }
-  const neighborhoodsRes = { data: neighborhoodRowsData }
 
   // null = the tile read FAILED (degraded), distinct from a genuine empty match.
   const tilesDegraded = searchTiles === null
@@ -485,27 +487,20 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
     }))
     .slice(0, 8)
 
-  const neighborhoodRows = (neighborhoodsRes.data ?? []) as {
-    name?: string | null
-    slug?: string | null
-    cities?: { slug?: string | null; name?: string | null } | null
-  }[]
-  const neighborhoods: SearchSuggestionNeighborhood[] = neighborhoodRows
-    .filter((n) => n.name?.trim() && n.slug?.trim() && n.cities?.slug?.trim() && n.cities?.name?.trim())
-    .map((n) => {
-      const citySlug = (n.cities!.slug ?? '').trim()
-      const cityName = (n.cities!.name ?? '').trim()
-      const neighborhoodName = (n.name ?? '').trim()
-      const neighborhoodSlug = (n.slug ?? '').trim()
-      return {
-        cityName,
-        citySlug,
-        neighborhoodName,
-        neighborhoodSlug,
-        href: neighborhoodPagePath(citySlug, neighborhoodSlug),
-      }
-    })
-    .slice(0, 10)
+  // Spelling-tolerant: the query and the stored name are both normalized to
+  // lowercase alphanumerics, so "RiverWest", "river west", and "river-west" all
+  // resolve to the River West district page.
+  const neighborhoods: SearchSuggestionNeighborhood[] = matchNeighborhoodEntries(
+    q,
+    neighborhoodDirectory ?? [],
+    10
+  ).map((n) => ({
+    cityName: n.cityName,
+    citySlug: n.citySlug,
+    neighborhoodName: n.neighborhoodName,
+    neighborhoodSlug: n.neighborhoodSlug,
+    href: neighborhoodPagePath(n.citySlug, n.neighborhoodSlug),
+  }))
 
   const reports: SearchSuggestionReport[] = []
   if (/\b(report|market)\b/.test(qLower)) {

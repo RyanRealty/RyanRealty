@@ -12,6 +12,8 @@ import {
   formatMonths,
   meaningLine,
   verdictLabel,
+  yoyCanCarryHeadline,
+  HEADLINE_MIN_SOLD_COUNT,
 } from './market-report-email'
 import type {
   MarketReportAreaBlock,
@@ -202,6 +204,127 @@ describe('buildHeadline', () => {
       expect(h).not.toContain(':')
       expect(h).not.toContain(' - ')
     }
+  })
+})
+
+/**
+ * The Old Bend fixture, from the live row that produced the 2026-07-29 subject
+ * line "Old Bend home prices are down 17.1% from a year ago":
+ * market_stats_cache geo_type=neighborhood geo=bend-old-bend period=rolling_365d,
+ * yoy_median_price_delta_pct = -17.0558, sold_count = 15. The figure is exact.
+ * The sample behind it is not headline-grade.
+ */
+function thinArea(overrides: Partial<MarketReportAreaBlock> = {}): MarketReportAreaBlock {
+  return block({
+    slug: 'bend-old-bend',
+    areaLabel: 'Old Bend',
+    geoType: 'neighborhood',
+    href: '/neighborhoods/bend-old-bend',
+    medianPrice: 985000,
+    activeListings: 9,
+    soldLast12mo: 15,
+    monthsOfSupply: 7.2,
+    marketVerdict: 'buyers',
+    yoyPct: -17.0558,
+    source: 'market_stats_cache:rolling_365d',
+    ...overrides,
+  })
+}
+
+describe('headline sample floor (§0 judgment, not §0 citation)', () => {
+  it('exposes a floor of 30 trailing-12-month closed sales', () => {
+    expect(HEADLINE_MIN_SOLD_COUNT).toBe(30)
+  })
+
+  it('rejects a YoY move drawn from too few closes', () => {
+    expect(yoyCanCarryHeadline({ yoyPct: -17.0558, soldLast12mo: 15 })).toBe(false)
+    expect(yoyCanCarryHeadline({ yoyPct: -17.0558, soldLast12mo: 29 })).toBe(false)
+  })
+
+  it('accepts a YoY move at or above the floor', () => {
+    expect(yoyCanCarryHeadline({ yoyPct: -17.0558, soldLast12mo: 30 })).toBe(true)
+    expect(yoyCanCarryHeadline({ yoyPct: -1.22, soldLast12mo: 1657 })).toBe(true)
+  })
+
+  it('rejects an area with no YoY or no close count at all', () => {
+    expect(yoyCanCarryHeadline({ yoyPct: null, soldLast12mo: 1657 })).toBe(false)
+    expect(yoyCanCarryHeadline({ yoyPct: Number.NaN, soldLast12mo: 1657 })).toBe(false)
+    expect(yoyCanCarryHeadline({ yoyPct: -17.0558, soldLast12mo: null })).toBe(false)
+  })
+
+  it('a thin-sample area cannot take the headline, even alone, and falls to the verdict', () => {
+    const h = buildHeadline([thinArea()])
+    expect(h).not.toContain('17.1%')
+    expect(h).not.toContain('from a year ago')
+    expect(h).toBe("Old Bend is a buyer's market with 7.2 months of supply")
+  })
+
+  it('a thin-sample area cannot take the headline from a well-sampled one', () => {
+    // Old Bend's -17.1% is 14x Bend's -1.2%, so the pre-floor engine handed it
+    // the headline on magnitude alone.
+    const h = buildHeadline([block(), thinArea()])
+    expect(h).toBe('Bend home prices are down 1.2% from a year ago')
+  })
+
+  it('the subject line inherits the floor', () => {
+    // The thin price claim never reaches the inbox. The subject falls to the
+    // next priority the headline engine already defines (the verdict), not to
+    // any new copy.
+    const solo = buildSubject([thinArea()])
+    expect(solo).not.toContain('17.1%')
+    expect(solo).not.toContain('from a year ago')
+    expect(solo).toBe("Old Bend is a buyer's market with 7.2 months of supply")
+    // And with no verdict either, it degrades to the plain area framing.
+    expect(buildSubject([thinArea({ marketVerdict: null, monthsOfSupply: null, medianPrice: null })])).toBe(
+      'Old Bend market update',
+    )
+    expect(buildSubject([block(), thinArea()])).toBe(
+      'Bend home prices are down 1.2% from a year ago',
+    )
+  })
+
+  it('a well-sampled area still carries a large YoY move', () => {
+    const h = buildHeadline([block({ areaLabel: 'Redmond', yoyPct: -17.0558, soldLast12mo: 412 })])
+    expect(h).toBe('Redmond home prices are down 17.1% from a year ago')
+  })
+
+  it('the floor is exactly inclusive at 30 closes', () => {
+    expect(buildHeadline([thinArea({ soldLast12mo: 29 })])).not.toContain('17.1%')
+    expect(buildHeadline([thinArea({ soldLast12mo: 30 })])).toBe(
+      'Old Bend home prices are down 17.1% from a year ago',
+    )
+  })
+
+  it('a flat 0.0% move from a well-sampled area is still a story', () => {
+    expect(buildHeadline([block({ yoyPct: 0 })])).toBe(
+      'Bend home prices are holding steady year over year',
+    )
+  })
+
+  it('falls all the way through to Where when a thin area has no verdict or median either', () => {
+    const h = buildHeadline([
+      thinArea({ marketVerdict: null, monthsOfSupply: null, medianPrice: null }),
+    ])
+    expect(h).toBe('Where the Old Bend market stands')
+  })
+
+  it('a thin area is still reported in full in the body, it just does not headline', () => {
+    const out = renderMarketReportEmail({
+      contactName: 'Jordan',
+      areas: [block(), thinArea()],
+      unsubscribeUrl: 'https://ryan-realty.com/api/email/unsubscribe?t=abc.def',
+    })
+    expect(out.subject).toBe('Bend home prices are down 1.2% from a year ago')
+    // Old Bend's own block still carries its verified figures and its trace.
+    expect(out.html).toContain('Old Bend')
+    expect(out.html).toContain('$985,000')
+    expect(out.html).toContain('↓ 17.1% YoY')
+    expect(out.text).toContain('Homes sold last 12 months 15')
+    const figures = out.traces.map((t) => t.figure).join('\n')
+    expect(figures).toContain('Old Bend median price ↓ 17.1% YoY')
+    // The headline trace states the floor so an auditor sees why it did not lead.
+    const headlineTrace = out.traces.find((t) => t.figure.startsWith('Headline '))
+    expect(headlineTrace?.source).toContain('at least 30 closed sales')
   })
 })
 

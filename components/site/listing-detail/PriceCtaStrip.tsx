@@ -126,6 +126,19 @@ export function PriceCtaStrip({
       ? listing.originalListPrice - listing.listPrice
       : null
 
+  // Accessible names for the Save + Share controls. The visible labels are bare
+  // verbs ("Save", "Share"), so a screen-reader visitor heard an action with no
+  // object and no state. Name the property and reflect saved vs not, matching
+  // components/listing/SaveListingButton.tsx ("Save to saved homes" /
+  // "Remove from saved homes") with the address added.
+  const propertyName = street || 'this home'
+  const saveAriaLabel =
+    saveState === 'saved'
+      ? `Remove ${propertyName} from your saved homes`
+      : saveState === 'saving'
+        ? `Saving ${propertyName} to your saved homes`
+        : `Save ${propertyName} to your saved homes`
+
   const tourHref =
     scheduleHref ?? `/contact?listingKey=${encodeURIComponent(listing.listingKey)}&intent=tour`
   const askHrefResolved =
@@ -261,10 +274,17 @@ export function PriceCtaStrip({
             onClick={handleSave}
             disabled={saveState === 'saving'}
             aria-pressed={saveState === 'saved'}
+            aria-label={saveAriaLabel}
           >
             {saveState === 'saved' ? 'Saved' : saveState === 'saving' ? 'Saving...' : 'Save'}
           </button>
-          <button type="button" className="btn" style={OUTLINE_BTN_STYLE} onClick={handleShare}>
+          <button
+            type="button"
+            className="btn"
+            style={OUTLINE_BTN_STYLE}
+            onClick={handleShare}
+            aria-label={`Share ${propertyName}`}
+          >
             Share
           </button>
         </div>

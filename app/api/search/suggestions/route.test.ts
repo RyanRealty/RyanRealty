@@ -35,8 +35,10 @@ vi.mock('@/lib/data', () => ({
   searchBrokersByDisplayName: vi.fn(async () => [
     { slug: 'matt-ryan', display_name: 'Matt Ryan' },
   ]),
-  searchNeighborhoodsByName: vi.fn(async () => [
-    { name: 'Mountain View', slug: 'mountain-view', cities: { slug: 'bend', name: 'Bend' } },
+  getNeighborhoodDirectory: vi.fn(async () => [
+    { neighborhoodName: 'Mountain View', neighborhoodSlug: 'mountain-view', cityName: 'Bend', citySlug: 'bend' },
+    { neighborhoodName: 'River West', neighborhoodSlug: 'river-west', cityName: 'Bend', citySlug: 'bend' },
+    { neighborhoodName: 'Southeast Bend', neighborhoodSlug: 'southeast-bend', cityName: 'Bend', citySlug: 'bend' },
   ]),
   searchSiteContentTitles: vi.fn(async () => ({
     blog: [{ title: 'Bend market update', slug: 'bend-market-update' }],
@@ -76,6 +78,18 @@ describe('GET /api/search/suggestions', () => {
     expect(body.addresses.length).toBeGreaterThan(0)
     expect(body.addresses[0].label).toContain('3480')
     expect(body.addresses[0].href).toMatch(/^\//)
+  })
+
+  it('finds a neighborhood however the buyer spaces it (the "RiverWest" class)', async () => {
+    // F6: one-word "RiverWest" used to return the empty shape ("No results")
+    // because the backend ILIKE'd the raw query against the stored "River West".
+    for (const q of ['RiverWest', 'river west', 'Riverwest', 'RIVER WEST']) {
+      const body = await (await GET(req(q))).json()
+      const hit = body.neighborhoods.find((n: { neighborhoodSlug: string }) => n.neighborhoodSlug === 'river-west')
+      expect(hit, `no River West suggestion for "${q}"`).toBeTruthy()
+      expect(hit.href).toBe('/cities/bend/river-west')
+      expect(hit.cityName).toBe('Bend')
+    }
   })
 
   it('always returns every category key', async () => {

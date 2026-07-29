@@ -9,6 +9,7 @@ import {
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { saveAnonymousPartialAddress } from '@/lib/data'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
+import { recordMarketingAssignment } from '@/lib/data/crm/recordMarketingAssignment'
 import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
 import { createCmaRequest } from '@/lib/cma-request'
 import { backfillSessionToFub } from '@/lib/visitor-backfill'
@@ -225,18 +226,17 @@ async function recordSellerAssignment(params: {
   tier: 'hot' | 'warm' | 'nurture' | 'unknown'
   source: string
 }): Promise<void> {
-  const supabase = getServiceSupabase()
-  if (!supabase) return
-  const { error } = await supabase.from('marketing_assignments').insert({
+  // Upsert, not insert (F8): a repeat submission refreshes the one ledger row.
+  const res = await recordMarketingAssignment({
     audience: 'seller',
     broker: params.broker,
-    fub_user_id: params.userId,
-    fub_person_id: params.fubPersonId,
+    fubUserId: params.userId,
+    fubPersonId: params.fubPersonId,
     source: params.source,
     tier: params.tier === 'unknown' ? 'nurture' : params.tier,
   })
-  if (error) {
-    console.warn('[seller-lp] marketing_assignments insert failed:', error.message)
+  if (!res.ok) {
+    console.warn('[seller-lp] marketing_assignments upsert failed:', res.error)
   }
 }
 

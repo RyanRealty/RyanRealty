@@ -1,6 +1,5 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import {
   sendEvent,
@@ -9,6 +8,7 @@ import {
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { saveAnonymousPartialAddress } from '@/lib/data'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
+import { recordMarketingAssignment } from '@/lib/data/crm/recordMarketingAssignment'
 import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
 import { createCmaRequest } from '@/lib/cma-request'
 import { backfillSessionToFub } from '@/lib/visitor-backfill'
@@ -62,13 +62,6 @@ export type FsboLPSubmission = {
 export type FsboLPResult =
   | { success: true; eventId: string; alreadyKnown: boolean; assignedBroker: BrokerSlug }
   | { success: false; error: string }
-
-function getServiceSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) return null
-  return createClient(url, key)
-}
 
 function parseAddress(raw: string): {
   street: string | null
@@ -287,20 +280,19 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
         }
       }).catch((e) => console.warn('[fsbo-lp] geocode failed (non-blocking):', e))
 
-      // Assignment ledger row (dashboards read marketing_assignments).
-      const supabase = getServiceSupabase()
-      if (supabase) {
-        const { error: insertError } = await supabase.from('marketing_assignments').insert({
-          audience: 'seller',
-          broker: assignment.broker,
-          fub_user_id: assignment.userId,
-          fub_person_id: fubPersonId,
-          source: 'fsbo-lp',
-          tier: 'hot',
-        })
-        if (insertError) {
-          console.warn('[fsbo-lp] marketing_assignments insert failed:', insertError.message)
-        }
+      // Assignment ledger row — write-only broker-attribution audit trail.
+      // Upsert, not insert (F8): a repeat submission from the same owner
+      // refreshes the one row for this person + audience + source.
+      const assignRes = await recordMarketingAssignment({
+        audience: 'seller',
+        broker: assignment.broker,
+        fubUserId: assignment.userId,
+        fubPersonId,
+        source: 'fsbo-lp',
+        tier: 'hot',
+      })
+      if (!assignRes.ok) {
+        console.warn('[fsbo-lp] marketing_assignments upsert failed:', assignRes.error)
       }
 
       // Instant CRM mirror + auto-enroll. intent:fsbo already routes to the
