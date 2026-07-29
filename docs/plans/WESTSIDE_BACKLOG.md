@@ -7,14 +7,17 @@ trending toward most west-side closed sides. Every figure below carries a trace 
 
 | | Sides | Volume | Share |
 |---|---|---|---|
-| West-side Bend market | 1,452 sides (726 closings) | $867M | — |
-| Cascade Hasson SIR | 262 | $331.1M | 18.0% |
-| Stellar Realty Northwest | 134 | $151.8M | 9.2% |
-| Harcourts The Garner Group | 111 | $153.2M | 7.6% |
-| RE/MAX Key Properties | 115 | $125.2M | 7.9% |
-| Bend Premier Real Estate | 79 | $86.4M | 5.4% |
+| West-side Bend market | 1,564 sides (782 closings) | $931.9M | — |
+| Cascade Hasson SIR | 282 | $354.3M | 18.0% |
+| Stellar Realty Northwest | 147 | $169.0M | 9.4% |
+| RE/MAX Key Properties | 120 | $131.0M | 7.7% |
+| Harcourts The Garner Group | 120 | $167.4M | 7.7% |
+| Bend Premier Real Estate | 84 | $92.4M | 5.4% |
 | Brian Ladd (top individual, 2 name variants) | 49 | $77.1M | 3.4% |
-| **Ryan Realty LLC** | **4** | **$5.0M** | **0.28%** |
+| **Ryan Realty LLC** | **4** | **$5.0M** | **0.26%** |
+
+*(Refreshed 2026-07-28 after the neighborhood backfill below recovered 129 closings into
+the GIS ledgers; shares moved < 0.3pt.)*
 
 West-side = GIS `boundary_neighborhood` IN (Summit West, Awbrey Butte, River West,
 Century West, Southwest Bend, Old Bend). Adjustable; per-neighborhood rows retained in trace.
@@ -30,10 +33,12 @@ Century West, Southwest Bend, Old Bend). Adjustable; per-neighborhood rows retai
 
 | # | Item | Evidence | Est. impact | Effort | Class |
 |---|---|---|---|---|---|
-| 1 | **Fix the lead-write discrepancy** — trace valuation/contact/lead events to `crm_people` writes; find where submissions die or events over-fire | 131 GA4 lead events vs 11 CRM website leads / 90d | If even 20% are real lost leads: +8/mo immediately | M | SHIP-NOW |
+| 1 | ~~Fix the lead-write discrepancy~~ **DONE 2026-07-28** (`f262c541`): no leads were lost — GA4 was inflated by cron CMA builds (180/90d) + CTA clicks firing `valuation_requested`. Both cut; GA4 now matches CRM reality. | 131 GA4 lead events vs ~10 real submissions / 90d | Metrics now trustworthy for spend decisions | M | SHIPPED |
 | 2 | **Win the sitting-duck queries** — on-page + content depth + internal links for Tetherow, Broken Top, Black Butte Ranch, Brasada, luxury-homes-bend pages | 980 imp/90d at pos 9.8–17.2, 0 clicks | pos→top-3 ≈ 90–150 clicks/mo on buyer/seller-intent queries | M | SHIP-NOW |
 | 3 | **Brand SERP repair** — "ryan realty" at pos 31; Organization schema, GBP↔site linkage, homepage title | 109 imp/90d, 10 clicks | Own the brand query; floor fix | S | SHIP-NOW |
-| 4 | **Backfill NULL `boundary_neighborhood`** (876 Bend closings, 34%) — existing `seo-backfill-bend-listings-neighborhood.mjs` + spatial index path | 876/2,540 Bend closings unattributed | Strengthens every neighborhood page + market stat | S | SHIP-NOW |
+| 4 | ~~Backfill NULL `boundary_neighborhood`~~ **DONE 2026-07-28**: official-polygon backfill recovered 129 closings (876→747 NULL); verified 0 recoverable rows remain — the 747 are genuinely outside the 13 Bend NA polygons | 876/2,540 Bend closings unattributed | Market map + neighborhood ledgers corrected | S | SHIPPED |
+| 4b | **Redirect consolidation** — geography legacy URLs retargeted to canonical community pages (+ dead `/broken-top` revived); overrides live in the generator so regen can't clobber | GSC: legacy URLs ranking pos 4–24 while canonical pages sat at 26–52 | Consolidates authority behind the pages that convert | S | SHIPPED |
+| 4c | **Build `/luxury` (luxury homes in Bend) page** — Google currently ranks our sitemap page for "luxury homes bend" (144 imp, pos 10.3, 0 clicks) because no real surface exists | GSC winnable table | New page on an existing archetype; 30–50 clicks/mo | M | SHIP-NOW |
 | 5 | **Indexing coverage audit** — 4,681 impressions/90d across 500 queries is coverage-starved for a site with programmatic city/neighborhood/listing pages | GSC totals above | Prerequisite multiplier for #2 | M | SHIP-NOW |
 | 6 | **Competitor digital teardown** (Cascade Hasson, Stellar, Harcourts Garner, RE/MAX Key, Bend Premier): what ranks, what captures, review velocity | Top-5 set derived from closed production above | Informs next backlog revision | M | SHIP-NOW (analysis) |
 | 7 | **Paid Social scale decision** — 107 sessions → 52 keyEvents (best conversion ratio of any channel) | GA4 channels table | Spend change | — | QUEUE-FOR-APPROVAL |

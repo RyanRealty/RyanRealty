@@ -295,6 +295,20 @@ async function main() {
     map[p] = dest
   }
 
+  // Hand-tuned overrides — applied LAST so a regeneration never clobbers an
+  // intentional retarget. Add here, never edit the JSON alone (two-source
+  // drift). 2026-07-28: geography-intent legacy URLs point at the canonical
+  // community page, not the blog post the sitemap heuristic picked — these
+  // URLs still rank (GSC) and the community page is the conversion surface.
+  const OVERRIDES = {
+    '/broken-top-bend-golf-community': '/communities/broken-top',
+    '/black-butte-ranch-guide': '/communities/black-butte-ranch',
+    '/brasada-ranch-central-oregon': '/communities/brasada-ranch',
+    // Google still serves bare /broken-top (GSC pos 24); it 404s without this.
+    '/broken-top': '/communities/broken-top',
+  }
+  Object.assign(map, OVERRIDES)
+
   // Deterministic key order for a clean diff.
   const ordered = {}
   for (const k of Object.keys(map).sort()) ordered[k] = map[k]
