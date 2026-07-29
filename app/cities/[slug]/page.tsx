@@ -10,9 +10,11 @@
  * LLMs (pageMetadata + MetadataBlock JSON-LD: Breadcrumb/City/Dataset/FAQPage) +
  * tracking (CityPageTracker + section/interaction events). Every figure live (§0).
  *
- * Section stack: breadcrumb · hero · about · featured · map · ticker · market ·
- * neighborhoods · communities · golf/master-planned · open houses · activity ·
- * explore-other-cities · guides(blog) · testimonials · team · sell · FAQ · footer.
+ * Section stack: breadcrumb · hero · featured · ticker · map · about · market ·
+ * neighborhoods · popular searches · communities · golf · area guide · open
+ * houses · activity · SELL · guides · testimonials · team · other-cities · FAQ ·
+ * footer. Funnel (Brain Dump 2): the seller CTA sat 18 deep, below the two blocks
+ * that route a reader OFF the page; it now follows activity (design-audit P1).
  *
  * Parity contract: design_system/ryan-realty/ui_kits/city/parity.json (KB set).
  */
@@ -659,27 +661,27 @@ export default async function CityDetailPage({ params }: Props) {
         <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={cityName} posterSrc={heroPosterSrc} />
         <KbOpenHouses items={openHouseItems} eyebrow={`${cityName} · This week`} heading="Open houses" viewAllHref={`/open-houses/${slug}`} />
         <KbActivity items={activityItems} eyebrow={`Live · ${cityName}`} heading="Latest market activity" viewAllHref="/housing-market" viewAllLabel="Full market pulse" />
-        <KbArticles
-          posts={articlePosts}
-          eyebrow="Guides and insights"
-          heading={`${cityName} real estate, explained`}
-          subtitle={`Local housing news, neighborhood deep dives, and buyer and seller guides for ${cityName} and Central Oregon.`}
-        />
-        <KbExploreTowns
-          towns={otherCityItems}
-          eyebrow="Central Oregon"
-          title="Explore other cities"
-          sectionId="nearby"
-          cta={{ href: '/cities', label: 'Every city' }}
-        />
-        <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
-        <KbTeam />
         <KbSell
           data={{
             medianListPrice: pulse?.medianListPrice ?? null,
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
             soldCount30d: pulse?.closedLast30Days ?? null,
           }}
+        />
+        <KbArticles
+          posts={articlePosts}
+          eyebrow="Guides and insights"
+          heading={`${cityName} real estate, explained`}
+          subtitle={`Local housing news, neighborhood deep dives, and buyer and seller guides for ${cityName} and Central Oregon.`}
+        />
+        <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
+        <KbTeam />
+        <KbExploreTowns
+          towns={otherCityItems}
+          eyebrow="Central Oregon"
+          title="Explore other cities"
+          sectionId="nearby"
+          cta={{ href: '/cities', label: 'Every city' }}
         />
         {faqs.length > 0 ? (
           <section id="faq" aria-label={`${cityName} real estate questions`}>

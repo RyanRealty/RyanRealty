@@ -107,9 +107,14 @@ hero → featured → ticker → map → about → market HUD → charts → exp
 communities → explore-towns → area-guide video → open houses → activity → articles →
 explore-towns → testimonials → team → sell → FAQ → footer.
 
-`KbExploreTowns` is mounted **three times** (`:618`, `:649`, `:666`). Inventory
-(featured/ticker/map) fires before any orientation, and the seller CTA (`KbSell`)
-sits 18 sections deep, below testimonials and team.
+**Correction (2026-07-28):** an earlier note in this doc called the three
+`KbExploreTowns` mounts a duplication. They are not — they carry three distinct
+data sets (neighborhoods, the golf/master-planned ledger, and other cities). One
+component, three sections. Nothing to collapse.
+
+The real defect was ORDER: the seller CTA (`KbSell`) sat **18 sections deep**,
+below testimonials, team, AND the explore-other-cities links — i.e. after the only
+two blocks whose job is to route a reader off the page.
 
 ### B-4 · EVERY page ships its whole body twice — CONFIRMED site-wide, open
 
@@ -257,9 +262,33 @@ Fannie Mae, into the trace and `citations.json` (§0).
 Sources: Fannie Mae Selling Guide B4-1.3-08 *Comparable Sales*; Sacramento Appraisal
 Blog, *The myth of the one-mile radius*; RealVals appraisal comparable guidelines.
 
-### A6 · Current photos on CMAs
-Trace the photo source in `lib/cma/build.ts` / `subject.ts`. The subject photo must
-resolve from the newest listing record for that address, not the first/oldest match.
+### A6 · Current photos on CMAs — **investigated 2026-07-28, no defect found in the live path**
+
+Measured rather than assumed. Three checks, all clean:
+
+1. **Subject selection lands on the newest listing.** Ran the real
+   `resolveCmaSubject` against 12 expired-listing addresses that each have 2-9
+   listing cycles. 12/12 resolved to the current cycle. (One initially read as a
+   miss; that was my probe's crude date math — the resolver correctly preferred an
+   on-market cycle over an older one with a later close date.) The 2026-07-10
+   most-recent-listing directive is working.
+2. **The cached cover photo is current.** Compared `listings.PhotoURL` against a
+   LIVE Spark primary-photo fetch for the 10 most recently built CMAs. The Spark
+   asset id is identical in all 10 — only the size tier differs (`1600x1200`
+   cached vs `1024x768` from the probe). Not stale.
+3. **Data supports the picker.** Across 132,598 multi-cycle addresses (467,808
+   rows), ZERO rows lack a listing-activity date, and only 4 rows have a null
+   cover photo while holding photos. The ranking inputs are populated.
+
+**What remains as the only plausible source:** 21 of 211 CMAs were built BEFORE
+the 2026-07-10 fix (`cmas.created_at < '2026-07-10'`). Those documents are stored
+HTML and still carry whatever photo was chosen at build time. They do not
+self-heal — they need a rebuild.
+
+**Not bulk-rebuilding them.** A rebuild re-runs pricing and can move the
+recommended number on a document Matt may already have sent. Those 21 get rebuilt
+individually, on purpose, with the new number reviewed. Listed for Matt rather
+than done silently.
 
 ### A7 · Send performance
 `/admin/reports/cma-performance` — per document: sent date, channel, opens, clicks,
@@ -274,7 +303,19 @@ reply → appointment. Reads the existing `email_events` / `visitor_events` /
 URL scoped to that geography. City → all city listings; neighborhood → that
 neighborhood; subdivision → that subdivision; community → that community.
 
-### B1 · Section order to a funnel
+### B1 · Section order to a funnel — **DONE 2026-07-28 (city pages)**
+
+Shipped. Verified in the browser: the seller CTA moved from position 19 to 14
+(now directly after the live activity feed, while the reader is still in market
+context), and explore-other-cities moved to last, after every conversion and
+trust section. Inventory deliberately stays near the top — burying it under
+amenities is the documented design-audit P1 regression from the community page,
+and reversing that would trade one defect for another.
+
+Remaining under this item: apply the same ordering pass to neighborhood,
+subdivision and community pages.
+
+#### Original plan
 Proposed city order — orient, then prove, then convert, then browse:
 hero → about (what this place is) → market HUD + charts (the proof) → **featured +
 view-all** → map → neighborhoods → communities → open houses → activity → area-guide
