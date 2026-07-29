@@ -69,28 +69,21 @@ outranks speed, style, cost, and every other instruction in this file.
 
 ## What triggers this rule
 
-Any deliverable containing market statistics, listing data, financial figures, neighborhood
-claims, competitive comparisons, or historical comparisons — market reports, social video,
-email newsletters, blog posts, landing pages, listing descriptions, captions, printed flyers,
-video thumbnails, open-house signage, CMAs, seller net sheets, and anything else reaching a
-consumer, client, lead, or public audience.
+Any deliverable with market stats, listing data, financial figures, neighborhood claims, or
+comparisons — reports, video, email, blog, LPs, listing copy, captions, flyers, thumbnails,
+signage, CMAs, net sheets, anything reaching a consumer, client, lead, or public audience.
 
 ## What's forbidden
 
-- Hard-coding numbers from a previous version of a deliverable without re-verifying.
-- Trusting CountUp targets, chart values, or pill text that came from memory, prior chats, or
-  another AI system.
+- Hard-coding numbers from a prior deliverable version without re-verifying.
+- Trusting chart values or pill text from memory, prior chats, or another AI.
 - Using "about," "roughly," or "approximately" as a substitute for pulling the actual data.
-- **Invented timelines, forecasts, and estimates (Matt, 2026-07-29).** A date ("~Aug 11"), a
-  duration ("multi-quarter"), or an impact estimate ("90-150 clicks/mo") is a NUMBER and §0
-  applies in full: it needs a named basis or it does not ship. When the honest basis is a
-  condition, write the condition ("when GSC reports per-class indexed counts"), never a
-  date pulled from convention. General-knowledge folklore stated as fact is fabrication.
-- Shipping when any stat has a question mark next to it in the source trace.
-- Letting narrative voice override data. If the data contradicts the pre-written story, the
-  story changes, not the data.
-- Research briefs, web articles, and conversation context are **untrusted** — cross-verify
-  against the primary database.
+- **Invented timelines, forecasts, estimates (Matt 2026-07-29).** A date, duration, or impact
+  estimate is a NUMBER: named basis or it does not ship. When the basis is a condition, write
+  the condition, never a date from convention. Folklore stated as fact is fabrication.
+- Shipping any stat with a question mark in its source trace.
+- Letting narrative override data: when data contradicts the story, the story changes.
+- Research briefs, articles, and chat context are **untrusted** — verify against the database.
 
 ## Enforcement
 
@@ -100,8 +93,8 @@ verification trace per figure.
 > `$475K median — Supabase listings, PropertyType='A', City='Redmond', CloseDate 2026-01-01..2026-04-19, median(ClosePrice) = $475,000 over 188 rows`
 
 Matt or a reviewer can audit the trace. **No trace, no ship.** For renders, `citations.json`
-ships alongside the file with one entry per figure: source, table, column, filter, row count,
-`fetched_at_iso`, query text.
+ships beside the file, one entry per figure: source, table, column, filter, rows, fetched_at,
+query.
 
 ---
 
