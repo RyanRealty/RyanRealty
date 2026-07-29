@@ -104,10 +104,60 @@ users get "Save" with no object. Reported, not fixed.
 - Search page loads: 632–845 ms (well under the 2s cap)
 - Multi-family inventory is real: Bend 24 actives, Redmond multi-family reachable via the preset
 
-## Not yet exercised
+## Phases 6-8 (completed 2026-07-29 18:20Z, after the fixes deployed)
 
-Phases 6 (CMA delivery + click tracking + per-figure §0 trace), 7 (market
-reports ×4), and 8 (back-office integrity + cleanup). The CMA request itself was
-exercised and produced F4. Test data still present: 12 `saved_listings`, 4
-`listing_alerts`, 3 `valuation_requests`, CRM person 59778 — cleanup is a
-required manifest step and has NOT been run.
+**All four fixes verified live.** The saved searches now store canonical filters
+and match real inventory — 48 / 14 / 24 / 11 listings where every one was
+**zero** before. The valuation form settles in **1,702 ms** with a proper
+confirmation (was 20-150s+). `/account` renders in **897 ms** warm (was ~24 s).
+
+**Phase 6 — CMA.** The seller LP created `cmas` row `cma-1265-saginaw`; the
+build worker produced it with 3 comps and a $410,000 recommendation. Its own
+adversarial audit returned **verdict `fail`** with three critical findings (two
+of the three priced comps are attached condo/townhouse products against a
+detached subject). The guard behaved exactly as designed: `needs_review = true`,
+the full rationale recorded in `build_summary.review_reason`, `status` stayed
+`draft`, `delivered_at` null, and `/cma/<slug>` correctly refused to serve a
+draft. **Nothing was auto-delivered, and I did not approve it** — a CMA its own
+auditor calls indefensible should not reach a homeowner. The audit was also
+factually right: those comps really are in "Hawthorne Townhouses" and "Monterra
+Condominiums" while the subject sits in Kenwood Gardens.
+
+**Phase 7 — market reports.** Subscribed to all four journey geographies
+(`bend-river-west`, `bend-old-bend`, `bend`, `redmond`), the send cron delivered
+1 of 1 due, and the click chain was verified end to end: a signed tracking token
+produced a 302 to the target plus an `email_click` row in `crm_timeline`
+(`source = email-tracking`). Note the system sends **one digest covering all
+subscribed areas**, not four separate emails — the manifest's "4 reports"
+expectation is satisfied by 4 subscribed areas in one send.
+
+**§0 figure verification.** 7 figures traced, **0 unverified** — see
+[RUN-20260729-figure-trace.md](RUN-20260729-figure-trace.md). The one figure that
+reached an inbox ("Old Bend home prices are down 17.1% from a year ago") traces
+exactly to `market_stats_cache.yoy_median_price_delta_pct = -17.0558…`,
+methodology `v3-2026-05-07`.
+
+**Phase 8 — integrity + cleanup.** Exactly **1** CRM person despite ~6 form
+submissions across the journey (no duplicates), correct source, 30 timeline rows
+across 6 event kinds. Cleanup removed 124 rows across 11 tables plus the CRM
+person and the Supabase auth user; re-verified **0 rows** across all 12 tables
+and 0 remaining `buyertest` auth users.
+
+Verifier: `node qa/buyer-journey/verify.mjs` → **exit 0**, 16/16 steps.
+
+## New findings from phases 6-8
+
+- **F5 · P2** — `/account/notifications` market-report prefs silently discard
+  changes unless a separate "Save market report preferences" button is clicked.
+  Every other toggle on the page auto-saves, under a header that reads "Changes
+  save automatically." A buyer who flips the toggle and picks areas believes
+  they subscribed; no row is written and nothing warns them.
+- **F7 · P2** — search pages degrade to 20-50 s while the 15-minute
+  `run_post_sync_pipeline` runs (`/homes-for-sale/redmond/multi-family` measured
+  51.5 s / 4.4 s / 36.7 s), though the underlying MV query is 106 ms. Page
+  latency is hostage to the sync job.
+- **F8 · P3** — `marketing_assignments` accumulates a row per event rather than
+  per person: one test buyer produced 12 identical `idx-registration` rows.
+- **Editorial (not a data fault)** — the -17.1% subject line rests on 15 sales
+  in a year and 3 in the last 90 days. Correctly cited, but thin; worth a
+  minimum-sample floor before a neighborhood YoY move becomes a subject line.

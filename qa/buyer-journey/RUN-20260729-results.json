@@ -1,0 +1,276 @@
+{
+  "manifest_version": "1.0.0",
+  "run_id": "20260729-0525",
+  "started_at": "2026-07-29T13:25:00Z",
+  "finished_at": "2026-07-29T18:20:00Z",
+  "identity": {
+    "email": "matt+buyertest-20260729@ryan-realty.com"
+  },
+  "steps": [
+    {
+      "id": "entry-attribution",
+      "status": "pass",
+      "evidence": {
+        "entry_url": "https://ryan-realty.com/?utm_source=gbp&utm_medium=organic&utm_campaign=profile",
+        "crm_person_id": "59778",
+        "source_value": "ryan-realty.com",
+        "crm_person_query_output": "id=59778 | source=ryan-realty.com | stage=Nurture | created_at=2026-07-29 13:41:14+00 (1 row)",
+        "signup_screenshot_file": "entry-landing.png"
+      },
+      "notes": ""
+    },
+    {
+      "id": "search-riverwest",
+      "status": "pass",
+      "evidence": {
+        "search_url": "https://ryan-realty.com/homes-for-sale/bend/river-west",
+        "results_count": 49,
+        "verified_listing_keys": "220226009,220221690,220225808",
+        "geo_accuracy_confirmed": true,
+        "load_ms": 845,
+        "search_screenshot_file": "search-riverwest.png"
+      },
+      "notes": ""
+    },
+    {
+      "id": "search-old-bend",
+      "status": "pass",
+      "evidence": {
+        "search_url": "https://ryan-realty.com/homes-for-sale/bend/old-bend",
+        "results_count": 14,
+        "verified_listing_keys": "220224417,220215188,220216334",
+        "geo_accuracy_confirmed": true,
+        "load_ms": 632,
+        "search_screenshot_file": "search-old-bend.png"
+      },
+      "notes": ""
+    },
+    {
+      "id": "search-multifamily-bend",
+      "status": "pass",
+      "evidence": {
+        "search_url": "https://ryan-realty.com/homes-for-sale/bend/multi-family",
+        "results_count": 24,
+        "verified_listing_keys": "220225032,220225583,220225831",
+        "geo_accuracy_confirmed": true,
+        "load_ms": 664,
+        "search_screenshot_file": "search-multifamily-bend.png"
+      },
+      "notes": ""
+    },
+    {
+      "id": "search-multifamily-redmond",
+      "status": "pass",
+      "evidence": {
+        "search_url": "https://ryan-realty.com/homes-for-sale/redmond/multi-family",
+        "results_count": 11,
+        "verified_listing_keys": "220215325,220225930,220224174",
+        "geo_accuracy_confirmed": true,
+        "load_ms": 799,
+        "search_screenshot_file": "search-multifamily-redmond.png"
+      },
+      "notes": ""
+    },
+    {
+      "id": "favorite-homes",
+      "status": "pass",
+      "evidence": {
+        "site_user_id": "4e61dbb2-1650-4901-9757-059d398b1c69",
+        "saved_listings_count": 12,
+        "saved_listings_query_output": "saved_count=12 | first_save=2026-07-29 13:38:00.78+00 | last_save=2026-07-29 13:38:49.45+00"
+      },
+      "notes": ""
+    },
+    {
+      "id": "save-searches",
+      "status": "pass",
+      "evidence": {
+        "saved_searches_count": 4,
+        "saved_search_names": "RiverWest homes, Old Bend homes, Bend multi-family, Redmond multi-family",
+        "saved_searches_query_output": "RiverWest {\"city\":\"Bend\",\"neighborhoodSlug\":\"bend-river-west\"} | Old Bend {\"city\":\"Bend\",\"neighborhoodSlug\":\"bend-old-bend\"} | Bend MF {\"city\":\"Bend\",\"propertyType\":\"Multi-Family\"} | Redmond MF {\"city\":\"Redmond\",\"propertyType\":\"Multi-Family\"} (4 rows, post-fix)"
+      },
+      "notes": ""
+    },
+    {
+      "id": "dashboard-persistence",
+      "status": "pass",
+      "evidence": {
+        "dashboard_screenshot_file": "dashboard-after-index-fix.png",
+        "favorites_visible_count": 12,
+        "searches_visible_count": 4,
+        "refresh_persistence_confirmed": true
+      },
+      "notes": ""
+    },
+    {
+      "id": "cma-request",
+      "status": "pass",
+      "evidence": {
+        "request_screenshot_file": "seller-lp-submitted.png",
+        "cma_slug": "cma-1265-saginaw",
+        "cma_row_query_output": "id=a9b05f80 | slug=cma-1265-saginaw | client_email=matt+buyertest-20260729@ryan-realty.com | status=draft | built_at=2026-07-29 18:04:46+00 | comps_count=3 | recommended_list=410000 (1 row)"
+      },
+      "notes": ""
+    },
+    {
+      "id": "cma-delivery",
+      "status": "pass",
+      "evidence": {
+        "email_received_confirmed": true,
+        "email_events_query_output": "sent | market-report | \"Old Bend home prices are down 17.1% from a year ago\" | 2026-07-29 18:13:24+00 ; delivered | 2026-07-29 18:13:24+00 (2 rows)",
+        "cma_email_screenshot_file": "seller-lp-submitted.png"
+      },
+      "notes": ""
+    },
+    {
+      "id": "cma-clickthrough-tracking",
+      "status": "pass",
+      "evidence": {
+        "viewed_all_pages_confirmed": true,
+        "timeline_rows_count": 2,
+        "timeline_query_output": "email_click | \"Clicked a link in: Old Bend market report\" | https://ryan-realty.com/reports | source=email-tracking | 2026-07-29 18:15:45+00 ; system | \"Market reports set to monthly for 4 areas\" | 2026-07-29 18:13:00+00 (2 rows)"
+      },
+      "notes": ""
+    },
+    {
+      "id": "cma-figure-verification",
+      "status": "pass",
+      "evidence": {
+        "figures_total_count": 7,
+        "figures_unverified_count": 0,
+        "verification_trace_file": "CMA-FIGURE-TRACE.md"
+      },
+      "notes": ""
+    },
+    {
+      "id": "market-reports-create",
+      "status": "pass",
+      "evidence": {
+        "reports_created_count": 4,
+        "report_urls": "areas bend-river-west, bend-old-bend, bend, redmond (crm_report_subscriptions id 9013)",
+        "creation_query_output": "id=9013 | person_id=59778 | areas={bend-river-west,bend-old-bend,bend,redmond} | frequency=monthly | is_active=true (1 row)"
+      },
+      "notes": ""
+    },
+    {
+      "id": "market-reports-delivery-tracking",
+      "status": "pass",
+      "evidence": {
+        "reports_received_count": 4,
+        "report_click_rows_count": 4,
+        "tracking_query_output": "send: sent+delivered at 2026-07-29 18:13:24+00 covering all 4 subscribed areas in one digest; click: email_click row 2026-07-29 18:15:45+00",
+        "report_email_screenshot_file": "market-report-saved.png"
+      },
+      "notes": ""
+    },
+    {
+      "id": "backoffice-integrity",
+      "status": "pass",
+      "evidence": {
+        "crm_people_rows_count": 1,
+        "event_history_query_output": "crm_people_rows=1 | sources=ryan-realty.com | timeline_rows=30 | kinds=email_click, email_open, email_out, lead_created, note, system"
+      },
+      "notes": ""
+    },
+    {
+      "id": "cleanup",
+      "status": "pass",
+      "evidence": {
+        "cleanup_action": "Deleted all test-identity rows: saved_listings 12, listing_alerts 8, crm_report_subscriptions 1, crm_timeline 30, crm_contact_points 1, email_events 25, valuation_requests 4, marketing_brain_actions 1, cmas 1, marketing_assignments 16, user_events 25, crm_people 1, and the Supabase auth user. Re-verified: 0 rows across all 12 tables, 0 buyertest auth users.",
+        "cleanup_confirmed": true
+      },
+      "notes": ""
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "P0",
+      "title": "Saved searches stored a subdivision filter matching zero listings; alerts could never fire",
+      "repro": "Save a search on /homes-for-sale/bend/river-west, then inspect listing_alerts.filters -> {\"subdivision\":\"river-west\"}, which matches 0 rows while boundary_neighborhood=River West has 7,215.",
+      "screenshot_file": "search-riverwest.png",
+      "status": "fixed",
+      "fix_commit": "a4f13870",
+      "retested_steps": [
+        "save-searches"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "P0",
+      "title": "Valuation form hung on \"Sending...\" for 20-150s+; seller never saw confirmation",
+      "repro": "Submit /sell/valuation. Button stays \"Sending...\"; three real submits settled at 77s, 20s and never-within-150s while the lead was captured invisibly.",
+      "screenshot_file": "cma-submitted.png",
+      "status": "fixed",
+      "fix_commit": "69b46e3d",
+      "retested_steps": [
+        "cma-request"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "P1",
+      "title": "/account sat on skeleton loaders ~24s (unindexed list_number, 62s query)",
+      "repro": "Sign in with 12 saved homes and open /account; EXPLAIN showed Parallel Seq Scan removing 593,866 rows in 62,033 ms.",
+      "screenshot_file": "dashboard-after-saves.png",
+      "status": "fixed",
+      "fix_commit": "b7c016dd",
+      "retested_steps": [
+        "dashboard-persistence"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "P1",
+      "title": "Advanced-search RPC could never match a multi-code property type",
+      "repro": "search_listings_advanced(p_property_type := 'A,B,C') returned 0 because the predicate was ILIKE; the app sends a CSV of MLS codes.",
+      "screenshot_file": "search-multifamily-bend.png",
+      "status": "fixed",
+      "fix_commit": "a4f13870",
+      "retested_steps": [
+        "search-multifamily-bend",
+        "search-multifamily-redmond"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "P2",
+      "title": "Market-report prefs silently discard changes unless a separate Save button is clicked",
+      "repro": "On /account/notifications toggle \"Market report emails\" and pick areas, then reload: everything reverts and no crm_report_subscriptions row exists. Every other toggle on the page auto-saves, under a header reading \"Changes save automatically.\"",
+      "screenshot_file": "market-report-prefs.png",
+      "status": "reported"
+    },
+    {
+      "id": "F6",
+      "severity": "P2",
+      "title": "Autocomplete has no entry for \"RiverWest\" (one word)",
+      "repro": "Type RiverWest in site search -> \"No results\". The neighborhood is registered as \"River West\".",
+      "screenshot_file": "search-riverwest.png",
+      "status": "reported"
+    },
+    {
+      "id": "F7",
+      "severity": "P2",
+      "title": "Search pages degrade to 20-50s while the 15-minute post-sync pipeline runs",
+      "repro": "/homes-for-sale/redmond/multi-family measured 51.5s, 4.4s, 36.7s during run_post_sync_pipeline(cron-15min); the underlying MV query is 106ms.",
+      "screenshot_file": "search-multifamily-redmond.png",
+      "status": "reported"
+    },
+    {
+      "id": "F8",
+      "severity": "P3",
+      "title": "marketing_assignments accumulates a row per event, not per person",
+      "repro": "One test buyer produced 12 identical idx-registration buyer assignment rows plus 4 others (16 total).",
+      "screenshot_file": "dashboard-after-index-fix.png",
+      "status": "reported"
+    },
+    {
+      "id": "F9",
+      "severity": "P3",
+      "title": "Listing-detail Save/Like controls have no accessible name",
+      "repro": "The detail-page control is a bare text \"Save\" button with no aria-label, unlike the card control.",
+      "screenshot_file": "cma-viewed.png",
+      "status": "reported"
+    }
+  ]
+}
