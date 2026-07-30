@@ -17,6 +17,7 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import type { CmaComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
+import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 
 const MODEL = 'claude-sonnet-4-5'
 const INPUT_COST_PER_TOKEN = 0.000003
@@ -209,12 +210,7 @@ export async function judgeComps(
     // Brand-voice sanitize: the model can emit em/en-dashes and semicolons,
     // which are banned in client prose. Numeric ranges become "to"; other
     // dashes become commas; semicolons become periods.
-    const sanitize = (s: string): string =>
-      s
-        .replace(/(\d)\s*[—–]\s*(\$?\d)/g, '$1 to $2')
-        .replace(/\s*[—–]\s*/g, ', ')
-        .replace(/;\s*/g, '. ')
-        .trim()
+    const sanitize = sanitizeClientProse
     return {
       verdicts: verdicts.map((v) => ({ ...v, reason: sanitize(v.reason) })),
       keptKeys,

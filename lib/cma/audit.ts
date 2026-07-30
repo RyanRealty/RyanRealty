@@ -17,6 +17,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
+import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CompJudgment } from '@/lib/cma/judge'
 import type { CmaSiteData } from '@/lib/cma/county'
@@ -302,8 +303,12 @@ export async function auditCma(args: {
       .map((f) => ({
         severity: (['critical', 'major', 'minor'].includes(f.severity ?? '') ? f.severity : 'major') as AuditSeverity,
         category: (CATEGORIES.includes((f.category ?? '') as AuditCategory) ? f.category : 'other') as AuditCategory,
-        claim: f.claim!.trim(),
-        evidence: (f.evidence ?? '').trim(),
+        // Sanitized at source: findings and the summary are folded into a
+        // contract review detail -> pricing.reviewReason -> pricing.notes,
+        // which buildCma brand-voice gates and THROWS on. An unsanitized model
+        // em-dash killed cma-16923-torrance in the 2026-07-30 rebuild.
+        claim: sanitizeClientProse(f.claim!),
+        evidence: sanitizeClientProse(f.evidence ?? ''),
         compListingKey: f.compListingKey && validKeys.has(f.compListingKey) ? f.compListingKey : null,
       }))
     // The LLM reports defects; CODE decides the verdict (see computeAuditVerdict).
@@ -314,7 +319,7 @@ export async function auditCma(args: {
       verdict,
       llmVerdict,
       findings,
-      summary: (out.summary ?? '').trim(),
+      summary: sanitizeClientProse(out.summary ?? ''),
       costUsd,
       model: MODEL,
       usedLlm: true,
