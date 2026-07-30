@@ -84,6 +84,8 @@ next-env.d.ts
 !.claude/skills/tc-builder/
 # ...and experience-rollout — tracked (its exception was implicit; made explicit for consistency, W13.3)
 !.claude/skills/experience-rollout/
+# ...and endtoend — the /endtoend mission protocol (2026-07-30), tracked so it survives clones + is visible to Cursor
+!.claude/skills/endtoend/
 .claude/worktrees
 .claude/cache
 .claude/projects
