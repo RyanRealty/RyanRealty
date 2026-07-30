@@ -291,6 +291,9 @@ export async function runListingAlerts(options?: {
         previewMode,
         recipients,
         compliance,
+        // ODS: sold data is VOW-only. A guest capture row (no user_id) never
+        // gets sold events, whatever the stored toggle says.
+        vowEligible: Boolean(row.user_id),
       })
 
       if (plan.action === 'skip') {

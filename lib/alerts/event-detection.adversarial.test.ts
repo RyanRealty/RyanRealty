@@ -233,7 +233,7 @@ describe('price_change fallback for legacy entries', () => {
     expect(res.events).toEqual([])
   })
 
-  it('when it DOES fire it reports oldPrice/direction from those stale columns', () => {
+  it('FIXED 2026-07-30: the stale-column path is gone, so it cannot fire at all', () => {
     const res = detectListingEvents({
       prevRaw: ['A'],
       lastNotifiedAt: '2026-01-01T00:00:00Z',
@@ -250,12 +250,11 @@ describe('price_change fallback for legacy entries', () => {
       departedLookup: [],
       now: NOW,
     })
-    const ev = res.events[0]
-    expect(ev.type).toBe('price_change')
-    // Reported to the client as a price INCREASE from $665,000 — a number with
-    // no live source (CLAUDE.md §0) taken from a column the MLS stopped feeding.
-    expect(ev.direction).toBe('up')
-    expect(ev.oldPrice).toBe(665000)
+    // Before the fix this emitted a price INCREASE from $665,000 — a number with
+    // no live source (CLAUDE.md §0) read from a column the MLS stopped feeding
+    // on 2026-04-07. price_change now fires only from the price we ourselves
+    // recorded at the last notify, so no unsourced figure can reach a client.
+    expect(res.events.filter((e) => e.type === 'price_change')).toEqual([])
   })
 })
 

@@ -261,27 +261,33 @@ export function detectListingEvents(args: {
     } else {
       const since = entry.notified_at
 
-      // price_change: prefer the per-subscriber notified price; fall back to
-      // the global price-history stamp for legacy entries with no stored price.
+      // price_change fires ONLY from the per-subscriber notified price: the
+      // price WE recorded when we last emailed them, compared to the price the
+      // MV serves now. Both sides are sourced and current, so every figure in
+      // the email is defensible (§0).
+      //
+      // The listings.last_price_change_* fallback was REMOVED 2026-07-30: the
+      // MLS feed stopped populating those columns on 2026-04-07 (see
+      // lib/data/listings/getPriceDrops.ts), so the stamp can no longer fire
+      // honestly, and when it did it reported amount/pct from equally stale
+      // columns — an adversarial test caught a real price DROP being announced
+      // as direction 'up' against a stale old price. An unsourced number does
+      // not go in a client email; a legacy entry with no stored price simply
+      // waits one cycle and then has one.
       const priceDelta =
         entry.price != null && row.listPrice != null && row.listPrice !== entry.price
           ? row.listPrice - entry.price
           : null
-      const historyFired = isAfter(row.lastPriceChangeDate, since)
-      if (priceDelta != null || historyFired) {
-        const amount = priceDelta ?? toFiniteOrNull(row.lastPriceChangeAmount)
-        const pct =
-          priceDelta != null && entry.price
-            ? Math.round((priceDelta / entry.price) * 1000) / 10
-            : toFiniteOrNull(row.lastPriceChangePct)
+      if (priceDelta != null) {
+        const pct = entry.price ? Math.round((priceDelta / entry.price) * 1000) / 10 : null
         events.push({
           type: 'price_change',
           listingKey: key,
-          oldPrice: entry.price ?? (row.listPrice != null && amount != null ? row.listPrice - amount : null),
+          oldPrice: entry.price,
           newPrice: row.listPrice,
-          changeAmount: amount,
+          changeAmount: priceDelta,
           changePct: pct,
-          direction: amount != null ? (amount < 0 ? 'down' : 'up') : undefined,
+          direction: priceDelta < 0 ? 'down' : 'up',
         })
       }
 
@@ -364,6 +370,21 @@ export function detectListingEvents(args: {
 export function filterEventsByToggles(
   events: ListingEvent[],
   toggles: AlertEventToggles,
+  /**
+   * VOW eligibility of the alert's recipient. Sold data is VOW-only under the
+   * ODS rules (§5-4 A.4 / reference_ods_rules): it may go to a registered user
+   * who accepted terms, never to a guest email capture. A guest row is any
+   * alert with no user_id. Defaults to false so a caller that forgets to pass
+   * it can only ever be MORE restrictive, never less.
+   */
+  opts?: { vowEligible?: boolean },
 ): ListingEvent[] {
-  return events.filter((e) => toggles[e.type])
+  const vowEligible = opts?.vowEligible === true
+  return events.filter((e) => {
+    if (!toggles[e.type]) return false
+    // Enforced here, not only at the toggle UI: a `sold: true` already stored on
+    // a guest row (or set by an admin) must still be unable to fire.
+    if (e.type === 'sold' && !vowEligible) return false
+    return true
+  })
 }

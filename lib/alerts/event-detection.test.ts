@@ -306,7 +306,7 @@ describe('detectListingEvents — legacy plain-key back-compat', () => {
     expect(types(result.events)).toEqual(['new:NEWK'])
   })
 
-  it('legacy keys still fire price_change via the history stamp', () => {
+  it('legacy keys do NOT fire price_change from the dead history stamp (§0, 2026-07-30)', () => {
     const result = detectListingEvents({
       prevRaw: ['DROP'],
       lastNotifiedAt: LAST_NOTIFY,
@@ -322,14 +322,11 @@ describe('detectListingEvents — legacy plain-key back-compat', () => {
       departedLookup: [],
       now: NOW,
     })
-    expect(result.events).toHaveLength(1)
-    const event = result.events[0]
-    expect(event.type).toBe('price_change')
-    expect(event.newPrice).toBe(775000)
-    expect(event.changeAmount).toBe(-25000)
-    expect(event.direction).toBe('down')
-    // oldPrice reconstructed from the history amount when no stored price.
-    expect(event.oldPrice).toBe(800000)
+    // The listings.last_price_change_* columns went dead on 2026-04-07, so the
+    // stamp cannot fire honestly and its amount/pct would be unsourced numbers
+    // in a client email. A legacy entry waits one cycle, gains a stored price,
+    // and then reports a fully sourced change.
+    expect(result.events.filter((e) => e.type === 'price_change')).toEqual([])
   })
 
   it('legacy state migrates to typed entries on the next pass', () => {
@@ -369,8 +366,16 @@ describe('filterEventsByToggles', () => {
     expect(filterEventsByToggles(events, off)).toEqual([])
   })
 
-  it('sold + open_house opt-in works', () => {
+  it('sold + open_house opt-in works for a VOW-eligible (registered) subscriber', () => {
     const toggles = normalizeEventToggles({ new: false, price_change: false, sold: true, open_house: true })
-    expect(types(filterEventsByToggles(events, toggles))).toEqual(['open_house:D', 'sold:C'])
+    expect(types(filterEventsByToggles(events, toggles, { vowEligible: true }))).toEqual([
+      'open_house:D',
+      'sold:C',
+    ])
+  })
+
+  it('sold is withheld from a guest row even when opted in (ODS VOW rule)', () => {
+    const toggles = normalizeEventToggles({ new: false, price_change: false, sold: true, open_house: true })
+    expect(types(filterEventsByToggles(events, toggles, { vowEligible: false }))).toEqual(['open_house:D'])
   })
 })

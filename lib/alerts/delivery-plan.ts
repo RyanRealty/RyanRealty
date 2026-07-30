@@ -100,8 +100,15 @@ export function planAlertDelivery(args: {
   recipients: AlertRecipient[]
   /** Keyed by lowercased email. A missing entry FAILS CLOSED (recipient dropped). */
   compliance: Map<string, RecipientCompliance>
+  /**
+   * True only for a registered (signed-in) subscriber. Sold events are VOW-only
+   * under the ODS rules and are dropped for guest rows. Omitted = false.
+   */
+  vowEligible?: boolean
 }): AlertDeliveryPlan {
-  const events = filterEventsByToggles(args.events, args.toggles)
+  const events = filterEventsByToggles(args.events, args.toggles, {
+    vowEligible: args.vowEligible === true,
+  })
   if (events.length === 0) return { action: 'skip', reason: 'no_events', events }
 
   if (args.previewMode) return { action: 'queue', events }
