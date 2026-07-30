@@ -26,9 +26,19 @@ export const PRIVATE_DETAIL_KEYS = [
   'ShowingContactName', 'ShowingContactPhone', 'ShowingPhoneNumber',
   'OwnerName', 'OwnerPhone', 'OccupantName', 'OccupantPhone',
   'ContingencyRemarks',
-  // Flexmls CustomFields spellings (spaced field names)
+  // Flexmls CustomFields spellings (spaced field names).
+  // EVERY camelCase key above needs its spaced twin here: the CF flatten emits
+  // the MLS display name, so 'PrivateRemarks' and 'Private Remarks' are two
+  // distinct jsonb keys. Missing the spaced twins leaked broker-private remarks
+  // and showing instructions to the anon key on ~2,500 on-market listings
+  // (found 2026-07-30 adversarial audit). check-private-key-parity.mjs (G58)
+  // now fails the build if a spelling pair goes missing again.
   'Owner Name', 'Occupant Name', 'Phone to Show', 'Phone to Show Number',
   'Preferred Escrow Company & Officer',
+  'Private Remarks', 'Private Office Remarks', 'Showing Instructions',
+  'Showing Contact Name', 'Showing Contact Phone', 'Showing Phone Number',
+  'Owner Phone', 'Occupant Phone', 'Contingency Remarks',
+  'Semi Private Remarks', 'SemiPrivateRemarks',
 ] as const
 
 /**

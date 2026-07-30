@@ -294,7 +294,14 @@ export async function runListingAlerts(options?: {
       })
 
       if (plan.action === 'skip') {
-        await advanceCursor(detection.nextState)
+        // A compliance stop is not proof the subscriber SAW these listings.
+        // isSuppressedByEmail fails CLOSED, so one transient DB blip would
+        // otherwise persist nextState and permanently absorb those events —
+        // the listings would never be mentioned again (audit 2026-07-30).
+        // Advance the cursor only; keep the notified state untouched so a real
+        // stop stays quiet while a transient one recovers on the next run.
+        if (plan.reason === 'all_recipients_stopped') await advanceCursor()
+        else await advanceCursor(detection.nextState)
         continue
       }
 

@@ -341,9 +341,12 @@ export async function markListingAlertNotified(
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = createServiceClient()
   const update: Record<string, unknown> = { last_notified_at: isoTime, updated_at: isoTime }
-  // Newest-last, capped: the diff only needs recent memory, and the cap bounds
-  // row growth for standing searches that run for years.
-  if (notifiedKeys) update.notified_listing_keys = notifiedKeys.slice(-1000)
+  // Cap from the TAIL, keeping the HEAD: detectListingEvents builds nextState
+  // newest-FIRST (current matches, then carried-forward departed keys), so
+  // slice(-1000) would have dropped the listings we just emailed and re-fired
+  // them as `new` forever once a subscriber crossed 1,000 keys (adversarial
+  // audit 2026-07-30; two live rows were at 189 and 145 and climbing).
+  if (notifiedKeys) update.notified_listing_keys = notifiedKeys.slice(0, 1000)
   const { error } = await supabase.from(TABLE).update(update).eq('id', id)
   if (error) return { ok: false, error: error.message }
   return { ok: true }

@@ -59,15 +59,39 @@ export async function enqueueAlertQueueItems(
     event_payload: i.eventPayload,
     status: 'pending' as const,
   }))
-  const { data, error } = await supabase
+  // uq_listing_alert_queue_pending is a PARTIAL unique index (WHERE
+  // status='pending') so an alert can legitimately re-queue a listing after an
+  // earlier item was sent or rejected. Postgres cannot infer a partial arbiter
+  // from a bare ON CONFLICT column list, so the upsert form raised 42P10 on
+  // EVERY preview-mode write: nothing queued, nothing sent, and the alert
+  // jammed at the head of the due queue forever (adversarial audit 2026-07-30).
+  // Select-then-insert keeps the partial-index semantics. The cron is the only
+  // writer, and a racing duplicate still trips the index, which we treat as the
+  // benign "already queued" case.
+  const alertIds = [...new Set(rows.map((r) => r.alert_id))]
+  const { data: existing, error: readError } = await supabase
     .from(TABLE)
-    .upsert(rows, { onConflict: 'alert_id,listing_key,event_type', ignoreDuplicates: true })
-    .select('id')
+    .select('alert_id, listing_key, event_type')
+    .in('alert_id', alertIds)
+    .eq('status', 'pending')
+  if (readError) {
+    console.error('[enqueueAlertQueueItems] pending read', readError.message)
+    return { ok: false, queued: 0, error: 'persist_failed' }
+  }
+  const pending = new Set(
+    (existing ?? []).map((r) => `${r.alert_id}|${r.listing_key}|${r.event_type}`),
+  )
+  const fresh = rows.filter((r) => !pending.has(`${r.alert_id}|${r.listing_key}|${r.event_type}`))
+  if (fresh.length === 0) return { ok: true, queued: 0 }
+
+  const { data, error } = await supabase.from(TABLE).insert(fresh).select('id')
   if (error) {
+    // 23505 = the partial index caught a concurrent duplicate. Already queued.
+    if (error.code === '23505') return { ok: true, queued: 0 }
     console.error('[enqueueAlertQueueItems]', error.message)
     return { ok: false, queued: 0, error: 'persist_failed' }
   }
-  return { ok: true, queued: data?.length ?? rows.length }
+  return { ok: true, queued: data?.length ?? fresh.length }
 }
 
 /** Load queue rows by id, restricted to one status (default pending). */
