@@ -102,25 +102,68 @@ async function buildSubdivisionGeos(descriptionKeys: ReadonlySet<string>): Promi
 /**
  * The matrix, serialized for the data cache.
  *
- * unstable_cache round-trips through JSON, so the two `Map`s have to travel as
- * entry arrays and be rehydrated on read. Wrapping the built matrix (a few KB of
- * path→count) instead of the raw inventory rows (~2.3MB) is the whole point:
- * the raw set is over Next's 2MB ceiling and could never be stored, so it
- * re-fetched on every single call and stalled production builds (2026-07-28).
+ * CORRECTION, 2026-07-30. The 2026-07-28 version of this cached the two full
+ * count maps and its comment claimed that was "a few KB". It was not. That
+ * measurement only covered `entries` (241 sitemap rows, 39KB); `countByPath`
+ * carries one entry for EVERY geo x preset combination, not just the emitted
+ * ones, and the real serialized payload measured **2,405,122 bytes** — still
+ * over unstable_cache's 2MB cap. So the write kept failing silently, the cache
+ * never populated, and `getMatrixCityPresetNoIndex` rebuilt the whole matrix
+ * once per city x preset inside buildAllUrls. That is why a cold sitemap pass
+ * cost 194-456s and why both the 600s and 1800s build ceilings were breached.
+ *
+ * The fix is to stop storing counts at all. `shouldNoIndexMatrixCombo` is
+ * `count != null && count <= 0` — the ONLY thing either map is consulted for is
+ * "is this combo a VERIFIED ZERO". So we store just the zero paths. Absent from
+ * the set means index (a positive count and an unknown combo both fail OPEN,
+ * exactly as before); present means noindex. Same decision, a fraction of the
+ * bytes.
  */
 type SerializedMatrix = {
   entries: MatrixEntry[]
-  countByPath: Array<[string, number]>
-  countByCityPreset: Array<[string, number]>
+  /**
+   * Combos with a POSITIVE count, plus the enumerated key space needed to tell
+   * "verified zero" from "never enumerated". Storing the ZEROES instead was the
+   * obvious inversion and the wrong one: measured on the real geo set, 35,528 of
+   * 41,748 combos are zero, so a zero-list is 1.84MB — under the 2MB cap but
+   * with 92% of it consumed and growing with every new subdivision. The positive
+   * list is 6,220.
+   */
+  positivePaths: string[]
+  /** "city/area" for every geo the builder enumerated. */
+  geoKeys: string[]
+  positiveCityPresets: string[]
+  cityPresetKeys: string[]
+}
+
+function splitByCount(counts: Map<string, number>): { positive: string[]; all: string[] } {
+  const positive: string[] = []
+  const all: string[] = []
+  for (const [k, n] of counts) {
+    all.push(k)
+    if (!shouldNoIndexMatrixCombo(n)) positive.push(k)
+  }
+  return { positive, all }
 }
 
 async function buildSerializedMatrix(): Promise<SerializedMatrix | null> {
   const built = await assembleSearchMatrix()
   if (!built) return null
+  const byPath = splitByCount(built.countByPath)
+  const byCityPreset = splitByCount(built.countByCityPreset)
+  // The geo key space collapses 41,748 paths to ~1,500 "city/area" pairs: a
+  // combo is ENUMERATED when its geo was built and its preset is a real preset.
+  const geoKeys = new Set<string>()
+  for (const path of byPath.all) {
+    const seg = path.split('/') // ['', 'homes-for-sale', city, area, preset]
+    if (seg.length >= 5) geoKeys.add(`${seg[2]}/${seg[3]}`)
+  }
   return {
     entries: built.entries,
-    countByPath: [...built.countByPath],
-    countByCityPreset: [...built.countByCityPreset],
+    positivePaths: byPath.positive,
+    geoKeys: [...geoKeys],
+    positiveCityPresets: byCityPreset.positive,
+    cityPresetKeys: byCityPreset.all,
   }
 }
 
@@ -138,13 +181,23 @@ const cachedSerializedMatrix = makeResilientCached<[], SerializedMatrix | null>(
  * The matrix for this render: one data-cache read, rehydrated, memoized per
  * request by React `cache()`. Returns null when the inventory read failed.
  */
-const getSearchMatrix = cache(async (): Promise<MatrixBuildResult | null> => {
+type MatrixDecisions = {
+  entries: MatrixEntry[]
+  positivePaths: Set<string>
+  geoKeys: Set<string>
+  positiveCityPresets: Set<string>
+  cityPresetKeys: Set<string>
+}
+
+const getSearchMatrix = cache(async (): Promise<MatrixDecisions | null> => {
   const s = await cachedSerializedMatrix()
   if (!s) return null
   return {
     entries: s.entries,
-    countByPath: new Map(s.countByPath),
-    countByCityPreset: new Map(s.countByCityPreset),
+    positivePaths: new Set(s.positivePaths),
+    geoKeys: new Set(s.geoKeys),
+    positiveCityPresets: new Set(s.positiveCityPresets),
+    cityPresetKeys: new Set(s.cityPresetKeys),
   }
 })
 
@@ -238,8 +291,11 @@ export async function getMatrixComboNoIndex(
   if (!city || !area || !preset) return false
   const matrix = await getSearchMatrix()
   if (!matrix) return false
-  const count = matrix.countByPath.get(matrixPath(city, area, preset))
-  return shouldNoIndexMatrixCombo(count ?? null)
+  const path = matrixPath(city, area, preset)
+  if (matrix.positivePaths.has(path)) return false // has inventory -> index
+  // Fail OPEN on a combo the builder never enumerated (unknown != zero).
+  if (!matrix.geoKeys.has(`${city}/${area}`)) return false
+  return true // enumerated and not positive -> VERIFIED zero
 }
 
 /**
@@ -257,8 +313,10 @@ export async function getMatrixCityPresetNoIndex(citySlug: string, presetSlug: s
   if (!city || !preset) return false
   const matrix = await getSearchMatrix()
   if (!matrix) return false
-  const count = matrix.countByCityPreset.get(cityPresetPath(city, preset))
-  return shouldNoIndexMatrixCombo(count ?? null)
+  const path = cityPresetPath(city, preset)
+  if (matrix.positiveCityPresets.has(path)) return false
+  if (!matrix.cityPresetKeys.has(path)) return false // never enumerated -> index
+  return true
 }
 
 /**

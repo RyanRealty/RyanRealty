@@ -39,6 +39,24 @@ export const PRIVATE_DETAIL_KEYS = [
   'Showing Contact Name', 'Showing Contact Phone', 'Showing Phone Number',
   'Owner Phone', 'Occupant Phone', 'Contingency Remarks',
   'Semi Private Remarks', 'SemiPrivateRemarks',
+  // Second adversarial pass, 2026-07-30, run with the PUBLIC ANON key against
+  // production AFTER the spaced-twin fix deployed. The twin fix was correct but
+  // incomplete: these three keys are not twins of anything already listed, so
+  // nothing caught them. Measured on 400 active rows read anonymously:
+  //   ShowingRequirements  399/400  appointment-only / call-listing-agent /
+  //                                  pets-on-premises flags — showing logistics
+  //   Tenant Name            6/400  real occupant names, e.g. a named church
+  //   Call Owner             2/400  routes a buyer around the listing broker
+  // Tenant Name is third-party PII that no one consented to publish. The other
+  // two are agent-only showing logistics. All three are confidential under the
+  // same rule the keys above enforce.
+  'ShowingRequirements', 'Showing Requirements',
+  'ShowingConsiderations', 'Showing Considerations',
+  'TenantName', 'Tenant Name',
+  'CallOwner', 'Call Owner',
+  'LockBoxLocation', 'LockBoxNumber', 'LockBoxSerialNumber',
+  'Lock Box Location', 'Lock Box Number', 'Lock Box Serial Number',
+  'AccessCode', 'Access Code',
 ] as const
 
 /**
