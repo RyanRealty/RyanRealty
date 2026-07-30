@@ -56,6 +56,9 @@ export default defineConfig({
       'app/api/**/*.test.ts',
       // LP form/filter logic tests colocate with their actions.
       'app/lp/**/*.test.ts',
+      // Server-action contract tests (authz + refusal locks) colocate with the
+      // action they guard, e.g. app/actions/cma-publish.test.ts.
+      'app/actions/**/*.test.ts',
       'components/admin/prospecting/**/*.test.ts',
       'components/admin/prospecting/**/*.test.tsx',
     ],

@@ -19,6 +19,8 @@ import { Button } from '@/components/ui/button'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
 import { KpiStrip } from '@/components/console/KpiStrip'
 import { CmaReviewActions } from '@/components/admin/cma/CmaReviewActions'
+import { CmaPublishControl } from '@/components/admin/cma/CmaPublishControl'
+import { cmaPublishRefusals } from '@/app/actions/cma-publish-preconditions'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
 
@@ -68,6 +70,13 @@ export default async function AdminCmaReviewPage({
   const buildError = (row.build_error as string | null) ?? null
   const summary = (row.build_summary as Record<string, unknown> | null) ?? null
   const marketSummary = (summary?.market as Record<string, unknown> | null) ?? null
+
+  // Publish eligibility is computed HERE, by the SAME function the publish
+  // action enforces (which is itself the public guard's own rules, stated in
+  // words). The control renders these reasons verbatim, so the panel can never
+  // offer a button the server would refuse.
+  const listingKey = String(row.subject_listing_key ?? '').trim()
+  const blockers = cmaPublishRefusals(row)
 
   const previewSrc = hasStoredHtml
     ? `/cma/${safeSlug}`
@@ -161,6 +170,20 @@ export default async function AdminCmaReviewPage({
             brokerSlug={(row.broker_slug as string | null) ?? null}
             brokers={brokers}
             hasDocument={hasDocument}
+          />
+        </ConsoleSection>
+
+        <ConsoleSection title="Listing page" className="lg:col-start-2">
+          <CmaPublishControl
+            slug={safeSlug}
+            subjectAddress={String(row.subject_address ?? safeSlug)}
+            listingKey={listingKey || null}
+            valueLow={(row.value_low as number | null) ?? null}
+            valueHigh={(row.value_high as number | null) ?? null}
+            published={row.published_to_listing === true}
+            publishedAt={(row.published_at as string | null) ?? null}
+            publishedBy={(row.published_by as string | null) ?? null}
+            blockers={blockers}
           />
         </ConsoleSection>
       </div>

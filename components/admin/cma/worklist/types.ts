@@ -44,6 +44,11 @@ export interface CmaWorklistRow {
   needsReview: boolean
   /** html_path starts with 'db:' or 'public/cmas/' — an openable document exists. */
   hasDocument: boolean
+  /** cmas.published_to_listing — the value range is live on the public listing page. */
+  publishedToListing: boolean
+  publishedAt: string | null
+  /** cmas.subject_listing_key — the listing this document is attached to, if any. */
+  listingKey: string | null
 }
 
 export interface CmaWorklistSummary {
@@ -55,4 +60,6 @@ export interface CmaWorklistSummary {
    *  distinct from `delivered` (current status), which drops once a sent CMA
    *  is archived. Mirrors prospecting's "sent" bucket. */
   sent: number
+  /** published_to_listing = true — the value range is live on a public page. */
+  published: number
 }

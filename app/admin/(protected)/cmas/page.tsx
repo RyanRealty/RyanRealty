@@ -73,6 +73,9 @@ function mapRow(r: Record<string, unknown>): CmaWorklistRow {
     buildError: (r.build_error as string | null) ?? null,
     needsReview: buildSummary?.needs_review === true,
     hasDocument: htmlPath.startsWith('db:') || htmlPath.startsWith('public/cmas/'),
+    publishedToListing: r.published_to_listing === true,
+    publishedAt: (r.published_at as string | null) ?? null,
+    listingKey: (r.subject_listing_key as string | null) ?? null,
   }
 }
 
@@ -100,6 +103,7 @@ export default async function AdminCmasPage({
     finalized: allRows.filter((r) => r.status === 'finalized').length,
     delivered: allRows.filter((r) => r.status === 'delivered').length,
     sent: allRows.filter((r) => r.deliveredAt != null).length,
+    published: allRows.filter((r) => r.publishedToListing).length,
   }
   const cities = Array.from(new Set(allRows.map((r) => r.subjectCity).filter((c): c is string => Boolean(c)))).sort()
 

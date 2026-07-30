@@ -111,29 +111,90 @@ type CmaRow = Record<string, unknown>
 const SUMMARY_COLUMNS =
   'id, slug, subject_listing_key, subject_address, doc_type, status, archived_at, value_low, value_high, comps_count, broker_slug, published_to_listing, published_at, finalized_at, created_at, build_summary'
 
+export type CmaPublishBlocker = {
+  /** Stable identifier for a caller that wants to branch on the cause. */
+  code: 'missing' | 'doc-type' | 'status' | 'archived' | 'value-range' | 'needs-review'
+  /** Plain language, written to be shown to a broker as-is. */
+  reason: string
+}
+
+/**
+ * Why this document may NOT be published, in words.
+ *
+ * This is the SAME rule set as `isPublishable`, stated once. `isPublishable` is
+ * defined in terms of it below, so the admin UI can never offer a button the
+ * guard would refuse, and a new rule can never land on one surface only.
+ *
+ * The publish FLAG itself is deliberately not checked here: this answers "may a
+ * human publish this document", not "is this document currently public".
+ */
+export function publishBlockers(row: CmaRow | null | undefined): CmaPublishBlocker[] {
+  if (!row) return [{ code: 'missing', reason: 'This document could not be read.' }]
+  const out: CmaPublishBlocker[] = []
+
+  const docType = String(row.doc_type ?? '').trim()
+  if (docType !== 'cma') {
+    out.push({
+      code: 'doc-type',
+      reason:
+        docType === 'expired-audit'
+          ? "This is an expired-listing audit of another broker's listing, not a seller CMA. The database refuses to publish one."
+          : `This document is typed ${docType || 'unknown'}, not a seller CMA. Only a CMA can go on a listing page.`,
+    })
+  }
+
+  const status = String(row.status ?? '').trim()
+  if (!PUBLISHABLE_STATUSES.has(status)) {
+    out.push({
+      code: 'status',
+      reason:
+        status === 'draft'
+          ? 'The document is still a draft. Approve it to final first.'
+          : `The document is ${status || 'in an unknown state'}, and only a finalized or delivered CMA can publish.`,
+    })
+  }
+
+  if (row.archived_at != null) {
+    out.push({ code: 'archived', reason: 'This CMA is archived. Restore it before publishing.' })
+  }
+
+  const low = Number(row.value_low)
+  const high = Number(row.value_high)
+  if (!Number.isFinite(low) || !Number.isFinite(high) || low <= 0 || high < low) {
+    out.push({
+      code: 'value-range',
+      reason: 'The value range is missing or out of order, and that range is the number that would go public.',
+    })
+  }
+
+  const summary = (row.build_summary ?? {}) as Record<string, unknown>
+  const pricing = (summary.pricing ?? {}) as Record<string, unknown>
+  if (pricing.needs_review === true) {
+    out.push({
+      code: 'needs-review',
+      reason:
+        'The pricing audit flagged this document for review. A number the system itself called unsound does not go on the public web.',
+    })
+  }
+
+  return out
+}
+
 /**
  * The one publish guard. Every surface calls this.
  *
- * Note the last clause. `build_summary.pricing.needs_review` is set by the
- * CMA's own adversarial audit. On 2026-07-30 the single document attached to
- * an active Ryan Realty listing carried `needs_review: true` with an audit
- * verdict of "fail". A human ticking a publish box is not enough to put a
- * number the system itself flagged as unsound onto the public web (CLAUDE.md
- * §0). Two signals must agree: a human published it, and the audit passed.
+ * Note the `needs_review` clause inside publishBlockers above.
+ * `build_summary.pricing.needs_review` is set by the CMA's own adversarial
+ * audit. On 2026-07-30 the single document attached to an active Ryan Realty
+ * listing carried `needs_review: true` with an audit verdict of "fail". A human
+ * ticking a publish box is not enough to put a number the system itself flagged
+ * as unsound onto the public web (CLAUDE.md §0). Two signals must agree: a human
+ * published it, and the audit passed.
  */
 export function isPublishable(row: CmaRow | null | undefined): boolean {
   if (!row) return false
   if (row.published_to_listing !== true) return false
-  if (String(row.doc_type ?? '') !== 'cma') return false
-  if (!PUBLISHABLE_STATUSES.has(String(row.status ?? ''))) return false
-  if (row.archived_at != null) return false
-  const low = Number(row.value_low)
-  const high = Number(row.value_high)
-  if (!Number.isFinite(low) || !Number.isFinite(high) || low <= 0 || high < low) return false
-  const summary = (row.build_summary ?? {}) as Record<string, unknown>
-  const pricing = (summary.pricing ?? {}) as Record<string, unknown>
-  if (pricing.needs_review === true) return false
-  return true
+  return publishBlockers(row).length === 0
 }
 
 function str(v: unknown): string | null {

@@ -58,7 +58,15 @@ export function CmaDetailPanel({
         {detail.clientEmail ? <p className="text-xs text-muted-foreground">{detail.clientEmail}</p> : null}
       </div>
 
-      <CmaStatusPill status={detail.status} needsReview={detail.needsReview} />
+      <CmaStatusPill status={detail.status} needsReview={detail.needsReview} published={detail.publishedToListing} />
+
+      {detail.publishedToListing ? (
+        <p className="text-xs text-muted-foreground">
+          The value range is on the public listing page
+          {detail.publishedAt ? ` since ${formatDate(detail.publishedAt)}` : ''}. Publish and take down from the
+          review page.
+        </p>
+      ) : null}
 
       <Separator />
 

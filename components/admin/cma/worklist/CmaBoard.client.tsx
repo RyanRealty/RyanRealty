@@ -170,6 +170,7 @@ export function CmaBoard({
           { label: 'Finalized', value: summary.finalized },
           { label: 'Delivered', value: summary.delivered },
           { label: 'Sent', value: summary.sent },
+          { label: 'Live on listings', value: summary.published },
         ]}
       />
 

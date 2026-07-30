@@ -95,7 +95,7 @@ export function CmaCard({
       ) : null}
 
       <div className="mt-2 flex items-center justify-between gap-2">
-        <CmaStatusPill status={row.status} needsReview={row.needsReview} />
+        <CmaStatusPill status={row.status} needsReview={row.needsReview} published={row.publishedToListing} />
         <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{formatDate(row.createdAt)}</span>
       </div>
 

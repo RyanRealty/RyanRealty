@@ -25,9 +25,12 @@ function statusVariant(status: CmaWorklistStatus) {
 export function CmaStatusPill({
   status,
   needsReview,
+  published,
 }: {
   status: CmaWorklistStatus
   needsReview?: boolean
+  /** published_to_listing — the value range is on a public listing page right now. */
+  published?: boolean
 }) {
   return (
     <div className="flex flex-wrap items-center gap-1">
@@ -35,6 +38,7 @@ export function CmaStatusPill({
         {status}
       </Badge>
       {needsReview ? <Badge variant="destructive">Needs review</Badge> : null}
+      {published ? <Badge>Live on listing</Badge> : null}
     </div>
   )
 }
