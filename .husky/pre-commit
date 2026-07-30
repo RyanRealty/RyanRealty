@@ -14,5 +14,11 @@ node scripts/check-producer-guard.mjs
 # violations may only decrease (scripts/brand-voice-baseline.json).
 npm run ci:brand-voice
 
-# Existing test suite (legacy step).
-npm test
+# UNIT tests only. The *.int.test.ts project hits live Supabase; under the old
+# `npm test` this hook ran the whole suite on every commit — 5-10 minutes, and
+# it flaked whenever a concurrent Vercel build saturated the connection pool
+# (measured 2026-07-29: 45 of 52 connections active, 19 pure timeouts, zero
+# assertion failures). Integration tests still run: `npm run push` builds and
+# gates before any ref moves, and CI runs the full suite on GitHub runners.
+# Commit fast, verify hard at the boundary that actually ships.
+npm run test:unit
