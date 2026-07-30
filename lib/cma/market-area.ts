@@ -203,7 +203,7 @@ export function lotCharacterCompatible(subjectAcres: number | null, compAcres: n
 }
 
 /** Product class a comp competes in. Null = the MLS did not say. */
-export type ProductClass = 'detached' | 'attached' | 'manufactured'
+export type ProductClass = 'detached' | 'attached' | 'manufactured' | 'leased-land' | 'coop'
 
 /**
  * Map the MLS `property_sub_type` to a product class.
@@ -218,6 +218,14 @@ export type ProductClass = 'detached' | 'attached' | 'manufactured'
 export function productClass(subType: string | null): ProductClass | null {
   if (!subType) return null
   const s = subType.toLowerCase()
+  // Order matters: "Residential Leased Land" and "Stock Cooperative" must be
+  // caught before any generic residential match, and neither is fee-simple
+  // ownership of a house. Leased land means the buyer does not own the ground
+  // under it; a co-op conveys shares in a corporation, not real property. Both
+  // sit under PropertyType='A' in this MLS (30 and 6 rows), and both used to
+  // fall through to null and fail OPEN against a detached subject.
+  if (s.includes('leased land')) return 'leased-land'
+  if (s.includes('cooperative') || s.includes('co-op')) return 'coop'
   if (s.includes('manufactured') || s.includes('mobile')) return 'manufactured'
   if (s.includes('town') || s.includes('condo') || s.includes('tenancy') || s.includes('attached')) return 'attached'
   if (s.includes('single family') || s.includes('detached') || s.includes('residence')) return 'detached'

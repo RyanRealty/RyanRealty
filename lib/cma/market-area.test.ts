@@ -100,6 +100,8 @@ describe('productTypeCompatible — product-class hard exclusion', () => {
     expect(productClass('Condominium')).toBe('attached')
     expect(productClass('Tenancy in Common')).toBe('attached')
     expect(productClass('Manufactured On Land')).toBe('manufactured')
+    expect(productClass('Residential Leased Land')).toBe('leased-land')
+    expect(productClass('Stock Cooperative')).toBe('coop')
     expect(productClass(null)).toBeNull()
   })
 
@@ -112,6 +114,13 @@ describe('productTypeCompatible — product-class hard exclusion', () => {
 
   it('rejects a manufactured home for a detached subject — financing differs', () => {
     expect(productTypeCompatible('Single Family Residence', 'Manufactured On Land')).toBe(false)
+  })
+
+  it('rejects leased land and co-ops — neither is fee-simple ownership of a house', () => {
+    // Both sit under PropertyType='A' and both used to fall through to null,
+    // which fails OPEN, so they could be priced against a detached house.
+    expect(productTypeCompatible('Single Family Residence', 'Residential Leased Land')).toBe(false)
+    expect(productTypeCompatible('Single Family Residence', 'Stock Cooperative')).toBe(false)
   })
 
   it('keeps like for like', () => {
