@@ -26,6 +26,7 @@ const SKIP_PREFIXES = [
   'video_production_skills/',
   'design_system/', // mockups / parity contracts — not imported by the app build
   'scripts/', // CI gates + one-off scripts; runtime code lives in app/lib
+  'supabase/migrations/', // SQL applies to the DB out-of-band; never changes the Next build output
 ]
 
 const SKIP_EXACT = new Set([

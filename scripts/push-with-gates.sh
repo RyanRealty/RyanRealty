@@ -148,6 +148,18 @@ run_chain_and_build() {
       "✗ next build FAILED — this commit would ERROR on Vercel and silently never deploy." \
       "  NOTHING landed on the remote. Your commits are still local."
     echo "✓ next build OK"
+
+    # Bundle budget — the same check CI's lint-and-build job runs after its
+    # build. It only ran in CI until 2026-07-29, so bundle drift passed every
+    # local push and reddened CI for days before anyone looked. Runs only when
+    # a build just ran (needs a fresh .next).
+    echo "push: bundle budget (matches CI) in $workdir…"
+    ( cd "$workdir" && npm run ci:bundle-budget ) || {
+      echo ""
+      echo "✗ bundle budget FAILED — investigate the growth, or re-baseline if intentional."
+      exit 1
+    }
+    echo "✓ bundle budget OK"
   else
     echo "push: only non-buildable files changed — skipping build."
   fi

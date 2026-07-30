@@ -92,6 +92,7 @@ beforeAll(() => {
           'ci:gates': "node -e \"console.log('stub ci:gates OK')\"",
           lint: "node -e \"console.log('stub lint OK')\"",
           build: "node -e \"console.log('stub build OK')\"",
+          'ci:bundle-budget': "node -e \"console.log('stub bundle-budget OK')\"",
         },
       },
       null,
