@@ -155,10 +155,17 @@ export async function judgeComps(
     'condition language ("fully remodeled", "new roof", "needs TLC", "investor special", "as-is") explains price ' +
     'differences and decides comparability. A comp set that mixes, say, $218/sqft and $414/sqft homes is not one ' +
     'market — say so and exclude the ones that do not belong, citing the specific feature or remarks evidence in a ' +
-    'one-line reason each. tier=strong means directly comparable (full weight in the reconciliation); tier=weak means ' +
+    'one-line reason each. ' +
+    'STRUCTURE TYPE IS A HARD EXCLUSION, and you are the only check on it. The MLS sub-type field is already ' +
+    'filtered upstream, but it is unreliable: properties tagged "Single Family Residence" turn out from their remarks ' +
+    'to be a duplex, triplex, or other multi-unit or income-configured building. For a single-family subject, exclude ' +
+    'any comp whose remarks indicate more than one dwelling unit, a shared wall, or a purpose-built income ' +
+    'configuration, no matter what its sub-type says or how close or recent the sale is. A duplex sells to an ' +
+    'investor on a rent roll, not to the subject\'s buyer. Say which remarks phrase gave it away. ' +
+    'tier=strong means directly comparable (full weight in the reconciliation); tier=weak means ' +
     'usable with reservations (half weight — bracketing only); tier=exclude means a different market segment (dropped ' +
     'before any math). Prefer excluding a genuinely non-comparable sale over keeping it to hit a count. Keep at least ' +
-    '6 comps when 6 or more are genuinely comparable. Be honest about confidence: honest uncertainty beats false ' +
+    '5 comps when 5 or more are genuinely comparable. Be honest about confidence: honest uncertainty beats false ' +
     'precision. Do not invent facts about a comp beyond what is given. ' +
     'Return your judgment only through the record_comp_judgment tool.'
 
