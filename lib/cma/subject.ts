@@ -120,6 +120,7 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
     baths: num(row['BathroomsTotal']),
     sqft: num(row['TotalLivingAreaSqFt']),
     lotAcres: num(row['lot_size_acres']),
+    propertySubType: str(row['property_sub_type']),
     yearBuilt: saneYearBuilt(num(row['year_built'])),
     garageSpaces: num(row['garage_spaces']),
     photoUrl: str(row['PhotoURL']),

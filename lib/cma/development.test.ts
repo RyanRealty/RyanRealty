@@ -67,6 +67,7 @@ function subject(overrides: Partial<CmaSubject> = {}): CmaSubject {
     baths: 2,
     sqft: 1800,
     lotAcres: 0.2,
+    propertySubType: null,
     yearBuilt: 2001,
     garageSpaces: 2,
     photoUrl: null,

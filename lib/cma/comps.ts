@@ -33,6 +33,7 @@ import { saneYearBuilt } from '@/lib/cma/subject'
 import {
   distanceMiles,
   lotCharacterCompatible,
+  productTypeCompatible,
   marketAreaName,
   proximityLabel,
   resolveMarketArea,
@@ -78,6 +79,7 @@ function rowToComp(row: CmaListingRow, tier: string): CmaComp | null {
     baths: num(row['BathroomsTotal']),
     sqft,
     lotAcres: num(row['lot_size_acres']),
+    propertySubType: str(row['property_sub_type']),
     yearBuilt: saneYearBuilt(num(row['year_built'])),
     photoUrl: str(row['PhotoURL']),
     publicRemarks: str(row['public_remarks']),
@@ -169,6 +171,7 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
   ]
 
   let excludedLotCharacter = 0
+  let excludedProductType = 0
   let excludedDistance = 0
   let excludedArea = 0
 
@@ -205,6 +208,15 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
         continue
       }
 
+      // HARD EXCLUSION at every tier: a townhome, condo, or manufactured home
+      // does not compete with a detached house for the same buyer. PropertyType
+      // 'A' mixes all of them, so without this the selector hands the judge a
+      // contaminated set and the audit fails the build after the fact.
+      if (!productTypeCompatible(subject.propertySubType, comp.propertySubType)) {
+        excludedProductType++
+        continue
+      }
+
       const compArea = resolveMarketArea(comp.latitude, comp.longitude)
       if (tier.sameArea && compArea !== subjectArea) {
         excludedArea++
@@ -234,6 +246,11 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
     if (byKey.size >= TARGET_COMPS) break
   }
 
+  if (excludedProductType > 0) {
+    trace.push(
+      `Excluded ${excludedProductType} comp(s) on product type (a townhome, condo, or manufactured home is not comparable to a detached house at any distance — Fannie Mae B4-1.3-08).`,
+    )
+  }
   if (excludedLotCharacter > 0) {
     trace.push(`Excluded ${excludedLotCharacter} comp(s) on lot character (acreage vs in-town lot is not comparable at any distance).`)
   }

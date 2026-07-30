@@ -145,3 +145,46 @@ export function lotCharacterCompatible(subjectAcres: number | null, compAcres: n
   if (!subjectIsAcreage) return true
   return compAcres >= subjectAcres * 0.4 && compAcres <= subjectAcres * 2.5
 }
+
+/** Product class a comp competes in. Null = the MLS did not say. */
+export type ProductClass = 'detached' | 'attached' | 'manufactured'
+
+/**
+ * Map the MLS `property_sub_type` to a product class.
+ *
+ * `PropertyType='A'` is the SFR convention (CLAUDE.md §0), but it is NOT
+ * "detached house" — it is a bucket. Measured against closed Bend sales over the
+ * 12 months to 2026-07-30 (1,000 rows): 818 Single Family Residence, 75
+ * Townhouse, 43 Manufactured On Land, 22 Condominium, 3 Tenancy in Common, 39
+ * null. So 14.3% of the pool offered to a detached subject is a different
+ * product, and the selector took it.
+ */
+export function productClass(subType: string | null): ProductClass | null {
+  if (!subType) return null
+  const s = subType.toLowerCase()
+  if (s.includes('manufactured') || s.includes('mobile')) return 'manufactured'
+  if (s.includes('town') || s.includes('condo') || s.includes('tenancy') || s.includes('attached')) return 'attached'
+  if (s.includes('single family') || s.includes('detached') || s.includes('residence')) return 'detached'
+  return null
+}
+
+/**
+ * Product-type comparability — a hard exclusion at every tier.
+ *
+ * A townhome shares walls and usually carries an HOA and no private lot; a
+ * manufactured home on land is financed differently. Neither competes with a
+ * detached house for the same buyer, so neither is comparable at any distance.
+ * Fannie Mae B4-1.3-08 requires comparable property type, and this is the rule
+ * the adversarial audit was failing builds on ("violating product-type
+ * comparability") after the fact — enforcing it at SELECTION is the fix, since
+ * the judge only sees the contaminated set the selector already chose.
+ *
+ * Unknown fails OPEN on either side, matching lotCharacterCompatible: excluding
+ * on absent data silently drops good comps, and the judge is still downstream.
+ */
+export function productTypeCompatible(subjectSubType: string | null, compSubType: string | null): boolean {
+  const subjectClass = productClass(subjectSubType)
+  const compClass = productClass(compSubType)
+  if (subjectClass == null || compClass == null) return true
+  return subjectClass === compClass
+}

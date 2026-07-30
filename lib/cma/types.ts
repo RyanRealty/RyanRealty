@@ -21,6 +21,8 @@ export interface CmaSubject {
   baths: number | null
   sqft: number | null
   lotAcres: number | null
+  /** MLS property_sub_type — drives product-class comparability. */
+  propertySubType: string | null
   yearBuilt: number | null
   garageSpaces: number | null
   photoUrl: string | null
@@ -55,6 +57,8 @@ export interface CmaComp {
   baths: number | null
   sqft: number
   lotAcres: number | null
+  /** MLS property_sub_type — drives product-class comparability. */
+  propertySubType: string | null
   yearBuilt: number | null
   photoUrl: string | null
   publicRemarks: string | null

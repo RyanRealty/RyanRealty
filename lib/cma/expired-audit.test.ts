@@ -127,6 +127,7 @@ describe('buildFailureFindings — ownership integration', () => {
     baths: 2,
     sqft: 1900,
     lotAcres: null,
+    propertySubType: null,
     yearBuilt: 1999,
     garageSpaces: null,
     photoUrl: null,

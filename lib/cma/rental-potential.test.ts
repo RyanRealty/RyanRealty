@@ -36,6 +36,7 @@ function subjectFixture(over: Partial<CmaSubject> = {}): CmaSubject {
     baths: 2,
     sqft: 1800,
     lotAcres: 0.17,
+    propertySubType: null,
     yearBuilt: 1998,
     garageSpaces: 2,
     photoUrl: null,
