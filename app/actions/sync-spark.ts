@@ -26,7 +26,13 @@ export type SyncDeltaResult = {
   error?: string
 }
 
-const SYNC_EXPAND = 'Photos,FloorPlans,Videos,VirtualTours,OpenHouses,Documents'
+/** v1 /listings expand, now including CustomFields (the Flexmls field
+ *  dictionary). The unified mapper flattens the public CF fields into details
+ *  and redactPublicDetails strips the confidential ones. Search plan Phase 1.2. */
+const SYNC_EXPAND = 'Photos,FloorPlans,Videos,VirtualTours,OpenHouses,Documents,CustomFields'
+/** RESO OData $expand. CustomFields is a Spark v1 concept with no OData
+ *  navigation property, so requesting it there would fail the request. */
+const ODATA_SYNC_EXPAND = 'Photos,FloorPlans,Videos,VirtualTours,OpenHouses,Documents'
 /** Upsert in small chunks to avoid Supabase statement timeout (large details JSON). */
 const UPSERT_CHUNK_SIZE = 12
 const UPSERT_CHUNK_SIZE_RETRY = 5
@@ -87,9 +93,13 @@ async function syncListingVideosForRows(
 // Local sparkHistoryItemToRow removed — using unifiedHistoryItemToRow from @/lib/listing-mapper
 const sparkHistoryItemToRow = unifiedHistoryItemToRow
 
-/** Wrap unified mapper to accept a Spark API result object (with StandardFields and Id). */
-function unifiedSparkToRow(result: { StandardFields?: Record<string, unknown>; Id?: string }): Record<string, unknown> {
-  return sparkToListingRow(result.StandardFields ?? {}, result.Id) as unknown as Record<string, unknown>
+/** Wrap unified mapper to accept a Spark API result object (with StandardFields, Id, and optional CustomFields). */
+function unifiedSparkToRow(result: {
+  StandardFields?: Record<string, unknown>
+  Id?: string
+  CustomFields?: unknown
+}): Record<string, unknown> {
+  return sparkToListingRow(result.StandardFields ?? {}, result.Id, result.CustomFields) as unknown as Record<string, unknown>
 }
 
 export type SyncSparkResult = {
@@ -350,7 +360,7 @@ export async function runOnePageActivePendingSync(state: {
         top: REFRESH_ACTIVE_PENDING_PAGE_SIZE,
         filter: ACTIVE_PENDING_ODATA_FILTER,
         // No $select — pull ALL available fields so details JSONB is complete
-        expand: SYNC_EXPAND, // Photos,FloorPlans,Videos,VirtualTours,OpenHouses,Documents
+        expand: ODATA_SYNC_EXPAND, // OData path (no CustomFields nav property)
         orderby: 'ModificationTimestamp asc',
       })
       const records = result.records
@@ -514,7 +524,7 @@ export async function syncSparkListingsActiveAndPending(): Promise<SyncActivePen
       top: REFRESH_ACTIVE_PENDING_PAGE_SIZE,
       filter: ACTIVE_PENDING_ODATA_FILTER,
       // No $select — pull ALL available fields so details JSONB is complete
-      expand: SYNC_EXPAND, // Photos,FloorPlans,Videos,VirtualTours,OpenHouses,Documents
+      expand: ODATA_SYNC_EXPAND, // OData path (no CustomFields nav property)
       orderby: 'ModificationTimestamp asc',
     })
 

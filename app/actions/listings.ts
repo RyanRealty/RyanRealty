@@ -15,6 +15,7 @@ import {
   getNeighborhoodListings as getNeighborhoodListingsDAL,
   getGeoSnapshot,
   searchListingsAll,
+  type SearchShapes,
   pickSearchFeatureFilters,
 } from '@/lib/data'
 import type { ListingTile, SearchFeatureFilters, SearchListingsAllFilter } from '@/lib/data'
@@ -565,6 +566,9 @@ export type AdvancedListingsFilters = Omit<ListingsFilters, 'sort'> & SearchFeat
    * which takes the boundary_neighborhood LABEL and covers Bend districts only.
    */
   neighborhoodSlug?: string
+  /** Drawn/named-area map shapes (include/exclude polygons + circles) —
+   *  resolved server-side in PostGIS; on-market MV path only. */
+  shapes?: SearchShapes
   maxBeds?: number
   maxBaths?: number
   maxSqFt?: number
@@ -979,6 +983,7 @@ function advancedToSearchAllFilter(
   const pt = options.propertyType?.trim()
   const postal = options.postalCode?.trim()
   return {
+    shapes: options.shapes,
     city: options.city?.trim() || undefined,
     cities:
       Array.isArray(options.cities) && options.cities.length > 0 ? options.cities : undefined,

@@ -4,6 +4,8 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useCallback, useState, useRef } from 'react'
 import { trackEvent } from '@/lib/tracking'
 import { fireFirstPartyEvent } from '@/components/VisitTracker'
+import { buildFilterApplyPayload } from '@/lib/search/search-events'
+import { fireSearchEvent } from '@/components/search/search-events.client'
 import {
   SearchSuggestPanel,
   flattenSuggestions,
@@ -262,6 +264,12 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
       }
       params.delete('page')
       router.push(`${pathname ?? '/homes-for-sale'}?${params.toString()}`, { scroll: false })
+      // Instrumentation (Phase 0.5): EVERY filter mutation routes through this
+      // one function — chip-bar dropdowns, the All-filters sheet apply, the
+      // location picker, chip removes. One URL mutation = one event; a
+      // view/sort-only update builds a null payload and fires nothing.
+      const payload = buildFilterApplyPayload(updates, params)
+      if (payload) fireSearchEvent('search_filter_apply', payload)
     },
     [router, pathname, searchParams]
   )

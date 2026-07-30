@@ -24,8 +24,30 @@ import { makeResilientCached } from '@/lib/data/cache/resilient'
 import type { ListingTile, ListingStatus } from '@/lib/data/types/listing'
 import { propertyTypeFilterToCodes } from '@/lib/property-type'
 import { SERVICE_AREA_CITIES_LOWER } from '@/lib/data/listings/service-area'
-import { SEARCH_FIELDS } from '@/lib/search/field-registry'
 import { PUBLIC_ACTIVE_STATUSES, PUBLIC_PENDING_STATUSES } from '@/lib/listing-status-public'
+import {
+  arrayLiteral,
+  ilikeExact,
+  BOOLEAN_PREDICATES,
+  BOOLEAN_FILTER_KEYS,
+  MULTI_FIELD_DEFS,
+  TEXT_FIELD_COLUMNS,
+  RANGE_FIELD_COLUMNS,
+} from '@/lib/data/listings/searchPredicates'
+import {
+  ShapesSchema,
+  mvRowToTile,
+  fetchSearchListingsAllInShapes,
+  countSearchListingsAllInShapes,
+  normalizeShapesForCacheKey,
+  type ListingSearchMvRow,
+  type SearchShapes,
+  type ShapeSearchDeps,
+} from '@/lib/data/listings/searchShapes'
+
+// Shape schemas/types + the shapes execution paths live in searchShapes.ts —
+// re-exported here so existing importers (lib/data/index.ts) keep working.
+export type { SearchShape, SearchShapes } from '@/lib/data/listings/searchShapes'
 
 // Coming Soon is excluded by policy — see lib/listing-status-public.ts.
 const ACTIVE_STATUSES: ListingStatus[] = PUBLIC_ACTIVE_STATUSES
@@ -75,6 +97,16 @@ const featureShape = {
   publicWater: bool(),
   onSeptic: bool(),
   publicSewer: bool(),
+  // CF tranche (2026-07-30) — promoted *_yn columns, MV v3 migration.
+  adu: bool(),
+  aduPermitted: bool(),
+  strPermit: bool(),
+  ccrs: bool(),
+  spa: bool(),
+  carport: bool(),
+  homeWarranty: bool(),
+  hasFloorPlan: bool(),
+  hasVideo: bool(),
   // Multi-selects (registry kind 'multi') — column + match mode resolve from
   // the registry def (matchMode 'all' -> contains, default -> overlaps,
   // singleColumnIn -> IN on the scalar column).
@@ -85,7 +117,6 @@ const featureShape = {
   interiorFeatures: multi(),
   exteriorFeatures: multi(),
   windowFeatures: multi(),
-  laundryFeatures: multi(),
   securityFeatures: multi(),
   parkingFeatures: multi(),
   patioPorch: multi(),
@@ -117,15 +148,43 @@ const featureShape = {
   poolFeatures: multi(),
   county: multi(),
   directionFaces: multi(),
-  // Text (registry kind 'text', schools) — case-insensitive exact match.
+  // CF tranche (2026-07-30) multis.
+  floodZone: multi(),
+  governmentOverlay: multi(),
+  easements: multi(),
+  roomsArr: multi(),
+  bodyType: multi(),
+  fencing: multi(),
+  // Text (registry kind 'text') — case-insensitive exact match.
   elementarySchool: text(),
   middleSchool: text(),
   highSchool: text(),
   schoolDistrict: text(),
+  zoning: text(),
+  irrigationDistrict: text(),
   // Max-only ranges (registry: min unused in the UI).
   hoaMonthlyMax: z.number().nonnegative().optional(),
   taxAnnualMax: z.number().nonnegative().optional(),
   monthlyPaymentMax: z.number().nonnegative().optional(),
+  // CF tranche (2026-07-30) Min/Max ranges (DAL-canonical `${key}Min`/`${key}Max`).
+  aduSqftMin: z.number().int().positive().optional().catch(undefined),
+  aduSqftMax: z.number().int().positive().optional().catch(undefined),
+  irrigationAcresMin: z.number().nonnegative().optional().catch(undefined),
+  irrigationAcresMax: z.number().nonnegative().optional().catch(undefined),
+  walkScoreMin: z.number().int().nonnegative().max(100).optional().catch(undefined),
+  walkScoreMax: z.number().int().nonnegative().max(100).optional().catch(undefined),
+  storiesTotalMin: z.number().int().nonnegative().optional().catch(undefined),
+  storiesTotalMax: z.number().int().nonnegative().optional().catch(undefined),
+  fireplacesTotalMin: z.number().int().nonnegative().optional().catch(undefined),
+  fireplacesTotalMax: z.number().int().nonnegative().optional().catch(undefined),
+  carportSpacesMin: z.number().int().nonnegative().optional().catch(undefined),
+  carportSpacesMax: z.number().int().nonnegative().optional().catch(undefined),
+  parkingTotalMin: z.number().int().nonnegative().optional().catch(undefined),
+  parkingTotalMax: z.number().int().nonnegative().optional().catch(undefined),
+  photosCountMin: z.number().int().nonnegative().optional().catch(undefined),
+  photosCountMax: z.number().int().nonnegative().optional().catch(undefined),
+  prevListPriceMin: z.number().positive().optional().catch(undefined),
+  prevListPriceMax: z.number().positive().optional().catch(undefined),
 } as const
 
 /**
@@ -177,6 +236,12 @@ const FilterSchema = z.object({
       north: z.number(),
     })
     .optional(),
+  /**
+   * Drawn map shapes (multi-shape include/exclude, polygons + circles).
+   * Resolved server-side via the search_listing_keys_in_shapes PostGIS RPC —
+   * see lib/data/listings/searchShapes.ts for the >1000-key policy.
+   */
+  shapes: ShapesSchema.optional(),
   /** Service-area guard — same default logic as getListingTiles. */
   scope: z.enum(['service-area', 'all']).optional(),
 
@@ -225,136 +290,29 @@ const FilterSchema = z.object({
 
 export type SearchListingsAllFilter = z.input<typeof FilterSchema>
 
+/** Parsed (post-zod) filter shape — consumed by the searchShapes module. */
+export type ParsedSearchListingsAllFilter = z.output<typeof FilterSchema>
+
 export type SearchListingsAllResult = {
   rows: ListingTile[]
   totalCount: number
   /** True when rows beyond this page exist (totalCount > offset + rows). */
   capped: boolean
+  /**
+   * False when totalCount may UNDER-report — only the in-memory shapes
+   * fallback can do that (its bbox overfetch is ceilinged at 1000 rows).
+   * Every other path counts exactly. Callers surfacing "N+" should key off
+   * this, not `capped`.
+   */
+  countIsExact: boolean
 }
 
-const EMPTY_RESULT: SearchListingsAllResult = { rows: [], totalCount: 0, capped: false }
+const EMPTY_RESULT: SearchListingsAllResult = { rows: [], totalCount: 0, capped: false, countIsExact: true }
 
-/**
- * PostgREST array literal with every element quoted — safe for values carrying
- * spaces, slashes, or parens ("RV Access/Parking", "Skylight(s)"). Braces,
- * quotes, and backslashes are stripped from elements: no registry vocabulary
- * uses them, so a URL-injected value simply matches nothing.
- */
-function arrayLiteral(values: readonly string[]): string {
-  return `{${values.map((v) => `"${v.replace(/[\\"{}]/g, '').trim()}"`).join(',')}}`
-}
-
-/** Strip ILIKE wildcards + escapes for exact case-insensitive matching. */
-function ilikeExact(value: string): string {
-  // * is a PostgREST wildcard (translated to %) — strip it along with SQL's.
-  return value.replace(/[%_*\\]/g, '').trim()
-}
-
-type BooleanFilterKey =
-  | 'hasFireplace' | 'hasPool' | 'hasWaterfront' | 'hasView' | 'hasGolfCourse'
-  | 'newConstruction' | 'basement' | 'horseProperty' | 'seniorCommunity' | 'noHoa'
-  | 'irrigationRights' | 'hasVirtualTour' | 'hasOpenHouse' | 'priceReduced'
-  | 'ownerWillCarry' | 'strAllowed' | 'gatedCommunity' | 'guestHouse' | 'shop'
-  | 'rvParking' | 'rvGarage' | 'evCharging' | 'heatedGarage' | 'singleLevel'
-  | 'primaryOnMain' | 'inLawFloorplan' | 'fencedYard' | 'onGolfCourse'
-  | 'adjoinsPublicLand' | 'onWell' | 'publicWater' | 'onSeptic' | 'publicSewer'
-
-type BooleanPredicate =
-  | { op: 'isTrue'; col: string }
-  /** col IS DISTINCT FROM true (noHoa). */
-  | { op: 'notTrue'; col: string }
-  | { op: 'eqValue'; col: string; value: string }
-  | { op: 'containsAll'; col: string; values: readonly string[] }
-  | { op: 'overlapsAny'; col: string; values: readonly string[] }
-  /** Multi-column OR in PostgREST syntax (contract "DAL expression" fields). */
-  | { op: 'orExpr'; expr: string }
-  /** view_types is a real non-empty view beyond bare 'Neighborhood'. */
-  | { op: 'hasView' }
-
-/** Boolean predicates, 1:1 with the contract's boolean table. */
-const BOOLEAN_PREDICATES: Record<BooleanFilterKey, BooleanPredicate> = {
-  hasFireplace: { op: 'isTrue', col: 'fireplace_yn' },
-  hasPool: { op: 'isTrue', col: 'pool_yn' },
-  hasWaterfront: { op: 'isTrue', col: 'waterfront_yn' },
-  hasView: { op: 'hasView' },
-  hasGolfCourse: {
-    op: 'orExpr',
-    expr: `view_types.cs.${arrayLiteral(['Golf Course'])},lot_features_arr.cs.${arrayLiteral(['On Golf Course'])}`,
-  },
-  newConstruction: { op: 'isTrue', col: 'new_construction_yn' },
-  basement: { op: 'isTrue', col: 'basement_yn' },
-  horseProperty: { op: 'isTrue', col: 'horse_yn' },
-  seniorCommunity: { op: 'isTrue', col: 'senior_community_yn' },
-  noHoa: { op: 'notTrue', col: 'association_yn' },
-  irrigationRights: { op: 'isTrue', col: 'irrigation_water_rights_yn' },
-  hasVirtualTour: { op: 'isTrue', col: 'has_virtual_tour' },
-  hasOpenHouse: { op: 'isTrue', col: 'has_open_house' },
-  priceReduced: { op: 'isTrue', col: 'price_reduced' },
-  ownerWillCarry: { op: 'containsAll', col: 'listing_terms', values: ['Owner Will Carry'] },
-  strAllowed: { op: 'containsAll', col: 'community_features', values: ['Short Term Rentals Allowed'] },
-  gatedCommunity: {
-    op: 'orExpr',
-    expr: `hoa_amenities.cs.${arrayLiteral(['Gated'])},parking_features.cs.${arrayLiteral(['Gated'])}`,
-  },
-  guestHouse: { op: 'containsAll', col: 'other_structures', values: ['Guest House'] },
-  shop: {
-    op: 'orExpr',
-    expr: `other_structures.cs.${arrayLiteral(['Workshop'])},parking_features.cs.${arrayLiteral(['Workshop in Garage'])}`,
-  },
-  rvParking: {
-    op: 'orExpr',
-    expr: `parking_features.ov.${arrayLiteral(['RV Access/Parking', 'RV Garage'])},other_structures.cs.${arrayLiteral(['RV/Boat Storage'])}`,
-  },
-  rvGarage: { op: 'containsAll', col: 'parking_features', values: ['RV Garage'] },
-  evCharging: { op: 'containsAll', col: 'parking_features', values: ['Electric Vehicle Charging Station(s)'] },
-  heatedGarage: { op: 'containsAll', col: 'parking_features', values: ['Heated Garage'] },
-  singleLevel: { op: 'eqValue', col: 'levels', value: 'One' },
-  primaryOnMain: { op: 'containsAll', col: 'interior_features', values: ['Primary Downstairs'] },
-  inLawFloorplan: { op: 'containsAll', col: 'interior_features', values: ['In-Law Floorplan'] },
-  fencedYard: { op: 'containsAll', col: 'lot_features_arr', values: ['Fenced'] },
-  onGolfCourse: { op: 'containsAll', col: 'lot_features_arr', values: ['On Golf Course'] },
-  adjoinsPublicLand: {
-    op: 'orExpr',
-    expr: `lot_features_arr.cs.${arrayLiteral(['Adjoins Public Lands'])},community_features.cs.${arrayLiteral(['Access to Public Lands'])}`,
-  },
-  onWell: { op: 'overlapsAny', col: 'water_source', values: ['Well', 'Shared Well'] },
-  publicWater: { op: 'containsAll', col: 'water_source', values: ['Public'] },
-  onSeptic: {
-    op: 'overlapsAny',
-    col: 'sewer_types',
-    values: [
-      'Septic Tank',
-      'Standard Leach Field',
-      'Sand Filter',
-      'Alternative Treatment Tech System',
-      'Holding Tank',
-      'Capping Fill',
-    ],
-  },
-  publicSewer: { op: 'containsAll', col: 'sewer_types', values: ['Public Sewer'] },
-}
-
-const BOOLEAN_FILTER_KEYS = Object.keys(BOOLEAN_PREDICATES) as BooleanFilterKey[]
-
-/** Registry multi defs, resolved once at module load. */
-const MULTI_FIELD_DEFS = SEARCH_FIELDS.filter((def) => def.kind === 'multi')
-
-const SCHOOL_TEXT_COLUMNS: Record<string, string> = {
-  elementarySchool: 'elementary_school',
-  middleSchool: 'middle_school',
-  highSchool: 'high_school',
-  schoolDistrict: 'school_district',
-}
-
-/** Range predicates: filter key -> MV column (gte on Min, lte on Max). */
-const RANGE_COLUMNS = {
-  price: 'list_price',
-  sqft: 'sqft',
-  lotAcres: 'lot_size_acres',
-  yearBuilt: 'year_built',
-  beds: 'beds',
-  baths: 'baths',
-} as const
+// The predicate tables (BOOLEAN_PREDICATES, the registry-derived multi/text/
+// range column maps) and the PostgREST literal escapers live in
+// lib/data/listings/searchPredicates.ts — extracted 2026-07-30 (file-size
+// budget), imported above.
 
 /**
  * Structural view of the chainable PostgREST filter methods (same pattern as
@@ -386,7 +344,8 @@ function applySearchFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>
       (parsed.subdivisions && parsed.subdivisions.length > 0) ||
       parsed.postalCode ||
       parsed.neighborhood ||
-      parsed.bbox
+      parsed.bbox ||
+      parsed.shapes
   )
   const applyServiceArea =
     parsed.scope === 'service-area' || (parsed.scope !== 'all' && !hasExplicitGeo)
@@ -440,23 +399,15 @@ function applySearchFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>
     if (sub) query = query.ilike('property_sub_type', `*${sub}*`)
   }
 
-  // ── Ranges ────────────────────────────────────────────────────────────────
-  for (const [key, col] of Object.entries(RANGE_COLUMNS)) {
+  // ── Ranges (every registry range field: gte `${key}Min`, lte `${key}Max`;
+  // one-sided legacy fields — garageMin, domMax, hoaMonthlyMax, taxAnnualMax,
+  // monthlyPaymentMax — resolve here too, their missing side has no schema
+  // key and is skipped) ─────────────────────────────────────────────────────
+  for (const [key, col] of Object.entries(RANGE_FIELD_COLUMNS)) {
     const min = record[`${key}Min`]
     const max = record[`${key}Max`]
     if (typeof min === 'number' && min > 0) query = query.gte(col, min)
     if (typeof max === 'number' && max > 0) query = query.lte(col, max)
-  }
-  if (parsed.garageMin) query = query.gte('garage_spaces', parsed.garageMin)
-  if (parsed.domMax) query = query.lte('dom', parsed.domMax)
-  if (parsed.hoaMonthlyMax != null && parsed.hoaMonthlyMax > 0) {
-    query = query.lte('hoa_monthly', parsed.hoaMonthlyMax)
-  }
-  if (parsed.taxAnnualMax != null && parsed.taxAnnualMax > 0) {
-    query = query.lte('tax_annual_amount', parsed.taxAnnualMax)
-  }
-  if (parsed.monthlyPaymentMax != null && parsed.monthlyPaymentMax > 0) {
-    query = query.lte('estimated_monthly_piti', parsed.monthlyPaymentMax)
   }
 
   // ── Booleans ──────────────────────────────────────────────────────────────
@@ -506,8 +457,8 @@ function applySearchFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>
     }
   }
 
-  // ── School text fields (case-insensitive exact) ───────────────────────────
-  for (const [key, col] of Object.entries(SCHOOL_TEXT_COLUMNS)) {
+  // ── Text fields (schools, zoning, irrigation district — ci exact) ─────────
+  for (const [key, col] of Object.entries(TEXT_FIELD_COLUMNS)) {
     const raw = record[key]
     if (typeof raw !== 'string') continue
     const value = ilikeExact(raw)
@@ -564,90 +515,10 @@ function applySort<T>(builder: T, sort: z.output<typeof FilterSchema>['sort']): 
   return sorted as unknown as T
 }
 
-/** MV row shape — listing_search_mv carries every listing_tile_mv column. */
-type ListingSearchMvRow = {
-  listing_key: string
-  list_number: string | null
-  standard_status: ListingStatus
-  list_price: number | null
-  close_price: number | null
-  close_date: string | null
-  beds: number | null
-  baths: number | null
-  sqft: number | null
-  street_number: string | null
-  street_name: string | null
-  street_suffix: string | null
-  city: string | null
-  postal_code: string | null
-  subdivision_name: string | null
-  lat: number | null
-  lng: number | null
-  photo_url: string | null
-  property_type: string | null
-  property_sub_type: string | null
-  on_market_date: string | null
-  modified_at: string | null
-  price_per_sqft: number | null
-  lot_size_acres: number | null
-  year_built: number | null
-  garage_spaces: number | null
-  pool_yn: boolean | null
-  has_virtual_tour: boolean | null
-  dom: number | null
-  price_drop_count: number | null
-  address_slug: string | null
-  boundary_city: string | null
-  boundary_neighborhood: string | null
-  boundary_subdivision: string | null
-}
-
-function mvRowToTile(row: ListingSearchMvRow): ListingTile {
-  const citySlug = row.city ? row.city.toLowerCase().replace(/\s+/g, '-') : null
-  const subdivisionSlug = row.subdivision_name
-    ? row.subdivision_name.toLowerCase().replace(/\s+/g, '-')
-    : null
-  return {
-    listingKey: row.listing_key,
-    listNumber: row.list_number,
-    status: row.standard_status,
-    listPrice: row.list_price,
-    closePrice: row.close_price,
-    closeDate: row.close_date,
-    beds: row.beds,
-    baths: row.baths,
-    sqft: row.sqft,
-    streetNumber: row.street_number,
-    streetName: row.street_name,
-    streetSuffix: row.street_suffix ?? null,
-    city: row.city,
-    citySlug,
-    postalCode: row.postal_code,
-    subdivisionName: row.subdivision_name,
-    subdivisionSlug,
-    lat: row.lat,
-    lng: row.lng,
-    photoUrl: row.photo_url,
-    propertyType: row.property_type,
-    propertySubType: row.property_sub_type,
-    onMarketDate: row.on_market_date,
-    modifiedAt: row.modified_at,
-    pricePerSqft: row.price_per_sqft,
-    lotSizeAcres: row.lot_size_acres,
-    yearBuilt: row.year_built,
-    garageSpaces: row.garage_spaces,
-    poolYn: row.pool_yn,
-    hasVirtualTour: row.has_virtual_tour,
-    // listing_search_mv carries has_virtual_tour only; the scalar URL stays a
-    // detail-page concern.
-    tourUrl: null,
-    dom: row.dom,
-    priceDropCount: row.price_drop_count,
-    addressSlug: row.address_slug,
-    boundaryCity: row.boundary_city,
-    boundaryNeighborhood: row.boundary_neighborhood,
-    boundarySubdivision: row.boundary_subdivision,
-  }
+/** Query-core callbacks handed to the searchShapes execution paths. */
+const shapeSearchDeps: ShapeSearchDeps = {
+  applyFilters: applySearchFilters,
+  applySort,
 }
 
 async function fetchSearchListingsAll(
@@ -655,6 +526,9 @@ async function fetchSearchListingsAll(
 ): Promise<SearchListingsAllResult> {
   const supabase = supabaseAnon()
   if (!supabase) return EMPTY_RESULT
+
+  // Shapes get their own execution path (RPC key resolution + chunked .in()).
+  if (parsed.shapes) return fetchSearchListingsAllInShapes(supabase, parsed, shapeSearchDeps)
 
   // Rows + exact total in ONE query (count: 'exact' rides the row fetch).
   let query = applySearchFilters(
@@ -678,6 +552,7 @@ async function fetchSearchListingsAll(
     rows,
     totalCount,
     capped: totalCount > parsed.offset + rows.length,
+    countIsExact: true,
   }
 }
 
@@ -704,6 +579,8 @@ function stableCacheKey(parsed: Record<string, unknown>): string {
         east: Math.round(b.east * 1e4) / 1e4,
         north: Math.round(b.north * 1e4) / 1e4,
       }
+    } else if (k === 'shapes' && v && typeof v === 'object') {
+      norm.shapes = normalizeShapesForCacheKey(v as SearchShapes)
     } else if (Array.isArray(v)) {
       norm[k] = [...v].sort()
     } else {
@@ -730,6 +607,11 @@ export const searchListingsAll = (filter: SearchListingsAllFilter): Promise<Sear
 async function fetchSearchListingsAllCount(parsed: z.output<typeof FilterSchema>): Promise<number> {
   const supabase = supabaseAnon()
   if (!supabase) return 0
+
+  // Shapes: resolve the key set, then sum per-chunk head counts (disjoint key
+  // chunks → the sum is exact). Same fallback policy as the row path.
+  if (parsed.shapes) return countSearchListingsAllInShapes(supabase, parsed, shapeSearchDeps)
+
   const query = applySearchFilters(
     supabase.from('listing_search_mv').select('listing_key', { count: 'exact', head: true }),
     parsed
@@ -760,3 +642,9 @@ export const searchListingsAllCount = (filter: SearchListingsAllFilter): Promise
     0,
   )()
 }
+
+/**
+ * Internal exports for unit tests ONLY (shapes schema validation + cache-key
+ * stability). Product code imports searchListingsAll / searchListingsAllCount.
+ */
+export { FilterSchema as SearchListingsAllFilterSchema, stableCacheKey as searchListingsAllCacheKey }

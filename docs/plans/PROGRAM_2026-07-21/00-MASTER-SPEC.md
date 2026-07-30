@@ -42,7 +42,7 @@ The audits corrected a lot of pessimism. Credit where it is earned:
 - **The sitemap already emits thousands of programmatic URLs** — every active listing, city-by-preset filters, subdivision pages, price-drop and motivated-seller facets.
 - **FSBO detection runs daily and works**: Apify Zillow scrape, skip trace, native CRM lead, queued CMA, audit row. Its outbound SMS has a rigorous TCPA and suppression pipeline.
 - **CMA and BPO are genuinely built**, with five real send surfaces and a working adversarial audit pattern in `lib/cma/audit.ts` that the rest of the program will copy.
-- **Search and map are strong at the core**: Google Maps clustering, polygon draw with server-side point-in-polygon, an 89-field URL registry, hourly alert cron.
+- **Search and map are strong at the core**: Google Maps clustering, polygon draw with server-side point-in-polygon, an 87-field URL registry (counted from `lib/search/field-registry.ts` 2026-07-29; earlier docs said 89, the registry never held more than 88, and the dead zero-option `laundryFeatures` field was removed), hourly alert cron.
 - **The CRM has real mobile engineering**, one nav shell, one nav source, a working Twilio send path, and reworked composers.
 - **The gate substrate works and is trusted.** 125 gates enforced in CI and in a pre-push hook. This is the lever the whole program pulls.
 

@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-26T13:48:57.891Z",
-  "total": 317,
+  "generatedAt": "2026-07-30T07:00:47.470Z",
+  "total": 315,
   "byFile": {
     "app/actions/auto-response.ts": 3,
     "app/admin/(protected)/analytics/_components/CityReportSection.tsx": 3,
@@ -227,5 +227,5 @@
     "components/tc/pdf-sign/SignaturePad.tsx": 4,
     "components/tc/pdf-sign/pdf-pages.tsx": 1
   },
-  "note": "Pre-existing design-token debt, grandfathered by the G26 ratchet (scripts/lint-design-tokens.js --ratchet). Total must monotonically DECREASE toward 0 \u2014 never add to it. New debt fails CI. Regenerate after cleaning a file with: npm run ci:design-tokens -- --write-baseline."
+  "note": "Pre-existing design-token debt, grandfathered by the G26 ratchet (scripts/lint-design-tokens.js --ratchet). Total must monotonically DECREASE toward 0 — never add to it. New debt fails CI. Regenerate after cleaning a file with: npm run ci:design-tokens -- --write-baseline."
 }

@@ -38,7 +38,8 @@ export default async function SavedSearchesPage() {
           <div className="min-w-0">
             <h2 className="text-lg font-semibold tracking-tight text-foreground">Your searches</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              Pause or resume alerts, change how often we email, rename, or remove a search.
+              Pause or resume alerts, choose what to watch and how often we email, share an alert
+              with your household, rename, or remove a search.
             </p>
           </div>
         </div>

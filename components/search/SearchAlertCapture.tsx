@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { getFiltersSummary } from '@/lib/search-filters'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
+import { buildAlertCreatePayload } from '@/lib/search/search-events'
+import { fireSearchEvent } from '@/components/search/search-events.client'
 
 /**
  * Inline guest-email "get listing alerts for this search" capture, shown to
@@ -170,6 +172,10 @@ export function SearchAlertCapture({
       const res = await submitSearchAlertSignup({ email, filters, company })
       if (res.ok) {
         setState('done')
+        // alert_create (Phase 0.5). 'daily' is the notification_frequency the
+        // guest_search_alerts row is written with (column default — the guest
+        // capture offers no cadence picker). Fire-and-forget on SUCCESS only.
+        fireSearchEvent('alert_create', buildAlertCreatePayload('daily'))
       } else {
         setState('error')
         setError(res.error)

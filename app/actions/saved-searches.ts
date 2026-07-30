@@ -28,6 +28,11 @@ import {
   normalizeSavedSearchFrequency,
   type SavedSearchFrequency,
 } from '@/lib/saved-search-frequency'
+import { normalizeScheduleDays } from '@/lib/saved-search-cadence'
+import {
+  normalizeEventToggles,
+  type AlertEventToggles,
+} from '@/lib/alerts/event-detection'
 
 /**
  * Signed-in saved-search (listing-alert) self-management.
@@ -62,6 +67,12 @@ export type SavedSearchRow = {
   is_paused: boolean
   /** instant | daily | weekly — the cadence the alert cron honors. */
   notification_frequency: SavedSearchCadence
+  /** Typed-event toggle map (normalized — always all six keys). */
+  events: AlertEventToggles
+  /** Weekly per-day schedule, 0=Sunday..6=Saturday. Null = no restriction. */
+  schedule_days: number[] | null
+  /** Household recipients (tokens deliberately NOT exposed to the client). */
+  recipients: Array<{ email: string; name: string | null }>
 }
 
 export type PublicSearchRow = {
@@ -96,6 +107,11 @@ export async function getSavedSearches(): Promise<SavedSearchRow[]> {
     public_click_count: null,
     is_paused: row.is_active === false,
     notification_frequency: validateCadence(row.notification_frequency) ?? 'daily',
+    events: normalizeEventToggles(row.events),
+    schedule_days: normalizeScheduleDays(row.schedule_days),
+    recipients: (Array.isArray(row.recipients) ? row.recipients : [])
+      .filter((r) => typeof r?.email === 'string' && r.email.trim().length > 0)
+      .map((r) => ({ email: r.email.trim().toLowerCase(), name: r.name?.trim() || null })),
   }))
 }
 

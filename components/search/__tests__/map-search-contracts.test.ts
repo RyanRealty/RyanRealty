@@ -310,8 +310,8 @@ describe('geo scope drops on user map move (W4.2, 2026-07-22)', () => {
     expect(src).toMatch(/Showing <span className="font-semibold">\{scopeLabel\}<\/span> only/)
   })
 
-  it('a new SSR payload (URL filter change) re-establishes the scope', () => {
-    expect(src).toMatch(/scopeDroppedRef\.current = false\n\s+setScopeDropped\(false\)/)
+  it('a new SSR payload (URL filter change) re-establishes the scope unless ?poly= holds it dropped', () => {
+    expect(src).toMatch(/scopeDroppedRef\.current = initialPolygon != null\n\s+setScopeDropped\(initialPolygon != null\)/)
   })
 
   it('the beyond-viewport count query drops the geo pin in lockstep', () => {
@@ -329,6 +329,79 @@ describe('geo scope drops on user map move (W4.2, 2026-07-22)', () => {
     // estimate query.
     expect(src).toMatch(/tabular-nums lg:hidden/)
     expect(src).toMatch(/const countLabel = capped \? `\$\{totalCount\.toLocaleString\(\)\}\+` : totalCount\.toLocaleString\(\)/)
+  })
+})
+
+describe('multi-shape draw tools (Phase 2 items 1+3, 2026-07-29)', () => {
+  // Real draw tools on the map: radius circle with a LIVE mile readout,
+  // rectangle, freeform polygon — N shapes per search, each include/exclude,
+  // resolved by the server-side PostGIS shapes contract and round-tripped
+  // through ?shapes= (legacy ?poly= reads forever). Pinned at the source level
+  // per "gates not prose".
+  const codec = readSrc('lib/map-polygon.ts')
+  const search = readSrc('app/actions/search.ts')
+  const view = readSrc('components/search/MapSearchView.tsx')
+  const mapSrc = readSrc('components/SearchMapClustered.tsx')
+  const tools = readSrc('components/search/MapDrawTools.tsx')
+  const page = readSrc('app/search/page.tsx')
+
+  it('the URL codec covers multi-shape sets and keeps the legacy ?poly= reader', () => {
+    expect(codec).toMatch(/export function encodeMapShapes/)
+    expect(codec).toMatch(/export function decodeMapShapes/)
+    expect(codec).toMatch(/export function buildShapeSetForSearch/)
+    // decodeMapPolygon is the read-forever legacy contract.
+    expect(codec).toMatch(/export function decodeMapPolygon/)
+  })
+
+  it('getViewportSearch accepts the include/exclude shape set and feeds the PostGIS shapes contract', () => {
+    expect(search).toMatch(/polygon: MapPolygonPoint\[\] \| MapShapeSet \| null/)
+    expect(search).toMatch(/\.\.\.\(shapesParam \? \{ shapes: shapesParam \} : \{\}\)/)
+    // Untrusted client shapes are sanitized, never thrown through the zod gate.
+    expect(search).toMatch(/function sanitizeShapeSet/)
+  })
+
+  it('MapSearchView owns the shape set: ?shapes= sync + legacy ?poly= mirror + fetch wiring', () => {
+    expect(view).toMatch(/params\.set\('shapes', encoded\)/)
+    expect(view).toMatch(/params\.set\('poly', polyEncoded\)/)
+    expect(view).toMatch(/buildShapeSetForSearch\(shapes, bounds\)/)
+    expect(view).toMatch(/onShapesChange=\{handleShapesChange\}/)
+    expect(view).toMatch(/shapes=\{drawnShapes\}/)
+  })
+
+  it('SearchMapClustered keeps the legacy single-polygon API for other callers while hosting the new tools', () => {
+    expect(mapSrc).toMatch(/onPolygonDrawn\?:/)
+    expect(mapSrc).toMatch(/onShapesChange\?:/)
+    expect(mapSrc).toMatch(/<MapDrawTools/)
+    // Legacy draw UI only renders when the multi-shape tools are NOT active.
+    expect(mapSrc).toMatch(/onPolygonDrawn && !multiShape/)
+  })
+
+  it('circle draw shows a LIVE radius readout in miles while dragging (Flexmls parity)', () => {
+    expect(tools).toMatch(/export function formatRadiusMiles/)
+    expect(tools).toMatch(/1609\.344/)
+    expect(tools).toMatch(/haversineMeters\(drag\.start, drag\.current\)/)
+    expect(tools).toMatch(/formatRadiusMiles\(dragRadiusM\)/)
+    // A zero-radius click is rejected with a clear error (plan spec).
+    expect(tools).toMatch(/MIN_CIRCLE_RADIUS_M/)
+  })
+
+  it('every drawn shape gets a floating pill with name, exclude toggle, and remove', () => {
+    expect(tools).toMatch(/`Area \$\{i \+ 1\}`/)
+    expect(tools).toMatch(/toggleExclude\(i\)/)
+    expect(tools).toMatch(/removeShape\(i\)/)
+    // Excluded shapes render visually distinct (red-tinted overlay).
+    expect(tools).toMatch(/EXCLUDE_RED/)
+  })
+
+  it('a rectangle drag commits as a 4-point polygon (one shapes contract, no special server case)', () => {
+    expect(tools).toMatch(/\{ lat: start\.lat, lng: last\.lng \}/)
+    expect(tools).toMatch(/\{ lat: last\.lat, lng: start\.lng \}/)
+  })
+
+  it('the page hydrates ?shapes= with the legacy ?poly= fallback', () => {
+    expect(page).toMatch(/decodeMapShapes\(sp\.shapes\)/)
+    expect(page).toMatch(/decodeMapPolygon\(sp\.poly\)/)
+    expect(page).toMatch(/initialShapes=\{initialShapes\}/)
   })
 })
 
@@ -372,8 +445,11 @@ describe('slug search page: guest save + reachable map-move (2026-06-09)', () =>
     expect(slug).toMatch(/defaultFilters=\{guestAlertFilters\}/)
   })
 
-  it('keeps the signed-in save-search button', () => {
-    expect(slug).toMatch(/<SaveSearchButton user=\{!!session\?\.user\}/)
+  it('keeps the signed-in save-search button (now inside the shared SearchFilterBar)', () => {
+    expect(slug).toMatch(/<SearchFilterBar/)
+    expect(slug).toMatch(/signedIn=\{!!session\?\.user\}/)
+    const bar = readFileSync(resolve(__dirname, '../../SearchFilterBar.tsx'), 'utf8')
+    expect(bar).toMatch(/<SaveSearchButton user=\{!!props\.signedIn\} pathContext=\{props\.pathContext\}/)
   })
 
   it('hands the save-search button SERVER-RESOLVED geography, not the raw pathname', () => {

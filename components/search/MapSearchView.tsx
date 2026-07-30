@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
@@ -9,7 +9,15 @@ import type { ListingTileRow, MapBounds } from '@/app/actions/listings'
 import { countSearchListings, getViewportSearch, type SearchFilters } from '@/app/actions/search'
 import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
 import type { ListingForMap } from '@/components/SearchMapClustered'
-import type { MapPolygonPoint } from '@/lib/map-polygon'
+import {
+  buildShapeSetForSearch,
+  encodeMapPolygon,
+  encodeMapShapes,
+  type DrawnShape,
+  type MapPolygonPoint,
+} from '@/lib/map-polygon'
+import { buildMapDrawPayload, buildZeroResultsPayload } from '@/lib/search/search-events'
+import { fireSearchEvent } from '@/components/search/search-events.client'
 import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registry'
 import { GEO_SCOPE_KEYS, geoScopeLabel, stripGeoScope } from '@/components/search/geo-scope'
 import { listingDetailPath, displaySubdivision } from '@/lib/slug'
@@ -227,6 +235,8 @@ export type MapSearchViewProps = {
   placeQuery: string
   boundaryGeojson?: unknown
   initialPolygon?: MapPolygonPoint[] | null
+  /** Multi-shape draw set from ?shapes= (falls back to ?poly= via initialPolygon). */
+  initialShapes?: DrawnShape[] | null
   /** Server-computed request timestamp (ms) for the card "New" badge — see
    *  cardBadge()'s comment for why this isn't read client-side. */
   nowMs?: number
@@ -242,9 +252,22 @@ export default function MapSearchView({
   likedListingKeys,
   placeQuery,
   boundaryGeojson,
-  initialPolygon = null,
+  initialPolygon: initialPolygonProp = null,
+  initialShapes = null,
   nowMs,
 }: MapSearchViewProps) {
+  // One initial shape set, whichever URL spelling delivered it: ?shapes=
+  // (multi-shape) wins; a legacy ?poly= ring arrives as a single include
+  // polygon. `initialPolygon` keeps its historical meaning for the scope-drop
+  // + re-seed logic: non-null exactly when the URL carried ANY include shape.
+  const initialDrawn = useMemo<DrawnShape[]>(() => {
+    if (initialShapes && initialShapes.length > 0) return initialShapes
+    if (initialPolygonProp && initialPolygonProp.length >= 3) {
+      return [{ type: 'polygon', points: initialPolygonProp, exclude: false }]
+    }
+    return []
+  }, [initialShapes, initialPolygonProp])
+  const initialPolygon = initialDrawn.some((s) => !s.exclude) ? initialDrawn : null
   const [listings, setListings] = useState(initialListings)
   const [totalCount, setTotalCount] = useState(initialTotalCount)
   const [capped, setCapped] = useState(initialCapped)
@@ -257,7 +280,7 @@ export default function MapSearchView({
   const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set())
   const [searchAsMove, setSearchAsMove] = useState(true)
   const [hoveredKey, setHoveredKey] = useState<string | null>(null)
-  const [polygon, setPolygon] = useState<MapPolygonPoint[] | null>(initialPolygon)
+  const [drawnShapes, setDrawnShapes] = useState<DrawnShape[]>(initialDrawn)
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
   // Window the CARD list so the SSR payload + hydration cost stays small even
   // when the viewport returns hundreds of homes. The MAP still gets every pin
@@ -285,11 +308,16 @@ export default function MapSearchView({
     () => geoScopeLabel({ city: filters.city, subdivision: filters.subdivision, postalCode: filters.postalCode }),
     [filters.city, filters.subdivision, filters.postalCode]
   )
-  const [scopeDropped, setScopeDropped] = useState(false)
+  // A URL that arrives with ?poly= encodes a search whose place pin was
+  // ALREADY superseded by the drawn shape (drawing calls dropGeoScope, and the
+  // server strips the geo scope from the initial viewport fetch when poly is
+  // present) — so the scope starts dropped and the chip stays hidden. That is
+  // what makes reload/share reproduce the exact post-draw state.
+  const [scopeDropped, setScopeDropped] = useState(initialPolygon != null)
   // Refs mirror the state so the debounced viewport fetch (350 ms setTimeout)
   // reads the CURRENT scope decision at fire time, not the closure it was
   // created with — a pan that drops the scope must not race its own refetch.
-  const scopeDroppedRef = useRef(false)
+  const scopeDroppedRef = useRef(initialPolygon != null)
   const searchFiltersRef = useRef(searchFilters)
   useEffect(() => {
     searchFiltersRef.current = searchFilters
@@ -308,6 +336,10 @@ export default function MapSearchView({
   }, [])
   const router = useRouter()
   const pathname = usePathname()
+  const urlSearchParams = useSearchParams()
+  // Once-per-distinct-query guard for search_zero_results — a pan across the
+  // same empty search must not re-fire; a CHANGED query that dead-ends must.
+  const zeroResultsFiredKeyRef = useRef<string | null>(null)
   // Zero results can come from tight filters, not just the map viewport — the
   // empty state names the likely cause and offers the same reset as "Clear all".
   // Registry params (fireplace, shop, well water, …) count as narrowing too;
@@ -326,8 +358,9 @@ export default function MapSearchView({
   // when the matches are simply outside the current map (rural listings around
   // a city are the common case).
   const [beyondViewportCount, setBeyondViewportCount] = useState<number | null>(null)
+  const hasDrawnShapes = drawnShapes.length > 0
   useEffect(() => {
-    if (totalCount !== 0 || !hasNarrowingFilters || polygon) {
+    if (totalCount !== 0 || !hasNarrowingFilters || hasDrawnShapes) {
       setBeyondViewportCount(null)
       return
     }
@@ -350,7 +383,7 @@ export default function MapSearchView({
     return () => {
       cancelled = true
     }
-  }, [totalCount, hasNarrowingFilters, polygon, scopeDropped, filtersSnapshot]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [totalCount, hasNarrowingFilters, hasDrawnShapes, scopeDropped, filtersSnapshot]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-seed from server props whenever the URL filters change (new SSR payload).
   // The SSR payload is scoped again, so the scope-drop resets with it — the
@@ -359,11 +392,11 @@ export default function MapSearchView({
     setListings(initialListings)
     setTotalCount(initialTotalCount)
     setCapped(initialCapped)
-    setPolygon(initialPolygon)
+    setDrawnShapes(initialDrawn)
     setVisibleCount(CARD_PAGE)
-    scopeDroppedRef.current = false
-    setScopeDropped(false)
-  }, [initialListings, initialTotalCount, initialCapped, initialPolygon, filtersSnapshot])
+    scopeDroppedRef.current = initialPolygon != null
+    setScopeDropped(initialPolygon != null)
+  }, [initialListings, initialTotalCount, initialCapped, initialDrawn, filtersSnapshot]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Clean up any pending debounce on unmount.
   useEffect(() => {
@@ -373,7 +406,7 @@ export default function MapSearchView({
   }, [])
 
   const runViewportSearch = useCallback(
-    async (bounds: MapBounds, poly: MapPolygonPoint[] | null) => {
+    async (bounds: MapBounds, shapes: DrawnShape[]) => {
       const reqId = ++reqIdRef.current
       setLoading(true)
       try {
@@ -383,12 +416,27 @@ export default function MapSearchView({
         // bounding-box — no invisible city/subdivision/zip pin.
         const base = searchFiltersRef.current
         const effectiveFilters = scopeDroppedRef.current ? stripGeoScope(base) : base
+        // The drawn set becomes the server's include/exclude shapes contract
+        // (PostGIS). Exclude-only sets ride the current viewport as the
+        // include ring — "this view minus those areas".
+        const poly = buildShapeSetForSearch(shapes, bounds)
         const res = await getViewportSearch(effectiveFilters, bounds, poly)
         // Ignore out-of-order responses (user kept panning).
         if (reqId !== reqIdRef.current) return
         setListings(res.listings)
         setTotalCount(res.totalCount)
         setCapped(res.capped)
+        // Instrumentation (Phase 0.5): a search round-trip that dead-ends at 0
+        // homes, keyed by the live query string so repeated pans over the same
+        // empty search fire once. Fire-and-forget — never touches the fetch.
+        if (res.totalCount === 0 && typeof window !== 'undefined') {
+          const payload = buildZeroResultsPayload(window.location.search)
+          const key = JSON.stringify(payload)
+          if (zeroResultsFiredKeyRef.current !== key) {
+            zeroResultsFiredKeyRef.current = key
+            fireSearchEvent('search_zero_results', payload)
+          }
+        }
       } finally {
         if (reqId === reqIdRef.current) setLoading(false)
       }
@@ -405,8 +453,8 @@ export default function MapSearchView({
 
   const clearGeoScope = useCallback(() => {
     dropGeoScope()
-    runViewportSearch(lastBoundsRef.current, polygon)
-  }, [dropGeoScope, polygon, runViewportSearch])
+    runViewportSearch(lastBoundsRef.current, drawnShapes)
+  }, [dropGeoScope, drawnShapes, runViewportSearch])
 
   const handleBoundsChanged = useCallback(
     (bounds: MapBounds) => {
@@ -423,31 +471,70 @@ export default function MapSearchView({
       if (!searchAsMove) return
       if (debounceRef.current) clearTimeout(debounceRef.current)
       debounceRef.current = setTimeout(() => {
-        runViewportSearch(bounds, polygon)
+        runViewportSearch(bounds, drawnShapes)
       }, 350)
     },
-    [searchAsMove, polygon, runViewportSearch, dropGeoScope]
+    [searchAsMove, drawnShapes, runViewportSearch, dropGeoScope]
   )
 
-  const handlePolygonDrawn = useCallback(
-    (poly: MapPolygonPoint[] | null) => {
-      // A user-drawn area is an explicit spatial choice — it supersedes the
-      // URL's place pin the same way a pan does.
-      if (poly) dropGeoScope()
-      setPolygon(poly)
-      runViewportSearch(lastBoundsRef.current, poly)
+  /** Reflect the drawn shape set into the URL so reload/share reproduce it.
+   *  `?shapes=` carries the full multi-shape set; a plain single freeform
+   *  include polygon ALSO mirrors into legacy `?poly=` (same encoding as the
+   *  SEO route) so every existing ?poly= consumer keeps working. Clearing
+   *  removes both params. */
+  const syncShapesToUrl = useCallback(
+    (shapes: DrawnShape[]) => {
+      const params = new URLSearchParams(urlSearchParams?.toString() ?? '')
+      const encoded = encodeMapShapes(shapes)
+      if (encoded) params.set('shapes', encoded)
+      else params.delete('shapes')
+      const single =
+        shapes.length === 1 && shapes[0].type === 'polygon' && !shapes[0].exclude ? shapes[0] : null
+      const polyEncoded = single ? encodeMapPolygon(single.points) : undefined
+      if (polyEncoded) params.set('poly', polyEncoded)
+      else params.delete('poly')
+      params.delete('page')
+      const query = params.toString()
+      const base = pathname ?? '/homes-for-sale'
+      router.replace(query ? `${base}?${query}` : base, { scroll: false })
     },
-    [runViewportSearch, dropGeoScope]
+    [router, pathname, urlSearchParams]
+  )
+
+  // Instrumentation guard: fire search_map_draw only when a shape was ADDED
+  // (not on exclude toggles / removals), with the polygon's vertex count.
+  const prevShapeCountRef = useRef(initialDrawn.length)
+
+  const handleShapesChange = useCallback(
+    (shapes: DrawnShape[]) => {
+      // A user-drawn include area is an explicit spatial choice — it
+      // supersedes the URL's place pin the same way a pan does.
+      const poly = shapes.some((s) => !s.exclude) ? shapes : null
+      if (poly) dropGeoScope()
+      setDrawnShapes(shapes)
+      syncShapesToUrl(shapes)
+      if (shapes.length > prevShapeCountRef.current) {
+        const latest = shapes[shapes.length - 1]
+        if (latest.type === 'polygon') {
+          fireSearchEvent('search_map_draw', buildMapDrawPayload(latest.points.length))
+        } else if (latest.type === 'circle') {
+          fireSearchEvent('search_map_draw', buildMapDrawPayload(0, 'circle', latest.radiusM))
+        }
+      }
+      prevShapeCountRef.current = shapes.length
+      runViewportSearch(lastBoundsRef.current, shapes)
+    },
+    [runViewportSearch, dropGeoScope, syncShapesToUrl]
   )
 
   // When the user flips search-as-you-move ON, immediately sync to the current view.
   const toggleSearchAsMove = useCallback(() => {
     setSearchAsMove((prev) => {
       const next = !prev
-      if (next) runViewportSearch(lastBoundsRef.current, polygon)
+      if (next) runViewportSearch(lastBoundsRef.current, drawnShapes)
       return next
     })
-  }, [polygon, runViewportSearch])
+  }, [drawnShapes, runViewportSearch])
 
   const onListHover = useCallback((key: string | null) => setHoveredKey(key), [])
   const onMarkerHover = useCallback((key: string | null) => {
@@ -663,8 +750,8 @@ export default function MapSearchView({
         placeQuery={placeQuery}
         boundaryGeojson={boundaryGeojson}
         onBoundsChanged={handleBoundsChanged}
-        onPolygonDrawn={handlePolygonDrawn}
-        initialPolygon={polygon}
+        shapes={drawnShapes}
+        onShapesChange={handleShapesChange}
         hoveredKey={hoveredKey}
         onMarkerHover={onMarkerHover}
         className="h-full w-full"

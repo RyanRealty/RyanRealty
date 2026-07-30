@@ -235,6 +235,92 @@ describe('attack-hardening (2026-07-11)', () => {
   })
 })
 
+describe('Phase 1 tranche voice (CustomFields + promoted scalars, 2026-07-30)', () => {
+  it('"homes with an adu" sets the adu filter, not guestHouse', () => {
+    const r = parseSearchQuery('homes with an adu')
+    expect(r.adu).toBe('1')
+    expect(r.guestHouse).toBeUndefined()
+  })
+
+  it('"accessory dwelling unit" and "casita" resolve to adu', () => {
+    expect(parseSearchQuery('accessory dwelling unit in bend').adu).toBe('1')
+    expect(parseSearchQuery('casita under 900k').adu).toBe('1')
+  })
+
+  it('"mother in law suite" is an adu; bare "mother in law" stays inLawFloorplan', () => {
+    expect(parseSearchQuery('home with a mother in law suite').adu).toBe('1')
+    const bare = parseSearchQuery('mother in law setup in redmond')
+    expect(bare.inLawFloorplan).toBe('1')
+    expect(bare.adu).toBeUndefined()
+  })
+
+  it('"str permit" sets strPermit', () => {
+    const r = parseSearchQuery('str permit in sunriver')
+    expect(r.strPermit).toBe('1')
+    expect(r.city).toBe('Sunriver')
+  })
+
+  it('"airbnb allowed" resolves to the permit filter, not the community flag', () => {
+    const r = parseSearchQuery('airbnb allowed in bend')
+    expect(r.strPermit).toBe('1')
+    expect(r.strAllowed).toBeUndefined()
+  })
+
+  it('bare "airbnb" keeps the existing community strAllowed behavior', () => {
+    expect(parseSearchQuery('airbnb in bend').strAllowed).toBe('1')
+  })
+
+  it('"ccrs" and "cc&rs" set the CC&Rs filter', () => {
+    expect(parseSearchQuery('acreage with ccrs').ccrs).toBe('1')
+    expect(parseSearchQuery('acreage with cc&rs').ccrs).toBe('1')
+  })
+
+  it('negative phrasing is consumed, never inverted: "no ccrs" sets nothing', () => {
+    const r = parseSearchQuery('5 acres with no ccrs in tumalo')
+    expect(r.ccrs).toBeUndefined()
+    expect(r.lotAcresMin).toBe('5')
+    expect(r.city).toBe('Tumalo')
+    expect(r.keywords ?? '').not.toContain('ccrs')
+  })
+
+  it('negation guard generalizes: "without a pool" does not set hasPool', () => {
+    const r = parseSearchQuery('3 bed without a pool in bend')
+    expect(r.hasPool).toBeUndefined()
+    expect(r.beds).toBe('3')
+  })
+
+  it('negation guard leaves negative-shaped positives alone: "no hoa" still works', () => {
+    expect(parseSearchQuery('condo with no hoa').noHoa).toBe('1')
+  })
+
+  it('spa, carport, and home warranty booleans', () => {
+    expect(parseSearchQuery('home with a spa in redmond').spa).toBe('1')
+    expect(parseSearchQuery('carport and 2 bed').carport).toBe('1')
+    expect(parseSearchQuery('home warranty included').homeWarranty).toBe('1')
+  })
+
+  it('"double wide" sets the manufactured body type multi', () => {
+    const r = parseSearchQuery('double wide in la pine')
+    expect(r.bodyType).toBe('Double Wide')
+    expect(r.city).toBe('La Pine')
+  })
+
+  it('rooms voice: home office + bonus room merge as CSV', () => {
+    const r = parseSearchQuery('home office and bonus room in bend')
+    expect((r.roomsArr ?? '').split(',').sort()).toEqual(['Bonus Room', 'Office'])
+  })
+
+  it('"open floor plan" stays an interior feature, not hasFloorPlan', () => {
+    const r = parseSearchQuery('open floor plan in bend')
+    expect(r.interiorFeatures).toBe('Open Floorplan')
+    expect(r.hasFloorPlan).toBeUndefined()
+  })
+
+  it('"floor plan" alone sets hasFloorPlan', () => {
+    expect(parseSearchQuery('listing with a floor plan in bend').hasFloorPlan).toBe('1')
+  })
+})
+
 describe('address-shaped queries (user report 2026-07-12)', () => {
   it('a house number + street name is an address, not filters', () => {
     expect(parseSearchQuery('61192 tall timber')).toEqual({ keywords: '61192 tall timber' })

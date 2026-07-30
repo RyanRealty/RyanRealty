@@ -150,12 +150,12 @@ export default async function CmaPerformancePage({
               <TableBody>
                 {rows.map((r) => (
                   <TableRow key={r.id}>
-                    <TableCell className="max-w-[16rem]">
+                    <TableCell className="max-w-xs">
                       <Link href={`/cma/${r.slug}`} className="block truncate hover:underline">
                         {r.subjectAddress}
                       </Link>
                     </TableCell>
-                    <TableCell className="max-w-[12rem] truncate text-muted-foreground">
+                    <TableCell className="max-w-48 truncate text-muted-foreground">
                       {r.clientName ?? '—'}
                     </TableCell>
                     <TableCell>

@@ -52,6 +52,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { EditSearchDialog, type RowState } from './EditSearchDialog'
+import AlertPreferences from './AlertPreferences'
 
 type Props = { searches: SavedSearchRow[] }
 
@@ -147,7 +148,9 @@ function SavedSearchCard({
   const filtersSummary = getFiltersSummary(state.filters)
 
   return (
-    <Card className="p-4">
+    // The id anchor is the target of getAlertManageUrl (lib/alerts/manage-url.ts)
+    // — the email footer's "manage this alert" link lands on this card.
+    <Card id={`alert-${search.id}`} className="scroll-mt-24 p-4">
       {/* Name + deep link */}
       {editing ? (
         <div className="flex flex-col gap-2">
@@ -258,6 +261,16 @@ function SavedSearchCard({
           </Select>
         </div>
       </div>
+
+      {/* Typed-event preferences: what to watch, weekly days, household recipients */}
+      <AlertPreferences
+        alertId={search.id}
+        cadence={state.cadence}
+        events={search.events}
+        scheduleDays={search.schedule_days}
+        recipients={search.recipients}
+        disabled={pending}
+      />
 
       {/* Delete + error */}
       <div className="mt-4 flex items-center justify-between gap-3">

@@ -45,6 +45,23 @@ export interface ListingAlertListing {
   /** Absolute listing detail URL (plain — the caller attributes + wraps it). */
   detailUrl: string
   status?: string | null
+  /** Price at last notify, for price-change cards ("Was $775,000"). */
+  previousPrice?: number | null
+  /** One short factual line under the meta, e.g. "Open house scheduled". */
+  eventNote?: string | null
+}
+
+/**
+ * One typed-event section ("Price changes", "Back on market", ...). When the
+ * caller passes sections, the email renders each label as a kicker above its
+ * cards; the flat `listings` input is ignored.
+ */
+export interface AlertEmailSection {
+  /** Machine kind ('new' | 'price_change' | ...) — used for subject logic. */
+  kind: string
+  /** Visible sentence-case label, e.g. "Price changes". */
+  label: string
+  listings: ListingAlertListing[]
 }
 
 export interface BuildListingAlertEmailInput {
@@ -69,6 +86,12 @@ export interface BuildListingAlertEmailInput {
   intro?: string | null
   /** The subscription's assigned broker — renders the close card when set. */
   senderBroker?: ShellBroker | null
+  /**
+   * Typed-event sections (Phase 3). When present, the body renders one
+   * labeled section per event type and `listings` is ignored. A single
+   * all-new section renders exactly like the legacy new-listings email.
+   */
+  sections?: AlertEmailSection[] | null
 }
 
 export interface BuiltListingAlertEmail {
@@ -113,6 +136,13 @@ export function buildListingAlertSubject(count: number, searchName: string): str
   return `${safeCount} new ${noun} for ${searchName.trim()}`
 }
 
+/** Mixed-event subject, equally plain: "4 updates for Bend under 800k". */
+export function buildListingAlertUpdatesSubject(count: number, searchName: string): string {
+  const safeCount = Math.max(1, Math.trunc(count))
+  const noun = safeCount === 1 ? 'update' : 'updates'
+  return `${safeCount} ${noun} for ${searchName.trim()}`
+}
+
 /**
  * One listing's editorial card: full-width photo, status kicker, serif display
  * price, address, meta line, closed by a hard hairline rule.
@@ -130,15 +160,26 @@ function listingCardHtml(listing: ListingAlertListing): string {
     ? `<a href="${href}"><img src="${escapeHtml(listing.photoUrl.trim())}" alt="${fullAddress}" width="572" style="display:block;width:100%;height:auto;"></a>`
     : ''
 
+  // Price-change context: prior price rendered exactly, next to the new one.
+  const wasLine =
+    listing.previousPrice != null &&
+    Number.isFinite(listing.previousPrice) &&
+    listing.previousPrice !== listing.price
+      ? `Was ${formatListingPrice(listing.previousPrice)}`
+      : ''
+  const note = (listing.eventNote ?? '').trim()
+
   return `<tr><td style="padding:26px 34px 0;">
     ${photo}
     <div style="padding:16px 0 22px;border-bottom:1px solid ${EMAIL_BORDER};">
       ${status ? `<div style="font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:${MUTED};margin-bottom:8px;">${escapeHtml(status)}</div>` : ''}
       <div style="font-family:${EMAIL_SERIF};font-size:28px;line-height:1.15;color:${EMAIL_NAVY};font-variant-numeric:tabular-nums;margin-bottom:6px;">${price}</div>
+      ${wasLine ? `<div style="font-size:14px;color:${MUTED};font-variant-numeric:tabular-nums;margin-bottom:6px;">${escapeHtml(wasLine)}</div>` : ''}
       <div style="font-size:16px;font-weight:700;line-height:1.4;margin-bottom:4px;">
         <a href="${href}" style="color:${EMAIL_INK};text-decoration:none;">${fullAddress}</a>
       </div>
       ${meta ? `<div style="font-size:14px;color:${MUTED};font-variant-numeric:tabular-nums;">${meta}</div>` : ''}
+      ${note ? `<div style="font-size:14px;color:${MUTED};margin-top:4px;">${escapeHtml(note)}</div>` : ''}
     </div>
   </td></tr>`
 }
@@ -149,8 +190,17 @@ function listingCardText(listing: ListingAlertListing): string {
   const cityLine = (listing.city ?? '').trim()
   lines.push(cityLine ? `${listing.address.trim()}, ${cityLine}` : listing.address.trim())
   lines.push(formatListingPrice(listing.price))
+  if (
+    listing.previousPrice != null &&
+    Number.isFinite(listing.previousPrice) &&
+    listing.previousPrice !== listing.price
+  ) {
+    lines.push(`Was ${formatListingPrice(listing.previousPrice)}`)
+  }
   const meta = formatListingMeta(listing)
   if (meta) lines.push(meta)
+  const note = (listing.eventNote ?? '').trim()
+  if (note) lines.push(note)
   lines.push(listing.detailUrl)
   return lines.join('\n')
 }
@@ -162,12 +212,25 @@ function listingCardText(listing: ListingAlertListing): string {
  */
 export function buildListingAlertEmail(input: BuildListingAlertEmailInput): BuiltListingAlertEmail {
   const searchName = input.searchName.trim() || 'your saved search'
-  const shown = Array.isArray(input.listings) ? input.listings : []
+  const sections = (input.sections ?? []).filter((s) => s.listings.length > 0)
+  const hasSections = sections.length > 0
+  const newOnly = hasSections && sections.every((s) => s.kind === 'new')
+  const shown = hasSections
+    ? sections.flatMap((s) => s.listings)
+    : Array.isArray(input.listings)
+      ? input.listings
+      : []
   const total = Math.max(shown.length, Math.trunc(input.totalNewCount ?? shown.length))
   const moreCount = Math.max(0, total - shown.length)
 
-  const subject = buildListingAlertSubject(total, searchName)
-  const countLine = `${total} new ${total === 1 ? 'listing matches' : 'listings match'} your search`
+  const subject =
+    hasSections && !newOnly
+      ? buildListingAlertUpdatesSubject(total, searchName)
+      : buildListingAlertSubject(total, searchName)
+  const countLine =
+    hasSections && !newOnly
+      ? `${total} ${total === 1 ? 'update' : 'updates'} for your search`
+      : `${total} new ${total === 1 ? 'listing matches' : 'listings match'} your search`
   const intro = (input.intro ?? '').trim()
   const filtersSummary = (input.filtersSummary ?? '').trim()
   const browseHref = escapeHtml(input.browseAllUrl)
@@ -179,7 +242,16 @@ export function buildListingAlertEmail(input: BuildListingAlertEmailInput): Buil
     ${intro ? `<div style="font-size:16px;line-height:1.6;color:${EMAIL_INK};margin-top:14px;">${escapeHtml(intro)}</div>` : ''}
   </td></tr>`
 
-  const cardsHtml = shown.map(listingCardHtml).join('')
+  const sectionHeaderHtml = (label: string): string =>
+    `<tr><td style="padding:30px 34px 0;">
+      <div style="font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:${EMAIL_NAVY};border-bottom:2px solid ${EMAIL_NAVY};padding-bottom:8px;">${escapeHtml(label)}</div>
+    </td></tr>`
+
+  const cardsHtml = hasSections
+    ? sections
+        .map((s) => sectionHeaderHtml(s.label) + s.listings.map(listingCardHtml).join(''))
+        .join('')
+    : shown.map(listingCardHtml).join('')
 
   const moreHtml = moreCount > 0
     ? `<tr><td style="padding:20px 34px 0;font-size:15px;font-variant-numeric:tabular-nums;">
@@ -194,7 +266,7 @@ export function buildListingAlertEmail(input: BuildListingAlertEmailInput): Buil
   const html = wrapBrandedEmail({
     bodyHtml: headerHtml + cardsHtml + moreHtml + ctaHtml,
     previewText: countLine,
-    mastheadLine: `NEW LISTINGS · ${searchName}`,
+    mastheadLine: hasSections && !newOnly ? `LISTING UPDATES · ${searchName}` : `NEW LISTINGS · ${searchName}`,
     heroUrl: null, // the listing photos are the visual — no brand hero
     senderBroker: input.senderBroker ?? null,
     unsubscribeUrl: input.unsubscribeUrl,
@@ -207,9 +279,20 @@ export function buildListingAlertEmail(input: BuildListingAlertEmailInput): Buil
   textParts.push(countLine)
   if (filtersSummary) textParts.push(filtersSummary)
   textParts.push('')
-  for (const listing of shown) {
-    textParts.push(listingCardText(listing))
-    textParts.push('')
+  if (hasSections) {
+    for (const section of sections) {
+      textParts.push(section.label.toUpperCase())
+      textParts.push('')
+      for (const listing of section.listings) {
+        textParts.push(listingCardText(listing))
+        textParts.push('')
+      }
+    }
+  } else {
+    for (const listing of shown) {
+      textParts.push(listingCardText(listing))
+      textParts.push('')
+    }
   }
   if (moreCount > 0) {
     textParts.push(`+${moreCount} more new ${moreCount === 1 ? 'listing' : 'listings'}: ${input.browseAllUrl}`)

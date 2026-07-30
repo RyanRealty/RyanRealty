@@ -1,47 +1,79 @@
-# Advanced Search
+# Site search architecture
 
-The site supports an **advanced listing search** that filters on every queryable dimension: flat Supabase columns and fields inside the `details` jsonb (full Spark StandardFields).
+One registry-driven search engine serves every consumer listing-search surface. This doc
+replaced the obsolete `search_listings_advanced`-centric writeup on 2026-07-29 (Phase 0 of
+`docs/plans/SEARCH_OPTIMIZATION_PLAN_2026-07-29.md`).
 
-## Where it lives
+## The three pillars
 
-- **URL:** `/listings` (all listings with advanced filters) and `/search/[city]` or `/search/[city]/[subdivision]` (same filters scoped by location).
-- **UI:** "Advanced search" panel with **Quick filters** (price, beds, baths, sq ft, property type, sort, include closed) and **More filters** (expandable): max beds/baths/sq ft, year built, lot acres, zip, property subtype, status, keywords, new listings, garage, open house, pool, view, waterfront.
+1. **`lib/search/field-registry.ts`** — the single source of truth for every consumer
+   filter: **87 fields** (11 range, 33 boolean, 38 multi-select, 5 text) across 16
+   categories. Each `SearchFieldDef` carries the URL param name(s), the
+   `listing_search_mv` column, the widget kind, multi-select options (harvested from live
+   on-market data, prevalence-ordered), and voice/NL synonyms. `ALL_SEARCH_URL_PARAMS`
+   enumerates every URL param; `coerceRegistryParams()` turns raw params into typed DAL
+   filters. (`laundryFeatures` was removed 2026-07-29: zero on-market rows carried a
+   value, verified against all 9,663 `listing_search_mv` rows.)
+2. **`public.listing_search_mv`** — the on-market materialized view (~9.7K rows: Active,
+   Active Under Contract, Coming Soon, Pending) carrying every `listing_tile_mv` column
+   plus the full registry filter surface: promoted `*_yn` booleans, HOA/tax/PITI
+   numerics, school names, and `rr_feature_keys()` text[] projections of the RESO
+   feature objects.
+3. **`searchListingsAll()`** (`lib/data/listings/searchListingsAll.ts`) — the one DAL
+   search function over the MV. Zod filter schema keyed by registry field keys,
+   resilient cache, exact count in the same query. Predicates resolve from the registry
+   (matchMode `all` -> contains, default -> overlaps, `singleColumnIn` -> IN,
+   `dalExpression` -> multi-column expression).
 
-## Data source
+## Surfaces (all render the same registry sheet)
 
-- **Search runs against Supabase** (synced from Spark). No live Spark API calls for search.
-- **Flat columns** (indexed): City, SubdivisionName, PostalCode, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, StandardStatus, PropertyType, ModificationTimestamp.
-- **details (jsonb):** Full Spark StandardFields, including YearBuilt, LotSizeAcres, PropertySubType, GarageSpaces, GarageYN, PoolYN, PoolFeatures, ViewYN, View, WaterfrontYN, WaterfrontFeatures, OpenHouses, PublicRemarks, and any other MLS fields Spark sends.
+| Surface | Route file | Filter UI |
+|---|---|---|
+| `/homes-for-sale` (query-param search, split/list/map) | `app/search/page.tsx` | `components/search/SearchFilters.tsx` chip bar |
+| `/homes-for-sale/{city}[/{area}][/{preset}]` (SEO grid + map views) | `app/search/[...slug]/page.tsx` | `components/SearchFilterBar.tsx` chip bar |
 
-## Backend
+Both chip bars open **`components/search/AllFiltersSheet.tsx`**, the registry-driven
+All-filters sheet, and render active filters through `activeRegistryFilters()` /
+`RegistryFilterChip`. A multi field with zero options is hidden by the sheet. The old
+hand-rolled `components/AdvancedSearchFilters.tsx` was deleted 2026-07-29.
 
-- **RPC:** `search_listings_advanced` in Supabase (see `supabase/migrations/20250315100000_advanced_search_rpc.sql`). Run `npx supabase db push` to create it.
-- **Server:** `getListingsWithAdvanced()` in `app/actions/listings.ts`. Uses the RPC when any advanced-only filter is set; otherwise uses the fast flat-column `getListings()` + `getActiveListingsCount()`.
+Voice + natural-language input (`lib/parse-search-query.ts`) compiles its matchers from
+the registry, so a new field is speakable the day it ships. Saved searches whitelist
+their filter keys from the registry too (`FILTER_KEYS` in `lib/search-filters.ts`).
 
-## Filters supported
+## Server routing (`getListingsWithAdvanced` in `app/actions/listings.ts`)
 
-| Filter | Source | Notes |
-|--------|--------|------|
-| City, subdivision, zip | Flat / details | City and SubdivisionName from URL or filter; PostalCode = zip |
-| Min/max price | ListPrice | |
-| Min/max beds, baths | BedroomsTotal, BathroomsTotal | |
-| Min/max sq ft | TotalLivingAreaSqFt | |
-| Year built min/max | details->YearBuilt | |
-| Lot acres min/max | details->LotSizeAcres | |
-| Property type / subtype | PropertyType, details->PropertySubType | |
-| Status | StandardStatus | active, active_and_pending, pending, closed, all |
-| Keywords | details->PublicRemarks | ILIKE search in description |
-| Has open house | details->OpenHouses | Non-empty array |
-| Garage min spaces | details->GarageSpaces or GarageYN | |
-| Has pool | details->PoolYN or PoolFeatures | |
-| Has view | details->ViewYN or View | |
-| Has waterfront | details->WaterfrontYN or WaterfrontFeatures | |
-| New listings (last N days) | ModificationTimestamp | |
-| Sort | — | newest, oldest, price_asc, price_desc, price_per_sqft_asc, price_per_sqft_desc, year_newest, year_oldest |
+- **On-market scopes** (active / active_and_pending / pending): every filter, the full
+  registry surface included, is served from `listing_search_mv` via
+  `searchListingsAll()` in one indexed read with an exact count. No RPC.
+- **Closed / `all` scopes** keep the legacy routing: the slim `listing_tile_mv` fast
+  path for flat-column filters, falling back to the heavy `search_listings_advanced`
+  RPC only for jsonb-derived feature filters or pagination deeper than the fast-path
+  cap. The RPC survives solely for these off-market scopes.
+- Degraded reads fail loud (poison-null protection): an unfiltered city scope returning
+  zero signals `degraded` so the page serves the last good ISR copy instead of caching
+  an empty grid.
 
-## Adding more criteria
+## Alerts and saved searches
 
-1. Add the parameter to `search_listings_advanced` in the migration (or a new migration).
-2. Add the filter to the RPC `WHERE` clause (flat column or `details->>'FieldName'`).
-3. Add to `AdvancedListingsFilters` in `app/actions/listings.ts` and to `getListingsAdvanced()` RPC call.
-4. Add the control and URL param in `components/AdvancedSearchFilters.tsx`.
+- **`public.listing_alerts`** is the ONE canonical alert table (unified 2026-07-07 by
+  migration `20260707160000_unify_listing_alerts.sql`; DAL:
+  `lib/data/leads/listingAlerts.ts`). Guest captures, signed-in saves, broker assigns,
+  and system defaults all live here, matched hourly by
+  `app/api/cron/saved-search-alerts/route.ts`.
+- **`public.saved_searches`** survives ONLY for the public-share feature (`is_public`,
+  `public_title`, `cache_listing_keys`, `public_click_count`). It no longer drives
+  alerts.
+
+## Adding a filter field
+
+1. Confirm the column exists in `listing_search_mv` and carries real values on
+   on-market rows (CLAUDE.md §0: no filter ships that matches nothing).
+2. Add the `SearchFieldDef` to `lib/search/field-registry.ts` (options harvested from
+   live data, noise values dropped, voice synonyms included).
+3. Add the matching zod key to `featureShape` in
+   `lib/data/listings/searchListingsAll.ts` (plus a predicate entry if it is a
+   `dalExpression` boolean).
+4. The sheet, chips, URL params, voice parser, and saved-search whitelist pick it up
+   from the registry with no further edits. `lib/search/field-registry.test.ts` guards
+   the invariants.

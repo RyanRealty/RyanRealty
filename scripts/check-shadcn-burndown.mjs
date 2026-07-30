@@ -11,6 +11,9 @@
  *   - app/admin/**, app/components/admin/**, components/admin/** (admin = its own design system)
  *   - app/lp/**               (paid LPs, migrate via the ad/LP track, not KB site shell)
  *   - app/sign/**, components/tc/** (e-sign / transaction-coordinator surfaces)
+ *   - app/account/**, components/account/** (signed-in management console:
+ *     form primitives — switches, dialogs, inputs — that KB does not provide;
+ *     same class as admin. 2026-07-30, search-plan Phase 3/4 alert manager.)
  *
  * Usage:
  *   node scripts/check-shadcn-burndown.mjs                # ratchet (CI)
@@ -32,6 +35,8 @@ const EXCLUDE = [
   'app/lp/',
   'app/sign/',
   'components/tc/',
+  'app/account/',
+  'components/account/',
 ]
 
 function walk(dir, out = []) {

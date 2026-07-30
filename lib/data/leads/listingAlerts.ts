@@ -24,6 +24,13 @@ import {
 
 const TABLE = 'listing_alerts'
 
+/** One additional-recipient entry (listing_alerts.recipients jsonb array). */
+export type ListingAlertRecipientEntry = {
+  email: string
+  name?: string | null
+  unsubscribe_token?: string | null
+}
+
 export type ListingAlertRow = {
   id: string
   email: string
@@ -40,22 +47,36 @@ export type ListingAlertRow = {
   source: string | null
   unsubscribe_token: string
   last_notified_at: string | null
-  /** Listing keys already emailed for this alert — the newly-matching diff
-   *  (price drops INTO range, back-on-market) compares against this set. */
-  notified_listing_keys: string[] | null
+  /** Per-key notified state for the typed-event diff: legacy plain key
+   *  strings and/or {key, price, status, notified_at, open_house} objects
+   *  (lib/alerts/event-detection.ts parseNotifiedState accepts both). */
+  notified_listing_keys: Array<string | Record<string, unknown>> | null
+  /** Typed-event toggle map. Undefined until migration 20260729235500 is
+   *  applied; readers normalize via normalizeEventToggles. */
+  events?: Record<string, unknown> | null
+  /** Weekly per-day schedule, 0=Sunday..6=Saturday. NULL = every day. */
+  schedule_days?: number[] | null
+  /** Preview mode: hold events in listing_alert_queue for broker approval. */
+  preview_mode?: boolean | null
+  /** Additional household recipients: [{email, name?, unsubscribe_token}]. */
+  recipients?: ListingAlertRecipientEntry[] | null
   created_at: string | null
   updated_at: string | null
 }
 
-const ROW_COLS =
-  'id, email, user_id, crm_person_id, fub_person_id, name, filters, filters_hash, notification_frequency, is_active, origin, assigned_by, source, unsubscribe_token, last_notified_at, notified_listing_keys, created_at, updated_at'
+// select('*') on purpose: the typed-event columns (events / schedule_days /
+// preview_mode / recipients) ship in migration 20260729235500 and the engine
+// must keep working BEFORE the migration is applied — an explicit column list
+// naming a not-yet-existing column fails the whole read, silencing every
+// alert. Missing columns simply read as undefined on the row type.
+export const ROW_COLS = '*'
 
 /**
  * Resolve the crm_people.id for an alert row (fub legacy id link first, then
  * email match). Every alert row should be born tracking-ready — the send path
  * needs a crm_person_id for open/click attribution.
  */
-async function resolveCrmPersonId(
+export async function resolveCrmPersonId(
   supabase: ReturnType<typeof createServiceClient>,
   args: { email?: string | null; fubPersonId?: number | null },
 ): Promise<number | null> {
@@ -309,11 +330,14 @@ export async function deleteListingAlertById(id: string): Promise<{ ok: boolean 
   return { ok: !error }
 }
 
-/** Stamp last_notified_at after the cron sends (or decides to skip) an alert. */
+/** Stamp last_notified_at after the cron sends (or decides to skip) an alert.
+ *  notifiedKeys accepts legacy plain key strings AND the typed per-key state
+ *  objects ({key, price, status, notified_at, open_house}) the event engine
+ *  writes. */
 export async function markListingAlertNotified(
   id: string,
   isoTime: string,
-  notifiedKeys?: string[],
+  notifiedKeys?: Array<string | Record<string, unknown>>,
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = createServiceClient()
   const update: Record<string, unknown> = { last_notified_at: isoTime, updated_at: isoTime }
@@ -325,11 +349,98 @@ export async function markListingAlertNotified(
   return { ok: true }
 }
 
+/** One alert row by id (queue release path). Null when missing. */
+export async function getListingAlertById(id: string): Promise<ListingAlertRow | null> {
+  const trimmed = (id ?? '').trim()
+  if (!trimmed) return null
+  const supabase = createServiceClient()
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select(ROW_COLS)
+    .eq('id', trimmed)
+    .maybeSingle()
+  if (error) {
+    console.error('[getListingAlertById]', error.message)
+    return null
+  }
+  return (data as ListingAlertRow | null) ?? null
+}
+
+/** Several alert rows by id in one read (admin approval-queue grouping). */
+export async function getListingAlertsByIds(ids: string[]): Promise<ListingAlertRow[]> {
+  const clean = [...new Set(ids.map((s) => (s ?? '').trim()).filter(Boolean))]
+  if (clean.length === 0) return []
+  const supabase = createServiceClient()
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select(ROW_COLS)
+    .in('id', clean)
+  if (error) {
+    console.error('[getListingAlertsByIds]', error.message)
+    return []
+  }
+  return (data ?? []) as ListingAlertRow[]
+}
+
+/**
+ * ADMIN engine-settings write (typed-event upgrade, migration 20260729235500):
+ * event toggle map, weekly schedule days, and/or preview mode on one alert.
+ * No user scope — the caller is an admin action gated by getCrmAccess, and
+ * broker-managed rows (origin='broker'/'system') have no user_id to scope by.
+ */
+export async function updateListingAlertEngineSettings(
+  id: string,
+  fields: {
+    events?: Record<string, boolean>
+    /** 0=Sunday..6=Saturday; null clears the per-day restriction. */
+    scheduleDays?: number[] | null
+    previewMode?: boolean
+  },
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = createServiceClient()
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (fields.events !== undefined) patch.events = fields.events
+  if (fields.scheduleDays !== undefined) patch.schedule_days = fields.scheduleDays
+  if (fields.previewMode !== undefined) patch.preview_mode = fields.previewMode
+  const { error } = await supabase.from(TABLE).update(patch).eq('id', id)
+  if (error) {
+    console.error('[updateListingAlertEngineSettings]', error.message)
+    return { ok: false, error: 'persist_failed' }
+  }
+  return { ok: true }
+}
+
+/**
+ * Overwrite the additional-recipients array (token backfill + recipient
+ * removal both route through here so the shape stays canonical).
+ */
+export async function updateListingAlertRecipients(
+  id: string,
+  recipients: ListingAlertRecipientEntry[] | null,
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = createServiceClient()
+  const { error } = await supabase
+    .from(TABLE)
+    .update({ recipients, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) {
+    console.error('[updateListingAlertRecipients]', error.message)
+    return { ok: false, error: 'persist_failed' }
+  }
+  return { ok: true }
+}
+
 /**
  * Unsubscribe — deactivate by token (ONE token namespace now: guest + signed-in
  * tokens were both migrated into listing_alerts with their values preserved, so
  * links in already-sent emails keep working). matched=false means the token was
  * unknown.
+ *
+ * Two tiers (typed-events upgrade, migration 20260729235500):
+ * - PRIMARY token (unsubscribe_token column) deactivates the whole alert.
+ * - ADDITIONAL-recipient token (an entry in the recipients jsonb array)
+ *   removes ONLY that recipient — the primary and everyone else keep
+ *   receiving. Checked second so a primary match never scans recipients.
  */
 export async function deactivateListingAlertByToken(token: string): Promise<{ ok: boolean; matched: boolean; error?: string }> {
   const trimmed = (token ?? '').trim()
@@ -341,153 +452,34 @@ export async function deactivateListingAlertByToken(token: string): Promise<{ ok
     .eq('unsubscribe_token', trimmed)
     .select('id')
   if (error) return { ok: false, matched: false, error: error.message }
-  return { ok: true, matched: (data?.length ?? 0) > 0 }
-}
+  if ((data?.length ?? 0) > 0) return { ok: true, matched: true }
 
-export type ClaimListingAlertsResult = {
-  ok: boolean
-  /** Active alert rows whose email matched and got the user_id stamped. */
-  claimed: number
-  error?: string
-}
-
-/**
- * Claim-on-sign-in (replaces the old copy-guest-row-then-deactivate flow):
- * stamp user_id (+ crm_person_id when resolvable) onto the ACTIVE alert rows
- * matching the just-signed-in user's VERIFIED email. The rows themselves are
- * already canonical — no materialization, no deactivation, no dedupe needed
- * (the unique (email, filters_hash) pair guarantees one row per search).
- *
- * IDEMPOTENT (re-stamping the same user_id is a no-op-shaped update). Only
- * rows without a DIFFERENT user_id are touched — an alert already claimed by
- * another account is never re-assigned. Best-effort: never throws, so a
- * failure here cannot break sign-in.
- */
-export async function claimListingAlertsForUser(
-  userId: string,
-  email: string,
-): Promise<ClaimListingAlertsResult> {
-  const uid = (userId ?? '').trim()
-  const normalizedEmail = (email ?? '').trim().toLowerCase()
-  if (!uid || !normalizedEmail) return { ok: true, claimed: 0 }
-
-  const supabase = createServiceClient()
-
-  // Resolve the CRM person once for this email (best-effort — null just means
-  // the column stays as-is).
-  const crmPersonId = await resolveCrmPersonId(supabase, { email: normalizedEmail })
-
-  const patch: Record<string, unknown> = { user_id: uid, updated_at: new Date().toISOString() }
-  if (crmPersonId != null) patch.crm_person_id = crmPersonId
-
-  const { data, error } = await supabase
-    .from(TABLE)
-    .update(patch)
-    .eq('email', normalizedEmail)
-    .eq('is_active', true)
-    .is('user_id', null)
-    .select('id')
-  if (error) {
-    console.error('[claimListingAlertsForUser]', error.message)
-    return { ok: false, claimed: 0, error: 'claim_failed' }
+  // Additional-recipient token: jsonb containment on the recipients array.
+  // Fail-soft pre-migration (missing column errors → token simply unmatched).
+  try {
+    const { data: rows, error: findErr } = await supabase
+      .from(TABLE)
+      .select('id, recipients')
+      .contains('recipients', JSON.stringify([{ unsubscribe_token: trimmed }]))
+      .limit(5)
+    if (findErr || !rows?.length) return { ok: true, matched: false }
+    let matched = false
+    for (const row of rows as Array<{ id: string; recipients: ListingAlertRecipientEntry[] | null }>) {
+      const remaining = (row.recipients ?? []).filter(
+        (r) => (r?.unsubscribe_token ?? '').trim() !== trimmed,
+      )
+      if (remaining.length === (row.recipients ?? []).length) continue
+      const { error: updErr } = await supabase
+        .from(TABLE)
+        .update({ recipients: remaining.length > 0 ? remaining : null, updated_at: new Date().toISOString() })
+        .eq('id', row.id)
+      if (!updErr) matched = true
+    }
+    return { ok: true, matched }
+  } catch {
+    return { ok: true, matched: false }
   }
-  return { ok: true, claimed: data?.length ?? 0 }
 }
 
-// ── Session-user-scoped helpers ───────────────────────────────────────────────
-// The /account server actions (app/actions/saved-searches.ts) verify the
-// session via getSession() and pass the authenticated user id here. Every write
-// carries BOTH .eq('id', id) AND .eq('user_id', userId), so a user can only
-// ever touch their own rows even though this runs on the service client.
-
-/** All alerts owned by a signed-in user, newest first. */
-export async function getListingAlertsForUser(userId: string): Promise<ListingAlertRow[]> {
-  const uid = (userId ?? '').trim()
-  if (!uid) return []
-  const supabase = createServiceClient()
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select(ROW_COLS)
-    .eq('user_id', uid)
-    .order('created_at', { ascending: false })
-  if (error) {
-    console.error('[getListingAlertsForUser]', error.message)
-    return []
-  }
-  return (data ?? []) as ListingAlertRow[]
-}
-
-/** Count of alerts owned by a signed-in user (lead scoring / personalization). */
-export async function countListingAlertsForUser(userId: string): Promise<number> {
-  const uid = (userId ?? '').trim()
-  if (!uid) return 0
-  const supabase = createServiceClient()
-  const { count } = await supabase
-    .from(TABLE)
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', uid)
-  return count ?? 0
-}
-
-/** Edit one alert owned by the session user (rename / filters / cadence). */
-export async function updateListingAlertForUser(
-  id: string,
-  userId: string,
-  fields: {
-    name?: string
-    filters?: Record<string, unknown>
-    filtersHash?: string
-    frequency?: SavedSearchFrequency
-  },
-): Promise<{ ok: boolean; error?: string }> {
-  const supabase = createServiceClient()
-  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
-  if (fields.name !== undefined) patch.name = fields.name
-  if (fields.filters !== undefined) patch.filters = fields.filters
-  if (fields.filtersHash !== undefined) patch.filters_hash = fields.filtersHash
-  if (fields.frequency !== undefined) patch.notification_frequency = normalizeSavedSearchFrequency(fields.frequency)
-  const { error } = await supabase.from(TABLE).update(patch).eq('id', id).eq('user_id', userId)
-  if (error) { console.error('[updateListingAlertForUser]', error.message); return { ok: false, error: 'persist_failed' } }
-  return { ok: true }
-}
-
-/** Pause / resume one alert owned by the session user. */
-export async function setListingAlertActiveForUser(
-  id: string,
-  userId: string,
-  active: boolean,
-): Promise<{ ok: boolean; error?: string }> {
-  const supabase = createServiceClient()
-  const { error } = await supabase
-    .from(TABLE)
-    .update({ is_active: active, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .eq('user_id', userId)
-  if (error) { console.error('[setListingAlertActiveForUser]', error.message); return { ok: false, error: 'persist_failed' } }
-  return { ok: true }
-}
-
-/** Delete one alert owned by the session user. */
-export async function deleteListingAlertForUser(id: string, userId: string): Promise<{ ok: boolean; error?: string }> {
-  const supabase = createServiceClient()
-  const { error } = await supabase.from(TABLE).delete().eq('id', id).eq('user_id', userId)
-  if (error) { console.error('[deleteListingAlertForUser]', error.message); return { ok: false, error: 'persist_failed' } }
-  return { ok: true }
-}
-
-/** Set the cadence on EVERY alert the session user owns (the /account/notifications fan-out). */
-export async function setListingAlertFrequencyForUser(
-  userId: string,
-  frequency: string,
-): Promise<{ ok: boolean; error?: string }> {
-  const supabase = createServiceClient()
-  const { error } = await supabase
-    .from(TABLE)
-    .update({
-      notification_frequency: normalizeSavedSearchFrequency(frequency),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('user_id', userId)
-  if (error) { console.error('[setListingAlertFrequencyForUser]', error.message); return { ok: false, error: 'persist_failed' } }
-  return { ok: true }
-}
+// Session-user-scoped reads/writes + sign-in claim live in listingAlertsUser.ts.
+export * from '@/lib/data/leads/listingAlertsUser'

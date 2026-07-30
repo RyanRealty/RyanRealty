@@ -116,6 +116,10 @@ export type SparkListingResult = {
   Id: string
   ResourceUri: string
   StandardFields: SparkStandardFields
+  /** Flexmls field-dictionary payload, present when `_expand=CustomFields`.
+   *  Shape: [{ "Main": [ { "<Group Name>": [ {"<Field Name>": value}, … ] } ] }]
+   *  — flattened + privacy-redacted by lib/listing-mapper.ts. */
+  CustomFields?: unknown
 }
 
 export type SparkListingsResponse = {

@@ -154,3 +154,101 @@ describe('buildListingAlertEmail', () => {
     expect(hits).toEqual([])
   })
 })
+
+describe('buildListingAlertEmail — typed-event sections (Phase 3)', () => {
+  const base = () => ({
+    searchName: 'Bend under 800k',
+    filtersSummary: '3+ beds, max $800,000, Bend',
+    listings: [] as ListingAlertListing[],
+    browseAllUrl: BROWSE,
+    unsubscribeUrl: UNSUB,
+    manageUrl: null,
+  })
+
+  const sections = () => [
+    { kind: 'new', label: 'New listings', listings: [listing(), listing({ address: '2054 NW Glassow Dr' })] },
+    {
+      kind: 'price_change',
+      label: 'Price changes',
+      listings: [listing({ address: '432 SW Century Dr', price: 750000, previousPrice: 775000 })],
+    },
+    { kind: 'back_on_market', label: 'Back on market', listings: [listing({ address: '19 Awbrey Rd' })] },
+    { kind: 'open_house', label: 'Open house scheduled', listings: [listing({ address: '7 Tetherow Ln' })] },
+    { kind: 'status_change', label: 'Now pending', listings: [listing({ address: '55 Paulina Pl', status: 'Pending' })] },
+    { kind: 'sold', label: 'Just sold', listings: [listing({ address: '81 Tumalo Rd', status: 'Sold' })] },
+  ]
+
+  it('renders every event section with its label', () => {
+    const out = buildListingAlertEmail({ ...base(), sections: sections(), totalNewCount: 7 })
+    for (const label of [
+      'New listings',
+      'Price changes',
+      'Back on market',
+      'Open house scheduled',
+      'Now pending',
+      'Just sold',
+    ]) {
+      expect(out.html).toContain(label)
+      expect(out.text).toContain(label.toUpperCase())
+    }
+  })
+
+  it('mixed events use the plain updates subject and masthead', () => {
+    const out = buildListingAlertEmail({ ...base(), sections: sections(), totalNewCount: 7 })
+    expect(out.subject).toBe('7 updates for Bend under 800k')
+    expect(out.html).toContain('LISTING UPDATES · BEND UNDER 800K')
+    expect(out.html).toContain('7 updates for your search')
+  })
+
+  it('a single update keeps singular grammar', () => {
+    const out = buildListingAlertEmail({
+      ...base(),
+      sections: [sections()[1]],
+      totalNewCount: 1,
+    })
+    expect(out.subject).toBe('1 update for Bend under 800k')
+  })
+
+  it('an all-new section set renders exactly like the legacy new-listings email', () => {
+    const out = buildListingAlertEmail({
+      ...base(),
+      sections: [sections()[0]],
+      totalNewCount: 2,
+    })
+    expect(out.subject).toBe('2 new listings for Bend under 800k')
+    expect(out.html).toContain('NEW LISTINGS · BEND UNDER 800K')
+  })
+
+  it('price changes render the old price next to the new one', () => {
+    const out = buildListingAlertEmail({ ...base(), sections: [sections()[1]], totalNewCount: 1 })
+    expect(out.html).toContain('$750,000')
+    expect(out.html).toContain('Was $775,000')
+    expect(out.text).toContain('Was $775,000')
+  })
+
+  it('empty sections are dropped', () => {
+    const out = buildListingAlertEmail({
+      ...base(),
+      sections: [
+        { kind: 'new', label: 'New listings', listings: [listing()] },
+        { kind: 'sold', label: 'Just sold', listings: [] },
+      ],
+      totalNewCount: 1,
+    })
+    expect(out.html).not.toContain('Just sold')
+  })
+
+  it('section emails stay brand-voice clean (no em-dash, semicolon, banned words)', () => {
+    const out = buildListingAlertEmail({ ...base(), sections: sections(), totalNewCount: 7 })
+    expect(out.subject).not.toMatch(/[–—;!]/)
+    expect(out.text).not.toMatch(/[–—]/)
+    expect(out.text).not.toContain(';')
+    expect(out.text).not.toContain('!')
+    const haystack = `${out.subject}\n${out.text}`.toLowerCase()
+    const hits = BANNED_VOCAB.BANNED_WORD_STRINGS.filter((w) => {
+      if (/\s/.test(w)) return haystack.includes(w)
+      return new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(haystack)
+    })
+    expect(hits).toEqual([])
+  })
+})

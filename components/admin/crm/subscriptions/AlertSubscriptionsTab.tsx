@@ -53,6 +53,7 @@ import {
   TableSkeleton,
 } from '@/components/admin/crm/subscriptions/subscriptions-shared'
 import AlertEditDialog from '@/components/admin/crm/subscriptions/AlertEditDialog'
+import AlertEngineSettingsDialog from '@/components/admin/crm/subscriptions/AlertEngineSettingsDialog'
 import AssignBrokerDialog from '@/components/admin/crm/subscriptions/AssignBrokerDialog'
 import EmailPreviewDialog from '@/components/admin/crm/subscriptions/EmailPreviewDialog'
 
@@ -90,6 +91,8 @@ export default function AlertSubscriptionsTab({
   // Delete confirm target: the current selection, or one row from its menu.
   const [deleteTarget, setDeleteTarget] = useState<'selection' | AdminAlertSubscriptionRow | null>(null)
   const [editRow, setEditRow] = useState<AdminAlertSubscriptionRow | null>(null)
+  // Typed-event engine settings (preview mode + events + weekly days).
+  const [settingsRow, setSettingsRow] = useState<AdminAlertSubscriptionRow | null>(null)
   const [previewRow, setPreviewRow] = useState<AdminAlertSubscriptionRow | null>(null)
   const [assignRow, setAssignRow] = useState<AdminAlertSubscriptionRow | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -374,6 +377,7 @@ export default function AlertSubscriptionsTab({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onSelect={() => setEditRow(row)}>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => setSettingsRow(row)}>Alert settings</DropdownMenuItem>
                           <DropdownMenuItem onSelect={() => setPreviewRow(row)}>Preview email</DropdownMenuItem>
                           <DropdownMenuItem
                             disabled={!row.crmPersonId}
@@ -425,6 +429,14 @@ export default function AlertSubscriptionsTab({
 
       {editRow ? (
         <AlertEditDialog row={editRow} onClose={() => setEditRow(null)} onSaved={reload} />
+      ) : null}
+
+      {settingsRow ? (
+        <AlertEngineSettingsDialog
+          alertId={settingsRow.id}
+          onClose={() => setSettingsRow(null)}
+          onSaved={reload}
+        />
       ) : null}
 
       {previewRow ? (

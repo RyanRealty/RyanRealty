@@ -17,7 +17,6 @@ import { getSession } from '../../actions/auth'
 import { getBannerUrl, getOrCreatePlaceBanner, getBannerSearchQuery } from '../../actions/banners'
 import { shareDescription, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '../../../lib/share-metadata'
 import { getBestListingHeroForGeography } from '../../actions/photo-classification'
-import SaveSearchButton from '../../../components/SaveSearchButton'
 // design-audit NAV-1: KbNav comes from app/search/layout.tsx; these scrolling
 // branches render a KbFooter so MLS reciprocity + legal survive the SiteFooter
 // suppression on /homes-for-sale/** (lib/site/chrome-routes.ts).
@@ -48,7 +47,7 @@ import {
 import { GolfLanding } from '@/components/site/golf/GolfLanding'
 import { GOLF_COMMUNITIES } from '@/data/golf-landing'
 import { getGolfImages, pickGolfImage, getGolfHomesForLanding, getMarketPulse, getDerivedPopularSearches } from '@/lib/data'
-import AdvancedSearchFilters from '../../../components/AdvancedSearchFilters'
+import SearchFilterBar from '../../../components/SearchFilterBar'
 import ShareButton from '../../../components/ShareButton'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import SearchPageJsonLd from './SearchPageJsonLd'
@@ -600,10 +599,7 @@ export default async function SearchPage({
 
   // Map split view: bounds-driven, Bend default; on city/community pages center on that place and scope search
   if ((sp.view === 'map' || sp.view === 'split') && (city || hasFilterOnly)) {
-    const [{ default: UnifiedMapListingsView }, { default: SearchFilterBar }] = await Promise.all([
-      import('../../../components/UnifiedMapListingsView'),
-      import('../../../components/SearchFilterBar'),
-    ])
+    const { default: UnifiedMapListingsView } = await import('../../../components/UnifiedMapListingsView')
     const placeQuery = city
       ? decodedSubdivision
         ? `${getSubdivisionDisplayName(decodedSubdivision)} ${city} Oregon`
@@ -678,6 +674,7 @@ export default async function SearchPage({
               locationLabel={displayName}
               locationHref={`${searchPagePath}?${new URLSearchParams({ ...sp, view: 'map' }).toString()}`}
               signedIn={!!session?.user}
+              pathContext={{ ...resolved, city, citySlug: slug[0] }}
               minPrice={sp.minPrice}
               maxPrice={sp.maxPrice}
               beds={sp.beds}
@@ -938,11 +935,14 @@ export default async function SearchPage({
         </div>
       </header>
 
-      {/* 3. Filter bar — the existing URL-driven filters, presented as one tidy row. */}
-      <div className="mt-6 flex flex-wrap items-center gap-3">
-        <Suspense fallback={<div className="h-14 flex-1 rounded-lg border border-border bg-muted" />}>
-          <AdvancedSearchFilters
+      {/* 3. Filter bar — the shared registry-driven chip bar + All-filters sheet
+          (same components as /homes-for-sale and this route's map view). */}
+      <div className="mt-6">
+        <Suspense fallback={<div className="h-14 w-full rounded-lg border border-border bg-muted" />}>
+          <SearchFilterBar
             basePath={searchPagePath}
+            signedIn={!!session?.user}
+            pathContext={{ ...resolved, city, citySlug: slug[0] }}
             minPrice={numStr(filterOpts.minPrice)}
             maxPrice={numStr(filterOpts.maxPrice)}
             beds={numStr(filterOpts.minBeds)}
@@ -957,7 +957,6 @@ export default async function SearchPage({
             lotAcresMax={numStr(filterOpts.lotAcresMax)}
             postalCode={filterOpts.postalCode}
             propertyType={filterOpts.propertyType}
-            propertySubType={filterOpts.propertySubType}
             statusFilter={filterOpts.statusFilter}
             keywords={filterOpts.keywords}
             hasOpenHouse={filterOpts.hasOpenHouse ? '1' : undefined}
@@ -972,7 +971,6 @@ export default async function SearchPage({
             perPage={perPageParam}
           />
         </Suspense>
-        <SaveSearchButton user={!!session?.user} pathContext={{ ...resolved, city, citySlug: slug[0] }} />
       </div>
 
       {/* 4 + 5. Listings grid (design-system ListingCard) + sort/pagination toolbar. */}

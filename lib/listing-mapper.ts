@@ -11,6 +11,20 @@
  * - Computes all 17 Tier 1 derived metrics
  */
 
+import {
+  flattenCustomFields,
+  mergeCustomFieldsIntoDetails,
+  redactPublicDetails,
+} from '@/lib/listing-customfields'
+
+// The CustomFields subsystem lives in lib/listing-customfields.ts —
+// re-exported here so existing importers keep working unchanged.
+export {
+  PRIVATE_DETAIL_KEYS, CF_COLLISION_PREFIX,
+  redactPublicDetails, extractPrivateDetails,
+  flattenCustomFields, mergeCustomFieldsIntoDetails,
+} from '@/lib/listing-customfields'
+
 // ---------------------------------------------------------------------------
 // Sanitizers — handle Spark's "****" masking and type coercion
 // ---------------------------------------------------------------------------
@@ -68,37 +82,6 @@ export function toBool(v: unknown): boolean | null {
 /** Safe text extraction. Returns null for masked, empty, or non-string values.
  *  Handles Spark JSON feature objects like {"Frame": true, "Concrete": true} → "Frame, Concrete"
  */
-/**
- * Agent-only confidential MLS keys that must NEVER land in the anon-readable
- * listings.details (attack finding 2026-07-11). Single source of truth mirrored
- * by the SQL rr_private_keys() in migration 20260712000000. The sync mapper
- * strips these from `details` (redactPublicDetails) and the sync route diverts
- * them into the service-role-only listing_private table (extractPrivateDetails).
- */
-export const PRIVATE_DETAIL_KEYS = [
-  'PrivateRemarks', 'PrivateOfficeRemarks', 'ShowingInstructions',
-  'ShowingContactName', 'ShowingContactPhone', 'ShowingPhoneNumber',
-  'OwnerName', 'OwnerPhone', 'OccupantName', 'OccupantPhone',
-  'ContingencyRemarks',
-] as const
-
-/** `details` with every confidential key removed — safe for the anon-readable column. */
-export function redactPublicDetails(fields: Record<string, unknown>): Record<string, unknown> {
-  const out: Record<string, unknown> = { ...fields }
-  for (const k of PRIVATE_DETAIL_KEYS) delete out[k]
-  return out
-}
-
-/** The confidential keys pulled out for the service-role-only listing_private table; null when none present. */
-export function extractPrivateDetails(fields: Record<string, unknown>): Record<string, unknown> | null {
-  const priv: Record<string, unknown> = {}
-  for (const k of PRIVATE_DETAIL_KEYS) {
-    const v = fields[k]
-    if (v != null && !(typeof v === 'string' && (v.trim() === '' || /^\*+$/.test(v)))) priv[k] = v
-  }
-  return Object.keys(priv).length > 0 ? priv : null
-}
-
 export function toText(v: unknown): string | null {
   if (v == null) return null
   if (typeof v === 'string') {
@@ -397,11 +380,16 @@ export interface SparkStandardFields {
  *
  * @param fields - The StandardFields object from Spark API
  * @param resultId - Optional fallback ID from the Spark result envelope
+ * @param customFields - Optional raw Results[].CustomFields structure (from
+ *   `_expand=CustomFields`). Public CF fields merge into `details` (collision
+ *   policy in mergeCustomFieldsIntoDetails); confidential CF fields are
+ *   stripped here and diverted via extractPrivateDetails in the sync route.
  * @returns A flat object matching the listings table schema
  */
 export function sparkToListingRow(
   fields: SparkStandardFields,
-  resultId?: string
+  resultId?: string,
+  customFields?: unknown
 ): Record<string, unknown> {
   // --- Core identification ---
   const listingKey = toText(pick(fields, 'ListingKey')) ?? resultId ?? null
@@ -524,11 +512,22 @@ export function sparkToListingRow(
     has_virtual_tour: hasVirtualTour,
     media_finalized: isClosed,
 
-    // --- FULL details, MINUS the agent-only confidential keys (they divert to
-    //     the service-role-only listing_private table via the sync route). The
-    //     anon role reads details, so PrivateRemarks/ShowingInstructions/etc.
-    //     must never be persisted here (attack finding 2026-07-11). ---
-    details: redactPublicDetails(fields as Record<string, unknown>),
+    // --- FULL details (StandardFields + flattened public CustomFields), MINUS
+    //     the agent-only confidential keys (they divert to the service-role-only
+    //     listing_private table via the sync route). The anon role reads
+    //     details, so PrivateRemarks/ShowingInstructions/Owner Name/etc. must
+    //     never be persisted here (attack finding 2026-07-11; CF audit
+    //     2026-07-29). CF fields are redacted BEFORE the merge (so a
+    //     confidential CF key can never survive via collision renaming) and the
+    //     merged object is redacted again after. ---
+    details: redactPublicDetails(
+      customFields != null
+        ? mergeCustomFieldsIntoDetails(
+            fields as Record<string, unknown>,
+            redactPublicDetails(flattenCustomFields(customFields)),
+          )
+        : (fields as Record<string, unknown>)
+    ),
 
     // --- Tier 2: Property Basics ---
     property_sub_type: toText(pick(fields, 'PropertySubType')),

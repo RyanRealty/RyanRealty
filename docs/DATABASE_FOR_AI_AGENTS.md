@@ -202,7 +202,8 @@ GEOGRAPHY SOURCE-OF-TRUTH (manually curated, rarely changes):
 
 | Table | Rows | Purpose |
 |---|---|---|
-| `public.saved_searches` | 0 | Per-user saved search filters. `notification_frequency` drives the alert digest cadence. |
+| `public.listing_alerts` | — | THE canonical listing-alert table (unified 2026-07-07, migration `20260707160000_unify_listing_alerts.sql`). Every alert row — guest capture, signed-in save, broker assign, system default — keyed by (email, filters_hash); `notification_frequency` drives the digest cadence. DAL: `lib/data/leads/listingAlerts.ts`. |
+| `public.saved_searches` | 0 | LEGACY — survives only for the public-share feature (`is_public`, `public_title`, `cache_listing_keys`, `public_click_count`). Alerts moved to `listing_alerts` July 2026; do not build alert logic against this table. |
 | `public.saved_listings` | 0 | User-favorited listings. One row per (user, listing_key). |
 | `public.saved_communities` | 0 | User-favorited communities (`entity_key='city:subdivision'`). |
 | `public.saved_cities` | 0 | User-favorited cities (`city_slug='bend'`, `'sunriver'`, etc.). |

@@ -9,6 +9,18 @@ import {
   type SearchFieldDef,
 } from './field-registry'
 
+describe('field-registry: registry size (update when fields land/leave)', () => {
+  it('carries the expected field count per kind', () => {
+    const byKind = (kind: string) => SEARCH_FIELDS.filter((f) => f.kind === kind).length
+    // Phase 1 tranche (2026-07-30): +9 range, +9 boolean, +6 multi, +2 text.
+    expect(byKind('range')).toBe(20)
+    expect(byKind('boolean')).toBe(42)
+    expect(byKind('multi')).toBe(44)
+    expect(byKind('text')).toBe(7)
+    expect(SEARCH_FIELDS).toHaveLength(113)
+  })
+})
+
 describe('field-registry: keys and URL params', () => {
   it('has no duplicate field keys', () => {
     const keys = SEARCH_FIELDS.map((f) => f.key)
@@ -50,16 +62,11 @@ describe('field-registry: keys and URL params', () => {
 })
 
 describe('field-registry: multi options', () => {
-  it('every multi has an options array, empty only for laundryFeatures', () => {
+  it('every multi has a non-empty options array', () => {
     for (const field of SEARCH_FIELDS) {
       if (field.kind !== 'multi') continue
       expect(Array.isArray(field.options), `${field.key} missing options`).toBe(true)
-      if (field.key !== 'laundryFeatures') {
-        expect(field.options!.length, `${field.key} has empty options`).toBeGreaterThan(0)
-      } else {
-        expect(field.options).toEqual([])
-        expect(field.coverageNote).toBeTruthy()
-      }
+      expect(field.options!.length, `${field.key} has empty options`).toBeGreaterThan(0)
     }
   })
 
@@ -172,5 +179,68 @@ describe('field-registry: helpers and contract fixtures', () => {
     for (const param of ['minPrice', 'maxPrice', 'minSqFt', 'maxSqFt', 'beds', 'maxBeds', 'baths', 'maxBaths', 'garageMin', 'daysOnMarket', 'hoaMonthlyMax', 'hasFireplace', 'shop', 'appliances', 'county', 'keywords']) {
       expect(ALL_SEARCH_URL_PARAMS, `missing ${param}`).toContain(param)
     }
+  })
+})
+
+describe('field-registry: Phase 1 tranche (CustomFields + promoted scalars, 2026-07-30)', () => {
+  const EXPECTED_MV: Record<string, string> = {
+    // booleans
+    adu: 'adu_yn',
+    aduPermitted: 'adu_permitted_yn',
+    strPermit: 'str_permit_yn',
+    ccrs: 'ccrs_yn',
+    spa: 'spa_yn',
+    carport: 'carport_yn',
+    homeWarranty: 'home_warranty_yn',
+    hasFloorPlan: 'has_floor_plan',
+    hasVideo: 'has_video',
+    // ranges
+    aduSqft: 'adu_sqft',
+    irrigationAcres: 'irrigation_acres',
+    walkScore: 'walk_score',
+    storiesTotal: 'stories_total',
+    fireplacesTotal: 'fireplaces_total',
+    carportSpaces: 'carport_spaces',
+    parkingTotal: 'parking_total',
+    photosCount: 'photos_count',
+    prevListPrice: 'prev_list_price',
+    // multis
+    floodZone: 'flood_zone',
+    governmentOverlay: 'government_overlay',
+    easements: 'easements',
+    roomsArr: 'rooms_arr',
+    bodyType: 'body_types',
+    fencing: 'fencing_arr',
+    // texts
+    zoning: 'zoning',
+    irrigationDistrict: 'irrigation_district',
+  }
+
+  it('every new field exists with the contracted MV column, a category, and a label', () => {
+    for (const [key, mv] of Object.entries(EXPECTED_MV)) {
+      const def = searchFieldByKey(key)
+      expect(def, `${key} missing from registry`).toBeDefined()
+      expect(def!.mv, `${key} mv column`).toBe(mv)
+      expect(def!.category.length, `${key} category`).toBeGreaterThan(0)
+      expect(def!.label.length, `${key} label`).toBeGreaterThan(0)
+    }
+  })
+
+  it('new URL params register in ALL_SEARCH_URL_PARAMS (saved-search whitelist)', () => {
+    for (const param of ['adu', 'strPermit', 'ccrs', 'spa', 'carport', 'homeWarranty', 'hasFloorPlan', 'hasVideo', 'floodZone', 'roomsArr', 'bodyType', 'fencing', 'zoning', 'irrigationDistrict', 'aduSqftMin', 'aduSqftMax', 'walkScoreMin', 'storiesTotalMin', 'fireplacesTotalMin', 'carportSpacesMin', 'parkingTotalMin', 'photosCountMin', 'prevListPriceMin', 'irrigationAcresMin']) {
+      expect(ALL_SEARCH_URL_PARAMS, `missing ${param}`).toContain(param)
+    }
+  })
+
+  it('CF-derived fields carry the backfill coverage note until the re-pull lands', () => {
+    for (const key of ['adu', 'aduPermitted', 'aduSqft', 'strPermit', 'ccrs', 'irrigationDistrict', 'floodZone', 'governmentOverlay', 'easements', 'roomsArr']) {
+      expect(searchFieldByKey(key)?.coverageNote, `${key} coverageNote`).toBe('Backfill pending 2026-07-30')
+    }
+  })
+
+  it('adu owns the accessory-dwelling voice phrases (moved off guestHouse)', () => {
+    expect(searchFieldByKey('adu')?.voice).toContain('adu')
+    expect(searchFieldByKey('adu')?.voice).toContain('casita')
+    expect(searchFieldByKey('guestHouse')?.voice).toEqual(['guest house'])
   })
 })

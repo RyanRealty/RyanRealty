@@ -27,7 +27,9 @@ function uuidv4(): string {
   return `${h[0]}${h[1]}${h[2]}${h[3]}-${h[4]}${h[5]}-${h[6]}${h[7]}-${h[8]}${h[9]}-${h[10]}${h[11]}${h[12]}${h[13]}${h[14]}${h[15]}`
 }
 
-function getOrCreateSessionId(): string | null {
+/** Exported so other client trackers (search-events.client.ts) stitch the SAME
+ *  rr_session_id the page_view pipeline uses — one visitor, one session key. */
+export function getOrCreateSessionId(): string | null {
   if (typeof window === 'undefined') return null
   try {
     const existing = localStorage.getItem(RR_SESSION_ID_KEY)

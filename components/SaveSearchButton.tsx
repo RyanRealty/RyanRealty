@@ -12,6 +12,8 @@ import {
   readArrayParam,
 } from '@/components/search/SearchAlertCapture'
 import { trackEvent } from '@/lib/tracking'
+import { buildSearchSavePayload, countActiveSearchParams } from '@/lib/search/search-events'
+import { fireSearchEvent } from '@/components/search/search-events.client'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -86,6 +88,16 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
     return normalizeSavedSearchFilters(raw)
   }
 
+  /** search_save row into user_events (Phase 0.5) — fired on SUCCESS only,
+   *  from both the signed-in and guest paths. Fire-and-forget. */
+  function fireSaveEvent() {
+    const params = new URLSearchParams(searchParams?.toString() ?? '')
+    fireSearchEvent(
+      'search_save',
+      buildSearchSavePayload(!!params.get('poly'), countActiveSearchParams(params))
+    )
+  }
+
   async function handleGuestSave(e: React.FormEvent) {
     e.preventDefault()
     setStatus('saving')
@@ -105,6 +117,7 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
     const res = await submitSearchAlertSignup({ email, filters: stringFilters, company })
     if (res.ok) {
       setStatus('done')
+      fireSaveEvent()
       try {
         trackEvent('save_search', {
           guest: true,
@@ -137,6 +150,7 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
     })
     setStatus(result.error ? 'error' : 'done')
     if (!result.error) {
+      fireSaveEvent()
       // High-intent event: visitor saved a search, expects alerts on new matches.
       // Carries the filter dimensions so we can answer "which buyer criteria
       // are most common" from the GA4 event taxonomy.

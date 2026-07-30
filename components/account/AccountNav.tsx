@@ -9,6 +9,7 @@ const ACCOUNT_NAV_LINKS = [
   { href: '/account/saved-homes', label: 'Saved homes' },
   { href: '/account/hidden', label: 'Hidden homes' },
   { href: '/account/saved-searches', label: 'Saved searches' },
+  { href: '/account/areas', label: 'My areas' },
   { href: '/account/collections', label: 'Collections' },
   { href: '/account/history', label: 'Viewing history' },
   { href: '/account/saved-cities', label: 'Saved cities' },

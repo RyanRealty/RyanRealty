@@ -90,19 +90,74 @@ export const CADENCE_INTERVAL_MS: Record<SavedSearchCadence, number> = {
 }
 
 /**
+ * Brokerage-local timezone for per-day weekly scheduling. Bend, Oregon —
+ * subscribers think in Pacific days, not UTC days.
+ */
+export const CADENCE_TIME_ZONE = 'America/Los_Angeles'
+
+/**
+ * Sanitize a stored schedule_days value (smallint[] — 0=Sunday..6=Saturday)
+ * to a deduped list of valid day numbers. Null/empty/garbage → null, meaning
+ * "no per-day restriction" (plain weekly interval applies).
+ */
+export function normalizeScheduleDays(raw: unknown): number[] | null {
+  if (!Array.isArray(raw)) return null
+  const days = [...new Set(raw.filter((d): d is number => Number.isInteger(d) && d >= 0 && d <= 6))]
+  return days.length > 0 ? days.sort((a, b) => a - b) : null
+}
+
+/** "2026-07-29"-style local calendar-day stamp for a moment, in `timeZone`. */
+function localDayStamp(at: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(at)
+}
+
+/** Local day-of-week (0=Sunday..6=Saturday) for a moment, in `timeZone`. */
+export function localDayOfWeek(at: Date, timeZone: string = CADENCE_TIME_ZONE): number {
+  const name = new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short' }).format(at)
+  const idx = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(name)
+  return idx >= 0 ? idx : at.getUTCDay()
+}
+
+/**
  * True when an alert row is due for its next send. Drop-in replacement for the
  * cron's local `shouldSendByFrequency` (app/actions/saved-search-alerts.ts):
  * a never-notified row is always due; an unknown or missing stored frequency
  * falls back to the default cadence; an unparseable timestamp is treated as
  * never-notified so a corrupt value can't silence an alert forever.
+ *
+ * Weekly + schedule_days (0=Sunday..6=Saturday, America/Los_Angeles): the
+ * Flexmls per-day-of-week model. The alert is due only ON a scheduled local
+ * day, at most once per local day (a Mon+Thu schedule sends twice a week —
+ * the 7-day interval does not also apply). schedule_days is ignored for every
+ * other cadence.
  */
 export function isCadenceDue(
-  alert: { notification_frequency: string | null; last_notified_at: string | null },
+  alert: {
+    notification_frequency: string | null
+    last_notified_at: string | null
+    schedule_days?: unknown
+  },
   now: Date = new Date(),
 ): boolean {
+  const cadence = normalizeStoredCadence(alert.notification_frequency)
+
+  const scheduleDays = cadence === 'weekly' ? normalizeScheduleDays(alert.schedule_days) : null
+  if (scheduleDays) {
+    if (!scheduleDays.includes(localDayOfWeek(now))) return false
+    if (!alert.last_notified_at) return true
+    const last = new Date(alert.last_notified_at)
+    if (!Number.isFinite(last.getTime())) return true
+    // At most one send per scheduled local day.
+    return localDayStamp(last, CADENCE_TIME_ZONE) !== localDayStamp(now, CADENCE_TIME_ZONE)
+  }
+
   if (!alert.last_notified_at) return true
   const last = new Date(alert.last_notified_at).getTime()
   if (!Number.isFinite(last)) return true
-  const cadence = normalizeStoredCadence(alert.notification_frequency)
   return now.getTime() - last >= CADENCE_INTERVAL_MS[cadence]
 }

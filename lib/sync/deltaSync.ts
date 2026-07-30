@@ -65,9 +65,13 @@ export const DELTA_SYNC = {
   HISTORY_CONCURRENCY: 5,
   /**
    * Reconciled SUPERSET expand: cron lacked FloorPlans + Documents, action had
-   * them. The union loses no media on either path.
+   * them. The union loses no media on either path. CustomFields added
+   * 2026-07-29 (search plan Phase 1.2): the full Flexmls field dictionary (ADU,
+   * STR permit, CC&Rs, zoning, flood, …) rides every upserted payload; its
+   * confidential fields (Owner Name, Phone to Show, escrow) divert to
+   * listing_private via extractPrivateDetails BEFORE details is persisted.
    */
-  EXPAND: 'Photos,FloorPlans,Videos,VirtualTours,OpenHouses,Documents',
+  EXPAND: 'Photos,FloorPlans,Videos,VirtualTours,OpenHouses,Documents,CustomFields',
   /** Default lookback when there is no stored cursor. Cron 30min (hardened). */
   DEFAULT_WINDOW_MS: 30 * 60 * 1000,
 } as const
@@ -85,8 +89,14 @@ export type ExistingListingLite = {
   is_finalized: boolean | null
 }
 
-/** A raw Spark delta result as returned by the listings feed. */
-export type SparkDeltaResult = { StandardFields?: Record<string, unknown>; Id?: string }
+/** A raw Spark delta result as returned by the listings feed. CustomFields is
+ *  the raw Flexmls dictionary structure (sibling of StandardFields, present when
+ *  the fetch expands CustomFields). */
+export type SparkDeltaResult = {
+  StandardFields?: Record<string, unknown>
+  Id?: string
+  CustomFields?: unknown
+}
 
 export type ActivityEventRow = {
   listing_key: string
@@ -149,7 +159,7 @@ function round2(n: number): number {
  * ListNumber). Every ListNumber the core reads flows through here.
  */
 export function resultToMappedRow(result: SparkDeltaResult): Record<string, unknown> {
-  return sparkToListingRow(result.StandardFields ?? {}, result.Id)
+  return sparkToListingRow(result.StandardFields ?? {}, result.Id, result.CustomFields)
 }
 
 // ── The pure decision heart (unit-tested) ────────────────────────────────────
@@ -212,7 +222,7 @@ export function computeDeltaPlan(
       continue
     }
 
-    const priv = extractPrivateDetails(fields)
+    const priv = extractPrivateDetails(fields, result.CustomFields)
     if (priv) plan.privateRows.push({ listing_key: listingKey, private_data: priv })
 
     const nowTerminal = status ? isTerminalStatus(status) : false

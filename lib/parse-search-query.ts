@@ -48,6 +48,10 @@ type PhraseAction =
   | { kind: 'boolean'; key: string }
   | { kind: 'multiValue'; key: string; value: string }
   | { kind: 'params'; params: Readonly<Record<string, string>> }
+  // Negation guard: consumes the span, sets nothing. "no ccrs" / "without a
+  // pool" must not fire the positive filter (the URL/DAL contract has no
+  // false state for booleans, so a negated phrase is dropped, not inverted).
+  | { kind: 'negated' }
 
 type CompiledMatcher = { phrase: string; re: RegExp; action: PhraseAction }
 
@@ -125,6 +129,20 @@ function buildMatchers(): CompiledMatcher[] {
     }
   }
   for (const [phrase, params] of GRAMMAR_PHRASES) add(phrase, { kind: 'params', params })
+
+  // Negation guards for every boolean phrase, registered AFTER the positives
+  // so a field whose own phrase is negative-shaped ('no hoa', 'no stairs')
+  // keeps its meaning. The longest-first sort below guarantees 'no ccrs'
+  // consumes before the bare 'ccrs' matcher can fire.
+  for (const field of SEARCH_FIELDS) {
+    if (field.kind !== 'boolean') continue
+    for (const phrase of field.voice ?? []) {
+      add(`no ${phrase}`, { kind: 'negated' })
+      // Interior articles are optional in phraseToRegex, so this one matcher
+      // covers both "without a pool" and "without pool".
+      add(`without a ${phrase}`, { kind: 'negated' })
+    }
+  }
 
   // Longest phrase first: 'on the golf course' beats 'golf course' beats 'golf'.
   return matchers.sort((a, b) => b.phrase.length - a.phrase.length)
@@ -265,6 +283,10 @@ export function parseSearchQuery(raw: string): ParsedSearch {
       return ' '.repeat(m.length)
     })
     if (!matched) continue
+    if (action.kind === 'negated') {
+      // Span consumed; the negated filter is intentionally NOT set.
+      continue
+    }
     if (action.kind === 'boolean') {
       out[action.key] = '1'
     } else if (action.kind === 'multiValue') {

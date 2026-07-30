@@ -10,6 +10,7 @@
  * outbound email carries open/click tracking via attributeOutbound.
  */
 
+import { getAlertManageUrl } from '@/lib/alerts/manage-url'
 import { getCrmAccess } from '@/app/actions/crm'
 import {
   listGuestAlertSubscriptions,
@@ -323,7 +324,7 @@ export async function previewAlertEmailAction(
       totalNewCount: Math.max(results.listings.length, listings.length),
       browseAllUrl: `${SITE_URL}${buildSearchUrlFromFilters(filters)}`,
       unsubscribeUrl: `${SITE_URL}/alerts/unsubscribe?token=${encodeURIComponent(sub.unsubscribeToken ?? '')}`,
-      manageUrl: kind === 'user' ? `${SITE_URL}/account/saved-searches` : null,
+      manageUrl: kind === 'user' ? getAlertManageUrl(sub.id, SITE_URL) : null,
     })
     const note = listings.length === 0
       ? 'No listings currently match this search, so the rendered email shows an empty state. A real send is skipped when nothing matches.'

@@ -88,3 +88,118 @@ describe('private-detail redaction (attack finding 2026-07-11)', () => {
     expect(extractPrivateDetails({ PublicRemarks: 'only public', City: 'Bend' })).toBeNull()
   })
 })
+
+// ---------------------------------------------------------------------------
+// CustomFields ingest (search plan Phase 1.2, 2026-07-29)
+// ---------------------------------------------------------------------------
+
+/** Fixture mirroring the REAL Spark CF response shape verified live 2026-07-29:
+ *  Results[].CustomFields = [{ "Main": [ { "<Group Name>": [ {"<Field>": v} ] } ] }] */
+const CF_FIXTURE = [
+  {
+    Main: [
+      {
+        'General Property Information': [
+          { 'Accessory Dwelling Unit YN': 'No' },
+          { 'Short Term Rental Permit YN': 'Yes' },
+          { "CC&R's YN": 'Yes' },
+          { 'Power Production': '' },            // empty → dropped
+          { 'Occupant Name': '********' },       // masked → dropped entirely
+        ],
+      },
+      {
+        'Location, Tax, and Legal': [
+          { Zoning: 'RM' },
+          { 'Owner Name': 'Jane Confidential' },
+          { 'Phone to Show': '541-555-0100' },
+          { 'Phone to Show Number': '541-555-0101' },
+          { 'Preferred Escrow Company & Officer': 'ABC Escrow / Sally O.' },
+        ],
+      },
+      { Flood: [{ Flood: 'None' }] },
+      { 'Government Overlay': [{ 'Government Overlay': 'Urban Growth Boundary' }] },
+    ],
+  },
+]
+
+describe('CustomFields flattening + privacy diversion', () => {
+  it('flattens the real CF shape to a single flat {Field: value} object, dropping masked + empty', async () => {
+    const { flattenCustomFields } = await import('./listing-mapper')
+    const flat = flattenCustomFields(CF_FIXTURE)
+    expect(flat['Accessory Dwelling Unit YN']).toBe('No')
+    expect(flat['Short Term Rental Permit YN']).toBe('Yes')
+    expect(flat["CC&R's YN"]).toBe('Yes')
+    expect(flat.Zoning).toBe('RM')
+    expect(flat.Flood).toBe('None')
+    expect(flat['Government Overlay']).toBe('Urban Growth Boundary')
+    // masked + empty values never survive flattening
+    expect(flat['Occupant Name']).toBeUndefined()
+    expect(flat['Power Production']).toBeUndefined()
+    // confidential values ARE in the raw flat output (redaction is the caller's job)
+    expect(flat['Owner Name']).toBe('Jane Confidential')
+  })
+
+  it('sparkToListingRow merges public CF fields into details and NEVER a confidential key (either spelling family)', async () => {
+    const { sparkToListingRow, PRIVATE_DETAIL_KEYS, CF_COLLISION_PREFIX } = await import('./listing-mapper')
+    const fields = {
+      ListingKey: '123', ListNumber: '220000001', StandardStatus: 'Active',
+      PublicRemarks: 'Lovely home.', PrivateRemarks: 'Lockbox 1234',
+    }
+    const row = sparkToListingRow(fields, undefined, CF_FIXTURE)
+    const details = row.details as Record<string, unknown>
+    // public CF fields are reachable in details under their spaced names
+    expect(details['Accessory Dwelling Unit YN']).toBe('No')
+    expect(details['Short Term Rental Permit YN']).toBe('Yes')
+    expect(details["CC&R's YN"]).toBe('Yes')
+    expect(details.Zoning).toBe('RM')
+    // no confidential key in details, in either spelling, prefixed or not
+    for (const k of PRIVATE_DETAIL_KEYS) {
+      expect(details[k], `details must not carry ${k}`).toBeUndefined()
+      expect(details[`${CF_COLLISION_PREFIX}${k}`], `details must not carry ${CF_COLLISION_PREFIX}${k}`).toBeUndefined()
+    }
+  })
+
+  it('extractPrivateDetails diverts the confidential CF keys (masked ones dropped)', async () => {
+    const { extractPrivateDetails } = await import('./listing-mapper')
+    const priv = extractPrivateDetails({ PrivateRemarks: 'Lockbox 1234' }, CF_FIXTURE)
+    expect(priv).toEqual({
+      PrivateRemarks: 'Lockbox 1234',
+      'Owner Name': 'Jane Confidential',
+      'Phone to Show': '541-555-0100',
+      'Phone to Show Number': '541-555-0101',
+      'Preferred Escrow Company & Officer': 'ABC Escrow / Sally O.',
+      // 'Occupant Name' was masked "********" → not diverted
+    })
+  })
+
+  it('collision policy: identical value skipped, different value stored under the CF prefix', async () => {
+    const { mergeCustomFieldsIntoDetails, CF_COLLISION_PREFIX } = await import('./listing-mapper')
+    const details = { Zoning: 'RM', City: 'Bend' }
+    // identical → single key, no prefix
+    const same = mergeCustomFieldsIntoDetails(details, { Zoning: 'RM', Flood: 'None' })
+    expect(same.Zoning).toBe('RM')
+    expect(same[`${CF_COLLISION_PREFIX}Zoning`]).toBeUndefined()
+    expect(same.Flood).toBe('None')
+    // different → StandardFields value keeps its key, CF value lands prefixed
+    const diff = mergeCustomFieldsIntoDetails(details, { Zoning: 'A-1' })
+    expect(diff.Zoning).toBe('RM')
+    expect(diff[`${CF_COLLISION_PREFIX}Zoning`]).toBe('A-1')
+  })
+
+  it('sparkToListingRow without CustomFields is unchanged (no CF keys, no crash)', async () => {
+    const { sparkToListingRow } = await import('./listing-mapper')
+    const row = sparkToListingRow({ ListingKey: '123', ListNumber: '220000001', PublicRemarks: 'x' })
+    const details = row.details as Record<string, unknown>
+    expect(details.PublicRemarks).toBe('x')
+    expect(details.Zoning).toBeUndefined()
+  })
+
+  it('flattenCustomFields tolerates junk shapes (null, non-array, empty)', async () => {
+    const { flattenCustomFields } = await import('./listing-mapper')
+    expect(flattenCustomFields(null)).toEqual({})
+    expect(flattenCustomFields(undefined)).toEqual({})
+    expect(flattenCustomFields([])).toEqual({})
+    expect(flattenCustomFields('garbage')).toEqual({})
+    expect(flattenCustomFields([{ Main: 'not-an-array' }])).toEqual({})
+  })
+})

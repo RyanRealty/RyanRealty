@@ -184,10 +184,10 @@ export function ProspectTable({
                   <div className="h-9 w-12 rounded-sm bg-secondary" aria-hidden />
                 )}
               </TableCell>
-              <TableCell className="max-w-[12rem] truncate font-medium">
+              <TableCell className="max-w-48 truncate font-medium">
                 {row.ownerName ?? <span className="text-muted-foreground">Owner unknown</span>}
               </TableCell>
-              <TableCell className="max-w-[16rem]">
+              <TableCell className="max-w-xs">
                 <Link href={detailHref(row)} className="block truncate underline-offset-2 hover:underline">
                   {row.fullAddress ?? row.streetAddress ?? '—'}
                 </Link>

@@ -21,6 +21,7 @@ import {
   listAlertSubscriptionsAction,
   listReportSubscriptionsAdminAction,
 } from '@/app/actions/subscriptions-admin'
+import { listPendingAlertApprovalGroups } from '@/lib/data/leads/listingAlertApprovals'
 import { getGlobalDeliverySummary } from '@/lib/data/crm/emailDelivery'
 import SubscriptionsHub from '@/components/admin/crm/subscriptions/SubscriptionsHub'
 
@@ -31,13 +32,15 @@ export default async function CrmSubscriptionsPage() {
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
 
-  const [guest, user, reports, delivery] = await Promise.all([
+  const [guest, user, reports, delivery, approvals] = await Promise.all([
     listAlertSubscriptionsAction({ kind: 'guest', status: 'all', limit: 50, offset: 0 }),
     listAlertSubscriptionsAction({ kind: 'user', status: 'all', limit: 50, offset: 0 }),
     listReportSubscriptionsAdminAction({ status: 'all', limit: 50, offset: 0 }),
     // Direct DAL read — the page is already behind getCrmAccess above, and the
     // reader fails soft (unreadable:true renders an honest empty tab).
     getGlobalDeliverySummary({ days: 30 }),
+    // Preview-mode holds waiting for broker approval ("To approve" tab).
+    listPendingAlertApprovalGroups().then((data) => ({ data, error: null as string | null })).catch(() => ({ data: null, error: 'Could not load the approval queue' })),
   ])
 
   return (
@@ -53,6 +56,7 @@ export default async function CrmSubscriptionsPage() {
         initialUser={user.data ?? { rows: [], total: 0 }}
         initialReports={reports.data ?? { rows: [], total: 0 }}
         initialDelivery={delivery}
+        initialApprovals={approvals.data ?? []}
       />
     </main>
   )

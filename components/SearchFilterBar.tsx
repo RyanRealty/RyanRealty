@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useTransition } from 'react'
 import { PROPERTY_TYPES } from '@/lib/property-type'
 import SaveSearchButton from '@/components/SaveSearchButton'
+import type { SavedSearchPathContext } from '@/lib/search/saved-search-path-filters'
 import AllFiltersSheet, {
   activeRegistryFilters,
   ParsedSearchNotice,
@@ -62,6 +63,10 @@ export type SearchFilterBarProps = {
   locationHref?: string
   /** Pass to show Save search button (logged-in only). */
   signedIn?: boolean
+  /** Server-resolved geography for path-scoped routes (city/subdivision/preset
+   *  in the slug) — SaveSearchButton stores canonical filters instead of
+   *  guessing from the pathname. Query-param surfaces omit it. */
+  pathContext?: SavedSearchPathContext
   minPrice?: string
   maxPrice?: string
   beds?: string
@@ -608,7 +613,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
       {/* Save this search — always present. Signed-in users get the named/public
           save; guests get the email-capture path (FUB buyer lead, audience:buyer).
           Gating on props.signedIn hid the affordance from most visitors. */}
-      <SaveSearchButton user={!!props.signedIn} />
+      <SaveSearchButton user={!!props.signedIn} pathContext={props.pathContext} />
         </div>
       </div>
 

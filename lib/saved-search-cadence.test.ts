@@ -8,6 +8,8 @@ import {
   normalizeStoredCadence,
   cadenceLabel,
   isCadenceDue,
+  localDayOfWeek,
+  normalizeScheduleDays,
 } from './saved-search-cadence'
 
 describe('SAVED_SEARCH_CADENCES', () => {
@@ -158,5 +160,137 @@ describe('isCadenceDue', () => {
     expect(CADENCE_INTERVAL_MS.instant).toBeLessThan(CADENCE_INTERVAL_MS.daily)
     expect(CADENCE_INTERVAL_MS.daily).toBeLessThan(CADENCE_INTERVAL_MS.weekly)
     expect(CADENCE_INTERVAL_MS.weekly).toBeLessThan(CADENCE_INTERVAL_MS.monthly)
+  })
+})
+
+describe('normalizeScheduleDays', () => {
+  it('accepts valid day lists, deduped and sorted', () => {
+    expect(normalizeScheduleDays([3, 1, 3, 5])).toEqual([1, 3, 5])
+  })
+
+  it('drops invalid entries and treats an empty result as null', () => {
+    expect(normalizeScheduleDays([7, -1, 2.5])).toBeNull()
+    expect(normalizeScheduleDays([])).toBeNull()
+    expect(normalizeScheduleDays(null)).toBeNull()
+    expect(normalizeScheduleDays('mon')).toBeNull()
+  })
+})
+
+describe('localDayOfWeek (America/Los_Angeles)', () => {
+  it('maps a UTC instant to the Pacific weekday', () => {
+    // 2026-07-30T04:00:00Z is still Wednesday July 29, 9 PM PDT.
+    expect(localDayOfWeek(new Date('2026-07-30T04:00:00.000Z'))).toBe(3)
+    // 2026-07-29T05:00:00Z is Tuesday July 28, 10 PM PDT.
+    expect(localDayOfWeek(new Date('2026-07-29T05:00:00.000Z'))).toBe(2)
+  })
+})
+
+describe('isCadenceDue — weekly schedule_days (0=Sunday..6=Saturday, Pacific)', () => {
+  // Wednesday July 29 2026, noon PDT.
+  const wedNoon = new Date('2026-07-29T19:00:00.000Z')
+
+  it('not due on a day outside the schedule', () => {
+    expect(
+      isCadenceDue(
+        { notification_frequency: 'weekly', last_notified_at: null, schedule_days: [1] },
+        wedNoon,
+      ),
+    ).toBe(false)
+  })
+
+  it('due on a scheduled day when never notified', () => {
+    expect(
+      isCadenceDue(
+        { notification_frequency: 'weekly', last_notified_at: null, schedule_days: [3] },
+        wedNoon,
+      ),
+    ).toBe(true)
+  })
+
+  it('at most one send per scheduled local day', () => {
+    // Already sent this Wednesday morning (6 AM PDT) → not due again today.
+    expect(
+      isCadenceDue(
+        {
+          notification_frequency: 'weekly',
+          last_notified_at: '2026-07-29T13:00:00.000Z',
+          schedule_days: [3],
+        },
+        wedNoon,
+      ),
+    ).toBe(false)
+    // Last send was the PREVIOUS Wednesday → due.
+    expect(
+      isCadenceDue(
+        {
+          notification_frequency: 'weekly',
+          last_notified_at: '2026-07-22T19:00:00.000Z',
+          schedule_days: [3],
+        },
+        wedNoon,
+      ),
+    ).toBe(true)
+  })
+
+  it('two scheduled days send twice a week (the 7-day interval does not apply)', () => {
+    // Sent Tuesday noon PDT; now Wednesday noon PDT with a Tue+Wed schedule.
+    expect(
+      isCadenceDue(
+        {
+          notification_frequency: 'weekly',
+          last_notified_at: '2026-07-28T19:00:00.000Z',
+          schedule_days: [2, 3],
+        },
+        wedNoon,
+      ),
+    ).toBe(true)
+  })
+
+  it('uses the PACIFIC calendar day, not the UTC day', () => {
+    // now: Wed Jul 29, 9 PM PDT (already Thursday in UTC).
+    const wedLateEvening = new Date('2026-07-30T04:00:00.000Z')
+    // last send: Tue Jul 28, 10 PM PDT (Wednesday in UTC!) → different local
+    // day, Wednesday is scheduled → due.
+    expect(
+      isCadenceDue(
+        {
+          notification_frequency: 'weekly',
+          last_notified_at: '2026-07-29T05:00:00.000Z',
+          schedule_days: [3],
+        },
+        wedLateEvening,
+      ),
+    ).toBe(true)
+  })
+
+  it('invalid or empty schedule_days falls back to the plain weekly interval', () => {
+    const sixDaysAgo = new Date(wedNoon.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString()
+    const eightDaysAgo = new Date(wedNoon.getTime() - 8 * 24 * 60 * 60 * 1000).toISOString()
+    for (const schedule of [[], [9, -2], null, undefined, 'bogus']) {
+      expect(
+        isCadenceDue(
+          { notification_frequency: 'weekly', last_notified_at: sixDaysAgo, schedule_days: schedule },
+          wedNoon,
+        ),
+      ).toBe(false)
+      expect(
+        isCadenceDue(
+          { notification_frequency: 'weekly', last_notified_at: eightDaysAgo, schedule_days: schedule },
+          wedNoon,
+        ),
+      ).toBe(true)
+    }
+  })
+
+  it('schedule_days is ignored for non-weekly cadences', () => {
+    // Daily row carrying schedule_days [1] (Monday): still due after 25 hours
+    // on a Wednesday — the day filter only applies to weekly.
+    const twentyFiveHoursAgo = new Date(wedNoon.getTime() - 25 * 60 * 60 * 1000).toISOString()
+    expect(
+      isCadenceDue(
+        { notification_frequency: 'daily', last_notified_at: twentyFiveHoursAgo, schedule_days: [1] },
+        wedNoon,
+      ),
+    ).toBe(true)
   })
 })

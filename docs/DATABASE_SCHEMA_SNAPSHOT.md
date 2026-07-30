@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-07-30T01:02:10.653Z
+**Generated:** 2026-07-30T06:54:21.838Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -348,7 +348,7 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `search_vector` | tsvector | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `similar_listings_mv` · **rows ≈ 76,005**
+### `similar_listings_mv` · **rows ≈ 75,953**
 
 (anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).
 
@@ -417,7 +417,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 12,531**
+### `market_stats_cache` · **rows ≈ 11,792**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -593,7 +593,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 219**
+### `cmas` · **rows ≈ 220**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -737,7 +737,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_email_claim_at` | timestamp with time zone | yes |  |
 | `outreach_email_idempotency_key` | text | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 581**
+### `marketing_brain_actions` · **rows ≈ 583**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -2593,6 +2593,20 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `office_phone` | text | yes |  |
 | `created_at` | timestamp with time zone | no | now() |
 
+### `listing_alert_queue`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `alert_id` | uuid | no |  |
+| `listing_key` | text | no |  |
+| `event_type` | text | no |  |
+| `event_payload` | jsonb | no | '{}'::jsonb |
+| `status` | text | no | 'pending'::text |
+| `created_at` | timestamp with time zone | no | now() |
+| `decided_at` | timestamp with time zone | yes |  |
+| `decided_by` | text | yes |  |
+
 ### `listing_alerts`
 
 | Column | Type | Nullable | Default |
@@ -2615,6 +2629,10 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `created_at` | timestamp with time zone | no | now() |
 | `updated_at` | timestamp with time zone | no | now() |
 | `notified_listing_keys` | jsonb | no | '[]'::jsonb |
+| `events` | jsonb | no | '{"new": true, "sold": false, "open_house": false, "price_change": true, "status_change": true, "back_on_market": false}'::jsonb |
+| `schedule_days` | ARRAY | yes |  |
+| `preview_mode` | boolean | no | false |
+| `recipients` | jsonb | yes |  |
 
 ### `listing_boundary_xref_mv`
 
@@ -2795,6 +2813,36 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `road_frontage` | ARRAY | yes |  |
 | `pool_features` | ARRAY | yes |  |
 | `direction_faces` | text | yes |  |
+| `adu_yn` | boolean | yes |  |
+| `adu_type` | text | yes |  |
+| `adu_sqft` | numeric | yes |  |
+| `adu_permitted_yn` | boolean | yes |  |
+| `str_permit_yn` | boolean | yes |  |
+| `ccrs_yn` | boolean | yes |  |
+| `zoning` | text | yes |  |
+| `irrigation_district` | text | yes |  |
+| `irrigation_acres` | numeric | yes |  |
+| `flood_zone` | ARRAY | yes |  |
+| `government_overlay` | ARRAY | yes |  |
+| `easements` | ARRAY | yes |  |
+| `rooms_arr` | ARRAY | yes |  |
+| `body_types` | ARRAY | yes |  |
+| `prev_list_price` | numeric | yes |  |
+| `floor_plans_count` | integer | yes |  |
+| `videos_count` | integer | yes |  |
+| `virtual_tours_count` | integer | yes |  |
+| `has_floor_plan` | boolean | yes |  |
+| `has_video` | boolean | yes |  |
+| `spa_yn` | boolean | yes |  |
+| `fencing_arr` | ARRAY | yes |  |
+| `carport_yn` | boolean | yes |  |
+| `carport_spaces` | smallint | yes |  |
+| `stories_total` | smallint | yes |  |
+| `fireplaces_total` | smallint | yes |  |
+| `home_warranty_yn` | boolean | yes |  |
+| `walk_score` | smallint | yes |  |
+| `parking_total` | smallint | yes |  |
+| `photos_count` | smallint | yes |  |
 
 ### `listing_search_mv_src`
 
@@ -2897,6 +2945,36 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `road_frontage` | text[] | yes |  |
 | `pool_features` | text[] | yes |  |
 | `direction_faces` | text | yes |  |
+| `adu_yn` | boolean | yes |  |
+| `adu_type` | text | yes |  |
+| `adu_sqft` | numeric | yes |  |
+| `adu_permitted_yn` | boolean | yes |  |
+| `str_permit_yn` | boolean | yes |  |
+| `ccrs_yn` | boolean | yes |  |
+| `zoning` | text | yes |  |
+| `irrigation_district` | text | yes |  |
+| `irrigation_acres` | numeric | yes |  |
+| `flood_zone` | text[] | yes |  |
+| `government_overlay` | text[] | yes |  |
+| `easements` | text[] | yes |  |
+| `rooms_arr` | text[] | yes |  |
+| `body_types` | text[] | yes |  |
+| `prev_list_price` | numeric | yes |  |
+| `floor_plans_count` | integer | yes |  |
+| `videos_count` | integer | yes |  |
+| `virtual_tours_count` | integer | yes |  |
+| `has_floor_plan` | boolean | yes |  |
+| `has_video` | boolean | yes |  |
+| `spa_yn` | boolean | yes |  |
+| `fencing_arr` | text[] | yes |  |
+| `carport_yn` | boolean | yes |  |
+| `carport_spaces` | smallint | yes |  |
+| `stories_total` | smallint | yes |  |
+| `fireplaces_total` | smallint | yes |  |
+| `home_warranty_yn` | boolean | yes |  |
+| `walk_score` | smallint | yes |  |
+| `parking_total` | smallint | yes |  |
+| `photos_count` | smallint | yes |  |
 
 ### `listing_shares`
 
@@ -3639,6 +3717,21 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `public_click_count` | integer | no | 0 |
 | `unsubscribe_token` | text | yes | (gen_random_uuid())::text |
 | `crm_person_id` | bigint | yes |  |
+
+### `search_areas`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `owner_user_id` | uuid | yes |  |
+| `owner_kind` | text | no | 'user'::text |
+| `name` | text | no |  |
+| `slug` | text | yes |  |
+| `shapes` | jsonb | no |  |
+| `geom` | USER-DEFINED | yes |  |
+| `is_public` | boolean | no | false |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
 
 ### `settings`
 

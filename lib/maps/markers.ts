@@ -15,6 +15,9 @@
  */
 
 // Brand tokens (hex required for Google Maps SVG/InfoWindow isolation).
+/** Excluded-shape tint for map draw tools (destructive red at map-overlay opacity). */
+export const MAP_EXCLUDE_RED = '#dc2626'
+
 export const MAP_NAVY = '#102742'
 export const MAP_WHITE = '#ffffff'
 export const MAP_TEXT_DARK = '#1a1a1a'

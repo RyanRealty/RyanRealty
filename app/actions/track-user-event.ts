@@ -12,6 +12,13 @@ export type UserEventType =
   | 'listing_unlike'
   | 'search'
   | 'share_click'
+  // Search-funnel instrumentation (Phase 0.5) — payload shapes built by
+  // lib/search/search-events.ts, fired via components/search/search-events.client.ts.
+  | 'search_filter_apply'
+  | 'search_map_draw'
+  | 'search_save'
+  | 'alert_create'
+  | 'search_zero_results'
 
 export async function trackUserEvent(params: {
   eventType: UserEventType

@@ -116,6 +116,8 @@ export type {
   SearchListingsAllFilter,
   SearchListingsAllResult,
   SearchFeatureFilters,
+  SearchShape,
+  SearchShapes,
 } from '@/lib/data/listings/searchListingsAll'
 
 // Listings — Central Oregon service-area guard (audit P0-3 2026-06-10).
@@ -768,3 +770,19 @@ export type {
   DerivedPresetLink,
   CityIndexLink,
 } from './seo/derive-search-links'
+
+// Named saved map areas ("My Areas" — search plan Phase 2.4). Owner reads
+// uncached; public landing reads cached on the 'search-areas' tag.
+export {
+  listAreasForUser,
+  getAreaForUser,
+  getAreasByIds,
+  createAreaForUser,
+  updateAreaForUser,
+  deleteAreaForUser,
+  setAreaPublicById,
+  listPublicAreas,
+  getPublicAreaBySlug,
+  SEARCH_AREAS_CACHE_TAG,
+} from './areas/searchAreas'
+export type { SearchAreaRow, SearchAreaOwnerKind } from './areas/searchAreas'

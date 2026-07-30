@@ -9,7 +9,14 @@ import {
 } from '@/app/actions/listings'
 import type { ListingTileRow } from '@/app/actions/listings'
 import type { MapListingRow } from '@/app/actions/listings'
-import { getPolygonBounds, isPointInPolygon, type MapPolygonPoint } from '@/lib/map-polygon'
+import {
+  getPolygonBounds,
+  getShapeSetBounds,
+  isPointInShapeSet,
+  MAX_SHAPE_RADIUS_M,
+  type MapPolygonPoint,
+  type MapShapeSet,
+} from '@/lib/map-polygon'
 import { getSubdivisionMatchNames } from '@/lib/subdivision-aliases'
 import { getGeneralLimiter } from '@/lib/rate-limit'
 import { SEARCH_FIELDS } from '@/lib/search/field-registry'
@@ -204,15 +211,44 @@ export async function getSearchListings(
  * split view too (the old getViewportListings path silently dropped them). Sold
  * scope keeps the legacy getViewportListings path.
  */
+/**
+ * Public server action → the client-supplied shape set is untrusted. The DAL's
+ * zod schema rejects a malformed set by THROWING (no silent widening), which
+ * would 500 the whole action — so junk shapes are dropped to null here (the
+ * query degrades to plain bbox, exactly what the map shows) instead of erroring.
+ */
+function sanitizeShapeSet(set: MapShapeSet | null): MapShapeSet | null {
+  if (!set || !Array.isArray(set.include)) return null
+  const okCoord = (c: unknown): c is [number, number] =>
+    Array.isArray(c) &&
+    typeof c[0] === 'number' && Number.isFinite(c[0]) && c[0] >= -180 && c[0] <= 180 &&
+    typeof c[1] === 'number' && Number.isFinite(c[1]) && c[1] >= -90 && c[1] <= 90
+  const okShape = (s: MapShapeSet['include'][number]): boolean =>
+    s?.type === 'circle'
+      ? okCoord(s.center) && Number.isFinite(s.radius_m) && s.radius_m > 0 && s.radius_m <= MAX_SHAPE_RADIUS_M
+      : s?.type === 'polygon' && Array.isArray(s.coords) && s.coords.length >= 3 &&
+        s.coords.length <= 2000 && s.coords.every(okCoord)
+  const include = set.include.filter(okShape)
+  const exclude = (set.exclude ?? []).filter(okShape)
+  if (include.length === 0 || include.length + exclude.length > 50) return null
+  return exclude.length > 0 ? { include, exclude } : { include }
+}
+
 export async function getViewportSearch(
   filters: SearchFilters,
   bounds: MapBounds,
-  polygon: MapPolygonPoint[] | null
+  polygon: MapPolygonPoint[] | MapShapeSet | null
 ): Promise<{ listings: ListingTileRow[]; totalCount: number; capped: boolean }> {
+  // The 3rd arg keeps its legacy shape (a single polygon ring) AND accepts the
+  // Phase 2 multi-shape include/exclude set — both spellings of "the user drew
+  // on the map". Arrays are the legacy ring; objects are the shape set.
+  const legacyPoly = Array.isArray(polygon) && polygon.length >= 3 ? polygon : null
+  const shapeSet = !Array.isArray(polygon) ? sanitizeShapeSet(polygon) : null
+
   if (filters.status === 'Sold') {
-    return getViewportListings({
-      bounds,
-      polygon: polygon && polygon.length >= 3 ? polygon : null,
+    const res = await getViewportListings({
+      bounds: shapeSet ? getShapeSetBounds(shapeSet) ?? bounds : bounds,
+      polygon: legacyPoly,
       statusFilter: 'closed',
       sort:
         filters.sort === 'price_asc' || filters.sort === 'priceAsc' ? 'price_asc'
@@ -238,6 +274,17 @@ export async function getViewportSearch(
       postalCode: filters.postalCode?.trim() || undefined,
       propertyType: filters.propertyType,
     })
+    if (!shapeSet) return res
+    // Sold rides the legacy tile path (no MV/RPC coverage) — apply the shape
+    // set algebra in memory over the returned rows. When the fetch capped, the
+    // filtered count is a floor, reported honestly as "N+" via capped.
+    const rows = res.listings.filter(
+      (l) =>
+        l.Latitude != null &&
+        l.Longitude != null &&
+        isPointInShapeSet({ lat: Number(l.Latitude), lng: Number(l.Longitude) }, shapeSet)
+    )
+    return { listings: rows, totalCount: rows.length, capped: res.capped }
   }
 
   const status: SearchListingsAllFilter['status'] =
@@ -246,16 +293,24 @@ export async function getViewportSearch(
     : 'active-and-pending'
 
   const cap = 500
-  const poly = polygon && polygon.length >= 3 ? polygon : null
-  const polygonBounds = poly ? getPolygonBounds(poly) : null
+  const poly = legacyPoly
+  const polygonBounds = poly ? getPolygonBounds(poly) : shapeSet ? getShapeSetBounds(shapeSet) : null
   const effectiveBounds = polygonBounds ?? bounds
-  // Polygon view fetches the polygon's bounding box first, then filters in
-  // memory by point-in-polygon, so we overfetch to keep the post-filter set full.
-  // PostgREST db-max-rows on this project is 1000 — asking for more silently
-  // truncates (and the schema clamp would reject it). 1000 is still 2x the
-  // display cap for the in-memory polygon post-filter.
-  const fetchLimit = poly ? Math.min(cap * 2, 1000) : cap
 
+  // Shapes path (Phase 2, SEARCH_OPTIMIZATION_PLAN_2026-07-29): drawn shapes
+  // (a legacy single polygon, or the multi-shape include/exclude set) go to
+  // the DAL as a `shapes` set and are resolved server-side in PostGIS
+  // (search_listing_keys_in_shapes RPC) — exact set algebra, exact counts, no
+  // Node ray-cast, no overfetch-cap distortion. The DAL degrades to the
+  // legacy bbox + in-memory filter only if the RPC is unavailable, and then
+  // reports `capped` honestly. The bbox still rides along: it is the include
+  // shapes' envelope, which keeps the MV's (lat, lng) btree in play and the
+  // cache key aligned with the drawn area.
+  const shapesParam: MapShapeSet | null =
+    shapeSet ??
+    (poly
+      ? { include: [{ type: 'polygon', coords: poly.map((p) => [p.lng, p.lat] as [number, number]) }] }
+      : null)
   const result = await searchListingsAll({
     ...toSearchAllFilter(filters),
     status,
@@ -265,33 +320,18 @@ export async function getViewportSearch(
       east: effectiveBounds.east,
       north: effectiveBounds.north,
     },
-    limit: fetchLimit,
+    ...(shapesParam ? { shapes: shapesParam } : {}),
+    limit: cap,
   })
 
-  let rows = result.rows.map(tileToViewportRow)
-  if (poly) {
-    rows = rows.filter((row) => {
-      const lat = Number(row.Latitude)
-      const lng = Number(row.Longitude)
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false
-      return isPointInPolygon({ lat, lng }, poly)
-    })
-    // The in-polygon count is exact unless the bbox overfetch itself capped —
-    // then rows beyond the fetched page could still fall inside the polygon.
-    return {
-      listings: rows.slice(0, cap),
-      totalCount: rows.length,
-      capped: result.capped,
-    }
-  }
-
-  // Non-polygon path: the MV count is exact for the bbox + filters, so the
-  // header never needs a '+' — the pin/card list is truncated at the cap, but
-  // the number itself is true.
+  // Both paths: totalCount is exact for the bbox/shape + filters (the shapes
+  // path resolves the full key set server-side), so the header never needs a
+  // '+' unless the DAL itself reports a cap — the pin/card list is truncated
+  // at the display cap, but the number itself is true.
   return {
-    listings: rows.slice(0, cap),
+    listings: result.rows.map(tileToViewportRow),
     totalCount: result.totalCount,
-    capped: false,
+    capped: result.capped,
   }
 }
 

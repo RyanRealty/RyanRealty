@@ -7,7 +7,8 @@ import { MarkerClusterer, defaultOnClusterClickHandler } from '@googlemaps/marke
 
 import { MAP_DEFAULT_CENTER } from '@/lib/map-constants'
 import { listingDetailPath } from '@/lib/slug'
-import type { MapPolygonPoint } from '@/lib/map-polygon'
+import type { DrawnShape, MapPolygonPoint } from '@/lib/map-polygon'
+import MapDrawTools from '@/components/search/MapDrawTools'
 import { Button } from "@/components/ui/button"
 import {
   buildClusterIcon,
@@ -126,6 +127,14 @@ type Props = {
   onPolygonDrawn?: (polygon: MapPolygonPoint[] | null) => void
   /** Initial polygon to render (e.g. from URL saved search). */
   initialPolygon?: MapPolygonPoint[] | null
+  /**
+   * Multi-shape draw tools (Phase 2): the current shape set. Providing
+   * onShapesChange activates the polygon/rectangle/circle tools + per-shape
+   * pills (MapDrawTools) and REPLACES the legacy single-polygon draw UI;
+   * callers that only pass onPolygonDrawn keep the legacy behavior untouched.
+   */
+  shapes?: DrawnShape[]
+  onShapesChange?: (shapes: DrawnShape[]) => void
   /** List to map hover sync: the listing key currently hovered in the list (highlights its marker). */
   hoveredKey?: string | null
   /** List to map hover sync: fired when the user hovers/unhovers a marker (null on mouseout). */
@@ -390,9 +399,13 @@ export default function SearchMapClustered({
   boundaryGeojson,
   onPolygonDrawn,
   initialPolygon,
+  shapes,
+  onShapesChange,
   hoveredKey = null,
   onMarkerHover,
 }: Props) {
+  // Multi-shape mode (Phase 2 draw tools) replaces the legacy single-polygon UI.
+  const multiShape = onShapesChange != null
   const mapRef = useRef<google.maps.Map | null>(null)
   // Ref for the DOM container we pass to new google.maps.Map(). We manage map
   // creation ourselves so we are not dependent on @react-google-maps/api's
@@ -410,6 +423,10 @@ export default function SearchMapClustered({
   const [showBoundary, setShowBoundary] = useState(true)
   const [drawingMode, setDrawingMode] = useState(false)
   const [drawingPoints, setDrawingPoints] = useState<MapPolygonPoint[]>([])
+  // Multi-shape draw state: MapDrawTools reports when a tool is armed (freeze
+  // map drag) and installs a tap-consumer so price-pill clicks become vertices.
+  const [multiDrawActive, setMultiDrawActive] = useState(false)
+  const multiDrawClickRef = useRef<((p: MapPolygonPoint) => boolean) | null>(null)
   const [activePolygon, setActivePolygon] = useState<MapPolygonPoint[] | null>(initialPolygon ?? null)
   const [openInfo, setOpenInfo] = useState<{
     listingKey: string
@@ -507,8 +524,8 @@ export default function SearchMapClustered({
       return {
         ...baseWithoutStyles,
         mapId: MAP_ID,
-        draggable: !drawingMode,
-        clickableIcons: !drawingMode,
+        draggable: !drawingMode && !multiDrawActive,
+        clickableIcons: !drawingMode && !multiDrawActive,
       }
     }
     // No Map ID: raster map with `styles` for POI suppression. Markers render
@@ -516,9 +533,10 @@ export default function SearchMapClustered({
     // mode because Google hard-requires a valid Map ID for Advanced Markers.
     return {
       ...base,
-      draggable: !drawingMode,
-      clickableIcons: !drawingMode,
+      draggable: !drawingMode && !multiDrawActive,
+      clickableIcons: !drawingMode && !multiDrawActive,
     }
+    // multiDrawActive mirrors drawingMode for the Phase 2 shape tools.
     // isLoaded: getSearchMapOptions()'s control-position fields are gated on
     // `typeof google !== 'undefined'` internally. This memo's first
     // computation usually runs before the Maps script has loaded, freezing
@@ -526,7 +544,7 @@ export default function SearchMapClustered({
     // map type control stuck top-left under the Draw-area button) since
     // isLoaded flipping true afterward wasn't a dependency (design-audit
     // P2, evidence: mapTypeControlOptions.position never took effect).
-  }, [drawingMode, isLoaded])
+  }, [drawingMode, multiDrawActive, isLoaded])
 
   // ─── Imperative map creation ───────────────────────────────────────────────
   // We create the google.maps.Map instance ourselves rather than relying on
@@ -719,7 +737,11 @@ export default function SearchMapClustered({
       const pillEl = buildPricePillElement(label, { saved: isSaved })
       const title = `${label} — ${[l.StreetNumber, l.StreetName].filter(Boolean).join(' ') || 'View listing'}`
       const handleClick = () => {
-        // Draw mode: a tap near a pill is an outline vertex, not a listing
+        // Multi-shape draw armed: MapDrawTools consumes the tap (a vertex in
+        // polygon mode, swallowed in rectangle/circle drag modes).
+        const consumeDraw = multiDrawClickRef.current
+        if (consumeDraw && consumeDraw({ lat: l.Latitude, lng: l.Longitude })) return
+        // Legacy draw mode: a tap near a pill is an outline vertex, not a listing
         // open — use the pill's own coordinates so the point lands where the
         // user aimed instead of zooming or opening the info window mid-draw.
         if (drawingModeRef.current) {
@@ -779,7 +801,7 @@ export default function SearchMapClustered({
       // viewport mid-outline and strands the user's partial polygon across two
       // zoom levels. Clusters go inert while drawing.
       onClusterClick: (event, cluster, clusterMap) => {
-        if (drawingModeRef.current) return
+        if (drawingModeRef.current || multiDrawClickRef.current) return
         defaultOnClusterClickHandler(event, cluster, clusterMap)
       },
       renderer: {
@@ -917,7 +939,7 @@ export default function SearchMapClustered({
       <MapContext.Provider value={mapInstance}>
         <div
           ref={mapContainerRef}
-          style={{ width: '100%', height: '100%', minHeight: 360, cursor: drawingMode ? 'crosshair' : '' }}
+          style={{ width: '100%', height: '100%', minHeight: 360, cursor: drawingMode || multiDrawActive ? 'crosshair' : '' }}
           onClick={(e) => {
             if (!drawingMode) return
             // Translate click coordinates to lat/lng via the map's projection.
@@ -955,8 +977,20 @@ export default function SearchMapClustered({
                 }}
               />
             )}
-            {/* Completed drawn polygon */}
-            {!drawingMode && activePolygon && activePolygon.length >= 3 && (
+            {/* Multi-shape draw tools (Phase 2): tools + shape overlays + pills.
+                Inside MapContext.Provider — MapDrawTools renders <Polygon>/<Circle>. */}
+            {multiShape && (
+              <MapDrawTools
+                map={mapInstance}
+                containerRef={mapContainerRef}
+                shapes={shapes ?? []}
+                onShapesChange={onShapesChange!}
+                onDrawActiveChange={setMultiDrawActive}
+                drawClickRef={multiDrawClickRef}
+              />
+            )}
+            {/* Completed drawn polygon (legacy single-polygon mode only) */}
+            {!multiShape && !drawingMode && activePolygon && activePolygon.length >= 3 && (
               <Polygon
                 paths={activePolygon}
                 options={{
@@ -1026,8 +1060,8 @@ export default function SearchMapClustered({
           </>
         )}
       </MapContext.Provider>
-      {/* Draw-on-map controls */}
-      {onPolygonDrawn && (
+      {/* Legacy single-polygon draw controls — multi-shape mode brings its own */}
+      {onPolygonDrawn && !multiShape && (
         <div className="absolute left-3 top-3 z-[100] flex gap-2" aria-label="Draw controls">
           {!drawingMode && (!activePolygon || activePolygon.length < 3) && (
             <Button

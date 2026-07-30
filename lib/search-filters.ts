@@ -45,6 +45,7 @@ const LEGACY_FILTER_KEYS = [
   'includeClosed',
   'view',
   'poly',
+  'areaIds',
 ] as const
 
 // Registry-driven param kinds (lib/search/field-registry.ts). Hash stability:
@@ -60,8 +61,10 @@ const REGISTRY_TEXT_KEYS = new Set(
   SEARCH_FIELDS.filter((f) => f.kind === 'text').map((f) => f.key),
 )
 
-/** Legacy string[] keys — arrays only, never CSV (unchanged URL behavior). */
-const LEGACY_ARRAY_KEYS = new Set(['cities', 'viewContainsAny'])
+/** Legacy string[] keys — arrays only, never CSV (unchanged URL behavior).
+ *  areaIds = saved named-area ids (search_areas); resolved to shapes by
+ *  lib/alerts/area-resolve.ts on the alert/search path. */
+const LEGACY_ARRAY_KEYS = new Set(['cities', 'viewContainsAny', 'areaIds'])
 
 const LEGACY_STRING_KEYS = new Set([
   'city', 'subdivision', 'neighborhoodSlug', 'postalCode', 'propertyType',
@@ -278,7 +281,6 @@ export function savedFiltersToAdvanced(filters: SavedSearchFilters): AdvancedLis
     interiorFeatures: arr('interiorFeatures'),
     exteriorFeatures: arr('exteriorFeatures'),
     windowFeatures: arr('windowFeatures'),
-    laundryFeatures: arr('laundryFeatures'),
     securityFeatures: arr('securityFeatures'),
     parkingFeatures: arr('parkingFeatures'),
     patioPorch: arr('patioPorch'),

@@ -9,6 +9,8 @@ import { getSavedListingKeys } from '@/app/actions/saved-listings'
 import { getLikedListingKeys } from '@/app/actions/likes'
 import { getBoundaryGeoJSON } from '@/lib/data'
 import { BEND_DEFAULT_BOUNDS } from '@/lib/map-constants'
+import { buildShapeSetForSearch, decodeMapPolygon, decodeMapShapes, type DrawnShape } from '@/lib/map-polygon'
+import { stripGeoScope } from '@/components/search/geo-scope'
 import { slugify } from '@/lib/slug'
 import { cn } from '@/lib/utils'
 // design-audit NAV-1: KbNav (the single search nav) comes from app/search/layout.tsx.
@@ -205,13 +207,33 @@ export default async function SearchPage({
       ? await withTimeout(getBoundaryGeoJSON({ geoType: 'city', geoSlug: citySlug }), null, 2000)
       : null
   const initialBounds = bboxFromGeometry(cityBoundaryGeo) ?? BEND_DEFAULT_BOUNDS
+  // ?shapes= — the user's drawn multi-shape set (polygons + radius circles,
+  // include/exclude), with legacy ?poly= as the read-forever fallback. Either
+  // spelling supersedes the URL's place pin exactly as a live draw does
+  // client-side (MapSearchView drops the geo scope on draw), so a reload or
+  // shared link reproduces the identical post-draw result set.
+  // getViewportSearch derives its effective bounds from the shapes themselves.
+  const legacyPoly = view === 'split' ? decodeMapPolygon(sp.poly) : null
+  const initialShapes: DrawnShape[] | null =
+    view === 'split'
+      ? decodeMapShapes(sp.shapes) ??
+        (legacyPoly ? [{ type: 'polygon', points: legacyPoly, exclude: false }] : null)
+      : null
+  const hasIncludeShape = initialShapes?.some((s) => !s.exclude) ?? false
   const viewport =
     view === 'split'
-      ? await withTimeout(getViewportSearch(effectiveFilters, initialBounds, null), {
-          listings: [],
-          totalCount: 0,
-          capped: false,
-        })
+      ? await withTimeout(
+          getViewportSearch(
+            hasIncludeShape ? stripGeoScope(effectiveFilters) : effectiveFilters,
+            initialBounds,
+            buildShapeSetForSearch(initialShapes, initialBounds)
+          ),
+          {
+            listings: [],
+            totalCount: 0,
+            capped: false,
+          }
+        )
       : null
 
   // LIST: paginated infinite-scroll browse (unchanged).
@@ -349,6 +371,7 @@ export default async function SearchPage({
                 likedListingKeys={likedKeys}
                 placeQuery={placeQuery}
                 boundaryGeojson={boundaryGeojson ?? undefined}
+                initialShapes={initialShapes}
                 nowMs={Date.now()}
               />
             ) : (
