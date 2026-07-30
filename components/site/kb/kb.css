@@ -1837,3 +1837,171 @@ html.lenis, html.lenis body{height:auto;}
 
 /* ===== Site index (/site-index, Wave D) — link-chip hover ===== */
 .kb-root .si-chip:hover{background:var(--navy);color:var(--cream);}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   DESKTOP DENSITY PASS — 2026 vertical rhythm (Matt 2026-07-30)
+
+   Matt: "The headers are so big they take up the whole screen, and every
+   section is way too large to make it manageable."
+
+   Measured, not eyeballed. Live DOM reads at a confirmed 1440x900 viewport
+   on 2026-07-30, KB surfaces vs. three real-estate peers loaded at the same
+   viewport in the same browser:
+
+     surface                     hero    page H1   section head   page height
+     Compass (compass.com)       0.42vh    56px      24-32px         4.13vh
+     Redfin (redfin.com)         0.47vh    41px      29-36px         5.16vh
+     Sotheby's Int'l Realty      0.74vh    44px      46px            n/a (lazy)
+     Ryan Realty BEFORE          1.00vh    76px      57.6px         12.6-22.8vh
+
+   Two published references anchor the direction:
+   - NN/g, "The Illusion of Completeness" — a hero sized to exactly fill the
+     viewport reads as the end of the page and suppresses scrolling. Leave the
+     next section visibly peeking.
+     https://www.nngroup.com/articles/illusion-of-completeness/
+   - Atlassian Design System spacing — space.400 to space.1000 (32-80px) is the
+     published band for "the largest pieces of UI and layout elements".
+     https://atlassian.design/foundations/spacing
+
+   Targets adopted here: no display type on a desktop page exceeds 56px (the
+   largest peer H1 measured) except the one full-bleed statement block per page,
+   which caps at 80px. Section titles cap at 46px (the largest peer H2
+   measured). Section-to-section gap lands at 36 + 40 = 76px, inside Atlassian's
+   32-80px band. Hero caps at 0.72vh so ~250px of the next section is visible
+   at rest.
+
+   Content max-width is deliberately NOT reduced. Ours is 1500px (1313px of
+   content at 1440); Sotheby's runs 1146px. Narrowing a card-grid page fits
+   fewer tiles per row and makes the page TALLER, which works against the
+   brief. Wide + short beats narrow + long here.
+
+   Scoped to min-width:1024px so phone and tablet rendering is untouched by
+   construction. Appended at end-of-file on purpose: the css-layers gate keys
+   its baseline by line number, so mid-file insertions shift baselined rules.
+   ═════════════════════════════════════════════════════════════════════════════ */
+@media (min-width:1024px){
+
+  /* ── 1. Hero: 1.00vh -> 0.72vh, so the next section peeks (NN/g) ───────── */
+  .kb-root .hero{min-height:min(72svh,720px);}
+  .kb-root .hero-inner{padding-bottom:28px;}
+  /* 76px -> 56px cap (Compass H1, the largest peer measured) */
+  .kb-root .hero-h{font-size:clamp(2.4rem,4.2vw,3.5rem);}
+
+  /* ── 2. Section heads: 57.6px -> 46px, 46/22 padding -> 36/18 ──────────── */
+  .kb-root .sec-head{padding-top:36px;padding-bottom:18px;}
+  .kb-root .sec-title{font-size:clamp(1.9rem,3.2vw,2.875rem);}
+  .kb-root .sec-cta{margin-top:28px;}
+
+  /* ── 3. Section tails: uniform 40px. Only sections that already carry a
+         bottom pad are listed — adding one to a flush section would make the
+         page taller, not shorter. ─────────────────────────────────────────── */
+  .kb-root .towns,
+  .kb-root .listings,
+  .kb-root .openhouses,
+  .kb-root .activity,
+  .kb-root .articles,
+  .kb-root .workwith,
+  .kb-root .about{padding-bottom:40px;}
+  .kb-root .kb-collections{padding:32px 0;}
+
+  /* ── 4. Display type ceiling. Statement blocks (one per page, full bleed)
+         cap at 80px; everything else at 56px. ──────────────────────────────── */
+  .kb-root .foot-cta .display{font-size:5rem;}      /* was 160px */
+  .kb-root .sell-h{font-size:5rem;margin-bottom:14px;} /* was 104px */
+  .kb-root .town-row .town-name{font-size:3.5rem;}  /* was 96px */
+
+  /* ── 5. Row + grid rhythm ───────────────────────────────────────────────── */
+  .kb-root .town-row{padding:16px 0;}
+  .kb-root .lst-grid{padding-top:22px;}
+  .kb-root .ww-grid{padding-top:28px;}
+  .kb-root .kb-reviews-grid{margin-top:26px;}
+  /* Lead listing card spans all 6 columns; 16/9 on a 1313px grid is a 739px
+     tall single tile. A 2.7/1 poster crop holds the same photo at 486px. */
+  .kb-root .lst-grid .lst-card:nth-child(1) .lst-media{aspect-ratio:2.7/1;}
+  /* The half-width pair sat at 485px each on a 4/3 crop. */
+  .kb-root .lst-grid .lst-card:nth-child(2) .lst-media,
+  .kb-root .lst-grid .lst-card:nth-child(3) .lst-media{aspect-ratio:16/10;}
+
+  /* ── 6. Footer ──────────────────────────────────────────────────────────── */
+  .kb-root .foot-cta{padding-top:56px;padding-bottom:36px;}
+  .kb-root .foot-cols{padding-top:36px;padding-bottom:36px;}
+}
+
+/* Desktop density pass, part 2 — the remaining display tokens measured above
+   the 56px ceiling at 1440px, plus two fixed-height media blocks that ran over
+   two thirds of the viewport on their own. Same 2026-07-30 measurement pass. */
+@media (min-width:1024px){
+  .kb-root .stat-num{font-size:3.5rem;}            /* was 102px */
+  .kb-root .ps-word{font-size:4rem;}               /* was 108px */
+  .kb-root .mkt-headline-val{font-size:3.5rem;}    /* was 60.8px */
+  .kb-root .foot-cta .display{line-height:.88;}
+  /* An embedded map at 640px ate 0.71 of a 900px viewport on its own. */
+  .kb-root #kbMap{height:min(52vh,520px);}
+  .kb-root .proof-stage{min-height:340px;}
+  .kb-root .about-grid{padding-top:32px;}
+  .kb-root .neigh-sub,.kb-root .art-sub{margin-top:14px;}
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   TOP-BAR NAV GROUPS — one uniform pattern for every top-level item
+   (Matt 2026-07-30: "the menu now has a submenu that doesn't match anything
+   else"). Replaces the one-off .nav-about / .nav-about-menu pair: every entry
+   in KB_TOP_NAV is a link plus a panel, all rendered by KbTopNavItem.
+   Below 880px the whole group is hidden and Menu+ carries navigation, matching
+   the .nav-link behaviour these groups replace.
+   ═════════════════════════════════════════════════════════════════════════════ */
+/* Six groups + Search + CTA + Menu+ needs 1000px to sit on one row without
+   crowding the wordmark — measured at 900px the bar ran flush to the logo with
+   0px slack. Below 1000px the Menu+ overlay carries navigation, which is what
+   the bar already did below 880px, and Menu+ is one click from every page. */
+.kb-root .nav-group{display:none;position:relative;}
+@media(min-width:1000px){.kb-root .nav-group{display:inline-flex;align-items:center;}}
+.kb-root .nav-group-link{display:inline-flex!important;align-items:center;}
+/* The caret is a real <button> (WAI APG disclosure pattern) — it owns the
+   expanded state so the label can stay a plain link to the overview page.
+   Padded to a 24px hit area without widening the visual gap. */
+.kb-root .nav-group-caret{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:24px;margin-left:1px;padding:0;
+  background:none;border:0;cursor:pointer;font:inherit;font-size:.6em;line-height:1;
+  color:inherit;opacity:.6;transition:transform .18s ease,opacity .18s ease;
+}
+.kb-root .nav-group-caret:hover{opacity:1;}
+.kb-root .nav-group.open .nav-group-caret{transform:rotate(180deg);opacity:1;}
+.kb-root .nav-group-caret:focus-visible{outline:2px solid var(--cream);outline-offset:2px;}
+.kb-root .nav-panel{
+  position:absolute;top:100%;left:50%;transform:translateX(-50%);
+  display:none;flex-direction:column;gap:2px;
+  min-width:13rem;margin-top:10px;padding:10px 0;
+  background:var(--navy);border:1px solid var(--cream-12);
+  box-shadow:0 12px 28px rgba(16,39,66,.34);
+  z-index:60;
+}
+/* A 10px gap between the label and the panel would drop the hover on the way
+   down. This bridges it so the pointer never leaves the group. */
+.kb-root .nav-panel::before{content:"";position:absolute;left:0;right:0;top:-12px;height:12px;}
+/* One opener: the .open class, set by hover or by the caret button. Deliberately
+   NOT :focus-within — that would expand a panel merely by Tabbing past its
+   label and push all 40 child links into the tab sequence. */
+.kb-root .nav-group.open .nav-panel{display:flex;}
+@layer base{
+  .kb-root .nav-panel a{
+    display:block;padding:8px 18px;white-space:nowrap;text-shadow:none;
+    font-size:.78rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--cream);
+  }
+  .kb-root .nav-panel a:hover{background:var(--cream-12);}
+}
+.kb-root .nav-panel a:focus-visible{outline:2px solid var(--cream);outline-offset:-2px;}
+/* "MENU +" wrapped to two lines at 1024px and pushed the bar to 73px tall.
+   Never let a top-bar control wrap. */
+.kb-root .menu-btn{white-space:nowrap;}
+/* Six top-level groups plus the CTA cluster is tight between 880 and 1280px —
+   tighten tracking, gap and CTA padding there rather than dropping a
+   destination from the bar. */
+@media(min-width:1000px) and (max-width:1279px){
+  .kb-root .topbar .nav-right{gap:12px;}
+  .kb-root .nav-link{font-size:.74rem;letter-spacing:.04em;}
+  .kb-root .menu-btn{font-size:.78rem;letter-spacing:.06em;}
+  .kb-root .topbar a.nav-cta{padding:9px 12px;font-size:.72rem;letter-spacing:.03em;}
+}

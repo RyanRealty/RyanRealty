@@ -47,4 +47,52 @@ describe('classifySitemapUrl', () => {
   it('exports the class list the route handler iterates', () => {
     expect(SITEMAP_CLASSES).toEqual(['core', 'geo', 'listings', 'matrix', 'content'])
   })
+
+  // TOTALITY. /sitemap.xml is a <sitemapindex> over the five per-class children
+  // (app/sitemaps/index.xml/route.ts), and each child is buildAllUrls() filtered
+  // by this function. So "no URL is lost relative to the old monolith" reduces
+  // to one property: classifySitemapUrl is TOTAL — every URL the sitemap can
+  // emit lands in exactly one class in SITEMAP_CLASSES, never undefined and
+  // never a value the index does not list. Verified on 2026-07-30 against the
+  // live set: monolith 10,689 URLs, children summed 10,689.
+  it('is total — every emitted URL family lands in a listed class', () => {
+    const families = [
+      `${B}/`,
+      `${B}/cities`,
+      `${B}/cities/bend`,
+      `${B}/cities/bend/awbrey-butte`,
+      `${B}/communities`,
+      `${B}/communities/tetherow`,
+      `${B}/subdivisions/awbrey-butte`,
+      `${B}/homes-for-sale`,
+      `${B}/homes-for-sale/bend`,
+      `${B}/homes-for-sale/bend/newest`,
+      `${B}/homes-for-sale/bend/awbrey-butte`,
+      `${B}/homes-for-sale/bend/awbrey-butte/newest`,
+      `${B}/homes-for-sale/bend/awbrey-butte/tetherow/438-9th-220208193`,
+      `${B}/open-houses`,
+      `${B}/open-houses/bend`,
+      `${B}/zip/97703`,
+      `${B}/schools/bend-high`,
+      `${B}/parks/drake-park`,
+      `${B}/central-oregon/events/bend-brewfest`,
+      `${B}/central-oregon/golf/tetherow`,
+      `${B}/oregon/medford`,
+      `${B}/housing-market/bend`,
+      `${B}/housing-market/reports/bend-q1`,
+      `${B}/price-drops/bend`,
+      `${B}/motivated-sellers/bend`,
+      `${B}/team/matt-ryan`,
+      `${B}/blog/tetherow-resort-living-real-estate`,
+      `${B}/lp/tetherow/`,
+      `${B}/tools/mortgage-calculator`,
+      `${B}/sell/expired-listings`,
+      `${B}/buy/relocation`,
+      `${B}/site-index`,
+      `${B}/some-family-that-does-not-exist-yet/deep/path`,
+    ]
+    for (const url of families) {
+      expect(SITEMAP_CLASSES).toContain(classifySitemapUrl(url, PRESETS))
+    }
+  })
 })

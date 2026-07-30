@@ -94,11 +94,18 @@ export function KbCommunities({ communities, eyebrow = 'Communities' }: { commun
       </div>
       <div className="comm-viewport">
         <div className="comm-track" ref={track}>
+          {/* Key on name + href, not href alone. Several distinct subdivisions
+              canonicalize onto one community page ("Broken Top", "Parks At
+              Broken Top" and "The Highlands at Broken Top" all resolve to
+              /communities/broken-top), so an href-only key threw "two children
+              with the same key" on every KB page. Hover/video state still keys
+              on href — cards for the same community lighting together is
+              correct behaviour. */}
           {communities.map((c) => {
             const playing = activeHref === c.href && !!c.video
             return (
               <a
-                key={c.href}
+                key={`${c.name}-${c.href}`}
                 ref={register(c.href)}
                 className={`comm-card${playing ? ' playing' : ''}`}
                 href={c.href}

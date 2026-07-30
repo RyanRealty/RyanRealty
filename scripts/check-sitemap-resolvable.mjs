@@ -23,6 +23,9 @@
  *      sourced from the resort registry (not a hardcoded list / the communities
  *      table), the /cities neighborhood family is sourced from the neighborhoods
  *      table, and /cities/{city}/{subdivision} is never emitted.
+ *   4. INDEX SHAPE (2026-07-30). /sitemap.xml must serve a <sitemapindex> over
+ *      the five per-class children, never a flat <urlset>. See INDEX CONTRACT
+ *      below for why and for every link the check pins.
  *
  * Adding a new sitemap family? Add it to FAMILIES with its resolver, and (if it
  * renders from mutable data at depth >= 2) a resolver-parity contract test.
@@ -165,12 +168,118 @@ if (!/allowedNeighborhoodPaths\.add\(/.test(src)) {
 if (!existsSync('lib/sitemap-guard.ts')) problems.push('drift-guard: lib/sitemap-guard.ts (filterRogueCityUrls) is missing')
 if (!existsSync('lib/sitemap-guard.test.ts')) problems.push('drift-guard: lib/sitemap-guard.test.ts (proves the guard catches concat/join/aliased constructions) is missing')
 
+// --- Check 4: INDEX CONTRACT — /sitemap.xml is a sitemap index, not a urlset.
+//
+// The 2026-07-30 regression class: /sitemap.xml served ONE flat urlset of
+// 10,689 <url> entries (2,148,231 bytes). Its prerender ran the whole
+// buildAllUrls() fan-out and outgrew Vercel's 600s per-page build ceiling on
+// 2026-07-28 — three retries, ~30 minutes burned on one route, two production
+// deploys canceled. The per-class children at /sitemaps/{class}.xml already
+// carried the same URL universe, so /sitemap.xml became a <sitemapindex> over
+// them and stopped doing data work entirely.
+//
+// Next's metadata convention owns /sitemap.xml whenever app/sitemap.ts exists,
+// and a MetadataRoute.Sitemap can ONLY emit <urlset> — the index shape is
+// impossible there. So the index is a Route Handler and a beforeFiles rewrite
+// maps /sitemap.xml onto it. That makes the live shape depend on FOUR files
+// agreeing; this check pins every link so the monolith cannot silently return:
+//   (a) the index route exists, emits <sitemapindex>, and emits NO <url> entry
+//   (b) it enumerates SITEMAP_CLASSES, so it can never list a subset of the
+//       children (a dropped class = silently unsubmitted URLs)
+//   (c) next.config.ts rewrites /sitemap.xml -> the index in beforeFiles.
+//       afterFiles would LOSE to the app/sitemap.ts filesystem route and serve
+//       the flat urlset again — the exact regression, invisible in CI
+//   (d) app/robots.ts still advertises /sitemap.xml (the index is the only
+//       sitemap URL Google is told about)
+//   (e) app/sitemap.ts stays off the build critical path (force-dynamic). It
+//       remains the URL-universe builder the children import, and the
+//       correct-but-slow fallback if the rewrite is ever removed.
+/**
+ * Comment-strip for the index-contract checks. Both block and line comments are
+ * ANCHORED to the start of a line: next.config.ts embeds CSP hosts like
+ * https://*.google-analytics.com, whose "//*" an unanchored block-comment regex
+ * reads as a comment opener and then blanks everything up to the next "*\/" —
+ * which silently deleted the very rewrite this gate checks for.
+ */
+function stripComments(text) {
+  return text.replace(/^[ \t]*\/\*[\s\S]*?\*\//gm, '').replace(/^[ \t]*\/\/.*$/gm, '')
+}
+
+const INDEX_ROUTE = 'app/sitemaps/index.xml/route.ts'
+const CHILD_ROUTE = 'app/sitemaps/[cls]/route.ts'
+const ROBOTS = 'app/robots.ts'
+const CLASSIFY = 'lib/data/sitemap/classify.ts'
+
+for (const f of [INDEX_ROUTE, CHILD_ROUTE, ROBOTS, CLASSIFY]) {
+  if (!existsSync(f)) problems.push(`index-contract: ${f} is missing — /sitemap.xml cannot serve a sitemap index without it`)
+}
+
+if (existsSync(INDEX_ROUTE)) {
+  const idx = readFileSync(INDEX_ROUTE, 'utf8')
+  if (!/<sitemapindex/.test(idx)) {
+    problems.push(`index-contract: ${INDEX_ROUTE} does not emit "<sitemapindex" — /sitemap.xml must be a sitemap index.`)
+  }
+  // Strip comments before scanning for URL entries: the WHY comment
+  // legitimately names the shape it replaced. Block-comment stripping is
+  // ANCHORED to line start — an unanchored /\*...\*\/ also eats the "//*" inside
+  // URLs like https://*.example.com and silently blanks real code.
+  const idxCode = stripComments(idx)
+  if (/<urlset|<url>/.test(idxCode)) {
+    problems.push(`index-contract: ${INDEX_ROUTE} emits "<url>"/"<urlset" — /sitemap.xml regressed to a flat urlset. The 10,689-URL monolith blew the 600s prerender ceiling and canceled production deploys; per-URL entries belong in the per-class children at /sitemaps/{class}.xml.`)
+  }
+  if (!/SITEMAP_CLASSES/.test(idxCode)) {
+    problems.push(`index-contract: ${INDEX_ROUTE} must enumerate SITEMAP_CLASSES (from ${CLASSIFY}) so every child sitemap is listed by construction. A hand-written list can drop a class, and a class that is not listed is never submitted to Google.`)
+  }
+}
+
+if (NEXT_CONFIG && existsSync(NEXT_CONFIG)) {
+  // Comment-stripped so a prose mention of "beforeFiles"/"afterFiles" (there is
+  // one, explaining exactly this) cannot satisfy or break the position check.
+  const cfg = stripComments(readFileSync(NEXT_CONFIG, 'utf8'))
+  const rewriteRe = /source:\s*'\/sitemap\.xml'\s*,\s*destination:\s*'\/sitemaps\/index\.xml'/
+  const m = rewriteRe.exec(cfg)
+  // Extract the exact span of the beforeFiles array by bracket matching, so
+  // "inside beforeFiles" is a structural fact, not a string-order guess.
+  let span = null
+  const keyIdx = cfg.search(/\bbeforeFiles\s*:\s*\[/)
+  if (keyIdx !== -1) {
+    const open = cfg.indexOf('[', keyIdx)
+    let depth = 0
+    for (let i = open; i < cfg.length; i++) {
+      if (cfg[i] === '[') depth++
+      else if (cfg[i] === ']') {
+        depth--
+        if (depth === 0) { span = [open, i]; break }
+      }
+    }
+  }
+  if (!m) {
+    problems.push(`index-contract: ${NEXT_CONFIG} has no rewrite { source: '/sitemap.xml', destination: '/sitemaps/index.xml' } — without it /sitemap.xml falls through to the app/sitemap.ts metadata route and serves the flat urlset again.`)
+  } else if (!span || m.index < span[0] || m.index > span[1]) {
+    problems.push(`index-contract: the /sitemap.xml rewrite in ${NEXT_CONFIG} is not inside the beforeFiles array. afterFiles rewrites run AFTER filesystem routes, so app/sitemap.ts would win and serve the flat urlset.`)
+  }
+}
+
+if (existsSync(ROBOTS)) {
+  const rb = readFileSync(ROBOTS, 'utf8')
+  if (!/sitemap:\s*`?\$\{?baseUrl\}?\/sitemap\.xml/.test(rb) && !/\/sitemap\.xml/.test(rb)) {
+    problems.push(`index-contract: ${ROBOTS} must still advertise /sitemap.xml — it is the only sitemap URL Google is given, and it now resolves to the index.`)
+  }
+}
+
+// Comment-stripped: a comment quoting the export must not satisfy the check.
+if (!/export const dynamic = 'force-dynamic'/.test(stripComments(src))) {
+  problems.push(`index-contract: ${SITEMAP} must export dynamic = 'force-dynamic'. It is no longer the served sitemap (the index route is), and prerendering its 10,689-URL fan-out is exactly what blew the 600s build ceiling. It stays as the URL-universe builder the children import, plus a runtime fallback.`)
+}
+
 const resolverCount = FAMILIES.reduce((n, f) => n + f.resolvers.length, 0)
 console.log('Sitemap-resolvable gate (ci:sitemap-resolvable)')
 console.log('===============================================')
 console.log(`families: ${FAMILIES.length}  ·  resolvers checked: ${resolverCount}  ·  inline roots emitted: ${emitted.size}`)
+console.log(`index contract: ${INDEX_ROUTE} + beforeFiles rewrite + ${ROBOTS}`)
 
 if (problems.length) fail(`${problems.length} sitemap resolvability problem(s)`, problems)
 
 console.log('\n✓ Every sitemap URL family maps to a route that exists; drift invariants intact.')
+console.log('✓ /sitemap.xml serves a <sitemapindex> over the per-class children (no flat urlset).')
 process.exit(0)

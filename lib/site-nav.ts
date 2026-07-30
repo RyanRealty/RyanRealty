@@ -111,8 +111,10 @@ export const PRIMARY_NAV: NavGroup[] = [
     label: 'Guides',
     href: '/blog',
     children: [
-      { href: '/blog', label: 'Blog' },
-      { href: '/blog', label: 'Buyer and seller guides' },
+      // '/blog' was listed twice here, once as "Blog" and once as "Buyer and
+      // seller guides" — the same destination offered twice in one menu, and a
+      // duplicate React key in any consumer that keys on href.
+      { href: '/blog', label: 'Blog and buyer/seller guides' },
       { href: '/central-oregon/events', label: 'Central Oregon events' },
       { href: '/central-oregon/venues', label: 'Live music & shows' },
       { href: '/resources', label: 'Resources' },
@@ -256,21 +258,123 @@ export const VALUATION_LP: NavLink = {
   label: "What's my home worth",
 }
 
-/** Always-visible KB top bar links (About is rendered with a dropdown separately). */
-export const KB_TOP_LINKS: NavLink[] = [
-  { href: '/homes-for-sale', label: 'Homes' },
-  { href: '/communities', label: 'Communities' },
-  { href: '/cities', label: 'Cities' },
-  { href: '/sell', label: 'Sell' },
-  { href: '/about', label: 'About' },
+/** A top-bar group. Unlike NavGroup, `href` is required — every top-level item
+ *  is itself a real destination, never a dropdown-only label. */
+export type TopNavGroup = NavGroup & { href: string }
+
+/**
+ * KB top bar — ONE uniform shape for every entry.
+ *
+ * Matt, 2026-07-30: "The menus on these sites are inadequate. I can't get to
+ * most of the features. There is really no way to easily get to the brokerage
+ * information. There was just an About section created, but the menu now has a
+ * submenu that doesn't match anything else."
+ *
+ * The fix is uniformity, not deletion. Every top-level item now behaves
+ * identically: it is a link to its own overview page AND it opens a panel of
+ * children on hover/focus. There is no longer one special item with a dropdown
+ * and four bare links, and no item is dropdown-only.
+ *
+ * Reachability contract (enforced by scripts/check-nav-reachability.mjs):
+ * every destination is at most two interactions from any page — hover/focus a
+ * top item then click a child, or open Menu+ then click. Brokerage pages
+ * (about, team, reviews, contact, our listings) all sit under About, one
+ * hover away, and are mirrored in Menu+ Company and the footer.
+ */
+export const KB_TOP_NAV: TopNavGroup[] = [
+  {
+    label: 'Homes',
+    href: '/homes-for-sale',
+    children: [
+      { href: '/homes-for-sale', label: 'All homes for sale' },
+      MAP_SEARCH,
+      { href: '/open-houses', label: 'Open houses' },
+      { href: '/price-drops', label: 'Price drops' },
+      { href: '/luxury-homes-bend', label: 'Luxury homes in Bend' },
+      { href: '/homes-for-sale?status=Sold', label: 'Sold homes' },
+      { href: '/compare', label: 'Compare listings' },
+      { href: '/lp/buyer-listing-alerts', label: 'Get listing alerts' },
+    ],
+  },
+  {
+    label: 'Communities',
+    href: '/communities',
+    children: [
+      { href: '/communities', label: 'All communities' },
+      { href: '/communities/tetherow', label: 'Tetherow' },
+      { href: '/communities/broken-top', label: 'Broken Top' },
+      { href: '/communities/northwest-crossing', label: 'NorthWest Crossing' },
+      { href: '/communities/caldera-springs', label: 'Caldera Springs' },
+      { href: '/communities/eagle-crest', label: 'Eagle Crest' },
+      { href: '/communities/black-butte-ranch', label: 'Black Butte Ranch' },
+      { href: '/area-guides', label: 'Area guides' },
+    ],
+  },
+  {
+    label: 'Cities',
+    href: '/cities',
+    children: [
+      { href: '/cities', label: 'All cities' },
+      { href: '/cities/bend', label: 'Bend' },
+      { href: '/cities/redmond', label: 'Redmond' },
+      { href: '/cities/sisters', label: 'Sisters' },
+      { href: '/cities/sunriver', label: 'Sunriver' },
+      { href: '/cities/la-pine', label: 'La Pine' },
+      { href: '/cities/terrebonne', label: 'Terrebonne' },
+      { href: '/schools', label: 'Schools' },
+      { href: '/parks', label: 'Parks' },
+    ],
+  },
+  {
+    label: 'Market',
+    href: '/housing-market',
+    children: [
+      { href: '/housing-market', label: 'Market overview' },
+      { href: '/housing-market/reports', label: 'Market reports' },
+      { href: '/activity', label: 'Recent activity' },
+      { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
+      { href: '/tools/appreciation', label: 'Appreciation tool' },
+    ],
+  },
+  {
+    label: 'Sell',
+    href: '/sell',
+    children: [
+      { href: '/sell', label: 'Sell your home' },
+      VALUATION_FORM,
+      { href: '/motivated-sellers', label: 'Sell on a deadline' },
+      { href: '/our-homes', label: 'Our listings' },
+    ],
+  },
+  {
+    // Brokerage information. Matt's second complaint was that this was hard to
+    // reach; it is now a top-level item whose panel holds every company page.
+    label: 'About',
+    href: '/about',
+    children: [
+      { href: '/about', label: 'About Ryan Realty' },
+      { href: '/team', label: 'Our team' },
+      { href: '/reviews', label: 'Client reviews' },
+      { href: '/contact', label: 'Contact us' },
+      { href: '/our-homes', label: 'Our listings' },
+      { href: '/join', label: 'Join the team' },
+    ],
+  },
 ]
 
-/** About dropdown children (also mirrored under Menu+ Company). */
-export const KB_ABOUT_DROPDOWN: NavLink[] = [
-  { href: '/team', label: 'Team' },
-  { href: '/reviews', label: 'Reviews' },
-  { href: '/contact', label: 'Contact' },
-]
+/** Derived — the flat top-bar labels. KB_TOP_NAV is the source of truth. */
+export const KB_TOP_LINKS: NavLink[] = KB_TOP_NAV.map((g) => ({
+  href: g.href,
+  label: g.label,
+}))
+
+/** Derived — the three trust pages under About, kept as a named export because
+ *  other surfaces reference the trust subset directly. */
+const ABOUT_TRUST_HREFS = ['/team', '/reviews', '/contact']
+export const KB_ABOUT_DROPDOWN: NavLink[] =
+  KB_TOP_NAV.find((g) => g.href === '/about')?.children.filter((l) =>
+    ABOUT_TRUST_HREFS.includes(l.href)
+  ) ?? []
 
 /**
  * Menu+ overlay groups. Company sits second so mobile trust pages appear near

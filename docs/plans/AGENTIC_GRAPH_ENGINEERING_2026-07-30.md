@@ -161,6 +161,12 @@ quoting, cache-not-raw-listings for market stats, §0 verification traces per fi
    Matt.
 10. **Findings become gates.** A workflow that keeps re-finding the same defect class has
     found a missing mechanical gate; the fixer writes it.
+11. **Anti-stranding contract (Matt's condition, 2026-07-30).** No work product ever sits
+    uncommitted and unreported. Before any turn ends after spawning agents or workflows:
+    `git status`, and every modified path is committed, reverted, or reported to Matt by
+    name. Parallel writers use worktrees; every worktree merges or is removed before
+    session end; workflow outputs are owned by the orchestrating session. Silence about
+    uncommitted work is the violation this contract exists to prevent.
 
 ---
 
@@ -215,7 +221,7 @@ and engagement response. Grouped by wave (sequencing in §6).
 | G.2 | Telemetry-freshness watcher | every snapshot cron's last-success age checked at the top of every loop iteration (and inside W2.1); stale scoreboard = blocked iteration, not wrong iteration | staleness check names the failing cron |
 | G.3 | Cadence separation | fast loops (alerts, sends, measurement crons) may not change reference values owned by slow loops (positioning, pricing, brand); slow-loop reference changes require Matt | canon section |
 | G.4 | Anchor declaration | `crm_people` lead intake + Vault closed transactions declared frozen anchors; changing how they're counted requires Matt sign-off | canon section |
-| G.5 | Approval-model doctrine reconciliation | workflows are journaled, resumable, `/workflows`-visible — the standing "no background subagents" directive's objection (stranded, untracked work) does not apply to them. **Needs Matt's explicit yes before any Wave runs** | Matt's decision recorded here |
+| G.5 | Approval-model doctrine reconciliation | **RESOLVED — Matt, 2026-07-30: directive removed.** "The problem I was having was that there would be all of this uncommitted work lying around that I'd have no idea and no agent would tell me about it... As long as we can handle that, then I don't want any other rules or directives to keep this process from being optimized." Parallelism is unrestricted; the anti-stranding contract (doctrine rule 11) is the standing condition | ✓ recorded; Wave 1 unblocked |
 
 ---
 

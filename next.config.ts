@@ -92,29 +92,36 @@ const nextConfig: NextConfig = {
     ],
     formats: ['image/avif', 'image/webp'],
   },
-  // Per-page prerender ceiling. Sized for the /sitemap.xml route, which fans out
-  // to many Supabase reads (per-city subdivision-count RPCs + paginated tables)
-  // with a cold cache at build time. Vercel is co-located with Supabase and
-  // finishes well under this; a LOCAL `next build` (the push gate) sees higher
-  // round-trip latency and needs the extra headroom, so the local gate does not
-  // false-fail on a route that deploys fine. Inert on Vercel (no page there
-  // approaches this); runtime perf is controlled separately via query timeouts +
-  // cache. (Follow-up: the sitemap runs the per-city subdivision RPC set twice —
-  // getSearchMatrix + getIndexableSubdivisions — worth deduping.)
+  // Per-page prerender ceiling, in seconds.
   //
-  // Raised 600 -> 1800 on 2026-07-28. The comment above ("inert on Vercel") is no
-  // longer true: /sitemap.xml outgrew 600s on Vercel and the build log showed
-  //   Failed to build /sitemap.xml/route ... took more than 600 seconds.
-  //   Retrying again shortly. (attempt 1 of 3)
-  // Three attempts x 600s is ~30 minutes on one route, which is why production
-  // deploys stalled and two were canceled. Same shape as the earlier 180 -> 600
-  // raise. This buys room; it is NOT the fix.
+  // HISTORY. This number was raised twice to absorb ONE route: the monolithic
+  // /sitemap.xml, which fanned out to per-city subdivision-count RPCs plus
+  // paginated table scans and emitted 10,689 URLs / 2,148,231 bytes in a single
+  // prerender. 180 -> 600, then 600 -> 1800 on 2026-07-28 after the build log
+  // showed "Failed to build /sitemap.xml/route ... took more than 600 seconds.
+  // Retrying again shortly. (attempt 1 of 3)" — three attempts x 600s is ~30
+  // minutes burned on one route, and two production deploys were canceled. On
+  // 2026-07-30 the same work, running once per class, blew the 1800s ceiling
+  // too ("Failed to build /sitemaps/core.xml ... more than 1800 seconds") and
+  // silently pinned production to an older commit for days.
   //
-  // THE REAL FIX is to split /sitemap.xml into a sitemap index of chunks
-  // (Next `generateSitemaps`), so no single route does thousands of URLs and
-  // ~2.4MB of XML in one prerender. Tracked in the plan doc. Until then, do not
-  // let this number quietly absorb further growth — if it needs raising again,
-  // split the sitemap instead.
+  // FIXED AT THE SOURCE, not here. Nothing sitemap-shaped prerenders any more:
+  //   - the five per-class children render on FIRST REQUEST and cache for an
+  //     hour (app/sitemaps/[cls]/route.ts, dynamicParams = true, 124348de)
+  //   - /sitemap.xml is now a <sitemapindex> that does zero data work
+  //     (app/sitemaps/index.xml/route.ts, reached via the beforeFiles rewrite)
+  //   - app/sitemap.ts, which still owns buildAllUrls, is force-dynamic and is
+  //     never prerendered
+  //
+  // WHY IT IS STILL 1800 AND NOT 600. Every route that motivated the raises is
+  // off the build path, so this ceiling is believed inert again — but that is
+  // an inference, not a measurement. It has NOT been proven against a real
+  // Vercel build, and this number is load-bearing in the worst way: guessing
+  // low re-breaks every deploy, and the last two times it was wrong the site
+  // silently served stale code for days. Lower it to 600 only AFTER a green
+  // production deploy on this configuration, reading the build log for the
+  // slowest prerendered route. Do NOT raise it again — if a route needs more
+  // than 1800s it must come off the build path, the way these did.
   staticPageGenerationTimeout: 1800,
   async headers() {
     return [
@@ -254,7 +261,20 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
-    return [
+    return {
+      // /sitemap.xml must serve a <sitemapindex> over the five per-class
+      // children. Next's metadata convention owns /sitemap.xml whenever
+      // app/sitemap.ts exists, and a MetadataRoute.Sitemap can only emit a flat
+      // <urlset> — so the index is a route handler and this rewrite points the
+      // canonical sitemap URL at it. It MUST stay in beforeFiles: afterFiles
+      // rewrites run after filesystem routes, so app/sitemap.ts would win and
+      // serve the 10,689-URL monolith again. Pinned by ci:sitemap-resolvable.
+      beforeFiles: [
+        { source: '/sitemap.xml', destination: '/sitemaps/index.xml' },
+      ],
+      // Unchanged. A bare array return from rewrites() is afterFiles, so these
+      // keep exactly the ordering semantics they had before the split.
+      afterFiles: [
       { source: '/homes-for-sale/listing/:listingKey', destination: '/listing/by-key/:listingKey' },
       { source: '/homes-for-sale/:city/:listingSlug([^/]*-[0-9]{5,})', destination: '/listing/by-address/:city/:listingSlug' },
       { source: '/homes-for-sale/:city/:community/:listingSlug([^/]*-[0-9]{5,})', destination: '/listing/by-address/:city/:community/:listingSlug' },
@@ -263,7 +283,8 @@ const nextConfig: NextConfig = {
       { source: '/homes-for-sale/:city/:neighborhood/:community/:listingSlug([^/]*~[^/]*)', destination: '/listing/by-address/:city/:neighborhood/:community/:listingSlug' },
       { source: '/homes-for-sale', destination: '/search' },
       { source: '/homes-for-sale/:path*', destination: '/search/:path*' },
-    ];
+      ],
+    };
   },
   // Avoid "Body exceeded 1 MB limit" → browser "Failed to fetch" (e.g. Server Actions with images/large payloads)
   experimental: {

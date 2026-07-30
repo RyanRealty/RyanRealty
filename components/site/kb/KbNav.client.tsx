@@ -7,8 +7,9 @@ import { CONTACT } from '@/lib/brand/contact'
 import { useSessionUser } from '@/lib/hooks/useSessionUser'
 import {
   KB_MENU_GROUPS,
-  KB_TOP_LINKS,
+  KB_TOP_NAV,
   VALUATION_FORM,
+  type TopNavGroup,
 } from '@/lib/site-nav'
 import {
   SearchSuggestPanel,
@@ -18,10 +19,88 @@ import {
 } from '@/components/search/SearchSuggest'
 
 /**
+ * One top-bar item. Every entry in KB_TOP_NAV renders through this component,
+ * so the interaction is identical across the bar — Matt, 2026-07-30: "the menu
+ * now has a submenu that doesn't match anything else."
+ *
+ * Shape is the WAI-ARIA APG "disclosure navigation menu with top-level links":
+ * a real link to the group's own overview page, plus an adjacent caret button
+ * that owns the expanded state. Pointer users get hover. Keyboard users Tab
+ * across six link/caret pairs and only expand what they want — an auto-expand
+ * on focus would drop all 40 child links into the tab sequence. Escape closes
+ * and returns focus to the caret.
+ *
+ * Below 1000px the whole group is display:none and the Menu+ overlay carries
+ * navigation, which is what the bar already did below 880px.
+ */
+function KbTopNavItem({ group }: { group: TopNavGroup }) {
+  const [open, setOpen] = useState(false)
+  const groupRef = useRef<HTMLDivElement>(null)
+  const caretRef = useRef<HTMLButtonElement>(null)
+  const panelId = `nav-panel-${group.href.replace(/[^a-z0-9]+/gi, '-')}`
+
+  // Native focusout, not React's onBlur — collapse once focus leaves the group
+  // entirely, so a Tab out of the last child closes the panel behind it.
+  useEffect(() => {
+    const el = groupRef.current
+    if (!el) return
+    const onOut = (e: FocusEvent) => {
+      if (!el.contains(e.relatedTarget as Node | null)) setOpen(false)
+    }
+    el.addEventListener('focusout', onOut)
+    return () => el.removeEventListener('focusout', onOut)
+  }, [])
+
+  return (
+    <div
+      ref={groupRef}
+      className={`nav-group${open ? ' open' : ''}`}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => {
+        // Never yank a panel out from under a keyboard user whose focus is
+        // still inside it just because the pointer drifted away.
+        if (!groupRef.current?.contains(document.activeElement)) setOpen(false)
+      }}
+      onKeyDown={(e) => {
+        if (e.key !== 'Escape' || !open) return
+        e.stopPropagation()
+        setOpen(false)
+        caretRef.current?.focus()
+      }}
+    >
+      <Link className="nav-link nav-group-link" href={group.href}>
+        {group.label}
+      </Link>
+      <button
+        ref={caretRef}
+        type="button"
+        className="nav-group-caret"
+        aria-expanded={open}
+        aria-controls={panelId}
+        aria-label={`${group.label} menu`}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span aria-hidden="true">▾</span>
+      </button>
+      {/* Visibility is CSS-driven off .nav-group.open, not the `hidden`
+          attribute — the panel and its links stay in the accessibility tree
+          and the tab order exactly while the disclosure says it is open. */}
+      <div className="nav-panel" id={panelId}>
+        {group.children.map((l) => (
+          <Link key={`${group.href}-${l.href}`} href={l.href} onClick={() => setOpen(false)}>
+            {l.label}
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
  * KB top bar — transparent over the hero, flips to solid navy past the hero.
- * Structure from lib/site-nav.ts (KB_TOP_LINKS / KB_MENU_GROUPS). Every top
- * link is a plain link (About's dropdown removed per Matt, 2026-07-29); deep
- * destinations live in the MENU overlay + footer.
+ * Structure from lib/site-nav.ts (KB_TOP_NAV / KB_MENU_GROUPS). Every top-level
+ * item is a link plus a panel, rendered by the same KbTopNavItem — no bare
+ * links, no one-off dropdown. Menu+ stays as the full index.
  */
 export function KbNav({ solid = false }: { solid?: boolean } = {}) {
   const bar = useRef<HTMLElement>(null)
@@ -140,12 +219,9 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
           <img className="logo-img" src="/images/brand/logo-horizontal-navy-transparent.png" alt="Ryan Realty" />
         </Link>
         <nav className="nav-right">
-          {/* About is a PLAIN LINK (Matt, 2026-07-29 — dropdown removed). Its
-              former destinations stay reachable via the MENU overlay + footer. */}
-          {KB_TOP_LINKS.map((l) => (
-            <a key={l.href} className="nav-link" href={l.href}>
-              {l.label}
-            </a>
+          {/* One shape for every top-level item (Matt, 2026-07-30). */}
+          {KB_TOP_NAV.map((g) => (
+            <KbTopNavItem key={g.href} group={g} />
           ))}
           <button
             type="button"

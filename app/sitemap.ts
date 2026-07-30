@@ -41,21 +41,30 @@ const RESORT_COMMUNITY_SLUGS: string[] = getAllResortCommunities().map((c) => c.
 const SUBDIVISION_SITEMAP_MIN_LIFETIME_LISTINGS = 3
 
 /**
- * Dynamic sitemap — generates at request time so it always has fresh data.
- * Next.js serves this at /sitemap.xml automatically.
+ * NOT THE SERVED SITEMAP ANY MORE — this file is the URL-UNIVERSE BUILDER.
  *
- * For a Central Oregon regional site, total URLs are well under Google's
- * 50,000 limit per sitemap file, so we serve a single sitemap without chunking.
- * This avoids the Next.js 16 bug (issue 77304) where generateSitemaps() creates
- * chunks at /sitemap/[id].xml but never generates the /sitemap.xml index.
+ * buildAllUrls() below is the single source of every public URL. The per-class
+ * children at /sitemaps/{core|geo|listings|matrix|content}.xml consume it, and
+ * /sitemap.xml serves a <sitemapindex> over those children
+ * (app/sitemaps/index.xml/route.ts, via the beforeFiles rewrite in next.config).
+ *
+ * WHY (2026-07-30): the flat urlset this used to serve reached 10,689 URLs /
+ * 2,148,231 bytes, built from per-city subdivision RPCs plus paginated scans.
+ * Prerendering it blew Vercel's per-route ceiling twice (600s on 2026-07-28,
+ * then 1800s on 2026-07-30 once the same work ran once per class) and both
+ * times production silently pinned to an older commit. Nothing sitemap-shaped
+ * prerenders now: the children render on first request (124348de), and the
+ * route config below keeps this one off the build path.
+ *
+ * The default export stays only because Next's metadata convention requires one
+ * (a sitemap.ts without it is a build error). The rewrite claims /sitemap.xml
+ * first, so it is unreachable in normal operation and survives as a
+ * correct-but-slow fallback. Do NOT delete it or point crawlers back at it.
  */
 
-// ISR, not force-dynamic: the heavy generation (~14s of listings scans) runs at
-// build + once per hour in the background, and every crawler request is served
-// from cache instantly. force-dynamic re-ran the whole thing on EVERY hit, which
-// is why /sitemap.xml took 11-14s and intermittently timed out. A sitemap up to
-// an hour stale is fine for Google.
-export const revalidate = 3600
+// Never prerender: `revalidate` alone put the whole buildAllUrls fan-out on the
+// build critical path, which is the failure described above.
+export const dynamic = 'force-dynamic'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
