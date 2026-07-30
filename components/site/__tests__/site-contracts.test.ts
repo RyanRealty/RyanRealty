@@ -48,14 +48,47 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/of\s+\{count\}/)
   })
 
-  it('D77 — listing-detail page imports the Showcase-parity components', () => {
+  it('D77 — listing-detail page carries no permanently-empty section', () => {
     const src = readSrc('app/listing/[listingKey]/page.tsx')
     // Climate risk retired 2026-07-28 (Matt). Its null branch shipped a fixed
     // paragraph citing FEMA/WUI/NOAA sources it never queried, identical on every
     // listing — a §0 violation. Zillow dropped climate scores too.
     expect(src).not.toMatch(/ClimateRiskBlock/)
-    expect(src).toMatch(/import\s*\{\s*VacationRentalPotential\s*\}/)
-    expect(src).toMatch(/import\s*\{\s*TransparentCMASummary\s*\}/)
+    // Retired 2026-07-30. Both mounted with a hardcoded null prop and both
+    // return null on null, so neither had EVER rendered. VacationRentalPotential
+    // has no nightly-rate / occupancy / City-of-Bend-STR-permit source.
+    // TransparentCMASummary is blocked on client confidentiality: every
+    // public.cmas row is a client document, and the one client-ready CMA tied to
+    // an Active listing is our own seller's, priced below their list price.
+    // See design_system/ryan-realty/ui_kits/listing-detail/parity.json.
+    // Matches an import or a JSX mount, not the prose above that explains why
+    // they are gone.
+    for (const name of ['VacationRentalPotential', 'TransparentCMASummary']) {
+      expect(src).not.toMatch(new RegExp(`import[^\\n]*\\b${name}\\b`))
+      expect(src).not.toMatch(new RegExp(`<${name}\\b`))
+    }
+  })
+
+  it('D88 — listing-detail sections follow the buyer decision sequence', () => {
+    const src = readSrc('app/listing/[listingKey]/page.tsx')
+    const main = src.slice(src.indexOf('const main = ('), src.indexOf('const sidebar ='))
+    const order = [
+      'PriceCtaStrip',
+      'PropertySpecs',
+      'DescriptionBlock',
+      'ListingLocationMap',
+      'NeighborhoodMarketContext',
+      'SchoolsBlock',
+      'ParksNearbyBlock',
+      'PropertyHistory',
+      'MortgageCalculator',
+      'RentalAnalysis',
+      'ListingAttribution',
+    ]
+    const positions = order.map((name) => main.indexOf(`<${name}`))
+    expect(positions.every((p) => p >= 0)).toBe(true)
+    // Facts before prose, money before attribution, strictly increasing.
+    expect(positions).toEqual([...positions].sort((a, b) => a - b))
   })
 
   it('D78 — city hero active count comes from getMarketPulse, not geo_snapshot all-count', () => {

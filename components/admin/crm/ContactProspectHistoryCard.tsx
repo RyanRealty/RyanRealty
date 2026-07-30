@@ -3,7 +3,8 @@
  * the contact page, right-rail card (renders when the contact links to an
  * expired_listings/fsbo_listings row via getContactProspectStory). Each row:
  * status + date, MLS#, last/original price with the drop, days on market, the
- * prior agent, and a deep link into the /admin/prospecting detail drawer.
+ * prior agent, and a deep link to the prospect's own page at
+ * /admin/prospecting/<kind>/<id> (the `?id=` drawer was deleted 2026-07-28).
  * Display-only server component — the actions live on the prospecting surface.
  */
 import Link from 'next/link'

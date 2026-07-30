@@ -35,8 +35,6 @@ import { PropertyHistory } from '@/components/site/listing-detail/PropertyHistor
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import ListingBrokerCTA from '@/components/site/listing-detail/ListingBrokerCTA.client'
-import { VacationRentalPotential } from '@/components/site/listing-detail/VacationRentalPotential'
-import { TransparentCMASummary } from '@/components/site/listing-detail/TransparentCMASummary'
 import { PhotoGalleryLightbox as _PhotoGalleryLightboxImport } from '@/components/site/PhotoGalleryLightbox'
 import { TextMattCTA as _TextMattCTAImport } from '@/components/site/listing-detail/TextMattCTA'
 // Parity marker: rendered transitively via ListingBrokerCTA.client (the mobile
@@ -75,30 +73,24 @@ void _TextMattCTAImport
 void ListingMobileContactBar
 
 /**
- * Wave 3 listing-detail page rebuild — composes the 13 components the
- * listing-detail mockup contract requires, in the section order spec'd
- * at design_system/ryan-realty/ui_kits/listing-detail/index.html.
+ * Listing-detail composition, ordered to the buyer decision sequence
+ * (reordered 2026-07-30): see it, price it, check the facts, read the
+ * story, tour it, place it, judge the market, schools and parks, history,
+ * run the money, then who to call.
  *
- * Replaces the 552-line legacy showcase composition. Fixes the React
- * "rendered more hooks than during the previous render" (error 310)
- * hydration crash that bricked the legacy page in production.
+ *   hero        ListingHero (photo-grid OR autoplay-video)
+ *   main        PriceCtaStrip · OpenHouses · PropertySpecs · DescriptionBlock
+ *               · ListingVideoEmbed · ListingLocationMap
+ *               · NeighborhoodMarketContext · SchoolsBlock · ParksNearbyBlock
+ *               · PropertyHistory · MortgageCalculator · RentalAnalysis
+ *               · ListingAttribution (ODS §5-3)
+ *   sidebar     ListingBrokerCTA (TextMattCTA + ListingMobileContactBar)
+ *   full-width  KbFeatured — homes for sale in this area
  *
- * Composition (mockup-driven, top to bottom):
- *   above-the-fold:
- *     ListingHero            — photo-grid OR autoplay-video hero
- *   main column:
- *     PriceCtaStrip          — price + pills + 4-button CTA
- *     PropertySpecs          — key facts grid
- *     DescriptionBlock       — public_remarks
- *     NeighborhoodMarketContext (the Zillow beater)
- *     SchoolsBlock
- *     MortgageCalculator
- *     PropertyHistory
- *     ListingLocationMap
- *     SimilarListings
- *   sticky sidebar:
- *     TextMattCTA            — broker CTA
- *     ListingAgentCard       — broker compact card
+ * Two sections were retired here 2026-07-30: VacationRentalPotential (no
+ * nightly-rate, occupancy, or City of Bend STR-permit source exists) and
+ * TransparentCMASummary (every public.cmas row is a confidential client
+ * document). Neither had ever rendered — both took a hardcoded null prop.
  *
  * The mockup-parity CI gate verifies every requiredComponent in
  * design_system/ryan-realty/ui_kits/listing-detail/parity.json is
@@ -417,15 +409,15 @@ export default async function ListingDetailPage({ params }: PageProps) {
           }))}
         />
       ) : null}
-      {/* Description sits directly above Property details (Matt directive). */}
-      <DescriptionBlock publicRemarks={listingWithPhotos.publicRemarks} />
+      {/* Facts before prose: a buyer scans the spec grid, then reads the
+          remarks. Reordered 2026-07-30 to the buyer decision sequence. */}
       <PropertySpecs listing={listingWithPhotos} />
+      <DescriptionBlock publicRemarks={listingWithPhotos.publicRemarks} />
       {virtualTours.length > 0 ? <ListingVideoEmbed videos={virtualTours} variant="tour" /> : null}
-      <ListingAttribution
-        listAgentName={listing.listAgentName}
-        listOfficeName={listing.listOfficeName}
-        listContact={listing.listOfficePhone ?? listing.listAgentPhone ?? listing.listAgentEmail}
-        refreshedAt={listing.refreshedAt}
+      <ListingLocationMap
+        lat={listing.lat}
+        lng={listing.lng}
+        lifestyleLine={buildLifestyleLine({ city: listing.city })}
       />
       {marketGeo ? (
         <NeighborhoodMarketContext
@@ -439,22 +431,19 @@ export default async function ListingDetailPage({ params }: PageProps) {
       ) : null}
       <SchoolsBlock listing={listingWithPhotos} />
       <ParksNearbyBlock listing={listingWithPhotos} />
+      {history.length > 0 ? <PropertyHistory history={history} mode="meaningful-only" /> : null}
+      {/* The money block: what it costs to own, then what it could earn. */}
       <MortgageCalculator
         listPrice={listing.listPrice}
         taxAnnualAmount={listing.taxAnnualAmount}
       />
       <RentalAnalysis listing={listing} />
-      {history.length > 0 ? <PropertyHistory history={history} mode="meaningful-only" /> : null}
-      <ListingLocationMap
-        lat={listing.lat}
-        lng={listing.lng}
-        lifestyleLine={buildLifestyleLine({ city: listing.city })}
+      <ListingAttribution
+        listAgentName={listing.listAgentName}
+        listOfficeName={listing.listOfficeName}
+        listContact={listing.listOfficePhone ?? listing.listAgentPhone ?? listing.listAgentEmail}
+        refreshedAt={listing.refreshedAt}
       />
-      {/* D77 — Wave 3 minimums for Showcase parity. Each component
-          takes data as a prop and renders a "request a report" CTA
-          when data is null. No fake numbers. */}
-      <VacationRentalPotential projection={null} />
-      <TransparentCMASummary cma={null} />
     </>
   )
 

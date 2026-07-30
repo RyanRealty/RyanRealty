@@ -10,15 +10,19 @@
  * Place/Dataset/FAQPage) + tracking (KbSectionTracker section/interaction
  * events). Every figure live (§0).
  *
- * City-fallback for the market chart: if the neighborhood's own monthly price
- * series is too sparse (<8 non-null monthly points OR <2 calendar years), we
- * fall back to the parent city's getPriceHistory('city', citySlug, 'monthly',
- * 60) for yearSeries/trend. chartScopeLabel is set to "{City} (city)" in that
- * case so the city figure is never read as the neighborhood's.
+ * City-fallback for the market chart: when the neighborhood's own monthly series
+ * is too sparse (<8 non-null points OR <2 calendar years) it falls back to the
+ * parent city's getPriceHistory('city', citySlug, 'monthly', 60), relabeled via
+ * chartScopeLabel "{City} (city)" so the city figure never reads as this one's.
  *
- * Section stack: breadcrumb · hero · about · market · featured · ticker · map ·
- * communities (subdivisions in neighborhood) · activity · guides(blog) ·
- * testimonials · team · sell · FAQ · footer.
+ * Section stack (city-page funnel parity): breadcrumb · hero · featured · ticker ·
+ * map · overview/about · market · subdivisions · area guide · open houses ·
+ * activity · SELL · guides · testimonials · team · other cities · FAQ · footer.
+ * Funnel (Brain Dump 2): the seller CTA used to sit below testimonials, team, AND
+ * the other-cities exit links, after the only two blocks whose job is to send a
+ * reader off the page. It now follows activity, the exit links land last, and
+ * inventory leads so a home is never buried under overview prose (design-audit
+ * P1, the fix the city page shipped 2026-07-28).
  *
  * Data ONLY through @/lib/data and @/app/actions/cities. No raw .from() calls.
  */
@@ -62,6 +66,7 @@ import { KbTicker } from '@/components/site/kb/KbTicker.client'
 import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
 import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
 import { KbActivity } from '@/components/site/kb/KbActivity.client'
+import { KbOpenHouses } from '@/components/site/kb/KbOpenHouses.client'
 import { KbArticles } from '@/components/site/kb/KbArticles'
 import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
 import { KbTeam } from '@/components/site/kb/KbTeam.client'
@@ -267,21 +272,10 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     .sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0))
     .slice(0, 14)
     .map((t) => ({
-      listingKey: t.listingKey ?? '',
-      listNumber: t.listNumber ?? null,
-      listPrice: t.listPrice,
-      beds: t.beds,
-      baths: t.baths,
-      sqft: t.sqft ?? null,
-      streetNumber: t.streetNumber,
-      streetName: t.streetName,
-      city: t.city,
-      postalCode: t.postalCode,
-      subdivisionName: t.subdivisionName,
-      lat: t.lat,
-      lng: t.lng,
-      photoUrl: t.photoUrl,
-      status: t.status ?? null,
+      listingKey: t.listingKey ?? '', listNumber: t.listNumber ?? null, listPrice: t.listPrice,
+      beds: t.beds, baths: t.baths, sqft: t.sqft ?? null, status: t.status ?? null,
+      streetNumber: t.streetNumber, streetName: t.streetName, city: t.city, postalCode: t.postalCode,
+      subdivisionName: t.subdivisionName, lat: t.lat, lng: t.lng, photoUrl: t.photoUrl,
     }))
     .filter((t) => t.listingKey)
   const featuredItems = await resolveFeaturedItems(featuredTileInput as unknown as Parameters<typeof resolveFeaturedItems>[0])
@@ -363,6 +357,21 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         : '',
     }
   })
+
+  // ── OPEN HOUSES ────────────────────────────────────────────────────────────
+  // Fetched city-wide (the MLS has no neighborhood scope on open-house rows), so
+  // the section is labeled with the CITY, never the neighborhood (§0).
+  const openHouseItems = openHouses.slice(0, 6).map((oh) => ({
+    href: listingTileHref({
+      listingKey: oh.listing_key, streetNumber: oh.street_number, streetName: oh.street_name, city: oh.city,
+    }),
+    photoUrl: oh.photo_url,
+    price: oh.list_price,
+    address: oh.unparsed_address ?? [oh.street_number, oh.street_name].filter(Boolean).join(' '),
+    cityLine: [oh.city, oh.subdivision_name].filter(Boolean).join(' · '),
+    beds: oh.beds_total, baths: oh.baths_full, sqft: oh.living_area,
+    whenLabel: openHouseWhen(oh.event_date, oh.start_time, oh.end_time),
+  }))
 
   // ── GUIDES / BLOG ──────────────────────────────────────────────────────────
   const articlePosts = blogPosts.map((p) => ({
@@ -487,29 +496,10 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           posterSrc={heroPhoto}
           mediaCaption={mediaCaption}
         />
-        {/* Rich, verified neighborhood depth (overview prose · drive times ·
-            amenities) — the KB rebuild of the pre-KB CommunityRichContent. Null
-            when no config, so it degrades to nothing. When present it carries the
-            overview, so the thin data-driven About below is suppressed to avoid
-            duplicating the same prose. */}
-        <KbResortOverview content={richContent} name={neighborhood.name} postsBySlug={amenityPosts} />
-        {!richContent && aboutParagraphs.length > 0 ? (
-          <KbAbout
-            eyebrow={neighborhoodLabel}
-            heading={`Living in ${neighborhood.name}`}
-            paragraphs={aboutParagraphs}
-            facts={aboutFacts}
-          />
-        ) : null}
-        {/* Flow: market credibility → featured homes → live ticker → map →
-            subdivisions ledger → activity → guides → explore other cities */}
-        <KbMarketHud
-          data={marketData}
-          eyebrow={`${neighborhood.name} · The market`}
-          chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
-        />
-        {/* The grid caps at 12 tiles — reach the rest of THIS neighborhood's
-            inventory, not the site-wide search. */}
+        {/* Inventory first (same place template as the city page): the page is
+            titled "{Neighborhood} homes for sale", so a buyer never scrolls prose
+            to reach a home (design-audit P1). The grid caps at 12 tiles — the
+            footer link reaches the rest of THIS neighborhood's inventory. */}
         <KbFeatured
           items={featuredItems}
           eyebrow={`${neighborhood.name} · For sale`}
@@ -528,6 +518,24 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           title={`Homes in\n${neighborhood.name}`}
           subtitle={`Every active single-family listing in ${neighborhood.name}, on the real terrain. Click any dot for the price, the beds, and the street.`}
         />
+        {/* Rich, verified depth (overview prose · drive times · amenities) — the
+            KB rebuild of the pre-KB CommunityRichContent. Null when no config, so
+            it degrades to nothing. When present it carries the overview, so the
+            thin data-driven About below is suppressed (no duplicate prose). */}
+        <KbResortOverview content={richContent} name={neighborhood.name} postsBySlug={amenityPosts} />
+        {richContent === null && aboutParagraphs.length > 0 ? (
+          <KbAbout
+            eyebrow={neighborhoodLabel}
+            heading={`Living in ${neighborhood.name}`}
+            paragraphs={aboutParagraphs}
+            facts={aboutFacts}
+          />
+        ) : null}
+        <KbMarketHud
+          data={marketData}
+          eyebrow={`${neighborhood.name} · The market`}
+          chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
+        />
         {subdivisionItems.length > 0 ? (
           <KbExploreTowns
             towns={subdivisionItems}
@@ -538,8 +546,10 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           />
         ) : null}
         <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={neighborhood.name} posterSrc={heroPhoto} />
-        {/* Feed is fetched city-wide (getActivityFeedWithFallbackMulti cities:[cityName])
-            — label the city, not the neighborhood (§0 honest-relabeling). */}
+        {/* Open houses + the feed are fetched city-wide (the MLS carries no
+            neighborhood scope on either) — label the city, not the neighborhood
+            (§0 honest-relabeling). */}
+        <KbOpenHouses items={openHouseItems} eyebrow={`${cityName} · This week`} heading="Open houses" viewAllHref={`/open-houses/${citySlug}`} />
         <KbActivity
           items={activityItems}
           eyebrow={`Live · ${cityName}`}
@@ -547,27 +557,30 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           viewAllHref="/housing-market"
           viewAllLabel="Full market pulse"
         />
-        <KbArticles
-          posts={articlePosts}
-          eyebrow="Guides and insights"
-          heading={`${neighborhood.name} real estate, explained`}
-          subtitle={`Local housing news, market data, and buyer and seller guides for ${neighborhood.name} and ${cityName}.`}
-        />
-        <KbExploreTowns
-          towns={otherCityItems}
-          eyebrow="Central Oregon"
-          title="Explore other cities"
-          sectionId="nearby"
-          cta={{ href: '/cities', label: 'Every city' }}
-        />
-        <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
-        <KbTeam />
+        {/* Convert before trust, and BOTH before the exit links. */}
         <KbSell
           data={{
             medianListPrice,
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
             soldCount30d: pulse?.closedLast30Days ?? null,
           }}
+        />
+        <KbArticles
+          posts={articlePosts}
+          eyebrow="Guides and insights"
+          heading={`${neighborhood.name} real estate, explained`}
+          subtitle={`Local housing news, market data, and buyer and seller guides for ${neighborhood.name} and ${cityName}.`}
+        />
+        <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
+        <KbTeam />
+        {/* Last block before the FAQ: every link here routes the reader OFF this
+            page, so it sits after the ask, never before it. */}
+        <KbExploreTowns
+          towns={otherCityItems}
+          eyebrow="Central Oregon"
+          title="Explore other cities"
+          sectionId="nearby"
+          cta={{ href: '/cities', label: 'Every city' }}
         />
         {faqs.length > 0 ? (
           <section id="faq" aria-label={`${neighborhood.name} real estate questions`}>

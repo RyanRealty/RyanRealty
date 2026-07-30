@@ -19,6 +19,11 @@
  * permanentRedirect fires ONLY for marketing-level slugs (resolveSubdivisionAreaRedirect).
  * notFound fires ONLY when all three paths return empty.
  *
+ * Section stack (city-page funnel parity, 2026-07-30): breadcrumb · hero ·
+ * featured · video tours · map · sales history · schools · SELL · footer.
+ * Inventory leads because the page is titled "{name} homes for sale", and the
+ * seller CTA closes the page with no exit-link block after it.
+ *
  * Data ONLY through @/lib/data and @/app/actions/communities. No raw .from().
  */
 
@@ -464,13 +469,34 @@ export default async function SubdivisionPage({ params }: Props) {
           posterSrc={posterSrc}
           mediaCaption={mediaCaption}
         />
-        {/* Video tours scoped to this subdivision, near the top (restored from the
-            pre-KB page). Gated on hasSubdivisionVideoTours so the rail only renders
-            when in-area video tours actually exist — never the top-priced site-wide
-            Central Oregon fallback under a "Walk through homes in {displayName}"
-            header. We scope on the canonical MLS SubdivisionName (community) rather
-            than displayName so the rail's own scoped fetch matches the probe above.
-            Tap drops into /feed, where the videos keep playing continuously. */}
+        {/* Inventory leads (city-page funnel parity): the page is titled
+            "{displayName} homes for sale", so the homes come before the map and
+            the history. Graceful empty state when the plat has no active listing. */}
+        {featuredItems.length > 0 ? (
+          <KbFeatured
+            items={featuredItems}
+            eyebrow={`${displayName} · For sale`}
+            viewAllHref={subdivisionListingsPath(cityName, displayName)}
+            viewAllLabel={`See every ${displayName} home for sale`}
+            totalCount={activeCount || null}
+          />
+        ) : (
+          <section className="section">
+            <div className="wrap" style={{ textAlign: 'center', padding: '2.5rem 0' }}>
+              <p style={{ fontSize: '1.05rem', lineHeight: 1.6, color: 'var(--navy-70)', maxWidth: '36rem', margin: '0 auto' }}>
+                No active listings in {displayName} right now. New homes come to
+                market regularly{resortLabel ? ` in ${resortLabel}` : ''}.
+              </p>
+            </div>
+          </section>
+        )}
+        {/* Video tours scoped to this subdivision. Gated on hasSubdivisionVideoTours
+            so the rail only renders when in-area video tours actually exist — never
+            the top-priced site-wide Central Oregon fallback under a "Walk through
+            homes in {displayName}" header. We scope on the canonical MLS
+            SubdivisionName (community) rather than displayName so the rail's own
+            scoped fetch matches the probe above. Tap drops into /feed, where the
+            videos keep playing continuously. */}
         {hasSubdivisionVideoTours && registryMatch ? (
           <VideoTourRail
             community={registryMatch.canonicalName}
@@ -492,25 +518,6 @@ export default async function SubdivisionPage({ params }: Props) {
             subtitle={`Every active single-family listing in ${displayName}${cityName !== 'Central Oregon' ? `, ${cityName}` : ''}. Click any dot for the price, the beds, and the street.`}
           />
         ) : null}
-        {/* Featured homes grid — shown when listings exist; graceful empty state otherwise. */}
-        {featuredItems.length > 0 ? (
-          <KbFeatured
-            items={featuredItems}
-            eyebrow={`${displayName} · For sale`}
-            viewAllHref={subdivisionListingsPath(cityName, displayName)}
-            viewAllLabel={`See every ${displayName} home for sale`}
-            totalCount={activeCount || null}
-          />
-        ) : (
-          <section className="section">
-            <div className="wrap" style={{ textAlign: 'center', padding: '2.5rem 0' }}>
-              <p style={{ fontSize: '1.05rem', lineHeight: 1.6, color: 'var(--navy-70)', maxWidth: '36rem', margin: '0 auto' }}>
-                No active listings in {displayName} right now. New homes come to
-                market regularly{resortLabel ? ` in ${resortLabel}` : ''}.
-              </p>
-            </div>
-          </section>
-        )}
         {/* Sales history (yearly closed-sale aggregates) + market-stats strip.
             Renders null when neither source has data — ODS-safe: aggregates
             only, never individual sold listings. */}

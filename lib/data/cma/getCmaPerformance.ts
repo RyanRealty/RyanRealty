@@ -11,11 +11,14 @@ import 'server-only'
  * the prospecting worklist and rendered as one thin line on a card. This reader
  * turns them into a report.
  *
- * Bounded by construction: the caller passes a page size, and the engagement
- * read is scoped to that page's slugs — never the whole table (spec §7).
+ * Scope note: unlike the prospecting worklist, the engagement read here covers
+ * the FULL document set rather than the visible page, because it feeds a funnel
+ * RATE and a rate needs one denominator. That costs ~90s uncached, so the export
+ * is wrapped in a 5-minute cache at the bottom of this file. See both comments.
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { getDocEngagement } from '@/lib/data/prospecting/engagement'
 import type { ProspectEngagement } from '@/lib/data/prospecting/types'
 
@@ -72,7 +75,7 @@ type RawRow = Record<string, unknown>
  * worklist uses, and it is what keeps the funnel percentages honest — a summary
  * computed over one page would describe the page, not the funnel.
  */
-export async function getCmaPerformance(filters: CmaPerformanceFilters = {}): Promise<CmaPerformanceResult> {
+async function computeCmaPerformance(filters: CmaPerformanceFilters = {}): Promise<CmaPerformanceResult> {
   const page = Math.max(1, Math.floor(filters.page ?? 1))
   const pageSize = Math.min(Math.max(Math.floor(filters.pageSize ?? 50), 1), 200)
   const sb = createServiceClient()
@@ -147,3 +150,29 @@ export async function getCmaPerformance(filters: CmaPerformanceFilters = {}): Pr
 
   return { rows, total, summary }
 }
+
+const EMPTY_RESULT: CmaPerformanceResult = {
+  rows: [],
+  total: 0,
+  summary: { built: 0, sent: 0, opened: 0, viewed: 0, anyActivity: 0 },
+}
+
+/**
+ * The cached report read.
+ *
+ * The uncached compute joins engagement across the FULL document set (deliberate
+ * — a funnel rate needs one denominator, see computeCmaPerformance), which
+ * measured ~90 SECONDS to first paint on production. Correct but unusable.
+ *
+ * A 5-minute TTL fixes that without giving up the correctness: the inputs move
+ * slowly (9 sends total across 217 documents), so a report up to five minutes
+ * stale is indistinguishable from live, while a broker opening the page gets it
+ * instantly. Invalidates on the same `cma:engagement` tag the engagement reader
+ * carries, so a fresh open/click/view flushes it early.
+ */
+export const getCmaPerformance = makeResilientCached<[CmaPerformanceFilters], CmaPerformanceResult>(
+  computeCmaPerformance,
+  ['cma-performance-v1'],
+  { revalidate: 300, tags: ['cma:engagement'] },
+  EMPTY_RESULT,
+)

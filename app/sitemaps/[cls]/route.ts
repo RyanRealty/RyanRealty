@@ -30,14 +30,20 @@ import { getIndexablePresetSlugs } from '@/lib/search-presets'
 
 export const revalidate = 3600
 
-// Prerender all five children at build time, the same treatment /sitemap.xml
-// gets via ISR (staticPageGenerationTimeout is already sized for this build).
-// Unknown params 404 without invoking the heavy build.
-export const dynamicParams = false
-
-export function generateStaticParams() {
-  return SITEMAP_CLASSES.map((cls) => ({ cls: `${cls}.xml` }))
-}
+// @no-static-params — deliberately NOT prerendered.
+//
+// These five children were prerendered at build time (generateStaticParams +
+// dynamicParams=false). Each one calls buildAllUrls over the whole ~10.7K-URL
+// universe, and the shared cache entry is 2.4MB — over unstable_cache's 2MB
+// cap — so the write fails and NOTHING is reused: five full DB-bound builds per
+// deploy. On 2026-07-30 that crossed the 1800s per-route build limit and every
+// production deploy went ERROR ("Failed to build /sitemaps/core.xml ... more
+// than 1800 seconds"), silently pinning the site to an older commit.
+//
+// They now render on first request and cache for an hour (revalidate above),
+// which keeps them out of the build critical path entirely. The authoritative
+// /sitemap.xml is unaffected, and Google re-requests a slow sitemap.
+export const dynamicParams = true
 
 function siteBaseUrl(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')

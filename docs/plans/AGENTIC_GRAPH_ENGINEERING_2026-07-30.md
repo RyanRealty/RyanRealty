@@ -130,3 +130,100 @@ break-even is real (>50% per-node pass rate). Mitigations baked into Phase 1: sm
 on a slice first, medium size guideline, stop conditions in every loop, and workflows
 reserved for the verification-shaped work where serial checking is the thing that is
 actually expensive (Matt's review cycles and missed defects).
+
+---
+
+## 5. Deeper research addendum (2026-07-30, second pass at Matt's request)
+
+Matt's question: does this factor in site performance, GA4, Search Console, social,
+content creation, newsletter/search engagement, sitemaps — the whole operation? The
+deeper literature answers it directly.
+
+**The mature framing (Eigent, "Graph Engineering for AI Agents"):** graph engineering is
+not N workflows. It is "wiring many feedback loops — metrics, evals, audits, policies,
+and workflows — into a network where they watch, constrain, and correct one another,
+instead of each loop quietly drifting away from reality." One loop = a variable you care
+about, a target, a gap measurement, and an action that shrinks the gap. The graph is the
+organization of those loops, with explicit edges encoding **trust, authority, and
+cadence**.
+
+Design rules that matter for us:
+
+1. **Grounded vs ungrounded.** A loop consuming only internal reports can stay perfectly
+   self-consistent while drifting from reality. Every loop needs an **anchor** — an
+   external reference the graph's dynamics cannot touch (verified closed transactions,
+   `crm_people` lead counts, GSC clicks, cash events). Dashboards feeding dashboards is
+   the failure mode.
+2. **Metrics pair with counter-metrics.** Push CTR and watch conversion; push send volume
+   and watch unsubscribes/spam-complaints; push page speed and watch build cost. When the
+   optimization metric climbs while the counter-metric falls, the graph has surfaced a
+   Goodhart problem instead of hiding it.
+3. **Cadence separation.** Fast loops (daily alert sends, cron measurement) must not
+   override slow loops (positioning, brand, pricing strategy). Slower, higher-level loops
+   own the reference values of faster ones.
+4. **Watch the watcher.** Sensors decay — a stale snapshot cron is a wrong scoreboard.
+   Telemetry freshness itself needs a loop (the 8-day-stale `listing_tile_mv` incident is
+   our own proof).
+
+The four structural failures at scale: Goodhart's Law, upward blindness (loops can't
+question their own targets), inter-loop conflict (independent loops fight over shared
+resources without knowing it — our canon's arbitration section already exists for this),
+and measurement decay.
+
+Additional sources: [Eigent — Graph Engineering for AI Agents](https://www.eigent.ai/blog/graph-engineering-ai-agents) ·
+[TrueFoundry — enterprise governance for agent graphs](https://www.truefoundry.com/blog/graph-engineering-enterprise-guide) ·
+[Frase — AI agents for SEO 2026](https://www.frase.io/blog/ai-agents-for-seo) ·
+[digitalapplied — agentic SEO during core updates](https://www.digitalapplied.com/blog/agentic-seo-during-core-updates-automation) ·
+[bosio.digital — loops vs graphs](https://bosio.digital/articles/loops-vs-graphs) ·
+[arXiv survey — workflow optimization for LLM agents](https://arxiv.org/pdf/2603.22386)
+
+---
+
+## 6. Full-surface node inventory — Matt's operation as a graph of loops
+
+Every surface Matt named, mapped to the loop that already ingests it and the graph gap:
+
+| Surface | Existing loop/node | Signal tables | Graph gap |
+|---|---|---|---|
+| GA4 (sessions, conversions, bounce) | Growth loop step 1 ingest | `site_signal` (via `marketing-snapshot-ga4`) | grounded ✓; needs counter-metric pairing (traffic vs lead quality) |
+| Search Console (queries, CTR, position) | Growth loop + target-query benchmark | `site_signal`, `target_queries`, `target_query_benchmark` | top-25/day coverage means absence ≠ zero — a coverage-aware verifier node |
+| Core Web Vitals / load speed | Growth loop diagnosis rule (LCP > 2.5s) | `web_vitals` by route | no freshness watcher; no regression fan-out (one agent per hot route) |
+| Sitemaps / crawl surface | Growth loop scope (sitemap/robots/canonicals); per-class sitemap cache | — | no periodic sitemap-integrity workflow (URL count deltas, orphan routes, 200-check) |
+| Social platforms (IG/FB/LinkedIn/YouTube/GBP) | `marketing-measurement-loop` cron measures published rows | `marketing_brain_actions` (measured), platform APIs | measurement exists per-post; no cross-platform synthesis node (what class of content wins where) feeding back into brain priorities |
+| Content creation | The marketing brain IS the work graph (pending → measured) | `marketing_brain_actions`, `content_briefs` view | post-mortem exists per §5 canon; no fan-out post-mortem workflow comparing cohorts of content against engagement anchors |
+| Newsletter | spec-only (mail infra done: DMARC, Resend) | `newsletter_*` per spec | when it ships, engagement (opens/clicks/replies/unsubs) must enter as counter-metric nodes from day one, not retrofitted |
+| Outbound sequences ("how they respond") | CRM sequence engine — **pause-on-reply is already a graph edge** (an engagement signal rerouting a workflow) | `crm_people`, sequence tables, email events | reply/engagement signals stop at the sequence; they don't flow upstream to content strategy or Growth prioritization |
+| Saved searches / alerts | typed alert engine (Phase 0–3 shipped) | `listing_alerts` | alert engagement (opens, click-throughs to listings) is not yet a scored input to Growth/content loops |
+| Leads (the anchor) | `getLeadIntake` on `crm_people` | `crm_people` | this IS the anchor metric — every optimization loop above should be paired against it |
+| Verified transactions (the deepest anchor) | Vault | Vault tables | ground truth for revenue attribution; untouched by any optimization loop — correct, keep frozen |
+
+The five-loop topology in `docs/DEVELOPMENT_PROCESS.md` (Growth, Experience, Nurture,
+Demand, Transaction) already IS an org graph with arbitration edges. What the research
+adds is the missing edge *types*: counter-metric pairings, anchors, cadence rules, and a
+telemetry-freshness watcher.
+
+---
+
+## 7. Phase 1b — derived workflow catalog (full surface)
+
+Beyond the four verification seeds in §3, derived the same way (fan-out + verify, stop
+conditions, external grounding). Build order follows the same rule as everything else:
+highest leverage first, one at a time, smoke-tested on a slice.
+
+| # | Workflow | Shape | Grounding |
+|---|---|---|---|
+| 1b.1 | `/scoreboard-sweep` | Fan out one agent per signal domain (GA4, GSC, vitals, target queries, alert engagement, sequence replies) → each verifies freshness + pulls its 28d window → synthesis node produces ONE ranked candidate list for the Growth iteration | replaces serial step-1 ingest; every domain checked for staleness before its numbers are trusted |
+| 1b.2 | `/vitals-regression` | One agent per hot route measuring CWV deltas vs baseline → verifier reproduces any regression → output = route, metric, delta, suspected commit range | `web_vitals` rows, not memory |
+| 1b.3 | `/sitemap-integrity` | Agents per sitemap class: URL count delta vs last run, sample-200-check, orphan detection (routes on disk not in sitemap), canonical/robots consistency | live HTTP + filesystem |
+| 1b.4 | `/content-postmortem <window>` | One agent per measured content row in the window → pull platform metrics → cross-platform synthesis: which class/format/geo won where → writes learnings the brain's next run must read | `marketing_brain_actions.measured` + platform APIs |
+| 1b.5 | `/engagement-echo` | Sweep sequence replies, alert click-throughs, newsletter events (when live) → classify intent → verify classification → route upstream: hot signals to CRM queue, pattern signals to Growth/content priorities | `crm_people` events — closes the "how they respond" edge Matt asked about |
+| 1b.6 | `/serp-defend` | One agent per priority-1 target query: live position, competitor movement, our page's freshness → verifier confirms losses before they become candidates | `target_query_benchmark` + live SERP |
+
+### Phase 2b — graph-of-loops upgrades (edges, not nodes)
+
+| # | Item | Acceptance criteria |
+|---|---|---|
+| 2b.1 | Counter-metric pairing: canon documents, per loop, its optimization metric + counter-metric + anchor (Growth: sessions/CTR ↔ lead quality ↔ `crm_people` intake; Nurture: touches ↔ unsubs/spam ↔ replies; Demand: CPL ↔ lead-to-appointment ↔ closed transactions) | table lands in `docs/DEVELOPMENT_PROCESS.md`; each loop skill cites its pair |
+| 2b.2 | Telemetry-freshness watcher: every snapshot cron's last-success age checked at the top of every loop iteration; stale scoreboard = blocked iteration, not wrong iteration | staleness check in 1b.1; a stale source names its cron |
+| 2b.3 | Cadence rules written into the canon: fast loops (alerts, sends, measurement crons) may not change reference values owned by slow loops (positioning, pricing, brand); slow-loop changes require Matt | canon section + loop-skills reference it |
+| 2b.4 | Anchor declaration: `crm_people` lead intake and Vault closed transactions declared as frozen anchor nodes — no optimization loop may redefine how they're counted | canon section; any change to lead-counting requires Matt sign-off |

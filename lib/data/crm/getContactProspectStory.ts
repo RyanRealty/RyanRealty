@@ -17,7 +17,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 
 export type ContactProspectStory = {
   kind: 'expired' | 'fsbo'
-  /** listing_key (expired) | fsbo_url (fsbo) — the /admin/prospecting ?id=. */
+  /** listing_key (expired) | fsbo_url (fsbo) — the prospect route's <id> segment. */
   prospectId: string
   /** 'Expired' / 'Canceled' / … (expired standard_status) or the FSBO status. */
   status: string
@@ -30,7 +30,11 @@ export type ContactProspectStory = {
   priorOfficeName: string | null
   streetAddress: string | null
   city: string | null
-  /** Deep link that opens the prospecting detail drawer for this row. */
+  /**
+   * Deep link to the prospect's own page, /admin/prospecting/<kind>/<id>. The
+   * `?id=` drawer this replaces was deleted 2026-07-28; the id segment stays
+   * URL-encoded because a fsbo_url carries slashes (the route decodes it).
+   */
   detailHref: string
 }
 
@@ -98,7 +102,7 @@ export async function getContactProspectStory(params: {
       priorOfficeName: (r.list_office_name as string | null) ?? null,
       streetAddress: (r.street_address as string | null) ?? null,
       city: (r.city as string | null) ?? null,
-      detailHref: `/admin/prospecting?kind=expired&id=${encodeURIComponent(id)}`,
+      detailHref: `/admin/prospecting/expired/${encodeURIComponent(id)}`,
     })
   }
   for (const r of ((fsbo.data ?? []) as unknown as RawRow[])) {
@@ -116,7 +120,7 @@ export async function getContactProspectStory(params: {
       priorOfficeName: null,
       streetAddress: (r.street_address as string | null) ?? null,
       city: (r.city as string | null) ?? null,
-      detailHref: `/admin/prospecting?kind=fsbo&id=${encodeURIComponent(id)}`,
+      detailHref: `/admin/prospecting/fsbo/${encodeURIComponent(id)}`,
     })
   }
 

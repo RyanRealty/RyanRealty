@@ -81,21 +81,17 @@
       "section": "fullscreen lightbox primitive consumed by ListingHero (D75 \u2014 thumbnails + dots + swipe + counter)",
       "blocking": true,
       "notes": "Lifted out of ListingHero per DESIGN_DIRECTIVES.md D75 so every gallery surface inherits the same nav contract. Page does NOT import directly \u2014 ListingHero does."
-    },
-    {
-      "name": "VacationRentalPotential",
-      "section": "Resort-community STR projection \u2014 peak/off-peak nightly + occupancy + annual gross (D77)",
-      "blocking": true,
-      "notes": "Page passes a real projection only when the listing's community is in the STR-allowed resort set (Tetherow, Sunriver, Eagle Crest, etc.) AND comp data is available. Otherwise `projection={null}` and the component renders a CTA."
-    },
-    {
-      "name": "TransparentCMASummary",
-      "section": "When Ryan Realty has run a CMA on this listing, show the range + suggested + comp count + PDF link (D77)",
-      "blocking": true,
-      "notes": "Component returns null when `cma={null}` \u2014 page queries public.cmas for the listing_key. This is the 'show our work' differentiator vs Zillow Showcase."
     }
   ],
   "deferredComponents": [
+    {
+      "name": "VacationRentalPotential",
+      "reason": "Retired 2026-07-30. The mount passed a hardcoded `projection={null}` since D77, so the section had never rendered. A pro-forma needs a nightly-rate + occupancy source AND the City of Bend STR permit status for the address; neither exists in this repo or the database (lib/vacation-rental-potential.ts is an unsourced heuristic behind an unconfigured STR_PROVIDER_URL, and listing_search_mv.str_permit_yn is a self-reported MLS field, not the City permit register). Same treatment as ClimateRiskBlock: a section that cannot be sourced does not ship."
+    },
+    {
+      "name": "TransparentCMASummary",
+      "reason": "Retired 2026-07-30. The mount passed a hardcoded `cma={null}` since D77, so the section had never rendered. Wiring it to public.cmas is blocked on client confidentiality, not on engineering: every candidate row is a client document. Of 220 rows, 3 are client-ready CMAs carrying a subject_listing_key; 2 are competitor-brokerage Closed listings with no built html_content, and the third is Ryan Realty's own Active listing where the CMA range sits below the seller's list price. Publishing that on a buyer-facing page discloses a seller client's valuation and negotiating floor (ORS 696.805 loyalty and confidentiality), and the underlying sold comps are VOW-restricted under the ODS rules. The 'show our work' surface is the CMA document itself and the seller LP, not the public listing page."
+    },
     {
       "name": "ListingVideoEmbed",
       "reason": "Folded into ListingHero (video-at-hero is the Showcase pattern, not a mid-page click-to-play)."

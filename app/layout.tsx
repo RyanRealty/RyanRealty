@@ -9,6 +9,11 @@ import HideOnLP, { HideChrome } from "../components/layout/HideOnLP";
 // comparison tray, visitor/intent trackers, auth bridges) behind route-aware
 // dynamic imports so their chunks never load on /admin (RC3 drop-public-bundle).
 import PublicClientLayer from "../components/layout/PublicClientLayer";
+// Reclaims React's streamed `<div hidden id="S:n">` Suspense content containers
+// on tabs that never paint (background tabs, headless renderers). React 19
+// defers the first reveal to requestAnimationFrame, which never fires there,
+// leaving a second full copy of the page body in the DOM. See the component.
+import StreamedBoundaryReclaimer from "../components/layout/StreamedBoundaryReclaimer";
 import JsonLd from "../components/JsonLd";
 import GTMHead from "../components/GTMHead";
 import { WebVitalsReporter } from "@/components/WebVitalsReporter";
@@ -109,6 +114,10 @@ export default function RootLayout({
             domain. Runs on every route (outside HideOnLP). No-op for the 99%
             of visitors with a clean browser. */}
         <StaleServiceWorkerReset />
+        {/* Drains React's deferred Suspense-reveal queue on tabs that never
+            paint, so the streamed body container is not left in the DOM as a
+            second full copy of the page. No-op on any visible tab. */}
+        <StreamedBoundaryReclaimer />
         <RootProvider>
           <HideOnLP>
             <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-[100] focus:p-4 focus:bg-card focus:text-primary">
