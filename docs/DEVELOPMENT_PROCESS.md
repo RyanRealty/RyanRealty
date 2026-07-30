@@ -101,6 +101,7 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 | `PAGE_REVIEW_REDESIGN_RUNBOOK.md` | **live** — page-review + redesign runbook |
 | `PAID_ADS_PLAN.md`, `ADS_CREATIVE_DIRECTION.md`, `ADS_BRIEFS.md`, `ADS_BUYER_SCRIPT.md`, `ADS_FOOTAGE_PLAN.md`, `ADS_PRO_EXAMPLES.md`, `ADS_GO_LIVE.md` | **live** — paid-ads program |
 | `TC_ARCHITECTURE_REVIEW.md` | **live** — Vault TC architecture backlog |
+| `AGENTIC_GRAPH_ENGINEERING_2026-07-30.md` | **live** — agentic-graph-engineering research + incorporation backlog: saved workflow library (`.claude/workflows/`), graph escape hatch in the loop skills, consumer-driven KG evaluation |
 | `TC_BUILDOUT_HANDOFF.md` | **paused 2026-06-24** — TC build-out resume point |
 | `twilio-cutover-2026-06-24.md` | **live** — Twilio cutover backlog |
 | `crm-attribution-coverage-2026-06-24.md` | **live** — attribution coverage map |
