@@ -142,6 +142,13 @@ export async function selectCmaCompsPool(opts: {
   sqftMax: number
   lotMin?: number | null
   lotMax?: number | null
+  /**
+   * Optional lat/lng box. The tiered selector uses this to push a market-area
+   * or radius bound INTO the query, because the row limit below is applied
+   * before any in-memory geographic filter — without it a neighborhood tier
+   * only sees whichever recent citywide sales happen to land inside it.
+   */
+  bounds?: { latMin: number; latMax: number; lngMin: number; lngMax: number } | null
   limit?: number
 }): Promise<CmaListingRow[]> {
   const sb = client()
@@ -161,9 +168,16 @@ export async function selectCmaCompsPool(opts: {
   if (opts.postalCode?.trim()) q = q.eq('PostalCode', opts.postalCode.trim())
   if (opts.lotMin != null) q = q.gte('lot_size_acres', opts.lotMin)
   if (opts.lotMax != null) q = q.lte('lot_size_acres', opts.lotMax)
+  if (opts.bounds) {
+    q = q
+      .gte('Latitude', opts.bounds.latMin)
+      .lte('Latitude', opts.bounds.latMax)
+      .gte('Longitude', opts.bounds.lngMin)
+      .lte('Longitude', opts.bounds.lngMax)
+  }
   const { data, error } = await q
     .order('CloseDate', { ascending: false })
-    .limit(Math.min(Math.max(opts.limit ?? 50, 1), 100))
+    .limit(Math.min(Math.max(opts.limit ?? 50, 1), opts.bounds ? 500 : 100))
   if (error) {
     console.error('[selectCmaCompsPool]', error.message)
     return []

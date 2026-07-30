@@ -34,13 +34,22 @@ import {
   distanceMiles,
   lotCharacterCompatible,
   productTypeCompatible,
+  marketAreaBounds,
+  radiusBounds,
   marketAreaName,
   proximityLabel,
   resolveMarketArea,
 } from '@/lib/cma/market-area'
 
 export const MIN_COMPS = 3
-export const TARGET_COMPS = 6
+/**
+ * Stop climbing the ladder at 5 (Matt 2026-07-30). The target is not "as many
+ * comps as possible" — every extra comp is bought by widening geography or
+ * time, so a target of 6 forced one more descent down the ladder than the
+ * analysis needed. Five closed sales support the three pricing methods, and
+ * stopping there keeps the set in the tightest tier that can fill it.
+ */
+export const TARGET_COMPS = 5
 export const MAX_COMPS = 10
 
 function num(v: unknown): number | null {
@@ -158,15 +167,29 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
     maxMiles: number | null
   }
 
+  // TRADE TIME BEFORE YOU TRADE LOCATION (Matt 2026-07-30). The ladder used to
+  // step subdivision-6mo -> neighborhood-6mo, so a subject in a tight desirable
+  // subdivision with one recent sale immediately widened to the whole polygon.
+  // 922 Ogden is the case: Kenwood has 1 in-band sale in 6 months and 2 in 12,
+  // so the selector took the single 6-month Kenwood sale and then reached for
+  // Starlight Estate and Cady — different, weaker submarkets — while the second
+  // Kenwood sale sat unused at 8 months old. An older sale on the subject's own
+  // street competes for the same buyer; a same-month sale two submarkets over
+  // does not. Fannie Mae B4-1.3-08 permits over-6-month comps with an
+  // explanation, and the trace carries that explanation, so the older
+  // same-subdivision sale is the cheaper concession.
   const tiers: Tier[] = [
-    // 1-2. Same market area, recent. Fannie Mae's "same market area when possible".
+    // 1-2. The subject's own subdivision, exhausted across the full 12 months
+    // BEFORE any geographic widening.
     { name: 'subdivision-6mo', subdivisionIlike: subject.subdivision, monthsBack: 6, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: null },
+    { name: 'subdivision-12mo', subdivisionIlike: subject.subdivision, monthsBack: 12, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: null },
+    // 3-4. The neighborhood — the group of subdivisions around the subject, as
+    // the City of Bend GIS mesh draws it. Same widen-time-first order.
     { name: 'neighborhood-6mo', monthsBack: 6, sqftBand: 0.25, sameArea: true, competing: false, maxMiles: null },
-    // 3. Same area, older. Over 6 months requires an explanation, which the trace carries.
     { name: 'neighborhood-12mo', monthsBack: 12, sqftBand: 0.25, sameArea: true, competing: false, maxMiles: null },
-    // 4. Competing market area — permitted, but disclosed and distance-bounded.
+    // 5. Competing market area — permitted, but disclosed and distance-bounded.
     { name: 'competing-area-12mo', monthsBack: 12, sqftBand: 0.25, sameArea: false, competing: true, maxMiles: 2 },
-    // 5. Last resort. Still bounded — the old ladder ended at "anywhere in the city".
+    // 6. Last resort. Still bounded — the old ladder ended at "anywhere in the city".
     { name: 'citywide-12mo', monthsBack: 12, sqftBand: 0.35, sameArea: false, competing: true, maxMiles: 5 },
   ]
 
@@ -182,6 +205,14 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
     const sqftMin = Math.round(sqft * (1 - tier.sqftBand))
     const sqftMax = Math.round(sqft * (1 + tier.sqftBand))
     const closeDateGte = isoMonthsAgo(tier.monthsBack)
+    // Push the tier's geography INTO the query. The row limit is applied
+    // before any in-memory filter, so without this a polygon or radius tier
+    // only sees whichever recent citywide sales happen to fall inside it.
+    const tierBounds = tier.sameArea
+      ? marketAreaBounds(subjectArea)
+      : tier.maxMiles != null
+        ? radiusBounds(subjectPoint, tier.maxMiles)
+        : null
     const rows = await selectCmaCompsPool({
       cityIlike: subject.city,
       subdivisionIlike: tier.subdivisionIlike ?? null,
@@ -191,7 +222,8 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
       sqftMax,
       lotMin,
       lotMax,
-      limit: 100,
+      bounds: tierBounds,
+      limit: tierBounds ? 500 : 100,
     })
     let added = 0
     for (const row of rows) {

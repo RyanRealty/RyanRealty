@@ -62,6 +62,62 @@ function pointInGeometry(lng: number, lat: number, g: Geometry): boolean {
   return g.coordinates.some((poly) => pointInPolygon(lng, lat, poly))
 }
 
+export type LatLngBounds = { latMin: number; latMax: number; lngMin: number; lngMax: number }
+
+function extendBounds(b: LatLngBounds, ring: Ring): void {
+  for (const [lng, lat] of ring) {
+    if (lat < b.latMin) b.latMin = lat
+    if (lat > b.latMax) b.latMax = lat
+    if (lng < b.lngMin) b.lngMin = lng
+    if (lng > b.lngMax) b.lngMax = lng
+  }
+}
+
+/**
+ * Axis-aligned bounding box of a market area, for pushing the geography INTO
+ * the comp query.
+ *
+ * Why this exists: the polygon test is exact but runs in memory, and the pool
+ * query returns the 100 most recent citywide sales. Filtering after that limit
+ * means the neighborhood tier only sees whichever recent sales happen to fall
+ * inside it. Measured on 922 Ogden (River West): 1,026 in-band closed sales
+ * citywide, 32 detached inside River West, but the 100-row pool surfaced only
+ * 5 of them. The tier starved and the ladder fell through to weaker submarkets.
+ *
+ * The bbox is a superset of the polygon, so it never drops a comp the polygon
+ * would keep — `resolveMarketArea` still makes the exact call afterward.
+ */
+export function marketAreaBounds(areaId: string | null): LatLngBounds | null {
+  if (!areaId) return null
+  const community = COMMUNITIES.find((c) => c.slug === areaId)
+  if (!community) return null
+  const b: LatLngBounds = { latMin: 90, latMax: -90, lngMin: 180, lngMax: -180 }
+  const g = community.geometry
+  if (g.type === 'Polygon') for (const ring of g.coordinates) extendBounds(b, ring)
+  else for (const poly of g.coordinates) for (const ring of poly) extendBounds(b, ring)
+  return b.latMin > b.latMax ? null : b
+}
+
+/**
+ * Bounding box covering a radius in miles around a point — the same
+ * push-into-the-query trick for the distance-bounded fallback tiers, which
+ * otherwise capped at 100 citywide rows before applying the mileage bound.
+ */
+export function radiusBounds(
+  point: { lat: number | null; lng: number | null },
+  miles: number,
+): LatLngBounds | null {
+  if (point.lat == null || point.lng == null) return null
+  const latDelta = miles / 69
+  const lngDelta = miles / (69 * Math.max(0.01, Math.cos((point.lat * Math.PI) / 180)))
+  return {
+    latMin: point.lat - latDelta,
+    latMax: point.lat + latDelta,
+    lngMin: point.lng - lngDelta,
+    lngMax: point.lng + lngDelta,
+  }
+}
+
 /**
  * The GIS neighborhood/community a coordinate falls in, or null when it is
  * outside every mapped polygon (rural, or a city we have no mesh for).
