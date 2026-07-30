@@ -7,7 +7,8 @@ type Props = {
   slug: string
   communityName: string
   city: string
-  activeCount: number
+  /** null when the reads degraded — an unknown count is not a zero (§0). */
+  activeCount: number | null
   medianPrice: number | null
 }
 

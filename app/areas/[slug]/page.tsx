@@ -28,7 +28,7 @@ import {
 } from '@/lib/data'
 import { resolveAreasToShapeSet } from '@/lib/alerts/area-resolve'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { cityHero } from '@/lib/geo-images'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -135,15 +135,19 @@ export default async function AreaPage({ params }: Props) {
   if (!shapeSet) notFound()
 
   // Exact PostGIS shapes path — same predicate as the drawn-map search.
-  const result = await withTimeoutFallback(
+  const read = await withTimeoutFallbackResult(
     searchListingsAll({ shapes: shapeSet, sort: 'newest', limit: 60 }),
     { rows: [] as ListingTile[], totalCount: 0, capped: false, countIsExact: true },
     6000,
     'area:listings',
   )
 
+  const result = read.value
   const rows = result.rows
-  const activeCount = result.totalCount
+  // §0 UNKNOWN IS NOT ZERO: the fallback's `totalCount: 0` is indistinguishable
+  // from an area with no inventory, so a degraded read published "No active
+  // listings inside the boundary right now" as fact. null = unknown.
+  const activeCount: number | null = read.ok ? result.totalCount : null
 
   // Modal city of the in-area listings — for the hero photo only, and only
   // when a strict majority agrees (same §0 discipline as the subdivision page).
@@ -167,7 +171,9 @@ export default async function AreaPage({ params }: Props) {
     derivedCity && heroData.verified ? `${derivedCity.city}, Oregon` : 'Central Oregon · Cascade Range'
 
   const lede =
-    activeCount > 0
+    activeCount == null
+      ? `Homes for sale inside the ${area.name} boundary.`
+      : activeCount > 0
       ? `${activeCount} ${activeCount === 1 ? 'home' : 'homes'} for sale inside the ${area.name} boundary.`
       : `No active listings inside the ${area.name} boundary right now.`
 
@@ -247,7 +253,7 @@ export default async function AreaPage({ params }: Props) {
         {hasMap ? (
           <KbListingMap
             geojson={mapGeo}
-            totalActive={activeCount || mapFeatures.length}
+            totalActive={activeCount ?? mapFeatures.length}
             fitToFeatures
             showRegionMarkers={false}
             polygons={mapPolygons}

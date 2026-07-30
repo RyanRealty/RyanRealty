@@ -451,7 +451,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   // at `community.medianPrice`, a median CLOSED SALE price, and three community
   // pages published it under "Median list". See lib/market/tile-medians.ts.
   const reliableBoundaryCount = boundaryReliable ? boundaryMapData.pins.length : null
-  const activeSet: { count: number; tiles: typeof communityTiles | null; median: number | null } =
+  const activeSet: { count: number | null; tiles: typeof communityTiles | null; median: number | null } =
     aliasAwareCount != null
       ? { count: aliasAwareCount, tiles: resortTiles, median: null }
       : reliableBoundaryCount != null && reliableBoundaryCount > 0
@@ -462,13 +462,14 @@ export default async function CommunityDetailPage({ params }: Props) {
       ? { count: pulse.activeCount, tiles: null, median: pulse.medianListPrice }
       : // Literal-name snapshot: its count and its median are computed from one
         // active set by the same MV, so they pair honestly even without tiles.
-        { count: snapshot?.activeSfrCount ?? 0, tiles: null, median: snapshot?.medianListPrice ?? null }
+        // §0 UNKNOWN IS NOT ZERO: every source above is guarded, so `?? 0` let a fully-degraded page publish "0 homes for sale".
+      { count: snapshot?.activeSfrCount ?? null, tiles: null, median: snapshot?.medianListPrice ?? null }
 
-  const activeCount = activeSet.count
+  const activeCount: number | null = activeSet.count
   // Zero for sale means there is no asking price to publish: vandevert-ranch
   // rendered "0 homes for sale" beside a "Median list" figure.
   const medianListPrice =
-    activeCount <= 0
+    activeCount == null || activeCount <= 0
       ? null
       : activeSet.tiles
       ? medianListPriceOfTiles(activeSet.tiles)
@@ -505,7 +506,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     richContent.aboutProse = seoAbout
   }
   const aboutFacts: { label: string; value: string }[] = [
-    { label: 'Active single-family', value: activeCount.toLocaleString('en-US') },
+    ...(activeCount != null ? [{ label: 'Active single-family', value: activeCount.toLocaleString('en-US') }] : []),
     ...(medianListPrice != null ? [{ label: 'Median list', value: fmtFull(medianListPrice) ?? '—' }] : []),
     ...(medianDays != null ? [{ label: pulse?.medianDaysToPending != null ? 'Median to pending' : 'Median days on market', value: `${Math.round(medianDays)} days` }] : []),
     ...(stats?.medianSalePrice != null ? [{ label: 'Median sold, 1 yr', value: fmtFull(stats.medianSalePrice) ?? '—' }] : []),
@@ -888,9 +889,8 @@ export default async function CommunityDetailPage({ params }: Props) {
           totalCount={activeCount || null}
         />
         <KbTicker items={tickerItems} />
-        {/* Fix 3: Visible freshness signal — "Market data updated [Month Year]" crawled
-            by search engines as a freshness signal and surfaced near the stats.
-            asOfLabel is the real refreshedAt / snapshot timestamp, never invented. (§0) */}
+        {/* Fix 3: freshness signal near the stats, crawled by search engines.
+            asOfLabel is the real refreshedAt timestamp, never invented. (§0) */}
         {asOfLabel ? (
           <p className="community-freshness-signal" aria-label={`Market data freshness: ${asOfLabel}`}>
             Market data updated {asOfLabel}
@@ -908,7 +908,7 @@ export default async function CommunityDetailPage({ params }: Props) {
         </p>
         <KbListingMap
           geojson={mapGeo}
-          totalActive={activeCount || mapFeatures.length}
+          totalActive={activeCount ?? mapFeatures.length}
           fitToFeatures
           showRegionMarkers={false}
           polygons={mapPolygons}

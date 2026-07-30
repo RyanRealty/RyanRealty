@@ -94,10 +94,30 @@ describe('design directive contracts', () => {
   it('D78 — city hero active count comes from getMarketPulse, not geo_snapshot all-count', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')
     // Hero activeCount must derive from the market pulse (same source as
-    // the MarketSnapshot card), never from snapshot.activeAllCount.
+    // the MarketSnapshot card), never from snapshot.activeAllCount. The
+    // `: number | null` annotation is required (§0 below), so allow it here.
     expect(src).toMatch(/getMarketPulse\s*\(/)
-    expect(src).toMatch(/activeCount\s*=\s*pulse\?\.activeCount/)
+    expect(src).toMatch(/activeCount(?::[^=]*)?=\s*pulse\?\.activeCount/)
     expect(src).not.toMatch(/activeCount\s*=\s*snapshot\.activeAllCount/)
+    // §0 UNKNOWN IS NOT ZERO. `pulse` is a withTimeoutFallback whose fallback is
+    // null, so `?? 0` published a fabricated "0 homes for sale" on every timeout.
+    expect(src).not.toMatch(/activeCount(?::[^=]*)?=\s*pulse\?\.activeCount\s*\?\?\s*0/)
+  })
+
+  it('§0 — neighborhood active count never resolves a degraded read to zero', () => {
+    const src = readSrc('app/cities/[slug]/[neighborhoodSlug]/page.tsx')
+    // The count reads the in-boundary pins, then the pulse row, then the
+    // listing_tile_mv-backed neighborhood row (market_pulse_live does not carry
+    // every neighborhood) — never snapshot.activeAllCount.
+    expect(src).toMatch(/activeCount:\s*number\s*\|\s*null\s*=\s*[\s\S]{0,120}pulse\?\.activeCount/)
+    expect(src).not.toMatch(/activeCount\s*=\s*snapshot\.activeAllCount/)
+    // The boundary pins must come from the `.ok`-reporting variant and be gated
+    // on it: a timed-out read yields `{ pins: [] }`, which is indistinguishable
+    // from a genuinely empty neighborhood.
+    expect(src).toMatch(/withTimeoutFallbackResult\s*\(\s*getGeoBoundaryMapData/)
+    expect(src).toMatch(/boundaryRead\.ok/)
+    // No zero floor anywhere in the resolution: unknown must stay unknown.
+    expect(src).not.toMatch(/activeCount(?::[^=]*)?=[\s\S]{0,200}\?\?\s*0\b/)
   })
 
   it('D83/D85 — defined neighborhoods section sources designated Bend polygons only', () => {

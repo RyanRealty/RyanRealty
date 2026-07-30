@@ -32,7 +32,7 @@ import {
 } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { homesForSalePath } from '@/lib/slug'
-import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -162,7 +162,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   const zipPageUrl = `/zip/${zip}`
 
   // Surface-tagged hero photo seeded by ZIP for per-page variety. (§D86)
-  const [zipHeroRaw, tiles, cityPriceHist] = await Promise.all([
+  const [zipHeroRaw, tilesRead, cityPriceHist] = await Promise.all([
     withTimeoutFallback(
       getSurfaceImage('hero', {
         geoTags: ['central-oregon'],
@@ -177,7 +177,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     // map, and subdivision explorer. limit=5000 captures the complete ZIP (no
     // ZIP in this service area has anywhere near 5000 active SFR). Per §0, we
     // never report a fetch cap as if it were the real inventory count.
-    withTimeoutFallback(
+    withTimeoutFallbackResult(
       getZipListings(zip, { status: 'active', propertyType: 'A', limit: 5000 }),
       [] as Awaited<ReturnType<typeof getZipListings>>,
       5000,
@@ -195,7 +195,12 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   ])
 
   // ── LIVE STATS — derived from the single tile fetch (§0) ──────────────────
-  const activeCount = tiles.length
+  // §0 UNKNOWN IS NOT ZERO: this ONE read feeds every figure on the page, and
+  // its `[]` fallback is indistinguishable from a ZIP with no inventory. A
+  // degraded read published "0 active single-family listings in 97701" as fact,
+  // in the hero AND in the Dataset JSON-LD Google reads. null = unknown.
+  const tiles = tilesRead.value
+  const activeCount: number | null = tilesRead.ok ? tiles.length : null
   const listPrices = tiles
     .map((t) => t.listPrice)
     .filter((n): n is number => typeof n === 'number' && Number.isFinite(n) && n > 0)
@@ -298,9 +303,9 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     }))
 
   // ── HERO LEDE ─────────────────────────────────────────────────────────────
-  const ledeParts: string[] = [
-    `${activeCount} active single-family ${activeCount === 1 ? 'listing' : 'listings'} in ${zip}.`,
-  ]
+  const ledeParts: string[] = activeCount == null
+    ? [`Active single-family listings in ${zip}.`]
+    : [`${activeCount} active single-family ${activeCount === 1 ? 'listing' : 'listings'} in ${zip}.`]
   if (medianListPrice != null) {
     ledeParts.push(`Median list price $${(Math.round(medianListPrice / 1000) * 1000).toLocaleString()}.`)
   }
@@ -312,9 +317,9 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   // ── STRUCTURED DATA (JSON-LD) ─────────────────────────────────────────────
   // Breadcrumb + Place + Dataset. §0: only emit stats when non-null and verified.
   type StatValue = { name: string; value: string | number; unitText?: string }
-  const datasetStats: StatValue[] = [
-    { name: 'Active single-family listings', value: activeCount, unitText: 'listings' },
-  ]
+  const datasetStats: StatValue[] = activeCount == null
+    ? []
+    : [{ name: 'Active single-family listings', value: activeCount, unitText: 'listings' }]
   if (medianListPrice != null) {
     datasetStats.push({ name: 'Median list price', value: medianListPrice, unitText: 'USD' })
   }
@@ -375,7 +380,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
       <SmoothScrollProvider>
         <KbHero
           data={{
-            activeCount: activeCount > 0 ? activeCount : null,
+            activeCount,
             medianListPrice,
             medianDaysToPending: null,
             medianDomActive: medianDom,
@@ -407,7 +412,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
 
         <KbListingMap
           geojson={mapGeo}
-          totalActive={activeCount}
+          totalActive={activeCount ?? mapFeatures.length}
           fitToFeatures
           showRegionMarkers={false}
           eyebrow={zip}

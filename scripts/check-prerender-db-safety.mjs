@@ -130,8 +130,11 @@ function checkFile(pagePath) {
       // A DAL call inside the Promise.all is only risky when it can reject —
       // one wrapped in withTimeoutFallback(...) resolves to its fallback on
       // rejection, so blank out those spans before scanning for DAL names.
+      // withTimeoutFallbackResult(...) has identical rejection semantics: it
+      // resolves to `{ value: fallback, ok: false }` and never rejects, so it
+      // must be blanked too or the wrapper reads as an unguarded DAL call.
       let inner = src.slice(openIdx, callEnd)
-      const safeRe = /\bwithTimeoutFallback\s*\(/g
+      const safeRe = /\bwithTimeoutFallback(?:Result)?\s*\(/g
       for (const w of inner.matchAll(safeRe)) {
         const wEnd = skipBalanced(inner, w.index + w[0].length - 1)
         inner = inner.slice(0, w.index) + ' '.repeat(wEnd - w.index) + inner.slice(wEnd)

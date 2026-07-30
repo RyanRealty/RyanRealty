@@ -259,7 +259,8 @@ export default async function CityDetailPage({ params }: Props) {
   // Hero — Bend reuses the homepage video; otherwise the VERIFIED cityHero photo
   // (a city without one renders the LABELED regional fallback, never a wrong-city
   // photo). DB hero_image_url override wins. (§D86)
-  const activeCount = pulse?.activeCount ?? 0
+  // §0 UNKNOWN IS NOT ZERO: `?? 0` published a fabricated "0 homes for sale" whenever the pulse read timed out.
+  const activeCount: number | null = pulse?.activeCount ?? null
   const curatedHero = cityHero(slug)
   const heroImageUrl = cityMeta?.hero_image_url ?? null
   const heroPhoto = heroImageUrl ? { src: heroImageUrl, verified: true } : curatedHero
@@ -280,14 +281,14 @@ export default async function CityDetailPage({ params }: Props) {
         county: quickFacts?.county ?? null,
         schoolDistrict: quickFacts?.schoolDistrict ?? null,
         nearestAirport: quickFacts?.nearestAirport ?? null,
-        activeCount,
+        activeCount: activeCount ?? 0,
         medianPrice: pulse?.medianListPrice ?? snapshot.medianListPrice,
         communityCount: communitySnapshots.length,
       }).slice(0, 2)
   const aboutFacts: { label: string; value: string }[] = [
     ...(quickFacts?.population ? [{ label: 'Population', value: quickFacts.population }] : []),
     ...(pulse?.medianListPrice ? [{ label: 'Median list', value: fmtFull(pulse.medianListPrice) ?? '—' }] : []),
-    { label: 'Active single-family', value: activeCount.toLocaleString('en-US') },
+    ...(activeCount != null ? [{ label: 'Active single-family', value: activeCount.toLocaleString('en-US') }] : []),
     ...(pulse?.medianDaysToPending != null ? [{ label: 'Median to pending', value: `${Math.round(pulse.medianDaysToPending)} days` }] : []),
     ...(quickFacts?.elevation ? [{ label: 'Elevation', value: quickFacts.elevation }] : []),
     ...(quickFacts?.county ? [{ label: 'County', value: `${quickFacts.county} County` }] : []),
@@ -593,9 +594,8 @@ export default async function CityDetailPage({ params }: Props) {
           posterSrc={heroPosterSrc}
           mediaCaption={mediaCaption}
         />
-        {/* Inventory first (shared place template with community pages). */}
-        {/* The grid caps at 12 tiles, so the footer link must reach the REST of this
-            city's inventory. activeCount is the pulse figure the hero already states. */}
+        {/* Inventory first (shared place template with community pages). The grid
+            caps at 12 tiles, so the footer link must reach the REST of the city. */}
         <KbFeatured items={featuredItems} eyebrow={`${cityName} · For sale`} viewAllHref={homesForSalePath(cityName)} viewAllLabel={`See every ${cityName} home for sale`} totalCount={activeCount || null} />
         <KbTicker items={tickerItems} />
         <KbListingMap

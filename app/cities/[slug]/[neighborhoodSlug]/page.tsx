@@ -18,11 +18,8 @@
  * Section stack (city-page funnel parity): breadcrumb · hero · featured · ticker ·
  * map · overview/about · market · subdivisions · area guide · open houses ·
  * activity · SELL · guides · testimonials · team · other cities · FAQ · footer.
- * Funnel (Brain Dump 2): the seller CTA used to sit below testimonials, team, AND
- * the other-cities exit links, after the only two blocks whose job is to send a
- * reader off the page. It now follows activity, the exit links land last, and
- * inventory leads so a home is never buried under overview prose (design-audit
- * P1, the fix the city page shipped 2026-07-28).
+ * Inventory leads and the seller CTA precedes the exit links, so a home is never
+ * buried under prose (design-audit P1, shipped on the city page 2026-07-28).
  *
  * Data ONLY through @/lib/data and @/app/actions/cities. No raw .from() calls.
  */
@@ -51,7 +48,7 @@ import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { slugify, listingTileHref, subdivisionListingsPath } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
@@ -100,8 +97,8 @@ const CENTRAL_OREGON_CITY_SLUGS = new Set([
 const monthLabel = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }) : ''
 const fmtK = (n: number | null): string | null => (n != null ? `$${Math.round(n / 1000).toLocaleString()}K` : null)
-// Full-thousand format for facts tables (brand rule: $895,000 not $895K). fmtK
-// stays for the character-constrained meta description below.
+// Full-thousand for facts tables (brand rule: $895,000 not $895K); fmtK stays
+// for the character-constrained meta description below.
 const fmtFull = (n: number | null): string | null => (n != null ? `$${(Math.round(n / 1000) * 1000).toLocaleString('en-US')}` : null)
 
 function openHouseWhen(eventDate: string, start: string | null, end: string | null): string {
@@ -143,9 +140,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ? `${neighborhood.activeCount} homes for sale in ${neighborhood.name}, ${neighborhood.cityName}. Median list price ${neighborhood.medianPrice != null ? fmtK(neighborhood.medianPrice) ?? '' : 'available on request'}. Local market data from Ryan Realty.`
       : `Explore ${neighborhood.name} in ${neighborhood.cityName}, Oregon. Live market data and listings from a local brokerage.`
   // Brand voice (CLAUDE.md): a curated DB seo_description carrying a banned
-  // real-estate cliche (e.g. the live "charming" on /cities/bend/old-bend) must
-  // never ship to the SERP. Fall back to the clean, data-driven description when
-  // the stored copy trips the cliche guard — defense-in-depth over the DB value.
+  // cliche (the live "charming" on /cities/bend/old-bend) must never reach the
+  // SERP, so a tripped guard falls back to the clean data-driven description.
   const bannedDescRe =
     /\b(charming|stunning|nestled|boasts|pristine|breathtaking|must-see|hidden gem|luxurious|meticulously|gorgeous|immaculate)\b/i
   const description =
@@ -176,7 +172,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
 
   const [
     pulse, stats, mktStats, regionPulse, priceHist,
-    boundaryMapData, allCitySnapshots, blogPosts, openHouses, activity,
+    boundaryRead, allCitySnapshots, blogPosts, openHouses, activity,
     cityPriceHist, neighborhoodCommunities, richContent, areaGuideVideo,
   ] = await Promise.all([
     withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), null, 3500, 'nbh:pulse'),
@@ -184,7 +180,10 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     withTimeoutFallback(getMarketStatsCacheRowForGeo({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), null, 3000, 'nbh:mktStats'),
     withTimeoutFallback(getRegionPulse(), null, 3000, 'nbh:regionPulse'),
     withTimeoutFallback(getPriceHistory('neighborhood', boundaryNeighborhoodSlug, 'monthly', 60), [], 4500, 'nbh:priceHistory'),
-    withTimeoutFallback(getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), { polygon: null, pins: [] }, 4500, 'nbh:boundary'),
+    // Result variant: a timed-out boundary yields `{ pins: [] }`, which is
+    // indistinguishable from a genuinely empty neighborhood. `.ok` keeps them
+    // apart so a degraded read can never publish a count (§0).
+    withTimeoutFallbackResult(getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), { polygon: null, pins: [] }, 4500, 'nbh:boundary'),
     withTimeoutFallback(getAllCitySnapshots(), [], 3000, 'nbh:cities'),
     withTimeoutFallback(getRecentBlogPosts({ cityName, limit: 3 }), [], 3000, 'nbh:blog'),
     withTimeoutFallback(getOpenHousesWithListings({ city: cityName }), [], 3500, 'nbh:openHouses'),
@@ -193,22 +192,19 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     // series is too thin for a real multi-year trend (<8 non-null points OR <2
     // calendar years). Relabeled as city-level when used (§0). (§0)
     withTimeoutFallback(getPriceHistory('city', cityGeoSlug, 'monthly', 60), [], 4500, 'nbh:cityPriceHistory'),
-    // Communities (subdivisions) within this neighborhood — drives the KbExploreTowns
-    // ledger. The neighborhood's id is needed; resolved from NeighborhoodDetail.
+    // Subdivisions within this neighborhood — drives the KbExploreTowns ledger.
     withTimeoutFallback(getCommunitiesInNeighborhood(neighborhood.id, cityName), [], 3500, 'nbh:communities'),
-    // Rich, verified neighborhood depth (overview prose · drive times · amenities)
-    // from data/resort-community-{citySlug}-{neighborhoodSlug}.json — the SAME
-    // curated source the resort LPs render. Null until a config is authored;
-    // KbResortOverview degrades to render nothing. Keyed by the boundary slug to
-    // match the polygon/pin namespace. Restores the pre-KB CommunityRichContent
-    // depth in the KB register (the KbResortOverview rebuild of it).
+    // Rich, verified neighborhood depth from
+    // data/resort-community-{citySlug}-{neighborhoodSlug}.json — the same curated
+    // source the resort LPs render, keyed by the boundary slug. Null until
+    // authored, and KbResortOverview then renders nothing.
     withTimeoutFallback(getResortCommunityContent(boundaryNeighborhoodSlug), null, 2500, 'nbh:content'),
-    // Per-neighborhood area-guide video — area-guide videos are tagged by the
-    // neighborhood/community slug (EXACT geo match). Null when this neighborhood
-    // has no guide; KbAreaGuideVideo then renders nothing.
+    // Per-neighborhood area-guide video, tagged by the neighborhood/community
+    // slug (EXACT geo match). Null → KbAreaGuideVideo renders nothing.
     withTimeoutFallback(getAreaGuideVideo(neighborhoodSlug), null, 3000, 'area-guide-video'),
   ])
 
+  const boundaryMapData = boundaryRead.value
   // In-boundary listing tiles (lat/lng/photo for map + featured + ticker).
   const boundaryListingKeys = boundaryMapData.pins.map((p) => p.listingKey)
   const listingTiles =
@@ -222,19 +218,32 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       : []
 
   // ── COUNTS + PRICES ────────────────────────────────────────────────────────
-  // Priority: pulse (neighborhood-scoped market_pulse_live) > boundary pins >
-  // neighborhood object (computed from listing_tile_mv at cache time).
-  const activeCount = pulse?.activeCount ?? boundaryMapData.pins.length > 0
-    ? boundaryMapData.pins.length
-    : neighborhood.activeCount
-  const medianListPrice = pulse?.medianListPrice ?? neighborhood.medianPrice ?? null
+  // §0 UNKNOWN IS NOT ZERO. This used to read `pulse?.activeCount ?? pins.length
+  // > 0 ? pins.length : neighborhood.activeCount`, which binds as `(pulse?.
+  // activeCount ?? (pins.length > 0)) ? pins.length : …` because `??` is
+  // lower-precedence than `>`. The pulse count never guarded anything and the
+  // answer was ALWAYS `pins.length`, so a boundary read that timed out returned
+  // the `{ pins: [] }` fallback and the hero published "0 homes for sale" beside
+  // a real median list price. Pins are the in-polygon truth, but only when the
+  // read SUCCEEDED, a polygon exists, and the count is under the RPC row cap (at
+  // the cap the true total is higher). Otherwise pulse, then the listing_tile_mv
+  // row, then null — consumers suppress the figure rather than print a zero.
+  const BOUNDARY_PIN_CAP = 200 // p_limit in getGeoBoundaryMapData's fetchPins
+  const inBoundaryCount =
+    boundaryRead.ok && boundaryMapData.polygon != null && boundaryMapData.pins.length < BOUNDARY_PIN_CAP
+      ? boundaryMapData.pins.length
+      : null
+  const activeCount: number | null =
+    inBoundaryCount ?? pulse?.activeCount ?? neighborhood.activeCount ?? null
+  // A count we could not measure has no asking price to pair with it.
+  const medianListPrice =
+    activeCount == null ? null : pulse?.medianListPrice ?? neighborhood.medianPrice ?? null
   const medianDays = pulse?.medianDaysToPending ?? stats?.medianDaysOnMarket ?? null
 
   // ── HERO ──────────────────────────────────────────────────────────────────
-  // Prefer a curated communityImage keyed by the boundary slug (handles
-  // neighborhoods that share their name with a resort), then the neighborhood's
-  // own hero image from the DB, then the parent city's verified hero photo with
-  // a labeled regional fallback.
+  // Curated communityImage by boundary slug (handles a neighborhood sharing its
+  // name with a resort), then the DB hero, then the city photo with a labeled
+  // regional fallback.
   const curatedHero = communityImage(boundaryNeighborhoodSlug) ?? communityImage(neighborhoodSlug)
   const heroPhoto = curatedHero ?? neighborhood.heroImageUrl ?? cityHero(citySlug).src
   const heroVerified = Boolean(curatedHero || neighborhood.heroImageUrl)
@@ -243,8 +252,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const neighborhoodLabel = `${neighborhood.name} · ${cityName}`
 
   // ── RICH OVERVIEW (amenity → blog topic-cluster links) ────────────────────
-  // Resolve the published blog posts referenced by amenity rows so KbResortOverview
-  // can link each amenity to its post (same topic-cluster SEO as the community page).
+  // Resolve the posts amenity rows reference so each amenity links to its post.
   const amenityBlogSlugs = (richContent?.amenities ?? [])
     .map((a) => a.blog_slug)
     .filter((s): s is string => Boolean(s))
@@ -253,12 +261,12 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       ? await withTimeoutFallback(getBlogPostsBySlugs(amenityBlogSlugs), {}, 2500, 'nbh:amenityPosts')
       : {}
 
-  // ── ABOUT ─────────────────────────────────────────────────────────────────
   const aboutParagraphs: string[] = [neighborhood.description ?? ''].filter(
     (p): p is string => Boolean(p && p.trim().length > 0),
   )
   const aboutFacts: { label: string; value: string }[] = [
-    { label: 'Active single-family', value: (activeCount ?? 0).toLocaleString('en-US') },
+    // Omitted, never "0", when the count is unknown (§0).
+    ...(activeCount != null ? [{ label: 'Active single-family', value: activeCount.toLocaleString('en-US') }] : []),
     ...(medianListPrice != null ? [{ label: 'Median list', value: fmtFull(medianListPrice) ?? '—' }] : []),
     ...(medianDays != null
       ? [{ label: pulse?.medianDaysToPending != null ? 'Median to pending' : 'Median days on market', value: `${Math.round(medianDays)} days` }]
@@ -313,8 +321,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     town: t.city ?? cityName,
   }))
 
-  // ── COMMUNITIES / SUBDIVISIONS WITHIN THIS NEIGHBORHOOD ───────────────────
-  // Each subdivision card → /subdivisions/{slugify(name)} per the task spec.
+  // ── SUBDIVISIONS ── each card → /subdivisions/{slugify(name)} ─────────────
   const subdivisionItems: KbTownItem[] = neighborhoodCommunities
     .slice(0, 12)
     .map((c) => ({
@@ -385,10 +392,8 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   }))
 
   // ── MARKET HUD ─────────────────────────────────────────────────────────────
-  // City-fallback: if neighborhood's own monthly price series is too sparse
-  // (<8 non-null monthly points OR <2 calendar years), fall back to the parent
-  // city's series and set chartScopeLabel so the city figure is never passed off
-  // as the neighborhood's. (§0)
+  // City-fallback for a too-sparse neighborhood series — see the header block.
+  // chartScopeLabel keeps the city figure from reading as this one's (§0).
   const nbhPricePoints = priceHist.filter((p) => p.medianSalePrice != null)
   const nbhTrendYears = new Set(nbhPricePoints.map((p) => new Date(p.periodStart).getUTCFullYear()))
   const chartIsCityLevel = nbhPricePoints.length < 8 || nbhTrendYears.size < 2
@@ -484,7 +489,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       <SmoothScrollProvider>
         <KbHero
           data={{
-            activeCount: activeCount ?? null,
+            activeCount,
             medianListPrice,
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
           }}
@@ -496,10 +501,9 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           posterSrc={heroPhoto}
           mediaCaption={mediaCaption}
         />
-        {/* Inventory first (same place template as the city page): the page is
-            titled "{Neighborhood} homes for sale", so a buyer never scrolls prose
-            to reach a home (design-audit P1). The grid caps at 12 tiles — the
-            footer link reaches the rest of THIS neighborhood's inventory. */}
+        {/* Inventory first: the page is titled "{Neighborhood} homes for sale",
+            so a buyer never scrolls prose to reach a home (design-audit P1). The
+            grid caps at 12 tiles; the footer link reaches the rest. */}
         <KbFeatured
           items={featuredItems}
           eyebrow={`${neighborhood.name} · For sale`}
@@ -508,20 +512,21 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           totalCount={activeCount || null}
         />
         <KbTicker items={tickerItems} />
-        <KbListingMap
-          geojson={mapGeo}
-          totalActive={activeCount || mapFeatures.length}
-          fitToFeatures
-          showRegionMarkers={false}
-          polygons={mapPolygons}
-          eyebrow={neighborhood.name}
-          title={`Homes in\n${neighborhood.name}`}
-          subtitle={`Every active single-family listing in ${neighborhood.name}, on the real terrain. Click any dot for the price, the beds, and the street.`}
-        />
-        {/* Rich, verified depth (overview prose · drive times · amenities) — the
-            KB rebuild of the pre-KB CommunityRichContent. Null when no config, so
-            it degrades to nothing. When present it carries the overview, so the
-            thin data-driven About below is suppressed (no duplicate prose). */}
+        {/* Suppressed when degraded: an empty map badged "0 active listings" is the same fabricated zero as the hero (§0). */}
+        {hasMap ? (
+          <KbListingMap
+            geojson={mapGeo}
+            totalActive={activeCount ?? mapFeatures.length}
+            fitToFeatures
+            showRegionMarkers={false}
+            polygons={mapPolygons}
+            eyebrow={neighborhood.name}
+            title={`Homes in\n${neighborhood.name}`}
+            subtitle={`Every active single-family listing in ${neighborhood.name}, on the real terrain. Click any dot for the price, the beds, and the street.`}
+          />
+        ) : null}
+        {/* Rich, verified depth. Null when no config, so it degrades to nothing.
+            When present it carries the overview, so About is suppressed. */}
         <KbResortOverview content={richContent} name={neighborhood.name} postsBySlug={amenityPosts} />
         {richContent === null && aboutParagraphs.length > 0 ? (
           <KbAbout
@@ -547,8 +552,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         ) : null}
         <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={neighborhood.name} posterSrc={heroPhoto} />
         {/* Open houses + the feed are fetched city-wide (the MLS carries no
-            neighborhood scope on either) — label the city, not the neighborhood
-            (§0 honest-relabeling). */}
+            neighborhood scope on either), so they are labeled with the city (§0). */}
         <KbOpenHouses items={openHouseItems} eyebrow={`${cityName} · This week`} heading="Open houses" viewAllHref={`/open-houses/${citySlug}`} />
         <KbActivity
           items={activityItems}

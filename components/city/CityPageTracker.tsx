@@ -6,7 +6,8 @@ import { trackEvent } from '@/lib/tracking'
 type Props = {
   cityName: string
   slug: string
-  listingCount: number
+  /** null when the pulse read degraded — an unknown count is not a zero (§0). */
+  listingCount: number | null
   medianPrice: number | null
   communityCount: number
 }

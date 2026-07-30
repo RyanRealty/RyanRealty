@@ -189,9 +189,13 @@ export default async function CitiesPage() {
   const featuredSlugs = new Set(featured.map((f) => f.slug))
   const others = visibleCities.filter((c) => featuredSlugs.has(c.slug) === false)
 
-  // Region totals — live pulse first, mv fallback
-  const totalActive =
-    regionPulse?.activeCount ?? allSnapshots.reduce((sum, s) => sum + s.activeSfrCount, 0)
+  // Region totals — live pulse first, mv fallback. §0 UNKNOWN IS NOT ZERO: both
+  // sources are guarded reads, and `[].reduce(…, 0)` turns a doubly-degraded
+  // render into a published "0". null = unknown, and the tile renders an
+  // em-dash placeholder instead.
+  const totalActive: number | null =
+    regionPulse?.activeCount ??
+    (allSnapshots.length > 0 ? allSnapshots.reduce((sum, s) => sum + s.activeSfrCount, 0) : null)
   const regionMedian = regionPulse?.medianListPrice ?? null
   const regionVerdict = verdictFromMos(regionPulse?.monthsOfSupply ?? null)
 
@@ -269,7 +273,7 @@ export default async function CitiesPage() {
             <div className="region-grid" style={{ marginTop: '26px' }}>
               <div className="stat-cell">
                 <span className="stat-num mono-num">
-                  {totalActive > 0 ? totalActive.toLocaleString() : '—'}
+                  {totalActive != null && totalActive > 0 ? totalActive.toLocaleString() : '—'}
                 </span>
                 <span className="stat-label">Active homes</span>
               </div>

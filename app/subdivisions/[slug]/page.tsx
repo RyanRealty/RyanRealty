@@ -43,7 +43,7 @@ import { getSubdivisionSchools } from '@/lib/data/subdivisions/getSubdivisionSch
 import { SubdivisionSchools } from './SubdivisionSchools'
 import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { getListingsWithVideos } from '@/app/actions/videos'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { cityHero } from '@/lib/geo-images'
@@ -151,12 +151,13 @@ export default async function SubdivisionPage({ params }: Props) {
   const { slug } = await params
 
   // ── PATH 1: GIS boundary (plat polygon + spatial pins) ───────────────────
-  const boundary = await withTimeoutFallback(
+  const boundaryRead = await withTimeoutFallbackResult(
     getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }),
     { polygon: null, pins: [] },
     4500,
     'sub:boundary',
   )
+  const boundary = boundaryRead.value
   const hasBoundary = Boolean(boundary.polygon)
 
   // ── PATH 2: Registry alias (resort-communities.json) ─────────────────────
@@ -259,16 +260,25 @@ export default async function SubdivisionPage({ params }: Props) {
   // ── Active count ─────────────────────────────────────────────────────────
   // Reliable pin count: prefer boundary spatial pins (authoritative for plats)
   // then registry-fetched listing count. Never fabricate.
-  const activeCount =
+  // §0 UNKNOWN IS NOT ZERO. With no polygon and no registry alias the only
+  // source left is `mapTiles`, which is populated ONLY from boundary pins — so a
+  // boundary read that timed out leaves it `[]`, indistinguishable from a real
+  // empty plat, and the lede published "No active listings right now" as fact.
+  // null = unknown, and the lede + count below suppress the claim instead.
+  const activeCount: number | null =
     hasBoundary
       ? boundary.pins.length
       : registryMatch
       ? featuredTiles.length
-      : mapTiles.length
+      : boundaryRead.ok
+      ? mapTiles.length
+      : null
 
   // ── Hero copy ─────────────────────────────────────────────────────────────
   const lede =
-    activeCount > 0
+    activeCount == null
+      ? `Homes for sale in ${displayName}.`
+      : activeCount > 0
       ? `${activeCount} ${activeCount === 1 ? 'home' : 'homes'} for sale in ${displayName}.`
       : `No active listings in ${displayName} right now.`
 
@@ -509,7 +519,7 @@ export default async function SubdivisionPage({ params }: Props) {
         {hasMap ? (
           <KbListingMap
             geojson={mapGeo}
-            totalActive={activeCount || mapFeatures.length}
+            totalActive={activeCount ?? mapFeatures.length}
             fitToFeatures
             showRegionMarkers={false}
             polygons={mapPolygons}
