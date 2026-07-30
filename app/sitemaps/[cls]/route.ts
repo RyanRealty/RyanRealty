@@ -9,8 +9,15 @@
  * the SAME URLs, just bucketed (Google explicitly permits overlapping
  * sitemaps).
  *
- * One shared cached build feeds all five children (revalidate 3600), so the
- * heavy generation still runs once an hour, not once per child request.
+ * CACHE SHAPE (fixed 2026-07-29): the v1 cache stored ALL ~10.7K URLs in ONE
+ * entry, 2.4MB, over unstable_cache's 2MB per-entry cap. The cache write
+ * failed on every attempt ("items over 2MB can not be cached" x6 per build),
+ * so the heavy buildAllUrls ran on EVERY child request, at build time and at
+ * runtime, forever. v2 caches PER CLASS (the class arg is part of the cache
+ * key) and stores compact [path, lastmodISO] tuples instead of objects with
+ * full URLs. The largest class (listings, ~7.6K rows) lands around ~0.7MB,
+ * real headroom under the cap. Cold cost is one buildAllUrls run per class
+ * per hour instead of one shared run that never actually cached.
  *
  * No XML escaping is needed. Every loc comes from our own slugified path
  * builders (lowercase a-z, digits, hyphens, slashes only) and lastmod is an
@@ -23,28 +30,35 @@ import { getIndexablePresetSlugs } from '@/lib/search-presets'
 
 export const revalidate = 3600
 
-// Prerender all five children at build time — same treatment /sitemap.xml
+// Prerender all five children at build time, the same treatment /sitemap.xml
 // gets via ISR (staticPageGenerationTimeout is already sized for this build).
-// First child warms the shared URL cache; the rest reuse it. Unknown params
-// 404 without invoking the heavy build.
+// Unknown params 404 without invoking the heavy build.
 export const dynamicParams = false
 
 export function generateStaticParams() {
   return SITEMAP_CLASSES.map((cls) => ({ cls: `${cls}.xml` }))
 }
 
-const getCachedUrls = unstable_cache(
-  async () => {
-    const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+function siteBaseUrl(): string {
+  return (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+}
+
+// Rows are [path, lastmodISO] tuples; path is relative to the site base URL
+// ('' for the homepage row). unstable_cache includes the cls argument in the
+// cache key, so each class caches independently and stays far under 2MB.
+const getClassRows = unstable_cache(
+  async (cls: SitemapClass): Promise<[string, string][]> => {
+    const baseUrl = siteBaseUrl()
     const urls = await buildAllUrls(baseUrl, new Date())
-    // unstable_cache JSON-serializes: Date lastModified survives as ISO string.
-    return urls.map((u) => ({
-      url: u.url,
-      lastModified:
+    const presetSlugs = new Set(getIndexablePresetSlugs())
+    return urls
+      .filter((u) => classifySitemapUrl(u.url, presetSlugs) === cls)
+      .map((u) => [
+        u.url.startsWith(baseUrl) ? u.url.slice(baseUrl.length) : u.url,
         u.lastModified instanceof Date ? u.lastModified.toISOString() : String(u.lastModified ?? ''),
-    }))
+      ])
   },
-  ['sitemap-class-urls-v1'],
+  ['sitemap-class-urls-v2'],
   { revalidate: 3600 },
 )
 
@@ -55,14 +69,14 @@ export async function GET(_req: Request, ctx: { params: Promise<{ cls: string }>
     return new Response('Not found', { status: 404 })
   }
 
-  const presetSlugs = new Set(getIndexablePresetSlugs())
-  const all = await getCachedUrls()
-  const rows = all.filter((u) => classifySitemapUrl(u.url, presetSlugs) === clean)
+  const baseUrl = siteBaseUrl()
+  const rows = await getClassRows(clean)
 
   const entries = rows
-    .map((u) => {
-      const lastmod = u.lastModified ? `<lastmod>${u.lastModified}</lastmod>` : ''
-      return `<url><loc>${u.url}</loc>${lastmod}</url>`
+    .map(([path, lastmodIso]) => {
+      const loc = path.startsWith('http') ? path : `${baseUrl}${path}`
+      const lastmod = lastmodIso ? `<lastmod>${lastmodIso}</lastmod>` : ''
+      return `<url><loc>${loc}</loc>${lastmod}</url>`
     })
     .join('\n')
 

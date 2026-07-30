@@ -43,6 +43,18 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(process.cwd()),
   },
+  typescript: {
+    // Vercel-ONLY: skip the type-check phase there. Vercel's standard build
+    // machine intermittently OOMs mid "Running TypeScript" (silent death,
+    // deployment state ERROR, full Build CPU billed, commit never deploys —
+    // 6 of 20 production deploys on 2026-07-29). The pushed tree is already
+    // type-checked twice before Vercel can see it: the local push chain
+    // (scripts/push-with-gates.sh, G47) builds with full checking on every
+    // code push, and CI's lint-and-build job builds again on GitHub runners
+    // (VERCEL is unset in both, so this flag stays false there). The Vercel
+    // pass was a redundant third check. Approved-by: matt 2026-07-29.
+    ignoreBuildErrors: process.env.VERCEL === '1',
+  },
   // pdfjs-dist breaks when Turbopack bundles it into a server action (TC
   // document upload page-count). Load it from node_modules at runtime instead.
   serverExternalPackages: ['pdfjs-dist'],
