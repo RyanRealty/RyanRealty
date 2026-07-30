@@ -13,6 +13,8 @@ import {
   bearingLabel,
   distanceMiles,
   lotCharacterCompatible,
+  productClass,
+  productTypeCompatible,
   marketAreaName,
   proximityLabel,
   resolveMarketArea,
@@ -88,5 +90,37 @@ describe('lotCharacterCompatible — Matt hard exclusion, any distance', () => {
   it('fails OPEN on unknown lot size — absent data must not silently drop good comps', () => {
     expect(lotCharacterCompatible(null, 0.2)).toBe(true)
     expect(lotCharacterCompatible(5, null)).toBe(true)
+  })
+})
+
+describe('productTypeCompatible — product-class hard exclusion', () => {
+  it('classifies the sub-types the MLS actually returns', () => {
+    expect(productClass('Single Family Residence')).toBe('detached')
+    expect(productClass('Townhouse')).toBe('attached')
+    expect(productClass('Condominium')).toBe('attached')
+    expect(productClass('Tenancy in Common')).toBe('attached')
+    expect(productClass('Manufactured On Land')).toBe('manufactured')
+    expect(productClass(null)).toBeNull()
+  })
+
+  it('rejects a townhome comp for a detached subject at any distance', () => {
+    // The cma-922-ogden regression: two townhomes sat in a 4-comp detached
+    // analysis and the auditor called the resulting price indefensible.
+    expect(productTypeCompatible('Single Family Residence', 'Townhouse')).toBe(false)
+    expect(productTypeCompatible('Single Family Residence', 'Condominium')).toBe(false)
+  })
+
+  it('rejects a manufactured home for a detached subject — financing differs', () => {
+    expect(productTypeCompatible('Single Family Residence', 'Manufactured On Land')).toBe(false)
+  })
+
+  it('keeps like for like', () => {
+    expect(productTypeCompatible('Single Family Residence', 'Single Family Residence')).toBe(true)
+    expect(productTypeCompatible('Townhouse', 'Condominium')).toBe(true)
+  })
+
+  it('fails OPEN when either side is unknown, like lotCharacterCompatible', () => {
+    expect(productTypeCompatible(null, 'Townhouse')).toBe(true)
+    expect(productTypeCompatible('Single Family Residence', null)).toBe(true)
   })
 })
