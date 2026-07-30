@@ -58,6 +58,13 @@ const LISTING_CMA_COLUMNS = [
   'ListAgentName',
   'list_agent_email',
   'photos_count',
+  // Association fields — consumed by lib/cma/development.ts to state whether an
+  // HOA exists and what it charges. Never used to characterise unread CC&Rs.
+  'association_yn',
+  'association_fee',
+  'association_fee_frequency',
+  'hoa_monthly',
+  'hoa_annual_cost',
 ].join(', ')
 
 export type CmaListingRow = Record<string, unknown>

@@ -32,6 +32,7 @@ import { judgeComps } from '@/lib/cma/judge'
 import { auditCma } from '@/lib/cma/audit'
 import { resolveCmaSiteData } from '@/lib/cma/county'
 import { resolveDevelopmentOpportunities } from '@/lib/cma/development'
+import { resolveRentalPotential } from '@/lib/cma/rental-potential'
 import { evaluateBpoAccuracyContract } from '@/lib/bpo/contract'
 import { analyzeListingHistory } from '@/lib/bpo/history'
 import { deriveOpinion } from '@/lib/bpo/opinion'
@@ -306,9 +307,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
     // never blocks the build. Attached to the result for the admin review UI.
     const voiceReview = await reviewProse(authoredRationale, { context: 'bpo' }).catch(() => null)
 
-    // Development potential — pure function over the verified zone + acreage.
-    // A buyer cares about the upside (ADU, second unit, division) as much as a
-    // seller does; the same verified registry serves both.
+    // Development + rental potential — pure functions over the verified zone.
     const development = resolveDevelopmentOpportunities(site, subject)
 
     const { html, pageCount } = renderBpoHtml({
@@ -324,6 +323,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       generatedAtIso,
       site,
       development,
+      rental: resolveRentalPotential(subject, site),
     })
 
     // 6. Citations — one entry per figure class (CLAUDE.md section 0).

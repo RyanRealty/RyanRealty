@@ -42,6 +42,7 @@ import {
   type ExpiredAuditData,
 } from '@/lib/cma/expired-audit'
 import { resolveDevelopmentOpportunities } from '@/lib/cma/development'
+import { resolveRentalPotential } from '@/lib/cma/rental-potential'
 import { buildCmaMapDataUri } from '@/lib/cma/map'
 import { renderCmaHtml } from '@/lib/cma/render'
 import { checkBrandVoice } from '@/lib/voice/check'
@@ -348,6 +349,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // acreage (no new fetches). Every item carries its code citation; the
     // section always renders with the disclaimer + agency directory.
     const development = resolveDevelopmentOpportunities(site, subject)
+    // 4.9. Rental potential — same pure-function contract, cited per tenure.
+    const rental = resolveRentalPotential(subject, site)
 
     // 5. Map (best effort — the report ships without it if the key is absent).
     const map = await buildCmaMapDataUri(subject, adjusted)
@@ -361,9 +364,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     const proseParts: string[] = [
       ...pricing.notes,
       pricing.confidenceReason,
-      ...(development
-        ? [development.disclaimer, ...development.items.flatMap((i) => [i.headline, i.detail])]
-        : []),
+      ...(development ? [development.disclaimer, ...development.items.flatMap((i) => [i.headline, i.detail]), ...development.buyerOptions.flatMap((o) => [o.headline, o.detail]), ...development.marketingHighlights.map((h) => h.headline)] : []),
+      ...(rental ? [rental.disclaimer, rental.economicsNote, ...rental.tenures.flatMap((t) => [t.headline, t.detail]), ...rental.marketingHighlights.map((h) => h.headline)] : []),
       ...(expiredAudit
         ? [
             expiredAudit.feeLine,
@@ -415,25 +417,12 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       site,
       expiredAudit,
       development,
+      rental,
     }
 
-    const { html, pageCount } = renderCmaHtml({
-      subject,
-      comps: adjusted,
-      market,
-      pricing,
-      broker,
-      client: input.client,
-      mapDataUri: map?.dataUri ?? null,
-      generatedAtIso,
-      subjectTrace: resolved.trace,
-      compTrace: selection.trace,
-      excludedOutliers: selection.excludedOutliers,
-      sellerImprovementsText: input.sellerImprovementsText ?? null,
-      site,
-      expiredAudit,
-      development,
-    })
+    // Spread, never a second hand-written list: a field added to one list and
+    // not the other would render here and vanish on re-brand (W10.3).
+    const { html, pageCount } = renderCmaHtml({ ...renderArgs, broker, mapDataUri: map?.dataUri ?? null })
 
     // 7. Citations — one entry per figure class (CLAUDE.md §0).
     const citations: Record<string, unknown> = {
@@ -556,9 +545,13 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
               zone: development.zone,
               regs_verified_as_of: development.verifiedAsOf,
               items: development.items,
+              zoning_explainer: development.zoningExplainer, buyer_options: development.buyerOptions, hoa: development.hoa, marketing_highlights: development.marketingHighlights,
               source: 'Zone-keyed registry in lib/cma/development.ts; every rule verified against its primary code source 2026-07-14 (58-fact adversarial verification pass)',
             },
           }
+        : {}),
+      ...(rental
+        ? { rental_potential: { jurisdiction: rental.jurisdiction, regs_verified_as_of: rental.verifiedAsOf, tenures: rental.tenures, income: rental.income, marketing_highlights: rental.marketingHighlights, source: 'Jurisdiction-keyed rental registry in lib/cma/rental-potential.ts; every rule cited to its primary code source' } }
         : {}),
       ...(expiredAudit
         ? {

@@ -1,18 +1,48 @@
 /**
  * Deterministic CMA HTML renderer — multi-page letter-format document in the
- * canonical brutalist navy/cream editorial style (exemplar:
- * public/drafts/cma-21042-robin/cma.html). Self-contained: inline CSS,
+ * canonical brutalist navy/cream editorial style. Self-contained: inline CSS,
  * absolute asset URLs, map embedded as a data URI. Print-friendly page breaks.
  *
  * Every figure printed here is computed by the same build from live Supabase
  * rows (CLAUDE.md §0). Copy is deterministic template text vetted against the
- * brand-voice banned list. The final page carries the Oregon competitive
- * market analysis disclosures required by OAR 863-015-0190 under ORS ch. 696.
+ * brand-voice banned list. The disclosure page carries the Oregon competitive
+ * market analysis elements required by OAR 863-015-0190 under ORS ch. 696.
+ *
+ * The document is a LISTING-STRATEGY document, not a neutral appraisal: it
+ * leads with the number a seller is deciding against, then the evidence, then
+ * what the property can do that the comp grid does not price (Matt 2026-07-30).
+ * Shared fact-section markup lives in lib/cma/render-blocks.ts so the CMA, the
+ * expired audit, and the BPO all print the same property the same way.
  */
 
 import { cmaStylesheet } from '@/lib/cma/render-css'
-import { formatPriceExact } from '@/lib/format/money'
-import { formatDate } from '@/lib/format/date'
+import {
+  buyerOptionsBlock,
+  chunk,
+  cleanText,
+  collectHighlights,
+  dateLong,
+  dec,
+  developmentItemsBlock,
+  developmentLeadLine,
+  dottedPhone,
+  escapeHtml,
+  hoaBlock,
+  int,
+  marketingHighlightsBlock,
+  monthYear,
+  phoneHref,
+  propertyIntelligenceBlock,
+  rentalIncomeBlock,
+  rentalLeadLine,
+  rentalTenuresBlock,
+  sparkPhotoAt,
+  trimRemarks,
+  usd,
+  usdSigned,
+  verifyResourcesBlock,
+  zoningExplainerBlock,
+} from '@/lib/cma/render-blocks'
 import type {
   CmaAdjustedComp,
   CmaBroker,
@@ -24,8 +54,20 @@ import type {
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
+import type { RentalPotential } from '@/lib/cma/rental-potential'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+
+// Re-exported so lib/bpo/render.ts keeps ONE import path for the shared blocks.
+export {
+  escapeHtml,
+  sparkPhotoAt,
+  propertyIntelligenceBlock,
+  developmentItemsBlock,
+  developmentResourcesBlock,
+} from '@/lib/cma/render-blocks'
+
+const esc = escapeHtml
 
 export interface RenderCmaArgs {
   subject: CmaSubject
@@ -43,215 +85,17 @@ export interface RenderCmaArgs {
   site?: CmaSiteData | null
   /** Present = render as an EXPIRED AUDIT (failure analysis + services + net sheet). */
   expiredAudit?: ExpiredAuditData | null
-  /** Zone-keyed development read (subdivide / ADU / second dwelling / middle housing / STR). */
+  /** Zoning read, buildability answers, buyer options, HOA, marketing highlights. */
   development?: DevelopmentOpportunities | null
-}
-
-// ── Development potential (shared by CMA page + BPO inline block) ────────────
-
-const DEV_VERDICT_LABELS: Record<string, string> = {
-  yes: 'Allowed',
-  conditional: 'Conditional',
-  unlikely: 'Unlikely',
-  no: 'Not available',
-  confirm: 'Worth exploring',
-}
-
-/** The development items themselves (no disclaimer/resources — see below). */
-export function developmentItemsBlock(dev: DevelopmentOpportunities | null | undefined): string {
-  if (!dev || dev.items.length === 0) return ''
-  const items = dev.items
-    .map(
-      (it) => `
-  <h3 class="subhead">${escapeHtml(it.topic)} · ${escapeHtml(DEV_VERDICT_LABELS[it.verdict] ?? it.verdict)}</h3>
-  <p><strong>${escapeHtml(it.headline)}</strong></p>
-  <p class="small">${escapeHtml(it.detail)}</p>
-  <p class="small" style="opacity:0.75;">Source: ${escapeHtml(it.citation)} · <a href="${escapeHtml(it.url)}">${escapeHtml(it.url.replace(/^https?:\/\//, '').split('/')[0] ?? it.url)}</a></p>`,
-    )
-    .join('')
-  return `
-  <p>Zoning of record: <strong>${escapeHtml(dev.zone)}</strong> · ${escapeHtml(dev.jurisdiction)}. Each answer below is a preliminary read of the code in effect ${escapeHtml(dev.verifiedAsOf)}, with the section we relied on cited. None of it is a land-use decision.</p>
-  ${items}`
-}
-
-/** The disclaimer + hyperlinked verify-it-yourself agency directory. */
-export function developmentResourcesBlock(dev: DevelopmentOpportunities | null | undefined): string {
-  if (!dev) return ''
-  const rows = dev.resources
-    .map(
-      (r) => `<li><strong><a href="${escapeHtml(r.url)}">${escapeHtml(r.name)}</a></strong>${r.phone ? ` · ${escapeHtml(r.phone)}` : ''}<div class="small" style="margin-top:1px;">${escapeHtml(r.role)}</div></li>`,
-    )
-    .join('')
-  return `
-  <p>${escapeHtml(dev.disclaimer)}</p>
-  <h3 class="subhead">Who to call, and where</h3>
-  <ul class="note-list">${rows}</ul>`
-}
-
-/**
- * Comprehensive property & site intelligence from the authoritative county /
- * state / federal records (SKILL §3.5/§3.6/§7b/§7c). Zoning + overlays, water,
- * septic + permit history, flood, wildfire, entitlement, buildability
- * constraints, hunting/LOP, and field-confirm caveats. Renders only what was
- * resolved; unresolved facts read "confirm at listing". Shared verbatim by the
- * CMA (subject page) and the BPO. Every consumer imports THIS — one source.
- */
-export function propertyIntelligenceBlock(site: CmaSiteData | null | undefined): string {
-  if (!site || (!site.zone && site.water.source === 'unknown' && site.septic.status === 'unknown')) return ''
-  const rows: string[] = []
-
-  // Zoning + overlays + entitlement.
-  if (site.zone) {
-    const overlays = site.overlays?.length ? ` · overlays: ${site.overlays.map((o) => escapeHtml(o.code)).join(', ')}` : ''
-    rows.push(`<li><strong>Zoning:</strong> ${escapeHtml(site.zone)}${overlays}${site.entitlement?.conditional ? '. Resource zone, so a dwelling requires a verified entitlement (confirm before relying on buildability)' : ''}</li>`)
-  }
-  if (site.acreage != null) rows.push(`<li><strong>Parcel:</strong> ${site.acreage} acres${site.taxlot ? ` · taxlot ${escapeHtml(site.taxlot)}` : ''}${site.trs ? ` · ${escapeHtml(site.trs)}` : ''}</li>`)
-
-  // Water.
-  const water =
-    site.water.source === 'well'
-      ? `Private well${site.water.wellLog?.completedDepthFt ? ` (nearest area log about ${site.water.wellLog.completedDepthFt} ft, ${escapeHtml(site.water.wellLog.completedDate ?? 'date n/a')}. Confirm the subject's OWRD log)` : ' (confirm the subject\'s OWRD well log at listing)'}`
-      : site.water.source === 'municipal'
-        ? escapeHtml(site.water.providerName || 'City water')
-        : null
-  if (water) rows.push(`<li><strong>Water:</strong> ${water}</li>`)
-  if (site.water.irrigationDistrict) rows.push(`<li><strong>Irrigation district:</strong> ${escapeHtml(site.water.irrigationDistrict)} (district boundary is not a water right. Confirm the appurtenant right with the district and OWRD)</li>`)
-
-  // OWRD water rights of record (mapped Places of Use intersecting the parcel).
-  if (site.water.rights.length > 0) {
-    const srcLabel = (s: string) => (s === 'surface' ? 'surface water' : s === 'ground' ? 'groundwater' : s === 'storage' ? 'stored water' : 'water')
-    const rightLines = site.water.rights
-      .slice(0, 8)
-      .map((r) => {
-        const inchoate = r.stage === 'permit' || r.stage === 'application' || r.stage === 'claim'
-        const bits = [
-          `${escapeHtml(r.use.toLowerCase())} (${srcLabel(r.source)})`,
-          r.acres != null ? `${r.acres} ac` : null,
-          r.priorityDate ? `priority ${escapeHtml(r.priorityDate)}` : null,
-          r.supplemental ? 'supplemental' : null,
-          inchoate ? 'not yet perfected' : null,
-          r.identifier ? escapeHtml(r.identifier) : null,
-          r.holder ? `held by ${escapeHtml(r.holder)}${r.holderType === 'municipal' ? ' (city/municipal supplier)' : r.holderType === 'district' ? ' (irrigation district)' : ''}` : null,
-        ].filter(Boolean)
-        return `<li>${bits.join(' · ')}</li>`
-      })
-      .join('')
-    const irr = site.water.mappedIrrigationAcres
-    let lead: string
-    if (!site.water.hasPrivateAppurtenant) {
-      // Only supplier-held (city / irrigation-district) rights map here — the
-      // parcel is within a supplier's service area, not the holder of a private
-      // appurtenant right. Do NOT present it as "a water right on this parcel".
-      lead = 'The water rights that map onto this parcel are held by a public supplier (a city or an irrigation district), whose service area covers the parcel. This is the supplier\'s own right of record, not a private water right appurtenant to the lot. Confirm any district-delivered right and its certificated acreage with the supplier and OWRD.'
-    } else if (irr != null) {
-      lead = `OWRD maps a water right of record whose place-of-use covers this parcel, including ${irr} acres of mapped irrigation${site.water.primaryIrrigationPriorityDate ? ` (mapped priority ${escapeHtml(site.water.primaryIrrigationPriorityDate)})` : ''}. This is the right as recorded, not proof of current validity, appurtenance to this lot, or that the mapped acreage falls entirely within the parcel. Confirm with OWRD and the deed.`
-    } else {
-      lead = 'OWRD maps a water right of record whose place-of-use covers this parcel. This is the right as recorded, not proof of current validity or appurtenance to this lot. Confirm with OWRD and the deed.'
-    }
-    rows.push(`<li><strong>Water rights (OWRD):</strong> ${lead}<ul class="note-list" style="margin-top:4px">${rightLines}</ul></li>`)
-  }
-
-  // Septic + permit history.
-  const septic =
-    site.septic.status === 'installed'
-      ? `Onsite septic system${site.septic.permit ? ` (permit ${escapeHtml(site.septic.permit)})` : ' of record'}`
-      : site.septic.status === 'site-evaluation-only'
-        ? 'Site evaluation only. No installed system of record (buyer installs)'
-        : site.septic.status === 'municipal-sewer'
-          ? 'City sewer'
-          : site.septic.status === 'none-found'
-            ? 'No onsite-wastewater permit on the county record (buyer installs)'
-            : null
-  if (septic) rows.push(`<li><strong>Sewer/septic:</strong> ${septic}</li>`)
-  if (site.permits?.length) rows.push(`<li><strong>Permits of record:</strong> ${site.permits.length} on file (${site.permits.slice(0, 6).map((p) => escapeHtml(p.type)).filter((v, i, a) => a.indexOf(v) === i).join(', ')})</li>`)
-
-  // Flood + wildfire.
-  if (site.flood?.zone) rows.push(`<li><strong>FEMA flood:</strong> zone ${escapeHtml(site.flood.zone)}${site.flood.inSFHA === true ? ' (Special Flood Hazard Area. Flood insurance required)' : site.flood.inSFHA === false ? ' (not a Special Flood Hazard Area)' : ''}</li>`)
-  if (site.wildfireHazard) rows.push('<li><strong>Wildfire hazard zone:</strong> yes (defensible-space + build standards apply)</li>')
-  if (site.publicLand) rows.push('<li><strong>Public land:</strong> parcel intersects a public-lands layer. Confirm ownership/boundary</li>')
-
-  if (rows.length === 0) return ''
-  let html = `<h3 class="subhead">Property &amp; site intelligence (county / state / FEMA records)</h3><ul class="note-list">${rows.join('')}</ul>`
-
-  // Buildability constraints (positives + limits, plainly stated).
-  if (site.constraints?.length) {
-    html += `<h3 class="subhead">Buildability &amp; constraints</h3><ul class="note-list">${site.constraints.map((c) => `<li>${escapeHtml(c)}</li>`).join('')}</ul>`
-  }
-
-  // Hunting / recreation (qualifying acreage only).
-  if (site.hunting) {
-    html += `<h3 class="subhead">Hunting, recreation &amp; landowner tags</h3><ul class="note-list">` +
-      `<li><strong>Game unit:</strong> ${escapeHtml(site.hunting.gameUnit)}</li>` +
-      `<li><strong>Landowner preference:</strong> ${escapeHtml(site.hunting.lop)}</li>` +
-      (site.hunting.noShootingDistrict != null ? `<li><strong>No Shooting District:</strong> ${site.hunting.noShootingDistrict ? 'yes (discharge restricted)' : 'no'}</li>` : '') +
-      `</ul>`
-  }
-
-  // Field-confirm caveats (facts a machine source can no longer serve).
-  if (site.fieldConfirm?.length) {
-    html += `<h3 class="subhead">Still to confirm</h3><ul class="note-list">${site.fieldConfirm.map((c) => `<li>${escapeHtml(c)}</li>`).join('')}</ul>`
-  }
-  return html
-}
-
-/** Back-compat alias.  the subject page calls this name. */
-const siteBlock = propertyIntelligenceBlock
-
-export function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
-
-const esc = escapeHtml
-
-const usd = formatPriceExact
-
-function usdSigned(n: number): string {
-  const abs = usd(Math.abs(n))
-  if (n === 0) return '$0'
-  return n > 0 ? `+${abs}` : `−${abs}`
-}
-
-function int(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(n)) return '—'
-  return new Intl.NumberFormat('en-US').format(Math.round(n))
-}
-
-function dec(n: number | null | undefined, digits = 1): string {
-  if (n == null || !Number.isFinite(n)) return '—'
-  return n.toFixed(digits)
-}
-
-const dateLong = formatDate
-
-function monthYear(iso: string | null | undefined): string {
-  return formatDate(iso, { month: 'short', day: undefined, year: 'numeric' })
-}
-
-/** Rewrite a Spark CDN photo URL to a specific size tier. */
-export function sparkPhotoAt(url: string | null, size: string): string | null {
-  if (!url) return null
-  if (/cdn\.resize\.sparkplatform\.com/.test(url)) {
-    return url.replace(/\/\d+x\d+\//, `/${size}/`)
-  }
-  return url
-}
-
-function trimRemarks(remarks: string | null, max = 850): string | null {
-  if (!remarks) return null
-  const clean = remarks.replace(/\s+/g, ' ').trim()
-  if (clean.length <= max) return clean
-  const cut = clean.slice(0, max)
-  return `${cut.slice(0, cut.lastIndexOf(' '))}…`
+  /** Long / mid / short-term rental read for the same parcel. */
+  rental?: RentalPotential | null
 }
 
 interface PageDef {
   meta: string
   body: string
+  /** Contents-page label. Omitted = the page is not listed (flyer runs, etc.). */
+  toc?: string
 }
 
 function wrapPage(page: PageDef, index: number, total: number, brokerPhone: string): string {
@@ -292,6 +136,11 @@ function subjectStatStrip(subject: CmaSubject): string {
   </div>`
 }
 
+/**
+ * Cover. The recommended list price is the single largest element on the page:
+ * a seller reads this document to answer one question, and the answer used to
+ * sit in the third sentence of a paragraph inside the value block.
+ */
 function coverPage(a: RenderCmaArgs): PageDef {
   const hero = heroForSubject(a.subject)
   const p = a.pricing
@@ -302,19 +151,40 @@ function coverPage(a: RenderCmaArgs): PageDef {
     body: `
   <div class="cover-label">${clientLine}</div>
   <h1 class="cover-title">${esc(a.subject.streetAddress)}</h1>
-  <div class="cover-sub">${esc(a.subject.city)}, Oregon ${esc(a.subject.postalCode ?? '')}${a.subject.subdivision ? ` · ${esc(a.subject.subdivision)}` : ''}</div>
+  <div class="cover-sub">${esc(a.subject.city)}, Oregon ${esc(a.subject.postalCode ?? '')}${cleanText(a.subject.subdivision) ? ` · ${esc(cleanText(a.subject.subdivision)!)}` : ''}</div>
   ${hero.src ? `<img class="hero-photo" src="${esc(hero.src)}" alt="${esc(a.subject.streetAddress)}" />` : '<div class="hero-photo"></div>'}
   <div class="hero-caption">${esc(hero.caption)}</div>
-  ${subjectStatStrip(a.subject)}
   <div class="value-block">
-    <div class="vb-label">Estimated Market Value Range</div>
-    <p class="vb-range">${usd(p.valueLow)} to ${usd(p.valueHigh)}</p>
-    <div class="vb-detail">Based on ${a.comps.length} closed sales near the subject, each adjusted to today's market conditions and to the subject's size before reconciliation.</div>
-    <div class="vb-most-likely"><strong>Recommended list price · ${usd(p.recommended)}.</strong> Confidence: ${p.confidence}. ${esc(p.confidenceReason)}</div>
+    <div class="vb-top">
+      <div>
+        <div class="vb-label">Recommended list price</div>
+        <p class="vb-price">${usd(p.recommended)}</p>
+      </div>
+      <div class="vb-pill">${esc(p.confidence)} confidence</div>
+    </div>
+    <div class="vb-range">Supported range ${usd(p.valueLow)} to ${usd(p.valueHigh)}</div>
+    <div class="vb-detail">${a.comps.length} closed sales near the subject, each adjusted to today's market and to your home's size before reconciliation. ${esc(p.confidenceReason)}</div>
   </div>
+  ${subjectStatStrip(a.subject)}
   <div class="presented-by">
     Presented by <strong>${esc(a.broker.displayName)}</strong> · ${esc(a.broker.title)} · Ryan Realty${a.broker.phone ? ` · ${esc(a.broker.phone)}` : ''}
   </div>`,
+  }
+}
+
+/** Contents. Built from the assembled page list, so it can never drift. */
+function contentsPage(rest: PageDef[], a: RenderCmaArgs): PageDef {
+  const rows = rest
+    .map((p, i) => ({ label: p.toc, page: i + 3 }))
+    .filter((e): e is { label: string; page: number } => Boolean(e.label))
+    .map((e) => `<li><span class="t">${esc(e.label)}</span><span class="d"></span><span class="p">${e.page}</span></li>`)
+    .join('')
+  return {
+    meta: `${esc(a.subject.streetAddress)} · Contents`,
+    body: `
+  <h2 class="section">What Is In This Report</h2>
+  <p>The recommendation is on the cover. Everything after it is the evidence behind that number, and what this property can do that a comparable-sales grid does not price.</p>
+  <ol class="toc">${rows}</ol>`,
   }
 }
 
@@ -330,16 +200,17 @@ function subjectPage(a: RenderCmaArgs): PageDef {
   const yoy = a.market?.yoyMedianPriceDeltaPct
   return {
     meta: `${esc(s.streetAddress)} · Subject Property`,
+    toc: 'The property, on the record',
     body: `
   <h2 class="section">Subject Property</h2>
   <div class="two-col">
     <div>
       <h3 class="subhead">At a glance</h3>
-      <p>${s.yearBuilt ? `${s.yearBuilt}-built home` : 'Home'}${s.lotAcres != null ? ` on ${dec(s.lotAcres, 2)} acres` : ''}${s.subdivision ? ` in the ${esc(s.subdivision)} subdivision` : ''}, ${esc(s.city)}. ${s.listingHistoryLine ? esc(s.listingHistoryLine) : 'No prior MLS listing history on file.'}</p>
+      <p>${s.yearBuilt ? `${s.yearBuilt}-built home` : 'Home'}${s.lotAcres != null ? ` on ${dec(s.lotAcres, 2)} acres` : ''}${cleanText(s.subdivision) ? ` in the ${esc(cleanText(s.subdivision)!)} subdivision` : ''}, ${esc(s.city)}. ${s.listingHistoryLine ? esc(s.listingHistoryLine) : 'No prior MLS listing history on file.'}</p>
       <h3 class="subhead">Site and structure</h3>
       <ul class="note-list">${facts.map((f) => `<li>${f}</li>`).join('')}</ul>
       ${a.sellerImprovementsText ? `<h3 class="subhead">Seller-reported details</h3><p class="small">${esc(a.sellerImprovementsText)} (Seller-reported, confirm at listing.)</p>` : ''}
-      ${siteBlock(a.site)}
+      ${propertyIntelligenceBlock(a.site)}
     </div>
     <div>
       <h3 class="subhead">How this analysis works</h3>
@@ -353,39 +224,52 @@ function subjectPage(a: RenderCmaArgs): PageDef {
 
 function mapPage(a: RenderCmaArgs): PageDef | null {
   if (!a.mapDataUri) return null
-  const keyItems: string[] = []
-  keyItems.push(
+  const keyItems = [
     `<div class="k"><span class="pin subject">S</span><div class="txt"><strong>Subject</strong><br/>${esc(a.subject.streetAddress)}</div></div>`,
-  )
-  a.comps.forEach((c, i) => {
-    keyItems.push(
-      `<div class="k"><span class="pin">${i + 1}</span><div class="txt"><strong>${esc(c.address)}</strong><br/>${usd(c.closePrice)} · ${monthYear(c.closeDate)}</div></div>`,
-    )
-  })
+    ...a.comps.map(
+      (c, i) =>
+        `<div class="k"><span class="pin">${i + 1}</span><div class="txt"><strong>${esc(c.address)}</strong><br/>${usd(c.closePrice)} · ${monthYear(c.closeDate)}${c.proximity ? ` · ${esc(c.proximity)}` : ''}</div></div>`,
+    ),
+  ]
   return {
     meta: `Comparable Sales Map · ${esc(a.subject.city)}`,
+    toc: 'Where the comps sit',
     body: `
   <h2 class="section">Where the Comps Sit</h2>
-  <p style="margin-bottom:14px;">Every comparable sale in this report on one map, with the subject marked S. Marker numbers match the comp order used throughout the report. Pin positions use each listing's recorded MLS coordinates.</p>
+  <p style="margin-bottom:14px;">Every comparable sale in this report on one map, with the subject marked S. Marker numbers match the comp order used throughout the report. Pin positions use each listing's recorded MLS coordinates, and each key line carries the straight-line distance and direction from the subject.</p>
   <img class="map-img" src="${a.mapDataUri}" alt="Comparable sales map" />
   <h3 class="subhead" style="margin-top:0;">Marker key</h3>
   <div class="map-key">${keyItems.join('')}</div>`,
   }
 }
 
+/** Sold price as a percentage of the last list price. Null when list is absent. */
+function soldVsList(c: CmaAdjustedComp): string | null {
+  if (!c.listPrice || c.listPrice <= 0) return null
+  return `${dec((c.closePrice / c.listPrice) * 100, 1)}% of list`
+}
+
 function compCardsAndTablePage(a: RenderCmaArgs): PageDef {
   const s = a.subject
+  const competing = a.comps.filter((c) => c.competingArea).length
   const cards = a.comps
     .slice(0, 8)
-    .map((c) => {
+    .map((c, i) => {
       const ph = sparkPhotoAt(c.photoUrl, '640x480')
+      const vsList = soldVsList(c)
       return `
     <div class="comp-card">
-      ${ph ? `<img class="ph" src="${esc(ph)}" alt="${esc(c.address)}" />` : '<div class="ph-missing">No MLS photo on file</div>'}
+      <div class="ph-wrap">
+        ${ph ? `<img class="ph" src="${esc(ph)}" alt="${esc(c.address)}" />` : '<div class="ph-missing">No MLS photo on file</div>'}
+        <span class="num-chip">${i + 1}</span>
+        ${c.proximity ? `<span class="prox-chip">${esc(c.proximity)}</span>` : ''}
+      </div>
       <div class="body">
         <div class="addr">${esc(c.address)}</div>
-        <div class="stats">${int(c.beds)} bd · ${dec(c.baths, 0)} ba · ${int(c.sqft)} sf${c.lotAcres != null ? ` · ${dec(c.lotAcres, 2)} ac` : ''}${c.yearBuilt ? ` · ${c.yearBuilt}` : ''}${c.proximity ? ` · ${esc(c.proximity)}` : ''}${c.competingArea ? ` · ${esc(c.competingArea)} (competing area)` : ''}</div>
-        <div class="price">${usd(c.closePrice)} <span class="when">${monthYear(c.closeDate)}${c.daysToOffer != null ? ` · ${int(c.daysToOffer)}d to offer` : ''}</span></div>
+        <div class="stats">${int(c.beds)} bd · ${dec(c.baths, 0)} ba · ${int(c.sqft)} sf${c.lotAcres != null ? ` · ${dec(c.lotAcres, 2)} ac` : ''}${c.yearBuilt ? ` · ${c.yearBuilt}` : ''}</div>
+        <div class="price">${usd(c.closePrice)}</div>
+        <div class="when">${monthYear(c.closeDate)}${vsList ? ` · ${esc(vsList)}` : ''}</div>
+        ${c.competingArea ? `<div class="area-tag">Competing area · ${esc(c.competingArea)}</div>` : ''}
       </div>
     </div>`
     })
@@ -396,7 +280,7 @@ function compCardsAndTablePage(a: RenderCmaArgs): PageDef {
     .map(
       (c, i) => `
     <tr>
-      <td>${i + 1}. ${esc(c.address)}</td>
+      <td>${i + 1}. ${esc(c.address)}${c.proximity || c.competingArea ? `<div class="sub-cell">${c.proximity ? esc(c.proximity) : ''}${c.proximity && c.competingArea ? ' · ' : ''}${c.competingArea ? `competing area: ${esc(c.competingArea)}` : ''}</div>` : ''}</td>
       <td class="num">${dateLong(c.closeDate)}</td>
       <td class="num">${usd(c.listPrice)}</td>
       <td class="num">${usd(c.closePrice)}</td>
@@ -412,9 +296,10 @@ function compCardsAndTablePage(a: RenderCmaArgs): PageDef {
 
   return {
     meta: `${esc(s.streetAddress)} · Comparable Sales`,
+    toc: 'The comparable sales',
     body: `
   <h2 class="section">Comparable Closed Sales</h2>
-  <p>${a.comps.length} closed single-family sales selected for similarity to the subject (size, location, and recency). Ordered most recent first. DTO is days to offer, the active-marketing read. DOM includes time under contract.</p>
+  <p>${a.comps.length} closed single-family sales, selected for similarity to the subject in size, lot character, location, and recency. Each card carries the straight-line distance and direction from your home, which is the answer to why these sales and not others. ${competing > 0 ? `${competing} of them come from a competing market area and are labeled as such, per Fannie Mae B4-1.3-08.` : 'All of them sit in the subject\'s own market area.'} DTO is days to offer, the active-marketing read. DOM includes time under contract.</p>
   <div class="comp-grid">${cards}</div>
   <table class="comps">
     <thead>
@@ -436,7 +321,7 @@ function compCardsAndTablePage(a: RenderCmaArgs): PageDef {
       ${rows}
     </tbody>
   </table>
-  <p class="small" style="margin-top:8px;">Subject List $ column shows the recommended list price for context. Em dash cells indicate a value that does not apply or is unavailable.</p>`,
+  <p class="small" style="margin-top:8px;">The subject List $ column shows the recommended list price for context. An em dash marks a value that does not apply or is unavailable.</p>`,
   }
 }
 
@@ -457,6 +342,7 @@ function adjustmentPage(a: RenderCmaArgs): PageDef {
     .join('')
   return {
     meta: `${esc(a.subject.streetAddress)} · Adjustment Grid`,
+    toc: 'Every adjustment, line by line',
     body: `
   <h2 class="section">Per-Comp Adjustment Grid</h2>
   <p>Each comp is reconciled to the subject in two transparent steps. The market-conditions line normalizes the close price to today using the verified ${esc(a.market?.geoLabel ?? a.subject.city)} year-over-year trend${yoy != null ? ` of ${dec(yoy, 1)}%` : ''}. The size line adjusts for the sqft difference at half the comp's adjusted $/sqft rate, the standard appraisal convention for marginal square footage.</p>
@@ -468,13 +354,6 @@ function adjustmentPage(a: RenderCmaArgs): PageDef {
   </table>
   <h3 class="subhead" style="margin-top:14px;">What is not adjusted, and why</h3>
   <p class="small">Bedroom and bathroom counts, lot differences, and condition are shown on the comp table but carry no dollar adjustment in this report. Defensible values for those items require paired-sales evidence specific to each pairing. Where a comp differs meaningfully from the subject on those dimensions, it is weighted down in the reconciliation rather than adjusted with an unsupported number.</p>
-  ${
-    a.excludedOutliers.length > 0
-      ? `<h3 class="subhead">Excluded outliers</h3><ul class="note-list">${a.excludedOutliers
-          .map((o) => `<li>${esc(o.address)} (${usd(o.closePrice)}): ${esc(o.reason)}.</li>`)
-          .join('')}</ul>`
-      : ''
-  }
   <div class="trace">
     <div class="t-hd">Weighting</div>
     Reconciliation weights favor comps closest to the subject in living area and closest in time. Weight = size proximity × recency, where size proximity = 1 ÷ (1 + |sqft difference| ÷ subject sqft) and recency = 1 ÷ (1 + months since close ÷ 12). Weights for this set: ${a.comps
@@ -488,12 +367,14 @@ function compFlyerPage(a: RenderCmaArgs, comp: CmaAdjustedComp, index: number): 
   const hero = sparkPhotoAt(comp.photoUrl, '1024x768')
   const remarks = trimRemarks(comp.publicRemarks, 800)
   const ppsf = Math.round(comp.closePrice / comp.sqft)
+  const vsList = soldVsList(comp)
   return {
-    meta: `Comparable Sale ${index + 1} of ${a.comps.length} · ${esc(comp.subdivision ?? comp.city)}`,
+    meta: `Comparable Sale ${index + 1} of ${a.comps.length} · ${esc(cleanText(comp.subdivision) ?? comp.city)}`,
+    toc: index === 0 ? 'Comparable sale detail, one page each' : undefined,
     body: `
-  <div class="flyer-badge">Closed ${monthYear(comp.closeDate)}${comp.daysToOffer != null ? ` · ${int(comp.daysToOffer)}d to offer` : ''}</div>
+  <div class="flyer-badge">Closed ${monthYear(comp.closeDate)}${comp.daysToOffer != null ? ` · ${int(comp.daysToOffer)}d to offer` : ''} · ${esc(comp.selectionTier)} comp</div>
   <h1 class="flyer-title">${esc(comp.address)}</h1>
-  <div class="flyer-sub">${esc(comp.city)}, Oregon${comp.subdivision ? ` · ${esc(comp.subdivision)}` : ''}${comp.mlsNumber ? ` · MLS ${esc(comp.mlsNumber)}` : ''}</div>
+  <div class="flyer-sub">${esc(comp.city)}, Oregon${cleanText(comp.subdivision) ? ` · ${esc(cleanText(comp.subdivision)!)}` : ''}${comp.mlsNumber ? ` · MLS ${esc(comp.mlsNumber)}` : ''}${comp.proximity ? ` · ${esc(comp.proximity)} from the subject` : ''}</div>
   ${hero ? `<img class="flyer-hero" src="${esc(hero)}" alt="${esc(comp.address)}" />` : '<div class="flyer-hero is-empty">Photo not retained on the closed listing</div>'}
   <div class="flyer-stats">
     <div class="s"><div class="l">Beds</div><div class="v">${int(comp.beds)}</div></div>
@@ -507,12 +388,12 @@ function compFlyerPage(a: RenderCmaArgs, comp: CmaAdjustedComp, index: number): 
   <div class="flyer-features">
     <div class="f"><div class="fl">List Price</div><div class="fv">${usd(comp.listPrice)}</div></div>
     <div class="f"><div class="fl">Sold Price</div><div class="fv">${usd(comp.closePrice)}</div></div>
+    <div class="f"><div class="fl">Sold vs List</div><div class="fv">${vsList ? esc(vsList) : '—'}</div></div>
     <div class="f"><div class="fl">Close Date</div><div class="fv">${dateLong(comp.closeDate)}</div></div>
-    <div class="f"><div class="fl">Days on Market</div><div class="fv">${comp.daysToOffer != null ? `${int(comp.daysToOffer)} days to offer` : '—'}${comp.domTotal != null ? ` · DOM ${int(comp.domTotal)}` : ''}</div></div>
-    <div class="f"><div class="fl">View</div><div class="fv">${esc(comp.viewDescription ?? '—')}</div></div>
-    <div class="f"><div class="fl">Tax (annual)</div><div class="fv">${usd(comp.taxAnnual)}</div></div>
+    <div class="f"><div class="fl">Days on Market</div><div class="fv">${comp.daysToOffer != null ? `${int(comp.daysToOffer)} to offer` : '—'}${comp.domTotal != null ? ` · DOM ${int(comp.domTotal)}` : ''}</div></div>
+    <div class="f"><div class="fl">Distance from Subject</div><div class="fv">${comp.proximity ? esc(comp.proximity) : '—'}</div></div>
+    <div class="f"><div class="fl">View</div><div class="fv">${esc(cleanText(comp.viewDescription) ?? '—')}</div></div>
     <div class="f"><div class="fl">Adjusted to Subject</div><div class="fv">${usd(comp.adjustedPrice)}</div></div>
-    <div class="f"><div class="fl">Selection Tier</div><div class="fv">${esc(comp.selectionTier)}</div></div>
   </div>
   ${remarks ? '<p class="small">Description quoted from the MLS listing record.</p>' : ''}`,
   }
@@ -525,6 +406,7 @@ function marketPage(a: RenderCmaArgs): PageDef | null {
     m.marketVerdict === 'seller' ? "Seller's market" : m.marketVerdict === 'buyer' ? "Buyer's market" : m.marketVerdict === 'balanced' ? 'Balanced market' : 'Not enough data'
   return {
     meta: `${esc(a.subject.streetAddress)} · Market Context`,
+    toc: `${m.geoLabel} market conditions`,
     body: `
   <h2 class="section">Market Context · ${esc(m.geoLabel)}</h2>
   <p>Verified conditions for the subject's market, from the Ryan Realty market data cache. Closed-sale figures cover ${dateLong(m.periodStart)} to ${dateLong(m.periodEnd)}. Inventory is live as of ${dateLong(m.pulseUpdatedAt ?? m.computedAt)}.</p>
@@ -563,20 +445,10 @@ function pricingPage(a: RenderCmaArgs): PageDef {
   const s = a.subject
   return {
     meta: `${esc(s.streetAddress)} · Pricing Strategy`,
+    toc: 'Pricing strategy and the three tiers',
     body: `
   <h2 class="section">Pricing Strategy</h2>
   <p>${p.method2 != null ? 'Three' : 'Two'} independent methods, one answer. ${p.converged ? 'The methods land within the 5% convergence tolerance, which is the math check.' : 'The methods land wider than the 5% tolerance, so the reconciliation method governs and the stated confidence is reduced.'}</p>
-  <h3 class="subhead">Method 1 · Tiered price per square foot</h3>
-  <p>The comps' time-adjusted $/sqft rates span ${usd(Math.round(p.method1Low / (s.sqft || 1)))} to ${usd(Math.round(p.method1High / (s.sqft || 1)))} at the 25th to 75th percentile. Applied to the subject's ${int(s.sqft)} sqft that brackets ${usd(p.method1Low)} to ${usd(p.method1High)}, with the median rate landing at ${usd(p.method1Mid)}.</p>
-  ${
-    p.method2 != null
-      ? `<h3 class="subhead">Method 2 · Size-matched baseline${p.improvementsValueAdd ? ' plus documented improvements' : ''}</h3>
-  <p>The median adjusted price of the three comps closest to the subject in living area${p.improvementsValueAdd ? `, plus ${usd(p.improvementsValueAdd)} of credited improvement value from the seller's reported spend at a 65% recovery rate,` : ''} lands at ${usd(p.method2)}.</p>`
-      : ''
-  }
-  <h3 class="subhead">Method ${p.method2 != null ? '3' : '2'} · Adjusted-comp reconciliation</h3>
-  <p>The similarity-weighted average of every comp's fully adjusted price (time plus size, weights favoring the closest and most recent sales) lands at ${usd(p.method3)}. This method carries the market-conditions correction, so it anchors the recommendation.</p>
-  <h3 class="subhead">Converged range</h3>
   <div class="tier-grid">
     <div class="tier">
       <div class="t-lbl">Conservative</div>
@@ -594,51 +466,175 @@ function pricingPage(a: RenderCmaArgs): PageDef {
       <div class="t-note">Ceiling of the supportable range with presentation and condition fully resolved.</div>
     </div>
   </div>
-  ${p.notes.length > 0 ? `<h3 class="subhead" style="margin-top:14px;">Method notes</h3><ul class="note-list">${p.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
-  <p class="small" style="margin-top:10px;">Confidence: <strong>${p.confidence}</strong>. ${esc(p.confidenceReason)}</p>`,
+  <h3 class="subhead" style="margin-top:14px;">Method 1 · Tiered price per square foot</h3>
+  <p>The comps' time-adjusted $/sqft rates span ${usd(Math.round(p.method1Low / (s.sqft || 1)))} to ${usd(Math.round(p.method1High / (s.sqft || 1)))} at the 25th to 75th percentile. Applied to the subject's ${int(s.sqft)} sqft that brackets ${usd(p.method1Low)} to ${usd(p.method1High)}, with the median rate landing at ${usd(p.method1Mid)}.</p>
+  ${
+    p.method2 != null
+      ? `<h3 class="subhead">Method 2 · Size-matched baseline${p.improvementsValueAdd ? ' plus documented improvements' : ''}</h3>
+  <p>The median adjusted price of the three comps closest to the subject in living area${p.improvementsValueAdd ? `, plus ${usd(p.improvementsValueAdd)} of credited improvement value from the seller's reported spend at a 65% recovery rate,` : ''} lands at ${usd(p.method2)}.</p>`
+      : ''
+  }
+  <h3 class="subhead">Method ${p.method2 != null ? '3' : '2'} · Adjusted-comp reconciliation</h3>
+  <p>The similarity-weighted average of every comp's fully adjusted price (time plus size, weights favoring the closest and most recent sales) lands at ${usd(p.method3)}. This method carries the market-conditions correction, so it anchors the recommendation.</p>
+  ${p.notes.length > 0 ? `<h3 class="subhead">Method notes</h3><ul class="note-list">${p.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
+  <p class="small" style="margin-top:8px;">Confidence: <strong>${p.confidence}</strong>. ${esc(p.confidenceReason)}</p>
+  <h3 class="subhead">Why this number holds up</h3>
+  <ul class="note-list">${whyBullets(a).map((b) => `<li>${b}</li>`).join('')}</ul>`,
   }
 }
 
-function rationalePage(a: RenderCmaArgs): PageDef {
+/** The pricing argument, in the seller's terms. Each line is a printed figure. */
+function whyBullets(a: RenderCmaArgs): string[] {
   const m = a.market
+  const out = [
+    `The recommendation sits on ${a.comps.length} verified closed sales, not on an automated estimate or a single anchor comp.`,
+    `Every comp was normalized to today's market before comparison${m?.yoyMedianPriceDeltaPct != null ? `, using the verified ${dec(m.yoyMedianPriceDeltaPct, 1)}% year-over-year trend for ${esc(m.geoLabel)}` : ''}.`,
+  ]
+  if (m?.monthsOfSupply != null) out.push(`${esc(m.geoLabel)} is carrying ${dec(m.monthsOfSupply, 1)} months of supply. The tier grid reflects that reality rather than working against it.`)
+  if (m?.medianDom != null) out.push(`The median ${esc(m.geoLabel)} sale is taking ${int(m.medianDom)} days. Pricing inside the supported range is what keeps a listing on the fast side of that number.`)
+  out.push('Where a defensible dollar adjustment was not possible, the difference is disclosed and down-weighted instead of guessed.')
+  return out
+}
+
+function rationalePage(a: RenderCmaArgs): PageDef {
   const traceLines = [a.subjectTrace, ...a.compTrace]
+  const outliers = a.excludedOutliers
   return {
-    meta: `${esc(a.subject.streetAddress)} · Why This Price`,
+    meta: `${esc(a.subject.streetAddress)} · Verification Trace`,
+    toc: 'Verification trace',
     body: `
-  <h2 class="section">Why This List Price</h2>
-  <ul class="note-list">
-    <li>The recommendation sits on ${a.comps.length} verified closed sales, not on an automated estimate or a single anchor comp.</li>
-    <li>Every comp was normalized to today's market before comparison${m?.yoyMedianPriceDeltaPct != null ? `, using the verified ${dec(m.yoyMedianPriceDeltaPct, 1)}% year-over-year trend for ${esc(m.geoLabel)}` : ''}.</li>
-    ${m?.monthsOfSupply != null ? `<li>${esc(m.geoLabel)} is carrying ${dec(m.monthsOfSupply, 1)} months of supply. The tier grid reflects that reality rather than working against it.</li>` : ''}
-    ${m?.medianDom != null ? `<li>The median ${esc(m.geoLabel)} sale is taking ${int(m.medianDom)} days. Pricing inside the supported range is what keeps a listing on the fast side of that number.</li>` : ''}
-    <li>Where a defensible dollar adjustment was not possible, the difference is disclosed and down-weighted instead of guessed.</li>
-  </ul>
-  <h2 class="section" style="margin-top:18px;">Verification Trace</h2>
+  <h2 class="section">Verification Trace</h2>
+  <p>Every figure in this report is auditable. Below is the exact query path that produced the subject record and the comparable set, printed so you or an appraiser can reproduce it.</p>
   <div class="trace">
     <div class="t-hd">Data sources (audit trail)</div>
     Every figure in this report traces to the Oregon Data Share MLS via the Ryan Realty data platform, pulled ${dateLong(a.generatedAtIso)}.<br/><br/>
     ${traceLines.map((t) => esc(t)).join('<br/>')}
-  </div>`,
+  </div>
+  ${outliers.length > 0 ? `<h3 class="subhead">Sales that were pulled and then excluded</h3><ul class="note-list">${outliers.map((o) => `<li>${esc(o.address)} (${usd(o.closePrice)}): ${esc(o.reason)}.</li>`).join('')}</ul>` : ''}`,
   }
 }
 
-function developmentPage(a: RenderCmaArgs): PageDef | null {
-  const body = developmentItemsBlock(a.development)
-  if (!body) return null
+// ── What the comp grid does not price ───────────────────────────────────────
+
+/**
+ * The sellable facts, high in the document and next to the pricing argument.
+ * This is the answer to "what makes this property worth the top of the range",
+ * and every line carries the record it came from.
+ */
+function highlightsPage(a: RenderCmaArgs): PageDef | null {
+  const highlights = collectHighlights(a.development, a.rental)
+  const block = marketingHighlightsBlock(highlights)
+  if (!block) return null
   return {
-    meta: `${esc(a.subject.streetAddress)} · Development Potential`,
+    meta: `${esc(a.subject.streetAddress)} · What We Lead With`,
+    toc: 'What we lead with when we market it',
     body: `
-  <h2 class="section">Development Potential</h2>${body}`,
+  <h2 class="section">What We Lead With</h2>
+  <p>A comparable-sales grid prices bedrooms, square feet, and a close date. It does not price what this parcel is allowed to become. Below is what this property can do that the comps cannot, each with the record behind it. This is what the listing copy, the photography brief, and the buyer conversations get built around.</p>
+  ${block}`,
   }
 }
 
-function developmentResourcesPage(a: RenderCmaArgs): PageDef | null {
-  const body = developmentResourcesBlock(a.development)
-  if (!body) return null
+function zoningPage(a: RenderCmaArgs): PageDef | null {
+  const block = zoningExplainerBlock(a.development)
+  if (!block) return null
+  return {
+    meta: `${esc(a.subject.streetAddress)} · Zoning Explained`,
+    toc: 'Zoning, in plain language',
+    body: `
+  <h2 class="section">Zoning, In Plain Language</h2>
+  <p>Zoning decides what a buyer is allowed to do here, and it is the first question a builder, an investor, or a second-home buyer asks. Here is the zone of record and what the code lets it be used for.</p>
+  ${block}`,
+  }
+}
+
+/** Development answers, chunked so a fixed-height page never clips one. */
+function developmentPages(a: RenderCmaArgs): PageDef[] {
+  const dev = a.development
+  if (!dev || dev.items.length === 0) return []
+  const groups = chunk(dev.items, 3)
+  return groups.map((_, i) => {
+    const slice = { ...dev, items: groups[i]! }
+    return {
+      meta: `${esc(a.subject.streetAddress)} · What You Can Build Here`,
+      toc: i === 0 ? 'What you can build here' : undefined,
+      body: `
+  <h2 class="section">What You Can Build Here${groups.length > 1 ? ` (${i + 1} of ${groups.length})` : ''}</h2>
+  ${i === 0 ? developmentLeadLine(dev) : ''}
+  ${developmentItemsBlock(slice)}`,
+    }
+  })
+}
+
+function buyerOptionsPages(a: RenderCmaArgs): PageDef[] {
+  const options = a.development?.buyerOptions ?? []
+  if (options.length === 0) return []
+  const groups = chunk(options, 5)
+  return groups.map((group, i) => ({
+    meta: `${esc(a.subject.streetAddress)} · What A Buyer Could Do`,
+    toc: i === 0 ? 'What a buyer could do with it' : undefined,
+    body: `
+  <h2 class="section">What A Buyer Could Do With It${groups.length > 1 ? ` (${i + 1} of ${groups.length})` : ''}</h2>
+  ${i === 0 ? '<p>Each option below is drawn from the parcel facts and the code sections already cited in this report. None of it is a promise about what will be approved. It is the range a buyer can picture, which is what widens the pool of people who want the house.</p>' : ''}
+  ${buyerOptionsBlock({ ...a.development!, buyerOptions: group })}`,
+  }))
+}
+
+/** Rental read, with the income basis on the closing page of the run. */
+function rentalPages(a: RenderCmaArgs): PageDef[] {
+  const r = a.rental
+  if (!r || (r.tenures.length === 0 && r.income.length === 0)) return []
+  const groups = r.tenures.length > 0 ? chunk(r.tenures, 1) : [[]]
+  const income = rentalIncomeBlock(r.income)
+  const pages: PageDef[] = []
+  if (income) {
+    pages.push({
+      meta: `${esc(a.subject.streetAddress)} · What It Could Bring In`,
+      toc: 'What it could bring in',
+      body: `
+  <h2 class="section">What It Could Bring In</h2>
+  <p>These are the rental figures for this address that trace to a named source, in ${esc(r.jurisdiction)} as of ${esc(r.verifiedAsOf)}. Each one prints the record it came from, and nothing is estimated to fill the table.</p>
+  ${income}
+  ${r.economicsNote ? `<p class="small">${esc(r.economicsNote)}</p>` : ''}`,
+    })
+  }
+  groups.forEach((group, i) => {
+    if (group.length === 0) return
+    pages.push({
+      meta: `${esc(a.subject.streetAddress)} · Renting It Out`,
+      toc: i === 0 ? 'Renting it out, tenure by tenure' : undefined,
+      body: `
+  <h2 class="section">Renting It Out${groups.length > 1 ? ` (${i + 1} of ${groups.length})` : ''}</h2>
+  ${i === 0 ? rentalLeadLine(r) : ''}
+  ${rentalTenuresBlock(group)}`,
+    })
+  })
+  return pages
+}
+
+function hoaPage(a: RenderCmaArgs): PageDef | null {
+  const block = hoaBlock(a.development)
+  if (!block) return null
+  return {
+    meta: `${esc(a.subject.streetAddress)} · HOA and CC&Rs`,
+    toc: 'HOA and CC&Rs',
+    body: `
+  <h2 class="section">HOA and CC&amp;Rs</h2>
+  <p>Recorded covenants sit on top of the zoning code and can be stricter than it. A buyer's lender, insurer, and rental plan all turn on what they say, so this is confirmed from the recorded documents before the listing goes live.</p>
+  ${block}`,
+  }
+}
+
+function verifyPage(a: RenderCmaArgs): PageDef | null {
+  const block = verifyResourcesBlock(a.development, a.rental)
+  if (!block) return null
   return {
     meta: `${esc(a.subject.streetAddress)} · Verify It Yourself`,
+    toc: 'Verify it yourself',
     body: `
-  <h2 class="section">Verify It Yourself</h2>${body}`,
+  <h2 class="section">Verify It Yourself</h2>
+  <p>Every land-use and rental answer in this report is a preliminary read of a published code, and every one of them is checkable by you at the source. Here is who holds each record and how to reach them.</p>
+  ${block}`,
   }
 }
 
@@ -668,6 +664,7 @@ function expiredAuditPage(a: RenderCmaArgs): PageDef | null {
     .join('')
   return {
     meta: `${esc(a.subject.streetAddress)} · What Happened`,
+    toc: 'What happened on the last listing',
     body: `
   <h2 class="section">What Happened</h2>
   <p>Your home came off the market without selling. Before anything else, you deserve a straight answer about why. The numbers below come straight from the MLS record and the verified comparable sales in this report. Under each one is what we read from it.</p>
@@ -680,6 +677,7 @@ function servicesPage(a: RenderCmaArgs): PageDef | null {
   if (!ea) return null
   return {
     meta: `${esc(a.subject.streetAddress)} · The Relist`,
+    toc: 'What every listing gets',
     body: `
   <h2 class="section">What Every Listing Gets</h2>
   <p>If you decide to try again, this is the standard. Every item below is on every Ryan Realty listing agreement, not a premium tier.</p>
@@ -698,24 +696,23 @@ function netSheetPage(a: RenderCmaArgs): PageDef | null {
       (l) => `
       <tr>
         <td>${esc(l.label)}${l.note ? `<div class="small" style="margin-top:2px;">${esc(l.note)}</div>` : ''}</td>
-        <td style="text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums;">${
-          l.amount === 0 ? '$0' : l.amount != null ? `(${usd(Math.abs(l.amount))})` : '—'
-        }</td>
+        <td class="num">${l.amount === 0 ? '$0' : l.amount != null ? `(${usd(Math.abs(l.amount))})` : '—'}</td>
       </tr>`,
     )
     .join('')
   return {
     meta: `${esc(a.subject.streetAddress)} · Estimated Seller Net Sheet`,
+    toc: 'What you would net',
     body: `
   <h2 class="section">Estimated Seller Net Sheet</h2>
   <p>What a sale at the recommended list price of ${usd(ns.salePrice)} would put in your pocket before your mortgage payoff, at the expired-listing rate.</p>
   <table class="comps" style="margin-top:10px;">
-    <thead><tr><th style="text-align:left;">Line</th><th style="text-align:right;">Amount</th></tr></thead>
+    <thead><tr><th>Line</th><th class="num">Amount</th></tr></thead>
     <tbody>
-      <tr><td><strong>Sale price (recommended list)</strong></td><td style="text-align:right; font-variant-numeric:tabular-nums;"><strong>${usd(ns.salePrice)}</strong></td></tr>
+      <tr><td><strong>Sale price (recommended list)</strong></td><td class="num"><strong>${usd(ns.salePrice)}</strong></td></tr>
       ${rows}
-      <tr><td><strong>Estimated costs of sale</strong></td><td style="text-align:right; font-variant-numeric:tabular-nums;"><strong>(${usd(ns.totalCosts)})</strong></td></tr>
-      <tr><td><strong>Estimated net before mortgage payoff</strong></td><td style="text-align:right; font-variant-numeric:tabular-nums;"><strong>${usd(ns.estimatedNet)}</strong></td></tr>
+      <tr><td><strong>Estimated costs of sale</strong></td><td class="num"><strong>(${usd(ns.totalCosts)})</strong></td></tr>
+      <tr><td><strong>Estimated net before mortgage payoff</strong></td><td class="num"><strong>${usd(ns.estimatedNet)}</strong></td></tr>
     </tbody>
   </table>
   <div class="tier-grid" style="margin-top:14px;">
@@ -748,28 +745,9 @@ function netSheetPage(a: RenderCmaArgs): PageDef | null {
   }
 }
 
-/** E.164-ish number for tel:/sms: hrefs. Null when the phone can't parse. */
-function phoneHref(phone: string | null): string | null {
-  if (!phone) return null
-  const d = phone.replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '')
-  return d.length === 10 ? `+1${d}` : null
-}
-
-/** Brand-voice display format 541.703.3095 (dotted) — brokers rows store
- *  parenthesized strings, which is not the locked brand format. */
-function dottedPhone(phone: string | null): string | null {
-  if (!phone) return null
-  const d = phone.replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '')
-  return d.length === 10 ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}` : phone
-}
-
 /**
- * Closing next-step page (conversion-audit 2026-07-15 #5): the document used
- * to END on disclosure paragraphs with zero tel:/sms:/mailto: links anywhere —
- * an 18-page trust build with no ask. One page: a direct next step, tappable
- * call/text/email, and the listing-consultation ask. Shared by both doc types;
- * the expired audit adds the "reply to the text that brought you here" line
- * (the outreach SMS is how the owner got the link).
+ * Closing next-step page: the document used to END on disclosure paragraphs
+ * with zero tel:/sms:/mailto: links anywhere — a long trust build with no ask.
  */
 function nextStepPage(a: RenderCmaArgs): PageDef {
   const b = a.broker
@@ -790,7 +768,8 @@ function nextStepPage(a: RenderCmaArgs): PageDef {
   // vercel.app link (which redirects and strips params) into a client-facing doc.
   const consultUrl = `https://ryan-realty.com/contact?utm_source=crm&utm_medium=doc&utm_campaign=${isAudit ? 'expired' : 'cma'}`
   return {
-    meta: `${esc(a.subject.streetAddress)} · Presented by ${esc(b.displayName)}`,
+    meta: `${esc(a.subject.streetAddress)} · Your Next Step`,
+    toc: 'Your next step',
     body: `
   <h2 class="section">Your next step</h2>
   <p class="cta-lead">${lead}</p>
@@ -805,20 +784,20 @@ function nextStepPage(a: RenderCmaArgs): PageDef {
 }
 // The closing "Your next step" page no longer repeats a broker signature block —
 // the single broker signature lives on the Disclosure page (the ORS/OAR
-// certification). The broker is still named in the CTA buttons above. This
-// removed the second signature that made every document read as double-signed
-// (regression from the 2026-07-16 closing-page commit).
+// certification). The broker is still named in the CTA buttons above.
 
 function disclosurePage(a: RenderCmaArgs): PageDef {
   const b = a.broker
   const headshot = b.photoUrl ? (b.photoUrl.startsWith('http') ? b.photoUrl : `${SITE_URL}${b.photoUrl}`) : null
   return {
-    meta: `${esc(a.subject.streetAddress)} · Presented by ${esc(b.displayName)}`,
+    meta: `${esc(a.subject.streetAddress)} · Disclosure · ${esc(b.displayName)}`,
+    toc: 'Disclosure and signature',
     body: `
   <h2 class="section">Disclosure</h2>
   <p><strong>Purpose and intent.</strong> This document is a competitive market analysis prepared by a licensed Oregon real estate broker to assist the owner of ${esc(a.subject.streetAddress)}, ${esc(a.subject.city)}, Oregon in evaluating a potential listing price. It is provided in accordance with ORS chapter 696 and OAR 863-015-0190.</p>
   <p><strong>Property description.</strong> ${esc(a.subject.streetAddress)}, ${esc(a.subject.city)}, Oregon ${esc(a.subject.postalCode ?? '')} · ${int(a.subject.beds)} bedrooms · ${dec(a.subject.baths, 0)} bathrooms · ${int(a.subject.sqft)} sqft${a.subject.lotAcres != null ? ` · ${dec(a.subject.lotAcres, 2)} acres` : ''}${a.subject.yearBuilt ? ` · built ${a.subject.yearBuilt}` : ''}.</p>
   <p><strong>Basis for the value.</strong> The value range rests on ${a.comps.length} closed comparable sales from the Oregon Data Share MLS, adjusted for market conditions and size as shown in the adjustment grid, and on verified market statistics for ${esc(a.market?.geoLabel ?? a.subject.city)}. The term value as used in this analysis means the estimated worth of or price for the property. It does not mean or imply a value arrived at by any method of appraisal.</p>
+  ${a.development ? '<p><strong>Land use, rental, and code statements.</strong> Zoning, buildability, rental, and covenant statements in this report are preliminary reads of published code and recorded documents as of the verification dates shown beside them. They are not land-use decisions, permits, or legal opinions, and they should be confirmed with the agencies listed at the back of this report before anyone relies on them.</p>' : ''}
   <p><strong>Limiting conditions.</strong> Interior condition was not inspected. Figures are accurate as of the pull date in the verification trace and market conditions change continuously. Seller-reported facts, where used, are labeled as such and should be independently confirmed.</p>
   <p><strong>Licensee interest.</strong> Neither ${esc(b.displayName)} nor Ryan Realty holds any existing or contemplated interest in the subject property. Any such interest, should one arise, will be disclosed in writing.</p>
   <p><strong>Not an appraisal.</strong> This competitive market analysis is not intended as an appraisal. If an appraisal is desired, the services of a competent professional licensed appraiser should be obtained. Unless the preparing licensee is also licensed by the Oregon Appraiser Certification and Licensure Board, this report is not intended to meet the requirements set out in the Uniform Standards of Professional Appraisal Practice. Equal Housing Opportunity.</p>
@@ -840,36 +819,45 @@ function disclosurePage(a: RenderCmaArgs): PageDef {
 }
 
 export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: number } {
-  const pages: PageDef[] = []
-  pages.push(coverPage(a))
-  pages.push(subjectPage(a))
+  // Everything after the cover, in reading order: the property, the evidence
+  // behind the number, then what the comp grid cannot price, then the
+  // disclosure and the ask.
+  const rest: PageDef[] = []
+  rest.push(subjectPage(a))
   const map = mapPage(a)
-  if (map) pages.push(map)
-  pages.push(compCardsAndTablePage(a))
-  pages.push(adjustmentPage(a))
-  a.comps.forEach((c, i) => pages.push(compFlyerPage(a, c, i)))
+  if (map) rest.push(map)
+  rest.push(compCardsAndTablePage(a))
+  rest.push(adjustmentPage(a))
+  a.comps.forEach((c, i) => rest.push(compFlyerPage(a, c, i)))
   const market = marketPage(a)
-  if (market) pages.push(market)
-  pages.push(pricingPage(a))
-  pages.push(rationalePage(a))
-  // Development potential (subdivide / ADU / second dwelling / middle housing /
-  // STR) + the verify-it-yourself disclaimer and agency directory.
-  const dev = developmentPage(a)
-  if (dev) pages.push(dev)
-  const devResources = developmentResourcesPage(a)
-  if (devResources) pages.push(devResources)
+  if (market) rest.push(market)
+  rest.push(pricingPage(a))
+  rest.push(rationalePage(a))
+  // What the comp grid does not price: the sellable facts first, then the code
+  // that backs them, then the ways a buyer can use the parcel.
+  const highlights = highlightsPage(a)
+  if (highlights) rest.push(highlights)
+  const zoning = zoningPage(a)
+  if (zoning) rest.push(zoning)
+  rest.push(...developmentPages(a))
+  rest.push(...buyerOptionsPages(a))
+  rest.push(...rentalPages(a))
+  const hoa = hoaPage(a)
+  if (hoa) rest.push(hoa)
+  const verify = verifyPage(a)
+  if (verify) rest.push(verify)
   // EXPIRED AUDIT variant: failure analysis → services standard → net sheet.
   const audit = expiredAuditPage(a)
-  if (audit) pages.push(audit)
+  if (audit) rest.push(audit)
   const services = servicesPage(a)
-  if (services) pages.push(services)
+  if (services) rest.push(services)
   const netSheet = netSheetPage(a)
-  if (netSheet) pages.push(netSheet)
-  pages.push(disclosurePage(a))
-  // The ask comes LAST — the document must not end on disclaimers
-  // (conversion-audit 2026-07-15 #5).
-  pages.push(nextStepPage(a))
+  if (netSheet) rest.push(netSheet)
+  rest.push(disclosurePage(a))
+  // The ask comes LAST — the document must not end on disclaimers.
+  rest.push(nextStepPage(a))
 
+  const pages: PageDef[] = [coverPage(a), contentsPage(rest, a), ...rest]
   const brokerPhone = dottedPhone(a.broker.phone) ?? '541.213.6706'
   const body = pages.map((p, i) => wrapPage(p, i, pages.length, brokerPhone)).join('\n')
   const html = `<!DOCTYPE html>

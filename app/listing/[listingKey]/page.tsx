@@ -18,6 +18,7 @@ import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingShareSummary } from '@/lib/share-metadata'
 import { homesForSalePath, listingDetailPath, subdivisionListingsPath } from '@/lib/slug'
+import { getPublishedCmaForListing } from '@/lib/data/cma/getPublishedCma'
 import type { BreadcrumbNavItem } from '@/components/site/BreadcrumbNav'
 import { ListingDetailShell } from '@/components/site/listing-detail/ListingDetailShell'
 import { ListingHero } from '@/components/site/listing-detail/ListingHero'
@@ -34,6 +35,7 @@ import { RentalAnalysis } from '@/components/site/listing-detail/RentalAnalysis'
 import { PropertyHistory } from '@/components/site/listing-detail/PropertyHistory'
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
+import { PublishedCmaSection } from '@/components/site/listing-detail/PublishedCmaSection'
 import ListingBrokerCTA from '@/components/site/listing-detail/ListingBrokerCTA.client'
 import { PhotoGalleryLightbox as _PhotoGalleryLightboxImport } from '@/components/site/PhotoGalleryLightbox'
 import { TextMattCTA as _TextMattCTAImport } from '@/components/site/listing-detail/TextMattCTA'
@@ -259,7 +261,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       ? { neighborhood: marketGeo.name, city: listing.city ?? undefined }
       : { city: listing.city ?? undefined }
 
-  const [nearbyTilesRaw, history, photos, videos, brokers, listingAgent, marketPulse, marketStats, openHouses, reviews] =
+  const [nearbyTilesRaw, history, photos, videos, brokers, listingAgent, marketPulse, marketStats, openHouses, reviews, publishedCma] =
     await Promise.all([
       // price-proximity + widen-on-thin-scope, see lib/kb/fetch-nearby-tiles.ts.
       withTimeoutFallback(
@@ -306,6 +308,10 @@ export default async function ListingDetailPage({ params }: PageProps) {
       // regardless) so the broker-name filter below can still find a generic,
       // broker-agnostic quote. Empty summary on a blip → the block just doesn't render.
       withTimeoutFallback(getReviews(50), null, 3000, 'listing:reviews'),
+      // Our published opinion of value. Returns null unless the row carries the
+      // per-document publish flag AND passed its own audit, so the default for
+      // every listing is that this renders nothing.
+      withTimeoutFallback(getPublishedCmaForListing(listing.listingKey), null, 3000, 'listing:publishedCma'),
     ])
 
   const listingWithPhotos = { ...listing, photos }
@@ -438,6 +444,11 @@ export default async function ListingDetailPage({ params }: PageProps) {
         taxAnnualAmount={listing.taxAnnualAmount}
       />
       <RentalAnalysis listing={listing} />
+      {/* Our opinion of value. Renders ONLY for a document Matt published per
+          row (published_to_listing) that also passed its own audit — the guard
+          lives in getPublishedCmaForListing, never here. Sold-comp detail stays
+          behind the registration the section's CTA opens (ODS 5-4 C). */}
+      <PublishedCmaSection cma={publishedCma} />
       <ListingAttribution
         listAgentName={listing.listAgentName}
         listOfficeName={listing.listOfficeName}

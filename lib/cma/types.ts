@@ -31,6 +31,16 @@ export interface CmaSubject {
   lastListPrice: number | null
   lastListDate: string | null
   listingHistoryLine: string | null
+  /**
+   * MLS association fields. Optional so existing fixtures keep compiling.
+   * The MLS reports whether an association EXISTS and what it charges. It does
+   * NOT report what the recorded CC&Rs say — see lib/cma/development.ts.
+   */
+  associationYn?: boolean | null
+  associationFee?: number | null
+  associationFeeFrequency?: string | null
+  hoaMonthly?: number | null
+  hoaAnnualCost?: number | null
 }
 
 export interface CmaComp {

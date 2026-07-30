@@ -81,6 +81,12 @@
       "section": "fullscreen lightbox primitive consumed by ListingHero (D75 \u2014 thumbnails + dots + swipe + counter)",
       "blocking": true,
       "notes": "Lifted out of ListingHero per DESIGN_DIRECTIVES.md D75 so every gallery surface inherits the same nav contract. Page does NOT import directly \u2014 ListingHero does."
+    },
+    {
+      "name": "PublishedCmaSection",
+      "path": "components/site/listing-detail/PublishedCmaSection.tsx",
+      "blocking": true,
+      "why": "Our published opinion of value. Renders only for a document with published_to_listing true that also passed its audit; sold-comp detail stays behind the ODS 5-4 C registration."
     }
   ],
   "deferredComponents": [

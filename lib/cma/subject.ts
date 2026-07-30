@@ -73,6 +73,17 @@ function str(v: unknown): string | null {
   return s || null
 }
 
+/** Strict tri-state read. Anything the MLS did not say stays null, never false. */
+function bool(v: unknown): boolean | null {
+  if (typeof v === 'boolean') return v
+  if (typeof v === 'string') {
+    const s = v.trim().toLowerCase()
+    if (s === 'true' || s === 'yes' || s === 'y' || s === '1') return true
+    if (s === 'false' || s === 'no' || s === 'n' || s === '0') return false
+  }
+  return null
+}
+
 function fmtDate(iso: string | null): string | null {
   if (!iso) return null
   const s = formatDate(iso, { month: 'short', day: undefined, year: 'numeric' })
@@ -119,6 +130,11 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
     lastListPrice: listPrice,
     lastListDate: listDate,
     listingHistoryLine: historyLine,
+    associationYn: bool(row['association_yn']),
+    associationFee: num(row['association_fee']),
+    associationFeeFrequency: str(row['association_fee_frequency']),
+    hoaMonthly: num(row['hoa_monthly']),
+    hoaAnnualCost: num(row['hoa_annual_cost']),
   }
 }
 

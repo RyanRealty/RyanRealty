@@ -8,6 +8,8 @@
  * puppeteer PDF render.
  */
 
+import { cmaSectionStyles } from '@/lib/cma/render-css-sections'
+
 export function cmaStylesheet(siteUrl: string): string {
   return `
   @font-face {
@@ -149,34 +151,52 @@ export function cmaStylesheet(siteUrl: string): string {
     margin: 0 0 18px 0;
     border-radius: 10px;
   }
+  .value-block .vb-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
+  }
   .value-block .vb-label {
     font-size: 10px;
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: rgba(250, 248, 244, 0.72);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
-  .value-block .vb-range {
+  /* The answer. A seller opens this document for one number, so it is the
+     largest element on the page. */
+  .value-block .vb-price {
     font-family: 'Amboqia Boriango', Georgia, serif;
-    font-size: 40px;
-    line-height: 1;
+    font-size: 58px;
+    line-height: 0.92;
     color: var(--cream);
     margin: 0;
   }
-  .value-block .vb-detail {
-    font-size: 11px;
-    color: rgba(250, 248, 244, 0.80);
-    margin-top: 10px;
-    line-height: 1.55;
+  .value-block .vb-pill {
+    flex-shrink: 0;
+    border: 1px solid rgba(250, 248, 244, 0.45);
+    border-radius: 999px;
+    padding: 5px 13px;
+    font-size: 9.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--cream);
+    white-space: nowrap;
   }
-  .value-block .vb-most-likely {
-    margin-top: 14px;
-    padding-top: 12px;
+  .value-block .vb-range {
+    margin-top: 12px;
+    padding-top: 11px;
     border-top: 1px solid rgba(250, 248, 244, 0.20);
-    font-size: 12px;
-    line-height: 1.55;
+    font-size: 13px;
+    color: var(--cream);
   }
-  .value-block .vb-most-likely strong { color: var(--cream); font-weight: 600; }
+  .value-block .vb-detail {
+    font-size: 10.5px;
+    color: rgba(250, 248, 244, 0.80);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
 
   .stat-strip {
     display: grid;
@@ -206,7 +226,10 @@ export function cmaStylesheet(siteUrl: string): string {
   }
 
   .presented-by {
-    margin-top: 18px;
+    position: absolute;
+    left: 0.6in;
+    right: 0.6in;
+    bottom: 0.72in;
     padding-top: 14px;
     border-top: 1px solid var(--navy-line);
     font-size: 10.5px;
@@ -245,7 +268,7 @@ export function cmaStylesheet(siteUrl: string): string {
     color: var(--cream);
     font-weight: 500;
   }
-  table.comps .num { text-align: right; }
+  table.comps .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
   .comp-grid {
     display: grid;
@@ -259,12 +282,53 @@ export function cmaStylesheet(siteUrl: string): string {
     overflow: hidden;
     background: white;
   }
+  .comp-card .ph-wrap { position: relative; }
   .comp-card .ph {
     width: 100%;
     height: 92px;
     object-fit: cover;
     display: block;
     background: var(--navy-fill);
+  }
+  /* Proximity is the answer to "why these comps" — it reads on the card, not
+     buried in a run-on stats line (comp rework 2026-07-30). */
+  .comp-card .num-chip {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: var(--cream);
+    font-size: 9px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .comp-card .prox-chip {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: var(--navy);
+    color: var(--cream);
+    font-size: 7.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 999px;
+  }
+  .comp-card .area-tag {
+    margin-top: 3px;
+    font-size: 7.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--navy);
+    background: var(--navy-fill);
+    border-radius: 3px;
+    padding: 2px 5px;
+    display: inline-block;
   }
   .comp-card .ph-missing {
     width: 100%;
@@ -296,13 +360,12 @@ export function cmaStylesheet(siteUrl: string): string {
     margin-top: 2px;
     font-variant-numeric: tabular-nums;
   }
-  .comp-card .price .when {
-    font-size: 8.5px;
-    font-weight: 400;
+  .comp-card .when {
+    font-size: 8px;
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    margin-left: 4px;
+    line-height: 1.3;
   }
 
   .tier-grid {
@@ -425,114 +488,6 @@ export function cmaStylesheet(siteUrl: string): string {
   .note-list { margin: 5px 0 8px 16px; padding: 0; }
   .note-list li { font-size: 10.5px; line-height: 1.4; margin-bottom: 3px; }
 
-  .flyer-badge {
-    display: inline-block;
-    background: var(--navy);
-    color: var(--cream);
-    font-size: 8.5px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    padding: 3px 11px;
-    border-radius: 999px;
-    margin-bottom: 8px;
-  }
-  .flyer-title {
-    font-family: 'Amboqia Boriango', Georgia, serif;
-    font-size: 32px;
-    line-height: 1;
-    color: var(--navy);
-    margin: 0 0 3px 0;
-  }
-  .flyer-sub { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; margin-bottom: 9px; }
-  .flyer-hero {
-    width: 100%;
-    height: 3.4in;
-    object-fit: cover;
-    object-position: center;
-    border-radius: 8px;
-    background: var(--navy-fill);
-    display: block;
-    margin-bottom: 9px;
-  }
-  .flyer-hero.is-empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--muted);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    text-align: center;
-    padding: 0 24px;
-  }
-  .flyer-stats {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    border-top: 1px solid var(--navy-line);
-    border-bottom: 1px solid var(--navy-line);
-    margin-bottom: 9px;
-  }
-  .flyer-stats .s { padding: 7px 6px; text-align: center; border-right: 1px solid var(--navy-line); }
-  .flyer-stats .s:last-child { border-right: 0; }
-  .flyer-stats .s .l {
-    font-size: 8px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 1px;
-  }
-  .flyer-stats .s .v { font-size: 13px; font-weight: 500; color: var(--navy); }
-  .flyer-stats .s.featured .v { font-weight: 600; }
-  .flyer-desc { font-size: 9.5px; line-height: 1.45; color: var(--navy); margin: 0 0 9px 0; }
-  .flyer-features {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 5px;
-    margin-bottom: 9px;
-    font-size: 9px;
-  }
-  .flyer-features .f { background: var(--navy-fill); padding: 4px 8px; border-radius: 5px; color: var(--navy); }
-  .flyer-features .f .fl {
-    font-size: 7.5px;
-    letter-spacing: 0.10em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-  .flyer-features .f .fv { font-size: 9px; line-height: 1.2; }
-
-  .map-img {
-    width: 100%;
-    height: auto;
-    border-radius: 10px;
-    background: var(--navy-fill);
-    display: block;
-    margin-bottom: 14px;
-  }
-  .map-key { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .map-key .k {
-    background: var(--navy-fill);
-    padding: 8px 10px;
-    border-radius: 6px;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-  }
-  .map-key .k .pin {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: var(--navy);
-    color: var(--cream);
-    font-size: 12px;
-    font-weight: 600;
-    flex-shrink: 0;
-  }
-  .map-key .k .pin.subject { background: #b3261e; }
-  .map-key .k .txt { font-size: 10px; line-height: 1.3; }
-
   @page { size: Letter; margin: 0; }
   @media print {
     body { background: white; margin: 0; padding: 0; }
@@ -545,8 +500,10 @@ export function cmaStylesheet(siteUrl: string): string {
       max-height: 11in;
       overflow: hidden;
       page-break-after: always;
+      break-after: page;
     }
-    .page:last-child { page-break-after: auto; }
+    .page:last-child { page-break-after: auto; break-after: auto; }
+    a { text-decoration: none; color: inherit; }
   }
-`
+`+ cmaSectionStyles()
 }

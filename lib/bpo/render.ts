@@ -23,7 +23,19 @@ import type {
 } from '@/lib/bpo/types'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
-import { propertyIntelligenceBlock, developmentItemsBlock, developmentResourcesBlock } from '@/lib/cma/render'
+import type { RentalPotential } from '@/lib/cma/rental-potential'
+import {
+  propertyIntelligenceBlock,
+  developmentItemsBlock,
+  verifyResourcesBlock,
+  zoningExplainerBlock,
+  buyerOptionsBlock,
+  hoaBlock,
+  rentalTenuresBlock,
+  rentalIncomeBlock,
+  marketingHighlightsBlock,
+  collectHighlights,
+} from '@/lib/cma/render-blocks'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const usd = formatPriceExact
@@ -103,6 +115,7 @@ export interface RenderBpoArgs {
   generatedAtIso: string
   site?: CmaSiteData | null
   development?: DevelopmentOpportunities | null
+  rental?: RentalPotential | null
 }
 
 function stylesheet(): string {
@@ -163,6 +176,27 @@ function stylesheet(): string {
   ul.note-list li strong { font-weight: 600; }
   .small { font-size: 10.5px; color: var(--muted); line-height: 1.5; }
   a { color: var(--navy); }
+  /* Shared capability blocks (lib/cma/render-blocks.ts) — same markup as the
+     CMA so one property reads identically across both documents. */
+  .hl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 10px; }
+  .hl { border: 1px solid var(--line); border-left: 3px solid var(--navy); border-radius: 8px;
+    padding: 10px 12px; break-inside: avoid; }
+  .hl .hl-head { font-size: 12px; font-weight: 600; line-height: 1.3; }
+  .hl .hl-basis { margin-top: 4px; font-size: 9.5px; line-height: 1.45; color: var(--muted); }
+  .verdict { display: inline-block; margin-left: 6px; vertical-align: 1px; background: var(--navy);
+    color: var(--cream); font-size: 7.5px; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; padding: 2px 8px; border-radius: 999px; }
+  .verdict.is-no { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 6px; }
+  .chips span { font-size: 9px; line-height: 1.2; background: var(--fill); border-radius: 4px; padding: 3px 7px; }
+  .zone-line { font-size: 14px; margin: 0 0 6px; }
+  .src { font-size: 9px; color: var(--muted); margin: 3px 0 10px; line-height: 1.4; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  table.kv th { width: 40%; text-align: left; white-space: normal; font-weight: 500; }
+  table.kv td { text-align: left; white-space: normal; }
+  table.kv.is-wide th { width: 26%; }
+  table.kv.is-wide td.v { width: 22%; font-weight: 600; color: var(--navy); }
+  table.kv.is-wide td.b, table.kv.is-wide th.b { color: var(--muted); font-size: 9.5px; }
   table { width: 100%; border-collapse: collapse; font-size: 11px; }
   th, td { text-align: right; padding: 6px 7px; border-bottom: 1px solid var(--line); white-space: nowrap; }
   th:first-child, td:first-child { text-align: left; white-space: normal; }
@@ -294,10 +328,16 @@ function signalsList(history: BpoListingHistory): string {
 }
 
 export function renderBpoHtml(args: RenderBpoArgs): { html: string; pageCount: number } {
-  const { subject, comps, market, history, opinion, offer, broker, rationale, purpose, generatedAtIso, site, development } = args
+  const { subject, comps, market, history, opinion, offer, broker, rationale, purpose, generatedAtIso, site, development, rental } = args
   const intelligence = propertyIntelligenceBlock(site)
   const devItems = developmentItemsBlock(development)
-  const devResources = developmentResourcesBlock(development)
+  const devResources = verifyResourcesBlock(development, rental)
+  const zoning = zoningExplainerBlock(development)
+  const buyerOptions = buyerOptionsBlock(development)
+  const hoa = hoaBlock(development)
+  const rentalTenures = rental ? rentalTenuresBlock(rental.tenures) : ''
+  const rentalIncome = rental ? rentalIncomeBlock(rental.income) : ''
+  const highlights = marketingHighlightsBlock(collectHighlights(development, rental))
   const addr = `${subject.streetAddress}, ${subject.city}, ${subject.state} ${subject.postalCode ?? ''}`.trim()
   const vsList =
     opinion.vsCurrentListPct != null
@@ -353,7 +393,13 @@ export function renderBpoHtml(args: RenderBpoArgs): { html: string; pageCount: n
 
     ${intelligence ? `<div class="rule"></div>${intelligence}` : ''}
 
-    ${devItems ? `<div class="rule"></div><h2 class="sec">Development potential</h2>${devItems}` : ''}
+    ${highlights ? `<div class="rule"></div><h2 class="sec">What we lead with</h2>${highlights}` : ''}
+    ${zoning ? `<div class="rule"></div><h2 class="sec">Zoning, in plain language</h2>${zoning}` : ''}
+    ${devItems ? `<div class="rule"></div><h2 class="sec">What you can build here</h2>${devItems}` : ''}
+    ${buyerOptions ? `<h2 class="sec">What a buyer could do with it</h2>${buyerOptions}` : ''}
+    ${rentalTenures ? `<h2 class="sec">Renting it out</h2>${rentalTenures}` : ''}
+    ${rentalIncome ? `<h3 class="subhead">What it could bring in</h3>${rentalIncome}${rental?.economicsNote ? `<p class="sub">${escapeHtml(rental.economicsNote)}</p>` : ''}` : ''}
+    ${hoa ? `<h2 class="sec">HOA and CC&amp;Rs</h2>${hoa}` : ''}
     ${devResources ? `<h2 class="sec">Verify it yourself</h2>${devResources}` : ''}
   </div>
 
