@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-07-29T23:02:26.012Z
+**Generated:** 2026-07-30T01:02:10.653Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -593,7 +593,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 217**
+### `cmas` · **rows ≈ 219**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -678,7 +678,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 199**
+### `expired_listings` · **rows ≈ 201**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -737,7 +737,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_email_claim_at` | timestamp with time zone | yes |  |
 | `outreach_email_idempotency_key` | text | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 579**
+### `marketing_brain_actions` · **rows ≈ 581**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -2398,6 +2398,19 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `community_count` | bigint | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
+### `geo_snapshot_mv_src`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `geo_type` | text | yes |  |
+| `geo_key` | text | yes |  |
+| `geo_label` | text | yes |  |
+| `active_sfr_count` | bigint | yes |  |
+| `active_all_count` | bigint | yes |  |
+| `pending_count` | bigint | yes |  |
+| `median_list_price` | double precision | yes |  |
+| `community_count` | bigint | yes |  |
+
 ### `geography_columns`
 
 | Column | Type | Nullable | Default |
@@ -2824,7 +2837,6 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `boundary_neighborhood` | text | yes |  |
 | `boundary_subdivision` | text | yes |  |
 | `search_vector` | tsvector | yes |  |
-| `refreshed_at` | timestamp with time zone | yes |  |
 | `fireplace_yn` | boolean | yes |  |
 | `waterfront_yn` | boolean | yes |  |
 | `basement_yn` | boolean | yes |  |

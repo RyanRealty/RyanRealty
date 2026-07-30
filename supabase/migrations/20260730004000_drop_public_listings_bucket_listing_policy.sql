@@ -1,0 +1,20 @@
+-- SECURITY: stop anon enumeration of the public `listings` storage bucket.
+--
+-- Supabase security advisor: `public_bucket_allows_listing` — the bucket had a
+-- broad SELECT policy on storage.objects ("Public read listings"), letting any
+-- client with the anon key LIST every file in it. A public bucket does not need
+-- that policy: object URLs under /storage/v1/object/public/<bucket>/<path>
+-- bypass storage.objects RLS entirely, so serving images is unaffected. The
+-- policy only granted directory enumeration, which exposes the full inventory
+-- (filenames can leak addresses, draft assets, and unreleased media).
+--
+-- Verified no code depends on listing THIS bucket: the only storage `.list()`
+-- call in the repo is app/actions/area-guide-upload.ts against the
+-- `community-media` bucket via the service role. Code touches
+-- tc-documents / crm-files / tc-forms; nothing lists `listings`.
+--
+-- Verified after applying (anon key, live):
+--   POST /storage/v1/object/list/listings           -> 200 []   (enumeration gone)
+--   HEAD /storage/v1/object/public/listings/matt-headshot.jpg -> 200 (serving intact)
+-- The "Allow insert listings" policy is left untouched.
+drop policy if exists "Public read listings" on storage.objects;
