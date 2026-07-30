@@ -3,77 +3,58 @@ name: endtoend
 description: Run any task as a full end-to-end mission — write the complete goal first, split into parallel workers only as far as the work genuinely allows, test the real thing after every meaningful step (browser, computer use, keystrokes), auto-review + commit + log progress continuously, synthesize worker results with tests as the tiebreaker, and finish with a dedicated review pass. Done means production grade — a real user can walk in and use it. Use whenever Matt says "/endtoend", "end to end", "take this all the way", "build this to done", or hands over a large task he expects finished without check-ins.
 ---
 
-# /endtoend — mission protocol
+# /endtoend
 
-The argument to this skill is **the task**. Everything below is how it gets done.
-Partial progress is not done. The deliverable is production grade: a real user can
-walk in and use it.
+The argument is the task. Done means production grade: a real user can walk in
+and use it. Partial progress is not done, and the bar applies to the
+architecture as much as the visible result — a good demo on a bad foundation
+fails this skill.
 
-Repo canon still binds: CLAUDE.md §0 data accuracy, §1 approval classes, brand
-voice, mechanical gates, and the draft-first rule for rendered content deliverables
-all outrank this protocol where they touch.
+Repo canon (CLAUDE.md §0 data accuracy, §1 approval classes, brand voice, gates,
+draft-first for rendered media) outranks this protocol wherever they touch.
 
-## 1. Goal first
+## Goal first
 
-Before any work, write yourself a full end-to-end goal for the task: what exists
-when it is finished, what a real user does with it, and what "meets the bar"
-means for both the architecture and the visible result. Write it down in the
-project (a plan file, progress doc, or ledger — somewhere sensible, not chat
-only). Keep going until the architecture and the result both meet that bar, not
-until the first version compiles.
+Write the full end-to-end goal before touching code: what exists when finished,
+what a real user does with it, what meets the bar. Put it in the project (plan
+file, progress doc, ledger) — a goal that lives only in your head drifts, and a
+goal in the repo is what the final review pass gets measured against.
 
-## 2. Split
+## Split honestly
 
-Break the goal into independent pieces and run them in parallel **only as far as
-the work genuinely allows** — forced parallelism on coupled work creates merge
-conflicts and rework, so serialize what shares files or decisions. Every worker's
-goal carries, explicitly:
+Decompose into independent pieces and parallelize only as far as the work
+genuinely allows. Coupled work run in parallel produces merge conflicts and
+rework, which is slower than serializing it. Each worker's brief carries its own
+deliverable, verification method, definition of done, and an exclusive file
+set. Verify workers' claims yourself — agents overstate completion.
 
-- its own deliverable
-- how to verify it
-- what counts as done
-- which files it may touch (disjoint from every other worker)
+## After every meaningful step
 
-Distrust a worker's "done" — verify it yourself (see the parallel-build-agents
-memory: partition disjoint files; agents overstate completion).
+Test the real thing, for real, end to end — browser, computer use, keystrokes,
+live queries, whatever the change actually needs to be exercised. Unit tests
+passing on unexercised integration is the classic way missions quietly fail.
+Then review the change, commit it, and log progress in the project doc. Keep
+moving — never pause the mission to narrate.
 
-## 3. After every meaningful step
+## Synthesize
 
-Test the real thing, for real, full end to end — not just unit tests. Use
-whatever the verification actually needs: the browser preview, computer use,
-keystrokes, a real render, a real query against the live source. A change that
-was not exercised in the real system is not verified.
+Merge results as they arrive and resolve conflicts before dependent work
+proceeds, because an open conflict poisons everything built on it. When two
+workers disagree, write a test that decides the question. The test outranks
+both — never settle a disagreement by picking the more confident prose.
 
-Then, in order: auto-review the change (self code review, `engineering:code-review`
-on meaningful changes), commit it, and write progress somewhere sensible in the
-project (the same plan/progress doc from step 1, or `.auto-memory/`). Commit and
-push as you go — never stop to report between fixes.
+## Stopping
 
-## 4. Synthesize
+Only three things stop a mission, and you name which one:
 
-Merge worker results as they come back and resolve conflicts **before** the next
-piece moves — a conflict left open poisons everything built on top of it. When
-two workers disagree, write a test that decides it. **The test outranks both
-workers.** Never resolve a disagreement by picking the more confident prose.
+1. Missing credentials — name the credential and where it's needed.
+2. Destructive ambiguity — an irreversible action whose intent is unclear.
+3. Conflicting requirements — quote both instructions that can't both hold.
 
-## 5. Stop conditions
+Errors, flakiness, gaps in your knowledge, long runtimes: work through them.
 
-Stop only for one of exactly three reasons, and say which one it is:
+## Finish
 
-1. **Missing credentials** — name the credential and where it is needed.
-2. **Destructive ambiguity** — an irreversible action whose intent is unclear.
-3. **Conflicting requirements** — two instructions that cannot both hold; surface
-   both verbatim.
-
-Everything else — errors, flaky tests, missing information you can find, long
-runtimes — you work through. Partial progress is not a stopping point.
-
-## 6. Finish
-
-One dedicated review pass over **everything** produced in the mission — not per
-piece, the whole: architecture, correctness, gates green, real-user walkthrough
-of the final surface. Fix what the pass finds.
-
-Then a short summary: what shipped (with commits/links) and what is still open.
-
-**Done = production grade. A real user can walk in and use it.**
+One dedicated review pass over the whole — architecture, correctness, gates,
+and a real-user walkthrough of the final surface. Fix what it finds. Then a
+short summary: what shipped (commits, links) and what remains open.
