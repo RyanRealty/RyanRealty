@@ -102,3 +102,71 @@ own jsonl.
 The judge consistency contract is therefore **shipped but unproven end to end.** It is
 unit-tested and one live pre-cap run was correct on the first pass at $0.019, but there is
 no measured before/after flag rate. Do not describe it as validated.
+
+---
+
+## Final state (all six workers merged, `d38668c2` pushed)
+
+190 gates green · 346 test files / 4365 tests · `tsc` clean.
+
+| Commit | What |
+|---|---|
+| `1d36f617` | Publish eligibility keys on finding severity |
+| `ab9c5f3d` | Place-page extraction, three files off their ceiling |
+| `3c78ec6b` | Int tests can no longer strand rows in production (G59) |
+| `b755d48f` | CMA send count no longer inflated by archived rows |
+| `57957728` `4d89d32d` | Archived documents out of the admin queue and its KPIs |
+| `7a36777f` | The judge must hold to the exclusion rule it declares |
+| `b3e1cfd4` | 'N/A' is not a subdivision; a mailing city is not a market; comp trace persisted |
+| `d38668c2` | A narrative citing a comp that does not exist is critical |
+
+### Corpus, measured
+
+```
+live documents           207
+  carry a price          201
+  build_error              7
+  needs_review           168
+  comp_selection trace    36
+  publish-blocked        207
+  publish-clean            0
+  currently published      0
+```
+
+**Zero documents are publishable right now, and that is correct.** Every rebuild in this
+session ran while `ANTHROPIC_API_KEY` was capped, so the judge and the adversarial audit
+both returned null. "No audit" blocks publishing by design, because publishing on an
+absence of evidence is the §0 failure mode. The funnel has no inventory until the corpus
+is rebuilt.
+
+### Three defects found that were NOT on the original list
+
+1. **`SubdivisionName='N/A'` on 62,974 listings.** The selector queried it literally, so
+   'N/A' matched citywide strangers and stamped them `subdivision-6mo` — reports told
+   sellers those were same-subdivision sales, and the bogus rung satisfied the comp target
+   so the real neighborhood tiers never ran. 21 live CMA subjects affected.
+2. **The CMA send count read 9 when the truth was 4**, and the admin queue showed Total 38
+   / Delivered 6 / Sent 7 against a truth of 25 / 1 / 2. Archiving sets `archived_at`;
+   both queries filtered only on `status`. Found by walking the UI, not by any test.
+3. **`buildCma` failed CLOSED on an audit outage.** An authored em-dash in the "audit
+   unavailable" note was pushed into `pricing.notes`, which the brand-voice gate throws on
+   90 lines later, so any API outage became a total build outage.
+
+### MUST DO after 2026-08-01 00:00 UTC
+
+The cap resets and only then can this be finished:
+
+1. **Rebuild the corpus.** Every current price is deterministic-only, unvetted by the judge
+   and unaudited. Nothing should be treated as publishable before this.
+2. **Measure the flag rate** before/after the judge consistency contract. It is shipped and
+   unit-tested but UNPROVEN end to end. Harness: `scratchpad/jab.mts` + `drive.sh`.
+3. **Measure the judge repair fire rate.** Cost is an estimate (~1.5x, worst case ~2.2x).
+4. Re-check the 7 `build_error` rows — 4 are genuine (two land listings, two never MLS-listed).
+
+### The highest-value lead, still open
+
+If every comp-selection finding vanished, **57% of the corpus would still be flagged**. The
+dominant driver is critical data-integrity from the SITE resolver: "Septic: none-found" on
+habitable dwellings, "Water: unknown", district-held water rights presented as private.
+**That is `lib/cma/county.ts`, not the comp engine.** It was out of scope here and is the
+next mission.
