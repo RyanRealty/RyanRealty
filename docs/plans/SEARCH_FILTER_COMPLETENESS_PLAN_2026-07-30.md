@@ -174,6 +174,21 @@ sentence, the jurisdiction, the code section, and the date the code was read.
 Sourced from the jurisdiction's own codification, never paraphrased from memory.
 This is what turns "MUA10" into something a buyer can act on.
 
+**The codified text can lag the jurisdiction's current policy, and the research
+caught a live example.** Jefferson County's still-codified rural-residential ADU
+language disagrees with the newer countywide rural-ADU policy the county
+publishes on its own website. A definition can therefore be sourced correctly
+from the code and still be wrong in practice. Three consequences the build must
+honor:
+
+1. Every definition row stores `source_url`, `code_section`, and `verified_on`,
+   and the UI shows the verification date rather than implying currency.
+2. A definition older than a set staleness window is flagged for re-check, the
+   same ratchet idea as the coverage census.
+3. Where the code and the jurisdiction's published policy disagree, we record
+   **both** and link out. We do not adjudicate between a county's own two
+   sources, and we never present one as settled.
+
 **Layer 3 — buyer intent.** The questions people actually ask, mapped to zones:
 ADU allowed, short-term rental allowed, livestock/horses, subdividable,
 multi-family allowed, commercial use. This layer is the most valuable and the
