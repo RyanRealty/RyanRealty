@@ -121,6 +121,7 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 | `CONTACT_HEADER_REDESIGN_2026-06-30.md` | open input — contact header redesign |
 | `GLOBAL_SKILLS_REGISTRY.md` | tool index (live reference) |
 | `SAVED_SEARCH_MASTER_GOAL.md` | **live** — saved-search + market-report subscriptions |
+| `BROKER_SMS_AGENT_2026-07-31.md` | **live** — broker SMS agent: conversational agent on the marketing line for CMA/content/database/law Q&A with broker self-approval; includes the Phase 0 pipeline repairs (humanApprovedAt wiring, needs_changes constraint) |
 | `LIFECYCLE_WORKFLOWS_MASTER_GOAL.md` | **live** — lifecycle workflows master goal |
 | `ADMIN_CONSOLIDATION_MASTER_GOAL.md` | **live** — admin consolidation master goal |
 | `ADMIN_CONSOLIDATION_AUDIT.md` | **live** — admin consolidation Phase 0 findings |
