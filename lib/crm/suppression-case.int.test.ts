@@ -12,14 +12,16 @@
  */
 import { afterAll, describe, expect, it } from 'vitest'
 import { config } from 'dotenv'
+import { INT_MARKER, intId } from '@/test/int-scope'
 
 config({ path: '.env.local' })
 
 const HAVE_DB = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL)
 const run = HAVE_DB ? describe : describe.skip
 
-const STAMP = process.env.VITEST_WORKER_ID ?? '0'
-const MIXED = `Case.Probe.${STAMP}@Example.Invalid` // stored with uppercase
+// Marked + unique per run: the old VITEST_WORKER_ID stamp repeated every run,
+// so a killed run's row could never be told apart from the next one's.
+const MIXED = `${intId('case-probe')}@Example.Invalid`.replace(INT_MARKER, INT_MARKER.toUpperCase())
 const LOWER = MIXED.toLowerCase()
 
 run('suppression is case-insensitive (C3)', () => {
@@ -37,8 +39,8 @@ run('suppression is case-insensitive (C3)', () => {
     const { data, error } = await sb
       .from('crm_people')
       .insert({
-        first_name: 'Case',
-        last_name: 'Probe',
+        first_name: INT_MARKER,
+        last_name: 'CaseProbe',
         emails: [{ value: MIXED, isPrimary: true }],
         tags: ['compliance:hard-stop'],
         deleted: false,

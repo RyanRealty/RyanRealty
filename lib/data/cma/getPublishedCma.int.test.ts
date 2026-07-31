@@ -14,7 +14,8 @@
  *      contains no comp address, price, or date even when comps exist.
  *
  * Skips without SUPABASE_SERVICE_ROLE_KEY. Self-cleaning: every seeded row is
- * deleted in afterAll even on failure. Slugs are `zz-test-` prefixed.
+ * deleted in afterAll even on failure. Identifiers come from @/test/int-scope,
+ * so the pre-run / post-run sweep clears them if this run is killed.
  */
 import { afterAll, describe, expect, it } from 'vitest'
 import { config } from 'dotenv'
@@ -23,6 +24,7 @@ config({ path: '.env.local' })
 
 import { createClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
+import { INT_MARKER, intEmail, intId } from '@/test/int-scope'
 import {
   CMA_DOCUMENT_TERMS_VERSION,
   getPublishedCmaForListing,
@@ -33,9 +35,15 @@ import {
 const hasCreds = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL)
 const describeIf = hasCreds ? describe : describe.skip
 
-const SLUG = 'zz-test-published-cma-gate'
-const LISTING_KEY = 'ZZTESTPUBCMA0000000000001'
-const SECRET_ADDRESS = '999 ZZ Secret Comp Lane'
+const SLUG = intId('published-cma-gate')
+const LISTING_KEY = intId('pubcma-listing').toUpperCase()
+const SUBJECT_ADDRESS = `${SLUG} Way, Bend, OR 97701`
+const FULL_DOC_MARKER = `${INT_MARKER.toUpperCase()} FULL DOCUMENT`
+const COMP_1_KEY = intId('comp-1').toUpperCase()
+const COMP_2_KEY = intId('comp-2').toUpperCase()
+const REGISTRANT_NAME = `${INT_MARKER} Registrant`
+const REGISTRANT_EMAIL = intEmail('registrant')
+const SECRET_ADDRESS = `999 ${INT_MARKER} Secret Comp Lane`
 const SECRET_PRICE = 987654
 
 let seededId: string | null = null
@@ -49,18 +57,24 @@ async function seed(): Promise<string> {
       slug: SLUG,
       doc_type: 'cma',
       status: 'finalized',
-      subject_address: '1 ZZ Test Way, Bend, OR 97701',
+      subject_address: SUBJECT_ADDRESS,
       subject_listing_key: LISTING_KEY,
       subject_city: 'Bend',
       value_low: 900000,
       value_high: 1000000,
       recommended_list: 950000,
       comps_count: 2,
-      html_path: 'public/cmas/zz-test/cma.html',
-      html_content: '<html><body>ZZ TEST FULL DOCUMENT WITH COMPS</body></html>',
+      html_path: `public/cmas/${SLUG}/cma.html`,
+      html_content: `<html><body>${FULL_DOC_MARKER} WITH COMPS</body></html>`,
       published_to_listing: false,
       build_summary: {
         pricing: { needs_review: false },
+        // The severity-aware publish gate (2026-07-30) refuses any document
+        // where no independent audit ran — `audit.used_llm !== true` is the
+        // `audit-missing` blocker in publishBlockers(). Without this block the
+        // seeded document is unpublishable and the lifecycle assertion below
+        // fails on a null summary. Zero findings = nothing critical to block on.
+        audit: { used_llm: true, findings: [] },
         site: { acreage: 1.5, zone: 'RR10', in_sfha: false, flood_zone: 'X', permit_count: 3 },
       },
     })
@@ -71,7 +85,7 @@ async function seed(): Promise<string> {
   const { error: compErr } = await sb.from('cma_comps').insert([
     {
       cma_id: id,
-      comp_listing_key: 'ZZTESTCOMP1',
+      comp_listing_key: COMP_1_KEY,
       comp_order: 1,
       comp_address: SECRET_ADDRESS,
       sold_price: SECRET_PRICE,
@@ -79,9 +93,9 @@ async function seed(): Promise<string> {
     },
     {
       cma_id: id,
-      comp_listing_key: 'ZZTESTCOMP2',
+      comp_listing_key: COMP_2_KEY,
       comp_order: 2,
-      comp_address: '998 ZZ Other Comp Rd',
+      comp_address: `998 ${INT_MARKER} Other Comp Rd`,
       sold_price: 912345,
       sold_date: '2026-05-20',
     },
@@ -143,8 +157,8 @@ describeIf('published CMA — the per-document flag is the gate', () => {
     // standing between it and the public web is the flag.
     const registerBefore = await registerForCmaDocument({
       listingKey: LISTING_KEY,
-      fullName: 'ZZ Test Registrant',
-      email: 'zz-test-published-cma@example.com',
+      fullName: REGISTRANT_NAME,
+      email: REGISTRANT_EMAIL,
       termsVersion: CMA_DOCUMENT_TERMS_VERSION,
     })
     expect(registerBefore.ok, 'registration must refuse an unpublished document').toBe(false)
@@ -167,16 +181,16 @@ describeIf('published CMA — the per-document flag is the gate', () => {
     const wire = JSON.stringify(summary)
     expect(wire).not.toContain(SECRET_ADDRESS)
     expect(wire).not.toContain(String(SECRET_PRICE))
-    expect(wire).not.toContain('ZZTESTCOMP1')
-    expect(wire).not.toContain('ZZ TEST FULL DOCUMENT')
+    expect(wire).not.toContain(COMP_1_KEY)
+    expect(wire).not.toContain(FULL_DOC_MARKER)
     // recommended_list is our pricing advice TO THE SELLER and never renders.
     expect(wire).not.toContain('950000')
 
     // --- registered --------------------------------------------------------
     const registered = await registerForCmaDocument({
       listingKey: LISTING_KEY,
-      fullName: 'ZZ Test Registrant',
-      email: 'zz-test-published-cma@example.com',
+      fullName: REGISTRANT_NAME,
+      email: REGISTRANT_EMAIL,
       termsVersion: CMA_DOCUMENT_TERMS_VERSION,
     })
     expect(registered.ok).toBe(true)
@@ -185,7 +199,7 @@ describeIf('published CMA — the per-document flag is the gate', () => {
     // The delivered document is a NORMAL CMA. ODS §7-5 D. Nothing is redacted.
     const delivered = await resolveCmaDocumentByToken(registered.token)
     expect(delivered).not.toBeNull()
-    expect(delivered?.html).toContain('ZZ TEST FULL DOCUMENT')
+    expect(delivered?.html).toContain(FULL_DOC_MARKER)
 
     // A wrong token gets nothing.
     expect(await resolveCmaDocumentByToken('x'.repeat(43))).toBeNull()
@@ -203,8 +217,8 @@ describeIf('published CMA — the per-document flag is the gate', () => {
     await setPublished(true)
     const staleTerms = await registerForCmaDocument({
       listingKey: LISTING_KEY,
-      fullName: 'ZZ Test Registrant',
-      email: 'zz-test-published-cma@example.com',
+      fullName: REGISTRANT_NAME,
+      email: REGISTRANT_EMAIL,
       termsVersion: 'cma-doc-terms-1999-01-01',
     })
     expect(staleTerms.ok).toBe(false)

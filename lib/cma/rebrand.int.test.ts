@@ -21,20 +21,23 @@
  * recommended_list, value_low, value_high, comps_count or citations).
  *
  * Skips without SUPABASE_SERVICE_ROLE_KEY. Self-cleaning: every seeded row is
- * deleted in afterAll even on failure. Slugs are `zz-test-` prefixed.
+ * deleted in afterAll even on failure. Slugs come from @/test/int-scope, so the
+ * pre-run / post-run sweep clears them even when this run is killed.
  */
 import { afterAll, describe, expect, it } from 'vitest'
 import { config } from 'dotenv'
+import { intId } from '@/test/int-scope'
 
 config({ path: '.env.local' })
 
 const HAVE_DB = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL)
 const run = HAVE_DB ? describe : describe.skip
 
-// Unique per process so parallel agent vitest runs cannot collide on cmas_slug_key.
-const STAMP = `${process.env.VITEST_WORKER_ID ?? '0'}-${process.pid}-${Date.now().toString(36)}`
-const SLUG_NO_ARGS = `zz-test-rebrand-noargs-${STAMP}`
-const SLUG_LOCKED = `zz-test-rebrand-locked-${STAMP}`
+// intId() is unique per RUN, so parallel agent vitest runs cannot collide on
+// cmas_slug_key, and every slug carries the marker the sweep looks for.
+const SLUG_NO_ARGS = intId('rebrand-noargs')
+const SLUG_LOCKED = intId('rebrand-locked')
+const SLUG_MISSING = intId('rebrand-missing')
 
 run('CMA re-brand — refusal contract (real DB)', () => {
   const seeded: string[] = []
@@ -53,7 +56,7 @@ run('CMA re-brand — refusal contract (real DB)', () => {
     const { error } = await sb.from('cmas').insert({
       slug,
       doc_type: 'cma',
-      subject_address: '1 Test Way, Bend, OR 97701',
+      subject_address: `${slug} Way, Bend, OR 97701`,
       html_path: `db:cmas.html_content:${slug}`,
       html_content: '<html><body>seed</body></html>',
       broker_slug: 'matthew-ryan',
@@ -108,7 +111,7 @@ run('CMA re-brand — refusal contract (real DB)', () => {
 
   it('refuses a missing document', async () => {
     const { rebrandCma } = await import('./rebrand')
-    const res = await rebrandCma({ slug: `zz-test-does-not-exist-${STAMP}`, brokerSlug: 'paul-stevenson' })
+    const res = await rebrandCma({ slug: SLUG_MISSING, brokerSlug: 'paul-stevenson' })
     expect(res.ok).toBe(false)
     if (!res.ok) expect(res.reason).toBe('not_found')
   })

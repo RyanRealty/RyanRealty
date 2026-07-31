@@ -18,14 +18,20 @@
  */
 import { afterAll, describe, expect, it } from 'vitest'
 import { config } from 'dotenv'
+import { INT_MARKER, intEmail, intId } from '@/test/int-scope'
 
 config({ path: '.env.local' })
 
 const HAVE_DB = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL)
 const run = HAVE_DB ? describe : describe.skip
 
-const STAMP = `${Date.now() % 1000000}`
-const ADDRESS = `${STAMP} Zztest Probe St, Bend`
+// The marker rides the ADDRESS and the person names, so the cmas row, the
+// marketing_brain_actions row and the crm_people/crm_timeline rows the
+// production path derives are all marked for the sweep.
+const ADDRESS = `${intId('kickoff')} St, Bend`
+const PROBE_NAME = `${INT_MARKER} KickoffProbe`
+const PROBE_NAME_B = `${INT_MARKER} KickoffProbeB`
+const ORIGINAL_EMAIL = intEmail('kickoff-orig')
 
 run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
   let sb: import('@supabase/supabase-js').SupabaseClient
@@ -57,9 +63,9 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
     const { data: person, error: seedErr } = await sb
       .from('crm_people')
       .insert({
-        first_name: 'Zztest',
+        first_name: INT_MARKER,
         last_name: 'KickoffProbe',
-        name: 'Zztest KickoffProbe',
+        name: PROBE_NAME,
         stage: 'Lead',
         assigned_broker: 'matt',
         phones: [{ value: '+15005550006', isPrimary: 1 }],
@@ -71,7 +77,7 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
     personId = person!.id as number
 
     const { kickoffCmaCore } = await import('@/lib/crm/cma-kickoff')
-    const key = `test-${STAMP}-aaaa-bbbb`
+    const key = intId('kickoff-a')
 
     // 1st call — enqueues.
     const first = await kickoffCmaCore({
@@ -98,7 +104,7 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
     const third = await kickoffCmaCore({
       personId,
       address: ADDRESS,
-      idempotencyKey: `test-${STAMP}-cccc-dddd`,
+      idempotencyKey: intId('kickoff-b'),
       actorBroker: 'matt',
     })
     expect(third.ok).toBe(true)
@@ -139,9 +145,9 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
     const { data: personB, error: seedErr } = await sb
       .from('crm_people')
       .insert({
-        first_name: 'Zztest',
+        first_name: INT_MARKER,
         last_name: 'KickoffProbeB',
-        name: 'Zztest KickoffProbeB',
+        name: PROBE_NAME_B,
         stage: 'Lead',
         assigned_broker: 'rebecca',
         phones: [{ value: '+15005550007', isPrimary: 1 }],
@@ -155,7 +161,7 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
     const res = await kickoffCmaCore({
       personId: personBId,
       address: ADDRESS,
-      idempotencyKey: `test-${STAMP}-3333-4444`,
+      idempotencyKey: intId('kickoff-c'),
       actorBroker: 'rebecca',
     })
     expect(res.ok).toBe(true)
@@ -201,7 +207,7 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
     // Make the fixture row look like a delivered document for a DIFFERENT client.
     await sb
       .from('cmas')
-      .update({ status: 'finalized', client_name: 'Original Client', client_email: 'original@example.invalid' })
+      .update({ status: 'finalized', client_name: 'Original Client', client_email: ORIGINAL_EMAIL })
       .eq('slug', slug!)
     // Clear the open action + idem keys so neither dedupe layer intercepts first.
     await sb.from('marketing_brain_actions').delete().eq('target', `cma:${slug}`)
@@ -210,7 +216,7 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
     const res = await kickoffCmaCore({
       personId: personId!,
       address: ADDRESS,
-      idempotencyKey: `test-${STAMP}-eeee-ffff`,
+      idempotencyKey: intId('kickoff-d'),
       actorBroker: 'matt',
     })
     expect(res.ok).toBe(true)
@@ -225,7 +231,7 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
       .single()
     expect(after!.status).toBe('finalized')
     expect(after!.client_name).toBe('Original Client')
-    expect(after!.client_email).toBe('original@example.invalid')
+    expect(after!.client_email).toBe(ORIGINAL_EMAIL)
     const { data: actions } = await sb.from('marketing_brain_actions').select('id').eq('target', `cma:${slug}`)
     expect((actions ?? []).length).toBe(0)
   }, 30000)
@@ -247,7 +253,7 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
     const res = await kickoffCmaCore({
       personId: personId!,
       address: ADDRESS,
-      idempotencyKey: `test-${STAMP}-1111-2222`,
+      idempotencyKey: intId('kickoff-e'),
       actorBroker: 'matt',
     })
     expect(res.ok).toBe(true)
@@ -271,7 +277,7 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
       .update({
         status: 'finalized',
         client_name: 'Original Client',
-        client_email: 'original@example.invalid',
+        client_email: ORIGINAL_EMAIL,
         html_path: `db:cmas.html_content:${slug}`,
         html_content: '<html>original finalized document</html>',
       })
@@ -286,7 +292,7 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
     const guarded = await kickoffCmaCore({
       personId: personId!,
       address: ADDRESS,
-      idempotencyKey: `test-${STAMP}-3333-4444`,
+      idempotencyKey: intId('kickoff-c'),
       actorBroker: 'matt',
     })
     expect(guarded.ok).toBe(true)
@@ -299,7 +305,7 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
     const fresh = await kickoffCmaCore({
       personId: personId!,
       address: ADDRESS,
-      idempotencyKey: `test-${STAMP}-5555-6666`,
+      idempotencyKey: intId('kickoff-f'),
       actorBroker: 'matt',
       buildNewVersion: true,
     })
@@ -334,17 +340,17 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
   }, 30000)
 
   it('the DB backstop holds (review MED): a second OPEN content:cma row for one target is rejected by the partial unique index', async () => {
-    const target = `cma:zztest-race-${STAMP}`
+    const target = `cma:${intId('race')}`
     const base = {
       action_type: 'content:cma',
       target,
       assigned_producer: 'marketing_brain_skills/producers/cma',
       payload: {},
       status: 'pending',
-      topic: 'zztest race probe',
+      topic: `${INT_MARKER} race probe`,
       format: 'cma',
       platforms: ['email'],
-      hook: 'zztest',
+      hook: INT_MARKER,
       target_audience: 'seller-lead',
       data_sources: {},
       predicted_outcome: {},

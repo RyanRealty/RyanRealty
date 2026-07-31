@@ -14,10 +14,12 @@
  *
  * Outbound side effects (broker email, lead confirmation, GA4) are mocked —
  * this test exercises the DB contract only. Skips without DB creds;
- * self-cleaning.
+ * self-cleaning. Identifiers come from @/test/int-scope so the pre-run /
+ * post-run sweep can clear them if this run is killed before afterAll.
  */
 import { afterAll, describe, expect, it, vi } from 'vitest'
 import { config } from 'dotenv'
+import { intEmail, intId } from '@/test/int-scope'
 
 config({ path: '.env.local' })
 
@@ -37,8 +39,14 @@ vi.mock('@/lib/ga4-measurement-protocol', async (importOriginal) => ({
 const HAVE_DB = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL)
 const run = HAVE_DB ? describe : describe.skip
 
-const STAMP = `${Date.now() % 1000000}`
-const ADDRESS = `${STAMP} Zztest Clobber Guard St, Bend`
+// The marker rides the ADDRESS, so every row the production path derives from
+// it (the cmas slug, the marketing_brain_actions target) is marked too.
+const STREET = `${intId('clobber')} St`
+const ADDRESS = `${STREET}, Bend`
+const ORIGINAL_EMAIL = intEmail('orig')
+const NEW_EMAIL = intEmail('new')
+const SECOND_EMAIL = intEmail('second')
+const THIRD_EMAIL = intEmail('third')
 
 run('createCmaRequest never clobbers a protected CMA (upsert-by-slug class)', () => {
   let sb: import('@supabase/supabase-js').SupabaseClient
@@ -67,7 +75,7 @@ run('createCmaRequest never clobbers a protected CMA (upsert-by-slug class)', ()
       subject_address: ADDRESS,
       subject_city: 'Bend',
       client_name: 'Original Client',
-      client_email: 'original@example.invalid',
+      client_email: ORIGINAL_EMAIL,
       status: 'delivered',
       html_path: `db:cmas.html_content:${baseSlug}`,
       html_content: '<html>original delivered document</html>',
@@ -78,11 +86,11 @@ run('createCmaRequest never clobbers a protected CMA (upsert-by-slug class)', ()
     const { createCmaRequest } = await import('@/lib/cma-request')
     const res = await createCmaRequest({
       rawAddress: ADDRESS,
-      parsedStreet: `${STAMP} Zztest Clobber Guard St`,
+      parsedStreet: STREET,
       parsedCity: 'Bend',
       parsedState: 'OR',
       parsedPostalCode: null,
-      leadEmail: 'new-lead@example.invalid',
+      leadEmail: NEW_EMAIL,
       leadName: 'New Lead',
       requestSource: 'seller-lp',
       notifyLead: false,
@@ -99,7 +107,7 @@ run('createCmaRequest never clobbers a protected CMA (upsert-by-slug class)', ()
       .single()
     expect(original!.status).toBe('delivered')
     expect(original!.client_name).toBe('Original Client')
-    expect(original!.client_email).toBe('original@example.invalid')
+    expect(original!.client_email).toBe(ORIGINAL_EMAIL)
     expect(original!.html_path).toBe(`db:cmas.html_content:${baseSlug}`)
     expect(original!.html_content).toBe('<html>original delivered document</html>')
 
@@ -110,7 +118,7 @@ run('createCmaRequest never clobbers a protected CMA (upsert-by-slug class)', ()
       .eq('slug', `${baseSlug}--v2`)
       .single()
     expect(v2!.status).toBe('draft')
-    expect(v2!.client_email).toBe('new-lead@example.invalid')
+    expect(v2!.client_email).toBe(NEW_EMAIL)
     expect(v2!.html_path).toBe(`pending:${baseSlug}--v2`)
 
     const { data: actions } = await sb
@@ -134,11 +142,11 @@ run('createCmaRequest never clobbers a protected CMA (upsert-by-slug class)', ()
     const { createCmaRequest } = await import('@/lib/cma-request')
     const res = await createCmaRequest({
       rawAddress: ADDRESS,
-      parsedStreet: `${STAMP} Zztest Clobber Guard St`,
+      parsedStreet: STREET,
       parsedCity: 'Bend',
       parsedState: 'OR',
       parsedPostalCode: null,
-      leadEmail: 'second-lead@example.invalid',
+      leadEmail: SECOND_EMAIL,
       leadName: 'Second Lead',
       requestSource: 'seller-lp',
       notifyLead: false,
@@ -158,7 +166,7 @@ run('createCmaRequest never clobbers a protected CMA (upsert-by-slug class)', ()
       .eq('slug', v2Slug)
       .single()
     expect(v2!.status).toBe('draft')
-    expect(v2!.client_email).toBe('second-lead@example.invalid')
+    expect(v2!.client_email).toBe(SECOND_EMAIL)
     expect(v2!.html_path).toBe(`db:cmas.html_content:${v2Slug}`)
     expect(v2!.html_content).toBe('<html>built draft</html>')
 
@@ -169,7 +177,7 @@ run('createCmaRequest never clobbers a protected CMA (upsert-by-slug class)', ()
       .eq('slug', baseSlug)
       .single()
     expect(original!.status).toBe('delivered')
-    expect(original!.client_email).toBe('original@example.invalid')
+    expect(original!.client_email).toBe(ORIGINAL_EMAIL)
 
     // The build must run for the NEWEST requester: whether the second intake
     // attached to the open action (23505 path, payload refreshed) or inserted
@@ -182,7 +190,7 @@ run('createCmaRequest never clobbers a protected CMA (upsert-by-slug class)', ()
       .eq('target', `cma:${v2Slug}`)
       .in('status', ['pending', 'in_production'])
     const carriesSecondLead = (openActions ?? []).some(
-      (a) => ((a.payload ?? {}) as Record<string, unknown>).client_email === 'second-lead@example.invalid',
+      (a) => ((a.payload ?? {}) as Record<string, unknown>).client_email === SECOND_EMAIL,
     )
     expect(carriesSecondLead).toBe(true)
   }, 30000)
@@ -202,11 +210,11 @@ run('createCmaRequest never clobbers a protected CMA (upsert-by-slug class)', ()
     const { createCmaRequest } = await import('@/lib/cma-request')
     const res = await createCmaRequest({
       rawAddress: ADDRESS,
-      parsedStreet: `${STAMP} Zztest Clobber Guard St`,
+      parsedStreet: STREET,
       parsedCity: 'Bend',
       parsedState: 'OR',
       parsedPostalCode: null,
-      leadEmail: 'third-lead@example.invalid',
+      leadEmail: THIRD_EMAIL,
       leadName: 'Third Lead',
       requestSource: 'seller-lp',
       notifyLead: false,
@@ -217,6 +225,6 @@ run('createCmaRequest never clobbers a protected CMA (upsert-by-slug class)', ()
 
     const { data: v2 } = await sb.from('cmas').select('status, client_email').eq('slug', v2Slug).single()
     expect(v2!.status).toBe('archived')
-    expect(v2!.client_email).toBe('second-lead@example.invalid')
+    expect(v2!.client_email).toBe(SECOND_EMAIL)
   }, 30000)
 })

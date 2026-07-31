@@ -16,24 +16,28 @@
  *
  * Skips itself (no failure) when SUPABASE_SERVICE_ROLE_KEY is absent so CI
  * without DB creds stays green. Self-cleaning: every object it writes is
- * removed in afterAll, even on assertion failure. Uses `zz-test-` prefixes
- * that can never collide with a real broker slug.
+ * removed in afterAll, even on assertion failure. Prefixes come from
+ * @/test/int-scope: they can never collide with a real broker slug, and the
+ * pre-run / post-run sweep clears them if this run is killed.
  */
 import { afterAll, describe, expect, it } from 'vitest'
 import { config } from 'dotenv'
+import { INT_MARKER, intId } from '@/test/int-scope'
 
 config({ path: '.env.local' })
 
 const HAVE_DB = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL)
 const run = HAVE_DB ? describe : describe.skip
 
-const STAMP = process.env.VITEST_WORKER_ID ?? '0'
-const BROKER_A = `zz-test-broker-a-${STAMP}`
-const BROKER_B = `zz-test-broker-b-${STAMP}`
-const ACTION_ID = `zz-test-action-${STAMP}`
+// Unique per RUN. The old VITEST_WORKER_ID stamp repeated every run, so three
+// copies of the seeded action row piled up in production stuck at
+// `in_production` when the cleanup in the `finally` never ran.
+const BROKER_A = intId('broker-a')
+const BROKER_B = intId('broker-b')
+const ACTION_ID = intId('action')
 const FILENAME = 'deliverable.json'
-const BODY_A = JSON.stringify({ owner: 'A', stamp: STAMP })
-const BODY_B = JSON.stringify({ owner: 'B', stamp: STAMP })
+const BODY_A = JSON.stringify({ owner: 'A', stamp: ACTION_ID })
+const BODY_B = JSON.stringify({ owner: 'B', stamp: ACTION_ID })
 
 run('broker content library — persistence + isolation (real storage)', () => {
   const written: string[] = []
@@ -180,13 +184,13 @@ run('broker content library — persistence + isolation (real storage)', () => {
     const { data: inserted, error } = await supabase
       .from('marketing_brain_actions')
       .insert({
-        topic: 'zz-test canonical slug probe',
+        topic: `${INT_MARKER} canonical slug probe`,
         format: 'test',
-        hook: 'test',
+        hook: INT_MARKER,
         target_audience: 'test',
-        generated_by: 'w10.2-int-test',
+        generated_by: `${INT_MARKER}-w10.2-int-test`,
         action_type: 'analyze:test',
-        target: 'test:w10.2',
+        target: `test:${INT_MARKER}:w10.2`,
         assigned_producer: 'test',
         assigned_approver: 'paul',
         status: 'pending',

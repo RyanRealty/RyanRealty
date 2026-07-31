@@ -16,15 +16,19 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { config } from 'dotenv'
+import { INT_MARKER, intEmail } from '@/test/int-scope'
 
 config({ path: '.env.local' })
 
 const HAVE_DB = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL)
 const run = HAVE_DB ? describe : describe.skip
 
-const STAMP = `${process.env.VITEST_WORKER_ID ?? '0'}-${process.pid}-${Date.now().toString(36)}`
-const NEW_EMAIL = `nl-oneoff-new-${STAMP}@test.invalid`
-const OPTOUT_EMAIL = `nl-oneoff-optout-${STAMP}@test.invalid`
+const NEW_EMAIL = intEmail('nl-new')
+const OPTOUT_EMAIL = intEmail('nl-optout')
+// The subject carries the marker too: the newsletters rows this test seeds had
+// no marker at all, so the 2026-07-30 residue survey walked straight past them.
+const SUBJECT_ONEOFF = `${INT_MARKER} S-10 integration probe`
+const SUBJECT_ALL_OPTOUT = `${INT_MARKER} S-10 all-optout probe`
 
 run('one-off bulk send — S-10 opt-out protection (real DB)', () => {
   let newsletterId = ''
@@ -40,14 +44,14 @@ run('one-off bulk send — S-10 opt-out protection (real DB)', () => {
     // A pre-existing OPT-OUT the one-off must NOT resurrect.
     const { error: subErr } = await sb
       .from('newsletter_subscribers')
-      .insert({ email: OPTOUT_EMAIL, status: 'unsubscribed', source: 'test', segment: 'general' })
+      .insert({ email: OPTOUT_EMAIL, status: 'unsubscribed', source: INT_MARKER, segment: 'general' })
     if (subErr) throw new Error(`seed optout failed: ${subErr.message}`)
 
     // A draft issue with a body (empty body would abort before the compliance path).
     const { data: nl, error: nlErr } = await sb
       .from('newsletters')
       .insert({
-        subject: 'S-10 integration probe',
+        subject: SUBJECT_ONEOFF,
         body_html: '<p>Probe body for the one-off compliance test.</p>',
         body_text: 'Probe body for the one-off compliance test.',
         status: 'draft',
@@ -111,7 +115,7 @@ run('one-off bulk send — S-10 opt-out protection (real DB)', () => {
     const { data: nl2, error } = await sb
       .from('newsletters')
       .insert({
-        subject: 'S-10 all-optout probe',
+        subject: SUBJECT_ALL_OPTOUT,
         body_html: '<p>x</p>',
         body_text: 'x',
         status: 'draft',

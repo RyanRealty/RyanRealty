@@ -20,14 +20,15 @@
  */
 import { afterAll, describe, expect, it } from 'vitest'
 import { config } from 'dotenv'
+import { INT_MARKER, intId } from '@/test/int-scope'
 
 config({ path: '.env.local' })
 
 const HAVE_DB = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL)
 const run = HAVE_DB ? describe : describe.skip
 
-const STAMP = `zztest-${Date.now()}`
-const KEY_PREFIX = 'deliverable:%zztest-%'
+const STAMP = intId('deliverable')
+const KEY_PREFIX = `deliverable:%${INT_MARKER}%`
 
 run('deliverable chokepoint — live A5 ledger (crm_idempotency_keys)', () => {
   let sb: import('@supabase/supabase-js').SupabaseClient

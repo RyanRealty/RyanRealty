@@ -10,21 +10,23 @@
  *     ONLY the four contact keys (notify_broker_sms survives), and refuses
  *     once the build is closed.
  *
- * Skips without DB creds; self-cleaning.
+ * Skips without DB creds; self-cleaning. Identifiers come from
+ * @/test/int-scope so the pre-run / post-run sweep clears them if this run is
+ * killed before afterAll.
  */
 import { afterAll, describe, expect, it } from 'vitest'
 import { config } from 'dotenv'
+import { INT_MARKER, intId } from '@/test/int-scope'
 
 config({ path: '.env.local' })
 
 const HAVE_DB = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL)
 const run = HAVE_DB ? describe : describe.skip
 
-const STAMP = `${Date.now() % 1000000}`
-
 run('BPO writable-slot resolution (the clobber class, BPO half)', () => {
   let sb: import('@supabase/supabase-js').SupabaseClient
-  const baseSlug = `bpo-${STAMP}-zztest-slot-probe`
+  const baseSlug = intId('bpo-slot')
+  const bpoAddress = `${baseSlug} St, Bend`
 
   afterAll(async () => {
     if (!sb) return
@@ -50,7 +52,7 @@ run('BPO writable-slot resolution (the clobber class, BPO half)', () => {
     // Seed a FINAL document (live /bpo link) — must never be the slot again.
     const { error: seedErr } = await sb.from('broker_price_opinions').insert({
       slug: baseSlug,
-      subject_address: `${STAMP} Zztest Slot Probe St, Bend`,
+      subject_address: bpoAddress,
       status: 'final',
       html_path: `db:broker_price_opinions.html_content:${baseSlug}`,
       html_content: '<html>final opinion</html>',
@@ -69,10 +71,10 @@ run('BPO writable-slot resolution (the clobber class, BPO half)', () => {
     // build_error) is rebuilt in place — the liveness half of the contract.
     const { error: draftErr } = await sb.from('broker_price_opinions').insert({
       slug: `${baseSlug}--v2`,
-      subject_address: `${STAMP} Zztest Slot Probe St, Bend`,
+      subject_address: bpoAddress,
       status: 'draft',
       html_path: `pending:${baseSlug}--v2`,
-      build_error: 'zztest: simulated failed build',
+      build_error: `${INT_MARKER}: simulated failed build`,
     })
     expect(draftErr).toBeNull()
 
@@ -97,7 +99,7 @@ run('BPO writable-slot resolution (the clobber class, BPO half)', () => {
 
 run('cma_action_merge_contact RPC (attach contact refresh)', () => {
   let sb: import('@supabase/supabase-js').SupabaseClient
-  const target = `cma:zztest-merge-${STAMP}`
+  const target = `cma:${intId('merge')}`
   let actionId: string
 
   afterAll(async () => {
@@ -121,10 +123,10 @@ run('cma_action_merge_contact RPC (attach contact refresh)', () => {
           notify_broker_sms: [{ person_id: 1, broker: 'matt' }],
         },
         status: 'pending',
-        topic: 'zztest merge probe',
+        topic: `${INT_MARKER} merge probe`,
         format: 'cma',
         platforms: ['email'],
-        hook: 'zztest',
+        hook: INT_MARKER,
         target_audience: 'seller-lead',
         data_sources: {},
         predicted_outcome: {},
