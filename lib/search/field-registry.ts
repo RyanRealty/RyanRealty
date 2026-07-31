@@ -216,6 +216,33 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     unit: 'usd',
     coverageNote: 'Reported when a listing has had a price change.',
   },
+  // ── P5 long-tail tranche (2026-07-30, plan §12) — existing MV columns only,
+  //    each verified ≥25 live rows before exposure (bathsFull/bathsHalf 6,575
+  //    of 9,649 MV rows; pricePerSqft 7,277; aduType 335). ──
+  {
+    key: 'bathsFull',
+    label: 'Full baths',
+    category: 'size_layout',
+    kind: 'range',
+    mv: 'baths_full',
+    unit: 'count',
+  },
+  {
+    key: 'bathsHalf',
+    label: 'Half baths',
+    category: 'size_layout',
+    kind: 'range',
+    mv: 'baths_half',
+    unit: 'count',
+  },
+  {
+    key: 'pricePerSqft',
+    label: 'Price per square foot',
+    category: 'price_terms',
+    kind: 'range',
+    mv: 'price_per_sqft',
+    unit: 'usd',
+  },
 
   // ── Booleans ──────────────────────────────────────────────────────────────
   {
@@ -1189,6 +1216,22 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     voiceValues: {
       'Barbed Wire': ['barbed wire'],
       'Cross Fenced': ['cross fenced'],
+    },
+  },
+  {
+    // P5 long-tail tranche (2026-07-30): CF 'ADU Type', scalar column — the
+    // full metadata value set {Attached, Detached}, prevalence order (335
+    // live rows: Detached 272, Attached 63, verified 2026-07-30).
+    key: 'aduType',
+    label: 'ADU type',
+    category: 'outbuildings',
+    kind: 'multi',
+    mv: 'adu_type',
+    singleColumnIn: true,
+    options: ['Detached', 'Attached'],
+    voiceValues: {
+      Detached: ['detached adu'],
+      Attached: ['attached adu'],
     },
   },
 

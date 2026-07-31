@@ -249,6 +249,26 @@
       "sparkSource": "cf:ADU SqFt",
       "viaValue": null
     },
+    "aduType": {
+      "candidateGaps": [],
+      "classes": [
+        "A",
+        "E"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "multi",
+      "metadataOptions": [
+        "Attached",
+        "Detached"
+      ],
+      "mv": "adu_type",
+      "resolution": "curation",
+      "resolutionReason": "Custom field 'ADU Type' (General Property Information), no standard parent. P5 long-tail tranche 2026-07-30: 335 live MV rows (Detached 272, Attached 63).",
+      "searchable": true,
+      "sparkSource": "cf:ADU Type",
+      "viaValue": null
+    },
     "appliances": {
       "candidateGaps": [
         "Other",
@@ -407,6 +427,42 @@
       "resolutionReason": "MV column is `baths`; Spark's standard name is BathsTotal.",
       "searchable": true,
       "sparkSource": "BathsTotal",
+      "viaValue": null
+    },
+    "bathsFull": {
+      "candidateGaps": [],
+      "classes": [
+        "A",
+        "B",
+        "E"
+      ],
+      "curationAdditions": [],
+      "idxPayload": true,
+      "kind": "range",
+      "metadataOptions": null,
+      "mv": "baths_full",
+      "resolution": "auto:key",
+      "resolutionReason": null,
+      "searchable": true,
+      "sparkSource": "BathsFull",
+      "viaValue": null
+    },
+    "bathsHalf": {
+      "candidateGaps": [],
+      "classes": [
+        "A",
+        "B",
+        "E"
+      ],
+      "curationAdditions": [],
+      "idxPayload": true,
+      "kind": "range",
+      "metadataOptions": null,
+      "mv": "baths_half",
+      "resolution": "auto:key",
+      "resolutionReason": null,
+      "searchable": true,
+      "sparkSource": "BathsHalf",
       "viaValue": null
     },
     "beds": {
@@ -3731,6 +3787,20 @@
       "sparkSource": "ListPrice",
       "viaValue": null
     },
+    "pricePerSqft": {
+      "candidateGaps": [],
+      "classes": null,
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "range",
+      "metadataOptions": null,
+      "mv": "price_per_sqft",
+      "resolution": "derived",
+      "resolutionReason": "Computed by us at ingest (list price / living area) into the bare price_per_sqft column — the MLS's own 'List Price per SqFt' custom field is not our source. P5 long-tail tranche 2026-07-30: 7,277 live MV rows.",
+      "searchable": null,
+      "sparkSource": null,
+      "viaValue": null
+    },
     "priceReduced": {
       "candidateGaps": [],
       "classes": null,
@@ -4748,7 +4818,6 @@
         "cf:# of Living Units",
         "cf:# of Other Parking",
         "cf:# of Parking Spaces",
-        "cf:ADU Type",
         "cf:Acreage CropsUsage 1",
         "cf:Acreage CropsUsage 2",
         "cf:Acreage CropsUsage 3",
@@ -4975,14 +5044,12 @@
         "group:Water Rights Type",
         "group:Window Features"
       ],
-      "count": 245
+      "count": 244
     },
     "standardSearchableIdxUnregistered": {
       "concepts": [
         "AssociationFeeFrequency",
         "AttachedGarageYN",
-        "BathsFull",
-        "BathsHalf",
         "City",
         "CloseDate",
         "ClosePrice",
@@ -5030,23 +5097,23 @@
         "VOWAutomatedValuationDisplayYN",
         "VOWConsumerCommentYN"
       ],
-      "count": 50
+      "count": 48
     }
   },
   "summary": {
     "byResolution": {
       "auto:group": 3,
-      "auto:key": 24,
+      "auto:key": 26,
       "auto:mv": 11,
-      "curation": 61,
-      "derived": 5
+      "curation": 62,
+      "derived": 6
     },
     "candidateGapTotal": 173,
     "curationAdditionTotal": 0,
     "exclusions": 11,
-    "longTailCustomCount": 245,
-    "longTailStandardCount": 50,
-    "mappedConcepts": 77,
-    "registryFields": 104
+    "longTailCustomCount": 244,
+    "longTailStandardCount": 48,
+    "mappedConcepts": 80,
+    "registryFields": 108
   }
 }

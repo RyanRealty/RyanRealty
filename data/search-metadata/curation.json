@@ -70,7 +70,9 @@
     "middleSchool": { "concept": "MiddleOrJuniorSchool", "reason": "Registry key is the buyer word; the Spark standard name is MiddleOrJuniorSchool." },
     "zoning": { "concept": "ZoningDescription", "reason": "Plan §6: details Zoning is masked on 9,485 of 9,627 on-market rows; ZoningDescription is the canonical source and a strict superset — the pipeline pins to it explicitly." },
     "irrigationDistrict": { "concept": "cf:Irrigation District", "reason": "Custom field 'Irrigation District' (General Property Information), no standard parent." },
-    "keywords": { "concept": "PublicRemarks", "reason": "Free-text search over the public remarks body." }
+    "keywords": { "concept": "PublicRemarks", "reason": "Free-text search over the public remarks body." },
+    "aduType": { "concept": "cf:ADU Type", "reason": "Custom field 'ADU Type' (General Property Information), no standard parent. P5 long-tail tranche 2026-07-30: 335 live MV rows (Detached 272, Attached 63)." },
+    "pricePerSqft": { "derived": true, "reason": "Computed by us at ingest (list price / living area) into the bare price_per_sqft column — the MLS's own 'List Price per SqFt' custom field is not our source. P5 long-tail tranche 2026-07-30: 7,277 live MV rows." }
   },
   "optionAllowlist": {},
   "exclusions": {

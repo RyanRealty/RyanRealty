@@ -8,7 +8,7 @@
     "app/actions/crm.ts": 2030,
     "app/actions/dashboard.ts": 985,
     "app/actions/listing-detail.ts": 1238,
-    "app/actions/listings.ts": 2625,
+    "app/actions/listings.ts": 2656,
     "app/actions/prospecting.ts": 843,
     "app/actions/sync-full-cron.ts": 605,
     "app/actions/sync-spark.ts": 1387,
@@ -44,8 +44,8 @@
     "lib/data/crm/getEmailReporting.ts": 686,
     "lib/data/crm/getInboxQueue.ts": 635,
     "lib/data/crm/getLeadSourcesReport.ts": 626,
-    "lib/data/index.ts": 789,
-    "lib/data/listings/searchListingsAll.ts": 665,
+    "lib/data/index.ts": 795,
+    "lib/data/listings/searchListingsAll.ts": 674,
     "lib/data/sync/syncWrites.ts": 1123,
     "lib/expired-owner-lookup.ts": 741,
     "lib/listing-mapper.ts": 699,
@@ -58,12 +58,12 @@
     "lib/marketing-brain/measurement-loop.ts": 948,
     "lib/marketing-brain/platform-trends.ts": 743,
     "lib/meta-graph.ts": 1215,
-    "lib/search/field-registry.ts": 1315,
+    "lib/search/field-registry.ts": 1358,
     "lib/spark.ts": 738,
     "lib/sync/deltaSync.ts": 636,
     "lib/x.ts": 787
   },
   "barrels": {
-    "lib/data/index.ts": 180
+    "lib/data/index.ts": 182
   }
 }

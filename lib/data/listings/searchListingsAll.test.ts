@@ -198,3 +198,36 @@ describe('CF tranche 2026-07-30 wiring (spot checks)', () => {
     }
   })
 })
+
+describe('P5 long-tail tranche 2026-07-30 wiring (spot checks)', () => {
+  it('parses and keeps the new filter keys', () => {
+    const parsed = SearchListingsAllFilterSchema.parse({
+      bathsFullMin: 2,
+      bathsHalfMin: 1,
+      pricePerSqftMin: 200,
+      pricePerSqftMax: 450,
+      aduType: ['Detached'],
+    })
+    expect(parsed.bathsFullMin).toBe(2)
+    expect(parsed.bathsHalfMin).toBe(1)
+    expect(parsed.pricePerSqftMin).toBe(200)
+    expect(parsed.pricePerSqftMax).toBe(450)
+    expect(parsed.aduType).toEqual(['Detached'])
+  })
+
+  it('aduType applies as IN via the singleColumnIn registry contract', () => {
+    const def = MULTI_FIELD_DEFS.find((d) => d.key === 'aduType')
+    expect(def).toBeDefined()
+    expect(def!.mv).toBe('adu_type')
+    expect(def!.singleColumnIn).toBe(true)
+  })
+
+  it('new keys ride SEARCH_FEATURE_FILTER_KEYS so action routers forward them', () => {
+    for (const key of [
+      'bathsFullMin', 'bathsFullMax', 'bathsHalfMin', 'bathsHalfMax',
+      'pricePerSqftMin', 'pricePerSqftMax', 'aduType',
+    ]) {
+      expect(SEARCH_FEATURE_FILTER_KEYS, `'${key}' missing from feature-filter keys`).toContain(key)
+    }
+  })
+})

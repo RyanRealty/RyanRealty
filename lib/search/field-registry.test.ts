@@ -19,11 +19,14 @@ describe('field-registry: registry size (update when fields land/leave)', () => 
     // (schoolDistrict) — all built on StandardFields the feed masks
     // ("********"), so none could ever match a listing.
     // Sub-type tranche (2026-07-30, plan §4): +1 multi (propertySubTypes).
-    expect(byKind('range')).toBe(15)
+    // P5 long-tail tranche (2026-07-30, plan §12): +3 range (bathsFull,
+    // bathsHalf, pricePerSqft), +1 multi (aduType) — existing MV columns,
+    // each verified ≥25 live rows before exposure.
+    expect(byKind('range')).toBe(18)
     expect(byKind('boolean')).toBe(39)
-    expect(byKind('multi')).toBe(44)
+    expect(byKind('multi')).toBe(45)
     expect(byKind('text')).toBe(6)
-    expect(SEARCH_FIELDS).toHaveLength(104)
+    expect(SEARCH_FIELDS).toHaveLength(108)
   })
 })
 
@@ -172,8 +175,10 @@ describe('field-registry: helpers and contract fixtures', () => {
   })
 
   it('flags exactly the contract single-column IN multis', () => {
+    // aduType joined the set in the P5 long-tail tranche (2026-07-30):
+    // adu_type is a scalar MV column, IN semantics like county/levels.
     const flagged = SEARCH_FIELDS.filter((f) => f.singleColumnIn).map((f) => f.key).sort()
-    expect(flagged).toEqual(['county', 'levelsOptions', 'propertySubTypes'])
+    expect(flagged).toEqual(['aduType', 'county', 'levelsOptions', 'propertySubTypes'])
   })
 
   it('keeps matchMode "all" only where the contract requires it', () => {

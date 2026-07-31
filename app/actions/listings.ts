@@ -18,6 +18,7 @@ import {
   type SearchShapes,
   pickSearchFeatureFilters,
 } from '@/lib/data'
+import { resolveLegacyPropertySubType } from '@/lib/data/listings/searchPredicates'
 import type { ListingTile, SearchFeatureFilters, SearchListingsAllFilter } from '@/lib/data'
 import { PUBLIC_ACTIVE_OR_PREDICATE, PUBLIC_ON_MARKET_OR_PREDICATE_WIDE, PUBLIC_SEARCH_STATUS_FILTERS, isPubliclyDisplayableStatus } from '@/lib/listing-status-public'
 
@@ -758,6 +759,9 @@ function hasAdvancedFilters(opts: Record<string, unknown>): boolean {
     opts.maxBaths != null ||
     (opts.postalCode != null && String(opts.postalCode).trim() !== '') ||
     (opts.propertySubType != null && String(opts.propertySubType).trim() !== '') ||
+    // The enumerated sub-type array (plan §4) is not a listing_tile_mv column
+    // either — it must route to the RPC on the legacy/closed paths.
+    (Array.isArray(opts.propertySubTypes) && opts.propertySubTypes.length > 0) ||
     (opts.statusFilter != null && String(opts.statusFilter) !== 'active') ||
     (opts.keywords != null && String(opts.keywords).trim() !== '') ||
     opts.hasOpenHouse === true ||
@@ -803,6 +807,33 @@ export async function getListingsAdvanced(options: {
           ? 'active_and_pending'
           : 'active'
 
+  // Sub types (sold-search parity, plan §4.7, 2026-07-30): the closed/'all'/
+  // off-market scopes reach this RPC, which historically ignored the
+  // `propertySubTypes` array and substring-matched the legacy scalar.
+  // p_property_subtype now takes a CSV of EXACT canonical values matched
+  // case-insensitively as a set (migration 20260730180000, same mechanism as
+  // p_property_type). The array passes through verbatim; the legacy scalar
+  // resolves through the same vocabulary the MV path uses (unknown strings
+  // become ci equality — loudly empty beats silently wrong). Commas are
+  // stripped from values so a hostile input cannot smuggle CSV members.
+  const subTypeSet = new Set<string>()
+  if (Array.isArray(options.propertySubTypes)) {
+    for (const v of options.propertySubTypes) {
+      const trimmed = typeof v === 'string' ? v.trim() : ''
+      if (trimmed) subTypeSet.add(trimmed)
+    }
+  }
+  const legacySubType = options.propertySubType?.trim()
+  if (legacySubType) {
+    const resolved = resolveLegacyPropertySubType(legacySubType)
+    if (resolved.kind === 'in') for (const v of resolved.values) subTypeSet.add(v)
+    else if (resolved.kind === 'ciEquals') subTypeSet.add(resolved.value)
+  }
+  const subTypeCsv =
+    subTypeSet.size > 0
+      ? [...subTypeSet].map((v) => v.replace(/,/g, ' ').trim()).filter(Boolean).join(',')
+      : null
+
   // Keyword-only searches (the single-level / with-shop / rv-parking presets, or
   // any free-text search with no other filters) route to the dedicated, indexed
   // keyword RPC. It uses the partial GIN full-text index on active+pending
@@ -823,7 +854,7 @@ export async function getListingsAdvanced(options: {
     (options.minSqFt ?? 0) <= 0 && (options.maxSqFt ?? 0) <= 0 &&
     options.yearBuiltMin == null && options.yearBuiltMax == null &&
     options.lotAcresMin == null && options.lotAcresMax == null &&
-    !options.postalCode?.trim() && !options.propertySubType?.trim() && !options.viewContains?.trim() &&
+    !options.postalCode?.trim() && subTypeSet.size === 0 && !options.viewContains?.trim() &&
     options.hasOpenHouse !== true && options.hasPool !== true && options.hasView !== true &&
     options.hasWaterfront !== true && options.hasFireplace !== true && options.hasGolfCourse !== true &&
     options.garageMin == null && options.newListingsDays == null &&
@@ -876,7 +907,7 @@ export async function getListingsAdvanced(options: {
     // is the MLS code (A-H). Map to the code set so the RPC matches; the function
     // now does an exact ANY(codes) match, not an ILIKE on the label. [[ryanrealty-listing-resolution-and-perf]]
     p_property_type: (() => { const c = propertyTypeFilterToCodes(options.propertyType); return c && c.length ? c.join(',') : null })(),
-    p_property_subtype: options.propertySubType?.trim() || null,
+    p_property_subtype: subTypeCsv,
     p_status_filter: statusFilter,
     p_keywords: options.keywords?.trim() || null,
     p_has_open_house: options.hasOpenHouse === true ? true : null,

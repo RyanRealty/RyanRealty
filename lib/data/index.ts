@@ -120,6 +120,12 @@ export type {
   SearchShapes,
 } from '@/lib/data/listings/searchListingsAll'
 
+// Listings — per-value facet counts for the filter surface (plan §2.2 P5,
+// 2026-07-30). Reads the small search_facet_counts table (rebuilt from
+// listing_search_mv by the :12/:27/:42/:57 cron), keyed by registry field.
+export { getSearchFacetCounts } from '@/lib/data/listings/searchFacets'
+export type { SearchFacetCountRow } from '@/lib/data/listings/searchFacets'
+
 // Listings — Central Oregon service-area guard (audit P0-3 2026-06-10).
 // ONE source of truth for the city allowlist that keeps the statewide MLS
 // feed off "Central Oregon" surfaces. Derived from lib/central-oregon.ts.

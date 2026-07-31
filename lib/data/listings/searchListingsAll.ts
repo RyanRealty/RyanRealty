@@ -157,6 +157,8 @@ const featureShape = {
   roomsArr: multi(),
   bodyType: multi(),
   fencing: multi(),
+  // P5 long-tail tranche (2026-07-30): adu_type scalar (singleColumnIn).
+  aduType: multi(),
   // Text (registry kind 'text') — case-insensitive exact match.
   elementarySchool: text(),
   middleSchool: text(),
@@ -179,6 +181,13 @@ const featureShape = {
   photosCountMax: z.number().int().nonnegative().optional().catch(undefined),
   prevListPriceMin: z.number().positive().optional().catch(undefined),
   prevListPriceMax: z.number().positive().optional().catch(undefined),
+  // P5 long-tail tranche (2026-07-30) ranges.
+  bathsFullMin: z.number().int().nonnegative().optional().catch(undefined),
+  bathsFullMax: z.number().int().nonnegative().optional().catch(undefined),
+  bathsHalfMin: z.number().int().nonnegative().optional().catch(undefined),
+  bathsHalfMax: z.number().int().nonnegative().optional().catch(undefined),
+  pricePerSqftMin: z.number().positive().optional().catch(undefined),
+  pricePerSqftMax: z.number().positive().optional().catch(undefined),
 } as const
 
 /**
