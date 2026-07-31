@@ -111,6 +111,11 @@ export const SEARCH_PRESETS: SearchPreset[] = [
   // lots" ranked /cities/bend at pos 36-55 with no dedicated surface
   // (conversion-audit #12).
   { slug: 'lots-and-land', shortLabel: 'Lots and Land', label: 'Lots and Land for Sale', params: { propertyType: 'Land', sort: 'newest' } },
+  // Residential Lots only — the buildable-lot slice of class D, without the
+  // commercial / agriculture / rangeland listings lots-and-land sweeps in.
+  // Live inventory verified 2026-07-31: 1,501 active (listing_search_mv,
+  // property_sub_type = 'Residential Lots', standard_status = 'Active').
+  { slug: 'residential-lots', shortLabel: 'Residential Lots', label: 'Residential Lots for Sale', params: { propertySubTypes: ['Residential Lots'], sort: 'newest' } },
   // Community types
   { slug: 'gated-community', shortLabel: 'Gated Community', label: 'Gated Community Homes', params: { gatedCommunity: true, sort: 'newest' } },
   // Property types — exact enumerated sub-type sets (plan §4.4, 2026-07-30).
@@ -123,6 +128,15 @@ export const SEARCH_PRESETS: SearchPreset[] = [
   // "multi-family homes in Redmond" had no reachable surface before this
   // preset existed (W3.2 search-matrix audit, 2026-07-21).
   { slug: 'multi-family', shortLabel: 'Multi-Family', label: 'Multi-Family & Income Properties', params: { propertyType: 'Multi-Family', sort: 'newest' } },
+  // Per-sub-type splits of the class-C umbrella above. Each slug targets ONE
+  // canonical PropertySubType value from the field registry — exact IN-set
+  // filtering, same contract as condos/townhomes. Live inventory verified
+  // 2026-07-31 (listing_search_mv, standard_status = 'Active'): Duplex 73,
+  // Triplex 13, Quadruplex 20. The fourplex slug uses the search term buyers
+  // type; the feed's canonical value is 'Quadruplex'.
+  { slug: 'duplex', shortLabel: 'Duplexes', label: 'Duplexes for Sale', params: { propertySubTypes: ['Duplex'], sort: 'newest' } },
+  { slug: 'triplex', shortLabel: 'Triplexes', label: 'Triplexes for Sale', params: { propertySubTypes: ['Triplex'], sort: 'newest' } },
+  { slug: 'fourplex', shortLabel: 'Fourplexes', label: 'Fourplexes for Sale', params: { propertySubTypes: ['Quadruplex'], sort: 'newest' } },
   // Manufactured homes — ALL THREE manufactured sub types, explicitly. The
   // old substring param ('Manufactured') claimed to cover class B but never
   // did: 'In Park' and 'On Leased Land' do not contain "Manufactured", so the

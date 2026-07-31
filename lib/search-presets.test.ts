@@ -121,6 +121,22 @@ describe('search-presets', () => {
       ])
     })
 
+    it('duplex carries exactly {Duplex}', () => {
+      expect(getPresetBySlug('duplex')!.params.propertySubTypes).toEqual(['Duplex'])
+    })
+
+    it('triplex carries exactly {Triplex}', () => {
+      expect(getPresetBySlug('triplex')!.params.propertySubTypes).toEqual(['Triplex'])
+    })
+
+    it('fourplex carries exactly {Quadruplex} (buyer slug, canonical feed value)', () => {
+      expect(getPresetBySlug('fourplex')!.params.propertySubTypes).toEqual(['Quadruplex'])
+    })
+
+    it('residential-lots carries exactly {Residential Lots}', () => {
+      expect(getPresetBySlug('residential-lots')!.params.propertySubTypes).toEqual(['Residential Lots'])
+    })
+
     it('no preset carries the legacy substring-era propertySubType scalar', () => {
       for (const preset of SEARCH_PRESETS) {
         expect(preset.params.propertySubType, preset.slug).toBeUndefined()

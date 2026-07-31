@@ -113,16 +113,23 @@ const nextConfig: NextConfig = {
   //   - app/sitemap.ts, which still owns buildAllUrls, is force-dynamic and is
   //     never prerendered
   //
-  // WHY IT IS STILL 1800 AND NOT 600. Every route that motivated the raises is
-  // off the build path, so this ceiling is believed inert again — but that is
-  // an inference, not a measurement. It has NOT been proven against a real
-  // Vercel build, and this number is load-bearing in the worst way: guessing
-  // low re-breaks every deploy, and the last two times it was wrong the site
-  // silently served stale code for days. Lower it to 600 only AFTER a green
-  // production deploy on this configuration, reading the build log for the
-  // slowest prerendered route. Do NOT raise it again — if a route needs more
-  // than 1800s it must come off the build path, the way these did.
-  staticPageGenerationTimeout: 1800,
+  // LOWERED 1800 -> 600 on 2026-07-31, per the contract the previous version
+  // of this comment recorded ("lower it to 600 only AFTER a green production
+  // deploy on this configuration, reading the build log for the slowest
+  // prerendered route"). Both conditions were measured, not inferred:
+  //   - Vercel deploy history (project prj_7ApmWUMyZQR3IIQbSiqHyzSWZoaA):
+  //     every production build since the sitemap work left the build path
+  //     (commit 846a9268, 2026-07-30) is READY — 15 consecutive across
+  //     2026-07-30..31, most recently ca979cee (dpl_ACqmMTche6traz2paf91sYfjqzCN),
+  //     zero ERROR states. CANCELED entries in the window are ignoreCommand
+  //     skips on docs-only commits, not build failures.
+  //   - That deploy's build log: "Build Completed in /vercel/output [4m]" for
+  //     the ENTIRE build. /sitemap.xml and /sitemaps/[cls] show as dynamic
+  //     (never prerendered); no prerendered route is within an order of
+  //     magnitude of 600s.
+  // Do NOT raise this again — if a route needs more than 600s it must come
+  // off the build path, the way the sitemap routes did (see HISTORY above).
+  staticPageGenerationTimeout: 600,
   async headers() {
     return [
       {

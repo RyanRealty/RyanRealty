@@ -161,6 +161,12 @@ const PRESET_COPY: Record<string, PresetCopy> = {
     criteria: (city) =>
       `Bare land and residential lots in ${city}, per the MLS property-type field. Before you buy a lot to build on, verify zoning, water (well or municipal), septic or sewer, and access with the county. We can walk you through what to check.`,
   },
+  'residential-lots': {
+    plural: 'residential lots',
+    singular: 'residential lot',
+    criteria: (city) =>
+      `Bare residential lots in ${city}, per the MLS property subtype. Commercial, agricultural, and recreational land is excluded. Before you buy a lot to build on, verify zoning, water (well or municipal), septic or sewer, and access with the county. We can walk you through what to check.`,
+  },
   // Community types
   'gated-community': {
     plural: 'homes in gated communities',
@@ -184,6 +190,24 @@ const PRESET_COPY: Record<string, PresetCopy> = {
     singular: 'multi-family or income property',
     criteria: (city) =>
       `Duplexes, triplexes, fourplexes, and other income properties in ${city}, per the MLS multi-family property type. Rent rolls and expenses come from the listing agent, so verify them during due diligence.`,
+  },
+  duplex: {
+    plural: 'duplexes',
+    singular: 'duplex',
+    criteria: (city) =>
+      `Listings in ${city} with a duplex property subtype in the MLS. Rent rolls and expenses come from the listing agent, so verify them during due diligence.`,
+  },
+  triplex: {
+    plural: 'triplexes',
+    singular: 'triplex',
+    criteria: (city) =>
+      `Listings in ${city} with a triplex property subtype in the MLS. Rent rolls and expenses come from the listing agent, so verify them during due diligence.`,
+  },
+  fourplex: {
+    plural: 'fourplexes',
+    singular: 'fourplex',
+    criteria: (city) =>
+      `Listings in ${city} carrying the MLS Quadruplex property subtype, the feed's term for a fourplex. Rent rolls and expenses come from the listing agent, so verify them during due diligence.`,
   },
   manufactured: {
     plural: 'manufactured homes',
