@@ -44,6 +44,8 @@ export type SearchFiltersInitial = {
   maxPrice?: string
   beds?: string
   baths?: string
+  maxBeds?: string
+  maxBaths?: string
   status?: string
   sort?: string
   view?: string
@@ -132,14 +134,21 @@ function priceLabel(min?: string, max?: string): string | null {
   return `Up to ${hi}`
 }
 
-function bedsLabel(v?: string): string | null {
-  if (!v) return null
-  return `${v}+ bd`
+// A max set via the All-filters sheet must show on the trigger too — the
+// trigger reading only the min side hid an active constraint (W-UI audit T3,
+// 2026-07-30).
+function bedsLabel(min?: string, max?: string): string | null {
+  if (min && max) return `${min}-${max} bd`
+  if (min) return `${min}+ bd`
+  if (max) return `Up to ${max} bd`
+  return null
 }
 
-function bathsLabel(v?: string): string | null {
-  if (!v) return null
-  return `${v}+ ba`
+function bathsLabel(min?: string, max?: string): string | null {
+  if (min && max) return `${min}-${max} ba`
+  if (min) return `${min}+ ba`
+  if (max) return `Up to ${max} ba`
+  return null
 }
 
 function typeLabel(v?: string): string | null {
@@ -357,8 +366,8 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
   // ---------------------------------------------------------------------------
 
   const activePriceLabel = priceLabel(initialFilters.minPrice, initialFilters.maxPrice)
-  const activeBedsLabel = bedsLabel(initialFilters.beds)
-  const activeBathsLabel = bathsLabel(initialFilters.baths)
+  const activeBedsLabel = bedsLabel(initialFilters.beds, initialFilters.maxBeds)
+  const activeBathsLabel = bathsLabel(initialFilters.baths, initialFilters.maxBaths)
   const activeTypeLabel = typeLabel(initialFilters.propertyType)
   const activeStatusLabel = statusLabel(initialFilters.status)
 
@@ -755,8 +764,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
           same value ("Price: $90M+") in their own label, so on mobile this
           row said the same fact twice before any results even rendered,
           costing ~90px of scarce viewport (design-audit P3). Desktop has
-          the room and keeps the faster per-chip remove affordance; mobile
-          drops to Row 2 + its dropdown's own clear control. */}
+          the room and keeps the faster per-chip remove affordance. */}
       {hasAnyFilter && (
         <div className="hidden flex-wrap items-center gap-1.5 border-t border-border px-3 py-2 sm:flex sm:px-4">
           {activeStatusLabel && (
@@ -774,6 +782,30 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
             size="sm"
             onClick={clearAll}
             className="ml-1 h-auto px-0 py-0 text-xs text-muted-foreground underline-offset-2 hover:underline hover:bg-transparent"
+          >
+            Clear all
+          </Button>
+        </div>
+      )}
+      {/* Mobile chips: ONLY sheet-applied registry filters — the quick four
+          (status/price/beds/type) stay on their Row 2 triggers, so the P3
+          duplication rationale holds, but a fireplace or flooring filter
+          applied in the sheet was previously invisible and individually
+          un-removable below 640px, and Clear all was unreachable (W-UI audit
+          T2, 2026-07-30). One scrollable row restores both affordances. */}
+      {registryActive.length > 0 && (
+        <div className="flex items-center gap-1.5 overflow-x-auto border-t border-border px-3 py-2 sm:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {registryActive.map(({ key, label, params }) => (
+            <span key={key} className="shrink-0">
+              <RegistryFilterChip label={label} onRemove={() => removeChip(params)} />
+            </span>
+          ))}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={clearAll}
+            className="ml-1 h-auto shrink-0 px-0 py-0 text-xs text-muted-foreground underline-offset-2 hover:underline hover:bg-transparent"
           >
             Clear all
           </Button>

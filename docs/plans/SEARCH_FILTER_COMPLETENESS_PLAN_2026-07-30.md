@@ -892,3 +892,40 @@ Baseline to stamp before P2 ships, from `user_events` (`search_filter_apply`
 already fires): filters used per session, distinct filters ever used,
 zero-result rate, and saved-search creations. Targets are set after one week of
 baseline rather than invented now — a §0 rule applied to our own goals.
+
+## 14. Adversarial accuracy audit — executed 2026-07-30, results
+
+Matt's directive: assume nothing works, test every filter and every option,
+100% accuracy. Method: every registry case ran twice — once through the real
+DAL (`searchListingsAllCount` against production) and once as independently
+hand-derived raw SQL on `listing_search_mv`. The two engines share nothing at
+execution time. Baseline scope reconciled exactly first (3,412 = 3,412).
+
+**592 cases: 42 booleans, 449 multi options, 44 two-value combos, 45 range
+bounds, 8 texts. Verdict: every filter that has data filters with exact count
+accuracy, 592/592** after two harness corrections that are themselves
+findings: the DAL accepts only canonical range names (`priceMin`) and pages
+translate legacy URL names at the call sites, and PostgREST `plfts` stems with
+the `english` config (585 = 585 on keywords).
+
+The real defects were in what filters were built ON, and in the layers above:
+
+| # | Defect | Root cause | Fix (commit) |
+|---|---|---|---|
+| 1 | 9 filters could never match: spa, carport, homeWarranty, walkScore, storiesTotal, fireplacesTotal, carportSpaces, parkingTotal, directionFaces | Spark masks these StandardFields as `********` at our feed level; direction_faces masked on 9,407/9,648 MV rows; the StandardFields path stored masks into `details` verbatim | Mapper strips masks at entry; filters removed; spa/carport voice intent moved to the real feature options (`f71e7ffd`) |
+| 2 | schoolDistrict filter: 100% of non-null values were the mask | Same; the "Reported on some listings only" coverage note described pollution | Removed; 1,608 masked rows nulled in prod |
+| 3 | county=Lake could never match; Klamath under-reported | county was not "explicit geo," so the service-area city guard intersected it | county now stands the guard down (`f71e7ffd`) |
+| 4 | `?daysOnMarket=N` silently dropped on every SEO page while the chip showed it applied | Page never read the param; registry passthrough strips `domMax` (FilterSchema body, not featureShape) | Page forwards it; `domFromPreset` accepts any 1–365 (`269b03b5`) |
+| 5 | Amenity presets un-removable: deleting the chip re-applied the preset | Preset spread had no URL off-switch | `?hasPool=0` class of params now wins over the preset (`269b03b5`) |
+| 6 | Mobile (<640px): sheet-applied filters invisible, individually un-removable, Clear all unreachable on /homes-for-sale | Chip row was `hidden sm:flex` per an earlier de-duplication pass that considered only the quick four | Mobile scrollable chip row for registry chips only |
+| 7 | Beds/baths max set in the sheet never showed on the Row-2 trigger | Trigger read the min side only | Range-aware labels |
+
+Layer audits (both exhaustive over the full registry): URL→DAL wiring 102/103
+WIRED on both surfaces (the 1 was defect 4); UI wiring all fields rendered
+with correct control kind, options parity PASS for all 44 multis.
+
+Production data remediation, verified with the public anon key exactly as an
+attacker would query: 498 on-market rows read anonymously — 0 confidential
+keys, 0 masked values. §8's live leak keys (ShowingRequirements, Tenant Name,
+Call Owner) confirmed absent from every on-market row. `check-private-key-parity`
+green (43 SQL keys = TS keys).

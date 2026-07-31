@@ -280,6 +280,8 @@ export default async function SearchPage({
     maxPrice: sp.maxPrice ?? '',
     beds: sp.beds ?? '',
     baths: sp.baths ?? '',
+    maxBeds: sp.maxBeds ?? '',
+    maxBaths: sp.maxBaths ?? '',
     status: sp.status ?? 'Active',
     sort: sp.sort ?? 'newest',
     view: sp.view ?? DEFAULT_VIEW,

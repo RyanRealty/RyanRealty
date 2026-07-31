@@ -129,13 +129,15 @@ export function RegistryFilterChip({ label, onRemove }: { label: string; onRemov
   return (
     <Badge variant="default" className="inline-flex h-auto items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium tabular-nums">
       {label}
+      {/* size-6 (24px) hit target per WCAG 2.5.8; negative margin keeps the
+          chip's visual height unchanged (W-UI a11y finding 2026-07-30). */}
       <Button
         type="button"
         variant="ghost"
         size="icon"
         aria-label={`Remove filter: ${label}`}
         onClick={onRemove}
-        className="ml-0.5 size-3.5 rounded-full p-0 text-primary-foreground/70 hover:bg-transparent hover:text-primary-foreground"
+        className="-my-1.5 -mr-1 ml-0.5 size-6 rounded-full p-0 text-primary-foreground/70 hover:bg-transparent hover:text-primary-foreground"
       >
         <HugeiconsIcon icon={Cancel01Icon} className="size-3" aria-hidden />
       </Button>
