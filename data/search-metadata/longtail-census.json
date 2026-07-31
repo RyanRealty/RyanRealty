@@ -1,0 +1,2696 @@
+{
+ "generatedAt": "2026-07-31T14:47:16.786141+00:00",
+ "scopeRows": 9644,
+ "scope": "listings JOIN listing_search_mv ON listing_key (on-market). Served classes A-D = 8,710 rows (A 6,272 / B 316 / C 202 / D 2,126); unserved E-H = 934 minus join drops, measured 693-728 in probes. coverageServedAD counts rows in classes A-D, the classes the buyer search surface serves (lib/search/class-prevalence.ts).",
+ "method": {
+  "measurement": "count(*) FILTER (WHERE details ? key / ?| memberKeys) per concept; standard-field counts use value-not-null (details->>key), because the StandardFields ingest stores keys with null values (presence overstated CloseDate to 8,881 rows vs 185 real values)",
+  "payloadKeys": "details keys are the Flexmls display labels, never the suffixed dictionary names ('CC&Rs' not 'CCRs', 'None' not 'None10'). 122 long-tail cf: concepts carry a suffixed sparkName whose payload key is a shared display label — their data merges into the base key and is not separately measurable",
+  "groupAmbiguity": "group coverage counts use only members whose display label is unique across the entire raw CF dictionary; shared labels (None, Other, Kitchen, Water, ...) collide across groups in the flat details namespace and overcount (group:Special Assessments measured 8,818 by presence, 1 by distinct members)",
+  "audit_tag": "-- audit: long-tail census"
+ },
+ "anomalies": [
+  "P0-class finding: showing-requirement member booleans (Appointment Only 4,062 · Pet(s) on Premises 660 · Combination Lock Box 235 served rows; 8,057 rows carry at least one member) remain in listings.details. PRIVATE_DETAIL_KEYS redacts the grouped 'Showing Requirements' spellings but not the flattened member keys — same class as the 2026-07-30 §8 leak. Verified the named private keys (Owner Name/Owner Phone/Tenant Name/Phone to Show/Preferred Escrow Company & Officer) are 0-row clean.",
+  "group:Power Production snapshot values omit the raw group's 'Solar Leased' member (43 served rows) — snapshot generator drops standardized members; include it in the powerProduction option set.",
+  "'To Be Built' (153) and 'Under Construction' (281 served rows) are construction-status members mis-homed in the Showing Requirements group; re-home before member-key redaction or the data is lost.",
+  "cf:Hydro measured 78 served rows under powerProduction — a high count worth a spot-check during MV build (possible hydronic-heating conflation by listing agents).",
+  "No masked values found: CF flatten drops masks at ingest, stripMaskedValues covers the standard path, and the 2026-07-30 remediation cleaned history. EXCLUDE:masked unused.",
+  "Disposition set extends the task's enum with EXCLUDE:not-shoppable, taken from plan §15.1's reason list (confidential / broker plumbing / rule-restricted / coverage / not buyer-shoppable)."
+ ],
+ "summary": {
+  "EXPOSE": 24,
+  "EXCLUDE:confidential": 17,
+  "EXCLUDE:rule-restricted": 2,
+  "EXCLUDE:broker-plumbing": 37,
+  "EXCLUDE:geography": 14,
+  "EXCLUDE:duplicate": 30,
+  "EXCLUDE:not-shoppable": 18,
+  "EXCLUDE:coverage": 150
+ },
+ "concepts": [
+  {
+   "concept": "AttachedGarageYN",
+   "source": "standard",
+   "disposition": "EXPOSE",
+   "reason": "Attached vs detached garage is a real buyer distinction; boolean discriminates (true 3,447 / false 3,202 on served rows)",
+   "coverage": 7273,
+   "coverageServedAD": 6649,
+   "proposedKey": "attachedGarage",
+   "kind": "boolean",
+   "mvColumn": "attached_garage_yn",
+   "sourceDetailsKeys": [
+    "AttachedGarageYN"
+   ],
+   "valuesTop": {
+    "true": 3447,
+    "false": 3202
+   }
+  },
+  {
+   "concept": "group:Utilities",
+   "source": "group",
+   "disposition": "EXPOSE",
+   "reason": "CF '-Connected' vocabulary (Electricity Connected 6,030 · Natural Gas 2,400 · Cable 1,370 · Phone 628 served) — MERGE into the existing utilities field as additional options; today utilities only carries the class-D '-Available' RESO options. 'Propane' member excluded from counts (payload key shared with Fireplace/Heating twins)",
+   "coverage": 6713,
+   "coverageServedAD": 6128,
+   "proposedKey": "utilities",
+   "kind": "multi",
+   "mvColumn": "utilities",
+   "sourceDetailsKeys": [
+    "Electricity Connected",
+    "Natural Gas Connected",
+    "Cable Connected",
+    "Phone Connected"
+   ],
+   "valuesTop": {
+    "Electricity Connected": 6030,
+    "Natural Gas Connected": 2400,
+    "Cable Connected": 1370,
+    "Phone Connected": 628
+   }
+  },
+  {
+   "concept": "cf:Rented YN",
+   "source": "custom",
+   "disposition": "EXPOSE",
+   "reason": "Tenant-in-place vs vacant: investors filter for tenants, owner-occupants for vacancy (Yes 270 / No 5,658 served)",
+   "coverage": 6047,
+   "coverageServedAD": 5928,
+   "proposedKey": "rented",
+   "kind": "boolean",
+   "mvColumn": "rented_yn",
+   "sourceDetailsKeys": [
+    "Rented YN"
+   ],
+   "valuesTop": {
+    "No": 5658,
+    "Yes": 270
+   }
+  },
+  {
+   "concept": "cf:Potential Tax Liability YN",
+   "source": "custom",
+   "disposition": "EXPOSE",
+   "reason": "Farm/forest deferral flag; discriminating (Yes 267 / No 3,764 served) and material to rural buyers in both directions",
+   "coverage": 4313,
+   "coverageServedAD": 4031,
+   "proposedKey": "potentialTaxLiability",
+   "kind": "boolean",
+   "mvColumn": "potential_tax_liability_yn",
+   "sourceDetailsKeys": [
+    "Potential Tax Liability YN"
+   ],
+   "valuesTop": {
+    "No": 3764,
+    "Yes": 267
+   }
+  },
+  {
+   "concept": "cf:Assessment YN",
+   "source": "custom",
+   "disposition": "EXPOSE",
+   "reason": "Special assessment on the property is a real cost; 'no special assessments' is a plausible buyer filter (Yes 518 / No 2,920 served)",
+   "coverage": 3646,
+   "coverageServedAD": 3438,
+   "proposedKey": "specialAssessment",
+   "kind": "boolean",
+   "mvColumn": "special_assessment_yn",
+   "sourceDetailsKeys": [
+    "Assessment YN"
+   ],
+   "valuesTop": {
+    "No": 2920,
+    "Yes": 518
+   }
+  },
+  {
+   "concept": "cf:List Price per Acre",
+   "source": "custom",
+   "disposition": "EXPOSE",
+   "reason": "Land buyers shop $/acre (92% of on-market class-D rows carry it, median $64,484). BUILD NOTE: compute list_price / lot_size_acres in the MV rather than trusting the CF value (known-unreliable source field; outliers measured)",
+   "coverage": 1963,
+   "coverageServedAD": 1963,
+   "proposedKey": "pricePerAcre",
+   "kind": "range",
+   "mvColumn": "price_per_acre",
+   "sourceDetailsKeys": [
+    "List Price per Acre"
+   ]
+  },
+  {
+   "concept": "group:Utilities Location",
+   "source": "group",
+   "disposition": "EXPOSE",
+   "reason": "'Power at the lot line' is a named plan goal (§0); At Street 911 / On Property 263 served rows on land listings",
+   "coverage": 1116,
+   "coverageServedAD": 1116,
+   "proposedKey": "utilitiesLocation",
+   "kind": "multi",
+   "mvColumn": "utilities_location",
+   "sourceDetailsKeys": [
+    "At Street",
+    "On Property"
+   ],
+   "valuesTop": {
+    "At Street": 911,
+    "On Property": 263
+   }
+  },
+  {
+   "concept": "group:Interior Features",
+   "source": "group",
+   "disposition": "EXPOSE",
+   "reason": "The group's single unstandardized member 'High Speed Internet' (950 served rows) is a real rural-buyer need in Central Oregon",
+   "coverage": 1029,
+   "coverageServedAD": 950,
+   "proposedKey": "highSpeedInternet",
+   "kind": "boolean",
+   "mvColumn": "high_speed_internet_yn",
+   "sourceDetailsKeys": [
+    "High Speed Internet"
+   ],
+   "valuesTop": {
+    "High Speed Internet": 950
+   }
+  },
+  {
+   "concept": "cf:Manufactured Structure Allowed YN",
+   "source": "custom",
+   "disposition": "EXPOSE",
+   "reason": "Land buyers ask 'can I put a manufactured home on this lot' — perfectly discriminating on class D (Yes 454 / No 461)",
+   "coverage": 915,
+   "coverageServedAD": 915,
+   "proposedKey": "manufacturedAllowed",
+   "kind": "boolean",
+   "mvColumn": "manufactured_allowed_yn",
+   "sourceDetailsKeys": [
+    "Manufactured Structure Allowed YN"
+   ],
+   "valuesTop": {
+    "No": 461,
+    "Yes": 454
+   }
+  },
+  {
+   "concept": "group:HomeBuild Site",
+   "source": "group",
+   "disposition": "EXPOSE",
+   "reason": "Build-site approval status answers the land buyer's 'can I build' (§0 goal: septic approved): Not Applied For 573 · Approved 234 · Applied For 40 · Denied 6 served",
+   "coverage": 839,
+   "coverageServedAD": 839,
+   "proposedKey": "homeSiteApproval",
+   "kind": "multi",
+   "mvColumn": "home_site_approval",
+   "sourceDetailsKeys": [
+    "Approved",
+    "Not Applied For",
+    "Applied For",
+    "Denied"
+   ],
+   "valuesTop": {
+    "Not Applied For": 573,
+    "Approved": 234,
+    "Applied For": 40,
+    "Denied": 6
+   }
+  },
+  {
+   "concept": "cf:Building Permit Issued YN",
+   "source": "custom",
+   "disposition": "EXPOSE",
+   "reason": "Permit-ready lot / new-build status (Yes 556 / No 189 served); distinct from newConstruction",
+   "coverage": 751,
+   "coverageServedAD": 745,
+   "proposedKey": "buildingPermitIssued",
+   "kind": "boolean",
+   "mvColumn": "building_permit_issued_yn",
+   "sourceDetailsKeys": [
+    "Building Permit Issued YN"
+   ],
+   "valuesTop": {
+    "Yes": 556,
+    "No": 189
+   }
+  },
+  {
+   "concept": "NumberOfUnitsTotal",
+   "source": "standard",
+   "disposition": "EXPOSE",
+   "reason": "Unit count for multi-family investors (198 of 202 on-market class-C rows carry it); pairs with the duplex/triplex sub-type work",
+   "coverage": 739,
+   "coverageServedAD": 199,
+   "proposedKey": "unitsTotal",
+   "kind": "range",
+   "mvColumn": "units_total",
+   "sourceDetailsKeys": [
+    "NumberOfUnitsTotal"
+   ],
+   "valuesTop": {
+    "2": 104,
+    "4": 31,
+    "3": 30,
+    "5": 11,
+    "10": 4
+   }
+  },
+  {
+   "concept": "group:Power Production",
+   "source": "group",
+   "disposition": "EXPOSE",
+   "reason": "Solar/generator/off-grid power: Solar Owned 282 · Generator 150 · Solar PV Ready 115 · Hydro 78 · Wind 4 served. BUILD NOTE: raw group also carries a Solar Leased member (43 served) missing from the snapshot values — include it",
+   "coverage": 596,
+   "coverageServedAD": 565,
+   "proposedKey": "powerProduction",
+   "kind": "multi",
+   "mvColumn": "power_production",
+   "sourceDetailsKeys": [
+    "Solar Owned",
+    "Generator",
+    "Solar PV Ready",
+    "Hydro",
+    "Wind",
+    "Solar Leased"
+   ],
+   "valuesTop": {
+    "Solar Owned": 282,
+    "Generator": 150,
+    "Solar PV Ready": 115,
+    "Hydro": 78,
+    "Solar Leased": 43,
+    "Wind": 4
+   }
+  },
+  {
+   "concept": "cf:Estimated Completion Date",
+   "source": "custom",
+   "disposition": "EXPOSE",
+   "reason": "New-construction move-in timing ('complete by August'); 556 served rows. BUILD NOTE: rows carry stale past dates back to 2020-06-08 — treat past dates as complete",
+   "coverage": 562,
+   "coverageServedAD": 556,
+   "proposedKey": "estCompletionDate",
+   "kind": "range",
+   "mvColumn": "est_completion_date",
+   "sourceDetailsKeys": [
+    "Estimated Completion Date"
+   ]
+  },
+  {
+   "concept": "group:Green Building Verification Type",
+   "source": "group",
+   "disposition": "EXPOSE",
+   "reason": "Energy certifications buyers filter by: Home Energy Score 217 · Earth Advantage 182 · ENERGY STAR 95 · Energy Performance Score 56 served",
+   "coverage": 499,
+   "coverageServedAD": 496,
+   "proposedKey": "greenCertification",
+   "kind": "multi",
+   "mvColumn": "green_certification",
+   "sourceDetailsKeys": [
+    "Home Energy Score",
+    "Earth Advantage",
+    "ENERGY STAR Certified Homes",
+    "Energy Performance Score",
+    "LEED Certified",
+    "LEED For Homes",
+    "LEED Gold",
+    "LEED Platinum",
+    "LEED Silver",
+    "WaterSense",
+    "Energy Audit Retrofit"
+   ],
+   "valuesTop": {
+    "Home Energy Score": 217,
+    "Earth Advantage": 182,
+    "ENERGY STAR Certified Homes": 95,
+    "Energy Performance Score": 56,
+    "LEED Certified": 0
+   }
+  },
+  {
+   "concept": "group:Restrictions",
+   "source": "group",
+   "disposition": "EXPOSE",
+   "reason": "Deed restrictions / recorded access / platting for land buyers: Recorded Plat 245 · Subject to Zoning 228 · Access Recorded 65 · Deed Restrictions 32 · Easement-ROW 31 served",
+   "coverage": 447,
+   "coverageServedAD": 437,
+   "proposedKey": "landRestrictions",
+   "kind": "multi",
+   "mvColumn": "land_restrictions",
+   "sourceDetailsKeys": [
+    "Recorded Plat",
+    "Subject to Zoning",
+    "Access Recorded",
+    "Deed Restrictions",
+    "Easement/Right-of-Way",
+    "No Access Recorded",
+    "Zone-Unplatted"
+   ],
+   "valuesTop": {
+    "Recorded Plat": 245,
+    "Subject to Zoning": 228,
+    "Access Recorded": 65,
+    "Deed Restrictions": 32,
+    "Easement/Right-of-Way": 31
+   }
+  },
+  {
+   "concept": "group:Additional Features",
+   "source": "group",
+   "disposition": "EXPOSE",
+   "reason": "Separate meters are a real multi-family investor filter (Separate Electric 66 · Gas 25 · Water 18 served, class C); 80 served rows across the 18 distinct members. Kitchen member excluded (payload key shared with Rooms)",
+   "coverage": 421,
+   "coverageServedAD": 80,
+   "proposedKey": "multiUnitFeatures",
+   "kind": "multi",
+   "mvColumn": "multi_unit_features",
+   "sourceDetailsKeys": [
+    "Separate Electric Meters",
+    "Separate Gas Meters",
+    "Separate Water Meters",
+    "3 Phase Electric",
+    "ADA Comply",
+    "Airport Access",
+    "Bath Common Area",
+    "Bus Service or Stop",
+    "Common Area",
+    "Expandable",
+    "Free Span Roof",
+    "Laundry Facility",
+    "Living Area in Building",
+    "Manager's Quarters",
+    "Mezzanine",
+    "Office Space",
+    "Overhead Crane",
+    "Tanks in Ground"
+   ],
+   "valuesTop": {
+    "Separate Electric Meters": 66,
+    "Separate Gas Meters": 25,
+    "Separate Water Meters": 18
+   }
+  },
+  {
+   "concept": "group:Railroad",
+   "source": "group",
+   "disposition": "EXPOSE",
+   "reason": "Rail availability on class-D land (283 served rows, all four members distinct-keyed); niche but real for industrial/ag land shoppers — borderline with strong coverage, plan prefers exposure",
+   "coverage": 283,
+   "coverageServedAD": 283,
+   "proposedKey": "railroadAccess",
+   "kind": "multi",
+   "mvColumn": "railroad_access",
+   "sourceDetailsKeys": [
+    "Available",
+    "In",
+    "Not Available",
+    "To Lot"
+   ]
+  },
+  {
+   "concept": "cf:Current Rent",
+   "source": "custom",
+   "disposition": "EXPOSE",
+   "reason": "Rent in place for tenant-occupied listings; investor range filter (n 268, median $1,650). Pairs with rented",
+   "coverage": 279,
+   "coverageServedAD": 268,
+   "proposedKey": "currentRent",
+   "kind": "range",
+   "mvColumn": "current_rent",
+   "sourceDetailsKeys": [
+    "Current Rent"
+   ]
+  },
+  {
+   "concept": "group:Soil Type",
+   "source": "group",
+   "disposition": "EXPOSE",
+   "reason": "Soil type for land/farm buyers (Loam 96 · Sand 51 · Rocky 31 · Clay 18 served). Ambiguous members Gravel/Mixed/Unknown excluded from the option set (payload keys shared with road-surface/business/flood twins)",
+   "coverage": 183,
+   "coverageServedAD": 164,
+   "proposedKey": "soilType",
+   "kind": "multi",
+   "mvColumn": "soil_type",
+   "sourceDetailsKeys": [
+    "Loam",
+    "Sand",
+    "Rocky",
+    "Clay",
+    "Alluvial",
+    "Land Fill",
+    "Soil Analysis Done",
+    "Soil Analysis Ordered",
+    "Top Soil Over Other"
+   ],
+   "valuesTop": {
+    "Loam": 96,
+    "Sand": 51,
+    "Rocky": 31,
+    "Clay": 18,
+    "Soil Analysis Done": 5
+   }
+  },
+  {
+   "concept": "group:Acreage Details",
+   "source": "group",
+   "disposition": "EXPOSE",
+   "reason": "Livestock Allowed (84 served) and Dividable Property (46 served) are direct land-buyer questions ('can I keep animals', 'can I split it'). Members with shared payload keys excluded from counts",
+   "coverage": 172,
+   "coverageServedAD": 123,
+   "proposedKey": "acreageFeatures",
+   "kind": "multi",
+   "mvColumn": "acreage_features",
+   "sourceDetailsKeys": [
+    "Livestock Allowed",
+    "Dividable Property",
+    "Conservation Reserve Program",
+    "Additional Crop/Usage/Acreage Info Attached"
+   ],
+   "valuesTop": {
+    "Livestock Allowed": 84,
+    "Dividable Property": 46,
+    "Additional Crop/Usage/Acreage Info Attached": 8,
+    "Conservation Reserve Program": 0
+   }
+  },
+  {
+   "concept": "group:Irrigation Distribution",
+   "source": "group",
+   "disposition": "EXPOSE",
+   "reason": "Irrigation delivery method (pivot/wheel line/hand line) for farm-ranch buyers; 50 served rows across 15 distinct members. None member excluded (shared payload key)",
+   "coverage": 157,
+   "coverageServedAD": 50,
+   "proposedKey": "irrigationDistribution",
+   "kind": "multi",
+   "mvColumn": "irrigation_distribution",
+   "sourceDetailsKeys": [
+    "Center Pivot",
+    "Gated Pipe",
+    "Gravity-Flood",
+    "Hand Line(s)",
+    "In Ground Sprinklers",
+    "K-Line",
+    "Linear",
+    "Mainline",
+    "Pump(s)",
+    "Solid Set",
+    "Sprinkled",
+    "Sprinkler Gun(s)",
+    "Sub-Irrigated",
+    "Water Wheel",
+    "Wheel Line(s)"
+   ],
+   "valuesTop": {
+    "Hand Line(s)": 10,
+    "Wheel Line(s)": 8,
+    "Center Pivot": 5,
+    "In Ground Sprinklers": 3
+   }
+  },
+  {
+   "concept": "group:Other Structures",
+   "source": "group",
+   "disposition": "EXPOSE",
+   "reason": "Single unstandardized member 'Second Residence' (98 served rows); distinct from guestHouse (RESO Guest House option) and adu",
+   "coverage": 122,
+   "coverageServedAD": 98,
+   "proposedKey": "secondResidence",
+   "kind": "boolean",
+   "mvColumn": "second_residence_yn",
+   "sourceDetailsKeys": [
+    "Second Residence"
+   ],
+   "valuesTop": {
+    "Second Residence": 98
+   }
+  },
+  {
+   "concept": "group:Water Rights Type",
+   "source": "group",
+   "disposition": "EXPOSE",
+   "reason": "Water rights class matters to Central Oregon land buyers; 26 served rows (Adjudicated 12 · Permitted 11 · Class A 6 · Riparian 3) — at the coverage bar, plan prefers exposure. See Remarks member excluded (shared payload key)",
+   "coverage": 68,
+   "coverageServedAD": 26,
+   "proposedKey": "waterRightsType",
+   "kind": "multi",
+   "mvColumn": "water_rights_type",
+   "sourceDetailsKeys": [
+    "Adjudicated",
+    "Permitted",
+    "Class A",
+    "Class B",
+    "Class C",
+    "Riparian"
+   ],
+   "valuesTop": {
+    "Adjudicated": 12,
+    "Permitted": 11,
+    "Class A": 6,
+    "Riparian": 3,
+    "Class C": 2,
+    "Class B": 1
+   }
+  },
+  {
+   "concept": "cf:Audio Surveillance on Premises YN",
+   "source": "custom",
+   "disposition": "EXCLUDE:confidential",
+   "reason": "Showing-class disclosure (surveillance during showings) — agent-facing logistics, not a buyer search concept",
+   "coverage": 8743,
+   "coverageServedAD": 8067
+  },
+  {
+   "concept": "cf:Video Surveillance on Premises YN",
+   "source": "custom",
+   "disposition": "EXCLUDE:confidential",
+   "reason": "Showing-class disclosure — same as audio surveillance",
+   "coverage": 8743,
+   "coverageServedAD": 8067
+  },
+  {
+   "concept": "group:Showing Requirements",
+   "source": "group",
+   "disposition": "EXCLUDE:confidential",
+   "reason": "Showing logistics class. ANOMALY REPORTED: the group's member-level flat keys (Appointment Only 4,062 · Pet(s) on Premises 660 · Combination Lock Box 235 served rows, 8,057 rows with any member) are still present in listings.details — PRIVATE_DETAIL_KEYS blocks only the grouped 'Showing Requirements'/'ShowingRequirements' spellings, not the flattened member booleans. Same class as the 2026-07-30 §8 leak. 'To Be Built' (153) and 'Under Construction' (281) members are construction-status data mis-homed in this group — worth re-homing via curation before the member keys are redacted",
+   "coverage": 8733,
+   "coverageServedAD": 8057
+  },
+  {
+   "concept": "cf:Owner Phone2",
+   "source": "custom",
+   "disposition": "EXCLUDE:confidential",
+   "reason": "Payload key is 'Owner Phone' (PRIVATE_DETAIL_KEYS). Verified 0 rows",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Phone to Show",
+   "source": "custom",
+   "disposition": "EXCLUDE:confidential",
+   "reason": "In PRIVATE_DETAIL_KEYS. Verified 0 rows carry it in details",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Preferred Escrow Company Officer",
+   "source": "custom",
+   "disposition": "EXCLUDE:confidential",
+   "reason": "Payload key 'Preferred Escrow Company & Officer' is in PRIVATE_DETAIL_KEYS (escrow class). Verified 0 rows",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Tenant Name",
+   "source": "custom",
+   "disposition": "EXCLUDE:confidential",
+   "reason": "Occupant identity (PRIVATE_DETAIL_KEYS 'Tenant Name'); suffixed unit variants share the same payload key. Verified 0 on-market details rows carry the key — redaction working",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Tenant Name10",
+   "source": "custom",
+   "disposition": "EXCLUDE:confidential",
+   "reason": "Occupant identity (PRIVATE_DETAIL_KEYS 'Tenant Name'); suffixed unit variants share the same payload key. Verified 0 on-market details rows carry the key — redaction working",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Tenant Name2",
+   "source": "custom",
+   "disposition": "EXCLUDE:confidential",
+   "reason": "Occupant identity (PRIVATE_DETAIL_KEYS 'Tenant Name'); suffixed unit variants share the same payload key. Verified 0 on-market details rows carry the key — redaction working",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Tenant Name3",
+   "source": "custom",
+   "disposition": "EXCLUDE:confidential",
+   "reason": "Occupant identity (PRIVATE_DETAIL_KEYS 'Tenant Name'); suffixed unit variants share the same payload key. Verified 0 on-market details rows carry the key — redaction working",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Tenant Name4",
+   "source": "custom",
+   "disposition": "EXCLUDE:confidential",
+   "reason": "Occupant identity (PRIVATE_DETAIL_KEYS 'Tenant Name'); suffixed unit variants share the same payload key. Verified 0 on-market details rows carry the key — redaction working",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Tenant Name5",
+   "source": "custom",
+   "disposition": "EXCLUDE:confidential",
+   "reason": "Occupant identity (PRIVATE_DETAIL_KEYS 'Tenant Name'); suffixed unit variants share the same payload key. Verified 0 on-market details rows carry the key — redaction working",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Tenant Name6",
+   "source": "custom",
+   "disposition": "EXCLUDE:confidential",
+   "reason": "Occupant identity (PRIVATE_DETAIL_KEYS 'Tenant Name'); suffixed unit variants share the same payload key. Verified 0 on-market details rows carry the key — redaction working",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Tenant Name7",
+   "source": "custom",
+   "disposition": "EXCLUDE:confidential",
+   "reason": "Occupant identity (PRIVATE_DETAIL_KEYS 'Tenant Name'); suffixed unit variants share the same payload key. Verified 0 on-market details rows carry the key — redaction working",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Tenant Name8",
+   "source": "custom",
+   "disposition": "EXCLUDE:confidential",
+   "reason": "Occupant identity (PRIVATE_DETAIL_KEYS 'Tenant Name'); suffixed unit variants share the same payload key. Verified 0 on-market details rows carry the key — redaction working",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Tenant Name9",
+   "source": "custom",
+   "disposition": "EXCLUDE:confidential",
+   "reason": "Occupant identity (PRIVATE_DETAIL_KEYS 'Tenant Name'); suffixed unit variants share the same payload key. Verified 0 on-market details rows carry the key — redaction working",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:owner2",
+   "source": "custom",
+   "disposition": "EXCLUDE:confidential",
+   "reason": "Payload key is 'Owner Name' (PRIVATE_DETAIL_KEYS). Verified 0 rows carry it in details",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Sold Price per Acre",
+   "source": "custom",
+   "disposition": "EXCLUDE:rule-restricted",
+   "reason": "Sold-terms data: ODS rules keep sold data VOW-only (docs/reference_ods_rules); also 0 on-market rows carry it",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Sold Price per SqFt",
+   "source": "custom",
+   "disposition": "EXCLUDE:rule-restricted",
+   "reason": "Sold-terms data: ODS VOW-only; 0 on-market rows",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "group:Documents on File",
+   "source": "group",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Same class as group:Documents (distinct-member coverage 3,400+ served is availability of paperwork, not a buyer concept)",
+   "coverage": 9642,
+   "coverageServedAD": 8914
+  },
+  {
+   "concept": "ListingContractDate",
+   "source": "standard",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Internal contract timestamp",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "ListingId",
+   "source": "standard",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "MLS identifier (list_number already serves lookup)",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "ListingKey",
+   "source": "standard",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Feed identifier",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "ListingUpdateTimestamp",
+   "source": "standard",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Internal timestamp",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "ModificationTimestamp",
+   "source": "standard",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Internal timestamp",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "OnMarketContractDate",
+   "source": "standard",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Internal timestamp",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "OriginatingSystemKey",
+   "source": "standard",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Feed plumbing",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "PermitInternetYN",
+   "source": "standard",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Syndication flag",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "PhotosChangeTimestamp",
+   "source": "standard",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Internal timestamp",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "SourceSystemKey",
+   "source": "standard",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Feed plumbing",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "StatusChangeTimestamp",
+   "source": "standard",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Internal timestamp",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "VOWAddressDisplayYN",
+   "source": "standard",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "VOW plumbing",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "VOWAutomatedValuationDisplayYN",
+   "source": "standard",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "VOW plumbing",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "VOWConsumerCommentYN",
+   "source": "standard",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "VOW plumbing",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "ParcelNumber",
+   "source": "standard",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Tax-lot identifier — a lookup, not a filter",
+   "coverage": 9395,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "cf:Agency Represent YN",
+   "source": "custom",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Agency-representation disclosure — transactional, not shoppable",
+   "coverage": 8744,
+   "coverageServedAD": 8068
+  },
+  {
+   "concept": "cf:Comp Sale YN2",
+   "source": "custom",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "MLS comp-entry admin flag (payload key 'Comp Sale YN', 8,068 served rows)",
+   "coverage": 8744,
+   "coverageServedAD": 8068
+  },
+  {
+   "concept": "cf:FIRPTA YN",
+   "source": "custom",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Escrow/tax-withholding compliance flag",
+   "coverage": 8743,
+   "coverageServedAD": 8067
+  },
+  {
+   "concept": "cf:Seller Directs No Photos with Listing",
+   "source": "custom",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Media/syndication directive",
+   "coverage": 8742,
+   "coverageServedAD": 8066
+  },
+  {
+   "concept": "cf:Section",
+   "source": "custom",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "PLSS legal-description component (7,462 served rows, still not a buyer filter)",
+   "coverage": 8091,
+   "coverageServedAD": 7462
+  },
+  {
+   "concept": "Directions",
+   "source": "standard",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Driving directions prose for agents",
+   "coverage": 4962,
+   "coverageServedAD": 4595
+  },
+  {
+   "concept": "PriceChangeTimestamp",
+   "source": "standard",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Internal timestamp (priceReduced already exposes the buyer-facing signal)",
+   "coverage": 4467,
+   "coverageServedAD": 4226
+  },
+  {
+   "concept": "group:Documents",
+   "source": "group",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Documents-on-file-with-listing flags — transaction plumbing, not property attributes",
+   "coverage": 3535,
+   "coverageServedAD": 3400
+  },
+  {
+   "concept": "cf:Projected Active Date",
+   "source": "custom",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Pre-market timing — also barred surface-wise: no public Coming Soon exposure",
+   "coverage": 1001,
+   "coverageServedAD": 974
+  },
+  {
+   "concept": "cf:Back on Market Date",
+   "source": "custom",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Status-change timestamp",
+   "coverage": 690,
+   "coverageServedAD": 654
+  },
+  {
+   "concept": "cf:Building Permit #",
+   "source": "custom",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Permit identifier (buildingPermitIssued carries the shoppable signal)",
+   "coverage": 562,
+   "coverageServedAD": 556
+  },
+  {
+   "concept": "cf:Dealer License Number",
+   "source": "custom",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Dealer license identifier",
+   "coverage": 274,
+   "coverageServedAD": 274
+  },
+  {
+   "concept": "cf:Dual Listing YN",
+   "source": "custom",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Listing-administration flag",
+   "coverage": 230,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Park Parcel Number",
+   "source": "custom",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Park tax-lot identifier",
+   "coverage": 94,
+   "coverageServedAD": 94
+  },
+  {
+   "concept": "cf:Public Survey Subsection",
+   "source": "custom",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "PLSS legal-description component",
+   "coverage": 30,
+   "coverageServedAD": 29
+  },
+  {
+   "concept": "cf:Legacy Pcl #",
+   "source": "custom",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Legacy parcel identifier",
+   "coverage": 28,
+   "coverageServedAD": 28
+  },
+  {
+   "concept": "cf:Listing Service",
+   "source": "custom",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Listing-administration field",
+   "coverage": 4,
+   "coverageServedAD": 3
+  },
+  {
+   "concept": "OriginatingSystemName",
+   "source": "standard",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Feed plumbing (0 rows carry a value)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "SourceSystemName",
+   "source": "standard",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Feed plumbing (0 rows carry a value)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Currently Not Used/Listing Service",
+   "source": "custom",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Retired dictionary field (absent from the current raw feed)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Fallthrough Date2",
+   "source": "custom",
+   "disposition": "EXCLUDE:broker-plumbing",
+   "reason": "Status-change timestamp (payload key merges into 'Back on Market Date')",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "City",
+   "source": "standard",
+   "disposition": "EXCLUDE:geography",
+   "reason": "City picker already handled (geo UX)",
+   "coverage": 9410,
+   "coverageServedAD": 8715
+  },
+  {
+   "concept": "PostalCode",
+   "source": "standard",
+   "disposition": "EXCLUDE:geography",
+   "reason": "Postal-code picker already handled",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "StateOrProvince",
+   "source": "standard",
+   "disposition": "EXCLUDE:geography",
+   "reason": "Single-state feed; geo UX",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "StreetName",
+   "source": "standard",
+   "disposition": "EXCLUDE:geography",
+   "reason": "Address component",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "UnparsedAddress",
+   "source": "standard",
+   "disposition": "EXCLUDE:geography",
+   "reason": "Address search already handled via search_vector",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "SubdivisionName",
+   "source": "standard",
+   "disposition": "EXCLUDE:geography",
+   "reason": "Subdivision picker already handled",
+   "coverage": 8975,
+   "coverageServedAD": 8670
+  },
+  {
+   "concept": "StreetNumber",
+   "source": "standard",
+   "disposition": "EXCLUDE:geography",
+   "reason": "Address component",
+   "coverage": 8826,
+   "coverageServedAD": 8135
+  },
+  {
+   "concept": "StreetNumberInteger",
+   "source": "standard",
+   "disposition": "EXCLUDE:geography",
+   "reason": "Address component",
+   "coverage": 8823,
+   "coverageServedAD": 8132
+  },
+  {
+   "concept": "StreetSuffix",
+   "source": "standard",
+   "disposition": "EXCLUDE:geography",
+   "reason": "Address component",
+   "coverage": 8725,
+   "coverageServedAD": 8096
+  },
+  {
+   "concept": "StreetDirPrefix",
+   "source": "standard",
+   "disposition": "EXCLUDE:geography",
+   "reason": "Address component — address/keyword search UX",
+   "coverage": 3320,
+   "coverageServedAD": 3016
+  },
+  {
+   "concept": "UnitNumber",
+   "source": "standard",
+   "disposition": "EXCLUDE:geography",
+   "reason": "Address component",
+   "coverage": 1987,
+   "coverageServedAD": 1860
+  },
+  {
+   "concept": "PostalCodePlus4",
+   "source": "standard",
+   "disposition": "EXCLUDE:geography",
+   "reason": "Zip+4 — address component, address search UX",
+   "coverage": 169,
+   "coverageServedAD": 158
+  },
+  {
+   "concept": "cf:Commonly Known Address",
+   "source": "custom",
+   "disposition": "EXCLUDE:geography",
+   "reason": "Address alias — address search UX, not a filter",
+   "coverage": 132,
+   "coverageServedAD": 130
+  },
+  {
+   "concept": "StreetDirSuffix",
+   "source": "standard",
+   "disposition": "EXCLUDE:geography",
+   "reason": "Address component",
+   "coverage": 82,
+   "coverageServedAD": 76
+  },
+  {
+   "concept": "MlsStatus",
+   "source": "standard",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "Status filter (standard_status) already exposed",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "OnMarketDate",
+   "source": "standard",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "dom (days on market) exposes the buyer-facing form of this timestamp",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "PropertyType",
+   "source": "standard",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "propertySubTypes + the class picker expose this taxonomy",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "PropertyTypeLabel",
+   "source": "standard",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "propertySubTypes + class picker",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "StandardStatus",
+   "source": "standard",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "Status filter already exposed",
+   "coverage": 9403,
+   "coverageServedAD": 8710
+  },
+  {
+   "concept": "LotSizeArea",
+   "source": "standard",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "lotAcres (lot_size_acres) is the exposed lot-size filter",
+   "coverage": 8851,
+   "coverageServedAD": 8201
+  },
+  {
+   "concept": "LotSizeSquareFeet",
+   "source": "standard",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "lotAcres",
+   "coverage": 8851,
+   "coverageServedAD": 8201
+  },
+  {
+   "concept": "LotSizeUnits",
+   "source": "standard",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "lotAcres (unit qualifier of the same measure)",
+   "coverage": 8851,
+   "coverageServedAD": 8201
+  },
+  {
+   "concept": "cf:Lot Size Square Feet",
+   "source": "custom",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "lotAcres (7,794 served rows duplicate the same measure)",
+   "coverage": 8440,
+   "coverageServedAD": 7794
+  },
+  {
+   "concept": "CoolingYN",
+   "source": "standard",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "coolingTypes exposes the same concept with more information",
+   "coverage": 7267,
+   "coverageServedAD": 6649
+  },
+  {
+   "concept": "HeatingYN",
+   "source": "standard",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "heatingTypes exposes the same concept",
+   "coverage": 7265,
+   "coverageServedAD": 6649
+  },
+  {
+   "concept": "cf:List Price per SqFt",
+   "source": "custom",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "pricePerSqft (price_per_sqft) already exposed",
+   "coverage": 6445,
+   "coverageServedAD": 5827
+  },
+  {
+   "concept": "AssociationFeeFrequency",
+   "source": "standard",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "hoaMonthly already normalizes fee cost (frequency dist: Monthly 1,732 · Annually 950 · Quarterly 471)",
+   "coverage": 3214,
+   "coverageServedAD": 3214
+  },
+  {
+   "concept": "cf:# of Carports",
+   "source": "custom",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "parkingFeatures 'Carport' option carries the shoppable signal (count values are mostly 0; 30 of 60 served rows say 0 carports)",
+   "coverage": 369,
+   "coverageServedAD": 60
+  },
+  {
+   "concept": "cf:May Remain In Park",
+   "source": "custom",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "propertySubTypes 'In Park' — this CF is constant-Yes when present (274 of 274)",
+   "coverage": 274,
+   "coverageServedAD": 274
+  },
+  {
+   "concept": "cf:Square Footage",
+   "source": "custom",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "sqft (registered); this CF is per-unit/commercial (135 served rows)",
+   "coverage": 226,
+   "coverageServedAD": 135
+  },
+  {
+   "concept": "cf:Monthly Rent",
+   "source": "custom",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "currentRent (proposed) covers the shoppable rent concept; this is the per-unit variant (134 served rows)",
+   "coverage": 202,
+   "coverageServedAD": 134
+  },
+  {
+   "concept": "CloseDate",
+   "source": "standard",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "Sold-search surface already filters close_date (MV column wired to status=sold)",
+   "coverage": 185,
+   "coverageServedAD": 171
+  },
+  {
+   "concept": "ClosePrice",
+   "source": "standard",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "Sold-search surface already filters close_price (MV column)",
+   "coverage": 185,
+   "coverageServedAD": 171
+  },
+  {
+   "concept": "cf:Deeded Acres",
+   "source": "custom",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "lotAcres covers shoppable size (this CF also carries garbage values — max 201,939,406 measured)",
+   "coverage": 170,
+   "coverageServedAD": 140
+  },
+  {
+   "concept": "cf:On Leased Land YN",
+   "source": "custom",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "propertySubTypes 'On Leased Land' / 'Residential Leased Land' expose the financing-relevant distinction",
+   "coverage": 165,
+   "coverageServedAD": 165
+  },
+  {
+   "concept": "cf:# of Bedrooms",
+   "source": "custom",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "beds (registered); per-unit variant",
+   "coverage": 155,
+   "coverageServedAD": 155
+  },
+  {
+   "concept": "cf:# Full Baths",
+   "source": "custom",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "bathsFull (registered); this CF is the per-unit-1 count on class C",
+   "coverage": 154,
+   "coverageServedAD": 154
+  },
+  {
+   "concept": "cf:# of Garages",
+   "source": "custom",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "garage (garage_spaces) already exposed",
+   "coverage": 119,
+   "coverageServedAD": 119
+  },
+  {
+   "concept": "cf:# of Other Parking",
+   "source": "custom",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "parkingFeatures covers parking type/presence",
+   "coverage": 117,
+   "coverageServedAD": 86
+  },
+  {
+   "concept": "cf:# Half Baths",
+   "source": "custom",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "bathsHalf (registered); per-unit variant",
+   "coverage": 69,
+   "coverageServedAD": 69
+  },
+  {
+   "concept": "group:Window Features",
+   "source": "group",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "windowFeatures (registered) — group's only unstandardized member is the 'Fiberglass Frames' option (56 served rows); add it via curation option-add, no new concept",
+   "coverage": 58,
+   "coverageServedAD": 56
+  },
+  {
+   "concept": "cf:# of Living Units",
+   "source": "custom",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "unitsTotal (proposed EXPOSE of NumberOfUnitsTotal); this CF is class-E only (0 served rows)",
+   "coverage": 17,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Irrigation Water Rights Acres3",
+   "source": "custom",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "irrigationAcres (registered); payload key merges into 'Irrigation Water Rights Acres'",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:List Price per SqFt2",
+   "source": "custom",
+   "disposition": "EXCLUDE:duplicate",
+   "reason": "pricePerSqft; 0 rows besides",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Green Verification Metric",
+   "source": "custom",
+   "disposition": "EXCLUDE:not-shoppable",
+   "reason": "Score qualifier of greenCertification; scales differ per program (EPS vs HES) so a bare number filter misleads",
+   "coverage": 421,
+   "coverageServedAD": 421
+  },
+  {
+   "concept": "cf:Assessment Comments",
+   "source": "custom",
+   "disposition": "EXCLUDE:not-shoppable",
+   "reason": "Free-text comments",
+   "coverage": 305,
+   "coverageServedAD": 292
+  },
+  {
+   "concept": "cf:Lease End Date",
+   "source": "custom",
+   "disposition": "EXCLUDE:not-shoppable",
+   "reason": "Tenant lease expiry — due-diligence detail, not a search filter (currentRent + rented carry the investor signal)",
+   "coverage": 279,
+   "coverageServedAD": 268
+  },
+  {
+   "concept": "cf:Personal Property Taxes",
+   "source": "custom",
+   "disposition": "EXCLUDE:not-shoppable",
+   "reason": "Cost detail on in-park homes; not a filter concept",
+   "coverage": 274,
+   "coverageServedAD": 274
+  },
+  {
+   "concept": "cf:Unit #",
+   "source": "custom",
+   "disposition": "EXCLUDE:not-shoppable",
+   "reason": "Per-unit identifier on multi-family",
+   "coverage": 264,
+   "coverageServedAD": 156
+  },
+  {
+   "concept": "cf:Manufacturer",
+   "source": "custom",
+   "disposition": "EXCLUDE:not-shoppable",
+   "reason": "Free-text manufactured-home brand, fragmented spellings ('Skyline' vs 'Skyline Homes'; top brand 21 rows) — unreliable as a filter",
+   "coverage": 231,
+   "coverageServedAD": 231
+  },
+  {
+   "concept": "Skirt",
+   "source": "standard",
+   "disposition": "EXCLUDE:not-shoppable",
+   "reason": "Manufactured-home skirting material (multi: Metal 81 · Vinyl 52 · Wood 39 · Block 29 served) — a detail-page attribute, not a search need",
+   "coverage": 223,
+   "coverageServedAD": 223
+  },
+  {
+   "concept": "cf:Leased Components",
+   "source": "custom",
+   "disposition": "EXCLUDE:not-shoppable",
+   "reason": "Free-text prose ('Propane Tank is leased through …'); not filterable",
+   "coverage": 219,
+   "coverageServedAD": 183
+  },
+  {
+   "concept": "cf:SewerSeptic Comments",
+   "source": "custom",
+   "disposition": "EXCLUDE:not-shoppable",
+   "reason": "Free-text comments (payload key 'Sewer/Septic Comments', 199 served rows)",
+   "coverage": 199,
+   "coverageServedAD": 199
+  },
+  {
+   "concept": "cf:Water Comments",
+   "source": "custom",
+   "disposition": "EXCLUDE:not-shoppable",
+   "reason": "Free-text comments",
+   "coverage": 167,
+   "coverageServedAD": 167
+  },
+  {
+   "concept": "cf:Utilities Comments",
+   "source": "custom",
+   "disposition": "EXCLUDE:not-shoppable",
+   "reason": "Free-text comments",
+   "coverage": 128,
+   "coverageServedAD": 128
+  },
+  {
+   "concept": "cf:Zoning Comments",
+   "source": "custom",
+   "disposition": "EXCLUDE:not-shoppable",
+   "reason": "Free-text comments (zoning filter exists)",
+   "coverage": 79,
+   "coverageServedAD": 79
+  },
+  {
+   "concept": "cf:Number of Units Leased",
+   "source": "custom",
+   "disposition": "EXCLUDE:not-shoppable",
+   "reason": "Per-listing occupancy detail; not filterable without unit-count math",
+   "coverage": 49,
+   "coverageServedAD": 49
+  },
+  {
+   "concept": "cf:Irrigation Comments",
+   "source": "custom",
+   "disposition": "EXCLUDE:not-shoppable",
+   "reason": "Free-text comments",
+   "coverage": 41,
+   "coverageServedAD": 26
+  },
+  {
+   "concept": "group:Unit 1 Rent Includes",
+   "source": "group",
+   "disposition": "EXCLUDE:not-shoppable",
+   "reason": "Per-unit rent-inclusion detail; also unmeasurable (see coverage note)",
+   "coverage": null,
+   "coverageServedAD": null
+  },
+  {
+   "concept": "group:Unit 2 Rent Includes",
+   "source": "group",
+   "disposition": "EXCLUDE:not-shoppable",
+   "reason": "Per-unit detail; unmeasurable",
+   "coverage": null,
+   "coverageServedAD": null
+  },
+  {
+   "concept": "group:Unit 3 Rent Includes",
+   "source": "group",
+   "disposition": "EXCLUDE:not-shoppable",
+   "reason": "Per-unit detail; unmeasurable",
+   "coverage": null,
+   "coverageServedAD": null
+  },
+  {
+   "concept": "group:Unit 4 Rent Includes",
+   "source": "group",
+   "disposition": "EXCLUDE:not-shoppable",
+   "reason": "Per-unit detail; unmeasurable",
+   "coverage": null,
+   "coverageServedAD": null
+  },
+  {
+   "concept": "cf:Business Included",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 527 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 527,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Parking",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 457 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 457,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:# of Parking Spaces",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 393 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 393,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Lease Rate Options",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 202 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 202,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "group:Existing Lease Type",
+   "source": "group",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 distinct-member served rows (commercial F/G concept; 126 unserved-class rows)",
+   "coverage": 126,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "group:Miscellaneous Information",
+   "source": "group",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 served rows (F/G/H commercial)",
+   "coverage": 120,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Inventory List Attached",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 68 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 68,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Seller to Provide Training",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 68 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 68,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:# OverheadDock Doors",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 52 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 52,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:# of Grade Level Doors",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 49 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 49,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Business Name",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 44 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 44,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Personal PropertyFixturesEquipment",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 44 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 44,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:ConfidentialityNon-Disclosure Agreement",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 43 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 43,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Hours of Operation Description",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 41 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 41,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Business is a Franchise2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 40 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 40,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Ceiling Clear Height",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 35 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 35,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:VehiclesAverage Daily Traffic",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 32 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 32,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Total Building NRA",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 28 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 28,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Option to Extend",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 27 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 27,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Rent Escalators",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 24 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 24,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "group:Mineral Information",
+   "source": "group",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "20 served rows",
+   "coverage": 23,
+   "coverageServedAD": 20
+  },
+  {
+   "concept": "cf:Unit List Attached",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "19 measurable rows in served classes A-D, 19 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 19,
+   "coverageServedAD": 19
+  },
+  {
+   "concept": "cf:Backup Package Available",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 18 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 18,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Acreage CropsUsage 1",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "8 measurable rows in served classes A-D, 17 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 17,
+   "coverageServedAD": 8
+  },
+  {
+   "concept": "group:Exclusion of Rights",
+   "source": "group",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "Only distinct-measurable member 'Mineral Rights' = 16 served rows; Other/Timber/Water Rights payload keys shared",
+   "coverage": 17,
+   "coverageServedAD": 16
+  },
+  {
+   "concept": "cf:Other Restrictions",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "16 measurable rows in served classes A-D, 16 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 16,
+   "coverageServedAD": 16
+  },
+  {
+   "concept": "cf:Production Comments",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "4 measurable rows in served classes A-D, 16 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 16,
+   "coverageServedAD": 4
+  },
+  {
+   "concept": "cf:Cap Rate Basis",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 15 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 15,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:UGB",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 15 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 15,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Water Costs",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "6 measurable rows in served classes A-D, 15 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 15,
+   "coverageServedAD": 6
+  },
+  {
+   "concept": "group:Agricultural Class",
+   "source": "group",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "Distinct-member coverage 9 served rows (Class 1-6; the 1,457 presence-probe was Unknown-key noise)",
+   "coverage": 14,
+   "coverageServedAD": 9
+  },
+  {
+   "concept": "cf:CropsUsage 1",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "6 measurable rows in served classes A-D, 13 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 13,
+   "coverageServedAD": 6
+  },
+  {
+   "concept": "cf:Annual Average Daily Traffic",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 12 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 12,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Irrigation Well GPM",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "1 measurable rows in served classes A-D, 12 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 12,
+   "coverageServedAD": 1
+  },
+  {
+   "concept": "cf:CAM Cost",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 11 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 11,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:CAM Frequency",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 11 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 11,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Dock Type",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 11 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 11,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "group:Income and Expenses (Annual Amounts)",
+   "source": "group",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 served rows (class H)",
+   "coverage": 10,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Inventory Value",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 9 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 9,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Labor Information",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 9 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 9,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Pumping Costs",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "1 measurable rows in served classes A-D, 9 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 9,
+   "coverageServedAD": 1
+  },
+  {
+   "concept": "cf:BLM",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 7 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 7,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:CAM SqFt",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 7 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 7,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Leased Acres",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "3 measurable rows in served classes A-D, 6 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 6,
+   "coverageServedAD": 3
+  },
+  {
+   "concept": "cf:Personal PropertyFixturesEquipment Value",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 5 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 5,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:BLM#",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 4 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 4,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:CropsUsage 2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "2 measurable rows in served classes A-D, 3 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 3,
+   "coverageServedAD": 2
+  },
+  {
+   "concept": "cf:USFS#",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 3 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 3,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Acreage CropsUsage 2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "2 measurable rows in served classes A-D, 2 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 2,
+   "coverageServedAD": 2
+  },
+  {
+   "concept": "cf:Comprehensive Unit List Attached",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 2 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 2,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:SeasonYear Round Crop 1",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "1 measurable rows in served classes A-D, 2 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 2,
+   "coverageServedAD": 1
+  },
+  {
+   "concept": "cf:Private#",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 1 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 1,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:USFS",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "1 measurable rows in served classes A-D, 1 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 1,
+   "coverageServedAD": 1
+  },
+  {
+   "concept": "group:Special Assessments",
+   "source": "group",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "Distinct-member coverage LID+Street = 1 served row (the presence-probe 8,818 was payload-key collision noise from None/Sewer/Water); specialAssessment (proposed, from cf:Assessment YN) carries the concept",
+   "coverage": 1,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:# Full Baths2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:# Full Baths3",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:# Full Baths4",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:# Half Baths2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:# Half Baths3",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:# Half Baths4",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:# of Bedrooms2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:# of Bedrooms3",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:# of Bedrooms4",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Acreage CropsUsage 3",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Acreage CropsUsage 4",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:CropsUsage 3",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:CropsUsage 4",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Hours of Operation Description2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Inventory List Attached2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Inventory Value2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Irrigation Comments2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Labor Information2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Load Factor",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Monthly Rent10",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Monthly Rent2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Monthly Rent3",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Monthly Rent4",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Monthly Rent5",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Monthly Rent6",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Monthly Rent7",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Monthly Rent8",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Monthly Rent9",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Option to Extend10",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Option to Extend2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Option to Extend3",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Option to Extend4",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Option to Extend5",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Option to Extend6",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Option to Extend7",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Option to Extend8",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Option to Extend9",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Other Restrictions2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Other27",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Ownership Interest Type",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Potential Tax Liability YN2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Price Per SqFt10",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Price Per SqFt11",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Price Per SqFt2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Price Per SqFt3",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Price Per SqFt4",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Price Per SqFt5",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Price Per SqFt6",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Price Per SqFt7",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Price Per SqFt8",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Price Per SqFt9",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Private3",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Rent Escalators10",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Rent Escalators2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Rent Escalators3",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Rent Escalators4",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Rent Escalators5",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Rent Escalators6",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Rent Escalators7",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Rent Escalators8",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Rent Escalators9",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:SeasonYear Round Crop 2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:SeasonYear Round Crop 3",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:SeasonYear Round Crop 4",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Seller to Provide Training2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Square Footage10",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Square Footage2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Square Footage3",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Square Footage4",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Square Footage5",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Square Footage6",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Square Footage7",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Square Footage8",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Square Footage9",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:State#",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:State2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Status10",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Status11",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Status12",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Status3",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Status4",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Status5",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Status6",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Status7",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Status8",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Status9",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Unit #10",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Unit #2",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Unit #3",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Unit #4",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Unit #5",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Unit #6",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Unit #7",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Unit #8",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "cf:Unit #9",
+   "source": "custom",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "0 measurable rows in served classes A-D, 0 across all on-market rows (under the 25-row bar; the buyer surface serves classes A-D only, lib/search/class-prevalence.ts). suffixed dictionary name; the payload key is the shared display label, so this per-unit/duplicate slot is not separately measurable (0 rows under its own key)",
+   "coverage": 0,
+   "coverageServedAD": 0
+  },
+  {
+   "concept": "group:Grazing Permits",
+   "source": "group",
+   "disposition": "EXCLUDE:coverage",
+   "reason": "unmeasurable: both member labels ('Other', 'State') are payload keys shared with unrelated fields; no distinct-measurable member remains. Upper bound 3,483 is key-collision noise; the related AUM fields (BLM/USFS/State/Private permit numbers) carry 0-7 on-market rows each, supporting a tiny true coverage",
+   "coverage": null,
+   "coverageServedAD": null
+  }
+ ]
+}
