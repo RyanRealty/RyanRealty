@@ -277,8 +277,14 @@ export default async function SearchPage({
   const headerIntro = headerIntroParts.join(' ')
   // Header title adapts: preset label folds into placeName, filter-only searches
   // use the derived presetLabel, everything else is "Homes for sale in <place>".
+  // The preset's own `label` is the grammatical noun phrase ("Duplexes for
+  // Sale", "Manufactured Homes"); `shortLabel` is a chip word. Appending the
+  // chip word produced broken English on every preset page — "Homes in Central
+  // Oregon residential lots" (live 2026-07-31). Strip the label's trailing
+  // "for Sale" (the H1 sits above a "for sale" count line) and read it as the
+  // subject. Title Case is correct here: this is the page's hero H1.
   const headerTitle = preset
-    ? `Homes in ${placeName} ${preset.shortLabel.toLowerCase()}`
+    ? `${preset.label.replace(/\s+for sale$/i, '')} in ${placeName}`
     : presetLabel
       ? `${presetLabel} homes in Central Oregon`
       : `Homes for sale in ${placeName}`

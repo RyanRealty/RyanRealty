@@ -67,6 +67,40 @@ export const PRIVATE_DETAIL_KEYS = [
 export const CF_COLLISION_PREFIX = 'CF '
 
 /**
+ * CustomFields GROUPS whose member fields are agent-only, redacted by GROUP at
+ * flatten time rather than by key afterwards.
+ *
+ * Why group-scoped and not another key list (census finding, 2026-07-31): the
+ * MLS flattens a multi-select group into one boolean field per member, so
+ * 'Showing Requirements' arrives as { "Appointment Only": true,
+ * "Combination Lock Box": true, ... }. Those member keys were never in
+ * PRIVATE_DETAIL_KEYS, so they stayed anon-readable — measured with the public
+ * key on 400 on-market rows: Call Listing Agent 290, Appointment Only 226,
+ * Pet(s) on Premises 39, Combination Lock Box 10, Security System 10.
+ *
+ * Redacting those LABELS blindly would destroy real public data, because the
+ * flat namespace collides: 'Vacant' is a Showing/Occupancy signal in one group
+ * and a legitimate public 'Current Use' value for land in another (verified in
+ * the raw payload: Current Use > Fields > Vacant). The group name is present
+ * in the payload and was simply being discarded, so the fix keeps it and
+ * decides there.
+ */
+export const CONFIDENTIAL_CF_GROUPS: ReadonlySet<string> = new Set([
+  'Showing Requirements',
+])
+
+/**
+ * Members of a confidential group that are NOT confidential. The MLS files
+ * construction status inside Showing Requirements; a buyer is entitled to know
+ * a home is under construction, and hiding it would be a data loss, not a
+ * privacy win.
+ */
+export const PUBLIC_MEMBERS_IN_CONFIDENTIAL_GROUPS: ReadonlySet<string> = new Set([
+  'To Be Built',
+  'Under Construction',
+])
+
+/**
  * Strip Spark's masked-field markers from a StandardFields object.
  *
  * Spark masks fields our feed access level does not license by returning the
@@ -123,13 +157,17 @@ export function extractPrivateDetails(
   fields: Record<string, unknown>,
   customFields?: unknown,
 ): Record<string, unknown> | null {
-  const source: Record<string, unknown> = customFields != null
-    ? { ...fields, ...flattenCustomFields(customFields) }
-    : fields
+  const parts = customFields != null ? partitionCustomFields(customFields) : null
+  const source: Record<string, unknown> = parts ? { ...fields, ...parts.public } : fields
   const priv: Record<string, unknown> = {}
   for (const k of PRIVATE_DETAIL_KEYS) {
     const v = source[k]
     if (v != null && !(typeof v === 'string' && (v.trim() === '' || /^\*+$/.test(v)))) priv[k] = v
+  }
+  // Confidential GROUP members carry no shared key list — they are private by
+  // provenance, so they divert wholesale.
+  if (parts) {
+    for (const [k, v] of Object.entries(parts.confidential)) priv[k] = v
   }
   return Object.keys(priv).length > 0 ? priv : null
 }
@@ -157,7 +195,27 @@ export function extractPrivateDetails(
  * it through redactPublicDetails / extractPrivateDetails.
  */
 export function flattenCustomFields(customFields: unknown): Record<string, unknown> {
+  return partitionCustomFields(customFields).public
+}
+
+/**
+ * The confidential half: member fields belonging to a CONFIDENTIAL_CF_GROUPS
+ * group. Diverted to listing_private, never merged into the public details.
+ */
+export function flattenConfidentialCustomFields(customFields: unknown): Record<string, unknown> {
+  return partitionCustomFields(customFields).confidential
+}
+
+/**
+ * One pass over the payload, splitting fields by their GROUP. The group name is
+ * only available here — every later stage sees a flat namespace where
+ * confidential and public members are indistinguishable by key.
+ */
+export function partitionCustomFields(
+  customFields: unknown,
+): { public: Record<string, unknown>; confidential: Record<string, unknown> } {
   const out: Record<string, unknown> = {}
+  const confidential: Record<string, unknown> = {}
   const containers = Array.isArray(customFields)
     ? customFields
     : customFields != null ? [customFields] : []
@@ -169,13 +227,18 @@ export function flattenCustomFields(customFields: unknown): Record<string, unkno
       for (const group of groupList) {
         if (group == null || typeof group !== 'object' || Array.isArray(group)) continue
         // group: { "<Group Name>": [ { "<Field Name>": value }, ... ] }
-        for (const fieldEntries of Object.values(group as Record<string, unknown>)) {
+        for (const [groupName, fieldEntries] of Object.entries(group as Record<string, unknown>)) {
+          const groupIsConfidential = CONFIDENTIAL_CF_GROUPS.has(groupName.trim())
           const fieldList = Array.isArray(fieldEntries) ? fieldEntries : [fieldEntries]
           for (const entry of fieldList) {
             if (entry == null || typeof entry !== 'object' || Array.isArray(entry)) continue
             for (const [name, value] of Object.entries(entry as Record<string, unknown>)) {
               if (value == null) continue
               if (typeof value === 'string' && (value.trim() === '' || /^\*+$/.test(value.trim()))) continue
+              if (groupIsConfidential && !PUBLIC_MEMBERS_IN_CONFIDENTIAL_GROUPS.has(name)) {
+                confidential[name] = value
+                continue
+              }
               out[name] = value
             }
           }
@@ -183,7 +246,7 @@ export function flattenCustomFields(customFields: unknown): Record<string, unkno
       }
     }
   }
-  return out
+  return { public: out, confidential }
 }
 
 /**
