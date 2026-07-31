@@ -934,3 +934,25 @@ attacker would query: 498 on-market rows read anonymously — 0 confidential
 keys, 0 masked values. §8's live leak keys (ShowingRequirements, Tenant Name,
 Call Owner) confirmed absent from every on-market row. `check-private-key-parity`
 green (43 SQL keys = TS keys).
+
+## 15. Completion mission (2026-07-31): the long tail, dispositioned
+
+Matt: "complete this." The refresh chain now has headroom (tile isolated at
+1800s, first cycles 492s/315s), so the last phase is unblocked. Done means:
+
+1. **Every long-tail concept in `registry-report.json` (48 standard + 244
+   custom/group) is DISPOSITIONED**: exposed as a live filter with measured
+   coverage, or excluded in the gate ledger with a §10 reason (confidential /
+   broker plumbing / rule-restricted / coverage under 25 live rows / not
+   buyer-shoppable). The honest target was never "239 columns" — it is zero
+   unexplained concepts, proven by `ci:search-field-completeness`.
+2. **MV v4** carries the columns the exposable tranche needs, applied with the
+   pg_cron one-shot zero-downtime pattern; facet refresh + census + report
+   regenerate; the ratchet baseline moves UP.
+3. **The search page splits** under its 1,196-line ceiling into real modules.
+4. **Per-subtype SEO slugs** ship where inventory justifies them (duplex,
+   triplex, fourplex, residential-lots).
+5. **`search_listings_advanced` gets its 12s statement_timeout back**.
+6. **`staticPageGenerationTimeout` drops 1800 → 600** per the recorded
+   contract, now that consecutive production deploys are green.
+7. Full gates, suite, local browser E2E, deploy READY, prod spot-checks.
