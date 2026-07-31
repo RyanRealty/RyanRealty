@@ -32,7 +32,7 @@
     "app/lp/tetherow/heath/page.tsx": 1101,
     "app/lp/tetherow/page.tsx": 1716,
     "app/price-drops/page.tsx": 684,
-    "app/search/[...slug]/page.tsx": 1174,
+    "app/search/[...slug]/page.tsx": 1196,
     "lib/bpo/build.ts": 632,
     "lib/cma/build.ts": 748,
     "lib/cma/county.ts": 639,
