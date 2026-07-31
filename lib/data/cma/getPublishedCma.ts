@@ -42,6 +42,7 @@ import 'server-only'
 import { createHash, randomBytes } from 'node:crypto'
 import { createServiceClient } from '@/lib/supabase/service'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
+import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 
 /** How long a delivery link stays live after registration. */
 const TOKEN_TTL_DAYS = 30
@@ -113,9 +114,46 @@ const SUMMARY_COLUMNS =
 
 export type CmaPublishBlocker = {
   /** Stable identifier for a caller that wants to branch on the cause. */
-  code: 'missing' | 'doc-type' | 'status' | 'archived' | 'value-range' | 'needs-review'
+  code: 'missing' | 'doc-type' | 'status' | 'archived' | 'value-range' | 'audit-missing' | 'audit-critical'
   /** Plain language, written to be shown to a broker as-is. */
   reason: string
+}
+
+/**
+ * Something the broker should read before publishing, that does not block. A
+ * `major` finding means a comp, a claim, or an exclusion needs correction, and
+ * it is the broker's call. A `minor` finding is polish.
+ */
+export type CmaPublishConcern = {
+  severity: 'major' | 'minor'
+  /** The audit's own category, or 'process' for a build-contract check. */
+  category: string
+  /** Plain language, written to be shown to a broker as-is. */
+  reason: string
+}
+
+type StoredFinding = { severity: string; category: string; claim: string }
+
+/**
+ * The document's own adversarial audit, read defensively.
+ *
+ * `build_summary` is untyped JSON written by lib/cma/build.ts, and rows built
+ * before the audit existed carry no `audit` key at all. `ran` is false for both
+ * of those, which is the honest answer: no severity information exists.
+ */
+function readAudit(row: CmaRow): { ran: boolean; findings: StoredFinding[] } {
+  const summary = (row.build_summary ?? {}) as Record<string, unknown>
+  const audit = summary.audit as Record<string, unknown> | null | undefined
+  if (!audit || audit.used_llm !== true) return { ran: false, findings: [] }
+  const raw = Array.isArray(audit.findings) ? (audit.findings as Record<string, unknown>[]) : []
+  const findings = raw
+    .map((f) => ({
+      severity: String(f.severity ?? ''),
+      category: String(f.category ?? 'other'),
+      claim: sanitizeClientProse(String(f.claim ?? '')),
+    }))
+    .filter((f) => f.claim.length > 0)
+  return { ran: true, findings }
 }
 
 /**
@@ -167,14 +205,75 @@ export function publishBlockers(row: CmaRow | null | undefined): CmaPublishBlock
     })
   }
 
-  const summary = (row.build_summary ?? {}) as Record<string, unknown>
-  const pricing = (summary.pricing ?? {}) as Record<string, unknown>
-  if (pricing.needs_review === true) {
+  // ── the severity-aware audit gate (2026-07-30) ───────────────────────────
+  //
+  // This clause used to read the binary `build_summary.pricing.needs_review`,
+  // which fired on 164 of 206 live documents and so carried no information: it
+  // refused a "[minor] the narrative says 1-bath, the remarks say 1.5" exactly
+  // as hard as a "[critical] the recommendation is not supported by the
+  // adjusted comps". Findings already carry a severity, so the gate reads it.
+  // critical BLOCKS (§0: a number the system itself calls unsound never reaches
+  // the public web), major is a concern the broker reads (publishConcerns),
+  // minor is advisory. `needs_review` is untouched and still drives Matt's
+  // review queue: "must a human look at this" and "may this go public" are
+  // different questions and stay separable.
+  //
+  // Deliberately NOT the same reduction as computeAuditVerdict (lib/cma/audit.ts).
+  // That function decides the queue signal, and it treats a price-opinion
+  // disagreement between two models as broker judgment rather than a gate,
+  // which is right for a document a broker is about to read. Here the
+  // recommendation IS the thing being published, so a critical price-opinion
+  // finding blocks even where the verdict stays 'pass'. Publishing is the
+  // stricter question, never the looser one.
+  //
+  // The build contract is not re-checked here: lib/cma/build.ts refuses to
+  // persist a row whose hard checks failed, so no such row exists to guard.
+  const audit = readAudit(row)
+  if (!audit.ran) {
     out.push({
-      code: 'needs-review',
+      code: 'audit-missing',
       reason:
-        'The pricing audit flagged this document for review. A number the system itself called unsound does not go on the public web.',
+        'No independent audit ran on this document, so nothing has checked the number that would go public. Rebuild it to run one.',
     })
+  }
+  for (const finding of audit.findings) {
+    if (finding.severity !== 'critical') continue
+    out.push({ code: 'audit-critical', reason: `The independent audit called this critical. ${finding.claim}` })
+  }
+
+  return out
+}
+
+/**
+ * What a broker should read before publishing, when nothing blocks.
+ *
+ * Everything here was previously folded into the binary `needs_review` refusal
+ * and therefore invisible. It is surfaced verbatim so the admin panel can say
+ * exactly what the concern is instead of "flagged for review".
+ */
+export function publishConcerns(row: CmaRow | null | undefined): CmaPublishConcern[] {
+  if (!row) return []
+  const out: CmaPublishConcern[] = []
+
+  for (const finding of readAudit(row).findings) {
+    if (finding.severity !== 'major' && finding.severity !== 'minor') continue
+    out.push({ severity: finding.severity, category: finding.category, reason: finding.claim })
+  }
+
+  // The build's own review-severity checks: comps never vetted by the judge,
+  // unresolved rural site facts, no market cache row. Each one forced
+  // needs_review, which used to block. They are real information, so they stay
+  // visible. The two audit checks are skipped because the findings above and
+  // the blockers already state that same thing in more detail.
+  const summary = (row.build_summary ?? {}) as Record<string, unknown>
+  const contract = (summary.accuracy_contract ?? {}) as Record<string, unknown>
+  const checks = Array.isArray(contract.checks) ? (contract.checks as Record<string, unknown>[]) : []
+  for (const check of checks) {
+    if (check.severity !== 'review' || check.pass === true) continue
+    const id = String(check.id ?? '')
+    if (id === 'adversarial-audit-ran' || id === 'adversarial-audit-clean') continue
+    const detail = sanitizeClientProse(String(check.detail ?? ''))
+    if (detail) out.push({ severity: 'major', category: 'process', reason: detail })
   }
 
   return out
@@ -183,13 +282,10 @@ export function publishBlockers(row: CmaRow | null | undefined): CmaPublishBlock
 /**
  * The one publish guard. Every surface calls this.
  *
- * Note the `needs_review` clause inside publishBlockers above.
- * `build_summary.pricing.needs_review` is set by the CMA's own adversarial
- * audit. On 2026-07-30 the single document attached to an active Ryan Realty
- * listing carried `needs_review: true` with an audit verdict of "fail". A human
- * ticking a publish box is not enough to put a number the system itself flagged
- * as unsound onto the public web (CLAUDE.md §0). Two signals must agree: a human
- * published it, and the audit passed.
+ * Note the audit clause inside publishBlockers above. A human ticking a publish
+ * box is not enough to put a number the system itself flagged as unsound onto
+ * the public web (CLAUDE.md §0). Two signals must agree: a human published it,
+ * and the document's own adversarial audit ran and found nothing critical.
  */
 export function isPublishable(row: CmaRow | null | undefined): boolean {
   if (!row) return false

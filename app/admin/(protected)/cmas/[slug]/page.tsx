@@ -20,7 +20,7 @@ import { ConsoleSection } from '@/components/console/ConsoleSection'
 import { KpiStrip } from '@/components/console/KpiStrip'
 import { CmaReviewActions } from '@/components/admin/cma/CmaReviewActions'
 import { CmaPublishControl } from '@/components/admin/cma/CmaPublishControl'
-import { cmaPublishRefusals } from '@/app/actions/cma-publish-preconditions'
+import { cmaPublishConcerns, cmaPublishRefusals } from '@/app/actions/cma-publish-preconditions'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
 
@@ -77,6 +77,9 @@ export default async function AdminCmaReviewPage({
   // offer a button the server would refuse.
   const listingKey = String(row.subject_listing_key ?? '').trim()
   const blockers = cmaPublishRefusals(row)
+  // The other half of the same rule: what does not block, stated in the audit's
+  // own words rather than summarised into a flag.
+  const concerns = cmaPublishConcerns(row)
 
   const previewSrc = hasStoredHtml
     ? `/cma/${safeSlug}`
@@ -184,6 +187,7 @@ export default async function AdminCmaReviewPage({
             publishedAt={(row.published_at as string | null) ?? null}
             publishedBy={(row.published_by as string | null) ?? null}
             blockers={blockers}
+            concerns={concerns}
           />
         </ConsoleSection>
       </div>

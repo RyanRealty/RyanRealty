@@ -44,6 +44,20 @@ vi.mock('next/cache', async (importOriginal) => ({
 
 import { publishCmaToListingAction, unpublishCmaFromListingAction } from '@/app/actions/cma-publish'
 import { isPublishable } from '@/lib/data/cma/getPublishedCma'
+import { cmaPublishConcerns } from '@/app/actions/cma-publish-preconditions'
+
+/** One audit finding, shaped exactly as lib/cma/build.ts persists it. */
+function finding(severity: string, category: string, claim = `a ${severity} ${category} defect`) {
+  return { severity, category, claim, evidence: 'the data shown', compListingKey: null }
+}
+
+/** A build_summary whose adversarial audit ran and produced these findings. */
+function audited(findings: ReturnType<typeof finding>[] = []) {
+  return {
+    pricing: { needs_review: findings.length > 0 },
+    audit: { used_llm: true, model: 'claude-sonnet-4-5', verdict: 'pass', summary: 'ok', findings },
+  }
+}
 
 /** A document that satisfies every clause of the guard. */
 function publishableRow(overrides: Record<string, unknown> = {}) {
@@ -57,7 +71,7 @@ function publishableRow(overrides: Record<string, unknown> = {}) {
     value_high: 1000000,
     subject_listing_key: 'ZZTESTLISTINGKEY',
     subject_address: '1 Test Way, Bend, OR 97701',
-    build_summary: { pricing: { needs_review: false } },
+    build_summary: audited(),
     ...overrides,
   }
 }
@@ -98,7 +112,28 @@ describe('the action refuses every document the guard would reject', () => {
     ['a missing value range', { value_low: null, value_high: null }],
     ['an inverted value range', { value_low: 1000000, value_high: 900000 }],
     ['a zero low', { value_low: 0 }],
-    ['a document its own pricing audit flagged', { build_summary: { pricing: { needs_review: true } } }],
+    // The severity-aware audit clause. `critical` blocks, in every category the
+    // auditor can emit, including the price-opinion one the QUEUE verdict
+    // treats as advisory: the recommendation is the number that would go
+    // public, so an auditor calling it indefensible stops it.
+    ['a critical data-integrity finding', { build_summary: audited([finding('critical', 'data-integrity')]) }],
+    ['a critical comp-selection finding', { build_summary: audited([finding('critical', 'comp-selection')]) }],
+    ['a critical price-opinion finding', { build_summary: audited([finding('critical', 'price-opinion')]) }],
+    [
+      'a critical finding sitting under majors and minors',
+      {
+        build_summary: audited([
+          finding('minor', 'narrative'),
+          finding('major', 'comp-selection'),
+          finding('critical', 'narrative'),
+        ]),
+      },
+    ],
+    // No audit means no severity information to read. Publishing on an absence
+    // of evidence is the §0 failure mode, so it refuses. This also covers every
+    // legacy row built before the adversarial audit existed.
+    ['a document no audit ever ran on', { build_summary: { pricing: { needs_review: false } } }],
+    ['a document whose audit call failed', { build_summary: { audit: { used_llm: false, note: 'no key' } } }],
   ]
 
   it.each(rejected)('refuses %s and writes nothing', async (_label, overrides) => {
@@ -159,6 +194,41 @@ describe('the happy path writes the flag and the audit stamp', () => {
   it('reports a failed write instead of claiming success', async () => {
     updateCmaRowFieldsBySlug.mockResolvedValue({ ok: false, error: 'db down' })
     expect((await publishCmaToListingAction('cma-test')).error).toBe('db down')
+  })
+})
+
+describe('a finding short of critical does not stop the publish', () => {
+  // The whole point of the severity rule. Before it, `needs_review` fired on
+  // 164 of 206 live documents and refused all of them identically.
+  const allowed: Array<[string, Record<string, unknown>]> = [
+    ['majors only', { build_summary: audited([finding('major', 'comp-selection'), finding('major', 'narrative')]) }],
+    ['minors only', { build_summary: audited([finding('minor', 'narrative')]) }],
+    [
+      'majors and minors together, with needs_review still raised',
+      { build_summary: audited([finding('major', 'price-opinion'), finding('minor', 'narrative')]) },
+    ],
+  ]
+
+  it.each(allowed)('publishes a document carrying %s', async (_label, overrides) => {
+    const row = publishableRow(overrides)
+    getCmaAdminRowBySlug.mockResolvedValue(row)
+
+    const result = await publishCmaToListingAction('cma-test')
+
+    expect(result.error).toBeNull()
+    expect(result.blockers).toBeUndefined()
+    expect(updateCmaRowFieldsBySlug).toHaveBeenCalledTimes(1)
+    // Cross-checked against the guard itself: the action and the public read
+    // agree that this same row is publishable.
+    expect(isPublishable({ ...row, published_to_listing: true })).toBe(true)
+    // And the concern is not swallowed. The panel prints it.
+    expect(cmaPublishConcerns(row).length).toBeGreaterThan(0)
+  })
+
+  it('hands the admin panel the exact sentence, not a summary of it', () => {
+    const claim = 'Comp 3 is positioned as a teardown land-value sale, not an improved-property comp.'
+    const row = publishableRow({ build_summary: audited([finding('major', 'comp-selection', claim)]) })
+    expect(cmaPublishConcerns(row)).toEqual([{ severity: 'major', category: 'comp-selection', reason: claim }])
   })
 })
 

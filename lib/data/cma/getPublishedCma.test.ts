@@ -4,7 +4,10 @@ import {
   CMA_DOCUMENT_TERMS_VERSION,
   highlightsFromSiteFacts,
   isPublishable,
+  publishBlockers,
+  publishConcerns,
 } from '@/lib/data/cma/getPublishedCma'
+import { computeAuditVerdict } from '@/lib/cma/audit'
 
 /**
  * The publish guard.
@@ -17,6 +20,20 @@ import {
  * no route to per-comp sold detail.
  */
 
+/** One audit finding, shaped exactly as build.ts persists it. */
+function finding(severity: string, category: string, claim = `a ${severity} ${category} defect`) {
+  return { severity, category, claim, evidence: 'the data shown', compListingKey: null }
+}
+
+/** A build_summary whose adversarial audit ran and produced these findings. */
+function audited(findings: ReturnType<typeof finding>[] = [], extra: Record<string, unknown> = {}) {
+  return {
+    pricing: { needs_review: findings.length > 0 },
+    audit: { used_llm: true, model: 'claude-sonnet-4-5', verdict: 'pass', summary: 'ok', findings },
+    ...extra,
+  }
+}
+
 function publishableRow(overrides: Record<string, unknown> = {}) {
   return {
     id: 'cma-1',
@@ -27,7 +44,7 @@ function publishableRow(overrides: Record<string, unknown> = {}) {
     value_low: 955000,
     value_high: 1060000,
     published_to_listing: true,
-    build_summary: { pricing: { needs_review: false } },
+    build_summary: audited(),
     ...overrides,
   }
 }
@@ -76,11 +93,23 @@ describe('isPublishable — the per-document opt-in', () => {
     expect(isPublishable(publishableRow({ archived_at: '2026-07-01T00:00:00Z' }))).toBe(false)
   })
 
-  it('refuses when the CMA’s own audit flagged it for review', () => {
+  it('refuses a document whose own audit found something critical', () => {
     // CLAUDE.md §0: a human ticking a box does not outrank the document's own
-    // adversarial audit. On 2026-07-30 the single CMA attached to an active
-    // Ryan Realty listing carried needs_review: true and a verdict of "fail".
-    expect(isPublishable(publishableRow({ build_summary: { pricing: { needs_review: true } } }))).toBe(false)
+    // adversarial audit.
+    const row = publishableRow({ build_summary: audited([finding('critical', 'data-integrity')]) })
+    expect(isPublishable(row)).toBe(false)
+  })
+
+  it('refuses a document no audit ever ran on, including every pre-audit legacy build', () => {
+    // No audit means no severity information, so the severity rule has nothing
+    // to read. Publishing on an absence of evidence is the §0 failure mode.
+    expect(isPublishable(publishableRow({ build_summary: { pricing: { needs_review: false } } }))).toBe(false)
+    expect(isPublishable(publishableRow({ build_summary: {} }))).toBe(false)
+    expect(
+      isPublishable(
+        publishableRow({ build_summary: { audit: { used_llm: false, note: 'no key' }, pricing: {} } }),
+      ),
+    ).toBe(false)
   })
 
   it('refuses a document with no usable value range', () => {
@@ -88,6 +117,129 @@ describe('isPublishable — the per-document opt-in', () => {
     expect(isPublishable(publishableRow({ value_low: 0, value_high: 0 }))).toBe(false)
     // Inverted range means the numbers are wrong, so nothing renders.
     expect(isPublishable(publishableRow({ value_low: 1060000, value_high: 955000 }))).toBe(false)
+  })
+})
+
+describe('publish eligibility is keyed to finding SEVERITY, not to the needs_review flag', () => {
+  it('blocks on a critical finding in every category the auditor can emit', () => {
+    for (const category of ['data-integrity', 'comp-selection', 'price-opinion', 'narrative', 'market-verdict', 'other']) {
+      const row = publishableRow({ build_summary: audited([finding('critical', category)]) })
+      expect(isPublishable(row), category).toBe(false)
+      expect(publishBlockers(row).map((b) => b.code)).toContain('audit-critical')
+    }
+  })
+
+  it('publishes a document whose worst finding is major', () => {
+    const row = publishableRow({
+      build_summary: audited([finding('major', 'comp-selection'), finding('major', 'narrative')]),
+    })
+    expect(publishBlockers(row)).toEqual([])
+    expect(isPublishable(row)).toBe(true)
+  })
+
+  it('publishes a document whose worst finding is minor', () => {
+    const row = publishableRow({ build_summary: audited([finding('minor', 'narrative')]) })
+    expect(isPublishable(row)).toBe(true)
+  })
+
+  it('does not block on needs_review by itself, which is the queue signal and not the publish rule', () => {
+    // A needs_review raised by an unresolved site fact or a missing market
+    // cache row is real information, and it is shown as a concern. It is not a
+    // number the system called unsound, so it does not gate the public page.
+    const row = publishableRow({
+      build_summary: {
+        pricing: { needs_review: true, review_reason: 'No market cache row.' },
+        audit: { used_llm: true, verdict: 'pass', summary: 'clean', findings: [finding('minor', 'narrative')] },
+        accuracy_contract: {
+          pass: true,
+          forceReview: true,
+          checks: [{ id: 'market-context-present', severity: 'review', pass: false, detail: 'No market cache row.' }],
+        },
+      },
+    })
+    expect(isPublishable(row)).toBe(true)
+    expect(publishConcerns(row).map((c) => c.reason)).toContain('No market cache row.')
+  })
+
+  it('blocks a critical price-opinion finding even though the queue verdict stays pass', () => {
+    // The exact divergence, asserted in both directions so neither side can
+    // drift into the other. computeAuditVerdict treats a price-level
+    // disagreement between two models as broker judgment, which is right for
+    // "must Matt look at this". Publishing is the stricter question: the
+    // recommendation IS what goes public, so an auditor calling it
+    // indefensible stops it.
+    const findings = [finding('critical', 'price-opinion', 'The $640,000 recommendation is not supported by the adjusted comps.')]
+    expect(computeAuditVerdict(findings as never)).toBe('pass')
+    const row = publishableRow({ build_summary: audited(findings) })
+    expect(isPublishable(row)).toBe(false)
+  })
+
+  it('states the critical finding verbatim, because a broker reads the refusal', () => {
+    const claim = 'The subject is stated as 2.5-bath but the comp set shows a 3-bath configuration.'
+    const row = publishableRow({ build_summary: audited([finding('critical', 'data-integrity', claim)]) })
+    const critical = publishBlockers(row).filter((b) => b.code === 'audit-critical')
+    expect(critical).toHaveLength(1)
+    expect(critical[0].reason).toContain(claim)
+  })
+
+  it('emits one blocker per critical finding, so none is summarised away', () => {
+    const row = publishableRow({
+      build_summary: audited([
+        finding('critical', 'data-integrity', 'Septic shows none-found on an occupied 2004 home.'),
+        finding('critical', 'comp-selection', 'Seven of eight comps are new spec construction.'),
+        finding('major', 'narrative'),
+      ]),
+    })
+    expect(publishBlockers(row).filter((b) => b.code === 'audit-critical')).toHaveLength(2)
+  })
+})
+
+describe('publishConcerns — what does not block, in the audit’s own words', () => {
+  it('returns majors and minors and never a critical', () => {
+    const row = publishableRow({
+      build_summary: audited([
+        finding('critical', 'data-integrity', 'a critical claim'),
+        finding('major', 'comp-selection', 'a major claim'),
+        finding('minor', 'narrative', 'a minor claim'),
+      ]),
+    })
+    const concerns = publishConcerns(row)
+    expect(concerns.map((c) => c.reason)).toEqual(['a major claim', 'a minor claim'])
+    expect(concerns.map((c) => c.severity)).toEqual(['major', 'minor'])
+    expect(JSON.stringify(concerns)).not.toContain('a critical claim')
+  })
+
+  it('adds the build contract’s failing review checks, minus the two the findings already cover', () => {
+    const row = publishableRow({
+      build_summary: audited([], {
+        accuracy_contract: {
+          checks: [
+            { id: 'llm-judgment-ran', severity: 'review', pass: false, detail: 'The comparability judge did not run.' },
+            { id: 'adversarial-audit-clean', severity: 'review', pass: false, detail: 'Audit verdict: fail.' },
+            { id: 'adversarial-audit-ran', severity: 'review', pass: false, detail: 'Audit did not run.' },
+            { id: 'comp-floor', severity: 'hard', pass: false, detail: 'never reaches here' },
+            { id: 'methods-converged', severity: 'info', pass: false, detail: 'informational only' },
+            { id: 'market-context-present', severity: 'review', pass: true, detail: 'passing check' },
+          ],
+        },
+      }),
+    })
+    expect(publishConcerns(row).map((c) => c.reason)).toEqual(['The comparability judge did not run.'])
+  })
+
+  it('strips punctuation the brand voice bans from stored model prose', () => {
+    // Findings written before audit.ts sanitized at source still carry model
+    // em-dashes and semicolons. CLAUDE.md §2 applies to what a human reads.
+    const row = publishableRow({
+      build_summary: audited([finding('major', 'narrative', 'The comp is weak—and the weight is high; review it.')]),
+    })
+    const reason = publishConcerns(row)[0].reason
+    expect(reason).not.toMatch(/[—–;]/)
+  })
+
+  it('returns nothing for a row with no audit and no contract', () => {
+    expect(publishConcerns(null)).toEqual([])
+    expect(publishConcerns(publishableRow({ build_summary: {} }))).toEqual([])
   })
 })
 

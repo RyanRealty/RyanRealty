@@ -15,7 +15,7 @@
  * This list may only ever be STRICTER than `isPublishable`, never looser.
  */
 
-import { publishBlockers } from '@/lib/data/cma/getPublishedCma'
+import { publishBlockers, publishConcerns, type CmaPublishConcern } from '@/lib/data/cma/getPublishedCma'
 
 export const CMA_PUBLISH_NO_LISTING_REASON =
   'No listing is attached to this document, so there is no page for it to appear on.'
@@ -26,4 +26,16 @@ export function cmaPublishRefusals(row: Record<string, unknown> | null | undefin
     reasons.push(CMA_PUBLISH_NO_LISTING_REASON)
   }
   return reasons
+}
+
+/**
+ * What the broker reads before clicking publish, when nothing refuses.
+ *
+ * The other half of the severity-aware gate: a `critical` audit finding lands
+ * in `cmaPublishRefusals` above and the button never appears, while `major` and
+ * `minor` findings land here and the button does. Same module, so a surface
+ * that renders one has the other in hand.
+ */
+export function cmaPublishConcerns(row: Record<string, unknown> | null | undefined): CmaPublishConcern[] {
+  return publishConcerns(row)
 }

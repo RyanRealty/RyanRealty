@@ -15,7 +15,10 @@
  *   action the server would refuse.
  *
  *   ELIGIBLE — a confirm dialog spells out exactly what becomes public before
- *   anything is written.
+ *   anything is written. Anything the audit called `major` or `minor` is
+ *   printed here verbatim, in the panel and again in the dialog. Those do not
+ *   block, so the broker is the one who decides, and deciding requires reading
+ *   the actual sentence rather than a "flagged for review" badge.
  *
  *   PUBLISHED — one click takes it down, with the consequence stated: every
  *   download link already handed out stops working, because every delivery
@@ -56,6 +59,53 @@ export interface CmaPublishControlProps {
   publishedBy: string | null
   /** Plain-language reasons this document cannot publish. Empty means eligible. */
   blockers: string[]
+  /**
+   * Non-blocking findings, from cmaPublishConcerns(). Structurally the
+   * CmaPublishConcern type, restated here so this client component never
+   * imports a server-only module.
+   */
+  concerns?: { severity: 'major' | 'minor'; category: string; reason: string }[]
+}
+
+/** The audit's own words, printed. Majors first, minors under their own label. */
+function ConcernList({ concerns }: { concerns: CmaPublishControlProps['concerns'] }) {
+  const majors = (concerns ?? []).filter((c) => c.severity === 'major')
+  const minors = (concerns ?? []).filter((c) => c.severity === 'minor')
+  if (majors.length === 0 && minors.length === 0) return null
+
+  return (
+    <div className="space-y-2 rounded-xl border border-border p-3">
+      {majors.length > 0 ? (
+        <>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            Read before you publish
+          </div>
+          <ul className="space-y-2">
+            {majors.map((c) => (
+              <li key={c.reason} className="text-sm text-foreground">
+                {c.reason}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      {minors.length > 0 ? (
+        <>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">Minor notes</div>
+          <ul className="space-y-1">
+            {minors.map((c) => (
+              <li key={c.reason} className="text-xs text-muted-foreground">
+                {c.reason}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      <p className="text-xs text-muted-foreground">
+        None of these stop a publish on their own. Only a critical finding does that.
+      </p>
+    </div>
+  )
 }
 
 export function CmaPublishControl(props: CmaPublishControlProps) {
@@ -148,6 +198,7 @@ export function CmaPublishControl(props: CmaPublishControlProps) {
         <p className="text-xs text-muted-foreground">
           Clear the reasons above and the publish button appears here.
         </p>
+        <ConcernList concerns={props.concerns} />
       </div>
     )
   }
@@ -158,6 +209,8 @@ export function CmaPublishControl(props: CmaPublishControlProps) {
       <p className="text-sm text-muted-foreground">
         Ready to publish. The listing page would show the value range and the county facts behind it.
       </p>
+
+      <ConcernList concerns={props.concerns} />
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogTrigger asChild>
@@ -199,6 +252,7 @@ export function CmaPublishControl(props: CmaPublishControlProps) {
                 <li className="text-muted-foreground">The client name, email, and phone on this document.</li>
               </ul>
             </div>
+            <ConcernList concerns={props.concerns} />
             <p className="text-xs text-muted-foreground">
               Reversible any time from this panel, and taking it down kills outstanding download links.
             </p>
