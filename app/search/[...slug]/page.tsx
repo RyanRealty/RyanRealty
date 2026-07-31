@@ -119,13 +119,26 @@ async function resolveSlugImpl(slug: string[]): Promise<{
   neighborhoodName: string | null
 }> {
   const citySlug = slug[0]
-  const resolvedCity = citySlug ? (await getCityFromSlug(citySlug)) ?? decodeURIComponent(citySlug).trim() : null
+  const knownCity = citySlug ? await getCityFromSlug(citySlug) : null
+  const resolvedCity = citySlug ? knownCity ?? decodeURIComponent(citySlug).trim() : null
   const city = resolvedCity ?? citySlug ?? null
 
   if (slug.length === 0) {
     return { city: null, subdivisionSlug: null, subdivisionDisplayName: null, presetSlug: null, preset: null, neighborhoodName: null }
   }
   if (slug.length === 1) {
+    // A single segment that is NOT a known city but IS a preset slug resolves
+    // as an all-cities preset: /homes-for-sale/manufactured is the
+    // manufactured search across the service area, not a phantom city page
+    // with zero homes (found live 2026-07-31 — the exact dead-end class the
+    // audit exists to kill). A real city always wins over a same-named preset,
+    // matching the two-segment rule below.
+    if (!knownCity && citySlug && isPresetSlug(citySlug)) {
+      return {
+        city: null, subdivisionSlug: null, subdivisionDisplayName: null,
+        presetSlug: citySlug, preset: getPresetBySlug(citySlug), neighborhoodName: null,
+      }
+    }
     return { city, subdivisionSlug: null, subdivisionDisplayName: null, presetSlug: null, preset: null, neighborhoodName: null }
   }
   if (slug.length === 2) {
@@ -323,7 +336,9 @@ export default async function SearchPage({
   // the subdivision-name match, so the page serves the full neighborhood (e.g.
   // Mountain View, Awbrey Butte) in ~4ms instead of the slow advanced RPC.
   const neighborhood = resolved.neighborhoodName ?? undefined
-  const hasFilterOnly = !city && hasFilterOnlySearch(sp)
+  // A path-resolved preset with no city (/homes-for-sale/manufactured) is a
+  // filter-only search too — the preset IS the filter, no query params needed.
+  const hasFilterOnly = !city && (Boolean(preset) || hasFilterOnlySearch(sp))
   const presetLabel = !city ? getPresetSearchLabel(sp) : null
 
   const columns = [1, 2, 3, 4, 5].includes(Number(sp.view)) ? Number(sp.view) : 3
@@ -569,9 +584,16 @@ export default async function SearchPage({
       ? (subdivisionTabContent?.about ?? getSubdivisionBlurb(decodedSubdivision!))
       : null
   const entityType = subdivision ? ('subdivision' as const) : ('city' as const)
-  const entityKey = subdivision ? subdivisionEntityKey(city!, decodedSubdivision!) : cityEntityKey(city!)
+  // All-cities preset routes (/homes-for-sale/manufactured) carry no city —
+  // there is no geographic entity to key banners or curation on.
+  const entityKey = subdivision
+    ? subdivisionEntityKey(city!, decodedSubdivision!)
+    : city
+      ? cityEntityKey(city)
+      : null
   const resortKeys = city && subdivision ? await withTimeout(getResortEntityKeys(), new Set<string>(), 1200) : new Set<string>()
-  const isResortSubdivision = subdivision && city && decodedSubdivision ? resortKeys.has(entityKey) : false
+  const isResortSubdivision =
+    subdivision && city && decodedSubdivision && entityKey ? resortKeys.has(entityKey) : false
   const bannerSearchQuery = city
     ? getBannerSearchQuery(
         subdivision ? 'subdivision' : 'city',
@@ -584,7 +606,7 @@ export default async function SearchPage({
   // structured data references the place's hero image. The clean results page does
   // not render a photo hero band, so only the URL is needed (no attribution chrome).
   const [listingHero, bannerResult] =
-    city
+    city && entityKey
       ? await Promise.all([
           withTimeout(getBestListingHeroForGeography(city, decodedSubdivision ?? null), null, 1500),
           IS_PRODUCTION_BUILD
