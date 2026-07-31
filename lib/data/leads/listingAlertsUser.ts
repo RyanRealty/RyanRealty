@@ -208,6 +208,53 @@ export async function updateListingAlertRecipientsForUser(
   return { ok: true }
 }
 
+/**
+ * Stamp the portal "new since last visit" baseline on ONE alert the session
+ * user owns (Phase 4.1). This is the entire mechanism behind the badge: one
+ * timestamp, written when the owner says they have seen the results. It never
+ * touches notified_listing_keys, so marking a search seen cannot suppress an
+ * alert email the engine has not sent yet.
+ */
+export async function markListingAlertViewedForUser(
+  id: string,
+  userId: string,
+  isoTime: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const trimmedId = (id ?? '').trim()
+  const uid = (userId ?? '').trim()
+  if (!trimmedId || !uid) return { ok: false, error: 'not_found' }
+  const supabase = createServiceClient()
+  const { error } = await supabase
+    .from(TABLE)
+    .update({ last_viewed_at: isoTime, updated_at: isoTime })
+    .eq('id', trimmedId)
+    .eq('user_id', uid)
+  if (error) {
+    console.error('[markListingAlertViewedForUser]', error.message)
+    return { ok: false, error: 'persist_failed' }
+  }
+  return { ok: true }
+}
+
+/** Stamp the baseline on EVERY alert the session user owns ("mark all seen"). */
+export async function markAllListingAlertsViewedForUser(
+  userId: string,
+  isoTime: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const uid = (userId ?? '').trim()
+  if (!uid) return { ok: false, error: 'not_found' }
+  const supabase = createServiceClient()
+  const { error } = await supabase
+    .from(TABLE)
+    .update({ last_viewed_at: isoTime, updated_at: isoTime })
+    .eq('user_id', uid)
+  if (error) {
+    console.error('[markAllListingAlertsViewedForUser]', error.message)
+    return { ok: false, error: 'persist_failed' }
+  }
+  return { ok: true }
+}
+
 /** Delete one alert owned by the session user. */
 export async function deleteListingAlertForUser(id: string, userId: string): Promise<{ ok: boolean; error?: string }> {
   const supabase = createServiceClient()

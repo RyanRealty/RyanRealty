@@ -39,6 +39,7 @@ import { cn } from '@/lib/utils'
 import { InlineEditText, InlineEditSelect, type InlineOption } from './InlineEditField'
 import { EditPhonesDialog, AddRelationshipDialog } from './PersonDialogs'
 import { MergeContactDialog } from '@/components/admin/crm/MergeContactDialog'
+import { PortalViewLink } from '@/components/admin/crm/portal-view/PortalViewLink'
 import {
   updatePersonFieldAction,
   saveEmailRowAction,
@@ -422,6 +423,11 @@ export function PersonSidebar({ data, customFieldsNode }: { data: SidebarData; c
         <EmailRows personId={p.personId} emails={p.emails} />
         <AddressRow personId={p.personId} address={p.address} />
       </div>
+
+      {/* Read-only mirror of this contact's signed-in portal (Phase 4.3). Sits
+          high in the profile column so it is reachable without scrolling the
+          rail, and it is a link, never an impersonation. */}
+      <PortalViewLink personId={p.personId} />
 
       {/* Relationships (§07a 4) */}
       <div className="border-t border-border pt-2">

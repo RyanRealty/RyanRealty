@@ -4,14 +4,18 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
+/**
+ * Account nav (Phase 4.1 consolidation).
+ *
+ * /account is now the portal: alerts, areas, homes, and activity are TABS on
+ * that one surface, not separate destinations. This nav therefore carries the
+ * portal plus the settings-shaped pages that stay standalone. The folded routes
+ * (/account/saved-homes, /account/hidden, /account/saved-searches,
+ * /account/areas, /account/history, /account/collections) still exist and still
+ * render, because alert emails and older links point at them.
+ */
 const ACCOUNT_NAV_LINKS = [
-  { href: '/account', label: 'Dashboard', exact: true },
-  { href: '/account/saved-homes', label: 'Saved homes' },
-  { href: '/account/hidden', label: 'Hidden homes' },
-  { href: '/account/saved-searches', label: 'Saved searches' },
-  { href: '/account/areas', label: 'My areas' },
-  { href: '/account/collections', label: 'Collections' },
-  { href: '/account/history', label: 'Viewing history' },
+  { href: '/account', label: 'Portal', exact: true },
   { href: '/account/saved-cities', label: 'Saved cities' },
   { href: '/account/saved-communities', label: 'Saved communities' },
   { href: '/account/notifications', label: 'Notifications' },

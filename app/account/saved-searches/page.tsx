@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getSavedSearches } from '@/app/actions/saved-searches'
+import { getSavedSearchInsights } from '@/app/account/portal-data'
 import SavedSearchControls from './SavedSearchControls'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -18,6 +19,9 @@ export default async function SavedSearchesPage() {
   if (!session?.user) redirect('/')
 
   const searches = await getSavedSearches()
+  // Same live figures the portal renders, so the email deep link and
+  // /account?tab=alerts never disagree about a count.
+  const insights = await getSavedSearchInsights(searches)
 
   return (
     <div className="space-y-8">
@@ -54,7 +58,7 @@ export default async function SavedSearchesPage() {
             </Button>
           </Card>
         ) : (
-          <SavedSearchControls searches={searches} />
+          <SavedSearchControls searches={searches} insights={insights} />
         )}
       </section>
     </div>

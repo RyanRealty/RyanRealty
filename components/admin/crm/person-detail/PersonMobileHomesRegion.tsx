@@ -4,6 +4,7 @@
  */
 
 import { MobileHomesTab } from '@/components/admin/crm/mobile/MobileHomesTab'
+import { PortalViewLink } from '@/components/admin/crm/portal-view/PortalViewLink'
 import { getViewedListingsForLead } from '@/lib/data'
 import { getContactSavedHomes, buildHomesPanelUnion } from '@/lib/data/crm/getContactSavedHomes'
 
@@ -21,5 +22,12 @@ export async function PersonMobileHomesRegion({
     getContactSavedHomes({ crmPersonId: personId, fubLegacyId, emails: personEmails }),
   ])
   const homesPanel = buildHomesPanelUnion(viewedListings, savedHomes)
-  return <MobileHomesTab listings={homesPanel} />
+  return (
+    <div className="space-y-3">
+      <div className="px-4 pt-3">
+        <PortalViewLink personId={personId} />
+      </div>
+      <MobileHomesTab listings={homesPanel} />
+    </div>
+  )
 }

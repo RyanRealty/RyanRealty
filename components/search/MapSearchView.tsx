@@ -30,6 +30,7 @@ import { Eyebrow, H3, Body } from '@/components/site/primitives'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import AreaPicker from '@/components/search/AreaPicker'
 import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
 import SaveListingButton from '@/components/listing/SaveListingButton'
 
@@ -527,6 +528,27 @@ export default function MapSearchView({
     [runViewportSearch, dropGeoScope, syncShapesToUrl]
   )
 
+  /**
+   * Apply (or clear) a SAVED named area from the in-map picker.
+   *
+   * Same end state as a hand-drawn set — shapes replaced, geo scope dropped,
+   * `?shapes=` rewritten, viewport refetched — with one difference: it does
+   * NOT fire search_map_draw. Picking a saved area is not a draw, and counting
+   * it as one would inflate the draw-adoption metric this instrumentation
+   * exists to measure. prevShapeCountRef still advances so the NEXT real draw
+   * compares against the right baseline.
+   */
+  const handleAreaShapes = useCallback(
+    (shapes: DrawnShape[]) => {
+      if (shapes.some((s) => !s.exclude)) dropGeoScope()
+      setDrawnShapes(shapes)
+      syncShapesToUrl(shapes)
+      prevShapeCountRef.current = shapes.length
+      runViewportSearch(lastBoundsRef.current, shapes)
+    },
+    [runViewportSearch, dropGeoScope, syncShapesToUrl]
+  )
+
   // When the user flips search-as-you-move ON, immediately sync to the current view.
   const toggleSearchAsMove = useCallback(() => {
     setSearchAsMove((prev) => {
@@ -756,6 +778,10 @@ export default function MapSearchView({
         onMarkerHover={onMarkerHover}
         className="h-full w-full"
       />
+      {/* Saved named areas (Flexmls My-Map-Overlays parity). Applying one
+          replaces the drawn shape set, so it rides the identical ?shapes=
+          contract and is shareable + alert-savable like any drawn area. */}
+      <AreaPicker shapes={drawnShapes} onApply={handleAreaShapes} />
       {/* Search-as-you-move toggle (Redfin/Zillow pattern). */}
       <Label className="absolute left-1/2 top-3 z-[100] flex -translate-x-1/2 cursor-pointer items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-md">
         <Checkbox

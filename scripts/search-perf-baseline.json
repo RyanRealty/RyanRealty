@@ -1,0 +1,191 @@
+{
+  "_doc": "Search performance budgets. `budgets` is the MEASURED record (npm run perf:search, live production data) and is documentation a human reads. `static` is the machine-enforced half: scripts/check-search-perf-budget.mjs (npm run ci:search-perf-budget) runs inside the secret-less ci:gates chain, so it cannot time a query — it enforces the structural invariants that keep the measured numbers true (ISR revalidate, fetch timeouts, cache wrappers, row caps, bounded reads). Refresh `budgets` with: npm run perf:search -- --json",
+  "measurement": {
+    "script": "scripts/perf-search-measure.mts",
+    "command": "npm run perf:search",
+    "measuredAt": "2026-07-31",
+    "runs": 6,
+    "environment": "laptop over the public internet to Supabase project dwvlophlbvvygjfxcrhm, live production data. Vercel runs closer to the database, so production is faster than these numbers, never slower.",
+    "cacheNote": "The measurement stubs next/cache so unstable_cache is a passthrough. Every timed call is a real query. 'cold' is the first run, 'warm' the median of the rest — a warm DATABASE, not a warm Next cache.",
+    "budgetRule": "budgetMs is set at roughly 2x the worst observed cold time with a 500 ms floor, so network jitter and a cold Postgres buffer never trip it while a real regression (dropped index, lost cache wrapper, unbounded select) shows up as a multiple."
+  },
+  "budgets": [
+    {
+      "path": "searchListingsAll",
+      "shape": "no filters",
+      "measuredColdMs": 450,
+      "measuredWarmMs": 334,
+      "budgetMs": 900,
+      "why": "Whole-MV first page. The slowest unfiltered read, because no index narrows it before the sort."
+    },
+    {
+      "path": "searchListingsAll",
+      "shape": "city only",
+      "measuredColdMs": 215,
+      "measuredWarmMs": 191,
+      "budgetMs": 500,
+      "why": "The single most common search shape on the site. Indexed city read plus an exact count in one query."
+    },
+    {
+      "path": "searchListingsAll",
+      "shape": "city + 2 filters",
+      "measuredColdMs": 230,
+      "measuredWarmMs": 204,
+      "budgetMs": 500,
+      "why": "City plus price plus beds. Adding registry filters must not cost more than the city read itself."
+    },
+    {
+      "path": "searchListingsAll",
+      "shape": "deep multi-filter",
+      "measuredColdMs": 263,
+      "measuredWarmMs": 174,
+      "budgetMs": 600,
+      "why": "Ten filters across price, beds, baths, sqft, year, garage, acreage and two feature booleans, sorted by price. The all-filters sheet's worst realistic case."
+    },
+    {
+      "path": "searchListingsAll",
+      "shape": "drawn shape",
+      "measuredColdMs": 771,
+      "measuredWarmMs": 499,
+      "budgetMs": 1500,
+      "why": "PostGIS key resolution plus chunked .in() re-read. Two round trips by construction, so it carries the widest budget of the row paths."
+    },
+    {
+      "path": "searchListingsAllCount",
+      "shape": "city only",
+      "measuredColdMs": 157,
+      "measuredWarmMs": 206,
+      "budgetMs": 500,
+      "why": "Head count behind the live match total. Runs on every filter change, so it has to stay under a quarter second."
+    },
+    {
+      "path": "searchListingsAllCount",
+      "shape": "deep multi-filter",
+      "measuredColdMs": 270,
+      "measuredWarmMs": 212,
+      "budgetMs": 600,
+      "why": "Same head count with seven predicates. The count must not diverge from the row read it labels."
+    },
+    {
+      "path": "getSearchFacetCounts",
+      "shape": "all classes",
+      "measuredColdMs": 680,
+      "measuredWarmMs": 415,
+      "budgetMs": 1200,
+      "why": "3,808 facet rows paged out of search_facet_counts at 1,000 per page. Four round trips, cached for 15 minutes to match the table's refresh."
+    },
+    {
+      "path": "search_listing_keys_in_shapes",
+      "shape": "one polygon",
+      "measuredColdMs": 754,
+      "measuredWarmMs": 376,
+      "budgetMs": 1500,
+      "why": "The shapes RPC on its own, one Bend-sized polygon returning 620 keys. Budget matches the drawn-shape row path it feeds."
+    }
+  ],
+  "knownDegraded": [
+    {
+      "path": "search_listings_advanced",
+      "shape": "sold + advanced filter",
+      "measuredMs": 12215,
+      "rowsReturned": 0,
+      "finding": "The legacy RPC exhausts the Postgres statement timeout (57014) on every call measured, and getListingsAdvanced returns degraded with zero rows. Reachable from production whenever a search leaves the listing_search_mv gate: a closed/sold scope with any advanced filter, a viewContains or offMarketWithinDays search, or pagination past FAST_TILE_FETCH_CAP. No budget is assigned because the path never completes.",
+      "measuredAt": "2026-07-31"
+    }
+  ],
+  "static": {
+    "minBudgetHeadroom": 1.25,
+    "postgrestMaxRows": 1000,
+    "pageRevalidateMaxSeconds": 60,
+    "pages": ["app/search/page.tsx", "app/search/[...slug]/page.tsx"],
+    "timeoutCeilings": [
+      {
+        "file": "app/search/page.tsx",
+        "kind": "withTimeoutDefault",
+        "name": "withTimeout",
+        "maxMs": 4000,
+        "why": "The split view degrades to an empty result rather than blocking the render on a slow Supabase."
+      },
+      {
+        "file": "app/search/[...slug]/fetch-guards.ts",
+        "kind": "withTimeoutDefault",
+        "name": "withTimeout",
+        "maxMs": 2500,
+        "why": "Secondary fetches on the SEO search routes fail soft fast."
+      },
+      {
+        "file": "app/search/[...slug]/fetch-guards.ts",
+        "kind": "constant",
+        "name": "LISTINGS_FETCH_TIMEOUT_MS",
+        "maxMs": 12000,
+        "why": "Ceiling for the primary listings fetch. Raising it means a user waits longer on the known-degraded RPC path."
+      }
+    ],
+    "cachedReads": [
+      {
+        "file": "lib/data/listings/searchListingsAll.ts",
+        "export": "searchListingsAll",
+        "wrapper": "makeResilientCached"
+      },
+      {
+        "file": "lib/data/listings/searchListingsAll.ts",
+        "export": "searchListingsAllCount",
+        "wrapper": "makeResilientCached"
+      },
+      {
+        "file": "lib/data/listings/searchFacets.ts",
+        "export": "getSearchFacetCounts",
+        "wrapper": "makeResilientCached"
+      }
+    ],
+    "rowCaps": [
+      {
+        "file": "lib/data/listings/searchShapes.ts",
+        "kind": "constant",
+        "name": "SHAPE_KEY_PAGE",
+        "max": 1000,
+        "why": "One PostgREST page. Above 1,000 the response silently truncates."
+      },
+      {
+        "file": "lib/data/listings/searchShapes.ts",
+        "kind": "constant",
+        "name": "MAX_SHAPE_KEYS",
+        "max": 3000,
+        "why": "Ceiling on key resolution before the search degrades to the bbox fallback. Each 1,000 keys is another round trip."
+      },
+      {
+        "file": "lib/data/listings/searchShapes.ts",
+        "kind": "constant",
+        "name": "SHAPE_KEY_CHUNK",
+        "max": 200,
+        "why": "Keys per .in() chunk. Larger chunks push the request URL past safe length."
+      },
+      {
+        "file": "lib/data/listings/searchFacets.ts",
+        "kind": "constant",
+        "name": "PAGE_SIZE",
+        "max": 1000,
+        "why": "Facet paging step, pinned to the PostgREST cap."
+      },
+      {
+        "file": "app/actions/search.ts",
+        "kind": "constant",
+        "name": "cap",
+        "max": 500,
+        "why": "Viewport row cap behind the map. Every row is a marker plus a card, so this is a render budget as much as a query budget."
+      },
+      {
+        "file": "lib/data/listings/searchListingsAll.ts",
+        "kind": "zodMax",
+        "name": "limit",
+        "max": 1000,
+        "why": "The filter schema's page-size ceiling. Above the PostgREST cap the read truncates without an error."
+      }
+    ],
+    "boundedReadFiles": [
+      "lib/data/listings/searchListingsAll.ts",
+      "lib/data/listings/searchShapes.ts",
+      "lib/data/listings/searchFacets.ts"
+    ]
+  }
+}

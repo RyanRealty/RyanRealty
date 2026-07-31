@@ -11,6 +11,8 @@ import {
   setListingAlertActiveForUser,
   deleteListingAlertForUser,
   setListingAlertFrequencyForUser,
+  markListingAlertViewedForUser,
+  markAllListingAlertsViewedForUser,
 } from '@/lib/data/leads/listingAlerts'
 import {
   buildSearchUrlFromFilters,
@@ -73,6 +75,9 @@ export type SavedSearchRow = {
   schedule_days: number[] | null
   /** Household recipients (tokens deliberately NOT exposed to the client). */
   recipients: Array<{ email: string; name: string | null }>
+  /** Last time the owner marked this search seen. Null = never marked, so the
+   *  portal measures "new" from created_at instead (lib/data/leads/newSince). */
+  last_viewed_at: string | null
 }
 
 export type PublicSearchRow = {
@@ -112,6 +117,7 @@ export async function getSavedSearches(): Promise<SavedSearchRow[]> {
     recipients: (Array.isArray(row.recipients) ? row.recipients : [])
       .filter((r) => typeof r?.email === 'string' && r.email.trim().length > 0)
       .map((r) => ({ email: r.email.trim().toLowerCase(), name: r.name?.trim() || null })),
+    last_viewed_at: row.last_viewed_at ?? null,
   }))
 }
 
@@ -308,6 +314,35 @@ export async function renameSavedSearch(id: string, name: string): Promise<Saved
   const next = (name ?? '').trim()
   if (!next) return { error: 'Give this search a name.' }
   return updateSavedSearch(id, { name: next })
+}
+
+/**
+ * Mark one saved search seen — the reset half of the portal's "new since last
+ * visit" badge (Phase 4.1, search-optimization plan §4.6). Writes
+ * listing_alerts.last_viewed_at and nothing else, so it can never suppress an
+ * alert email the engine has not sent yet. Scoped to the session user.
+ */
+export async function markSavedSearchSeen(id: string): Promise<SavedSearchActionResult> {
+  const searchId = (id ?? '').trim()
+  if (!searchId) return { error: 'Search not found' }
+  const session = await getSession()
+  if (!session) return { error: 'Not signed in' }
+  const result = await markListingAlertViewedForUser(
+    searchId,
+    session.user.id,
+    new Date().toISOString(),
+  )
+  if (!result.ok) return { error: 'Could not update that search' }
+  return { error: null }
+}
+
+/** Mark EVERY saved search the signed-in user owns as seen in one write. */
+export async function markAllSavedSearchesSeen(): Promise<SavedSearchActionResult> {
+  const session = await getSession()
+  if (!session) return { error: 'Not signed in' }
+  const result = await markAllListingAlertsViewedForUser(session.user.id, new Date().toISOString())
+  if (!result.ok) return { error: 'Could not update your searches' }
+  return { error: null }
 }
 
 /**

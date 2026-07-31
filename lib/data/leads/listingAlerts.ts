@@ -60,6 +60,10 @@ export type ListingAlertRow = {
   preview_mode?: boolean | null
   /** Additional household recipients: [{email, name?, unsubscribe_token}]. */
   recipients?: ListingAlertRecipientEntry[] | null
+  /** Portal "new since last visit" baseline — the owner's last explicit
+   *  "mark as seen" on /account (migration 20260731180000). NULL until they
+   *  mark it once; readers fall back to created_at (lib/data/leads/newSince). */
+  last_viewed_at?: string | null
   created_at: string | null
   updated_at: string | null
 }

@@ -23,8 +23,11 @@ import {
   setSavedSearchCadence,
   renameSavedSearch,
   deleteSavedSearch,
+  markSavedSearchSeen,
 } from '@/app/actions/saved-searches'
 import type { SavedSearchRow } from '@/app/actions/saved-searches'
+import type { SavedSearchInsight } from '@/app/account/portal-data'
+import { formatNewSinceLabel } from '@/lib/data/leads/newSince'
 import { SAVED_SEARCH_CADENCES, type SavedSearchCadence } from '@/lib/saved-search-cadence'
 import { buildSearchUrlFromFilters, getFiltersSummary } from '@/lib/search-filters'
 import { cn } from '@/lib/utils'
@@ -33,6 +36,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -54,15 +58,26 @@ import {
 import { EditSearchDialog, type RowState } from './EditSearchDialog'
 import AlertPreferences from './AlertPreferences'
 
-type Props = { searches: SavedSearchRow[] }
+type Props = {
+  searches: SavedSearchRow[]
+  /**
+   * Live per-search figures keyed by search id (app/account/portal-data.ts):
+   * exact current match count plus "new since last visit". A missing key means
+   * the figure could not be produced honestly, and the card renders no number
+   * rather than a wrong one (§0).
+   */
+  insights?: Record<string, SavedSearchInsight>
+}
 
 type ActionResult = { error: string | null }
 
 function SavedSearchCard({
   search,
+  insight,
   onChanged,
 }: {
   search: SavedSearchRow
+  insight?: SavedSearchInsight
   onChanged: () => void
 }) {
   const [state, setState] = useState<RowState>({
@@ -75,6 +90,9 @@ function SavedSearchCard({
   const [draftName, setDraftName] = useState(state.name)
   const [pending, startTransition] = useTransition()
   const [note, setNote] = useState<{ tone: 'ok' | 'err', text: string } | null>(null)
+  // "New since last visit" is server-computed; marking it seen clears the
+  // badge here first, then writes listing_alerts.last_viewed_at.
+  const [seen, setSeen] = useState(false)
 
   function dispatch(apply: () => void, revert: () => void, action: () => Promise<ActionResult>) {
     apply()
@@ -143,9 +161,18 @@ function SavedSearchCard({
     )
   }
 
+  function onMarkSeen() {
+    dispatch(
+      () => setSeen(true),
+      () => setSeen(false),
+      () => markSavedSearchSeen(search.id),
+    )
+  }
+
   const cadenceId = `cadence-${search.id}`
   const alertsId = `alerts-${search.id}`
   const filtersSummary = getFiltersSummary(state.filters)
+  const newSinceLabel = insight && !seen ? formatNewSinceLabel(insight.newSince) : null
 
   return (
     // The id anchor is the target of getAlertManageUrl (lib/alerts/manage-url.ts)
@@ -191,17 +218,34 @@ function SavedSearchCard({
       ) : (
         <div className="flex items-start justify-between gap-3">
           <Link href={buildSearchUrlFromFilters(state.filters)} className="min-w-0 flex-1">
-            <span className="block break-words text-sm font-medium text-foreground">{state.name}</span>
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="break-words text-sm font-medium text-foreground">{state.name}</span>
+              {newSinceLabel ? (
+                <Badge className="tabular-nums">{newSinceLabel}</Badge>
+              ) : null}
+            </span>
             <span className="mt-0.5 block text-xs text-muted-foreground">{filtersSummary}</span>
             <span className="mt-0.5 block text-xs text-muted-foreground">
-              {typeof search.result_count === 'number' ? (
-                <span className="tabular-nums">{search.result_count} matches</span>
+              {insight ? (
+                <span className="tabular-nums">{insight.totalCount} matches now</span>
               ) : (
                 'View results'
               )}
             </span>
           </Link>
           <div className="flex shrink-0 items-center gap-1">
+            {newSinceLabel ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onMarkSeen}
+                disabled={pending}
+                className="shrink-0 text-muted-foreground hover:text-foreground"
+              >
+                Mark as seen
+              </Button>
+            ) : null}
             <Button
               type="button"
               variant="ghost"
@@ -314,12 +358,17 @@ function SavedSearchCard({
   )
 }
 
-export default function SavedSearchControls({ searches }: Props) {
+export default function SavedSearchControls({ searches, insights }: Props) {
   const router = useRouter()
   return (
     <div className="flex flex-col gap-3">
       {searches.map((search) => (
-        <SavedSearchCard key={search.id} search={search} onChanged={() => router.refresh()} />
+        <SavedSearchCard
+          key={search.id}
+          search={search}
+          insight={insights?.[search.id]}
+          onChanged={() => router.refresh()}
+        />
       ))}
     </div>
   )
