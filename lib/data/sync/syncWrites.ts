@@ -863,15 +863,7 @@ export async function listCmasForAdmin(options: {
       'id, slug, doc_type, subject_address, subject_subdivision, subject_city, subject_listing_key, client_name, client_email, broker_slug, value_low, value_high, recommended_list, comps_count, status, generation_reason, created_at, finalized_at, delivered_at, built_at, build_error, html_path, price_override, build_summary, published_to_listing, published_at',
       { count: 'exact' },
     )
-    // Archiving sets the archived_at TIMESTAMP; `status` is a separate axis and
-    // the page's own "Archived" filter matches on status. Without this, archived
-    // rows stayed in the working queue AND in the KPI counts above it. On
-    // 2026-07-30 that meant seven "1 Test Way, Bend" integration-test rows sat
-    // in the real CMA queue, five of them stamped delivered, inflating both the
-    // Delivered and Sent cards. A queue Matt works from must not contain
-    // documents he already archived (§0).
-    .is('archived_at', null)
-    .or('doc_type.eq.cma,doc_type.is.null').order('created_at', { ascending: false })
+    .is('archived_at', null).or('doc_type.eq.cma,doc_type.is.null').order('created_at', { ascending: false })
     .range(options.offset, options.offset + options.limit - 1)
   return { rows: (data ?? []) as Array<Record<string, unknown>>, total: count ?? data?.length ?? 0 }
 }
@@ -913,8 +905,6 @@ export async function countCmasInRange(options: {
 }): Promise<number> {
   const sb = client()
   if (!sb) return 0
-  // Same archived_at exclusion as listCmasForAdmin — this feeds analytics, and
-  // an archived document is not a delivered one.
   let q = sb.from('cmas').select('id', { count: 'exact', head: true }).is('archived_at', null)
   if (options.statusIn && options.statusIn.length > 0) q = q.in('status', options.statusIn)
   if (options.fromIso) q = q.gte('created_at', options.fromIso)
