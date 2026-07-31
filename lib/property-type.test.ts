@@ -5,7 +5,9 @@ import {
   propertyTypeFilterToCodes,
   PROPERTY_TYPES,
   REPORT_PROPERTY_TYPE_SEGMENTS,
+  SUBTYPE_TO_CLASS,
 } from './property-type'
+import { searchFieldByKey } from './search/field-registry'
 
 describe('property-type', () => {
   describe('getPropertyTypeLabel', () => {
@@ -97,6 +99,36 @@ describe('property-type', () => {
       expect(keys).toContain('condo_town')
       expect(keys).toContain('manufactured')
       expect(keys).toContain('acreage')
+    })
+  })
+
+  describe('SUBTYPE_TO_CLASS (plan §4.5.3 class auto-narrow data)', () => {
+    it('covers every propertySubTypes registry option, and nothing else', () => {
+      const options = searchFieldByKey('propertySubTypes')!.options!
+      for (const option of options) {
+        expect(SUBTYPE_TO_CLASS[option], `${option} missing a class`).toMatch(/^[A-D]$/)
+      }
+      // No orphan keys: the map and the registry vocabulary are the same set.
+      expect(Object.keys(SUBTYPE_TO_CLASS).sort()).toEqual([...options].sort())
+    })
+
+    it('assigns the classes measured in listing_search_mv (2026-07-30)', () => {
+      expect(SUBTYPE_TO_CLASS['Single Family Residence']).toBe('A')
+      expect(SUBTYPE_TO_CLASS['Manufactured On Land']).toBe('A')
+      expect(SUBTYPE_TO_CLASS['In Park']).toBe('B')
+      expect(SUBTYPE_TO_CLASS['On Leased Land']).toBe('B')
+      expect(SUBTYPE_TO_CLASS.Duplex).toBe('C')
+      expect(SUBTYPE_TO_CLASS.Triplex).toBe('C')
+      expect(SUBTYPE_TO_CLASS.Quadruplex).toBe('C')
+      expect(SUBTYPE_TO_CLASS['Multi Family']).toBe('C')
+      expect(SUBTYPE_TO_CLASS['Residential Lots']).toBe('D')
+      expect(SUBTYPE_TO_CLASS.Rangeland).toBe('D')
+    })
+
+    it('every class code is a code propertyTypeFilterToCodes understands', () => {
+      for (const [subType, cls] of Object.entries(SUBTYPE_TO_CLASS)) {
+        expect(propertyTypeFilterToCodes(cls), `${subType} class ${cls}`).toEqual([cls])
+      }
     })
   })
 

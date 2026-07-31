@@ -47,6 +47,8 @@ const CITY_PATTERNS: ReadonlyArray<readonly [RegExp, string]> = [
 type PhraseAction =
   | { kind: 'boolean'; key: string }
   | { kind: 'multiValue'; key: string; value: string }
+  /** One phrase selecting SEVERAL canonical values of one multi field. */
+  | { kind: 'multiValues'; key: string; values: readonly string[] }
   | { kind: 'params'; params: Readonly<Record<string, string>> }
   // Negation guard: consumes the span, sets nothing. "no ccrs" / "without a
   // pool" must not fire the positive filter (the URL/DAL contract has no
@@ -64,18 +66,34 @@ const LITERAL_RANGE_PHRASE_PARAMS: Readonly<Record<string, Readonly<Record<strin
 }
 
 // Grammar the contract adds beyond registry voice: sale status and property
-// type words. 'manufactured' is deliberately absent — the registry's
-// structureTypes voiceValues already claims it (-> Manufactured House).
+// type words. condo/townhome moved to the propertySubTypes registry
+// voiceValues (plan §4.6, 2026-07-30) — they now emit the enumerated
+// `propertySubTypes` param instead of the legacy scalar.
 const GRAMMAR_PHRASES: ReadonlyArray<readonly [string, Readonly<Record<string, string>>]> = [
   ['sold', { statusFilter: 'closed' }],
   ['pending', { statusFilter: 'pending' }],
-  ['condo', { propertySubType: 'Condominium' }],
-  ['condominium', { propertySubType: 'Condominium' }],
-  ['townhome', { propertySubType: 'Townhouse' }],
-  ['town home', { propertySubType: 'Townhouse' }],
-  ['townhouse', { propertySubType: 'Townhouse' }],
   ['land', { propertyType: 'Land' }],
   ['house', { propertyType: 'Residential' }],
+]
+
+// Sub-type synonyms that resolve to MORE than one canonical value (plan §4.6,
+// 2026-07-30). voiceValues carries one option per phrase, so the multi-value
+// rows live here and register BEFORE the registry loop (first registration
+// wins): 'manufactured' resolves to the enumerated sub-type set, not
+// structureTypes 'Manufactured House' (that voice synonym was retired with
+// this table). Interplay note: 'double wide' KEEPS its bodyType 'Double Wide'
+// registry claim — it is deliberately not re-mapped here. Bare 'acreage' also
+// stays keyword-able by design (a home on acreage is a lot-size intent, not
+// the Agriculture/Rangeland land sub types) — only 'ag land' maps.
+const SUBTYPE_SET_PHRASES: ReadonlyArray<readonly [string, readonly string[]]> = [
+  ['manufactured', ['Manufactured On Land', 'In Park', 'On Leased Land']],
+  ['mobile home', ['Manufactured On Land', 'In Park', 'On Leased Land']],
+  ['multifamily', ['Duplex', 'Triplex', 'Quadruplex', 'Multi Family']],
+  ['multi family', ['Duplex', 'Triplex', 'Quadruplex', 'Multi Family']],
+  ['income property', ['Duplex', 'Triplex', 'Quadruplex', 'Multi Family']],
+  ['leased land', ['Residential Leased Land', 'On Leased Land']],
+  ['land lease', ['Residential Leased Land', 'On Leased Land']],
+  ['ag land', ['Agriculture', 'Rangeland']],
 ]
 
 const ARTICLES = new Set(['a', 'an', 'the'])
@@ -109,6 +127,11 @@ function buildMatchers(): CompiledMatcher[] {
     if (!phrase || claimed.has(phrase)) return
     claimed.add(phrase)
     matchers.push({ phrase, re: phraseToRegex(phrase), action })
+  }
+
+  // Multi-value sub-type synonyms claim first (see SUBTYPE_SET_PHRASES).
+  for (const [phrase, values] of SUBTYPE_SET_PHRASES) {
+    add(phrase, { kind: 'multiValues', key: 'propertySubTypes', values })
   }
 
   for (const field of SEARCH_FIELDS) {
@@ -296,6 +319,12 @@ export function parseSearchQuery(raw: string): ParsedSearch {
       // A specific view type implies a view — keeps 'mountain views' working
       // for the broader hasView filter alongside the viewTypes narrowing.
       if (action.key === 'viewTypes') out.hasView = '1'
+    } else if (action.kind === 'multiValues') {
+      const values = multiValues.get(action.key) ?? []
+      for (const value of action.values) {
+        if (!values.includes(value)) values.push(value)
+      }
+      multiValues.set(action.key, values)
     } else {
       Object.assign(out, action.params)
     }

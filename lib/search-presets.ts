@@ -40,8 +40,18 @@ export type SearchPreset = {
      * hard-coded year drifting stale in the source.
      */
     yearBuiltMinOffset?: number
-    /** Property subtype keyword (details.PropertySubType ILIKE %value%) */
+    /**
+     * LEGACY scalar sub-type param. No preset carries it anymore (remapped to
+     * propertySubTypes 2026-07-30); the key survives so old saved-preset
+     * payloads still type-check. The DAL resolves it to EXACT canonical
+     * values — the substring contract is gone (plan §4.8.4).
+     */
     propertySubType?: string
+    /**
+     * Enumerated PropertySubType values — exact canonical feed strings from
+     * the propertySubTypes registry field, applied as IN (plan §4.4).
+     */
+    propertySubTypes?: string[]
     /**
      * Property type filter value (Residential / Land / Commercial), mapped to
      * MLS codes by propertyTypeFilterToCodes. Powers the lots-and-land preset
@@ -103,19 +113,23 @@ export const SEARCH_PRESETS: SearchPreset[] = [
   { slug: 'lots-and-land', shortLabel: 'Lots and Land', label: 'Lots and Land for Sale', params: { propertyType: 'Land', sort: 'newest' } },
   // Community types
   { slug: 'gated-community', shortLabel: 'Gated Community', label: 'Gated Community Homes', params: { gatedCommunity: true, sort: 'newest' } },
-  // Property types
-  { slug: 'condos', shortLabel: 'Condos', label: 'Condos for Sale', params: { propertySubType: 'Condo', sort: 'newest' } },
-  { slug: 'townhomes', shortLabel: 'Townhomes', label: 'Townhomes for Sale', params: { propertySubType: 'Townhouse', sort: 'newest' } },
+  // Property types — exact enumerated sub-type sets (plan §4.4, 2026-07-30).
+  // Slugs unchanged (live SEO routes); only the filter contract moved from
+  // the substring scalar to explicit canonical value sets.
+  { slug: 'condos', shortLabel: 'Condos', label: 'Condos for Sale', params: { propertySubTypes: ['Condominium'], sort: 'newest' } },
+  { slug: 'townhomes', shortLabel: 'Townhomes', label: 'Townhomes for Sale', params: { propertySubTypes: ['Townhouse'], sort: 'newest' } },
   // Multi-family / income (MLS PropertyType C — duplex/triplex/fourplex,
   // verified against the live MV in lib/property-type.ts 2026-06-08).
   // "multi-family homes in Redmond" had no reachable surface before this
   // preset existed (W3.2 search-matrix audit, 2026-07-21).
   { slug: 'multi-family', shortLabel: 'Multi-Family', label: 'Multi-Family & Income Properties', params: { propertyType: 'Multi-Family', sort: 'newest' } },
-  // Manufactured homes — matched on the MLS PropertySubType keyword so both
-  // manufactured-on-land (PropertyType A) and manufactured-in-park
-  // (PropertyType B) rows qualify. Same propertySubType contract as
-  // condos/townhomes ("details.PropertySubType ILIKE %value%").
-  { slug: 'manufactured', shortLabel: 'Manufactured', label: 'Manufactured Homes', params: { propertySubType: 'Manufactured', sort: 'newest' } },
+  // Manufactured homes — ALL THREE manufactured sub types, explicitly. The
+  // old substring param ('Manufactured') claimed to cover class B but never
+  // did: 'In Park' and 'On Leased Land' do not contain "Manufactured", so the
+  // page under-reported by 308 of 895 listings (34%). This value set is the
+  // §4.3 defect-1 fix — a deliberate, measured correction (~587 → ~895),
+  // approved 2026-07-30.
+  { slug: 'manufactured', shortLabel: 'Manufactured', label: 'Manufactured Homes', params: { propertySubTypes: ['Manufactured On Land', 'In Park', 'On Leased Land'], sort: 'newest' } },
   // Layout / lifestyle (PublicRemarks keyword match)
   { slug: 'single-level', shortLabel: 'Single Level', label: 'Single-Level Homes', params: { keywords: 'single level', sort: 'newest' } },
   { slug: 'with-shop', shortLabel: 'With Shop', label: 'Homes with a Shop', params: { keywords: 'shop', sort: 'newest' } },

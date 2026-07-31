@@ -30,6 +30,7 @@ import {
   resolvePresetYearBuiltMin,
 } from '@/lib/search-presets'
 import { propertyTypeFilterToCodes } from '@/lib/property-type'
+import { resolveLegacyPropertySubType } from '@/lib/data/listings/searchPredicates'
 import { CENTRAL_OREGON_CITY_SLUGS, citySlugForScope } from '@/lib/central-oregon'
 import { slugify } from '@/lib/slug'
 
@@ -112,6 +113,7 @@ const SUPPORTED_PARAM_KEYS = new Set([
   'yearBuiltMinOffset',
   'lotAcresMin',
   'propertySubType',
+  'propertySubTypes',
   'propertyType',
   'hasPool',
   'newListingsDays',
@@ -119,6 +121,28 @@ const SUPPORTED_PARAM_KEYS = new Set([
 ])
 
 const DAY_MS = 86_400_000
+
+/**
+ * A preset's sub-type filter as a lowercase EXACT-value set, or null when the
+ * preset has none. Mirrors searchListingsAll 1:1 (plan §4.8.4): the enumerated
+ * `propertySubTypes` array is used verbatim; the legacy scalar resolves
+ * through the same resolveLegacyPropertySubType table the DAL uses — never a
+ * substring needle.
+ */
+export function presetSubTypeSet(params: {
+  propertySubType?: string
+  propertySubTypes?: string[]
+}): ReadonlySet<string> | null {
+  const values: string[] = []
+  if (Array.isArray(params.propertySubTypes)) values.push(...params.propertySubTypes)
+  if (params.propertySubType) {
+    const resolved = resolveLegacyPropertySubType(params.propertySubType)
+    if (resolved.kind === 'in') values.push(...resolved.values)
+    else if (resolved.kind === 'ciEquals') values.push(resolved.value)
+  }
+  if (values.length === 0) return null
+  return new Set(values.map((v) => v.toLowerCase()))
+}
 
 /**
  * Build a tile predicate for a preset, or null when the preset cannot be
@@ -142,7 +166,7 @@ export function presetTileMatcher(
   const ptCodes = p.propertyType ? propertyTypeFilterToCodes(p.propertyType) : null
   // An unmapped propertyType value would silently match everything — refuse.
   if (p.propertyType && (!ptCodes || ptCodes.length === 0)) return null
-  const subNeedle = p.propertySubType ? p.propertySubType.toLowerCase() : null
+  const subTypeSet = presetSubTypeSet(p)
   const newSinceMs =
     p.newListingsDays != null ? now.getTime() - p.newListingsDays * DAY_MS : null
 
@@ -151,7 +175,7 @@ export function presetTileMatcher(
     if (p.minPrice != null && !(tile.listPrice != null && tile.listPrice >= p.minPrice)) return false
     if (yearMin != null && !(tile.yearBuilt != null && tile.yearBuilt >= yearMin)) return false
     if (p.lotAcresMin != null && !(tile.lotAcres != null && tile.lotAcres >= p.lotAcresMin)) return false
-    if (subNeedle != null && !(tile.propertySubType ?? '').toLowerCase().includes(subNeedle)) return false
+    if (subTypeSet != null && !(tile.propertySubType != null && subTypeSet.has(tile.propertySubType.toLowerCase()))) return false
     if (ptCodes != null && !(tile.propertyType != null && ptCodes.includes(tile.propertyType.toUpperCase()))) return false
     if (p.hasPool === true && tile.hasPool !== true) return false
     if (newSinceMs != null) {

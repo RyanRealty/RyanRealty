@@ -18,11 +18,12 @@ describe('field-registry: registry size (update when fields land/leave)', () => 
     // carport, homeWarranty), -1 multi (directionFaces), -1 text
     // (schoolDistrict) — all built on StandardFields the feed masks
     // ("********"), so none could ever match a listing.
+    // Sub-type tranche (2026-07-30, plan §4): +1 multi (propertySubTypes).
     expect(byKind('range')).toBe(15)
     expect(byKind('boolean')).toBe(39)
-    expect(byKind('multi')).toBe(43)
+    expect(byKind('multi')).toBe(44)
     expect(byKind('text')).toBe(6)
-    expect(SEARCH_FIELDS).toHaveLength(103)
+    expect(SEARCH_FIELDS).toHaveLength(104)
   })
 })
 
@@ -172,7 +173,7 @@ describe('field-registry: helpers and contract fixtures', () => {
 
   it('flags exactly the contract single-column IN multis', () => {
     const flagged = SEARCH_FIELDS.filter((f) => f.singleColumnIn).map((f) => f.key).sort()
-    expect(flagged).toEqual(['county', 'levelsOptions'])
+    expect(flagged).toEqual(['county', 'levelsOptions', 'propertySubTypes'])
   })
 
   it('keeps matchMode "all" only where the contract requires it', () => {
@@ -184,6 +185,67 @@ describe('field-registry: helpers and contract fixtures', () => {
     for (const param of ['minPrice', 'maxPrice', 'minSqFt', 'maxSqFt', 'beds', 'maxBeds', 'baths', 'maxBaths', 'garageMin', 'daysOnMarket', 'hoaMonthlyMax', 'hasFireplace', 'shop', 'appliances', 'county', 'keywords']) {
       expect(ALL_SEARCH_URL_PARAMS, `missing ${param}`).toContain(param)
     }
+  })
+})
+
+describe('field-registry: propertySubTypes (sub-type tranche, plan §4 2026-07-30)', () => {
+  const def = searchFieldByKey('propertySubTypes')!
+
+  it('is an enumerated single-column IN multi over property_sub_type', () => {
+    expect(def).toBeDefined()
+    expect(def.kind).toBe('multi')
+    expect(def.label).toBe('Property sub type')
+    expect(def.category).toBe('type_construction')
+    expect(def.mv).toBe('property_sub_type')
+    expect(def.singleColumnIn).toBe(true)
+    expect(def.matchMode).toBeUndefined()
+  })
+
+  it('carries the 21 exact live values, grouped by class in count-descending order', () => {
+    // Measured in listing_search_mv (all 9,648 on-market rows, 2026-07-30):
+    // 21 distinct non-null values. Order: class A, B, C, D; count-descending
+    // within class.
+    expect(def.options).toEqual([
+      'Single Family Residence', 'Manufactured On Land', 'Townhouse', 'Condominium',
+      'Tenancy in Common', 'Residential Leased Land', 'Stock Cooperative', 'Timeshare',
+      'In Park', 'On Leased Land',
+      'Duplex', 'Multi Family', 'Quadruplex', 'Triplex',
+      'Residential Lots', 'Commercial', 'Recreational', 'Agriculture',
+      'Industrial', 'Rangeland', 'Investment',
+    ])
+  })
+
+  it('owns the single-target sub-type voice synonyms (plan §4.6)', () => {
+    const vv = def.voiceValues!
+    expect(vv.Condominium).toContain('condo')
+    expect(vv.Townhouse).toContain('townhome')
+    expect(vv.Townhouse).toContain('row house')
+    expect(vv.Duplex).toContain('duplex')
+    expect(vv.Triplex).toContain('triplex')
+    expect(vv.Quadruplex).toContain('fourplex')
+    expect(vv.Quadruplex).toContain('quadplex')
+    expect(vv['In Park']).toContain('mobile home park')
+    expect(vv['Stock Cooperative']).toContain('co-op')
+    expect(vv['Tenancy in Common']).toContain('tic')
+    expect(vv.Timeshare).toContain('timeshare')
+    expect(vv['Residential Lots']).toContain('vacant lot')
+  })
+
+  it('leaves "double wide" on bodyType and "manufactured" off structureTypes (interplay locks)', () => {
+    // 'double wide' stays a manufactured BODY TYPE filter, not a sub-type
+    // remap; 'manufactured' moved to the multi-value sub-type grammar in
+    // parse-search-query (SUBTYPE_SET_PHRASES), off structureTypes.
+    expect(searchFieldByKey('bodyType')?.voiceValues?.['Double Wide']).toContain('double wide')
+    const flat = Object.values(def.voiceValues!).flat()
+    expect(flat).not.toContain('double wide')
+    expect(Object.values(searchFieldByKey('structureTypes')?.voiceValues ?? {}).flat()).not.toContain('manufactured')
+  })
+
+  it('registers the propertySubTypes URL param without touching the legacy scalar', () => {
+    expect(ALL_SEARCH_URL_PARAMS).toContain('propertySubTypes')
+    // The legacy scalar `propertySubType` is a DAL/page param, not a registry
+    // field — the registry must not claim it.
+    expect(ALL_SEARCH_URL_PARAMS).not.toContain('propertySubType')
   })
 })
 

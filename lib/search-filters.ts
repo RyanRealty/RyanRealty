@@ -274,6 +274,9 @@ export function savedFiltersToAdvanced(filters: SavedSearchFilters): AdvancedLis
     onSeptic: bool('onSeptic'),
     publicSewer: bool('publicSewer'),
     // Multi-selects (canonical DB values)
+    // Enumerated sub types (plan §4, 2026-07-30) — narrowing (NOT in
+    // NON_NARROWING_KEYS), so a duplex/condo saved search can become an alert.
+    propertySubTypes: arr('propertySubTypes'),
     appliances: arr('appliances'),
     flooring: arr('flooring'),
     heatingTypes: arr('heatingTypes'),

@@ -96,6 +96,28 @@ describe('registry-driven filter keys', () => {
   })
 })
 
+describe('propertySubTypes saved-search wiring (plan §4.7, 2026-07-30)', () => {
+  it('normalizes the CSV URL grammar and string[] identically', () => {
+    expect(normalizeSavedSearchFilters({ propertySubTypes: 'Duplex,Triplex' })).toEqual({
+      propertySubTypes: ['Duplex', 'Triplex'],
+    })
+    expect(getSavedSearchHash({ propertySubTypes: 'Duplex,Triplex' })).toBe(
+      getSavedSearchHash({ propertySubTypes: ['Duplex', 'Triplex'] }),
+    )
+  })
+  it('savedFiltersToAdvanced carries the array (alerts see the sub-type filter)', () => {
+    const adv = savedFiltersToAdvanced({ city: 'Bend', propertySubTypes: 'Duplex,Triplex' })
+    expect(adv.propertySubTypes).toEqual(['Duplex', 'Triplex'])
+    // Legacy scalar still round-trips for pre-remap saved rows.
+    const legacy = savedFiltersToAdvanced({ propertySubType: 'Condo' })
+    expect(legacy.propertySubType).toBe('Condo')
+  })
+  it('is a NARROWING key — a sub-type-only search can become an alert', () => {
+    expect(hasNarrowingFilter({ propertySubTypes: ['Duplex'] })).toBe(true)
+    expect(hasNarrowingFilter({ propertySubTypes: 'Duplex,Triplex' })).toBe(true)
+  })
+})
+
 describe('hasNarrowingFilter (attack 2026-07-11)', () => {
   it('view/sort/poly/status-only searches are NOT narrowing (blocks whole-feed alerts)', () => {
     expect(hasNarrowingFilter({ view: 'list' })).toBe(false)

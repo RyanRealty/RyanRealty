@@ -90,7 +90,10 @@ describe('parseSearchQuery — registry-driven grammar (contract 2026-07-11)', (
 
   it('condo with no hoa built after 2015', () => {
     const r = parseSearchQuery('condo with no hoa built after 2015')
-    expect(r.propertySubType).toBe('Condominium')
+    // 'condo' now emits the enumerated propertySubTypes multi (plan §4.6),
+    // not the legacy scalar.
+    expect(r.propertySubTypes).toBe('Condominium')
+    expect(r.propertySubType).toBeUndefined()
     expect(r.noHoa).toBe('1')
     expect(r.yearBuiltMin).toBe('2015')
     expect(r.hoaMonthlyMax).toBeUndefined()
@@ -325,6 +328,71 @@ describe('Phase 1 tranche voice (CustomFields + promoted scalars, 2026-07-30)', 
 
   it('"floor plan" alone sets hasFloorPlan', () => {
     expect(parseSearchQuery('listing with a floor plan in bend').hasFloorPlan).toBe('1')
+  })
+})
+
+describe('sub-type voice (plan §4.6, 2026-07-30)', () => {
+  it('"duplex in bend" targets the Duplex sub type', () => {
+    const r = parseSearchQuery('duplex in bend')
+    expect((r.propertySubTypes ?? '').split(',')).toContain('Duplex')
+    expect(r.city).toBe('Bend')
+    expect(r.keywords).toBeUndefined()
+  })
+
+  it('"mobile home" resolves to the three-value manufactured set', () => {
+    const r = parseSearchQuery('mobile home under 300k')
+    expect((r.propertySubTypes ?? '').split(',').sort()).toEqual(
+      ['In Park', 'Manufactured On Land', 'On Leased Land'],
+    )
+    expect(r.maxPrice).toBe('300000')
+  })
+
+  it('"manufactured" resolves to the same set (moved off structureTypes)', () => {
+    const r = parseSearchQuery('manufactured homes in la pine')
+    expect((r.propertySubTypes ?? '').split(',').sort()).toEqual(
+      ['In Park', 'Manufactured On Land', 'On Leased Land'],
+    )
+    expect(r.structureTypes).toBeUndefined()
+    expect(r.city).toBe('La Pine')
+  })
+
+  it('"mobile home park" narrows to In Park only (longest phrase wins)', () => {
+    expect(parseSearchQuery('mobile home park in redmond').propertySubTypes).toBe('In Park')
+  })
+
+  it('"multifamily" and "income property" resolve to the four-value class-C set', () => {
+    const set = ['Duplex', 'Multi Family', 'Quadruplex', 'Triplex']
+    expect(parseSearchQuery('multifamily in bend').propertySubTypes!.split(',').sort()).toEqual(set)
+    expect(parseSearchQuery('income property under 900k').propertySubTypes!.split(',').sort()).toEqual(set)
+  })
+
+  it('triplex + fourplex phrases merge with duplex as CSV', () => {
+    const r = parseSearchQuery('duplex or triplex or fourplex in redmond')
+    expect(r.propertySubTypes!.split(',').sort()).toEqual(['Duplex', 'Quadruplex', 'Triplex'])
+  })
+
+  it('"townhouse" and "condo" emit the enumerated multi, not the legacy scalar', () => {
+    expect(parseSearchQuery('townhouse in bend').propertySubTypes).toBe('Townhouse')
+    expect(parseSearchQuery('condo in bend').propertySubTypes).toBe('Condominium')
+    expect(parseSearchQuery('condo in bend').propertySubType).toBeUndefined()
+  })
+
+  it('"double wide" interplay lock: bodyType keeps the phrase, sub types stay unset', () => {
+    const r = parseSearchQuery('double wide in la pine')
+    expect(r.bodyType).toBe('Double Wide')
+    expect(r.propertySubTypes).toBeUndefined()
+  })
+
+  it('"tic" and "co-op" resolve to their exact sub types', () => {
+    expect(parseSearchQuery('tic in bend').propertySubTypes).toBe('Tenancy in Common')
+    expect(parseSearchQuery('co-op under 400k').propertySubTypes).toBe('Stock Cooperative')
+  })
+
+  it('"vacant lot" resolves to Residential Lots; "leased land" to both leased-land values', () => {
+    expect(parseSearchQuery('vacant lot in bend').propertySubTypes).toBe('Residential Lots')
+    expect(parseSearchQuery('leased land in bend').propertySubTypes!.split(',').sort()).toEqual(
+      ['On Leased Land', 'Residential Leased Land'],
+    )
   })
 })
 

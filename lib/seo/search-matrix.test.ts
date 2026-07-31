@@ -160,18 +160,32 @@ describe('presetMatrixMatcher — row semantics', () => {
     expect(match(row({ property_type: null }))).toBe(false)
   })
 
-  it('manufactured matches the property_sub_type substring, both feed spellings', () => {
+  it('manufactured matches EXACTLY the three manufactured sub types (plan §4.8.3 value-set contract)', () => {
+    // The substring contract is gone: the preset carries the explicit value
+    // set {Manufactured On Land, In Park, On Leased Land}. In Park and
+    // On Leased Land (class B) were the 308 rows the old substring missed;
+    // a value outside the set — even one containing "Manufactured" — must
+    // NOT match.
     const match = presetMatrixMatcher(preset('manufactured'), NOW)!
-    expect(match(row({ property_sub_type: 'Manufactured On Land' }))).toBe(true)
-    expect(match(row({ property_sub_type: 'Manufactured Home' }))).toBe(true)
+    expect(match(row({ property_sub_type: 'Manufactured On Land', property_type: 'A' }))).toBe(true)
+    expect(match(row({ property_sub_type: 'In Park', property_type: 'B' }))).toBe(true)
+    expect(match(row({ property_sub_type: 'On Leased Land', property_type: 'B' }))).toBe(true)
+    expect(match(row({ property_sub_type: 'Manufactured Home' }))).toBe(false)
     expect(match(row({ property_sub_type: 'Single Family Residence' }))).toBe(false)
     expect(match(row({ property_sub_type: null }))).toBe(false)
   })
 
-  it('condos matches Condominium via substring (the searchListingsAll ilike contract)', () => {
+  it('condos matches EXACTLY Condominium (value-set contract, not substring)', () => {
     const match = presetMatrixMatcher(preset('condos'), NOW)!
     expect(match(row({ property_sub_type: 'Condominium' }))).toBe(true)
     expect(match(row({ property_sub_type: 'Townhouse' }))).toBe(false)
+    expect(match(row({ property_sub_type: 'Condominium Hotel' }))).toBe(false)
+  })
+
+  it('townhomes matches EXACTLY Townhouse (value-set contract)', () => {
+    const match = presetMatrixMatcher(preset('townhomes'), NOW)!
+    expect(match(row({ property_sub_type: 'Townhouse' }))).toBe(true)
+    expect(match(row({ property_sub_type: 'Condominium' }))).toBe(false)
   })
 
   it('pending preset matches Pending status only; active presets exclude Pending', () => {

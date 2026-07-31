@@ -6,6 +6,8 @@ import {
   MULTI_FIELD_DEFS,
   TEXT_FIELD_COLUMNS,
   RANGE_FIELD_COLUMNS,
+  LEGACY_PROPERTY_SUB_TYPE_MAP,
+  resolveLegacyPropertySubType,
 } from './searchPredicates'
 
 /**
@@ -99,6 +101,65 @@ describe('registry ↔ predicate-table parity', () => {
     for (const def of ranges) {
       expect(RANGE_FIELD_COLUMNS[def.key], `range '${def.key}' not wired`).toBe(def.mv)
     }
+  })
+})
+
+describe('sub types (plan §4, 2026-07-30)', () => {
+  const MANUFACTURED_SET = ['Manufactured On Land', 'In Park', 'On Leased Land']
+
+  it('FilterSchema accepts the propertySubTypes array (max 25)', () => {
+    const parsed = SearchListingsAllFilterSchema.parse({
+      propertySubTypes: ['Condominium', 'Townhouse'],
+    })
+    expect(parsed.propertySubTypes).toEqual(['Condominium', 'Townhouse'])
+    // Over the cap -> catch(undefined), never a thrown query.
+    const over = SearchListingsAllFilterSchema.parse({
+      propertySubTypes: Array.from({ length: 26 }, (_, i) => `V${i}`),
+    })
+    expect(over.propertySubTypes).toBeUndefined()
+  })
+
+  it('propertySubTypes applies as IN via the singleColumnIn registry contract', () => {
+    // Same mechanism the county/levelsOptions multis use: applySearchFilters
+    // routes singleColumnIn defs to query.in(def.mv, values).
+    const def = MULTI_FIELD_DEFS.find((d) => d.key === 'propertySubTypes')
+    expect(def).toBeDefined()
+    expect(def!.mv).toBe('property_sub_type')
+    expect(def!.singleColumnIn).toBe(true)
+    expect(SEARCH_FEATURE_FILTER_KEYS).toContain('propertySubTypes')
+  })
+
+  it('legacy scalar strings resolve to EXACT canonical value sets', () => {
+    // The mapping table the old substring contract papered over, now explicit.
+    const cases: Array<[string, string[]]> = [
+      ['Condo', ['Condominium']],
+      ['condo', ['Condominium']],
+      ['Condominium', ['Condominium']],
+      ['Townhouse', ['Townhouse']],
+      ['townhome', ['Townhouse']],
+      ['Manufactured', MANUFACTURED_SET],
+      ['manufactured', MANUFACTURED_SET],
+    ]
+    for (const [input, values] of cases) {
+      expect(resolveLegacyPropertySubType(input), input).toEqual({ kind: 'in', values })
+    }
+    expect(LEGACY_PROPERTY_SUB_TYPE_MAP.manufactured).toEqual(MANUFACTURED_SET)
+  })
+
+  it('canonical values pass through as single-value IN sets, case-insensitively', () => {
+    expect(resolveLegacyPropertySubType('Duplex')).toEqual({ kind: 'in', values: ['Duplex'] })
+    expect(resolveLegacyPropertySubType('duplex')).toEqual({ kind: 'in', values: ['Duplex'] })
+    expect(resolveLegacyPropertySubType('residential lots')).toEqual({ kind: 'in', values: ['Residential Lots'] })
+  })
+
+  it('unknown strings become case-insensitive EQUALITY, never substring', () => {
+    const resolved = resolveLegacyPropertySubType('Mystery Value')
+    expect(resolved).toEqual({ kind: 'ciEquals', value: 'Mystery Value' })
+    // Wildcards are stripped BEFORE lookup, so an injected pattern cannot
+    // widen the match ('Condo%' -> the Condo legacy set, not an ilike scan).
+    expect(resolveLegacyPropertySubType('Condo%')).toEqual({ kind: 'in', values: ['Condominium'] })
+    expect(resolveLegacyPropertySubType('*Land*')).toEqual({ kind: 'ciEquals', value: 'Land' })
+    expect(resolveLegacyPropertySubType('%_*\\')).toEqual({ kind: 'none' })
   })
 })
 

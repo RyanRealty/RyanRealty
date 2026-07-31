@@ -100,4 +100,31 @@ describe('search-presets', () => {
       }
     })
   })
+
+  describe('sub-type presets (plan §4.4 value-set contract, 2026-07-30)', () => {
+    it('condos carries exactly {Condominium}', () => {
+      expect(getPresetBySlug('condos')!.params.propertySubTypes).toEqual(['Condominium'])
+    })
+
+    it('townhomes carries exactly {Townhouse}', () => {
+      expect(getPresetBySlug('townhomes')!.params.propertySubTypes).toEqual(['Townhouse'])
+    })
+
+    it('manufactured carries all three manufactured sub types (§4.3 defect-1 fix)', () => {
+      // Pins the VALUE SET, not the result count (§4.8.3). The In Park /
+      // On Leased Land values are the class-B inventory the old substring
+      // param missed (308 of 895 listings).
+      expect(getPresetBySlug('manufactured')!.params.propertySubTypes).toEqual([
+        'Manufactured On Land',
+        'In Park',
+        'On Leased Land',
+      ])
+    })
+
+    it('no preset carries the legacy substring-era propertySubType scalar', () => {
+      for (const preset of SEARCH_PRESETS) {
+        expect(preset.params.propertySubType, preset.slug).toBeUndefined()
+      }
+    })
+  })
 })

@@ -42,6 +42,7 @@ import {
   resolvePresetYearBuiltMin,
 } from '@/lib/search-presets'
 import { propertyTypeFilterToCodes } from '@/lib/property-type'
+import { presetSubTypeSet } from '@/lib/data/seo/derive-search-links'
 import type { SearchMatrixInventoryRow } from '@/lib/data/listings/getSearchMatrixInventory'
 import {
   PUBLIC_ACTIVE_STATUSES,
@@ -161,6 +162,7 @@ const SUPPORTED_PARAM_KEYS = new Set([
   'lotAcresMin',
   'propertyType',
   'propertySubType',
+  'propertySubTypes',
   'hasPool',
   'hasFireplace',
   'hasWaterfront',
@@ -187,8 +189,9 @@ function rowStatusMatches(
  * Build a row predicate for a preset, or null when the preset cannot be FULLY
  * evaluated from the slim columns (derivability rule above). Null-guarded
  * conservatively: a row missing a needed field does NOT match. Semantics
- * mirror searchListingsAll 1:1 (substring property_sub_type ilike, Gated in
- * hoa_amenities OR parking_features, view_types beyond bare 'Neighborhood').
+ * mirror searchListingsAll 1:1 (EXACT property_sub_type value sets — the
+ * substring contract is gone, plan §4.8.4 — Gated in hoa_amenities OR
+ * parking_features, view_types beyond bare 'Neighborhood').
  */
 export function presetMatrixMatcher(
   preset: SearchPreset,
@@ -210,7 +213,7 @@ export function presetMatrixMatcher(
   const ptCodes = p.propertyType ? propertyTypeFilterToCodes(p.propertyType) : null
   // An unmapped propertyType would silently match everything — refuse.
   if (p.propertyType && (!ptCodes || ptCodes.length === 0)) return null
-  const subNeedle = p.propertySubType ? p.propertySubType.trim().toLowerCase() : null
+  const subTypeSet = presetSubTypeSet(p)
   const viewNeedle = p.viewContains ? p.viewContains.trim().toLowerCase() : null
 
   return (row: SearchMatrixInventoryRow): boolean => {
@@ -219,7 +222,7 @@ export function presetMatrixMatcher(
     if (p.minPrice != null && !(row.list_price != null && row.list_price >= p.minPrice)) return false
     if (yearMin != null && !(row.year_built != null && row.year_built >= yearMin)) return false
     if (p.lotAcresMin != null && !(row.lot_size_acres != null && row.lot_size_acres >= p.lotAcresMin)) return false
-    if (subNeedle != null && !(row.property_sub_type ?? '').toLowerCase().includes(subNeedle)) return false
+    if (subTypeSet != null && !(row.property_sub_type != null && subTypeSet.has(row.property_sub_type.toLowerCase()))) return false
     if (ptCodes != null && !(row.property_type != null && ptCodes.includes(row.property_type.toUpperCase()))) return false
     if (p.hasPool === true && row.pool_yn !== true) return false
     if (p.hasFireplace === true && row.fireplace_yn !== true) return false

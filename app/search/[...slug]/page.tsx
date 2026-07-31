@@ -10,7 +10,7 @@ import {
   getListingsWithAdvanced,
   type AdvancedSort,
 } from '../../actions/listings'
-import { coerceRegistryParams } from '@/lib/search/field-registry'
+import { coerceRegistryParams, searchFieldByKey } from '@/lib/search/field-registry'
 import { PUBLIC_SEARCH_STATUS_FILTERS } from '@/lib/listing-status-public'
 import { pickSearchFeatureFilters } from '@/lib/data'
 import { getSession } from '../../actions/auth'
@@ -257,6 +257,8 @@ type SearchParams = {
   postalCode?: string
   propertyType?: string
   propertySubType?: string
+  /** Enumerated sub types, CSV of exact canonical values (registry multi). */
+  propertySubTypes?: string
   statusFilter?: string
   keywords?: string
   hasOpenHouse?: string
@@ -410,6 +412,10 @@ export default async function SearchPage({
         ...(preset.params.lotAcresMin != null && !sp.lotAcresMin && { lotAcresMin: preset.params.lotAcresMin }),
         ...(presetYearBuiltMin != null && !sp.yearBuiltMin && { yearBuiltMin: presetYearBuiltMin }),
         ...(preset.params.propertySubType != null && preset.params.propertySubType !== '' && !sp.propertySubType && { propertySubType: preset.params.propertySubType }),
+        // Enumerated sub-type sets (condos / townhomes / manufactured, plan
+        // §4.4). URL CSV (?propertySubTypes=...) wins over the preset — the
+        // registry spread in filterOptsBase already parsed it.
+        ...(preset.params.propertySubTypes != null && preset.params.propertySubTypes.length > 0 && !sp.propertySubTypes && { propertySubTypes: preset.params.propertySubTypes }),
         // lots-and-land: PropertyType filter (Land -> code D); an explicit URL
         // propertyType still wins, same contract as the other preset keys.
         ...(preset.params.propertyType != null && preset.params.propertyType !== '' && !sp.propertyType && { propertyType: preset.params.propertyType }),
@@ -419,6 +425,21 @@ export default async function SearchPage({
         ...(preset.params.sort != null && !sp.sort && { sort: preset.params.sort as AdvancedSort }),
       }
     : filterOptsBase
+
+  // Preset-applied amenity chips for the filter bar: filters the ROUTE applies
+  // that the query string does not carry. Their chip removal writes `<key>=0`,
+  // which the preset merge above honors (W-UI audit T1, 2026-07-30).
+  const AMENITY_PRESET_KEYS = [
+    'hasOpenHouse', 'hasPool', 'hasView', 'hasFireplace', 'hasGolfCourse',
+    'hasWaterfront', 'gatedCommunity',
+  ] as const
+  const presetChips = preset
+    ? AMENITY_PRESET_KEYS.flatMap((k) =>
+        (preset.params as Record<string, unknown>)[k] != null && (sp as Record<string, string | undefined>)[k] == null
+          ? [{ param: k, label: searchFieldByKey(k)?.label ?? k }]
+          : []
+      )
+    : []
 
   // Golf landing — the on-golf-course preset renders a purpose-built, immersive
   // golf properties landing page (hero + community spotlight + stat band + the
@@ -683,6 +704,7 @@ export default async function SearchPage({
           filterBar={
             <SearchFilterBar
               basePath={searchPagePath}
+              presetChips={presetChips}
               locationLabel={displayName}
               locationHref={`${searchPagePath}?${new URLSearchParams({ ...sp, view: 'map' }).toString()}`}
               signedIn={!!session?.user}
@@ -953,6 +975,7 @@ export default async function SearchPage({
         <Suspense fallback={<div className="h-14 w-full rounded-lg border border-border bg-muted" />}>
           <SearchFilterBar
             basePath={searchPagePath}
+            presetChips={presetChips}
             signedIn={!!session?.user}
             pathContext={{ ...resolved, city, citySlug: slug[0] }}
             minPrice={numStr(filterOpts.minPrice)}

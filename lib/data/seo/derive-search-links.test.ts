@@ -3,6 +3,7 @@ import type { SearchPreset } from '@/lib/search-presets'
 import { SEARCH_PRESETS, getPresetBySlug } from '@/lib/search-presets'
 import {
   presetTileMatcher,
+  presetSubTypeSet,
   deriveCityPresetLinks,
   deriveCityLinks,
   deriveCommunityLinks,
@@ -59,7 +60,7 @@ describe('presetTileMatcher', () => {
     expect(match!(tile({ yearBuilt: null }))).toBe(false)
   })
 
-  it('evaluates acreage via lotAcres and subtype via contains', () => {
+  it('evaluates acreage via lotAcres and sub type via EXACT value sets', () => {
     const acreage = presetTileMatcher(preset('acreage-5'), NOW)
     expect(acreage!(tile({ lotAcres: 6 }))).toBe(true)
     expect(acreage!(tile({ lotAcres: 4.9 }))).toBe(false)
@@ -67,6 +68,29 @@ describe('presetTileMatcher', () => {
     const condos = presetTileMatcher(preset('condos'), NOW)
     expect(condos!(tile({ propertySubType: 'Condominium' }))).toBe(true)
     expect(condos!(tile({ propertySubType: 'Townhouse' }))).toBe(false)
+    // Exact value set — substring semantics are gone (plan §4.8.4).
+    expect(condos!(tile({ propertySubType: 'Condominium Hotel' }))).toBe(false)
+  })
+
+  it('manufactured matches EXACTLY the three-value manufactured set (plan §4.8.3)', () => {
+    const match = presetTileMatcher(preset('manufactured'), NOW)
+    expect(match).not.toBeNull()
+    expect(match!(tile({ propertySubType: 'Manufactured On Land', propertyType: 'A' }))).toBe(true)
+    expect(match!(tile({ propertySubType: 'In Park', propertyType: 'B' }))).toBe(true)
+    expect(match!(tile({ propertySubType: 'On Leased Land', propertyType: 'B' }))).toBe(true)
+    expect(match!(tile({ propertySubType: 'Manufactured Home' }))).toBe(false)
+    expect(match!(tile({ propertySubType: null }))).toBe(false)
+  })
+
+  it('presetSubTypeSet resolves legacy scalars through the DAL table (never substring)', () => {
+    expect(presetSubTypeSet({ propertySubType: 'Condo' })).toEqual(new Set(['condominium']))
+    expect(presetSubTypeSet({ propertySubType: 'Manufactured' })).toEqual(
+      new Set(['manufactured on land', 'in park', 'on leased land']),
+    )
+    expect(presetSubTypeSet({ propertySubTypes: ['Duplex', 'Triplex'] })).toEqual(
+      new Set(['duplex', 'triplex']),
+    )
+    expect(presetSubTypeSet({})).toBeNull()
   })
 
   it('maps lots-and-land to MLS PropertyType code D', () => {

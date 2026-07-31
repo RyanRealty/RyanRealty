@@ -39,6 +39,45 @@ export function propertyTypeFilterToCodes(value: string | null | undefined): str
   return null
 }
 
+/** MLS PropertyType class codes that carry enumerated sub types. */
+export type PropertySubTypeClass = 'A' | 'B' | 'C' | 'D'
+
+/**
+ * Every live PropertySubType value -> its one MLS PropertyType class code.
+ * Measured from listing_search_mv (all 9,648 on-market rows, 2026-07-30):
+ * 21 distinct values, each observed under exactly one class. Pure data for
+ * the class-aware sub-type UI (plan §4.5.3): picking 'Duplex' auto-narrows
+ * the class filter to C; picking across classes widens to both. Keys match
+ * the propertySubTypes registry field options 1:1 (tested).
+ */
+export const SUBTYPE_TO_CLASS: Readonly<Record<string, PropertySubTypeClass>> = {
+  // Class A — residential
+  'Single Family Residence': 'A',
+  'Manufactured On Land': 'A',
+  Townhouse: 'A',
+  Condominium: 'A',
+  'Tenancy in Common': 'A',
+  'Residential Leased Land': 'A',
+  'Stock Cooperative': 'A',
+  Timeshare: 'A',
+  // Class B — manufactured
+  'In Park': 'B',
+  'On Leased Land': 'B',
+  // Class C — multi-family / income
+  Duplex: 'C',
+  'Multi Family': 'C',
+  Quadruplex: 'C',
+  Triplex: 'C',
+  // Class D — land
+  'Residential Lots': 'D',
+  Commercial: 'D',
+  Recreational: 'D',
+  Agriculture: 'D',
+  Industrial: 'D',
+  Rangeland: 'D',
+  Investment: 'D',
+}
+
 /** Report segment key matching backend include flags (SFR, condo/town, manufactured, acreage). */
 export type ReportPropertyTypeSegmentKey =
   | 'residential'

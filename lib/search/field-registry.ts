@@ -554,6 +554,51 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
 
   // ── Multi-selects ─────────────────────────────────────────────────────────
   {
+    // Enumerated sub-type filter (plan §4, 2026-07-30). Values are the 21
+    // exact live feed strings measured in listing_search_mv (all 9,648
+    // on-market rows, verified 2026-07-30), grouped by property class in
+    // count-descending order: class A residential, then B manufactured,
+    // C multi-family, D land. The DAL applies IN over these exact values —
+    // no substring matching (§4.8.4). Registered FIRST among the multis so
+    // its voice phrases claim before later fields ('first registration wins'
+    // in the parser). Multi-VALUE synonyms ('mobile home' -> the 3-value
+    // manufactured set) cannot live in voiceValues (one option per phrase) —
+    // they are wired in lib/parse-search-query.ts SUBTYPE_SET_PHRASES.
+    // NOTE: 'double wide' stays on bodyType 'Double Wide' (its registry
+    // claim), deliberately NOT re-mapped here.
+    key: 'propertySubTypes',
+    label: 'Property sub type',
+    category: 'type_construction',
+    kind: 'multi',
+    mv: 'property_sub_type',
+    singleColumnIn: true,
+    options: [
+      // Class A — residential
+      'Single Family Residence', 'Manufactured On Land', 'Townhouse', 'Condominium',
+      'Tenancy in Common', 'Residential Leased Land', 'Stock Cooperative', 'Timeshare',
+      // Class B — manufactured
+      'In Park', 'On Leased Land',
+      // Class C — multi-family
+      'Duplex', 'Multi Family', 'Quadruplex', 'Triplex',
+      // Class D — land
+      'Residential Lots', 'Commercial', 'Recreational', 'Agriculture',
+      'Industrial', 'Rangeland', 'Investment',
+    ],
+    voiceValues: {
+      Condominium: ['condo', 'condominium'],
+      Townhouse: ['townhome', 'town home', 'townhouse', 'row house'],
+      Duplex: ['duplex', 'two unit', '2 unit'],
+      Triplex: ['triplex', 'three unit', '3 unit'],
+      Quadruplex: ['fourplex', 'four plex', 'quadplex', '4 unit'],
+      'Manufactured On Land': ['manufactured on land', 'manufactured with land'],
+      'In Park': ['mobile home park', 'in park'],
+      'Stock Cooperative': ['co-op', 'stock cooperative'],
+      'Tenancy in Common': ['tic', 'tenancy in common'],
+      Timeshare: ['timeshare'],
+      'Residential Lots': ['vacant lot', 'buildable lot'],
+    },
+  },
+  {
     key: 'appliances',
     label: 'Kitchen and appliances',
     category: 'kitchen',
@@ -788,7 +833,10 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     mv: 'structure_types',
     options: ['House', 'Manufactured House', 'Cabin', 'Mixed Use', 'Office', 'Warehouse', 'Industrial'],
     voiceValues: {
-      'Manufactured House': ['manufactured'],
+      // 'manufactured' moved to the propertySubTypes multi-value grammar
+      // (parse-search-query SUBTYPE_SET_PHRASES, plan §4.6 2026-07-30): the
+      // sub-type set {Manufactured On Land, In Park, On Leased Land} is the
+      // authoritative model and covers class B, which structure_types missed.
       Cabin: ['cabin'],
     },
   },

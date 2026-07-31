@@ -123,6 +123,58 @@ export const BOOLEAN_FILTER_KEYS = Object.keys(BOOLEAN_PREDICATES) as BooleanFil
 /** Registry multi defs, resolved once at module load. */
 export const MULTI_FIELD_DEFS = SEARCH_FIELDS.filter((def) => def.kind === 'multi')
 
+// ── Legacy propertySubType scalar → exact value sets (plan §4.4, 2026-07-30) ──
+
+/** The 21 canonical sub-type values, straight from the registry field. */
+const PROPERTY_SUB_TYPE_OPTIONS: readonly string[] =
+  SEARCH_FIELDS.find((def) => def.key === 'propertySubTypes')?.options ?? []
+
+const CANONICAL_SUB_TYPE_BY_LOWER: ReadonlyMap<string, string> = new Map(
+  PROPERTY_SUB_TYPE_OPTIONS.map((value) => [value.toLowerCase(), value])
+)
+
+/**
+ * The legacy scalar `propertySubType` param's KNOWN historical vocabulary —
+ * strings old URLs and pre-remap presets actually sent — mapped to the exact
+ * canonical value sets they meant. 'Manufactured' expands to all three
+ * manufactured sub types (classes A + B), the §4.3 defect-1 fix: the old
+ * substring contract missed In Park / On Leased Land entirely.
+ */
+export const LEGACY_PROPERTY_SUB_TYPE_MAP: Readonly<Record<string, readonly string[]>> = {
+  condo: ['Condominium'],
+  condominium: ['Condominium'],
+  condos: ['Condominium'],
+  townhome: ['Townhouse'],
+  townhouse: ['Townhouse'],
+  manufactured: ['Manufactured On Land', 'In Park', 'On Leased Land'],
+}
+
+export type PropertySubTypeResolution =
+  /** Apply as IN over these exact canonical values. */
+  | { kind: 'in'; values: readonly string[] }
+  /** Unknown string: case-insensitive EQUALITY (ilike with no wildcards). */
+  | { kind: 'ciEquals'; value: string }
+  /** Nothing usable after sanitizing — apply no sub-type predicate. */
+  | { kind: 'none' }
+
+/**
+ * Resolve the legacy scalar `propertySubType` param to an EXACT-match
+ * predicate. Never substring (§4.8.4): known legacy strings and canonical
+ * values become IN sets; anything else becomes case-insensitive equality,
+ * which for a value outside the feed vocabulary matches nothing — loudly
+ * empty beats silently wrong.
+ */
+export function resolveLegacyPropertySubType(raw: string): PropertySubTypeResolution {
+  const cleaned = ilikeExact(raw)
+  if (!cleaned) return { kind: 'none' }
+  const lower = cleaned.toLowerCase()
+  const legacy = LEGACY_PROPERTY_SUB_TYPE_MAP[lower]
+  if (legacy) return { kind: 'in', values: legacy }
+  const canonical = CANONICAL_SUB_TYPE_BY_LOWER.get(lower)
+  if (canonical) return { kind: 'in', values: [canonical] }
+  return { kind: 'ciEquals', value: cleaned }
+}
+
 /**
  * Text fields (case-insensitive exact match on the MV column), straight from
  * the registry. `keywords` is excluded — it gets the word-AND address/remarks

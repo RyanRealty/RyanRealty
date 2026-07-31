@@ -28,6 +28,7 @@ import { PUBLIC_ACTIVE_STATUSES, PUBLIC_PENDING_STATUSES } from '@/lib/listing-s
 import {
   arrayLiteral,
   ilikeExact,
+  resolveLegacyPropertySubType,
   BOOLEAN_PREDICATES,
   BOOLEAN_FILTER_KEYS,
   MULTI_FIELD_DEFS,
@@ -107,6 +108,11 @@ const featureShape = {
   // Multi-selects (registry kind 'multi') — column + match mode resolve from
   // the registry def (matchMode 'all' -> contains, default -> overlaps,
   // singleColumnIn -> IN on the scalar column).
+  // Enumerated sub types (plan §4, 2026-07-30): exact canonical feed values,
+  // applied as IN over property_sub_type via singleColumnIn. Max 25 covers
+  // all 21 live values with headroom. Distinct from the legacy scalar
+  // `propertySubType` param above, which is kept for old-URL compat.
+  propertySubTypes: z.array(z.string().min(1).max(80)).max(25).optional().catch(undefined),
   appliances: multi(),
   flooring: multi(),
   heatingTypes: multi(),
@@ -236,6 +242,11 @@ const FilterSchema = z.object({
   // ── Status / property type ────────────────────────────────────────────────
   status: z.enum(['active', 'active-and-pending', 'pending-only']).default('active'),
   propertyType: z.string().min(1).max(40).optional().catch(undefined),
+  /**
+   * LEGACY scalar sub-type param (old URLs / saved searches). Resolved to
+   * EXACT canonical values by resolveLegacyPropertySubType — never substring.
+   * New code sends the `propertySubTypes` array (featureShape).
+   */
   propertySubType: z.string().min(1).max(80).optional().catch(undefined),
 
   // ── Ranges (registry kind 'range', DAL-canonical `${key}Min`/`${key}Max`) ─
@@ -385,14 +396,21 @@ function applySearchFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>
   const ptCodes = propertyTypeFilterToCodes(parsed.propertyType)
   if (ptCodes && ptCodes.length > 0) query = query.in('property_type', ptCodes)
   if (parsed.propertySubType) {
-    const sub = ilikeExact(parsed.propertySubType)
-    // SUBSTRING match, mirroring the legacy RPC (`PropertySubType ILIKE
-    // '%' || p || '%'`) and the documented SearchPreset contract
-    // ("details.PropertySubType ILIKE %value%"). The previous exact ilike
-    // silently zeroed the condos preset ('Condo' never matched the feed's
-    // 'Condominium') and would zero the manufactured preset ('Manufactured'
-    // vs 'Manufactured On Land' / 'Manufactured Home'). W3.2 2026-07-22.
-    if (sub) query = query.ilike('property_sub_type', `*${sub}*`)
+    // EXACT resolution (plan §4.4, 2026-07-30 — supersedes the W3.2 substring
+    // contract). The old `*value*` ILIKE papered over the 'Condo' vs
+    // 'Condominium' vocabulary gap and produced three measured defects:
+    // silent class-crossing ('Land' matched 668 rows across classes A+B),
+    // /homes-for-sale/manufactured under-reporting by 34% (In Park /
+    // On Leased Land never contain "Manufactured"), and one-value-per-search.
+    // Known legacy strings now resolve to explicit canonical value sets
+    // (resolveLegacyPropertySubType: 'Condo'→{Condominium}, 'Manufactured'→
+    // the 3-value manufactured set, …); anything else is case-insensitive
+    // EQUALITY against property_sub_type. NO substring matching remains on
+    // this column anywhere in the DAL (§4.8.4). New callers should send the
+    // enumerated `propertySubTypes` array instead.
+    const resolved = resolveLegacyPropertySubType(parsed.propertySubType)
+    if (resolved.kind === 'in') query = query.in('property_sub_type', [...resolved.values])
+    else if (resolved.kind === 'ciEquals') query = query.ilike('property_sub_type', resolved.value)
   }
 
   // ── Ranges (every registry range field: gte `${key}Min`, lte `${key}Max`;

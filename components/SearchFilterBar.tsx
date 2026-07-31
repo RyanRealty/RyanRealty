@@ -94,6 +94,14 @@ export type SearchFilterBarProps = {
   view?: string
   perPage?: string
   poly?: string
+  /**
+   * Filters the preset ROUTE applies that are not in the query string
+   * (/with-pool applies hasPool without ?hasPool=1). Without these chips the
+   * filter was live but invisible and un-removable (W-UI audit T1,
+   * 2026-07-30). Removing one writes its off param (`hasPool=0`), which the
+   * page's preset merge now honors.
+   */
+  presetChips?: readonly { label: string; param: string }[]
 }
 
 function hasStatusActive(params: SearchFilterBarProps): boolean {
@@ -617,9 +625,19 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
         </div>
       </div>
 
-      {/* Active registry filters — removable chips so applied filters stay visible */}
-      {registryActive.length > 0 && (
+      {/* Active registry filters — removable chips so applied filters stay
+          visible. Preset-route filters render first: their remove writes the
+          off param instead of deleting (deleting would let the preset
+          re-apply on the next request). */}
+      {(registryActive.length > 0 || (props.presetChips?.length ?? 0) > 0) && (
         <div className="flex flex-wrap items-center gap-1.5">
+          {props.presetChips?.map(({ label, param }) => (
+            <RegistryFilterChip
+              key={`preset:${param}`}
+              label={label}
+              onRemove={() => applyRegistryUpdates({ [param]: '0' })}
+            />
+          ))}
           {registryActive.map(({ key, label, params }) => (
             <RegistryFilterChip
               key={key}
