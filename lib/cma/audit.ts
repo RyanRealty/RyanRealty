@@ -17,6 +17,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
+import { checkNarrativeIntegrity } from '@/lib/cma/audit-narrative-integrity'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CompJudgment } from '@/lib/cma/judge'
@@ -240,7 +241,11 @@ export async function auditCma(args: {
     'failure may reflect condition, presentation, or timing. Flag it only when the comps do not support it. ' +
     'Judge only from the data given; never invent facts. SEVERITY CALIBRATION — critical means NO reasonable broker ' +
     'could defend the recommendation with this comp set; a recommendation that is debatable but sits inside the ' +
-    'adjusted comp cluster is NOT critical. major means a specific comp, claim, or exclusion needs broker correction ' +
+    'adjusted comp cluster is NOT critical. FABRICATED EVIDENCE IS ALWAYS critical WITH category=data-integrity, ' +
+    'whether or not the price is affected: the narrative naming a comparable sale that is not in the priced comp ' +
+    'set, stating a comp count higher than the number of priced comps, or quoting a sale price or price bracket no ' +
+    'priced comp reaches. A homeowner reads this narrative, so evidence it cites must exist in this report. Naming a ' +
+    'comp the report explicitly EXCLUDED is not fabrication — that is honest disclosure. major means a specific comp, claim, or exclusion needs broker correction ' +
     '(set compListingKey when it is a comp); minor is polish. Most competent analyses should PASS or carry a small ' +
     'number of major findings — reserve fail for a genuinely broken analysis. If the analysis survives your attack, ' +
     'verdict=pass and say so plainly — a clean pass is a legitimate outcome. Report only through the record_audit tool.'
@@ -311,6 +316,16 @@ export async function auditCma(args: {
         evidence: sanitizeClientProse(f.evidence ?? ''),
         compListingKey: f.compListingKey && validKeys.has(f.compListingKey) ? f.compListingKey : null,
       }))
+    // Fabricated evidence is not left to the model's severity judgment: the
+    // comp set is data, so the claim is checked in code and lands as
+    // critical + data-integrity, which computeAuditVerdict maps to `fail`.
+    // Guarded on its own so a bug in the checker can never discard the LLM's
+    // findings and turn a real audit into "audit unavailable".
+    try {
+      findings.push(...checkNarrativeIntegrity({ narrative: judgment?.narrative, comps, excluded, subject, market }))
+    } catch (err) {
+      console.warn('[cma/audit] narrative-integrity check failed:', err instanceof Error ? err.message : String(err))
+    }
     // The LLM reports defects; CODE decides the verdict (see computeAuditVerdict).
     // The model's self-reported verdict is kept only as advisory context.
     const verdict = computeAuditVerdict(findings)
