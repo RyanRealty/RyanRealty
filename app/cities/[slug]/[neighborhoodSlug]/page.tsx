@@ -46,7 +46,19 @@ import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
 import { communityImage, cityHero } from '@/lib/geo-images'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { buildYearSeries } from '@/lib/kb/year-series'
-import { slugify, listingTileHref, subdivisionListingsPath } from '@/lib/slug'
+// Row-to-prop shaping shared with the city + community place pages — one copy,
+// so a fix cannot land on one of the three and drift on the others.
+import {
+  buildActivityItems,
+  buildArticlePosts,
+  buildMapPointFeatures,
+  buildMonthlyTrend,
+  buildOpenHouseItems,
+  buildOtherCityItems,
+  buildTickerItems,
+  isTrendSeriesTooSparse,
+} from '@/lib/kb/place-sections'
+import { slugify, subdivisionListingsPath } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
@@ -73,11 +85,8 @@ import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import type {
-  KbTownItem,
-  KbTickerItem,
-  KbMarketData,
-} from '@/components/site/kb/types'
+import { kbMoneyFull } from '@/components/site/kb/types'
+import type { KbTownItem, KbMarketData } from '@/components/site/kb/types'
 import { TESTIMONIALS } from '@/lib/testimonials'
 import '@/components/site/kb/kb.css'
 
@@ -89,42 +98,9 @@ export const revalidate = 60
 
 type Props = { params: Promise<{ slug: string; neighborhoodSlug: string }> }
 
-const CENTRAL_OREGON_CITY_SLUGS = new Set([
-  'bend', 'redmond', 'sisters', 'la-pine', 'sunriver', 'madras',
-  'prineville', 'culver', 'terrebonne', 'tumalo', 'powell-butte',
-])
-
-const monthLabel = (iso?: string) =>
-  iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }) : ''
+// Short form for the character-constrained meta description below ONLY. Facts
+// tables use kbMoneyFull, per the brand rule ($895,000, not $895K).
 const fmtK = (n: number | null): string | null => (n != null ? `$${Math.round(n / 1000).toLocaleString()}K` : null)
-// Full-thousand for facts tables (brand rule: $895,000 not $895K); fmtK stays
-// for the character-constrained meta description below.
-const fmtFull = (n: number | null): string | null => (n != null ? `$${(Math.round(n / 1000) * 1000).toLocaleString('en-US')}` : null)
-
-function openHouseWhen(eventDate: string, start: string | null, end: string | null): string {
-  const day = new Date(eventDate + 'T12:00:00Z').toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
-  })
-  const t = (s: string | null) => {
-    if (!s) return ''
-    const [h, m] = s.split(':')
-    const hr = Number(h)
-    const ap = hr >= 12 ? 'pm' : 'am'
-    const h12 = hr % 12 === 0 ? 12 : hr % 12
-    return m && m !== '00' ? `${h12}:${m}${ap}` : `${h12}${ap}`
-  }
-  const range = start && end ? `${t(start)}-${t(end)}` : start ? t(start) : ''
-  return [day, range].filter(Boolean).join(' · ')
-}
-
-const ACTIVITY_KIND: Record<string, { kind: string; label: string }> = {
-  new_listing: { kind: 'new', label: 'New' },
-  price_drop: { kind: 'price_drop', label: 'Price cut' },
-  status_pending: { kind: 'pending', label: 'Pending' },
-  status_closed: { kind: 'sold', label: 'Sold' },
-  back_on_market: { kind: 'new', label: 'Back on market' },
-  status_expired: { kind: 'expired', label: 'Off market' },
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug: citySlug, neighborhoodSlug } = await params
@@ -267,11 +243,11 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const aboutFacts: { label: string; value: string }[] = [
     // Omitted, never "0", when the count is unknown (§0).
     ...(activeCount != null ? [{ label: 'Active single-family', value: activeCount.toLocaleString('en-US') }] : []),
-    ...(medianListPrice != null ? [{ label: 'Median list', value: fmtFull(medianListPrice) ?? '—' }] : []),
+    ...(medianListPrice != null ? [{ label: 'Median list', value: kbMoneyFull(medianListPrice) ?? '—' }] : []),
     ...(medianDays != null
       ? [{ label: pulse?.medianDaysToPending != null ? 'Median to pending' : 'Median days on market', value: `${Math.round(medianDays)} days` }]
       : []),
-    ...(stats?.medianSalePrice != null ? [{ label: 'Median sold, 1 yr', value: fmtFull(stats.medianSalePrice) ?? '—' }] : []),
+    ...(stats?.medianSalePrice != null ? [{ label: 'Median sold, 1 yr', value: kbMoneyFull(stats.medianSalePrice) ?? '—' }] : []),
     { label: 'City', value: cityName },
   ]
 
@@ -288,17 +264,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     .filter((t) => t.listingKey)
   const featuredItems = await resolveFeaturedItems(featuredTileInput as unknown as Parameters<typeof resolveFeaturedItems>[0])
 
-  const mapFeatures = listingTiles
-    .filter((t) => t.lat != null && t.lng != null)
-    .map((t) => ({
-      type: 'Feature' as const,
-      geometry: { type: 'Point' as const, coordinates: [Number(t.lng), Number(t.lat)] as [number, number] },
-      properties: {
-        p: t.listPrice, bd: t.beds, ba: t.baths, sf: t.sqft,
-        a: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
-        sub: t.subdivisionName ?? '', city: t.city ?? '', img: t.photoUrl ?? '',
-      },
-    }))
+  const mapFeatures = buildMapPointFeatures(listingTiles)
   const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
 
   // Boundary polygon for the map (reliable when present).
@@ -315,11 +281,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       }
     : undefined
 
-  const tickerItems: KbTickerItem[] = listingTiles.slice(0, 6).map((t) => ({
-    price: t.listPrice,
-    address: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
-    town: t.city ?? cityName,
-  }))
+  const tickerItems = buildTickerItems(listingTiles, cityName)
 
   // ── SUBDIVISIONS ── each card → /subdivisions/{slugify(name)} ─────────────
   const subdivisionItems: KbTownItem[] = neighborhoodCommunities
@@ -333,70 +295,25 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     }))
 
   // ── EXPLORE OTHER CITIES ──────────────────────────────────────────────────
-  const otherCityItems: KbTownItem[] = allCitySnapshots
-    .map((s) => ({ s, cs: s.geoKey.replace(/\s+/g, '-') }))
-    .filter(({ cs }) => CENTRAL_OREGON_CITY_SLUGS.has(cs))
-    .slice(0, 8)
-    .map(({ s, cs }) => {
-      const hero = cityHero(cs)
-      return {
-        name: s.geoLabel,
-        href: `/cities/${cs}`,
-        activeCount: s.activeSfrCount > 0 ? s.activeSfrCount : 0,
-        medianPrice: s.medianListPrice ?? null,
-        img: hero.verified ? hero.src : '',
-      }
-    })
+  // No excludeSlug: a neighborhood page links its own parent city on purpose.
+  const otherCityItems: KbTownItem[] = buildOtherCityItems(allCitySnapshots)
 
   // ── LIVE ACTIVITY ──────────────────────────────────────────────────────────
-  const activityItems = activity.slice(0, 8).map((a) => {
-    const km = ACTIVITY_KIND[a.event_type] ?? { kind: a.event_type, label: a.event_type }
-    return {
-      kind: km.kind,
-      label: km.label,
-      address: [a.StreetNumber, a.StreetName, a.StreetSuffix].filter(Boolean).join(' ') || 'Address on request',
-      cityLine: [a.City, a.SubdivisionName].filter(Boolean).join(' · '),
-      price: a.ListPrice ?? null,
-      imageUrl: a.PhotoURL ?? null,
-      href: listingTileHref({ listingKey: a.listing_key, streetNumber: a.StreetNumber ?? null, streetName: a.StreetName ?? null, city: a.City ?? null }),
-      whenLabel: a.event_at
-        ? new Date(a.event_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
-        : '',
-    }
-  })
+  // No stale-"New" relabel here — every event keeps the label the feed reports.
+  const activityItems = buildActivityItems(activity)
 
   // ── OPEN HOUSES ────────────────────────────────────────────────────────────
   // Fetched city-wide (the MLS has no neighborhood scope on open-house rows), so
   // the section is labeled with the CITY, never the neighborhood (§0).
-  const openHouseItems = openHouses.slice(0, 6).map((oh) => ({
-    href: listingTileHref({
-      listingKey: oh.listing_key, streetNumber: oh.street_number, streetName: oh.street_name, city: oh.city,
-    }),
-    photoUrl: oh.photo_url,
-    price: oh.list_price,
-    address: oh.unparsed_address ?? [oh.street_number, oh.street_name].filter(Boolean).join(' '),
-    cityLine: [oh.city, oh.subdivision_name].filter(Boolean).join(' · '),
-    beds: oh.beds_total, baths: oh.baths_full, sqft: oh.living_area,
-    whenLabel: openHouseWhen(oh.event_date, oh.start_time, oh.end_time),
-  }))
+  const openHouseItems = buildOpenHouseItems(openHouses)
 
   // ── GUIDES / BLOG ──────────────────────────────────────────────────────────
-  const articlePosts = blogPosts.map((p) => ({
-    title: p.title,
-    href: `/blog/${p.slug}`,
-    excerpt: p.excerpt,
-    imageUrl: p.heroImageUrl,
-    dateLabel: p.publishedAt
-      ? new Date(p.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
-      : null,
-  }))
+  const articlePosts = buildArticlePosts(blogPosts)
 
   // ── MARKET HUD ─────────────────────────────────────────────────────────────
   // City-fallback for a too-sparse neighborhood series — see the header block.
   // chartScopeLabel keeps the city figure from reading as this one's (§0).
-  const nbhPricePoints = priceHist.filter((p) => p.medianSalePrice != null)
-  const nbhTrendYears = new Set(nbhPricePoints.map((p) => new Date(p.periodStart).getUTCFullYear()))
-  const chartIsCityLevel = nbhPricePoints.length < 8 || nbhTrendYears.size < 2
+  const chartIsCityLevel = isTrendSeriesTooSparse(priceHist)
   const chartPriceHist = chartIsCityLevel ? cityPriceHist : priceHist
 
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
@@ -408,10 +325,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
     daysToPending: pulse?.medianDaysToPending ?? null,
     monthsSupply: pulse?.monthsOfSupply ?? null,
-    trend: chartPriceHist
-      .slice(-13)
-      .filter((p) => p.medianSalePrice != null)
-      .map((p) => ({ label: monthLabel(p.periodStart), value: p.medianSalePrice as number })),
+    trend: buildMonthlyTrend(chartPriceHist),
     byTown: [],
     countyMedian: regionPulse?.medianListPrice ?? null,
     yearSeries: buildYearSeries(chartPriceHist, 5),

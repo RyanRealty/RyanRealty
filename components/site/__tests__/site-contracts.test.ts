@@ -170,10 +170,17 @@ describe('design directive contracts', () => {
   })
 
   it('D87 — multi-word city geo_keys are slugified (La Pine, Powell Butte not dropped)', () => {
+    // The "explore other cities" ledger moved into the shared place-section
+    // module (one copy for city + neighborhood + community), so the slugify +
+    // service-area allowlist contract is asserted at its new home. The city page
+    // still normalizes geo_key spaces for its own community-snapshot lookup.
     const src = readSrc('app/cities/[slug]/page.tsx')
-    // geo_key spaces normalized before the service-area match + in the href
     expect(src).toMatch(/replace\(\/\\s\+\/g, '-'\)/)
-    expect(src).toMatch(/'la-pine'/)
+    const shared = readSrc('lib/kb/place-sections.ts')
+    // geo_key spaces normalized before the service-area match + in the href
+    expect(shared).toMatch(/replace\(\/\\s\+\/g, '-'\)/)
+    expect(shared).toMatch(/'la-pine'/)
+    expect(shared).toMatch(/href: `\/cities\/\$\{cs\}`/)
   })
 
   it('D88 — communities rail renders ALL the city communities (built from cityComms, not a curated 3)', () => {
@@ -209,7 +216,17 @@ describe('design directive contracts', () => {
   it('D93 — activity section is "Latest market activity" with per-row listing thumbnails', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')
     expect(src).toMatch(/heading="Latest market activity"/)
-    expect(src).toMatch(/imageUrl: a\.PhotoURL/)
+    // The row shaping moved into the shared place-section module, so all three
+    // place pages (city / neighborhood / community) inherit the thumbnail.
+    const shared = readSrc('lib/kb/place-sections.ts')
+    expect(shared).toMatch(/imageUrl: a\.PhotoURL/)
+    for (const page of [
+      'app/cities/[slug]/page.tsx',
+      'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
+      'app/communities/[slug]/page.tsx',
+    ]) {
+      expect(readSrc(page)).toMatch(/buildActivityItems\(/)
+    }
     const act = readSrc('components/site/kb/KbActivity.client.tsx')
     expect(act).toMatch(/act-thumb/)
     expect(act).toMatch(/imageUrl\?: string \| null/)

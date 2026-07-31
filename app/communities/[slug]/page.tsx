@@ -62,9 +62,22 @@ import { communityImage, cityHero, GOLF_COMMUNITY_IMAGES } from '@/lib/geo-image
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { resortActiveSfrCounts, cityResorts, resortTilesForSlug } from '@/lib/kb/resort-active-counts'
+import { fetchAllCityActiveSfr } from '@/lib/kb/city-active-sfr'
+// Row-to-prop shaping shared with the city + neighborhood place pages — one
+// copy, so a fix cannot land on one of the three and drift on the others.
+import {
+  buildActivityItems,
+  buildArticlePosts,
+  buildMapPointFeatures,
+  buildMonthlyTrend,
+  buildOpenHouseItems,
+  buildOtherCityItems,
+  buildTickerItems,
+  isTrendSeriesTooSparse,
+} from '@/lib/kb/place-sections'
 import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
 import { getDistrictForCity } from '@/data/co-schools'
-import { listingTileHref, homesForSalePath, slugify } from '@/lib/slug'
+import { homesForSalePath, slugify } from '@/lib/slug'
 import { getCanonicalCityForSubdivision, getAllResortCommunities } from '@/lib/data/communities/registry'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { CONTACT } from '@/lib/brand/contact'
@@ -99,10 +112,10 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { kbMoneyFull } from '@/components/site/kb/types'
 import type {
   KbTownItem,
   KbCommunityItem,
-  KbTickerItem,
   KbFeaturedItem,
   KbMarketData,
 } from '@/components/site/kb/types'
@@ -119,11 +132,6 @@ export const dynamicParams = true
 export const revalidate = 60
 
 type Props = { params: Promise<{ slug: string }> }
-
-const CENTRAL_OREGON_CITY_SLUGS = new Set([
-  'bend', 'redmond', 'sisters', 'la-pine', 'sunriver', 'madras',
-  'prineville', 'culver', 'terrebonne', 'tumalo', 'powell-butte',
-])
 
 // Hover photo for each resort/golf community card. The literal-name image
 // lookups miss for resorts (banner rows are tagged under alias subdivisions),
@@ -151,52 +159,6 @@ const RESORT_IMG: Record<string, string> = {
 const UNRELIABLE_BOUNDARY_SLUGS = new Set(boundarySanityBaseline.allowed as string[])
 function isBoundaryReliable(slug: string): boolean {
   return !UNRELIABLE_BOUNDARY_SLUGS.has(slug)
-}
-
-// Every active SFR tile in a city, PAGINATED past PostgREST's 1000-row cap (Bend
-// alone has ~1044). The resort alias-aware counts must see the COMPLETE set or
-// they undercount communities whose older listings fall past the first page.
-// Copied from the city page so the community hero count MATCHES the city ledger. (§0)
-async function fetchAllCityActiveSfr(cityName: string): Promise<Awaited<ReturnType<typeof getListingTiles>>> {
-  const PAGE = 1000
-  // Dedupe by listingKey across pages — offset pagination over a newest-sorted set
-  // can repeat a row if inventory shifts between page fetches. (review fix)
-  const byKey = new Map<string, Awaited<ReturnType<typeof getListingTiles>>[number]>()
-  for (let offset = 0; offset < 6000; offset += PAGE) {
-    const page = await getListingTiles({ city: cityName, status: 'active', propertyType: 'A', limit: PAGE, offset })
-    for (const t of page) byKey.set(t.listingKey, t)
-    if (page.length < PAGE) break
-  }
-  return [...byKey.values()]
-}
-
-const monthLabel = (iso?: string) =>
-  iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }) : ''
-const fmtFull = (n: number | null): string | null => (n != null ? `$${(Math.round(n / 1000) * 1000).toLocaleString('en-US')}` : null)
-
-function openHouseWhen(eventDate: string, start: string | null, end: string | null): string {
-  const day = new Date(eventDate + 'T12:00:00Z').toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
-  })
-  const t = (s: string | null) => {
-    if (!s) return ''
-    const [h, m] = s.split(':')
-    const hr = Number(h)
-    const ap = hr >= 12 ? 'pm' : 'am'
-    const h12 = hr % 12 === 0 ? 12 : hr % 12
-    return m && m !== '00' ? `${h12}:${m}${ap}` : `${h12}${ap}`
-  }
-  const range = start && end ? `${t(start)}-${t(end)}` : start ? t(start) : ''
-  return [day, range].filter(Boolean).join(' · ')
-}
-
-const ACTIVITY_KIND: Record<string, { kind: string; label: string }> = {
-  new_listing: { kind: 'new', label: 'New' },
-  price_drop: { kind: 'price_drop', label: 'Price cut' },
-  status_pending: { kind: 'pending', label: 'Pending' },
-  status_closed: { kind: 'sold', label: 'Sold' },
-  back_on_market: { kind: 'new', label: 'Back on market' },
-  status_expired: { kind: 'expired', label: 'Off market' },
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -507,9 +469,9 @@ export default async function CommunityDetailPage({ params }: Props) {
   }
   const aboutFacts: { label: string; value: string }[] = [
     ...(activeCount != null ? [{ label: 'Active single-family', value: activeCount.toLocaleString('en-US') }] : []),
-    ...(medianListPrice != null ? [{ label: 'Median list', value: fmtFull(medianListPrice) ?? '—' }] : []),
+    ...(medianListPrice != null ? [{ label: 'Median list', value: kbMoneyFull(medianListPrice) ?? '—' }] : []),
     ...(medianDays != null ? [{ label: pulse?.medianDaysToPending != null ? 'Median to pending' : 'Median days on market', value: `${Math.round(medianDays)} days` }] : []),
-    ...(stats?.medianSalePrice != null ? [{ label: 'Median sold, 1 yr', value: fmtFull(stats.medianSalePrice) ?? '—' }] : []),
+    ...(stats?.medianSalePrice != null ? [{ label: 'Median sold, 1 yr', value: kbMoneyFull(stats.medianSalePrice) ?? '—' }] : []),
     ...(registryEntry?.hoa_annual_estimate ? [{ label: 'HOA estimate', value: `$${registryEntry.hoa_annual_estimate.toLocaleString('en-US')}/yr` }] : []),
     { label: 'City', value: cityName },
   ]
@@ -546,17 +508,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   // Map: only the REAL community pins. Reliable boundary -> all in-polygon homes;
   // oversized boundary -> only the subdivision homes we resolved (already
   // narrowed into communityTiles above). Build Point features for KbListingMap.
-  const mapFeatures = communityTiles
-    .filter((t) => t.lat != null && t.lng != null)
-    .map((t) => ({
-      type: 'Feature' as const,
-      geometry: { type: 'Point' as const, coordinates: [Number(t.lng), Number(t.lat)] as [number, number] },
-      properties: {
-        p: t.listPrice, bd: t.beds, ba: t.baths, sf: t.sqft,
-        a: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
-        sub: t.subdivisionName ?? '', city: t.city ?? '', img: t.photoUrl ?? '',
-      },
-    }))
+  const mapFeatures = buildMapPointFeatures(communityTiles)
   const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
 
   // Polygon: the county plat union (TRUE footprint) ALWAYS draws when present;
@@ -570,11 +522,7 @@ export default async function CommunityDetailPage({ params }: Props) {
       }
     : undefined
 
-  const tickerItems: KbTickerItem[] = communityTiles.slice(0, 6).map((t) => ({
-    price: t.listPrice,
-    address: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
-    town: t.city ?? cityName,
-  }))
+  const tickerItems = buildTickerItems(communityTiles, cityName)
 
   // Sub-neighborhood ledger intentionally omitted: the registry has no per-sub
   // active count or median, so a ledger would publish a fabricated 0 / a mislabeled
@@ -607,67 +555,18 @@ export default async function CommunityDetailPage({ params }: Props) {
     .filter((x): x is KbCommunityItem => x !== null)
 
   // ── EXPLORE OTHER CITIES ──────────────────────────────────────────────────
-  const otherCityItems: KbTownItem[] = allCitySnapshots
-    .map((s) => ({ s, cs: s.geoKey.replace(/\s+/g, '-') }))
-    .filter(({ cs }) => CENTRAL_OREGON_CITY_SLUGS.has(cs))
-    .slice(0, 8)
-    .map(({ s, cs }) => {
-      const hero = cityHero(cs)
-      return {
-        name: s.geoLabel,
-        href: `/cities/${cs}`,
-        activeCount: s.activeSfrCount > 0 ? s.activeSfrCount : 0,
-        medianPrice: s.medianListPrice ?? null,
-        img: hero.verified ? hero.src : '',
-      }
-    })
+  // No excludeSlug: a community page links its own parent city on purpose.
+  const otherCityItems: KbTownItem[] = buildOtherCityItems(allCitySnapshots)
 
   // ── OPEN HOUSES ───────────────────────────────────────────────────────────
-  const openHouseItems = openHouses.slice(0, 6).map((oh) => ({
-    href: listingTileHref({
-      listingKey: oh.listing_key, streetNumber: oh.street_number, streetName: oh.street_name, city: oh.city,
-    }),
-    photoUrl: oh.photo_url,
-    price: oh.list_price,
-    address: oh.unparsed_address ?? [oh.street_number, oh.street_name].filter(Boolean).join(' '),
-    cityLine: [oh.city, oh.subdivision_name].filter(Boolean).join(' · '),
-    beds: oh.beds_total,
-    baths: oh.baths_full,
-    sqft: oh.living_area,
-    whenLabel: openHouseWhen(oh.event_date, oh.start_time, oh.end_time),
-  }))
+  const openHouseItems = buildOpenHouseItems(openHouses)
 
   // ── LIVE ACTIVITY (per-row thumbnails, like the city page) ────────────────
-  const activityItems = activity.slice(0, 8).map((a) => {
-    const km = ACTIVITY_KIND[a.event_type] ?? { kind: a.event_type, label: a.event_type }
-    // design-audit TRU-2: only badge "New" when the listing is genuinely recent
-    // (past 21 days it is "Listed"). Relabels only — no market figure changes.
-    const daysOld = a.event_at ? (Date.now() - new Date(a.event_at).getTime()) / 86_400_000 : Infinity
-    const staleNew = km.label === 'New' && daysOld > 21
-    return {
-      kind: staleNew ? 'listed' : km.kind,
-      label: staleNew ? 'Listed' : km.label,
-      address: [a.StreetNumber, a.StreetName, a.StreetSuffix].filter(Boolean).join(' ') || 'Address on request',
-      cityLine: [a.City, a.SubdivisionName].filter(Boolean).join(' · '),
-      price: a.ListPrice ?? null,
-      imageUrl: a.PhotoURL ?? null,
-      href: listingTileHref({ listingKey: a.listing_key, streetNumber: a.StreetNumber ?? null, streetName: a.StreetName ?? null, city: a.City ?? null }),
-      whenLabel: a.event_at
-        ? new Date(a.event_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
-        : '',
-    }
-  })
+  // 21-day stale-"New" relabel per design-audit TRU-2.
+  const activityItems = buildActivityItems(activity, { staleNewAfterDays: 21 })
 
   // ── GUIDES / BLOG ──────────────────────────────────────────────────────────
-  const articlePosts = blogPosts.map((p) => ({
-    title: p.title,
-    href: `/blog/${p.slug}`,
-    excerpt: p.excerpt,
-    imageUrl: p.heroImageUrl,
-    dateLabel: p.publishedAt
-      ? new Date(p.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
-      : null,
-  }))
+  const articlePosts = buildArticlePosts(blogPosts)
 
   // ── MARKET HUD ──────────────────────────────────────────────────────────────
   // Trend chart series: prefer this community's OWN neighborhood close-sale history.
@@ -676,9 +575,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   // series can't support a real multi-year trend (<8 monthly points OR <2 calendar
   // years), fall back to the parent CITY's trend — relabeled as city-level so no city
   // figure is ever passed off as the community's. (§0)
-  const commPricePoints = priceHist.filter((p) => p.medianSalePrice != null)
-  const commTrendYears = new Set(commPricePoints.map((p) => new Date(p.periodStart).getUTCFullYear()))
-  const chartIsCityLevel = commPricePoints.length < 8 || commTrendYears.size < 2
+  const chartIsCityLevel = isTrendSeriesTooSparse(priceHist)
   const chartPriceHist = chartIsCityLevel ? cityPriceHist : priceHist
 
   // Core-chart module scope mirrors the SAME sparse-community decision: the
@@ -701,10 +598,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     // with honest 12-month labels by the HUD — never as 30-day figures. (§0)
     sold12mo: stats?.soldCount ?? null,
     medianDom12mo: stats?.medianDaysOnMarket ?? null,
-    trend: chartPriceHist
-      .slice(-13)
-      .filter((p) => p.medianSalePrice != null)
-      .map((p) => ({ label: monthLabel(p.periodStart), value: p.medianSalePrice as number })),
+    trend: buildMonthlyTrend(chartPriceHist),
     byTown: [],
     countyMedian: regionPulse?.medianListPrice ?? null,
     yearSeries: buildYearSeries(chartPriceHist, 5),

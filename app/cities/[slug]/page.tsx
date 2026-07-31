@@ -20,7 +20,6 @@
  */
 
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import type { Metadata } from 'next'
 import {
   getGeoSnapshot,
@@ -50,7 +49,20 @@ import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { assignNeighborhoodPhotos } from '@/lib/kb/neighborhood-photos'
 import { resortActiveSfrCounts, resortLabelToSlug, cityResorts } from '@/lib/kb/resort-active-counts'
-import { homesForSalePath, listingTileHref, slugify } from '@/lib/slug'
+import { fetchAllCityActiveSfr } from '@/lib/kb/city-active-sfr'
+import { CITY_HERO_VIDEO, CITY_MARQUEE_COMMUNITIES, communityVideoUrl } from '@/lib/kb/city-page-config'
+// Row-to-prop shaping shared with the neighborhood + community place pages —
+// one copy, so a fix cannot land on one of the three and drift on the others.
+import {
+  buildActivityItems,
+  buildArticlePosts,
+  buildMapPointFeatures,
+  buildMonthlyTrend,
+  buildOpenHouseItems,
+  buildOtherCityItems,
+  buildTickerItems,
+} from '@/lib/kb/place-sections'
+import { homesForSalePath, slugify } from '@/lib/slug'
 import { getPlaceLinks } from '@/lib/place-links'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
@@ -75,20 +87,20 @@ import { KbArticles } from '@/components/site/kb/KbArticles'
 import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
 import { KbTeam } from '@/components/site/kb/KbTeam.client'
 import { KbSell } from '@/components/site/kb/KbSell.client'
+import { KbPopularSearches } from '@/components/site/kb/KbPopularSearches'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import CityPageTracker from '@/components/city/CityPageTracker'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { kbMoneyFull } from '@/components/site/kb/types'
 import type {
   KbTownItem,
   KbCommunityItem,
-  KbTickerItem,
   KbFeaturedItem,
   KbMarketData,
 } from '@/components/site/kb/types'
 import { TESTIMONIALS } from '@/lib/testimonials'
-import communityVideoManifest from '@/data/city-hero-videos.resolved.json'
 import '@/components/site/kb/kb.css'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
@@ -100,28 +112,6 @@ export const dynamicParams = true
 export const revalidate = 60
 
 type Props = { params: Promise<{ slug: string }> }
-
-// Each city's scenic hero B-roll (Mt Bachelor for Bend, Sparks Lake for Sunriver, ...)
-// is produced by scripts/sync-city-videos.mjs into public/videos/cities/ and recorded
-// in data/city-hero-videos.resolved.json (scope:'cities'). It renders as the muted,
-// looping <KbHero> background over its poster still. Cities without a clean B-roll clip
-// fall back to their verified cityHero photo.
-const CITY_HERO_VIDEO: Record<string, { videoSrc: string; posterSrc: string }> = Object.fromEntries(
-  Object.entries(communityVideoManifest as Record<string, { scope?: string; video?: string; poster?: string }>)
-    .filter(([, v]) => v?.scope === 'cities' && v.video && v.poster)
-    .map(([slug, v]) => [slug, { videoSrc: v.video as string, posterSrc: v.poster as string }]),
-)
-
-// Curated marquee communities per city (img + Area Guide video), resolved against
-// live counts from getCommunitiesForIndex — same pattern as the homepage.
-const CITY_COMMUNITIES: Record<string, { match: string; img: string; videoSlug?: string }[]> = {
-  bend: [
-    { match: 'tetherow', img: '/images/kb/tetherow-golf-aerial.jpg', videoSlug: 'tetherow' },
-    { match: 'broken top', img: '/images/kb/broken-top.jpg', videoSlug: 'broken-top' },
-    { match: 'northwest crossing', img: '/images/kb/northwest-crossing.jpg', videoSlug: 'northwest-crossing' },
-  ],
-  sunriver: [{ match: 'caldera', img: '/images/kb/caldera-springs.jpg', videoSlug: 'caldera-springs' }],
-}
 
 // Hover photo for each resort/golf community in the master-planned ledger, keyed by
 // the resort-registry slug. The literal-name image lookups miss for resorts (their
@@ -142,56 +132,6 @@ const RESORT_IMG: Record<string, string> = {
   crosswater: GOLF_COMMUNITY_IMAGES.crosswater,
   'eagle-crest': GOLF_COMMUNITY_IMAGES['eagle-crest'],
   'brasada-ranch': GOLF_COMMUNITY_IMAGES['brasada-ranch'],
-}
-
-// Every active SFR tile in a city, PAGINATED past PostgREST's 1000-row cap (Bend
-// alone has ~1044). The resort alias-aware counts must see the COMPLETE set or
-// they undercount communities whose older listings fall past the first page. (§0)
-async function fetchAllCityActiveSfr(cityName: string): Promise<Awaited<ReturnType<typeof getListingTiles>>> {
-  const PAGE = 1000
-  // Dedupe by listingKey across pages — offset pagination over a newest-sorted set
-  // can repeat a row if inventory shifts between page fetches.
-  const byKey = new Map<string, Awaited<ReturnType<typeof getListingTiles>>[number]>()
-  for (let offset = 0; offset < 6000; offset += PAGE) {
-    const page = await getListingTiles({ city: cityName, status: 'active', propertyType: 'A', limit: PAGE, offset })
-    for (const t of page) byKey.set(t.listingKey, t)
-    if (page.length < PAGE) break
-  }
-  return [...byKey.values()]
-}
-
-const CENTRAL_OREGON_CITY_SLUGS = new Set([
-  'bend', 'redmond', 'sisters', 'la-pine', 'sunriver', 'madras',
-  'prineville', 'culver', 'terrebonne', 'tumalo', 'powell-butte',
-])
-
-const monthLabel = (iso?: string) =>
-  iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }) : ''
-const fmtFull = (n: number | null): string | null => (n != null ? `$${(Math.round(n / 1000) * 1000).toLocaleString('en-US')}` : null)
-
-function openHouseWhen(eventDate: string, start: string | null, end: string | null): string {
-  const day = new Date(eventDate + 'T12:00:00Z').toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
-  })
-  const t = (s: string | null) => {
-    if (!s) return ''
-    const [h, m] = s.split(':')
-    const hr = Number(h)
-    const ap = hr >= 12 ? 'pm' : 'am'
-    const h12 = hr % 12 === 0 ? 12 : hr % 12
-    return m && m !== '00' ? `${h12}:${m}${ap}` : `${h12}${ap}`
-  }
-  const range = start && end ? `${t(start)}-${t(end)}` : start ? t(start) : ''
-  return [day, range].filter(Boolean).join(' · ')
-}
-
-const ACTIVITY_KIND: Record<string, { kind: string; label: string }> = {
-  new_listing: { kind: 'new', label: 'New' },
-  price_drop: { kind: 'price_drop', label: 'Price cut' },
-  status_pending: { kind: 'pending', label: 'Pending' },
-  status_closed: { kind: 'sold', label: 'Sold' },
-  back_on_market: { kind: 'new', label: 'Back on market' },
-  status_expired: { kind: 'expired', label: 'Off market' },
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -287,7 +227,7 @@ export default async function CityDetailPage({ params }: Props) {
       }).slice(0, 2)
   const aboutFacts: { label: string; value: string }[] = [
     ...(quickFacts?.population ? [{ label: 'Population', value: quickFacts.population }] : []),
-    ...(pulse?.medianListPrice ? [{ label: 'Median list', value: fmtFull(pulse.medianListPrice) ?? '—' }] : []),
+    ...(pulse?.medianListPrice ? [{ label: 'Median list', value: kbMoneyFull(pulse.medianListPrice) ?? '—' }] : []),
     ...(activeCount != null ? [{ label: 'Active single-family', value: activeCount.toLocaleString('en-US') }] : []),
     ...(pulse?.medianDaysToPending != null ? [{ label: 'Median to pending', value: `${Math.round(pulse.medianDaysToPending)} days` }] : []),
     ...(quickFacts?.elevation ? [{ label: 'Elevation', value: quickFacts.elevation }] : []),
@@ -298,17 +238,7 @@ export default async function CityDetailPage({ params }: Props) {
   // price-desc doesn't lead with pure luxury outliers (design-audit P2).
   const cityMedians = pulse?.medianListPrice != null ? Array(4).fill({ name: cityName, medianPrice: pulse.medianListPrice }) : []
   const featuredItems: KbFeaturedItem[] = await resolveFeaturedItems(curateFeaturedTiles(featuredTiles, cityMedians, 14))
-  const mapFeatures = mapTiles
-    .filter((t) => t.lat != null && t.lng != null)
-    .map((t) => ({
-      type: 'Feature' as const,
-      geometry: { type: 'Point' as const, coordinates: [Number(t.lng), Number(t.lat)] as [number, number] },
-      properties: {
-        p: t.listPrice, bd: t.beds, ba: t.baths, sf: t.sqft,
-        a: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
-        sub: t.subdivisionName ?? '', city: t.city ?? '', img: t.photoUrl ?? '',
-      },
-    }))
+  const mapFeatures = buildMapPointFeatures(mapTiles)
   const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
   // Neighborhood boundary polygons drawn on the city map (Bend has them).
   const neighborhoodPolygons =
@@ -322,16 +252,12 @@ export default async function CityDetailPage({ params }: Props) {
           })),
         }
       : undefined
-  const tickerItems: KbTickerItem[] = mapTiles.slice(0, 6).map((t) => ({
-    price: t.listPrice,
-    address: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
-    town: t.city ?? '',
-  }))
+  // The tape spans one city here, so a tile with no City renders a blank town.
+  const tickerItems = buildTickerItems(mapTiles, '')
 
   // Communities in this city (with banner images) — reused for the rail AND as
   // neighborhood hover imagery where a neighborhood matches a community by name.
   const cityComms = communities.filter((c) => c.city?.toLowerCase().trim() === cityName.toLowerCase().trim())
-  const communityVideos = communityVideoManifest as Record<string, { video?: string } | undefined>
   const commImgByName = new Map(cityComms.map((c) => [c.subdivision.toLowerCase(), c.heroImageUrl]))
   const commImgBySlug = new Map(cityComms.map((c) => [c.slug, c.heroImageUrl]))
   // One active count per community across the page — a resort like Tetherow that
@@ -400,11 +326,11 @@ export default async function CityDetailPage({ params }: Props) {
   // Communities rail — EVERY community in the city that has a banner photo, with
   // the curated marquee set (hand-picked still + silent Area Guide video) floated
   // to the front, then the rest by active count. (Matt: "all in the slider".)
-  const curatedComms = CITY_COMMUNITIES[slug] ?? []
+  const curatedComms = CITY_MARQUEE_COMMUNITIES[slug] ?? []
   const communityItems: KbCommunityItem[] = cityComms
     .map((c): KbCommunityItem | null => {
       const curated = curatedComms.find((f) => c.subdivision.toLowerCase().includes(f.match))
-      const cv = curated?.videoSlug ? communityVideos[curated.videoSlug] : undefined
+      const cvUrl = communityVideoUrl(curated?.videoSlug)
       const img = curated?.img ?? c.heroImageUrl ?? null
       if (!img) return null
       // When this community is a resort, show its alias-aware count (so the rail
@@ -422,7 +348,7 @@ export default async function CityDetailPage({ params }: Props) {
           citySlug: slug,
         }).placeUrl,
         img,
-        video: cv?.video ? { url: cv.video, embedType: 'video-tag' as const } : null,
+        video: cvUrl ? { url: cvUrl, embedType: 'video-tag' as const } : null,
       }
     })
     .filter((x): x is KbCommunityItem => x !== null)
@@ -437,70 +363,18 @@ export default async function CityDetailPage({ params }: Props) {
     (t) => carouselNames.has(t.name.toLowerCase().trim()) === false,
   )
 
-  // Explore other cities — editorial index with VERIFIED thumbnails. (§D84, §D87)
-  const otherCityItems: KbTownItem[] = allCitySnapshots
-    .map((s) => ({ s, citySlug: s.geoKey.replace(/\s+/g, '-') }))
-    .filter(({ citySlug }) => citySlug !== slug && CENTRAL_OREGON_CITY_SLUGS.has(citySlug))
-    .slice(0, 8)
-    .map(({ s, citySlug }) => {
-      const hero = cityHero(citySlug)
-      return {
-        name: s.geoLabel,
-        href: `/cities/${citySlug}`,
-        activeCount: s.activeSfrCount > 0 ? s.activeSfrCount : 0,
-        medianPrice: s.medianListPrice ?? null,
-        img: hero.verified ? hero.src : '',
-      }
-    })
+  // Explore other cities — editorial index with VERIFIED thumbnails, minus the
+  // city the reader is already on. (§D84, §D87)
+  const otherCityItems: KbTownItem[] = buildOtherCityItems(allCitySnapshots, { excludeSlug: slug })
 
   // Open houses (next, in this city) → KB cards.
-  const openHouseItems = openHouses.slice(0, 6).map((oh) => ({
-    href: listingTileHref({
-      listingKey: oh.listing_key, streetNumber: oh.street_number, streetName: oh.street_name, city: oh.city,
-    }),
-    photoUrl: oh.photo_url,
-    price: oh.list_price,
-    address: oh.unparsed_address ?? [oh.street_number, oh.street_name].filter(Boolean).join(' '),
-    cityLine: [oh.city, oh.subdivision_name].filter(Boolean).join(' · '),
-    beds: oh.beds_total,
-    baths: oh.baths_full,
-    sqft: oh.living_area,
-    whenLabel: openHouseWhen(oh.event_date, oh.start_time, oh.end_time),
-  }))
+  const openHouseItems = buildOpenHouseItems(openHouses)
 
-  // Live activity → KB rows.
-  const activityItems = activity.slice(0, 8).map((a) => {
-    const km = ACTIVITY_KIND[a.event_type] ?? { kind: a.event_type, label: a.event_type }
-    // design-audit TRU-2: only badge "New" when the listing is genuinely recent.
-    // An old new_listing kept the "New" tag next to a weeks-old date, so a stale
-    // feed read as brand-new. Past 21 days it is just "Listed" (the date is
-    // unchanged — this relabels, it does not touch any market figure).
-    const daysOld = a.event_at ? (Date.now() - new Date(a.event_at).getTime()) / 86_400_000 : Infinity
-    const staleNew = km.label === 'New' && daysOld > 21
-    return {
-      kind: staleNew ? 'listed' : km.kind,
-      label: staleNew ? 'Listed' : km.label,
-      address: [a.StreetNumber, a.StreetName, a.StreetSuffix].filter(Boolean).join(' ') || 'Address on request',
-      cityLine: [a.City, a.SubdivisionName].filter(Boolean).join(' · '),
-      price: a.ListPrice ?? null,
-      imageUrl: a.PhotoURL ?? null,
-      href: listingTileHref({ listingKey: a.listing_key, streetNumber: a.StreetNumber ?? null, streetName: a.StreetName ?? null, city: a.City ?? null }),
-      whenLabel: a.event_at
-        ? new Date(a.event_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
-        : '',
-    }
-  })
+  // Live activity → KB rows. 21-day stale-"New" relabel per design-audit TRU-2.
+  const activityItems = buildActivityItems(activity, { staleNewAfterDays: 21 })
 
   // Guides / blog. (§D80 — getRecentBlogPosts)
-  const articlePosts = blogPosts.map((p) => ({
-    title: p.title,
-    href: `/blog/${p.slug}`,
-    excerpt: p.excerpt,
-    imageUrl: p.heroImageUrl,
-    dateLabel: p.publishedAt
-      ? new Date(p.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
-      : null,
-  }))
+  const articlePosts = buildArticlePosts(blogPosts)
 
   // Market HUD.
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
@@ -512,10 +386,7 @@ export default async function CityDetailPage({ params }: Props) {
     saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
     daysToPending: pulse?.medianDaysToPending ?? null,
     monthsSupply: pulse?.monthsOfSupply ?? null,
-    trend: priceHist
-      .slice(-13)
-      .filter((p) => p.medianSalePrice != null)
-      .map((p) => ({ label: monthLabel(p.periodStart), value: p.medianSalePrice as number })),
+    trend: buildMonthlyTrend(priceHist),
     byTown: bendNeighborhoodItems.filter((n) => n.medianPrice != null).map((n) => ({ name: n.name, median: n.medianPrice as number })),
     countyMedian: regionPulse?.medianListPrice ?? null,
     yearSeries: buildYearSeries(priceHist, 5),
@@ -626,24 +497,7 @@ export default async function CityDetailPage({ params }: Props) {
           sectionId="neighborhoods"
           cta={{ href: `/homes-for-sale/${slug}`, label: `All ${cityName} homes` }}
         />
-        {/* Lifestyle collections (conversion-audit 2026-07-15 #12): GSC showed
-            "bend golf course homes", "bend gated community homes", and "bend
-            buildable lots" ranking THIS page at pos 36-55 because nothing
-            linked the dedicated preset pages. Exact-match anchors, one per
-            measured query class. */}
-        <section className="section kb-collections" aria-label={`Browse ${cityName} homes by lifestyle`}>
-          <div className="wrap">
-            <span className="sec-index">{cityName} · Popular searches</span>
-            <div className="kb-collection-links">
-              <a href={`/homes-for-sale/${slug}/on-golf-course`} className="btn alt">{cityName} golf course homes</a>
-              <a href={`/homes-for-sale/${slug}/gated-community`} className="btn alt">{cityName} gated community homes</a>
-              <a href={`/homes-for-sale/${slug}/lots-and-land`} className="btn alt">{cityName} lots and land</a>
-              <a href={`/homes-for-sale/${slug}/acreage`} className="btn alt">{cityName} homes on acreage</a>
-              <a href={`/homes-for-sale/${slug}/new-construction`} className="btn alt">{cityName} new construction</a>
-              <Link href="/communities" className="btn alt">Resort communities</Link>
-            </div>
-          </div>
-        </section>
+        <KbPopularSearches citySlug={slug} cityName={cityName} />
         <KbCommunities communities={communityItems} eyebrow={`${cityName} · Communities`} />
         {/* Ledger dedupes against the carousel above it (design-audit P2: the
             same 3-4 resorts rendered twice, once as a photo carousel and again
