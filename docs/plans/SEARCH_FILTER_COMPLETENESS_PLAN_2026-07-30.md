@@ -279,13 +279,31 @@ about that property, and it is labeled as such.
 This is the difference between a search that helps and one that creates
 liability for a licensed principal broker.
 
-**Corroborated across jurisdictions, so this is a pattern and not a Sisters
-quirk.** La Pine independently uses the same structure: a **250-foot**
-concentration limit in residential zones (LPDC 15.104.100, Ord. 2025-04),
-commercial zones exempt, one unit per property, and permits issued after
-2026-01-01 that **do not run with the land**. Two of two cities examined make
-STR eligibility depend on the neighbors and on the transfer date, which no
-listing field and no zoning code can express.
+**Six jurisdictions examined, and they split into two incompatible regulatory
+models. That split is the strongest argument for the rule.**
+
+*Model 1, concentration limits.* Sisters bars a new STR within **500 feet** of
+another licensed one (SDC 2.15.2700, Ord. 540, 2024). La Pine uses **250 feet**
+(LPDC 15.104.100, Ord. 2025-04). Both exempt commercial zones, both cap one unit
+per property, and both issue permits that **do not run with the land**, so a sale
+voids the approval and the buyer re-applies into whatever the neighbors have
+since taken.
+
+*Model 2, tax registration with no zoning restriction.* Jefferson County permits
+STRs county-wide subject to transient-room-tax registration (County Code 3.08,
+which defines "short-term rental" for tax purposes while Title 17 never zones
+it). Madras follows the same shape (MMC 3.30), with a separate and stricter
+conditional-use path only for owner-occupied bed-and-breakfasts (MDC 18.30.080).
+Prineville and Crook County likewise regulate through a lodging tax with no
+STR land-use category found.
+
+One further wrinkle: Jefferson County's rural ADU standard **bars STR use of the
+ADU outright** with a 45-day minimum tenancy.
+
+So the answer to "can this property be a short-term rental" depends on the
+jurisdiction's model, the neighbors, the transfer date, the structure type, and
+a tax registration that is not in any listing field. **No filter can express
+that, which is exactly why the product must not pretend to.**
 
 The ADU side corroborates in the opposite direction, which is why it stays a
 filter: Sisters allows one ADU per lot up to 800 sq ft (SDC 2.15.300); La Pine
