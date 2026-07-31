@@ -236,6 +236,45 @@ case and punctuation, and two truncation walls exist at 15 and 25 characters
 `Rrm5; Recreational Reside`). 83.4% of Deschutes strings are already clean
 uppercase tokens, so the normalization is tractable.
 
+### 6.0.1 Proof that the key must be `jurisdiction:code`, and one case I missed
+
+The completed jurisdiction research supplies the concrete collisions:
+
+- **`PR`** is Prineville's Open Space-Park Reserve (city, §153.075) *and* Crook
+  County's Park Reserve (§18.36). Different rules, same two letters.
+- **`MUE`** is a Jefferson County zone (§17.310) *and* a City of Madras zone
+  (§18.15.100).
+- **`UAR10`** is Deschutes County's; **`UH-10`** is Redmond's. Never merge.
+- **EFU minimums are county-specific**: Jefferson A-1/A-2 require **80 acres**
+  (RL 160), while Crook EFU-1/2/3 require **640 / 320 / 160**. A single "EFU"
+  filter that implied one acreage would be wrong in at least one county.
+- **`ERD`** is an unincorporated **Jefferson County** zone, yet listings carrying
+  it are tagged city "Madras" because that is the mailing address. This is the
+  §6.0 item 4 risk in one example: trusting `city` would file a county parcel
+  under city rules.
+
+**The case I had not planned for: MLS zone strings that match no current code.**
+`RR1` does not exist in Jefferson County (only RR-2/5/10/20). `LPR` does not
+exist in La Pine's current code. `TRRAR` appears to be an MLS spelling of the
+code's `TRRA`. `FR/F1` is ambiguous between Forest (F-1) and Forest Recreation
+(FR-10), which carry different minimums.
+
+So the normalization pipeline needs an explicit **`unmapped`** state. A string
+that does not resolve to a known `jurisdiction:code` is still filterable as a
+raw value with its live count, and it renders **without** a definition rather
+than being force-matched to the nearest-looking zone. Guessing here would attach
+a wrong legal definition to real listings, which is the exact failure mode §6.2
+exists to prevent. Unmapped strings are also the work queue for the definition
+layer, ranked by listing count.
+
+**Sourcing discipline carried into the build:** several county figures above were
+obtained from search-engine snippets of the official codifier rather than a
+direct page render, because the codifier blocks automated fetches. Those are
+marked in the research and **must be re-verified by loading the cited chapter
+directly before any definition is displayed**. A number that reached us through
+an intermediary is treated as unverified regardless of how official the
+underlying source is.
+
 ### 6.1 The statewide baseline (verified, sources in-line)
 
 Oregon law settles part of the ADU and middle-housing question above any local
