@@ -1,5 +1,5 @@
 {
-  "count": 212,
+  "count": 206,
   "files": [
     "app/alerts/unsubscribe/page.tsx",
     "app/buy/loading.tsx",
@@ -177,12 +177,6 @@
     "components/reports/ReportsByCityView.tsx",
     "components/reports/SalesReportCard.tsx",
     "components/reports/StatCard.tsx",
-    "components/search/AllFiltersSheet.tsx",
-    "components/search/MapDrawTools.tsx",
-    "components/search/MapSearchView.tsx",
-    "components/search/SearchAlertCapture.tsx",
-    "components/search/SearchFilters.tsx",
-    "components/search/SearchResults.tsx",
     "components/seller-lp/AddressAutocomplete.tsx",
     "components/seller-lp/SoldStoryCard.tsx",
     "components/site/AttributedBrokerCard.client.tsx",

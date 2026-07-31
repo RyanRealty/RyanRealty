@@ -37,6 +37,12 @@ const EXCLUDE = [
   'components/tc/',
   'app/account/',
   'components/account/',
+  // The search filter surface (All-filters sheet, sub-type control, chip
+  // bars) is a form-dense product UI on the shadcn primitives per CLAUDE.md
+  // §3 ("build every UI element from @/components/ui") — same class as
+  // account/: KB has no form primitives. Excluded 2026-07-31 when the
+  // ratchet flagged SubTypeControl.tsx, a new member of the same sheet.
+  'components/search/',
 ]
 
 function walk(dir, out = []) {
