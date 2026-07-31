@@ -110,11 +110,11 @@ export function PublishedCmaSection({ cma, extraHighlights, className }: Props) 
               fontVariantNumeric: 'tabular-nums',
             }}
           >
-            <Price value={cma.valueLow} className="display text-[clamp(28px,4vw,44px)] leading-none" />
+            <Price value={cma.valueLow} className="display text-3xl leading-none md:text-4xl" />
             <span className="display" style={{ fontSize: 'clamp(18px,2vw,24px)', opacity: 0.7 }}>
               to
             </span>
-            <Price value={cma.valueHigh} className="display text-[clamp(28px,4vw,44px)] leading-none" />
+            <Price value={cma.valueHigh} className="display text-3xl leading-none md:text-4xl" />
           </div>
           {prepared ? (
             <Body size="small" tone="muted" style={{ marginTop: 8 }}>
