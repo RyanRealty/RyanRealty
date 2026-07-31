@@ -85,7 +85,14 @@ async function computeCmaPerformance(filters: CmaPerformanceFilters = {}): Promi
     .select(
       'id, slug, doc_type, subject_address, subject_city, client_name, client_email, recommended_list, status, created_at, delivered_at',
     )
+    // Archived is a TIMESTAMP, not a status. Filtering only on status='archived'
+    // missed every row archived the normal way, and on 2026-07-30 that meant the
+    // report counted 9 documents as sent when the truth was 4: five archived
+    // zz-test-rebrand rows carried a real delivered_at from an integration test.
+    // A send count is the number Matt judges the whole funnel on, so an inflated
+    // one is a §0 failure, not a cosmetic bug.
     .neq('status', 'archived')
+    .is('archived_at', null)
   if (filters.docType && filters.docType !== 'all') q = q.eq('doc_type', filters.docType)
   if (filters.sentOnly) q = q.not('delivered_at', 'is', null)
 
