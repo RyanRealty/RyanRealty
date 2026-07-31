@@ -87,9 +87,19 @@
     {
       "path": "search_listings_advanced",
       "shape": "sold + advanced filter",
-      "measuredMs": 12215,
+      "measuredMs": 12085,
       "rowsReturned": 0,
-      "finding": "The legacy RPC exhausts the Postgres statement timeout (57014) on every call measured, and getListingsAdvanced returns degraded with zero rows. Reachable from production whenever a search leaves the listing_search_mv gate: a closed/sold scope with any advanced filter, a viewContains or offMarketWithinDays search, or pagination past FAST_TILE_FETCH_CAP. No budget is assigned because the path never completes.",
+      "finding": "STILL DEGRADED. The harness shape is getListingsWithAdvanced({city:'Bend', statusFilter:'closed', hasView:true}) and it still exhausts the 12s statement timeout (57014) with zero rows. Migration 20260731190000_search_advanced_deferred_join rewrote the RPC as a deferred join, which fixed the SORT-PAYLOAD half of the problem but NOT this shape, because this shape is bound by TOAST detoasting, not by sorting. No budget is assigned because the path still never completes.",
+      "rootCause": "listings.details is a jsonb averaging 10 KB in a 12 GB TOAST relation, against shared_buffers=1GB. Every predicate that reads details (hasView / hasPool / hasFireplace / hasWaterfront / hasOpenHouse / keywords / property sub-type / viewContains) must detoast the WHOLE document per candidate row — Postgres cannot read one key out of a TOASTed value. Measured live 2026-07-31, bounded to 5,000 closed+Bend rows: 41.1s of filter time over the row fetch = 8.2 ms/row scattered, ~15.8 buffers/row. The full closed+Bend candidate set is 96,673 rows, i.e. roughly 13 minutes. count(*) OVER () is part of the pagination contract, so the predicate cannot be short-circuited by the LIMIT. No query rewrite removes this work.",
+      "whatTheDeferredJoinFixed": "The base CTE no longer carries l.details or the 18 wide payload columns through the WindowAgg tuplestore and Sort; it carries only the PK plus the four sort inputs plus count(*) OVER (), then joins back to listings on the PK for the returned page. Apples-to-apples on closed+Bend limit 12 offset 3000: 4,806 ms -> 2,516 ms (-48%), and the temp-file spill (temp read=5,401 written=2,982 blocks, ~66 MB) is eliminated entirely. Row-for-row parity verified against the pre-change function across 10 argument shapes (identical rows, identical order, identical full_count).",
+      "measuredGains": {
+        "closed+Bend offset 3000": "legacy 2320/2678 ms -> new 2216/2261 ms (min/median, 3 interleaved runs)",
+        "closed+Bend sort year_newest": "legacy 2115/2157 -> new 1803/1897",
+        "closed+Bend deep multi-filter": "legacy 1056/1199 -> new 875/1004",
+        "off_market + offMarketWithinDays 180": "legacy 4312/8222 (13,084 cold) -> new 3702/3759",
+        "jsonb feature shapes": "no material change, as expected — detoast-bound, not sort-bound"
+      },
+      "remainingFix": "Eliminating the detoast needs a narrow indexed projection of the handful of details keys the predicates read, computed with the IDENTICAL expressions so semantics do not shift (the typed columns pool_yn / fireplace_yn / view_description DISAGREE materially with the jsonb — closed Bend: jsonb pool 15,763 vs typed 167; jsonb fireplace 74,148 vs typed 58,828 — so they are NOT a valid substitute). Build cost measured 2026-07-31: a sequential full-table detoast pass runs at 1.25 ms/row, so one pass over 594,141 rows is about 12.4 minutes. One narrow flags projection covers every feature predicate in that single pass; separate partial expression indexes cost roughly the same per index (double under CREATE INDEX CONCURRENTLY) and still cannot cover the dynamic keyword ILIKE. Needs an explicit decision because a projection changes freshness semantics on a public search surface.",
       "measuredAt": "2026-07-31"
     }
   ],
