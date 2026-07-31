@@ -185,3 +185,4 @@ docs/design-audit/assets/*-desktop-*.png
 docs/design-audit/assets/*-mobile-*.png
 docs/design-audit/assets/state-*.png
 docs/design-audit/assets/fix-*.png
+.audit-tmp/

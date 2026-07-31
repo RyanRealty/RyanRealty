@@ -1,0 +1,4 @@
+# Raw Spark metadata pulls stay out of git (plan §11: raw is gitignored; the
+# normalized snapshot beside this directory is the committed artifact).
+*
+!.gitignore
