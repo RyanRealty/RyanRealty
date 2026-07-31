@@ -311,3 +311,205 @@ as per-action Matt approval.
 - SMS `From` spoofing is theoretically possible; surface exposure is draft-creation and
   reads only (whitelisted recipients, APPROVE-gated publish, no client sends), which caps
   the blast radius; revisit with per-session PIN if it ever matters.
+
+---
+
+# Amendment 1 — the naive-broker scenario (2026-07-31)
+
+The design target is not a broker who knows the system. It is Rebecca texting:
+
+> "I've got some new photos back from Rich, the photographer, for framed visuals. Can you
+> take a look at what he sent me and then create some more marketing materials out of it?"
+
+That message contains: a person who exists nowhere in our systems (Rich), no property, no
+deliverable format, voice-to-text noise ("framed visuals"), and an implicit instruction to go
+read her email. The agent must resolve all of it with at most one smart question. This
+amendment adds the capabilities and the edge-case ledger that scenario forces.
+
+**Recon facts this rests on (verified 2026-07-31):**
+- Per-broker Gmail access already exists and is *structurally* scoped: `getGmailFor(subject)`
+  in `lib/crm/gmail.ts` builds one DWD JWT per mailbox (3 broker mailboxes in
+  `CRM_MAILBOXES`) — the agent impersonates only the requesting broker and cannot see
+  anyone else's mail. Rich `q=` search and `attachments.get` byte download are proven in
+  scripts (`scripts/_ordway-gmail-hunt.mjs`, `_ordway-gmail-download.mjs`) but not
+  productized in `lib/`.
+- The asset library has `register()` but no property-shoot ingest flow; `listing_photos`
+  (Spark MLS) and `asset_library` never meet. Vision grading is an uncodified agent pass;
+  the manifest field is `vision_quality` while the Postgres column is `vision_grade` — any
+  new ingest writes BOTH. No EXIF capability exists anywhere (greenfield: add `exifr`).
+- Listing-state inference is fully feasible from existing columns: `StandardStatus`
+  (includes literal `'Coming Soon'`), `OnMarketDate`, `ListDate`, `DaysOnMarket`. No row at
+  all for a fresh shoot = pre-market.
+- Coming Soon on the PUBLIC SITE is absolutely suppressed (`lib/listing-status-public.ts`,
+  gate `ci:public-listing-status`, 2026-07-21 incident). That rule is untouched here.
+- **Live compliance bug found:** `s1_just_listed()` in `scripts/build_single_image_posts.py:169`
+  renders with NO brokerage attribution (eyebrow is "JUST LISTED", and the skill bans logos,
+  so nothing on the image names Ryan Realty). Flyer footer attribution is "if required"
+  judgment prose, and one approved flyer layout has no footer at all. The
+  brokerage-name-in-advertising rule (cited in-repo as OAR 863-015-0215 in
+  `listing-description/SKILL.md`; re-verify the citation during R4.1 ingest) has no gate.
+
+## New / amended rungs
+
+- **R0.6 (new, ships regardless of the agent — this is live exposure today):** add the
+  `RYAN REALTY` attribution to the S1 Just Listed template; make the flyer compliance footer
+  non-optional in `flyer-design/SKILL.md` (kill the "if required" hedge and the no-footer
+  layout, or give that layout an attribution element); new gate
+  `check-ad-brokerage-attribution.mjs` — every registered creative template/generator carries
+  the brokerage name by construction. *Accept:* gate wired in `ci:gates`; S1 render shows
+  attribution.
+- **R1.2 (amended):** inbound turns aggregate over a 20s debounce window before processing —
+  real people text in bursts, and three rapid texts are one request, not three.
+- **R2.2 (amended):** APPROVE with more than one job awaiting approval requires the job
+  handle ("APPROVE 2"); a bare APPROVE with multiple pending gets a clarifying reply, never
+  a guess.
+- **R2.5 (new) `email_search` tool:** Gmail `q=` search over the requesting broker's mailbox
+  only (DWD subject = requester; structural scoping). Searches by display name, domain,
+  `has:attachment`, recency. Returns candidates (from, subject, date, attachment/link
+  summary) for confirm-back. Productizes the script-proven pattern into `lib/agent/gmail.ts`.
+- **R2.6 (new) `fetch_assets` tool:** attachment bytes via `attachments.get` (productized);
+  link ladder — direct file URLs and Dropbox (`?dl=1`) fetched automatically; WeTransfer
+  fetched immediately on discovery (links expire ~7 days); gallery platforms (Aryeo,
+  HDPhotoHub, Amerititle-style portals) are v1 honest-fallback: the agent asks the broker to
+  tap "download all" and forward the direct link. Zip archives extracted. Per-file size cap
+  500 MB; video stored to the bucket, never re-sent over MMS.
+- **R2.7 (new) property-shoot ingestion:** new bucket path `property-shoots/<slug>/`;
+  register into `asset_library` with property + broker tags, writing BOTH `vision_quality`
+  and `vision_grade`; vision grading codified as part of ingest (closing the uncodified-pass
+  gap); EXIF extraction (`exifr`): capture date + GPS. GPS does double duty — confirms the
+  property match and flags wrong-property outliers in a batch (photographers batch-deliver).
+  *Accept:* a seeded Gmail fixture with 30 photos + 1 outlier ingests, grades, tags, and
+  flags the outlier.
+- **R2.8 (new) MMS-in as asset source:** a broker texting photos directly enters the same
+  ingest path (Twilio media URLs are authenticated and expiring — fetch immediately).
+- **R2.9 (new) listing-state inference module** — deterministic signal table, not vibes.
+  This is the mechanism behind "smart enough to say coming soon or just listed":
+
+  | Signal | Inferred state | Agent suggestion |
+  |---|---|---|
+  | No `listings` row for the address + fresh shoot | pre-market | "Coming soon or just-listed-at-launch kit?" (+ compliance affordance below) |
+  | `StandardStatus = 'Coming Soon'` | coming soon | coming-soon kit (+ affordance) |
+  | `OnMarketDate` ≤ 7 days | just listed | just-listed kit |
+  | Recent price change | price improvement | price-improvement post |
+  | Pending / Active Under Contract | under contract | "pending in X days" post |
+  | Closed, RR was a side | just sold | S2 represented-the-… post |
+  | Withdrawn / Expired / Canceled | dead listing | no marketing; expired workflow if RR-relevant |
+  | `StandardStatus` NULL | **unknown, treated as NOT public-safe** (stricter than the site's documented null-pass-through hole) | ask the broker |
+
+- **R2.10 (new) broker-provided-fact protocol:** pre-market properties have no MLS data, so
+  price/beds/baths/sqft come from the broker in-thread. Every broker-supplied figure is
+  confirmed back verbatim and traced as `broker-provided (<name>, <date>)` in the citations —
+  §0 satisfied with an honest source, not a fabricated one.
+- **R2.11 (new) `bpo` tool:** the BPO twin of the CMA flow (`lib/data/bpo/reads.ts`,
+  `/bpo/<slug>` route already exist). Client-safe variant links only; the offer-strategy
+  block stays admin-side by the route's existing strip mechanism.
+- **R3.6 (new) coming-soon compliance affordance:** a coming-soon kit is produced only after
+  (a) the broker confirms in-thread that a signed listing agreement exists (answer logged on
+  the action row — no marketing without a listing agreement), and (b) the agent states the
+  clear-cooperation consequence: public marketing starts the MLS-submission clock (verify
+  the current NAR/MLSCO window during R4.1 and encode it). The public-site suppression rule
+  is untouched — a coming-soon listing still never renders on ryan-realty.com.
+- **R3.7 (new) third-party listing guard:** if the property resolves to a listing held by
+  another brokerage (or the broker is on the buy side), the agent refuses marketing-material
+  production — advertising another firm's listing without written consent is an advertising
+  violation. It says so plainly and offers what IS allowed (e.g., a just-sold
+  "represented the buyer" post after closing).
+
+## DONE contract additions
+
+11. The Rebecca transcript runs end to end as a golden E2E: "photos back from Rich, make
+    marketing materials" → agent finds the email in HER mailbox → ingests + grades the
+    shoot → infers pre-market → asks the one smart question ("Coming soon or save it for
+    launch? I'd do a coming-soon teaser + just-listed kit for day one") → drafts → one
+    revision round → APPROVE → published.
+12. R0.6 shipped: no registered creative template can render without brokerage attribution;
+    gate wired.
+13. A pre-market property with zero MLS data flows through with broker-provided facts,
+    confirmed back and traced.
+
+## Edge-case ledger
+
+Each row: the case → the handling (and the rung that owns it).
+
+**A. Request comprehension (the naive-broker contract)**
+1. No format named ("marketing materials") → propose the default kit (flyer + IG post +
+   carousel via the list-kit orchestrator) as a recommendation, not a menu interrogation;
+   one question max (R2.1 system prompt).
+2. Voice-to-text noise ("framed visuals") → interpret charitably; confirm-back absorbs the
+   ambiguity cost (R2.2).
+3. Rapid multi-text bursts → 20s aggregation before processing (R1.2).
+4. Named human unknown to the system ("Rich") → treated as an email-search cue, not a CRM
+   lookup failure (R2.5).
+5. No property named → infer from the broker's active listings + the found email + session
+   context; ALWAYS confirm-back before work (R2.2 resolve_property).
+6. Nicknames ("the Johnson place") → fuzzy owner/address match, candidate list.
+7. Retired format (listing video/reel) → honest "retired 2026-06-14" + nearest alternative
+   (R0.3).
+8. Out-of-bounds (boost this post, text my client, delete X) → plain-language refusal from
+   the refusal table; never silent.
+9. Zero system jargon in replies: no "action row / producer / registry / render worker" —
+   deliverable language only (R2.1).
+10. First-ever message from a broker → one-time 3-line capability intro; HELP reproduces it.
+11. Conversational texts with no task ("ugh, this seller") → brief human reply, no machinery.
+12. Question about another broker's clients/deals → declined per CRM broker scope (R2.2
+    crm_lookup).
+
+**B. Email retrieval**
+1. Multiple senders match "Rich" / photographer texts from a studio domain → rank by
+   has:attachment + recency + display name; candidates confirmed back (R2.5).
+2. The email went to a different broker's mailbox → agent says exactly what it searched
+   (whose mailbox, what query) and asks for a forward. It never reads across mailboxes —
+   structurally cannot (R2.5).
+3. Photographer used the broker's personal Gmail → unreachable; ask for a forward to the
+   work address.
+4. Delivery is a link, not attachments → the R2.6 ladder; expiring links fetched at
+   discovery time, not at production time.
+5. Zip archive → extracted in ingest.
+6. Multi-GB 4K video → bucket storage, size cap, honest note about what each format can use.
+7. Same photographer, two properties in the window → EXIF GPS + subject/body address parse
+   disambiguate; confirm-back decides (R2.7).
+8. Link expired / returns an HTML page instead of files → detected, reported, forward
+   requested.
+9. Email is a "gallery coming soon" placeholder → recognized as such; broker told to expect
+   a follow-up, no empty ingest.
+
+**C. Property + listing state**
+1. Pre-market, no listings row → `manual:<slug>` target + R2.10 broker-provided facts +
+   R3.6 affordance.
+2. Another RR broker's listing → allowed (team marketing); listing-agent headshot/attribution
+   rules resolve automatically from the listings row; pre-MLS falls back to the requesting
+   broker with a confirm.
+3. Not an RR listing / buy side → R3.7 refusal with the allowed alternative.
+4. Coming Soon status → site suppression absolute; social only via R3.6.
+5. Closed → just-sold content with the represented-side eyebrow (S2 template).
+6. Withdrawn/Expired/Canceled → no marketing; route to the expired workflow when relevant.
+7. Wrong-property photos inside a delivery batch → EXIF GPS outlier flag + vision check
+   (R2.7).
+8. NULL StandardStatus → unknown, never assumed active (stricter than the site's documented
+   hole; the agent asks).
+9. Virtually staged or AI-enhanced imagery in the delivery → §4 disclosure rules apply; the
+   agent asks the broker if staging was virtual when vision flags it, and stamps disclosure
+   on affected deliverables.
+
+**D. Production + review**
+1. Flyer needs print-res / IG needs portrait → asset selection uses stored width/height +
+   grades; the agent says when the shoot lacks a usable shot for a format instead of
+   stretching one.
+2. Photos land ungraded → impossible by construction; grading is inside ingest (R2.7).
+3. Two jobs awaiting approval → APPROVE requires the handle (R2.2 amendment).
+4. Broker silent mid-flow → job holds; one gentle nudge at 24h; draft auto-expires at 7 days
+   with notice (matches the approval-freshness window).
+5. "Wait, hold that" after APPROVE but before the sweep publishes → HOLD/CANCEL un-approves
+   any not-yet-executed row.
+6. Edit requested after publish → agent explains per-platform reality (edit vs delete-repost
+   vs leave), constrained by the known platform limits.
+7. Platform publish failure → broker told plainly + retry status; no silent kill.
+8. Daily cost cap hit mid-conversation → polite halt naming the reset time.
+
+**E. CMA / BPO**
+1. Thin comp pool (rural, acreage, unique) → the agent states the pool size and spread
+   honestly and offers widened criteria; it never pads a pool to look confident.
+2. Subject unresolvable by address (new construction, bare lot) → manual subject facts via
+   R2.10.
+3. BPO strategy content → client-safe variant only in any link that could be forwarded;
+   full variant stays behind admin auth (existing route behavior).
