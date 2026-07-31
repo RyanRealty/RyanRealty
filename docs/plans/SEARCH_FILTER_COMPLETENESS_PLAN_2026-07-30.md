@@ -194,6 +194,48 @@ ADU allowed, short-term rental allowed, livestock/horses, subdividable,
 multi-family allowed, commercial use. This layer is the most valuable and the
 most dangerous, so it carries hard rules (§6.2).
 
+### 6.0 Four findings that reshape this section
+
+Measured against our own listings, and they make the work smaller and safer.
+
+**1. Do not infer from zoning what the MLS already states.** Four of the seven
+buyer intents are answered directly by broker-entered fields with usable fill:
+`ccrs_yn` **90.3%**, `str_permit_yn` **63.3%**, `adu_yn` **59.8%**, `horse_yn`
+**45.4%**. Those become filters immediately and need no zoning inference at all.
+The exception is `adu_permitted_yn` at **2.7% fill**, which is unusable alone and
+must never be shown as a standalone filter. Zone inference is reserved for the
+questions no field answers.
+
+**2. `str_permit_yn = false` does not mean "short-term rental prohibited."** It
+means no permit is on file. Given §6.3, where four of six jurisdictions do not
+zone STRs at all, the UI copy must say "no permit on record" and nothing more.
+
+**3. The feed is not Central Oregon only, so a bare zone code is ambiguous.**
+Deschutes is **32.5%** of rows; Jackson, Klamath and Josephine together are
+**49.4%**. `R2` means four different things across Klamath, Crook and
+Deschutes/Redmond; `RR5` is mostly Southern Oregon; `WR` is a Josephine
+woodlot zone, not a Deschutes one. `UAR10` is Deschutes County's and `UH-10` is
+Redmond's, and merging them would be wrong. The canonical key is therefore
+**`jurisdiction:code`**, never the bare code.
+
+**4. Jurisdiction cannot come from the `city` column.** MLS `city` is a mailing
+address, so a "Bend" address is routinely unincorporated county with entirely
+different rules. Jurisdiction must resolve through PostGIS against the
+boundaries table. This is a prerequisite for the zoning layer, not an
+enhancement, and it is the single largest misattribution risk in this plan.
+
+Source note for the builder: `details->>'Zoning'` is masked on 9,485 of 9,627
+on-market rows. `ZoningDescription` is the canonical source and a strict
+superset. The v3 MV coalesce already falls through to it because the mask is
+stripped upstream, but the pipeline must pin to it explicitly rather than rely
+on ordering.
+
+**Vocabulary reality:** 964 distinct raw strings collapse to 710 after squashing
+case and punctuation, and two truncation walls exist at 15 and 25 characters
+(the same Crook zone appears as both `Rrm5; Recreatio` and
+`Rrm5; Recreational Reside`). 83.4% of Deschutes strings are already clean
+uppercase tokens, so the normalization is tractable.
+
 ### 6.1 The statewide baseline (verified, sources in-line)
 
 Oregon law settles part of the ADU and middle-housing question above any local
@@ -249,6 +291,15 @@ built on a parcel is a liability, so the intent layer ships under these rules:
 5. **Parcel-level questions route to parcel data**, not MLS text. The repo
    already holds Deschutes DIAL parcel work and a PostGIS boundaries table;
    anything needing lot geometry or overlay membership belongs there.
+6. **Never source a definition from an aggregator.** The research caught a
+   widely-repeated "500-foot separation, RL/RS/RM/RH/MR" rule attributed to
+   Redmond that is verifiably **Bend's** BDC 3.6.500 language, cross-contaminated
+   by a third-party site and then echoed. Publishing it would have put a wrong,
+   confidently-worded rule under our name. Jurisdiction codifications only.
+7. **Re-verify anything older than the staleness window before it ships.** The
+   best available Deschutes County STR source is from roughly June 2025 (no
+   zoning permit, Transient Room Tax under DCC 4.08, licensing program in
+   development). Over a year has passed, so it is re-checked before display.
 
 ### 6.3 Two treatments, decided by the research (not a style choice)
 
