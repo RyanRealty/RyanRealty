@@ -461,10 +461,8 @@ async function readHiddenHomes(userIds: string[]): Promise<ClientPortalHiddenHom
   const { data: live } = await sb
     .from('listing_tile_mv')
     .select('listing_key,street_number,street_name,city,standard_status,list_price,address_slug')
-    // A stale key misses the join and renders without its live tile, which is
-    // honest for a listing that no longer exists; it never resolves to a
-    // different listing's data.
-    // @canonical-key — keys come from hidden_listings, same ListingKey space
+    // @canonical-key — hidden_listings keys share the tile MV's ListingKey
+    // space; a stale one misses the join, never maps to another listing.
     .in('listing_key', keys)
   const liveByKey = new Map((live ?? []).map((r) => [String(r.listing_key), r]))
 
