@@ -1,0 +1,42 @@
+{
+  "_readme": [
+    "Matt's live Flexmls subscriptions, for migration to the in-house alert engine.",
+    "",
+    "WHY THIS FILE IS HAND-MAINTAINED: our Spark replication key is data-only.",
+    "/v1/savedsearches, /v1/subscriptions and /v1/contacts all return 'Your key does",
+    "not have permission to access this resource' (verified 2026-07-31), and the",
+    "Flexmls web UI sits behind a CAPTCHA. There is no programmatic export available",
+    "to us, so the definitions are transcribed here and imported by",
+    "scripts/import-flexmls-subscriptions.mjs.",
+    "",
+    "SAFETY: the importer writes rows with is_active=false. Nothing sends until Matt",
+    "approves and the row is activated (--activate, or the account/admin UI). Alerts",
+    "to real recipients are an outbound-message class action under CLAUDE.md §1.",
+    "",
+    "TO FINISH: add the remaining subscriptions from Flexmls (Contacts -> ",
+    "Subscriptions). Per subscription capture: name, recipient email(s), the search",
+    "filters as our registry params, cadence, and which events are on.",
+    "",
+    "filters use SEARCH FIELD REGISTRY param names (lib/search/field-registry.ts),",
+    "the same vocabulary the site URL uses, so an imported alert behaves exactly like",
+    "a saved search made on the site."
+  ],
+  "subscriptions": [
+    {
+      "name": "Bend ADUs under 1M",
+      "recipients": ["matt@ryan-realty.com"],
+      "filters": { "city": "Bend", "adu": "1", "maxPrice": "1000000" },
+      "notification_frequency": "daily",
+      "events": { "new": true, "price_change": true, "status_change": true, "back_on_market": true, "sold": false, "open_house": false },
+      "source_note": "Named in the 2026-07-29 Flexmls teardown as a live subscription; the filter it needs (adu) became expressible on our side in deed9e4b."
+    },
+    {
+      "name": "Bend Multi-Family",
+      "recipients": [],
+      "filters": { "city": "Bend", "propertyType": "Multi-Family" },
+      "notification_frequency": "daily",
+      "events": { "new": true, "price_change": true, "status_change": true, "back_on_market": true, "sold": false, "open_house": false },
+      "source_note": "Named in the teardown as going to contact Nate Hon. RECIPIENT LEFT EMPTY ON PURPOSE: sending to a real client needs Matt's per-action approval and his current address for Nate, which is not recorded here."
+    }
+  ]
+}
