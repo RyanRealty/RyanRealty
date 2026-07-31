@@ -20,6 +20,35 @@ import {
   SEARCH_FIELD_CATEGORIES,
   type SearchFieldDef,
 } from '@/lib/search/field-registry'
+import {
+  PROPERTY_CLASS_LABELS,
+  autoNarrowPropertyType,
+  bestClassForValue,
+  classesForPropertyType,
+  loadClassPrevalence,
+  propertyTypeDisplayLabel,
+  propertyTypeValueForClass,
+  type ClassPrevalenceArtifact,
+  type PropertyClass,
+} from '@/lib/search/class-prevalence'
+import {
+  conditionBoolean,
+  conditionMultiOptions,
+  zeroReasonLabel,
+} from '@/components/search/class-conditioning'
+import {
+  buildFindIndex,
+  fieldAnchorId,
+  searchFindIndex,
+  type FindFilterHit,
+} from '@/components/search/find-a-filter'
+import {
+  culpritCandidates,
+  draftWithoutCandidate,
+  pickCulprit,
+  type CulpritProbeResult,
+} from '@/components/search/zero-culprit'
+import SubTypeControl from '@/components/search/SubTypeControl'
 import { countSearchListings } from '@/app/actions/search'
 import { describeParsedSearch } from '@/lib/parse-search-query'
 import { Badge } from '@/components/ui/badge'
@@ -207,8 +236,6 @@ const UNIT_LABEL: Record<string, string> = {
 
 type SetParam = (param: string, value: string | undefined) => void
 
-const EMPTY_OPTIONS: readonly string[] = []
-
 function RangeFieldRow({
   def,
   draft,
@@ -291,44 +318,74 @@ function MultiFieldChips({
   def,
   values,
   disabled,
+  artifact,
+  classes,
+  scopeLabel,
   onToggle,
+  onSwitchClass,
 }: {
   def: SearchFieldDef
   values: string[]
   disabled: boolean
+  artifact: ClassPrevalenceArtifact | null
+  classes: readonly PropertyClass[] | null
+  scopeLabel: string | null
   onToggle: (option: string) => void
+  onSwitchClass: (option: string) => void
 }) {
   const [expanded, setExpanded] = useState(false)
-  const options = def.options ?? EMPTY_OPTIONS
+  // Class conditioning (plan §5): live values first by count, zero-for-class
+  // values visible but disabled, selected-but-invalid values suspended
+  // (struck through, never silently dropped — §7.1 rule 2).
+  const { options, suspended } = useMemo(
+    () => conditionMultiOptions(def, artifact, classes, values),
+    [def, artifact, classes, values],
+  )
   const visible = useMemo(() => {
     if (expanded || options.length <= 8) return options
     const head = options.slice(0, 8)
+    const headSet = new Set(head.map((o) => o.value))
     // Keep already-selected values visible even when collapsed.
-    const selectedTail = options.filter((o) => values.includes(o) && !head.includes(o))
+    const selectedTail = options.filter((o) => o.selected && !headSet.has(o.value))
     return [...head, ...selectedTail]
-  }, [expanded, options, values])
+  }, [expanded, options])
 
   return (
     <div>
       <p className="mb-1.5 text-xs text-muted-foreground">{def.label}</p>
       <div className="flex flex-wrap gap-1.5">
-        {visible.map((option) => {
-          const selected = values.includes(option)
-          return (
-            <Button
-              key={option}
-              type="button"
-              size="sm"
-              variant={selected ? 'default' : 'outline'}
-              aria-pressed={selected}
-              disabled={disabled}
-              onClick={() => onToggle(option)}
-              className="h-auto rounded-full px-2.5 py-1 text-xs"
-            >
-              {option}
-            </Button>
-          )
-        })}
+        {visible.map((option) => (
+          <Button
+            key={option.value}
+            type="button"
+            size="sm"
+            variant={option.selected ? 'default' : 'outline'}
+            aria-pressed={option.selected}
+            disabled={disabled || (option.count === 0 && !option.selected)}
+            aria-label={
+              option.count === 0
+                ? `${option.value}, ${zeroReasonLabel(scopeLabel)}`
+                : undefined
+            }
+            onClick={() => onToggle(option.value)}
+            className={cn(
+              'h-auto rounded-full px-2.5 py-1 text-xs tabular-nums',
+              option.suspended && 'line-through decoration-2 opacity-80',
+            )}
+          >
+            {option.value}
+            {option.count !== null && (
+              <span
+                className={cn(
+                  'ml-1',
+                  option.selected ? 'text-primary-foreground/70' : 'text-muted-foreground',
+                )}
+              >
+                {option.count.toLocaleString()}
+              </span>
+            )}
+          </Button>
+        ))}
         {options.length > 8 && (
           <Button
             type="button"
@@ -342,6 +399,44 @@ function MultiFieldChips({
           </Button>
         )}
       </div>
+      {suspended.length > 0 && (
+        <div className="mt-1.5 flex flex-col gap-1">
+          {suspended.map((option) => {
+            const best = artifact ? bestClassForValue(artifact, def.key, option.value) : null
+            const offerSwitch = best !== null && (!classes || !classes.includes(best))
+            return (
+              <div
+                key={option.value}
+                className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground"
+              >
+                <span>
+                  {option.value}: {zeroReasonLabel(scopeLabel)}.
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onToggle(option.value)}
+                  className="h-auto px-1.5 py-0.5 text-xs underline-offset-2 hover:underline"
+                >
+                  Remove
+                </Button>
+                {offerSwitch && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onSwitchClass(option.value)}
+                    className="h-auto px-1.5 py-0.5 text-xs underline-offset-2 hover:underline"
+                  >
+                    Search {PROPERTY_CLASS_LABELS[best as PropertyClass]}
+                  </Button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
       {def.coverageNote && <p className="mt-1 text-xs text-muted-foreground">{def.coverageNote}</p>}
     </div>
   )
@@ -388,6 +483,27 @@ function TextFieldRow({
 
 const REGISTRY_PARAM_SET = new Set<string>(ALL_SEARCH_URL_PARAMS)
 
+// Non-registry URL params the sheet also drafts. propertyType drives class
+// conditioning (plan §5): the sheet reads it on open, auto-narrows it when a
+// class-exclusive sub type is picked, and writes it back on Apply. Both
+// mounting surfaces apply arbitrary keys to the URL, so the extra key rides
+// the same onApply map.
+const EXTRA_SHEET_PARAMS = ['propertyType'] as const
+const SHEET_PARAM_SET = new Set<string>([...ALL_SEARCH_URL_PARAMS, ...EXTRA_SHEET_PARAMS])
+
+function csvValues(raw: string | undefined): string[] {
+  return (raw ?? '').split(',').map((v) => v.trim()).filter(Boolean)
+}
+
+/** Two propertyType values are equivalent when they constrain the same classes. */
+function samePropertyTypeScope(a: string | undefined, b: string | undefined): boolean {
+  if ((a ?? '') === (b ?? '')) return true
+  const ca = classesForPropertyType(a)
+  const cb = classesForPropertyType(b)
+  if (ca === null || cb === null) return ca === cb && (a ?? '') === (b ?? '')
+  return ca.length === cb.length && ca.every((cls) => cb.includes(cls))
+}
+
 export type AllFiltersSheetProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -421,20 +537,57 @@ export default function AllFiltersSheet({
   const searchParams = useSearchParams()
   const [draft, setDraft] = useState<Record<string, string>>({})
   const [count, setCount] = useState<number | null>(null)
+  // Class-prevalence census (plan §5) — ~120 KB, loaded lazily on first open.
+  const [artifact, setArtifact] = useState<ClassPrevalenceArtifact | null>(null)
+  // Find-a-filter (plan §7.1 rule 1)
+  const [findQuery, setFindQuery] = useState('')
+  // Auto-narrow undo affordance (plan §4.5.3)
+  const [narrowNotice, setNarrowNotice] = useState<{ prev: string; label: string } | null>(null)
+  // Zero-result culprit (plan §7.1 rule 3)
+  const [culprit, setCulprit] = useState<{ label: string; params: readonly string[]; recovered: number } | null>(null)
 
   // Re-seed the draft from the URL each time the sheet opens.
   useEffect(() => {
     if (!open) return
     const next: Record<string, string> = {}
-    for (const param of ALL_SEARCH_URL_PARAMS) {
+    for (const param of [...ALL_SEARCH_URL_PARAMS, ...EXTRA_SHEET_PARAMS]) {
       const v = searchParams?.get(param)
       if (v) next[param] = v
     }
     setDraft(next)
     setCount(null)
+    setFindQuery('')
+    setNarrowNotice(null)
+    setCulprit(null)
     // Seed on open only — while editing, the draft is the source of truth.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
+
+  // Load the census once the sheet first opens.
+  useEffect(() => {
+    if (!open || artifact) return
+    let cancelled = false
+    loadClassPrevalence()
+      .then((a) => {
+        if (!cancelled) setArtifact(a)
+      })
+      .catch(() => {
+        // Census unavailable — the sheet renders unconditioned (no counts).
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [open, artifact])
+
+  // The property-class scope the draft constrains (null = unconditioned).
+  const classes = useMemo(
+    () => classesForPropertyType(draft.propertyType),
+    [draft.propertyType],
+  )
+  const scopeLabel = useMemo(
+    () => (classes ? propertyTypeDisplayLabel(draft.propertyType) : null),
+    [classes, draft.propertyType],
+  )
 
   const setParam = useCallback<SetParam>((param, value) => {
     setDraft((d) => {
@@ -458,22 +611,114 @@ export default function AllFiltersSheet({
     })
   }, [])
 
+  // Sub-type toggle with class auto-narrow (plan §4.5.3): the class filter
+  // moves to the narrowest propertyType covering every selected sub type —
+  // picking Duplex narrows to multi-family, picking across classes widens —
+  // and the change carries a one-tap undo.
+  const toggleSubType = useCallback(
+    (option: string) => {
+      const values = csvValues(draft.propertySubTypes)
+      const nextValues = values.includes(option)
+        ? values.filter((v) => v !== option)
+        : [...values, option]
+      const next = { ...draft }
+      if (nextValues.length === 0) delete next.propertySubTypes
+      else next.propertySubTypes = nextValues.join(',')
+      const target = autoNarrowPropertyType(nextValues)
+      if (target !== null && !samePropertyTypeScope(target, draft.propertyType)) {
+        if (target === '') delete next.propertyType
+        else next.propertyType = target
+        setNarrowNotice({
+          prev: draft.propertyType ?? '',
+          label: target === '' ? 'All types' : (propertyTypeDisplayLabel(target) ?? target),
+        })
+      }
+      setDraft(next)
+    },
+    [draft],
+  )
+
+  const undoNarrow = useCallback(() => {
+    if (!narrowNotice) return
+    setParam('propertyType', narrowNotice.prev || undefined)
+    setNarrowNotice(null)
+  }, [narrowNotice, setParam])
+
+  // Suspended-value resolution 2 (plan §7.1 rule 2): switch the class to the
+  // one where the value actually lives.
+  const switchClassForValue = useCallback(
+    (fieldKey: string, value: string) => {
+      if (!artifact) return
+      const best = bestClassForValue(artifact, fieldKey, value)
+      if (!best) return
+      setNarrowNotice(null)
+      setParam('propertyType', propertyTypeValueForClass(best))
+    },
+    [artifact, setParam],
+  )
+
+  // Find-a-filter (plan §7.1 rule 1): value hits apply directly; range/text
+  // hits scroll their control into view.
+  const applyFindHit = useCallback(
+    (hit: FindFilterHit) => {
+      if (hit.kind === 'field') {
+        document.getElementById(fieldAnchorId(hit.fieldKey))?.scrollIntoView({ block: 'center' })
+        return
+      }
+      if (hit.kind === 'boolean') setParam(hit.fieldKey, '1')
+      else if (hit.kind === 'zoning') setParam('zoning', hit.value)
+      else if (hit.fieldKey === 'propertySubTypes') {
+        if (!csvValues(draft.propertySubTypes).includes(hit.value)) toggleSubType(hit.value)
+      } else if (!csvValues(draft[hit.fieldKey]).includes(hit.value)) {
+        toggleMultiValue(hit.fieldKey, hit.value)
+      }
+      setFindQuery('')
+    },
+    [draft, setParam, toggleMultiValue, toggleSubType],
+  )
+
+  const findIndex = useMemo(() => buildFindIndex(artifact), [artifact])
+  const findHits = useMemo(
+    () => searchFindIndex(findIndex, artifact, findQuery, classes),
+    [findIndex, artifact, findQuery, classes],
+  )
+
+  const removeCulprit = useCallback(() => {
+    if (!culprit) return
+    setDraft((d) => {
+      const next = { ...d }
+      for (const param of culprit.params) delete next[param]
+      return next
+    })
+    setCulprit(null)
+  }, [culprit])
+
+  // Full count-endpoint param map for a given draft: context defaults under
+  // the URL's non-sheet params under the draft. Shared by the live count and
+  // the zero-culprit leave-one-out probes so the two can never disagree.
+  const buildCountParams = useCallback(
+    (d: Record<string, string>): Record<string, string> => {
+      const merged: Record<string, string> = {}
+      for (const [k, v] of Object.entries(contextDefaults ?? {})) {
+        if (v.trim() !== '') merged[k] = v
+      }
+      searchParams?.forEach((value, key) => {
+        if (!SHEET_PARAM_SET.has(key)) merged[key] = value
+      })
+      for (const [k, v] of Object.entries(d)) merged[k] = v
+      delete merged.page
+      return merged
+    },
+    [contextDefaults, searchParams],
+  )
+
   // Live match count, debounced 400 ms behind draft edits.
   const draftKey = JSON.stringify(draft)
   useEffect(() => {
     if (!open || closedScope || !enableCount) return
     let cancelled = false
     const timer = setTimeout(() => {
-      const merged: Record<string, string> = {}
-      for (const [k, v] of Object.entries(contextDefaults ?? {})) {
-        if (v.trim() !== '') merged[k] = v
-      }
-      searchParams?.forEach((value, key) => {
-        if (!REGISTRY_PARAM_SET.has(key)) merged[key] = value
-      })
-      for (const [k, v] of Object.entries(draft)) merged[k] = v
-      delete merged.page
-      countSearchListings(merged)
+      countSearchListings(buildCountParams(draft))
         .then((n) => {
           if (!cancelled) setCount(n)
         })
@@ -489,6 +734,46 @@ export default function AllFiltersSheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftKey, open, closedScope, enableCount])
 
+  // Zero-result culprit (plan §7.1 rule 3): when the live count is 0, probe
+  // leave-one-out counts (capped candidates, debounced) and name the filter
+  // whose removal recovers the most matches. A suggestion that itself yields
+  // 0 is never made (pickCulprit drops it).
+  useEffect(() => {
+    if (!open || closedScope || !enableCount) return
+    if (count !== 0) {
+      setCulprit(null)
+      return
+    }
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      const candidates = culpritCandidates(draft)
+      if (candidates.length === 0) return
+      const results: CulpritProbeResult[] = await Promise.all(
+        candidates.map(async (candidate) => {
+          try {
+            const n = await countSearchListings(buildCountParams(draftWithoutCandidate(draft, candidate)))
+            return { candidate, count: n }
+          } catch {
+            return { candidate, count: null }
+          }
+        }),
+      )
+      if (cancelled) return
+      const winner = pickCulprit(results)
+      setCulprit(
+        winner
+          ? { label: winner.candidate.label, params: winner.candidate.params, recovered: winner.recovered }
+          : null,
+      )
+    }, 700)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+    // draftKey stands in for the draft object identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [count, draftKey, open, closedScope, enableCount])
+
   const fieldDisabled = useCallback(
     (def: SearchFieldDef) => closedScope && !CLOSED_SCOPE_KEYS.has(def.key),
     [closedScope]
@@ -497,6 +782,7 @@ export default function AllFiltersSheet({
   function handleApply() {
     const updates: Record<string, string | undefined> = {}
     for (const param of ALL_SEARCH_URL_PARAMS) updates[param] = draft[param] || undefined
+    for (const param of EXTRA_SHEET_PARAMS) updates[param] = draft[param] || undefined
     onApply(updates)
     onOpenChange(false)
   }
@@ -524,6 +810,77 @@ export default function AllFiltersSheet({
           )}
         </SheetHeader>
 
+        {/* Find-a-filter (plan §7.1 rule 1) — pinned above the scroll pane.
+            Matches field labels AND values (zoning codes included), ranked by
+            live count. Client-side over the registry + census, no fetch. */}
+        <div className="border-b border-border px-4 pb-3 pt-2">
+          <Input
+            type="search"
+            value={findQuery}
+            onChange={(e) => setFindQuery(e.target.value)}
+            placeholder="Find a filter, like duplex or MUA10"
+            aria-label="Find a filter by name or value"
+          />
+          {findQuery.trim().length >= 2 && (
+            <div className="mt-2 max-h-56 overflow-y-auto rounded-lg border border-border">
+              {findHits.length === 0 ? (
+                <p className="px-3 py-2 text-xs text-muted-foreground">
+                  No filter or value matches that.
+                </p>
+              ) : (
+                findHits.map((hit) => (
+                  <Button
+                    key={`${hit.kind}:${hit.fieldKey}:${hit.value}`}
+                    type="button"
+                    variant="ghost"
+                    onClick={() => applyFindHit(hit)}
+                    className="flex h-auto w-full items-center justify-between gap-2 rounded-none px-3 py-2 text-left font-normal"
+                  >
+                    <span className="min-w-0 text-sm">
+                      <span className="block truncate">
+                        {hit.valueLabel}
+                        {hit.kind === 'multi-value' || hit.kind === 'zoning' ? (
+                          <span className="ml-1.5 text-xs text-muted-foreground">{hit.fieldLabel}</span>
+                        ) : null}
+                      </span>
+                      {/* Zoning definition layer (plan §6.3): plain English
+                          when exactly one jurisdiction defines the code; the
+                          jurisdiction list when the code collides — never a
+                          silent pick. */}
+                      {hit.definition ? (
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {hit.definition.plainEnglish ??
+                            `Defined by ${hit.definition.jurisdictions.join(' and ')}`}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                      {hit.count !== null ? hit.count.toLocaleString() : hit.kind === 'field' ? 'Go to' : ''}
+                    </span>
+                  </Button>
+                ))
+              )}
+            </div>
+          )}
+          {classes && scopeLabel && (
+            <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Counts shown for {scopeLabel.toLowerCase()} listings.</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setNarrowNotice(null)
+                  setParam('propertyType', undefined)
+                }}
+                className="h-auto px-1 py-0 text-xs underline-offset-2 hover:underline"
+              >
+                All types
+              </Button>
+            </div>
+          )}
+        </div>
+
         {/* min-h-0 is load-bearing: without it this flex child sizes to its
             ~7,000px content, nothing scrolls, and the Apply footer lands off
             screen (the 2026-07-11 audit hit the same defect in the old sheet). */}
@@ -542,52 +899,105 @@ export default function AllFiltersSheet({
                       {label}
                     </p>
                     {ranges.map((def) => (
-                      <RangeFieldRow
-                        key={def.key}
-                        def={def}
-                        draft={draft}
-                        disabled={fieldDisabled(def)}
-                        setParam={setParam}
-                      />
+                      <div key={def.key} id={fieldAnchorId(def.key)}>
+                        <RangeFieldRow
+                          def={def}
+                          draft={draft}
+                          disabled={fieldDisabled(def)}
+                          setParam={setParam}
+                        />
+                      </div>
                     ))}
                     {booleans.length > 0 && (
                       <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                        {booleans.map((def) => (
-                          <Label
-                            key={def.key}
-                            className={cn(
-                              'flex items-center gap-2',
-                              fieldDisabled(def) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
-                            )}
-                          >
-                            <Checkbox
-                              checked={draft[def.key] === '1'}
-                              disabled={fieldDisabled(def)}
-                              onCheckedChange={(v) => setParam(def.key, v === true ? '1' : undefined)}
-                              aria-label={def.label}
-                            />
-                            <span className="text-sm text-foreground">{def.label}</span>
-                          </Label>
-                        ))}
+                        {booleans.map((def) => {
+                          const meta = conditionBoolean(def.key, artifact, classes, draft[def.key] === '1')
+                          const zeroDisabled = meta.count === 0 && !meta.selected
+                          return (
+                            <Label
+                              key={def.key}
+                              className={cn(
+                                'flex items-center gap-2',
+                                fieldDisabled(def) || zeroDisabled
+                                  ? 'cursor-not-allowed opacity-50'
+                                  : 'cursor-pointer'
+                              )}
+                            >
+                              <Checkbox
+                                checked={meta.selected}
+                                disabled={fieldDisabled(def) || zeroDisabled}
+                                onCheckedChange={(v) => setParam(def.key, v === true ? '1' : undefined)}
+                                aria-label={
+                                  meta.count === 0
+                                    ? `${def.label}, ${zeroReasonLabel(scopeLabel)}`
+                                    : def.label
+                                }
+                              />
+                              <span
+                                className={cn(
+                                  'text-sm text-foreground',
+                                  meta.suspended && 'line-through decoration-2'
+                                )}
+                              >
+                                {def.label}
+                              </span>
+                              {meta.count === 0 && (
+                                <span className="text-xs tabular-nums text-muted-foreground">0</span>
+                              )}
+                            </Label>
+                          )
+                        })}
                       </div>
                     )}
-                    {multis.map((def) => (
-                      <MultiFieldChips
-                        key={def.key}
-                        def={def}
-                        values={(draft[def.key] ?? '').split(',').map((v) => v.trim()).filter(Boolean)}
-                        disabled={fieldDisabled(def)}
-                        onToggle={(option) => toggleMultiValue(def.key, option)}
-                      />
-                    ))}
+                    {multis.map((def) =>
+                      def.key === 'propertySubTypes' ? (
+                        <div key={def.key} id={fieldAnchorId(def.key)}>
+                          <SubTypeControl
+                            def={def}
+                            artifact={artifact}
+                            classes={classes}
+                            values={csvValues(draft[def.key])}
+                            disabled={fieldDisabled(def)}
+                            onToggle={toggleSubType}
+                          />
+                          {narrowNotice && (
+                            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                              <span>Property type set to {narrowNotice.label}.</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={undoNarrow}
+                                className="h-auto px-1.5 py-0.5 text-xs underline-offset-2 hover:underline"
+                              >
+                                Undo
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <MultiFieldChips
+                          key={def.key}
+                          def={def}
+                          values={csvValues(draft[def.key])}
+                          disabled={fieldDisabled(def)}
+                          artifact={artifact}
+                          classes={classes}
+                          scopeLabel={scopeLabel}
+                          onToggle={(option) => toggleMultiValue(def.key, option)}
+                          onSwitchClass={(option) => switchClassForValue(def.key, option)}
+                        />
+                      )
+                    )}
                     {texts.map((def) => (
-                      <TextFieldRow
-                        key={def.key}
-                        def={def}
-                        value={draft[def.key] ?? ''}
-                        disabled={fieldDisabled(def)}
-                        setParam={setParam}
-                      />
+                      <div key={def.key} id={fieldAnchorId(def.key)}>
+                        <TextFieldRow
+                          def={def}
+                          value={draft[def.key] ?? ''}
+                          disabled={fieldDisabled(def)}
+                          setParam={setParam}
+                        />
+                      </div>
                     ))}
                   </section>
                 </Fragment>
@@ -596,8 +1006,32 @@ export default function AllFiltersSheet({
           </div>
         </ScrollArea>
 
+        {/* Zero-result culprit (plan §7.1 rule 3) — names the filter whose
+            removal recovers the most matches, with a one-tap fix. */}
+        {count === 0 && culprit && (
+          <div aria-live="polite" className="border-t border-border px-4 py-3">
+            <p className="text-sm text-foreground">
+              No homes match all of these filters. Removing {culprit.label} shows{' '}
+              <span className="tabular-nums">{culprit.recovered.toLocaleString()}</span>{' '}
+              {culprit.recovered === 1 ? 'home' : 'homes'}.
+            </p>
+            <Button type="button" variant="outline" size="sm" onClick={removeCulprit} className="mt-2">
+              Remove {culprit.label}
+            </Button>
+          </div>
+        )}
+
         <SheetFooter className="gap-2 px-4 pb-4">
-          <Button type="button" variant="ghost" className="flex-1" onClick={() => setDraft({})}>
+          <Button
+            type="button"
+            variant="ghost"
+            className="flex-1"
+            onClick={() => {
+              setDraft({})
+              setNarrowNotice(null)
+              setCulprit(null)
+            }}
+          >
             Reset
           </Button>
           <Button type="button" className="flex-1" onClick={handleApply}>

@@ -1,0 +1,10408 @@
+{
+ "generatedAt": "2026-07-31T06:05:09.273Z",
+ "source": "listing_search_mv, all on-market rows, anon read",
+ "generator": "scripts/generate-class-prevalence.mjs",
+ "classOrder": [
+  "A",
+  "B",
+  "C",
+  "D"
+ ],
+ "thresholds": {
+  "note": "shown when count >= min(SHOWN_MIN_SHARE * classRows, SHOWN_MIN_COUNT) — lib/search/class-prevalence.ts",
+  "shownMinShare": 0.005,
+  "shownMinCount": 25
+ },
+ "rowTotals": {
+  "A": 6273,
+  "B": 316,
+  "C": 203,
+  "D": 2129,
+  "other": 728,
+  "total": 9649
+ },
+ "zoningValueCap": 200,
+ "fields": {
+  "accessibilityFeatures": {
+   "kind": "multi",
+   "mv": "accessibility_features",
+   "values": {
+    "Accessible Bedroom": {
+     "counts": [
+      226,
+      10,
+      4,
+      0
+     ],
+     "total": 245,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Accessible Hallway(s)": {
+     "counts": [
+      216,
+      11,
+      5,
+      0
+     ],
+     "total": 238,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Accessible Approach with Ramp": {
+     "counts": [
+      180,
+      45,
+      6,
+      0
+     ],
+     "total": 234,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Accessible Full Bath": {
+     "counts": [
+      202,
+      11,
+      6,
+      0
+     ],
+     "total": 223,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Accessible Kitchen": {
+     "counts": [
+      190,
+      7,
+      5,
+      0
+     ],
+     "total": 208,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Accessible Entrance": {
+     "counts": [
+      184,
+      10,
+      4,
+      0
+     ],
+     "total": 201,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Accessible Doors": {
+     "counts": [
+      178,
+      7,
+      3,
+      0
+     ],
+     "total": 191,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Accessible Closets": {
+     "counts": [
+      154,
+      5,
+      5,
+      0
+     ],
+     "total": 168,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Smart Technology": {
+     "counts": [
+      165,
+      0,
+      0,
+      0
+     ],
+     "total": 165,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Grip-Accessible Features": {
+     "counts": [
+      87,
+      8,
+      1,
+      0
+     ],
+     "total": 98,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    }
+   }
+  },
+  "adjoinsPublicLand": {
+   "kind": "boolean",
+   "mv": "lot_features_arr",
+   "values": {
+    "true": {
+     "counts": [
+      1060,
+      12,
+      5,
+      379
+     ],
+     "total": 1485,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "adu": {
+   "kind": "boolean",
+   "mv": "adu_yn",
+   "values": {
+    "true": {
+     "counts": [
+      304,
+      0,
+      0,
+      0
+     ],
+     "total": 335,
+     "hint": [
+      "A",
+      "E"
+     ]
+    }
+   }
+  },
+  "aduPermitted": {
+   "kind": "boolean",
+   "mv": "adu_permitted_yn",
+   "values": {
+    "true": {
+     "counts": [
+      191,
+      0,
+      0,
+      0
+     ],
+     "total": 212,
+     "hint": [
+      "A",
+      "E"
+     ]
+    }
+   }
+  },
+  "appliances": {
+   "kind": "multi",
+   "mv": "appliances",
+   "values": {
+    "Dishwasher": {
+     "counts": [
+      5239,
+      225,
+      108,
+      0
+     ],
+     "total": 5647,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Refrigerator": {
+     "counts": [
+      4622,
+      252,
+      135,
+      0
+     ],
+     "total": 5087,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Range": {
+     "counts": [
+      4518,
+      236,
+      142,
+      0
+     ],
+     "total": 4967,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Water Heater": {
+     "counts": [
+      4119,
+      224,
+      118,
+      0
+     ],
+     "total": 4526,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Microwave": {
+     "counts": [
+      4053,
+      130,
+      54,
+      0
+     ],
+     "total": 4282,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Oven": {
+     "counts": [
+      3805,
+      191,
+      115,
+      0
+     ],
+     "total": 4169,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Disposal": {
+     "counts": [
+      3870,
+      117,
+      73,
+      0
+     ],
+     "total": 4100,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Washer": {
+     "counts": [
+      2705,
+      152,
+      56,
+      0
+     ],
+     "total": 2958,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Dryer": {
+     "counts": [
+      2660,
+      147,
+      58,
+      0
+     ],
+     "total": 2909,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Range Hood": {
+     "counts": [
+      2213,
+      140,
+      61,
+      0
+     ],
+     "total": 2458,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Cooktop": {
+     "counts": [
+      1551,
+      55,
+      31,
+      0
+     ],
+     "total": 1667,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Tankless Water Heater": {
+     "counts": [
+      650,
+      2,
+      3,
+      0
+     ],
+     "total": 660,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Double Oven": {
+     "counts": [
+      567,
+      7,
+      0,
+      0
+     ],
+     "total": 595,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Wine Refrigerator": {
+     "counts": [
+      321,
+      1,
+      0,
+      0
+     ],
+     "total": 328,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Instant Hot Water": {
+     "counts": [
+      279,
+      1,
+      2,
+      0
+     ],
+     "total": 291,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Water Softener": {
+     "counts": [
+      197,
+      1,
+      0,
+      0
+     ],
+     "total": 207,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Water Purifier": {
+     "counts": [
+      196,
+      3,
+      0,
+      0
+     ],
+     "total": 206,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Trash Compactor": {
+     "counts": [
+      169,
+      3,
+      0,
+      0
+     ],
+     "total": 177,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    }
+   }
+  },
+  "architecturalStyles": {
+   "kind": "multi",
+   "mv": "architectural_styles",
+   "values": {
+    "Ranch": {
+     "counts": [
+      1434,
+      0,
+      40,
+      0
+     ],
+     "total": 1533,
+     "hint": [
+      "A",
+      "C",
+      "E"
+     ]
+    },
+    "Traditional": {
+     "counts": [
+      1397,
+      0,
+      59,
+      0
+     ],
+     "total": 1466,
+     "hint": [
+      "A",
+      "C",
+      "E"
+     ]
+    },
+    "Northwest": {
+     "counts": [
+      1420,
+      0,
+      20,
+      0
+     ],
+     "total": 1454,
+     "hint": [
+      "A",
+      "C",
+      "E"
+     ]
+    },
+    "Craftsman": {
+     "counts": [
+      1011,
+      0,
+      20,
+      0
+     ],
+     "total": 1044,
+     "hint": [
+      "A",
+      "C",
+      "E"
+     ]
+    },
+    "Contemporary": {
+     "counts": [
+      961,
+      0,
+      34,
+      0
+     ],
+     "total": 1002,
+     "hint": [
+      "A",
+      "C",
+      "E"
+     ]
+    },
+    "Bungalow": {
+     "counts": [
+      259,
+      0,
+      18,
+      0
+     ],
+     "total": 281,
+     "hint": [
+      "A",
+      "C",
+      "E"
+     ]
+    },
+    "Chalet": {
+     "counts": [
+      103,
+      0,
+      2,
+      0
+     ],
+     "total": 106,
+     "hint": [
+      "A",
+      "C",
+      "E"
+     ]
+    },
+    "Log": {
+     "counts": [
+      98,
+      0,
+      0,
+      0
+     ],
+     "total": 103,
+     "hint": [
+      "A",
+      "C",
+      "E"
+     ]
+    },
+    "Prairie": {
+     "counts": [
+      55,
+      0,
+      0,
+      0
+     ],
+     "total": 59,
+     "hint": [
+      "A",
+      "C",
+      "E"
+     ]
+    }
+   }
+  },
+  "basement": {
+   "kind": "boolean",
+   "mv": "basement_yn",
+   "values": {
+    "true": {
+     "counts": [
+      555,
+      0,
+      12,
+      0
+     ],
+     "total": 616,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "basementTypes": {
+   "kind": "multi",
+   "mv": "basement_types",
+   "values": {
+    "Finished": {
+     "counts": [
+      291,
+      0,
+      3,
+      0
+     ],
+     "total": 309,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Daylight": {
+     "counts": [
+      266,
+      0,
+      4,
+      0
+     ],
+     "total": 282,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Partial": {
+     "counts": [
+      151,
+      0,
+      4,
+      0
+     ],
+     "total": 175,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Full": {
+     "counts": [
+      134,
+      0,
+      3,
+      0
+     ],
+     "total": 149,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Exterior Entry": {
+     "counts": [
+      132,
+      0,
+      3,
+      0
+     ],
+     "total": 145,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Unfinished": {
+     "counts": [
+      111,
+      0,
+      4,
+      0
+     ],
+     "total": 131,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "bodyType": {
+   "kind": "multi",
+   "mv": "body_types",
+   "values": {
+    "Double Wide": {
+     "counts": [
+      431,
+      224,
+      0,
+      0
+     ],
+     "total": 676,
+     "hint": [
+      "A",
+      "B",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Single Wide": {
+     "counts": [
+      74,
+      76,
+      0,
+      0
+     ],
+     "total": 154,
+     "hint": [
+      "A",
+      "B",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Triple Wide": {
+     "counts": [
+      61,
+      4,
+      0,
+      0
+     ],
+     "total": 68,
+     "hint": [
+      "A",
+      "B",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Park Model": {
+     "counts": [
+      2,
+      2,
+      0,
+      0
+     ],
+     "total": 4,
+     "hint": [
+      "A",
+      "B",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Quad Wide": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0,
+     "hint": [
+      "A",
+      "B",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "ccrs": {
+   "kind": "boolean",
+   "mv": "ccrs_yn",
+   "values": {
+    "true": {
+     "counts": [
+      3463,
+      139,
+      56,
+      1070
+     ],
+     "total": 4893,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "commonWalls": {
+   "kind": "multi",
+   "mv": "common_walls",
+   "values": {
+    "No Common Walls": {
+     "counts": [
+      5470,
+      0,
+      50,
+      0
+     ],
+     "total": 5813,
+     "hint": [
+      "A",
+      "C",
+      "F",
+      "G"
+     ]
+    },
+    "No One Above": {
+     "counts": [
+      691,
+      0,
+      24,
+      0
+     ],
+     "total": 760,
+     "hint": [
+      "A",
+      "C",
+      "F",
+      "G"
+     ]
+    },
+    "No One Below": {
+     "counts": [
+      688,
+      0,
+      25,
+      0
+     ],
+     "total": 755,
+     "hint": [
+      "A",
+      "C",
+      "F",
+      "G"
+     ]
+    },
+    "1 Common Wall": {
+     "counts": [
+      434,
+      0,
+      111,
+      0
+     ],
+     "total": 633,
+     "hint": [
+      "A",
+      "C",
+      "F",
+      "G"
+     ]
+    },
+    "2+ Common Walls": {
+     "counts": [
+      203,
+      0,
+      48,
+      0
+     ],
+     "total": 351,
+     "hint": [
+      "A",
+      "C",
+      "F",
+      "G"
+     ]
+    },
+    "End Unit": {
+     "counts": [
+      109,
+      0,
+      12,
+      0
+     ],
+     "total": 140,
+     "hint": [
+      "A",
+      "C",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "communityFeatures": {
+   "kind": "multi",
+   "mv": "community_features",
+   "values": {
+    "Trail(s)": {
+     "counts": [
+      1201,
+      17,
+      12,
+      266
+     ],
+     "total": 1496,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Park": {
+     "counts": [
+      1153,
+      44,
+      15,
+      178
+     ],
+     "total": 1390,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Access to Public Lands": {
+     "counts": [
+      888,
+      9,
+      4,
+      301
+     ],
+     "total": 1202,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Playground": {
+     "counts": [
+      882,
+      38,
+      13,
+      172
+     ],
+     "total": 1105,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Short Term Rentals Allowed": {
+     "counts": [
+      686,
+      2,
+      8,
+      146
+     ],
+     "total": 842,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Pickleball": {
+     "counts": [
+      612,
+      5,
+      10,
+      176
+     ],
+     "total": 803,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Tennis Court(s)": {
+     "counts": [
+      582,
+      9,
+      4,
+      151
+     ],
+     "total": 746,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Pool": {
+     "counts": [
+      623,
+      42,
+      4,
+      72
+     ],
+     "total": 741,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Short Term Rentals Not Allowed": {
+     "counts": [
+      541,
+      29,
+      2,
+      138
+     ],
+     "total": 710,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Gas Available": {
+     "counts": [
+      523,
+      3,
+      9,
+      133
+     ],
+     "total": 668,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Sport Court": {
+     "counts": [
+      505,
+      5,
+      11,
+      135
+     ],
+     "total": 656,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Road Assessment": {
+     "counts": [
+      93,
+      1,
+      0,
+      50
+     ],
+     "total": 144,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    }
+   }
+  },
+  "constructionMaterials": {
+   "kind": "multi",
+   "mv": "construction_materials_arr",
+   "values": {
+    "Frame": {
+     "counts": [
+      4958,
+      0,
+      172,
+      0
+     ],
+     "total": 5474,
+     "hint": [
+      "A",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Concrete": {
+     "counts": [
+      282,
+      0,
+      12,
+      0
+     ],
+     "total": 404,
+     "hint": [
+      "A",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Block": {
+     "counts": [
+      133,
+      0,
+      11,
+      0
+     ],
+     "total": 254,
+     "hint": [
+      "A",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Double Wall/Staggered Stud": {
+     "counts": [
+      235,
+      0,
+      1,
+      0
+     ],
+     "total": 243,
+     "hint": [
+      "A",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Steel Frame": {
+     "counts": [
+      43,
+      0,
+      0,
+      0
+     ],
+     "total": 155,
+     "hint": [
+      "A",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Brick": {
+     "counts": [
+      48,
+      0,
+      4,
+      0
+     ],
+     "total": 108,
+     "hint": [
+      "A",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Log": {
+     "counts": [
+      87,
+      0,
+      0,
+      0
+     ],
+     "total": 92,
+     "hint": [
+      "A",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "coolingTypes": {
+   "kind": "multi",
+   "mv": "cooling_types",
+   "values": {
+    "Central Air": {
+     "counts": [
+      3375,
+      148,
+      48,
+      0
+     ],
+     "total": 3850,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Heat Pump": {
+     "counts": [
+      2032,
+      137,
+      47,
+      0
+     ],
+     "total": 2362,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Ductless": {
+     "counts": [
+      680,
+      22,
+      38,
+      0
+     ],
+     "total": 816,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Zoned": {
+     "counts": [
+      400,
+      0,
+      4,
+      0
+     ],
+     "total": 438,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Wall/Window Unit(s)": {
+     "counts": [
+      268,
+      27,
+      39,
+      0
+     ],
+     "total": 393,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "ENERGY STAR Qualified Equipment": {
+     "counts": [
+      351,
+      12,
+      6,
+      0
+     ],
+     "total": 373,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Whole House Fan": {
+     "counts": [
+      232,
+      6,
+      1,
+      0
+     ],
+     "total": 247,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "county": {
+   "kind": "multi",
+   "mv": "county",
+   "values": {
+    "Deschutes": {
+     "counts": [
+      2535,
+      48,
+      45,
+      400
+     ],
+     "total": 3130,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+     ]
+    },
+    "Klamath": {
+     "counts": [
+      686,
+      19,
+      22,
+      585
+     ],
+     "total": 1412,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+     ]
+    },
+    "Crook": {
+     "counts": [
+      354,
+      2,
+      10,
+      236
+     ],
+     "total": 637,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+     ]
+    },
+    "Jefferson": {
+     "counts": [
+      252,
+      4,
+      8,
+      85
+     ],
+     "total": 387,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+     ]
+    },
+    "Lake": {
+     "counts": [
+      37,
+      0,
+      0,
+      75
+     ],
+     "total": 121,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+     ]
+    }
+   }
+  },
+  "currentUse": {
+   "kind": "multi",
+   "mv": "current_use",
+   "values": {
+    "Vacant": {
+     "counts": [
+      0,
+      0,
+      0,
+      1783
+     ],
+     "total": 1783,
+     "hint": [
+      "D"
+     ]
+    },
+    "Recreational": {
+     "counts": [
+      0,
+      0,
+      0,
+      203
+     ],
+     "total": 228,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Agricultural": {
+     "counts": [
+      0,
+      0,
+      0,
+      98
+     ],
+     "total": 194,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Pasture": {
+     "counts": [
+      0,
+      0,
+      0,
+      43
+     ],
+     "total": 105,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Grazing": {
+     "counts": [
+      0,
+      0,
+      0,
+      45
+     ],
+     "total": 96,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Commercial": {
+     "counts": [
+      0,
+      0,
+      0,
+      77
+     ],
+     "total": 81,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Ranch": {
+     "counts": [
+      0,
+      0,
+      0,
+      24
+     ],
+     "total": 80,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Timber": {
+     "counts": [
+      0,
+      0,
+      0,
+      54
+     ],
+     "total": 62,
+     "hint": [
+      "D",
+      "E"
+     ]
+    }
+   }
+  },
+  "easements": {
+   "kind": "multi",
+   "mv": "easements",
+   "values": {
+    "Well": {
+     "counts": [
+      1581,
+      18,
+      13,
+      344
+     ],
+     "total": 2125,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Utilities": {
+     "counts": [
+      1060,
+      35,
+      40,
+      392
+     ],
+     "total": 1633,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Access": {
+     "counts": [
+      328,
+      12,
+      9,
+      199
+     ],
+     "total": 592,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Irrigation": {
+     "counts": [
+      160,
+      2,
+      1,
+      38
+     ],
+     "total": 234,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "View": {
+     "counts": [
+      21,
+      5,
+      1,
+      13
+     ],
+     "total": 41,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Conservation": {
+     "counts": [
+      4,
+      0,
+      0,
+      2
+     ],
+     "total": 8,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "evCharging": {
+   "kind": "boolean",
+   "mv": "parking_features",
+   "values": {
+    "true": {
+     "counts": [
+      216,
+      0,
+      1,
+      0
+     ],
+     "total": 221,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "exteriorFeatures": {
+   "kind": "multi",
+   "mv": "exterior_features",
+   "values": {
+    "Spa/Hot Tub": {
+     "counts": [
+      681,
+      5,
+      1,
+      0
+     ],
+     "total": 700,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "RV Hookup": {
+     "counts": [
+      592,
+      3,
+      3,
+      0
+     ],
+     "total": 629,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Fire Pit": {
+     "counts": [
+      600,
+      0,
+      1,
+      0
+     ],
+     "total": 613,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "F",
+      "G"
+     ]
+    },
+    "Courtyard": {
+     "counts": [
+      346,
+      6,
+      8,
+      0
+     ],
+     "total": 384,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "RV Dump": {
+     "counts": [
+      276,
+      2,
+      2,
+      0
+     ],
+     "total": 295,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Built-in Barbecue": {
+     "counts": [
+      144,
+      0,
+      1,
+      0
+     ],
+     "total": 151,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Outdoor Kitchen": {
+     "counts": [
+      98,
+      1,
+      0,
+      0
+     ],
+     "total": 104,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Dock": {
+     "counts": [
+      51,
+      1,
+      0,
+      0
+     ],
+     "total": 71,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "fencedYard": {
+   "kind": "boolean",
+   "mv": "lot_features_arr",
+   "values": {
+    "true": {
+     "counts": [
+      3253,
+      93,
+      74,
+      157
+     ],
+     "total": 3747,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "fencing": {
+   "kind": "multi",
+   "mv": "fencing_arr",
+   "values": {
+    "Wire": {
+     "counts": [
+      0,
+      0,
+      0,
+      104
+     ],
+     "total": 133,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Perimeter": {
+     "counts": [
+      0,
+      0,
+      0,
+      80
+     ],
+     "total": 125,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Barbed Wire": {
+     "counts": [
+      0,
+      0,
+      0,
+      79
+     ],
+     "total": 123,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Wood": {
+     "counts": [
+      0,
+      0,
+      0,
+      58
+     ],
+     "total": 72,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Cross Fenced": {
+     "counts": [
+      0,
+      0,
+      0,
+      22
+     ],
+     "total": 69,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Split Rail": {
+     "counts": [
+      0,
+      0,
+      0,
+      7
+     ],
+     "total": 14,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Vinyl": {
+     "counts": [
+      0,
+      0,
+      0,
+      5
+     ],
+     "total": 13,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Electric": {
+     "counts": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "total": 9,
+     "hint": [
+      "D",
+      "E"
+     ]
+    }
+   }
+  },
+  "fireplaceTypes": {
+   "kind": "multi",
+   "mv": "fireplace_types",
+   "values": {
+    "Gas": {
+     "counts": [
+      1915,
+      3,
+      17,
+      0
+     ],
+     "total": 1946,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Living Room": {
+     "counts": [
+      1509,
+      10,
+      19,
+      0
+     ],
+     "total": 1564,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Great Room": {
+     "counts": [
+      1424,
+      2,
+      2,
+      0
+     ],
+     "total": 1443,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Wood Burning": {
+     "counts": [
+      1315,
+      7,
+      9,
+      0
+     ],
+     "total": 1368,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Family Room": {
+     "counts": [
+      537,
+      3,
+      4,
+      0
+     ],
+     "total": 554,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Propane": {
+     "counts": [
+      460,
+      1,
+      0,
+      0
+     ],
+     "total": 473,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Insert": {
+     "counts": [
+      284,
+      0,
+      0,
+      0
+     ],
+     "total": 294,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Primary Bedroom": {
+     "counts": [
+      263,
+      1,
+      1,
+      0
+     ],
+     "total": 274,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Electric": {
+     "counts": [
+      227,
+      13,
+      5,
+      0
+     ],
+     "total": 248,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Outside": {
+     "counts": [
+      66,
+      0,
+      0,
+      0
+     ],
+     "total": 67,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    }
+   }
+  },
+  "floodZone": {
+   "kind": "multi",
+   "mv": "flood_zone",
+   "values": {
+    "N/A": {
+     "counts": [
+      1953,
+      69,
+      61,
+      555
+     ],
+     "total": 2788,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Plain": {
+     "counts": [
+      80,
+      8,
+      3,
+      35
+     ],
+     "total": 139,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Way": {
+     "counts": [
+      17,
+      1,
+      1,
+      7
+     ],
+     "total": 27,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "flooring": {
+   "kind": "multi",
+   "mv": "flooring",
+   "values": {
+    "Carpet": {
+     "counts": [
+      4570,
+      200,
+      150,
+      0
+     ],
+     "total": 5215,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Vinyl": {
+     "counts": [
+      2537,
+      180,
+      136,
+      0
+     ],
+     "total": 3036,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Tile": {
+     "counts": [
+      2683,
+      27,
+      36,
+      0
+     ],
+     "total": 2872,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Laminate": {
+     "counts": [
+      2259,
+      177,
+      97,
+      0
+     ],
+     "total": 2689,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Hardwood": {
+     "counts": [
+      2114,
+      6,
+      17,
+      0
+     ],
+     "total": 2237,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Simulated Wood": {
+     "counts": [
+      669,
+      21,
+      12,
+      0
+     ],
+     "total": 717,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Concrete": {
+     "counts": [
+      136,
+      1,
+      4,
+      0
+     ],
+     "total": 402,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Stone": {
+     "counts": [
+      342,
+      2,
+      0,
+      0
+     ],
+     "total": 354,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Bamboo": {
+     "counts": [
+      79,
+      0,
+      0,
+      0
+     ],
+     "total": 83,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "foundationTypes": {
+   "kind": "multi",
+   "mv": "foundation_types",
+   "values": {
+    "Stemwall": {
+     "counts": [
+      2820,
+      0,
+      52,
+      0
+     ],
+     "total": 2953,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Concrete Perimeter": {
+     "counts": [
+      2230,
+      17,
+      99,
+      0
+     ],
+     "total": 2512,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Slab": {
+     "counts": [
+      619,
+      7,
+      47,
+      0
+     ],
+     "total": 1009,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Block": {
+     "counts": [
+      708,
+      79,
+      21,
+      0
+     ],
+     "total": 855,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Pillar/Post/Pier": {
+     "counts": [
+      434,
+      199,
+      15,
+      0
+     ],
+     "total": 679,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Brick/Mortar": {
+     "counts": [
+      32,
+      2,
+      2,
+      0
+     ],
+     "total": 41,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "gatedCommunity": {
+   "kind": "boolean",
+   "mv": "hoa_amenities",
+   "values": {
+    "true": {
+     "counts": [
+      1023,
+      3,
+      7,
+      263
+     ],
+     "total": 1390,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    }
+   }
+  },
+  "governmentOverlay": {
+   "kind": "multi",
+   "mv": "government_overlay",
+   "values": {
+    "Airport Zone": {
+     "counts": [
+      47,
+      1,
+      0,
+      19
+     ],
+     "total": 78,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Opportunity Zone": {
+     "counts": [
+      4,
+      0,
+      1,
+      17
+     ],
+     "total": 46,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Wetlands": {
+     "counts": [
+      18,
+      0,
+      0,
+      19
+     ],
+     "total": 43,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Enterprise Zone": {
+     "counts": [
+      2,
+      0,
+      0,
+      7
+     ],
+     "total": 19,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Urban Renewal": {
+     "counts": [
+      1,
+      1,
+      0,
+      4
+     ],
+     "total": 12,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Foreign Trade": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "guestHouse": {
+   "kind": "boolean",
+   "mv": "other_structures",
+   "values": {
+    "true": {
+     "counts": [
+      234,
+      0,
+      0,
+      0
+     ],
+     "total": 266,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "hasFireplace": {
+   "kind": "boolean",
+   "mv": "fireplace_yn",
+   "values": {
+    "true": {
+     "counts": [
+      4016,
+      29,
+      32,
+      0
+     ],
+     "total": 4139,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    }
+   }
+  },
+  "hasFloorPlan": {
+   "kind": "boolean",
+   "mv": "has_floor_plan",
+   "values": {
+    "true": {
+     "counts": [
+      1476,
+      19,
+      23,
+      9
+     ],
+     "total": 1585
+    }
+   }
+  },
+  "hasGolfCourse": {
+   "kind": "boolean",
+   "mv": "view_types",
+   "values": {
+    "true": {
+     "counts": [
+      247,
+      0,
+      3,
+      94
+     ],
+     "total": 347,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "hasOpenHouse": {
+   "kind": "boolean",
+   "mv": "has_open_house",
+   "values": {
+    "true": {
+     "counts": [
+      461,
+      11,
+      2,
+      2
+     ],
+     "total": 478
+    }
+   }
+  },
+  "hasPool": {
+   "kind": "boolean",
+   "mv": "pool_yn",
+   "values": {
+    "true": {
+     "counts": [
+      1183,
+      53,
+      10,
+      224
+     ],
+     "total": 1483
+    }
+   }
+  },
+  "hasVideo": {
+   "kind": "boolean",
+   "mv": "has_video",
+   "values": {
+    "true": {
+     "counts": [
+      1116,
+      6,
+      12,
+      135
+     ],
+     "total": 1329
+    }
+   }
+  },
+  "hasView": {
+   "kind": "boolean",
+   "mv": "view_types",
+   "values": {
+    "true": {
+     "counts": [
+      4248,
+      126,
+      93,
+      1541
+     ],
+     "total": 6297,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "hasVirtualTour": {
+   "kind": "boolean",
+   "mv": "has_virtual_tour",
+   "values": {
+    "true": {
+     "counts": [
+      1106,
+      6,
+      12,
+      140
+     ],
+     "total": 1310,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+     ]
+    }
+   }
+  },
+  "hasWaterfront": {
+   "kind": "boolean",
+   "mv": "waterfront_yn",
+   "values": {
+    "true": {
+     "counts": [
+      588,
+      7,
+      5,
+      146
+     ],
+     "total": 817,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "heatedGarage": {
+   "kind": "boolean",
+   "mv": "parking_features",
+   "values": {
+    "true": {
+     "counts": [
+      321,
+      2,
+      0,
+      0
+     ],
+     "total": 346,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "heatingTypes": {
+   "kind": "multi",
+   "mv": "heating_types",
+   "values": {
+    "Forced Air": {
+     "counts": [
+      3824,
+      165,
+      60,
+      0
+     ],
+     "total": 4298,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Electric": {
+     "counts": [
+      2192,
+      153,
+      97,
+      0
+     ],
+     "total": 2618,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Natural Gas": {
+     "counts": [
+      2264,
+      35,
+      56,
+      0
+     ],
+     "total": 2523,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Heat Pump": {
+     "counts": [
+      1926,
+      150,
+      46,
+      0
+     ],
+     "total": 2267,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Wood": {
+     "counts": [
+      1041,
+      6,
+      7,
+      0
+     ],
+     "total": 1101,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Fireplace(s)": {
+     "counts": [
+      893,
+      9,
+      7,
+      0
+     ],
+     "total": 938,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Ductless": {
+     "counts": [
+      695,
+      21,
+      34,
+      0
+     ],
+     "total": 820,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Propane": {
+     "counts": [
+      451,
+      8,
+      0,
+      0
+     ],
+     "total": 493,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Zoned": {
+     "counts": [
+      416,
+      0,
+      14,
+      0
+     ],
+     "total": 471,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "ENERGY STAR Qualified Equipment": {
+     "counts": [
+      315,
+      12,
+      6,
+      0
+     ],
+     "total": 337,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Wall Furnace": {
+     "counts": [
+      228,
+      3,
+      21,
+      0
+     ],
+     "total": 260,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Pellet Stove": {
+     "counts": [
+      197,
+      6,
+      1,
+      0
+     ],
+     "total": 211,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Radiant": {
+     "counts": [
+      191,
+      0,
+      5,
+      0
+     ],
+     "total": 206,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Baseboard": {
+     "counts": [
+      159,
+      1,
+      21,
+      0
+     ],
+     "total": 203,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Oil": {
+     "counts": [
+      126,
+      1,
+      2,
+      0
+     ],
+     "total": 149,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Hot Water": {
+     "counts": [
+      108,
+      4,
+      2,
+      0
+     ],
+     "total": 128,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Solar Leased": {
+     "counts": [
+      46,
+      0,
+      2,
+      0
+     ],
+     "total": 50,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Geothermal": {
+     "counts": [
+      41,
+      0,
+      2,
+      0
+     ],
+     "total": 46,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Solar": {
+     "counts": [
+      44,
+      0,
+      0,
+      0
+     ],
+     "total": 45,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "hoaAmenities": {
+   "kind": "multi",
+   "mv": "hoa_amenities",
+   "values": {
+    "Snow Removal": {
+     "counts": [
+      1061,
+      10,
+      5,
+      280
+     ],
+     "total": 1356,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Trail(s)": {
+     "counts": [
+      949,
+      1,
+      2,
+      271
+     ],
+     "total": 1223,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Park": {
+     "counts": [
+      977,
+      9,
+      3,
+      185
+     ],
+     "total": 1174,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Pool": {
+     "counts": [
+      900,
+      13,
+      1,
+      221
+     ],
+     "total": 1135,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Landscaping": {
+     "counts": [
+      888,
+      4,
+      13,
+      81
+     ],
+     "total": 986,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Clubhouse": {
+     "counts": [
+      732,
+      28,
+      1,
+      181
+     ],
+     "total": 942,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Playground": {
+     "counts": [
+      730,
+      13,
+      1,
+      190
+     ],
+     "total": 934,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Fitness Center": {
+     "counts": [
+      619,
+      14,
+      1,
+      178
+     ],
+     "total": 812,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Pickleball Court(s)": {
+     "counts": [
+      570,
+      2,
+      1,
+      198
+     ],
+     "total": 771,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Tennis Court(s)": {
+     "counts": [
+      596,
+      0,
+      1,
+      171
+     ],
+     "total": 768,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Resort Community": {
+     "counts": [
+      519,
+      1,
+      1,
+      177
+     ],
+     "total": 698,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Gated": {
+     "counts": [
+      400,
+      2,
+      0,
+      263
+     ],
+     "total": 665,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Golf Course": {
+     "counts": [
+      476,
+      0,
+      0,
+      185
+     ],
+     "total": 661,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Restaurant": {
+     "counts": [
+      456,
+      0,
+      1,
+      171
+     ],
+     "total": 628,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Sport Court": {
+     "counts": [
+      461,
+      0,
+      1,
+      149
+     ],
+     "total": 611,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Firewise Certification": {
+     "counts": [
+      451,
+      1,
+      0,
+      154
+     ],
+     "total": 606,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Water": {
+     "counts": [
+      390,
+      23,
+      6,
+      66
+     ],
+     "total": 485,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Sewer": {
+     "counts": [
+      385,
+      23,
+      5,
+      26
+     ],
+     "total": 439,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Trash": {
+     "counts": [
+      318,
+      21,
+      6,
+      8
+     ],
+     "total": 353,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "RV/Boat Storage": {
+     "counts": [
+      233,
+      14,
+      0,
+      17
+     ],
+     "total": 264,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Security": {
+     "counts": [
+      191,
+      2,
+      1,
+      55
+     ],
+     "total": 249,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Road Assessment": {
+     "counts": [
+      149,
+      1,
+      0,
+      90
+     ],
+     "total": 240,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Stable(s)": {
+     "counts": [
+      147,
+      0,
+      0,
+      68
+     ],
+     "total": 215,
+     "hint": [
+      "A",
+      "C",
+      "D"
+     ]
+    },
+    "Marina": {
+     "counts": [
+      147,
+      0,
+      0,
+      24
+     ],
+     "total": 171,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    },
+    "Airport/Runway": {
+     "counts": [
+      55,
+      0,
+      0,
+      13
+     ],
+     "total": 68,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    }
+   }
+  },
+  "horseProperty": {
+   "kind": "boolean",
+   "mv": "horse_yn",
+   "values": {
+    "true": {
+     "counts": [
+      801,
+      0,
+      0,
+      365
+     ],
+     "total": 1258,
+     "hint": [
+      "A",
+      "D",
+      "E"
+     ]
+    }
+   }
+  },
+  "inLawFloorplan": {
+   "kind": "boolean",
+   "mv": "interior_features",
+   "values": {
+    "true": {
+     "counts": [
+      278,
+      3,
+      3,
+      0
+     ],
+     "total": 289,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "interiorFeatures": {
+   "kind": "multi",
+   "mv": "interior_features",
+   "values": {
+    "Shower/Tub Combo": {
+     "counts": [
+      3644,
+      173,
+      108,
+      0
+     ],
+     "total": 3968,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Ceiling Fan(s)": {
+     "counts": [
+      3362,
+      142,
+      56,
+      0
+     ],
+     "total": 3650,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Walk-In Closet(s)": {
+     "counts": [
+      3464,
+      106,
+      29,
+      0
+     ],
+     "total": 3638,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Open Floorplan": {
+     "counts": [
+      3145,
+      118,
+      47,
+      0
+     ],
+     "total": 3350,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Primary Downstairs": {
+     "counts": [
+      2941,
+      132,
+      41,
+      0
+     ],
+     "total": 3154,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Pantry": {
+     "counts": [
+      2846,
+      96,
+      29,
+      0
+     ],
+     "total": 3018,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Linen Closet": {
+     "counts": [
+      2805,
+      93,
+      36,
+      0
+     ],
+     "total": 2973,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Vaulted Ceiling(s)": {
+     "counts": [
+      2706,
+      114,
+      24,
+      0
+     ],
+     "total": 2929,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Double Vanity": {
+     "counts": [
+      2614,
+      60,
+      14,
+      0
+     ],
+     "total": 2725,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Kitchen Island": {
+     "counts": [
+      2519,
+      65,
+      20,
+      0
+     ],
+     "total": 2638,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Breakfast Bar": {
+     "counts": [
+      2078,
+      62,
+      29,
+      0
+     ],
+     "total": 2200,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Tile Shower": {
+     "counts": [
+      1984,
+      24,
+      14,
+      0
+     ],
+     "total": 2052,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Solid Surface Counters": {
+     "counts": [
+      1792,
+      20,
+      19,
+      0
+     ],
+     "total": 1859,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Granite Counters": {
+     "counts": [
+      1484,
+      20,
+      18,
+      0
+     ],
+     "total": 1568,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Soaking Tub": {
+     "counts": [
+      1465,
+      46,
+      6,
+      0
+     ],
+     "total": 1541,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Built-in Features": {
+     "counts": [
+      1401,
+      40,
+      10,
+      0
+     ],
+     "total": 1522,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Fiberglass Stall Shower": {
+     "counts": [
+      1353,
+      90,
+      32,
+      0
+     ],
+     "total": 1488,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Enclosed Toilet(s)": {
+     "counts": [
+      1325,
+      4,
+      3,
+      0
+     ],
+     "total": 1346,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Laminate Counters": {
+     "counts": [
+      1063,
+      116,
+      56,
+      0
+     ],
+     "total": 1320,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Tile Counters": {
+     "counts": [
+      874,
+      7,
+      7,
+      0
+     ],
+     "total": 911,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Smart Thermostat": {
+     "counts": [
+      836,
+      13,
+      3,
+      0
+     ],
+     "total": 866,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Stone Counters": {
+     "counts": [
+      690,
+      6,
+      5,
+      0
+     ],
+     "total": 713,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Central Vacuum": {
+     "counts": [
+      419,
+      2,
+      1,
+      0
+     ],
+     "total": 431,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Wired for Data": {
+     "counts": [
+      390,
+      0,
+      2,
+      0
+     ],
+     "total": 431,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Wired for Sound": {
+     "counts": [
+      406,
+      0,
+      0,
+      0
+     ],
+     "total": 425,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Spa/Hot Tub": {
+     "counts": [
+      347,
+      2,
+      0,
+      0
+     ],
+     "total": 360,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Smart Lock(s)": {
+     "counts": [
+      306,
+      3,
+      0,
+      0
+     ],
+     "total": 312,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "In-Law Floorplan": {
+     "counts": [
+      278,
+      3,
+      3,
+      0
+     ],
+     "total": 289,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Wet Bar": {
+     "counts": [
+      276,
+      0,
+      0,
+      0
+     ],
+     "total": 285,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Solar Tube(s)": {
+     "counts": [
+      188,
+      11,
+      1,
+      0
+     ],
+     "total": 203,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Dual Flush Toilet(s)": {
+     "counts": [
+      160,
+      5,
+      4,
+      0
+     ],
+     "total": 174,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Smart Light(s)": {
+     "counts": [
+      164,
+      2,
+      1,
+      0
+     ],
+     "total": 171,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Dry Bar": {
+     "counts": [
+      157,
+      1,
+      0,
+      0
+     ],
+     "total": 161,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Bidet": {
+     "counts": [
+      114,
+      1,
+      1,
+      0
+     ],
+     "total": 119,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Elevator": {
+     "counts": [
+      41,
+      0,
+      0,
+      0
+     ],
+     "total": 53,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "irrigationRights": {
+   "kind": "boolean",
+   "mv": "irrigation_water_rights_yn",
+   "values": {
+    "true": {
+     "counts": [
+      386,
+      0,
+      0,
+      120
+     ],
+     "total": 592,
+     "hint": [
+      "A",
+      "D",
+      "E"
+     ]
+    }
+   }
+  },
+  "irrigationSource": {
+   "kind": "multi",
+   "mv": "irrigation_source",
+   "values": {
+    "District": {
+     "counts": [
+      383,
+      0,
+      0,
+      57
+     ],
+     "total": 492,
+     "hint": [
+      "A",
+      "D",
+      "E"
+     ]
+    },
+    "On Site Well": {
+     "counts": [
+      318,
+      0,
+      0,
+      35
+     ],
+     "total": 388,
+     "hint": [
+      "A",
+      "D",
+      "E"
+     ]
+    },
+    "Creek": {
+     "counts": [
+      84,
+      0,
+      0,
+      12
+     ],
+     "total": 117,
+     "hint": [
+      "A",
+      "D",
+      "E"
+     ]
+    },
+    "Pond": {
+     "counts": [
+      80,
+      0,
+      0,
+      6
+     ],
+     "total": 97,
+     "hint": [
+      "A",
+      "D",
+      "E"
+     ]
+    },
+    "River": {
+     "counts": [
+      55,
+      0,
+      0,
+      9
+     ],
+     "total": 74,
+     "hint": [
+      "A",
+      "D",
+      "E"
+     ]
+    },
+    "Spring": {
+     "counts": [
+      29,
+      0,
+      0,
+      6
+     ],
+     "total": 38,
+     "hint": [
+      "A",
+      "D",
+      "E"
+     ]
+    }
+   }
+  },
+  "levelsOptions": {
+   "kind": "multi",
+   "mv": "levels",
+   "values": {
+    "One": {
+     "counts": [
+      2970,
+      273,
+      81,
+      0
+     ],
+     "total": 3620,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Two": {
+     "counts": [
+      2234,
+      4,
+      68,
+      0
+     ],
+     "total": 2398,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Three Or More": {
+     "counts": [
+      198,
+      0,
+      6,
+      0
+     ],
+     "total": 220,
+     "hint": [
+      "A",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Multi/Split": {
+     "counts": [
+      67,
+      0,
+      0,
+      0
+     ],
+     "total": 74,
+     "hint": [
+      "A",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "listingTerms": {
+   "kind": "multi",
+   "mv": "listing_terms",
+   "values": {
+    "Cash": {
+     "counts": [
+      6037,
+      304,
+      199,
+      2047
+     ],
+     "total": 9125,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+     ]
+    },
+    "Conventional": {
+     "counts": [
+      5722,
+      243,
+      183,
+      1200
+     ],
+     "total": 7733,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+     ]
+    },
+    "VA Loan": {
+     "counts": [
+      3936,
+      20,
+      70,
+      115
+     ],
+     "total": 4178,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+     ]
+    },
+    "FHA": {
+     "counts": [
+      3803,
+      29,
+      85,
+      97
+     ],
+     "total": 4047,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+     ]
+    },
+    "USDA Loan": {
+     "counts": [
+      1253,
+      6,
+      14,
+      53
+     ],
+     "total": 1357,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+     ]
+    },
+    "Owner Will Carry": {
+     "counts": [
+      170,
+      6,
+      10,
+      273
+     ],
+     "total": 532,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+     ]
+    },
+    "FMHA": {
+     "counts": [
+      227,
+      2,
+      3,
+      16
+     ],
+     "total": 261,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+     ]
+    },
+    "Contract": {
+     "counts": [
+      56,
+      1,
+      2,
+      36
+     ],
+     "total": 139,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+     ]
+    },
+    "Private Financing Available": {
+     "counts": [
+      62,
+      3,
+      3,
+      37
+     ],
+     "total": 124,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+     ]
+    },
+    "Trade": {
+     "counts": [
+      3,
+      0,
+      0,
+      41
+     ],
+     "total": 47,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+     ]
+    }
+   }
+  },
+  "lotFeatures": {
+   "kind": "multi",
+   "mv": "lot_features_arr",
+   "values": {
+    "Level": {
+     "counts": [
+      3200,
+      167,
+      117,
+      849
+     ],
+     "total": 4618,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Landscaped": {
+     "counts": [
+      3629,
+      116,
+      73,
+      17
+     ],
+     "total": 3985,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Fenced": {
+     "counts": [
+      3253,
+      93,
+      74,
+      157
+     ],
+     "total": 3747,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Sprinklers In Front": {
+     "counts": [
+      2663,
+      31,
+      34,
+      1
+     ],
+     "total": 2801,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Sprinkler Timer(s)": {
+     "counts": [
+      2257,
+      35,
+      27,
+      2
+     ],
+     "total": 2372,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Sprinklers In Rear": {
+     "counts": [
+      2175,
+      26,
+      16,
+      1
+     ],
+     "total": 2264,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Native Plants": {
+     "counts": [
+      1306,
+      10,
+      4,
+      595
+     ],
+     "total": 1947,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Drip System": {
+     "counts": [
+      1368,
+      36,
+      8,
+      5
+     ],
+     "total": 1459,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Sloped": {
+     "counts": [
+      757,
+      3,
+      8,
+      515
+     ],
+     "total": 1320,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Wooded": {
+     "counts": [
+      825,
+      3,
+      0,
+      449
+     ],
+     "total": 1292,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Corner Lot": {
+     "counts": [
+      815,
+      28,
+      28,
+      197
+     ],
+     "total": 1182,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Garden": {
+     "counts": [
+      1002,
+      25,
+      8,
+      16
+     ],
+     "total": 1092,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Pasture": {
+     "counts": [
+      465,
+      0,
+      2,
+      78
+     ],
+     "total": 618,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Adjoins Public Lands": {
+     "counts": [
+      382,
+      4,
+      1,
+      148
+     ],
+     "total": 564,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Water Feature": {
+     "counts": [
+      456,
+      3,
+      0,
+      15
+     ],
+     "total": 497,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Xeriscape Landscape": {
+     "counts": [
+      386,
+      8,
+      6,
+      10
+     ],
+     "total": 415,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Rock Outcropping": {
+     "counts": [
+      256,
+      2,
+      1,
+      104
+     ],
+     "total": 381,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "On Golf Course": {
+     "counts": [
+      177,
+      0,
+      0,
+      48
+     ],
+     "total": 228,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Smart Irrigation": {
+     "counts": [
+      190,
+      1,
+      1,
+      1
+     ],
+     "total": 204,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Marketable Timber": {
+     "counts": [
+      89,
+      0,
+      0,
+      50
+     ],
+     "total": 150,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "newConstruction": {
+   "kind": "boolean",
+   "mv": "new_construction_yn",
+   "values": {
+    "true": {
+     "counts": [
+      788,
+      0,
+      16,
+      0
+     ],
+     "total": 811,
+     "hint": [
+      "A",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "noHoa": {
+   "kind": "boolean",
+   "mv": "association_yn",
+   "values": {
+    "true": {
+     "counts": [
+      3832,
+      259,
+      182,
+      1435
+     ],
+     "total": 6436,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    }
+   }
+  },
+  "onGolfCourse": {
+   "kind": "boolean",
+   "mv": "lot_features_arr",
+   "values": {
+    "true": {
+     "counts": [
+      177,
+      0,
+      0,
+      48
+     ],
+     "total": 228,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "onSeptic": {
+   "kind": "boolean",
+   "mv": "sewer_types",
+   "values": {
+    "true": {
+     "counts": [
+      2207,
+      16,
+      12,
+      221
+     ],
+     "total": 2629,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "onWell": {
+   "kind": "boolean",
+   "mv": "water_source",
+   "values": {
+    "true": {
+     "counts": [
+      1827,
+      43,
+      17,
+      415
+     ],
+     "total": 2485,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "otherStructures": {
+   "kind": "multi",
+   "mv": "other_structures",
+   "values": {
+    "Shed(s)": {
+     "counts": [
+      1769,
+      172,
+      27,
+      108
+     ],
+     "total": 2174,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Storage": {
+     "counts": [
+      1272,
+      48,
+      26,
+      86
+     ],
+     "total": 1538,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Workshop": {
+     "counts": [
+      1123,
+      23,
+      5,
+      47
+     ],
+     "total": 1288,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "RV/Boat Storage": {
+     "counts": [
+      746,
+      6,
+      3,
+      0
+     ],
+     "total": 771,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "F",
+      "G"
+     ]
+    },
+    "Barn(s)": {
+     "counts": [
+      400,
+      0,
+      0,
+      27
+     ],
+     "total": 506,
+     "hint": [
+      "A",
+      "B",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Second Garage": {
+     "counts": [
+      386,
+      0,
+      2,
+      5
+     ],
+     "total": 419,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Greenhouse": {
+     "counts": [
+      327,
+      2,
+      2,
+      15
+     ],
+     "total": 365,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Poultry Coop": {
+     "counts": [
+      314,
+      0,
+      1,
+      8
+     ],
+     "total": 334,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Animal Stall(s)": {
+     "counts": [
+      248,
+      0,
+      0,
+      16
+     ],
+     "total": 301,
+     "hint": [
+      "A",
+      "B",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Kennel/Dog Run": {
+     "counts": [
+      255,
+      0,
+      1,
+      2
+     ],
+     "total": 275,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Guest House": {
+     "counts": [
+      234,
+      0,
+      0,
+      0
+     ],
+     "total": 266,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Corral(s)": {
+     "counts": [
+      161,
+      0,
+      0,
+      13
+     ],
+     "total": 223,
+     "hint": [
+      "A",
+      "B",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Gazebo": {
+     "counts": [
+      171,
+      7,
+      5,
+      7
+     ],
+     "total": 200,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Stable(s)": {
+     "counts": [
+      144,
+      0,
+      0,
+      6
+     ],
+     "total": 175,
+     "hint": [
+      "A",
+      "B",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Arena": {
+     "counts": [
+      57,
+      0,
+      0,
+      5
+     ],
+     "total": 81,
+     "hint": [
+      "A",
+      "B",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Mobile Home": {
+     "counts": [
+      41,
+      0,
+      0,
+      12
+     ],
+     "total": 60,
+     "hint": [
+      "A",
+      "B",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Covered Arena": {
+     "counts": [
+      39,
+      0,
+      0,
+      2
+     ],
+     "total": 53,
+     "hint": [
+      "A",
+      "B",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "ownerWillCarry": {
+   "kind": "boolean",
+   "mv": "listing_terms",
+   "values": {
+    "true": {
+     "counts": [
+      170,
+      6,
+      10,
+      273
+     ],
+     "total": 532,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+     ]
+    }
+   }
+  },
+  "parkingFeatures": {
+   "kind": "multi",
+   "mv": "parking_features",
+   "values": {
+    "Driveway": {
+     "counts": [
+      4649,
+      158,
+      115,
+      0
+     ],
+     "total": 5070,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Attached": {
+     "counts": [
+      3352,
+      23,
+      69,
+      0
+     ],
+     "total": 3496,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Garage Door Opener": {
+     "counts": [
+      3341,
+      20,
+      44,
+      0
+     ],
+     "total": 3446,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "RV Access/Parking": {
+     "counts": [
+      2063,
+      20,
+      12,
+      0
+     ],
+     "total": 2197,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Asphalt": {
+     "counts": [
+      1290,
+      35,
+      51,
+      0
+     ],
+     "total": 1667,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Concrete": {
+     "counts": [
+      1488,
+      69,
+      37,
+      0
+     ],
+     "total": 1651,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Gravel": {
+     "counts": [
+      1327,
+      30,
+      32,
+      0
+     ],
+     "total": 1547,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "On Street": {
+     "counts": [
+      914,
+      29,
+      64,
+      0
+     ],
+     "total": 1132,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Detached": {
+     "counts": [
+      1009,
+      10,
+      14,
+      0
+     ],
+     "total": 1085,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Storage": {
+     "counts": [
+      888,
+      40,
+      8,
+      0
+     ],
+     "total": 976,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Workshop in Garage": {
+     "counts": [
+      919,
+      7,
+      5,
+      0
+     ],
+     "total": 964,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Gated": {
+     "counts": [
+      676,
+      1,
+      7,
+      0
+     ],
+     "total": 778,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "No Garage": {
+     "counts": [
+      412,
+      54,
+      20,
+      0
+     ],
+     "total": 526,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Alley Access": {
+     "counts": [
+      401,
+      1,
+      27,
+      0
+     ],
+     "total": 486,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Attached Carport": {
+     "counts": [
+      253,
+      166,
+      18,
+      0
+     ],
+     "total": 446,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Detached Carport": {
+     "counts": [
+      338,
+      61,
+      12,
+      0
+     ],
+     "total": 424,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "RV Garage": {
+     "counts": [
+      367,
+      0,
+      1,
+      0
+     ],
+     "total": 387,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Heated Garage": {
+     "counts": [
+      321,
+      2,
+      0,
+      0
+     ],
+     "total": 346,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Parking Lot": {
+     "counts": [
+      0,
+      0,
+      24,
+      0
+     ],
+     "total": 294,
+     "hint": [
+      "C",
+      "F",
+      "G"
+     ]
+    },
+    "Shared Driveway": {
+     "counts": [
+      204,
+      8,
+      23,
+      0
+     ],
+     "total": 273,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Electric Vehicle Charging Station(s)": {
+     "counts": [
+      216,
+      0,
+      1,
+      0
+     ],
+     "total": 221,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Assigned": {
+     "counts": [
+      125,
+      12,
+      13,
+      0
+     ],
+     "total": 168,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Tandem": {
+     "counts": [
+      117,
+      14,
+      1,
+      0
+     ],
+     "total": 135,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Paver Block": {
+     "counts": [
+      84,
+      0,
+      1,
+      0
+     ],
+     "total": 86,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "patioPorch": {
+   "kind": "multi",
+   "mv": "patio_porch_features",
+   "values": {
+    "Patio": {
+     "counts": [
+      2555,
+      60,
+      67,
+      0
+     ],
+     "total": 2751,
+     "hint": [
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Deck": {
+     "counts": [
+      2240,
+      99,
+      36,
+      0
+     ],
+     "total": 2442,
+     "hint": [
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Covered": {
+     "counts": [
+      1895,
+      97,
+      26,
+      0
+     ],
+     "total": 2076,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Rear Porch": {
+     "counts": [
+      1361,
+      31,
+      22,
+      0
+     ],
+     "total": 1449,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Porch": {
+     "counts": [
+      1289,
+      48,
+      28,
+      0
+     ],
+     "total": 1401,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Front Porch": {
+     "counts": [
+      1174,
+      54,
+      14,
+      0
+     ],
+     "total": 1273,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Covered Deck": {
+     "counts": [
+      834,
+      61,
+      6,
+      0
+     ],
+     "total": 929,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Side Porch": {
+     "counts": [
+      341,
+      17,
+      7,
+      0
+     ],
+     "total": 382,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Wrap Around": {
+     "counts": [
+      297,
+      14,
+      1,
+      0
+     ],
+     "total": 331,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Awning(s)": {
+     "counts": [
+      154,
+      20,
+      6,
+      0
+     ],
+     "total": 193,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Enclosed": {
+     "counts": [
+      103,
+      7,
+      3,
+      0
+     ],
+     "total": 121,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Terrace": {
+     "counts": [
+      65,
+      0,
+      0,
+      0
+     ],
+     "total": 72,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Screened": {
+     "counts": [
+      57,
+      6,
+      0,
+      0
+     ],
+     "total": 65,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "poolFeatures": {
+   "kind": "multi",
+   "mv": "pool_features",
+   "values": {
+    "Outdoor Pool": {
+     "counts": [
+      281,
+      4,
+      2,
+      0
+     ],
+     "total": 291,
+     "hint": [
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "In Ground": {
+     "counts": [
+      265,
+      9,
+      2,
+      0
+     ],
+     "total": 280,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Association": {
+     "counts": [
+      210,
+      3,
+      1,
+      0
+     ],
+     "total": 215,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Community": {
+     "counts": [
+      200,
+      12,
+      0,
+      0
+     ],
+     "total": 212,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Heated": {
+     "counts": [
+      165,
+      0,
+      1,
+      0
+     ],
+     "total": 168,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Fenced": {
+     "counts": [
+      130,
+      2,
+      1,
+      0
+     ],
+     "total": 135,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Private": {
+     "counts": [
+      84,
+      0,
+      0,
+      0
+     ],
+     "total": 85,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Pool Cover": {
+     "counts": [
+      83,
+      0,
+      0,
+      0
+     ],
+     "total": 84,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Pool/Spa Combo": {
+     "counts": [
+      69,
+      0,
+      1,
+      0
+     ],
+     "total": 70,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Above Ground": {
+     "counts": [
+      46,
+      0,
+      0,
+      0
+     ],
+     "total": 49,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Indoor": {
+     "counts": [
+      47,
+      1,
+      0,
+      0
+     ],
+     "total": 48,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Lap": {
+     "counts": [
+      33,
+      0,
+      0,
+      0
+     ],
+     "total": 33,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "priceReduced": {
+   "kind": "boolean",
+   "mv": "price_reduced",
+   "values": {
+    "true": {
+     "counts": [
+      816,
+      69,
+      32,
+      334
+     ],
+     "total": 1365
+    }
+   }
+  },
+  "primaryOnMain": {
+   "kind": "boolean",
+   "mv": "interior_features",
+   "values": {
+    "true": {
+     "counts": [
+      2941,
+      132,
+      41,
+      0
+     ],
+     "total": 3154,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "propertySubTypes": {
+   "kind": "multi",
+   "mv": "property_sub_type",
+   "values": {
+    "Single Family Residence": {
+     "counts": [
+      4928,
+      0,
+      0,
+      0
+     ],
+     "total": 4928,
+     "hint": [
+      "A"
+     ]
+    },
+    "Residential Lots": {
+     "counts": [
+      0,
+      0,
+      0,
+      1623
+     ],
+     "total": 1623,
+     "hint": [
+      "D"
+     ]
+    },
+    "Manufactured On Land": {
+     "counts": [
+      585,
+      0,
+      0,
+      0
+     ],
+     "total": 585,
+     "hint": [
+      "A"
+     ]
+    },
+    "Townhouse": {
+     "counts": [
+      327,
+      0,
+      0,
+      0
+     ],
+     "total": 327,
+     "hint": [
+      "A"
+     ]
+    },
+    "In Park": {
+     "counts": [
+      0,
+      304,
+      0,
+      0
+     ],
+     "total": 304,
+     "hint": [
+      "B"
+     ]
+    },
+    "Condominium": {
+     "counts": [
+      178,
+      0,
+      0,
+      0
+     ],
+     "total": 178,
+     "hint": [
+      "A"
+     ]
+    },
+    "Commercial": {
+     "counts": [
+      0,
+      0,
+      0,
+      160
+     ],
+     "total": 160,
+     "hint": [
+      "D"
+     ]
+    },
+    "Recreational": {
+     "counts": [
+      0,
+      0,
+      0,
+      114
+     ],
+     "total": 114,
+     "hint": [
+      "D"
+     ]
+    },
+    "Agriculture": {
+     "counts": [
+      0,
+      0,
+      0,
+      102
+     ],
+     "total": 102,
+     "hint": [
+      "D"
+     ]
+    },
+    "Duplex": {
+     "counts": [
+      0,
+      0,
+      97,
+      0
+     ],
+     "total": 97,
+     "hint": [
+      "C"
+     ]
+    },
+    "Tenancy in Common": {
+     "counts": [
+      71,
+      0,
+      0,
+      0
+     ],
+     "total": 71,
+     "hint": [
+      "A"
+     ]
+    },
+    "Multi Family": {
+     "counts": [
+      0,
+      0,
+      59,
+      0
+     ],
+     "total": 59,
+     "hint": [
+      "C"
+     ]
+    },
+    "Residential Leased Land": {
+     "counts": [
+      54,
+      0,
+      0,
+      0
+     ],
+     "total": 54,
+     "hint": [
+      "A"
+     ]
+    },
+    "Industrial": {
+     "counts": [
+      0,
+      0,
+      0,
+      29
+     ],
+     "total": 29,
+     "hint": [
+      "D"
+     ]
+    },
+    "Quadruplex": {
+     "counts": [
+      0,
+      0,
+      25,
+      0
+     ],
+     "total": 25,
+     "hint": [
+      "C"
+     ]
+    },
+    "Rangeland": {
+     "counts": [
+      0,
+      0,
+      0,
+      24
+     ],
+     "total": 24,
+     "hint": [
+      "D"
+     ]
+    },
+    "Triplex": {
+     "counts": [
+      0,
+      0,
+      19,
+      0
+     ],
+     "total": 19,
+     "hint": [
+      "C"
+     ]
+    },
+    "Investment": {
+     "counts": [
+      0,
+      0,
+      0,
+      13
+     ],
+     "total": 13,
+     "hint": [
+      "D"
+     ]
+    },
+    "On Leased Land": {
+     "counts": [
+      0,
+      3,
+      0,
+      0
+     ],
+     "total": 3,
+     "hint": [
+      "B"
+     ]
+    },
+    "Stock Cooperative": {
+     "counts": [
+      2,
+      0,
+      0,
+      0
+     ],
+     "total": 2,
+     "hint": [
+      "A"
+     ]
+    },
+    "Timeshare": {
+     "counts": [
+      1,
+      0,
+      0,
+      0
+     ],
+     "total": 1,
+     "hint": [
+      "A"
+     ]
+    }
+   }
+  },
+  "publicSewer": {
+   "kind": "boolean",
+   "mv": "sewer_types",
+   "values": {
+    "true": {
+     "counts": [
+      3801,
+      270,
+      186,
+      578
+     ],
+     "total": 5303,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "publicWater": {
+   "kind": "boolean",
+   "mv": "water_source",
+   "values": {
+    "true": {
+     "counts": [
+      3956,
+      243,
+      181,
+      646
+     ],
+     "total": 5487,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "roadFrontage": {
+   "kind": "multi",
+   "mv": "road_frontage",
+   "values": {
+    "Shared Access": {
+     "counts": [
+      1248,
+      80,
+      52,
+      526
+     ],
+     "total": 2062,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Private Access": {
+     "counts": [
+      733,
+      20,
+      13,
+      180
+     ],
+     "total": 1019,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Easement": {
+     "counts": [
+      185,
+      5,
+      4,
+      103
+     ],
+     "total": 322,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "roadSurface": {
+   "kind": "multi",
+   "mv": "road_surface",
+   "values": {
+    "Paved": {
+     "counts": [
+      4011,
+      205,
+      135,
+      865
+     ],
+     "total": 5550,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Gravel": {
+     "counts": [
+      908,
+      12,
+      9,
+      531
+     ],
+     "total": 1544,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Dirt": {
+     "counts": [
+      160,
+      1,
+      1,
+      287
+     ],
+     "total": 466,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Cinder": {
+     "counts": [
+      41,
+      0,
+      0,
+      43
+     ],
+     "total": 85,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "roofTypes": {
+   "kind": "multi",
+   "mv": "roof_types",
+   "values": {
+    "Composition": {
+     "counts": [
+      4954,
+      211,
+      176,
+      0
+     ],
+     "total": 5554,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Metal": {
+     "counts": [
+      931,
+      41,
+      22,
+      0
+     ],
+     "total": 1230,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Asphalt": {
+     "counts": [
+      269,
+      10,
+      9,
+      0
+     ],
+     "total": 337,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Membrane": {
+     "counts": [
+      94,
+      32,
+      9,
+      0
+     ],
+     "total": 267,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Tile": {
+     "counts": [
+      167,
+      2,
+      1,
+      0
+     ],
+     "total": 180,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "roomsArr": {
+   "kind": "multi",
+   "mv": "rooms_arr",
+   "values": {
+    "Kitchen": {
+     "counts": [
+      5365,
+      265,
+      0,
+      0
+     ],
+     "total": 5855,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    },
+    "Primary Bedroom": {
+     "counts": [
+      4589,
+      225,
+      1,
+      0
+     ],
+     "total": 4883,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    },
+    "Laundry": {
+     "counts": [
+      4344,
+      212,
+      0,
+      0
+     ],
+     "total": 4637,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    },
+    "Living Room": {
+     "counts": [
+      3640,
+      222,
+      17,
+      0
+     ],
+     "total": 3948,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    },
+    "Eating Area": {
+     "counts": [
+      2964,
+      130,
+      0,
+      0
+     ],
+     "total": 3135,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    },
+    "Dining Room": {
+     "counts": [
+      2324,
+      108,
+      0,
+      0
+     ],
+     "total": 2480,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    },
+    "Great Room": {
+     "counts": [
+      2356,
+      37,
+      2,
+      0
+     ],
+     "total": 2430,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    },
+    "Family Room": {
+     "counts": [
+      1490,
+      39,
+      3,
+      0
+     ],
+     "total": 1580,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    },
+    "Office": {
+     "counts": [
+      1311,
+      26,
+      0,
+      0
+     ],
+     "total": 1474,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    },
+    "Bonus Room": {
+     "counts": [
+      1040,
+      14,
+      0,
+      0
+     ],
+     "total": 1076,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    },
+    "Mud Room": {
+     "counts": [
+      770,
+      13,
+      0,
+      0
+     ],
+     "total": 816,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    },
+    "Second Primary": {
+     "counts": [
+      725,
+      12,
+      0,
+      0
+     ],
+     "total": 748,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    },
+    "Loft": {
+     "counts": [
+      666,
+      4,
+      0,
+      0
+     ],
+     "total": 692,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    },
+    "Breakfast Nook": {
+     "counts": [
+      619,
+      27,
+      0,
+      0
+     ],
+     "total": 660,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    },
+    "Enclosed Porch/Patio": {
+     "counts": [
+      287,
+      15,
+      0,
+      0
+     ],
+     "total": 311,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    },
+    "Jack and Jill Bath": {
+     "counts": [
+      224,
+      5,
+      0,
+      0
+     ],
+     "total": 235,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    },
+    "Media Room": {
+     "counts": [
+      197,
+      1,
+      0,
+      0
+     ],
+     "total": 203,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    },
+    "Sunroom": {
+     "counts": [
+      157,
+      4,
+      0,
+      0
+     ],
+     "total": 164,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    },
+    "Sauna": {
+     "counts": [
+      86,
+      0,
+      0,
+      0
+     ],
+     "total": 89,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    },
+    "Solarium": {
+     "counts": [
+      22,
+      0,
+      0,
+      0
+     ],
+     "total": 24,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    }
+   }
+  },
+  "rvGarage": {
+   "kind": "boolean",
+   "mv": "parking_features",
+   "values": {
+    "true": {
+     "counts": [
+      367,
+      0,
+      1,
+      0
+     ],
+     "total": 387,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "rvParking": {
+   "kind": "boolean",
+   "mv": "parking_features",
+   "values": {
+    "true": {
+     "counts": [
+      2220,
+      21,
+      13,
+      0
+     ],
+     "total": 2367,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "securityFeatures": {
+   "kind": "multi",
+   "mv": "security_features",
+   "values": {
+    "Smoke Detector(s)": {
+     "counts": [
+      5055,
+      228,
+      150,
+      0
+     ],
+     "total": 5662,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Carbon Monoxide Detector(s)": {
+     "counts": [
+      4895,
+      172,
+      138,
+      0
+     ],
+     "total": 5383,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Security System Owned": {
+     "counts": [
+      316,
+      3,
+      4,
+      0
+     ],
+     "total": 393,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Fire Sprinkler System": {
+     "counts": [
+      58,
+      2,
+      2,
+      0
+     ],
+     "total": 106,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Security System Leased": {
+     "counts": [
+      55,
+      1,
+      0,
+      0
+     ],
+     "total": 73,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "seniorCommunity": {
+   "kind": "boolean",
+   "mv": "senior_community_yn",
+   "values": {
+    "true": {
+     "counts": [
+      73,
+      167,
+      0,
+      12
+     ],
+     "total": 252,
+     "hint": [
+      "A",
+      "B",
+      "D"
+     ]
+    }
+   }
+  },
+  "sewerTypes": {
+   "kind": "multi",
+   "mv": "sewer_types",
+   "values": {
+    "Public Sewer": {
+     "counts": [
+      3801,
+      270,
+      186,
+      578
+     ],
+     "total": 5303,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Septic Tank": {
+     "counts": [
+      2090,
+      15,
+      12,
+      165
+     ],
+     "total": 2448,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Standard Leach Field": {
+     "counts": [
+      883,
+      3,
+      2,
+      85
+     ],
+     "total": 1036,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Septic Needed": {
+     "counts": [
+      5,
+      0,
+      0,
+      407
+     ],
+     "total": 413,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Private Sewer": {
+     "counts": [
+      309,
+      16,
+      0,
+      32
+     ],
+     "total": 380,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Perc Test On File": {
+     "counts": [
+      3,
+      0,
+      0,
+      158
+     ],
+     "total": 161,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Sand Filter": {
+     "counts": [
+      117,
+      0,
+      1,
+      19
+     ],
+     "total": 140,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Alternative Treatment Tech System": {
+     "counts": [
+      60,
+      0,
+      0,
+      14
+     ],
+     "total": 75,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Holding Tank": {
+     "counts": [
+      46,
+      0,
+      0,
+      4
+     ],
+     "total": 54,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Capping Fill": {
+     "counts": [
+      36,
+      0,
+      1,
+      15
+     ],
+     "total": 52,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "shop": {
+   "kind": "boolean",
+   "mv": "other_structures",
+   "values": {
+    "true": {
+     "counts": [
+      1575,
+      27,
+      9,
+      47
+     ],
+     "total": 1759,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "singleLevel": {
+   "kind": "boolean",
+   "mv": "levels",
+   "values": {
+    "true": {
+     "counts": [
+      2970,
+      273,
+      81,
+      0
+     ],
+     "total": 3620,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "specialConditions": {
+   "kind": "multi",
+   "mv": "special_conditions",
+   "values": {
+    "Standard": {
+     "counts": [
+      5927,
+      296,
+      197,
+      2033
+     ],
+     "total": 9028,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Trust": {
+     "counts": [
+      89,
+      2,
+      1,
+      17
+     ],
+     "total": 120,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Probate Listing": {
+     "counts": [
+      58,
+      6,
+      2,
+      13
+     ],
+     "total": 83,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Real Estate Owned": {
+     "counts": [
+      44,
+      3,
+      0,
+      3
+     ],
+     "total": 52,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "strAllowed": {
+   "kind": "boolean",
+   "mv": "community_features",
+   "values": {
+    "true": {
+     "counts": [
+      686,
+      2,
+      8,
+      146
+     ],
+     "total": 842,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ]
+    }
+   }
+  },
+  "strPermit": {
+   "kind": "boolean",
+   "mv": "str_permit_yn",
+   "values": {
+    "true": {
+     "counts": [
+      581,
+      3,
+      9,
+      0
+     ],
+     "total": 593,
+     "hint": [
+      "A",
+      "B",
+      "C"
+     ]
+    }
+   }
+  },
+  "structureTypes": {
+   "kind": "multi",
+   "mv": "structure_types",
+   "values": {
+    "House": {
+     "counts": [
+      3044,
+      0,
+      79,
+      0
+     ],
+     "total": 3208,
+     "hint": [
+      "A",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Manufactured House": {
+     "counts": [
+      603,
+      201,
+      10,
+      0
+     ],
+     "total": 841,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Mixed Use": {
+     "counts": [
+      28,
+      0,
+      16,
+      0
+     ],
+     "total": 119,
+     "hint": [
+      "A",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Cabin": {
+     "counts": [
+      104,
+      0,
+      0,
+      0
+     ],
+     "total": 104,
+     "hint": [
+      "A"
+     ]
+    },
+    "Office": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 102,
+     "hint": [
+      "F",
+      "G"
+     ]
+    },
+    "Warehouse": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 75,
+     "hint": [
+      "F",
+      "G"
+     ]
+    },
+    "Industrial": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 65,
+     "hint": [
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "utilities": {
+   "kind": "multi",
+   "mv": "utilities",
+   "values": {
+    "Electricity Available": {
+     "counts": [
+      0,
+      0,
+      0,
+      1371
+     ],
+     "total": 1371,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Phone Available": {
+     "counts": [
+      0,
+      0,
+      0,
+      502
+     ],
+     "total": 502,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Cable Available": {
+     "counts": [
+      0,
+      0,
+      0,
+      481
+     ],
+     "total": 481,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Natural Gas Available": {
+     "counts": [
+      0,
+      0,
+      0,
+      450
+     ],
+     "total": 450,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Fiber Optics Available": {
+     "counts": [
+      0,
+      0,
+      0,
+      168
+     ],
+     "total": 168,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "viewTypes": {
+   "kind": "multi",
+   "mv": "view_types",
+   "values": {
+    "Territorial": {
+     "counts": [
+      2646,
+      74,
+      60,
+      970
+     ],
+     "total": 3902,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Neighborhood": {
+     "counts": [
+      2576,
+      144,
+      101,
+      480
+     ],
+     "total": 3404,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Mountain(s)": {
+     "counts": [
+      1868,
+      69,
+      35,
+      871
+     ],
+     "total": 2969,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Cascade Mountains": {
+     "counts": [
+      795,
+      6,
+      6,
+      349
+     ],
+     "total": 1219,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Panoramic": {
+     "counts": [
+      622,
+      7,
+      2,
+      345
+     ],
+     "total": 1037,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Forest": {
+     "counts": [
+      700,
+      8,
+      2,
+      260
+     ],
+     "total": 994,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Valley": {
+     "counts": [
+      484,
+      5,
+      5,
+      302
+     ],
+     "total": 840,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "City": {
+     "counts": [
+      260,
+      2,
+      10,
+      92
+     ],
+     "total": 438,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "River": {
+     "counts": [
+      233,
+      2,
+      4,
+      79
+     ],
+     "total": 337,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Golf Course": {
+     "counts": [
+      238,
+      0,
+      3,
+      90
+     ],
+     "total": 334,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Ridge": {
+     "counts": [
+      158,
+      2,
+      0,
+      80
+     ],
+     "total": 255,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Lake": {
+     "counts": [
+      103,
+      5,
+      0,
+      129
+     ],
+     "total": 243,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Pond": {
+     "counts": [
+      186,
+      1,
+      0,
+      23
+     ],
+     "total": 240,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Creek/Stream": {
+     "counts": [
+      164,
+      4,
+      2,
+      41
+     ],
+     "total": 235,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Park/Greenbelt": {
+     "counts": [
+      179,
+      1,
+      3,
+      18
+     ],
+     "total": 204,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Desert": {
+     "counts": [
+      109,
+      0,
+      0,
+      85
+     ],
+     "total": 201,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Canyon": {
+     "counts": [
+      95,
+      0,
+      0,
+      30
+     ],
+     "total": 134,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Vineyard": {
+     "counts": [
+      53,
+      0,
+      0,
+      20
+     ],
+     "total": 87,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "waterSource": {
+   "kind": "multi",
+   "mv": "water_source",
+   "values": {
+    "Public": {
+     "counts": [
+      3956,
+      243,
+      181,
+      646
+     ],
+     "total": 5487,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Well": {
+     "counts": [
+      1667,
+      18,
+      14,
+      304
+     ],
+     "total": 2171,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Private": {
+     "counts": [
+      833,
+      20,
+      1,
+      177
+     ],
+     "total": 1073,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Shared Well": {
+     "counts": [
+      208,
+      27,
+      5,
+      119
+     ],
+     "total": 385,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Backflow Domestic": {
+     "counts": [
+      353,
+      2,
+      3,
+      6
+     ],
+     "total": 373,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Water Meter": {
+     "counts": [
+      243,
+      0,
+      8,
+      23
+     ],
+     "total": 296,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Backflow Irrigation": {
+     "counts": [
+      197,
+      0,
+      1,
+      2
+     ],
+     "total": 208,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Cistern": {
+     "counts": [
+      81,
+      0,
+      0,
+      12
+     ],
+     "total": 101,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Spring": {
+     "counts": [
+      52,
+      1,
+      0,
+      17
+     ],
+     "total": 81,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "waterfrontTypes": {
+   "kind": "multi",
+   "mv": "waterfront_types",
+   "values": {
+    "Creek": {
+     "counts": [
+      206,
+      2,
+      3,
+      60
+     ],
+     "total": 302,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Pond": {
+     "counts": [
+      202,
+      1,
+      0,
+      27
+     ],
+     "total": 262,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "River Front": {
+     "counts": [
+      165,
+      0,
+      2,
+      44
+     ],
+     "total": 228,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Waterfront": {
+     "counts": [
+      79,
+      1,
+      2,
+      29
+     ],
+     "total": 120,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Stream": {
+     "counts": [
+      46,
+      0,
+      0,
+      14
+     ],
+     "total": 68,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Lake Front": {
+     "counts": [
+      31,
+      4,
+      0,
+      16
+     ],
+     "total": 54,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "windowFeatures": {
+   "kind": "multi",
+   "mv": "window_features",
+   "values": {
+    "Double Pane Windows": {
+     "counts": [
+      3890,
+      174,
+      108,
+      0
+     ],
+     "total": 4316,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Vinyl Frames": {
+     "counts": [
+      3746,
+      172,
+      101,
+      0
+     ],
+     "total": 4141,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Aluminum Frames": {
+     "counts": [
+      456,
+      42,
+      24,
+      0
+     ],
+     "total": 584,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Wood Frames": {
+     "counts": [
+      469,
+      1,
+      9,
+      0
+     ],
+     "total": 514,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "ENERGY STAR Qualified Windows": {
+     "counts": [
+      441,
+      10,
+      3,
+      0
+     ],
+     "total": 468,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Skylight(s)": {
+     "counts": [
+      439,
+      18,
+      1,
+      0
+     ],
+     "total": 467,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Low-Emissivity Windows": {
+     "counts": [
+      289,
+      2,
+      4,
+      0
+     ],
+     "total": 301,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Bay Window(s)": {
+     "counts": [
+      128,
+      3,
+      2,
+      0
+     ],
+     "total": 140,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Garden Window(s)": {
+     "counts": [
+      48,
+      0,
+      1,
+      0
+     ],
+     "total": 52,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Triple Pane Windows": {
+     "counts": [
+      43,
+      1,
+      0,
+      0
+     ],
+     "total": 47,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Tinted Windows": {
+     "counts": [
+      40,
+      1,
+      0,
+      0
+     ],
+     "total": 44,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "zoning": {
+   "kind": "text",
+   "mv": "zoning",
+   "values": {
+    "RS": {
+     "counts": [
+      730,
+      0,
+      14,
+      51
+     ],
+     "total": 795
+    },
+    "R2": {
+     "counts": [
+      262,
+      0,
+      4,
+      272
+     ],
+     "total": 542
+    },
+    "RR10": {
+     "counts": [
+      265,
+      0,
+      0,
+      76
+     ],
+     "total": 341
+    },
+    "EFU": {
+     "counts": [
+      148,
+      0,
+      1,
+      78
+     ],
+     "total": 275
+    },
+    "SFR-4": {
+     "counts": [
+      210,
+      0,
+      0,
+      16
+     ],
+     "total": 226
+    },
+    "Rr5; Rural Res 5 Ac": {
+     "counts": [
+      151,
+      0,
+      3,
+      35
+     ],
+     "total": 190
+    },
+    "R5": {
+     "counts": [
+      86,
+      0,
+      5,
+      80
+     ],
+     "total": 171
+    },
+    "R4": {
+     "counts": [
+      157,
+      0,
+      4,
+      2
+     ],
+     "total": 163
+    },
+    "RR-5": {
+     "counts": [
+      128,
+      0,
+      0,
+      33
+     ],
+     "total": 161
+    },
+    "R1": {
+     "counts": [
+      126,
+      0,
+      7,
+      22
+     ],
+     "total": 155
+    },
+    "RM": {
+     "counts": [
+      112,
+      0,
+      16,
+      11
+     ],
+     "total": 140
+    },
+    "RR5": {
+     "counts": [
+      60,
+      0,
+      0,
+      73
+     ],
+     "total": 134
+    },
+    "RL": {
+     "counts": [
+      124,
+      0,
+      1,
+      5
+     ],
+     "total": 130
+    },
+    "WR": {
+     "counts": [
+      83,
+      0,
+      0,
+      39
+     ],
+     "total": 124
+    },
+    "R-1-8": {
+     "counts": [
+      96,
+      0,
+      1,
+      18
+     ],
+     "total": 116
+    },
+    "SFR-6": {
+     "counts": [
+      100,
+      0,
+      2,
+      4
+     ],
+     "total": 109
+    },
+    "R-2": {
+     "counts": [
+      82,
+      0,
+      14,
+      6
+     ],
+     "total": 103
+    },
+    "R": {
+     "counts": [
+      76,
+      0,
+      3,
+      15
+     ],
+     "total": 95
+    },
+    "MUA10": {
+     "counts": [
+      80,
+      0,
+      0,
+      9
+     ],
+     "total": 90
+    },
+    "Rrm5; Recreational Reside": {
+     "counts": [
+      44,
+      0,
+      0,
+      44
+     ],
+     "total": 88
+    },
+    "SF": {
+     "counts": [
+      78,
+      0,
+      0,
+      8
+     ],
+     "total": 86
+    },
+    "Efu3; Exclusive Farm Use": {
+     "counts": [
+      39,
+      0,
+      0,
+      38
+     ],
+     "total": 81
+    },
+    "R2; General Residential": {
+     "counts": [
+      69,
+      0,
+      0,
+      2
+     ],
+     "total": 72
+    },
+    "Residential": {
+     "counts": [
+      53,
+      0,
+      2,
+      17
+     ],
+     "total": 72
+    },
+    "R3": {
+     "counts": [
+      52,
+      0,
+      4,
+      15
+     ],
+     "total": 71
+    },
+    "PUD": {
+     "counts": [
+      27,
+      0,
+      0,
+      41
+     ],
+     "total": 70
+    },
+    "RRM5": {
+     "counts": [
+      20,
+      0,
+      0,
+      50
+     ],
+     "total": 70
+    },
+    "MD": {
+     "counts": [
+      43,
+      0,
+      5,
+      21
+     ],
+     "total": 69
+    },
+    "DRO": {
+     "counts": [
+      21,
+      0,
+      0,
+      47
+     ],
+     "total": 68
+    },
+    "GC": {
+     "counts": [
+      6,
+      0,
+      2,
+      11
+     ],
+     "total": 68
+    },
+    "R-1-8; Res Low Density": {
+     "counts": [
+      62,
+      0,
+      0,
+      3
+     ],
+     "total": 65
+    },
+    "Sfr-10": {
+     "counts": [
+      50,
+      0,
+      11,
+      2
+     ],
+     "total": 63
+    },
+    "C-C": {
+     "counts": [
+      0,
+      0,
+      4,
+      4
+     ],
+     "total": 61
+    },
+    "FR": {
+     "counts": [
+      28,
+      0,
+      0,
+      24
+     ],
+     "total": 61
+    },
+    "RR10, WA": {
+     "counts": [
+      47,
+      0,
+      0,
+      8
+     ],
+     "total": 55
+    },
+    "CRRR": {
+     "counts": [
+      46,
+      0,
+      0,
+      8
+     ],
+     "total": 54
+    },
+    "R-3": {
+     "counts": [
+      37,
+      0,
+      10,
+      3
+     ],
+     "total": 51
+    },
+    "R-1": {
+     "counts": [
+      41,
+      0,
+      0,
+      9
+     ],
+     "total": 50
+    },
+    "Sr; Single Fam Res": {
+     "counts": [
+      24,
+      0,
+      2,
+      24
+     ],
+     "total": 50
+    },
+    "EFU3": {
+     "counts": [
+      17,
+      0,
+      0,
+      24
+     ],
+     "total": 47
+    },
+    "R-2; Res Mod Density": {
+     "counts": [
+      40,
+      0,
+      6,
+      0
+     ],
+     "total": 46
+    },
+    "SFR-10": {
+     "counts": [
+      34,
+      0,
+      7,
+      5
+     ],
+     "total": 46
+    },
+    "UAR10": {
+     "counts": [
+      42,
+      0,
+      0,
+      4
+     ],
+     "total": 46
+    },
+    "SFR": {
+     "counts": [
+      43,
+      0,
+      0,
+      0
+     ],
+     "total": 43
+    },
+    "BBRR": {
+     "counts": [
+      39,
+      0,
+      0,
+      2
+     ],
+     "total": 41
+    },
+    "MFR": {
+     "counts": [
+      38,
+      0,
+      0,
+      2
+     ],
+     "total": 40
+    },
+    "R-3; Res High Density": {
+     "counts": [
+      32,
+      0,
+      7,
+      1
+     ],
+     "total": 40
+    },
+    "Wr; Woodlot Resource": {
+     "counts": [
+      25,
+      0,
+      0,
+      14
+     ],
+     "total": 39
+    },
+    "R-1-10": {
+     "counts": [
+      31,
+      0,
+      2,
+      5
+     ],
+     "total": 38
+    },
+    "R-1-6": {
+     "counts": [
+      34,
+      0,
+      2,
+      1
+     ],
+     "total": 37
+    },
+    "R5; Rural Residential": {
+     "counts": [
+      29,
+      0,
+      0,
+      8
+     ],
+     "total": 37
+    },
+    "EFUSC": {
+     "counts": [
+      33,
+      0,
+      0,
+      3
+     ],
+     "total": 36
+    },
+    "EFUTRB": {
+     "counts": [
+      29,
+      0,
+      0,
+      5
+     ],
+     "total": 36
+    },
+    "SURM": {
+     "counts": [
+      35,
+      0,
+      0,
+      0
+     ],
+     "total": 35
+    },
+    "NR": {
+     "counts": [
+      15,
+      0,
+      0,
+      19
+     ],
+     "total": 34
+    },
+    "Res": {
+     "counts": [
+      27,
+      0,
+      0,
+      7
+     ],
+     "total": 34
+    },
+    "C-1": {
+     "counts": [
+      6,
+      0,
+      0,
+      11
+     ],
+     "total": 32
+    },
+    "I-L": {
+     "counts": [
+      0,
+      0,
+      0,
+      4
+     ],
+     "total": 31
+    },
+    "C-S/P": {
+     "counts": [
+      3,
+      0,
+      1,
+      5
+     ],
+     "total": 30
+    },
+    "EFU-CG": {
+     "counts": [
+      12,
+      0,
+      0,
+      8
+     ],
+     "total": 30
+    },
+    "R-1-7 5": {
+     "counts": [
+      25,
+      0,
+      1,
+      3
+     ],
+     "total": 29
+    },
+    "RR10, LM, WA": {
+     "counts": [
+      15,
+      0,
+      0,
+      14
+     ],
+     "total": 29
+    },
+    "A2": {
+     "counts": [
+      5,
+      0,
+      0,
+      23
+     ],
+     "total": 28
+    },
+    "EFUAL": {
+     "counts": [
+      14,
+      0,
+      0,
+      11
+     ],
+     "total": 28
+    },
+    "MUN": {
+     "counts": [
+      20,
+      0,
+      0,
+      6
+     ],
+     "total": 28
+    },
+    "OSR": {
+     "counts": [
+      12,
+      0,
+      0,
+      14
+     ],
+     "total": 27
+    },
+    "SMWCR": {
+     "counts": [
+      26,
+      0,
+      1,
+      0
+     ],
+     "total": 27
+    },
+    "Sr-2 5": {
+     "counts": [
+      23,
+      0,
+      0,
+      3
+     ],
+     "total": 27
+    },
+    "I-G": {
+     "counts": [
+      1,
+      0,
+      0,
+      3
+     ],
+     "total": 26
+    },
+    "Rr2 5; Rural Res 2 5 Ac": {
+     "counts": [
+      23,
+      0,
+      0,
+      3
+     ],
+     "total": 26
+    },
+    "RSF": {
+     "counts": [
+      21,
+      0,
+      1,
+      4
+     ],
+     "total": 26
+    },
+    "C1": {
+     "counts": [
+      1,
+      0,
+      1,
+      9
+     ],
+     "total": 25
+    },
+    "EFUSC DR SMIA": {
+     "counts": [
+      21,
+      0,
+      0,
+      4
+     ],
+     "total": 25
+    },
+    "SR-1": {
+     "counts": [
+      22,
+      0,
+      0,
+      3
+     ],
+     "total": 25
+    },
+    "A": {
+     "counts": [
+      16,
+      0,
+      4,
+      3
+     ],
+     "total": 24
+    },
+    "R-1-10; Res Low Density": {
+     "counts": [
+      15,
+      0,
+      0,
+      9
+     ],
+     "total": 24
+    },
+    "RR-00": {
+     "counts": [
+      19,
+      0,
+      0,
+      4
+     ],
+     "total": 24
+    },
+    "Fc; Forest Comm": {
+     "counts": [
+      12,
+      0,
+      0,
+      10
+     ],
+     "total": 23
+    },
+    "R-1-6; Res Mod Density": {
+     "counts": [
+      22,
+      0,
+      0,
+      1
+     ],
+     "total": 23
+    },
+    "RES": {
+     "counts": [
+      16,
+      0,
+      1,
+      6
+     ],
+     "total": 23
+    },
+    "SFR-2": {
+     "counts": [
+      7,
+      0,
+      0,
+      16
+     ],
+     "total": 23
+    },
+    "UR-1": {
+     "counts": [
+      11,
+      0,
+      1,
+      11
+     ],
+     "total": 23
+    },
+    "F": {
+     "counts": [
+      10,
+      0,
+      1,
+      11
+     ],
+     "total": 22
+    },
+    "Gc; General Comm": {
+     "counts": [
+      4,
+      0,
+      0,
+      6
+     ],
+     "total": 22
+    },
+    "SURS, AS": {
+     "counts": [
+      22,
+      0,
+      0,
+      0
+     ],
+     "total": 22
+    },
+    "TRRAR": {
+     "counts": [
+      11,
+      0,
+      0,
+      11
+     ],
+     "total": 22
+    },
+    "FC": {
+     "counts": [
+      7,
+      0,
+      0,
+      13
+     ],
+     "total": 21
+    },
+    "RR-2.5": {
+     "counts": [
+      16,
+      0,
+      0,
+      5
+     ],
+     "total": 21
+    },
+    "RR2.5": {
+     "counts": [
+      17,
+      0,
+      0,
+      4
+     ],
+     "total": 21
+    },
+    "SURS": {
+     "counts": [
+      20,
+      0,
+      0,
+      1
+     ],
+     "total": 21
+    },
+    "C2": {
+     "counts": [
+      4,
+      0,
+      0,
+      0
+     ],
+     "total": 20
+    },
+    "EFU-C": {
+     "counts": [
+      9,
+      0,
+      0,
+      2
+     ],
+     "total": 20
+    },
+    "R-4": {
+     "counts": [
+      8,
+      0,
+      6,
+      0
+     ],
+     "total": 20
+    },
+    "RH": {
+     "counts": [
+      13,
+      0,
+      1,
+      1
+     ],
+     "total": 20
+    },
+    "Rr1; Rural Res 1 Ac": {
+     "counts": [
+      17,
+      0,
+      1,
+      2
+     ],
+     "total": 20
+    },
+    "C": {
+     "counts": [
+      1,
+      0,
+      0,
+      7
+     ],
+     "total": 19
+    },
+    "Ef; Exclusive Farm": {
+     "counts": [
+      13,
+      0,
+      0,
+      3
+     ],
+     "total": 19
+    },
+    "Efu1; Exclusive Farm Use": {
+     "counts": [
+      6,
+      0,
+      0,
+      9
+     ],
+     "total": 19
+    },
+    "CL": {
+     "counts": [
+      11,
+      0,
+      1,
+      3
+     ],
+     "total": 18
+    },
+    "Efu2; Exclusive Farm Use": {
+     "counts": [
+      14,
+      0,
+      0,
+      4
+     ],
+     "total": 18
+    },
+    "R-1-12; Res Low Density": {
+     "counts": [
+      13,
+      0,
+      0,
+      5
+     ],
+     "total": 18
+    },
+    "Resid": {
+     "counts": [
+      18,
+      0,
+      0,
+      0
+     ],
+     "total": 18
+    },
+    "Commercial": {
+     "counts": [
+      3,
+      0,
+      0,
+      5
+     ],
+     "total": 17
+    },
+    "F2, DR, WA": {
+     "counts": [
+      14,
+      0,
+      0,
+      3
+     ],
+     "total": 17
+    },
+    "RS-1": {
+     "counts": [
+      17,
+      0,
+      0,
+      0
+     ],
+     "total": 17
+    },
+    "MF": {
+     "counts": [
+      16,
+      0,
+      0,
+      0
+     ],
+     "total": 16
+    },
+    "R1; Limited Residential": {
+     "counts": [
+      14,
+      0,
+      1,
+      1
+     ],
+     "total": 16
+    },
+    "A-1": {
+     "counts": [
+      11,
+      0,
+      0,
+      1
+     ],
+     "total": 15
+    },
+    "C-4": {
+     "counts": [
+      0,
+      0,
+      0,
+      9
+     ],
+     "total": 15
+    },
+    "E-1": {
+     "counts": [
+      4,
+      0,
+      1,
+      3
+     ],
+     "total": 15
+    },
+    "RR-2": {
+     "counts": [
+      11,
+      0,
+      0,
+      4
+     ],
+     "total": 15
+    },
+    "C-G": {
+     "counts": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "total": 14
+    },
+    "C-H": {
+     "counts": [
+      3,
+      0,
+      0,
+      3
+     ],
+     "total": 14
+    },
+    "F2": {
+     "counts": [
+      10,
+      0,
+      0,
+      4
+     ],
+     "total": 14
+    },
+    "RM-22": {
+     "counts": [
+      10,
+      0,
+      0,
+      4
+     ],
+     "total": 14
+    },
+    "RR-10": {
+     "counts": [
+      11,
+      0,
+      0,
+      3
+     ],
+     "total": 14
+    },
+    "A-2": {
+     "counts": [
+      1,
+      0,
+      0,
+      12
+     ],
+     "total": 13
+    },
+    "EFUTE": {
+     "counts": [
+      9,
+      0,
+      0,
+      3
+     ],
+     "total": 13
+    },
+    "PR": {
+     "counts": [
+      3,
+      0,
+      0,
+      10
+     ],
+     "total": 13
+    },
+    "R-1-12": {
+     "counts": [
+      10,
+      0,
+      0,
+      3
+     ],
+     "total": 13
+    },
+    "RR10/WA": {
+     "counts": [
+      7,
+      0,
+      0,
+      6
+     ],
+     "total": 13
+    },
+    "UR-6": {
+     "counts": [
+      13,
+      0,
+      0,
+      0
+     ],
+     "total": 13
+    },
+    "CG": {
+     "counts": [
+      1,
+      0,
+      0,
+      3
+     ],
+     "total": 12
+    },
+    "F-5": {
+     "counts": [
+      10,
+      0,
+      0,
+      2
+     ],
+     "total": 12
+    },
+    "LMR": {
+     "counts": [
+      12,
+      0,
+      0,
+      0
+     ],
+     "total": 12
+    },
+    "MR": {
+     "counts": [
+      10,
+      0,
+      1,
+      0
+     ],
+     "total": 12
+    },
+    "R-1-5": {
+     "counts": [
+      12,
+      0,
+      0,
+      0
+     ],
+     "total": 12
+    },
+    "RMP": {
+     "counts": [
+      12,
+      0,
+      0,
+      0
+     ],
+     "total": 12
+    },
+    "RR": {
+     "counts": [
+      9,
+      0,
+      0,
+      3
+     ],
+     "total": 12
+    },
+    "S; Serpentine": {
+     "counts": [
+      6,
+      0,
+      0,
+      6
+     ],
+     "total": 12
+    },
+    "SR": {
+     "counts": [
+      8,
+      0,
+      0,
+      4
+     ],
+     "total": 12
+    },
+    "TER": {
+     "counts": [
+      9,
+      0,
+      0,
+      1
+     ],
+     "total": 12
+    },
+    "UR-30": {
+     "counts": [
+      11,
+      0,
+      0,
+      1
+     ],
+     "total": 12
+    },
+    "WCUR-30": {
+     "counts": [
+      8,
+      0,
+      1,
+      3
+     ],
+     "total": 12
+    },
+    "CC": {
+     "counts": [
+      0,
+      0,
+      0,
+      2
+     ],
+     "total": 11
+    },
+    "CSVR": {
+     "counts": [
+      11,
+      0,
+      0,
+      0
+     ],
+     "total": 11
+    },
+    "IL": {
+     "counts": [
+      0,
+      0,
+      0,
+      2
+     ],
+     "total": 11
+    },
+    "LI": {
+     "counts": [
+      0,
+      0,
+      1,
+      1
+     ],
+     "total": 11
+    },
+    "Mfr-15": {
+     "counts": [
+      11,
+      0,
+      0,
+      0
+     ],
+     "total": 11
+    },
+    "Mfr-20": {
+     "counts": [
+      6,
+      0,
+      4,
+      1
+     ],
+     "total": 11
+    },
+    "MFR-20": {
+     "counts": [
+      8,
+      0,
+      0,
+      0
+     ],
+     "total": 11
+    },
+    "Rc; Rural Comm": {
+     "counts": [
+      4,
+      0,
+      0,
+      3
+     ],
+     "total": 11
+    },
+    "RR10,WA": {
+     "counts": [
+      6,
+      0,
+      0,
+      5
+     ],
+     "total": 11
+    },
+    "UR-8": {
+     "counts": [
+      11,
+      0,
+      0,
+      0
+     ],
+     "total": 11
+    },
+    "C-R": {
+     "counts": [
+      0,
+      0,
+      0,
+      3
+     ],
+     "total": 10
+    },
+    "GI": {
+     "counts": [
+      1,
+      0,
+      0,
+      2
+     ],
+     "total": 10
+    },
+    "M1": {
+     "counts": [
+      2,
+      0,
+      1,
+      4
+     ],
+     "total": 10
+    },
+    "R-1-7.5": {
+     "counts": [
+      10,
+      0,
+      0,
+      0
+     ],
+     "total": 10
+    },
+    "R4; Residential Redevelop": {
+     "counts": [
+      8,
+      0,
+      2,
+      0
+     ],
+     "total": 10
+    },
+    "RESID": {
+     "counts": [
+      10,
+      0,
+      0,
+      0
+     ],
+     "total": 10
+    },
+    "Sr1; Suburban Residential": {
+     "counts": [
+      8,
+      0,
+      1,
+      1
+     ],
+     "total": 10
+    },
+    "EFU-DR": {
+     "counts": [
+      2,
+      0,
+      0,
+      7
+     ],
+     "total": 9
+    },
+    "EFUAL, DR": {
+     "counts": [
+      4,
+      0,
+      0,
+      5
+     ],
+     "total": 9
+    },
+    "Fr-160": {
+     "counts": [
+      6,
+      0,
+      0,
+      3
+     ],
+     "total": 9
+    },
+    "HC": {
+     "counts": [
+      7,
+      0,
+      0,
+      0
+     ],
+     "total": 9
+    },
+    "MMR": {
+     "counts": [
+      4,
+      0,
+      4,
+      1
+     ],
+     "total": 9
+    },
+    "RR10 WA": {
+     "counts": [
+      6,
+      0,
+      0,
+      3
+     ],
+     "total": 9
+    },
+    "EFUAL/DR": {
+     "counts": [
+      1,
+      0,
+      0,
+      7
+     ],
+     "total": 8
+    },
+    "FF": {
+     "counts": [
+      6,
+      0,
+      0,
+      2
+     ],
+     "total": 8
+    },
+    "HR-5": {
+     "counts": [
+      7,
+      0,
+      0,
+      1
+     ],
+     "total": 8
+    },
+    "MUA10 DR LM": {
+     "counts": [
+      8,
+      0,
+      0,
+      0
+     ],
+     "total": 8
+    },
+    "RR 2.5": {
+     "counts": [
+      6,
+      0,
+      1,
+      1
+     ],
+     "total": 8
+    },
+    "SURM, AS": {
+     "counts": [
+      8,
+      0,
+      0,
+      0
+     ],
+     "total": 8
+    },
+    "A1": {
+     "counts": [
+      2,
+      0,
+      0,
+      1
+     ],
+     "total": 7
+    },
+    "AR": {
+     "counts": [
+      4,
+      0,
+      0,
+      3
+     ],
+     "total": 7
+    },
+    "C3": {
+     "counts": [
+      0,
+      0,
+      0,
+      3
+     ],
+     "total": 7
+    },
+    "EFU2": {
+     "counts": [
+      5,
+      0,
+      0,
+      1
+     ],
+     "total": 7
+    },
+    "EFUSC DR": {
+     "counts": [
+      7,
+      0,
+      0,
+      0
+     ],
+     "total": 7
+    },
+    "F2,DR,WA": {
+     "counts": [
+      3,
+      0,
+      0,
+      4
+     ],
+     "total": 7
+    },
+    "Industrial": {
+     "counts": [
+      0,
+      0,
+      0,
+      3
+     ],
+     "total": 7
+    },
+    "MAU10": {
+     "counts": [
+      7,
+      0,
+      0,
+      0
+     ],
+     "total": 7
+    },
+    "MFR15": {
+     "counts": [
+      6,
+      0,
+      1,
+      0
+     ],
+     "total": 7
+    },
+    "NC": {
+     "counts": [
+      1,
+      0,
+      1,
+      2
+     ],
+     "total": 7
+    },
+    "RC": {
+     "counts": [
+      2,
+      0,
+      0,
+      1
+     ],
+     "total": 7
+    },
+    "res": {
+     "counts": [
+      6,
+      0,
+      0,
+      1
+     ],
+     "total": 7
+    },
+    "Resort": {
+     "counts": [
+      6,
+      0,
+      0,
+      1
+     ],
+     "total": 7
+    },
+    "Rrm5": {
+     "counts": [
+      2,
+      0,
+      0,
+      5
+     ],
+     "total": 7
+    },
+    "UH10": {
+     "counts": [
+      5,
+      0,
+      0,
+      1
+     ],
+     "total": 7
+    },
+    "CT": {
+     "counts": [
+      2,
+      0,
+      0,
+      2
+     ],
+     "total": 6
+    },
+    "DR": {
+     "counts": [
+      5,
+      0,
+      0,
+      0
+     ],
+     "total": 6
+    },
+    "FG": {
+     "counts": [
+      3,
+      0,
+      0,
+      3
+     ],
+     "total": 6
+    },
+    "I": {
+     "counts": [
+      0,
+      0,
+      0,
+      4
+     ],
+     "total": 6
+    },
+    "MUA": {
+     "counts": [
+      6,
+      0,
+      0,
+      0
+     ],
+     "total": 6
+    },
+    "MUA 10": {
+     "counts": [
+      6,
+      0,
+      0,
+      0
+     ],
+     "total": 6
+    },
+    "MUE": {
+     "counts": [
+      0,
+      0,
+      0,
+      2
+     ],
+     "total": 6
+    },
+    "Pr; Park Reserve": {
+     "counts": [
+      3,
+      0,
+      0,
+      3
+     ],
+     "total": 6
+    },
+    "R1-20": {
+     "counts": [
+      5,
+      0,
+      0,
+      1
+     ],
+     "total": 6
+    },
+    "RCR": {
+     "counts": [
+      4,
+      0,
+      0,
+      2
+     ],
+     "total": 6
+    },
+    "RSFR": {
+     "counts": [
+      4,
+      0,
+      0,
+      2
+     ],
+     "total": 6
+    },
+    "SFR-00": {
+     "counts": [
+      3,
+      0,
+      0,
+      3
+     ],
+     "total": 6
+    },
+    "C1; Central Commercial": {
+     "counts": [
+      1,
+      0,
+      0,
+      1
+     ],
+     "total": 5
+    },
+    "C2; General Commercial": {
+     "counts": [
+      1,
+      0,
+      1,
+      1
+     ],
+     "total": 5
+    },
+    "Cbd; Central Bus Dist": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 5
+    },
+    "DC": {
+     "counts": [
+      1,
+      0,
+      0,
+      2
+     ],
+     "total": 5
+    },
+    "EF": {
+     "counts": [
+      3,
+      0,
+      0,
+      2
+     ],
+     "total": 5
+    },
+    "EFUHR": {
+     "counts": [
+      1,
+      0,
+      0,
+      4
+     ],
+     "total": 5
+    },
+    "EFUSC, DR": {
+     "counts": [
+      5,
+      0,
+      0,
+      0
+     ],
+     "total": 5
+    },
+    "F1": {
+     "counts": [
+      2,
+      0,
+      0,
+      3
+     ],
+     "total": 5
+    },
+    "Forest": {
+     "counts": [
+      2,
+      0,
+      0,
+      2
+     ],
+     "total": 5
+    },
+    "Fr; Farm Resource": {
+     "counts": [
+      2,
+      0,
+      0,
+      2
+     ],
+     "total": 5
+    }
+   }
+  }
+ }
+}

@@ -13,6 +13,7 @@ import {
   type SuggestItem,
 } from '@/components/search/SearchSuggest'
 import { PROPERTY_TYPES } from '@/lib/property-type'
+import { propertyTypeDisplayLabel } from '@/lib/search/class-prevalence'
 import { parseSearchQuery } from '@/lib/parse-search-query'
 import SaveSearchButton from '@/components/SaveSearchButton'
 import AllFiltersSheet, {
@@ -153,7 +154,10 @@ function bathsLabel(min?: string, max?: string): string | null {
 
 function typeLabel(v?: string): string | null {
   if (!v) return null
-  return PROPERTY_TYPES.find((t) => t.value === v)?.label ?? null
+  // The All-filters sheet's sub-type auto-narrow writes class values the
+  // static option list does not carry ('A', 'multi-family', ...) — resolve
+  // those too so the chip never shows an active filter as inactive.
+  return PROPERTY_TYPES.find((t) => t.value === v)?.label ?? propertyTypeDisplayLabel(v)
 }
 
 function statusLabel(v?: string): string | null {
