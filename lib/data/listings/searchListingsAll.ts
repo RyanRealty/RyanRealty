@@ -105,6 +105,15 @@ const featureShape = {
   ccrs: bool(),
   hasFloorPlan: bool(),
   hasVideo: bool(),
+  // MV v4 long-tail tranche (2026-07-31, plan §15) booleans.
+  attachedGarage: bool(),
+  rented: bool(),
+  potentialTaxLiability: bool(),
+  specialAssessment: bool(),
+  highSpeedInternet: bool(),
+  manufacturedAllowed: bool(),
+  buildingPermitIssued: bool(),
+  secondResidence: bool(),
   // Multi-selects (registry kind 'multi') — column + match mode resolve from
   // the registry def (matchMode 'all' -> contains, default -> overlaps,
   // singleColumnIn -> IN on the scalar column).
@@ -159,6 +168,19 @@ const featureShape = {
   fencing: multi(),
   // P5 long-tail tranche (2026-07-30): adu_type scalar (singleColumnIn).
   aduType: multi(),
+  // MV v4 long-tail tranche (2026-07-31, plan §15) multis — all text[] columns
+  // with GIN indexes, applied as array overlap by the registry-driven loop.
+  utilitiesLocation: multi(),
+  homeSiteApproval: multi(),
+  powerProduction: multi(),
+  greenCertification: multi(),
+  landRestrictions: multi(),
+  multiUnitFeatures: multi(),
+  railroadAccess: multi(),
+  soilType: multi(),
+  acreageFeatures: multi(),
+  irrigationDistribution: multi(),
+  waterRightsType: multi(),
   // Text (registry kind 'text') — case-insensitive exact match.
   elementarySchool: text(),
   middleSchool: text(),
@@ -188,6 +210,18 @@ const featureShape = {
   bathsHalfMax: z.number().int().nonnegative().optional().catch(undefined),
   pricePerSqftMin: z.number().positive().optional().catch(undefined),
   pricePerSqftMax: z.number().positive().optional().catch(undefined),
+  // MV v4 long-tail tranche (2026-07-31, plan §15) ranges. price_per_acre is
+  // computed in the MV (list_price / lot_size_acres), est_completion_year is
+  // the YEAR projected off the CF completion date — both are plain numeric
+  // ranges here, so the registry-driven gte/lte loop needs no special case.
+  pricePerAcreMin: z.number().positive().optional().catch(undefined),
+  pricePerAcreMax: z.number().positive().optional().catch(undefined),
+  unitsTotalMin: z.number().int().positive().optional().catch(undefined),
+  unitsTotalMax: z.number().int().positive().optional().catch(undefined),
+  currentRentMin: z.number().positive().optional().catch(undefined),
+  currentRentMax: z.number().positive().optional().catch(undefined),
+  estCompletionYearMin: z.number().int().min(1700).max(2100).optional().catch(undefined),
+  estCompletionYearMax: z.number().int().min(1700).max(2100).optional().catch(undefined),
 } as const
 
 /**

@@ -105,6 +105,14 @@
       "reason": "Adversarial accuracy audit: Spark masks StoriesTotal at our feed access level ('********' on every row); MV column 100% null. Buyer intent survives via levelsOptions (Levels).",
       "removed": "2026-07-30"
     },
+    "utilitiesConnected": {
+      "concepts": [
+        "group:Utilities"
+      ],
+      "mvColumns": [],
+      "reason": "Not a mask-dead removal: group:Utilities is DISPOSITIONED, not dropped. Its four '* Connected' members ship as additional options on the existing `utilities` field (see optionAllowlist.utilities) because the MV v4 column unions the RESO feature object with the CF group. A separate `utilitiesConnected` filter would split one buyer question — 'what utilities does this property have' — across two controls, so the concept is marked handled here rather than left unmapped in the long-tail ledger.",
+      "removed": "2026-07-31"
+    },
     "walkScore": {
       "concepts": [],
       "mvColumns": [
@@ -146,6 +154,28 @@
       "resolutionReason": null,
       "searchable": true,
       "sparkSource": "AccessibilityFeatures",
+      "viaValue": null
+    },
+    "acreageFeatures": {
+      "candidateGaps": [],
+      "classes": [
+        "D",
+        "E"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "multi",
+      "metadataOptions": [
+        "Additional Crop/Usage/Acreage Info Attached",
+        "Conservation Reserve Program",
+        "Dividable Property",
+        "Livestock Allowed"
+      ],
+      "mv": "acreage_features",
+      "resolution": "curation",
+      "resolutionReason": "Registry key is pluralized to match the other feature multis; the CF group is 'Acreage Details'. MV v4 tranche 2026-07-31: Livestock Allowed 129 · Dividable Property 52 serving rows.",
+      "searchable": true,
+      "sparkSource": "group:Acreage Details",
       "viaValue": null
     },
     "adjoinsPublicLand": {
@@ -351,6 +381,27 @@
       "sparkSource": "ArchitecturalStyle",
       "viaValue": null
     },
+    "attachedGarage": {
+      "candidateGaps": [],
+      "classes": [
+        "A",
+        "B",
+        "C",
+        "E",
+        "F",
+        "G"
+      ],
+      "curationAdditions": [],
+      "idxPayload": true,
+      "kind": "boolean",
+      "metadataOptions": null,
+      "mv": "attached_garage_yn",
+      "resolution": "auto:mv",
+      "resolutionReason": null,
+      "searchable": true,
+      "sparkSource": "AttachedGarageYN",
+      "viaValue": null
+    },
     "basement": {
       "candidateGaps": [],
       "classes": [
@@ -510,6 +561,29 @@
       "resolutionReason": null,
       "searchable": true,
       "sparkSource": "BodyType",
+      "viaValue": null
+    },
+    "buildingPermitIssued": {
+      "candidateGaps": [],
+      "classes": [
+        "A",
+        "C",
+        "E",
+        "F",
+        "G"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "boolean",
+      "metadataOptions": [
+        "No",
+        "Yes"
+      ],
+      "mv": "building_permit_issued_yn",
+      "resolution": "curation",
+      "resolutionReason": "Custom field 'Building Permit Issued YN', no standard parent; distinct from newConstruction (NewConstructionYN). MV v4 tranche 2026-07-31: 751 serving rows, 562 true.",
+      "searchable": true,
+      "sparkSource": "cf:Building Permit Issued YN",
       "viaValue": null
     },
     "ccrs": {
@@ -769,6 +843,24 @@
       "resolutionReason": "Registry key is the buyer word; the Spark standard name is CountyOrParish.",
       "searchable": true,
       "sparkSource": "CountyOrParish",
+      "viaValue": null
+    },
+    "currentRent": {
+      "candidateGaps": [],
+      "classes": [
+        "A",
+        "B",
+        "E"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "range",
+      "metadataOptions": null,
+      "mv": "current_rent",
+      "resolution": "auto:cf",
+      "resolutionReason": null,
+      "searchable": true,
+      "sparkSource": "cf:Current Rent",
       "viaValue": null
     },
     "currentUse": {
@@ -1547,6 +1639,26 @@
       "sparkSource": "ElementarySchool",
       "viaValue": null
     },
+    "estCompletionYear": {
+      "candidateGaps": [],
+      "classes": [
+        "A",
+        "C",
+        "E",
+        "F",
+        "G"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "range",
+      "metadataOptions": null,
+      "mv": "est_completion_year",
+      "resolution": "curation",
+      "resolutionReason": "Custom field 'Estimated Completion Date' (a YYYY-MM-DD string on 562 serving rows), projected to its YEAR in the MV. The registry's range plumbing is numeric on both sides, and a year is the honest granularity for 'when can I move in' — the rows carry stale past dates back to 2020, which sort below the current year rather than being rewritten against the clock (MV determinism, F7). MV v4 tranche 2026-07-31.",
+      "searchable": true,
+      "sparkSource": "cf:Estimated Completion Date",
+      "viaValue": null
+    },
     "evCharging": {
       "candidateGaps": [],
       "classes": [
@@ -1951,6 +2063,45 @@
       "resolutionReason": null,
       "searchable": true,
       "sparkSource": "group:Government Overlay",
+      "viaValue": null
+    },
+    "greenCertification": {
+      "candidateGaps": [
+        "LEED Gold",
+        "LEED Platinum",
+        "LEED Silver",
+        "Other"
+      ],
+      "classes": [
+        "A",
+        "B",
+        "C",
+        "E",
+        "F",
+        "G"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "multi",
+      "metadataOptions": [
+        "ENERGY STAR Certified Homes",
+        "Earth Advantage",
+        "Energy Audit Retrofit",
+        "Energy Performance Score",
+        "Home Energy Score",
+        "LEED Certified",
+        "LEED For Homes",
+        "LEED Gold",
+        "LEED Platinum",
+        "LEED Silver",
+        "Other",
+        "WaterSense"
+      ],
+      "mv": "green_certification",
+      "resolution": "curation",
+      "resolutionReason": "The MLS publishes energy certifications as the parentless boolean group 'Green Building Verification Type'; the registry label is the buyer word. MV v4 tranche 2026-07-31: Home Energy Score 218 · Earth Advantage 182 · ENERGY STAR 95 · Energy Performance Score 56 serving rows.",
+      "searchable": true,
+      "sparkSource": "group:Green Building Verification Type",
       "viaValue": null
     },
     "guestHouse": {
@@ -2569,6 +2720,29 @@
       "sparkSource": "HighSchool",
       "viaValue": null
     },
+    "highSpeedInternet": {
+      "candidateGaps": [],
+      "classes": [
+        "A",
+        "B",
+        "C",
+        "E",
+        "F",
+        "G"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "boolean",
+      "metadataOptions": [
+        "High Speed Internet"
+      ],
+      "mv": "high_speed_internet_yn",
+      "resolution": "curation",
+      "resolutionReason": "Boolean filter targeting the sole unstandardized member of the CF 'Interior Features' group (the group's other members fold into the standard InteriorFeatures enum). MV v4 tranche 2026-07-31: 1,029 serving rows.",
+      "searchable": true,
+      "sparkSource": "group:Interior Features",
+      "viaValue": "High Speed Internet"
+    },
     "hoaAmenities": {
       "candidateGaps": [
         "Laundry",
@@ -2638,6 +2812,30 @@
       "resolutionReason": "MV `hoa_monthly` is AssociationFee frequency-normalized to a monthly figure at ingest (Spark publishes the fee plus AssociationFeeFrequency).",
       "searchable": true,
       "sparkSource": "AssociationFee",
+      "viaValue": null
+    },
+    "homeSiteApproval": {
+      "candidateGaps": [
+        "None"
+      ],
+      "classes": [
+        "D"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "multi",
+      "metadataOptions": [
+        "Applied For",
+        "Approved",
+        "Denied",
+        "None",
+        "Not Applied For"
+      ],
+      "mv": "home_site_approval",
+      "resolution": "curation",
+      "resolutionReason": "The MLS publishes build-site approval as the parentless boolean group 'HomeBuild Site'; the registry key names it the way a buyer would. MV v4 tranche 2026-07-31: Not Applied For 573 · Approved 234 · Applied For 40 · Denied 6 serving rows.",
+      "searchable": true,
+      "sparkSource": "group:HomeBuild Site",
       "viaValue": null
     },
     "horseProperty": {
@@ -2802,6 +3000,42 @@
       "sparkSource": "IrrigationWaterRightsAcres",
       "viaValue": null
     },
+    "irrigationDistribution": {
+      "candidateGaps": [
+        "None"
+      ],
+      "classes": [
+        "D",
+        "E"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "multi",
+      "metadataOptions": [
+        "Center Pivot",
+        "Gated Pipe",
+        "Gravity-Flood",
+        "Hand Line(s)",
+        "In Ground Sprinklers",
+        "K-Line",
+        "Linear",
+        "Mainline",
+        "None",
+        "Pump(s)",
+        "Solid Set",
+        "Sprinkled",
+        "Sprinkler Gun(s)",
+        "Sub-Irrigated",
+        "Water Wheel",
+        "Wheel Line(s)"
+      ],
+      "mv": "irrigation_distribution",
+      "resolution": "auto:group",
+      "resolutionReason": null,
+      "searchable": true,
+      "sparkSource": "group:Irrigation Distribution",
+      "viaValue": null
+    },
     "irrigationDistrict": {
       "candidateGaps": [],
       "classes": [
@@ -2916,6 +3150,31 @@
       "resolutionReason": "Free-text search over the public remarks body.",
       "searchable": true,
       "sparkSource": "PublicRemarks",
+      "viaValue": null
+    },
+    "landRestrictions": {
+      "candidateGaps": [],
+      "classes": [
+        "D",
+        "E"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "multi",
+      "metadataOptions": [
+        "Access Recorded",
+        "Deed Restrictions",
+        "Easement/Right-of-Way",
+        "No Access Recorded",
+        "Recorded Plat",
+        "Subject to Zoning",
+        "Zone-Unplatted"
+      ],
+      "mv": "land_restrictions",
+      "resolution": "curation",
+      "resolutionReason": "The CF group is bare 'Restrictions'; the registry key says which restrictions (they are land-scoped: recorded plat, zoning, access, deed). MV v4 tranche 2026-07-31: Recorded Plat 247 · Subject to Zoning 235 · Access Recorded 67 serving rows.",
+      "searchable": true,
+      "sparkSource": "group:Restrictions",
       "viaValue": null
     },
     "levelsOptions": {
@@ -3047,6 +3306,25 @@
       "resolutionReason": null,
       "searchable": true,
       "sparkSource": "LotFeatures",
+      "viaValue": null
+    },
+    "manufacturedAllowed": {
+      "candidateGaps": [],
+      "classes": [
+        "D"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "boolean",
+      "metadataOptions": [
+        "No",
+        "Yes"
+      ],
+      "mv": "manufactured_allowed_yn",
+      "resolution": "curation",
+      "resolutionReason": "Custom field 'Manufactured Structure Allowed YN', no standard parent — the land buyer's 'can I put a manufactured home on this lot'. MV v4 tranche 2026-07-31: 915 serving rows, 455 true.",
+      "searchable": true,
+      "sparkSource": "cf:Manufactured Structure Allowed YN",
       "viaValue": null
     },
     "middleSchool": {
@@ -3288,6 +3566,46 @@
       "resolutionReason": "Estimated PITI computed by us from list price, prevailing rate, taxes and HOA — no MLS field exists.",
       "searchable": null,
       "sparkSource": null,
+      "viaValue": null
+    },
+    "multiUnitFeatures": {
+      "candidateGaps": [
+        "Kitchen"
+      ],
+      "classes": [
+        "C",
+        "F",
+        "G"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "multi",
+      "metadataOptions": [
+        "3 Phase Electric",
+        "ADA Comply",
+        "Airport Access",
+        "Bath Common Area",
+        "Bus Service or Stop",
+        "Common Area",
+        "Expandable",
+        "Free Span Roof",
+        "Kitchen",
+        "Laundry Facility",
+        "Living Area in Building",
+        "Manager's Quarters",
+        "Mezzanine",
+        "Office Space",
+        "Overhead Crane",
+        "Separate Electric Meters",
+        "Separate Gas Meters",
+        "Separate Water Meters",
+        "Tanks in Ground"
+      ],
+      "mv": "multi_unit_features",
+      "resolution": "curation",
+      "resolutionReason": "The CF group is bare 'Additional Features'; its members are income-property building features (separate meters, laundry facility, common area), so the registry key names the audience. The 'Kitchen' member is omitted from the option set — its flat payload key is shared with the Rooms group. MV v4 tranche 2026-07-31: Office Space 239 · Separate Electric Meters 151 · 3 Phase Electric 121 serving rows.",
+      "searchable": true,
+      "sparkSource": "group:Additional Features",
       "viaValue": null
     },
     "newConstruction": {
@@ -3741,6 +4059,58 @@
       "sparkSource": "PoolFeatures",
       "viaValue": null
     },
+    "potentialTaxLiability": {
+      "candidateGaps": [],
+      "classes": [
+        "B"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "boolean",
+      "metadataOptions": [
+        "No",
+        "Yes"
+      ],
+      "mv": "potential_tax_liability_yn",
+      "resolution": "curation",
+      "resolutionReason": "Custom field 'Potential Tax Liability YN', no standard parent — the farm or forest deferral that comes due on a use change. Registry label names the deferral rather than the liability because that is the buyer's question. MV v4 tranche 2026-07-31: 4,312 serving rows, 331 true.",
+      "searchable": true,
+      "sparkSource": "cf:Potential Tax Liability YN",
+      "viaValue": null
+    },
+    "powerProduction": {
+      "candidateGaps": [
+        "None"
+      ],
+      "classes": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G"
+      ],
+      "curationAdditions": [
+        "Solar Leased"
+      ],
+      "idxPayload": null,
+      "kind": "multi",
+      "metadataOptions": [
+        "Generator",
+        "Hydro",
+        "None",
+        "Solar Owned",
+        "Solar PV Ready",
+        "Wind"
+      ],
+      "mv": "power_production",
+      "resolution": "auto:group",
+      "resolutionReason": null,
+      "searchable": true,
+      "sparkSource": "group:Power Production",
+      "viaValue": null
+    },
     "prevListPrice": {
       "candidateGaps": [],
       "classes": [
@@ -3785,6 +4155,22 @@
       "resolutionReason": null,
       "searchable": true,
       "sparkSource": "ListPrice",
+      "viaValue": null
+    },
+    "pricePerAcre": {
+      "candidateGaps": [],
+      "classes": [
+        "D"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "range",
+      "metadataOptions": null,
+      "mv": "price_per_acre",
+      "resolution": "curation",
+      "resolutionReason": "The MLS publishes this concept as a custom field, but the MV COMPUTES it (list_price / lot_size_acres) instead of reading the CF value. Measured 2026-07-31 on the 1,903 serving rows carrying both: agrees within 1% on 1,879, diverges by more than 10% on 12 (worst 108.3%), and is absent on 6,894 rows we can compute. Same derived-at-source treatment price_per_sqft gets; 8,856 serving rows carry a computable value.",
+      "searchable": true,
+      "sparkSource": "cf:List Price per Acre",
       "viaValue": null
     },
     "pricePerSqft": {
@@ -3987,6 +4373,50 @@
       "searchable": true,
       "sparkSource": "WaterSource",
       "viaValue": "Public"
+    },
+    "railroadAccess": {
+      "candidateGaps": [
+        "In"
+      ],
+      "classes": [
+        "D"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "multi",
+      "metadataOptions": [
+        "Available",
+        "In",
+        "Not Available",
+        "To Lot"
+      ],
+      "mv": "railroad_access",
+      "resolution": "curation",
+      "resolutionReason": "The CF group is bare 'Railroad'; the registry key says what is being asked. MV v4 tranche 2026-07-31: Not Available 276 · Available 5 · To Lot 1 serving rows.",
+      "searchable": true,
+      "sparkSource": "group:Railroad",
+      "viaValue": null
+    },
+    "rented": {
+      "candidateGaps": [],
+      "classes": [
+        "A",
+        "B",
+        "E"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "boolean",
+      "metadataOptions": [
+        "No",
+        "Yes"
+      ],
+      "mv": "rented_yn",
+      "resolution": "curation",
+      "resolutionReason": "Custom field 'Rented YN' (General Property Information), no standard parent. MV v4 tranche 2026-07-31: 6,052 serving rows carry the flag, 280 true.",
+      "searchable": true,
+      "sparkSource": "cf:Rented YN",
+      "viaValue": null
     },
     "roadFrontage": {
       "candidateGaps": [
@@ -4223,6 +4653,25 @@
       "sparkSource": "ParkingFeatures",
       "viaValue": "RV Access/Parking"
     },
+    "secondResidence": {
+      "candidateGaps": [],
+      "classes": [
+        "A",
+        "E"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "boolean",
+      "metadataOptions": [
+        "Second Residence"
+      ],
+      "mv": "second_residence_yn",
+      "resolution": "curation",
+      "resolutionReason": "Boolean filter targeting the sole unstandardized member of the CF 'Other Structures' group (the rest fold into the standard OtherStructures enum). Distinct from guestHouse (OtherStructures 'Guest House') and from adu. MV v4 tranche 2026-07-31: 122 serving rows.",
+      "searchable": true,
+      "sparkSource": "group:Other Structures",
+      "viaValue": "Second Residence"
+    },
     "securityFeatures": {
       "candidateGaps": [
         "Other"
@@ -4389,6 +4838,66 @@
       "searchable": true,
       "sparkSource": "Levels",
       "viaValue": "One"
+    },
+    "soilType": {
+      "candidateGaps": [
+        "Gravel",
+        "Land Fill",
+        "Mixed",
+        "Unknown"
+      ],
+      "classes": [
+        "D",
+        "E"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "multi",
+      "metadataOptions": [
+        "Alluvial",
+        "Clay",
+        "Gravel",
+        "Land Fill",
+        "Loam",
+        "Mixed",
+        "Rocky",
+        "Sand",
+        "Soil Analysis Done",
+        "Soil Analysis Ordered",
+        "Top Soil Over Other",
+        "Unknown"
+      ],
+      "mv": "soil_type",
+      "resolution": "auto:group",
+      "resolutionReason": null,
+      "searchable": true,
+      "sparkSource": "group:Soil Type",
+      "viaValue": null
+    },
+    "specialAssessment": {
+      "candidateGaps": [],
+      "classes": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "boolean",
+      "metadataOptions": [
+        "No",
+        "Yes"
+      ],
+      "mv": "special_assessment_yn",
+      "resolution": "curation",
+      "resolutionReason": "Custom field 'Assessment YN', no standard parent. Registry key is prefixed 'special' to say which assessment it means. MV v4 tranche 2026-07-31: 3,645 serving rows, 541 true.",
+      "searchable": true,
+      "sparkSource": "cf:Assessment YN",
+      "viaValue": null
     },
     "specialConditions": {
       "candidateGaps": [
@@ -4571,6 +5080,24 @@
       "sparkSource": "TaxAmount",
       "viaValue": null
     },
+    "unitsTotal": {
+      "candidateGaps": [],
+      "classes": [
+        "C",
+        "F",
+        "G"
+      ],
+      "curationAdditions": [],
+      "idxPayload": true,
+      "kind": "range",
+      "metadataOptions": null,
+      "mv": "units_total",
+      "resolution": "curation",
+      "resolutionReason": "Registry key drops the RESO 'NumberOf' prefix; the Spark standard name is NumberOfUnitsTotal. MV v4 tranche 2026-07-31: 738 serving rows.",
+      "searchable": true,
+      "sparkSource": "NumberOfUnitsTotal",
+      "viaValue": null
+    },
     "utilities": {
       "candidateGaps": [
         "None",
@@ -4579,7 +5106,12 @@
       "classes": [
         "D"
       ],
-      "curationAdditions": [],
+      "curationAdditions": [
+        "Cable Connected",
+        "Electricity Connected",
+        "Natural Gas Connected",
+        "Phone Connected"
+      ],
       "idxPayload": true,
       "kind": "multi",
       "metadataOptions": [
@@ -4596,6 +5128,30 @@
       "resolutionReason": null,
       "searchable": true,
       "sparkSource": "Utilities",
+      "viaValue": null
+    },
+    "utilitiesLocation": {
+      "candidateGaps": [
+        "None",
+        "Other"
+      ],
+      "classes": [
+        "D"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "multi",
+      "metadataOptions": [
+        "At Street",
+        "None",
+        "On Property",
+        "Other"
+      ],
+      "mv": "utilities_location",
+      "resolution": "auto:group",
+      "resolutionReason": null,
+      "searchable": true,
+      "sparkSource": "group:Utilities Location",
       "viaValue": null
     },
     "viewTypes": {
@@ -4646,6 +5202,33 @@
       "resolutionReason": "Registry key is pluralized; the Spark enum is View.",
       "searchable": true,
       "sparkSource": "View",
+      "viaValue": null
+    },
+    "waterRightsType": {
+      "candidateGaps": [
+        "See Remarks"
+      ],
+      "classes": [
+        "D",
+        "E"
+      ],
+      "curationAdditions": [],
+      "idxPayload": null,
+      "kind": "multi",
+      "metadataOptions": [
+        "Adjudicated",
+        "Class A",
+        "Class B",
+        "Class C",
+        "Permitted",
+        "Riparian",
+        "See Remarks"
+      ],
+      "mv": "water_rights_type",
+      "resolution": "auto:group",
+      "resolutionReason": null,
+      "searchable": true,
+      "sparkSource": "group:Water Rights Type",
       "viaValue": null
     },
     "waterSource": {
@@ -4825,14 +5408,12 @@
         "cf:Agency Represent YN",
         "cf:Annual Average Daily Traffic",
         "cf:Assessment Comments",
-        "cf:Assessment YN",
         "cf:Audio Surveillance on Premises YN",
         "cf:BLM",
         "cf:BLM#",
         "cf:Back on Market Date",
         "cf:Backup Package Available",
         "cf:Building Permit #",
-        "cf:Building Permit Issued YN",
         "cf:Business Included",
         "cf:Business Name",
         "cf:Business is a Franchise2",
@@ -4849,13 +5430,11 @@
         "cf:CropsUsage 2",
         "cf:CropsUsage 3",
         "cf:CropsUsage 4",
-        "cf:Current Rent",
         "cf:Currently Not Used/Listing Service",
         "cf:Dealer License Number",
         "cf:Deeded Acres",
         "cf:Dock Type",
         "cf:Dual Listing YN",
-        "cf:Estimated Completion Date",
         "cf:FIRPTA YN",
         "cf:Fallthrough Date2",
         "cf:Green Verification Metric",
@@ -4876,13 +5455,11 @@
         "cf:Leased Acres",
         "cf:Leased Components",
         "cf:Legacy Pcl #",
-        "cf:List Price per Acre",
         "cf:List Price per SqFt",
         "cf:List Price per SqFt2",
         "cf:Listing Service",
         "cf:Load Factor",
         "cf:Lot Size Square Feet",
-        "cf:Manufactured Structure Allowed YN",
         "cf:Manufacturer",
         "cf:May Remain In Park",
         "cf:Monthly Rent",
@@ -4918,7 +5495,6 @@
         "cf:Personal PropertyFixturesEquipment",
         "cf:Personal PropertyFixturesEquipment Value",
         "cf:Phone to Show",
-        "cf:Potential Tax Liability YN",
         "cf:Potential Tax Liability YN2",
         "cf:Preferred Escrow Company Officer",
         "cf:Price Per SqFt10",
@@ -4947,7 +5523,6 @@
         "cf:Rent Escalators7",
         "cf:Rent Escalators8",
         "cf:Rent Escalators9",
-        "cf:Rented YN",
         "cf:SeasonYear Round Crop 1",
         "cf:SeasonYear Round Crop 2",
         "cf:SeasonYear Round Crop 3",
@@ -5013,43 +5588,28 @@
         "cf:Water Costs",
         "cf:Zoning Comments",
         "cf:owner2",
-        "group:Acreage Details",
-        "group:Additional Features",
         "group:Agricultural Class",
         "group:Documents",
         "group:Documents on File",
         "group:Exclusion of Rights",
         "group:Existing Lease Type",
         "group:Grazing Permits",
-        "group:Green Building Verification Type",
-        "group:HomeBuild Site",
         "group:Income and Expenses (Annual Amounts)",
-        "group:Interior Features",
-        "group:Irrigation Distribution",
         "group:Mineral Information",
         "group:Miscellaneous Information",
-        "group:Other Structures",
-        "group:Power Production",
-        "group:Railroad",
-        "group:Restrictions",
         "group:Showing Requirements",
-        "group:Soil Type",
         "group:Special Assessments",
         "group:Unit 1 Rent Includes",
         "group:Unit 2 Rent Includes",
         "group:Unit 3 Rent Includes",
         "group:Unit 4 Rent Includes",
-        "group:Utilities",
-        "group:Utilities Location",
-        "group:Water Rights Type",
         "group:Window Features"
       ],
-      "count": 244
+      "count": 222
     },
     "standardSearchableIdxUnregistered": {
       "concepts": [
         "AssociationFeeFrequency",
-        "AttachedGarageYN",
         "City",
         "CloseDate",
         "ClosePrice",
@@ -5065,7 +5625,6 @@
         "LotSizeUnits",
         "MlsStatus",
         "ModificationTimestamp",
-        "NumberOfUnitsTotal",
         "OnMarketContractDate",
         "OnMarketDate",
         "OriginatingSystemKey",
@@ -5097,23 +5656,24 @@
         "VOWAutomatedValuationDisplayYN",
         "VOWConsumerCommentYN"
       ],
-      "count": 48
+      "count": 46
     }
   },
   "summary": {
     "byResolution": {
-      "auto:group": 3,
+      "auto:cf": 1,
+      "auto:group": 8,
       "auto:key": 26,
-      "auto:mv": 11,
-      "curation": 62,
+      "auto:mv": 12,
+      "curation": 78,
       "derived": 6
     },
-    "candidateGapTotal": 173,
-    "curationAdditionTotal": 0,
-    "exclusions": 11,
-    "longTailCustomCount": 244,
-    "longTailStandardCount": 48,
-    "mappedConcepts": 80,
-    "registryFields": 108
+    "candidateGapTotal": 189,
+    "curationAdditionTotal": 5,
+    "exclusions": 12,
+    "longTailCustomCount": 222,
+    "longTailStandardCount": 46,
+    "mappedConcepts": 103,
+    "registryFields": 131
   }
 }

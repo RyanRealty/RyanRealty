@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-07-31T06:05:09.273Z",
+ "generatedAt": "2026-07-31T17:07:59.970Z",
  "source": "listing_search_mv, all on-market rows, anon read",
  "generator": "scripts/generate-class-prevalence.mjs",
  "classOrder": [
@@ -14,12 +14,12 @@
   "shownMinCount": 25
  },
  "rowTotals": {
-  "A": 6273,
+  "A": 6276,
   "B": 316,
-  "C": 203,
-  "D": 2129,
+  "C": 201,
+  "D": 2125,
   "other": 728,
-  "total": 9649
+  "total": 9646
  },
  "zoningValueCap": 200,
  "fields": {
@@ -29,12 +29,12 @@
    "values": {
     "Accessible Bedroom": {
      "counts": [
-      226,
+      227,
       10,
       4,
       0
      ],
-     "total": 245,
+     "total": 246,
      "hint": [
       "A",
       "B",
@@ -44,12 +44,12 @@
     },
     "Accessible Hallway(s)": {
      "counts": [
-      216,
+      217,
       11,
       5,
       0
      ],
-     "total": 238,
+     "total": 239,
      "hint": [
       "A",
       "B",
@@ -74,12 +74,12 @@
     },
     "Accessible Full Bath": {
      "counts": [
-      202,
+      203,
       11,
       6,
       0
      ],
-     "total": 223,
+     "total": 224,
      "hint": [
       "A",
       "B",
@@ -89,12 +89,12 @@
     },
     "Accessible Kitchen": {
      "counts": [
-      190,
+      191,
       7,
       5,
       0
      ],
-     "total": 208,
+     "total": 209,
      "hint": [
       "A",
       "B",
@@ -104,12 +104,12 @@
     },
     "Accessible Entrance": {
      "counts": [
-      184,
+      185,
       10,
       4,
       0
      ],
-     "total": 201,
+     "total": 202,
      "hint": [
       "A",
       "B",
@@ -119,12 +119,12 @@
     },
     "Accessible Doors": {
      "counts": [
-      178,
+      179,
       7,
       3,
       0
      ],
-     "total": 191,
+     "total": 192,
      "hint": [
       "A",
       "B",
@@ -134,12 +134,12 @@
     },
     "Accessible Closets": {
      "counts": [
-      154,
+      155,
       5,
       5,
       0
      ],
-     "total": 168,
+     "total": 169,
      "hint": [
       "A",
       "B",
@@ -164,16 +164,74 @@
     },
     "Grip-Accessible Features": {
      "counts": [
-      87,
+      88,
       8,
       1,
       0
      ],
-     "total": 98,
+     "total": 99,
      "hint": [
       "A",
       "B",
       "C",
+      "E"
+     ]
+    }
+   }
+  },
+  "acreageFeatures": {
+   "kind": "multi",
+   "mv": "acreage_features",
+   "values": {
+    "Livestock Allowed": {
+     "counts": [
+      0,
+      0,
+      0,
+      84
+     ],
+     "total": 129,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Dividable Property": {
+     "counts": [
+      0,
+      0,
+      0,
+      46
+     ],
+     "total": 52,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Additional Crop/Usage/Acreage Info Attached": {
+     "counts": [
+      0,
+      0,
+      0,
+      4
+     ],
+     "total": 7,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Conservation Reserve Program": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 2,
+     "hint": [
+      "D",
       "E"
      ]
     }
@@ -185,12 +243,12 @@
    "values": {
     "true": {
      "counts": [
-      1060,
+      1062,
       12,
       5,
       379
      ],
-     "total": 1485,
+     "total": 1487,
      "hint": [
       "A",
       "B",
@@ -209,12 +267,12 @@
    "values": {
     "true": {
      "counts": [
-      304,
+      302,
       0,
       0,
       0
      ],
-     "total": 335,
+     "total": 333,
      "hint": [
       "A",
       "E"
@@ -241,18 +299,50 @@
     }
    }
   },
+  "aduType": {
+   "kind": "multi",
+   "mv": "adu_type",
+   "values": {
+    "Detached": {
+     "counts": [
+      239,
+      0,
+      0,
+      0
+     ],
+     "total": 270,
+     "hint": [
+      "A",
+      "E"
+     ]
+    },
+    "Attached": {
+     "counts": [
+      63,
+      0,
+      0,
+      0
+     ],
+     "total": 63,
+     "hint": [
+      "A",
+      "E"
+     ]
+    }
+   }
+  },
   "appliances": {
    "kind": "multi",
    "mv": "appliances",
    "values": {
     "Dishwasher": {
      "counts": [
-      5239,
+      5241,
       225,
       108,
       0
      ],
-     "total": 5647,
+     "total": 5649,
      "hint": [
       "A",
       "B",
@@ -262,12 +352,12 @@
     },
     "Refrigerator": {
      "counts": [
-      4622,
+      4626,
       252,
-      135,
+      133,
       0
      ],
-     "total": 5087,
+     "total": 5089,
      "hint": [
       "A",
       "B",
@@ -277,9 +367,9 @@
     },
     "Range": {
      "counts": [
-      4518,
+      4520,
       236,
-      142,
+      140,
       0
      ],
      "total": 4967,
@@ -292,12 +382,12 @@
     },
     "Water Heater": {
      "counts": [
-      4119,
+      4120,
       224,
-      118,
+      116,
       0
      ],
-     "total": 4526,
+     "total": 4525,
      "hint": [
       "A",
       "B",
@@ -307,12 +397,12 @@
     },
     "Microwave": {
      "counts": [
-      4053,
+      4054,
       130,
       54,
       0
      ],
-     "total": 4282,
+     "total": 4283,
      "hint": [
       "A",
       "B",
@@ -322,12 +412,12 @@
     },
     "Oven": {
      "counts": [
-      3805,
+      3812,
       191,
-      115,
+      114,
       0
      ],
-     "total": 4169,
+     "total": 4175,
      "hint": [
       "A",
       "B",
@@ -337,12 +427,12 @@
     },
     "Disposal": {
      "counts": [
-      3870,
+      3873,
       117,
       73,
       0
      ],
-     "total": 4100,
+     "total": 4103,
      "hint": [
       "A",
       "B",
@@ -352,12 +442,12 @@
     },
     "Washer": {
      "counts": [
-      2705,
+      2710,
       152,
-      56,
+      55,
       0
      ],
-     "total": 2958,
+     "total": 2962,
      "hint": [
       "A",
       "B",
@@ -367,12 +457,12 @@
     },
     "Dryer": {
      "counts": [
-      2660,
+      2665,
       147,
-      58,
+      57,
       0
      ],
-     "total": 2909,
+     "total": 2913,
      "hint": [
       "A",
       "B",
@@ -384,10 +474,10 @@
      "counts": [
       2213,
       140,
-      61,
+      60,
       0
      ],
-     "total": 2458,
+     "total": 2457,
      "hint": [
       "A",
       "B",
@@ -397,12 +487,12 @@
     },
     "Cooktop": {
      "counts": [
-      1551,
+      1554,
       55,
       31,
       0
      ],
-     "total": 1667,
+     "total": 1670,
      "hint": [
       "A",
       "B",
@@ -412,12 +502,12 @@
     },
     "Tankless Water Heater": {
      "counts": [
-      650,
+      649,
       2,
       3,
       0
      ],
-     "total": 660,
+     "total": 659,
      "hint": [
       "A",
       "B",
@@ -427,12 +517,12 @@
     },
     "Double Oven": {
      "counts": [
-      567,
+      566,
       7,
       0,
       0
      ],
-     "total": 595,
+     "total": 594,
      "hint": [
       "A",
       "B",
@@ -442,12 +532,12 @@
     },
     "Wine Refrigerator": {
      "counts": [
-      321,
+      319,
       1,
       0,
       0
      ],
-     "total": 328,
+     "total": 326,
      "hint": [
       "A",
       "B",
@@ -523,12 +613,12 @@
    "values": {
     "Ranch": {
      "counts": [
-      1434,
+      1438,
       0,
-      40,
+      39,
       0
      ],
-     "total": 1533,
+     "total": 1536,
      "hint": [
       "A",
       "C",
@@ -537,12 +627,12 @@
     },
     "Traditional": {
      "counts": [
-      1397,
+      1400,
       0,
       59,
       0
      ],
-     "total": 1466,
+     "total": 1469,
      "hint": [
       "A",
       "C",
@@ -565,12 +655,12 @@
     },
     "Craftsman": {
      "counts": [
-      1011,
+      1010,
       0,
       20,
       0
      ],
-     "total": 1044,
+     "total": 1043,
      "hint": [
       "A",
       "C",
@@ -579,12 +669,12 @@
     },
     "Contemporary": {
      "counts": [
-      961,
+      957,
       0,
-      34,
+      33,
       0
      ],
-     "total": 1002,
+     "total": 997,
      "hint": [
       "A",
       "C",
@@ -649,18 +739,41 @@
     }
    }
   },
+  "attachedGarage": {
+   "kind": "boolean",
+   "mv": "attached_garage_yn",
+   "values": {
+    "true": {
+     "counts": [
+      3352,
+      23,
+      69,
+      0
+     ],
+     "total": 3496,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
   "basement": {
    "kind": "boolean",
    "mv": "basement_yn",
    "values": {
     "true": {
      "counts": [
-      555,
+      552,
       0,
       12,
       0
      ],
-     "total": 616,
+     "total": 613,
      "hint": [
       "A",
       "B",
@@ -678,12 +791,12 @@
    "values": {
     "Finished": {
      "counts": [
-      291,
+      290,
       0,
       3,
       0
      ],
-     "total": 309,
+     "total": 308,
      "hint": [
       "A",
       "B",
@@ -729,12 +842,12 @@
     },
     "Full": {
      "counts": [
-      134,
+      133,
       0,
       3,
       0
      ],
-     "total": 149,
+     "total": 148,
      "hint": [
       "A",
       "B",
@@ -746,12 +859,12 @@
     },
     "Exterior Entry": {
      "counts": [
-      132,
+      131,
       0,
       3,
       0
      ],
-     "total": 145,
+     "total": 144,
      "hint": [
       "A",
       "B",
@@ -763,12 +876,12 @@
     },
     "Unfinished": {
      "counts": [
-      111,
+      110,
       0,
       4,
       0
      ],
-     "total": 131,
+     "total": 130,
      "hint": [
       "A",
       "B",
@@ -802,12 +915,12 @@
     },
     "Single Wide": {
      "counts": [
-      74,
+      73,
       76,
       0,
       0
      ],
-     "total": 154,
+     "total": 153,
      "hint": [
       "A",
       "B",
@@ -866,18 +979,40 @@
     }
    }
   },
+  "buildingPermitIssued": {
+   "kind": "boolean",
+   "mv": "building_permit_issued_yn",
+   "values": {
+    "true": {
+     "counts": [
+      544,
+      0,
+      12,
+      0
+     ],
+     "total": 562,
+     "hint": [
+      "A",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
   "ccrs": {
    "kind": "boolean",
    "mv": "ccrs_yn",
    "values": {
     "true": {
      "counts": [
-      3463,
+      3472,
       139,
       56,
-      1070
+      1068
      ],
-     "total": 4893,
+     "total": 4900,
      "hint": [
       "A",
       "B",
@@ -898,10 +1033,10 @@
      "counts": [
       5470,
       0,
-      50,
+      49,
       0
      ],
-     "total": 5813,
+     "total": 5812,
      "hint": [
       "A",
       "C",
@@ -911,12 +1046,12 @@
     },
     "No One Above": {
      "counts": [
-      691,
+      688,
       0,
-      24,
+      23,
       0
      ],
-     "total": 760,
+     "total": 756,
      "hint": [
       "A",
       "C",
@@ -926,12 +1061,12 @@
     },
     "No One Below": {
      "counts": [
-      688,
+      685,
       0,
-      25,
+      24,
       0
      ],
-     "total": 755,
+     "total": 751,
      "hint": [
       "A",
       "C",
@@ -941,12 +1076,12 @@
     },
     "1 Common Wall": {
      "counts": [
-      434,
+      437,
       0,
-      111,
+      110,
       0
      ],
-     "total": 633,
+     "total": 635,
      "hint": [
       "A",
       "C",
@@ -971,12 +1106,12 @@
     },
     "End Unit": {
      "counts": [
-      109,
+      110,
       0,
       12,
       0
      ],
-     "total": 140,
+     "total": 141,
      "hint": [
       "A",
       "C",
@@ -992,12 +1127,12 @@
    "values": {
     "Trail(s)": {
      "counts": [
-      1201,
+      1202,
       17,
       12,
       266
      ],
-     "total": 1496,
+     "total": 1497,
      "hint": [
       "A",
       "B",
@@ -1007,12 +1142,12 @@
     },
     "Park": {
      "counts": [
-      1153,
+      1155,
       44,
       15,
-      178
+      177
      ],
-     "total": 1390,
+     "total": 1391,
      "hint": [
       "A",
       "B",
@@ -1022,12 +1157,12 @@
     },
     "Access to Public Lands": {
      "counts": [
-      888,
+      890,
       9,
       4,
       301
      ],
-     "total": 1202,
+     "total": 1204,
      "hint": [
       "A",
       "B",
@@ -1037,12 +1172,12 @@
     },
     "Playground": {
      "counts": [
-      882,
+      883,
       38,
       13,
       172
      ],
-     "total": 1105,
+     "total": 1106,
      "hint": [
       "A",
       "B",
@@ -1052,12 +1187,12 @@
     },
     "Short Term Rentals Allowed": {
      "counts": [
-      686,
+      689,
       2,
       8,
       146
      ],
-     "total": 842,
+     "total": 845,
      "hint": [
       "A",
       "B",
@@ -1082,12 +1217,12 @@
     },
     "Tennis Court(s)": {
      "counts": [
-      582,
+      583,
       9,
       4,
       151
      ],
-     "total": 746,
+     "total": 747,
      "hint": [
       "A",
       "B",
@@ -1097,12 +1232,12 @@
     },
     "Pool": {
      "counts": [
-      623,
+      622,
       42,
       4,
       72
      ],
-     "total": 741,
+     "total": 740,
      "hint": [
       "A",
       "B",
@@ -1112,12 +1247,12 @@
     },
     "Short Term Rentals Not Allowed": {
      "counts": [
-      541,
+      540,
       29,
       2,
       138
      ],
-     "total": 710,
+     "total": 709,
      "hint": [
       "A",
       "B",
@@ -1127,12 +1262,12 @@
     },
     "Gas Available": {
      "counts": [
-      523,
+      524,
       3,
       9,
       133
      ],
-     "total": 668,
+     "total": 669,
      "hint": [
       "A",
       "B",
@@ -1178,12 +1313,12 @@
    "values": {
     "Frame": {
      "counts": [
-      4958,
+      4957,
       0,
-      172,
+      170,
       0
      ],
-     "total": 5474,
+     "total": 5471,
      "hint": [
       "A",
       "C",
@@ -1196,10 +1331,10 @@
      "counts": [
       282,
       0,
-      12,
+      11,
       0
      ],
-     "total": 404,
+     "total": 403,
      "hint": [
       "A",
       "C",
@@ -1212,10 +1347,10 @@
      "counts": [
       133,
       0,
-      11,
+      10,
       0
      ],
-     "total": 254,
+     "total": 253,
      "hint": [
       "A",
       "C",
@@ -1226,12 +1361,12 @@
     },
     "Double Wall/Staggered Stud": {
      "counts": [
-      235,
+      234,
       0,
       1,
       0
      ],
-     "total": 243,
+     "total": 242,
      "hint": [
       "A",
       "C",
@@ -1296,12 +1431,12 @@
    "values": {
     "Central Air": {
      "counts": [
-      3375,
+      3380,
       148,
-      48,
+      47,
       0
      ],
-     "total": 3850,
+     "total": 3854,
      "hint": [
       "A",
       "B",
@@ -1313,12 +1448,12 @@
     },
     "Heat Pump": {
      "counts": [
-      2032,
+      2031,
       137,
       47,
       0
      ],
-     "total": 2362,
+     "total": 2361,
      "hint": [
       "A",
       "B",
@@ -1330,9 +1465,9 @@
     },
     "Ductless": {
      "counts": [
-      680,
+      681,
       22,
-      38,
+      37,
       0
      ],
      "total": 816,
@@ -1364,12 +1499,12 @@
     },
     "Wall/Window Unit(s)": {
      "counts": [
-      268,
+      270,
       27,
-      39,
+      38,
       0
      ],
-     "total": 393,
+     "total": 394,
      "hint": [
       "A",
       "B",
@@ -1383,10 +1518,10 @@
      "counts": [
       351,
       12,
-      6,
+      5,
       0
      ],
-     "total": 373,
+     "total": 372,
      "hint": [
       "A",
       "B",
@@ -1421,12 +1556,12 @@
    "values": {
     "Deschutes": {
      "counts": [
-      2535,
+      2539,
       48,
       45,
       400
      ],
-     "total": 3130,
+     "total": 3134,
      "hint": [
       "A",
       "B",
@@ -1440,9 +1575,9 @@
     },
     "Klamath": {
      "counts": [
-      686,
+      687,
       19,
-      22,
+      21,
       585
      ],
      "total": 1412,
@@ -1497,12 +1632,12 @@
     },
     "Lake": {
      "counts": [
-      37,
+      38,
       0,
       0,
       75
      ],
-     "total": 121,
+     "total": 122,
      "hint": [
       "A",
       "B",
@@ -1525,9 +1660,9 @@
       0,
       0,
       0,
-      1783
+      1780
      ],
-     "total": 1783,
+     "total": 1780,
      "hint": [
       "D"
      ]
@@ -1631,12 +1766,12 @@
    "values": {
     "Well": {
      "counts": [
-      1581,
+      1582,
       18,
       13,
       344
      ],
-     "total": 2125,
+     "total": 2126,
      "hint": [
       "A",
       "B",
@@ -1649,12 +1784,12 @@
     },
     "Utilities": {
      "counts": [
-      1060,
+      1057,
       35,
-      40,
+      39,
       392
      ],
-     "total": 1633,
+     "total": 1629,
      "hint": [
       "A",
       "B",
@@ -1667,12 +1802,12 @@
     },
     "Access": {
      "counts": [
-      328,
+      327,
       12,
       9,
       199
      ],
-     "total": 592,
+     "total": 591,
      "hint": [
       "A",
       "B",
@@ -1703,12 +1838,12 @@
     },
     "View": {
      "counts": [
-      21,
+      22,
       5,
       1,
       13
      ],
-     "total": 41,
+     "total": 42,
      "hint": [
       "A",
       "B",
@@ -1785,12 +1920,12 @@
     },
     "RV Hookup": {
      "counts": [
-      592,
+      594,
       3,
       3,
       0
      ],
-     "total": 629,
+     "total": 631,
      "hint": [
       "A",
       "B",
@@ -1818,12 +1953,12 @@
     },
     "Courtyard": {
      "counts": [
-      346,
+      347,
       6,
       8,
       0
      ],
-     "total": 384,
+     "total": 385,
      "hint": [
       "A",
       "B",
@@ -1852,12 +1987,12 @@
     },
     "Built-in Barbecue": {
      "counts": [
-      144,
+      142,
       0,
       1,
       0
      ],
-     "total": 151,
+     "total": 149,
      "hint": [
       "A",
       "B",
@@ -1909,10 +2044,10 @@
    "values": {
     "true": {
      "counts": [
-      3253,
+      3256,
       93,
-      74,
-      157
+      72,
+      156
      ],
      "total": 3747,
      "hint": [
@@ -1975,9 +2110,9 @@
       0,
       0,
       0,
-      58
+      56
      ],
-     "total": 72,
+     "total": 70,
      "hint": [
       "D",
       "E"
@@ -2043,12 +2178,12 @@
    "values": {
     "Gas": {
      "counts": [
-      1915,
+      1913,
       3,
       17,
       0
      ],
-     "total": 1946,
+     "total": 1944,
      "hint": [
       "A",
       "B",
@@ -2058,12 +2193,12 @@
     },
     "Living Room": {
      "counts": [
-      1509,
+      1506,
       10,
       19,
       0
      ],
-     "total": 1564,
+     "total": 1561,
      "hint": [
       "A",
       "B",
@@ -2088,12 +2223,12 @@
     },
     "Wood Burning": {
      "counts": [
-      1315,
+      1313,
       7,
       9,
       0
      ],
-     "total": 1368,
+     "total": 1366,
      "hint": [
       "A",
       "B",
@@ -2103,12 +2238,12 @@
     },
     "Family Room": {
      "counts": [
-      537,
+      536,
       3,
       4,
       0
      ],
-     "total": 554,
+     "total": 553,
      "hint": [
       "A",
       "B",
@@ -2118,12 +2253,12 @@
     },
     "Propane": {
      "counts": [
-      460,
+      462,
       1,
       0,
       0
      ],
-     "total": 473,
+     "total": 475,
      "hint": [
       "A",
       "B",
@@ -2148,12 +2283,12 @@
     },
     "Primary Bedroom": {
      "counts": [
-      263,
+      262,
       1,
       1,
       0
      ],
-     "total": 274,
+     "total": 273,
      "hint": [
       "A",
       "B",
@@ -2163,12 +2298,12 @@
     },
     "Electric": {
      "counts": [
-      227,
+      226,
       13,
       5,
       0
      ],
-     "total": 248,
+     "total": 247,
      "hint": [
       "A",
       "B",
@@ -2199,12 +2334,12 @@
    "values": {
     "N/A": {
      "counts": [
-      1953,
+      1952,
       69,
       61,
-      555
+      554
      ],
-     "total": 2788,
+     "total": 2786,
      "hint": [
       "A",
       "B",
@@ -2259,12 +2394,12 @@
    "values": {
     "Carpet": {
      "counts": [
-      4570,
+      4568,
       200,
-      150,
+      148,
       0
      ],
-     "total": 5215,
+     "total": 5211,
      "hint": [
       "A",
       "B",
@@ -2278,10 +2413,10 @@
      "counts": [
       2537,
       180,
-      136,
+      134,
       0
      ],
-     "total": 3036,
+     "total": 3034,
      "hint": [
       "A",
       "B",
@@ -2293,12 +2428,12 @@
     },
     "Tile": {
      "counts": [
-      2683,
+      2681,
       27,
       36,
       0
      ],
-     "total": 2872,
+     "total": 2870,
      "hint": [
       "A",
       "B",
@@ -2310,9 +2445,9 @@
     },
     "Laminate": {
      "counts": [
-      2259,
+      2260,
       177,
-      97,
+      96,
       0
      ],
      "total": 2689,
@@ -2327,12 +2462,12 @@
     },
     "Hardwood": {
      "counts": [
-      2114,
+      2115,
       6,
       17,
       0
      ],
-     "total": 2237,
+     "total": 2238,
      "hint": [
       "A",
       "B",
@@ -2361,12 +2496,12 @@
     },
     "Concrete": {
      "counts": [
-      136,
+      137,
       1,
       4,
       0
      ],
-     "total": 402,
+     "total": 403,
      "hint": [
       "A",
       "B",
@@ -2418,12 +2553,12 @@
    "values": {
     "Stemwall": {
      "counts": [
-      2820,
+      2826,
       0,
       52,
       0
      ],
-     "total": 2953,
+     "total": 2959,
      "hint": [
       "A",
       "B",
@@ -2435,12 +2570,12 @@
     },
     "Concrete Perimeter": {
      "counts": [
-      2230,
+      2227,
       17,
-      99,
+      98,
       0
      ],
-     "total": 2512,
+     "total": 2508,
      "hint": [
       "A",
       "B",
@@ -2452,12 +2587,12 @@
     },
     "Slab": {
      "counts": [
-      619,
+      618,
       7,
-      47,
+      46,
       0
      ],
-     "total": 1009,
+     "total": 1007,
      "hint": [
       "A",
       "B",
@@ -2469,12 +2604,12 @@
     },
     "Block": {
      "counts": [
-      708,
+      707,
       79,
       21,
       0
      ],
-     "total": 855,
+     "total": 854,
      "hint": [
       "A",
       "B",
@@ -2486,12 +2621,12 @@
     },
     "Pillar/Post/Pier": {
      "counts": [
-      434,
+      432,
       199,
-      15,
+      14,
       0
      ],
-     "total": 679,
+     "total": 676,
      "hint": [
       "A",
       "B",
@@ -2526,12 +2661,12 @@
    "values": {
     "true": {
      "counts": [
-      1023,
+      1021,
       3,
       7,
       263
      ],
-     "total": 1390,
+     "total": 1388,
      "hint": [
       "A",
       "B",
@@ -2655,18 +2790,149 @@
     }
    }
   },
+  "greenCertification": {
+   "kind": "multi",
+   "mv": "green_certification",
+   "values": {
+    "Home Energy Score": {
+     "counts": [
+      214,
+      0,
+      4,
+      0
+     ],
+     "total": 218,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E"
+     ]
+    },
+    "Earth Advantage": {
+     "counts": [
+      180,
+      1,
+      1,
+      0
+     ],
+     "total": 182,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "ENERGY STAR Certified Homes": {
+     "counts": [
+      83,
+      12,
+      0,
+      0
+     ],
+     "total": 95,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Energy Performance Score": {
+     "counts": [
+      56,
+      0,
+      0,
+      0
+     ],
+     "total": 56,
+     "hint": [
+      "A"
+     ]
+    },
+    "LEED For Homes": {
+     "counts": [
+      8,
+      0,
+      0,
+      0
+     ],
+     "total": 8,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "LEED Certified": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 2,
+     "hint": [
+      "F",
+      "G"
+     ]
+    },
+    "WaterSense": {
+     "counts": [
+      2,
+      0,
+      0,
+      0
+     ],
+     "total": 2,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Energy Audit Retrofit": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 1,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
   "guestHouse": {
    "kind": "boolean",
    "mv": "other_structures",
    "values": {
     "true": {
      "counts": [
-      234,
+      233,
       0,
       0,
       0
      ],
-     "total": 266,
+     "total": 265,
      "hint": [
       "A",
       "B",
@@ -2706,12 +2972,12 @@
    "values": {
     "true": {
      "counts": [
-      1476,
+      1482,
       19,
-      23,
+      22,
       9
      ],
-     "total": 1585
+     "total": 1590
     }
    }
   },
@@ -2721,12 +2987,12 @@
    "values": {
     "true": {
      "counts": [
-      247,
+      248,
       0,
       3,
       94
      ],
-     "total": 347,
+     "total": 348,
      "hint": [
       "A",
       "B",
@@ -2745,12 +3011,12 @@
    "values": {
     "true": {
      "counts": [
-      461,
+      458,
       11,
       2,
-      2
+      3
      ],
-     "total": 478
+     "total": 476
     }
    }
   },
@@ -2760,12 +3026,12 @@
    "values": {
     "true": {
      "counts": [
-      1183,
+      1186,
       53,
       10,
       224
      ],
-     "total": 1483
+     "total": 1486
     }
    }
   },
@@ -2790,12 +3056,12 @@
    "values": {
     "true": {
      "counts": [
-      4248,
+      4242,
       126,
-      93,
-      1541
+      91,
+      1538
      ],
-     "total": 6297,
+     "total": 6286,
      "hint": [
       "A",
       "B",
@@ -2814,12 +3080,12 @@
    "values": {
     "true": {
      "counts": [
-      1106,
+      1105,
       6,
       12,
       140
      ],
-     "total": 1310,
+     "total": 1309,
      "hint": [
       "A",
       "B",
@@ -2839,12 +3105,12 @@
    "values": {
     "true": {
      "counts": [
-      588,
+      590,
       7,
       5,
-      146
+      145
      ],
-     "total": 817,
+     "total": 818,
      "hint": [
       "A",
       "B",
@@ -2903,12 +3169,12 @@
     },
     "Electric": {
      "counts": [
-      2192,
+      2193,
       153,
-      97,
+      95,
       0
      ],
-     "total": 2618,
+     "total": 2617,
      "hint": [
       "A",
       "B",
@@ -2920,12 +3186,12 @@
     },
     "Natural Gas": {
      "counts": [
-      2264,
+      2262,
       35,
       56,
       0
      ],
-     "total": 2523,
+     "total": 2521,
      "hint": [
       "A",
       "B",
@@ -2937,12 +3203,12 @@
     },
     "Heat Pump": {
      "counts": [
-      1926,
+      1925,
       150,
       46,
       0
      ],
-     "total": 2267,
+     "total": 2266,
      "hint": [
       "A",
       "B",
@@ -2954,12 +3220,12 @@
     },
     "Wood": {
      "counts": [
-      1041,
+      1039,
       6,
       7,
       0
      ],
-     "total": 1101,
+     "total": 1099,
      "hint": [
       "A",
       "B",
@@ -2971,12 +3237,12 @@
     },
     "Fireplace(s)": {
      "counts": [
-      893,
+      895,
       9,
       7,
       0
      ],
-     "total": 938,
+     "total": 940,
      "hint": [
       "A",
       "B",
@@ -2988,9 +3254,9 @@
     },
     "Ductless": {
      "counts": [
-      695,
+      696,
       21,
-      34,
+      33,
       0
      ],
      "total": 820,
@@ -3005,12 +3271,12 @@
     },
     "Propane": {
      "counts": [
-      451,
+      449,
       8,
       0,
       0
      ],
-     "total": 493,
+     "total": 491,
      "hint": [
       "A",
       "B",
@@ -3041,10 +3307,10 @@
      "counts": [
       315,
       12,
-      6,
+      5,
       0
      ],
-     "total": 337,
+     "total": 336,
      "hint": [
       "A",
       "B",
@@ -3056,12 +3322,12 @@
     },
     "Wall Furnace": {
      "counts": [
-      228,
+      229,
       3,
       21,
       0
      ],
-     "total": 260,
+     "total": 261,
      "hint": [
       "A",
       "B",
@@ -3073,12 +3339,12 @@
     },
     "Pellet Stove": {
      "counts": [
-      197,
+      196,
       6,
       1,
       0
      ],
-     "total": 211,
+     "total": 210,
      "hint": [
       "A",
       "B",
@@ -3107,12 +3373,12 @@
     },
     "Baseboard": {
      "counts": [
-      159,
+      160,
       1,
       21,
       0
      ],
-     "total": 203,
+     "total": 204,
      "hint": [
       "A",
       "B",
@@ -3210,6 +3476,29 @@
     }
    }
   },
+  "highSpeedInternet": {
+   "kind": "boolean",
+   "mv": "high_speed_internet_yn",
+   "values": {
+    "true": {
+     "counts": [
+      916,
+      18,
+      16,
+      0
+     ],
+     "total": 1029,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
   "hoaAmenities": {
    "kind": "multi",
    "mv": "hoa_amenities",
@@ -3231,12 +3520,12 @@
     },
     "Trail(s)": {
      "counts": [
-      949,
+      951,
       1,
       2,
       271
      ],
-     "total": 1223,
+     "total": 1225,
      "hint": [
       "A",
       "B",
@@ -3246,12 +3535,12 @@
     },
     "Park": {
      "counts": [
-      977,
+      978,
       9,
       3,
       185
      ],
-     "total": 1174,
+     "total": 1175,
      "hint": [
       "A",
       "B",
@@ -3261,12 +3550,12 @@
     },
     "Pool": {
      "counts": [
-      900,
+      902,
       13,
       1,
       221
      ],
-     "total": 1135,
+     "total": 1137,
      "hint": [
       "A",
       "B",
@@ -3276,12 +3565,12 @@
     },
     "Landscaping": {
      "counts": [
-      888,
+      889,
       4,
       13,
       81
      ],
-     "total": 986,
+     "total": 987,
      "hint": [
       "A",
       "B",
@@ -3291,12 +3580,12 @@
     },
     "Clubhouse": {
      "counts": [
-      732,
+      733,
       28,
       1,
       181
      ],
-     "total": 942,
+     "total": 943,
      "hint": [
       "A",
       "B",
@@ -3306,12 +3595,12 @@
     },
     "Playground": {
      "counts": [
-      730,
+      732,
       13,
       1,
       190
      ],
-     "total": 934,
+     "total": 936,
      "hint": [
       "A",
       "B",
@@ -3321,12 +3610,12 @@
     },
     "Fitness Center": {
      "counts": [
-      619,
+      620,
       14,
       1,
       178
      ],
-     "total": 812,
+     "total": 813,
      "hint": [
       "A",
       "B",
@@ -3336,12 +3625,12 @@
     },
     "Pickleball Court(s)": {
      "counts": [
-      570,
+      571,
       2,
       1,
       198
      ],
-     "total": 771,
+     "total": 772,
      "hint": [
       "A",
       "B",
@@ -3351,12 +3640,12 @@
     },
     "Tennis Court(s)": {
      "counts": [
-      596,
+      598,
       0,
       1,
       171
      ],
-     "total": 768,
+     "total": 770,
      "hint": [
       "A",
       "B",
@@ -3366,12 +3655,12 @@
     },
     "Resort Community": {
      "counts": [
-      519,
+      520,
       1,
       1,
       177
      ],
-     "total": 698,
+     "total": 699,
      "hint": [
       "A",
       "B",
@@ -3396,12 +3685,12 @@
     },
     "Golf Course": {
      "counts": [
-      476,
+      477,
       0,
       0,
       185
      ],
-     "total": 661,
+     "total": 662,
      "hint": [
       "A",
       "B",
@@ -3411,12 +3700,12 @@
     },
     "Restaurant": {
      "counts": [
-      456,
+      458,
       0,
       1,
       171
      ],
-     "total": 628,
+     "total": 630,
      "hint": [
       "A",
       "B",
@@ -3456,12 +3745,12 @@
     },
     "Water": {
      "counts": [
-      390,
+      389,
       23,
       6,
-      66
+      65
      ],
-     "total": 485,
+     "total": 483,
      "hint": [
       "A",
       "B",
@@ -3486,12 +3775,12 @@
     },
     "Trash": {
      "counts": [
-      318,
+      319,
       21,
       6,
       8
      ],
-     "total": 353,
+     "total": 354,
      "hint": [
       "A",
       "B",
@@ -3501,12 +3790,12 @@
     },
     "RV/Boat Storage": {
      "counts": [
-      233,
+      234,
       14,
       0,
       17
      ],
-     "total": 264,
+     "total": 265,
      "hint": [
       "A",
       "B",
@@ -3560,12 +3849,12 @@
     },
     "Marina": {
      "counts": [
-      147,
+      146,
       0,
       0,
       24
      ],
-     "total": 171,
+     "total": 170,
      "hint": [
       "A",
       "B",
@@ -3590,18 +3879,72 @@
     }
    }
   },
+  "homeSiteApproval": {
+   "kind": "multi",
+   "mv": "home_site_approval",
+   "values": {
+    "Not Applied For": {
+     "counts": [
+      0,
+      0,
+      0,
+      573
+     ],
+     "total": 573,
+     "hint": [
+      "D"
+     ]
+    },
+    "Approved": {
+     "counts": [
+      0,
+      0,
+      0,
+      234
+     ],
+     "total": 234,
+     "hint": [
+      "D"
+     ]
+    },
+    "Applied For": {
+     "counts": [
+      0,
+      0,
+      0,
+      40
+     ],
+     "total": 40,
+     "hint": [
+      "D"
+     ]
+    },
+    "Denied": {
+     "counts": [
+      0,
+      0,
+      0,
+      6
+     ],
+     "total": 6,
+     "hint": [
+      "D"
+     ]
+    }
+   }
+  },
   "horseProperty": {
    "kind": "boolean",
    "mv": "horse_yn",
    "values": {
     "true": {
      "counts": [
-      801,
+      799,
       0,
       0,
       365
      ],
-     "total": 1258,
+     "total": 1256,
      "hint": [
       "A",
       "D",
@@ -3616,12 +3959,12 @@
    "values": {
     "true": {
      "counts": [
-      278,
+      277,
       3,
       3,
       0
      ],
-     "total": 289,
+     "total": 288,
      "hint": [
       "A",
       "B",
@@ -3639,9 +3982,9 @@
    "values": {
     "Shower/Tub Combo": {
      "counts": [
-      3644,
+      3646,
       173,
-      108,
+      106,
       0
      ],
      "total": 3968,
@@ -3654,12 +3997,12 @@
     },
     "Ceiling Fan(s)": {
      "counts": [
-      3362,
+      3364,
       142,
-      56,
+      55,
       0
      ],
-     "total": 3650,
+     "total": 3651,
      "hint": [
       "A",
       "B",
@@ -3671,12 +4014,12 @@
     },
     "Walk-In Closet(s)": {
      "counts": [
-      3464,
+      3468,
       106,
-      29,
+      28,
       0
      ],
-     "total": 3638,
+     "total": 3641,
      "hint": [
       "A",
       "B",
@@ -3688,10 +4031,10 @@
      "counts": [
       3145,
       118,
-      47,
+      45,
       0
      ],
-     "total": 3350,
+     "total": 3348,
      "hint": [
       "A",
       "B",
@@ -3703,10 +4046,10 @@
      "counts": [
       2941,
       132,
-      41,
+      40,
       0
      ],
-     "total": 3154,
+     "total": 3153,
      "hint": [
       "A",
       "B",
@@ -3716,12 +4059,12 @@
     },
     "Pantry": {
      "counts": [
-      2846,
+      2843,
       96,
-      29,
+      28,
       0
      ],
-     "total": 3018,
+     "total": 3014,
      "hint": [
       "A",
       "B",
@@ -3731,12 +4074,12 @@
     },
     "Linen Closet": {
      "counts": [
-      2805,
+      2804,
       93,
       36,
       0
      ],
-     "total": 2973,
+     "total": 2972,
      "hint": [
       "A",
       "B",
@@ -3746,12 +4089,12 @@
     },
     "Vaulted Ceiling(s)": {
      "counts": [
-      2706,
+      2710,
       114,
       24,
       0
      ],
-     "total": 2929,
+     "total": 2933,
      "hint": [
       "A",
       "B",
@@ -3763,12 +4106,12 @@
     },
     "Double Vanity": {
      "counts": [
-      2614,
+      2612,
       60,
       14,
       0
      ],
-     "total": 2725,
+     "total": 2723,
      "hint": [
       "A",
       "B",
@@ -3793,12 +4136,12 @@
     },
     "Breakfast Bar": {
      "counts": [
-      2078,
+      2077,
       62,
       29,
       0
      ],
-     "total": 2200,
+     "total": 2199,
      "hint": [
       "A",
       "B",
@@ -3808,12 +4151,12 @@
     },
     "Tile Shower": {
      "counts": [
-      1984,
+      1982,
       24,
-      14,
+      13,
       0
      ],
-     "total": 2052,
+     "total": 2049,
      "hint": [
       "A",
       "B",
@@ -3823,12 +4166,12 @@
     },
     "Solid Surface Counters": {
      "counts": [
-      1792,
+      1787,
       20,
       19,
       0
      ],
-     "total": 1859,
+     "total": 1854,
      "hint": [
       "A",
       "B",
@@ -3857,12 +4200,12 @@
     },
     "Soaking Tub": {
      "counts": [
-      1465,
+      1467,
       46,
       6,
       0
      ],
-     "total": 1541,
+     "total": 1543,
      "hint": [
       "A",
       "B",
@@ -3872,12 +4215,12 @@
     },
     "Built-in Features": {
      "counts": [
-      1401,
+      1403,
       40,
       10,
       0
      ],
-     "total": 1522,
+     "total": 1524,
      "hint": [
       "A",
       "B",
@@ -3889,12 +4232,12 @@
     },
     "Fiberglass Stall Shower": {
      "counts": [
-      1353,
+      1355,
       90,
       32,
       0
      ],
-     "total": 1488,
+     "total": 1490,
      "hint": [
       "A",
       "B",
@@ -3904,12 +4247,12 @@
     },
     "Enclosed Toilet(s)": {
      "counts": [
-      1325,
+      1327,
       4,
       3,
       0
      ],
-     "total": 1346,
+     "total": 1348,
      "hint": [
       "A",
       "B",
@@ -3921,10 +4264,10 @@
      "counts": [
       1063,
       116,
-      56,
+      55,
       0
      ],
-     "total": 1320,
+     "total": 1319,
      "hint": [
       "A",
       "B",
@@ -3953,12 +4296,12 @@
     },
     "Smart Thermostat": {
      "counts": [
-      836,
+      838,
       13,
       3,
       0
      ],
-     "total": 866,
+     "total": 868,
      "hint": [
       "A",
       "B",
@@ -3970,12 +4313,12 @@
     },
     "Stone Counters": {
      "counts": [
-      690,
+      688,
       6,
       5,
       0
      ],
-     "total": 713,
+     "total": 711,
      "hint": [
       "A",
       "B",
@@ -3987,12 +4330,12 @@
     },
     "Central Vacuum": {
      "counts": [
-      419,
+      420,
       2,
       1,
       0
      ],
-     "total": 431,
+     "total": 432,
      "hint": [
       "A",
       "B",
@@ -4036,12 +4379,12 @@
     },
     "Spa/Hot Tub": {
      "counts": [
-      347,
+      348,
       2,
       0,
       0
      ],
-     "total": 360,
+     "total": 361,
      "hint": [
       "A",
       "B",
@@ -4051,12 +4394,12 @@
     },
     "Smart Lock(s)": {
      "counts": [
-      306,
+      305,
       3,
       0,
       0
      ],
-     "total": 312,
+     "total": 311,
      "hint": [
       "A",
       "B",
@@ -4068,12 +4411,12 @@
     },
     "In-Law Floorplan": {
      "counts": [
-      278,
+      277,
       3,
       3,
       0
      ],
-     "total": 289,
+     "total": 288,
      "hint": [
       "A",
       "B",
@@ -4115,12 +4458,12 @@
     },
     "Dual Flush Toilet(s)": {
      "counts": [
-      160,
+      162,
       5,
       4,
       0
      ],
-     "total": 174,
+     "total": 176,
      "hint": [
       "A",
       "B",
@@ -4162,12 +4505,12 @@
     },
     "Bidet": {
      "counts": [
-      114,
+      113,
       1,
       1,
       0
      ],
-     "total": 119,
+     "total": 118,
      "hint": [
       "A",
       "B",
@@ -4177,12 +4520,12 @@
     },
     "Elevator": {
      "counts": [
-      41,
+      40,
       0,
       0,
       0
      ],
-     "total": 53,
+     "total": 52,
      "hint": [
       "A",
       "B",
@@ -4194,18 +4537,219 @@
     }
    }
   },
+  "irrigationDistribution": {
+   "kind": "multi",
+   "mv": "irrigation_distribution",
+   "values": {
+    "Pump(s)": {
+     "counts": [
+      0,
+      0,
+      0,
+      20
+     ],
+     "total": 67,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Wheel Line(s)": {
+     "counts": [
+      0,
+      0,
+      0,
+      8
+     ],
+     "total": 54,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Hand Line(s)": {
+     "counts": [
+      0,
+      0,
+      0,
+      10
+     ],
+     "total": 45,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Gravity-Flood": {
+     "counts": [
+      0,
+      0,
+      0,
+      14
+     ],
+     "total": 42,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Center Pivot": {
+     "counts": [
+      0,
+      0,
+      0,
+      5
+     ],
+     "total": 41,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Mainline": {
+     "counts": [
+      0,
+      0,
+      0,
+      7
+     ],
+     "total": 28,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Sprinkled": {
+     "counts": [
+      0,
+      0,
+      0,
+      4
+     ],
+     "total": 23,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "In Ground Sprinklers": {
+     "counts": [
+      0,
+      0,
+      0,
+      3
+     ],
+     "total": 14,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Sprinkler Gun(s)": {
+     "counts": [
+      0,
+      0,
+      0,
+      3
+     ],
+     "total": 12,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Sub-Irrigated": {
+     "counts": [
+      0,
+      0,
+      0,
+      3
+     ],
+     "total": 11,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Gated Pipe": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 8,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "K-Line": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 4,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Linear": {
+     "counts": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "total": 2,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Solid Set": {
+     "counts": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "total": 2,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Water Wheel": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 1,
+     "hint": [
+      "D",
+      "E"
+     ]
+    }
+   }
+  },
   "irrigationRights": {
    "kind": "boolean",
    "mv": "irrigation_water_rights_yn",
    "values": {
     "true": {
      "counts": [
-      386,
+      384,
       0,
       0,
       120
      ],
-     "total": 592,
+     "total": 590,
      "hint": [
       "A",
       "D",
@@ -4220,12 +4764,12 @@
    "values": {
     "District": {
      "counts": [
-      383,
+      380,
       0,
       0,
       57
      ],
-     "total": 492,
+     "total": 489,
      "hint": [
       "A",
       "D",
@@ -4234,12 +4778,12 @@
     },
     "On Site Well": {
      "counts": [
-      318,
+      317,
       0,
       0,
       35
      ],
-     "total": 388,
+     "total": 387,
      "hint": [
       "A",
       "D",
@@ -4290,14 +4834,111 @@
     },
     "Spring": {
      "counts": [
-      29,
+      28,
       0,
       0,
       6
      ],
-     "total": 38,
+     "total": 37,
      "hint": [
       "A",
+      "D",
+      "E"
+     ]
+    }
+   }
+  },
+  "landRestrictions": {
+   "kind": "multi",
+   "mv": "land_restrictions",
+   "values": {
+    "Recorded Plat": {
+     "counts": [
+      0,
+      0,
+      0,
+      245
+     ],
+     "total": 247,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Subject to Zoning": {
+     "counts": [
+      0,
+      0,
+      0,
+      228
+     ],
+     "total": 235,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Access Recorded": {
+     "counts": [
+      0,
+      0,
+      0,
+      65
+     ],
+     "total": 67,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Deed Restrictions": {
+     "counts": [
+      0,
+      0,
+      0,
+      32
+     ],
+     "total": 32,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Easement/Right-of-Way": {
+     "counts": [
+      0,
+      0,
+      0,
+      31
+     ],
+     "total": 32,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "No Access Recorded": {
+     "counts": [
+      0,
+      0,
+      0,
+      4
+     ],
+     "total": 4,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Zone-Unplatted": {
+     "counts": [
+      0,
+      0,
+      0,
+      2
+     ],
+     "total": 2,
+     "hint": [
       "D",
       "E"
      ]
@@ -4310,12 +4951,12 @@
    "values": {
     "One": {
      "counts": [
-      2970,
+      2975,
       273,
-      81,
+      80,
       0
      ],
-     "total": 3620,
+     "total": 3624,
      "hint": [
       "A",
       "B",
@@ -4327,12 +4968,12 @@
     },
     "Two": {
      "counts": [
-      2234,
+      2235,
       4,
       68,
       0
      ],
-     "total": 2398,
+     "total": 2399,
      "hint": [
       "A",
       "B",
@@ -4344,12 +4985,12 @@
     },
     "Three Or More": {
      "counts": [
-      198,
+      196,
       0,
       6,
       0
      ],
-     "total": 220,
+     "total": 218,
      "hint": [
       "A",
       "C",
@@ -4382,12 +5023,12 @@
    "values": {
     "Cash": {
      "counts": [
-      6037,
+      6040,
       304,
-      199,
-      2047
+      197,
+      2043
      ],
-     "total": 9125,
+     "total": 9122,
      "hint": [
       "A",
       "B",
@@ -4401,10 +5042,10 @@
     },
     "Conventional": {
      "counts": [
-      5722,
+      5726,
       243,
-      183,
-      1200
+      181,
+      1198
      ],
      "total": 7733,
      "hint": [
@@ -4420,12 +5061,12 @@
     },
     "VA Loan": {
      "counts": [
-      3936,
+      3940,
       20,
-      70,
+      69,
       115
      ],
-     "total": 4178,
+     "total": 4181,
      "hint": [
       "A",
       "B",
@@ -4439,12 +5080,12 @@
     },
     "FHA": {
      "counts": [
-      3803,
+      3809,
       29,
-      85,
+      84,
       97
      ],
-     "total": 4047,
+     "total": 4052,
      "hint": [
       "A",
       "B",
@@ -4458,12 +5099,12 @@
     },
     "USDA Loan": {
      "counts": [
-      1253,
+      1255,
       6,
       14,
       53
      ],
-     "total": 1357,
+     "total": 1359,
      "hint": [
       "A",
       "B",
@@ -4480,9 +5121,9 @@
       170,
       6,
       10,
-      273
+      272
      ],
-     "total": 532,
+     "total": 531,
      "hint": [
       "A",
       "B",
@@ -4496,12 +5137,12 @@
     },
     "FMHA": {
      "counts": [
-      227,
+      226,
       2,
       3,
       16
      ],
-     "total": 261,
+     "total": 260,
      "hint": [
       "A",
       "B",
@@ -4578,12 +5219,12 @@
    "values": {
     "Level": {
      "counts": [
-      3200,
+      3201,
       167,
-      117,
-      849
+      115,
+      848
      ],
-     "total": 4618,
+     "total": 4616,
      "hint": [
       "A",
       "B",
@@ -4596,12 +5237,12 @@
     },
     "Landscaped": {
      "counts": [
-      3629,
+      3633,
       116,
-      73,
+      71,
       17
      ],
-     "total": 3985,
+     "total": 3987,
      "hint": [
       "A",
       "B",
@@ -4614,10 +5255,10 @@
     },
     "Fenced": {
      "counts": [
-      3253,
+      3256,
       93,
-      74,
-      157
+      72,
+      156
      ],
      "total": 3747,
      "hint": [
@@ -4632,12 +5273,12 @@
     },
     "Sprinklers In Front": {
      "counts": [
-      2663,
+      2665,
       31,
       34,
       1
      ],
-     "total": 2801,
+     "total": 2803,
      "hint": [
       "A",
       "B",
@@ -4650,12 +5291,12 @@
     },
     "Sprinkler Timer(s)": {
      "counts": [
-      2257,
+      2258,
       35,
       27,
       2
      ],
-     "total": 2372,
+     "total": 2373,
      "hint": [
       "A",
       "B",
@@ -4668,12 +5309,12 @@
     },
     "Sprinklers In Rear": {
      "counts": [
-      2175,
+      2179,
       26,
       16,
       1
      ],
-     "total": 2264,
+     "total": 2268,
      "hint": [
       "A",
       "B",
@@ -4686,12 +5327,12 @@
     },
     "Native Plants": {
      "counts": [
-      1306,
+      1307,
       10,
       4,
-      595
+      596
      ],
-     "total": 1947,
+     "total": 1949,
      "hint": [
       "A",
       "B",
@@ -4704,12 +5345,12 @@
     },
     "Drip System": {
      "counts": [
-      1368,
+      1371,
       36,
       8,
       5
      ],
-     "total": 1459,
+     "total": 1462,
      "hint": [
       "A",
       "B",
@@ -4722,12 +5363,12 @@
     },
     "Sloped": {
      "counts": [
-      757,
+      755,
       3,
       8,
       515
      ],
-     "total": 1320,
+     "total": 1318,
      "hint": [
       "A",
       "B",
@@ -4743,9 +5384,9 @@
       825,
       3,
       0,
-      449
+      450
      ],
-     "total": 1292,
+     "total": 1293,
      "hint": [
       "A",
       "B",
@@ -4758,10 +5399,10 @@
     },
     "Corner Lot": {
      "counts": [
-      815,
+      814,
       28,
       28,
-      197
+      198
      ],
      "total": 1182,
      "hint": [
@@ -4776,12 +5417,12 @@
     },
     "Garden": {
      "counts": [
-      1002,
+      1004,
       25,
       8,
       16
      ],
-     "total": 1092,
+     "total": 1094,
      "hint": [
       "A",
       "B",
@@ -4794,9 +5435,9 @@
     },
     "Pasture": {
      "counts": [
-      465,
+      466,
       0,
-      2,
+      1,
       78
      ],
      "total": 618,
@@ -4812,12 +5453,12 @@
     },
     "Adjoins Public Lands": {
      "counts": [
-      382,
+      381,
       4,
       1,
       148
      ],
-     "total": 564,
+     "total": 563,
      "hint": [
       "A",
       "B",
@@ -4830,12 +5471,12 @@
     },
     "Water Feature": {
      "counts": [
-      456,
+      455,
       3,
       0,
       15
      ],
-     "total": 497,
+     "total": 496,
      "hint": [
       "A",
       "B",
@@ -4848,12 +5489,12 @@
     },
     "Xeriscape Landscape": {
      "counts": [
-      386,
+      387,
       8,
       6,
       10
      ],
-     "total": 415,
+     "total": 416,
      "hint": [
       "A",
       "B",
@@ -4902,12 +5543,12 @@
     },
     "Smart Irrigation": {
      "counts": [
-      190,
+      191,
       1,
       1,
       1
      ],
-     "total": 204,
+     "total": 205,
      "hint": [
       "A",
       "B",
@@ -4923,15 +5564,280 @@
       89,
       0,
       0,
-      50
+      49
      ],
-     "total": 150,
+     "total": 149,
      "hint": [
       "A",
       "B",
       "C",
       "D",
       "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "manufacturedAllowed": {
+   "kind": "boolean",
+   "mv": "manufactured_allowed_yn",
+   "values": {
+    "true": {
+     "counts": [
+      0,
+      0,
+      0,
+      455
+     ],
+     "total": 455,
+     "hint": [
+      "D"
+     ]
+    }
+   }
+  },
+  "multiUnitFeatures": {
+   "kind": "multi",
+   "mv": "multi_unit_features",
+   "values": {
+    "Office Space": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 239,
+     "hint": [
+      "F",
+      "G"
+     ]
+    },
+    "Separate Electric Meters": {
+     "counts": [
+      0,
+      0,
+      65,
+      0
+     ],
+     "total": 151,
+     "hint": [
+      "C",
+      "F",
+      "G"
+     ]
+    },
+    "3 Phase Electric": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 121,
+     "hint": [
+      "F",
+      "G"
+     ]
+    },
+    "Common Area": {
+     "counts": [
+      0,
+      0,
+      9,
+      0
+     ],
+     "total": 91,
+     "hint": [
+      "C",
+      "F",
+      "G"
+     ]
+    },
+    "Separate Gas Meters": {
+     "counts": [
+      0,
+      0,
+      25,
+      0
+     ],
+     "total": 89,
+     "hint": [
+      "C",
+      "F",
+      "G"
+     ]
+    },
+    "ADA Comply": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 88,
+     "hint": [
+      "F",
+      "G"
+     ]
+    },
+    "Laundry Facility": {
+     "counts": [
+      0,
+      0,
+      17,
+      0
+     ],
+     "total": 76,
+     "hint": [
+      "C",
+      "F",
+      "G"
+     ]
+    },
+    "Bath Common Area": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 62,
+     "hint": [
+      "F",
+      "G"
+     ]
+    },
+    "Separate Water Meters": {
+     "counts": [
+      0,
+      0,
+      18,
+      0
+     ],
+     "total": 60,
+     "hint": [
+      "C",
+      "F",
+      "G"
+     ]
+    },
+    "Free Span Roof": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 45,
+     "hint": [
+      "F",
+      "G"
+     ]
+    },
+    "Bus Service or Stop": {
+     "counts": [
+      0,
+      0,
+      8,
+      0
+     ],
+     "total": 42,
+     "hint": [
+      "C",
+      "F",
+      "G"
+     ]
+    },
+    "Mezzanine": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 37,
+     "hint": [
+      "F",
+      "G"
+     ]
+    },
+    "Manager's Quarters": {
+     "counts": [
+      0,
+      0,
+      3,
+      0
+     ],
+     "total": 34,
+     "hint": [
+      "C",
+      "F",
+      "G"
+     ]
+    },
+    "Living Area in Building": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 32,
+     "hint": [
+      "F",
+      "G"
+     ]
+    },
+    "Expandable": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 28,
+     "hint": [
+      "F",
+      "G"
+     ]
+    },
+    "Tanks in Ground": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 10,
+     "hint": [
+      "F",
+      "G"
+     ]
+    },
+    "Overhead Crane": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 4,
+     "hint": [
+      "F",
+      "G"
+     ]
+    },
+    "Airport Access": {
+     "counts": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 3,
+     "hint": [
       "F",
       "G"
      ]
@@ -4968,10 +5874,10 @@
      "counts": [
       3832,
       259,
-      182,
-      1435
+      180,
+      1432
      ],
-     "total": 6436,
+     "total": 6431,
      "hint": [
       "A",
       "B",
@@ -5011,12 +5917,12 @@
    "values": {
     "true": {
      "counts": [
-      2207,
+      2209,
       16,
       12,
       221
      ],
-     "total": 2629,
+     "total": 2631,
      "hint": [
       "A",
       "B",
@@ -5035,12 +5941,12 @@
    "values": {
     "true": {
      "counts": [
-      1827,
-      43,
+      1828,
+      44,
       17,
       415
      ],
-     "total": 2485,
+     "total": 2487,
      "hint": [
       "A",
       "B",
@@ -5059,12 +5965,12 @@
    "values": {
     "Shed(s)": {
      "counts": [
-      1769,
+      1768,
       172,
-      27,
+      26,
       108
      ],
-     "total": 2174,
+     "total": 2172,
      "hint": [
       "A",
       "B",
@@ -5077,12 +5983,12 @@
     },
     "Storage": {
      "counts": [
-      1272,
+      1271,
       48,
       26,
       86
      ],
-     "total": 1538,
+     "total": 1537,
      "hint": [
       "A",
       "B",
@@ -5095,12 +6001,12 @@
     },
     "Workshop": {
      "counts": [
-      1123,
+      1124,
       23,
       5,
       47
      ],
-     "total": 1288,
+     "total": 1289,
      "hint": [
       "A",
       "B",
@@ -5113,12 +6019,12 @@
     },
     "RV/Boat Storage": {
      "counts": [
-      746,
+      745,
       6,
       3,
       0
      ],
-     "total": 771,
+     "total": 770,
      "hint": [
       "A",
       "B",
@@ -5182,12 +6088,12 @@
     },
     "Poultry Coop": {
      "counts": [
-      314,
+      313,
       0,
       1,
       8
      ],
-     "total": 334,
+     "total": 333,
      "hint": [
       "A",
       "B",
@@ -5200,12 +6106,12 @@
     },
     "Animal Stall(s)": {
      "counts": [
-      248,
+      249,
       0,
       0,
       16
      ],
-     "total": 301,
+     "total": 302,
      "hint": [
       "A",
       "B",
@@ -5217,12 +6123,12 @@
     },
     "Kennel/Dog Run": {
      "counts": [
-      255,
+      254,
       0,
       1,
       2
      ],
-     "total": 275,
+     "total": 274,
      "hint": [
       "A",
       "B",
@@ -5235,12 +6141,12 @@
     },
     "Guest House": {
      "counts": [
-      234,
+      233,
       0,
       0,
       0
      ],
-     "total": 266,
+     "total": 265,
      "hint": [
       "A",
       "B",
@@ -5252,12 +6158,12 @@
     },
     "Corral(s)": {
      "counts": [
-      161,
+      162,
       0,
       0,
       13
      ],
-     "total": 223,
+     "total": 224,
      "hint": [
       "A",
       "B",
@@ -5269,12 +6175,12 @@
     },
     "Gazebo": {
      "counts": [
-      171,
+      172,
       7,
       5,
       7
      ],
-     "total": 200,
+     "total": 201,
      "hint": [
       "A",
       "B",
@@ -5304,12 +6210,12 @@
     },
     "Arena": {
      "counts": [
-      57,
+      58,
       0,
       0,
       5
      ],
-     "total": 81,
+     "total": 82,
      "hint": [
       "A",
       "B",
@@ -5338,12 +6244,12 @@
     },
     "Covered Arena": {
      "counts": [
-      39,
+      40,
       0,
       0,
       2
      ],
-     "total": 53,
+     "total": 54,
      "hint": [
       "A",
       "B",
@@ -5364,9 +6270,9 @@
       170,
       6,
       10,
-      273
+      272
      ],
-     "total": 532,
+     "total": 531,
      "hint": [
       "A",
       "B",
@@ -5386,12 +6292,12 @@
    "values": {
     "Driveway": {
      "counts": [
-      4649,
+      4650,
       158,
-      115,
+      113,
       0
      ],
-     "total": 5070,
+     "total": 5069,
      "hint": [
       "A",
       "B",
@@ -5420,12 +6326,12 @@
     },
     "Garage Door Opener": {
      "counts": [
-      3341,
+      3345,
       20,
       44,
       0
      ],
-     "total": 3446,
+     "total": 3450,
      "hint": [
       "A",
       "B",
@@ -5437,12 +6343,12 @@
     },
     "RV Access/Parking": {
      "counts": [
-      2063,
+      2066,
       20,
       12,
       0
      ],
-     "total": 2197,
+     "total": 2200,
      "hint": [
       "A",
       "B",
@@ -5454,12 +6360,12 @@
     },
     "Asphalt": {
      "counts": [
-      1290,
+      1295,
       35,
       51,
       0
      ],
-     "total": 1667,
+     "total": 1672,
      "hint": [
       "A",
       "B",
@@ -5471,9 +6377,9 @@
     },
     "Concrete": {
      "counts": [
-      1488,
+      1489,
       69,
-      37,
+      36,
       0
      ],
      "total": 1651,
@@ -5488,12 +6394,12 @@
     },
     "Gravel": {
      "counts": [
-      1327,
+      1324,
       30,
-      32,
+      31,
       0
      ],
-     "total": 1547,
+     "total": 1543,
      "hint": [
       "A",
       "B",
@@ -5505,9 +6411,9 @@
     },
     "On Street": {
      "counts": [
-      914,
+      915,
       29,
-      64,
+      63,
       0
      ],
      "total": 1132,
@@ -5522,12 +6428,12 @@
     },
     "Detached": {
      "counts": [
-      1009,
+      1010,
       10,
       14,
       0
      ],
-     "total": 1085,
+     "total": 1086,
      "hint": [
       "A",
       "B",
@@ -5539,9 +6445,9 @@
     },
     "Storage": {
      "counts": [
-      888,
+      889,
       40,
-      8,
+      7,
       0
      ],
      "total": 976,
@@ -5556,12 +6462,12 @@
     },
     "Workshop in Garage": {
      "counts": [
-      919,
+      920,
       7,
       5,
       0
      ],
-     "total": 964,
+     "total": 965,
      "hint": [
       "A",
       "B",
@@ -5573,12 +6479,12 @@
     },
     "Gated": {
      "counts": [
-      676,
+      674,
       1,
       7,
       0
      ],
-     "total": 778,
+     "total": 776,
      "hint": [
       "A",
       "B",
@@ -5590,12 +6496,12 @@
     },
     "No Garage": {
      "counts": [
-      412,
+      410,
       54,
       20,
       0
      ],
-     "total": 526,
+     "total": 524,
      "hint": [
       "A",
       "B",
@@ -5607,12 +6513,12 @@
     },
     "Alley Access": {
      "counts": [
-      401,
+      402,
       1,
       27,
       0
      ],
-     "total": 486,
+     "total": 487,
      "hint": [
       "A",
       "B",
@@ -5624,12 +6530,12 @@
     },
     "Attached Carport": {
      "counts": [
-      253,
+      252,
       166,
-      18,
+      17,
       0
      ],
-     "total": 446,
+     "total": 444,
      "hint": [
       "A",
       "B",
@@ -5641,12 +6547,12 @@
     },
     "Detached Carport": {
      "counts": [
-      338,
+      340,
       61,
       12,
       0
      ],
-     "total": 424,
+     "total": 426,
      "hint": [
       "A",
       "B",
@@ -5658,12 +6564,12 @@
     },
     "RV Garage": {
      "counts": [
-      367,
+      366,
       0,
       1,
       0
      ],
-     "total": 387,
+     "total": 386,
      "hint": [
       "A",
       "B",
@@ -5740,12 +6646,12 @@
     },
     "Assigned": {
      "counts": [
-      125,
+      126,
       12,
       13,
       0
      ],
-     "total": 168,
+     "total": 169,
      "hint": [
       "A",
       "B",
@@ -5797,12 +6703,12 @@
    "values": {
     "Patio": {
      "counts": [
-      2555,
+      2562,
       60,
-      67,
+      66,
       0
      ],
-     "total": 2751,
+     "total": 2757,
      "hint": [
       "B",
       "C",
@@ -5815,10 +6721,10 @@
      "counts": [
       2240,
       99,
-      36,
+      35,
       0
      ],
-     "total": 2442,
+     "total": 2441,
      "hint": [
       "B",
       "C",
@@ -5829,12 +6735,12 @@
     },
     "Covered": {
      "counts": [
-      1895,
+      1897,
       97,
-      26,
+      25,
       0
      ],
-     "total": 2076,
+     "total": 2077,
      "hint": [
       "A",
       "B",
@@ -5846,12 +6752,12 @@
     },
     "Rear Porch": {
      "counts": [
-      1361,
+      1364,
       31,
-      22,
+      21,
       0
      ],
-     "total": 1449,
+     "total": 1451,
      "hint": [
       "A",
       "B",
@@ -5863,12 +6769,12 @@
     },
     "Porch": {
      "counts": [
-      1289,
+      1293,
       48,
       28,
       0
      ],
-     "total": 1401,
+     "total": 1405,
      "hint": [
       "A",
       "B",
@@ -5880,12 +6786,12 @@
     },
     "Front Porch": {
      "counts": [
-      1174,
+      1173,
       54,
-      14,
+      13,
       0
      ],
-     "total": 1273,
+     "total": 1271,
      "hint": [
       "A",
       "B",
@@ -5897,12 +6803,12 @@
     },
     "Covered Deck": {
      "counts": [
-      834,
+      836,
       61,
       6,
       0
      ],
-     "total": 929,
+     "total": 931,
      "hint": [
       "A",
       "B",
@@ -5914,12 +6820,12 @@
     },
     "Side Porch": {
      "counts": [
-      341,
+      346,
       17,
       7,
       0
      ],
-     "total": 382,
+     "total": 387,
      "hint": [
       "A",
       "B",
@@ -5931,12 +6837,12 @@
     },
     "Wrap Around": {
      "counts": [
-      297,
+      296,
       14,
       1,
       0
      ],
-     "total": 331,
+     "total": 330,
      "hint": [
       "A",
       "B",
@@ -5965,12 +6871,12 @@
     },
     "Enclosed": {
      "counts": [
-      103,
+      102,
       7,
       3,
       0
      ],
-     "total": 121,
+     "total": 120,
      "hint": [
       "A",
       "B",
@@ -5982,12 +6888,12 @@
     },
     "Terrace": {
      "counts": [
-      65,
+      66,
       0,
       0,
       0
      ],
-     "total": 72,
+     "total": 73,
      "hint": [
       "A",
       "B",
@@ -5999,12 +6905,12 @@
     },
     "Screened": {
      "counts": [
-      57,
+      58,
       6,
       0,
       0
      ],
-     "total": 65,
+     "total": 66,
      "hint": [
       "A",
       "B",
@@ -6038,12 +6944,12 @@
     },
     "In Ground": {
      "counts": [
-      265,
+      264,
       9,
       2,
       0
      ],
-     "total": 280,
+     "total": 279,
      "hint": [
       "A",
       "B",
@@ -6072,12 +6978,12 @@
     },
     "Community": {
      "counts": [
-      200,
+      201,
       12,
       0,
       0
      ],
-     "total": 212,
+     "total": 213,
      "hint": [
       "A",
       "B",
@@ -6089,12 +6995,12 @@
     },
     "Heated": {
      "counts": [
-      165,
+      164,
       0,
       1,
       0
      ],
-     "total": 168,
+     "total": 167,
      "hint": [
       "A",
       "B",
@@ -6123,12 +7029,12 @@
     },
     "Private": {
      "counts": [
-      84,
+      85,
       0,
       0,
       0
      ],
-     "total": 85,
+     "total": 86,
      "hint": [
       "A",
       "B",
@@ -6174,12 +7080,12 @@
     },
     "Above Ground": {
      "counts": [
-      46,
+      48,
       0,
       0,
       0
      ],
-     "total": 49,
+     "total": 51,
      "hint": [
       "A",
       "B",
@@ -6223,18 +7129,141 @@
     }
    }
   },
+  "potentialTaxLiability": {
+   "kind": "boolean",
+   "mv": "potential_tax_liability_yn",
+   "values": {
+    "true": {
+     "counts": [
+      171,
+      4,
+      1,
+      90
+     ],
+     "total": 330,
+     "hint": [
+      "B"
+     ]
+    }
+   }
+  },
+  "powerProduction": {
+   "kind": "multi",
+   "mv": "power_production",
+   "values": {
+    "Solar Owned": {
+     "counts": [
+      264,
+      0,
+      1,
+      17
+     ],
+     "total": 292,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Generator": {
+     "counts": [
+      138,
+      0,
+      0,
+      14
+     ],
+     "total": 166,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Solar PV Ready": {
+     "counts": [
+      111,
+      1,
+      1,
+      2
+     ],
+     "total": 115,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Hydro": {
+     "counts": [
+      32,
+      0,
+      2,
+      45
+     ],
+     "total": 91,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    },
+    "Solar Leased": {
+     "counts": [
+      42,
+      0,
+      1,
+      0
+     ],
+     "total": 45
+    },
+    "Wind": {
+     "counts": [
+      2,
+      0,
+      0,
+      2
+     ],
+     "total": 6,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
   "priceReduced": {
    "kind": "boolean",
    "mv": "price_reduced",
    "values": {
     "true": {
      "counts": [
-      816,
+      815,
       69,
-      32,
-      334
+      31,
+      332
      ],
-     "total": 1365
+     "total": 1361
     }
    }
   },
@@ -6246,10 +7275,10 @@
      "counts": [
       2941,
       132,
-      41,
+      40,
       0
      ],
-     "total": 3154,
+     "total": 3153,
      "hint": [
       "A",
       "B",
@@ -6267,12 +7296,12 @@
    "values": {
     "Single Family Residence": {
      "counts": [
-      4928,
+      4930,
       0,
       0,
       0
      ],
-     "total": 4928,
+     "total": 4930,
      "hint": [
       "A"
      ]
@@ -6282,33 +7311,33 @@
       0,
       0,
       0,
-      1623
+      1621
      ],
-     "total": 1623,
+     "total": 1621,
      "hint": [
       "D"
      ]
     },
     "Manufactured On Land": {
      "counts": [
-      585,
+      584,
       0,
       0,
       0
      ],
-     "total": 585,
+     "total": 584,
      "hint": [
       "A"
      ]
     },
     "Townhouse": {
      "counts": [
-      327,
+      328,
       0,
       0,
       0
      ],
-     "total": 327,
+     "total": 328,
      "hint": [
       "A"
      ]
@@ -6327,12 +7356,12 @@
     },
     "Condominium": {
      "counts": [
-      178,
+      179,
       0,
       0,
       0
      ],
-     "total": 178,
+     "total": 179,
      "hint": [
       "A"
      ]
@@ -6342,9 +7371,9 @@
       0,
       0,
       0,
-      160
+      159
      ],
-     "total": 160,
+     "total": 159,
      "hint": [
       "D"
      ]
@@ -6377,10 +7406,10 @@
      "counts": [
       0,
       0,
-      97,
+      96,
       0
      ],
-     "total": 97,
+     "total": 96,
      "hint": [
       "C"
      ]
@@ -6401,10 +7430,10 @@
      "counts": [
       0,
       0,
-      59,
+      58,
       0
      ],
-     "total": 59,
+     "total": 58,
      "hint": [
       "C"
      ]
@@ -6474,9 +7503,9 @@
       0,
       0,
       0,
-      13
+      12
      ],
-     "total": 13,
+     "total": 12,
      "hint": [
       "D"
      ]
@@ -6525,12 +7554,12 @@
    "values": {
     "true": {
      "counts": [
-      3801,
+      3804,
       270,
-      186,
-      578
+      184,
+      576
      ],
-     "total": 5303,
+     "total": 5302,
      "hint": [
       "A",
       "B",
@@ -6549,12 +7578,12 @@
    "values": {
     "true": {
      "counts": [
-      3956,
-      243,
-      181,
-      646
+      3958,
+      242,
+      179,
+      643
      ],
-     "total": 5487,
+     "total": 5483,
      "hint": [
       "A",
       "B",
@@ -6567,18 +7596,80 @@
     }
    }
   },
+  "railroadAccess": {
+   "kind": "multi",
+   "mv": "railroad_access",
+   "values": {
+    "Not Available": {
+     "counts": [
+      0,
+      0,
+      0,
+      276
+     ],
+     "total": 276,
+     "hint": [
+      "D"
+     ]
+    },
+    "Available": {
+     "counts": [
+      0,
+      0,
+      0,
+      5
+     ],
+     "total": 5,
+     "hint": [
+      "D"
+     ]
+    },
+    "To Lot": {
+     "counts": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "total": 1,
+     "hint": [
+      "D"
+     ]
+    }
+   }
+  },
+  "rented": {
+   "kind": "boolean",
+   "mv": "rented_yn",
+   "values": {
+    "true": {
+     "counts": [
+      268,
+      1,
+      0,
+      0
+     ],
+     "total": 280,
+     "hint": [
+      "A",
+      "B",
+      "E"
+     ]
+    }
+   }
+  },
   "roadFrontage": {
    "kind": "multi",
    "mv": "road_frontage",
    "values": {
     "Shared Access": {
      "counts": [
-      1248,
+      1247,
       80,
-      52,
+      51,
       526
      ],
-     "total": 2062,
+     "total": 2060,
      "hint": [
       "A",
       "B",
@@ -6594,9 +7685,9 @@
       733,
       20,
       13,
-      180
+      179
      ],
-     "total": 1019,
+     "total": 1018,
      "hint": [
       "A",
       "B",
@@ -6612,9 +7703,9 @@
       185,
       5,
       4,
-      103
+      102
      ],
-     "total": 322,
+     "total": 321,
      "hint": [
       "A",
       "B",
@@ -6633,12 +7724,12 @@
    "values": {
     "Paved": {
      "counts": [
-      4011,
+      4012,
       205,
-      135,
-      865
+      133,
+      862
      ],
-     "total": 5550,
+     "total": 5546,
      "hint": [
       "A",
       "B",
@@ -6654,9 +7745,9 @@
       908,
       12,
       9,
-      531
+      532
      ],
-     "total": 1544,
+     "total": 1545,
      "hint": [
       "A",
       "B",
@@ -6672,9 +7763,9 @@
       160,
       1,
       1,
-      287
+      286
      ],
-     "total": 466,
+     "total": 465,
      "hint": [
       "A",
       "B",
@@ -6687,12 +7778,12 @@
     },
     "Cinder": {
      "counts": [
-      41,
+      42,
       0,
       0,
       43
      ],
-     "total": 85,
+     "total": 86,
      "hint": [
       "A",
       "B",
@@ -6711,12 +7802,12 @@
    "values": {
     "Composition": {
      "counts": [
-      4954,
+      4957,
       211,
-      176,
+      174,
       0
      ],
-     "total": 5554,
+     "total": 5555,
      "hint": [
       "A",
       "B",
@@ -6730,10 +7821,10 @@
      "counts": [
       931,
       41,
-      22,
+      21,
       0
      ],
-     "total": 1230,
+     "total": 1229,
      "hint": [
       "A",
       "B",
@@ -6802,12 +7893,12 @@
    "values": {
     "Kitchen": {
      "counts": [
-      5365,
+      5366,
       265,
       0,
       0
      ],
-     "total": 5855,
+     "total": 5856,
      "hint": [
       "A",
       "B",
@@ -6816,12 +7907,12 @@
     },
     "Primary Bedroom": {
      "counts": [
-      4589,
+      4597,
       225,
       1,
       0
      ],
-     "total": 4883,
+     "total": 4891,
      "hint": [
       "A",
       "B",
@@ -6844,12 +7935,12 @@
     },
     "Living Room": {
      "counts": [
-      3640,
+      3645,
       222,
       17,
       0
      ],
-     "total": 3948,
+     "total": 3953,
      "hint": [
       "A",
       "B",
@@ -6872,12 +7963,12 @@
     },
     "Dining Room": {
      "counts": [
-      2324,
+      2328,
       108,
       0,
       0
      ],
-     "total": 2480,
+     "total": 2484,
      "hint": [
       "A",
       "B",
@@ -6886,12 +7977,12 @@
     },
     "Great Room": {
      "counts": [
-      2356,
+      2357,
       37,
       2,
       0
      ],
-     "total": 2430,
+     "total": 2431,
      "hint": [
       "A",
       "B",
@@ -6900,12 +7991,12 @@
     },
     "Family Room": {
      "counts": [
-      1490,
+      1488,
       39,
       3,
       0
      ],
-     "total": 1580,
+     "total": 1578,
      "hint": [
       "A",
       "B",
@@ -6914,12 +8005,12 @@
     },
     "Office": {
      "counts": [
-      1311,
+      1314,
       26,
       0,
       0
      ],
-     "total": 1474,
+     "total": 1477,
      "hint": [
       "A",
       "B",
@@ -6928,12 +8019,12 @@
     },
     "Bonus Room": {
      "counts": [
-      1040,
+      1038,
       14,
       0,
       0
      ],
-     "total": 1076,
+     "total": 1074,
      "hint": [
       "A",
       "B",
@@ -6942,12 +8033,12 @@
     },
     "Mud Room": {
      "counts": [
-      770,
+      768,
       13,
       0,
       0
      ],
-     "total": 816,
+     "total": 814,
      "hint": [
       "A",
       "B",
@@ -6956,12 +8047,12 @@
     },
     "Second Primary": {
      "counts": [
-      725,
+      726,
       12,
       0,
       0
      ],
-     "total": 748,
+     "total": 749,
      "hint": [
       "A",
       "B",
@@ -6984,12 +8075,12 @@
     },
     "Breakfast Nook": {
      "counts": [
-      619,
+      617,
       27,
       0,
       0
      ],
-     "total": 660,
+     "total": 658,
      "hint": [
       "A",
       "B",
@@ -6998,12 +8089,12 @@
     },
     "Enclosed Porch/Patio": {
      "counts": [
-      287,
+      288,
       15,
       0,
       0
      ],
-     "total": 311,
+     "total": 312,
      "hint": [
       "A",
       "B",
@@ -7040,12 +8131,12 @@
     },
     "Sunroom": {
      "counts": [
-      157,
+      155,
       4,
       0,
       0
      ],
-     "total": 164,
+     "total": 162,
      "hint": [
       "A",
       "B",
@@ -7068,12 +8159,12 @@
     },
     "Solarium": {
      "counts": [
-      22,
+      21,
       0,
       0,
       0
      ],
-     "total": 24,
+     "total": 23,
      "hint": [
       "A",
       "B",
@@ -7088,12 +8179,12 @@
    "values": {
     "true": {
      "counts": [
-      367,
+      366,
       0,
       1,
       0
      ],
-     "total": 387,
+     "total": 386,
      "hint": [
       "A",
       "B",
@@ -7111,12 +8202,12 @@
    "values": {
     "true": {
      "counts": [
-      2220,
+      2223,
       21,
       13,
       0
      ],
-     "total": 2367,
+     "total": 2370,
      "hint": [
       "A",
       "B",
@@ -7128,18 +8219,37 @@
     }
    }
   },
+  "secondResidence": {
+   "kind": "boolean",
+   "mv": "second_residence_yn",
+   "values": {
+    "true": {
+     "counts": [
+      98,
+      0,
+      0,
+      0
+     ],
+     "total": 122,
+     "hint": [
+      "A",
+      "E"
+     ]
+    }
+   }
+  },
   "securityFeatures": {
    "kind": "multi",
    "mv": "security_features",
    "values": {
     "Smoke Detector(s)": {
      "counts": [
-      5055,
+      5059,
       228,
-      150,
+      148,
       0
      ],
-     "total": 5662,
+     "total": 5664,
      "hint": [
       "A",
       "B",
@@ -7151,12 +8261,12 @@
     },
     "Carbon Monoxide Detector(s)": {
      "counts": [
-      4895,
+      4898,
       172,
-      138,
+      136,
       0
      ],
-     "total": 5383,
+     "total": 5384,
      "hint": [
       "A",
       "B",
@@ -7245,12 +8355,12 @@
    "values": {
     "Public Sewer": {
      "counts": [
-      3801,
+      3804,
       270,
-      186,
-      578
+      184,
+      576
      ],
-     "total": 5303,
+     "total": 5302,
      "hint": [
       "A",
       "B",
@@ -7263,12 +8373,12 @@
     },
     "Septic Tank": {
      "counts": [
-      2090,
+      2092,
       15,
       12,
       165
      ],
-     "total": 2448,
+     "total": 2450,
      "hint": [
       "A",
       "B",
@@ -7281,12 +8391,12 @@
     },
     "Standard Leach Field": {
      "counts": [
-      883,
+      884,
       3,
       2,
       85
      ],
-     "total": 1036,
+     "total": 1037,
      "hint": [
       "A",
       "B",
@@ -7317,12 +8427,12 @@
     },
     "Private Sewer": {
      "counts": [
-      309,
+      310,
       16,
       0,
       32
      ],
-     "total": 380,
+     "total": 381,
      "hint": [
       "A",
       "B",
@@ -7371,12 +8481,12 @@
     },
     "Alternative Treatment Tech System": {
      "counts": [
-      60,
+      59,
       0,
       0,
       14
      ],
-     "total": 75,
+     "total": 74,
      "hint": [
       "A",
       "B",
@@ -7389,12 +8499,12 @@
     },
     "Holding Tank": {
      "counts": [
-      46,
+      47,
       0,
       0,
       4
      ],
-     "total": 54,
+     "total": 55,
      "hint": [
       "A",
       "B",
@@ -7407,12 +8517,12 @@
     },
     "Capping Fill": {
      "counts": [
-      36,
+      37,
       0,
       1,
       15
      ],
-     "total": 52,
+     "total": 53,
      "hint": [
       "A",
       "B",
@@ -7431,12 +8541,12 @@
    "values": {
     "true": {
      "counts": [
-      1575,
+      1576,
       27,
       9,
       47
      ],
-     "total": 1759,
+     "total": 1760,
      "hint": [
       "A",
       "B",
@@ -7455,16 +8565,150 @@
    "values": {
     "true": {
      "counts": [
-      2970,
+      2975,
       273,
-      81,
+      80,
       0
      ],
-     "total": 3620,
+     "total": 3624,
      "hint": [
       "A",
       "B",
       "C",
+      "E",
+      "F",
+      "G"
+     ]
+    }
+   }
+  },
+  "soilType": {
+   "kind": "multi",
+   "mv": "soil_type",
+   "values": {
+    "Loam": {
+     "counts": [
+      0,
+      0,
+      0,
+      96
+     ],
+     "total": 111,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Sand": {
+     "counts": [
+      0,
+      0,
+      0,
+      51
+     ],
+     "total": 59,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Rocky": {
+     "counts": [
+      0,
+      0,
+      0,
+      31
+     ],
+     "total": 32,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Clay": {
+     "counts": [
+      0,
+      0,
+      0,
+      18
+     ],
+     "total": 19,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Soil Analysis Done": {
+     "counts": [
+      0,
+      0,
+      0,
+      5
+     ],
+     "total": 7,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Top Soil Over Other": {
+     "counts": [
+      0,
+      0,
+      0,
+      5
+     ],
+     "total": 6,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Soil Analysis Ordered": {
+     "counts": [
+      0,
+      0,
+      0,
+      3
+     ],
+     "total": 3,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Alluvial": {
+     "counts": [
+      0,
+      0,
+      0,
+      2
+     ],
+     "total": 2,
+     "hint": [
+      "D",
+      "E"
+     ]
+    }
+   }
+  },
+  "specialAssessment": {
+   "kind": "boolean",
+   "mv": "special_assessment_yn",
+   "values": {
+    "true": {
+     "counts": [
+      322,
+      10,
+      1,
+      187
+     ],
+     "total": 541,
+     "hint": [
+      "A",
+      "B",
+      "C",
+      "D",
       "E",
       "F",
       "G"
@@ -7478,12 +8722,12 @@
    "values": {
     "Standard": {
      "counts": [
-      5927,
+      5930,
       296,
-      197,
-      2033
+      195,
+      2029
      ],
-     "total": 9028,
+     "total": 9025,
      "hint": [
       "A",
       "B",
@@ -7556,12 +8800,12 @@
    "values": {
     "true": {
      "counts": [
-      686,
+      689,
       2,
       8,
       146
      ],
-     "total": 842,
+     "total": 845,
      "hint": [
       "A",
       "B",
@@ -7577,12 +8821,12 @@
    "values": {
     "true": {
      "counts": [
-      581,
+      584,
       3,
       9,
       0
      ],
-     "total": 593,
+     "total": 596,
      "hint": [
       "A",
       "B",
@@ -7597,12 +8841,12 @@
    "values": {
     "House": {
      "counts": [
-      3044,
+      3043,
       0,
-      79,
+      77,
       0
      ],
-     "total": 3208,
+     "total": 3205,
      "hint": [
       "A",
       "C",
@@ -7613,12 +8857,12 @@
     },
     "Manufactured House": {
      "counts": [
-      603,
+      602,
       201,
-      10,
+      9,
       0
      ],
-     "total": 841,
+     "total": 839,
      "hint": [
       "A",
       "B",
@@ -7701,14 +8945,41 @@
    "kind": "multi",
    "mv": "utilities",
    "values": {
+    "Electricity Connected": {
+     "counts": [
+      5285,
+      253,
+      161,
+      333
+     ],
+     "total": 6608
+    },
+    "Natural Gas Connected": {
+     "counts": [
+      2287,
+      43,
+      57,
+      14
+     ],
+     "total": 2611
+    },
+    "Cable Connected": {
+     "counts": [
+      1283,
+      51,
+      31,
+      6
+     ],
+     "total": 1451
+    },
     "Electricity Available": {
      "counts": [
       0,
       0,
       0,
-      1371
+      1370
      ],
-     "total": 1371,
+     "total": 1370,
      "hint": [
       "A",
       "B",
@@ -7719,14 +8990,23 @@
       "G"
      ]
     },
+    "Phone Connected": {
+     "counts": [
+      583,
+      25,
+      12,
+      8
+     ],
+     "total": 776
+    },
     "Phone Available": {
      "counts": [
       0,
       0,
       0,
-      502
+      501
      ],
-     "total": 502,
+     "total": 501,
      "hint": [
       "A",
       "B",
@@ -7742,9 +9022,9 @@
       0,
       0,
       0,
-      481
+      479
      ],
-     "total": 481,
+     "total": 479,
      "hint": [
       "A",
       "B",
@@ -7760,9 +9040,9 @@
       0,
       0,
       0,
-      450
+      449
      ],
-     "total": 450,
+     "total": 449,
      "hint": [
       "A",
       "B",
@@ -7793,18 +9073,48 @@
     }
    }
   },
+  "utilitiesLocation": {
+   "kind": "multi",
+   "mv": "utilities_location",
+   "values": {
+    "At Street": {
+     "counts": [
+      0,
+      0,
+      0,
+      910
+     ],
+     "total": 910,
+     "hint": [
+      "D"
+     ]
+    },
+    "On Property": {
+     "counts": [
+      0,
+      0,
+      0,
+      263
+     ],
+     "total": 263,
+     "hint": [
+      "D"
+     ]
+    }
+   }
+  },
   "viewTypes": {
    "kind": "multi",
    "mv": "view_types",
    "values": {
     "Territorial": {
      "counts": [
-      2646,
+      2640,
       74,
-      60,
-      970
+      58,
+      969
      ],
-     "total": 3902,
+     "total": 3893,
      "hint": [
       "A",
       "B",
@@ -7817,12 +9127,12 @@
     },
     "Neighborhood": {
      "counts": [
-      2576,
+      2578,
       144,
-      101,
+      100,
       480
      ],
-     "total": 3404,
+     "total": 3405,
      "hint": [
       "A",
       "B",
@@ -7835,12 +9145,12 @@
     },
     "Mountain(s)": {
      "counts": [
-      1868,
+      1866,
       69,
-      35,
-      871
+      34,
+      870
      ],
-     "total": 2969,
+     "total": 2965,
      "hint": [
       "A",
       "B",
@@ -7853,12 +9163,12 @@
     },
     "Cascade Mountains": {
      "counts": [
-      795,
+      793,
       6,
       6,
       349
      ],
-     "total": 1219,
+     "total": 1217,
      "hint": [
       "A",
       "B",
@@ -7871,12 +9181,12 @@
     },
     "Panoramic": {
      "counts": [
-      622,
+      619,
       7,
       2,
       345
      ],
-     "total": 1037,
+     "total": 1034,
      "hint": [
       "A",
       "B",
@@ -7889,12 +9199,12 @@
     },
     "Forest": {
      "counts": [
-      700,
+      699,
       8,
       2,
       260
      ],
-     "total": 994,
+     "total": 993,
      "hint": [
       "A",
       "B",
@@ -7907,12 +9217,12 @@
     },
     "Valley": {
      "counts": [
-      484,
+      481,
       5,
       5,
       302
      ],
-     "total": 840,
+     "total": 837,
      "hint": [
       "A",
       "B",
@@ -7943,10 +9253,10 @@
     },
     "River": {
      "counts": [
-      233,
+      234,
       2,
       4,
-      79
+      78
      ],
      "total": 337,
      "hint": [
@@ -7961,12 +9271,12 @@
     },
     "Golf Course": {
      "counts": [
-      238,
+      239,
       0,
       3,
       90
      ],
-     "total": 334,
+     "total": 335,
      "hint": [
       "A",
       "B",
@@ -8033,12 +9343,12 @@
     },
     "Creek/Stream": {
      "counts": [
-      164,
+      163,
       4,
       2,
       41
      ],
-     "total": 235,
+     "total": 234,
      "hint": [
       "A",
       "B",
@@ -8054,9 +9364,9 @@
       179,
       1,
       3,
-      18
+      17
      ],
-     "total": 204,
+     "total": 203,
      "hint": [
       "A",
       "B",
@@ -8087,12 +9397,12 @@
     },
     "Canyon": {
      "counts": [
-      95,
+      96,
       0,
       0,
       30
      ],
-     "total": 134,
+     "total": 135,
      "hint": [
       "A",
       "B",
@@ -8123,18 +9433,102 @@
     }
    }
   },
+  "waterRightsType": {
+   "kind": "multi",
+   "mv": "water_rights_type",
+   "values": {
+    "Permitted": {
+     "counts": [
+      0,
+      0,
+      0,
+      11
+     ],
+     "total": 33,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Adjudicated": {
+     "counts": [
+      0,
+      0,
+      0,
+      12
+     ],
+     "total": 27,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Class A": {
+     "counts": [
+      0,
+      0,
+      0,
+      6
+     ],
+     "total": 12,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Riparian": {
+     "counts": [
+      0,
+      0,
+      0,
+      3
+     ],
+     "total": 5,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Class B": {
+     "counts": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "total": 4,
+     "hint": [
+      "D",
+      "E"
+     ]
+    },
+    "Class C": {
+     "counts": [
+      0,
+      0,
+      0,
+      2
+     ],
+     "total": 2,
+     "hint": [
+      "D",
+      "E"
+     ]
+    }
+   }
+  },
   "waterSource": {
    "kind": "multi",
    "mv": "water_source",
    "values": {
     "Public": {
      "counts": [
-      3956,
-      243,
-      181,
-      646
+      3958,
+      242,
+      179,
+      643
      ],
-     "total": 5487,
+     "total": 5483,
      "hint": [
       "A",
       "B",
@@ -8147,12 +9541,12 @@
     },
     "Well": {
      "counts": [
-      1667,
+      1668,
       18,
       14,
       304
      ],
-     "total": 2171,
+     "total": 2172,
      "hint": [
       "A",
       "B",
@@ -8165,12 +9559,12 @@
     },
     "Private": {
      "counts": [
-      833,
+      830,
       20,
       1,
       177
      ],
-     "total": 1073,
+     "total": 1070,
      "hint": [
       "A",
       "B",
@@ -8184,11 +9578,11 @@
     "Shared Well": {
      "counts": [
       208,
-      27,
+      28,
       5,
       119
      ],
-     "total": 385,
+     "total": 386,
      "hint": [
       "A",
       "B",
@@ -8201,12 +9595,12 @@
     },
     "Backflow Domestic": {
      "counts": [
-      353,
+      356,
       2,
       3,
       6
      ],
-     "total": 373,
+     "total": 376,
      "hint": [
       "A",
       "B",
@@ -8237,12 +9631,12 @@
     },
     "Backflow Irrigation": {
      "counts": [
-      197,
+      199,
       0,
       1,
       2
      ],
-     "total": 208,
+     "total": 210,
      "hint": [
       "A",
       "B",
@@ -8273,12 +9667,12 @@
     },
     "Spring": {
      "counts": [
-      52,
+      51,
       1,
       0,
       17
      ],
-     "total": 81,
+     "total": 80,
      "hint": [
       "A",
       "B",
@@ -8333,12 +9727,12 @@
     },
     "River Front": {
      "counts": [
-      165,
+      167,
       0,
       2,
       44
      ],
-     "total": 228,
+     "total": 230,
      "hint": [
       "A",
       "B",
@@ -8351,12 +9745,12 @@
     },
     "Waterfront": {
      "counts": [
-      79,
+      80,
       1,
       2,
       29
      ],
-     "total": 120,
+     "total": 121,
      "hint": [
       "A",
       "B",
@@ -8390,9 +9784,9 @@
       31,
       4,
       0,
-      16
+      15
      ],
-     "total": 54,
+     "total": 53,
      "hint": [
       "A",
       "B",
@@ -8411,12 +9805,12 @@
    "values": {
     "Double Pane Windows": {
      "counts": [
-      3890,
+      3893,
       174,
-      108,
+      106,
       0
      ],
-     "total": 4316,
+     "total": 4317,
      "hint": [
       "A",
       "B",
@@ -8428,9 +9822,9 @@
     },
     "Vinyl Frames": {
      "counts": [
-      3746,
+      3748,
       172,
-      101,
+      99,
       0
      ],
      "total": 4141,
@@ -8445,12 +9839,12 @@
     },
     "Aluminum Frames": {
      "counts": [
-      456,
+      455,
       42,
-      24,
+      23,
       0
      ],
-     "total": 584,
+     "total": 582,
      "hint": [
       "A",
       "B",
@@ -8477,14 +9871,14 @@
       "G"
      ]
     },
-    "ENERGY STAR Qualified Windows": {
+    "Skylight(s)": {
      "counts": [
       441,
-      10,
-      3,
+      18,
+      1,
       0
      ],
-     "total": 468,
+     "total": 469,
      "hint": [
       "A",
       "B",
@@ -8494,11 +9888,11 @@
       "G"
      ]
     },
-    "Skylight(s)": {
+    "ENERGY STAR Qualified Windows": {
      "counts": [
-      439,
-      18,
-      1,
+      440,
+      10,
+      3,
       0
      ],
      "total": 467,
@@ -8604,57 +9998,57 @@
    "values": {
     "RS": {
      "counts": [
-      730,
+      732,
       0,
-      14,
+      13,
       51
      ],
-     "total": 795
+     "total": 796
     },
     "R2": {
      "counts": [
-      262,
+      261,
       0,
       4,
       272
      ],
-     "total": 542
+     "total": 541
     },
     "RR10": {
      "counts": [
-      265,
+      266,
       0,
       0,
       76
      ],
-     "total": 341
+     "total": 342
     },
     "EFU": {
      "counts": [
-      148,
+      147,
       0,
       1,
-      78
+      77
      ],
-     "total": 275
+     "total": 273
     },
     "SFR-4": {
      "counts": [
-      210,
+      209,
       0,
       0,
       16
      ],
-     "total": 226
+     "total": 225
     },
     "Rr5; Rural Res 5 Ac": {
      "counts": [
-      151,
+      152,
       0,
       3,
       35
      ],
-     "total": 190
+     "total": 191
     },
     "R5": {
      "counts": [
@@ -8667,12 +10061,12 @@
     },
     "R4": {
      "counts": [
-      157,
+      158,
       0,
       4,
       2
      ],
-     "total": 163
+     "total": 164
     },
     "RR-5": {
      "counts": [
@@ -8694,12 +10088,12 @@
     },
     "RM": {
      "counts": [
-      112,
+      114,
       0,
       16,
       11
      ],
-     "total": 140
+     "total": 142
     },
     "RR5": {
      "counts": [
@@ -8721,12 +10115,12 @@
     },
     "WR": {
      "counts": [
-      83,
+      82,
       0,
       0,
       39
      ],
-     "total": 124
+     "total": 123
     },
     "R-1-8": {
      "counts": [
@@ -8766,12 +10160,12 @@
     },
     "MUA10": {
      "counts": [
-      80,
+      81,
       0,
       0,
       9
      ],
-     "total": 90
+     "total": 91
     },
     "Rrm5; Recreational Reside": {
      "counts": [
@@ -8784,12 +10178,12 @@
     },
     "SF": {
      "counts": [
-      78,
+      79,
       0,
       0,
       8
      ],
-     "total": 86
+     "total": 87
     },
     "Efu3; Exclusive Farm Use": {
      "counts": [
@@ -8802,12 +10196,12 @@
     },
     "R2; General Residential": {
      "counts": [
-      69,
+      70,
       0,
       0,
       2
      ],
-     "total": 72
+     "total": 73
     },
     "Residential": {
      "counts": [
@@ -8818,21 +10212,21 @@
      ],
      "total": 72
     },
-    "R3": {
-     "counts": [
-      52,
-      0,
-      4,
-      15
-     ],
-     "total": 71
-    },
     "PUD": {
      "counts": [
       27,
       0,
       0,
       41
+     ],
+     "total": 70
+    },
+    "R3": {
+     "counts": [
+      51,
+      0,
+      4,
+      15
      ],
      "total": 70
     },
@@ -8881,15 +10275,6 @@
      ],
      "total": 65
     },
-    "Sfr-10": {
-     "counts": [
-      50,
-      0,
-      11,
-      2
-     ],
-     "total": 63
-    },
     "C-C": {
      "counts": [
       0,
@@ -8908,7 +10293,16 @@
      ],
      "total": 61
     },
-    "RR10, WA": {
+    "Sfr-10": {
+     "counts": [
+      49,
+      0,
+      10,
+      2
+     ],
+     "total": 61
+    },
+    "CRRR": {
      "counts": [
       47,
       0,
@@ -8917,14 +10311,14 @@
      ],
      "total": 55
     },
-    "CRRR": {
+    "RR10, WA": {
      "counts": [
-      46,
+      47,
       0,
       0,
       8
      ],
-     "total": 54
+     "total": 55
     },
     "R-3": {
      "counts": [
@@ -8991,12 +10385,12 @@
     },
     "SFR": {
      "counts": [
-      43,
+      44,
       0,
       0,
       0
      ],
-     "total": 43
+     "total": 44
     },
     "BBRR": {
      "counts": [
@@ -9006,15 +10400,6 @@
       2
      ],
      "total": 41
-    },
-    "MFR": {
-     "counts": [
-      38,
-      0,
-      0,
-      2
-     ],
-     "total": 40
     },
     "R-3; Res High Density": {
      "counts": [
@@ -9034,6 +10419,15 @@
      ],
      "total": 39
     },
+    "MFR": {
+     "counts": [
+      37,
+      0,
+      0,
+      1
+     ],
+     "total": 38
+    },
     "R-1-10": {
      "counts": [
       31,
@@ -9052,15 +10446,6 @@
      ],
      "total": 37
     },
-    "R5; Rural Residential": {
-     "counts": [
-      29,
-      0,
-      0,
-      8
-     ],
-     "total": 37
-    },
     "EFUSC": {
      "counts": [
       33,
@@ -9076,6 +10461,15 @@
       0,
       0,
       5
+     ],
+     "total": 36
+    },
+    "R5; Rural Residential": {
+     "counts": [
+      28,
+      0,
+      0,
+      8
      ],
      "total": 36
     },
@@ -9142,15 +10536,6 @@
      ],
      "total": 30
     },
-    "R-1-7 5": {
-     "counts": [
-      25,
-      0,
-      1,
-      3
-     ],
-     "total": 29
-    },
     "RR10, LM, WA": {
      "counts": [
       15,
@@ -9187,12 +10572,30 @@
      ],
      "total": 28
     },
+    "R-1-7 5": {
+     "counts": [
+      24,
+      0,
+      1,
+      3
+     ],
+     "total": 28
+    },
     "OSR": {
      "counts": [
       12,
       0,
       0,
       14
+     ],
+     "total": 27
+    },
+    "RSF": {
+     "counts": [
+      21,
+      0,
+      1,
+      5
      ],
      "total": 27
     },
@@ -9229,15 +10632,6 @@
       0,
       0,
       3
-     ],
-     "total": 26
-    },
-    "RSF": {
-     "counts": [
-      21,
-      0,
-      1,
-      4
      ],
      "total": 26
     },
@@ -9304,15 +10698,6 @@
      ],
      "total": 23
     },
-    "R-1-6; Res Mod Density": {
-     "counts": [
-      22,
-      0,
-      0,
-      1
-     ],
-     "total": 23
-    },
     "RES": {
      "counts": [
       16,
@@ -9358,6 +10743,15 @@
      ],
      "total": 22
     },
+    "R-1-6; Res Mod Density": {
+     "counts": [
+      22,
+      0,
+      0,
+      0
+     ],
+     "total": 22
+    },
     "SURS, AS": {
      "counts": [
       22,
@@ -9376,12 +10770,12 @@
      ],
      "total": 22
     },
-    "FC": {
+    "R-4": {
      "counts": [
-      7,
+      9,
       0,
-      0,
-      13
+      6,
+      0
      ],
      "total": 21
     },
@@ -9430,12 +10824,12 @@
      ],
      "total": 20
     },
-    "R-4": {
+    "FC": {
      "counts": [
-      8,
+      7,
       0,
-      6,
-      0
+      0,
+      12
      ],
      "total": 20
     },
@@ -9682,15 +11076,6 @@
      ],
      "total": 13
     },
-    "RR10/WA": {
-     "counts": [
-      7,
-      0,
-      0,
-      6
-     ],
-     "total": 13
-    },
     "UR-6": {
      "counts": [
       13,
@@ -9727,15 +11112,6 @@
      ],
      "total": 12
     },
-    "MR": {
-     "counts": [
-      10,
-      0,
-      1,
-      0
-     ],
-     "total": 12
-    },
     "R-1-5": {
      "counts": [
       12,
@@ -9760,6 +11136,15 @@
       0,
       0,
       3
+     ],
+     "total": 12
+    },
+    "RR10/WA": {
+     "counts": [
+      6,
+      0,
+      0,
+      6
      ],
      "total": 12
     },
@@ -9871,6 +11256,15 @@
      ],
      "total": 11
     },
+    "MR": {
+     "counts": [
+      9,
+      0,
+      1,
+      0
+     ],
+     "total": 11
+    },
     "Rc; Rural Comm": {
      "counts": [
       4,
@@ -9897,15 +11291,6 @@
       0
      ],
      "total": 11
-    },
-    "C-R": {
-     "counts": [
-      0,
-      0,
-      0,
-      3
-     ],
-     "total": 10
     },
     "GI": {
      "counts": [
@@ -9961,6 +11346,15 @@
      ],
      "total": 10
     },
+    "C-R": {
+     "counts": [
+      0,
+      0,
+      0,
+      2
+     ],
+     "total": 9
+    },
     "EFU-DR": {
      "counts": [
       2,
@@ -10015,6 +11409,15 @@
      ],
      "total": 9
     },
+    "A1": {
+     "counts": [
+      3,
+      0,
+      0,
+      1
+     ],
+     "total": 8
+    },
     "EFUAL/DR": {
      "counts": [
       1,
@@ -10068,15 +11471,6 @@
       0
      ],
      "total": 8
-    },
-    "A1": {
-     "counts": [
-      2,
-      0,
-      0,
-      1
-     ],
-     "total": 7
     },
     "AR": {
      "counts": [

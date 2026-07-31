@@ -22,11 +22,20 @@ describe('field-registry: registry size (update when fields land/leave)', () => 
     // P5 long-tail tranche (2026-07-30, plan §12): +3 range (bathsFull,
     // bathsHalf, pricePerSqft), +1 multi (aduType) — existing MV columns,
     // each verified ≥25 live rows before exposure.
-    expect(byKind('range')).toBe(18)
-    expect(byKind('boolean')).toBe(39)
-    expect(byKind('multi')).toBe(45)
+    // MV v4 long-tail tranche (2026-07-31, plan §15): +4 range (pricePerAcre,
+    // unitsTotal, currentRent, estCompletionYear), +8 boolean (attachedGarage,
+    // rented, potentialTaxLiability, specialAssessment, highSpeedInternet,
+    // manufacturedAllowed, buildingPermitIssued, secondResidence), +11 multi
+    // (utilitiesLocation, homeSiteApproval, powerProduction,
+    // greenCertification, landRestrictions, multiUnitFeatures, railroadAccess,
+    // soilType, acreageFeatures, irrigationDistribution, waterRightsType).
+    // The 24th EXPOSE concept, group:Utilities, merged into the existing
+    // `utilities` field as four options rather than adding a field.
+    expect(byKind('range')).toBe(22)
+    expect(byKind('boolean')).toBe(47)
+    expect(byKind('multi')).toBe(56)
     expect(byKind('text')).toBe(6)
-    expect(SEARCH_FIELDS).toHaveLength(108)
+    expect(SEARCH_FIELDS).toHaveLength(131)
   })
 })
 
@@ -306,5 +315,128 @@ describe('field-registry: Phase 1 tranche (CustomFields + promoted scalars, 2026
     expect(searchFieldByKey('adu')?.voice).toContain('adu')
     expect(searchFieldByKey('adu')?.voice).toContain('casita')
     expect(searchFieldByKey('guestHouse')?.voice).toEqual(['guest house'])
+  })
+})
+
+describe('field-registry: MV v4 long-tail tranche (2026-07-31, plan §15)', () => {
+  // The 24 EXPOSE concepts from data/search-metadata/longtail-census.json.
+  // 23 of them land as new fields; group:Utilities merges into `utilities`.
+  const EXPECTED_MV: Record<string, string> = {
+    // booleans
+    attachedGarage: 'attached_garage_yn',
+    rented: 'rented_yn',
+    potentialTaxLiability: 'potential_tax_liability_yn',
+    specialAssessment: 'special_assessment_yn',
+    highSpeedInternet: 'high_speed_internet_yn',
+    manufacturedAllowed: 'manufactured_allowed_yn',
+    buildingPermitIssued: 'building_permit_issued_yn',
+    secondResidence: 'second_residence_yn',
+    // ranges
+    pricePerAcre: 'price_per_acre',
+    unitsTotal: 'units_total',
+    currentRent: 'current_rent',
+    estCompletionYear: 'est_completion_year',
+    // multis
+    utilitiesLocation: 'utilities_location',
+    homeSiteApproval: 'home_site_approval',
+    powerProduction: 'power_production',
+    greenCertification: 'green_certification',
+    landRestrictions: 'land_restrictions',
+    multiUnitFeatures: 'multi_unit_features',
+    railroadAccess: 'railroad_access',
+    soilType: 'soil_type',
+    acreageFeatures: 'acreage_features',
+    irrigationDistribution: 'irrigation_distribution',
+    waterRightsType: 'water_rights_type',
+  }
+
+  it('registers all 23 new fields on their contracted MV columns', () => {
+    expect(Object.keys(EXPECTED_MV)).toHaveLength(23)
+    for (const [key, mv] of Object.entries(EXPECTED_MV)) {
+      const def = searchFieldByKey(key)
+      expect(def, `${key} missing from registry`).toBeDefined()
+      expect(def!.mv, `${key} mv column`).toBe(mv)
+      expect(def!.label.length, `${key} label`).toBeGreaterThan(0)
+      // Sentence case, brand voice: no Title Case run-ons in a field label.
+      expect(def!.label[0], `${key} label starts uppercase`).toBe(def!.label[0].toUpperCase())
+    }
+  })
+
+  it('registers every new URL param (saved-search whitelist)', () => {
+    for (const param of [
+      'attachedGarage', 'rented', 'potentialTaxLiability', 'specialAssessment',
+      'highSpeedInternet', 'manufacturedAllowed', 'buildingPermitIssued', 'secondResidence',
+      'pricePerAcreMin', 'pricePerAcreMax', 'unitsTotalMin', 'unitsTotalMax',
+      'currentRentMin', 'currentRentMax', 'estCompletionYearMin', 'estCompletionYearMax',
+      'utilitiesLocation', 'homeSiteApproval', 'powerProduction', 'greenCertification',
+      'landRestrictions', 'multiUnitFeatures', 'railroadAccess', 'soilType',
+      'acreageFeatures', 'irrigationDistribution', 'waterRightsType',
+    ]) {
+      expect(ALL_SEARCH_URL_PARAMS, `missing ${param}`).toContain(param)
+    }
+  })
+
+  it('merges the CF "* Connected" utilities into the existing utilities field', () => {
+    // group:Utilities is the 24th EXPOSE concept. Its four members ship as
+    // options here, not as a second filter — the MV v4 column unions the RESO
+    // feature object with the CF group.
+    const utilities = searchFieldByKey('utilities')!
+    expect(utilities.mv).toBe('utilities')
+    for (const option of ['Electricity Connected', 'Natural Gas Connected', 'Cable Connected', 'Phone Connected']) {
+      expect(utilities.options, `utilities missing ${option}`).toContain(option)
+    }
+    // The pre-existing "* Available" options are untouched.
+    expect(utilities.options).toContain('Electricity Available')
+    expect(searchFieldByKey('utilitiesConnected'), 'no second utilities filter').toBeUndefined()
+  })
+
+  it('leaves "attached garage" with parkingFeatures (first registration wins)', () => {
+    // attachedGarage registers in the boolean block, ahead of the parking
+    // multi. Giving it the phrase would silently take it off a working filter,
+    // so the field ships without voice.
+    expect(searchFieldByKey('attachedGarage')?.voice).toBeUndefined()
+    expect(searchFieldByKey('parkingFeatures')?.voiceValues?.Attached).toContain('attached garage')
+  })
+
+  it('beats the bare "manufactured" sub-type claim with a longer phrase', () => {
+    // The parser sorts matchers longest-first, so 'manufactured home allowed'
+    // consumes before SUBTYPE_SET_PHRASES' 'manufactured'.
+    const voice = searchFieldByKey('manufacturedAllowed')?.voice ?? []
+    expect(voice).toContain('manufactured home allowed')
+    for (const phrase of voice) expect(phrase.length).toBeGreaterThan('manufactured'.length)
+  })
+
+  it('ships pricePerAcre as a computed usd range, not the MLS custom field', () => {
+    const def = searchFieldByKey('pricePerAcre')!
+    expect(def.kind).toBe('range')
+    expect(def.unit).toBe('usd')
+    expect(def.mv).toBe('price_per_acre')
+  })
+
+  it('ships estCompletionYear as a year range (the CF is a date string)', () => {
+    const def = searchFieldByKey('estCompletionYear')!
+    expect(def.kind).toBe('range')
+    expect(def.unit).toBe('year')
+    expect(urlParamsForField(def)).toEqual(['estCompletionYearMin', 'estCompletionYearMax'])
+  })
+
+  it('keeps every new multi on array-overlap semantics', () => {
+    // None of the v4 multis is a scalar column, so none may carry
+    // singleColumnIn, and none needs match-all.
+    for (const key of ['utilitiesLocation', 'homeSiteApproval', 'powerProduction', 'greenCertification', 'landRestrictions', 'multiUnitFeatures', 'railroadAccess', 'soilType', 'acreageFeatures', 'irrigationDistribution', 'waterRightsType']) {
+      const def = searchFieldByKey(key)!
+      expect(def.kind, `${key} kind`).toBe('multi')
+      expect(def.singleColumnIn, `${key} singleColumnIn`).toBeUndefined()
+      expect(def.matchMode, `${key} matchMode`).toBeUndefined()
+      expect(def.options!.length, `${key} options`).toBeGreaterThan(0)
+    }
+  })
+
+  it('carries Solar Leased on powerProduction (the snapshot drops it)', () => {
+    // Census anomaly 2026-07-31: the normalizer folds StandardizedAs members
+    // into their parent enum, so group:Power Production's value list loses
+    // 'Solar Leased' even though 45 serving rows assert it. Curation
+    // allowlists the option; the MV candidate array includes it.
+    expect(searchFieldByKey('powerProduction')?.options).toContain('Solar Leased')
   })
 })

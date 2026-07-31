@@ -244,6 +244,60 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     unit: 'usd',
   },
 
+  // ── MV v4 long-tail tranche (2026-07-31, plan §15) — the 24 EXPOSE concepts
+  //    from data/search-metadata/longtail-census.json. Coverage figures below
+  //    are live counts on the 9,647 serving rows (on-market minus Coming Soon),
+  //    measured 2026-07-31 against listings.details before the columns shipped.
+  {
+    // COMPUTED in the MV as list_price / lot_size_acres — never the MLS's own
+    // 'List Price per Acre' custom field. Measured on the 1,903 rows carrying
+    // both: agrees within 1% on 1,879, diverges by more than 10% on 12 (worst
+    // 108.3%), and is absent on 6,894 rows we can compute. 8,856 rows carry a
+    // computable value.
+    key: 'pricePerAcre',
+    label: 'Price per acre',
+    category: 'land_acreage',
+    kind: 'range',
+    mv: 'price_per_acre',
+    unit: 'usd',
+    voice: ['under n per acre', 'n per acre'],
+  },
+  {
+    key: 'unitsTotal',
+    label: 'Number of units',
+    category: 'size_layout',
+    kind: 'range',
+    mv: 'units_total',
+    unit: 'count',
+    voice: ['n units'],
+    coverageNote: 'Reported on multi-family and commercial listings.',
+  },
+  {
+    key: 'currentRent',
+    label: 'Current rent',
+    category: 'price_terms',
+    kind: 'range',
+    mv: 'current_rent',
+    unit: 'usdMonth',
+    voice: ['rent under n'],
+    coverageNote: 'Reported when a tenant is in place.',
+  },
+  {
+    // The MLS publishes 'Estimated Completion Date' as a YYYY-MM-DD string on
+    // 562 serving rows. The registry's range plumbing is numeric on both sides,
+    // so the MV projects the YEAR and this filter shops it as a year, the same
+    // way yearBuilt does. Stale past dates sort below the current year rather
+    // than being rewritten against the clock (MV determinism, F7).
+    key: 'estCompletionYear',
+    label: 'Completion year',
+    category: 'listing_meta',
+    kind: 'range',
+    mv: 'est_completion_year',
+    unit: 'year',
+    voice: ['completed by n'],
+    coverageNote: 'New construction only.',
+  },
+
   // ── Booleans ──────────────────────────────────────────────────────────────
   {
     key: 'hasFireplace',
@@ -577,6 +631,79 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     kind: 'boolean',
     mv: 'has_video',
     voice: ['video tour'],
+  },
+  // ── MV v4 long-tail tranche booleans (2026-07-31, plan §15) ──
+  {
+    // No voice phrases on purpose: parkingFeatures 'Attached' already claims
+    // "attached garage", and first registration wins in the parser. Booleans
+    // register before multis, so adding it here would silently take the phrase
+    // off a working filter. 7,277 rows carry the flag, 3,498 of them true.
+    key: 'attachedGarage',
+    label: 'Attached garage',
+    category: 'parking',
+    kind: 'boolean',
+    mv: 'attached_garage_yn',
+  },
+  {
+    key: 'rented',
+    label: 'Tenant in place',
+    category: 'listing_meta',
+    kind: 'boolean',
+    mv: 'rented_yn',
+    voice: ['tenant in place', 'tenant occupied', 'currently rented'],
+  },
+  {
+    // 'Potential Tax Liability YN' in the feed: the farm or forest deferral
+    // that comes due when the use changes. Named for what it is, since the
+    // buyer question is "is this land in deferral", not "is there a liability".
+    key: 'potentialTaxLiability',
+    label: 'Farm or forest tax deferral',
+    category: 'land_acreage',
+    kind: 'boolean',
+    mv: 'potential_tax_liability_yn',
+    voice: ['tax deferral', 'farm deferral', 'forest deferral'],
+  },
+  {
+    key: 'specialAssessment',
+    label: 'Special assessment',
+    category: 'price_terms',
+    kind: 'boolean',
+    mv: 'special_assessment_yn',
+    voice: ['special assessment'],
+  },
+  {
+    key: 'highSpeedInternet',
+    label: 'High-speed internet',
+    category: 'water_utilities',
+    kind: 'boolean',
+    mv: 'high_speed_internet_yn',
+    voice: ['high speed internet', 'fast internet'],
+  },
+  {
+    key: 'manufacturedAllowed',
+    label: 'Manufactured home allowed',
+    category: 'land_acreage',
+    kind: 'boolean',
+    mv: 'manufactured_allowed_yn',
+    // Longest phrase wins in the parser, so these beat the bare 'manufactured'
+    // sub-type claim in SUBTYPE_SET_PHRASES.
+    voice: ['manufactured home allowed', 'manufactured allowed'],
+  },
+  {
+    key: 'buildingPermitIssued',
+    label: 'Building permit issued',
+    category: 'land_acreage',
+    kind: 'boolean',
+    mv: 'building_permit_issued_yn',
+    voice: ['building permit issued', 'permit issued'],
+  },
+  {
+    key: 'secondResidence',
+    label: 'Second residence',
+    category: 'outbuildings',
+    kind: 'boolean',
+    mv: 'second_residence_yn',
+    voice: ['second residence'],
   },
 
   // ── Multi-selects ─────────────────────────────────────────────────────────
@@ -927,16 +1054,24 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     },
   },
   {
+    // MV v4 (2026-07-31, plan §15): the '* Connected' options come from the CF
+    // group:Utilities, merged into this column by the MV rather than shipped as
+    // a second filter — "is power available" and "is power already hooked up"
+    // are one buyer question with two answers. Available options keep their
+    // order; the Connected set appends in live count order (Electricity 6,609 ·
+    // Natural Gas 2,612 · Cable 1,451 · Phone 776 serving rows).
     key: 'utilities',
-    label: 'Utilities available',
+    label: 'Utilities',
     category: 'water_utilities',
     kind: 'multi',
     mv: 'utilities',
-    options: ['Electricity Available', 'Cable Available', 'Phone Available', 'Natural Gas Available', 'Fiber Optics Available'],
+    options: ['Electricity Available', 'Cable Available', 'Phone Available', 'Natural Gas Available', 'Fiber Optics Available', 'Electricity Connected', 'Natural Gas Connected', 'Cable Connected', 'Phone Connected'],
     voiceValues: {
       'Fiber Optics Available': ['fiber', 'fiber optic'],
       'Natural Gas Available': ['natural gas'],
       'Cable Available': ['cable'],
+      'Electricity Connected': ['power connected', 'electricity connected'],
+      'Natural Gas Connected': ['gas connected'],
     },
   },
   {
@@ -1232,6 +1367,163 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     voiceValues: {
       Detached: ['detached adu'],
       Attached: ['attached adu'],
+    },
+  },
+
+  // ── MV v4 long-tail tranche multis (2026-07-31, plan §15) ──
+  // Every option below is a CF group member measured with at least one live
+  // serving row on 2026-07-31, in count-descending order. Members the metadata
+  // lists but the feed has never used (LEED Gold / Platinum / Silver, railroad
+  // 'In', soil 'Land Fill') stay out of the option set until they carry data —
+  // the same "no filter that can never match" rule the 2026-07-30 audit set.
+  {
+    key: 'utilitiesLocation',
+    label: 'Utilities location',
+    category: 'water_utilities',
+    kind: 'multi',
+    mv: 'utilities_location',
+    options: ['At Street', 'On Property'],
+    voiceValues: {
+      'At Street': ['power at the street', 'utilities at the street'],
+      'On Property': ['power on the property', 'utilities on the property'],
+    },
+    coverageNote: 'Reported on land listings.',
+  },
+  {
+    key: 'homeSiteApproval',
+    label: 'Home site approval',
+    category: 'land_acreage',
+    kind: 'multi',
+    mv: 'home_site_approval',
+    options: ['Not Applied For', 'Approved', 'Applied For', 'Denied'],
+    voiceValues: {
+      Approved: ['home site approved', 'site approved'],
+    },
+    coverageNote: 'Reported on land listings.',
+  },
+  {
+    key: 'powerProduction',
+    label: 'Power production',
+    category: 'water_utilities',
+    kind: 'multi',
+    mv: 'power_production',
+    options: ['Solar Owned', 'Generator', 'Solar PV Ready', 'Hydro', 'Solar Leased', 'Wind'],
+    voiceValues: {
+      'Solar Owned': ['owned solar', 'solar owned'],
+      'Solar Leased': ['leased solar', 'solar leased'],
+      'Solar PV Ready': ['solar ready'],
+      Generator: ['generator', 'backup generator'],
+      Hydro: ['micro hydro'],
+    },
+  },
+  {
+    key: 'greenCertification',
+    label: 'Energy certification',
+    category: 'type_construction',
+    kind: 'multi',
+    mv: 'green_certification',
+    options: ['Home Energy Score', 'Earth Advantage', 'ENERGY STAR Certified Homes', 'Energy Performance Score', 'LEED For Homes', 'LEED Certified', 'WaterSense', 'Energy Audit Retrofit'],
+    voiceValues: {
+      'Home Energy Score': ['home energy score'],
+      'Earth Advantage': ['earth advantage'],
+      'ENERGY STAR Certified Homes': ['energy star'],
+      'LEED Certified': ['leed'],
+    },
+  },
+  {
+    key: 'landRestrictions',
+    label: 'Land restrictions',
+    category: 'land_acreage',
+    kind: 'multi',
+    mv: 'land_restrictions',
+    options: ['Recorded Plat', 'Subject to Zoning', 'Access Recorded', 'Deed Restrictions', 'Easement/Right-of-Way', 'No Access Recorded', 'Zone-Unplatted'],
+    voiceValues: {
+      'Recorded Plat': ['recorded plat'],
+      'Deed Restrictions': ['deed restrictions'],
+      'Access Recorded': ['recorded access'],
+      'Easement/Right-of-Way': ['right of way'],
+    },
+  },
+  {
+    key: 'multiUnitFeatures',
+    label: 'Multi-unit features',
+    category: 'type_construction',
+    kind: 'multi',
+    mv: 'multi_unit_features',
+    options: ['Office Space', 'Separate Electric Meters', '3 Phase Electric', 'Common Area', 'Separate Gas Meters', 'ADA Comply', 'Laundry Facility', 'Bath Common Area', 'Separate Water Meters', 'Free Span Roof', 'Bus Service or Stop', 'Mezzanine', "Manager's Quarters", 'Living Area in Building', 'Expandable', 'Tanks in Ground', 'Overhead Crane', 'Airport Access'],
+    voiceValues: {
+      'Separate Electric Meters': ['separate meters', 'separate electric meters'],
+      'Separate Gas Meters': ['separate gas meters'],
+      'Separate Water Meters': ['separate water meters'],
+      'Laundry Facility': ['laundry facility'],
+      'Office Space': ['office space'],
+    },
+  },
+  {
+    key: 'railroadAccess',
+    label: 'Railroad access',
+    category: 'land_acreage',
+    kind: 'multi',
+    mv: 'railroad_access',
+    options: ['Not Available', 'Available', 'To Lot'],
+    voiceValues: {
+      Available: ['rail access', 'railroad access'],
+      'To Lot': ['rail spur'],
+    },
+    coverageNote: 'Reported on land listings.',
+  },
+  {
+    key: 'soilType',
+    label: 'Soil type',
+    category: 'land_acreage',
+    kind: 'multi',
+    mv: 'soil_type',
+    options: ['Loam', 'Sand', 'Rocky', 'Clay', 'Soil Analysis Done', 'Top Soil Over Other', 'Soil Analysis Ordered', 'Alluvial'],
+    voiceValues: {
+      Loam: ['loam soil'],
+      Sand: ['sandy soil'],
+      Rocky: ['rocky soil'],
+      Clay: ['clay soil'],
+    },
+  },
+  {
+    key: 'acreageFeatures',
+    label: 'Acreage details',
+    category: 'land_acreage',
+    kind: 'multi',
+    mv: 'acreage_features',
+    options: ['Livestock Allowed', 'Dividable Property', 'Additional Crop/Usage/Acreage Info Attached', 'Conservation Reserve Program'],
+    voiceValues: {
+      'Livestock Allowed': ['livestock allowed', 'animals allowed'],
+      'Dividable Property': ['dividable', 'can be divided'],
+      'Conservation Reserve Program': ['conservation reserve'],
+    },
+  },
+  {
+    key: 'irrigationDistribution',
+    label: 'Irrigation delivery',
+    category: 'land_acreage',
+    kind: 'multi',
+    mv: 'irrigation_distribution',
+    options: ['Pump(s)', 'Wheel Line(s)', 'Hand Line(s)', 'Gravity-Flood', 'Center Pivot', 'Mainline', 'Sprinkled', 'In Ground Sprinklers', 'Sprinkler Gun(s)', 'Sub-Irrigated', 'Gated Pipe', 'K-Line', 'Linear', 'Solid Set', 'Water Wheel'],
+    voiceValues: {
+      'Center Pivot': ['center pivot'],
+      'Wheel Line(s)': ['wheel line'],
+      'Hand Line(s)': ['hand line'],
+      'Gravity-Flood': ['flood irrigation'],
+    },
+  },
+  {
+    key: 'waterRightsType',
+    label: 'Water rights type',
+    category: 'land_acreage',
+    kind: 'multi',
+    mv: 'water_rights_type',
+    options: ['Permitted', 'Adjudicated', 'Class A', 'Riparian', 'Class B', 'Class C'],
+    voiceValues: {
+      Adjudicated: ['adjudicated water rights'],
+      Permitted: ['permitted water rights'],
+      Riparian: ['riparian rights'],
     },
   },
 

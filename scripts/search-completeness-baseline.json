@@ -1,8 +1,8 @@
 {
   "_doc": "Ratchet baseline for ci:search-field-completeness (plan SEARCH_FILTER_COMPLETENESS_PLAN_2026-07-30 §11.2/§12, P5). exposedFields may only grow; the two long-tail counts may only shrink. Update deliberately via `node scripts/check-search-field-completeness.mjs --update` after regenerating registry-report.json. mvColumnExclusions is the gate's own exclusion ledger: every listing_search_mv column that is NOT a registry field's mv target and NOT on the curation mask-dead list must appear here with a reason a reviewer can audit. Seeded 2026-07-30 from the post-P5-tranche state (108 fields; long tail 48 standard / 244 custom; live coverage verified per-field in the plan's §12 P5 execution).",
-  "exposedFields": 108,
-  "standardLongTail": 48,
-  "customLongTail": 244,
+  "exposedFields": 131,
+  "standardLongTail": 46,
+  "customLongTail": 222,
   "mvColumnExclusions": {
     "listing_key": "Row identity key (RETS ListingKey) — joins and dedupe, not a buyer filter.",
     "list_number": "MLS number — direct lookup runs through resolveCanonicalListingKey, not the filter surface.",

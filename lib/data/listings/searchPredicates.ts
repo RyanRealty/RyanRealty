@@ -114,6 +114,20 @@ export const BOOLEAN_PREDICATES = {
   ccrs: { op: 'isTrue', col: 'ccrs_yn' },
   hasFloorPlan: { op: 'isTrue', col: 'has_floor_plan' },
   hasVideo: { op: 'isTrue', col: 'has_video' },
+  // ── MV v4 long-tail tranche (2026-07-31, plan §15). Every column is a
+  //    v4 addition to listing_search_mv; all eight are plain IS TRUE. The two
+  //    single-member CF groups (high_speed_internet_yn, second_residence_yn)
+  //    are true/false rather than true/null — presence of the member key IS
+  //    the assertion, there is no "No" side in the feed — which changes
+  //    nothing here because only the true side is ever filtered. ──
+  attachedGarage: { op: 'isTrue', col: 'attached_garage_yn' },
+  rented: { op: 'isTrue', col: 'rented_yn' },
+  potentialTaxLiability: { op: 'isTrue', col: 'potential_tax_liability_yn' },
+  specialAssessment: { op: 'isTrue', col: 'special_assessment_yn' },
+  highSpeedInternet: { op: 'isTrue', col: 'high_speed_internet_yn' },
+  manufacturedAllowed: { op: 'isTrue', col: 'manufactured_allowed_yn' },
+  buildingPermitIssued: { op: 'isTrue', col: 'building_permit_issued_yn' },
+  secondResidence: { op: 'isTrue', col: 'second_residence_yn' },
 } satisfies Record<string, BooleanPredicate>
 
 export type BooleanFilterKey = keyof typeof BOOLEAN_PREDICATES

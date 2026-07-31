@@ -231,3 +231,95 @@ describe('P5 long-tail tranche 2026-07-30 wiring (spot checks)', () => {
     }
   })
 })
+
+describe('MV v4 long-tail tranche 2026-07-31 wiring (spot checks)', () => {
+  it('parses and keeps the new filter keys', () => {
+    const parsed = SearchListingsAllFilterSchema.parse({
+      attachedGarage: true,
+      rented: true,
+      potentialTaxLiability: true,
+      specialAssessment: true,
+      highSpeedInternet: true,
+      manufacturedAllowed: true,
+      buildingPermitIssued: true,
+      secondResidence: true,
+      pricePerAcreMin: 10000,
+      pricePerAcreMax: 250000,
+      unitsTotalMin: 2,
+      currentRentMax: 2500,
+      estCompletionYearMax: 2026,
+      soilType: ['Loam'],
+      powerProduction: ['Solar Owned'],
+      waterRightsType: ['Adjudicated'],
+      utilities: ['Electricity Connected'],
+    })
+    expect(parsed.attachedGarage).toBe(true)
+    expect(parsed.secondResidence).toBe(true)
+    expect(parsed.pricePerAcreMin).toBe(10000)
+    expect(parsed.pricePerAcreMax).toBe(250000)
+    expect(parsed.unitsTotalMin).toBe(2)
+    expect(parsed.currentRentMax).toBe(2500)
+    expect(parsed.estCompletionYearMax).toBe(2026)
+    expect(parsed.soilType).toEqual(['Loam'])
+    expect(parsed.powerProduction).toEqual(['Solar Owned'])
+    expect(parsed.waterRightsType).toEqual(['Adjudicated'])
+    expect(parsed.utilities).toEqual(['Electricity Connected'])
+  })
+
+  it('wires all eight new booleans to their v4 MV columns as IS TRUE', () => {
+    const expected: Record<string, string> = {
+      attachedGarage: 'attached_garage_yn',
+      rented: 'rented_yn',
+      potentialTaxLiability: 'potential_tax_liability_yn',
+      specialAssessment: 'special_assessment_yn',
+      highSpeedInternet: 'high_speed_internet_yn',
+      manufacturedAllowed: 'manufactured_allowed_yn',
+      buildingPermitIssued: 'building_permit_issued_yn',
+      secondResidence: 'second_residence_yn',
+    }
+    for (const [key, col] of Object.entries(expected)) {
+      const predicate = BOOLEAN_PREDICATES[key as keyof typeof BOOLEAN_PREDICATES]
+      expect(predicate, `'${key}' missing from BOOLEAN_PREDICATES`).toBeDefined()
+      expect(predicate.op, `'${key}' op`).toBe('isTrue')
+      expect((predicate as { col: string }).col, `'${key}' column`).toBe(col)
+    }
+  })
+
+  it('wires the new ranges and multis through the registry-derived tables', () => {
+    expect(RANGE_FIELD_COLUMNS.pricePerAcre).toBe('price_per_acre')
+    expect(RANGE_FIELD_COLUMNS.unitsTotal).toBe('units_total')
+    expect(RANGE_FIELD_COLUMNS.currentRent).toBe('current_rent')
+    expect(RANGE_FIELD_COLUMNS.estCompletionYear).toBe('est_completion_year')
+    const byKey = new Map(MULTI_FIELD_DEFS.map((d) => [d.key, d]))
+    for (const [key, col] of [
+      ['utilitiesLocation', 'utilities_location'],
+      ['homeSiteApproval', 'home_site_approval'],
+      ['powerProduction', 'power_production'],
+      ['greenCertification', 'green_certification'],
+      ['landRestrictions', 'land_restrictions'],
+      ['multiUnitFeatures', 'multi_unit_features'],
+      ['railroadAccess', 'railroad_access'],
+      ['soilType', 'soil_type'],
+      ['acreageFeatures', 'acreage_features'],
+      ['irrigationDistribution', 'irrigation_distribution'],
+      ['waterRightsType', 'water_rights_type'],
+    ] as const) {
+      expect(byKey.get(key)?.mv, `multi '${key}' not wired`).toBe(col)
+      expect(byKey.get(key)?.singleColumnIn, `'${key}' must overlap, not IN`).toBeUndefined()
+    }
+  })
+
+  it('new keys ride SEARCH_FEATURE_FILTER_KEYS so action routers forward them', () => {
+    for (const key of [
+      'attachedGarage', 'rented', 'potentialTaxLiability', 'specialAssessment',
+      'highSpeedInternet', 'manufacturedAllowed', 'buildingPermitIssued', 'secondResidence',
+      'pricePerAcreMin', 'pricePerAcreMax', 'unitsTotalMin', 'unitsTotalMax',
+      'currentRentMin', 'currentRentMax', 'estCompletionYearMin', 'estCompletionYearMax',
+      'utilitiesLocation', 'homeSiteApproval', 'powerProduction', 'greenCertification',
+      'landRestrictions', 'multiUnitFeatures', 'railroadAccess', 'soilType',
+      'acreageFeatures', 'irrigationDistribution', 'waterRightsType',
+    ]) {
+      expect(SEARCH_FEATURE_FILTER_KEYS, `'${key}' missing from feature-filter keys`).toContain(key)
+    }
+  })
+})
