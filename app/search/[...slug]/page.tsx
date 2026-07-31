@@ -1,41 +1,24 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { Suspense, cache } from 'react'
+import { Suspense } from 'react'
 import {
   getListingKeysWithRecentPriceChange,
-  getCityFromSlug,
-  getSubdivisionNameFromSlug,
-  getNeighborhoodNameForCitySlug,
   getListingsWithAdvanced,
-  type AdvancedSort,
 } from '../../actions/listings'
-import { coerceRegistryParams, searchFieldByKey } from '@/lib/search/field-registry'
-import { PUBLIC_SEARCH_STATUS_FILTERS } from '@/lib/listing-status-public'
-import { pickSearchFeatureFilters } from '@/lib/data'
 import { getSession } from '../../actions/auth'
-import { getBannerUrl, getOrCreatePlaceBanner, getBannerSearchQuery } from '../../actions/banners'
-import { shareDescription, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '../../../lib/share-metadata'
-import { getBestListingHeroForGeography } from '../../actions/photo-classification'
 // design-audit NAV-1: KbNav comes from app/search/layout.tsx; these scrolling
 // branches render a KbFooter so MLS reciprocity + legal survive the SiteFooter
 // suppression on /homes-for-sale/** (lib/site/chrome-routes.ts).
 import { KbFooter } from '../../../components/site/kb/KbFooter.client'
 import { SearchAlertCapture } from '../../../components/search/SearchAlertCapture'
 import { getCityContent, getSubdivisionBlurb } from '../../../lib/city-content'
-import { cityEntityKey, subdivisionEntityKey, getSubdivisionDisplayName, homesForSalePath, listingDetailPath, listingsBrowsePath, listingTileHref } from '../../../lib/slug'
-import { entityKeyToSlug } from '../../../lib/community-slug'
-import { getPresetBySlug, isPresetSlug, resolvePresetYearBuiltMin } from '../../../lib/search-presets'
+import { cityEntityKey, getSubdivisionDisplayName, homesForSalePath, listingDetailPath } from '../../../lib/slug'
 import { getPopularSearchesForCity, getAllCityHomesLink } from '../../../lib/popular-searches'
-import { type ListingCardData } from '@/components/site/ListingCard'
-import HideAwareListingGrid, { type HideAwareItem } from '@/components/search/HideAwareListingGrid'
 import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { MapsLocation01Icon } from '@hugeicons/core-free-icons'
-import { Container, Body, H1, H2 } from '@/components/site/primitives'
-import MarketSnapshot from '@/components/site/MarketSnapshot'
-import { FAQBlock } from '@/components/site/FAQBlock'
-import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { Container, Body, H1 } from '@/components/site/primitives'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import {
   buildPresetFaq,
@@ -44,272 +27,54 @@ import {
   getSamePresetCityLinks,
   isSortOnlyPreset,
 } from '@/lib/site/preset-faq'
-import { GolfLanding } from '@/components/site/golf/GolfLanding'
-import { GOLF_COMMUNITIES } from '@/data/golf-landing'
-import { getGolfImages, pickGolfImage, getGolfHomesForLanding, getMarketPulse, getDerivedPopularSearches } from '@/lib/data'
+import { getMarketPulse, getDerivedPopularSearches } from '@/lib/data'
 import SearchFilterBar from '../../../components/SearchFilterBar'
 import ShareButton from '../../../components/ShareButton'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import SearchPageJsonLd from './SearchPageJsonLd'
 import ResortCommunityJsonLd from './ResortCommunityJsonLd'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { isResortCommunity } from '../../../lib/resort-communities'
 import { getResortEntityKeys } from '../../actions/subdivision-flags'
-import {
-  getSubdivisionDescription,
-  getSubdivisionTabContent,
-} from '../../actions/subdivision-descriptions'
-import SearchListingsToolbar from '../../../components/SearchListingsToolbar'
+import { getSubdivisionTabContent } from '../../actions/subdivision-descriptions'
 import TrackSearchView from '../../../components/tracking/TrackSearchView'
 import { ResultsStamp } from '@/components/search/ResultsStamp.client'
 import { getSavedListingKeys } from '../../actions/saved-listings'
 import { getLikedListingKeys } from '../../actions/likes'
 import { getBuyingPreferences } from '../../actions/buying-preferences'
-import { getCityBoundary } from '../../actions/cities'
-import { getCommunityBySlug } from '../../actions/communities'
 import { shouldNoIndexSearchVariant } from '../../../lib/seo-routing'
-import { resolveMatrixNoIndex } from '@/lib/seo/getSearchMatrixEntries'
 import { decodeMapPolygon } from '@/lib/map-polygon'
 import { generateStaticParams as buildSearchStaticParams, IS_PRODUCTION_BUILD } from './search-static'
+import { withTimeout, LISTINGS_FETCH_TIMEOUT_MS } from './fetch-guards'
+import { resolveSlug, buildCanonicalPath } from './resolve-slug'
+import { buildSearchSlugMetadata } from './search-metadata'
+import { resolvePlaceBannerUrl } from './place-banner'
+import {
+  buildSearchFilters,
+  getPresetSearchLabel,
+  hasFilterOnlySearch,
+  numStr,
+  type SearchParams,
+} from './page-filters'
+import { renderGolfLanding } from './sections/GolfBranch'
+import { renderMapSplitView } from './sections/MapSplitView'
+import { ListingsResults } from './sections/ListingsResults'
+import { SearchSeoTail } from './sections/SeoTail'
 
 export async function generateStaticParams() {
   return buildSearchStaticParams()
 }
 export const dynamicParams = true
 
-async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {
-  return Promise.race([
-    // A rejection (e.g. a 57014 statement-timeout on a cold heavy read) must
-    // degrade to the fallback, NOT propagate and blank the whole page. The race
-    // alone only handles HANGS — a promise that rejects before timeoutMs would
-    // reject the race. Catch it so every guarded fetch fails soft.
-    promise.catch(() => fallback),
-    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
-  ])
-}
-
-/**
- * Timeout for the primary listings fetch. The common case resolves from the
- * slim MV in well under a second; this ceiling exists only to cover the heavy
- * search_listings_advanced RPC fallback (jsonb feature filters / deep pages),
- * whose cold scan can take ~8s. It is long enough that a real result is never
- * truncated to an empty fallback (the original bug, where a 2.5s timeout cut
- * off the ~8s cold RPC) and short enough to fail loud if the data layer is
- * genuinely stuck. The RPC warms to ~1-2s, so 12s comfortably covers a cold run.
- */
-const LISTINGS_FETCH_TIMEOUT_MS = 12000
-
-/** Resolve slug segments to city, subdivision (display name), and preset. */
-// Request-scoped dedup: resolveSlug runs in both generateMetadata and the page
-// body (1-3 sequential DB round trips each). cache() keys by per-arg Object.is,
-// so an array arg never dedupes — key on the joined path to collapse the two
-// resolutions into one per render.
-const _resolveSlugByPath = cache((path: string) => resolveSlugImpl(path ? path.split('/') : []))
-function resolveSlug(slug: string[]) {
-  return _resolveSlugByPath(slug.join('/'))
-}
-
-async function resolveSlugImpl(slug: string[]): Promise<{
-  city: string | null
-  subdivisionSlug: string | null
-  subdivisionDisplayName: string | null
-  presetSlug: string | null
-  preset: ReturnType<typeof getPresetBySlug>
-  /** Set when the second segment is a known boundary_neighborhood (e.g. Bend
-   *  "Mountain View"). Drives the single-indexed neighborhood fast path. */
-  neighborhoodName: string | null
-}> {
-  const citySlug = slug[0]
-  const knownCity = citySlug ? await getCityFromSlug(citySlug) : null
-  const resolvedCity = citySlug ? knownCity ?? decodeURIComponent(citySlug).trim() : null
-  const city = resolvedCity ?? citySlug ?? null
-
-  if (slug.length === 0) {
-    return { city: null, subdivisionSlug: null, subdivisionDisplayName: null, presetSlug: null, preset: null, neighborhoodName: null }
-  }
-  if (slug.length === 1) {
-    // A single segment that is NOT a known city but IS a preset slug resolves
-    // as an all-cities preset: /homes-for-sale/manufactured is the
-    // manufactured search across the service area, not a phantom city page
-    // with zero homes (found live 2026-07-31 — the exact dead-end class the
-    // audit exists to kill). A real city always wins over a same-named preset,
-    // matching the two-segment rule below.
-    if (!knownCity && citySlug && isPresetSlug(citySlug)) {
-      return {
-        city: null, subdivisionSlug: null, subdivisionDisplayName: null,
-        presetSlug: citySlug, preset: getPresetBySlug(citySlug), neighborhoodName: null,
-      }
-    }
-    return { city, subdivisionSlug: null, subdivisionDisplayName: null, presetSlug: null, preset: null, neighborhoodName: null }
-  }
-  if (slug.length === 2) {
-    const second = slug[1]!
-    // A real neighborhood wins over a same-named preset. 'mountain-view' is BOTH
-    // the Mountain View neighborhood AND a "mountain view" amenity preset; the
-    // preset routed to the slow advanced RPC and timed out to an empty grid,
-    // while the neighborhood resolves to one indexed boundary_neighborhood query.
-    const neighborhoodName = citySlug ? await getNeighborhoodNameForCitySlug(citySlug, second) : null
-    if (neighborhoodName) {
-      return { city, subdivisionSlug: second, subdivisionDisplayName: neighborhoodName, presetSlug: null, preset: null, neighborhoodName }
-    }
-    if (isPresetSlug(second)) {
-      return { city, subdivisionSlug: null, subdivisionDisplayName: null, presetSlug: second, preset: getPresetBySlug(second), neighborhoodName: null }
-    }
-    const subdivisionDisplayName = city ? (await getSubdivisionNameFromSlug(city, second)) ?? decodeURIComponent(second) : null
-    return { city, subdivisionSlug: second, subdivisionDisplayName, presetSlug: null, preset: null, neighborhoodName: null }
-  }
-  // slug.length >= 3: [city, subdivision-or-neighborhood, preset]
-  const subSlug = slug[1]!
-  const nbhd3 = citySlug ? await getNeighborhoodNameForCitySlug(citySlug, subSlug) : null
-  const subdivisionDisplayName = nbhd3 ?? (city ? (await getSubdivisionNameFromSlug(city, subSlug)) ?? decodeURIComponent(subSlug) : null)
-  const presetSlug = slug[2] ?? null
-  const preset = presetSlug ? getPresetBySlug(presetSlug) : null
-  return { city, subdivisionSlug: subSlug, subdivisionDisplayName, presetSlug, preset, neighborhoodName: nbhd3 }
-}
-
-function buildCanonicalPath(city: string | null, subdivisionDisplayName: string | null, subdivisionSlug: string | null, presetSlug: string | null): string {
-  if (!city) return listingsBrowsePath()
-  const base = subdivisionDisplayName ?? subdivisionSlug
-    ? homesForSalePath(city, subdivisionDisplayName ?? subdivisionSlug ?? null)
-    : homesForSalePath(city, null)
-  return presetSlug ? `${base}/${presetSlug}` : base
-}
-
-export async function generateMetadata({
-  params,
-  searchParams,
-}: {
+export async function generateMetadata(props: {
   params: Promise<{ slug: string[] }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }): Promise<Metadata> {
-  const { slug = [] } = await params
-  const sp = await searchParams
-  const { city, subdivisionDisplayName, subdivisionSlug, presetSlug, preset } = await resolveSlug(slug)
-  const hasInvalidPresetSegment = slug.length >= 3 && !!presetSlug && !preset
-  const placeName = subdivisionDisplayName ? getSubdivisionDisplayName(subdivisionDisplayName) : (city ?? 'Central Oregon')
-  const displayName = preset ? `${placeName} ${preset.shortLabel}` : placeName
-  const content = city ? getCityContent(city) : null
-  const subdivisionDesc =
-    subdivisionDisplayName && city
-      ? await withTimeout(getSubdivisionDescription(city, subdivisionDisplayName), null, 1200)
-      : null
-  const rawMetaDesc =
-    (subdivisionDisplayName ? (subdivisionDesc ?? getSubdivisionBlurb(subdivisionDisplayName)) : null) ??
-    content?.metaDescription ??
-    (preset
-      ? `Browse ${preset.label.toLowerCase()} in ${placeName}, Central Oregon. View listings and property details.`
-      : `Browse homes for sale in ${displayName}, Central Oregon. View listings, map, and property details.`)
-  const metaDesc = shareDescription(rawMetaDesc)
-  const bannerUrl =
-    city &&
-    (subdivisionDisplayName
-      ? await withTimeout(getBannerUrl('subdivision', subdivisionEntityKey(city, subdivisionDisplayName)), null, 1200)
-      : await withTimeout(getBannerUrl('city', cityEntityKey(city)), null, 1200))
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-  const defaultOgImage = `${siteUrl}/api/og?type=default`
-  const canonicalPath = buildCanonicalPath(city, subdivisionDisplayName, subdivisionSlug, presetSlug)
-  const dynamicOgImage = slug.length > 0
-    ? `${siteUrl}/search/og/${slug.map((part) => encodeURIComponent(part)).join('/')}`
-    : defaultOgImage
-  const title = preset ? `${preset.label} in ${placeName}` : `Homes for Sale in ${placeName}`
-  // W3.2 search-matrix noindex: a 3-segment {city}/{area}/{preset} combo with a
-  // VERIFIED zero active-inventory count stays renderable but is noindexed —
-  // the sitemap (lib/seo/getSearchMatrixEntries.ts) only submits combos with
-  // >= 1 verified match AND depth content. Unknown states (failed inventory
-  // read, uncurated geo, non-derivable preset, timeout) fail OPEN.
-  // W3.2 (3-seg) + W3.1 (2-seg) verified-zero-inventory noindex; fail-OPEN.
-  const matrixNoIndex = await withTimeout(
-    resolveMatrixNoIndex(slug, preset?.slug ?? null, hasInvalidPresetSegment),
-    false,
-    2500,
-  )
-  return {
-    title,
-    description: metaDesc,
-    alternates: { canonical: `${siteUrl}${canonicalPath}` },
-    // Sort-only presets (price-low-to-high / price-high-to-low) reorder the
-    // same inventory the parent page shows — noindex the duplicate, keep links
-    // followable. They are also excluded from the sitemap preset loop.
-    robots:
-      hasInvalidPresetSegment || (!!preset && isSortOnlyPreset(preset)) || shouldNoIndexSearchVariant(sp) || matrixNoIndex
-        ? { index: false, follow: true }
-        : undefined,
-    openGraph: {
-      title,
-      description: metaDesc,
-      url: `${siteUrl}${canonicalPath}`,
-      siteName: 'Ryan Realty',
-      type: 'website',
-      images: [
-        {
-          url: dynamicOgImage || bannerUrl || defaultOgImage,
-          width: OG_IMAGE_WIDTH,
-          height: OG_IMAGE_HEIGHT,
-          alt: `Real estate in ${placeName}, Central Oregon`,
-        },
-      ],
-    },
-    twitter: { card: 'summary_large_image', title, description: metaDesc, images: [dynamicOgImage || bannerUrl || defaultOgImage] },
-  }
-}
-
-type SearchParams = {
-  /** On the on-golf-course landing, ?all=1 falls through to the standard filterable list. */
-  all?: string
-  minPrice?: string
-  maxPrice?: string
-  beds?: string
-  baths?: string
-  minSqFt?: string
-  maxSqFt?: string
-  maxBeds?: string
-  maxBaths?: string
-  yearBuiltMin?: string
-  yearBuiltMax?: string
-  lotAcresMin?: string
-  lotAcresMax?: string
-  postalCode?: string
-  propertyType?: string
-  propertySubType?: string
-  /** Enumerated sub types, CSV of exact canonical values (registry multi). */
-  propertySubTypes?: string
-  statusFilter?: string
-  keywords?: string
-  hasOpenHouse?: string
-  garageMin?: string
-  hasPool?: string
-  hasView?: string
-  hasWaterfront?: string
-  hasFireplace?: string
-  hasGolfCourse?: string
-  gatedCommunity?: string
-  newListingsDays?: string
-  /** Registry dom range's URL param — a days-on-market ceiling. */
-  daysOnMarket?: string
-  sort?: string
-  includeClosed?: string
-  page?: string
-  perPage?: string
-  view?: string
-  poly?: string
-}
-
-/** Preset breadcrumb label for filter-only searches (e.g. Under $500K, Luxury). */
-function getPresetSearchLabel(sp: SearchParams): string | null {
-  if (sp.maxPrice === '500000') return 'Under $500K'
-  if (sp.minPrice === '1000000') return 'Luxury'
-  if (sp.keywords?.toLowerCase().includes('new construction')) return 'New Construction'
-  if (sp.hasWaterfront === '1') return 'Waterfront'
-  return null
-}
-
-function hasFilterOnlySearch(sp: SearchParams): boolean {
-  return Boolean(sp.maxPrice || sp.minPrice || (sp.keywords?.trim()) || sp.hasWaterfront === '1')
-}
-
-/** Number -> string for the filter-bar props (the UI reflects the resolved
- *  filterOpts, including preset-supplied values), undefined when unset. */
-function numStr(n: number | null | undefined): string | undefined {
-  return n != null && !Number.isNaN(n) ? String(n) : undefined
+  // The full assembly lives in ./search-metadata (file-size split 2026-07-31);
+  // the alternates.canonical contract stays pinned in this route file
+  // (ci:seo-routes file contract + lib/seo-route-contracts.test.ts).
+  const { canonicalUrl, metadata } = await buildSearchSlugMetadata(props)
+  return { ...metadata, alternates: { canonical: canonicalUrl } }
 }
 
 export const revalidate = 60
@@ -352,164 +117,14 @@ export default async function SearchPage({
   const offset = (page - 1) * pageSize
   const initialPolygon = decodeMapPolygon(sp.poly)
 
-  const filterOptsBase = {
-    // Registry fields (fireplace, shop, well water, appliances, …) — without
-    // this spread the AllFiltersSheet/chips on this surface would claim filters
-    // the query ignores (review finding 2026-07-11).
-    ...pickSearchFeatureFilters(coerceRegistryParams(sp as Record<string, string | undefined>)),
-    city: city || undefined,
-    subdivision: decodedSubdivision,
-    neighborhood,
-    minPrice: sp.minPrice ? Number(sp.minPrice) : undefined,
-    maxPrice: sp.maxPrice ? Number(sp.maxPrice) : undefined,
-    minBeds: sp.beds ? Number(sp.beds) : undefined,
-    minBaths: sp.baths ? Number(sp.baths) : undefined,
-    minSqFt: sp.minSqFt ? Number(sp.minSqFt) : undefined,
-    maxSqFt: sp.maxSqFt ? Number(sp.maxSqFt) : undefined,
-    maxBeds: sp.maxBeds ? Number(sp.maxBeds) : undefined,
-    maxBaths: sp.maxBaths ? Number(sp.maxBaths) : undefined,
-    yearBuiltMin: sp.yearBuiltMin ? Number(sp.yearBuiltMin) : undefined,
-    yearBuiltMax: sp.yearBuiltMax ? Number(sp.yearBuiltMax) : undefined,
-    lotAcresMin: sp.lotAcresMin != null ? Number(sp.lotAcresMin) : undefined,
-    lotAcresMax: sp.lotAcresMax != null ? Number(sp.lotAcresMax) : undefined,
-    postalCode: sp.postalCode?.trim() || undefined,
-    propertyType: sp.propertyType?.trim() || undefined,
-    propertySubType: sp.propertySubType?.trim() || undefined,
-    // Sanitized here, not just for the UI toggle below: the raw param used to
-    // reach the fetch, making ?statusFilter=coming_soon a public browse mode.
-    statusFilter: PUBLIC_SEARCH_STATUS_FILTERS.includes(sp.statusFilter?.trim() ?? '')
-      ? sp.statusFilter!.trim()
-      : undefined,
-    keywords: sp.keywords?.trim() || undefined,
-    hasOpenHouse: sp.hasOpenHouse === '1',
-    garageMin: sp.garageMin != null ? Number(sp.garageMin) : undefined,
-    hasPool: sp.hasPool === '1',
-    hasView: sp.hasView === '1',
-    hasWaterfront: sp.hasWaterfront === '1',
-    newListingsDays: sp.newListingsDays ? Number(sp.newListingsDays) : undefined,
-    // The registry dom filter writes ?daysOnMarket=N. This page never read it
-    // (W-URL audit 2026-07-30): the AllFiltersSheet showed an applied chip
-    // while the query ran unfiltered — the worst failure mode a filter has.
-    // getAdvancedListings folds it with newListingsDays, tightest ceiling wins.
-    daysOnMarket: sp.daysOnMarket ? Number(sp.daysOnMarket) : undefined,
-    sort:
-      sp.sort === 'newest' || sp.sort === 'oldest' || sp.sort === 'price_asc' || sp.sort === 'price_desc' ||
-      sp.sort === 'price_per_sqft_asc' || sp.sort === 'price_per_sqft_desc' || sp.sort === 'year_newest' || sp.sort === 'year_oldest'
-        ? (sp.sort as AdvancedSort)
-        : 'newest',
-    includeClosed: sp.includeClosed === '1',
-  }
-  // Predefined preset: apply preset params (preset wins for its keys so the page shows the right results)
-  const presetYearBuiltMin = preset ? resolvePresetYearBuiltMin(preset) : undefined
-  // A preset only FILLS filters the visitor has not explicitly set in the URL.
-  // An explicit query param (the visitor changed a filter) wins over the preset
-  // for that one key. Without the `!sp.*` guards the preset always won, so
-  // changing price / sort / status on a preset page did nothing — "if you change
-  // a filter it breaks." Amenity booleans gained their off-switch 2026-07-30
-  // (W-UI audit trap T1): `?hasPool=0` on /with-pool now clears the pool
-  // filter — the guard is `sp.<key> == null` (URL silent → preset fills), so a
-  // visitor landing from search is no longer trapped in a filter they can see
-  // but not remove.
-  const filterOpts = preset
-    ? {
-        ...filterOptsBase,
-        ...(preset.params.maxPrice != null && !sp.maxPrice && { maxPrice: preset.params.maxPrice }),
-        ...(preset.params.minPrice != null && !sp.minPrice && { minPrice: preset.params.minPrice }),
-        ...(preset.params.statusFilter != null && !sp.statusFilter && { statusFilter: preset.params.statusFilter }),
-        ...(preset.params.newListingsDays != null && !sp.newListingsDays && { newListingsDays: preset.params.newListingsDays }),
-        ...(preset.params.hasOpenHouse != null && sp.hasOpenHouse == null && { hasOpenHouse: preset.params.hasOpenHouse }),
-        ...(preset.params.hasPool != null && sp.hasPool == null && { hasPool: preset.params.hasPool }),
-        ...(preset.params.hasView != null && sp.hasView == null && { hasView: preset.params.hasView }),
-        ...(preset.params.hasFireplace != null && sp.hasFireplace == null && { hasFireplace: preset.params.hasFireplace }),
-        ...(preset.params.hasGolfCourse != null && sp.hasGolfCourse == null && { hasGolfCourse: preset.params.hasGolfCourse }),
-        ...(preset.params.hasWaterfront != null && sp.hasWaterfront == null && { hasWaterfront: preset.params.hasWaterfront }),
-        ...(preset.params.viewContains != null && preset.params.viewContains !== '' && { viewContains: preset.params.viewContains }),
-        ...(preset.params.lotAcresMin != null && !sp.lotAcresMin && { lotAcresMin: preset.params.lotAcresMin }),
-        ...(presetYearBuiltMin != null && !sp.yearBuiltMin && { yearBuiltMin: presetYearBuiltMin }),
-        ...(preset.params.propertySubType != null && preset.params.propertySubType !== '' && !sp.propertySubType && { propertySubType: preset.params.propertySubType }),
-        // Enumerated sub-type sets (condos / townhomes / manufactured, plan
-        // §4.4). URL CSV (?propertySubTypes=...) wins over the preset — the
-        // registry spread in filterOptsBase already parsed it.
-        ...(preset.params.propertySubTypes != null && preset.params.propertySubTypes.length > 0 && !sp.propertySubTypes && { propertySubTypes: preset.params.propertySubTypes }),
-        // lots-and-land: PropertyType filter (Land -> code D); an explicit URL
-        // propertyType still wins, same contract as the other preset keys.
-        ...(preset.params.propertyType != null && preset.params.propertyType !== '' && !sp.propertyType && { propertyType: preset.params.propertyType }),
-        // gated-community: MLS-verified gated flag. Same off-switch contract.
-        ...(preset.params.gatedCommunity != null && sp.gatedCommunity == null && { gatedCommunity: preset.params.gatedCommunity }),
-        ...(preset.params.keywords != null && preset.params.keywords !== '' && !sp.keywords && { keywords: preset.params.keywords }),
-        ...(preset.params.sort != null && !sp.sort && { sort: preset.params.sort as AdvancedSort }),
-      }
-    : filterOptsBase
-
-  // Preset-applied amenity chips for the filter bar: filters the ROUTE applies
-  // that the query string does not carry. Their chip removal writes `<key>=0`,
-  // which the preset merge above honors (W-UI audit T1, 2026-07-30).
-  const AMENITY_PRESET_KEYS = [
-    'hasOpenHouse', 'hasPool', 'hasView', 'hasFireplace', 'hasGolfCourse',
-    'hasWaterfront', 'gatedCommunity',
-  ] as const
-  const presetChips = preset
-    ? AMENITY_PRESET_KEYS.flatMap((k) =>
-        (preset.params as Record<string, unknown>)[k] != null && (sp as Record<string, string | undefined>)[k] == null
-          ? [{ param: k, label: searchFieldByKey(k)?.label ?? k }]
-          : []
-      )
-    : []
+  const { filterOpts, presetChips } = buildSearchFilters({ sp, city, decodedSubdivision, neighborhood, preset })
 
   // Golf landing — the on-golf-course preset renders a purpose-built, immersive
   // golf properties landing page (hero + community spotlight + stat band + the
   // real golf homes + FAQ). `?all=1` falls through to the standard filterable
   // list+map view of the same golf-filtered homes.
   if (preset?.landing === 'golf' && city && sp.all !== '1') {
-    const [golfRows, golfImages] = await Promise.all([
-      // Lightweight golf-homes fetch (search_golf_homes RPC, no full_count window)
-      // returns in well under a second. The full search RPC's count(*) OVER ()
-      // golf-filters all ~134K Bend rows (~7s, risks a serverless timeout).
-      withTimeout(getGolfHomesForLanding(city, 24), [], 6000),
-      withTimeout(getGolfImages(24), []),
-    ])
-    const heroImage = pickGolfImage(golfImages, city, null)
-    const homes = golfRows.map((l): ListingCardData => {
-      const street = [l.StreetNumber, l.StreetName].filter(Boolean).join(' ').trim()
-      const cityLine = [[l.City, 'OR'].filter(Boolean).join(', '), l.PostalCode].filter(Boolean).join(' ').trim()
-      return {
-        listingKey: (l.ListNumber ?? l.ListingKey ?? '').toString().trim(),
-        href: listingTileHref({
-          listingKey: l.ListingKey,
-          listNumber: l.ListNumber,
-          streetNumber: l.StreetNumber,
-          streetName: l.StreetName,
-          city: l.City,
-        }),
-        photoUrl: l.PhotoURL ?? null,
-        price: l.ListPrice ?? null,
-        addressLine: street || 'Address available on request',
-        cityLine: cityLine || 'Central Oregon',
-        beds: l.BedroomsTotal ?? null,
-        baths: l.BathroomsTotal ?? null,
-        sqft: l.TotalLivingAreaSqFt ?? null,
-      }
-    })
-    const citySlug = cityEntityKey(city)
-    const cityCommunities = GOLF_COMMUNITIES.filter((c) => c.citySlug === citySlug)
-    const communities = cityCommunities.length ? cityCommunities : GOLF_COMMUNITIES
-    const allHomesHref = `${homesForSalePath(city)}/on-golf-course?all=1`
-    return (
-      <>
-        <GolfLanding
-          city={city}
-          heroImage={heroImage}
-          communities={communities}
-          homes={homes}
-          totalHomes={0}
-          allHomesHref={allHomesHref}
-        />
-        {/* design-audit NAV-1: KbFooter replaces the suppressed SiteFooter. */}
-        <div className="kb-root">
-          <KbFooter towns={[]} />
-        </div>
-      </>
-    )
+    return renderGolfLanding(city)
   }
 
   // Fetch the independent data the clean results page renders in one parallel batch:
@@ -583,48 +198,7 @@ export default async function SearchPage({
     subdivision
       ? (subdivisionTabContent?.about ?? getSubdivisionBlurb(decodedSubdivision!))
       : null
-  const entityType = subdivision ? ('subdivision' as const) : ('city' as const)
-  // All-cities preset routes (/homes-for-sale/manufactured) carry no city —
-  // there is no geographic entity to key banners or curation on.
-  const entityKey = subdivision
-    ? subdivisionEntityKey(city!, decodedSubdivision!)
-    : city
-      ? cityEntityKey(city)
-      : null
-  const resortKeys = city && subdivision ? await withTimeout(getResortEntityKeys(), new Set<string>(), 1200) : new Set<string>()
-  const isResortSubdivision =
-    subdivision && city && decodedSubdivision && entityKey ? resortKeys.has(entityKey) : false
-  const bannerSearchQuery = city
-    ? getBannerSearchQuery(
-        subdivision ? 'subdivision' : 'city',
-        subdivision ? decodedSubdivision! : city,
-        city,
-        subdivision ? isResortSubdivision : undefined
-      )
-    : ''
-  // Banner URL is still resolved because the SearchPageJsonLd / ResortCommunityJsonLd
-  // structured data references the place's hero image. The clean results page does
-  // not render a photo hero band, so only the URL is needed (no attribution chrome).
-  const [listingHero, bannerResult] =
-    city && entityKey
-      ? await Promise.all([
-          withTimeout(getBestListingHeroForGeography(city, decodedSubdivision ?? null), null, 1500),
-          IS_PRODUCTION_BUILD
-            ? withTimeout(getBannerUrl(entityType, entityKey), null, 800).then((url) => ({
-                url,
-                attribution: null,
-              }))
-            : withTimeout(
-                getOrCreatePlaceBanner(entityType, entityKey, bannerSearchQuery),
-                { url: null, attribution: null },
-                1500,
-              ),
-        ])
-      : [null, { url: null, attribution: null }]
-  // Prefer curated Central Oregon lifestyle image over generic Unsplash/AI banner
-  const { CITY_HERO_IMAGES } = await import('@/lib/central-oregon-images')
-  const curatedCityImage = city ? (CITY_HERO_IMAGES[city.toLowerCase().replace(/\s+/g, '-')] ?? null) : null
-  const bannerUrl = curatedCityImage ?? listingHero?.url ?? bannerResult?.url ?? null
+  const bannerUrl = await resolvePlaceBannerUrl({ city, subdivision, decodedSubdivision })
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const searchPagePath = buildCanonicalPath(city ?? null, decodedSubdivision ?? null, subdivision ?? null, resolved.presetSlug)
@@ -654,17 +228,6 @@ export default async function SearchPage({
 
   // Map split view: bounds-driven, Bend default; on city/community pages center on that place and scope search
   if ((sp.view === 'map' || sp.view === 'split') && (city || hasFilterOnly)) {
-    const { default: UnifiedMapListingsView } = await import('../../../components/UnifiedMapListingsView')
-    const placeQuery = city
-      ? decodedSubdivision
-        ? `${getSubdivisionDisplayName(decodedSubdivision)} ${city} Oregon`
-        : `${city} Oregon`
-      : 'Bend Oregon'
-    const mapBoundaryGeojson = city
-      ? decodedSubdivision
-        ? (await withTimeout(getCommunityBySlug(entityKeyToSlug(subdivisionEntityKey(city, decodedSubdivision))), null, 1000))?.boundaryGeojson ?? null
-        : await withTimeout(getCityBoundary(city), null, 1000)
-      : null
     // Grid-view href = the same search with `view`/`poly` dropped, so the toggle
     // returns to the static grid render of this exact city/preset page.
     const gridViewHref = (() => {
@@ -676,93 +239,32 @@ export default async function SearchPage({
       const q = params.toString()
       return q ? `${searchPagePath}?${q}` : searchPagePath
     })()
-    // design-audit NAV-1: clear the 64px fixed KbNav and size the app-frame to
-    // the remaining viewport (overrides the shared .map-search-shell 100vh-120px
-    // which assumed the in-flow 72px SiteHeader).
-    return (
-      <main className="flex flex-col map-search-shell overflow-hidden" style={{ marginTop: 64, height: 'calc(100vh - 64px)' }}>
-        <div className="shrink-0 border-b border-primary/20 bg-primary">
-          <Container className="flex items-center justify-between gap-3 py-3">
-            {searchBreadcrumbItems.length > 1 ? (
-              <BreadcrumbNav tone="on-navy" items={searchBreadcrumbItems} includeJsonLd={false} />
-            ) : (
-              <span />
-            )}
-            <Button asChild variant="secondary" size="sm" className="shrink-0">
-              <Link href={gridViewHref} aria-label="Switch back to the grid view">
-                Grid view
-              </Link>
-            </Button>
-          </Container>
-        </div>
-        <UnifiedMapListingsView
-          containerClassName="flex-1 min-h-0 overflow-hidden"
-          pageTitle={`${displayName} Real Estate & Homes For Sale`}
-          basePath={searchPagePath}
-          placeQuery={placeQuery}
-          boundaryGeojson={mapBoundaryGeojson}
-          city={city ?? undefined}
-          subdivision={decodedSubdivision ?? undefined}
-          savedKeys={savedKeys}
-          likedKeys={likedKeys}
-          priceChangeKeys={priceChangeKeys}
-          signedIn={!!session?.user}
-          userEmail={session?.user?.email ?? null}
-          prefs={prefs}
-          statusFilter={effectiveStatusFilter}
-          includeClosed={sp.includeClosed === '1'}
-          minPrice={sp.minPrice != null ? Number(sp.minPrice) : undefined}
-          maxPrice={sp.maxPrice != null ? Number(sp.maxPrice) : undefined}
-          minBeds={sp.beds != null ? Number(sp.beds) : undefined}
-          maxBeds={sp.maxBeds != null ? Number(sp.maxBeds) : undefined}
-          minBaths={sp.baths != null ? Number(sp.baths) : undefined}
-          maxBaths={sp.maxBaths != null ? Number(sp.maxBaths) : undefined}
-          minSqFt={sp.minSqFt != null ? Number(sp.minSqFt) : undefined}
-          maxSqFt={sp.maxSqFt != null ? Number(sp.maxSqFt) : undefined}
-          postalCode={sp.postalCode ?? undefined}
-          propertyType={sp.propertyType ?? undefined}
-          initialPolygon={initialPolygon}
-          persistPolygonInUrl
-          filterBar={
-            <SearchFilterBar
-              basePath={searchPagePath}
-              presetChips={presetChips}
-              locationLabel={displayName}
-              locationHref={`${searchPagePath}?${new URLSearchParams({ ...sp, view: 'map' }).toString()}`}
-              signedIn={!!session?.user}
-              pathContext={{ ...resolved, city, citySlug: slug[0] }}
-              minPrice={sp.minPrice}
-              maxPrice={sp.maxPrice}
-              beds={sp.beds}
-              baths={sp.baths}
-              minSqFt={sp.minSqFt}
-              maxSqFt={sp.maxSqFt}
-              maxBeds={sp.maxBeds}
-              maxBaths={sp.maxBaths}
-              yearBuiltMin={sp.yearBuiltMin}
-              yearBuiltMax={sp.yearBuiltMax}
-              lotAcresMin={sp.lotAcresMin}
-              lotAcresMax={sp.lotAcresMax}
-              postalCode={sp.postalCode}
-              propertyType={sp.propertyType}
-              statusFilter={sp.statusFilter}
-              keywords={sp.keywords}
-              hasOpenHouse={sp.hasOpenHouse}
-              garageMin={sp.garageMin}
-              hasPool={sp.hasPool}
-              hasView={sp.hasView}
-              hasWaterfront={sp.hasWaterfront}
-              newListingsDays={sp.newListingsDays}
-              includeClosed={sp.includeClosed}
-              sort={sp.sort}
-              view="map"
-              perPage={perPageParam}
-              poly={sp.poly}
-            />
-          }
-        />
-      </main>
-    )
+    return renderMapSplitView({
+      sp,
+      slug,
+      resolved,
+      city,
+      decodedSubdivision,
+      displayName,
+      searchPagePath,
+      searchBreadcrumbItems,
+      savedKeys,
+      likedKeys,
+      priceChangeKeys,
+      session,
+      prefs,
+      effectiveStatusFilter,
+      initialPolygon,
+      presetChips,
+      perPageParam,
+      gridViewCta: (
+        <Button asChild variant="secondary" size="sm" className="shrink-0">
+          <Link href={gridViewHref} aria-label="Switch back to the grid view">
+            Grid view
+          </Link>
+        </Button>
+      ),
+    })
   }
 
   // Clean header copy — data-grounded. Active count = totalCount (the accurate
@@ -1031,161 +533,35 @@ export default async function SearchPage({
       </div>
 
       {/* 4 + 5. Listings grid (design-system ListingCard) + sort/pagination toolbar. */}
-      {!city && !hasFilterOnly ? (
-        <Body className="mt-10">Select a city or subdivision to see listings.</Body>
-      ) : listings.length === 0 ? (
-        <Body className="mt-10">No homes match this search right now. Adjust the filters or explore a related search below.</Body>
-      ) : (
-        <div className="mt-6">
-          <SearchListingsToolbar
-            pathname={searchPagePath}
-            totalCount={totalCount}
-            page={page}
-            pageSize={pageSize}
-            viewParam={viewParam}
-            perPageParam={perPageParam}
-            searchParams={{
-              minPrice: sp.minPrice,
-              maxPrice: sp.maxPrice,
-              beds: sp.beds,
-              baths: sp.baths,
-              minSqFt: sp.minSqFt,
-              propertyType: sp.propertyType,
-              sort: sp.sort ?? 'newest',
-              statusFilter: sp.statusFilter ?? (sp.includeClosed === '1' ? 'all' : 'active'),
-              includeClosed: sp.includeClosed,
-              page: String(page),
-              view: viewParam,
-              perPage: perPageParam,
-            }}
-          />
-          {/* HideAwareListingGrid: per-user hidden-home subtraction at the edge of render (W7.2); signed-out sees the full set. */}
-          <HideAwareListingGrid
-            items={listings.map((listing, i): HideAwareItem => {
-              const key = (listing.ListNumber ?? listing.ListingKey ?? `listing-${i}`).toString().trim()
-              const street = [listing.StreetNumber, listing.StreetName, listing.StreetSuffix].filter(Boolean).join(' ').trim()
-              const cityLine = [[listing.City ?? city, 'OR'].filter(Boolean).join(', '), listing.PostalCode].filter(Boolean).join(' ').trim()
-              const card: ListingCardData = {
-                listingKey: key,
-                href: listingTileHref({
-                  listingKey: listing.ListingKey,
-                  listNumber: listing.ListNumber,
-                  streetNumber: listing.StreetNumber,
-                  streetName: listing.StreetName,
-                  city: listing.City,
-                  subdivisionName: listing.SubdivisionName,
-                }),
-                photoUrl: listing.PhotoURL ?? null,
-                price: listing.ListPrice ?? null,
-                addressLine: street || 'Address available on request',
-                cityLine: cityLine || 'Central Oregon',
-                beds: listing.BedroomsTotal ?? null,
-                baths: listing.BathroomsTotal ?? null,
-                sqft: listing.TotalLivingAreaSqFt ?? null,
-                ...(key && priceChangeKeys.has(key) ? { badge: { kind: 'drop' as const, label: 'Price drop' } } : {}),
-              }
-              return { card, ListingKey: listing.ListingKey ?? null, ListNumber: listing.ListNumber ?? null }
-            })}
-          />
-        </div>
-      )}
+      <ListingsResults
+        city={city}
+        hasFilterOnly={hasFilterOnly}
+        listings={listings}
+        totalCount={totalCount}
+        page={page}
+        pageSize={pageSize}
+        viewParam={viewParam}
+        perPageParam={perPageParam}
+        sp={sp}
+        searchPagePath={searchPagePath}
+        priceChangeKeys={priceChangeKeys}
+      />
 
       {/* Below-fold SEO depth. Results + filters stay the only above-fold job. */}
-      {isPlainCityPage && (
-        <section id="search-seo" className="mt-12">
-          <MarketSnapshot citySlug={relatedCitySlug!} cityName={city!} />
-        </section>
-      )}
-      {cityMarketFaq && cityMarketFaq.faqs.length > 0 && (
-        <FAQBlock
-          items={cityMarketFaq.faqs}
-          eyebrow="Common questions"
-          title={`${city!} real estate questions`}
-        />
-      )}
-
-      {/* Preset-page depth: preset-scoped FAQ + FAQPage JSON-LD (FAQBlock emits
-          the schema from the same items, so text and markup never diverge). */}
-      {presetDepth && presetDepth.faqs.length > 0 && (
-        <FAQBlock
-          items={presetDepth.faqs}
-          eyebrow="Common questions"
-          title={presetDepth.faqTitle}
-        />
-      )}
-
-      {/* Preset cross-links: adjacent price bands + the same search in other
-          cities (only cities whose data-grounded popular-search list carries
-          this preset, so no empty-inventory links). */}
-      {(presetBandLinks.length > 0 || presetCityLinks.length > 0) && (
-        <section className="mt-14 border-t border-border pt-10" aria-labelledby="preset-crosslinks-heading">
-          <H2 id="preset-crosslinks-heading">Similar searches</H2>
-          {presetBandLinks.length > 0 && (
-            <div className="mt-5">
-              <Body size="small">Nearby price ranges</Body>
-              <div className="mt-2.5 flex flex-wrap gap-2.5">
-                {presetBandLinks.map((l) => (
-                  <Link
-                    key={l.href}
-                    href={l.href}
-                    className="rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/30 hover:shadow-sm"
-                  >
-                    {l.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-          {presetCityLinks.length > 0 && (
-            <div className="mt-5">
-              <Body size="small">
-                {subdivision
-                  ? 'Widen the search'
-                  : preset
-                    ? `${preset.shortLabel} in other cities`
-                    : 'In other cities'}
-              </Body>
-              <div className="mt-2.5 flex flex-wrap gap-2.5">
-                {presetCityLinks.map((l) => (
-                  <Link
-                    key={l.href}
-                    href={l.href}
-                    className="rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/30 hover:shadow-sm"
-                  >
-                    {l.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* 6. Related searches — SEO internal links to this city's other popular searches. */}
-      {(relatedAllHomes || relatedSearches.length > 0) && (
-        <section className="mt-14 border-t border-border pt-10" aria-labelledby="related-searches-heading">
-          <H2 id="related-searches-heading">Related searches</H2>
-          <div className="mt-5 flex flex-wrap gap-2.5">
-            {relatedAllHomes && (
-              <Link
-                href={relatedAllHomes.href}
-                className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
-              >
-                {relatedAllHomes.label}
-              </Link>
-            )}
-            {relatedSearches.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/30 hover:shadow-sm"
-              >
-                {placeName} {l.label.toLowerCase()}
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
+      <SearchSeoTail
+        isPlainCityPage={isPlainCityPage}
+        relatedCitySlug={relatedCitySlug}
+        city={city}
+        cityMarketFaq={cityMarketFaq}
+        presetDepth={presetDepth}
+        presetBandLinks={presetBandLinks}
+        presetCityLinks={presetCityLinks}
+        relatedAllHomes={relatedAllHomes}
+        relatedSearches={relatedSearches}
+        placeName={placeName}
+        subdivision={subdivision}
+        preset={preset}
+      />
       </Container>
       <div className="kb-root">
         <KbFooter towns={[]} />

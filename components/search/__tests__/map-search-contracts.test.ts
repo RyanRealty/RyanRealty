@@ -133,7 +133,18 @@ describe('hidden homes are excluded from the SSR city browse grid too (W7.2, 202
   // control — and it is fed BOTH RETS identifiers so membership matches whether
   // the store recorded the ListingKey or the MLS ListNumber.
   const grid = readSrc('components/search/HideAwareListingGrid.tsx')
-  const slug = readSrc('app/search/[...slug]/page.tsx')
+  // The slug route was split into colocated modules (2026-07-31 file-size
+  // split): the browse grid lives in sections/ListingsResults.tsx. Concatenate
+  // the page with every render section so the import/dual-key assertions find
+  // the moved grid AND the no-raw-ListingCard guard still covers the whole
+  // route render surface.
+  const slug = [
+    'app/search/[...slug]/page.tsx',
+    'app/search/[...slug]/sections/ListingsResults.tsx',
+    'app/search/[...slug]/sections/MapSplitView.tsx',
+    'app/search/[...slug]/sections/GolfBranch.tsx',
+    'app/search/[...slug]/sections/SeoTail.tsx',
+  ].map(readSrc).join('\n')
 
   it('the browse grid renders through HideAwareListingGrid, not a raw ListingCard grid', () => {
     expect(slug).toMatch(/import HideAwareListingGrid, \{ type HideAwareItem \} from '@\/components\/search\/HideAwareListingGrid'/)

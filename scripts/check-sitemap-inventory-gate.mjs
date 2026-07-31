@@ -34,7 +34,9 @@ import ts from 'typescript'
 // getMatrixCityPresetNoIndex. All three links must hold, or the guard is dead.
 const CHECKS = [
   { file: 'app/sitemap.ts', guard: 'getMatrixCityPresetNoIndex', why: 'omit a zero-count combo from the sitemap' },
-  { file: 'app/search/[...slug]/page.tsx', guard: 'resolveMatrixNoIndex', why: 'noindex a zero-count combo at render' },
+  // The search route's metadata assembly moved to the colocated module in the
+  // 2026-07-31 file-size split; page.tsx's generateMetadata forwards to it.
+  { file: 'app/search/[...slug]/search-metadata.ts', guard: 'resolveMatrixNoIndex', why: 'noindex a zero-count combo at render' },
   {
     file: 'lib/seo/getSearchMatrixEntries.ts',
     guard: 'getMatrixCityPresetNoIndex',
