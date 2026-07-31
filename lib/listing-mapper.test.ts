@@ -89,6 +89,47 @@ describe('private-detail redaction (attack finding 2026-07-11)', () => {
   })
 })
 
+describe('masked-value stripping (adversarial audit 2026-07-30)', () => {
+  // Spark returns "********" for fields our feed access level does not
+  // license. The mask reached anon-readable `details` verbatim (measured:
+  // DirectionFaces masked on 9,407 of 9,648 MV rows) and nine search filters
+  // were built over fields that are 100% masked. Masks must die at the door.
+  it('stripMaskedValues drops masked scalars, filters masked array elements', async () => {
+    const { stripMaskedValues } = await import('./listing-mapper')
+    expect(stripMaskedValues({
+      DirectionFaces: '********',
+      SchoolDistrict: '****',
+      City: 'Bend',
+      Levels: ['One', '********'],
+      AllMasked: ['****', '********'],
+      Price: 500000,
+      Empty: '',
+      Star: '*',
+    })).toEqual({
+      City: 'Bend',
+      Levels: ['One'],
+      Price: 500000,
+      Empty: '',   // empty string is not a mask; other layers decide its fate
+    })
+  })
+
+  it('sparkToListingRow.details never carries a masked value, typed columns null', async () => {
+    const { sparkToListingRow } = await import('./listing-mapper')
+    const row = sparkToListingRow({
+      ListingKey: 'k1', ListNumber: '220000002', StandardStatus: 'Active',
+      DirectionFaces: '********', SchoolDistrict: '********',
+      StoriesTotal: '********', WalkScore: '********',
+      City: 'Bend', PublicRemarks: 'Real remarks.',
+    })
+    const details = row.details as Record<string, unknown>
+    expect(details.DirectionFaces).toBeUndefined()
+    expect(details.SchoolDistrict).toBeUndefined()
+    expect(details.StoriesTotal).toBeUndefined()
+    expect(details.PublicRemarks).toBe('Real remarks.')
+    expect(row.school_district).toBeNull()
+  })
+})
+
 // ---------------------------------------------------------------------------
 // CustomFields ingest (search plan Phase 1.2, 2026-07-29)
 // ---------------------------------------------------------------------------

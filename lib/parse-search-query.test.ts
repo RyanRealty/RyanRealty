@@ -293,10 +293,17 @@ describe('Phase 1 tranche voice (CustomFields + promoted scalars, 2026-07-30)', 
     expect(parseSearchQuery('condo with no hoa').noHoa).toBe('1')
   })
 
-  it('spa, carport, and home warranty booleans', () => {
-    expect(parseSearchQuery('home with a spa in redmond').spa).toBe('1')
-    expect(parseSearchQuery('carport and 2 bed').carport).toBe('1')
-    expect(parseSearchQuery('home warranty included').homeWarranty).toBe('1')
+  it('spa and carport voice resolve to the REAL data fields (booleans removed 2026-07-30)', () => {
+    // spa_yn/carport_yn/home_warranty_yn are 100% masked at the feed level, so
+    // the booleans were removed by the accuracy audit. The spoken intent now
+    // lands on the feature options that actually carry data.
+    const spa = parseSearchQuery('home with a spa in redmond')
+    expect(spa.spa).toBeUndefined()
+    expect(spa.exteriorFeatures).toContain('Spa/Hot Tub')
+    const carport = parseSearchQuery('carport and 2 bed')
+    expect(carport.carport).toBeUndefined()
+    expect(carport.parkingFeatures).toContain('Attached Carport')
+    expect(parseSearchQuery('home warranty included').homeWarranty).toBeUndefined()
   })
 
   it('"double wide" sets the manufactured body type multi', () => {

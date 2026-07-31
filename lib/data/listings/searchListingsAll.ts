@@ -102,9 +102,6 @@ const featureShape = {
   aduPermitted: bool(),
   strPermit: bool(),
   ccrs: bool(),
-  spa: bool(),
-  carport: bool(),
-  homeWarranty: bool(),
   hasFloorPlan: bool(),
   hasVideo: bool(),
   // Multi-selects (registry kind 'multi') — column + match mode resolve from
@@ -147,7 +144,6 @@ const featureShape = {
   roadFrontage: multi(),
   poolFeatures: multi(),
   county: multi(),
-  directionFaces: multi(),
   // CF tranche (2026-07-30) multis.
   floodZone: multi(),
   governmentOverlay: multi(),
@@ -159,7 +155,6 @@ const featureShape = {
   elementarySchool: text(),
   middleSchool: text(),
   highSchool: text(),
-  schoolDistrict: text(),
   zoning: text(),
   irrigationDistrict: text(),
   // Max-only ranges (registry: min unused in the UI).
@@ -171,16 +166,9 @@ const featureShape = {
   aduSqftMax: z.number().int().positive().optional().catch(undefined),
   irrigationAcresMin: z.number().nonnegative().optional().catch(undefined),
   irrigationAcresMax: z.number().nonnegative().optional().catch(undefined),
-  walkScoreMin: z.number().int().nonnegative().max(100).optional().catch(undefined),
-  walkScoreMax: z.number().int().nonnegative().max(100).optional().catch(undefined),
-  storiesTotalMin: z.number().int().nonnegative().optional().catch(undefined),
-  storiesTotalMax: z.number().int().nonnegative().optional().catch(undefined),
-  fireplacesTotalMin: z.number().int().nonnegative().optional().catch(undefined),
-  fireplacesTotalMax: z.number().int().nonnegative().optional().catch(undefined),
-  carportSpacesMin: z.number().int().nonnegative().optional().catch(undefined),
-  carportSpacesMax: z.number().int().nonnegative().optional().catch(undefined),
-  parkingTotalMin: z.number().int().nonnegative().optional().catch(undefined),
-  parkingTotalMax: z.number().int().nonnegative().optional().catch(undefined),
+  // walkScore/storiesTotal/fireplacesTotal/carportSpaces/parkingTotal ranges
+  // removed 2026-07-30: source StandardFields are masked at our feed level,
+  // columns 100% null (accuracy audit).
   photosCountMin: z.number().int().nonnegative().optional().catch(undefined),
   photosCountMax: z.number().int().nonnegative().optional().catch(undefined),
   prevListPriceMin: z.number().positive().optional().catch(undefined),
@@ -337,6 +325,13 @@ function applySearchFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>
   const record = parsed as unknown as Record<string, unknown>
 
   // ── Service-area guard (same default semantics as getListingTiles) ───────
+  // county counts as explicit geography (accuracy audit 2026-07-30): without
+  // it, the guard's service-area city list silently intersected the county
+  // filter, so county=Lake could never match anything (its cities are not in
+  // the service list) and Klamath under-reported. A user naming a county has
+  // named their geography — the guard must stand down exactly as it does for
+  // a city.
+  const countyFilter = record.county
   const hasExplicitGeo = Boolean(
     parsed.city ||
       (parsed.cities && parsed.cities.length > 0) ||
@@ -345,7 +340,8 @@ function applySearchFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>
       parsed.postalCode ||
       parsed.neighborhood ||
       parsed.bbox ||
-      parsed.shapes
+      parsed.shapes ||
+      (Array.isArray(countyFilter) && countyFilter.length > 0)
   )
   const applyServiceArea =
     parsed.scope === 'service-area' || (parsed.scope !== 'all' && !hasExplicitGeo)

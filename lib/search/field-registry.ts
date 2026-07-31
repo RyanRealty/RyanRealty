@@ -191,46 +191,14 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     unit: 'acres',
     coverageNote: 'Land and farm listings only.',
   },
-  {
-    key: 'walkScore',
-    label: 'Walk Score',
-    category: 'listing_meta',
-    kind: 'range',
-    mv: 'walk_score',
-    unit: 'count',
-  },
-  {
-    key: 'storiesTotal',
-    label: 'Stories count',
-    category: 'size_layout',
-    kind: 'range',
-    mv: 'stories_total',
-    unit: 'count',
-  },
-  {
-    key: 'fireplacesTotal',
-    label: 'Fireplaces',
-    category: 'interior',
-    kind: 'range',
-    mv: 'fireplaces_total',
-    unit: 'count',
-  },
-  {
-    key: 'carportSpaces',
-    label: 'Carport spaces',
-    category: 'parking',
-    kind: 'range',
-    mv: 'carport_spaces',
-    unit: 'spaces',
-  },
-  {
-    key: 'parkingTotal',
-    label: 'Total parking spaces',
-    category: 'parking',
-    kind: 'range',
-    mv: 'parking_total',
-    unit: 'spaces',
-  },
+  // REMOVED 2026-07-30 (adversarial accuracy audit): walkScore, storiesTotal,
+  // fireplacesTotal, carportSpaces, parkingTotal. Spark masks these
+  // StandardFields at our feed access level ("********" on every row), so the
+  // MV columns are 100% null and each filter was a guaranteed-zero dead end.
+  // A filter that can never match is not exposed — re-add only if the feed
+  // access level changes AND observed coverage is nonzero (measured, per plan
+  // §5). Same audit removed spa/carport/homeWarranty booleans and
+  // directionFaces/schoolDistrict below.
   {
     key: 'photosCount',
     label: 'Photo count',
@@ -557,30 +525,13 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     voice: ['ccrs', 'cc&rs', "cc&r's", 'covenants'],
     coverageNote: 'Backfill pending 2026-07-30',
   },
-  {
-    key: 'spa',
-    label: 'Spa or hot tub',
-    category: 'outdoor_lot',
-    kind: 'boolean',
-    mv: 'spa_yn',
-    voice: ['spa', 'jacuzzi'],
-  },
-  {
-    key: 'carport',
-    label: 'Carport',
-    category: 'parking',
-    kind: 'boolean',
-    mv: 'carport_yn',
-    voice: ['carport'],
-  },
-  {
-    key: 'homeWarranty',
-    label: 'Home warranty',
-    category: 'listing_meta',
-    kind: 'boolean',
-    mv: 'home_warranty_yn',
-    voice: ['home warranty'],
-  },
+  // REMOVED 2026-07-30 (adversarial accuracy audit): spa, carport,
+  // homeWarranty. SpaYN/CarportYN/HomeWarrantyYN arrive masked ("********")
+  // at our feed level — the *_yn columns are 100% null and the filters could
+  // never match. The BUYER INTENT survives through real data: spa/hot tub is
+  // exteriorFeatures 'Spa/Hot Tub' + interiorFeatures 'Spa/Hot Tub' (605 live
+  // rows); carport is parkingFeatures 'Attached Carport'/'Detached Carport'
+  // (188 live rows). Voice phrases moved onto those fields.
   {
     key: 'hasFloorPlan',
     label: 'Floor plan available',
@@ -686,7 +637,9 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     mv: 'exterior_features',
     options: ['Spa/Hot Tub', 'RV Hookup', 'Fire Pit', 'RV Dump', 'Courtyard', 'Built-in Barbecue', 'Outdoor Kitchen', 'Dock'],
     voiceValues: {
-      'Spa/Hot Tub': ['hot tub'],
+      // 'spa'/'jacuzzi' moved here from the removed spa boolean (spa_yn is
+      // 100% masked at the feed level; this option carries the real data).
+      'Spa/Hot Tub': ['hot tub', 'spa', 'jacuzzi'],
       'Fire Pit': ['fire pit'],
       'Outdoor Kitchen': ['outdoor kitchen'],
       'RV Hookup': ['rv hookup'],
@@ -730,6 +683,10 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     voiceValues: {
       Attached: ['attached garage'],
       Detached: ['detached garage'],
+      // 'carport' moved here from the removed carport boolean (carport_yn is
+      // 100% masked at the feed level; these options carry the real data).
+      'Attached Carport': ['carport', 'attached carport'],
+      'Detached Carport': ['detached carport'],
     },
   },
   {
@@ -1103,25 +1060,9 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
       Jefferson: ['jefferson county'],
     },
   },
-  {
-    key: 'directionFaces',
-    label: 'Faces',
-    category: 'outdoor_lot',
-    kind: 'multi',
-    mv: 'direction_faces',
-    singleColumnIn: true,
-    options: ['North', 'Northeast', 'East', 'Southeast', 'South', 'Southwest', 'West', 'Northwest'],
-    voiceValues: {
-      North: ['north facing', 'faces north'],
-      Northeast: ['northeast facing', 'faces northeast'],
-      East: ['east facing', 'faces east'],
-      Southeast: ['southeast facing', 'faces southeast'],
-      South: ['south facing', 'faces south'],
-      Southwest: ['southwest facing', 'faces southwest'],
-      West: ['west facing', 'faces west'],
-      Northwest: ['northwest facing', 'faces northwest'],
-    },
-  },
+  // REMOVED 2026-07-30 (adversarial accuracy audit): directionFaces.
+  // DirectionFaces is masked ("********") on 9,407 of 9,648 MV rows — the
+  // feed does not license it, so all 8 compass options returned zero, always.
   {
     key: 'floodZone',
     label: 'Flood zone',
@@ -1225,14 +1166,12 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     kind: 'text',
     mv: 'high_school',
   },
-  {
-    key: 'schoolDistrict',
-    label: 'School district',
-    category: 'schools',
-    kind: 'text',
-    mv: 'school_district',
-    coverageNote: 'Reported on some listings only.',
-  },
+  // REMOVED 2026-07-30 (adversarial accuracy audit): schoolDistrict. Every
+  // non-null school_district value in the MV (1,596 rows) was the masked
+  // marker "********" — the feed does not license SchoolDistrict, and the old
+  // coverageNote ("Reported on some listings only") described mask pollution,
+  // not data. The elementary/middle/high school name filters remain — those
+  // columns carry real values.
   {
     key: 'zoning',
     label: 'Zoning',

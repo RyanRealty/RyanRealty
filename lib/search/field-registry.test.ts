@@ -13,11 +13,16 @@ describe('field-registry: registry size (update when fields land/leave)', () => 
   it('carries the expected field count per kind', () => {
     const byKind = (kind: string) => SEARCH_FIELDS.filter((f) => f.kind === kind).length
     // Phase 1 tranche (2026-07-30): +9 range, +9 boolean, +6 multi, +2 text.
-    expect(byKind('range')).toBe(20)
-    expect(byKind('boolean')).toBe(42)
-    expect(byKind('multi')).toBe(44)
-    expect(byKind('text')).toBe(7)
-    expect(SEARCH_FIELDS).toHaveLength(113)
+    // Accuracy audit (2026-07-30): -5 range (walkScore, storiesTotal,
+    // fireplacesTotal, carportSpaces, parkingTotal), -3 boolean (spa,
+    // carport, homeWarranty), -1 multi (directionFaces), -1 text
+    // (schoolDistrict) — all built on StandardFields the feed masks
+    // ("********"), so none could ever match a listing.
+    expect(byKind('range')).toBe(15)
+    expect(byKind('boolean')).toBe(39)
+    expect(byKind('multi')).toBe(43)
+    expect(byKind('text')).toBe(6)
+    expect(SEARCH_FIELDS).toHaveLength(103)
   })
 })
 
@@ -157,7 +162,7 @@ describe('field-registry: helpers and contract fixtures', () => {
 
   it('searchFieldsByCategory returns the school text fields', () => {
     const keys = searchFieldsByCategory('schools').map((f) => f.key)
-    expect(keys).toEqual(['elementarySchool', 'middleSchool', 'highSchool', 'schoolDistrict'])
+    expect(keys).toEqual(['elementarySchool', 'middleSchool', 'highSchool'])
   })
 
   it('flags exactly the contract DAL-expression booleans', () => {
@@ -167,7 +172,7 @@ describe('field-registry: helpers and contract fixtures', () => {
 
   it('flags exactly the contract single-column IN multis', () => {
     const flagged = SEARCH_FIELDS.filter((f) => f.singleColumnIn).map((f) => f.key).sort()
-    expect(flagged).toEqual(['county', 'directionFaces', 'levelsOptions'])
+    expect(flagged).toEqual(['county', 'levelsOptions'])
   })
 
   it('keeps matchMode "all" only where the contract requires it', () => {
@@ -189,19 +194,11 @@ describe('field-registry: Phase 1 tranche (CustomFields + promoted scalars, 2026
     aduPermitted: 'adu_permitted_yn',
     strPermit: 'str_permit_yn',
     ccrs: 'ccrs_yn',
-    spa: 'spa_yn',
-    carport: 'carport_yn',
-    homeWarranty: 'home_warranty_yn',
     hasFloorPlan: 'has_floor_plan',
     hasVideo: 'has_video',
     // ranges
     aduSqft: 'adu_sqft',
     irrigationAcres: 'irrigation_acres',
-    walkScore: 'walk_score',
-    storiesTotal: 'stories_total',
-    fireplacesTotal: 'fireplaces_total',
-    carportSpaces: 'carport_spaces',
-    parkingTotal: 'parking_total',
     photosCount: 'photos_count',
     prevListPrice: 'prev_list_price',
     // multis
@@ -227,7 +224,7 @@ describe('field-registry: Phase 1 tranche (CustomFields + promoted scalars, 2026
   })
 
   it('new URL params register in ALL_SEARCH_URL_PARAMS (saved-search whitelist)', () => {
-    for (const param of ['adu', 'strPermit', 'ccrs', 'spa', 'carport', 'homeWarranty', 'hasFloorPlan', 'hasVideo', 'floodZone', 'roomsArr', 'bodyType', 'fencing', 'zoning', 'irrigationDistrict', 'aduSqftMin', 'aduSqftMax', 'walkScoreMin', 'storiesTotalMin', 'fireplacesTotalMin', 'carportSpacesMin', 'parkingTotalMin', 'photosCountMin', 'prevListPriceMin', 'irrigationAcresMin']) {
+    for (const param of ['adu', 'strPermit', 'ccrs', 'hasFloorPlan', 'hasVideo', 'floodZone', 'roomsArr', 'bodyType', 'fencing', 'zoning', 'irrigationDistrict', 'aduSqftMin', 'aduSqftMax', 'photosCountMin', 'prevListPriceMin', 'irrigationAcresMin']) {
       expect(ALL_SEARCH_URL_PARAMS, `missing ${param}`).toContain(param)
     }
   })

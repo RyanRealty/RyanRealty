@@ -84,7 +84,6 @@ describe('registry-driven filter keys', () => {
       hoaMonthlyMax: '150',
       daysOnMarket: '7',
       monthlyPaymentMax: 3000,
-      schoolDistrict: 'Bend-La Pine',
     })
     expect(adv.city).toBe('Bend')
     expect(adv.shop).toBe(true)
@@ -94,7 +93,6 @@ describe('registry-driven filter keys', () => {
     expect(adv.hoaMonthlyMax).toBe(150)
     expect(adv.daysOnMarket).toBe(7)
     expect(adv.monthlyPaymentMax).toBe(3000)
-    expect(adv.schoolDistrict).toBe('Bend-La Pine')
   })
 })
 

@@ -66,6 +66,40 @@ export const PRIVATE_DETAIL_KEYS = [
  */
 export const CF_COLLISION_PREFIX = 'CF '
 
+/**
+ * Strip Spark's masked-field markers from a StandardFields object.
+ *
+ * Spark masks fields our feed access level does not license by returning the
+ * literal string "********" (any run of asterisks). The CustomFields flatten
+ * has always dropped these (flattenCustomFields), but the StandardFields path
+ * stored them verbatim into `details` and typed text columns — measured
+ * 2026-07-30: `direction_faces` carried the mask on 9,407 of 9,648 MV rows,
+ * `school_district` on all 1,596 non-null rows, and 7,539 active rows carried
+ * masked SpaYN/CarportYN/StoriesTotal/WalkScore/... keys. Nine search filters
+ * were built on top of those fields before anyone noticed the source never
+ * provides them. A masked value carries zero information: drop the key.
+ *
+ * Scalars matching /^\*+$/ (trimmed) are dropped. String arrays are filtered
+ * of masked elements and dropped entirely when nothing survives. Everything
+ * else passes through untouched.
+ */
+export function stripMaskedValues(fields: Record<string, unknown>): Record<string, unknown> {
+  const masked = (v: unknown): boolean =>
+    typeof v === 'string' && /^\*+$/.test(v.trim()) && v.trim() !== ''
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(fields)) {
+    if (masked(v)) continue
+    if (Array.isArray(v)) {
+      const kept = v.filter((el) => !masked(el))
+      if (kept.length === 0 && v.length > 0) continue
+      out[k] = kept.length === v.length ? v : kept
+      continue
+    }
+    out[k] = v
+  }
+  return out
+}
+
 /** `details` with every confidential key removed — safe for the anon-readable column.
  *  Also removes the `CF `-prefixed variant of each key (belt-and-suspenders: a
  *  confidential CF key must never survive redaction via collision renaming). */

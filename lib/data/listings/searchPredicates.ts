@@ -104,14 +104,14 @@ export const BOOLEAN_PREDICATES = {
     ],
   },
   publicSewer: { op: 'containsAll', col: 'sewer_types', values: ['Public Sewer'] },
-  // ── CF tranche (2026-07-30) — promoted *_yn columns, MV v3 migration ──────
+  // ── CF tranche (2026-07-30) — promoted *_yn columns, MV v3 migration.
+  //    spa/carport/homeWarranty were removed 2026-07-30: their source
+  //    StandardFields are masked ("********") at our feed level, the columns
+  //    are 100% null, and the filters could never match (accuracy audit). ──
   adu: { op: 'isTrue', col: 'adu_yn' },
   aduPermitted: { op: 'isTrue', col: 'adu_permitted_yn' },
   strPermit: { op: 'isTrue', col: 'str_permit_yn' },
   ccrs: { op: 'isTrue', col: 'ccrs_yn' },
-  spa: { op: 'isTrue', col: 'spa_yn' },
-  carport: { op: 'isTrue', col: 'carport_yn' },
-  homeWarranty: { op: 'isTrue', col: 'home_warranty_yn' },
   hasFloorPlan: { op: 'isTrue', col: 'has_floor_plan' },
   hasVideo: { op: 'isTrue', col: 'has_video' },
 } satisfies Record<string, BooleanPredicate>

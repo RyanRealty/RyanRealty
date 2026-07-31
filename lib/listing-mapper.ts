@@ -15,6 +15,7 @@ import {
   flattenCustomFields,
   mergeCustomFieldsIntoDetails,
   redactPublicDetails,
+  stripMaskedValues,
 } from '@/lib/listing-customfields'
 
 // The CustomFields subsystem lives in lib/listing-customfields.ts —
@@ -22,7 +23,7 @@ import {
 export {
   PRIVATE_DETAIL_KEYS, CF_COLLISION_PREFIX,
   redactPublicDetails, extractPrivateDetails,
-  flattenCustomFields, mergeCustomFieldsIntoDetails,
+  flattenCustomFields, mergeCustomFieldsIntoDetails, stripMaskedValues,
 } from '@/lib/listing-customfields'
 
 // ---------------------------------------------------------------------------
@@ -387,10 +388,18 @@ export interface SparkStandardFields {
  * @returns A flat object matching the listings table schema
  */
 export function sparkToListingRow(
-  fields: SparkStandardFields,
+  rawFields: SparkStandardFields,
   resultId?: string,
   customFields?: unknown
 ): Record<string, unknown> {
+  // Spark masks unlicensed fields as "********". Strip them at the door so
+  // neither the typed columns (toText would store the mask — school_district
+  // did, on every non-null row) nor `details` (DirectionFaces did, on 97% of
+  // MV rows) ever persist a mask. See stripMaskedValues for the measurements.
+  const fields = stripMaskedValues(
+    rawFields as Record<string, unknown>
+  ) as SparkStandardFields
+
   // --- Core identification ---
   const listingKey = toText(pick(fields, 'ListingKey')) ?? resultId ?? null
   const listNumber = toText(pick(fields, 'ListNumber', 'ListingId')) ?? resultId ?? null

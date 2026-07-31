@@ -112,7 +112,6 @@ describe('CF tranche 2026-07-30 wiring (spot checks)', () => {
       zoning: 'EFU',
       irrigationDistrict: 'COID',
       aduSqftMin: 400,
-      walkScoreMin: 50,
       prevListPriceMax: 900000,
     })
     expect(parsed.adu).toBe(true)
@@ -122,19 +121,16 @@ describe('CF tranche 2026-07-30 wiring (spot checks)', () => {
     expect(parsed.zoning).toBe('EFU')
     expect(parsed.irrigationDistrict).toBe('COID')
     expect(parsed.aduSqftMin).toBe(400)
-    expect(parsed.walkScoreMin).toBe(50)
     expect(parsed.prevListPriceMax).toBe(900000)
   })
 
   it('new keys ride SEARCH_FEATURE_FILTER_KEYS so action routers forward them', () => {
     for (const key of [
-      'adu', 'aduPermitted', 'strPermit', 'ccrs', 'spa', 'carport', 'homeWarranty',
+      'adu', 'aduPermitted', 'strPermit', 'ccrs',
       'hasFloorPlan', 'hasVideo', 'floodZone', 'governmentOverlay', 'easements',
       'roomsArr', 'bodyType', 'fencing', 'zoning', 'irrigationDistrict',
       'aduSqftMin', 'aduSqftMax', 'irrigationAcresMin', 'irrigationAcresMax',
-      'walkScoreMin', 'walkScoreMax', 'storiesTotalMin', 'storiesTotalMax',
-      'fireplacesTotalMin', 'fireplacesTotalMax', 'carportSpacesMin', 'carportSpacesMax',
-      'parkingTotalMin', 'parkingTotalMax', 'photosCountMin', 'photosCountMax',
+      'photosCountMin', 'photosCountMax',
       'prevListPriceMin', 'prevListPriceMax',
     ]) {
       expect(SEARCH_FEATURE_FILTER_KEYS, `'${key}' missing from feature-filter keys`).toContain(key)

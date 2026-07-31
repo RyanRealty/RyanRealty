@@ -311,12 +311,12 @@ export function savedFiltersToAdvanced(filters: SavedSearchFilters): AdvancedLis
     roadFrontage: arr('roadFrontage'),
     poolFeatures: arr('poolFeatures'),
     county: arr('county'),
-    directionFaces: arr('directionFaces'),
+    // directionFaces removed 2026-07-30: feed masks DirectionFaces (accuracy audit)
     // School texts
     elementarySchool: asTrimmedString(normalized.elementarySchool),
     middleSchool: asTrimmedString(normalized.middleSchool),
     highSchool: asTrimmedString(normalized.highSchool),
-    schoolDistrict: asTrimmedString(normalized.schoolDistrict),
+    // schoolDistrict removed 2026-07-30: school_district was 100% masked (accuracy audit)
   }
 }
 
