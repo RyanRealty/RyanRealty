@@ -71,3 +71,21 @@ CREATE OR REPLACE FUNCTION public.rr_private_keys()
 RETURNS text[] LANGUAGE sql IMMUTABLE AS $$
   SELECT public.rr_private_keys_base() || public.rr_showing_member_keys();
 $$;
+
+-- Remediation of stored rows (executed 2026-07-31, recorded here for the
+-- migration trail; the machinery was torn down after it reported done).
+--
+-- The obvious single UPDATE cannot work: `details ?| keys` is a sequential
+-- scan over 594K rows with TOAST reads, and every channel has a ceiling —
+-- the API gateway drops the connection, and pg_cron's role carries a 600s
+-- statement_timeout that killed both a plain UPDATE and a DO-block loop.
+-- A DO block cannot raise it either: statement_timeout is armed for the
+-- top-level statement before set_config runs inside it, so the whole block
+-- rolled back at 600s having committed nothing, twice.
+--
+-- What worked: keyset pagination over the PRIMARY KEY, 40,000 rows per
+-- cron firing, each firing a single committing statement, with a cursor
+-- table carrying its own done flag. 15 firings, 399 rows cleaned, verified
+-- with the PUBLIC ANON KEY across 5,000 rows spanning all five statuses:
+-- zero showing-member keys, while 'Vacant' (287) and 'To Be Built' (50)
+-- survived untouched — the collision guard held in both directions.
