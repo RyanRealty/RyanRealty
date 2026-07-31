@@ -109,6 +109,7 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 | `crm-golive-execution-2026-06-25.md` | **live** — CRM go-live execution log |
 | `PROSPECT_TO_CMA_AND_SITE_IA_2026-07-28.md` | **live** — Brain Dump 2: prospecting → CMA → measurement workflow, and the public-site IA/density pass |
 | `SEARCH_OPTIMIZATION_PLAN_2026-07-29.md` | **live** — Flexmls search/map/subscription teardown + phased plan to parity-plus site search (filters, map geography, alerts engine, portal) |
+| `SEARCH_FILTER_COMPLETENESS_PLAN_2026-07-30.md` | **live** — second pass over the shipped search surface: generate the filter set from Spark field metadata (1,562 searchable fields, 11,859 enumerated values, 35 class-conditioned), expose sub types and zoning-with-definitions, and gate completeness mechanically |
 | `WESTSIDE_BACKLOG.md` | **live** — west-side dominance ranked backlog, generated 2026-07-28 from live competitor/market data |
 | `CROSS_AGENT_HANDOFF.md` | session-continuity (required agent handoff protocol) |
 | `CRM_BUILD_MISSION.md` | **live** — CRM delivery mission |
