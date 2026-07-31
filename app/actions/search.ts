@@ -76,10 +76,14 @@ function toDalSort(sort: string | undefined): DalSort {
 }
 
 function domFromPreset(daysOnMarket: string | undefined): number | undefined {
-  if (daysOnMarket === '7') return 7
-  if (daysOnMarket === '30') return 30
-  if (daysOnMarket === '90') return 90
-  return undefined
+  // Any positive day count is a valid ceiling, not just the three UI preset
+  // stops — a hand-edited or externally shared ?daysOnMarket=14 used to
+  // silently no-op while the chip showed the filter as applied (W-URL audit
+  // 2026-07-30). Cap at 365: dom beyond a year is no longer "new on market".
+  if (!daysOnMarket) return undefined
+  const n = Number(daysOnMarket)
+  if (!Number.isFinite(n) || n <= 0) return undefined
+  return Math.min(Math.round(n), 365)
 }
 
 function toAdvancedFilters(

@@ -264,7 +264,12 @@ type SearchParams = {
   hasPool?: string
   hasView?: string
   hasWaterfront?: string
+  hasFireplace?: string
+  hasGolfCourse?: string
+  gatedCommunity?: string
   newListingsDays?: string
+  /** Registry dom range's URL param — a days-on-market ceiling. */
+  daysOnMarket?: string
   sort?: string
   includeClosed?: string
   page?: string
@@ -365,6 +370,11 @@ export default async function SearchPage({
     hasView: sp.hasView === '1',
     hasWaterfront: sp.hasWaterfront === '1',
     newListingsDays: sp.newListingsDays ? Number(sp.newListingsDays) : undefined,
+    // The registry dom filter writes ?daysOnMarket=N. This page never read it
+    // (W-URL audit 2026-07-30): the AllFiltersSheet showed an applied chip
+    // while the query ran unfiltered — the worst failure mode a filter has.
+    // getAdvancedListings folds it with newListingsDays, tightest ceiling wins.
+    daysOnMarket: sp.daysOnMarket ? Number(sp.daysOnMarket) : undefined,
     sort:
       sp.sort === 'newest' || sp.sort === 'oldest' || sp.sort === 'price_asc' || sp.sort === 'price_desc' ||
       sp.sort === 'price_per_sqft_asc' || sp.sort === 'price_per_sqft_desc' || sp.sort === 'year_newest' || sp.sort === 'year_oldest'
@@ -378,8 +388,11 @@ export default async function SearchPage({
   // An explicit query param (the visitor changed a filter) wins over the preset
   // for that one key. Without the `!sp.*` guards the preset always won, so
   // changing price / sort / status on a preset page did nothing — "if you change
-  // a filter it breaks." Amenity presets (pool/view/golf/fireplace) have no
-  // off-switch in the URL, so they stay preset-driven.
+  // a filter it breaks." Amenity booleans gained their off-switch 2026-07-30
+  // (W-UI audit trap T1): `?hasPool=0` on /with-pool now clears the pool
+  // filter — the guard is `sp.<key> == null` (URL silent → preset fills), so a
+  // visitor landing from search is no longer trapped in a filter they can see
+  // but not remove.
   const filterOpts = preset
     ? {
         ...filterOptsBase,
@@ -387,12 +400,12 @@ export default async function SearchPage({
         ...(preset.params.minPrice != null && !sp.minPrice && { minPrice: preset.params.minPrice }),
         ...(preset.params.statusFilter != null && !sp.statusFilter && { statusFilter: preset.params.statusFilter }),
         ...(preset.params.newListingsDays != null && !sp.newListingsDays && { newListingsDays: preset.params.newListingsDays }),
-        ...(preset.params.hasOpenHouse != null && { hasOpenHouse: preset.params.hasOpenHouse }),
-        ...(preset.params.hasPool != null && { hasPool: preset.params.hasPool }),
-        ...(preset.params.hasView != null && { hasView: preset.params.hasView }),
-        ...(preset.params.hasFireplace != null && { hasFireplace: preset.params.hasFireplace }),
-        ...(preset.params.hasGolfCourse != null && { hasGolfCourse: preset.params.hasGolfCourse }),
-        ...(preset.params.hasWaterfront != null && { hasWaterfront: preset.params.hasWaterfront }),
+        ...(preset.params.hasOpenHouse != null && sp.hasOpenHouse == null && { hasOpenHouse: preset.params.hasOpenHouse }),
+        ...(preset.params.hasPool != null && sp.hasPool == null && { hasPool: preset.params.hasPool }),
+        ...(preset.params.hasView != null && sp.hasView == null && { hasView: preset.params.hasView }),
+        ...(preset.params.hasFireplace != null && sp.hasFireplace == null && { hasFireplace: preset.params.hasFireplace }),
+        ...(preset.params.hasGolfCourse != null && sp.hasGolfCourse == null && { hasGolfCourse: preset.params.hasGolfCourse }),
+        ...(preset.params.hasWaterfront != null && sp.hasWaterfront == null && { hasWaterfront: preset.params.hasWaterfront }),
         ...(preset.params.viewContains != null && preset.params.viewContains !== '' && { viewContains: preset.params.viewContains }),
         ...(preset.params.lotAcresMin != null && !sp.lotAcresMin && { lotAcresMin: preset.params.lotAcresMin }),
         ...(presetYearBuiltMin != null && !sp.yearBuiltMin && { yearBuiltMin: presetYearBuiltMin }),
@@ -400,9 +413,8 @@ export default async function SearchPage({
         // lots-and-land: PropertyType filter (Land -> code D); an explicit URL
         // propertyType still wins, same contract as the other preset keys.
         ...(preset.params.propertyType != null && preset.params.propertyType !== '' && !sp.propertyType && { propertyType: preset.params.propertyType }),
-        // gated-community: MLS-verified gated flag. Amenity-style preset with
-        // no URL off-switch, matching hasPool/hasGolfCourse behavior.
-        ...(preset.params.gatedCommunity != null && { gatedCommunity: preset.params.gatedCommunity }),
+        // gated-community: MLS-verified gated flag. Same off-switch contract.
+        ...(preset.params.gatedCommunity != null && sp.gatedCommunity == null && { gatedCommunity: preset.params.gatedCommunity }),
         ...(preset.params.keywords != null && preset.params.keywords !== '' && !sp.keywords && { keywords: preset.params.keywords }),
         ...(preset.params.sort != null && !sp.sort && { sort: preset.params.sort as AdvancedSort }),
       }
