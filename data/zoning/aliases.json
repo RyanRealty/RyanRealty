@@ -1,0 +1,228 @@
+{
+  "meta": {
+    "builtOn": "2026-07-30",
+    "method": "MLS spelling to canonical code, scoped to a jurisdiction. Normalization (uppercase, strip spaces, hyphens, periods, parentheses and slashes, take the token before any semicolon) already collapses most variants. Aliases cover the rest. The unmapped list records strings that match no current code so they are never force-matched."
+  },
+  "aliases": {
+    "jefferson-county:TRRAR": {
+      "to": "TRRA",
+      "note": "MLS spelling. Jefferson County Title 17 establishes TRRA (17.319) and TRRAW (17.320) only. Verified against the chapter 17.3 section list on 2026-07-30."
+    },
+    "deschutes-county:MUA": {
+      "to": "MUA10",
+      "note": "DCC 18.32 names the zone MUA. The live feed writes MUA10, which this dataset uses as the canonical code."
+    },
+    "deschutes-county:RR": {
+      "to": "RR10",
+      "note": "DCC Title 18 has one rural residential zone, RR-10 (DCC 18.60). A bare RR in a Deschutes County row is that zone."
+    }
+  },
+  "overlays": {
+    "deschutes-county": {
+      "WA": "Wildlife Area Combining Zone (DCC 18.88)",
+      "LM": "Landscape Management Combining Zone (DCC 18.84)",
+      "SMIA": "Surface Mining Impact Area Combining Zone (DCC 18.56)",
+      "AS": "Airport Safety Combining Zone (DCC 18.80)",
+      "GSGA": "Greater Sage-Grouse Area Combining Zone (DCC 18.89)",
+      "SBMH": "Sensitive Bird and Mammal Habitat Combining Zone (DCC 18.90)",
+      "LU": "Limited Use Combining Zone (DCC 18.112)",
+      "DR": "Destination Resorts Zone (DCC 18.113)",
+      "FP": "Flood Plain Zone (DCC 18.96)",
+      "SM": "Surface Mining Zone (DCC 18.52)"
+    },
+    "jefferson-county": {
+      "WA": "Wildlife Area Overlay Zone (JCC 17.321)",
+      "BH": "Sensitive Bird Habitat Overlay Zone (JCC 17.322)",
+      "URA": "Urban Reserve Area Overlay Zone (JCC 17.323)",
+      "LU": "Limited Use Overlay Zone (JCC 17.315)",
+      "FP": "Floodplain Overlay Zone (JCC 17.316)"
+    }
+  },
+  "unmapped": [
+    {
+      "normalizedCode": "RR1",
+      "jurisdiction": "jefferson-county",
+      "note": "Jefferson County Title 17 establishes RR-2, RR-5, RR-10 and RR-20 only. RR1 matches no current county zone. Verified against the chapter 17.3 text on 2026-07-30."
+    },
+    {
+      "normalizedCode": "LPR",
+      "jurisdiction": "la-pine",
+      "note": "No LPR zone appears in the La Pine Development Code chapter listings. The string matches no current code."
+    },
+    {
+      "normalizedCode": "SURM",
+      "jurisdiction": "deschutes-county",
+      "note": "Reads like the Sunriver community RM district under DCC 18.108. That chapter was not loaded for this build, so no definition ships rather than a guess."
+    },
+    {
+      "normalizedCode": "BBRR",
+      "jurisdiction": "deschutes-county",
+      "note": "Reads like a Black Butte Ranch residential label. It matches no DCC Title 18 chapter name. Resort community zoning under DCC 18.110 was not loaded for this build."
+    },
+    {
+      "normalizedCode": "SMWCR",
+      "jurisdiction": "deschutes-county",
+      "note": "Matches no DCC Title 18 chapter name. No definition ships."
+    },
+    {
+      "normalizedCode": "FR",
+      "jurisdiction": "crook-county",
+      "note": "Ambiguous in Crook County between the Forest Zone F-1 (CCC 18.28) and Forest Recreation FR-10 (CCC 18.96), which carry different rules. Never force-matched."
+    },
+    {
+      "normalizedCode": "GC",
+      "jurisdiction": "klamath-county",
+      "note": "The Klamath County LDC lists CG General Commercial. GC as written matches no county zone and is not silently flipped to CG."
+    },
+    {
+      "normalizedCode": "SF",
+      "jurisdiction": "klamath-county",
+      "note": "Not a Klamath County LDC zone. Rows carry a Klamath Falls mailing city, so this is likely a City of Klamath Falls code. The city code was not loaded for this build."
+    },
+    {
+      "normalizedCode": "MD",
+      "jurisdiction": "klamath-county",
+      "note": "Not a Klamath County LDC zone. Likely a City of Klamath Falls code. The city code was not loaded for this build."
+    },
+    {
+      "normalizedCode": "DRO",
+      "jurisdiction": "klamath-county",
+      "note": "Not a Klamath County LDC zone. Likely a City of Klamath Falls code. The city code was not loaded for this build."
+    },
+    {
+      "normalizedCode": "PUD",
+      "jurisdiction": "klamath-county",
+      "note": "Not a Klamath County LDC base zone. Planned unit development labels describe an approval type, not a zone."
+    },
+    {
+      "normalizedCode": "CC",
+      "jurisdiction": "jackson-county",
+      "note": "Rows carry a Medford mailing city. The City of Medford commercial chapters were not loaded for this build."
+    },
+    {
+      "normalizedCode": "CSP",
+      "jurisdiction": "jackson-county",
+      "note": "C-S/P rows carry a Medford mailing city. The City of Medford commercial chapters were not loaded for this build."
+    },
+    {
+      "normalizedCode": "IL",
+      "jurisdiction": "jackson-county",
+      "note": "I-L rows carry a Medford mailing city. The City of Medford industrial chapters were not loaded for this build."
+    },
+    {
+      "normalizedCode": "R18",
+      "jurisdiction": "jackson-county",
+      "note": "City-style code carried by a Jackson County mailing address. The city codes for Ashland, Central Point, Eagle Point, Talent, Phoenix, Rogue River and neighbors were not loaded for this build. Check with the city named in the listing."
+    },
+    {
+      "normalizedCode": "R2",
+      "jurisdiction": "jackson-county",
+      "note": "City-style code carried by a Jackson County mailing address. The city codes for Ashland, Central Point, Eagle Point, Talent, Phoenix, Rogue River and neighbors were not loaded for this build. Check with the city named in the listing."
+    },
+    {
+      "normalizedCode": "R3",
+      "jurisdiction": "jackson-county",
+      "note": "City-style code carried by a Jackson County mailing address. The city codes for Ashland, Central Point, Eagle Point, Talent, Phoenix, Rogue River and neighbors were not loaded for this build. Check with the city named in the listing."
+    },
+    {
+      "normalizedCode": "R110",
+      "jurisdiction": "jackson-county",
+      "note": "City-style code carried by a Jackson County mailing address. The city codes for Ashland, Central Point, Eagle Point, Talent, Phoenix, Rogue River and neighbors were not loaded for this build. Check with the city named in the listing."
+    },
+    {
+      "normalizedCode": "R16",
+      "jurisdiction": "jackson-county",
+      "note": "City-style code carried by a Jackson County mailing address. The city codes for Ashland, Central Point, Eagle Point, Talent, Phoenix, Rogue River and neighbors were not loaded for this build. Check with the city named in the listing."
+    },
+    {
+      "normalizedCode": "R17",
+      "jurisdiction": "jackson-county",
+      "note": "City-style code carried by a Jackson County mailing address. The city codes for Ashland, Central Point, Eagle Point, Talent, Phoenix, Rogue River and neighbors were not loaded for this build. Check with the city named in the listing."
+    },
+    {
+      "normalizedCode": "R1",
+      "jurisdiction": "jackson-county",
+      "note": "City-style code carried by a Jackson County mailing address. The city codes for Ashland, Central Point, Eagle Point, Talent, Phoenix, Rogue River and neighbors were not loaded for this build. Check with the city named in the listing."
+    },
+    {
+      "normalizedCode": "SR1",
+      "jurisdiction": "jackson-county",
+      "note": "City-style code carried by a Jackson County mailing address. The city codes for Ashland, Central Point, Eagle Point, Talent, Phoenix, Rogue River and neighbors were not loaded for this build. Check with the city named in the listing."
+    },
+    {
+      "normalizedCode": "SR2",
+      "jurisdiction": "jackson-county",
+      "note": "City-style code carried by a Jackson County mailing address. The city codes for Ashland, Central Point, Eagle Point, Talent, Phoenix, Rogue River and neighbors were not loaded for this build. Check with the city named in the listing."
+    },
+    {
+      "normalizedCode": "SFR2",
+      "jurisdiction": "jackson-county",
+      "note": "City-style code carried by a Jackson County mailing address. The city codes for Ashland, Central Point, Eagle Point, Talent, Phoenix, Rogue River and neighbors were not loaded for this build. Check with the city named in the listing."
+    },
+    {
+      "normalizedCode": "C1",
+      "jurisdiction": "jackson-county",
+      "note": "City-style code carried by a Jackson County mailing address. The city codes for Ashland, Central Point, Eagle Point, Talent, Phoenix, Rogue River and neighbors were not loaded for this build. Check with the city named in the listing."
+    },
+    {
+      "normalizedCode": "IG",
+      "jurisdiction": "jackson-county",
+      "note": "City-style code carried by a Jackson County mailing address. The city codes for Ashland, Central Point, Eagle Point, Talent, Phoenix, Rogue River and neighbors were not loaded for this build. Check with the city named in the listing."
+    },
+    {
+      "normalizedCode": "SR",
+      "jurisdiction": "josephine-county",
+      "note": "Reads like a Cave Junction or Josephine County single family residential code. The source code was not loaded for this build."
+    },
+    {
+      "normalizedCode": "RR2",
+      "jurisdiction": "josephine-county",
+      "note": "Reads like Rural Residential 2.5 acre with the period dropped by the MLS. The Josephine County Rural Land Development Code was not loaded for this build, so no definition ships rather than a guess."
+    },
+    {
+      "normalizedCode": "FC",
+      "jurisdiction": "josephine-county",
+      "note": "Reads like a Josephine County forest commercial code per the MLS description. The source code was not loaded for this build."
+    },
+    {
+      "normalizedCode": "A",
+      "jurisdiction": "klamath-county",
+      "note": "Matches no Klamath County LDC zone. No definition ships."
+    },
+    {
+      "normalizedCode": "SURS",
+      "jurisdiction": "deschutes-county",
+      "note": "Reads like the Sunriver community RS district under DCC 18.108. That chapter was not loaded for this build, so no definition ships rather than a guess."
+    },
+    {
+      "normalizedCode": "A2",
+      "jurisdiction": null,
+      "note": "Lake County rows. Lake County zoning was not verified for this build, so no definition ships."
+    },
+    {
+      "normalizedCode": "R",
+      "jurisdiction": null,
+      "note": "A bare R is a generic label, not a resolvable zone code. In Sisters rows it reads like the city Residential District but is not force-matched."
+    },
+    {
+      "normalizedCode": "RESIDENTIAL",
+      "jurisdiction": null,
+      "note": "Generic label, not a zone code."
+    },
+    {
+      "normalizedCode": "RES",
+      "jurisdiction": null,
+      "note": "Generic label, not a zone code."
+    },
+    {
+      "normalizedCode": "SFR",
+      "jurisdiction": null,
+      "note": "Generic label. Medford's zones carry a density suffix (SFR-4, SFR-6, SFR-10). A bare SFR matches no code."
+    },
+    {
+      "normalizedCode": "UNKNOWN",
+      "jurisdiction": null,
+      "note": "Placeholder, not a zone code."
+    }
+  ]
+}

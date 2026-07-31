@@ -466,8 +466,13 @@ The completed jurisdiction research supplies the concrete collisions:
   (§18.15.100).
 - **`UAR10`** is Deschutes County's; **`UH-10`** is Redmond's. Never merge.
 - **EFU minimums are county-specific**: Jefferson A-1/A-2 require **80 acres**
-  (RL 160), while Crook EFU-1/2/3 require **640 / 320 / 160**. A single "EFU"
-  filter that implied one acreage would be wrong in at least one county.
+  (RL 160), while Crook EFU-1/2/3 set new-parcel minimums of **160 / 80 / 160**
+  (CCC 18.16.070, chapter loaded directly 2026-07-30). A single "EFU" filter
+  that implied one acreage would be wrong in at least one county.
+  *Correction:* this section originally stated 640/320/160 for Crook — those
+  figures are the guest-ranch contiguous-acreage test in the same chapter,
+  sourced from a search snippet. The build's verification pass caught it, which
+  is the §6.0.1 sourcing rule doing exactly its job, on this document itself.
 - **`ERD`** is an unincorporated **Jefferson County** zone, yet listings carrying
   it are tagged city "Madras" because that is the mailing address. This is the
   §6.0 item 4 risk in one example: trusting `city` would file a county parcel
