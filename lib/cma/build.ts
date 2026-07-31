@@ -20,6 +20,8 @@ import {
 } from '@/lib/data'
 import { resolveCmaSubject } from '@/lib/cma/subject'
 import { selectComps, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
+import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
+import { composeBuildSummary, composeFailureSummary } from '@/lib/cma/build-summary'
 import { getCmaMarketContext } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { judgeComps } from '@/lib/cma/judge'
@@ -46,6 +48,7 @@ import { resolveRentalPotential } from '@/lib/cma/rental-potential'
 import { buildCmaMapDataUri } from '@/lib/cma/map'
 import { renderCmaHtml } from '@/lib/cma/render'
 import { checkBrandVoice } from '@/lib/voice/check'
+import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { reviewProse } from '@/lib/voice/reviewer'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult } from '@/lib/cma/types'
 
@@ -83,17 +86,45 @@ async function resolveBroker(input: CmaBuildInput): Promise<CmaBroker> {
   }
 }
 
-/** Record a failed build on the cmas row so the admin queue shows WHY. */
-async function recordBuildFailure(slug: string, error: string): Promise<void> {
+/**
+ * Record a failed build on the cmas row so the admin queue shows WHY.
+ *
+ * The comp trace goes down with it. A document that could not be priced is
+ * exactly the one whose selection ladder someone needs to read, and before
+ * 2026-07-30 the failure path wrote only a prose `build_error` — so "which
+ * constraint starved this" was unanswerable without re-running the build.
+ */
+async function recordBuildFailure(
+  slug: string,
+  error: string,
+  meta?: { stage: 'subject' | 'comps' | 'pricing' | 'contract'; docType: 'cma' | 'expired-audit'; compSelection?: CompSelectionDiagnostics | null },
+): Promise<void> {
   await updateCmaRowFieldsBySlug(slug, {
     build_error: error.slice(0, 2000),
     built_at: new Date().toISOString(),
+    ...(meta
+      ? {
+          build_summary: composeFailureSummary({
+            builder: CMA_BUILDER_VERSION,
+            docType: meta.docType,
+            stage: meta.stage,
+            error,
+            compSelection: meta.compSelection ?? null,
+          }),
+        }
+      : {}),
   }).catch(() => {})
 }
 
 export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
   const slug = input.slug.trim().toLowerCase()
   const generatedAtIso = new Date().toISOString()
+  // Hoisted: every failure path stamps it on the row alongside the comp trace.
+  const docType: 'cma' | 'expired-audit' = input.docType === 'expired-audit' ? 'expired-audit' : 'cma'
+  // Held outside the try so the catch-all below can still write the comp trace.
+  // A throw anywhere downstream of selection (voice gate, render, persist) used
+  // to wipe the answer to "why these comps" off the row entirely.
+  let compDiagnostics: CompSelectionDiagnostics | null = null
   try {
     const broker = await resolveBroker(input)
 
@@ -105,7 +136,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       postalCode: input.postalCode,
     })
     if (!resolved.subject) {
-      await recordBuildFailure(slug, resolved.trace)
+      await recordBuildFailure(slug, resolved.trace, { stage: 'subject', docType })
       return { ok: false, error: resolved.trace, slug }
     }
     const subject = resolved.subject
@@ -119,6 +150,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       getCmaMarketContext(subject.city),
       resolveCmaSiteData(subject),
     ])
+    compDiagnostics = selection.diagnostics
 
     // Broker-confirmed site facts override the GIS-resolved values (§0 allows a
     // seller/broker-confirmed water source). A parcel converted off a private
@@ -139,8 +171,20 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     }
 
     if (selection.comps.length < MIN_COMPS) {
-      const err = `Only ${selection.comps.length} qualifying closed comps found (minimum ${MIN_COMPS}). ${selection.trace.join(' ')}`
-      await recordBuildFailure(slug, err)
+      // Lead with the CONSTRAINT that starved it, not the bare count. A broker
+      // reading "only 2 qualifying closed comps found" cannot tell whether the
+      // subject is genuinely unpriceable or the search was too narrow; the
+      // diagnosis names the binding band, radius, or exclusion.
+      const why = selection.diagnostics.starved_reason
+      // The trace already ends with `why` whenever the diagnosis was produced,
+      // so appending it wholesale printed the same paragraph twice.
+      const rest = selection.trace.filter((t) => t !== why)
+      const err = `Only ${selection.comps.length} qualifying closed comps found (minimum ${MIN_COMPS}). ${why ?? ''}${
+        rest.length ? ` Full search trace: ${rest.join(' ')}` : ''
+      }`
+        .replace(/\s+/g, ' ')
+        .trim()
+      await recordBuildFailure(slug, err, { stage: 'comps', docType, compSelection: selection.diagnostics })
       return { ok: false, error: err, slug }
     }
 
@@ -187,7 +231,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       )
     } else {
       selection.trace.push(
-        'Comparability judgment unavailable for this build — priced on the full selection with the dispersion guard as backstop; broker review required.',
+        'Comparability judgment unavailable for this build. Priced on the full selection with the dispersion guard as backstop, and broker review is required.',
       )
     }
 
@@ -225,7 +269,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     let { adj: adjusted, p: pricing } = priceSet(compsForPricing)
     if (!pricing) {
       const err = 'Pricing could not be computed (subject sqft missing).'
-      await recordBuildFailure(slug, err)
+      await recordBuildFailure(slug, err, { stage: 'pricing', docType, compSelection: selection.diagnostics })
       return { ok: false, error: err, slug }
     }
 
@@ -282,7 +326,12 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         ? audit.verdict === 'pass'
           ? `Adversarial accuracy audit: an independent review pass attacked this analysis${repairedKeys.length ? `, ${repairedKeys.length} comp(s) were removed on its findings and the analysis re-priced,` : ' and'} found no remaining material defect.`
           : `Adversarial accuracy audit: ${audit.findings.length} finding(s) recorded for broker review before this analysis is released${repairedKeys.length ? ` (after a repair pass removed ${repairedKeys.length} comp(s))` : ''}.`
-        : 'Adversarial accuracy audit unavailable for this build — broker review required before release.',
+        : // No em-dash. This string is pushed into pricing.notes, which the
+          // brand-voice gate 90 lines below reads and THROWS on, so an em-dash
+          // here bricks every build that takes this branch. It stayed latent
+          // because the branch only runs when auditCma returns null, and until
+          // the Anthropic account hit its usage cap on 2026-07-30 it never did.
+          'Adversarial accuracy audit unavailable for this build. Broker review is required before release.',
     )
 
     // 4.5. Accuracy contract — the mechanical enforcement of the process.
@@ -303,7 +352,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         .map((c) => `${c.id}: ${c.detail}`)
         .join(' | ')
       const err = `Accuracy contract failed: ${failed}`
-      await recordBuildFailure(slug, err)
+      await recordBuildFailure(slug, err, { stage: 'contract', docType, compSelection: selection.diagnostics })
       return { ok: false, error: err, slug }
     }
     if (contract.forceReview && !pricing.needsReview) {
@@ -320,7 +369,6 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // output adds a deterministic failure analysis (listing history + verified
     // numbers), the services standard, and a net sheet at the 2.5% expired rate.
     // All derive from data already gated above — no new unverified facts here.
-    const docType: 'cma' | 'expired-audit' = input.docType === 'expired-audit' ? 'expired-audit' : 'cma'
     let expiredAudit: ExpiredAuditData | null = null
     if (docType === 'expired-audit') {
       const tokens = subject.streetAddress.trim().split(/\s+/)
@@ -361,6 +409,21 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // expired-audit variant) the failure findings, services list, and net-
     // sheet lines. Every other field in the report is a verified number or a
     // structured fact, not authored prose, so it is out of scope here.
+    //
+    // PUNCTUATION IS SANITIZED, NOT GATED. Everything in `proseParts` is either
+    // written by us or derived from an LLM summary, and both routinely carry an
+    // em-dash or a semicolon. Failing the build on one is the wrong trade twice
+    // over: the reader gets no document at all, and the defect is a character
+    // we can simply fix. sanitizeClientProse rewrites it in place, so the
+    // rendered report is clean AND the gate below can only ever fire on a
+    // banned word, which is a real content problem.
+    pricing.notes = pricing.notes.map(sanitizeClientProse)
+    pricing.confidenceReason = sanitizeClientProse(pricing.confidenceReason)
+    // reviewReason is folded from the accuracy-contract check details, which
+    // quote the adversarial audit's own summary — LLM punctuation, shown to the
+    // broker in the admin queue.
+    if (pricing.reviewReason) pricing.reviewReason = sanitizeClientProse(pricing.reviewReason)
+
     const proseParts: string[] = [
       ...pricing.notes,
       pricing.confidenceReason,
@@ -385,7 +448,19 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       : proseParts.join('\n')
     const voice = checkBrandVoice(authoredProse)
     if (!voice.ok) {
-      throw new Error('CMA prose fails brand voice: ' + voice.violations.map((v) => v.term).join(', '))
+      // Reaching here means a banned WORD, not punctuation: every prose string
+      // above was punctuation-sanitized at source a few lines up, so a dash or
+      // semicolon can no longer get this far. That distinction is the whole
+      // point. Punctuation used to fail the build CLOSED, and the string that
+      // did it was one we wrote ourselves on the audit-unavailable branch, so
+      // the moment the Anthropic account hit its usage cap on 2026-07-30 every
+      // build in the corpus died on "CMA prose fails brand voice: —" and an
+      // API outage became a total CMA outage. Sanitizing at source makes that
+      // class structurally impossible; a banned word is a real content defect
+      // in our own copy and §2 is right that it should stop the document.
+      const err = 'CMA prose fails brand voice: ' + voice.violations.map((v) => `${v.term} (${v.kind})`).join(', ')
+      await recordBuildFailure(slug, err, { stage: 'pricing', docType, compSelection: selection.diagnostics })
+      return { ok: false, error: err, slug }
     }
 
     // 5.6. Advisory Orwell-rules review (W11.3) — runs ALONGSIDE the deterministic
@@ -570,104 +645,21 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         : {}),
     }
 
-    const buildSummary = {
+    const buildSummary = composeBuildSummary({
       builder: CMA_BUILDER_VERSION,
-      doc_type: docType,
-      page_count: pageCount,
-      comps_count: adjusted.length,
-      // Authoritative site facts for the admin summary (full trace in citations.site).
-      site: {
-        zone: site.zone,
-        overlays: site.zoneOverlays,
-        acreage: site.acreage,
-        water_source: site.water.source,
-        irrigation_district: site.water.irrigationDistrict,
-        water_rights_count: site.water.rights.length,
-        mapped_irrigation_acres: site.water.mappedIrrigationAcres,
-        primary_irrigation_priority_date: site.water.primaryIrrigationPriorityDate,
-        has_private_appurtenant: site.water.hasPrivateAppurtenant,
-        water_rights_query_ok: site.water.rightsQueryOk,
-        septic: site.septic.status,
-        permit_count: site.permits.length,
-        flood_zone: site.flood.zone,
-        in_sfha: site.flood.inSFHA,
-        wildfire_hazard: site.wildfireHazard,
-        entitlement_conditional: site.entitlement?.conditional ?? false,
-        hunting_eligible: site.hunting != null,
-        constraint_count: site.constraints.length,
-        is_municipal: site.isMunicipal,
-        resolved: site.resolved,
-      },
-      // The LLM comparability judgment (or a note that it was unavailable).
-      judgment: judgment
-        ? {
-            used_llm: true as const,
-            model: judgment.model,
-            cost_usd: judgment.costUsd,
-            confidence: judgment.confidence,
-            kept: judgment.keptKeys.length,
-            excluded: judgment.verdicts.filter((v) => v.tier === 'exclude').length,
-            narrative: judgment.narrative,
-            verdicts: judgment.verdicts,
-          }
-        : {
-            used_llm: false as const,
-            note: 'LLM comparability judge unavailable (no key or call failed); priced on the full comp set with the dispersion guard as backstop.',
-          },
-      // Top-level so the admin queue + batch reports can filter flagged CMAs
-      // without digging into the pricing sub-object.
-      needs_review: pricing.needsReview,
-      review_reason: pricing.reviewReason,
-      // The adversarial audit (or a note that it was unavailable).
-      audit: audit
-        ? {
-            used_llm: true as const,
-            model: audit.model,
-            cost_usd: audit.costUsd,
-            verdict: audit.verdict,
-            summary: audit.summary,
-            findings: audit.findings,
-            // Self-repair provenance: what the first audit flagged and what
-            // was removed before the re-priced, re-audited result above.
-            repaired_comp_keys: repairedKeys.length ? repairedKeys : undefined,
-            first_round: firstRoundAudit
-              ? {
-                  verdict: firstRoundAudit.verdict,
-                  summary: firstRoundAudit.summary,
-                  findings: firstRoundAudit.findings,
-                  cost_usd: firstRoundAudit.costUsd,
-                }
-              : undefined,
-          }
-        : {
-            used_llm: false as const,
-            note: 'Adversarial audit unavailable (no key or call failed); needs_review forced via the contract.',
-          },
-      // The full accuracy-contract evaluation — every check, pass or fail.
-      accuracy_contract: contract,
-      pricing: {
-        conservative: pricing.conservative,
-        recommended: pricing.recommended,
-        high_end: pricing.highEnd,
-        confidence: pricing.confidence,
-        convergence_spread_pct: pricing.convergenceSpreadPct,
-        comp_ppsf_cv: pricing.compPpsfCv,
-        needs_review: pricing.needsReview,
-        review_reason: pricing.reviewReason,
-        method1_mid: pricing.method1Mid,
-        method2: pricing.method2,
-        method3: pricing.method3,
-      },
-      market: market
-        ? {
-            geo_label: market.geoLabel,
-            months_of_supply: market.monthsOfSupply,
-            verdict: market.marketVerdict,
-            median_dom: market.medianDom,
-            yoy_pct: market.yoyMedianPriceDeltaPct,
-          }
-        : null,
-    }
+      docType,
+      pageCount,
+      comps: adjusted,
+      compSelection: selection.diagnostics,
+      site,
+      judgment,
+      audit,
+      firstRoundAudit,
+      repairedKeys,
+      contract,
+      pricing,
+      market,
+    })
 
     // 8. Persist. Upsert keyed on slug — a rebuild updates in place (G47:
     // one property, one slug, one CMA).
@@ -743,7 +735,13 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     }
   } catch (e) {
     const err = e instanceof Error ? e.message : String(e)
-    await recordBuildFailure(slug, err)
+    // Stage is inferred from how far we got: if comps were selected, the throw
+    // came from pricing or later, and the comp trace is worth keeping either way.
+    await recordBuildFailure(slug, err, {
+      stage: compDiagnostics ? 'pricing' : 'subject',
+      docType,
+      compSelection: compDiagnostics,
+    })
     return { ok: false, error: err, slug }
   }
 }

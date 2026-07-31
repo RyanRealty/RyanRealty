@@ -134,7 +134,14 @@ export async function getListingPhotosCount(listingKey: string): Promise<number 
 
 /** Closed SFR comp pool for one selection tier. The builder composes tiers. */
 export async function selectCmaCompsPool(opts: {
-  cityIlike: string
+  /**
+   * City bound. NULL is deliberate and means "any mailing city": on a rural
+   * acreage parcel the MLS City is a postal address, not a market, and the
+   * nearest true comparables routinely carry a different one. Only the rural
+   * tiers pass null, and only after every city-bounded tier has starved; they
+   * always pair it with a `bounds` radius so it never means "anywhere".
+   */
+  cityIlike: string | null
   subdivisionIlike?: string | null
   postalCode?: string | null
   closeDateGte: string
@@ -163,7 +170,7 @@ export async function selectCmaCompsPool(opts: {
     .gt('ClosePrice', 0)
     .gte('TotalLivingAreaSqFt', opts.sqftMin)
     .lte('TotalLivingAreaSqFt', opts.sqftMax)
-    .ilike('City', opts.cityIlike)
+  if (opts.cityIlike?.trim()) q = q.ilike('City', opts.cityIlike.trim())
   if (opts.subdivisionIlike?.trim()) q = q.ilike('SubdivisionName', opts.subdivisionIlike.trim())
   if (opts.postalCode?.trim()) q = q.eq('PostalCode', opts.postalCode.trim())
   if (opts.lotMin != null) q = q.gte('lot_size_acres', opts.lotMin)

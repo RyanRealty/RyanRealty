@@ -40,6 +40,17 @@ import {
   proximityLabel,
   resolveMarketArea,
 } from '@/lib/cma/market-area'
+import {
+  addExclusions,
+  countByTier,
+  diagnoseStarvation,
+  emptyExclusions,
+  type CompSelectionDiagnostics,
+  type CompTierTrace,
+} from '@/lib/cma/comp-trace'
+import { compTierLadder, isRuralAcreage, realSubdivision } from '@/lib/cma/comp-tiers'
+
+export { realSubdivision }
 
 export const MIN_COMPS = 3
 /**
@@ -109,6 +120,7 @@ function isoMonthsAgo(months: number): string {
   return d.toISOString().slice(0, 10)
 }
 
+
 function similarityScore(subjectSqft: number, comp: CmaComp): number {
   const sizeProximity = 1 / (1 + Math.abs(subjectSqft - comp.sqft) / subjectSqft)
   const months = Math.max(0, (Date.now() - new Date(comp.closeDate).getTime()) / (30.44 * 86_400_000))
@@ -121,19 +133,61 @@ export interface CompSelection {
   excludedOutliers: Array<{ address: string; closePrice: number; ppsf: number; reason: string }>
   tiersUsed: string[]
   trace: string[]
+  /** The structured, queryable half of the trace — persisted to build_summary. */
+  diagnostics: CompSelectionDiagnostics
+}
+
+function emptyDiagnostics(subject: CmaSubject, note: string | null): CompSelectionDiagnostics {
+  return {
+    market_area: null,
+    market_area_resolved: false,
+    rural_acreage: false,
+    subject: {
+      sqft: subject.sqft ?? null,
+      lot_acres: subject.lotAcres ?? null,
+      subdivision: realSubdivision(subject.subdivision),
+      subdivision_raw: subject.subdivision ?? null,
+      product_sub_type: subject.propertySubType ?? null,
+    },
+    ladder: [],
+    tiers_used: [],
+    reached_target: false,
+    starved: true,
+    starved_at: null,
+    starved_reason: note,
+    target_comps: TARGET_COMPS,
+    min_comps: MIN_COMPS,
+    candidates: 0,
+    excluded_totals: emptyExclusions(),
+    outliers_excluded: 0,
+    final_count: 0,
+    final_tier_counts: {},
+    disclosures: [],
+  }
 }
 
 /**
- * Select 6-10 closed comps for the subject. Every query filter is recorded in
- * the trace for citations.
+ * Select up to MAX_COMPS closed comps for the subject. Every query filter is
+ * recorded in `trace` (prose, for the rendered citations) and in `diagnostics`
+ * (structured, for build_summary).
  */
 export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
   const sqft = subject.sqft ?? 0
   if (!sqft || !subject.city) {
-    return { comps: [], excludedOutliers: [], tiersUsed: [], trace: ['Subject is missing sqft or city — comps cannot be selected.'] }
+    // A subject with no living area is not a house the MLS has a record of —
+    // most often the address resolves to a LAND listing (property_sub_type
+    // 'Residential Lots'), which no closed-SFR comp set can price.
+    const note = !sqft
+      ? `The MLS record for this address carries no living area (TotalLivingAreaSqFt is empty${
+          subject.propertySubType ? `, and its property sub-type is "${subject.propertySubType}"` : ''
+        }). A comparable-sales analysis prices a dwelling, so there is nothing to compare. If the property has since been built on, the MLS record has not caught up and the subject must be entered by the MLS number of the improved listing.`
+      : 'The subject has no city on its MLS record, so no comp market could be identified.'
+    return { comps: [], excludedOutliers: [], tiersUsed: [], trace: [note], diagnostics: emptyDiagnostics(subject, note) }
   }
   const trace: string[] = []
   const tiersUsed: string[] = []
+  const ladder: CompTierTrace[] = []
+  const excludedTotals = emptyExclusions()
   const byKey = new Map<string, CmaComp>()
 
   // Lot-character band for the QUERY. The in-memory lotCharacterCompatible check
@@ -143,6 +197,9 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
   const lotMin = subject.lotAcres != null && subject.lotAcres >= 1 ? +(subject.lotAcres * 0.4).toFixed(2) : null
   const lotMax = subject.lotAcres != null && subject.lotAcres >= 1 ? +(subject.lotAcres * 2.5).toFixed(2) : null
 
+  // Null when the MLS holds a placeholder rather than a real subdivision.
+  const subdivisionIlike = realSubdivision(subject.subdivision)
+
   // The subject's GIS market area, when it sits inside one. Null is a legitimate
   // answer (rural, or a city with no mesh) — those subjects fall back to distance.
   const subjectArea = resolveMarketArea(subject.latitude, subject.longitude)
@@ -151,60 +208,52 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
   trace.push(
     subjectArea
       ? `Subject market area: ${subjectAreaName} (City of Bend GIS neighborhood mesh, point-in-polygon).`
-      : 'Subject is outside every mapped neighborhood polygon — comps fall back to distance from the subject.',
+      : 'Subject is outside every mapped neighborhood polygon, so comps fall back to distance from the subject.',
   )
 
-  type Tier = {
-    name: string
-    subdivisionIlike?: string | null
-    monthsBack: number
-    sqftBand: number
-    /** Restrict to the subject's own GIS market area. */
-    sameArea: boolean
-    /** Allow a different market area, DISCLOSED on every comp it yields. */
-    competing: boolean
-    /** Hard cap in miles for the fallback tiers, so "city" never means "anywhere". */
-    maxMiles: number | null
-  }
 
-  // TRADE TIME BEFORE YOU TRADE LOCATION (Matt 2026-07-30). The ladder used to
-  // step subdivision-6mo -> neighborhood-6mo, so a subject in a tight desirable
-  // subdivision with one recent sale immediately widened to the whole polygon.
-  // 922 Ogden is the case: Kenwood has 1 in-band sale in 6 months and 2 in 12,
-  // so the selector took the single 6-month Kenwood sale and then reached for
-  // Starlight Estate and Cady — different, weaker submarkets — while the second
-  // Kenwood sale sat unused at 8 months old. An older sale on the subject's own
-  // street competes for the same buyer; a same-month sale two submarkets over
-  // does not. Fannie Mae B4-1.3-08 permits over-6-month comps with an
-  // explanation, and the trace carries that explanation, so the older
-  // same-subdivision sale is the cheaper concession.
-  const tiers: Tier[] = [
-    // 1-2. The subject's own subdivision, exhausted across the full 12 months
-    // BEFORE any geographic widening.
-    { name: 'subdivision-6mo', subdivisionIlike: subject.subdivision, monthsBack: 6, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: null },
-    { name: 'subdivision-12mo', subdivisionIlike: subject.subdivision, monthsBack: 12, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: null },
-    // 3-4. The neighborhood — the group of subdivisions around the subject, as
-    // the City of Bend GIS mesh draws it. Same widen-time-first order.
-    { name: 'neighborhood-6mo', monthsBack: 6, sqftBand: 0.25, sameArea: true, competing: false, maxMiles: null },
-    { name: 'neighborhood-12mo', monthsBack: 12, sqftBand: 0.25, sameArea: true, competing: false, maxMiles: null },
-    // 5. Competing market area — permitted, but disclosed and distance-bounded.
-    { name: 'competing-area-12mo', monthsBack: 12, sqftBand: 0.25, sameArea: false, competing: true, maxMiles: 2 },
-    // 6. Last resort. Still bounded — the old ladder ended at "anywhere in the city".
-    { name: 'citywide-12mo', monthsBack: 12, sqftBand: 0.35, sameArea: false, competing: true, maxMiles: 5 },
-  ]
-
-  let excludedLotCharacter = 0
-  let excludedProductType = 0
-  let excludedDistance = 0
-  let excludedArea = 0
+  const tiers = compTierLadder(subdivisionIlike)
+  const ruralAcreage = isRuralAcreage(subject, subjectArea)
 
   for (const tier of tiers) {
-    if (tier.name.startsWith('subdivision') && !tier.subdivisionIlike) continue
-    // The polygon tiers are meaningless without a resolved subject area.
-    if (tier.sameArea && !subjectArea) continue
+    const skip =
+      tier.name.startsWith('subdivision') && !tier.subdivisionIlike
+        ? 'the subject has no usable SubdivisionName on its MLS record'
+        : tier.sameArea && !subjectArea
+          ? 'the subject sits outside every mapped neighborhood polygon'
+          : tier.ruralOnly && !ruralAcreage
+            ? 'this rung is reserved for rural acreage subjects outside every mapped neighborhood'
+            : null
     const sqftMin = Math.round(sqft * (1 - tier.sqftBand))
     const sqftMax = Math.round(sqft * (1 + tier.sqftBand))
     const closeDateGte = isoMonthsAgo(tier.monthsBack)
+    const geography = [
+      tier.subdivisionIlike ? `SubdivisionName ILIKE '${tier.subdivisionIlike}'` : null,
+      tier.ignoreCity ? 'any mailing city' : `City ILIKE '${subject.city}'`,
+      tier.sameArea ? `market area = ${subjectAreaName}` : null,
+      tier.maxMiles != null ? `within ${tier.maxMiles} miles of the subject` : null,
+    ]
+      .filter(Boolean)
+      .join(', ')
+    const rung: CompTierTrace = {
+      tier: tier.name,
+      ran: !skip,
+      skipped_reason: skip,
+      months_back: tier.monthsBack,
+      sqft_min: sqftMin,
+      sqft_max: sqftMax,
+      lot_min: lotMin,
+      lot_max: lotMax,
+      geography,
+      rows_returned: 0,
+      comps_added: 0,
+      running_total: byKey.size,
+      excluded: emptyExclusions(),
+    }
+    if (skip) {
+      ladder.push(rung)
+      continue
+    }
     // Push the tier's geography INTO the query. The row limit is applied
     // before any in-memory filter, so without this a polygon or radius tier
     // only sees whichever recent citywide sales happen to fall inside it.
@@ -214,7 +263,7 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
         ? radiusBounds(subjectPoint, tier.maxMiles)
         : null
     const rows = await selectCmaCompsPool({
-      cityIlike: subject.city,
+      cityIlike: tier.ignoreCity ? null : subject.city,
       subdivisionIlike: tier.subdivisionIlike ?? null,
       postalCode: null,
       closeDateGte,
@@ -225,18 +274,31 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
       bounds: tierBounds,
       limit: tierBounds ? 500 : 100,
     })
+    rung.rows_returned = rows.length
     let added = 0
     for (const row of rows) {
       const comp = rowToComp(row, tier.name)
-      if (!comp) continue
-      if (subject.listingKey && comp.listingKey === subject.listingKey) continue
-      if (subject.streetAddress && comp.address.toLowerCase() === subject.streetAddress.toLowerCase()) continue
-      if (byKey.has(comp.listingKey)) continue
+      if (!comp) {
+        rung.excluded.unusable_row++
+        continue
+      }
+      if (subject.listingKey && comp.listingKey === subject.listingKey) {
+        rung.excluded.self++
+        continue
+      }
+      if (subject.streetAddress && comp.address.toLowerCase() === subject.streetAddress.toLowerCase()) {
+        rung.excluded.self++
+        continue
+      }
+      if (byKey.has(comp.listingKey)) {
+        rung.excluded.duplicate++
+        continue
+      }
 
       // HARD EXCLUSION at every tier (Matt 2026-07-28): acreage and in-town lots
       // are different products with different buyer pools, at any distance.
       if (!lotCharacterCompatible(subject.lotAcres, comp.lotAcres)) {
-        excludedLotCharacter++
+        rung.excluded.lot_character++
         continue
       }
 
@@ -245,19 +307,19 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
       // 'A' mixes all of them, so without this the selector hands the judge a
       // contaminated set and the audit fails the build after the fact.
       if (!productTypeCompatible(subject.propertySubType, comp.propertySubType)) {
-        excludedProductType++
+        rung.excluded.product_type++
         continue
       }
 
       const compArea = resolveMarketArea(comp.latitude, comp.longitude)
       if (tier.sameArea && compArea !== subjectArea) {
-        excludedArea++
+        rung.excluded.market_area++
         continue
       }
 
       const miles = distanceMiles(subjectPoint, { lat: comp.latitude, lng: comp.longitude })
       if (tier.maxMiles != null && miles != null && miles > tier.maxMiles) {
-        excludedDistance++
+        rung.excluded.distance++
         continue
       }
 
@@ -270,35 +332,56 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
       byKey.set(comp.listingKey, comp)
       added++
     }
+    rung.comps_added = added
+    rung.running_total = byKey.size
+    addExclusions(excludedTotals, rung.excluded)
+    ladder.push(rung)
     trace.push(
-      `Tier ${tier.name}: listings WHERE StandardStatus ILIKE '%Closed%' AND PropertyType='A' AND ClosePrice>0 AND CloseDate>='${closeDateGte}' AND City ILIKE '${subject.city}'${tier.subdivisionIlike ? ` AND SubdivisionName ILIKE '${tier.subdivisionIlike}'` : ''} AND TotalLivingAreaSqFt BETWEEN ${sqftMin} AND ${sqftMax}${lotMin != null ? ` AND lot_size_acres BETWEEN ${lotMin} AND ${lotMax}` : ''}` +
+      `Tier ${tier.name}: listings WHERE StandardStatus ILIKE '%Closed%' AND PropertyType='A' AND ClosePrice>0 AND CloseDate>='${closeDateGte}'${tier.ignoreCity ? '' : ` AND City ILIKE '${subject.city}'`}${tier.subdivisionIlike ? ` AND SubdivisionName ILIKE '${tier.subdivisionIlike}'` : ''} AND TotalLivingAreaSqFt BETWEEN ${sqftMin} AND ${sqftMax}${lotMin != null ? ` AND lot_size_acres BETWEEN ${lotMin} AND ${lotMax}` : ''}` +
         `${tier.sameArea ? ` AND market area = ${subjectAreaName}` : ''}${tier.maxMiles != null ? ` AND distance <= ${tier.maxMiles} miles` : ''}. Returned ${rows.length} rows, ${added} new comps.`,
     )
     if (added > 0) tiersUsed.push(tier.name)
     if (byKey.size >= TARGET_COMPS) break
   }
 
-  if (excludedProductType > 0) {
+  const disclosures: string[] = []
+  const x = excludedTotals
+  if (x.product_type > 0) {
     trace.push(
-      `Excluded ${excludedProductType} comp(s) on product type (a townhome, condo, or manufactured home is not comparable to a detached house at any distance — Fannie Mae B4-1.3-08).`,
+      `Excluded ${x.product_type} comp(s) on product type. A townhome, condo, or manufactured home is not comparable to a detached house at any distance, per Fannie Mae B4-1.3-08.`,
     )
   }
-  if (excludedLotCharacter > 0) {
-    trace.push(`Excluded ${excludedLotCharacter} comp(s) on lot character (acreage vs in-town lot is not comparable at any distance).`)
+  if (x.lot_character > 0) {
+    trace.push(`Excluded ${x.lot_character} comp(s) on lot character (acreage vs in-town lot is not comparable at any distance).`)
   }
-  if (excludedArea > 0) trace.push(`Excluded ${excludedArea} comp(s) outside the subject's market area.`)
-  if (excludedDistance > 0) trace.push(`Excluded ${excludedDistance} comp(s) beyond the tier's distance bound.`)
-
-  const usedOlder = tiersUsed.some((t) => t.includes('12mo'))
-  if (usedOlder) {
-    trace.push('Comps older than 6 months were used because the 6-month set did not reach the minimum — Fannie Mae B4-1.3-08 requires this be stated.')
+  if (x.market_area > 0) trace.push(`Excluded ${x.market_area} comp(s) outside the subject's market area.`)
+  if (x.distance > 0) trace.push(`Excluded ${x.distance} comp(s) beyond the tier's distance bound.`)
+  if (subject.subdivision && !subdivisionIlike) {
+    trace.push(
+      `The subject's SubdivisionName is "${subject.subdivision}", an MLS placeholder rather than a named subdivision, so the subdivision tiers were skipped and the ladder started at the neighborhood. Selecting on that placeholder would have matched unrelated sales across the whole city and labeled them same-subdivision comps.`,
+    )
+  }
+  if (tiersUsed.some((t) => t.includes('12mo') || t.includes('24mo'))) {
+    const older =
+      'Comps older than 6 months were used because the 6-month set did not reach the minimum. Fannie Mae B4-1.3-08 requires this be stated.'
+    trace.push(older)
+    disclosures.push(older)
+  }
+  for (const t of tiers) {
+    if (t.disclosure && tiersUsed.includes(t.name)) {
+      trace.push(t.disclosure)
+      disclosures.push(t.disclosure)
+    }
   }
   const competingCount = [...byKey.values()].filter((c) => c.competingArea).length
   if (competingCount > 0) {
-    trace.push(`${competingCount} comp(s) come from a COMPETING market area and are labeled as such on the report, per Fannie Mae B4-1.3-08.`)
+    const d = `${competingCount} comp(s) come from a COMPETING market area and are labeled as such on the report, per Fannie Mae B4-1.3-08.`
+    trace.push(d)
+    disclosures.push(d)
   }
 
   let comps = Array.from(byKey.values())
+  const candidateCount = comps.length
 
   // Outlier exclusion: drop $/sqft beyond 2 standard deviations, only when the
   // set stays at or above MIN_COMPS afterward.
@@ -336,7 +419,38 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
   comps.sort((a, b) => b.closeDate.localeCompare(a.closeDate))
 
   trace.push(`Final comp set: ${comps.length} closed sales (tiers: ${tiersUsed.join(', ') || 'none'}).`)
-  return { comps, excludedOutliers, tiersUsed, trace }
+
+  const ran = ladder.filter((t) => t.ran)
+  const reachedTarget = candidateCount >= TARGET_COMPS
+  const diagnostics: CompSelectionDiagnostics = {
+    market_area: subjectAreaName,
+    market_area_resolved: subjectArea != null,
+    rural_acreage: ruralAcreage,
+    subject: {
+      sqft: subject.sqft ?? null,
+      lot_acres: subject.lotAcres ?? null,
+      subdivision: subdivisionIlike,
+      subdivision_raw: subject.subdivision ?? null,
+      product_sub_type: subject.propertySubType ?? null,
+    },
+    ladder,
+    tiers_used: tiersUsed,
+    reached_target: reachedTarget,
+    starved: !reachedTarget,
+    starved_at: reachedTarget ? null : (ran[ran.length - 1]?.tier ?? null),
+    starved_reason: null,
+    target_comps: TARGET_COMPS,
+    min_comps: MIN_COMPS,
+    candidates: candidateCount,
+    excluded_totals: excludedTotals,
+    outliers_excluded: excludedOutliers.length,
+    final_count: comps.length,
+    final_tier_counts: countByTier(comps),
+    disclosures,
+  }
+  diagnostics.starved_reason = diagnoseStarvation(diagnostics)
+  if (diagnostics.starved_reason && comps.length < MIN_COMPS) trace.push(diagnostics.starved_reason)
+  return { comps, excludedOutliers, tiersUsed, trace, diagnostics }
 }
 
 /**
@@ -361,10 +475,35 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
   const comps = Array.from(byKey.values()).sort((a, b) => b.closeDate.localeCompare(a.closeDate))
   const found = new Set(comps.map((c) => c.listingKey))
   const missing = requested.filter((k) => !found.has(k))
-  const trace = [
-    `Broker-selected comp set: ${comps.length} of ${requested.length} requested ListingKey(s) resolved as valid closed SFR${
-      missing.length ? ` (unresolved: ${missing.join(', ')})` : ''
-    }.`,
-  ]
-  return { comps, excludedOutliers: [], tiersUsed: ['broker-selected'], trace }
+  const note = `Broker-selected comp set: ${comps.length} of ${requested.length} requested ListingKey(s) resolved as valid closed SFR${
+    missing.length ? ` (unresolved: ${missing.join(', ')})` : ''
+  }.`
+  const diagnostics: CompSelectionDiagnostics = {
+    ...emptyDiagnostics(subject, comps.length >= MIN_COMPS ? null : note),
+    ladder: [
+      {
+        tier: 'broker-selected',
+        ran: true,
+        skipped_reason: null,
+        months_back: 0,
+        sqft_min: null,
+        sqft_max: null,
+        lot_min: null,
+        lot_max: null,
+        geography: `explicit ListingKey set (${requested.length} requested)`,
+        rows_returned: rows.length,
+        comps_added: comps.length,
+        running_total: comps.length,
+        excluded: emptyExclusions(),
+      },
+    ],
+    tiers_used: ['broker-selected'],
+    reached_target: comps.length >= MIN_COMPS,
+    starved: comps.length < MIN_COMPS,
+    starved_at: comps.length < MIN_COMPS ? 'broker-selected' : null,
+    candidates: comps.length,
+    final_count: comps.length,
+    final_tier_counts: countByTier(comps),
+  }
+  return { comps, excludedOutliers: [], tiersUsed: ['broker-selected'], trace: [note], diagnostics }
 }
