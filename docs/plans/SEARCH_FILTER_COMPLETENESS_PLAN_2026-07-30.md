@@ -62,7 +62,8 @@ Raw artifacts: `spark-standardfields.json`, `spark-customfields.json`,
 The gap is not 113 vs 1,829 in practice, because much of the feed is broker
 plumbing, agent identity, and internal timestamps that no consumer should see.
 The honest target is defined in §4: every searchable field that a buyer could
-reasonably shop by, minus the confidential and rule-restricted set.
+reasonably shop by, minus the confidential and rule-restricted set. That target
+is derived in §10.
 
 **§0 correction, made against my own figure.** I published "11,859 allowed
 values" earlier in this session. An independent pass could not reproduce it:
@@ -132,7 +133,7 @@ the plan treats them as requirements rather than nice-to-haves:
 5. **Denormalization on demand.** If a filter is slow we add a column, an index,
    or a precomputed array. That option does not exist against someone else's API.
 
-Design constraints this imposes, to be honored in §7 and §8: the facet table
+Design constraints this imposes, to be honored in §4, §5 and §7: the facet table
 must be class-aware (counts differ per property class), it must respect the same
 public-visibility rules as the serving view (no Coming Soon, no confidential
 fields), and a stale facet must never contradict the result count the user
@@ -154,6 +155,225 @@ the MV.
 6. A deep multi-filter search can be saved and turned into an alert without
    re-entering anything.
 7. Sold search carries the same filter depth as active search.
+
+---
+
+## 4. Sub types: the filter Matt asked for first
+
+This section exists because §2.1 stops at "the hierarchy is in the data." Knowing
+the hierarchy is not the deliverable. Being able to ask for a triplex is.
+
+### 4.1 What is actually shipped today, measured not assumed
+
+I previously said the search surface had **zero** sub-type filters. That was
+wrong and the correction matters, because the real state is worse in a more
+specific way. `propertySubType` **does** exist as a filter param
+(`lib/search-filters.ts:28`), and it is applied in
+`lib/data/listings/searchListingsAll.ts:391-400`. But:
+
+- It is a **single free-text string**, capped at 80 chars
+  (`searchListingsAll.ts:251`), not an enumerated multi-select.
+- It is matched by **substring ILIKE** (`*value*`), not by value equality. The
+  code comment explains why: an earlier exact match zeroed the condos preset,
+  because the preset passes `'Condo'` and the feed says `'Condominium'`.
+  Substring matching papered over a vocabulary mismatch rather than fixing it.
+- It is reachable from exactly **three** places: the `condos`, `townhomes`, and
+  `manufactured` preset slugs (`lib/search-presets.ts:107-118`), and five phrase
+  aliases in the query parser (`lib/parse-search-query.ts:72-76`).
+- It appears in **no filter panel and no chip**. A user who wants a duplex has no
+  control to click, and typing "duplex" does nothing: the parser has no alias for
+  it.
+
+### 4.2 The live inventory, and what today's surface does to it
+
+Measured in `listing_search_mv`, 2026-07-30, all statuses in the serving view:
+
+| Class | Sub type | Listings | Reachable today |
+|---|---|---|---|
+| **A** Residential | Single Family Residence | 4,929 | via class only |
+| | Manufactured On Land | 587 | `manufactured` preset |
+| | Townhouse | 327 | `townhomes` preset |
+| | Condominium | 178 | `condos` preset |
+| | Tenancy in Common | 71 | **no** |
+| | Residential Leased Land | 54 | **no** |
+| | Stock Cooperative | 2 | **no** |
+| | Timeshare | 1 | **no** |
+| | *(none recorded)* | 127 | n/a |
+| **B** Manufactured | In Park | 305 | **no** |
+| | On Leased Land | 3 | **no** |
+| | *(none recorded)* | 9 | n/a |
+| **C** Multi-family | Duplex | 96 | **no** |
+| | Multi Family | 59 | **no** |
+| | Quadruplex | 25 | **no** |
+| | Triplex | 19 | **no** |
+| | *(none recorded)* | 3 | n/a |
+| **D** Land | Residential Lots | 1,623 | **no** |
+| | Commercial | 160 | **no** |
+| | Recreational | 113 | **no** |
+| | Agriculture | 102 | **no** |
+| | Industrial | 29 | **no** |
+| | Rangeland | 24 | **no** |
+| | Investment | 13 | **no** |
+| | *(none recorded)* | 64 | n/a |
+
+Every one of the 22 sub types has live inventory. None would be cut by a
+coverage gate. **17 of 22 are unreachable**, and the five that are reachable are
+reachable only by URL slug, never by a control.
+
+### 4.3 Three defects the substring contract produces, with counts
+
+1. **`/homes-for-sale/manufactured` misses 308 of the 895 manufactured listings.**
+   The preset passes `'Manufactured'`. Class-B sub types are `In Park` and
+   `On Leased Land`, and neither string contains "Manufactured". Measured:
+   587 match, class B holds 317 rows, 308 of them fail the substring. The code
+   comment at `search-presets.ts:114-117` asserts the opposite ("so both
+   manufactured-on-land (PropertyType A) and manufactured-in-park (PropertyType
+   B) rows qualify"). The comment is wrong and the page has been under-reporting
+   by 34% of true manufactured inventory.
+2. **Substring matching crosses classes silently.** `Land` matches 668 rows
+   spanning `Manufactured On Land` (A), `Residential Leased Land` (A), and
+   `On Leased Land` (B). Any future preset or typed value containing a common
+   word inherits this, and the failure is invisible: it returns listings, just
+   the wrong ones.
+3. **One value per search.** The param is a scalar, so "duplex or triplex" and
+   "condo or townhouse" cannot be expressed at all, which is precisely how
+   small-multifamily buyers and first-time buyers actually shop.
+
+### 4.4 The model
+
+**Sub type becomes an enumerated, class-aware, multi-select filter over exact
+values.** No substring matching survives.
+
+- **Storage.** `property_sub_type` stays a single text column in the serving
+  view; it is single-valued per listing in the feed. The filter is a
+  set-membership test (`in (...)`), which a btree index on
+  `(property_type, property_sub_type)` serves directly. No new column is needed
+  for the filter itself; the facet counts land in the facet table from §2.2.
+- **Vocabulary.** Values are generated from Spark metadata and reconciled
+  against observed values in our database. A metadata value with zero live
+  listings is retained but rendered at zero; an observed value absent from the
+  metadata is a **loud build failure**, because it means the feed's vocabulary
+  moved.
+- **The `'Condo'` vs `'Condominium'` class of bug is designed out.** The UI never
+  sends a human word. It sends the exact feed value. Human words are resolved to
+  feed values by the synonym layer (§4.6), which is data, versioned, and tested,
+  rather than by a wildcard at query time.
+- **Legacy slugs keep working.** `condos`, `townhomes` and `manufactured` are
+  live SEO routes with rankings, so they are remapped to explicit value sets:
+  `condos → {Condominium}`, `townhomes → {Townhouse}`,
+  `manufactured → {Manufactured On Land, In Park, On Leased Land}`. The third
+  one is the fix for defect 1, and it changes a live page's result count from
+  587 to 895. That is a deliberate, measured correction, not a regression.
+
+### 4.5 Interaction, which is the part Matt actually asked for
+
+"All those subtypes should already be loaded." Concretely:
+
+1. **The sub-type control is on the Property type chip, not buried in All
+   filters.** Opening it shows every sub type for the selected class, already
+   populated, with live counts next to each: `Duplex (96)`, `Triplex (19)`.
+   Nothing is typed and nothing is fetched on open.
+2. **No class selected means all classes are shown, grouped by class heading.**
+   The user does not have to know that a duplex lives under "Multi-family" to
+   find one. Grouping teaches the hierarchy without requiring it.
+3. **Picking a sub type auto-narrows the class**, with one-tap undo, per the §7.1
+   rule. Picking `Duplex` sets class C. Picking sub types across two classes
+   widens the class filter to both rather than blocking the selection.
+4. **Zero-count values are visible but disabled**, with the reason on hover or
+   long-press ("0 in this area with your current filters"), because hiding them
+   makes the surface feel arbitrary and hides real market facts.
+5. **Counts respond to the rest of the filter set** (§2.2 requirement 2), so
+   inside a drawn shape under $600K the counts are the counts for that search.
+6. **The 931 rows with no recorded sub type are never silently dropped.** A
+   sub-type selection excludes them by definition, so the empty-state and the
+   result header say so when the count is material: 127 class-A listings have no
+   sub type recorded and would vanish from a "Single Family Residence" search
+   that the user believes is complete.
+
+### 4.6 The synonym layer
+
+Typing is the fastest door (§7), so sub types get first-class synonyms, stored
+as data next to the generated value set rather than hard-coded in the parser:
+
+| Typed | Resolves to |
+|---|---|
+| duplex, two unit, 2 unit, two-plex | `{Duplex}` |
+| triplex, three unit, 3 unit | `{Triplex}` |
+| fourplex, four plex, quadplex, quad, 4 unit | `{Quadruplex}` |
+| multifamily, multi family, income property, plex, small multifamily | `{Duplex, Triplex, Quadruplex, Multi Family}` |
+| condo, condominium | `{Condominium}` |
+| townhome, townhouse, row house | `{Townhouse}` |
+| manufactured, mobile home, double wide, single wide | `{Manufactured On Land, In Park, On Leased Land}` |
+| manufactured on land, manufactured with land | `{Manufactured On Land}` |
+| mobile home park, in park, park model | `{In Park}` |
+| co-op, coop, stock cooperative | `{Stock Cooperative}` |
+| tic, tenancy in common | `{Tenancy in Common}` |
+| leased land, land lease | `{Residential Leased Land, On Leased Land}` |
+| timeshare, fractional | `{Timeshare}` |
+| lot, vacant lot, buildable lot | `{Residential Lots}` |
+| acreage, farm, ranch, ag land | `{Agriculture, Rangeland}` |
+
+"Mobile home" resolving to the manufactured set is the single highest-volume
+vocabulary gap: it is what buyers say and it appears nowhere in the feed.
+
+### 4.7 Downstream, because a filter that does not survive the save is not shipped
+
+- **Alerts.** Sub type is a narrowing key, so it must NOT be in
+  `NON_NARROWING_KEYS` (`lib/search-filters.ts:412`), and the alert digest must
+  name it ("New Duplex listings in Bend").
+- **SEO.** Each sub type earns a slug on the existing preset mechanism where it
+  has enough inventory to justify a page. `duplex`, `triplex`, `fourplex` and
+  `residential-lots` clear that bar on today's counts; `stock-cooperative` (2)
+  and `timeshare` (1) do not and stay filter-only.
+- **Sold search** carries the same sub-type set, subject to the VOW rule already
+  in force.
+
+### 4.8 Acceptance for §4
+
+1. All 22 sub types are selectable from a control, with live counts, without
+   typing.
+2. Multi-select works within and across classes.
+3. `/homes-for-sale/manufactured` returns 895, not 587, and a test pins the
+   value set rather than the number.
+4. No substring matching remains on `property_sub_type` anywhere in the DAL.
+5. Every synonym in §4.6 resolves in the omnibox, covered by a test per row.
+6. A sub-type search saves as an alert and the digest names the sub type.
+7. A gate fails the build if an observed sub-type value has no generated entry.
+
+---
+
+## 5. The other 34 fields that behave the same way
+
+Sub type is not special. It is the most visible member of a class of **35
+class-conditioned fields (28 distinct concepts, 22 buyer-facing)** counted in §2.
+Building sub type as a one-off and hand-writing the rest is how the first pass
+produced a flat 113.
+
+**The rule, applied uniformly:** any enumerated field is generated with its
+values, each value carries the classes it is valid for, and the UI conditions on
+that. The difference from §2.1 is the source of the conditioning, per the §2
+correction: **validity comes from observed per-class prevalence in our database,
+with Spark's `AppliesTo` as a hint and tie-breaker only.** `Deck` and `Patio`
+are marked class-B-only in the metadata and appear on roughly a third of live
+class-A listings, so trusting the metadata would have hidden the two most common
+outdoor features from residential search.
+
+**Prevalence thresholds, so "valid for this class" is a number and not a
+judgment call.** For each (field, value, class): show if the value appears on
+≥ 0.5% of live listings in that class or on ≥ 25 listings, whichever is lower;
+show disabled with a zero count if it appears at all; hide only if it never
+appears in that class AND `AppliesTo` agrees it does not belong. Thresholds live
+in the generator config, are printed in the build artifact, and move only by
+commit.
+
+**A value valid in several classes is one filter, not several.** The user picks
+`Gas` fireplace once; the query applies it to whichever classes are in scope.
+Class conditioning changes which values are OFFERED and which are struck through
+(§7.1 rule 2). It never forks the parameter.
+
+**Ordering inside a value list is by live count descending, not alphabetical.**
+On a 165-field surface with long value lists, alphabetical ordering buries the
+answer. Ties break alphabetically so the order is stable between refreshes.
 
 ---
 
@@ -661,8 +881,8 @@ facet counts.
 |---|---|---|---|
 | **P0** | Close the group-name leak (§8) | `ci:search-confidential-exclusion` | Live exposure of broker-only data. Precedes all feature work |
 | **P1** | T0 pipeline at zero diff | `ci:search-registry-generated` | Nothing else is safe to build on a hand-maintained registry |
-| **P2** | Corrections + PropertySubType (§9, §7.2) | `ci:search-coverage`, `ci:search-option-parity` | Highest buyer value per hour; MV columns already exist |
-| **P3** | Class conditioning + find-a-filter (§7.1) | render + interaction tests | Makes the surface usable rather than merely large |
+| **P2** | Sub types end to end (§4) + registry corrections (§9, §7.2) | `ci:search-coverage`, `ci:search-option-parity`, plus the §4.8 acceptance set | Highest buyer value per hour; the column and index already exist, and it fixes a live 308-listing undercount |
+| **P3** | Class conditioning across the other 34 (§5) + find-a-filter (§7.1) | render + interaction tests, prevalence thresholds printed in the build artifact | Generalizes §4 instead of leaving it a one-off; makes the surface usable rather than merely large |
 | **P4** | Zoning two-layer (§6) | definition-source presence check | Matt's named requirement |
 | **P5** | Long tail to 239 + facet counts (§2.2) | `ci:search-field-completeness` ratchet | Volume, once the frame holds it |
 
