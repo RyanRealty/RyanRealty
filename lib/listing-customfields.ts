@@ -31,7 +31,7 @@ export const PRIVATE_DETAIL_KEYS = [
   // the MLS display name, so 'PrivateRemarks' and 'Private Remarks' are two
   // distinct jsonb keys. Missing the spaced twins leaked broker-private remarks
   // and showing instructions to the anon key on ~2,500 on-market listings
-  // (found 2026-07-30 adversarial audit). check-private-key-parity.mjs (G58)
+  // (found 2026-07-30 adversarial audit). check-private-key-parity.mjs (G60)
   // now fails the build if a spelling pair goes missing again.
   'Owner Name', 'Occupant Name', 'Phone to Show', 'Phone to Show Number',
   'Preferred Escrow Company & Officer',
@@ -101,6 +101,71 @@ export const PUBLIC_MEMBERS_IN_CONFIDENTIAL_GROUPS: ReadonlySet<string> = new Se
 ])
 
 /**
+ * The confidential MEMBER LABELS of CONFIDENTIAL_CF_GROUPS, redacted BY KEY,
+ * independent of which group they arrive in. Exact mirror of the SQL
+ * rr_showing_member_keys() (migration 20260731160000); G60 fails the build if
+ * the two lists drift.
+ *
+ * WHY THIS EXISTS ON TOP OF THE GROUP CHECK (root cause, 2026-07-31):
+ * group-scoped redaction is PROVENANCE-based, and the flattened namespace is
+ * not partitioned by provenance — the same label can arrive a second time from
+ * a group that is not confidential, and that copy lands in the public half
+ * under the identical key. A live Spark census over 800 on-market listings
+ * found exactly one such cross-group collision:
+ *
+ *   'Call Listing Agent'   Showing Requirements = 576   Existing Lease Type = 1
+ *
+ * The Showing Requirements copy diverted correctly to listing_private; the
+ * 'Existing Lease Type' copy was written into the anon-readable
+ * listings.details on ListNumber 220226199 (Active, Medford) and was readable
+ * with the PUBLIC ANON KEY. One row, because only one listing in the sample
+ * carries that lease field — but every future sync of any such listing would
+ * re-leak it, and any new MLS group reusing a showing label would open the
+ * same hole silently.
+ *
+ * So the group check decides DIVERSION (what earns a listing_private row) and
+ * this list decides EXCLUSION (what may never reach `details`). Exclusion is
+ * unconditional, which is what makes the class unable to recur.
+ *
+ * The three deliberate publics are absent by construction: 'To Be Built' and
+ * 'Under Construction' (PUBLIC_MEMBERS_IN_CONFIDENTIAL_GROUPS) and 'Vacant',
+ * which the census confirms lives only in the public 'Current Use' group
+ * (64/800) and never inside Showing Requirements. Over-redaction is a defect
+ * too, so this list is the measured member set, not a blanket label sweep.
+ */
+export const CONFIDENTIAL_CF_MEMBER_KEYS = [
+  '24 Hour Notice',
+  'Appointment Only',
+  'Call Listing Agent',
+  'Call Owner',
+  'Call Tenant',
+  'Combination Lock Box',
+  'Day Sleeper',
+  'Key In Office',
+  'Listing Agent Must Accompany',
+  'Lockbox',
+  'Lockbox CBS Code Required',
+  'No Appointment/Call Needed',
+  'Pet(s) on Premises',
+  'Security System',
+  'See Showing Instructions',
+  'Text Listing Agent',
+] as const
+
+const CONFIDENTIAL_CF_MEMBER_SET: ReadonlySet<string> = new Set(CONFIDENTIAL_CF_MEMBER_KEYS)
+
+/**
+ * Everything that must never appear in the anon-readable `details`, whatever
+ * its provenance: the RESO/CF confidential keys plus the confidential group
+ * members. Mirrors the SQL rr_private_keys() (= rr_private_keys_base() ||
+ * rr_showing_member_keys()) one-for-one.
+ */
+export const REDACTED_DETAIL_KEYS: readonly string[] = [
+  ...PRIVATE_DETAIL_KEYS,
+  ...CONFIDENTIAL_CF_MEMBER_KEYS,
+]
+
+/**
  * Strip Spark's masked-field markers from a StandardFields object.
  *
  * Spark masks fields our feed access level does not license by returning the
@@ -139,7 +204,7 @@ export function stripMaskedValues(fields: Record<string, unknown>): Record<strin
  *  confidential CF key must never survive redaction via collision renaming). */
 export function redactPublicDetails(fields: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...fields }
-  for (const k of PRIVATE_DETAIL_KEYS) {
+  for (const k of REDACTED_DETAIL_KEYS) {
     delete out[k]
     delete out[`${CF_COLLISION_PREFIX}${k}`]
   }
@@ -160,7 +225,7 @@ export function extractPrivateDetails(
   const parts = customFields != null ? partitionCustomFields(customFields) : null
   const source: Record<string, unknown> = parts ? { ...fields, ...parts.public } : fields
   const priv: Record<string, unknown> = {}
-  for (const k of PRIVATE_DETAIL_KEYS) {
+  for (const k of REDACTED_DETAIL_KEYS) {
     const v = source[k]
     if (v != null && !(typeof v === 'string' && (v.trim() === '' || /^\*+$/.test(v)))) priv[k] = v
   }
@@ -235,7 +300,17 @@ export function partitionCustomFields(
             for (const [name, value] of Object.entries(entry as Record<string, unknown>)) {
               if (value == null) continue
               if (typeof value === 'string' && (value.trim() === '' || /^\*+$/.test(value.trim()))) continue
-              if (groupIsConfidential && !PUBLIC_MEMBERS_IN_CONFIDENTIAL_GROUPS.has(name)) {
+              // Two independent reasons a field is confidential. The LABEL test
+              // runs first and has no escape hatch: a confidential member label
+              // is confidential no matter which group carried it, which is what
+              // closes the cross-group collision (see CONFIDENTIAL_CF_MEMBER_KEYS).
+              // The GROUP test is what earns the listing_private diversion for
+              // members we have not enumerated, and it alone honors the
+              // deliberate-public carve-out.
+              const confidentialByLabel = CONFIDENTIAL_CF_MEMBER_SET.has(name)
+              const confidentialByGroup =
+                groupIsConfidential && !PUBLIC_MEMBERS_IN_CONFIDENTIAL_GROUPS.has(name)
+              if (confidentialByLabel || confidentialByGroup) {
                 confidential[name] = value
                 continue
               }

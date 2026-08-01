@@ -22,93 +22,21 @@ import {
 // re-exported here so existing importers keep working unchanged.
 export {
   PRIVATE_DETAIL_KEYS, CF_COLLISION_PREFIX,
+  CONFIDENTIAL_CF_MEMBER_KEYS, REDACTED_DETAIL_KEYS,
   redactPublicDetails, extractPrivateDetails,
   flattenCustomFields, mergeCustomFieldsIntoDetails, stripMaskedValues,
 } from '@/lib/listing-customfields'
 
 // ---------------------------------------------------------------------------
-// Sanitizers — handle Spark's "****" masking and type coercion
+// Sanitizers — handle Spark's "****" masking and type coercion.
+// Extracted to lib/listing-scalars.ts (file-size budget split); re-exported
+// here so existing importers keep working unchanged.
 // ---------------------------------------------------------------------------
 
-/** Numeric coercion. Returns null for masked "****", empty strings, NaN. */
-export function toNum(v: unknown): number | null {
-  if (v == null) return null
-  if (typeof v === 'number') return Number.isNaN(v) ? null : v
-  if (typeof v === 'string') {
-    if (v === '' || /^\*+$/.test(v)) return null
-    const n = Number(v)
-    return Number.isNaN(n) ? null : n
-  }
-  return null
-}
+import { toNum, toInt, toTimestamp, toDate, toBool, toText } from '@/lib/listing-scalars'
 
-/** Integer coercion for counters (DOM, rooms, etc.). */
-export function toInt(v: unknown): number | null {
-  const n = toNum(v)
-  if (n == null) return null
-  const r = Math.round(n)
-  return Number.isFinite(r) ? r : null
-}
+export { toNum, toInt, toTimestamp, toDate, toBool, toText } from '@/lib/listing-scalars'
 
-/** Timestamp string validation. Returns null for masked or invalid dates. */
-export function toTimestamp(v: unknown): string | null {
-  if (v == null || typeof v !== 'string') return null
-  if (/^\*+$/.test(v) || v.trim() === '') return null
-  const d = new Date(v)
-  return Number.isNaN(d.getTime()) ? null : v
-}
-
-/** Date-only string (YYYY-MM-DD). Returns null for masked or invalid. */
-export function toDate(v: unknown): string | null {
-  if (v == null || typeof v !== 'string') return null
-  if (/^\*+$/.test(v) || v.trim() === '') return null
-  const d = new Date(v)
-  if (Number.isNaN(d.getTime())) return null
-  return d.toISOString().slice(0, 10)
-}
-
-/** Boolean coercion. Handles true/false strings and "Yes"/"No". */
-export function toBool(v: unknown): boolean | null {
-  if (v == null) return null
-  if (typeof v === 'boolean') return v
-  if (typeof v === 'string') {
-    const lower = v.toLowerCase().trim()
-    if (lower === 'true' || lower === 'yes' || lower === '1') return true
-    if (lower === 'false' || lower === 'no' || lower === '0') return false
-    if (/^\*+$/.test(v)) return null
-  }
-  return null
-}
-
-/** Safe text extraction. Returns null for masked, empty, or non-string values.
- *  Handles Spark JSON feature objects like {"Frame": true, "Concrete": true} → "Frame, Concrete"
- */
-export function toText(v: unknown): string | null {
-  if (v == null) return null
-  if (typeof v === 'string') {
-    if (/^\*+$/.test(v) || v.trim() === '') return null
-    // Try parsing JSON objects stored as strings (from JSONB extraction)
-    if (v.startsWith('{') && v.endsWith('}')) {
-      try {
-        const parsed = JSON.parse(v)
-        if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-          const keys = Object.keys(parsed).filter(k => parsed[k] === true)
-          return keys.length > 0 ? keys.join(', ') : null
-        }
-      } catch { /* not JSON, return as-is */ }
-    }
-    return v.trim()
-  }
-  // Handle arrays from Spark (e.g., ["Frame", "Stone"])
-  if (Array.isArray(v)) return v.filter(Boolean).join(', ') || null
-  // Handle Spark JSON feature objects like {Frame: true, Concrete: true}
-  if (typeof v === 'object' && v !== null) {
-    const obj = v as Record<string, unknown>
-    const keys = Object.keys(obj).filter(k => obj[k] === true)
-    return keys.length > 0 ? keys.join(', ') : null
-  }
-  return null
-}
 
 // ---------------------------------------------------------------------------
 // Spark field accessor — handles RESO vs v1 field name variations
