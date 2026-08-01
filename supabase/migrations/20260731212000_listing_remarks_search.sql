@@ -19,12 +19,29 @@
 -- ride the same cascade.
 --
 -- STILL VASTLY CHEAPER THAN details EVEN WITHOUT AN INDEX. PublicRemarks is a
--- short field; the whole projection is a small fraction of the ~13 GB TOAST
--- relation the predicate reads today, so an ILIKE scan over this table is a
--- different order of magnitude from detoasting details even before any index is
--- considered. Whether a pg_trgm GIN index earns its build cost and size on top of
--- that is a separate, measured decision — see the follow-up migration, or its
--- absence.
+-- short field (measured heap 273 MB against a ~13 GB TOAST relation), so an ILIKE
+-- scan over this table is a different order of magnitude from detoasting details
+-- even before any index is considered.
+--
+-- THE pg_trgm GIN INDEX IS KEPT, on measurement, not on principle. A/B on the same
+-- shape (Bend + closed + keywords 'granite', 60,094 matching rows), read off
+-- EXPLAIN (ANALYZE, BUFFERS) so the number is not a load artefact:
+--   without it  Parallel Seq Scan + ILIKE filter   4,021 ms, 34,995 blocks
+--   with it     Bitmap Index Scan + heap recheck   1,037 ms, 27,952 blocks
+--               (the index probe itself is 262 ms)
+-- i.e. it cuts the keyword predicate's own evaluation by 74%. Build cost was
+-- ~3.5 min under load; size 243 MB. Ongoing cost is GIN maintenance, and only on
+-- writes where PublicRemarks actually CHANGES — the trigger's
+-- `WHERE r.public_remarks IS DISTINCT FROM EXCLUDED.public_remarks` skips the rest.
+--
+-- WHAT THE INDEX DOES NOT FIX, stated plainly: keywords combined with another
+-- filter on a large closed scope still measures anywhere from 1.7 s to 20 s. The
+-- remaining cost is not the scan, it is the JOIN — 60,094 keyword matches against
+-- the 96,683-row Bend/closed candidate set, where the planner picks a nested loop
+-- of 60K index probes into listings (25 s of the 26 s total in one plan). That is
+-- a join-order problem, not a TOAST problem, and it is left open rather than
+-- papered over. Keyword-ONLY searches never reach here: app/actions/listings.ts
+-- routes them to search_keyword_listings and its partial GIN full-text index.
 --
 -- EXPRESSION LIFTED VERBATIM. The stored value is exactly `details->>'PublicRemarks'`,
 -- the same expression the RPC evaluates today, including its NULL behaviour: the
@@ -112,6 +129,12 @@ CREATE TABLE IF NOT EXISTS public.listing_remarks_search (
 
 COMMENT ON TABLE public.listing_remarks_search IS
   'Narrow trigger-maintained projection of listings.details->>''PublicRemarks'', so search_listings_advanced''s p_keywords ILIKE never detoasts the ~10 KB details document. Written only by trg_listing_feature_flags_* on public.listings.';
+
+-- Substring search index for p_keywords. Built after the backfill, not before —
+-- building it on an empty table would have made every one of the 594K backfill
+-- inserts pay GIN maintenance.
+CREATE INDEX IF NOT EXISTS listing_remarks_search_trgm_idx
+  ON public.listing_remarks_search USING gin (public_remarks gin_trgm_ops);
 
 ALTER TABLE public.listing_remarks_search ENABLE ROW LEVEL SECURITY;
 

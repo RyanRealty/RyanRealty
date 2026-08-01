@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-08-01T00:47:42.056Z
+**Generated:** 2026-08-01T01:19:00.984Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -822,59 +822,6 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `collection_name` | text | no | 'All Saved'::text |
 
 ## Other
-
-### `_lff_backfill_cursor`
-
-| Column | Type | Nullable | Default |
-|---|---|---|---|
-| `id` | integer | no |  |
-| `lo_key` | text | no |  |
-| `hi_key` | text | no |  |
-| `last_key` | text | no |  |
-| `total_rows` | bigint | no |  |
-| `rows_seen` | bigint | no | 0 |
-| `rows_written` | bigint | no | 0 |
-| `batch_size` | integer | no | 20000 |
-| `done` | boolean | no | false |
-| `last_batch_ms` | integer | yes |  |
-| `updated_at` | timestamp with time zone | no | now() |
-| `rows_written_r` | bigint | no | 0 |
-
-### `_lff_verify`
-
-| Column | Type | Nullable | Default |
-|---|---|---|---|
-| `shard` | integer | no |  |
-| `n` | bigint | yes |  |
-| `missing_flags` | bigint | yes |  |
-| `missing_remarks` | bigint | yes |  |
-| `d_view` | bigint | yes |  |
-| `d_pool` | bigint | yes |  |
-| `d_waterfront` | bigint | yes |  |
-| `d_fireplace` | bigint | yes |  |
-| `d_open_house_filter` | bigint | yes |  |
-| `d_open_house_raw` | bigint | yes |  |
-| `oh_raw_null` | bigint | yes |  |
-| `d_sub_type` | bigint | yes |  |
-| `d_remarks` | bigint | yes |  |
-| `ran_ms` | integer | yes |  |
-| `finished_at` | timestamp with time zone | yes | now() |
-
-### `_parity_runs`
-
-| Column | Type | Nullable | Default |
-|---|---|---|---|
-| `id` | bigint | no | nextval('_parity_runs_id_seq'::regclass) |
-| `label` | text | no |  |
-| `args` | text | no |  |
-| `variant` | text | no |  |
-| `pass` | integer | no |  |
-| `fp` | text | yes |  |
-| `full_count` | bigint | yes |  |
-| `n` | integer | yes |  |
-| `ms` | integer | yes |  |
-| `err` | text | yes |  |
-| `at` | timestamp with time zone | no | clock_timestamp() |
 
 ### `activity_events`
 
