@@ -3,7 +3,7 @@
   "measurement": {
     "script": "scripts/perf-search-measure.mts",
     "command": "npm run perf:search",
-    "measuredAt": "2026-07-31",
+    "measuredAt": "2026-08-01",
     "runs": 6,
     "environment": "laptop over the public internet to Supabase project dwvlophlbvvygjfxcrhm, live production data. Vercel runs closer to the database, so production is faster than these numbers, never slower.",
     "cacheNote": "The measurement stubs next/cache so unstable_cache is a passthrough. Every timed call is a real query. 'cold' is the first run, 'warm' the median of the rest — a warm DATABASE, not a warm Next cache.",
@@ -81,25 +81,31 @@
       "measuredWarmMs": 376,
       "budgetMs": 1500,
       "why": "The shapes RPC on its own, one Bend-sized polygon returning 620 keys. Budget matches the drawn-shape row path it feeds."
+    },
+    {
+      "path": "search_listings_advanced",
+      "shape": "sold + advanced filter",
+      "measuredColdMs": 5142,
+      "measuredWarmMs": 3468,
+      "budgetMs": 10500,
+      "why": "The RPC fallback: a closed (sold) scope plus a jsonb-derived feature filter, the combination that falls out of listing_search_mv and into search_listings_advanced. This line was the single degraded path in this file until 2026-08-01, when it returned rows 0 and error 57014 for every anonymous visitor. Budget is roughly 2x the measured cold (worst cold across two runs was 5877 ms under a concurrent MV refresh) and sits deliberately just under the function's own 12 s statement_timeout, which is the hard ceiling: a regression that slows the path without erroring outright still trips this budget."
     }
   ],
   "knownDegraded": [
     {
       "path": "search_listings_advanced",
-      "shape": "sold + advanced filter",
-      "measuredMs": 12077,
+      "shape": "viewContains preset, no city (the five view SEO pages)",
+      "measuredMs": 12153,
+      "status": "STILL DEGRADED at the production 12s ceiling. The TOAST cause is closed and the results are now correct, but the shape is still too slow to complete.",
+      "measuredAt": "2026-08-01",
+      "shapes": "Measured through the DAL (getListingsWithAdvanced, a real top-level PostgREST call, so the function's own 12s statement_timeout is armed): mountain-view 12,153 ms 57014 degraded; river-view 12,167 ms 57014 degraded; golf-course-view 12,118 ms 57014 degraded; lake-view 12,068 ms 57014 degraded; water-view 11,021 ms completes, degraded=false, 0 rows for a content reason (below). Run-to-run it flickers — river-view completed on one run and timed out on the next — which is what sitting on the ceiling looks like.",
+      "whatWasFixed": "p_view_contains was the last predicate reading listings.details. Migrations 20260801020000 / 021000 / 030000 projected details->>'View' into listing_feature_flags.view_text (trigger-maintained, 594,196-row sharded backfill, pg_trgm GIN index) and repointed the RPC at it, so the shape no longer detoasts a ~10 KB jsonb document per candidate row. Under a relaxed timeout the shapes now COMPLETE and return CORRECT rows (Mountain 2,877 matches, River 282, Golf 280, Lake 222, Water 0), where before the fix they could only ever return 57014 and zero rows. That is real progress and it is a precondition for the routing fix below, but on its own it does not get these pages under the ceiling.",
+      "remainingRootCause": "A JOIN-ORDER problem driven by an unindexable predicate, the same open class already documented for p_keywords. 'Active' is expressed as \"StandardStatus\" ILIKE '%Active%', which no index can serve, and these five pages set NO city, so there is no cheap narrowing predicate anywhere in the shape. Both join orders were measured and both lose: driving from the trgm index does 198,768 flag matches nested-looped into listings (14.4 s of a 16.3 s plan), and forcing a hash semi-join instead pays a 9.6 s Parallel Seq Scan of listings to find the 7,742 active rows (11.0 s total). The residual cost is the seq scan, not the projection.",
+      "correctNextStep": "Route these presets to the listing_search_mv fast path rather than to this RPC. The MV IS the indexable on-market projection the shape needs, and it already carries a view_types array column. That is a routing change in hasAdvancedFilters() (app/actions/listings.ts) plus an index on view_types, and it MUST be preceded by an equivalence proof between view_types and details->>'View' — the flat promoted columns on listings have twice been found to disagree materially with the jsonb (see 20260731210000), so this is exactly the trap to check for before switching.",
+      "notAPerfIssue": "/homes-for-sale/water-view renders empty for a content reason, not a performance one: no active listing's View field contains the string 'Water'. Verified both expressions over the whole active population — old details->>'View' ILIKE '%Water%' = 0, new view_text ILIKE '%Water%' = 0. It would render empty against an infinitely fast query.",
+      "projectionCorrectness": "view_text vs details->>'View': 0 mismatches over 16,531 rows (the entire 7,742-row active population plus an 8,789-row 1.5% block sample across all 8 statuses), exact 594,196 = 594,196 coverage with 0 listings lacking a flags row, and per-term equality over the active population (Mountain 2877/2877, River 282/282, Golf 280/280, Lake 222/222, Water 0/0). Two RPC parity shapes fingerprinted identically before and after the swap.",
       "rowsReturned": 0,
-      "status": "STILL DEGRADED, but for a DIFFERENT reason than before. The TOAST cause is closed; a second, independent, pre-existing cause is now the whole of it.",
-      "finding": "The harness shape is getListingsWithAdvanced({city:'Bend', statusFilter:'closed', hasView:true, limit:24}) and it still exhausts the 12s statement timeout (57014) with zero rows. Migrations 20260731210000 / 20260731212000 / 20260731220000 moved every details-reading predicate off listings.details onto two narrow trigger-maintained projections, which is measurably done: as the postgres role the same shape now returns real rows in 1,659-1,700 ms warm (6,225 ms cold) against 335,479 ms for the pre-change function on an identical interleaved run. What still fails is the ANON role, and it fails on a predicate this work never touched.",
-      "remainingRootCause": "ROW-LEVEL SECURITY plus a non-LEAKPROOF operator. public.listings has RLS enabled with `lower(coalesce(\"StandardStatus\",'')) NOT LIKE 'coming%soon%'` for anon. PostgreSQL refuses to evaluate a non-leakproof user qual ahead of a security qual, and pg_catalog.texticlike (the ILIKE operator) has proleakproof = false. So for anon the planner cannot use idx_listings_city_trgm for `\"City\" ILIKE $1` and falls back to a Parallel Seq Scan of the 13 GB listings relation: 25.7 s of the 27.9 s total in EXPLAIN (ANALYZE, BUFFERS). The identical query as anon with a LEAKPROOF `\"City\" = 'Bend'` instead of ILIKE plans an Index Only Scan on idx_listings_city_status and finishes in 3.2 s, which isolates the cause exactly.",
-      "provenPreExisting": "This is not a regression from the flags work and is not specific to feature filters. As anon, closed+Bend with NO advanced filter at all measures 21,822 ms on the same RPC, versus 885-936 ms for the same call as postgres. Every anon call into search_listings_advanced that passes p_city pays it, which is the entire sold-search surface.",
-      "whyNoBudgetAssigned": "A budget would assert a completion time this path does not have. It stays here until the RLS/leakproof cause is closed.",
-      "candidateRemedies": "(1) Mark texticlike/texticnlike LEAKPROOF. One catalog change, fixes every RLS-protected ILIKE in the database, no semantics change to any query — but it is a database-wide security posture decision (a leaky operator can in principle disclose values of rows RLS is hiding), so it belongs to the broker, not to a perf fix. (2) Serve closed scopes from a materialized view the way on-market scopes already are (listing_search_mv), so the anon read never touches the RLS-protected base table. (3) Replace `\"City\" ILIKE p_city` with a leakproof equality — REJECTED: ILIKE 'Bend' also matches 'BEND', `lower()` is itself not leakproof (proleakproof = false), and MLS city casing is not canonical, so no equality rewrite is provably equivalent.",
-      "whatTheFlagsProjectionFixed": "Six feature predicates (hasView / hasPool / hasWaterfront / hasFireplace / hasOpenHouse / propertySubType) plus p_keywords no longer read listings.details at all. Measured as postgres, interleaved old vs new, 16 shapes: DEFECT-bend-closed-view 335,479 ms -> 25,430 ms under load and 1,659 ms warm on a settled instance; DEFECT-bend-closed-keywords 285,908 -> 13,745; redmond-closed-view+year sort 67,451 -> 5,040; sisters-closed-subtype-set 36,152 -> 3,045; sisters-multiflag+price_desc 17,464 -> 1,210; bend-active-keywords+price 112,436 -> 4,189. Isolated cost of the flags semi-join on closed+Bend: base 885-936 ms, with hasView 1,659-1,700 ms, i.e. about 770 ms.",
-      "parity": "16 argument shapes, 2 interleaved passes, md5 fingerprint over (row order, ListNumber, ListingKey, ListPrice, ModificationTimestamp, md5(details)) plus full_count, compared against a byte-identical clone of the pre-change function. 14 shapes single-fingerprint. The 2 that differed (CTRL-bend-active-plain, CTRL-sisters-viewcontains) differ BY PASS and never by variant — old and new agree exactly within each pass; the change between passes is MLS drift on active listings over the 7 minutes between them.",
-      "flagCorrectness": "Whole-table, 594,190 rows, each flag compared against the RPC's own verbatim details expression: view 0, pool 0, waterfront 0, fireplace 0, open house 0, property sub-type 0, PublicRemarks 0 disagreements; 0 listings without a flags row and 0 without a remarks row.",
-      "keywordVerdict": "p_keywords moved to public.listing_remarks_search (273 MB heap) with a pg_trgm GIN index (243 MB, ~3.5 min build). The index cuts the keyword predicate's own evaluation from a 4,021 ms parallel seq scan over 34,995 blocks to a 1,037 ms bitmap scan over 27,952 blocks (the index probe itself is 262 ms), so it is kept. It does NOT make the shape reliable: keywords plus another filter on a large closed scope measures 1.7-20 s as postgres because the planner nested-loops 60,094 keyword matches into listings (25 s of a 26 s plan). That is a join-order problem, not a TOAST problem, and it is left open. Keyword-ONLY searches never reach this RPC — app/actions/listings.ts routes them to search_keyword_listings.",
-      "measuredAt": "2026-08-01"
+      "doNotMisreadWarmNumbers": "Timing these five inside ONE transaction reports 4.3-14.6 s and looks much better than reality, because the sequential runs share Postgres buffer cache and the function's proconfig statement_timeout does not re-arm inside a larger statement. The DAL numbers above are the ones that describe production. This trap cost a wrong reading once already on 2026-08-01."
     }
   ],
   "static": {
@@ -199,5 +205,22 @@
       "lib/data/listings/searchShapes.ts",
       "lib/data/listings/searchFacets.ts"
     ]
-  }
+  },
+  "resolved": [
+    {
+      "path": "search_listings_advanced",
+      "shape": "sold + advanced filter",
+      "resolvedAt": "2026-08-01",
+      "wasMeasuredMs": 12077,
+      "wasRowsReturned": 0,
+      "nowMeasuredColdMs": 5142,
+      "nowRowsReturned": 24,
+      "status": "CLOSED. Moved out of knownDegraded into budgets on 2026-08-01.",
+      "rootCause": "ROW-LEVEL SECURITY plus a non-LEAKPROOF operator. public.listings has RLS enabled and the anon policy is one predicate, lower(coalesce(\"StandardStatus\",'')) NOT LIKE 'coming%soon%'. PostgreSQL will not evaluate a non-leakproof user qual ahead of a security qual, and pg_catalog.texticlike (ILIKE) has proleakproof = false, so for anon the planner could not use idx_listings_city_trgm for \"City\" ILIKE $1 and fell back to a Parallel Seq Scan of the ~13 GB listings relation. Pre-existing and not feature-specific: closed+Bend with NO advanced filter measured 21,822 ms as anon against 885 ms as postgres.",
+      "fix": "Migration 20260801010000 made search_listings_advanced SECURITY DEFINER with a pinned search_path, and wrote the Coming Soon exclusion into the body explicitly and unconditionally (three places: the base CTE, the exclude-sold-since subquery, and the projection join). The function no longer fights RLS, so the planner is free to use the indexes; the visible result set for an anonymous caller is unchanged because the same predicate excludes the same rows. EXECUTE was revoked from PUBLIC and granted to exactly anon, authenticated and service_role.",
+      "rejected": "Marking texticlike/texticnlike LEAKPROOF was rejected by the broker: one catalog change would fix every RLS-protected ILIKE in the database but it is a database-wide security-posture decision, and it is not worth making to speed up one function. Rewriting \"City\" ILIKE as a leakproof equality was rejected because ILIKE 'Bend' also matches 'BEND', lower() is itself not leakproof, and MLS city casing is not canonical.",
+      "proof": "PLANS, same query text, as anon vs with the explicit predicate and no RLS: Parallel Seq Scan on listings, 4,949 ms of a 5,103 ms plan, 165,986 buffers -> Bitmap Index Scan on idx_listings_city_trgm with Index Cond (\"City\" ~~* 'Bend'), 1,157 ms, 87,256 buffers. TIMING as anon, before vs after, same arguments: bend closed plain 11,127 -> 1,422 ms; bend closed + hasView 11,532 -> 1,201 ms; redmond closed price band 5,377 -> 1,072 ms; multi-city closed 1,346 -> 656 ms (smallest gain because = ANY is leakproof and was never blocked, which independently confirms the mechanism). PARITY: 12 argument shapes run AS ANON with both the pre-change clone and the new function inside ONE statement, so both share a single snapshot and MLS drift cannot produce a false mismatch; md5 over row order, ListNumber, ListingKey, ListPrice, StandardStatus, ModificationTimestamp and the full details document, plus full_count, identical on all 12.",
+      "comingSoonContainment": "The function bypasses RLS, so the exclusion is now the function's own responsibility. Verified as anon across 7 shapes chosen to select FOR Coming Soon rows (Bend all-status 13 baited rows, the exact Coming Soon price band, Redmond 2, Sunriver 2, status=NULL, status=coming_soon, and all 16 cities that hold one, 38 baited rows): zero leaked. Verified again synthetically as POSTGRES, which is subject to no RLS backstop at all so a leak could not be masked: a real Bend listing was flipped to each of 'Coming Soon', 'coming soon', 'COMING SOON', 'Coming-Soon' and 'ComingSoon' inside a subtransaction, control before the flip returned it (1), every spelling returned 0, and the subtransaction was force-rolled-back."
+    }
+  ]
 }
