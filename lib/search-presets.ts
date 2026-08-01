@@ -2,6 +2,10 @@
  * Predefined search presets for SEO-friendly, indexable pages.
  * Used for: /homes-for-sale/[city]/[preset] and /homes-for-sale/[city]/[subdivision]/[preset].
  * Each preset maps to search params and a human-readable label for titles and breadcrumbs.
+ *
+ * Also owns the `viewContains` vocabulary (bottom of file) — the one place that
+ * decides which enumerated `view_types` values a view term covers, shared by the
+ * DAL routing and the SEO matrix so both answer the same question.
  */
 
 export type SearchPreset = {
@@ -27,7 +31,12 @@ export type SearchPreset = {
     hasFireplace?: boolean
     hasGolfCourse?: boolean
     hasWaterfront?: boolean
-    /** View type keyword (details.View ILIKE %viewContains%) */
+    /**
+     * View keyword. Resolved to the enumerated `view_types` values it covers
+     * (lib/search/view-contains.ts) and served from listing_search_mv on
+     * on-market scopes; closed/off-market scopes keep the legacy
+     * `view_text ILIKE '%term%'` RPC predicate, which is the same test.
+     */
     viewContains?: string
     /** Minimum lot size in acres (details.LotSizeAcres >= value) */
     lotAcresMin?: number
@@ -153,8 +162,14 @@ export const SEARCH_PRESETS: SearchPreset[] = [
   { slug: 'with-view', shortLabel: 'With View', label: 'Homes with View', params: { hasView: true, sort: 'newest' } },
   { slug: 'with-fireplace', shortLabel: 'With Fireplace', label: 'Homes with Fireplace', params: { hasFireplace: true, sort: 'newest' } },
   { slug: 'on-golf-course', shortLabel: 'On Golf Course', label: 'Homes on Golf Course', landing: 'golf', params: { hasGolfCourse: true, sort: 'newest' } },
-  // View types (details.View keyword match)
+  // View types. The term resolves to the enumerated view_types values it
+  // covers (lib/search/view-contains.ts). Live inventory verified 2026-07-31
+  // (listing_search_mv, Active + Active Under Contract, service-area cities):
+  // Mountain 1,086 · River 124 · Golf 207 · Lake 51 · Water 332.
   { slug: 'mountain-view', shortLabel: 'Mountain View', label: 'Homes with Mountain View', params: { viewContains: 'Mountain', sort: 'newest' } },
+  // Water: the feed never writes the literal string "Water" (0 active rows), it
+  // names the body of water. The term maps to those values — see
+  // VIEW_CONTAINS_INTENT_VALUES for why that is the honest read, not a stretch.
   { slug: 'water-view', shortLabel: 'Water View', label: 'Homes with Water View', params: { viewContains: 'Water', sort: 'newest' } },
   { slug: 'river-view', shortLabel: 'River View', label: 'Homes with River View', params: { viewContains: 'River', sort: 'newest' } },
   { slug: 'golf-course-view', shortLabel: 'Golf Course View', label: 'Homes with Golf Course View', params: { viewContains: 'Golf', sort: 'newest' } },
@@ -196,3 +211,140 @@ export function getAllPresetSlugs(): string[] {
 export function getIndexablePresetSlugs(): string[] {
   return SEARCH_PRESETS.filter((p) => !isSortOnlyPreset(p)).map((p) => p.slug)
 }
+
+// ─────────────────── viewContains → the view_types vocabulary ───────────────────
+//
+// WHY THIS EXISTS
+// The five view presets above ship `viewContains: '<term>'`. That param used to
+// mean ONE thing: `listing_feature_flags.view_text ILIKE '%term%'`, which only
+// `search_listings_advanced` can evaluate. With no city to narrow the candidate
+// set that RPC has no servable plan (the active-status predicate is an
+// unindexable `ILIKE '%Active%'`), so all five pages timed out and rendered
+// "No homes match this search right now" — live, indexable, permanently empty.
+//
+// `listing_search_mv` carries `view_types text[]`: the SAME data as an array, on
+// the indexable on-market projection the fast path already uses. Resolving the
+// term to the matching vocabulary values lets those searches run there
+// (measured 12.1s → timeout/empty, vs ~110-300ms → real rows).
+//
+// EQUIVALENCE, MEASURED 2026-07-31 BEFORE ANY CODE CHANGED
+// `view_text` is the raw JSON rendering of the same key set `view_types` is
+// built from (e.g. `{"Mountain(s)": true, "Territorial": true}`), verified over
+// the whole on-market set: 0 rows with text but no array, 0 with array but no
+// text, 0 array values absent from the text. So "view_text contains T" and
+// "some view_types value contains T" are the same predicate. Per-term counts
+// (listing_search_mv, standard_status IN ('Active','Active Under Contract'),
+// service-area cities — the scope these no-city presets actually run in):
+//
+//   term      view_text ILIKE '%T%'   view_types && <mapped values>   delta
+//   Mountain            1,086                  1,086                    0
+//   River                 124                    124                    0
+//   Golf                  207                    207                    0
+//   Lake                   51                     51                    0
+//   Water                   0                    332                   intent map, below
+//
+// Every term but Water is EXACT in both directions — 0 rows matched by one test
+// and not the other.
+
+/**
+ * Every value a listing's `view_types` can carry. The first 18 are the registry
+ * `viewTypes` options (lib/search/field-registry.ts); the last four are live
+ * feed values the registry's UI facet list does not offer. Measured against
+ * listing_search_mv 2026-07-31 (22 distinct values in the data, 18 in the
+ * registry) — resolution runs against the FULL vocabulary, because matching only
+ * the facet subset is exactly how a promoted-column mapping silently
+ * under-reports. Kept in lockstep with the registry by a unit test.
+ */
+const VIEW_TYPE_VOCABULARY: readonly string[] = [
+  'Territorial', 'Neighborhood', 'Mountain(s)', 'Cascade Mountains', 'Panoramic',
+  'Forest', 'Valley', 'City', 'Golf Course', 'Lake', 'River', 'Pond', 'Ridge',
+  'Creek/Stream', 'Park/Greenbelt', 'Desert', 'Canyon', 'Vineyard',
+  'Orchard', 'Ocean', 'Beach', 'Bay',
+]
+
+/**
+ * Terms the MLS View field never spells literally, mapped to the values that
+ * carry the same meaning.
+ *
+ * `water` is the only entry. "Homes with Water View" is a real buyer intent and
+ * a real search query, but NO active listing's View contains the string
+ * "Water" — the feed names the body of water instead. Matching those values
+ * turns a permanently-empty indexable page into the homes that genuinely have
+ * an MLS-verified view of water. A deliberate, measured correction (0 → 332),
+ * same class as the manufactured sub-type fix (587 → 895, 2026-07-30): the old
+ * number was not a smaller true answer, it was the wrong question asked of the
+ * data.
+ *
+ * Waterfront is deliberately NOT here — owning frontage is a different claim
+ * from having a view of water, and it has its own filters (hasWaterfront /
+ * waterfrontTypes).
+ */
+const VIEW_CONTAINS_INTENT_VALUES: Record<string, readonly string[]> = {
+  water: ['Lake', 'River', 'Pond', 'Creek/Stream', 'Ocean', 'Bay', 'Beach'],
+}
+
+/**
+ * Resolve a `viewContains` term to the enumerated `view_types` values it covers.
+ *
+ * Returns null when the term matches nothing — callers MUST treat null as "this
+ * filter cannot be served from listing_search_mv" and keep their existing
+ * routing, so an unknown term never silently becomes an unfiltered search.
+ */
+export function resolveViewContainsValues(term: string | null | undefined): readonly string[] | null {
+  const needle = String(term ?? '').trim().toLowerCase()
+  if (!needle) return null
+  const matched = new Set<string>(VIEW_CONTAINS_INTENT_VALUES[needle] ?? [])
+  for (const value of VIEW_TYPE_VOCABULARY) {
+    if (value.toLowerCase().includes(needle)) matched.add(value)
+  }
+  return matched.size > 0 ? [...matched] : null
+}
+
+/**
+ * Row-level form of the same predicate: does this listing's `view_types` array
+ * satisfy `viewContains: term`?
+ *
+ * UNION of the resolved value set and the raw substring test, so a value that
+ * exists in the feed but not yet in the vocabulary above still matches — this
+ * function can only ever be as wide as the legacy substring semantics, never
+ * narrower. Used by the SEO matrix so sitemap emission and the DAL answer the
+ * same question (two generation paths disagreeing about one page is a failure
+ * mode this repo has already paid for).
+ */
+export function viewContainsMatchesValues(
+  term: string | null | undefined,
+  values: readonly (string | null)[] | null | undefined,
+): boolean {
+  const needle = String(term ?? '').trim().toLowerCase()
+  if (!needle) return false
+  if (!Array.isArray(values) || values.length === 0) return false
+  const resolved = resolveViewContainsValues(needle)
+  const resolvedSet = new Set(resolved ?? [])
+  return values.some((raw) => {
+    const value = raw ?? ''
+    return resolvedSet.has(value) || value.toLowerCase().includes(needle)
+  })
+}
+
+/**
+ * viewContains -> the `viewTypes` registry multi listing_search_mv serves
+ * natively, as a spreadable filter fragment.
+ *
+ * An EXPLICIT viewTypes selection wins and this contributes nothing — the same
+ * contract every other preset key follows ("a preset only fills filters the
+ * visitor has not set in the URL"). Returns {} for an unresolvable term, which
+ * never reaches here anyway: that case stays on the legacy RPC.
+ */
+export function viewContainsAsViewTypes(options: {
+  viewContains?: string
+  viewTypes?: string[]
+}): { viewTypes?: string[] } {
+  const term = options.viewContains?.trim()
+  if (!term) return {}
+  if (Array.isArray(options.viewTypes) && options.viewTypes.length > 0) return {}
+  const values = resolveViewContainsValues(term)
+  return values ? { viewTypes: [...values] } : {}
+}
+
+/** Test-only: the vocabulary the resolver matches against. */
+export const __VIEW_TYPE_VOCABULARY_FOR_TESTS = VIEW_TYPE_VOCABULARY

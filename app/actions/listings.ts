@@ -19,6 +19,7 @@ import {
   pickSearchFeatureFilters,
 } from '@/lib/data'
 import { resolveLegacyPropertySubType } from '@/lib/data/listings/searchPredicates'
+import { resolveViewContainsValues, viewContainsAsViewTypes } from '@/lib/search-presets'
 import type { ListingTile, SearchFeatureFilters, SearchListingsAllFilter } from '@/lib/data'
 import { PUBLIC_ACTIVE_OR_PREDICATE, PUBLIC_ON_MARKET_OR_PREDICATE_WIDE, PUBLIC_SEARCH_STATUS_FILTERS, isPubliclyDisplayableStatus } from '@/lib/listing-status-public'
 
@@ -983,15 +984,18 @@ function resolveOnMarketStatus(options: {
 
 /**
  * Filters listing_search_mv cannot serve: boundary-slug matching runs through
- * listing_boundary_xref_mv in the RPC, viewContains/viewContainsAny are legacy
- * ILIKE semantics over details.View (superseded by the viewTypes registry
- * multi but still emitted by SEO presets + saved searches), and the off-market
- * fields only pair with off-market scopes anyway.
+ * listing_boundary_xref_mv in the RPC, viewContainsAny is legacy ILIKE over
+ * listings.view_description, and the off-market fields only pair with
+ * off-market scopes anyway. viewContains LEFT this list 2026-07-31 — same data
+ * as view_types, so a term resolving to enumerated values is served from the MV
+ * (equivalence measurement in lib/search-presets.ts); a term resolving to
+ * NOTHING still routes here, since unknown input must never become unfiltered.
  */
 function advancedNeedsLegacyPath(options: AdvancedListingsFilters): boolean {
+  const viewContains = options.viewContains?.trim()
   return Boolean(
     options.neighborhoodSlug?.trim() ||
-      options.viewContains?.trim() ||
+      (viewContains && resolveViewContainsValues(viewContains) === null) ||
       (Array.isArray(options.viewContainsAny) && options.viewContainsAny.length > 0) ||
       options.offMarketWithinDays != null ||
       options.excludeSoldSince === true
@@ -1062,6 +1066,9 @@ function advancedToSearchAllFilter(
         ? options.keywords.trim()
         : undefined,
     ...pickSearchFeatureFilters(options),
+    // AFTER the registry spread: an explicit ?viewTypes= is already in there
+    // and wins (this contributes nothing when it is set).
+    ...viewContainsAsViewTypes(options),
   }
 }
 
@@ -1164,6 +1171,8 @@ export async function getListingsWithAdvanced(options: {
         options.garageMin != null || options.newListingsDays != null ||
         options.keywords?.trim() ||
         options.propertySubType?.trim() ||
+        // viewContains narrows too (a viewTypes overlap on the MV path).
+        options.viewContains?.trim() ||
         (options.propertyType && options.propertyType.trim() !== '' && options.propertyType.trim() !== 'all') ||
         Object.keys(pickSearchFeatureFilters(options)).length > 0
     )

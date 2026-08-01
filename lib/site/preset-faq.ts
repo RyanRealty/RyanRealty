@@ -241,9 +241,18 @@ const PRESET_COPY: Record<string, PresetCopy> = {
     criteria: (city) =>
       `Listings in ${city} on or fronting a golf course, or in a golf community, based on the MLS view field and listing descriptions.`,
   },
-  // View types (details.View keyword match)
+  // View types — the term resolves to the enumerated MLS view values it covers
+  // (lib/search-presets.ts).
   'mountain-view': viewCopy('mountain', 'Mountain'),
-  'water-view': viewCopy('water', 'Water'),
+  // NOT viewCopy: the MLS view field never contains the word "Water" (0 active
+  // listings), it names the body of water. Saying otherwise would describe a
+  // filter we do not run.
+  'water-view': {
+    plural: 'homes with water views',
+    singular: 'home with a water view',
+    criteria: (city) =>
+      `Listings in ${city} whose MLS view field names a body of water (lake, river, pond, or creek), as reported by the listing agent.`,
+  },
   'river-view': viewCopy('river', 'River'),
   'golf-course-view': viewCopy('golf course', 'Golf Course'),
   'lake-view': viewCopy('lake', 'Lake'),

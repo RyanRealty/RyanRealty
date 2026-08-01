@@ -3,8 +3,12 @@ import {
   getPresetBySlug,
   isPresetSlug,
   getAllPresetSlugs,
+  resolveViewContainsValues,
+  viewContainsMatchesValues,
+  __VIEW_TYPE_VOCABULARY_FOR_TESTS,
   SEARCH_PRESETS,
 } from './search-presets'
+import { searchFieldByKey } from './search/field-registry'
 
 describe('search-presets', () => {
   describe('getPresetBySlug', () => {
@@ -142,5 +146,105 @@ describe('search-presets', () => {
         expect(preset.params.propertySubType, preset.slug).toBeUndefined()
       }
     })
+  })
+})
+
+/**
+ * viewContains resolution. Each expected value set was verified against live
+ * inventory 2026-07-31 (listing_search_mv, standard_status IN
+ * ('Active','Active Under Contract'), service-area cities) to return EXACTLY
+ * the rows the legacy `view_text ILIKE '%term%'` predicate returns — 0 rows
+ * matched by one test and not the other.
+ *
+ * If a vocabulary edit changes one of these sets, the equivalence is no longer
+ * the measured one and these tests fail on purpose. Re-measure before updating.
+ *
+ * `activeRows` is the count at measurement time, recorded for provenance —
+ * live inventory moves (mountain went 1,086 -> 1,087 within the hour), so it is
+ * documentation. Only `values` is asserted.
+ */
+const MEASURED_VIEW_TERMS = {
+  Mountain: { values: ['Mountain(s)', 'Cascade Mountains'], activeRows: 1086 },
+  River: { values: ['River'], activeRows: 124 },
+  Golf: { values: ['Golf Course'], activeRows: 207 },
+  Lake: { values: ['Lake'], activeRows: 51 },
+  Water: { values: ['Lake', 'River', 'Pond', 'Creek/Stream', 'Ocean', 'Bay', 'Beach'], activeRows: 332 },
+} as const
+
+describe('resolveViewContainsValues', () => {
+  for (const [term, expected] of Object.entries(MEASURED_VIEW_TERMS)) {
+    it(`resolves '${term}' to the measured value set (${expected.activeRows} active rows at measurement)`, () => {
+      const resolved = resolveViewContainsValues(term)
+      expect(resolved).not.toBeNull()
+      expect([...resolved!].sort()).toEqual([...expected.values].sort())
+    })
+  }
+
+  it('is case-insensitive and trims', () => {
+    expect(resolveViewContainsValues('  mOuNtAiN ')).toEqual(resolveViewContainsValues('Mountain'))
+  })
+
+  it('returns null for an unknown term so the caller keeps legacy routing', () => {
+    // null is load-bearing: advancedNeedsLegacyPath reads it as "the MV cannot
+    // serve this", the only thing standing between an unknown term and a
+    // silently unfiltered search.
+    expect(resolveViewContainsValues('zzz-not-a-view')).toBeNull()
+    expect(resolveViewContainsValues('')).toBeNull()
+    expect(resolveViewContainsValues(null)).toBeNull()
+    expect(resolveViewContainsValues(undefined)).toBeNull()
+  })
+
+  it('resolves a partial vocabulary term a URL can carry', () => {
+    expect(resolveViewContainsValues('Cascade')).toEqual(['Cascade Mountains'])
+  })
+
+  it('resolves every viewContains term shipped by a preset', () => {
+    // An unresolvable preset term is the defect this vocabulary fixes: it routes
+    // the page back to the RPC that cannot serve a no-city search.
+    const terms = SEARCH_PRESETS.map((p) => p.params.viewContains).filter(
+      (t): t is string => typeof t === 'string' && t.trim() !== '',
+    )
+    expect(terms.length).toBe(5)
+    for (const term of terms) {
+      expect(resolveViewContainsValues(term), `preset term '${term}'`).not.toBeNull()
+    }
+  })
+
+  it('covers every registry viewTypes option (vocabulary drift guard)', () => {
+    // The vocabulary is a superset of the UI facet list by design. A registry
+    // option missing here would make the resolver under-report that value.
+    const vocabulary = new Set(__VIEW_TYPE_VOCABULARY_FOR_TESTS)
+    for (const option of searchFieldByKey('viewTypes')?.options ?? []) {
+      expect(vocabulary.has(option), `registry option '${option}'`).toBe(true)
+    }
+  })
+
+  it('never resolves to a value outside the vocabulary', () => {
+    const vocabulary = new Set(__VIEW_TYPE_VOCABULARY_FOR_TESTS)
+    for (const term of Object.keys(MEASURED_VIEW_TERMS)) {
+      for (const value of resolveViewContainsValues(term) ?? []) {
+        expect(vocabulary.has(value), `${term} -> ${value}`).toBe(true)
+      }
+    }
+  })
+})
+
+describe('viewContainsMatchesValues', () => {
+  it('matches a row through the resolved vocabulary', () => {
+    expect(viewContainsMatchesValues('Mountain', ['Cascade Mountains', 'Territorial'])).toBe(true)
+    expect(viewContainsMatchesValues('Water', ['Pond'])).toBe(true)
+    expect(viewContainsMatchesValues('Lake', ['River'])).toBe(false)
+  })
+
+  it('still matches a feed value the vocabulary has not caught up to', () => {
+    // Union semantics: never NARROWER than the legacy substring test, so a new
+    // feed spelling cannot silently drop a row out of the sitemap matcher.
+    expect(viewContainsMatchesValues('Mountain', ['Mountain Ridge'])).toBe(true)
+  })
+
+  it('is false for empty/absent view arrays', () => {
+    expect(viewContainsMatchesValues('Mountain', [])).toBe(false)
+    expect(viewContainsMatchesValues('Mountain', null)).toBe(false)
+    expect(viewContainsMatchesValues('', ['Mountain(s)'])).toBe(false)
   })
 })

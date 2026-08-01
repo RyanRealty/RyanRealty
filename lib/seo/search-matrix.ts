@@ -40,6 +40,7 @@ import {
   SEARCH_PRESETS,
   isSortOnlyPreset,
   resolvePresetYearBuiltMin,
+  viewContainsMatchesValues,
 } from '@/lib/search-presets'
 import { propertyTypeFilterToCodes } from '@/lib/property-type'
 import { presetSubTypeSet } from '@/lib/data/seo/derive-search-links'
@@ -236,10 +237,12 @@ export function presetMatrixMatcher(
       if (!hasRealView) return false
     }
     if (viewNeedle != null) {
-      const views = row.view_types
-      if (!Array.isArray(views) || !views.some((v) => (v ?? '').toLowerCase().includes(viewNeedle))) {
-        return false
-      }
+      // ONE viewContains semantics, shared with the DAL (lib/search/view-contains):
+      // resolved vocabulary values UNION the raw substring test. Sitemap
+      // emission and the page's own query must answer the same question — a
+      // matrix that says "0 matches" for a page the DAL fills is how a
+      // reachable page goes unsubmitted.
+      if (!viewContainsMatchesValues(viewNeedle, row.view_types)) return false
     }
     if (p.gatedCommunity === true) {
       const gated =

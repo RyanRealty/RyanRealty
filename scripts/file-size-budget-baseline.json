@@ -8,7 +8,7 @@
     "app/actions/crm.ts": 2030,
     "app/actions/dashboard.ts": 985,
     "app/actions/listing-detail.ts": 1238,
-    "app/actions/listings.ts": 2656,
+    "app/actions/listings.ts": 2665,
     "app/actions/prospecting.ts": 843,
     "app/actions/sync-full-cron.ts": 605,
     "app/actions/sync-spark.ts": 1394,
