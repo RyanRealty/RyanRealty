@@ -244,3 +244,178 @@ describe('CustomFields flattening + privacy diversion', () => {
     expect(flattenCustomFields([{ Main: 'not-an-array' }])).toEqual({})
   })
 })
+
+describe('toText — one representation per typed text column (levels defect, 2026-07-31)', () => {
+  // Root cause: the April promotion of the tier-2 columns out of `details`
+  // wrote `listings.levels` with a raw jsonb->text cast and a JS String()
+  // coercion instead of reducing the multi-select object to its truthy keys.
+  // 881 on-market rows froze carrying '{"One": true}' / '[object Object]' /
+  // '********'. singleLevel compares `levels = 'One'` and levelsOptions does an
+  // IN over the bare labels — both exactly right, both blind to those rows.
+  // Every shape below was measured in production before the backfill.
+
+  it('scalar label passes through', async () => {
+    const { toText } = await import('./listing-mapper')
+    expect(toText('One')).toBe('One')
+    expect(toText('  Two  ')).toBe('Two')
+  })
+
+  it('single-key multi-select object reduces to its label', async () => {
+    const { toText } = await import('./listing-mapper')
+    expect(toText({ One: true })).toBe('One')
+    expect(toText({ 'Multi/Split': true })).toBe('Multi/Split')
+  })
+
+  it('multi-key object joins truthy labels in feed order, drops falsy keys', async () => {
+    const { toText } = await import('./listing-mapper')
+    expect(toText({ One: true, Two: true })).toBe('One, Two')
+    expect(toText({ Two: true, 'Three Or More': true })).toBe('Two, Three Or More')
+    expect(toText({ One: true, Two: false })).toBe('One')
+    expect(toText({ One: false, Two: false })).toBeNull()
+    expect(toText({})).toBeNull()
+  })
+
+  it('object stringified by a jsonb->text cast reduces to the same label', async () => {
+    const { toText } = await import('./listing-mapper')
+    // Postgres renders jsonb with a space after the colon; JSON.stringify does not.
+    expect(toText('{"One": true}')).toBe('One')
+    expect(toText('{"One":true}')).toBe('One')
+    expect(toText('{"One": true, "Two": true}')).toBe('One, Two')
+    expect(toText('{"One": false}')).toBeNull()
+  })
+
+  it('[object Object] is dropped, never persisted', async () => {
+    const { toText } = await import('./listing-mapper')
+    expect(toText('[object Object]')).toBeNull()
+  })
+
+  it('the Spark mask is dropped', async () => {
+    const { toText } = await import('./listing-mapper')
+    expect(toText('********')).toBeNull()
+    expect(toText('****')).toBeNull()
+    expect(toText('  ********  ')).toBeNull()
+    expect(toText('')).toBeNull()
+    expect(toText('   ')).toBeNull()
+    // A lone asterisk is still a mask run, not content.
+    expect(toText('*')).toBeNull()
+  })
+
+  it('an already-normalized comma list is left alone', async () => {
+    const { toText } = await import('./listing-mapper')
+    expect(toText('One, Two')).toBe('One, Two')
+    expect(toText('Three Or More, Multi/Split')).toBe('Three Or More, Multi/Split')
+  })
+
+  it('unparseable object/array-shaped text is dropped, never leaked raw', async () => {
+    const { toText } = await import('./listing-mapper')
+    expect(toText('{One: true')).toBeNull()
+    expect(toText('{not json at all}')).toBeNull()
+    expect(toText('[unclosed')).toBeNull()
+  })
+
+  it('arrays join their labels and drop masked elements', async () => {
+    const { toText } = await import('./listing-mapper')
+    expect(toText(['Frame', 'Stone'])).toBe('Frame, Stone')
+    expect(toText(['One', '********'])).toBe('One')
+    expect(toText(['********', '****'])).toBeNull()
+    expect(toText([])).toBeNull()
+    expect(toText('["Frame", "Stone"]')).toBe('Frame, Stone')
+  })
+
+  it('null/undefined and non-text scalars', async () => {
+    const { toText } = await import('./listing-mapper')
+    expect(toText(null)).toBeNull()
+    expect(toText(undefined)).toBeNull()
+    expect(toText(42)).toBeNull()
+  })
+
+  it('sparkToListingRow normalizes levels for every observed shape', async () => {
+    const { sparkToListingRow } = await import('./listing-mapper')
+    const levelsOf = (Levels: unknown) =>
+      sparkToListingRow({ ListingKey: '1', ListNumber: '220000001', Levels }).levels
+    expect(levelsOf('One')).toBe('One')
+    expect(levelsOf({ One: true })).toBe('One')
+    expect(levelsOf({ One: true, Two: true })).toBe('One, Two')
+    expect(levelsOf('{"One": true}')).toBe('One')
+    expect(levelsOf('[object Object]')).toBeNull()
+    expect(levelsOf('********')).toBeNull()
+    expect(levelsOf('One, Two')).toBe('One, Two')
+  })
+
+  it('the mask never reaches a typed text column via any promoted field', async () => {
+    const { sparkToListingRow } = await import('./listing-mapper')
+    const row = sparkToListingRow({
+      ListingKey: '1', ListNumber: '220000001',
+      Levels: '********', DirectionFaces: '********', SubdivisionName: '********',
+      ArchitecturalStyle: '{"Craftsman": true}', FoundationDetails: '[object Object]',
+    })
+    expect(row.levels).toBeNull()
+    expect(row.direction_faces).toBeNull()
+    expect(row.SubdivisionName).toBeNull()
+    expect(row.architectural_style).toBe('Craftsman')
+    expect(row.foundation_details).toBeNull()
+  })
+})
+
+describe('toText invariant — no unmatchable representation may reach a typed column', () => {
+  // The gate for this defect class. singleLevel/levelsOptions and every other
+  // scalar-column filter compare the column to a bare label, so ANY value that
+  // is not a label (raw JSON, an object coerced to string, a Spark mask) is a
+  // row silently deleted from its own filter. Rather than enumerate the shapes
+  // seen so far, assert the invariant over every shape we can think of: toText
+  // returns a label list or null, never a serialization artifact.
+  const ARTIFACTS = [
+    '[object Object]',
+    '[object Array]',
+    '{"One": true}',
+    '{"One":true}',
+    '{"One": true, "Two": true}',
+    '{}',
+    '{',
+    '{broken',
+    '{not json}',
+    '[',
+    '[]',
+    '["One"]',
+    '********',
+    '****',
+    '*',
+    '   ********   ',
+    '',
+    '   ',
+  ]
+
+  it('never returns a raw object/array-shaped string, [object Object], or a mask', async () => {
+    const { toText } = await import('./listing-mapper')
+    const inputs: unknown[] = [
+      ...ARTIFACTS,
+      { One: true },
+      { One: true, Two: true },
+      { One: false },
+      {},
+      ['One', '********'],
+      ['********'],
+      [],
+      null,
+      undefined,
+      42,
+    ]
+    for (const v of inputs) {
+      const out = toText(v)
+      if (out === null) continue
+      expect(out, `toText(${JSON.stringify(v)}) leaked a brace shape`).not.toMatch(/^[{[]/)
+      expect(out, `toText(${JSON.stringify(v)}) leaked [object Object]`).not.toBe('[object Object]')
+      expect(out, `toText(${JSON.stringify(v)}) leaked a mask`).not.toMatch(/^\*+$/)
+      expect(out, `toText(${JSON.stringify(v)}) leaked whitespace padding`).toBe(out.trim())
+      expect(out.length, `toText(${JSON.stringify(v)}) returned empty`).toBeGreaterThan(0)
+    }
+  })
+
+  it('every artifact shape collapses to null or a clean label list', async () => {
+    const { toText } = await import('./listing-mapper')
+    for (const a of ARTIFACTS) {
+      const out = toText(a)
+      expect(out === null || /^[^{[*].*$/.test(out), `${a} -> ${out}`).toBe(true)
+    }
+  })
+})
