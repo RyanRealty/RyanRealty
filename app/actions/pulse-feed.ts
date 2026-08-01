@@ -82,15 +82,6 @@ export type PulseFeedResult = {
   nextOffset: number | null
 }
 
-const LISTING_SELECT = [
-  'ListingKey, ListNumber, ListPrice, OriginalListPrice, BedroomsTotal, BathroomsTotal',
-  'TotalLivingAreaSqFt, StreetNumber, StreetName, StreetSuffix:details->>StreetSuffix, City, State, PostalCode, SubdivisionName',
-  'PhotoURL, StandardStatus, OnMarketDate, CloseDate, ClosePrice',
-  'ListAgentName, ListOfficeName',
-  'virtual_tour_url, has_virtual_tour, sale_to_list_ratio, days_to_pending',
-  'last_price_change_pct, last_price_change_amount',
-].join(', ')
-
 /**
  * Activity events joined to listings + video data. Filtered by city and event type.
  * Pages through results via offset; nextOffset is null when exhausted.
@@ -135,7 +126,6 @@ export async function getPulseFeed(options: PulseFeedQuery): Promise<PulseFeedRe
 
   // DAL: match by ListingKey OR ListNumber via listing_tile_mv. Two parallel
   // DAL calls cover both keying paths (activity events store either form).
-  void LISTING_SELECT
   const safeKeys = keys.filter((k) => /^[a-zA-Z0-9._-]+$/.test(k)).slice(0, 5000)
   const { getListingTiles } = await import('@/lib/data')
   // scope:'service-area' — activity_events arrive feed-wide (statewide MLS),

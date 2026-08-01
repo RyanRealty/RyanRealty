@@ -1030,7 +1030,14 @@ export async function syncListingHistory(options?: {
       }
 
       usedTerminalFallback = true
-      const fallbackLimit = Math.max(rangeLimit * 5, 300)
+      // TOAST discipline (docs/TOAST_READ_DISCIPLINE.md): COLS_SYNC selects the
+      // `details` jsonb, which costs ~3.8ms/row to detoast (measured 2026-07-31:
+      // 29,135 rows, 0.107ms/row typed vs 3.953ms/row with one details key).
+      // The primary query just died on a statement timeout, so the retry must be
+      // NARROWER, never wider — the previous `rangeLimit * 5` (up to 10,000 rows
+      // x ~10KB details) guaranteed a second timeout and left the hourly
+      // /api/cron/sync-history-terminal sweep silently making zero progress.
+      const fallbackLimit = Math.min(rangeLimit, 300)
       const fallback = await selectHistorySyncCandidates<typeof rows[number]>({
         columns: COLS_SYNC,
         statusOr: TERMINAL_STATUS_OR,

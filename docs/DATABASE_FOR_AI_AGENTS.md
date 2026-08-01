@@ -404,7 +404,19 @@ SELECT ListingKey, ListPrice, BedroomsTotal FROM listings WHERE StandardStatus =
 
 ### 4b. The "800 fields" reality
 
-Spark gives us ~130 first-class columns + a `details` JSONB blob (~70 more fields). **NEVER `SELECT details` on hot paths** — it's ~200KB per row. Use the promoted columns or extract via `details->>'FieldName'` for one-off needs.
+Spark gives us ~130 first-class columns + a `details` JSONB blob (~70 more fields).
+
+**⚠️ Read [`TOAST_READ_DISCIPLINE.md`](TOAST_READ_DISCIPLINE.md) before writing any query that touches `details`.** It is the second trap on this table, and it is more expensive than the quoting rule above.
+
+Measured 2026-07-31: `details` averages **10,074 bytes** per row (max 21,471) and accounts for **12 GB of the table's 14 GB** against a 1 GB `shared_buffers`. Postgres cannot read one key out of a TOASTed value, so `details->>'FieldName'` detoasts the **entire** document, **per candidate row** — measured **+3.845 ms/row (36.9× slower)** than reading typed columns over the same 29,135 rows.
+
+The cost is per row the predicate *examines*, not per row returned, so `LIMIT` does not save you. 96,682 Bend closed rows × 3.8 ms ≈ 6 minutes against a 12 s timeout.
+
+- **NEVER `SELECT details`, and never `.select('*')`, on any path with a broad candidate set** (whole-city, sold/closed, matview refresh, cron sweep). `*` includes `details`.
+- `details->>'FieldName'` is **not** a cheap escape hatch — it costs the same as selecting the whole blob.
+- Safe: single-row lookups already bounded by `"ListingKey"` / `"ListNumber"`.
+- For filterable fields use the trigger-maintained side tables (`listing_feature_flags`, `listing_remarks_search`).
+- Typed columns are backfilled artifacts, **not guaranteed mirrors** — `pool_yn` returns 167 rows where the jsonb expression returns 15,763. Prove equivalence over the whole table before swapping. The proof query is in `TOAST_READ_DISCIPLINE.md`.
 
 Tier breakdown (kept from prior version):
 
