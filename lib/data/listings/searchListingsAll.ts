@@ -28,6 +28,7 @@ import { PUBLIC_ACTIVE_STATUSES, PUBLIC_PENDING_STATUSES } from '@/lib/listing-s
 import {
   arrayLiteral,
   ilikeExact,
+  tokenScalarOrExpr,
   resolveLegacyPropertySubType,
   BOOLEAN_PREDICATES,
   BOOLEAN_FILTER_KEYS,
@@ -475,8 +476,8 @@ function applySearchFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>
       case 'isTrue':
         query = query.eq(predicate.col, true)
         break
-      case 'notTrue':
-        query = query.not(predicate.col, 'is', true)
+      case 'isFalse':
+        query = query.eq(predicate.col, false)
         break
       case 'eqValue':
         query = query.eq(predicate.col, predicate.value)
@@ -505,7 +506,17 @@ function applySearchFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>
     if (!Array.isArray(raw) || raw.length === 0) continue
     const values = raw.filter((v): v is string => typeof v === 'string' && v.trim() !== '')
     if (values.length === 0) continue
-    if (def.singleColumnIn) {
+    if (def.singleColumnIn && def.multiValueScalar) {
+      // Scalar column holding a ', '-joined list (`levels`): match by token,
+      // not by whole string, or the 106 on-market multi-level rows are
+      // unreachable from every option (2026-07-31 coverage fix).
+      const trimmed = values.map((v) => v.trim())
+      const expr = tokenScalarOrExpr(def.mv, trimmed)
+      // Fail CLOSED. If every value sanitized away (URL garbage), fall back to
+      // whole-string IN, which matches nothing — skipping the predicate would
+      // drop the filter and silently return the unfiltered result set.
+      query = expr ? query.or(expr) : query.in(def.mv, trimmed)
+    } else if (def.singleColumnIn) {
       query = query.in(def.mv, values.map((v) => v.trim()))
     } else if (def.matchMode === 'all') {
       query = query.contains(def.mv, arrayLiteral(values))

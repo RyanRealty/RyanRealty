@@ -1,0 +1,44 @@
+-- audit: migration — drop the dead get_listing_media_counts() RPC (marker
+-- required by the DAL-bypass guard).
+--
+-- THE DEFECT. get_listing_media_counts() is a SECURITY DEFINER, STABLE SQL
+-- function whose body is:
+--
+--   SELECT count(*), count(*) FILTER (WHERE "PhotoURL" ...),
+--          count(*) FILTER (WHERE jsonb_typeof(details->'Videos') = 'array'
+--                             AND jsonb_array_length(details->'Videos') > 0)
+--   FROM listings;
+--
+-- No WHERE clause. Two details reads over all 594,199 rows. At the measured
+-- 3.845 ms/row detoast delta (docs/TOAST_READ_DISCIPLINE.md) that is ~2,285 s —
+-- roughly 38 minutes — against a 12 s PostgREST timeout. It cannot succeed. It
+-- is the same class as the matview defect, minus any chance of completing.
+--
+-- WHY DELETING IS THE FIX RATHER THAN BOUNDING IT. It has no callers. Verified
+-- 2026-08-01 by grepping the entire working tree (excluding node_modules, .next,
+-- .git) for the identifier: the only hits are
+--   * types/database.ts — the generated RPC map, updated alongside this
+--     migration;
+--   * a stale comment in app/actions/listings.ts above getAdminSyncCounts(),
+--     which describes the function as "best-effort for photos/videos only";
+--   * three docs (SYNC.md, VIDEO_DATA_FLOW.md, REPORTING_AND_ANALYTICS.md)
+--     claiming the Admin Sync page renders its output;
+--   * the original migration and 20260530180000_revoke_anon_execute_admin_functions.sql.
+-- No .rpc('get_listing_media_counts') call exists anywhere. The AdminSyncCounts
+-- interface in app/actions/listings.ts has no photos or videos field, and
+-- getAdminSyncCounts() never invokes it — the docs describe a surface that was
+-- removed and the RPC outlived it. The live "listings with videos" surface is
+-- fetchListingsWithVideos() in lib/fetch-listings-with-videos.ts, which is a
+-- bounded DAL read and is untouched here.
+--
+-- A dead SECURITY DEFINER function that seq-scans a 14 GB table is a loaded gun:
+-- one call saturates a connection for ~38 minutes and starves the pool that the
+-- matview refresh chain shares. Deleting it is cheaper and safer than optimising
+-- something nothing calls.
+--
+-- REVERSIBILITY. The body is preserved verbatim in the header above and in
+-- 20250304100000_sync_history_and_media_counts.sql. If an admin media count is
+-- ever wanted again, it should be a bounded projection (photos_count is already
+-- a typed column on listings), not a details sweep.
+
+DROP FUNCTION IF EXISTS public.get_listing_media_counts();

@@ -8,6 +8,22 @@
  * order. Data-noise values ('None', 'Other', 'Unknown', 'See Remarks') are
  * dropped from UI options.
  *
+ * OPTION-EXPOSURE BAR (set 2026-07-31, after a coverage audit found 40 real
+ * values with no filter option):
+ * - >= 25 live active listings ships unconditionally. That is the same bar the
+ *   long-tail census uses to decide whether a CONCEPT earns a filter.
+ * - Below 25 ships too, when the field is a CLOSED ATTRIBUTE ENUM whose
+ *   vocabulary the MLS publishes in full. Exposing part of such a set asserts
+ *   the hidden values do not exist: a sale-conditions list showing Trust and
+ *   Real Estate Owned while hiding Short Sale reads as "no short sales here",
+ *   which is false. Live facet counts render beside every option, so a 5-row
+ *   value labels its own size instead of misleading.
+ * - Zero live rows never ships. A filter that can never match is the one thing
+ *   the 2026-07-30 accuracy audit removed fields for.
+ * - GEOGRAPHY is the deliberate exception: `county` is a 39-value directory,
+ *   not an attribute vocabulary, so it keeps the >= 25 bar on its own. See the
+ *   note on that field.
+ *
  * Voice conventions:
  * - `voice` phrases are lowercase, matched with word boundaries by the parser.
  * - Range-field voice entries use a lowercase `n` as the number slot
@@ -39,6 +55,14 @@ export interface SearchFieldDef {
   coverageNote?: string           // data caveat, shown as muted hint if set
   dalExpression?: true            // predicate is a multi-column DAL expression; mv holds the PRIMARY column
   singleColumnIn?: true           // multi over a scalar column; DAL maps to IN, not array overlap
+  /**
+   * singleColumnIn only. The scalar column may hold a ', '-joined LIST of
+   * option values ("One, Two"), so the DAL matches by TOKEN containment
+   * instead of whole-string IN. Set it only where the feed is measured to
+   * multi-select into the column — `levels` is the only one (106 on-market
+   * rows, 2026-07-31); property_sub_type, county and adu_type all measure 0.
+   */
+  multiValueScalar?: true
 }
 
 export const SEARCH_FIELD_CATEGORIES: readonly { id: SearchFieldCategory; label: string }[] = [
@@ -373,12 +397,18 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     voice: ['55 plus', '55+', '55 and older', 'senior community', 'age restricted', 'active adult'],
   },
   {
+    // Tightened 2026-07-31. The predicate was `association_yn IS DISTINCT FROM
+    // TRUE`, which swept in 761 live rows whose HOA answer is NULL. NULL is
+    // "unknown", and a filter labelled "No HOA" that returns a home with dues
+    // is the same overclaim class §0 exists to prevent. It now matches explicit
+    // false only, so the label is exactly what the data asserts.
     key: 'noHoa',
     label: 'No HOA',
     category: 'community_hoa',
     kind: 'boolean',
     mv: 'association_yn',
     voice: ['no hoa', 'without an hoa'],
+    coverageNote: 'Matches listings that report no HOA. Listings that leave the HOA question blank are excluded.',
   },
   {
     key: 'irrigationRights',
@@ -490,12 +520,19 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     voice: ['heated garage'],
   },
   {
+    // Deliberately stays an EXACT levels = 'One' match while the levelsOptions
+    // multi moved to token containment (2026-07-31). A row listing "One, Two"
+    // has a one-story section and a two-story section, so it belongs under
+    // Stories = One when a buyer is browsing, but it is not a single-level home
+    // and this filter promises 'no stairs'. Widening it would repeat the noHoa
+    // overclaim in a different column.
     key: 'singleLevel',
     label: 'Single level',
     category: 'size_layout',
     kind: 'boolean',
     mv: 'levels',
     voice: ['single level', 'single story', 'one level', 'one story', 'no stairs'],
+    coverageNote: 'Matches listings whose only level is one. Homes listing more than one level are excluded.',
   },
   {
     key: 'primaryOnMain',
@@ -925,8 +962,19 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     category: 'views_waterfront',
     kind: 'multi',
     mv: 'view_types',
-    options: ['Territorial', 'Neighborhood', 'Mountain(s)', 'Cascade Mountains', 'Panoramic', 'Forest', 'Valley', 'City', 'Golf Course', 'Lake', 'River', 'Pond', 'Ridge', 'Creek/Stream', 'Park/Greenbelt', 'Desert', 'Canyon', 'Vineyard'],
+    // All 22 published View values carry live rows 2026-07-31; the four added
+    // in the coverage fix are Orchard 28, Ocean 19, Beach 6, Bay 5 (coastal and
+    // orchard views reach this feed through its Southern Oregon counties).
+    options: [
+      'Territorial', 'Neighborhood', 'Mountain(s)', 'Cascade Mountains', 'Panoramic', 'Forest',
+      'Valley', 'City', 'River', 'Golf Course', 'Ridge', 'Lake', 'Pond', 'Creek/Stream',
+      'Desert', 'Park/Greenbelt', 'Canyon', 'Vineyard', 'Orchard', 'Ocean', 'Beach', 'Bay',
+    ],
     voiceValues: {
+      Ocean: ['ocean view'],
+      Beach: ['beach view'],
+      Bay: ['bay view'],
+      Orchard: ['orchard view'],
       'Cascade Mountains': ['cascade views', 'cascade mountain views'],
       'Mountain(s)': ['mountain views'],
       River: ['river view'],
@@ -1109,10 +1157,19 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     category: 'type_construction',
     kind: 'multi',
     mv: 'roof_types',
-    options: ['Composition', 'Metal', 'Asphalt', 'Membrane', 'Tile'],
+    // All 10 published Roof values carry live rows (2026-07-31): Composition
+    // 4,153 · Metal 998 · Asphalt 276 · Membrane 218 · Tile 144 · Rubber 42 ·
+    // Shake 25 · Rolled/Hot Mop 24 · Built-Up 20 · Slate 11.
+    options: [
+      'Composition', 'Metal', 'Asphalt', 'Membrane', 'Tile',
+      'Rubber', 'Shake', 'Rolled/Hot Mop', 'Built-Up', 'Slate',
+    ],
     voiceValues: {
       Metal: ['metal roof'],
       Tile: ['tile roof'],
+      Shake: ['shake roof', 'cedar shake roof'],
+      Slate: ['slate roof'],
+      Rubber: ['rubber roof'],
     },
   },
   {
@@ -1121,10 +1178,20 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     category: 'type_construction',
     kind: 'multi',
     mv: 'construction_materials_arr',
-    options: ['Frame', 'Concrete', 'Block', 'Double Wall/Staggered Stud', 'Steel Frame', 'Log', 'Brick'],
+    // Live rows 2026-07-31: Frame 4,170 · Concrete 336 · Block 210 · Double
+    // Wall 156 · Steel Frame 139 · Brick 89 · Log 81 · ICFs 28 · Structural
+    // Insulated Panels 26 · Straw 3. 'Unknown' (115) is a noise token, dropped.
+    // Rammed Earth is published but has zero live rows, so it stays out.
+    options: [
+      'Frame', 'Concrete', 'Block', 'Double Wall/Staggered Stud', 'Steel Frame', 'Brick', 'Log',
+      'ICFs (Insulated Concrete Forms)', 'Structural Insulated Panels', 'Straw',
+    ],
     voiceValues: {
       Log: ['log home'],
       'Steel Frame': ['steel frame'],
+      'ICFs (Insulated Concrete Forms)': ['icf', 'insulated concrete forms'],
+      'Structural Insulated Panels': ['sips', 'structural insulated panels'],
+      Straw: ['straw bale'],
     },
   },
   {
@@ -1144,8 +1211,19 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     category: 'type_construction',
     kind: 'multi',
     mv: 'architectural_styles',
-    options: ['Northwest', 'Ranch', 'Traditional', 'Craftsman', 'Contemporary', 'Bungalow', 'Log', 'Chalet', 'Prairie'],
+    // Every published style with live rows 2026-07-31: Northwest 1,167 · Ranch
+    // 1,135 · Traditional 1,092 · Contemporary 783 · Craftsman 781 · Bungalow
+    // 189 · Log 93 · Chalet 82 · Prairie 45 · A-Frame 38 · Colonial 26 ·
+    // Victorian 19 · Tudor 10. 'Other' (522) is a noise token, dropped.
+    options: [
+      'Northwest', 'Ranch', 'Traditional', 'Contemporary', 'Craftsman', 'Bungalow',
+      'Log', 'Chalet', 'Prairie', 'A-Frame', 'Colonial', 'Victorian', 'Tudor',
+    ],
     voiceValues: {
+      'A-Frame': ['a frame', 'a-frame'],
+      Colonial: ['colonial'],
+      Victorian: ['victorian'],
+      Tudor: ['tudor'],
       Craftsman: ['craftsman'],
       Ranch: ['ranch style'],
       Log: ['log cabin'],
@@ -1157,12 +1235,18 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     },
   },
   {
+    // `levels` is a scalar column the feed multi-selects into: 106 on-market
+    // rows hold ', '-joined lists ("One, Two", "Three Or More, Multi/Split").
+    // Whole-string IN matched none of them, so those homes were invisible to
+    // every Stories option. multiValueScalar switches the DAL to token
+    // containment — a row is found by each level it actually lists.
     key: 'levelsOptions',
     label: 'Stories',
     category: 'size_layout',
     kind: 'multi',
     mv: 'levels',
     singleColumnIn: true,
+    multiValueScalar: true,
     options: ['One', 'Two', 'Three Or More', 'Multi/Split'],
     voiceValues: {
       Two: ['two story'],
@@ -1175,11 +1259,20 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     category: 'price_terms',
     kind: 'multi',
     mv: 'listing_terms',
-    options: ['Cash', 'Conventional', 'VA Loan', 'FHA', 'USDA Loan', 'Owner Will Carry', 'FMHA', 'Contract', 'Private Financing Available', 'Trade'],
+    // All 12 published ListingTerms values carry live rows 2026-07-31: Cash
+    // 7,263 · Conventional 6,030 · VA Loan 3,119 · FHA 2,963 · USDA Loan 1,021 ·
+    // Owner Will Carry 471 · FMHA 192 · Contract 111 · Private Financing 110 ·
+    // Trade 44 · Assumable 35 · Trust Deed 13.
+    options: [
+      'Cash', 'Conventional', 'VA Loan', 'FHA', 'USDA Loan', 'Owner Will Carry',
+      'FMHA', 'Contract', 'Private Financing Available', 'Trade', 'Assumable', 'Trust Deed',
+    ],
     voiceValues: {
       FHA: ['fha'],
       'VA Loan': ['va loan', 'va eligible'],
       'USDA Loan': ['usda'],
+      Assumable: ['assumable', 'assumable loan', 'assumable mortgage'],
+      'Trust Deed': ['trust deed'],
     },
   },
   {
@@ -1188,10 +1281,29 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     category: 'listing_meta',
     kind: 'multi',
     mv: 'special_conditions',
-    options: ['Standard', 'Trust', 'Probate Listing', 'Real Estate Owned'],
+    // All 12 published values carry live rows 2026-07-31: Standard 7,215 ·
+    // Trust 99 · Probate Listing 59 · Real Estate Owned 32 · Third Party
+    // Approval 22 · Short Sale 19 · Conservatorship 6 · In Foreclosure 5 ·
+    // Auction 5 · Notice Of Default 5 · Bankruptcy Property 4 · HUD Owned 4.
+    // The tail ships below 25 deliberately: this field IS the distressed-sale
+    // vocabulary, and hiding Short Sale or In Foreclosure while showing Real
+    // Estate Owned tells a buyer those sales are not in this market.
+    options: [
+      'Standard', 'Trust', 'Probate Listing', 'Real Estate Owned', 'Third Party Approval',
+      'Short Sale', 'Conservatorship', 'In Foreclosure', 'Auction', 'Notice Of Default',
+      'Bankruptcy Property', 'HUD Owned',
+    ],
     voiceValues: {
-      'Real Estate Owned': ['foreclosure', 'reo', 'bank owned'],
+      'Real Estate Owned': ['reo', 'bank owned'],
       'Probate Listing': ['probate'],
+      'Short Sale': ['short sale'],
+      'In Foreclosure': ['in foreclosure', 'foreclosure', 'pre foreclosure'],
+      'Notice Of Default': ['notice of default'],
+      Auction: ['auction'],
+      'HUD Owned': ['hud owned', 'hud home'],
+      'Bankruptcy Property': ['bankruptcy'],
+      'Third Party Approval': ['third party approval'],
+      Conservatorship: ['conservatorship'],
     },
   },
   {
@@ -1250,24 +1362,67 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     category: 'outdoor_lot',
     kind: 'multi',
     mv: 'pool_features',
-    options: ['Outdoor Pool', 'In Ground', 'Community', 'Association', 'Heated', 'Fenced', 'Pool Cover', 'Private', 'Above Ground', 'Indoor', 'Lap', 'Pool/Spa Combo'],
+    // Every published PoolFeatures value with live rows 2026-07-31, prevalence
+    // order: Outdoor Pool 241 · In Ground 228 · Association 181 · Community 172
+    // · Heated 132 · Fenced 112 · Pool Cover 77 · Private 74 · Pool/Spa Combo 59
+    // · Indoor 43 · Above Ground 41 · Gas Heat 32 · Gunite 31 · Waterfall 31 ·
+    // Filtered 30 · Lap 28 · Salt Water 28 · Solar Heat 28 · Pool Sweep 21 ·
+    // Tile 20 · Diving Board 12 · Electric Heat 12 · Solar Cover 12 · Liner 10 ·
+    // ENERGY STAR Qualified Pool Pump 9 · Vinyl 9 · Cabana 8 · Fiberglass 5 ·
+    // Sport 4 · Infinity 3 · Black Bottom 2. 'None' (622), 'See Remarks' (31)
+    // and 'Other' (9) are noise tokens, dropped. Screen Enclosure is published
+    // with zero live rows, so it stays out.
+    options: [
+      'Outdoor Pool', 'In Ground', 'Association', 'Community', 'Heated', 'Fenced',
+      'Pool Cover', 'Private', 'Pool/Spa Combo', 'Indoor', 'Above Ground', 'Gas Heat',
+      'Gunite', 'Waterfall', 'Filtered', 'Lap', 'Salt Water', 'Solar Heat', 'Pool Sweep',
+      'Tile', 'Diving Board', 'Electric Heat', 'Solar Cover', 'Liner',
+      'ENERGY STAR Qualified Pool Pump', 'Vinyl', 'Cabana', 'Fiberglass', 'Sport',
+      'Infinity', 'Black Bottom',
+    ],
     voiceValues: {
       'In Ground': ['in ground pool'],
       Indoor: ['indoor pool'],
+      'Salt Water': ['salt water pool', 'saltwater pool'],
+      'Solar Heat': ['solar heated pool'],
+      Waterfall: ['pool waterfall'],
+      'Diving Board': ['diving board'],
+      Infinity: ['infinity pool'],
+      Cabana: ['pool cabana'],
+      Lap: ['lap pool'],
     },
   },
   {
+    // Coverage fix 2026-07-31: the five Central Oregon counties reached ~59% of
+    // live active inventory. The feed spans 34 counties and the Southern Oregon
+    // block (Jackson 1,734 · Josephine 850 — Medford, Ashland, Grants Pass) had
+    // no option at all. County keeps the program's >= 25-live-listing bar rather
+    // than the "every live value" rule the attribute enums use: this is a
+    // geography directory, not a closed attribute vocabulary, and its tail
+    // (Gilliam 1, Sherman 1, Hood River 1) is out-of-service-area noise where an
+    // option would be a dead end. Counts are active rows in listing_search_mv,
+    // measured 2026-07-31, listed in prevalence order.
     key: 'county',
     label: 'County',
     category: 'listing_meta',
     kind: 'multi',
     mv: 'county',
     singleColumnIn: true,
-    options: ['Deschutes', 'Crook', 'Jefferson', 'Klamath', 'Lake'],
+    options: [
+      'Deschutes', 'Jackson', 'Klamath', 'Josephine', 'Crook',
+      'Jefferson', 'Lake', 'Grant', 'Douglas', 'Lane',
+    ],
     voiceValues: {
       Deschutes: ['deschutes county'],
+      Jackson: ['jackson county'],
+      Klamath: ['klamath county'],
+      Josephine: ['josephine county'],
       Crook: ['crook county'],
       Jefferson: ['jefferson county'],
+      Lake: ['lake county'],
+      Grant: ['grant county'],
+      Douglas: ['douglas county'],
+      Lane: ['lane county'],
     },
   },
   // REMOVED 2026-07-30 (adversarial accuracy audit): directionFaces.

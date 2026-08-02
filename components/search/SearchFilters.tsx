@@ -798,7 +798,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
           un-removable below 640px, and Clear all was unreachable (W-UI audit
           T2, 2026-07-30). One scrollable row restores both affordances. */}
       {registryActive.length > 0 && (
-        <div className="flex items-center gap-1.5 overflow-x-auto border-t border-border px-3 py-2 sm:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto border-t border-border px-3 py-2 sm:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {registryActive.map(({ key, label, params }) => (
             <span key={key} className="shrink-0">
               <RegistryFilterChip label={label} onRemove={() => removeChip(params)} />

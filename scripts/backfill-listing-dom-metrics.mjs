@@ -62,8 +62,13 @@ async function main() {
     last = Number(data?.updated ?? 0) || 0
     rounds += 1
     total += last
-    console.log(`Round ${rounds}: updated ${last}`)
-    if (last === 0) break
+    const scanned = Number(data?.scanned ?? 0) || 0
+    console.log(`Round ${rounds}: scanned ${scanned}, updated ${last}`)
+    // p_limit bounds rows SCANNED (and therefore detoasted), not rows updated —
+    // a batch can legitimately update 0 while work remains, so the RPC's `done`
+    // flag is the only valid stop condition. See
+    // supabase/migrations/20260801052500_bound_details_backfill_rpcs.sql
+    if (data?.done === true) break
   }
   const end = await countMissingDom()
   console.log(JSON.stringify({ rounds, totalUpdated: total, rowsStillMissingDomOrCdom: end }, null, 2))

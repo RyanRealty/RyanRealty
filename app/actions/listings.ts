@@ -1789,7 +1789,9 @@ export type AdminSyncCounts = {
 
 /**
  * Admin sync page: counts using service role so we see real data (not affected by RLS).
- * Total listings uses the lightweight PostgREST count; get_listing_media_counts() is best-effort for photos/videos only.
+ * Total listings uses the lightweight PostgREST count. There is deliberately no photos/videos count
+ * here: the old get_listing_media_counts() RPC read listings.details with no WHERE clause and was
+ * dropped 2026-08-01 (see docs/TOAST_READ_DISCIPLINE.md).
  */
 export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
   const supabase = getServiceSupabase()

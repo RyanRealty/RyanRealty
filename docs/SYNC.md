@@ -20,7 +20,7 @@ Sync runs **in the background** with no manual steps:
 
 2. **History** – For each listing we call Spark’s history (or price history) API and store rows in `listing_history` (event_date, event, price, price_change, raw). Closed listings are marked `history_finalized` after a successful fetch so future syncs skip them.
 
-3. **Photos/videos** – Not in separate tables. They live inside `listings.details` (e.g. `details.Photos`, `details.Videos`). Admin counts use `get_listing_media_counts()` (listings with PhotoURL, listings with `details.Videos` array length > 0).
+3. **Photos/videos** – Not in separate tables. They live inside `listings.details` (e.g. `details.Photos`, `details.Videos`). There is no whole-table media count: `get_listing_media_counts()` read `details` with no WHERE clause (~38 minutes of detoast) and was dropped 2026-08-01 — see [`TOAST_READ_DISCIPLINE.md`](TOAST_READ_DISCIPLINE.md). Bounded video reads go through `fetchListingsWithVideos()`.
 
 ## How to run sync (override / local)
 
@@ -81,4 +81,4 @@ If you run a full sync and `listing_history` stays empty, Spark is returning 0 e
 ## After sync
 
 - **Refresh report cache:** The Full sync UI (and the cron route) call `refreshListingsBreakdown()` when history phase completes.
-- **Counts:** Admin Sync page shows total listings, history rows, and (via `get_listing_media_counts()`) listings with photos and with videos.
+- **Counts:** Admin Sync page shows total listings and history rows. It does not show photos/videos counts — `get_listing_media_counts()` was dropped 2026-08-01 as an unbounded `details` scan.

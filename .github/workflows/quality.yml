@@ -55,3 +55,15 @@ jobs:
       # the Supabase creds set in this job's env; SKIPS cleanly if they're absent.
       - name: Market city names are real MLS cities (ci:market-city-mls-canon)
         run: npm run ci:market-city-mls-canon
+
+      # View-preset equivalence gate (G63) — off-chain nightly, DB-dependent
+      # like G16/G57. Proves, against live rows, that every `viewContains`
+      # preset term still resolves to EXACTLY the listings its legacy
+      # `view_text ILIKE '%term%'` predicate matched, and that the MLS has not
+      # emitted a `view_types` value the resolver's vocabulary lacks. That is
+      # how the five view SEO pages would quietly start under-returning again,
+      # with no error and no red build. Uses this job's Supabase creds; SKIPS
+      # cleanly if they're absent. Do NOT set RR_VIEW_PRESET_ROW_CACHE here —
+      # this run must read live.
+      - name: View presets still match live view data (ci:view-preset-equivalence)
+        run: npm run ci:view-preset-equivalence

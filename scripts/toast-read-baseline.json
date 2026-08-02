@@ -1,0 +1,128 @@
+{
+  "_comment": "G62 ci:toast-discipline ratchet. Known-remaining listings.details read sites, keyed by { rule, file, normalized-expression } — never line numbers. SHRINK-ONLY: a new key or a higher count fails the build. Regenerate with `npm run ci:toast-discipline:baseline` ONLY after genuinely removing sites. See docs/TOAST_READ_DISCIPLINE.md.",
+  "generated": "2026-08-01",
+  "total": 40,
+  "sites": {
+    "A1 broad select": {
+      "lib/data/sync/syncWrites.ts": {
+        "select:details": 1
+      }
+    },
+    "A3 helper columns": {
+      "app/actions/sync-spark.ts": {
+        "selectHistorySyncCandidates:details": 2
+      }
+    },
+    "A4 sql definition": {
+      "supabase/migrations/20250304100000_sync_history_and_media_counts.sql": {
+        "function:get_listing_media_counts": 1
+      },
+      "supabase/migrations/20250315100000_advanced_search_rpc.sql": {
+        "function:search_listings_advanced": 1
+      },
+      "supabase/migrations/20260318120000_advanced_search_fireplace_golf_view.sql": {
+        "function:search_listings_advanced": 1
+      },
+      "supabase/migrations/20260321110000_advanced_search_pending_under_contract.sql": {
+        "function:search_listings_advanced": 1
+      },
+      "supabase/migrations/20260401000000_fix_cma_comps_rpc.sql": {
+        "function:get_cma_comps": 1,
+        "function:get_cma_comps_by_community": 1
+      },
+      "supabase/migrations/20260405022000_data_architecture_phase10_cma_listing_key.sql": {
+        "function:public.get_cma_comps_by_listing_key": 1
+      },
+      "supabase/migrations/20260414190000_backfill_close_price_from_history_rpc.sql": {
+        "function:public.apply_original_list_price_from_details_batch": 1
+      },
+      "supabase/migrations/20260415194600_listing_days_on_market_columns_and_backfill.sql": {
+        "function:public.apply_listing_dom_metrics_batch": 1
+      },
+      "supabase/migrations/20260603140000_fix_golf_course_filter_populated_signals.sql": {
+        "function:public.search_listings_advanced": 1
+      },
+      "supabase/migrations/20260603193000_search_golf_homes_landing.sql": {
+        "function:public.search_golf_homes": 1
+      },
+      "supabase/migrations/20260608120000_search_advanced_property_type_codes.sql": {
+        "function:public.search_listings_advanced": 1
+      },
+      "supabase/migrations/20260608170000_search_advanced_guard_numeric_jsonb_casts.sql": {
+        "function:public.search_listings_advanced": 1
+      },
+      "supabase/migrations/20260609180000_keyword_search_partial_index_and_rpc.sql": {
+        "function:public.search_keyword_listings": 1
+      },
+      "supabase/migrations/20260705120000_advanced_search_offmarket_multicity_viewany.sql": {
+        "function:search_listings_advanced": 1
+      },
+      "supabase/migrations/20260707100000_advanced_search_neighborhood_slug.sql": {
+        "function:search_listings_advanced": 1
+      },
+      "supabase/migrations/20260707110000_advanced_search_neighborhood_slug_fast.sql": {
+        "function:search_listings_advanced": 1
+      },
+      "supabase/migrations/20260708150000_listing_tile_mv_street_suffix.sql": {
+        "materialized view:public.listing_tile_mv": 1
+      },
+      "supabase/migrations/20260711160000_listing_search_mv.sql": {
+        "materialized view:public.listing_search_mv": 1
+      },
+      "supabase/migrations/20260711190000_listing_search_mv_private_remarks.sql": {
+        "materialized view:public.listing_search_mv": 1
+      },
+      "supabase/migrations/20260712000000_listing_private_redaction.sql": {
+        "function:public.rr_redact_listings": 1
+      },
+      "supabase/migrations/20260712010000_listing_search_mv_private_from_private_table.sql": {
+        "materialized view:public.listing_search_mv": 1
+      },
+      "supabase/migrations/20260729140000_advanced_search_property_type_codes.sql": {
+        "function:public.search_listings_advanced": 1
+      },
+      "supabase/migrations/20260729193000_listing_tile_mv_drop_now_refreshed_at.sql": {
+        "materialized view:public.listing_tile_mv_src": 1
+      },
+      "supabase/migrations/20260730000500_listing_search_mv_drop_volatile_refreshed_at.sql": {
+        "materialized view:public.listing_search_mv_src": 1
+      },
+      "supabase/migrations/20260730010000_rr_private_keys_customfields.sql": {
+        "function:public.rr_redact_listings": 1
+      },
+      "supabase/migrations/20260730020000_listing_search_mv_v3.sql": {
+        "materialized view:public.listing_search_mv_src_new": 1
+      },
+      "supabase/migrations/20260730180000_search_facet_counts_and_subtype_exact_set.sql": {
+        "function:public.search_listings_advanced": 1
+      },
+      "supabase/migrations/20260731170000_listing_search_mv_v4.sql": {
+        "materialized view:public.listing_search_mv_src_new": 1
+      },
+      "supabase/migrations/20260731190000_search_advanced_deferred_join.sql": {
+        "function:public.search_listings_advanced": 1
+      },
+      "supabase/migrations/20260731210000_listing_feature_flags.sql": {
+        "function:public.listing_feature_flags_of": 1
+      },
+      "supabase/migrations/20260731212000_listing_remarks_search.sql": {
+        "function:public.listing_feature_flags_of": 1
+      },
+      "supabase/migrations/20260731220000_search_advanced_feature_flags.sql": {
+        "function:public.search_listings_advanced": 1
+      },
+      "supabase/migrations/20260801003000_redact_private_details_write_trigger.sql": {
+        "function:public.rr_redact_private_details": 1
+      },
+      "supabase/migrations/20260801010000_search_advanced_security_definer.sql": {
+        "function:public.search_listings_advanced": 1
+      },
+      "supabase/migrations/20260801020000_listing_feature_flags_view_text.sql": {
+        "function:public.listing_feature_flags_of": 1
+      },
+      "supabase/migrations/20260801050000_listing_feature_flags_street_suffix.sql": {
+        "function:public.sync_listing_feature_flags": 1
+      }
+    }
+  }
+}

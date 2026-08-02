@@ -4382,14 +4382,6 @@ export type Database = {
           subdivision_name: string
         }[]
       }
-      get_listing_media_counts: {
-        Args: never
-        Returns: {
-          total_listings: number
-          with_photos: number
-          with_videos: number
-        }[]
-      }
       get_listing_sync_status_breakdown: { Args: never; Returns: Json }
       get_listings_breakdown: { Args: never; Returns: Json }
       get_mortgage_rate: { Args: never; Returns: number }

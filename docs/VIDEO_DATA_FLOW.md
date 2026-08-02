@@ -47,4 +47,4 @@ This doc traces how listing video data gets from the MLS (Spark API) to the list
 
 ## 7. Admin: counts
 
-- Sync dashboard and admin sync page show “with videos” count from `get_listing_media_counts()` (Supabase), which counts rows where `details->'Videos'` is a non-empty array. Use this to confirm how many listings have video data stored.
+- There is no whole-table “with videos” count. `get_listing_media_counts()` counted rows where `details->'Videos'` was a non-empty array across all 594K listings, which detoasts the entire 12 GB TOAST relation (~38 minutes against a 12 s timeout); it had no callers and was dropped 2026-08-01. See [`TOAST_READ_DISCIPLINE.md`](TOAST_READ_DISCIPLINE.md). Use the bounded `fetchListingsWithVideos()` path instead.

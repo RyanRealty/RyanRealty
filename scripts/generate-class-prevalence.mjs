@@ -8,8 +8,10 @@
  * predicate (boolean), bucketed by MLS property class (listing_search_mv
  * .property_type A/B/C/D; classes E-H and null roll up into "other").
  * Boolean counts mirror the DAL's BOOLEAN_PREDICATES exactly (isTrue /
- * notTrue / eqValue / containsAll / overlapsAny / orExpr / hasView), so the
+ * isFalse / eqValue / containsAll / overlapsAny / orExpr / hasView), so the
  * census counts what the filter would actually match, not just a *_yn column.
+ * Multi counts mirror it too: a `multiValueScalar` field (levels) counts a
+ * ', '-joined row toward each token it lists, exactly as the DAL matches it.
  * Zoning (text) gets its distinct observed values, capped at the top 200 by
  * total count, so find-a-filter can resolve typed codes like "MUA10".
  *
@@ -119,8 +121,10 @@ function evalPredicate(predicate, row) {
   switch (predicate.op) {
     case 'isTrue':
       return row[predicate.col] === true
-    case 'notTrue':
-      return row[predicate.col] !== true
+    // Explicit false only — mirrors the DAL's isFalse predicate (noHoa,
+    // tightened 2026-07-31). A NULL HOA answer is unknown, not "no".
+    case 'isFalse':
+      return row[predicate.col] === false
     case 'eqValue':
       return row[predicate.col] === predicate.value
     case 'containsAll':
@@ -213,8 +217,15 @@ async function main() {
 
       for (const def of multiDefs) {
         const cell = row[def.mv]
+        // multiValueScalar mirrors the DAL's token match: `levels` is a scalar
+        // column the feed multi-selects into ("One, Two"), so the row counts
+        // toward EACH level it lists, exactly as the filter now finds it.
         const observed = def.singleColumnIn
-          ? typeof cell === 'string' && cell.trim() !== '' ? [cell.trim()] : []
+          ? typeof cell === 'string' && cell.trim() !== ''
+            ? def.multiValueScalar
+              ? cell.split(',').map((s) => s.trim()).filter(Boolean)
+              : [cell.trim()]
+            : []
           : cellArray(cell)
         const optionSet = optionSets.get(def.key)
         const seen = new Set()

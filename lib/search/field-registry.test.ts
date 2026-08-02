@@ -440,3 +440,78 @@ describe('field-registry: MV v4 long-tail tranche (2026-07-31, plan §15)', () =
     expect(searchFieldByKey('powerProduction')?.options).toContain('Solar Leased')
   })
 })
+
+describe('field-registry: filter-coverage fix (2026-07-31)', () => {
+  it('county covers every market carrying 25+ live listings', () => {
+    // Measured over listing_search_mv active rows 2026-07-31: Deschutes 2,449 ·
+    // Jackson 1,734 · Klamath 1,205 · Josephine 850 · Crook 553 · Jefferson 314
+    // · Lake 113 · Grant 55 · Douglas 48 · Lane 29. The 24 remaining counties in
+    // the feed all sit under 25 (Lincoln 20 is the highest) and stay out — an
+    // option reaching one listing in Gilliam is a dead end, not a filter.
+    expect(searchFieldByKey('county')?.options).toEqual([
+      'Deschutes', 'Jackson', 'Klamath', 'Josephine', 'Crook',
+      'Jefferson', 'Lake', 'Grant', 'Douglas', 'Lane',
+    ])
+  })
+
+  it('gives every county option a voice phrase', () => {
+    const def = searchFieldByKey('county')!
+    for (const option of def.options!) {
+      expect(def.voiceValues?.[option], `county option ${option} has no voice phrase`).toBeTruthy()
+    }
+  })
+
+  it('exposes every live value of the closed attribute enums', () => {
+    // Live active counts, listing_search_mv 2026-07-31. Options below 25 ship
+    // because these are closed vocabularies the MLS publishes in full: showing
+    // part of one asserts the hidden values do not exist.
+    const EXPECTED: Record<string, string[]> = {
+      listingTerms: ['Assumable', 'Trust Deed'],                                  // 35, 13
+      specialConditions: [
+        'Third Party Approval', 'Short Sale', 'Conservatorship', 'In Foreclosure',
+        'Auction', 'Notice Of Default', 'Bankruptcy Property', 'HUD Owned',
+      ],                                                                          // 22..4
+      architecturalStyles: ['A-Frame', 'Colonial', 'Victorian', 'Tudor'],         // 38, 26, 19, 10
+      roofTypes: ['Rubber', 'Shake', 'Rolled/Hot Mop', 'Built-Up', 'Slate'],      // 42..11
+      viewTypes: ['Orchard', 'Ocean', 'Beach', 'Bay'],                            // 28, 19, 6, 5
+      constructionMaterials: [
+        'ICFs (Insulated Concrete Forms)', 'Structural Insulated Panels', 'Straw',
+      ],                                                                          // 28, 26, 3
+      poolFeatures: [
+        'Gas Heat', 'Gunite', 'Waterfall', 'Filtered', 'Salt Water', 'Solar Heat',
+        'Pool Sweep', 'Tile', 'Diving Board', 'Electric Heat', 'Solar Cover', 'Liner',
+        'ENERGY STAR Qualified Pool Pump', 'Vinyl', 'Cabana', 'Fiberglass', 'Sport',
+        'Infinity', 'Black Bottom',
+      ],                                                                          // 32..2
+    }
+    for (const [key, added] of Object.entries(EXPECTED)) {
+      const options = searchFieldByKey(key)?.options
+      for (const value of added) {
+        expect(options, `${key} is missing the live value "${value}"`).toContain(value)
+      }
+    }
+  })
+
+  it('keeps the option counts the coverage fix landed on', () => {
+    const sizes: Record<string, number> = {
+      county: 10, listingTerms: 12, specialConditions: 12, architecturalStyles: 13,
+      roofTypes: 10, viewTypes: 22, constructionMaterials: 10, poolFeatures: 31,
+    }
+    for (const [key, n] of Object.entries(sizes)) {
+      expect(searchFieldByKey(key)?.options?.length, `${key} option count`).toBe(n)
+    }
+  })
+
+  it('states the exclusion on both filters whose label used to overclaim', () => {
+    // noHoa dropped 761 unknown-HOA rows; singleLevel keeps excluding mixed
+    // "One, Two" homes. Both say so rather than letting the label imply more
+    // than the data asserts.
+    expect(searchFieldByKey('noHoa')?.coverageNote).toMatch(/excluded/)
+    expect(searchFieldByKey('singleLevel')?.coverageNote).toMatch(/excluded/)
+  })
+
+  it('flags levels as the one scalar column the feed multi-selects into', () => {
+    const flagged = SEARCH_FIELDS.filter((f) => f.multiValueScalar).map((f) => f.key)
+    expect(flagged).toEqual(['levelsOptions'])
+  })
+})

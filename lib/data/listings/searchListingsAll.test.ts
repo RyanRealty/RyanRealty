@@ -8,6 +8,7 @@ import {
   RANGE_FIELD_COLUMNS,
   LEGACY_PROPERTY_SUB_TYPE_MAP,
   resolveLegacyPropertySubType,
+  tokenScalarOrExpr,
 } from './searchPredicates'
 
 /**
@@ -321,5 +322,75 @@ describe('MV v4 long-tail tranche 2026-07-31 wiring (spot checks)', () => {
     ]) {
       expect(SEARCH_FEATURE_FILTER_KEYS, `'${key}' missing from feature-filter keys`).toContain(key)
     }
+  })
+})
+
+describe('filter-coverage fix (2026-07-31): semantics of noHoa and levels', () => {
+  it('noHoa matches explicit false, never the unknown/NULL side', () => {
+    // Was `notTrue` (IS DISTINCT FROM true), which swept in 761 live rows whose
+    // association_yn is NULL — "the listing did not answer", not "no HOA".
+    // Verified against listing_search_mv on 2026-07-31: false 4,325 · true
+    // 2,586 · NULL 761 over active rows; the DAL now returns 4,325, which is
+    // exactly `association_yn IS FALSE`.
+    expect(BOOLEAN_PREDICATES.noHoa).toEqual({ op: 'isFalse', col: 'association_yn' })
+  })
+
+  it('singleLevel stays an exact levels match, so it cannot claim a mixed home', () => {
+    // A row reading "One, Two" lists a one-story AND a two-story section. It is
+    // reachable through Stories = One (browse), but this filter promises
+    // "no stairs" — widening it would be the noHoa overclaim in another column.
+    expect(BOOLEAN_PREDICATES.singleLevel).toEqual({ op: 'eqValue', col: 'levels', value: 'One' })
+  })
+
+  it('levelsOptions is the only multiValueScalar field, and it is a scalar IN field', () => {
+    const flagged = SEARCH_FIELDS.filter((f) => f.multiValueScalar).map((f) => f.key)
+    expect(flagged).toEqual(['levelsOptions'])
+    const def = MULTI_FIELD_DEFS.find((d) => d.key === 'levelsOptions')!
+    expect(def.mv).toBe('levels')
+    expect(def.singleColumnIn).toBe(true)
+    // Any field carrying multiValueScalar must also be singleColumnIn — the DAL
+    // only consults it inside that branch.
+    for (const f of SEARCH_FIELDS) {
+      if (f.multiValueScalar) expect(f.singleColumnIn, `${f.key}`).toBe(true)
+    }
+  })
+})
+
+describe('tokenScalarOrExpr (multi-value scalar matching)', () => {
+  it('emits the four positional branches, each double-quoted', () => {
+    expect(tokenScalarOrExpr('levels', ['One'])).toBe(
+      'levels.eq."One",levels.like."One, *",levels.like."*, One",levels.like."*, One, *"',
+    )
+  })
+
+  it('unions the branches of every selected value into one or() expression', () => {
+    const expr = tokenScalarOrExpr('levels', ['One', 'Multi/Split'])
+    expect(expr.split(',').filter((s) => s.startsWith('levels.')).length).toBe(8)
+    expect(expr).toContain('levels.eq."Multi/Split"')
+    expect(expr).toContain('levels.like."*, Multi/Split, *"')
+  })
+
+  it('anchors on the separator so a token cannot match inside another value', () => {
+    // The bug a bare `*One*` substring match would reintroduce: no branch is an
+    // unanchored contains, every one pins the token to ', ' or a boundary.
+    for (const branch of tokenScalarOrExpr('levels', ['One']).split(',levels.')) {
+      expect(branch).not.toMatch(/like\."\*[A-Za-z]/)
+    }
+  })
+
+  it('strips the or()-grammar and LIKE metacharacters from injected values', () => {
+    // ", ( ) end the or() tree; % _ * \ are wildcards. None appear in registry
+    // vocabulary, so a URL-injected value is sanitized down to a literal that
+    // simply matches nothing rather than rewriting the filter.
+    const expr = tokenScalarOrExpr('levels', ['On"e,(x)*%_\\'])
+    expect(expr).toBe('levels.eq."Onex",levels.like."Onex, *",levels.like."*, Onex",levels.like."*, Onex, *"')
+  })
+
+  it('returns an empty expression when every value sanitizes away', () => {
+    // The empty string is the signal applySearchFilters keys off to fall back
+    // to whole-string IN. Skipping the predicate instead would drop the filter
+    // and return the unfiltered universe — verified against the live DAL
+    // 2026-07-31: levelsOptions=['%%%'] returns 0, not the 7,672-row universe.
+    expect(tokenScalarOrExpr('levels', ['%%%', '  '])).toBe('')
   })
 })

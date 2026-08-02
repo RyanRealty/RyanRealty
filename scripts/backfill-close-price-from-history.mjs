@@ -121,8 +121,15 @@ async function main() {
       summary.originalListPrice.rounds += 1
       summary.originalListPrice.totalUpdated += n
       summary.originalListPrice.lastBatch = n
-      console.log(`OriginalListPrice batch ${summary.originalListPrice.rounds}: updated ${n}`)
-      if (n === 0) break
+      const scanned = Number(data?.scanned ?? 0) || 0
+      console.log(
+        `OriginalListPrice batch ${summary.originalListPrice.rounds}: scanned ${scanned}, updated ${n}`
+      )
+      // p_limit bounds rows SCANNED (and therefore detoasted), not rows updated —
+      // a batch can legitimately update 0 while work remains, so the RPC's `done`
+      // flag is the only valid stop condition. See
+      // supabase/migrations/20260801052500_bound_details_backfill_rpcs.sql
+      if (data?.done === true) break
     }
   }
 

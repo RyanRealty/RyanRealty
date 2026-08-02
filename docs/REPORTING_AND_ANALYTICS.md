@@ -47,7 +47,7 @@ Once a **closed** listing has full history and media synced, it is marked `histo
 ## Migrations
 
 - `20250305100000_reporting_cache_and_indexes.sql`: report cache table, `refresh_listings_breakdown()`, `get_listings_breakdown()` reading from cache, and indexes for listings and listing_history.
-- `20250304100000_sync_history_and_media_counts.sql`: `get_listing_media_counts()` for admin photos/videos counts.
+- `20250304100000_sync_history_and_media_counts.sql`: `get_listing_media_counts()` for admin photos/videos counts. **Dropped 2026-08-01** by `20260801052000_drop_get_listing_media_counts.sql` — it was an unbounded `listings.details` scan with no callers.
 - Finalized sync and report migration: `CloseDate`, `ListDate`, `history_finalized`, `media_finalized` on listings; indexes; report RPC implementation.
 - `20250305120000_rename_report_functions.sql`: `get_city_period_metrics()`, `get_city_price_bands()` (generic names used by the app).
 

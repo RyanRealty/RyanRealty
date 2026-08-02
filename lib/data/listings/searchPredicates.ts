@@ -31,10 +31,55 @@ export function ilikeExact(value: string): string {
   return value.replace(/[%_*\\]/g, '').trim()
 }
 
+/**
+ * Sanitize a value for embedding inside a DOUBLE-QUOTED PostgREST `or()`
+ * literal. On top of the LIKE wildcards, the or() grammar itself reserves
+ * `"` , `,` , `(` and `)` — a URL-injected one would close the quote and
+ * rewrite the filter tree. No registry vocabulary uses any of them, so a
+ * stripped value simply matches nothing.
+ */
+export function orLiteral(value: string): string {
+  return value.replace(/[%_*\\"(),]/g, '').trim()
+}
+
+/**
+ * PostgREST `or()` branch set matching a ', '-joined SCALAR list column by
+ * TOKEN, for registry fields flagged `multiValueScalar`.
+ *
+ * `levels` is the one such column: the feed multi-selects into it, so 106
+ * on-market rows read "One, Two" or "Three Or More, Multi/Split". Whole-string
+ * IN matched none of them and those homes were unreachable from every Stories
+ * option. Four branches per value cover the four positions a token can hold —
+ * sole value, first, last, interior. Each value is double-quoted so the comma
+ * inside a pattern is not read as an or() separator, and `*` is PostgREST's
+ * LIKE wildcard.
+ *
+ * Exact by construction, never substring: every branch anchors the token
+ * against ', ' or a string boundary, so 'One' cannot match inside another
+ * value the way a bare `*One*` would.
+ */
+export function tokenScalarOrExpr(col: string, values: readonly string[]): string {
+  return values
+    .map(orLiteral)
+    .filter(Boolean)
+    .flatMap((v) => [
+      `${col}.eq."${v}"`,
+      `${col}.like."${v}, *"`,
+      `${col}.like."*, ${v}"`,
+      `${col}.like."*, ${v}, *"`,
+    ])
+    .join(',')
+}
+
 export type BooleanPredicate =
   | { op: 'isTrue'; col: string }
-  /** col IS DISTINCT FROM true (noHoa). */
-  | { op: 'notTrue'; col: string }
+  /**
+   * col IS FALSE (noHoa). Explicit false only — NULL is "the listing did not
+   * answer", never "no". Replaced `notTrue` (IS DISTINCT FROM true) on
+   * 2026-07-31: that swept 761 live unknown-HOA rows into a filter labelled
+   * "No HOA".
+   */
+  | { op: 'isFalse'; col: string }
   | { op: 'eqValue'; col: string; value: string }
   | { op: 'containsAll'; col: string; values: readonly string[] }
   | { op: 'overlapsAny'; col: string; values: readonly string[] }
@@ -57,7 +102,7 @@ export const BOOLEAN_PREDICATES = {
   basement: { op: 'isTrue', col: 'basement_yn' },
   horseProperty: { op: 'isTrue', col: 'horse_yn' },
   seniorCommunity: { op: 'isTrue', col: 'senior_community_yn' },
-  noHoa: { op: 'notTrue', col: 'association_yn' },
+  noHoa: { op: 'isFalse', col: 'association_yn' },
   irrigationRights: { op: 'isTrue', col: 'irrigation_water_rights_yn' },
   hasVirtualTour: { op: 'isTrue', col: 'has_virtual_tour' },
   hasOpenHouse: { op: 'isTrue', col: 'has_open_house' },

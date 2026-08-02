@@ -344,11 +344,7 @@
     },
     "architecturalStyles": {
       "candidateGaps": [
-        "A-Frame",
-        "Colonial",
-        "Other",
-        "Tudor",
-        "Victorian"
+        "Other"
       ],
       "classes": [
         "A",
@@ -674,10 +670,7 @@
     },
     "constructionMaterials": {
       "candidateGaps": [
-        "ICFs (Insulated Concrete Forms)",
         "Rammed Earth",
-        "Straw",
-        "Structural Insulated Panels",
         "Unknown"
       ],
       "classes": [
@@ -757,14 +750,9 @@
         "Coos",
         "Curry",
         "Del Norte",
-        "Douglas",
         "Gilliam",
-        "Grant",
         "Harney",
         "Hood River",
-        "Jackson",
-        "Josephine",
-        "Lane",
         "Lincoln",
         "Linn",
         "Malheur",
@@ -3204,10 +3192,7 @@
       "viaValue": null
     },
     "listingTerms": {
-      "candidateGaps": [
-        "Assumable",
-        "Trust Deed"
-      ],
+      "candidateGaps": [],
       "classes": [
         "A",
         "B",
@@ -3980,29 +3965,10 @@
     },
     "poolFeatures": {
       "candidateGaps": [
-        "Black Bottom",
-        "Cabana",
-        "Diving Board",
-        "ENERGY STAR Qualified Pool Pump",
-        "Electric Heat",
-        "Fiberglass",
-        "Filtered",
-        "Gas Heat",
-        "Gunite",
-        "Infinity",
-        "Liner",
         "None",
         "Other",
-        "Pool Sweep",
-        "Salt Water",
         "Screen Enclosure",
-        "See Remarks",
-        "Solar Cover",
-        "Solar Heat",
-        "Sport",
-        "Tile",
-        "Vinyl",
-        "Waterfall"
+        "See Remarks"
       ],
       "classes": [
         "A",
@@ -4478,13 +4444,7 @@
       "viaValue": null
     },
     "roofTypes": {
-      "candidateGaps": [
-        "Built-Up",
-        "Rolled/Hot Mop",
-        "Rubber",
-        "Shake",
-        "Slate"
-      ],
+      "candidateGaps": [],
       "classes": [
         "A",
         "B",
@@ -4900,16 +4860,7 @@
       "viaValue": null
     },
     "specialConditions": {
-      "candidateGaps": [
-        "Auction",
-        "Bankruptcy Property",
-        "Conservatorship",
-        "HUD Owned",
-        "In Foreclosure",
-        "Notice Of Default",
-        "Short Sale",
-        "Third Party Approval"
-      ],
+      "candidateGaps": [],
       "classes": [
         "A",
         "B",
@@ -5155,12 +5106,7 @@
       "viaValue": null
     },
     "viewTypes": {
-      "candidateGaps": [
-        "Bay",
-        "Beach",
-        "Ocean",
-        "Orchard"
-      ],
+      "candidateGaps": [],
       "classes": [
         "A",
         "B",
@@ -5668,7 +5614,7 @@
       "curation": 78,
       "derived": 6
     },
-    "candidateGapTotal": 189,
+    "candidateGapTotal": 139,
     "curationAdditionTotal": 5,
     "exclusions": 12,
     "longTailCustomCount": 222,
