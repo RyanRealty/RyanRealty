@@ -85,6 +85,20 @@ html.lenis, html.lenis body{height:auto;}
   display:flex;align-items:center;justify-content:space-between;
   padding:16px 24px;
   pointer-events:none;
+  /* Navy scrim at 72% under the pre-scroll (transparent-over-hero) state.
+     Two jobs: (1) guarantees the white nav text (.topbar a{color:#fff} below)
+     reads at >=4.5:1 against ANY hero photo brightness, not just the ones we
+     happened to test against, and (2) gives contrast checkers a real
+     ancestor background-color to compute from. Without this, pa11y/HTML_CS
+     can't see the <img>/<video> hero (it's a sibling, not a CSS background,
+     so DOM-based contrast tools default to "no background" and report a
+     false ~1:1 ratio) -- WCAG2AA.1_4_3 flagged all 9 nav items on all 8
+     pages (audit-e2e, 2026-08-02). Same hue as .scrolled below so the
+     transition (background .3s ease, above) is a pure alpha ramp, not a
+     hue jump. Sanctioned by design-system: "black is allowed for
+     text-on-photo legibility and scrim layers" (CLAUDE.md §3), navy reads
+     as the on-brand choice here since it already IS the scrolled color. */
+  background:rgba(16,39,66,.72);
   transition:background .3s ease, padding .3s ease;
 }
 .kb-root .topbar.scrolled{background:var(--navy);padding-top:11px;padding-bottom:11px;}

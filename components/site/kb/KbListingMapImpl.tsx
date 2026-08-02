@@ -169,8 +169,14 @@ export function KbListingMapImpl({
       const dot: google.maps.Symbol = { path: g.SymbolPath.CIRCLE, scale: 5, fillColor: NAVY, fillOpacity: 1, strokeColor: CREAM, strokeWeight: 1.4 }
       const markers = geojson.features.slice(0, MAX_MARKERS).map((f) => {
         const [lng, lat] = f.geometry.coordinates
-        const m = new g.Marker({ position: { lat, lng }, icon: dot })
         const p = f.properties
+        // a11y: google.maps.Marker's `title` is the documented accessibility-text
+        // hook (Google's own docs: "an accessibility text... will be added to the
+        // marker"). Without it the marker's internal clickable div ships as an
+        // unlabeled role="button" — pa11y WCAG2AA.4_1_2 flagged every dot on
+        // /cities pages. ListingMapGoogle.tsx already does this for the
+        // single-listing map; this mirrors that proven pattern.
+        const m = new g.Marker({ position: { lat, lng }, icon: dot, title: `${money(p.p)} · ${p.a || 'Listing'}` })
         m.addListener('click', () => {
           const specs = [p.bd != null ? `${p.bd} bd` : '', p.ba != null ? `${p.ba} ba` : '', p.sf ? `${Number(p.sf).toLocaleString('en-US')} sf` : '']
             .filter(Boolean).map((s) => `<span>${s}</span>`).join('')
@@ -183,7 +189,7 @@ export function KbListingMapImpl({
       const renderer: Renderer = {
         render: ({ count, position }) => {
           const r = count < 25 ? 17 : count < 100 ? 21 : count < 400 ? 26 : 32
-          return new g.Marker({ position, zIndex: 1000 + count, icon: { path: g.SymbolPath.CIRCLE, scale: r, fillColor: NAVY, fillOpacity: 1, strokeColor: 'rgba(250,248,244,0.9)', strokeWeight: 2 }, label: { text: String(count), color: CREAM, fontSize: '13px', fontWeight: '700' } })
+          return new g.Marker({ position, zIndex: 1000 + count, icon: { path: g.SymbolPath.CIRCLE, scale: r, fillColor: NAVY, fillOpacity: 1, strokeColor: 'rgba(250,248,244,0.9)', strokeWeight: 2 }, label: { text: String(count), color: CREAM, fontSize: '13px', fontWeight: '700' }, title: `${count} listings` })
         },
       }
       // radius 80 (default 60): adjacent cluster bubbles overlapped at region
@@ -193,8 +199,8 @@ export function KbListingMapImpl({
       // towns + Cascade peaks (region scope only)
       const overlays: google.maps.Marker[] = []
       if (showRegionMarkers) {
-        for (const t of TOWNS) overlays.push(new g.Marker({ position: { lat: t.c[1], lng: t.c[0] }, map, clickable: false, icon: { path: g.SymbolPath.CIRCLE, scale: 3, fillColor: NAVY, fillOpacity: 0.9, strokeColor: CREAM, strokeWeight: 1.5 }, label: { text: t.n, color: NAVY, fontSize: '11px', fontWeight: '700', className: 'kb-map-town-lbl' } }))
-        for (const t of PEAKS) overlays.push(new g.Marker({ position: { lat: t.c[1], lng: t.c[0] }, map, clickable: false, icon: { path: 'M 0,-6 L 5,4 L -5,4 Z', fillColor: NAVY, fillOpacity: 0.85, strokeColor: CREAM, strokeWeight: 1, scale: 1.1, anchor: new g.Point(0, 4) }, label: { text: t.n, color: NAVY, fontSize: '10px', fontWeight: '600', className: 'kb-map-peak-lbl' } }))
+        for (const t of TOWNS) overlays.push(new g.Marker({ position: { lat: t.c[1], lng: t.c[0] }, map, clickable: false, title: t.n, icon: { path: g.SymbolPath.CIRCLE, scale: 3, fillColor: NAVY, fillOpacity: 0.9, strokeColor: CREAM, strokeWeight: 1.5 }, label: { text: t.n, color: NAVY, fontSize: '11px', fontWeight: '700', className: 'kb-map-town-lbl' } }))
+        for (const t of PEAKS) overlays.push(new g.Marker({ position: { lat: t.c[1], lng: t.c[0] }, map, clickable: false, title: t.n, icon: { path: 'M 0,-6 L 5,4 L -5,4 Z', fillColor: NAVY, fillOpacity: 0.85, strokeColor: CREAM, strokeWeight: 1, scale: 1.1, anchor: new g.Point(0, 4) }, label: { text: t.n, color: NAVY, fontSize: '10px', fontWeight: '600', className: 'kb-map-peak-lbl' } }))
       }
       overlaysRef.current = overlays
 
