@@ -2,9 +2,8 @@
 name: marketing-brain-produce
 description: >
   Direct producer invocation. Bypasses the weekly cycle to call a specific
-  producer for a specific deliverable. Use when Matt says "make a listing
-  video for", "create a flyer for", "update the copy on", "draft a GBP post",
-  "send an email to", "run the listing reel for", "make a news clip about",
+  producer for a specific deliverable. Use when Matt says "create a flyer
+  for", "update the copy on", "draft a GBP post", "send an email to",
   "write a blog post on", "create a carousel for", or any request naming a
   specific deliverable + specific target. Also fires on "produce <anything>"
   and "/produce <anything>".
@@ -32,14 +31,10 @@ growth-frozen (`ci:producer-freeze`); see CLAUDE.md "Producer-layer freeze."
 ## 1. When to use this skill
 
 Matt says any of:
-- "make a listing video for 1234 NW Foo St"
 - "create a flyer for the Tetherow listing"
 - "update the home page hero copy"
 - "draft a GBP post for the new listing"
-- "run the listing reel for MLS 220189422"
-- "make a news clip about the wildfire risk story"
 - "write a blog post on the Bend inventory spike"
-- "create a market report video for Bend"
 - "make a carousel for the Awbrey Butte listing"
 - "produce a just-listed flyer for.."
 - "send a seller alert email to the list"
@@ -74,14 +69,7 @@ Extract three things from Matt's message:
 Common mappings:
 | Matt says | action_type |
 |---|---|
-| "listing video", "listing tour", "tour video" | `content:listing_video` |
-| "listing reel", "just-listed reel", "listing reveal" | `content:listing_reel` |
 | "full listing package", "list kit" | `content:list_kit` |
-| "market report video", "market video" | `content:market_video` |
-| "market data short" | `content:market_data_short` |
-| "YouTube market report", "long-form market" | `content:market_youtube_longform` |
-| "news clip", "news video" | `content:news_clip` |
-| "neighborhood tour", "area guide" | `content:neighborhood_tour` |
 | "blog post", "blog" | `content:blog_post` |
 | "Facebook ad", "FB ad", "lead gen ad" | `content:fb_lead_gen_ad` |
 | "flyer", "just-listed flyer" | `content:just_listed_flyer` |
@@ -89,8 +77,16 @@ Common mappings:
 | "feature sheet", "property sheet" | `content:feature_sheet` |
 | "Instagram carousel", "carousel" | `content:ig_carousel` |
 | "CMA", "comparative market analysis", "create a CMA for", "what's this property worth", "pricing opinion on" | `content:cma` |
-| "GBP post", "Google Business post" | `ops:gbp_review_response` |
+| "GBP post", "Google Business post" | `ops:gbp_post` |
 | "update home page", "edit site copy" | `site:copy_update` |
+
+**Retired formats.** Video producers (listing video/reel, market report video,
+market data short, YouTube long-form market, news clip, neighborhood tour)
+were decommissioned 2026-06-14 by Matt directive.  their registry rows are
+gone, there is nothing left to dispatch.  If Matt asks for one of these, say
+so plainly: "that format is retired" plus the nearest live alternative (list
+kit, IG single post, carousel, flyer, blog post).  Never silently substitute
+a retired action_type or invent a producer path that no longer exists.
 
 **target:** What the action is about. Format:
 - For listings: `mls:<MlsId>` (e.g. `mls:220189422`).  resolve from address if Matt gives one
@@ -105,7 +101,7 @@ Common mappings:
 - `address`.  if Matt gave an address instead of MLS#
 - `city`.  for market reports
 - `open_house_date`.  for open house flyers
-- `topic`.  for blog posts and news clips
+- `topic`.  for blog posts
 - `campaign_id`.  for Meta Ads
 - `target_audience`.  if Matt specified
 - Any other detail Matt included
@@ -132,10 +128,9 @@ If the request could map to more than one action_type, ask Matt ONE
 clarifying question before proceeding:
 
 Examples:
-- "listing video or listing reel? (video = 60-90s tour, reel = 40-48s viral)"
-- "short-form market video or YouTube long-form?"
 - "just-listed flyer or full feature sheet?"
 - "GBP post or Instagram carousel?"
+- "single IG post or a full list kit (flyer + post + carousel)?"
 
 Never guess. One disambiguation question, then proceed.
 
@@ -233,11 +228,11 @@ Matt says "ship it" / "approved" / "go":
 
 ### Pattern: ambiguous listing format
 ```
-Matt: "make a video for 1234 NW Foo St"
-Brain: "Listing reel (40-48s viral, no VO captions only) or listing tour
-       (60-90s with Victoria VO)? Both use the same MLS photos."
-Matt: "reel"
-Brain: → action_type='content:listing_reel', dispatches listing_reveal producer
+Matt: "make something for 1234 NW Foo St"
+Brain: "Just-listed flyer (static, single image, fastest to publish) or
+       Instagram carousel (multi-photo swipe, 5-10 min build)?"
+Matt: "carousel"
+Brain: → action_type='content:ig_carousel', dispatches instagram-carousel producer
 ```
 
 ### Pattern: address with multiple matches
@@ -258,12 +253,12 @@ Brain: → action_type='site:copy_update', target='/', payload={section:'hero', 
        → dispatches site-edit producer (pending build)
 ```
 
-### Pattern: news clip
+### Pattern: topical blog post
 ```
-Matt: "make a news clip about the wildfire risk story I saw on KTVZ"
-Brain: → action_type='content:news_clip', target='topic:wildfire-risk-2026'
+Matt: "write something about the wildfire risk story I saw on KTVZ"
+Brain: → action_type='content:blog_post', target='topic:wildfire-risk-2026'
        → payload={source_url:'<URL Matt provides or WebSearch result>', topic:'wildfire risk Bend 2026'}
-       → dispatches news-video producer
+       → dispatches blog-post producer
 ```
 
 ### Pattern: ops action

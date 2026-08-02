@@ -29,7 +29,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
-import Anthropic from '@anthropic-ai/sdk'
+import { createAnthropic, PRODUCER_MODEL, modelCostUsd } from '@/lib/ai/anthropic'
+import type Anthropic from '@anthropic-ai/sdk'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { createServiceClient } from '@/lib/supabase/service'
 import { persistDeliverable, resolveBrokerSlugForAction } from '@/lib/marketing-brain/deliverable-library'
@@ -42,9 +43,7 @@ import {
 
 export const maxDuration = 300
 
-const MODEL = 'claude-sonnet-4-5'
-const INPUT_COST_PER_TOKEN = 0.000003   // $3.00 / 1M
-const OUTPUT_COST_PER_TOKEN = 0.000015  // $15.00 / 1M
+const MODEL = PRODUCER_MODEL
 const PER_ROW_COST_CEILING_USD = 5.00
 const PER_RUN_COST_CEILING_USD = 15.00
 const DEFAULT_MAX_ROWS = 3
@@ -68,7 +67,7 @@ interface RuntimeError {
 }
 
 function computeCostUsd(inputTokens: number, outputTokens: number): number {
-  return inputTokens * INPUT_COST_PER_TOKEN + outputTokens * OUTPUT_COST_PER_TOKEN
+  return modelCostUsd(MODEL, inputTokens, outputTokens)
 }
 
 async function logCost(
@@ -161,7 +160,7 @@ export async function GET(request: NextRequest) {
     })
   }
 
-  const client = new Anthropic({ apiKey: anthropicKey })
+  const client = createAnthropic(anthropicKey)
   const executed: RuntimeResult[] = []
   const errors: RuntimeError[] = []
   const deferred: Array<{ action_id: string; producer_slug: string; output_class: string }> = []
@@ -360,6 +359,28 @@ export async function GET(request: NextRequest) {
       if (!persisted.ok) console.error(`[producer-runtime] deliverable persist failed for ${row.id}:`, persisted.error)
     } catch (err) {
       console.error(`[producer-runtime] deliverable persist threw for ${row.id}:`, err)
+    }
+
+    // R3.1 (BROKER_SMS_AGENT_2026-07-31) — a broker-initiated request can
+    // finish as a TEXT producer on this hourly cloud path (not only via the
+    // local render worker), so it needs its own notify hook. Never blocks or
+    // fails the row: a notify failure is logged and swallowed, matching the
+    // render-worker's notifyMattReady contract.
+    const requestPayload = (row.payload ?? {}) as Record<string, unknown>
+    if (requestPayload.requested_via === 'broker_sms' && requestPayload.requested_by_cell) {
+      try {
+        const previewUrl =
+          (updatedEnvelope as Record<string, unknown>).preview_url ??
+          (updatedEnvelope as Record<string, unknown>).draft_path ??
+          'check the approval queue'
+        const { sendAgentSms } = await import('@/lib/agent/send')
+        await sendAgentSms({
+          to: String(requestPayload.requested_by_cell),
+          body: `Draft ready: ${previewUrl}. Reply APPROVE to post, or tell me what to change.`,
+        })
+      } catch (err) {
+        console.warn(`[producer-runtime] broker notify failed for ${row.id} (non-blocking):`, err)
+      }
     }
 
     await logCost(supabase, row.id, costUsd, {

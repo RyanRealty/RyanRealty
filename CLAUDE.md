@@ -117,6 +117,10 @@ approval, a passing gate is never approval, a successful build is never approval
 3. **Ad spend** — creating, changing, or scaling paid campaigns.
 4. **OAuth grants** — connecting accounts or granting scopes.
 
+**Broker self-approval (2026-08-01):** `content:*` drafts a broker initiates on the broker
+SMS agent line are approved by that broker (APPROVE reply = the stamp, same 7-day freshness;
+Matt gets a daily digest). Everything else above is unchanged.
+
 **One commit-time class keeps an approval marker:** rendered content deliverables (video files
 in tracked `public/` paths) require `Approved-by: matt` or `Draft-shown: <url>` in the commit
 message — enforced by `scripts/check-draft-first.mjs` via the commit-msg hook. Everything else
@@ -503,12 +507,10 @@ retention.
    [`load-amboqia.ts`](video_production_skills/captions/canonical/load-amboqia.ts) before the
    first render — a caption render without the brand font is a ship-blocker.
 
-*Migration status (re-verified 2026-07-24):* legacy caption components still exist
-(`video/market-report/CaptionBand`, `KineticCaptions`, `video/earnest/brand/CaptionBand`,
-`video/evergreen-education/components/CaptionBand`, `listing_video_v4/src/news/SentenceCaption`).
-Migration replaces the legacy body with a re-export of the canonical component. **Known
-breakage:** several gate-excluded comps under `video/` import a `safe-zones` path that no
-longer exists and do not compile — repoint them to the canonical path when you next touch one.
+*Migration status (2026-07-24):* legacy caption components remain under `video/*` and
+`listing_video_v4` — migrate each to a re-export of the canonical component when touched.
+**Known breakage:** several gate-excluded comps under `video/` import a dead `safe-zones`
+path and do not compile — repoint when next touched.
 
 ## VO — ElevenLabs Victoria, mandatory
 **Voice: Victoria, ID `qSeXEcewz7tA0Q0qk9fH`** (locked 2026-04-27, permanent — saved as
@@ -623,9 +625,8 @@ push. Cheaper to fix in `out/` than to revert a public commit.
 Any agent producing content, writing site copy, mutating ad campaigns, or sending
 communications on behalf of Ryan Realty reads this first.
 
-**Producer freeze LIFTED 2026-07-21.** Gate G45 and its baseline are deleted; new producers may
-be added again. Every producer still routes through the action-row protocol, the approval
-queue, and the voice/QA gates — the freeze governed growth, never those controls.
+**Producer freeze lifted 2026-07-21** (G45 deleted); producers still route through the
+action-row protocol, the approval queue, and the voice/QA gates.
 
 ## Three invocation modes
 
@@ -730,10 +731,8 @@ is the canonical compound-producer pattern — one data pull fans out to 5 paral
 verification trace per figure, kit-manifest.json, approval gate, publish step, asset-library
 registration. Read it before building any new orchestrator-class producer.
 
-*Platform token status (verified 2026-05-06):* Meta Page token is long-lived with full
-publishing scopes — IG/FB publishing is LIVE. LinkedIn, YouTube, X, GBP have tokens (some
-auto-refresh on first call). TikTok / Pinterest / Threads OAuth tables are empty and need a
-first-time connect.
+*Platform tokens (2026-05-06):* Meta LIVE with publishing scopes; LinkedIn/YouTube/X/GBP
+tokened; TikTok/Pinterest/Threads need a first-time OAuth connect.
 
 ---
 
@@ -969,6 +968,7 @@ task. Everything else fires on trigger match.
 | Seller LP follow-up workflow | **The in-house CRM sequence engine.** `app/lp/seller-home-value/actions.ts` → `autoEnrollByFubId()` in [`lib/crm/enroll.ts`](lib/crm/enroll.ts); `/api/cron/crm-auto-enroll` sweeps misses; `/api/cron/crm-sequence-engine` fires touches (pause-on-reply lives inside it); `/api/cron/crm-scheduled-sends` delivers. Sequences edited at `/admin/crm/sequences`. |
 | Expired / Canceled / Withdrawn listing workflow | [`marketing_brain_skills/producers/expired-listing-lp/SKILL.md`](marketing_brain_skills/producers/expired-listing-lp/SKILL.md) · `/lp/expired-listing` · `public.expired_listings`. Detection runs inside the delta sync, NOT on a schedule — the `detect-expired-listings` route exists but is not registered in `vercel.json`. Voice: authentic, never salesy, no "most agents do X" framing. |
 | Per-broker agent attribution | `?agent=<slug>` (`matt`, `rebecca`, `paul`, or full-name variants) → `components/AgentAttributionBridge.tsx` writes the `rr_agent_attribution` cookie (90-day). Server: `readAttributedAgentServer()` in `app/actions/agent-attribution-read.ts`. Both LP forms call it and override the default Matt-routing when set. |
+| Broker texts the marketing line (SMS agent) | [`docs/plans/BROKER_SMS_AGENT_2026-07-31.md`](docs/plans/BROKER_SMS_AGENT_2026-07-31.md) · `lib/agent/` |
 | Supabase market-data tables | §7 and the three docs it names |
 | Asset library | manifest at `data/asset-library/manifest.json`, CLI at [`lib/asset-library.mjs`](lib/asset-library.mjs). Photos carry vision grades — search the `vision_*` fields. |
 | CMA / valuation ("what's this property worth", "pricing opinion on…") | [`marketing_brain_skills/producers/cma/SKILL.md`](marketing_brain_skills/producers/cma/SKILL.md) — branded HTML CMA, signed by the broker handling the listing (resolved from `public.brokers`, falls back to Matt). Recorded in `public.cmas` + `cma_comps`. |

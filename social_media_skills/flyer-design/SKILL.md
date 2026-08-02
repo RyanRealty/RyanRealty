@@ -69,7 +69,7 @@ All 800×1200 px, pure white bg, identical head height, natural color. Specs in 
 - Deliverable intent: print (`8.5x11`, postcard, etc.), digital feed (`1080x1350` / `1080x1080`),
   or both.
 - **Listing agent headshot**.  resolved from `ListAgentFullName` to one of the three broker headshots at `design_system/ryan-realty/assets/team/`. Required for any listing flyer. Missing headshot = stop and resolve before building.
-- CTA + compliance copy (phone, email, URL, legal footer if required).
+- CTA + compliance copy (phone, email, URL, legal footer with the brokerage name, Ryan Realty. required on every flyer).
 
 If any input is missing, stop and request it. Do not fabricate.
 
@@ -136,7 +136,9 @@ strip (beds/baths/sqft/lot/built/garage) · brand-clean description · **3×2 ti
 distinct-register interior photos with corner labels · **cream signature sign-off** (listing
 agent's uncropped transparent-cutout headshot + name in Amboqia + role + `phone · web`) ·
 **tracked QR** to the live listing (bottom-right, "Scan to tour this listing"). **No navy footer
-bar. No disclaimer line.** Navy `#102742` + cream `#faf8f4` only.
+bar. No disclaimer line.** Navy `#102742` + cream `#faf8f4` only. Even without the footer bar,
+the flyer must carry "Ryan Realty" in the contact block. attribution is unconditional
+(Oregon brokerage-name-in-advertising rule, OAR 863-015-0215).
 
 ### Run
 
@@ -283,7 +285,7 @@ A flyer is NON-SHIP if any check fails:
    posing as a filmstrip; hero subject reads as sky/lot instead of structure; unchecked
    `design_review_checklist` (any `fail`).
 6. Cluttered layout: more than 3 hierarchy levels competing in the same panel.
-7. Missing legal/compliance footer when required for listing status/type.
+7. Missing brokerage attribution (Ryan Realty) anywhere on the flyer, or missing legal/compliance footer.
 8. Banned/cliche copy from brand rules or filler claims unsupported by listing facts.
 
 ## Output package

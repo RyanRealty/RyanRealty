@@ -2,41 +2,28 @@
  * POST /api/admin/run-producer/[id]
  *
  * One-shot manual trigger for a single marketing_brain_actions row.
- * Executes the producer recipe via the Anthropic Messages API and
- * transitions the row to 'ready'. Identical logic to the producer-runtime
- * cron but processes exactly one row and requires admin cookie auth.
+ *
+ * R3.1 (docs/plans/BROKER_SMS_AGENT_2026-07-31.md): the actual "classify ->
+ * execute via the Anthropic Messages API -> transition to 'ready'" logic
+ * moved to lib/marketing-brain/run-producer-core.ts (runProducerRow), shared
+ * with the broker SMS agent's run_now/revise_action tools. This route is now
+ * just admin auth + the pending/in_production status precondition + the
+ * one-shot dispatch envelope + the runProducerRow call. NO behavior change
+ * from the pre-extraction version.
  *
  * The row must be in 'pending' or 'in_production' status. If it is
  * 'pending', this route transitions it to 'in_production' first, then
- * executes. If it is already 'in_production', it executes directly.
+ * executes.
  *
  * Returns:
- *   { ok: true, action_id, new_status, cost_usd, input_tokens, output_tokens }
+ *   { ok: true, action_id, new_status, cost_usd, input_tokens, output_tokens, draft_summary }
  * on success, or { error, requires_billing_action } on failure.
  */
 import { NextRequest, NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
-import Anthropic from '@anthropic-ai/sdk'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { persistDeliverable, resolveBrokerSlugForAction } from '@/lib/marketing-brain/deliverable-library'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import {
-  classifyProducerFromDisk,
-  canCloudComplete,
-  buildTextProducerSystemPrompt,
-  buildVisualDeferralEnvelope,
-} from '@/lib/marketing-brain/producer-output-class'
-
-const MODEL = 'claude-sonnet-4-5'
-const INPUT_COST_PER_TOKEN = 0.000003
-const OUTPUT_COST_PER_TOKEN = 0.000015
-const PER_ROW_COST_CEILING_USD = 5.00
-
-function computeCostUsd(inputTokens: number, outputTokens: number): number {
-  return inputTokens * INPUT_COST_PER_TOKEN + outputTokens * OUTPUT_COST_PER_TOKEN
-}
+import { runProducerRow } from '@/lib/marketing-brain/run-producer-core'
 
 export async function POST(
   _request: NextRequest,
@@ -53,8 +40,7 @@ export async function POST(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const anthropicKey = process.env.ANTHROPIC_API_KEY
-  if (!anthropicKey) {
+  if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: 'ANTHROPIC_API_KEY is not configured' }, { status: 500 })
   }
 
@@ -64,7 +50,7 @@ export async function POST(
   // Fetch the row.
   const { data: row, error: fetchErr } = await service
     .from('marketing_brain_actions')
-    .select('id, action_type, assigned_producer, payload, executor_response, status')
+    .select('id, status, assigned_producer')
     .eq('id', id)
     .single()
 
@@ -104,221 +90,41 @@ export async function POST(
     }
   }
 
-  const producerSlug = row.assigned_producer ?? 'unknown'
-  const skillPath = path.join(process.cwd(), producerSlug, 'SKILL.md')
+  const result = await runProducerRow(id, { triggeredBy: 'admin_manual' })
 
-  // Classify from output_type. Visual producers cannot be rendered in this
-  // serverless route — refuse rather than let the model fabricate a draft_path
-  // + citations + scorecard for a deliverable that was never created
-  // (CLAUDE.md §0). They are deferred to the local render worker.
-  let cls: ReturnType<typeof classifyProducerFromDisk>['cls']
-  let skillContent: string
-  try {
-    const res = classifyProducerFromDisk(producerSlug, process.cwd())
-    cls = res.cls
-    skillContent = res.skillContent
-  } catch {
-    const msg = `SKILL.md not found at ${skillPath}`
-    await service.from('producer_execution_failures').insert({
-      action_id: id,
-      producer_slug: producerSlug,
-      phase: 'skill_load',
-      error_message: msg,
-      occurred_at: new Date().toISOString(),
-      retry_count: 0,
-      requires_billing_action: false,
-    })
-    return NextResponse.json({ error: msg }, { status: 422 })
+  if (!result.ok) {
+    if (result.error === 'ANTHROPIC_API_KEY is not configured' || result.error === 'Row not found') {
+      return NextResponse.json({ error: result.error }, { status: result.error === 'Row not found' ? 404 : 500 })
+    }
+    if (result.error?.startsWith('SKILL.md not found')) {
+      return NextResponse.json({ error: result.error }, { status: 422 })
+    }
+    const status = result.requiresBillingAction ? 502 : 422
+    return NextResponse.json(
+      { error: result.error, requires_billing_action: result.requiresBillingAction },
+      { status },
+    )
   }
 
-  if (!canCloudComplete(cls)) {
-    const deferEnvelope = buildVisualDeferralEnvelope(
-      (row.executor_response ?? {}) as Record<string, unknown>,
-      cls,
-      producerSlug,
-    )
-    await service
-      .from('marketing_brain_actions')
-      .update({ executor_response: deferEnvelope })
-      .eq('id', id)
-      .eq('status', 'in_production')
+  if (result.deferred) {
     return NextResponse.json({
       ok: true,
       action_id: id,
       deferred: true,
-      output_class: cls,
+      output_class: 'visual',
       new_status: 'in_production',
       reason:
         'Visual producer deferred to the local render worker (scripts/render-worker.mjs). The serverless runtime cannot render video/image/PDF/web-page deliverables; running it here would fabricate citations + scorecard for a file that was never created.',
     })
   }
 
-  // Text producer: hardened prompt — figures come from the (already verified)
-  // payload, never invented; citations trace to payload provenance.
-  const systemPrompt = buildTextProducerSystemPrompt(skillContent)
-
-  const userMessage = JSON.stringify({
-    action_id: row.id,
-    action_type: row.action_type,
-    payload: row.payload ?? {},
-  })
-
-  const client = new Anthropic({ apiKey: anthropicKey })
-  let response: Anthropic.Message
-  let inputTokens = 0
-  let outputTokens = 0
-
-  try {
-    response = await client.messages.create({
-      model: MODEL,
-      max_tokens: 4096,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userMessage }],
-    })
-    inputTokens = response.usage.input_tokens
-    outputTokens = response.usage.output_tokens
-  } catch (err) {
-    const errMsg = err instanceof Error ? err.message : String(err)
-    const isBilling = errMsg.includes('429') || errMsg.toLowerCase().includes('credit') || errMsg.toLowerCase().includes('billing')
-
-    await service.from('producer_execution_failures').insert({
-      action_id: id,
-      producer_slug: producerSlug,
-      phase: 'anthropic_call',
-      error_message: errMsg,
-      occurred_at: new Date().toISOString(),
-      retry_count: 0,
-      requires_billing_action: isBilling,
-    })
-
-    if (isBilling) {
-      await service
-        .from('marketing_brain_actions')
-        .update({ status: 'pending', executor_response: null })
-        .eq('id', id)
-        .eq('status', 'in_production')
-    }
-
-    return NextResponse.json({ error: errMsg, requires_billing_action: isBilling }, { status: 502 })
-  }
-
-  const costUsd = computeCostUsd(inputTokens, outputTokens)
-
-  if (costUsd > PER_ROW_COST_CEILING_USD) {
-    const msg = `Row cost $${costUsd.toFixed(4)} exceeds per-row ceiling $${PER_ROW_COST_CEILING_USD}`
-    await service.from('marketing_cost_ledger').insert({
-      action_id: id,
-      cost_type: 'anthropic_tokens',
-      amount_usd: costUsd,
-      metadata: { model: MODEL, input_tokens: inputTokens, output_tokens: outputTokens, action_phase: 'manual_execute', over_ceiling: true },
-      recorded_at: new Date().toISOString(),
-    })
-    await service.from('producer_execution_failures').insert({
-      action_id: id,
-      producer_slug: producerSlug,
-      phase: 'cost_ceiling',
-      error_message: msg,
-      occurred_at: new Date().toISOString(),
-      retry_count: 0,
-      requires_billing_action: false,
-    })
-    return NextResponse.json({ error: msg }, { status: 422 })
-  }
-
-  const rawText = response.content
-    .filter((b) => b.type === 'text')
-    .map((b) => (b as Anthropic.TextBlock).text)
-    .join('')
-
-  let producerOutput: Record<string, unknown>
-  try {
-    const stripped = rawText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
-    producerOutput = JSON.parse(stripped)
-  } catch {
-    const msg = 'Producer output is not valid JSON'
-    await service.from('producer_execution_failures').insert({
-      action_id: id,
-      producer_slug: producerSlug,
-      phase: 'output_parse',
-      error_message: msg,
-      occurred_at: new Date().toISOString(),
-      retry_count: 0,
-      requires_billing_action: false,
-    })
-    await service.from('marketing_cost_ledger').insert({
-      action_id: id,
-      cost_type: 'anthropic_tokens',
-      amount_usd: costUsd,
-      metadata: { model: MODEL, input_tokens: inputTokens, output_tokens: outputTokens, action_phase: 'manual_execute', parse_error: true },
-      recorded_at: new Date().toISOString(),
-    })
-    return NextResponse.json({ error: msg, raw_preview: rawText.slice(0, 300) }, { status: 422 })
-  }
-
-  // Only TEXT producers reach here (visual deferred above). The deliverable is
-  // the inline text — no rendered file, so no draft_path / scorecard.
-  const existingEnvelope = (row.executor_response ?? {}) as Record<string, unknown>
-  const updatedEnvelope: Record<string, unknown> = {
-    ...existingEnvelope,
-    producer_output: producerOutput,
-    output_class: 'text',
-    deliverable_text: producerOutput.deliverable_text ?? null,
-    publish_payload: producerOutput.publish_payload ?? null,
-    draft_summary: producerOutput.draft_summary ?? null,
-    citations: producerOutput.citations ?? [],
-    needs_render: false,
-    completed_at: new Date().toISOString(),
-    model: MODEL,
-    input_tokens: inputTokens,
-    output_tokens: outputTokens,
-    cost_usd: costUsd,
-    triggered_by: 'admin_manual',
-  }
-
-  const { error: updateErr } = await service
-    .from('marketing_brain_actions')
-    .update({ status: 'ready', executor_response: updatedEnvelope })
-    .eq('id', id)
-    .eq('status', 'in_production')
-
-  if (updateErr) {
-    return NextResponse.json({ error: updateErr.message }, { status: 500 })
-  }
-
-  // W10.2 — persist the finished deliverable into the requesting broker's
-  // library so it outlives this run (executor_response alone is not something a
-  // broker can come back to and download). Advisory on purpose: the producer run
-  // already succeeded, so a storage failure is logged, never surfaced as a 500.
-  try {
-    const brokerSlug = await resolveBrokerSlugForAction(id)
-    const persisted = await persistDeliverable({
-      actionId: id,
-      brokerSlug,
-      filename: `${String(row.action_type).replace(/[^a-z0-9]+/gi, '-')}.json`,
-      // Whole envelope — a fixed key list dropped content:cma output (round 4).
-        body: JSON.stringify({ action_type: row.action_type, ...updatedEnvelope }, null, 2),
-      contentType: 'application/json',
-    })
-    if (!persisted.ok) console.error('[run-producer] deliverable persist failed:', persisted.error)
-  } catch (err) {
-    console.error('[run-producer] deliverable persist threw:', err)
-  }
-
-  await service.from('marketing_cost_ledger').insert({
-    action_id: id,
-    cost_type: 'anthropic_tokens',
-    amount_usd: costUsd,
-    metadata: { model: MODEL, input_tokens: inputTokens, output_tokens: outputTokens, action_phase: 'manual_execute' },
-    recorded_at: new Date().toISOString(),
-  })
-
   return NextResponse.json({
     ok: true,
     action_id: id,
     new_status: 'ready',
-    cost_usd: costUsd,
-    input_tokens: inputTokens,
-    output_tokens: outputTokens,
-    draft_summary: producerOutput.draft_summary ?? null,
+    cost_usd: result.costUsd,
+    input_tokens: result.inputTokens,
+    output_tokens: result.outputTokens,
+    draft_summary: result.draftSummary ?? null,
   })
 }

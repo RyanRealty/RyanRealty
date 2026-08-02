@@ -9,9 +9,9 @@
  * 4. STOP/UNSUBSCRIBE keywords → suppression chokepoint (sms channel).
  */
 
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { DEFAULT_DESK_BROKER, brokerForTwilioNumber, verifiedTwilioParams, brokerTwilioNumber, forwardCellForBroker, normalizeTo10, sendSms } from '@/lib/crm/twilio'
+import { DEFAULT_DESK_BROKER, brokerForTwilioNumber, verifiedTwilioParams, brokerTwilioNumber, forwardCellForBroker, normalizeTo10, sendSms, MARKETING_NUMBER } from '@/lib/crm/twilio'
 import { getBrokerTelephony } from '@/lib/data/crm/getBrokerTelephony'
 import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPhone'
 import { markConversationUnreadOnInbound } from '@/app/actions/crm-inbox'
@@ -22,10 +22,15 @@ import { CRM_MAILBOXES, sendCrmEmail } from '@/lib/crm/gmail'
 import { classifyInboundReply, REPLY_INTENT_LABELS, type ReplyClassification } from '@/lib/crm/reply-intent'
 import { prospectOutreachContext } from '@/lib/crm/prospect-context'
 import { buildSuggestedReplyLink } from '@/components/admin/crm/composer-preload'
+import { handleAgentInbound, processAfterDebounce } from '@/lib/agent/ingress'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60
+// Raised from 60 (docs/plans/BROKER_SMS_AGENT_2026-07-31.md R1.2): the agent
+// branch below schedules a 20s-debounce + 30-120s model turn via after(),
+// which Vercel counts against this same function's execution budget. The
+// webhook itself still acks in well under a second on every branch.
+export const maxDuration = 300
 
 const STOP_WORDS = new Set(['stop', 'stopall', 'unsubscribe', 'cancel', 'end', 'quit'])
 const START_WORDS = new Set(['start', 'unstop', 'yes', 'resubscribe'])
@@ -40,6 +45,19 @@ function parseMms(params: Record<string, string>): Array<{ mediaSid: string; con
     const url = params[`MediaUrl${i}`] ?? ''
     const m = url.match(/\/Media\/(ME[a-f0-9]{32})/)
     if (m) out.push({ mediaSid: m[1], contentType: params[`MediaContentType${i}`] ?? 'application/octet-stream' })
+  }
+  return out
+}
+
+/** Raw Twilio Media URLs (authenticated, expiring — R2.6/R2.8 fetch them
+ *  later) for the broker SMS agent branch. Twin of parseMms() above, which
+ *  extracts mediaSid/contentType for the lead-flow timeline instead. */
+function rawMediaUrls(params: Record<string, string>): string[] {
+  const n = Number(params.NumMedia ?? 0)
+  const out: string[] = []
+  for (let i = 0; i < n && i < 10; i++) {
+    const url = params[`MediaUrl${i}`]
+    if (url) out.push(url)
   }
   return out
 }
@@ -59,6 +77,11 @@ function twiml(message?: string): NextResponse {
  * own cell must never be turned into a "lead" or re-forwarded. (True phone-native
  * two-way reply is the Conversations build on the roadmap; until then the forward
  * body directs the broker to reply in the app, which sends from the business line.)
+ *
+ * Also the branch point for the broker SMS agent (POST, below): the same
+ * "this is a broker's own cell" fact that used to mean an unconditional silent
+ * drop now ALSO means "maybe an agent turn" when the dialed number is the
+ * marketing line and the agent is enabled for that broker.
  */
 async function isBrokerForwardCell(phone: string): Promise<boolean> {
   const ten = normalizeTo10(phone)
@@ -84,19 +107,42 @@ export async function POST(request: Request) {
   const params = verified.params
 
   const from = params.From ?? ''
+  const to = params.To ?? ''
+  const body = (params.Body ?? '').trim()
+  const sid = params.MessageSid ?? `unknown-${Date.now()}`
+
   // Block gate: a blocked/spam number's texts are dropped silently (no log, no
   // alert, empty 200 so Twilio doesn't retry).
   const { isNumberBlocked } = await import('@/lib/data/crm/getBlockedNumber')
   if (await isNumberBlocked(from)) return twiml()
-  // Reply-loop guard: a text FROM a broker's own forward cell is that broker
-  // replying (or testing) in the forwarded phone thread — never a lead, never a
-  // re-forward. Drop it silently so it can't create a self-lead. (Real client
-  // replies come from the broker via the CRM composer, which sends from the
-  // business line.)
-  if (await isBrokerForwardCell(from)) return twiml()
-  const to = params.To ?? ''
-  const body = (params.Body ?? '').trim()
-  const sid = params.MessageSid ?? `unknown-${Date.now()}`
+
+  // Reply-loop guard / broker SMS agent branch (docs/plans/BROKER_SMS_AGENT_2026-07-31.md
+  // R1.1). A text FROM a broker's own forward cell TO the shared marketing
+  // line is either (a) the broker SMS agent, when BROKER_SMS_AGENT_ENABLED is
+  // 'true' AND that broker's own sms_agent_enabled flag is on, or (b) the
+  // broker replying/testing in the forwarded phone thread — never a lead,
+  // never a re-forward, dropped silently exactly as before the agent existed.
+  // (Real client replies come from the broker via the CRM composer, which
+  // sends from the business line.) Broker→their OWN business line (not the
+  // marketing line) is untouched by the agent branch and always drops here.
+  const isBrokerCell = await isBrokerForwardCell(from)
+  if (
+    isBrokerCell &&
+    normalizeTo10(to) === normalizeTo10(MARKETING_NUMBER) &&
+    process.env.BROKER_SMS_AGENT_ENABLED === 'true'
+  ) {
+    const result = await handleAgentInbound({ from, to, body, messageSid: sid, mediaUrls: rawMediaUrls(params) })
+    if (result.status === 'queued') {
+      after(() => processAfterDebounce(result.sessionId, result.messageSid, result.ctx))
+    }
+    // 'queued' work continues after this response via after(); 'not-agent'
+    // (per-broker pilot flag off) and 'duplicate' (Twilio webhook retry) are
+    // silent no-ops — every outcome here acks Twilio the same way the
+    // pre-agent guard below did.
+    return twiml()
+  }
+  if (isBrokerCell) return twiml()
+
   const firstToken = body.toLowerCase().split(/\s+/)[0] ?? ''
   const media = parseMms(params)
   const displayBody = body || (media.length ? `[${media.length} attachment${media.length > 1 ? 's' : ''}]` : '')

@@ -178,6 +178,77 @@ async function notifyMattReady(row, relArtifact) {
   }
 }
 
+/**
+ * Notify the REQUESTING BROKER (not Matt) when their broker-SMS-agent-
+ * initiated visual render lands as a draft (R3.1,
+ * docs/plans/BROKER_SMS_AGENT_2026-07-31.md). producer-runtime's cloud path
+ * carries the matching hook for text producers that finish there; visual
+ * producers always finish HERE, so this worker needs its own copy.
+ *
+ * Sent from the marketing line — the same thread the broker is texting —
+ * via the A2P messaging service, passing BOTH MessagingServiceSid AND From
+ * together (lib/crm/twilio.ts sendSms: a raw-From send skips the carrier
+ * queue and can sit `queued` for an hour on AT&T; through the service with
+ * From pinned it still sends from that exact number and gets the queue).
+ *
+ * HARD WHITELIST (same rule lib/agent/send.ts enforces for the in-app agent
+ * sender — applies everywhere the agent's replies can originate, not just
+ * the Next.js runtime): only ever sends to a number in the
+ * TWILIO_FORWARD_MATT/REBECCA/PAUL union. Never throws — a notify failure
+ * must not block or unwind the ready flip.
+ */
+const last10 = (p) => String(p ?? '').replace(/\D/g, '').slice(-10)
+const BROKER_CELL_WHITELIST = new Set(
+  [env.TWILIO_FORWARD_MATT, env.TWILIO_FORWARD_REBECCA, env.TWILIO_FORWARD_PAUL]
+    .map(last10)
+    .filter(Boolean),
+)
+
+async function sendTwilioSmsFromMarketing(to, body) {
+  const sid = env.TWILIO_ACCOUNT_SID
+  const token = env.TWILIO_AUTH_TOKEN
+  const svc = env.TWILIO_MESSAGING_SERVICE_SID
+  const from = env.TWILIO_NUMBER_MARKETING || '+15412245025'
+  const form = new URLSearchParams({ To: to, MessagingServiceSid: svc, From: from, Body: body })
+  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+    method: 'POST',
+    headers: {
+      Authorization: 'Basic ' + Buffer.from(`${sid}:${token}`).toString('base64'),
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: form,
+  })
+  if (!res.ok) throw new Error(`twilio ${res.status}: ${(await res.text()).slice(0, 140)}`)
+}
+
+async function notifyRequestingBroker(row, relArtifact) {
+  try {
+    const payload = row.payload || {}
+    if (payload.requested_via !== 'broker_sms' || !payload.requested_by_cell) return // not a broker-SMS-initiated row
+
+    const rawTo = String(payload.requested_by_cell)
+    if (!BROKER_CELL_WHITELIST.has(last10(rawTo))) {
+      console.warn(`  ! broker notify skipped: "${rawTo}" is not a registered broker cell`)
+      return
+    }
+    if (!env.TWILIO_ACCOUNT_SID || !env.TWILIO_AUTH_TOKEN || !env.TWILIO_MESSAGING_SERVICE_SID) {
+      console.warn('  ! broker notify skipped: Twilio not configured')
+      return
+    }
+
+    const site = 'https://ryan-realty.com'
+    const draftUrl = relArtifact.startsWith('public/')
+      ? `${site}/${relArtifact.slice('public/'.length)}`
+      : 'check the approval queue'
+    const to = rawTo.startsWith('+') ? rawTo : `+1${last10(rawTo)}`
+    const body = `Draft ready: ${draftUrl}. Reply APPROVE to post, or tell me what to change.`
+    await sendTwilioSmsFromMarketing(to, body)
+    console.log(`  ✓ notified requesting broker (twilio → ${to})`)
+  } catch (e) {
+    console.warn(`  ! broker notify failed (non-blocking): ${e.message}`)
+  }
+}
+
 // ── core ───────────────────────────────────────────────────────────────────────
 
 async function fetchDeferredRows() {
@@ -327,6 +398,7 @@ async function processRow(row) {
 
   console.log(`  ✓ ${row.id} → ready (awaiting Matt approval; draft-first §0.5)`)
   await notifyMattReady(row, relArtifact)
+  await notifyRequestingBroker(row, relArtifact)
   return { id: row.id, ok: true, artifact: relArtifact }
 }
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# @producer-guard-exempt: template/design library rendering hardcoded sample data; the brain-callable producer path is build_ig_single_post_wrapper.py (action-row audit lives at the dispatch layer)
 """
 Single-Image Post Templates · Ryan Realty
 ==========================================
@@ -166,7 +167,7 @@ def s1_just_listed():
     # Eyebrow — top of frame, tracked (bumped from 22 → 29 for legibility)
     eyebrow_font = azo(29)
     eyebrow_y = 60
-    eyebrow_text = "JUST LISTED"
+    eyebrow_text = "RYAN REALTY  ·  JUST LISTED"
     tw = measure_tracked(draw, eyebrow_text, eyebrow_font, 0.20)
     tracked_text(draw, (60, eyebrow_y), eyebrow_text, eyebrow_font, fill=CREAM, tracking_em=0.20, shadow=True)
     # Hairline under eyebrow — drawn with shadow for contrast on bright sky
@@ -249,8 +250,8 @@ def s3_open_house():
 
     # Eyebrow — bumped 22→29 for legibility
     eb = azo(29)
-    tracked_text(draw, (60, 60), "OPEN HOUSE", eb, fill=CREAM, tracking_em=0.20, shadow=True)
-    tw = measure_tracked(draw, "OPEN HOUSE", eb, 0.20)
+    tracked_text(draw, (60, 60), "RYAN REALTY  ·  OPEN HOUSE", eb, fill=CREAM, tracking_em=0.20, shadow=True)
+    tw = measure_tracked(draw, "RYAN REALTY  ·  OPEN HOUSE", eb, 0.20)
     draw.line([(60, 107), (60 + tw, 107)], fill=CREAM, width=1)
 
     # Date + time — main headline area
@@ -289,8 +290,8 @@ def s4_coming_soon():
 
     # Eyebrow top — bumped 22→29 for legibility
     eb = azo(29)
-    tracked_text(draw, (60, 60), "COMING SOON", eb, fill=CREAM, tracking_em=0.22, shadow=True)
-    tw = measure_tracked(draw, "COMING SOON", eb, 0.22)
+    tracked_text(draw, (60, 60), "RYAN REALTY  ·  COMING SOON", eb, fill=CREAM, tracking_em=0.22, shadow=True)
+    tw = measure_tracked(draw, "RYAN REALTY  ·  COMING SOON", eb, 0.22)
     draw.line([(60, 107), (60 + tw, 107)], fill=CREAM, width=1)
 
     # Subtitle top right corner — bumped 20→26
@@ -327,8 +328,8 @@ def s5_price_improvement():
 
     # Eyebrow — bumped 22→29 for legibility
     eb = azo(29)
-    tracked_text(draw, (60, 60), "NEW PRICE", eb, fill=CREAM, tracking_em=0.22, shadow=True)
-    tw = measure_tracked(draw, "NEW PRICE", eb, 0.22)
+    tracked_text(draw, (60, 60), "RYAN REALTY  ·  NEW PRICE", eb, fill=CREAM, tracking_em=0.22, shadow=True)
+    tw = measure_tracked(draw, "RYAN REALTY  ·  NEW PRICE", eb, 0.22)
     draw.line([(60, 107), (60 + tw, 107)], fill=CREAM, width=1)
 
     # Old price strikethrough
@@ -424,8 +425,8 @@ def s7_agent_intro():
 
     # Eyebrow top (rendered AFTER portrait so it sits cleanly over cream margin)
     eb = azo(22)
-    tracked_text(draw, (60, 60), "MEET YOUR BROKER", eb, fill=NAVY, tracking_em=0.20)
-    tw = measure_tracked(draw, "MEET YOUR BROKER", eb, 0.20)
+    tracked_text(draw, (60, 60), "RYAN REALTY  ·  MEET YOUR BROKER", eb, fill=NAVY, tracking_em=0.20)
+    tw = measure_tracked(draw, "RYAN REALTY  ·  MEET YOUR BROKER", eb, 0.20)
     draw.line([(60, 100), (60 + tw, 100)], fill=NAVY, width=1)
 
     # Hairline divider separating portrait zone from name zone
@@ -564,9 +565,9 @@ def s9_press_feature():
     bw = bbox[2] - bbox[0]
     draw.text(((W - bw) // 2, 1140), body_text, font=body_font, fill=(50, 60, 80))
 
-    # Footer
+    # Footer — carries brokerage attribution (OR brokerage-name-in-advertising rule)
     foot_font = azo(16)
-    foot_text = "AS SEEN IN SOURCE WEEKLY"
+    foot_text = "RYAN REALTY  ·  AS SEEN IN SOURCE WEEKLY"
     tw_f = measure_tracked(draw, foot_text, foot_font, 0.22)
     tracked_text(draw, ((W - tw_f) // 2, 1230), foot_text, foot_font, fill=(50, 60, 80), tracking_em=0.22)
 

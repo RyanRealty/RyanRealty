@@ -176,6 +176,11 @@ export async function GET(request: NextRequest) {
       typeof row.action_type === 'string' ? row.action_type : 'content',
     ) as Record<string, unknown>
 
+    // R0.1: DB-verified approval — /api/social/publish checks this row's
+    // status/approved_by/approved_at/citations server-side. Replaces the
+    // never-wired gate.humanApprovedAt handoff.
+    stampedPayload.approvalRef = { actionId: row.id }
+
     // POST to /api/social/publish.
     let publishResponse: Response
     try {

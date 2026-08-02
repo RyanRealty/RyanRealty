@@ -82,7 +82,15 @@ interface PublishRequest {
   captionPerPlatform?: Partial<Record<Platform, string>>
   hashtagsPerPlatform?: Partial<Record<Platform, string[]>>
   coverUrl?: string
-  gate: GateArtifacts
+  gate?: GateArtifacts
+  /**
+   * R0.1 (BROKER_SMS_AGENT plan): DB-verified approval reference. When the legacy
+   * gate object is absent/invalid, the route verifies the marketing_brain_actions
+   * row itself: status='approved', approved_by present, approved_at ≤ 7 days,
+   * citations present per §0. Stronger than caller-asserted artifact paths —
+   * the DB row, not the payload, is the source of truth.
+   */
+  approvalRef?: { actionId: string }
   metadata?: {
     tiktok?: {
       title?: string
@@ -246,6 +254,58 @@ function validateGate(gate: GateArtifacts | undefined): { valid: true } | { vali
     }
   }
 
+  return { valid: true }
+}
+
+/**
+ * R0.1: server-side approval verification against marketing_brain_actions.
+ * The ≤7-day freshness rule from validateGate applies to approved_at. The row
+ * must carry §0 citations in executor_response — no trace, no ship.
+ */
+async function validateDbApproval(
+  actionId: string,
+): Promise<{ valid: true } | { valid: false; error: string }> {
+  if (!/^[0-9a-f-]{36}$/i.test(actionId)) {
+    return { valid: false, error: 'approvalRef.actionId is not a UUID' }
+  }
+  const supabase = getSupabase()
+  const { data: row, error } = await supabase
+    .from('marketing_brain_actions')
+    .select('status, approved_at, approved_by, executor_response')
+    .eq('id', actionId)
+    .maybeSingle()
+  if (error) return { valid: false, error: `approvalRef lookup failed: ${error.message}` }
+  if (!row) return { valid: false, error: `approvalRef row ${actionId} not found` }
+  if (row.status !== 'approved') {
+    return { valid: false, error: `approvalRef row is '${row.status}', not 'approved'` }
+  }
+  if (typeof row.approved_by !== 'string' || !row.approved_by.trim()) {
+    return { valid: false, error: 'approvalRef row has no approved_by stamp' }
+  }
+  const approvedAt = row.approved_at ? new Date(row.approved_at as string) : null
+  if (!approvedAt || Number.isNaN(approvedAt.getTime())) {
+    return { valid: false, error: 'approvalRef row has no valid approved_at' }
+  }
+  const ageMs = Date.now() - approvedAt.getTime()
+  if (ageMs < 0) return { valid: false, error: 'approvalRef approved_at is in the future' }
+  if (ageMs > GATE_MAX_AGE_MS) {
+    const days = Math.floor(ageMs / (24 * 60 * 60 * 1000))
+    return {
+      valid: false,
+      error: `approvalRef approved_at is ${days} days old (max 7). Obtain fresh approval.`,
+    }
+  }
+  const er = (row.executor_response ?? {}) as Record<string, unknown>
+  const citations = er.citations
+  const hasCitations = Array.isArray(citations)
+    ? citations.length > 0
+    : Boolean(citations && (typeof citations !== 'object' || Object.keys(citations).length > 0))
+  if (!hasCitations) {
+    return {
+      valid: false,
+      error: 'approvalRef row has no citations in executor_response — §0: no trace, no ship',
+    }
+  }
   return { valid: true }
 }
 
@@ -645,12 +705,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Approval: legacy gate artifacts OR the R0.1 DB-verified approvalRef.
+    // The gate object is kept for hand-run publish scripts; the autonomous
+    // sweep path sends approvalRef (nothing ever wired gate.humanApprovedAt,
+    // which killed every sweep publish until 2026-07-31).
     const gateCheck = validateGate(body.gate)
     if (!gateCheck.valid) {
-      return NextResponse.json(
-        { error: `Publish blocked (gate): ${gateCheck.error}` },
-        { status: 400 }
-      )
+      const refCheck = body.approvalRef?.actionId
+        ? await validateDbApproval(body.approvalRef.actionId)
+        : ({ valid: false, error: 'no approvalRef provided' } as const)
+      if (!refCheck.valid) {
+        return NextResponse.json(
+          { error: `Publish blocked (gate): ${gateCheck.error} | (approvalRef): ${refCheck.error}` },
+          { status: 400 }
+        )
+      }
     }
 
     if (!platforms?.length || !mediaType || !mediaUrl) {

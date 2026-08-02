@@ -302,6 +302,54 @@ Ad spend · any message to a client, lead, or prospect · OAuth/account changes 
 listing video/reel formats (decommissioned) · deal-specific legal advice · anything §1 lists
 as per-action Matt approval.
 
+## Build log
+
+- **2026-07-31 (build day 1).** Phase 0 SHIPPED: R0.1 approvalRef wiring (publisher-sweep →
+  `/api/social/publish` `validateDbApproval`, DB-verified, replaces the never-wired
+  `gate.humanApprovedAt`); R0.2 `needs_changes` added to the live CHECK constraint
+  (migration `20260801050000`, applied + local file); R0.3 produce/SKILL.md purged of all
+  retired video mappings incl. frontmatter triggers, Step-3 examples, and the news-clip
+  pattern (gbp row corrected to `ops:gbp_post`); R0.4 `lib/ai/anthropic.ts` shared client
+  (producer paths kept on their shipped model; agent on claude-opus-5), producer-runtime +
+  run-producer migrated; R0.6 attribution fixed on s1/s3/s4/s5/s7/s9 (finding was 6 of 10
+  templates, not 1) + flyer SKILL hedges killed + `check-ad-brokerage-attribution.mjs` wired.
+  Phase 1 tables live in prod + local migration `20260801051000` (broker_agent_sessions,
+  broker_agent_turns w/ MessageSid idempotency, brokers.sms_agent_enabled, legal_corpus,
+  all RLS-locked). `lib/agent/types.ts` contract locked. `exifr` installed. Verified live:
+  all four Twilio numbers (incl. marketing +15412245025) already webhook to
+  `/api/twilio/inbound-sms`; `TWILIO_NUMBER_MARKETING` + `PRODUCER_RUNTIME_ENABLED` exist in
+  Vercel prod. **Manual go-live step: set `BROKER_SMS_AGENT_ENABLED=true` in Vercel
+  production (CLI write was permission-blocked in this session; code ships dark until set).**
+  Parallel workers building: transport/ingress, agent runtime + core tools, produce tools +
+  run-producer-core extraction, Gmail/asset ingestion, ORS 696 + OAR 863 corpus ingest,
+  digest cron + the two safety gates.
+
+- **2026-08-02 (build day 2 — SHIPPED).** All six parallel workers landed: transport
+  (`lib/agent/ingress.ts` + inbound-sms branch, 20s debounce, never-silent fallback), agent
+  core (`lib/agent/runtime.ts`, Opus 5 tool loop, §0 tracer w/ corrective retry, daily $3
+  cap), produce tools (run-producer-core extraction, create/revise/approve/hold/status,
+  listing-state table, coming-soon + third-party guards), Gmail/assets (broker-scoped DWD
+  search, attachment + link ladder, EXIF/vision shoot ingest), law corpus (**352 rows live:
+  105 ORS 696 + 203 OAR 863 + 44 matrix, version 2026-08-01**), digest cron (0 14 * * *)
+  and gates `ci:broker-agent-send-safety` (9 checks) + `ci:approval-stamp-wired` (6 checks).
+  Integration fixes: tools param on force-final/trace-retry calls (API 400 otherwise),
+  `server-only` imports removed from new files (+ `server-only` dep installed for the
+  existing CRM chain), `marketing_cost_ledger` cost_type CHECK extended for
+  `broker_agent_tokens` (found live), audit/ledger writes made non-fatal to a good reply.
+  Tests: 4,811 unit green incl. the R5.1 golden-transcript harness (8 scenarios).
+  **REAL E2E PASSED:** in-process production path (ingress → debounce → Opus 5 → market
+  tools → whitelist send), Twilio status **delivered** to Matt's cell: "Redmond right now:
+  185 active listings, median list price $540,000, 4.4 months of supply…" — every figure
+  present in the same turn's `market_stats` tool result (pulse refreshedAt 22:48Z). Re-run:
+  `NODE_OPTIONS=--conditions=react-server npx tsx scripts/_smoke-broker-agent.ts`.
+  DONE contract: 1✅ 2◐(CMA render path deferred to render worker; wiring shipped)
+  3◐(mechanics gate-verified; first live publish rides the first broker-approved draft — a
+  live publish is per-action approval territory) 4✅ 5✅(corpus live; general-vs-deal
+  classifier fail-open) 6✅(gated) 7✅(cron registered) 8✅(harness) 9✅(ledger verified
+  live) 10◐(pilot flag ON for matt; BROKER_SMS_AGENT_ENABLED=true still needs to be set in
+  Vercel prod — CLI write was permission-blocked) 11◐(spine harness-verified; live run needs
+  a real shoot email) 12✅ 13✅(broker-provided-fact protocol in prompt + produce tool).
+
 ## Risks
 
 - Render-worker liveness bounds visual-format latency (CMA/flyer/carousel); the agent's ETA
