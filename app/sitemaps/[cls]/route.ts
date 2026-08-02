@@ -28,6 +28,7 @@ import { unstable_cache } from 'next/cache'
 import { buildAllUrls } from '@/app/sitemap'
 import { classifySitemapUrl, SITEMAP_CLASSES, type SitemapClass } from '@/lib/data/sitemap/classify'
 import { getIndexablePresetSlugs } from '@/lib/search-presets'
+import { createUniverseMemo } from '@/lib/sitemap-universe-memo'
 
 export const revalidate = 3600
 
@@ -75,22 +76,31 @@ function siteBaseUrl(): string {
 // failed silently on every attempt and nothing was ever reused). It lives only
 // as a module-level promise for the life of the instance; the compact per-class
 // tuples below are what actually get persisted.
-const UNIVERSE_TTL_MS = 60_000
-let universePromise: Promise<MetadataRoute.Sitemap> | null = null
-let universeBuiltAt = 0
+//
+// SECOND PASS, 2026-08-02: the first version of this dedupe stamped freshness
+// when the build STARTED and used a 60s TTL. A universe build takes 115s in
+// production and 235s on a laptop, so the entry was always 2-4x past its TTL by
+// the time it resolved and the next request rebuilt from scratch. Measured
+// against a real production build: core.xml returned 200 with all 159 URLs
+// after 234.7s, and geo.xml requested straight afterwards STILL died at 280s.
+// Five sequential children cost five full builds, exactly as before.
+//
+// It looked correct because it was verified against five CONCURRENT cold
+// requests, where single-flight does collapse them to one build. But Googlebot
+// fetches children sequentially and the hourly warmer walks them in a loop, so
+// the one access pattern never exercised is the only one that happens.
+//
+// Freshness is now stamped on RESOLVE, so a build slower than its own TTL is
+// still reused, and the window has room for a sequential sweep of all five
+// classes plus the warmer. The per-class unstable_cache below still holds for
+// an hour, so this window only governs the cold sweep.
+// See lib/sitemap-universe-memo.ts + its tests for the invariant.
+const UNIVERSE_TTL_MS = 600_000
 
-function buildUniverseOnce(baseUrl: string): Promise<MetadataRoute.Sitemap> {
-  const now = Date.now()
-  if (!universePromise || now - universeBuiltAt > UNIVERSE_TTL_MS) {
-    universeBuiltAt = now
-    universePromise = buildAllUrls(baseUrl, new Date()).catch((err) => {
-      // Never cache a failure — the next request must be free to retry.
-      universePromise = null
-      throw err
-    })
-  }
-  return universePromise
-}
+const buildUniverseOnce = createUniverseMemo<MetadataRoute.Sitemap>(
+  () => buildAllUrls(siteBaseUrl(), new Date()),
+  UNIVERSE_TTL_MS,
+)
 
 // Rows are [path, lastmodISO] tuples; path is relative to the site base URL
 // ('' for the homepage row). unstable_cache includes the cls argument in the
@@ -98,7 +108,7 @@ function buildUniverseOnce(baseUrl: string): Promise<MetadataRoute.Sitemap> {
 const getClassRows = unstable_cache(
   async (cls: SitemapClass): Promise<[string, string][]> => {
     const baseUrl = siteBaseUrl()
-    const urls = await buildUniverseOnce(baseUrl)
+    const urls = await buildUniverseOnce()
     const presetSlugs = new Set(getIndexablePresetSlugs())
     return urls
       .filter((u) => classifySitemapUrl(u.url, presetSlugs) === cls)
