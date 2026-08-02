@@ -41,12 +41,12 @@ const faqOgImage = `${siteUrl}/api/og?type=default`
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'Real Estate FAQ for Bend, Oregon',
+  title: 'FAQ — Real Estate in Bend, Oregon',
   description:
     "Honest answers to the questions Bend buyers and sellers ask Ryan Realty every week. Neighborhoods, timelines, market conditions, working with a brokerage.",
   alternates: { canonical: `${siteUrl}/faq` },
   openGraph: {
-    title: 'Real Estate FAQ | Ryan Realty Bend',
+    title: 'FAQ — Ryan Realty Bend',
     description:
       'Honest, direct answers to the most common questions about buying and selling real estate in Bend, Oregon.',
     url: `${siteUrl}/faq`,

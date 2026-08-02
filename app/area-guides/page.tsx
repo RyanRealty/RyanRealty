@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     'Explore Bend, Redmond, Sisters, Sunriver, La Pine, Prineville and more. Neighborhoods, market trends, and homes for sale in every corner of Central Oregon.',
   alternates: { canonical: `${siteUrl}/area-guides` },
   openGraph: {
-    title: 'Area Guides | Ryan Realty',
+    title: 'Area Guides | Ryan Realty — Central Oregon',
     url: `${siteUrl}/area-guides`,
     type: 'website',
     images: [{ url: ogImage, width: 1200, height: 630 }],

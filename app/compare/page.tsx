@@ -47,12 +47,12 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 
 export const metadata: Metadata = {
   title: 'Compare properties · Ryan Realty',
-  description: 'Compare up to 4 Central Oregon homes side by side. Price, size, features, and more.',
+  description: 'Compare up to 4 Central Oregon homes side by side — price, size, features, and more.',
   alternates: { canonical: `${siteUrl}/compare` },
   robots: { index: false, follow: true },
   openGraph: {
     title: 'Compare properties | Ryan Realty',
-    description: 'Compare up to 4 Central Oregon homes side by side. Price, size, features, and more.',
+    description: 'Compare up to 4 Central Oregon homes side by side — price, size, features, and more.',
     url: `${siteUrl}/compare`,
     type: 'website',
     siteName: 'Ryan Realty',
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Compare properties | Ryan Realty',
-    description: 'Compare up to 4 Central Oregon homes side by side. Price, size, features, and more.',
+    description: 'Compare up to 4 Central Oregon homes side by side — price, size, features, and more.',
     images: [`${siteUrl}/api/og?type=default`],
   },
 }
