@@ -159,6 +159,15 @@ const GOOD_BOT_RE =
 // these. (AhrefsBot is intentionally absent — it feeds our own Ahrefs site
 // audit. Sophisticated headless bots faking a real browser UA are caught by the
 // geo layer, not this list.)
+//
+// THIS LIST BREAKS CI IF YOU ARE NOT CAREFUL. `axios` is on it, `wait-on` is
+// built on axios, and `start-server-and-test` uses wait-on — so the CI route
+// smoke step got a 403 on every readiness probe and timed out after five
+// minutes with no usable diagnostic. Every pull request failed that way for
+// roughly three months (2026-05 → 2026-08-02) while the app was perfectly
+// healthy. CI probes now send the shared UA in scripts/lib/ci-probe-ua.mjs, and
+// `npm run ci:probe-ua` fails the build if anything added here would screen it.
+// Before adding a token, check it against that constant.
 const BAD_BOT_RE =
   /(curl\/|wget|python-requests|python-urllib|urllib|aiohttp|httpx|libwww-perl|lwp::|java\/|okhttp|go-http-client|node-fetch|axios|guzzlehttp|apache-httpclient|httpclient|winhttp|wininet|mechanize|scrapy|httrack|colly|zgrab|masscan|nmap|nikto|sqlmap|nuclei|wpscan|gobuster|censys|internet-measurement|l9scan|netcraftsurveyagent|semrushbot|mj12bot|dotbot|dataforseobot|petalbot|bytespider|blexbot|megaindex|serpstatbot|seekport|barkrowler|spbot)/i
 

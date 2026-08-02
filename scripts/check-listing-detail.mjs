@@ -29,6 +29,7 @@
  *
  * Run mode: node scripts/check-listing-detail.mjs [--json]
  */
+import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 
 const BASE = (process.env.LISTING_SMOKE_BASE ?? process.env.SMOKE_BASE_URL ?? 'https://ryan-realty.com').replace(/\/+$/, '')
 const LISTING_KEY = process.env.SMOKE_LISTING_KEY ?? null
@@ -89,7 +90,7 @@ async function discoverListingPath() {
   try {
     const ctrl = new AbortController()
     const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
-    const res = await fetch(searchUrl, { signal: ctrl.signal, headers: { 'user-agent': UA } })
+    const res = await fetch(searchUrl, { signal: ctrl.signal, headers: { ...CI_PROBE_HEADERS, 'user-agent': UA } })
     clearTimeout(t)
     html = await res.text()
   } catch {
@@ -129,7 +130,7 @@ async function main() {
   try {
     const ctrl = new AbortController()
     const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
-    res = await fetch(url, { signal: ctrl.signal, headers: { 'user-agent': UA }, redirect: 'follow' })
+    res = await fetch(url, { signal: ctrl.signal, headers: { ...CI_PROBE_HEADERS, 'user-agent': UA }, redirect: 'follow' })
     clearTimeout(t)
     html = await res.text()
   } catch (e) {

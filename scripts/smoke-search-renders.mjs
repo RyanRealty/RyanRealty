@@ -21,6 +21,7 @@
  *   npm run smoke:search
  * Exit 0 = all pages rendered with data. Exit 1 = at least one empty/broken.
  */
+import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 
 const BASE = (process.argv[2] || process.env.SMOKE_BASE_URL || 'https://ryan-realty.com').replace(/\/$/, '')
 const FETCH_TIMEOUT_MS = 20000
@@ -48,6 +49,7 @@ async function fetchText(url) {
       redirect: 'follow',
       signal: ctrl.signal,
       headers: {
+        ...CI_PROBE_HEADERS,
         'user-agent': 'RyanRealty-SmokeCheck/1.0 (+search-renders)',
         accept: 'text/html',
       },

@@ -246,6 +246,9 @@ await tryCheck('twilio.a2p-campaign', async () => {
 // URL list in sync with CTA_URLS in scripts/crm-a2p-resubmit.mjs +
 // COMPLIANCE_VERIFICATION_PATHS in middleware.ts.
 await tryCheck('web.compliance-cta-reachable', async () => {
+  // probe-ua: adversarial — this UA is deliberately one BAD_BOT_RE blocks. The
+  // assertion IS that COMPLIANCE_VERIFICATION_PATHS bypasses the screen, so it
+  // must NOT be switched to the shared CI probe UA. Exempt from ci:probe-ua.
   const ua = { 'User-Agent': 'python-requests/2.31.0' };
   // Canonical SMS consent text (SmsConsentDisclosure.tsx SMS_CONSENT_TEXT). Updated
   // 2026-06-23 to the carrier-approved checkbox wording; keep this snippet in lock-step.

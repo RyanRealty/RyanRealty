@@ -38,6 +38,7 @@
  *   node scripts/check-geo-detail.mjs
  *   node scripts/check-geo-detail.mjs --json
  */
+import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 
 const BASE = (process.env.GEO_SMOKE_BASE ?? process.env.SMOKE_BASE_URL ?? 'https://ryan-realty.com').replace(/\/+$/, '')
 const TIMEOUT_MS = Number(process.env.GEO_SMOKE_TIMEOUT_MS ?? 15_000)
@@ -114,7 +115,7 @@ async function check(label, path) {
   try {
     const ctrl = new AbortController()
     const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
-    res = await fetch(url, { signal: ctrl.signal, headers: { 'user-agent': UA }, redirect: 'follow' })
+    res = await fetch(url, { signal: ctrl.signal, headers: { ...CI_PROBE_HEADERS, 'user-agent': UA }, redirect: 'follow' })
     clearTimeout(t)
     html = await res.text()
   } catch (e) {
@@ -155,7 +156,7 @@ async function checkRedirect(label, path, expectLocationIncludes) {
   try {
     const ctrl = new AbortController()
     const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
-    res = await fetch(url, { signal: ctrl.signal, headers: { 'user-agent': UA }, redirect: 'manual' })
+    res = await fetch(url, { signal: ctrl.signal, headers: { ...CI_PROBE_HEADERS, 'user-agent': UA }, redirect: 'manual' })
     clearTimeout(t)
   } catch (e) {
     const msg = String(e?.message ?? e)
@@ -189,7 +190,7 @@ async function checkRedirect(label, path, expectLocationIncludes) {
     try {
       const ctrl = new AbortController()
       const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
-      const destRes = await fetch(destUrl, { signal: ctrl.signal, headers: { 'user-agent': UA }, redirect: 'follow' })
+      const destRes = await fetch(destUrl, { signal: ctrl.signal, headers: { ...CI_PROBE_HEADERS, 'user-agent': UA }, redirect: 'follow' })
       clearTimeout(t)
       destStatus = destRes.status
       if (destStatus !== 200) {

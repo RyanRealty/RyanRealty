@@ -29,6 +29,7 @@
 import { readFileSync, realpathSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const LEGACY_ORIGIN = 'https://ryan-realty.com'
@@ -73,7 +74,7 @@ function fail(msg) {
 }
 
 async function fetchLocs(url) {
-  const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (legacy-redirect-gate)' } })
+  const res = await fetch(url, { headers: { ...CI_PROBE_HEADERS, 'User-Agent': 'Mozilla/5.0 (legacy-redirect-gate)' } })
   if (!res.ok) throw new Error(`${url} -> ${res.status}`)
   const xml = await res.text()
   return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)]
@@ -132,7 +133,7 @@ async function main() {
     const bad = []
     for (const d of dests) {
       try {
-        const res = await fetch(`${LIVE_HOST}${d}`, { method: 'HEAD', redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0 (legacy-redirect-gate)' } })
+        const res = await fetch(`${LIVE_HOST}${d}`, { method: 'HEAD', redirect: 'follow', headers: { ...CI_PROBE_HEADERS, 'User-Agent': 'Mozilla/5.0 (legacy-redirect-gate)' } })
         if (res.status !== 200) bad.push(`${d} -> ${res.status}`)
       } catch (e) {
         bad.push(`${d} -> ERR ${e.message}`)

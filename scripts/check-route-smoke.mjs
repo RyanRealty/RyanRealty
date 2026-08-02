@@ -38,6 +38,7 @@
 
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 
 const BASE = (process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:3000').replace(/\/+$/, '')
 const LISTING_KEY = process.env.SMOKE_LISTING_KEY
@@ -149,7 +150,7 @@ async function fetchWithTimeout(url, ms) {
   try {
     const res = await fetch(url, {
       signal: ctrl.signal,
-      headers: { 'user-agent': 'rr-smoke/1.0' },
+      headers: { ...CI_PROBE_HEADERS },
     })
     const body = await res.text()
     return { status: res.status, body }

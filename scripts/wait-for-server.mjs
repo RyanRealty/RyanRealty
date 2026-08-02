@@ -21,9 +21,18 @@
  * wait-on use, no extra tooling, and unaffected by proxy environment variables
  * that intercept curl.
  *
+ * ROOT CAUSE, found 2026-08-02 and recorded here so nobody re-derives it: the
+ * old waiter was `wait-on`, which is axios-based and sends `User-Agent:
+ * axios/1.x`. The middleware bot screen's `BAD_BOT_RE` matches `axios`, so every
+ * probe came back 403; `wait-on` only accepts 2xx, so it retried to the timeout.
+ * The app was healthy throughout. This probe therefore sends an EXPLICIT
+ * User-Agent rather than inheriting a runtime default — `npm run ci:probe-ua`
+ * checks that UA against the live regex.
+ *
  * Usage: node scripts/wait-for-server.mjs <url> [timeoutSeconds]
  * Exit 0 as soon as the URL returns 200; exit 1 on timeout.
  */
+import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 
 const url = process.argv[2] ?? 'http://127.0.0.1:3000'
 const timeoutSec = Number(process.argv[3] ?? 120)
@@ -38,7 +47,11 @@ async function probe() {
     // redirect: 'manual' so a 3xx is reported as a 3xx instead of being followed
     // and masked — an unexpected redirect is exactly the kind of thing that
     // would make a naive waiter hang forever.
-    const res = await fetch(url, { signal: ctrl.signal, redirect: 'manual' })
+    const res = await fetch(url, {
+      signal: ctrl.signal,
+      redirect: 'manual',
+      headers: { ...CI_PROBE_HEADERS },
+    })
     clearTimeout(timer)
     return { status: res.status, ms: Date.now() - startedAt }
   } catch (err) {

@@ -30,6 +30,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -67,7 +68,13 @@ async function fetchWithTimeout(url, opts = {}, timeoutMs = PROBE_TIMEOUT_MS) {
   const ctl = new AbortController()
   const id = setTimeout(() => ctl.abort(), timeoutMs)
   try {
-    return await fetch(url, { ...opts, signal: ctl.signal })
+    // Explicit UA: the middleware bot screen 403s automation User-Agents, and an
+    // implicit runtime default is what silently broke CI for three months.
+    return await fetch(url, {
+      ...opts,
+      signal: ctl.signal,
+      headers: { ...CI_PROBE_HEADERS, ...(opts.headers ?? {}) },
+    })
   } finally {
     clearTimeout(id)
   }

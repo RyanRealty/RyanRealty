@@ -21,6 +21,8 @@
  *
  * Usage: node scripts/check-search-results.mjs
  */
+import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
+
 const BASE = (process.env.SEARCH_SMOKE_BASE || 'https://ryan-realty.com').replace(/\/$/, '')
 const UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36'
@@ -61,7 +63,7 @@ async function check(c) {
   const t0 = Date.now()
   let res, html
   try {
-    res = await fetch(url, { headers: { 'User-Agent': UA }, redirect: 'follow' })
+    res = await fetch(url, { headers: { ...CI_PROBE_HEADERS, 'User-Agent': UA }, redirect: 'follow' })
     html = await res.text()
   } catch (e) {
     return { ...c, ok: false, reason: `fetch failed: ${e.message}` }

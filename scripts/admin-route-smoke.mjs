@@ -23,6 +23,8 @@
  * or have a setup step log a CI-only admin account in and capture the cookie.
  */
 
+import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
+
 const BASE = (process.env.ADMIN_SMOKE_BASE_URL || 'https://ryan-realty.com').replace(/\/$/, '')
 const COOKIE = process.env.ADMIN_SMOKE_COOKIE
 
@@ -73,7 +75,7 @@ for (const route of ROUTES) {
   const url = BASE + route
   try {
     const res = await fetch(url, {
-      headers: { Cookie: COOKIE, 'User-Agent': 'admin-route-smoke' },
+      headers: { Cookie: COOKIE, ...CI_PROBE_HEADERS },
       redirect: 'manual',
     })
     // A 3xx means the auth layer bounced us — the cookie is missing/expired, so

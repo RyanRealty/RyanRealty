@@ -30,6 +30,7 @@
  *   node scripts/check-lead-funnels.mjs
  *   node scripts/check-lead-funnels.mjs --json
  */
+import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 
 const BASE = (process.env.LEAD_SMOKE_BASE ?? process.env.SMOKE_BASE_URL ?? 'https://ryan-realty.com').replace(/\/+$/, '')
 const TIMEOUT_MS = Number(process.env.LEAD_SMOKE_TIMEOUT_MS ?? 15_000)
@@ -105,7 +106,7 @@ async function check(label, path, markers, minBodyBytes = 4_000) {
   try {
     const ctrl = new AbortController()
     const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
-    res = await fetch(url, { signal: ctrl.signal, headers: { 'user-agent': UA }, redirect: 'follow' })
+    res = await fetch(url, { signal: ctrl.signal, headers: { ...CI_PROBE_HEADERS, 'user-agent': UA }, redirect: 'follow' })
     clearTimeout(t)
     html = await res.text()
   } catch (e) {

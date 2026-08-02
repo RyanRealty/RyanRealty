@@ -30,6 +30,7 @@
 
 import { writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 
 const LEGACY_ORIGIN = 'https://ryan-realty.com'
 const OUT = join(process.cwd(), 'data', 'legacy-redirects.json')
@@ -200,7 +201,7 @@ async function fetchSitemapLocs(url) {
   // the durable source of the legacy URLs is data/legacy-ranking-paths.json + the
   // existing committed map (seeded in main()).
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (cutover-redirect-builder)' } })
+    const res = await fetch(url, { headers: { ...CI_PROBE_HEADERS, 'User-Agent': 'Mozilla/5.0 (cutover-redirect-builder)' } })
     if (!res.ok) { console.warn(`warn: ${url} → ${res.status} (skipping live sitemap)`); return [] }
     const xml = await res.text()
     const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1])

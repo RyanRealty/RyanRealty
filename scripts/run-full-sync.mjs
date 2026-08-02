@@ -8,6 +8,7 @@
 
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
+import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 
 function loadEnvLocal() {
   const path = resolve(process.cwd(), '.env.local')
@@ -60,7 +61,7 @@ async function oneRun() {
   try {
     res = await fetch(url, {
       method: 'GET',
-      headers: { Authorization: `Bearer ${secret}` },
+      headers: { ...CI_PROBE_HEADERS, Authorization: `Bearer ${secret}` },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     })
   } catch (err) {
