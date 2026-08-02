@@ -153,13 +153,35 @@ builds it with real env and the build step passes.
 ("Ready in 708ms") and `wait-on` then times out for 5 minutes probing
 `http://127.0.0.1:3000`. Build itself succeeds in ~270s.
 
-**Not caused by this work:** it failed identically on `8b981a9`, which added a single markdown
-file and no code. `main` is green, so this is not a broken base either — it points to a flake
-or a PR-event environment difference in that step. Investigated and rejected two theories with
-evidence: the middleware canonical-host redirect (`NON_CANONICAL_HOSTS` is a two-entry
-allowlist that excludes `127.0.0.1`) and a bind-address mismatch (Next reports a network
-address, so it is not localhost-only). Left alone deliberately rather than changing CI config
-on a guess that cannot be reproduced without CI's credentials.
+**Not caused by this work, and not a flake — the step has never passed.** Every other step on
+this branch passes, including `ci:gates` (so the new punctuation gate holds in CI) and `build`.
+
+Three pieces of evidence:
+
+1. It failed identically on `8b981a9`, a markdown-only commit. A docs change cannot break a
+   server smoke test.
+2. **No `pull_request` CI run in this repo has passed in roughly three months.** The last 15
+   PR-event runs all failed, across unrelated branches (`does-this-work`, `offline-maps-iphone`,
+   `cma-rebuild-property`, `skyslope-form-compliance`, `optimize-spark-api-calls`).
+3. `main` looks green only because the step is gated on
+   `if: github.event_name == 'pull_request'` and never runs on push. **An earlier note in this
+   file reasoned from "main is green"; that was wrong** — green `main` says nothing about a
+   PR-only step.
+
+Two hypotheses raised and both eliminated with evidence:
+
+- *Middleware canonical-host redirect answering the probe with a 308.* No: `NON_CANONICAL_HOSTS`
+  is a two-entry allowlist and `127.0.0.1:3000` is not in it.
+- *Bind-address mismatch.* No: `next start` calls `server.listen(port, hostname)` with
+  `hostname` undefined when `-H` is absent, which binds all interfaces dual-stack. Next printing
+  `localhost` is display formatting (`start-server.js:280`), not the bind address.
+
+The remaining candidate is that `/` does not return 2xx inside the window. Separating "500 from
+a failed data call" from "hangs on Spark with a dummy key" from "unexpected redirect" needs the
+CI environment, since a production build is not reproducible here without Supabase credentials.
+Deliberately **not** fixed on a guess: the plausible guesses (repoint `wait-on` at a lighter
+route, relax the status check) would mask the failure on a step whose job is catching 5xx
+regressions. Reported on PR #28 with a concrete next diagnostic step instead.
 
 ### Blocker fixed along the way
 
