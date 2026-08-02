@@ -75,7 +75,6 @@ jobs:
           # Pick a real listing key (falls back to a known-active one)
           export SMOKE_LISTING_KEY=$(node scripts/pick-lhci-listing.mjs 2>/dev/null | grep -oE '[0-9]{20,}' | head -1)
           npm run start:ci > /tmp/route-smoke-server.log 2>&1 &
-          echo "SMOKE_SERVER_PID=$!" >> "$GITHUB_ENV"
           if ! node scripts/wait-for-server.mjs http://127.0.0.1:3000 180; then
             echo "----- server log -----"
             cat /tmp/route-smoke-server.log || true
@@ -103,8 +102,8 @@ jobs:
       # default. Flip to false once the first real output has been read.
       #
       # Both need a server on 127.0.0.1:3000 and lighthouserc.cjs sets no
-      # startServerCommand, so the smoke step above leaves its server running
-      # and "Stop smoke server" below tears it down.
+      # startServerCommand, so the smoke step above deliberately leaves its
+      # server running. Teardown is the runner's job — see the note below.
       - name: Lighthouse CI
         if: github.event_name == 'pull_request'
         run: npm run ci:lighthouse
@@ -120,18 +119,20 @@ jobs:
         run: npm run ci:a11y
         continue-on-error: true
 
-      # Tears down the server the smoke step started. Kills the process GROUP:
-      # `npm run start:ci` spawns next-server as a child, so killing the npm pid
-      # alone leaves it holding port 3000 — visible in earlier runs as
-      # "Terminate orphan process: next-server" during job cleanup.
-      - name: Stop smoke server
-        if: always()
-        run: |
-          if [ -n "${SMOKE_SERVER_PID:-}" ]; then
-            kill -- "-$(ps -o pgid= "$SMOKE_SERVER_PID" | tr -d ' ')" 2>/dev/null || kill "$SMOKE_SERVER_PID" 2>/dev/null || true
-          fi
-          pkill -f 'next-server' 2>/dev/null || true
-          exit 0
+      # NO explicit teardown step for the smoke server, deliberately.
+      #
+      # A "Stop smoke server" step here killed the process GROUP, reasoning that
+      # `npm run start:ci` spawns next-server as a child so killing the npm pid
+      # alone leaves the child holding port 3000. That took down the RUNNER:
+      # background jobs started from a step inherit the runner's process group,
+      # so the negative-pid kill signalled the runner too. The job died with
+      # exit 143 and "The runner has received a shutdown signal" after every
+      # other step had already passed.
+      #
+      # The runner cleans up after itself regardless — "Terminate orphan
+      # process: next-server" at the end of the job is that working as intended.
+      # The server needs to outlive the smoke step anyway so Lighthouse and
+      # pa11y can reach it, and nothing after them needs port 3000.
 
       # Build health tracking
       - name: Record build health metrics
