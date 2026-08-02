@@ -74,8 +74,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description =
     broker.bio?.slice(0, 155) ??
     `${broker.display_name}, ${broker.title ?? 'Real Estate Broker'} at ${siteName}. Licensed in Oregon. Contact for Central Oregon real estate.`
-  const canonical = `${siteUrl}/team/${slug}`
-  const ogImage = `${siteUrl}/api/og?type=broker&id=${encodeURIComponent(slug)}`
+  // SEO (audit item 2, P0): resolve to the CANONICAL slug before building any
+  // self-referencing URL. getAgentBySlug() already resolves BROKER_SLUG_ALIASES
+  // (matt-ryan, matt, matthew -> matthew-ryan; rebecca-ryser-peterson, rebecca
+  // -> rebecca-peterson; paul -> paul-stevenson — see BROKER_SLUG_ALIASES in
+  // lib/data/brokers/getBrokers.ts / app/actions/brokers.ts) and the returned
+  // broker row carries the true canonical slug in `broker.slug`. Building the
+  // canonical URL from the REQUESTED `slug` instead let every alias declare
+  // itself canonical, splitting SEO authority across 5+ URLs per broker.
+  // (normalizeAgentSlug from lib/agent-attribution.ts is NOT the right tool
+  // here: it collapses to the SHORT attribution slug — matt/rebecca/paul —
+  // used only for the FUB cookie below, which is itself one of the alias
+  // paths this fix consolidates away from.)
+  const canonicalSlug = broker.slug || slug
+  const canonical = `${siteUrl}/team/${canonicalSlug}`
+  const ogImage = `${siteUrl}/api/og?type=broker&id=${encodeURIComponent(canonicalSlug)}`
   return {
     title,
     description,
@@ -197,7 +210,17 @@ export default async function TeamMemberPage({ params }: Props) {
   const brokerage = await getBrokerageSettings()
   const siteName = brokerage?.name ?? 'Ryan Realty'
   const firstName = broker.display_name.split(' ')[0] ?? broker.display_name
-  const canonicalUrl = `${siteUrl}/team/${slug}`
+  // Same canonical-slug resolution as generateMetadata above. This feeds the
+  // RealEstateAgent JSON-LD `url` and the BreadcrumbList, so leaving it on the
+  // REQUESTED slug would have the structured data assert an alias URL that
+  // contradicts the <link rel="canonical"> on the very same page.
+  //
+  // Named ...PathSlug, NOT canonicalSlug: `canonicalSlug` further down is the
+  // 3-value ATTRIBUTION slug (matt / rebecca / paul) for the rr_agent_attribution
+  // cookie. Different namespace, and one of those values is itself an alias path
+  // this fix redirects away from. Do not merge the two.
+  const canonicalPathSlug = broker.slug || slug
+  const canonicalUrl = `${siteUrl}/team/${canonicalPathSlug}`
 
   const [reviews, brokerageTiles, brokerSales] = await Promise.all([
     // Pull the full review pool (count/average are computed across all rows) so
@@ -350,7 +373,7 @@ export default async function TeamMemberPage({ params }: Props) {
             items: [
               { name: 'Home', url: '/' },
               { name: 'Team', url: '/team' },
-              { name: broker.display_name, url: `/team/${slug}` },
+              { name: broker.display_name, url: `/team/${canonicalPathSlug}` },
             ],
           },
         ]}

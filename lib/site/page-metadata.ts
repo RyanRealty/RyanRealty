@@ -21,7 +21,7 @@ const MAX_TITLE = 60
 const MAX_DESC = 155
 
 export type PageMetadataInput = {
-  /** Page title; auto-appended with " | Ryan Realty — Central Oregon Real Estate" via layout.tsx template. */
+  /** Page title; auto-appended with " | Ryan Realty" via layout.tsx template. */
   title: string
   /** Page description — 100–160 chars recommended. Brand-voice-clean prose. */
   description: string
@@ -57,10 +57,10 @@ const DEFAULT_OG_IMAGE = '/api/og?type=default'
 
 /**
  * Normalize a page title before the layout's title.template appends the single
- * canonical brand suffix (" | Ryan Realty — Central Oregon Real Estate"):
+ * canonical brand suffix (" | Ryan Realty"):
  *   1. Strip a trailing brand the caller (or a DB seoTitle) already baked in, so
  *      the template can't double-brand the SERP title ("Foo | Ryan Realty" + the
- *      template was producing "Foo | Ryan Realty | Ryan Realty — …").
+ *      template was producing "Foo | Ryan Realty | Ryan Realty").
  *   2. Cap at MAX_TITLE WITHOUT cutting mid-word — the old slice(0,60) sheared
  *      long neighborhood titles to a dangling "… | Rya".
  *   3. Never return empty — a brand-only / whitespace title would collapse the

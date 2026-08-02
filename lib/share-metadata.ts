@@ -30,9 +30,25 @@ export function listingHashtags(city?: string | null): string {
   return parts.join(' ')
 }
 
-/** Trim and clean a string for og:description (100–160 chars recommended). */
+/**
+ * Trim and clean a string for og:description (100–160 chars recommended).
+ *
+ * A string within `max` chars is returned unchanged (no ellipsis added). A
+ * longer string is cut back to the last full word that fits — reserving one
+ * char for the trailing ellipsis so the result never exceeds `max` — and a
+ * single "…" is appended. Never cuts mid-word, never leaves a dangling space
+ * or stray punctuation before the ellipsis. Falls back to a hard cut only
+ * when the text has no word boundary within the limit (e.g. one long token).
+ */
 export function shareDescription(text: string, max = MAX_DESC): string {
-  return text.replace(/\s+/g, ' ').trim().slice(0, max)
+  const normalized = text.replace(/\s+/g, ' ').trim()
+  if (normalized.length <= max) return normalized
+  const ELLIPSIS = '…'
+  let cut = normalized.slice(0, Math.max(0, max - ELLIPSIS.length))
+  const lastSpace = cut.lastIndexOf(' ')
+  if (lastSpace > 0) cut = cut.slice(0, lastSpace)
+  cut = cut.replace(/[\s.,;:!?]+$/, '')
+  return `${cut}${ELLIPSIS}`
 }
 
 /** Build a listing share summary: price, beds/baths/sqft, address, CTA. */
@@ -58,7 +74,7 @@ export function listingShareSummary(opts: {
   const location = [opts.address, opts.city].filter(Boolean).join(opts.address && opts.city ? ', ' : '')
   if (location) parts.push(location)
   const raw = parts.join(' · ')
-  return shareDescription(raw || 'Property for sale — Ryan Realty')
+  return shareDescription(raw || 'Property for sale. Ryan Realty')
 }
 
 /** Max length for social post text (Twitter allows 280; URL takes ~23, so leave room). */

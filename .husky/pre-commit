@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 # Pre-commit gates. Run cheap structural checks before any heavy tests.
 
+# husky's runner invokes hooks as `sh -e "$hook"`, which ignores the shebang
+# above. Where /bin/sh is dash (Debian, Ubuntu, most Linux CI images) that shell
+# has no `set -o pipefail`, so this hook aborted with "Illegal option -o
+# pipefail" before running a single gate — the commit failed for a shell reason
+# while every gate was still green. Re-exec under bash so the pipefail semantics
+# the piped gates below depend on actually hold, instead of dropping pipefail
+# and letting a mid-pipeline failure pass silently.
+[ -z "${BASH_VERSION:-}" ] && exec bash "$0" "$@"
+
 set -eo pipefail
 
 # Producer guard (G22) — every staged scripts/build_*.py must call

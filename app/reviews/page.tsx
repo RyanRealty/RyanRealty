@@ -34,7 +34,7 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 const ogImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
-  title: 'Client Reviews | Ryan Realty',
+  title: 'Client Reviews',
   description:
     'See what buyers and sellers say about working with Ryan Realty. Real testimonials from clients across Central Oregon.',
   alternates: { canonical: `${siteUrl}/reviews` },
@@ -58,14 +58,20 @@ const STAR_PATH =
 const RENDERED_STAR_RATING = 5
 
 /**
- * Review + AggregateRating JSON-LD for the brokerage, built from the SAME
- * TESTIMONIALS the page renders so SERP rich results match what's on screen.
+ * Review JSON-LD for the brokerage, built from the SAME TESTIMONIALS the page
+ * renders so SERP rich results match what's on screen.
  *
  * Each rendered card draws RENDERED_STAR_RATING stars, so every Review node
- * carries that rating as reviewRating. reviewCount = the actual count of those
- * rated reviews, and ratingValue = the mean of their ratings (derived, not
- * hardcoded — if the data changes the math follows). aggregateRating is emitted
- * only when at least one rated review exists, so no rating is ever fabricated.
+ * carries that rating as reviewRating.
+ *
+ * Deliberately NO aggregateRating on this RealEstateAgent entity: an aggregate
+ * rating of the business, published on the business's own site, is a
+ * self-serving review under Google's structured-data policy and makes the page
+ * ineligible for review rich results (manual-action risk) — see
+ * https://developers.google.com/search/docs/appearance/structured-data/review-snippet#guidelines.
+ * The individual Review nodes below are honest, verified, and fine to keep;
+ * only the self-referential aggregate is banned. Do not re-add aggregateRating
+ * here.
  */
 function buildReviewsJsonLd(): Record<string, unknown> {
   const reviews = TESTIMONIALS.map((t) => ({
@@ -81,20 +87,7 @@ function buildReviewsJsonLd(): Record<string, unknown> {
     },
   }))
 
-  const ratingCount = reviews.length
-  const aggregateRating =
-    ratingCount > 0
-      ? {
-          '@type': 'AggregateRating',
-          ratingValue:
-            reviews.reduce((sum, r) => sum + r.reviewRating.ratingValue, 0) / ratingCount,
-          reviewCount: ratingCount,
-          bestRating: 5,
-          worstRating: 1,
-        }
-      : undefined
-
-  const subject: Record<string, unknown> = {
+  return {
     '@context': 'https://schema.org',
     '@type': 'RealEstateAgent',
     '@id': `${siteUrl}#organization`,
@@ -102,16 +95,15 @@ function buildReviewsJsonLd(): Record<string, unknown> {
     url: `${siteUrl}/reviews`,
     review: reviews,
   }
-  if (aggregateRating) subject.aggregateRating = aggregateRating
-  return subject
 }
 
 export default function ReviewsPage() {
   const reviewsJsonLd = buildReviewsJsonLd()
   return (
     <main className="kb-root">
-      {/* Review + AggregateRating JSON-LD — built from the rendered TESTIMONIALS
-          so the SERP rich result matches the cards on the page. */}
+      {/* Review JSON-LD (no aggregateRating — self-serving on our own site,
+          see buildReviewsJsonLd) — built from the rendered TESTIMONIALS so the
+          SERP rich result matches the cards on the page. */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd) }}

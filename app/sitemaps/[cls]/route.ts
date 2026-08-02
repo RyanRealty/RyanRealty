@@ -23,12 +23,20 @@
  * builders (lowercase a-z, digits, hyphens, slashes only) and lastmod is an
  * ISO timestamp. Neither can contain XML-special characters.
  */
+import type { MetadataRoute } from 'next'
 import { unstable_cache } from 'next/cache'
 import { buildAllUrls } from '@/app/sitemap'
 import { classifySitemapUrl, SITEMAP_CLASSES, type SitemapClass } from '@/lib/data/sitemap/classify'
 import { getIndexablePresetSlugs } from '@/lib/search-presets'
 
 export const revalidate = 3600
+
+// The build fans out over the whole ~10.7K-URL universe (per-city subdivision
+// RPCs, a paginated listings scan, zips, blog, reports). Without an explicit
+// ceiling it inherits the platform default and is killed mid-build, before a
+// single response header is written — the observed failure was http=000,
+// ttfb=0, 0 bytes. 300s matches the other heavy routes in this repo.
+export const maxDuration = 300
 
 // @no-static-params — deliberately NOT prerendered.
 //
@@ -49,13 +57,48 @@ function siteBaseUrl(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 }
 
+// IN-FLIGHT DEDUPE (fixes the 2026-08-02 audit P0).
+//
+// unstable_cache keys per class, so a cold cache means FIVE independent calls
+// to buildAllUrls — five full fan-outs over the same universe, hitting the same
+// tables at the same time. That self-contention is why listings.xml and
+// matrix.xml never returned a byte while the cheap classes sometimes squeaked
+// through: whichever build lost the race got starved and killed.
+//
+// v2 tried to fix the cost by caching per class, but the per-class key is
+// exactly what multiplies the work on a cold start. Collapsing concurrent
+// builds onto one shared promise makes a cold start cost ONE build instead of
+// five, which is what brings it back inside maxDuration.
+//
+// The single shared universe is deliberately NOT written to unstable_cache —
+// that was the v1 mistake (2.4MB, over the 2MB per-entry cap, so the write
+// failed silently on every attempt and nothing was ever reused). It lives only
+// as a module-level promise for the life of the instance; the compact per-class
+// tuples below are what actually get persisted.
+const UNIVERSE_TTL_MS = 60_000
+let universePromise: Promise<MetadataRoute.Sitemap> | null = null
+let universeBuiltAt = 0
+
+function buildUniverseOnce(baseUrl: string): Promise<MetadataRoute.Sitemap> {
+  const now = Date.now()
+  if (!universePromise || now - universeBuiltAt > UNIVERSE_TTL_MS) {
+    universeBuiltAt = now
+    universePromise = buildAllUrls(baseUrl, new Date()).catch((err) => {
+      // Never cache a failure — the next request must be free to retry.
+      universePromise = null
+      throw err
+    })
+  }
+  return universePromise
+}
+
 // Rows are [path, lastmodISO] tuples; path is relative to the site base URL
 // ('' for the homepage row). unstable_cache includes the cls argument in the
 // cache key, so each class caches independently and stays far under 2MB.
 const getClassRows = unstable_cache(
   async (cls: SitemapClass): Promise<[string, string][]> => {
     const baseUrl = siteBaseUrl()
-    const urls = await buildAllUrls(baseUrl, new Date())
+    const urls = await buildUniverseOnce(baseUrl)
     const presetSlugs = new Set(getIndexablePresetSlugs())
     return urls
       .filter((u) => classifySitemapUrl(u.url, presetSlugs) === cls)

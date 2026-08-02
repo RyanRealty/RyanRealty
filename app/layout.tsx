@@ -40,14 +40,14 @@ export const revalidate = 60
 export const metadata: Metadata = {
   metadataBase: new URL(getCanonicalSiteUrl()),
   title: {
-    default: "Ryan Realty — Central Oregon Real Estate",
-    template: "%s | Ryan Realty — Central Oregon Real Estate",
+    default: "Ryan Realty. Central Oregon Real Estate",
+    template: "%s | Ryan Realty",
   },
   description:
     "Find your next home in Bend, Redmond, Sisters, and across Central Oregon. Ryan Realty offers expert local real estate service, listings, and market insights.",
   keywords: ["Central Oregon", "homes for sale", "real estate", "Bend", "Redmond", "Sisters", "listings", "MLS"],
   openGraph: {
-    title: "Ryan Realty — Central Oregon Real Estate",
+    title: "Ryan Realty. Central Oregon Real Estate",
     description: "Find your next home in Bend and Central Oregon. Expert real estate service, listings, and market insights.",
     type: "website",
     url: getCanonicalSiteUrl(),
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Ryan Realty — Central Oregon Real Estate",
+    title: "Ryan Realty. Central Oregon Real Estate",
     description: "Find your next home in Bend and Central Oregon. Expert real estate service and listings.",
   },
   robots: "index, follow",
@@ -108,6 +108,11 @@ export default function RootLayout({
             the extra preload is cheap (browser drops on no-match). Keeping
             this in the static shell preserves the prerender. */}
         <link rel="preload" as="image" href="/images/hero-poster.webp" fetchPriority="high" />
+        {/* Spark listing photos serve from this CDN on nearly every route
+            (homepage tiles, search, listing detail). Preconnect warms the
+            TCP+TLS handshake before the first <img> request fires. */}
+        <link rel="preconnect" href="https://cdn.resize.sparkplatform.com" />
+        <link rel="dns-prefetch" href="https://cdn.resize.sparkplatform.com" />
       </head>
       <body className="min-h-screen overflow-x-hidden antialiased">
         {/* Evict any stale service worker left by the pre-cutover site on this

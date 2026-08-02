@@ -27,7 +27,12 @@ function replay(alert: { notification_frequency: string; schedule_days?: unknown
   for (const now of hourlyTicks(fromIso, hours)) {
     if (isCadenceDue({ ...alert, last_notified_at: lastNotifiedAt }, now)) {
       fired.push(
-        `${new Intl.DateTimeFormat('en-CA', { timeZone: LA, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)} ${new Intl.DateTimeFormat('en-US', { timeZone: LA, weekday: 'short' }).format(now)} ${new Intl.DateTimeFormat('en-US', { timeZone: LA, hour: '2-digit', hour12: false }).format(now)}`,
+        // hourCycle 'h23' pins midnight to '00'. `hour12: false` alone is
+        // ICU-version-dependent for the midnight hour — older ICU renders it on
+        // the h24 clock as '24', newer ICU (Node 22+) as '00' — so this
+        // assertion passed or failed purely on the Node the suite happened to
+        // run under, with no code change involved.
+        `${new Intl.DateTimeFormat('en-CA', { timeZone: LA, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)} ${new Intl.DateTimeFormat('en-US', { timeZone: LA, weekday: 'short' }).format(now)} ${new Intl.DateTimeFormat('en-US', { timeZone: LA, hour: '2-digit', hourCycle: 'h23' }).format(now)}`,
       )
       lastNotifiedAt = now.toISOString()
     }
@@ -46,7 +51,7 @@ describe('H5 weekly schedule_days', () => {
     expect(fired).toHaveLength(3)
     expect(fired.every((f) => f.includes('Mon'))).toBe(true)
     // Fires on the FIRST tick of the local Monday (00:00 PDT = 07:00 UTC).
-    expect(fired[0].slice(15)).toBe('24')
+    expect(fired[0].slice(15)).toBe('00')
     expect(fired.map((f) => f.slice(0, 10))).toEqual(['2026-08-03', '2026-08-10', '2026-08-17'])
   })
 

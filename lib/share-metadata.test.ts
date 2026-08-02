@@ -59,11 +59,41 @@ describe('share-metadata', () => {
       const longText = 'A'.repeat(300)
       const result = shareDescription(longText)
       expect(result.length).toBeLessThanOrEqual(155)
+      // No word boundary exists in a single 300-char token — hard-cut fallback,
+      // but it still signals truncation with a trailing ellipsis.
+      expect(result.endsWith('…')).toBe(true)
     })
 
-    it('uses custom max length', () => {
-      const result = shareDescription('Hello World Test', 5)
-      expect(result).toBe('Hello')
+    it('uses custom max length, cutting on a word boundary with an ellipsis', () => {
+      const result = shareDescription('Hello World Test', 8)
+      expect(result).toBe('Hello…')
+    })
+
+    it('never cuts mid-word — backs off to the last full word and appends a single ellipsis', () => {
+      // Reproduces the live-site bug (audit 2026-08-02): a hard slice(0, 155)
+      // sheared descriptions mid-word, e.g. "...Request a fr" on /sell.
+      const longDescription =
+        'List your Central Oregon home with Ryan Realty. Pricing from live market data, ' +
+        'professional marketing, and one broker from valuation to close. Request a free home valuation.'
+      const result = shareDescription(longDescription)
+      expect(result.length).toBeLessThanOrEqual(155)
+      // Ends with the ellipsis, not a dangling space before it.
+      expect(result.endsWith('…')).toBe(true)
+      expect(result.endsWith(' …')).toBe(false)
+      // The character right before the ellipsis is a real word character —
+      // never a fragment cut out of the middle of a longer word.
+      const beforeEllipsis = result.slice(0, -1)
+      expect(/[a-zA-Z]$/.test(beforeEllipsis)).toBe(true)
+      // The old bug: "Request a fr" (mid-word fragment of "free"). Confirm the
+      // fragment is gone and the cut lands on a whole word instead.
+      expect(result).not.toContain(' fr…')
+      expect(result).not.toMatch(/\bfr…$/)
+    })
+
+    it('returns text unchanged (no ellipsis) when already within the limit', () => {
+      const result = shareDescription('A short description under the limit.')
+      expect(result).toBe('A short description under the limit.')
+      expect(result.endsWith('…')).toBe(false)
     })
   })
 

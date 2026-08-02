@@ -54,7 +54,9 @@ export const revalidate = 1800
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 export const metadata: Metadata = pageMetadata({
-  title: 'Central Oregon Cities: Bend, Redmond, Sisters, Sunriver',
+  // Kept short enough that the " | Ryan Realty" template suffix still lands
+  // inside the ~60-char SERP display budget (46 chars resolved).
+  title: 'Central Oregon Cities: Bend, Redmond, Sisters',
   description:
     'Explore homes for sale in Central Oregon cities. Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and more. Live market data from a local brokerage.',
   path: '/cities',
