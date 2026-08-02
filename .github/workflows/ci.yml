@@ -57,12 +57,32 @@ jobs:
       # asserting no 404/5xx/blank-page regressions per CLAUDE.md
       # "verify before moving on."
       - run: npm run ci:bundle-budget
+      # Was `npm run ci:route-smoke:start`, i.e. start-server-and-test. That
+      # wrapper has failed on EVERY pull request since at least 2026-07-25
+      # (verified on unrelated branches: same step, same 5:02 wait-on timeout),
+      # and its entire failure output is "Timed out waiting for:
+      # http://127.0.0.1:3000" — no status code, no timing, no server log, so
+      # the cause was undiagnosable from CI. Meanwhile a production build of the
+      # same commit serves `/` with HTTP 200 in 0.55s locally and passes 277/277
+      # routes, so the application is not the cause.
+      #
+      # Split into explicit start / wait / smoke. Same semantics, but the wait
+      # reports what it saw on each probe and the server log is dumped on
+      # failure, so a red run now explains itself instead of timing out mutely.
       - name: Route smoke test
         if: github.event_name == 'pull_request'
         run: |
           # Pick a real listing key (falls back to a known-active one)
           export SMOKE_LISTING_KEY=$(node scripts/pick-lhci-listing.mjs 2>/dev/null | grep -oE '[0-9]{20,}' | head -1)
-          npm run ci:route-smoke:start
+          npm run start:ci > /tmp/route-smoke-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
+          if ! node scripts/wait-for-server.mjs http://127.0.0.1:3000 180; then
+            echo "----- server log -----"
+            cat /tmp/route-smoke-server.log || true
+            exit 1
+          fi
+          npm run ci:route-smoke
 
       # Lighthouse CI — gates PRs on perf/a11y/BP/SEO regression against
       # lighthouserc.cjs thresholds. Uses start-server-and-test under the hood.
