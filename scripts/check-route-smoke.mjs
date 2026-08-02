@@ -20,8 +20,10 @@
  * Run modes:
  *   - Standalone: `node scripts/check-route-smoke.mjs` (requires the
  *     server to be up at SMOKE_BASE_URL or http://127.0.0.1:3000)
- *   - Via start-server-and-test in CI:
- *       `start-server-and-test start:ci http://127.0.0.1:3000 ci:route-smoke`
+ *   - In CI (.github/workflows/ci.yml, "Route smoke test"): the server is
+ *     started in the background, `scripts/wait-for-server.mjs` polls it until
+ *     200, then this runs. That replaced start-server-and-test, whose only
+ *     failure output was "Timed out waiting for", with no status or timing.
  *
  * Add a route: edit ROUTES below. To pin a route to a known-good
  * listing key without burning into source, set SMOKE_LISTING_KEY in
@@ -40,6 +42,27 @@ import { resolve } from 'node:path'
 const BASE = (process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:3000').replace(/\/+$/, '')
 const LISTING_KEY = process.env.SMOKE_LISTING_KEY
 const TIMEOUT_MS = Number(process.env.SMOKE_TIMEOUT_MS ?? 15_000)
+
+// KNOWN-SLOW ROUTES — a longer budget for routes that are slow BY DESIGN on a
+// cold cache, so one of them cannot fail the whole gate while still being
+// checked for 404 / 5xx / blank-page like every other route.
+//
+// Deliberately a narrow allow-list rather than a bigger global TIMEOUT_MS: the
+// point of the 15s default is to catch a page that has quietly become slow, and
+// raising it for all 277 routes would throw that away to accommodate one.
+//
+// /admin/media/banners: listMissingBanners() scans listings per city to compute
+// the missing-banner set. The page already wraps it in unstable_cache at 300s
+// (see its source comment: "slow enough to read as 'admin is down' … only a
+// cold start ever pays the full scan"), and CI is always a cold start. Staff-
+// only, behind auth, Disallow-ed in robots.txt. If this page ever needs to be
+// fast, the fix is in listMissingBanners, not here.
+const SLOW_ROUTE_TIMEOUT_MS = Number(process.env.SMOKE_SLOW_TIMEOUT_MS ?? 45_000)
+const KNOWN_SLOW_ROUTES = new Set(['/admin/media/banners'])
+
+function timeoutFor(path) {
+  return KNOWN_SLOW_ROUTES.has(path) ? Math.max(TIMEOUT_MS, SLOW_ROUTE_TIMEOUT_MS) : TIMEOUT_MS
+}
 // CONCURRENCY caps parallel HTTP requests so the smoke covers the
 // full canonical set without overwhelming the dev/start:ci server.
 const CONCURRENCY = Number(process.env.SMOKE_CONCURRENCY ?? 6)
@@ -131,7 +154,7 @@ function checkBody(body) {
 async function checkRoute(route) {
   const url = BASE + route.path
   try {
-    const { status, body } = await fetchWithTimeout(url, TIMEOUT_MS)
+    const { status, body } = await fetchWithTimeout(url, timeoutFor(route.path))
     if (status !== 200) {
       return { ...route, url, ok: false, status, reasons: [`HTTP ${status}`], title: null }
     }
@@ -179,7 +202,7 @@ async function main() {
   if (failed.length > 0 && !REPORT) {
     console.log()
     console.log('Fix: start the server with `npm run start:ci` (or `npm run dev`),')
-    console.log('then re-run. For CI, use start-server-and-test to wrap the gate.')
+    console.log('then re-run. CI does this in the "Route smoke test" step.')
   }
 
   if (REPORT) process.exit(0)
