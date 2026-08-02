@@ -147,6 +147,44 @@ should be re-checked against production after merge, and the cron warmer confirm
 A local production build is not possible in this environment (no Supabase credentials); CI
 builds it with real env and the build step passes.
 
+## The smoke gate — reproduced locally, three defects fixed (`b326fd3`)
+
+An earlier note here claimed a local repro needed CI credentials. **That was wrong.**
+`lib/env.ts` requires only four vars and validates them as non-empty strings, so a production
+build runs on the public Supabase URL plus dummies. Build completed (473/473 static pages),
+`npm run start:ci` served the app.
+
+**Proven: the application is not why that step is red.** Against a real production build,
+`fetch('http://127.0.0.1:3100/')` returns `http=200` in **0.55s**, 128,317 bytes, correct
+title, hero H1 present, no error markers. The real gate then scored **277 of 277 routes** — on
+*invalid* Supabase credentials, so the app degrades gracefully rather than passing by luck.
+
+Two earlier theories killed for good:
+
+- `next start` reports `listen ... 0.0.0.0:3000` in its own `EADDRINUSE` error, so it binds all
+  interfaces and `127.0.0.1` is reachable.
+- `next start` does not log per-request in production, so the silent CI log was never evidence
+  that requests failed to arrive. That inference was over-read.
+
+Three real defects found and fixed, all independent of the `wait-on` timeout:
+
+1. **The generator threw on every run.** `index-routes.mjs` regexes `lib/cities.ts` for a
+   `PRIMARY_CITIES` literal, but that file now only re-exports it from
+   `lib/data/geo/report-cities.ts`. That is why the inventory sat stale since 2026-07-18
+   despite its own header saying to regenerate it: nobody could.
+2. **Two guaranteed 404s** — `/admin/operations/optimization` and `/admin/optimization`, neither
+   of which has a `page.tsx`.
+3. **A non-URL row parsed as a route** — the literal `` `(no enumeration)` `` marker.
+
+274/277 → **277/277**.
+
+*Coverage note, deliberately not "fixed":* regenerating drops `/cities/tumalo`,
+`/cities/crooked-river-ranch`, `/housing-market/explore`, `/reports/explore`, `/guides` from the
+smoke set. All five are live and return 200, but none has its own `page.tsx` — they are
+catch-all or redirect targets the generator does not claim to enumerate. Widening its slug
+sources would change what the inventory means, so that is a decision for Matt, not a silent
+scope change.
+
 ## Known open item
 
 `lint-and-build` fails at step 10, "Route smoke test", not at build. The server starts
