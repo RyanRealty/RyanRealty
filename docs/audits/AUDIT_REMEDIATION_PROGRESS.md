@@ -124,6 +124,43 @@ ratchet regression.
 Proven working: injecting an em dash into `app/faq/page.tsx` makes the gate fail; removing it
 returns to green.
 
+| 16:25 | **Review pass.** Caught a NUL byte I had written into `check-brand-voice.mjs`, which made git classify the gate script as binary. Fixed (`bb9fd37`) |
+
+## Final state — audit items 1 to 8
+
+| # | Item | Status | Commit |
+|---|---|---|---|
+| 1 | Sitemap timeouts (P0) | Done | `fbf512e` |
+| 2 | Broker canonical + alias 301s (P0) | Done | `fbf512e` |
+| 3 | Punctuation gate wired + em dash removed | Done | `e7580a8`, `bb9fd37` |
+| 4 | Title lengths, duplicate brand | Done | `fbf512e` |
+| 5 | Mid-word description truncation | Done | `fbf512e` |
+| 6 | `/buyers`, `/sitemap`, `/lp/` redirects | Done | `fbf512e` |
+| 7 | `preconnect` for the image CDN | Done | `fbf512e` |
+| 8 | Self-serving `AggregateRating` | Done | `fbf512e` |
+
+Verified: 359/359 test files, full `ci:gates` chain, `tsc` clean, redirect gate (810 mappings,
+no loops, no multi-hop), brand-voice at 0 with punctuation now actually enforced.
+
+**Not verifiable from here:** the live sitemap fix needs a deploy. The three dead children
+should be re-checked against production after merge, and the cron warmer confirmed running.
+A local production build is not possible in this environment (no Supabase credentials); CI
+builds it with real env and the build step passes.
+
+## Known open item
+
+`lint-and-build` fails at step 10, "Route smoke test", not at build. The server starts
+("Ready in 708ms") and `wait-on` then times out for 5 minutes probing
+`http://127.0.0.1:3000`. Build itself succeeds in ~270s.
+
+**Not caused by this work:** it failed identically on `8b981a9`, which added a single markdown
+file and no code. `main` is green, so this is not a broken base either — it points to a flake
+or a PR-event environment difference in that step. Investigated and rejected two theories with
+evidence: the middleware canonical-host redirect (`NON_CANONICAL_HOSTS` is a two-entry
+allowlist that excludes `127.0.0.1`) and a bind-address mismatch (Next reports a network
+address, so it is not localhost-only). Left alone deliberately rather than changing CI config
+on a guess that cannot be reproduced without CI's credentials.
+
 ### Blocker fixed along the way
 
 The pre-commit hook aborted before running a single gate. husky invokes hooks as `sh -e`,
