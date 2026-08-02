@@ -323,7 +323,7 @@ async function runValuationFollowUp(ctx: {
         const buffer = await renderToBuffer(doc as DocElement)
         const sent = await sendEmail({
           to: email,
-          subject: `Your Home Valuation for ${fullAddress || 'Property'}`,
+          subject: `Your Home Valuation – ${fullAddress || 'Property'}`,
           text: `Hi${name ? ` ${name.split(/\s+/)[0]}` : ''},\n\nAttached is your Comparative Market Analysis for ${fullAddress || 'your property'}.\n\nIf you have questions or want to discuss next steps, reply to this email or give us a call.\n\nBest,\nRyan Realty`,
           attachments: [{ filename: 'home-valuation.pdf', content: Buffer.from(buffer) }],
         })

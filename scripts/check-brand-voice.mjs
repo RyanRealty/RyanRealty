@@ -140,7 +140,74 @@ function isEmbeddedCode(value) {
 //    because "stunning" in a <title> is still "stunning".
 const SEO_METADATA_ASSIGNMENT = /\b(title|template|default|description|siteName)\s*:\s*(`|'|")?$/
 
-function isSeoMetadataValue(lineText, value) {
+// 7. NOT PROSE A READER SEES — Matt, 2026-08-02: "The em dash rule only applies
+//    to text users are reading on a page that might make it seem like it was
+//    written by AI."
+//
+//    That is the WHY behind the rule, and it narrows it sharply. The em dash is
+//    an AI tell inside a SENTENCE. It is not a tell in a short label, a field
+//    separator, or an accessibility attribute, and banning it there produced
+//    changes that made copy worse without making it less AI-looking.
+//
+//    Two mechanical consequences:
+//
+//    a) ATTRIBUTE VALUES (alt, aria-label, title=, placeholder) are read by a
+//       screen reader or shown on hover, never as page prose.
+//    b) SHORT LABELS AND SEPARATORS ("Bend — $755,000", "No MLS match — manual
+//       CMA needed") are composition, not writing. A sentence long enough to
+//       read as authored prose is the actual target.
+const ATTRIBUTE_ASSIGNMENT = /\b(alt|aria-label|aria-describedby|placeholder|title)\s*=\s*[{('"`]*$/
+
+// Sentence-shaped: enough total words to read as authored prose, and a real
+// clause after the dash rather than a value.
+//
+// The sides are weighted differently on purpose. What reads as AI is the
+// EXPANSION after the dash — "Central Oregon — where the high desert meets the
+// mountains" has only two words in front of it and is still exactly the tell.
+// What stays exempt is a separator, where the trailing side is a value rather
+// than a clause: "Bend — $755,000", "Matt Ryan — Ryan Realty".
+// Word counts alone cannot tell "Central Oregon — where the high desert meets
+// the mountains" (the tell) from "Matt Ryan — Ryan Realty principal broker" (a
+// label). Both are short-then-long. The discriminator is what the dash DOES:
+//
+//   AI tell   the sentence CONTINUES, so the next word is lowercase
+//             "…live market data — not from a guess", "Central Oregon — where…"
+//   label     a new VALUE starts, so it is capitalised or numeric
+//             "Matt Ryan — Ryan Realty", "Awbrey Butte — 12 active listings"
+//
+// Requiring a lowercase continuation keeps separators out of the gate, which
+// matters more than catching every last one: a false positive here is what
+// produced the over-correction this rule change is undoing.
+const PROSE_MIN_WORDS = 8
+const PROSE_MIN_WORDS_AFTER = 4
+
+function countWords(s) {
+  return (s.trim().match(/[A-Za-z][A-Za-z'’-]*/g) ?? []).length
+}
+
+function isProseSentence(value, char) {
+  if (countWords(value) < PROSE_MIN_WORDS) return false
+  const parts = value.split(char)
+  for (let i = 1; i < parts.length; i++) {
+    const after = parts[i].trimStart()
+    if (countWords(after) < PROSE_MIN_WORDS_AFTER) continue
+    if (/^[a-z]/.test(after)) return true // clause continues -> authored prose
+  }
+  return false
+}
+
+// Metadata in this repo is frequently split across two lines:
+//
+//   description:
+//     'Find your next home in Bend — pricing, photos, and live data.',
+//
+// so the assignment sits on the PREVIOUS line and a same-line-only check would
+// miss it and flag the value as prose. `prevLineText` closes that.
+function isSeoMetadataValue(lineText, value, prevLineText) {
+  if (prevLineText && SEO_METADATA_ASSIGNMENT.test(prevLineText.trimEnd())) {
+    // Current line must be just the literal, not code that happens to follow.
+    if (/^\s*[`'"]/.test(lineText ?? '')) return true
+  }
   if (!lineText) return false
   // The literal's own line, up to where the literal starts.
   const idx = lineText.indexOf(value.slice(0, 24))
@@ -148,8 +215,16 @@ function isSeoMetadataValue(lineText, value) {
   return SEO_METADATA_ASSIGNMENT.test(prefix.trimEnd())
 }
 
-function findPunctuationViolations(value, lineNum, snippet, relPath, lineText) {
-  if (isSeoMetadataValue(lineText, value)) return []
+function isAttributeValue(lineText, value) {
+  if (!lineText) return false
+  const idx = lineText.indexOf(value.slice(0, 24))
+  const prefix = idx > 0 ? lineText.slice(0, idx) : lineText
+  return ATTRIBUTE_ASSIGNMENT.test(prefix.trimEnd())
+}
+
+function findPunctuationViolations(value, lineNum, snippet, relPath, lineText, prevLineText) {
+  if (isSeoMetadataValue(lineText, value, prevLineText)) return []
+  if (isAttributeValue(lineText, value)) return []
   if (relPath && REVIEW_DATA_FILES.has(relPath)) return []
   if (isDebugOutput(value)) return []
   if (isEmbeddedCode(value)) return []
@@ -170,6 +245,10 @@ function findPunctuationViolations(value, lineNum, snippet, relPath, lineText) {
       residual = residual.replace(RANGE_SEPARATOR, PLACEHOLDER_MARK)
     } while (residual !== prev)
     if (!residual.includes(p.char)) continue
+    // The rule targets an AI tell inside a SENTENCE. A short label or a
+    // separator between two values is not what a reader clocks as machine
+    // writing, so it is not a violation.
+    if (!isProseSentence(residual, p.char)) continue
     out.push({ word: `${p.label} — ${p.advice}`, line: lineNum, snippet })
   }
   return out
@@ -178,7 +257,7 @@ function findPunctuationViolations(value, lineNum, snippet, relPath, lineText) {
 // Exported for scripts/__tests__/brand-voice-punctuation.test.mjs. The
 // exemptions below encode §2 carve-outs; a silent regression in one of them
 // would either re-open the em-dash hole or start flagging legitimate output.
-export { findPunctuationViolations, isEmbeddedCode, isDebugOutput, stripInterpolations }
+export { findPunctuationViolations, isEmbeddedCode, isDebugOutput, isProseSentence, stripInterpolations }
 
 function normalize(p) {
   return p.split(sep).join('/')
@@ -367,7 +446,7 @@ function scanFile(absPath) {
         violations.push({ word: `Law ${pat.law}: ${pat.label}`, line: lineNum, snippet: lit.value.slice(0, 80) })
       }
     }
-    violations.push(...findPunctuationViolations(lit.value, lineNum, lit.value.slice(0, 80), relPath, lineText))
+    violations.push(...findPunctuationViolations(lit.value, lineNum, lit.value.slice(0, 80), relPath, lineText, lines[lineNum - 2] ?? ''))
   }
 
   // JSX text children — slogans written between tags, invisible to the literal
@@ -388,7 +467,7 @@ function scanFile(absPath) {
         violations.push({ word: `Law ${pat.law}: ${pat.label}`, line: lineNum, snippet })
       }
     }
-    violations.push(...findPunctuationViolations(frag.value, lineNum, snippet, relPath, lines[lineNum - 1] ?? ''))
+    violations.push(...findPunctuationViolations(frag.value, lineNum, snippet, relPath, lines[lineNum - 1] ?? '', lines[lineNum - 2] ?? ''))
   }
 
   if (violations.length === 0) return null

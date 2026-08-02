@@ -103,7 +103,7 @@ export default async function AreaGuidesPage() {
             type: 'webPage',
             name: 'Central Oregon area guides',
             description:
-              'Explore Central Oregon by city and community. Bend, Redmond, Sisters, Sunriver, and beyond, with market trends and homes for sale in every area.',
+              'Explore Central Oregon by city and community — Bend, Redmond, Sisters, Sunriver, and beyond, with market trends and homes for sale in every area.',
             url: '/area-guides',
           },
         ]}

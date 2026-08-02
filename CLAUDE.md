@@ -160,13 +160,13 @@ technical docs) is NOT governed.
 
 ## Hard fails
 
-**Punctuation.** Em dashes (`—`) and en dashes (`–`) — replace with a period or comma.
-Semicolons — replace with a period. Dramatic colons in body prose (colons in headers, list
+**Punctuation.** Em/en dashes are banned **only in prose a reader sees that reads as
+AI-written** (Matt 2026-08-02). Labels, separators, alt/aria text, SEO metadata and the
+"unavailable" placeholder are fine. Gated; see `voice_guidelines.md` §6.1.
+Semicolons, replace with a period. Dramatic colons in body prose (colons in headers, list
 intros, and tables are fine). Exclamation marks in body copy: one per piece maximum, none in
-market-data content. *Exceptions (gated):* em-dash as an "unavailable" mark, and
-**in SEO metadata — titles, descriptions (Matt 2026-08-02)**; `voice_guidelines.md` §6.
-Compound hyphens stay where English requires (single-family, 30-year fixed);
-`ryan-realty.com` needs its hyphen.
+market-data content. Compound hyphens stay where English requires (single-family, 30-year
+fixed); `ryan-realty.com` needs its hyphen.
 
 **Words** (categories; the full list is the vocabulary file above):
 - *Real-estate clichés* — stunning, breathtaking, gorgeous, charming, pristine, nestled,
