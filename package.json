@@ -360,7 +360,9 @@
     "secrets:pack": "node scripts/secrets-pack.mjs",
     "ci:person-workspace-single-tree": "node scripts/check-person-workspace-single-tree.mjs",
     "wt:status": "node scripts/worktree-hygiene.mjs",
-    "ci:community-alias-cities": "node scripts/check-community-alias-cities.mjs"
+    "ci:community-alias-cities": "node scripts/check-community-alias-cities.mjs",
+    "ci:lighthouse": "lhci autorun --config=./lighthouserc.cjs",
+    "ci:a11y": "pa11y-ci"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",

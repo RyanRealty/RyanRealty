@@ -75,8 +75,7 @@ jobs:
           # Pick a real listing key (falls back to a known-active one)
           export SMOKE_LISTING_KEY=$(node scripts/pick-lhci-listing.mjs 2>/dev/null | grep -oE '[0-9]{20,}' | head -1)
           npm run start:ci > /tmp/route-smoke-server.log 2>&1 &
-          SERVER_PID=$!
-          trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
+          echo "SMOKE_SERVER_PID=$!" >> "$GITHUB_ENV"
           if ! node scripts/wait-for-server.mjs http://127.0.0.1:3000 180; then
             echo "----- server log -----"
             cat /tmp/route-smoke-server.log || true
@@ -87,10 +86,29 @@ jobs:
       # Lighthouse CI — gates PRs on perf/a11y/BP/SEO regression against
       # lighthouserc.cjs thresholds. Uses start-server-and-test under the hood.
       # Skipped on push events (already run nightly via quality.yml).
+      # NOTE (2026-08-02): this step and pa11y below have NEVER executed. They
+      # called `npm run ci:lighthouse` / `npm run ci:a11y`, and neither script
+      # existed in package.json — every run died instantly on "Missing script".
+      # Nobody noticed because the route smoke above failed first for months, so
+      # both were permanently skipped. Same shape as the punctuation rule: a
+      # gate that was documented, believed enforced, and checked by nothing.
+      #
+      # The scripts are now defined (the tooling and configs were always here:
+      # @lhci/cli + lighthouserc.cjs, pa11y-ci + .pa11yci.json), so these run
+      # for the first time.
+      #
+      # continue-on-error while their thresholds get a first look. Turning on
+      # two never-validated quality gates is a bar-setting decision, not a bug
+      # fix, and failing a PR on numbers nobody has reviewed would be the wrong
+      # default. Flip to false once the first real output has been read.
+      #
+      # Both need a server on 127.0.0.1:3000 and lighthouserc.cjs sets no
+      # startServerCommand, so the smoke step above leaves its server running
+      # and "Stop smoke server" below tears it down.
       - name: Lighthouse CI
         if: github.event_name == 'pull_request'
         run: npm run ci:lighthouse
-        continue-on-error: false
+        continue-on-error: true
 
       # G23 — pa11y-ci. The Lighthouse a11y category covers aggregate
       # scoring but misses specific WCAG 2.1 failures that show up at
@@ -100,7 +118,20 @@ jobs:
       - name: pa11y-ci accessibility
         if: github.event_name == 'pull_request'
         run: npm run ci:a11y
-        continue-on-error: false
+        continue-on-error: true
+
+      # Tears down the server the smoke step started. Kills the process GROUP:
+      # `npm run start:ci` spawns next-server as a child, so killing the npm pid
+      # alone leaves it holding port 3000 — visible in earlier runs as
+      # "Terminate orphan process: next-server" during job cleanup.
+      - name: Stop smoke server
+        if: always()
+        run: |
+          if [ -n "${SMOKE_SERVER_PID:-}" ]; then
+            kill -- "-$(ps -o pgid= "$SMOKE_SERVER_PID" | tr -d ' ')" 2>/dev/null || kill "$SMOKE_SERVER_PID" 2>/dev/null || true
+          fi
+          pkill -f 'next-server' 2>/dev/null || true
+          exit 0
 
       # Build health tracking
       - name: Record build health metrics
