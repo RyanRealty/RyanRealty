@@ -81,6 +81,39 @@ describe('brand-voice punctuation gate — honors the §2 carve-outs', () => {
   })
 })
 
+describe('SEO metadata carve-out (Matt, 2026-08-02)', () => {
+  // "We can have em dashes in page titles for SEO and SEO where appropriate."
+  // A SERP title is not body prose. The exemption is scoped to metadata VALUES
+  // and to the punctuation rule only.
+  const atLine = (lineText, value) =>
+    findPunctuationViolations(value, 1, value.slice(0, 60), 'app/x/page.tsx', lineText)
+
+  it('allows an em dash in a page title', () => {
+    expect(atLine("title: 'FAQ — Real Estate in Bend, Oregon',", 'FAQ — Real Estate in Bend, Oregon')).toHaveLength(0)
+  })
+
+  it('allows an em dash in the layout title template', () => {
+    expect(
+      atLine('  template: "%s | Ryan Realty — Central Oregon",', '%s | Ryan Realty — Central Oregon'),
+    ).toHaveLength(0)
+  })
+
+  it('allows an em dash in a meta description and in siteName', () => {
+    expect(atLine("  description: 'Homes in Bend — updated daily.',", 'Homes in Bend — updated daily.')).toHaveLength(0)
+    expect(atLine("  siteName: 'Ryan Realty — Central Oregon',", 'Ryan Realty — Central Oregon')).toHaveLength(0)
+  })
+
+  it('does NOT leak the exemption into ordinary prose on a nearby line', () => {
+    expect(
+      atLine("  const heading = 'Compare homes — price and size'", 'Compare homes — price and size'),
+    ).toHaveLength(1)
+  })
+
+  it('does NOT exempt JSX body text', () => {
+    expect(atLine('<p>Sell your home — fast</p>', 'Sell your home — fast')).toHaveLength(1)
+  })
+})
+
 describe('stripInterpolations', () => {
   it('removes ${...} blocks so in-expression dashes are not read as prose', () => {
     expect(stripInterpolations("a ${x ?? '—'} b")).not.toContain('—')

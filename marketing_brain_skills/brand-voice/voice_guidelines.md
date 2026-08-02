@@ -243,6 +243,22 @@ These mark AI-generated text and are banned in every piece of published content.
 - **Compound hyphens are allowed** when standard English requires them. Examples: single-family, out-of-state, 30-year fixed, first-time buyer, well-maintained.
 - **Pre-publish em-dash grep is mandatory.** `grep -nP '[–—]' <caption-file>` returns zero matches before any caption ships. Em-dashes that slipped past this gate in May 2026 captions are a known regression and are not allowed to recur. Same rule applies to blog posts, ad copy, email body, video on-screen text, listing descriptions, flyers, and signage.
 
+#### Exception: SEO metadata (Matt, 2026-08-02)
+
+> "We can have em dashes in page titles for SEO and SEO where appropriate."
+
+**Em dashes ARE allowed in SEO metadata**: the `<title>`, the layout title template, meta descriptions, and `siteName`. A SERP title is not body prose. The dash is a scannable separator between the page name and the brand or qualifier, and it is what Google renders in the result.
+
+Scope, precisely:
+
+- **Applies to** the metadata *value* only, in `app/**` metadata exports (`title`, `template`, `default`, `description`, `siteName`).
+- **Does NOT apply to** body copy, headings, JSX text, captions, or anything in the published-content channels above. Those keep the ban, and the runtime guard `assertNoDashes()` in `lib/punctuation-guard.ts` still blocks the social publish path.
+- **Only the punctuation rule is relaxed.** Banned words and the VOICE.md banned moves still apply to titles: "stunning" in a `<title>` is still "stunning".
+
+Enforced by the SEO-metadata carve-out in `scripts/check-brand-voice.mjs`, covered both directions by `scripts/__tests__/brand-voice-punctuation.test.mjs` (a dash in a title passes; the same dash in adjacent prose still fails).
+
+**Length still governs.** The exception permits the dash, it does not license a long title. Google truncates around 60 characters, so a keyword-rich brand suffix that pushes past that trades a visible word for an invisible one.
+
 ### 6.2 Banned words
 
 These are AI-tells, real-estate clichés, or both. Never use any of these.

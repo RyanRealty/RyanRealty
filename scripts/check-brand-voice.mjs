@@ -131,7 +131,25 @@ function isEmbeddedCode(value) {
   return /\{[^}]*[a-z-]+\s*:[^};]+;/i.test(value)
 }
 
-function findPunctuationViolations(value, lineNum, snippet, relPath) {
+// 6. SEO METADATA — Matt, 2026-08-02: "We can have em dashes in page titles for
+//    SEO and SEO where appropriate." A SERP title is not body prose; the dash is
+//    a scannable separator between the page name and the brand/qualifier, and it
+//    is what Google renders. This exempts the metadata VALUES only — title,
+//    template, default, description, siteName — and only from the PUNCTUATION
+//    rule. Banned words and the VOICE.md banned moves still apply to titles,
+//    because "stunning" in a <title> is still "stunning".
+const SEO_METADATA_ASSIGNMENT = /\b(title|template|default|description|siteName)\s*:\s*(`|'|")?$/
+
+function isSeoMetadataValue(lineText, value) {
+  if (!lineText) return false
+  // The literal's own line, up to where the literal starts.
+  const idx = lineText.indexOf(value.slice(0, 24))
+  const prefix = idx > 0 ? lineText.slice(0, idx) : lineText
+  return SEO_METADATA_ASSIGNMENT.test(prefix.trimEnd())
+}
+
+function findPunctuationViolations(value, lineNum, snippet, relPath, lineText) {
+  if (isSeoMetadataValue(lineText, value)) return []
   if (relPath && REVIEW_DATA_FILES.has(relPath)) return []
   if (isDebugOutput(value)) return []
   if (isEmbeddedCode(value)) return []
@@ -349,7 +367,7 @@ function scanFile(absPath) {
         violations.push({ word: `Law ${pat.law}: ${pat.label}`, line: lineNum, snippet: lit.value.slice(0, 80) })
       }
     }
-    violations.push(...findPunctuationViolations(lit.value, lineNum, lit.value.slice(0, 80), relPath))
+    violations.push(...findPunctuationViolations(lit.value, lineNum, lit.value.slice(0, 80), relPath, lineText))
   }
 
   // JSX text children — slogans written between tags, invisible to the literal
@@ -370,7 +388,7 @@ function scanFile(absPath) {
         violations.push({ word: `Law ${pat.law}: ${pat.label}`, line: lineNum, snippet })
       }
     }
-    violations.push(...findPunctuationViolations(frag.value, lineNum, snippet, relPath))
+    violations.push(...findPunctuationViolations(frag.value, lineNum, snippet, relPath, lines[lineNum - 1] ?? ''))
   }
 
   if (violations.length === 0) return null

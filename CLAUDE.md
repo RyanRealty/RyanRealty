@@ -163,9 +163,10 @@ technical docs) is NOT governed.
 **Punctuation.** Em dashes (`—`) and en dashes (`–`) — replace with a period or comma.
 Semicolons — replace with a period. Dramatic colons in body prose (colons in headers, list
 intros, and tables are fine). Exclamation marks in body copy: one per piece maximum, none in
-market-data content. *Exception:* the em-dash is allowed as a literal data placeholder for
-"unavailable" in a stats table. Compound hyphens stay where standard English requires them
-(single-family, out-of-state, 30-year fixed, well-maintained); `ryan-realty.com` needs its hyphen.
+market-data content. *Exceptions (gated):* em-dash as an "unavailable" mark, and
+**in SEO metadata — titles, descriptions (Matt 2026-08-02)**; `voice_guidelines.md` §6.
+Compound hyphens stay where English requires (single-family, 30-year fixed);
+`ryan-realty.com` needs its hyphen.
 
 **Words** (categories; the full list is the vocabulary file above):
 - *Real-estate clichés* — stunning, breathtaking, gorgeous, charming, pristine, nestled,
