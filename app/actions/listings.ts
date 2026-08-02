@@ -21,7 +21,7 @@ import {
 import { resolveLegacyPropertySubType } from '@/lib/data/listings/searchPredicates'
 import { resolveViewContainsValues, viewContainsAsViewTypes } from '@/lib/search-presets'
 import type { ListingTile, SearchFeatureFilters, SearchListingsAllFilter } from '@/lib/data'
-import { PUBLIC_ACTIVE_OR_PREDICATE, PUBLIC_ON_MARKET_OR_PREDICATE_WIDE, PUBLIC_SEARCH_STATUS_FILTERS, isPubliclyDisplayableStatus } from '@/lib/listing-status-public'
+import { PUBLIC_ACTIVE_OR_PREDICATE, PUBLIC_ACTIVE_OR_PREDICATE_EXACT, PUBLIC_ON_MARKET_OR_PREDICATE_WIDE, PUBLIC_SEARCH_STATUS_FILTERS, isPubliclyDisplayableStatus } from '@/lib/listing-status-public'
 
 function getAnonSupabase(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -2353,16 +2353,15 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
   return R * c
 }
 
-/**
- * Communities in a city with listing counts (for city page "Communities in {city}").
- */
+/** Communities in a city with listing counts (for city page "Communities in {city}").
+ * Perf: pre-filters via PUBLIC_ACTIVE_OR_PREDICATE_EXACT (see its doc comment — 2026-08-02 fix for /admin/media/banners's 60s+ cold load). */
 export async function getSubdivisionsInCity(city: string): Promise<SubdivisionInCity[]> {
   const supabase = getAnonSupabase()
   if (!supabase || !city?.trim()) return []
   const { fetchAllRows: fetchAll } = await import('@/lib/supabase/paginate')
   const rows = await fetchAll<{ SubdivisionName?: string | null; StandardStatus?: string | null }>(
     supabase, 'listings', 'SubdivisionName, StandardStatus',
-    (q: any) => q.eq('"City"', city),
+    (q: any) => q.eq('"City"', city).or(PUBLIC_ACTIVE_OR_PREDICATE_EXACT),
   )
   const bySub = new Map<string, number>()
   for (const row of rows) {

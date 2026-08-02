@@ -74,8 +74,12 @@ const ADMIN_TIMEOUT_MS = Number(process.env.SMOKE_ADMIN_TIMEOUT_MS ?? 60_000)
 // The real fix is in listMissingBanners / getSubdivisionsInCity, not in this
 // file. Deliberately not attempted from here: measuring that query needs live
 // Supabase, and a performance change nobody can measure is a guess.
+// /admin/media/banners was skipped here from 2026-08-02 until the cold-load
+// cause was found: getSubdivisionsInCity() fetched EVERY historical row for each
+// of 13 cities (277,415 rows, 284 round-trips, 38.2s) and filtered to "active"
+// in JS. Now pre-filtered server-side: 3,344 rows, 14 round-trips, 271-510ms,
+// byte-identical output. The route is back in the smoke set.
 const SKIP_ROUTES = new Map([
-  ['/admin/media/banners', 'exceeds 60s on a cold cache; fix belongs in listMissingBanners'],
 ])
 
 function timeoutFor(path) {
