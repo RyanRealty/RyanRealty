@@ -87,7 +87,7 @@ export function NotFoundClient() {
     // flag is the signal. Cleared on unmount (e.g. client-nav to a real page).
     document.documentElement.dataset.notFound = '1'
     try {
-      document.title = 'Page not found | Ryan Realty — Central Oregon Real Estate'
+      document.title = 'Page not found | Ryan Realty'
     } catch {
       // ignore
     }

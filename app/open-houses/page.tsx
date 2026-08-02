@@ -36,7 +36,7 @@ export const revalidate = 60
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
-    title: 'Open Houses in Central Oregon — This Weekend and Upcoming',
+    title: 'Open Houses in Central Oregon',
     description:
       'Browse open houses this weekend and upcoming in Bend, Redmond, Sisters, and Central Oregon. Live list from the regional MLS with times, photos, and prices.',
     path: '/open-houses',

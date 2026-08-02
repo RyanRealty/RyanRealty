@@ -70,7 +70,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const [broker, brokerage] = await Promise.all([getAgentBySlug(slug), getBrokerageSettings()])
   if (!broker) notFound()
   const siteName = brokerage?.name ?? 'Ryan Realty'
-  const title = `${broker.display_name} · ${siteName} — Central Oregon real estate`
+  const title = `${broker.display_name} · ${siteName}`
   const description =
     broker.bio?.slice(0, 155) ??
     `${broker.display_name}, ${broker.title ?? 'Real Estate Broker'} at ${siteName}. Licensed in Oregon. Contact for Central Oregon real estate.`

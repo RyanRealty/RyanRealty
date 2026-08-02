@@ -72,7 +72,7 @@ export default function BrokerCard({ agent, basePath = 'team' }: Props) {
               onClickWrap={(e) => { e.preventDefault(); e.stopPropagation() }}
               share={{
                 url: shareUrl,
-                title: `${agent.display_name} – Ryan Realty`,
+                title: `${agent.display_name}, Ryan Realty`,
                 text: agent.bio ? agent.bio.slice(0, 100) : undefined,
                 ariaLabel: `Share ${agent.display_name}`,
               }}

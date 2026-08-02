@@ -83,3 +83,50 @@ Only the compact per-class tuples are persisted.
 **Audit recommendation dropped as unnecessary:** "split `listings` into paginated children
 under the 50K limit." The listings class is ~7.6K URLs, well inside both the 50,000-URL and
 50MB sitemap limits. Splitting would add moving parts for no gain.
+
+| 16:02 | **Round 1 merged and committed** (`fbf512e`). B, D, E verified against their own claims, not taken on report. 358/358 test files green |
+| 16:10 | **C (punctuation gate) done.** Gate wired, 18 real prose violations fixed, ratchet held at 0. 12 new tests |
+
+### Worker B, D, E — verification notes
+
+Each worker's claim was re-checked rather than accepted:
+
+- **B** correctly identified that `normalizeAgentSlug` was the WRONG resolver (it returns the
+  3-value attribution slug, and `null` for three of the aliases, which would have produced
+  `/team/null`). It used `broker.slug` instead. It also flagged that the page BODY had the same
+  bug feeding the JSON-LD `url` and BreadcrumbList — outside its brief, so I fixed it. That
+  collided with an existing `canonicalSlug` in the same scope, hence `canonicalPathSlug`.
+- **D** located the truncation in `lib/share-metadata.ts` (not `lib/seo/`). Verified it is the
+  real path: `/sell` imports `pageMetadata`, which calls `shareDescription` at line 88. Re-ran
+  the fix against the four actual live descriptions.
+- **E** caught a multi-hop chain the brief missed: `/matthew-ryan` already pointed at
+  `/team/matt-ryan`, so adding `/team/matt-ryan` would have created a 2-hop redirect the gate
+  rejects. It retargeted both.
+
+### Worker C — the punctuation gate, and what it should NOT enforce
+
+`VOCAB.PUNCTUATION` has four entries. Only the two dashes are gated, deliberately:
+
+- **semicolon** — string literals in `app/` and `components/` are full of CSS and SVG where
+  `;` is syntax. §2 bans it in *body prose*, which a literal-level scanner cannot separate
+  from a style string.
+- **exclamation** — §2 allows one per piece and bans it only in market-data copy. That is a
+  per-deliverable budget, not a per-literal rule.
+
+Encoding either would trade a real gate for a noisy one. Both stay under human review per §2.
+
+Five exemptions, each carved out by §2 itself: bare data placeholder, dash inside a `${...}`
+fallback, numeric range, debug output, client reviews, embedded CSS/JS. Without them the gate
+flagged 243 items, most of them legitimate output whose "fix" would have degraded the product.
+With them: 82 → 23 → 18 genuine prose violations, all fixed. **Baseline stays at 0** — no
+ratchet regression.
+
+Proven working: injecting an em dash into `app/faq/page.tsx` makes the gate fail; removing it
+returns to green.
+
+### Blocker fixed along the way
+
+The pre-commit hook aborted before running a single gate. husky invokes hooks as `sh -e`,
+ignoring the bash shebang, and dash has no `set -o pipefail`. Also fixed a pre-existing test
+that failed on Node 22 for ICU reasons (`hour12: false` renders midnight as `'24'` on old ICU,
+`'00'` on new). Confirmed pre-existing by reproducing it on a clean stash of HEAD.

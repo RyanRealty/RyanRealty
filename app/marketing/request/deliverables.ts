@@ -281,7 +281,7 @@ export const DELIVERABLE_GROUPS: DeliverableGroup[] = [
       {
         id: 'site_property_landing_create',
         label: 'Per-listing landing page',
-        description: 'Dedicated page for one listing — gallery, video, 3D tour, showing form.',
+        description: 'Dedicated page for one listing. Gallery, video, 3D tour, showing form.',
         prompt: 'Build a per-listing landing page.',
         needsProperty: true,
       },

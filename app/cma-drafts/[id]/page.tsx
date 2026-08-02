@@ -26,7 +26,7 @@ import SiteFooter from '@/components/site/SiteFooter'
 
 export const dynamic = 'force-dynamic'
 export const metadata = {
-  title: 'Review and send CMA — Ryan Realty',
+  title: 'Review and send CMA',
   robots: { index: false, follow: false },
 }
 
@@ -122,7 +122,7 @@ export default async function CmaDraftReviewPage({
           {r.status === 'sent'
             ? 'CMA sent'
             : r.status === 'no_match'
-              ? 'No MLS match — manual CMA needed'
+              ? 'No MLS match. Manual CMA needed'
               : 'Review and send the CMA'}
         </h1>
         <p className="mt-2 text-foreground/70">

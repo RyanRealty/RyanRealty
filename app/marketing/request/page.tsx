@@ -22,7 +22,7 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 export const metadata: Metadata = {
   title: 'Marketing request | Ryan Realty',
   description:
-    'Here is what the Ryan Realty marketing team can build for you — listing kits, market reports, social posts, ads, blog posts, and more. Pick what you need and we will draft it.',
+    'Here is what the Ryan Realty marketing team can build for you. Listing kits, market reports, social posts, ads, blog posts, and more. Pick what you need and we will draft it.',
   robots: { index: false, follow: false },
 }
 

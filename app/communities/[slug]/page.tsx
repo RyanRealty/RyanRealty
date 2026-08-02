@@ -882,7 +882,7 @@ export default async function CommunityDetailPage({ params }: Props) {
         <KbBuyCta
           communityName={community.name}
           listingsHref={homesForSalePath(cityName, community.subdivision)}
-          contactHref={`/contact?inquiryType=Buying&message=${encodeURIComponent(`Interested in ${community.name} — please get in touch.`)}`}
+          contactHref={`/contact?inquiryType=Buying&message=${encodeURIComponent(`Interested in ${community.name}. Please get in touch.`)}`}
         />
         {/* Listing-alert email capture — reuses submitSearchAlertSignup + the
             canonical listing_alerts table (same path as SearchAlertCapture on

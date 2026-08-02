@@ -43,12 +43,12 @@ const ogImage = `${siteUrl}/api/og?type=default`
 export const revalidate = 60
 
 export const metadata: Metadata = {
-  title: 'Area Guides | Central Oregon Cities & Communities',
+  title: 'Area Guides | Central Oregon Cities',
   description:
     'Explore Bend, Redmond, Sisters, Sunriver, La Pine, Prineville and more. Neighborhoods, market trends, and homes for sale in every corner of Central Oregon.',
   alternates: { canonical: `${siteUrl}/area-guides` },
   openGraph: {
-    title: 'Area Guides | Ryan Realty — Central Oregon',
+    title: 'Area Guides | Ryan Realty',
     url: `${siteUrl}/area-guides`,
     type: 'website',
     images: [{ url: ogImage, width: 1200, height: 630 }],
@@ -103,7 +103,7 @@ export default async function AreaGuidesPage() {
             type: 'webPage',
             name: 'Central Oregon area guides',
             description:
-              'Explore Central Oregon by city and community — Bend, Redmond, Sisters, Sunriver, and beyond, with market trends and homes for sale in every area.',
+              'Explore Central Oregon by city and community. Bend, Redmond, Sisters, Sunriver, and beyond, with market trends and homes for sale in every area.',
             url: '/area-guides',
           },
         ]}

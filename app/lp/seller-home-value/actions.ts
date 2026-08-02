@@ -378,7 +378,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       person,
       source: resolveLeadSource(originUtmSource, source),
       sourceUrl: leadSourceUrl,
-      pageTitle: 'Seller LP — Home Value',
+      pageTitle: 'Seller LP, Home Value',
       message: `Seller LP submission. Address: ${parsed.full}. Timeline: ${timeline ?? 'unspecified'}. Tier: ${classification}. Assigned: ${assignment.broker}.`,
       property: {
         street: parsed.street ?? undefined,
