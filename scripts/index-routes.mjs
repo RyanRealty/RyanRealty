@@ -28,12 +28,33 @@ const APP = resolve('app')
 // expanding [slug] segments. We read them from the SOURCE files so
 // the inventory tracks reality — not a stale copy.
 
+// PRIMARY_CITIES moved: lib/cities.ts now only RE-EXPORTS it
+// (`import { PRIMARY_CITIES } from '@/lib/data/geo/report-cities'`), so the
+// literal-array regex below stopped matching there and this generator threw on
+// every run. That is why docs/ROUTE_INVENTORY.md went stale — it could not be
+// regenerated at all, and the smoke gate that reads it kept testing routes that
+// no longer exist. Search the candidates in order and use the first that holds
+// the actual literal, so a future move breaks the search rather than the build.
+const CITY_SLUG_SOURCES = ['lib/data/geo/report-cities.ts', 'lib/cities.ts']
+
 const CITY_SLUGS = (() => {
-  const mod = readFileSync(resolve('lib/cities.ts'), 'utf8')
-  const block = mod.match(/PRIMARY_CITIES\s*=\s*\[([\s\S]*?)\]/)
-  if (!block) throw new Error('lib/cities.ts no longer exports PRIMARY_CITIES as a literal array')
-  return [...block[1].matchAll(/'([^']+)'/g)].map((m) =>
-    m[1].toLowerCase().replace(/\s+/g, '-'),
+  for (const rel of CITY_SLUG_SOURCES) {
+    let mod
+    try {
+      mod = readFileSync(resolve(rel), 'utf8')
+    } catch {
+      continue
+    }
+    const block = mod.match(/PRIMARY_CITIES\s*=\s*\[([\s\S]*?)\]/)
+    if (!block) continue
+    const slugs = [...block[1].matchAll(/'([^']+)'/g)].map((m) =>
+      m[1].toLowerCase().replace(/\s+/g, '-'),
+    )
+    if (slugs.length > 0) return slugs
+  }
+  throw new Error(
+    `PRIMARY_CITIES literal array not found in any of: ${CITY_SLUG_SOURCES.join(', ')}. ` +
+      'If it moved again, add the new path to CITY_SLUG_SOURCES.',
   )
 })()
 

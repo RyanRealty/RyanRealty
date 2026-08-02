@@ -62,6 +62,13 @@ function loadRoutesFromInventory() {
   while ((m = re.exec(md))) {
     const path = m[1]
     if (path.includes('<runtime-resolved>')) continue
+    // The inventory also carries non-path markers for dynamic families the
+    // generator cannot expand — it writes a literal `(no enumeration)` row
+    // (scripts/index-routes.mjs). Those are documentation, not URLs: fetching
+    // one produced "Failed to parse URL from http://127.0.0.1:3000(no
+    // enumeration)" and counted as a smoke failure. Anything that is not a
+    // rooted path is a marker, so skip it rather than enumerate marker strings.
+    if (!path.startsWith('/')) continue
     routes.push({ path, name: path === '/' ? 'homepage' : path.replace(/^\//, '') })
   }
   return routes
