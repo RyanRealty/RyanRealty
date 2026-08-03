@@ -34,7 +34,8 @@ export default async function DscrPage() {
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">DSCR acquisition screen</h1>
         <p className="max-w-3xl text-sm text-muted-foreground">
-          {rows.length.toLocaleString()} active listings a DSCR lender would finance, ranked best first.
+          {rows.length.toLocaleString()} active Central Oregon listings (Deschutes, Crook, Jefferson)
+          a DSCR lender would finance, ranked best first.
           {' '}<strong>Buy at</strong> is the price that would put the property at DSCR 1.00 on its own rent,
           and <strong>Delta</strong> is how far that sits from asking. DSCR is the lender&apos;s test and
           ignores operating costs, so a property can clear 1.00 and still lose money each month. Cash flow

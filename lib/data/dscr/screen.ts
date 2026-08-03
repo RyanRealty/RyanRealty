@@ -105,13 +105,23 @@ function monthlyPI(loan: number, annualRatePct: number, years: number): number {
 const EXCLUDED_SUBTYPES = ['In Park', 'Residential Leased Land', 'Tenancy in Common', 'On Leased Land', 'Timeshare']
 /** DSCR loans need real property and clear a minimum loan amount (~$100K). */
 const MIN_PRICE = 133_000
+/**
+ * Central Oregon — the brokerage's service area, matching lib/hud-fmr.ts.
+ * The listings table spans 31 counties (a lot of southern Oregon), so without
+ * this the screen ranks Klamath Falls and Grants Pass above everything local.
+ */
+export const CENTRAL_OREGON_COUNTIES = ['Deschutes', 'Crook', 'Jefferson'] as const
 
-export async function getDscrScreen(a: DscrAssumptions = DSCR_DEFAULTS): Promise<DscrRow[]> {
+export async function getDscrScreen(
+  a: DscrAssumptions = DSCR_DEFAULTS,
+  opts: { counties?: readonly string[] | null } = {},
+): Promise<DscrRow[]> {
+  const counties = opts.counties === undefined ? CENTRAL_OREGON_COUNTIES : opts.counties
   const sb = createServiceClient()
 
   const listings: Record<string, unknown>[] = []
   for (let from = 0; ; from += 1000) {
-    const { data, error } = await sb
+    let q = sb
       .from('listing_search_mv')
       .select(
         'listing_key,list_number,street_number,street_name,street_suffix,city,county,subdivision_name,property_sub_type,photo_url,list_price,beds,baths,sqft,year_built,dom,units_total,str_permit_yn,adu_yn,tax_annual_amount,hoa_monthly',
@@ -120,8 +130,8 @@ export async function getDscrScreen(a: DscrAssumptions = DSCR_DEFAULTS): Promise
       .in('property_type', ['A', 'B', 'C'])
       .not('property_sub_type', 'in', `(${EXCLUDED_SUBTYPES.map((s) => `"${s}"`).join(',')})`)
       .gte('list_price', MIN_PRICE)
-      .order('listing_key', { ascending: true })
-      .range(from, from + 999)
+    if (counties?.length) q = q.in('county', counties)
+    const { data, error } = await q.order('listing_key', { ascending: true }).range(from, from + 999)
     if (error) {
       console.error('[getDscrScreen] listings', error.message)
       return []
