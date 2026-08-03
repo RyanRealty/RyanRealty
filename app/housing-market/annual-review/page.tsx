@@ -61,6 +61,7 @@
  */
 
 import type { Metadata } from 'next'
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { getMarketPulse, getMarketPulseCitySnapshots, getCityMarketDetail } from '@/lib/data'
@@ -84,7 +85,6 @@ import {
   Container,
   Section,
   Stack,
-  Grid,
   Eyebrow,
   H1,
   H2,
@@ -95,9 +95,6 @@ import {
   TabularNumber,
   DaysCount,
 } from '@/components/site/primitives'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { submitMarketPageInquiry } from '@/app/housing-market/actions'
 import '@/components/site/kb/kb.css'
 
@@ -120,11 +117,23 @@ const dbGeoSlug = (citySlug: string): string => CITY_DB_GEO_SLUG[citySlug] ?? ci
 const GRID_CITIES = REPORT_CITIES.filter((c) => !(c.label in NON_MLS_CITY_EXEMPTIONS))
 const NAMED_EXEMPTIONS = REPORT_CITIES.filter((c) => c.label in NON_MLS_CITY_EXEMPTIONS)
 
-const badgeVariantFor: Record<'sellers' | 'balanced' | 'buyers' | 'unknown', 'success' | 'soft-neutral' | 'warning'> = {
-  sellers: 'success',
-  balanced: 'soft-neutral',
-  buyers: 'warning',
-  unknown: 'soft-neutral',
+/**
+ * KPI tile. The KB (kinetic-brutalist) kb.css `.mkt-kpi` pattern, the exact
+ * classes KbMarketHud.client.tsx uses for the region/city "market desk" KPI
+ * grid on the live report pages (central-oregon, housing-market/[...slug]).
+ * This page is already a KB shell (`kb-root` + kb.css import below), so those
+ * classes apply here as-is (ci:shadcn-burndown / ci:design-tokens: no
+ * @/components/ui/card import, no hand-rolled rounded-2xl+border+bg-card
+ * shell, a real KB class instead).
+ */
+function KpiTile({ val, lbl, sub }: { val: ReactNode; lbl: string; sub?: ReactNode }) {
+  return (
+    <div className="mkt-kpi">
+      <span className="mkt-kpi-val">{val}</span>
+      <span className="mkt-kpi-lbl">{lbl}</span>
+      {sub != null ? <span className="mkt-kpi-lbl">{sub}</span> : null}
+    </div>
+  )
 }
 
 function capitalize(s: string): string {
@@ -223,12 +232,22 @@ export default async function AnnualReviewPage() {
   // -------------------------------------------------------------------------
   // FAQ + Dataset variables — single source (buildMarketFaq) so the visible
   // FAQ, the FAQPage JSON-LD, and the region's Dataset variables cannot diverge.
+  //
+  // Pulse-timeout fallback (G52 page-contract, same idiom as central-oregon/
+  // page.tsx and housing-market/[...slug]/page.tsx): `pulse` is the pulse-only
+  // slice of the input, `pulse ?? {...}` is the honest null-shaped fallback
+  // when the market_pulse_live row is slow or missing, so the FAQ/Dataset
+  // JSON-LD below still renders (with the regionDetail-sourced fields it does
+  // not depend on) instead of vanishing.
   // -------------------------------------------------------------------------
+  const pulse = regionPulse
+  const pulseFields =
+    pulse ?? { activeCount: null, medianListPrice: null, medianDaysToPending: null }
   const { faqs, datasetVariables: regionFaqVariables, asOfIso } = buildMarketFaq('Central Oregon', {
-    activeCount: regionPulse?.activeCount ?? null,
-    medianListPrice: regionPulse?.medianListPrice ?? null,
+    activeCount: pulseFields.activeCount,
+    medianListPrice: pulseFields.medianListPrice,
     monthsOfSupply: regionMos,
-    medianDaysToPending: regionPulse?.medianDaysToPending ?? null,
+    medianDaysToPending: pulseFields.medianDaysToPending,
     refreshedAt: inventoryAsOf,
     medianDaysOnMarket: regionDetail?.medianDom ?? null,
     soldCount12mo: regionDetail?.soldCount ?? null,
@@ -379,96 +398,35 @@ export default async function AnnualReviewPage() {
                 <Eyebrow>Central Oregon</Eyebrow>
                 <H2>Region summary</H2>
               </Stack>
-              <Grid cols={4} gap="default" className="w-full">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Active listings</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <p className="text-2xl font-semibold text-foreground">
-                      <TabularNumber value={regionPulse?.activeCount ?? null} />
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Median list price</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <p className="text-2xl font-semibold text-foreground">
-                      <Price value={regionPulse?.medianListPrice ?? null} />
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Months of supply</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0 flex items-center gap-2">
-                    <p className="text-2xl font-semibold text-foreground">
-                      {regionMos != null ? formatMonthsOfSupply(regionMos) : 'Not available'}
-                    </p>
-                    {regionMos != null ? (
-                      <Badge variant={badgeVariantFor[regionVerdict.kind]}>{capitalize(regionVerdict.label)}</Badge>
-                    ) : null}
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Median sale price, TTM</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0 flex items-center gap-2">
-                    <p className="text-2xl font-semibold text-foreground">
-                      <Price value={regionDetail?.medianSalePrice ?? null} />
-                    </p>
-                    <PercentChange value={regionDetail?.yoyMedianPriceDeltaPct ?? null} suffix="YoY" />
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Homes sold, TTM</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <p className="text-2xl font-semibold text-foreground">
-                      <TabularNumber value={regionDetail?.soldCount ?? null} />
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Median days on market, TTM</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0 flex items-center gap-2">
-                    <p className="text-2xl font-semibold text-foreground">
-                      <DaysCount value={regionDetail?.medianDom ?? null} />
-                    </p>
-                    <Caption className="whitespace-nowrap">
-                      {formatDayDelta(regionDetail?.yoyDomChange ?? null)} YoY
-                    </Caption>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Avg sale to list, TTM</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <p className="text-2xl font-semibold text-foreground">
-                      {formatRatioPct(regionDetail?.avgSaleToListRatio ?? null)}
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Median dollars per sqft, TTM</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0 flex items-center gap-2">
-                    <p className="text-2xl font-semibold text-foreground">
-                      <Price value={regionDetail?.medianPricePerSqft ?? null} exact />
-                    </p>
-                    <PercentChange value={regionDetail?.yoyPpsfChangePct ?? null} suffix="YoY" />
-                  </CardContent>
-                </Card>
-              </Grid>
+              <div className="mkt-kpis w-full">
+                <KpiTile val={<TabularNumber value={regionPulse?.activeCount ?? null} />} lbl="Active listings" />
+                <KpiTile val={<Price value={regionPulse?.medianListPrice ?? null} />} lbl="Median list price" />
+                <KpiTile
+                  val={regionMos != null ? formatMonthsOfSupply(regionMos) : 'Not available'}
+                  lbl="Months of supply"
+                  sub={regionMos != null ? capitalize(regionVerdict.label) : undefined}
+                />
+                <KpiTile
+                  val={<Price value={regionDetail?.medianSalePrice ?? null} />}
+                  lbl="Median sale price, TTM"
+                  sub={<PercentChange value={regionDetail?.yoyMedianPriceDeltaPct ?? null} suffix="YoY" />}
+                />
+                <KpiTile val={<TabularNumber value={regionDetail?.soldCount ?? null} />} lbl="Homes sold, TTM" />
+                <KpiTile
+                  val={<DaysCount value={regionDetail?.medianDom ?? null} />}
+                  lbl="Median days on market, TTM"
+                  sub={`${formatDayDelta(regionDetail?.yoyDomChange ?? null)} YoY`}
+                />
+                <KpiTile
+                  val={formatRatioPct(regionDetail?.avgSaleToListRatio ?? null)}
+                  lbl="Avg sale to list, TTM"
+                />
+                <KpiTile
+                  val={<Price value={regionDetail?.medianPricePerSqft ?? null} exact />}
+                  lbl="Median dollars per sqft, TTM"
+                  sub={<PercentChange value={regionDetail?.yoyPpsfChangePct ?? null} suffix="YoY" />}
+                />
+              </div>
             </Stack>
           </Container>
         </Section>
@@ -485,65 +443,73 @@ export default async function AnnualReviewPage() {
                   above, never a separate call.
                 </Body>
               </Stack>
-              <Card className="w-full">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>City</TableHead>
-                      <TableHead>Active now</TableHead>
-                      <TableHead>Median list, now</TableHead>
-                      <TableHead>Months of supply</TableHead>
-                      <TableHead>Median sale price, TTM</TableHead>
-                      <TableHead>Price, YoY</TableHead>
-                      <TableHead>Sold, TTM</TableHead>
-                      <TableHead>Median DOM, TTM</TableHead>
-                      <TableHead>DOM, YoY</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {cityRows.map((row) => {
-                      const mos = row.pulse?.months_of_supply ?? null
-                      const verdict = marketVerdict(mos)
-                      return (
-                        <TableRow key={row.slug}>
-                          <TableCell className="font-medium text-foreground">
-                            <Link href={`/housing-market/${row.slug}`} className="hover:underline">
-                              {row.label}
-                            </Link>
-                          </TableCell>
-                          <TableCell>
-                            <TabularNumber value={row.pulse?.active_count ?? null} />
-                          </TableCell>
-                          <TableCell>
-                            <Price value={row.pulse?.median_list_price ?? null} />
-                          </TableCell>
-                          <TableCell>
-                            <span className="inline-flex items-center gap-2">
-                              {mos != null ? formatMonthsOfSupply(mos) : 'Not available'}
-                              {mos != null ? (
-                                <Badge variant={badgeVariantFor[verdict.kind]}>{capitalize(verdict.label)}</Badge>
-                              ) : null}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <Price value={row.detail?.medianSalePrice ?? null} />
-                          </TableCell>
-                          <TableCell>
-                            <PercentChange value={row.detail?.yoyMedianPriceDeltaPct ?? null} suffix="" />
-                          </TableCell>
-                          <TableCell>
-                            <TabularNumber value={row.detail?.soldCount ?? null} />
-                          </TableCell>
-                          <TableCell>
-                            <DaysCount value={row.detail?.medianDom ?? null} />
-                          </TableCell>
-                          <TableCell>{formatDayDelta(row.detail?.yoyDomChange ?? null)}</TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </Card>
+              {/* KB-native comparison grid. No @/components/ui/table (shadcn) and
+                  no raw <table> (design-tokens gate G bans the bare primitive).
+                  Same grid-of-divs idiom KbTimeframeStats.client.tsx uses for
+                  tabular market figures, with explicit table/row/cell roles for
+                  assistive tech. Semantic Tailwind tokens (text-foreground,
+                  text-muted-foreground, border-border) mixed with kb-root, same
+                  as this page's own narrative section further down. */}
+              <div className="w-full overflow-x-auto no-scrollbar">
+                <div role="table" aria-label="City by city, year over year, single-family homes">
+                  <div
+                    role="row"
+                    className="grid grid-cols-[minmax(110px,1.3fr)_repeat(8,minmax(92px,1fr))] gap-3 border-b-2 border-border pb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                  >
+                    <span role="columnheader">City</span>
+                    <span role="columnheader">Active now</span>
+                    <span role="columnheader">Median list, now</span>
+                    <span role="columnheader">Months of supply</span>
+                    <span role="columnheader">Median sale price, TTM</span>
+                    <span role="columnheader">Price, YoY</span>
+                    <span role="columnheader">Sold, TTM</span>
+                    <span role="columnheader">Median DOM, TTM</span>
+                    <span role="columnheader">DOM, YoY</span>
+                  </div>
+                  {cityRows.map((row) => {
+                    const mos = row.pulse?.months_of_supply ?? null
+                    const verdict = marketVerdict(mos)
+                    return (
+                      <div
+                        key={row.slug}
+                        role="row"
+                        className="grid grid-cols-[minmax(110px,1.3fr)_repeat(8,minmax(92px,1fr))] items-baseline gap-3 border-b border-border py-3 text-sm"
+                      >
+                        <span role="cell" className="font-medium text-foreground">
+                          <Link href={`/housing-market/${row.slug}`} className="hover:underline">
+                            {row.label}
+                          </Link>
+                        </span>
+                        <span role="cell">
+                          <TabularNumber value={row.pulse?.active_count ?? null} />
+                        </span>
+                        <span role="cell">
+                          <Price value={row.pulse?.median_list_price ?? null} />
+                        </span>
+                        <span role="cell">
+                          {mos != null ? formatMonthsOfSupply(mos) : 'Not available'}
+                          {mos != null ? (
+                            <span className="ml-1 text-xs text-muted-foreground">({capitalize(verdict.label)})</span>
+                          ) : null}
+                        </span>
+                        <span role="cell">
+                          <Price value={row.detail?.medianSalePrice ?? null} />
+                        </span>
+                        <span role="cell">
+                          <PercentChange value={row.detail?.yoyMedianPriceDeltaPct ?? null} suffix="" />
+                        </span>
+                        <span role="cell">
+                          <TabularNumber value={row.detail?.soldCount ?? null} />
+                        </span>
+                        <span role="cell">
+                          <DaysCount value={row.detail?.medianDom ?? null} />
+                        </span>
+                        <span role="cell">{formatDayDelta(row.detail?.yoyDomChange ?? null)}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
               {NAMED_EXEMPTIONS.length > 0 ? (
                 <Caption className="max-w-[70ch]">
                   {NAMED_EXEMPTIONS.map((c) => {

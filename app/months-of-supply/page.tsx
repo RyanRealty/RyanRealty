@@ -72,7 +72,6 @@ import {
   TextLink,
   BadgePill,
 } from '@/components/site/primitives'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import SiteFooter from '@/components/site/SiteFooter'
 
 export const revalidate = 300
@@ -270,30 +269,30 @@ export default async function MonthsOfSupplyPage() {
           <Container>
             <Stack gap="loose" className="max-w-[70ch]">
               <H2>The formula</H2>
-              <Card>
-                <CardHeader>
-                  <Caption tone="primary" className="font-semibold uppercase tracking-[0.08em]">
-                    Formula
-                  </Caption>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <Body size="large" tone="primary" className="font-semibold">
-                    {MOS_METHODOLOGY_CLAUSE}
-                  </Body>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <Caption tone="primary" className="font-semibold uppercase tracking-[0.08em]">
-                    Thresholds
-                  </Caption>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <Body size="large" tone="primary" className="font-semibold">
-                    {MOS_THRESHOLD_CLAUSE}
-                  </Body>
-                </CardContent>
-              </Card>
+              {/* Non-shadcn card shell (§3, ci:shadcn-burndown): rounded-[14px] is
+                  the allowlisted arbitrary-radius token (D22), same idiom already
+                  used by components/site/MarketSnapshot.tsx and
+                  components/site/MarketDetailStats.tsx for stat cards outside the
+                  KB (kinetic-brutalist) shell. This page is not wrapped in
+                  .kb-root (see the file header), so kb.css's .mkt-kpi classes do
+                  not apply here without adding that wrapper, which is out of
+                  scope for this fix. */}
+              <div className="rounded-[14px] border border-border bg-card p-5 shadow-sm">
+                <Caption tone="primary" className="font-semibold uppercase tracking-[0.08em]">
+                  Formula
+                </Caption>
+                <Body size="large" tone="primary" className="mt-2 font-semibold">
+                  {MOS_METHODOLOGY_CLAUSE}
+                </Body>
+              </div>
+              <div className="rounded-[14px] border border-border bg-card p-5 shadow-sm">
+                <Caption tone="primary" className="font-semibold uppercase tracking-[0.08em]">
+                  Thresholds
+                </Caption>
+                <Body size="large" tone="primary" className="mt-2 font-semibold">
+                  {MOS_THRESHOLD_CLAUSE}
+                </Body>
+              </div>
               <Body size="small">
                 This is the same formula and the same thresholds behind every
                 market-pace figure on ryan-realty.com. It never changes by page.
@@ -317,35 +316,34 @@ export default async function MonthsOfSupplyPage() {
                   {figures.map((f) => {
                     const verdict = marketVerdict(f.monthsOfSupply)
                     return (
-                      <Card key={f.label}>
-                        <CardHeader>
-                          <div className="flex items-center justify-between gap-3">
-                            <Caption tone="primary" className="font-semibold uppercase tracking-[0.08em]">
-                              {f.label}
-                            </Caption>
-                            {verdict.kind !== 'unknown' ? (
-                              <BadgePill tone={VERDICT_TONE[verdict.kind]}>
-                                {capitalize(verdict.label)}
-                              </BadgePill>
-                            ) : null}
-                          </div>
-                        </CardHeader>
-                        <CardContent className="flex flex-col gap-3 pt-0">
-                          <div className="flex items-end gap-2">
-                            <DisplayHeading as="span" className="text-4xl leading-none sm:text-5xl">
-                              {f.monthsOfSupply != null ? formatMonthsOfSupply(f.monthsOfSupply) : '—'}
-                            </DisplayHeading>
-                            <span className="pb-1 text-sm text-muted-foreground">months of supply</span>
-                          </div>
-                          <Body size="small">
-                            <TabularNumber value={f.activeCount} /> active single-family listings
-                          </Body>
-                          {f.refreshedAtLabel ? (
-                            <Caption>Refreshed {f.refreshedAtLabel} · market_pulse_live, Oregon Data Share</Caption>
+                      <div
+                        key={f.label}
+                        className="flex flex-col gap-3 rounded-[14px] border border-border bg-card p-5 shadow-sm"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <Caption tone="primary" className="font-semibold uppercase tracking-[0.08em]">
+                            {f.label}
+                          </Caption>
+                          {verdict.kind !== 'unknown' ? (
+                            <BadgePill tone={VERDICT_TONE[verdict.kind]}>
+                              {capitalize(verdict.label)}
+                            </BadgePill>
                           ) : null}
-                          <TextLink href={f.href}>See the full {f.label} market report</TextLink>
-                        </CardContent>
-                      </Card>
+                        </div>
+                        <div className="flex items-end gap-2">
+                          <DisplayHeading as="span" className="text-4xl leading-none sm:text-5xl">
+                            {f.monthsOfSupply != null ? formatMonthsOfSupply(f.monthsOfSupply) : '—'}
+                          </DisplayHeading>
+                          <span className="pb-1 text-sm text-muted-foreground">months of supply</span>
+                        </div>
+                        <Body size="small">
+                          <TabularNumber value={f.activeCount} /> active single-family listings
+                        </Body>
+                        {f.refreshedAtLabel ? (
+                          <Caption>Refreshed {f.refreshedAtLabel} · market_pulse_live, Oregon Data Share</Caption>
+                        ) : null}
+                        <TextLink href={f.href}>See the full {f.label} market report</TextLink>
+                      </div>
                     )
                   })}
                 </div>
