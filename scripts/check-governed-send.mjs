@@ -64,6 +64,38 @@ const isSourceFile = (p) => /\.(ts|tsx)$/.test(p) && !/\.test\.(ts|tsx)$/.test(p
 const isAllowed = (rel) => ALLOWED.some((re) => re.test(rel))
 
 /**
+ * Senders that can only ever reach an INTERNAL BROKER, never a lead.
+ *
+ * WHY THIS EXISTS (2026-08-02): the chokepoint is keyed on a CRM person.
+ * `sendGovernedSms` calls `getSendTarget(req.personId)` and resolves the number
+ * from `crm_people`; `checkSendGuards` applies hard-stop tags, channel
+ * suppression and quiet hours. Every one of those is a CONSUMER protection. A
+ * broker's own cell is not a `crm_people` row and has no opt-out state, so the
+ * chokepoint cannot serve these sends — routing them through it would fail at
+ * the recipient stage, not merely be redundant.
+ *
+ * The gate previously said "the fix is always the same: call sendGovernedSms",
+ * which is true for lead-facing sends and has no answer for internal ones. That
+ * was the actual gap. Entries here need PROOF the recipient cannot be a lead,
+ * not an assertion, and both current entries have it. Same mechanism and same
+ * bar as EXEMPT in scripts/check-sms-link-tracking.mjs.
+ */
+const INTERNAL_SENDERS = new Map([
+  [
+    'lib/agent/send.ts',
+    'broker SMS agent sender — the recipient is checked against a whitelist built from ' +
+      'brokers.forward_to_cell UNION the TWILIO_FORWARD_* env vars, and ' +
+      'scripts/check-broker-agent-send-safety.mjs AST-verifies both that this file applies that ' +
+      'whitelist and that no other module in the agent tree calls a raw sender',
+  ],
+  [
+    'app/api/cron/broker-agent-digest/route.ts',
+    'principal-broker supervision digest — fromMailbox and to are both the broker mailbox from ' +
+      'CRM_MAILBOXES (Matt to Matt). No lead recipient is reachable from this route',
+  ],
+])
+
+/**
  * Blank out comments while preserving line count + column positions, so a
  * `sendEmail(` mentioned in a doc comment is never mistaken for a call site.
  * Same implementation as scripts/check-email-send-gated.mjs (house style).
@@ -155,18 +187,57 @@ function walk(dir, out = []) {
 // preceded by `.` (a method on something else) or a word char (part of a longer
 // name like sendCrmEmailAction). Definitions live in allowlisted files only.
 const CALL_RE = new RegExp(`(^|[^.\\w$])(${SEND_FNS.join('|')})\\s*\\(`)
-// A raw Twilio REST client bypassing even the lib/crm/twilio helpers.
-const RAW_TWILIO_RE = /\.messages\s*\.create\s*\(/
+// A raw Twilio REST client bypassing even the lib/crm/twilio helpers. The
+// receiver is captured so an identically-named method on a DIFFERENT client can
+// be told apart — see anthropicReceivers below.
+const RAW_TWILIO_RE = /(?:^|[^.\w$])([A-Za-z_$][\w$]*)\s*\.messages\s*\.create\s*\(/
+
+/**
+ * Identifiers in this source that hold an ANTHROPIC client.
+ *
+ * WHY (2026-08-02): `anthropic.messages.create()` and `twilioClient.messages
+ * .create()` are spelled identically. This gate matched the bare method and
+ * reported five Anthropic Messages API calls as un-governed SMS sends — the
+ * broker agent's runtime, its law and asset tools, and the marketing-brain
+ * producer runtime, none of which import twilio at all. As the codebase uses
+ * more of the Messages API this misfires more often, and a gate that cries wolf
+ * on the AI call path is a gate people start ignoring.
+ *
+ * Two signals, both conservative: a binding created from the Anthropic SDK, and
+ * (for receivers passed in as parameters) a file that imports the Anthropic SDK
+ * and never imports twilio. A file doing BOTH still has its twilio call flagged,
+ * because the binding set only excuses the receivers it can actually prove.
+ */
+function anthropicReceivers(source) {
+  const names = new Set()
+  const bind =
+    /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:await\s+)?(?:new\s+Anthropic\b|createAnthropic\s*\()/g
+  let m
+  while ((m = bind.exec(source))) names.add(m[1])
+
+  const importsAnthropic = /from\s+['"]@anthropic-ai\/sdk['"]|from\s+['"]@\/lib\/ai\/anthropic['"]/.test(source)
+  const importsTwilio = /from\s+['"]twilio['"]|from\s+['"]@\/lib\/crm\/twilio['"]/.test(source)
+  return { names, anthropicOnlyFile: importsAnthropic && !importsTwilio }
+}
 
 /** Find every direct-send call site in one (comment-stripped) source. */
 export function findSendSites(source) {
   const lines = source.split('\n')
+  const { names, anthropicOnlyFile } = anthropicReceivers(source)
   const sites = []
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
     const m = CALL_RE.exec(line)
-    if (m) sites.push({ line: i + 1, fn: m[2] })
-    else if (RAW_TWILIO_RE.test(line)) sites.push({ line: i + 1, fn: '.messages.create' })
+    if (m) {
+      sites.push({ line: i + 1, fn: m[2] })
+      continue
+    }
+    const raw = RAW_TWILIO_RE.exec(line)
+    if (raw) {
+      const receiver = raw[1]
+      if (names.has(receiver) || anthropicOnlyFile) continue
+      sites.push({ line: i + 1, fn: '.messages.create' })
+    }
   }
   return sites
 }
@@ -238,6 +309,7 @@ if (isMain) {
   const baseline = loadBaseline().files ?? {}
   const failures = []
   for (const [f, count] of Object.entries(counts)) {
+    if (INTERNAL_SENDERS.has(f)) continue
     const allowed = baseline[f]
     if (allowed === undefined) {
       failures.push(
