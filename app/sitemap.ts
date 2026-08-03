@@ -15,6 +15,7 @@ import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { getAllNeighborhoodsWithCity } from '@/lib/data'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { subdivisionSitemapUrls } from '@/lib/data/subdivisions/subdivision-index'
+import { getSubdivisionBrowseSlugsByCity } from '@/lib/data/subdivisions/getSubdivisionBrowseSlugsByCity'
 import { getSearchMatrixSitemapEntries, getMatrixCityPresetNoIndex } from '@/lib/seo/getSearchMatrixEntries'
 import { getOutOfAreaCitySitemapEntries } from '@/lib/data/geo/getOutOfAreaCities'
 import { CO_EVENTS } from '@/data/co-events'
@@ -347,75 +348,40 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
       })
     }
 
-    // Subdivisions — persistent (city, subdivision) pairs across ALL listing
+    // Subdivisions. Persistent (city, subdivision) pairs across ALL listing
     // statuses, thresholded by SUBDIVISION_SITEMAP_MIN_LIFETIME_LISTINGS, NOT
     // just currently-active pairs (active-only sourcing dropped a subdivision
-    // URL from the sitemap the day its last listing closed). Pairs come from
-    // the get_subdivision_status_counts RPC — one server-side aggregate per
-    // service-area city (Bend ~3.5s, other cities <1s, run 6 at a time).
-    // PostgREST aggregates are disabled on this project (PGRST123) and a
-    // client-side pair scan across all statuses is ~267K rows per
-    // regeneration, so the existing RPC is the cheap path. City scoping stays
-    // on the CENTRAL_OREGON_CITY_SLUGS allowlist — now independent of live
+    // URL from the sitemap the day its last listing closed). City scoping
+    // stays on the CENTRAL_OREGON_CITY_SLUGS allowlist, independent of live
     // inventory, so a city with zero actives keeps its subdivision URLs too.
     // /cities/{city}/{sub} is deliberately NOT emitted here: that route only
     // resolves for boundary-neighborhood rows (anything else 404s), and
     // submitting 404s poisons the programmatic-page quality signal. The
     // neighborhood URLs are emitted below from the table the page resolves.
-    type SubdivisionCountRow = {
-      subdivision_name?: string | null
-      active?: number | null
-      pending?: number | null
-      closed?: number | null
-    }
+    //
+    // Pairs come from listing_tile_mv (indexed on city_lower), NOT the
+    // get_subdivision_status_counts RPC. That RPC's `TRIM("City") ILIKE
+    // TRIM(p_city)` forces a sequential scan of the 589K-row listings table
+    // per city (measured against production 2026-08-02: Bend 41.3s, Sisters
+    // 32.0s, Redmond 14.6s, 104.7s total for just eight cities, the root
+    // cause of the /sitemaps/*.xml 504s). The sitemap only needs the slugs of
+    // subdivisions that clear the lifetime floor, not the RPC's
+    // active/pending/closed split. See
+    // lib/data/subdivisions/subdivision-sitemap-inventory.ts for the
+    // classification this replicates and its one deliberate divergence
+    // (listing_tile_mv excludes internet-display-opted-out listings, which
+    // the RPC's raw-table scan does not).
     const subdivisionCitySlugs = [...CENTRAL_OREGON_CITY_SLUGS]
-    const SUBDIVISION_RPC_BATCH = 6
-    // SERVICE client for this RPC (verified 2026-07-22): the anon role's 3s
-    // statement_timeout now kills get_subdivision_status_counts for EVERY city
-    // (~3.1s even for Sisters), which silently emptied this whole section.
-    // Service role completes in ~1-2.5s per city. Server-only file, aggregate
-    // counts only — nothing sensitive crosses the wire.
-    const { createServiceClient } = await import('@/lib/supabase/service')
-    const subdivisionCountsClient = createServiceClient()
-    for (let i = 0; i < subdivisionCitySlugs.length; i += SUBDIVISION_RPC_BATCH) {
-      const batch = subdivisionCitySlugs.slice(i, i + SUBDIVISION_RPC_BATCH)
-      const results = await Promise.all(
-        batch.map(async (citySlug) => {
-          try {
-            // The RPC matches TRIM("City") ILIKE — hyphenless allowlist slugs
-            // map back to the MLS spelling by swapping hyphens for spaces
-            // ("la-pine" -> "la pine" matches "La Pine").
-            const { data, error } = await subdivisionCountsClient.rpc('get_subdivision_status_counts', {
-              p_city: citySlug.replace(/-/g, ' '),
-            })
-            if (error) {
-              console.error('[sitemap] subdivision counts RPC error:', citySlug, error)
-              return { citySlug, rows: [] as SubdivisionCountRow[] }
-            }
-            return { citySlug, rows: (Array.isArray(data) ? data : []) as SubdivisionCountRow[] }
-          } catch (err) {
-            console.error('[sitemap] subdivision counts failed:', citySlug, err)
-            return { citySlug, rows: [] as SubdivisionCountRow[] }
-          }
-        }),
-      )
-      for (const { citySlug, rows } of results) {
-        // Dedup by slug — the RPC groups by trimmed name, so casing variants
-        // of the same subdivision can arrive as separate rows.
-        const seen = new Set<string>()
-        for (const row of rows) {
-          const name = (row.subdivision_name ?? '').trim()
-          // 'N/A' would slugify into a bogus /n-a/ segment — drop it.
-          if (!name || name === 'N/A') continue
-          const lifetime = (row.active ?? 0) + (row.pending ?? 0) + (row.closed ?? 0)
-          if (lifetime < SUBDIVISION_SITEMAP_MIN_LIFETIME_LISTINGS) continue
-          const subSlug = slugify(name)
-          if (subSlug === 'unknown' || seen.has(subSlug)) continue
-          seen.add(subSlug)
-          dynamicPages.push(
-            { url: `${baseUrl}/homes-for-sale/${citySlug}/${subSlug}`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
-          )
-        }
+    const subdivisionSlugsByCity = await getSubdivisionBrowseSlugsByCity(
+      supabase,
+      subdivisionCitySlugs,
+      SUBDIVISION_SITEMAP_MIN_LIFETIME_LISTINGS,
+    )
+    for (const [citySlug, subSlugs] of subdivisionSlugsByCity) {
+      for (const subSlug of subSlugs) {
+        dynamicPages.push(
+          { url: `${baseUrl}/homes-for-sale/${citySlug}/${subSlug}`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+        )
       }
     }
 

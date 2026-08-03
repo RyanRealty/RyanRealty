@@ -13,9 +13,9 @@
  *     1. the slug has an authoritative GIS polygon in public.boundaries
  *        (geo_type='subdivision' — Deschutes County plats, never approximated),
  *     2. the subdivision has >= SUBDIVISION_INDEX_MIN_LIFETIME_SALES lifetime
- *        CLOSED sales (summed across Central Oregon cities from the
- *        get_subdivision_status_counts RPC — the same server-side aggregate the
- *        sitemap's browse-pair loop uses).
+ *        CLOSED sales (summed across Central Oregon cities, sourced from
+ *        listing_tile_mv — see getIndexableSubdivisions.ts for why that
+ *        replaced the get_subdivision_status_counts RPC as the source here).
  *   Below the threshold the page still renders — it just carries noindex via
  *   pageMetadata({ noindex: true }) so thin plat pages never dilute the
  *   programmatic-page quality signal.
