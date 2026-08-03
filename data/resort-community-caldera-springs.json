@@ -10,9 +10,11 @@
   "acres": 1000,
   "founded": 2006,
   "about_prose": [
-    "Caldera Springs is a private residential resort community adjacent to Sunriver Resort, 15 miles south of Bend. The community launched in 2006 on 400 acres and expanded eastward in 2021, bringing the master plan to 1,000 acres. The original build-out included 320 single-family homesites and 45 cabins; the expansion adds a 220-acre Wildlife Forest Preserve permanently protected from development.",
-    "The community centers on 14.7 acres of lakes and streams, including Obsidian Lake and Trailmere Lake, where owners and resort guests paddle, kayak, and fly fish. Thirteen miles of paved and soft trails wind through forested terrain, and the par-27 Caldera Links course, designed by Bob Cupp, is available to owners and Sunriver Resort guests. A master-plan investment announced in 2024 funded Forest House, Forest Park, and a reimagined Lake House.",
-    "Caldera Springs operates in connection with Sunriver Resort and is managed by CoralTree Hospitality. Homes include custom single-family residences, Caldera Cabins, and Forestbrook vacation homes with attached studio units. The Forestbrook enclave began delivering homes in 2024, with pricing starting at $1.29 million; expansion-area homesites have been priced from the low $400,000s."
+    "Caldera Springs sits fifteen miles south of Bend, next to Sunriver Resort, at roughly 4,170 feet of elevation in the high desert along the upper Deschutes River. The community's own design guidelines place the site in a semi-arid Montane Life Zone, a transition band between the Great Basin Desert and the Cascade Range, covered in ponderosa and lodgepole pine with an understory of sagebrush, bitterbrush, and manzanita. Average annual precipitation runs 18 inches and average snowfall 49 inches, though the range swings hard from year to year. One winter brought 13 inches of snow, the next brought 144, according to those same guidelines. Every builder in the community designs around that swing. Snow-load framing, solar gain through winter windows, and wildfire resistance all run through the same approval process. Caldera Springs holds Firewise Community status, and the guidelines require wildfire-resistant roofing, building materials, and defensible landscaping before anyone breaks ground.",
+    "PacTrust opened the community in 2006 on 400 acres, with an original plan for 320 single-family homesites and 45 cabins. A 600-acre eastward expansion, launched in 2021, brought the master plan to its current 1,000 acres. Roughly a fifth of that total, 220 acres, was set aside rather than built on, carried in the plat as a protected wildlife mitigation area and marketed today as the Wildlife Forest Preserve. The lake and stream system at the center of the community, 14.7 acres of water including Obsidian Lake and Trailmere Lake, predates the expansion and still anchors it. So does Caldera Links, a nine-hole, par-27 course designed by golf architect Bob Cupp, with holes running a tight 60 to 185 yards and built for an afternoon rather than a full day on the course.",
+    "The most recent capital investment landed in 2024. Forest House added a family aquatics complex with a dual-racer water slide and a 1,748-square-foot fitness center. Forest Park added six pickleball courts, a dog park, and a winter sledding hill. The Lake House reopened on Obsidian Lake as Sunriver Resort's eleventh restaurant, open to the public and not just to owners. Thirteen miles of paved and soft-surface trail tie the lakes to the forest, and The Outpost rents kayaks, canoes, and paddleboards for the water. Owners also get access to the Spa at Sunriver Resort, a reminder that Caldera Springs is managed in connection with the resort next door, under Sunriver Resort's operator, CoralTree Hospitality, and not as a fully separate community.",
+    "Three kinds of homes exist here. Custom single-family residences are built lot by lot to the community's own standards. Caldera Cabins are the smaller product from the original 2006 plan. Forestbrook is the newest, three- and four-bedroom homes with attached studios, floor-to-ceiling windows, and private hot tubs, built to enter Sunriver Resort's vacation-rental program when an owner is away. The first Forestbrook homes were delivered in the summer of 2024. Every home, cabin or custom build, goes through the Caldera Springs Owners' Association's Design Review Committee. The guidelines do not mandate one architectural style, but they steer new construction toward what they call Northwest Mountain style, a family of Cascadian, Lodge, Ranch, Craftsman, and Northwest Contemporary forms. They also set a 30-foot maximum building height and a 1,600-square-foot minimum on habitable space for anything other than a cabin or cottage. The CSOA, the homeowners' association behind that review process, is a separate body from Sunriver Resort's own management.",
+    "Kids in the community feed into Three Rivers School, a K-8 public school in Sunriver and one of 36 schools in the Bend-La Pine School District. That K-8 structure matters before you buy. There is no town center inside the gates and no high school on site, so daily life runs on a drive, into Sunriver Village for basics or up US-97 into Bend for anything larger. The other trade-off is that privacy only goes so far here. The golf course, the trails, and now the Lake House restaurant are shared with Sunriver Resort's overnight guests as well as owners, so a quiet Tuesday morning at Obsidian Lake can turn crowded the moment resort occupancy fills for a holiday weekend. And every custom home has to clear the Design Review Committee before a shovel goes in the ground, which protects the look of the neighborhood but limits how far a buyer can depart from the approved Northwest Mountain palette."
   ],
   "amenities": [
     { "category": "Dining", "name": "Lake House", "description": "Waterfront restaurant on Obsidian Lake with indoor-outdoor dining and Mt. Bachelor views, plus the adjacent Shore Shack walkup bar with fire-pit seating.", "access": "Public" },
@@ -37,5 +39,53 @@
     { "fact": "Forest Park: six pickleball courts, dog park, play area, sledding hill; Lake House public", "source_url": "https://www.bendsource.com/business/sunriver-resort-expands-its-amenity-offerings-with-the-debut-of-forest-house-forest-park-and-reimagined-lake-house-at-caldera-springs-21612444/" },
     { "fact": "Caldera Links 9-hole par-27 (Bob Cupp), holes 60-185 yds", "source_url": "https://www.golforegon.com/golfcourses/sunriver-resort-caldera-links" },
     { "fact": "Forestbrook homes from $1.29M, first nine delivered summer 2024; managed by CoralTree Hospitality", "source_url": "https://westernhomejournal.com/bend-oregon/a-new-era-at-caldera-springs/" }
+  ],
+  "last_modified": "2026-08-03T00:00:00Z",
+  "sources": [
+    {
+      "url": "https://calderasprings.com/wp-content/uploads/2023/04/April-2023-CSOA-Revised-Design-Guidelines.pdf",
+      "publisher": "Caldera Springs Owners' Association (CSOA), Design Guidelines, April 2023",
+      "supports": "Site described as a semi-arid Montane Life Zone between the Great Basin Desert and Cascade Range; ponderosa/lodgepole pine, sagebrush, bitterbrush, manzanita; 18 in. average annual precipitation and 49 in. average snowfall with the 13 in./144 in. year-to-year swing; Firewise Community status and wildfire-resistant construction requirements; Design Review Committee process; Northwest Mountain style (Cascadian, Lodge, Ranch, Craftsman, Northwest Contemporary) with no single mandated style; 30-foot maximum building height; 1,600-square-foot minimum habitable space outside cabins/cottages; Wildlife Mitigation Area as a platted protected area."
+    },
+    {
+      "url": "https://www.pactrust.com/about/partnerships/caldera-springs/",
+      "publisher": "PacTrust",
+      "supports": "Community opened in 2006 on 400 acres with an original plan of 320 single-family homesites and 45 cabins."
+    },
+    {
+      "url": "https://ktvz.com/news/business/2024/09/10/caldera-springs-in-sunriver-expands-amenities-adds-new-elements-for-visitors-residents-to-enjoy/",
+      "publisher": "KTVZ",
+      "supports": "600-acre eastward expansion launched in 2021 brought the master plan to 1,000 acres; 220-acre Wildlife Forest Preserve; 2024 amenity investment (Forest House, Forest Park, Lake House); Lake House reopened as Sunriver Resort's eleventh restaurant, open to the public."
+    },
+    {
+      "url": "https://calderasprings.com/lifestyle/",
+      "publisher": "Caldera Springs (official community site), Lifestyle page",
+      "supports": "14.7 acres of lakes including Obsidian Lake and Trailmere Lake; 13 miles of paved and soft-surface trail; The Outpost kayak/canoe/paddleboard rentals; Forest House 1,748-square-foot fitness center and dual-racer water slide; owner/guest access to the Spa at Sunriver Resort."
+    },
+    {
+      "url": "https://www.golforegon.com/golfcourses/sunriver-resort-caldera-links",
+      "publisher": "Golf Oregon",
+      "supports": "Caldera Links is a nine-hole, par-27 course designed by golf architect Bob Cupp with holes ranging from 60 to 185 yards."
+    },
+    {
+      "url": "https://westernhomejournal.com/bend-oregon/a-new-era-at-caldera-springs/",
+      "publisher": "Western Home Journal",
+      "supports": "Forestbrook enclave: three- and four-bedroom homes with attached studios, floor-to-ceiling windows, private hot tubs, built for Sunriver Resort's vacation-rental program; first homes delivered summer 2024; community managed by CoralTree Hospitality in connection with Sunriver Resort."
+    },
+    {
+      "url": "https://www.bendsource.com/business/sunriver-resort-expands-its-amenity-offerings-with-the-debut-of-forest-house-forest-park-and-reimagined-lake-house-at-caldera-springs-21612444/",
+      "publisher": "Bend Source",
+      "supports": "Forest Park amenities: six pickleball courts, a dog park, and a winter sledding hill."
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/Sunriver,_Oregon",
+      "publisher": "Wikipedia, citing USGS/Census sources",
+      "supports": "Sunriver-area elevation of roughly 4,170 feet; location on the upper Deschutes River about fifteen miles south of Bend."
+    },
+    {
+      "url": "https://www.greatschools.org/oregon/sunriver/210-Three-Rivers-K-8-School/",
+      "publisher": "GreatSchools",
+      "supports": "Three Rivers School is a K-8 public school in Sunriver and one of 36 schools in the Bend-La Pine School District."
+    }
   ]
 }

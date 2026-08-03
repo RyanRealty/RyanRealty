@@ -11,32 +11,179 @@
   "founded": 1995,
   "architect": "Robert E. Cupp",
   "about_prose": [
-    "Crosswater is a private, gated golf community on 600 acres of woodlands and preserved wetlands within the Sunriver area, about 15 miles south of Bend. The community wraps around a heathland-style golf course designed by Robert E. Cupp and opened in 1995. The Deschutes and Little Deschutes Rivers thread through the property and cross the course up to seven times depending on tee selection. Residents also hold access to the broader Sunriver amenity network.",
-    "The community comprises estate lots, single-family homes, and Osprey Pointe condominiums, governed through the Crosswater Club. The club operates The Grille restaurant and a pro shop, with access to Sage Springs Spa and Fitness, and three miles of walking and biking trails run through the common area. The course has hosted the JELD-WEN Tradition (a PGA Tour Champions major, 2007 to 2010), the PGA Professional National Championship, and two NCAA Division I championships."
+    "Crosswater sits on 600 acres of woodland and preserved wetland adjacent to Sunriver and Caldera Springs in Deschutes County, about 15 miles south of Bend. The Deschutes and Little Deschutes Rivers run through the property, crossing the golf course as many as seven times in a round depending on which tees you play. The community is private and gated, developed decades after the surrounding area. Sunriver itself dates to 1968, built on the grounds of Camp Abbot, a World War II Army training site that closed in 1944.",
+    "The golf course opened in 1995, designed by Robert E. Cupp in a heathland style. It played 7,683 yards from the championship tees, the longest course in the country at the time it opened. Bent grass covers the fairways and greens, with five tee placements per hole and a course rating of 76.5 against a slope of 145. Golf Digest named it Best New Resort Course of 1995, ranked it as high as 28th nationally in 2005-06, and placed it 69th on America's 100 Greatest Public Courses for 2025-26, along with 11th best in Oregon. Golfweek ranks it 17th among the country's best residential golf courses. The course has hosted the JELD-WEN Tradition, a PGA Tour Champions major, for four years running from 2007 through 2010, plus the PGA Professional National Championship and NCAA Division I championships.",
+    "Ownership at Crosswater comes in three forms. Ninety-four estate lots sit around the course, two of them consolidated so 92 are buildable. Seven Canoe Camp homes and 23 Osprey Pointe condominiums round out the count. Some Osprey Pointe units are also offered through Sunriver Resort's vacation rental program, so not every neighbor there is a full-time owner. Everything is governed through the Crosswater Club, which runs The Grille restaurant and the pro shop, and gives members access to Sage Springs Spa and Fitness. Three miles of walking and biking trails run through the community's wetlands and common area.",
+    "The course itself is not open to the public. It is reserved for Crosswater Club members and Sunriver Resort guests, so buying a lot or a home here means buying into club membership, not just a golf-course address. Membership also opens access to the wider Sunriver network, including the SHARC aquatic center and additional golf, under the terms of your ownership and membership agreement. Golf access at Crosswater runs through the club, not through the property title alone.",
+    "Sunriver Village, with its grocery store and shops, is about 5 minutes away. Bend, and the fuller range of retail, dining, and services that comes with it, is about 20 minutes north. Kids in the area attend Three Rivers School, a K-8 school run by Bend-La Pine Schools with roughly 420 students, the only school inside Sunriver. There is no high school in Sunriver itself. Families send teenagers on to Caldera High School in Bend or La Pine High School in La Pine, a real commute worth weighing before you buy.",
+    "The broader Sunriver area was named a Dark Sky Friendly Development of Distinction by DarkSky International in August 2020, the first such designation in Oregon. The recognition reflects a sustained, area-wide effort to control outdoor lighting, and it shows on a clear night. Combined with the wetlands and the two rivers, the tree cover across the 600 acres gives Crosswater the feel of a private reserve as much as a golf community."
   ],
   "amenities": [
-    { "category": "Golf", "name": "Crosswater Golf Course", "description": "An 18-hole, par-72 heathland-style course playing 7,683 yards from the championship tees, with bent-grass fairways and greens and five tee placements per hole.", "access": "Members and Sunriver Resort guests" },
-    { "category": "Dining", "name": "The Grille", "description": "The club's on-site restaurant.", "access": "Members" },
-    { "category": "Wellness", "name": "Sage Springs Spa and Fitness", "description": "Full-service spa and fitness facility accessible through Crosswater Club membership.", "access": "Members" },
-    { "category": "Recreation", "name": "Walking and Biking Trails", "description": "Three miles of trails through the community's common area and wetlands.", "access": "Residents and members" },
-    { "category": "Recreation", "name": "Sunriver Resort Amenities", "description": "Crosswater residents have access to the broader Sunriver network, including the SHARC aquatic center and additional golf.", "access": "Per membership and ownership agreements" }
+    {
+      "category": "Golf",
+      "name": "Crosswater Golf Course",
+      "description": "An 18-hole, par-72 heathland-style course playing 7,683 yards from the championship tees, with bent-grass fairways and greens and five tee placements per hole.",
+      "access": "Members and Sunriver Resort guests"
+    },
+    {
+      "category": "Dining",
+      "name": "The Grille",
+      "description": "The club's on-site restaurant.",
+      "access": "Members"
+    },
+    {
+      "category": "Wellness",
+      "name": "Sage Springs Spa and Fitness",
+      "description": "Full-service spa and fitness facility accessible through Crosswater Club membership.",
+      "access": "Members"
+    },
+    {
+      "category": "Recreation",
+      "name": "Walking and Biking Trails",
+      "description": "Three miles of trails through the community's common area and wetlands.",
+      "access": "Residents and members"
+    },
+    {
+      "category": "Recreation",
+      "name": "Sunriver Resort Amenities",
+      "description": "Crosswater residents have access to the broader Sunriver network, including the SHARC aquatic center and additional golf.",
+      "access": "Per membership and ownership agreements"
+    }
   ],
   "drive_times": [
-    { "minutes": 5, "destination": "Sunriver Village", "note": "Crosswater is within the Sunriver area" },
-    { "minutes": 20, "destination": "Bend", "note": "Sunriver is about 15 miles south of Bend" },
-    { "minutes": 41, "destination": "Redmond Airport (RDM)", "note": "33-mile drive north via US-97" },
-    { "minutes": 41, "destination": "Mt. Bachelor", "note": "22-mile drive via Century Drive" }
+    {
+      "minutes": 5,
+      "destination": "Sunriver Village",
+      "note": "Crosswater is within the Sunriver area"
+    },
+    {
+      "minutes": 20,
+      "destination": "Bend",
+      "note": "Sunriver is about 15 miles south of Bend"
+    },
+    {
+      "minutes": 41,
+      "destination": "Redmond Airport (RDM)",
+      "note": "33-mile drive north via US-97"
+    },
+    {
+      "minutes": 41,
+      "destination": "Mt. Bachelor",
+      "note": "22-mile drive via Century Drive"
+    }
   ],
   "course_rankings": [
-    { "rank": "#69", "publication": "Golf Digest America's 100 Greatest Public Courses (2025-26)", "description": "Named Best New Resort Course of 1995; ranked as high as 28th in 2005-06" },
-    { "rank": "#11", "publication": "Golf Digest Best in State (Oregon, 2025-26)", "description": "Oregon course ranking" },
-    { "rank": "#17", "publication": "Golfweek Best Residential Golf Courses", "description": "Top residential golf community ranking" }
+    {
+      "rank": "#69",
+      "publication": "Golf Digest America's 100 Greatest Public Courses (2025-26)",
+      "description": "Named Best New Resort Course of 1995; ranked as high as 28th in 2005-06"
+    },
+    {
+      "rank": "#11",
+      "publication": "Golf Digest Best in State (Oregon, 2025-26)",
+      "description": "Oregon course ranking"
+    },
+    {
+      "rank": "#17",
+      "publication": "Golfweek Best Residential Golf Courses",
+      "description": "Top residential golf community ranking"
+    }
   ],
-  "course_specs": { "par": 72, "yardage": 7683, "summary": "Heathland-style layout; bent-grass fairways and greens; five tee placements per hole; rating 76.5, slope 145. The Deschutes and Little Deschutes Rivers come into play on up to seven holes." },
+  "course_specs": {
+    "par": 72,
+    "yardage": 7683,
+    "summary": "Heathland-style layout; bent-grass fairways and greens; five tee placements per hole; rating 76.5, slope 145. The Deschutes and Little Deschutes Rivers come into play on up to seven holes."
+  },
   "citations": [
-    { "fact": "600 acres, opened 1995, designed by Robert E. Cupp, par 72, 7,683 yds, rivers cross up to seven times", "source_url": "https://en.wikipedia.org/wiki/Crosswater_Club" },
-    { "fact": "Golf Digest Best New Resort Course 1995; 28th (2005-06); 69th (2025-26); #11 Best in State Oregon", "source_url": "https://www.sunriverresort.com/blog/golf-digest-names-crosswater-golf-course-one-of-americas-100-greatest-public-courses" },
-    { "fact": "Hosted JELD-WEN Tradition 2007-2010; PGA Professional National Championship; NCAA Division I championships", "source_url": "https://www.crosswater.com/golf" },
-    { "fact": "Golfweek #17 Best Residential; rating 76.5 slope 145; 3 miles of trails; Sage Springs Spa; The Grille", "source_url": "https://sunriverrealty.com/neighborhoods/crosswater" }
+    {
+      "fact": "600 acres, opened 1995, designed by Robert E. Cupp, par 72, 7,683 yds, rivers cross up to seven times",
+      "source_url": "https://en.wikipedia.org/wiki/Crosswater_Club"
+    },
+    {
+      "fact": "Golf Digest Best New Resort Course 1995; 28th (2005-06); 69th (2025-26); #11 Best in State Oregon",
+      "source_url": "https://www.sunriverresort.com/blog/golf-digest-names-crosswater-golf-course-one-of-americas-100-greatest-public-courses"
+    },
+    {
+      "fact": "Hosted JELD-WEN Tradition 2007-2010; PGA Professional National Championship; NCAA Division I championships",
+      "source_url": "https://www.crosswater.com/golf"
+    },
+    {
+      "fact": "Golfweek #17 Best Residential; rating 76.5 slope 145; 3 miles of trails; Sage Springs Spa; The Grille",
+      "source_url": "https://sunriverrealty.com/neighborhoods/crosswater"
+    }
+  ],
+  "source": "Wikipedia (Crosswater Club), crosswater.com, sunriverresort.com, sunriverrealty.com. See citations[] for the per-fact course/ranking trace. Long-form about_prose rewrite added 2026-08-03 (geography, ownership composition, schools, Dark Sky designation). See sources[] below for that pass's provenance.",
+  "last_modified": "2026-08-03T00:00:00Z",
+  "sources": [
+    {
+      "url": "https://en.wikipedia.org/wiki/Crosswater_Club",
+      "publisher": "Wikipedia",
+      "supports": "600 acres of wetlands and woodlands, 1995 opening, Robert E. Cupp design, par 72 / 7,683 yards, rating 76.5 slope 145, longest U.S. course at its 1995 opening, rivers cross the course up to seven times, JELD-WEN Tradition 2007-2010, PGA Professional National Championship years"
+    },
+    {
+      "url": "https://www.crosswater.com/golf",
+      "publisher": "Crosswater Club (official)",
+      "supports": "heathland-style design, five tee placements, bent-grass fairways and greens, The Grille, pro shop, private/members-and-resort-guests-only access, NCAA Division I championship hosted"
+    },
+    {
+      "url": "https://sunriverrealty.com/neighborhoods/crosswater",
+      "publisher": "Sunriver Realty",
+      "supports": "Crosswater is adjacent to Sunriver and Caldera Springs, 600 acres of woodlands/meadows/wetlands, three miles of trails, Crosswater Club structure and amenities"
+    },
+    {
+      "url": "https://www.sunriverresort.com/blog/golf-digest-names-crosswater-golf-course-one-of-americas-100-greatest-public-courses",
+      "publisher": "Sunriver Resort",
+      "supports": "Golf Digest Best New Resort Course of 1995, ranked 28th nationally in 2005-06, 69th in 2025-26, 11th best in Oregon"
+    },
+    {
+      "url": "https://www.movetobend.com/crosswater/",
+      "publisher": "Strategic Realty / MoveToBend",
+      "supports": "Ownership composition: 94 estate lots (92 buildable after 2 consolidations), 7 Canoe Camp homes, 23 Osprey Pointe condominiums"
+    },
+    {
+      "url": "https://www.enjoybendlife.com/sunriver/crosswater-homes/",
+      "publisher": "EnjoyBendLife",
+      "supports": "Corroborates Crosswater as a private, gated 600-acre community with a small owner count"
+    },
+    {
+      "url": "https://www.greatschools.org/oregon/sunriver/210-Three-Rivers-K-8-School/",
+      "publisher": "GreatSchools",
+      "supports": "Three Rivers School is a K-8 school in Sunriver run by Bend-La Pine Schools, roughly 420 students"
+    },
+    {
+      "url": "https://www.countyoffice.org/three-rivers-elementary-school-sunriver-or-178/",
+      "publisher": "County Office",
+      "supports": "Corroborates Three Rivers School enrollment figure"
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/Bend-La_Pine_School_District",
+      "publisher": "Wikipedia",
+      "supports": "Bend-La Pine Schools serves the Sunriver area; Caldera High School and La Pine High School are the district's high schools closest to Sunriver"
+    },
+    {
+      "url": "https://www.homes.com/local-guide/sunriver-or/",
+      "publisher": "Homes.com",
+      "supports": "Sunriver-area students choose between Caldera High School in Bend and La Pine High School in La Pine for high school"
+    },
+    {
+      "url": "https://columbiainsight.org/sunrivers-dark-skies-gain-international-recognition/",
+      "publisher": "Columbia Insight",
+      "supports": "Sunriver designated a Dark Sky Friendly Development of Distinction by DarkSky International in August 2020, the first such designation in Oregon"
+    },
+    {
+      "url": "https://darksky.org/news/sunriver-first-idsp-in-oregon/",
+      "publisher": "DarkSky International",
+      "supports": "Corroborates Sunriver as the first International Dark Sky Place designation in Oregon"
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/Sunriver,_Oregon",
+      "publisher": "Wikipedia",
+      "supports": "Sunriver is an unincorporated community in Deschutes County, about 15 miles south of Bend; built starting in 1968 on the former grounds of Camp Abbot, a World War II Army training site that closed in 1944"
+    },
+    {
+      "url": "https://www.sunriverresort.com/accommodations/osprey-pointe-at-crosswater",
+      "publisher": "Sunriver Resort",
+      "supports": "Osprey Pointe units at Crosswater are offered through Sunriver Resort's vacation rental program"
+    }
   ]
 }

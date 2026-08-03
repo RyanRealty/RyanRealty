@@ -10,8 +10,12 @@
   "founded": 1991,
   "architect": "Robert Muir Graves",
   "about_prose": [
-    "Widgi Creek is a golf community on Bend's west side, set among Ponderosa pines along the rim of the Deschutes River Canyon on SW Century Drive. The Golf Club at Widgi Creek, an 18-hole public course designed by Robert Muir Graves and opened in 1991, anchors the community and has been voted Central Oregon's favorite public golf course by The Source readers more than 20 times.",
-    "Residential options include single-family homes and the Elkai Woods townhomes, which front the fairways and back to the Deschutes National Forest. The community sits about 5 miles southwest of downtown Bend on the road to Mt. Bachelor, giving residents direct access to year-round recreation along the corridor."
+    "Living on a golf course five miles from downtown Bend means something different than living on one fifteen or twenty miles out. Widgi Creek sits on SW Century Drive, the road that becomes the Cascade Lakes Scenic Byway and carries traffic toward Mt. Bachelor. Ponderosa pine covers the property on the town side, and the Deschutes River Canyon cuts along its edge on the other. The elevation runs close to 3,900 feet, a few hundred feet above the valley floor where most of Bend sits, which is part of why the pine cover here reads heavier than it does closer to the river downtown.",
+    "Golf arrived on this stretch of forest in 1991, one of a wave of Central Oregon courses that opened that year as the region's golf-destination era took hold. The course first went by a different name, Seventh Mountain Golf Village, before it became Widgi Creek Golf Club. Robert Muir Graves routed it. Graves spent close to fifty years designing golf courses across the American West, served a term as president of the American Society of Golf Course Architects in the mid-1970s, and had already built the Big Meadow course at Black Butte Ranch nineteen years earlier, in 1972. He died in Bend in 2003, so Widgi Creek is one of the last courses he saw built close to home.",
+    "The course plays to a par 72 across 6,911 yards from the back tees, with a 73.4 rating and a 134 slope, threading tight fairways along the canyon rim. Golf Digest named it among the best new courses of 1995 and has kept it on its Best Places to Play list in most years since. Readers of the Source Weekly have voted it Central Oregon's favorite public course more than 20 times. It has always been a public course. A member's guest and a walk-up player from out of state book the same tee sheet. That openness is also the honest trade-off here. This is not a gated, members-only layout like Broken Top or Pronghorn. Anyone can book a Tuesday afternoon tee time, so the golf-course frontage at Widgi Creek comes without the screened privacy those communities sell.",
+    "Housing splits into two products. Single-family lots back onto fairways or the Deschutes National Forest boundary, and the Elkai Woods townhomes front the course directly, putting fairway views outside the window without the same lot-maintenance load as a detached home. The two products do not share one homeowners association. A 2020 Oregon Court of Appeals land-use case names three separate entities tied to the property: the Widgi Creek Homeowners Association, the Elkai Woods Homeowners Association, and the Elkai Woods Fractional Homeowners Association. A buyer comparing a single-family lot to an Elkai Woods unit is comparing two different sets of governing documents, not one.",
+    "The location's real payoff is the road itself. Mt. Bachelor sits 22 miles further southwest on the same pavement, and the highway continues past the mountain as the Cascade Lakes Scenic Byway. Redmond Airport runs about 35 minutes north. None of that is unique to Widgi Creek. Every address on Century Drive gets the same access. What Widgi Creek adds is proximity to town, five miles out instead of fifteen or twenty for the resort communities further down the same road. There is one seasonal catch on that corridor. Deschutes County closes the highway every winter west of Mt. Bachelor, between the Dutchman Flat and Deschutes Bridge gates, typically from mid-November into the following spring. Widgi Creek sits well inside that closure line and keeps year-round access. It is the road further out that goes quiet each winter, not this stretch of it.",
+    "The clubhouse runs a full-service restaurant and bar with an outdoor deck and a banquet room that holds up to 150, open to the public rather than just members. Pickleball courts operate on site with lessons available through the club, and Operation 36 Golf Academy staffs instruction alongside the club's own teaching professionals. None of that requires owning a home here. It does mean a Widgi Creek address puts a restaurant, a pro shop, and instructors within a short drive rather than across town. That fits a buyer who plays golf or pickleball often enough for the distance to matter, and who would rather look out at an active public course than pay for the privacy of a members-only one. It is a poor fit for a buyer set on a gated community. Bend has those elsewhere, and they are built for exactly that instead."
   ],
   "amenities": [
     { "category": "Golf", "name": "The Golf Club at Widgi Creek", "description": "18-hole course by Robert Muir Graves, with bent-grass fairways and greens, tight tree-lined fairways, and undulating greens along the Deschutes River Canyon.", "access": "Public tee times; membership options" },
@@ -30,5 +34,59 @@
     { "fact": "Voted Central Oregon's favorite public course by The Source 20+ times; pickleball, Operation 36 academy, The Grill, banquet 150", "source_url": "https://www.widgi.com/" },
     { "fact": "18707 SW Century Dr; bent-grass; range balls with greens fees", "source_url": "https://www.golfpass.com/travel-advisor/courses/62-widgi-creek-golf-club" },
     { "fact": "Elkai Woods townhomes front Widgi Creek fairways", "source_url": "https://www.redfin.com/OR/Bend/60462-Elkai-Woods-Dr-97702/home/146731913" }
-  ]
+  ],
+  "source": "Original citations[] (GolfLink, widgi.com, GolfPass, Redfin) verified in a prior pass. about_prose rewritten and expanded 2026-08-03 to long-form editorial per docs/audits/WEBSITE_AUDIT_2026-08-02.md, drawing on the same base sources plus the Bend Bulletin (1991 opening and the course's original name), Wikipedia (architect Robert Muir Graves biography and other Central Oregon work), hoa-bend.com and a 2020 Oregon Court of Appeals case (three-HOA governance structure), Deschutes County Road Department (seasonal Century Drive/Cascade Lakes Highway closure), and maplogs.com (elevation). No market figures included by design. See the sources array for per-claim provenance.",
+  "sources": [
+    {
+      "url": "https://bendbulletin.com/2018/05/06/how-a-sleepy-lumber-town-turned-into-a-golf-hotbed/",
+      "publisher": "The Bulletin (Bend Bulletin)",
+      "supports": "Course opened in 1991 as Seventh Mountain Golf Village, now Widgi Creek Golf Club, part of a wave of Central Oregon courses built that year as the region's golf-destination era took hold"
+    },
+    {
+      "url": "https://www.golflink.com/golf-courses/or/bend/widgi-creek-golf-club",
+      "publisher": "GolfLink",
+      "supports": "Course specs: par 72, 6,911 yards from the back tees, 73.4 rating, 134 slope; architect Robert Muir Graves; opened 1991; address 18707 SW Century Dr"
+    },
+    {
+      "url": "https://www.golfpass.com/travel-advisor/courses/62-widgi-creek-golf-club",
+      "publisher": "GolfPass",
+      "supports": "Tight, tree-lined fairways along the rim of the Deschutes River Canyon; public course open to daily play"
+    },
+    {
+      "url": "https://www.widgi.com/",
+      "publisher": "Widgi Creek Golf Club (official site)",
+      "supports": "Voted Central Oregon's favorite public course by Source Weekly readers more than 20 times; Golf Digest named it among the best new courses of 1995 and includes it on its Best Places to Play list; on-site pickleball, Operation 36 Golf Academy, The Grill restaurant and a banquet room for up to 150"
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/Robert_Muir_Graves",
+      "publisher": "Wikipedia",
+      "supports": "Robert Muir Graves career span (1955-2001), ASGCA president 1974-1975, designed the Big Meadow course at Black Butte Ranch (1972), died in Bend in 2003"
+    },
+    {
+      "url": "https://www.redfin.com/OR/Bend/60462-Elkai-Woods-Dr-97702/home/146731913",
+      "publisher": "Redfin",
+      "supports": "Elkai Woods townhomes front Widgi Creek's fairways and back to Deschutes National Forest"
+    },
+    {
+      "url": "https://hoa-bend.com/portfolio-item/elkai-woods-homes-hoa/",
+      "publisher": "HOA Management, Inc. (hoa-bend.com)",
+      "supports": "Elkai Woods sits in the Widgi Creek subdivision about 5 miles southwest of downtown Bend and is bordered by the golf course"
+    },
+    {
+      "url": "https://caselaw.findlaw.com/court/or-court-of-appeals/2092117.html",
+      "publisher": "Oregon Court of Appeals (via FindLaw)",
+      "supports": "Three separate homeowners associations tied to the property: Widgi Creek Homeowners Association, Elkai Woods Homeowners Association, and Elkai Woods Fractional Homeowners Association (2020 land-use case, State ex rel Kine v. Widgi Creek Homeowners Association)"
+    },
+    {
+      "url": "https://www.deschutescounty.gov/road/page/road-department-plans-seasonal-closures-cascade-lakes-highway-and-paulina-lake-road",
+      "publisher": "Deschutes County Road Department",
+      "supports": "Cascade Lakes Highway/Century Drive closes seasonally west of Mt. Bachelor between the Dutchman Flat and Deschutes Bridge gates, typically from mid-November until targeted reopening before Memorial Day"
+    },
+    {
+      "url": "https://elevation.maplogs.com/poi/sw_century_dr_bend_or_usa.369730.html",
+      "publisher": "Maplogs",
+      "supports": "Elevation of SW Century Dr, Bend, OR at approximately 3,927 feet"
+    }
+  ],
+  "last_modified": "2026-08-03T00:00:00Z"
 }

@@ -10,36 +10,181 @@
   "founded": 1992,
   "architect": "Tom Weiskopf / Jay Morrish",
   "about_prose": [
-    "Broken Top is a private, gated golf community on Bend's west side, established in 1992 on land where the high desert meets the foothills of the Cascade Range. The community surrounds an 18-hole championship golf course designed by Tom Weiskopf and Jay Morrish, which opened for play on July 4, 1993.",
-    "In October 2019, 84 percent of the community's 645 homeowners voted to purchase the club from Gold Ring Holdings for $6.4 million, transferring ownership to the Broken Top Community Association. The club is now managed by Troon. The 27,000-square-foot clubhouse overlooks a six-acre lake with sightlines to Broken Top, South Sister, and Mt. Bachelor.",
-    "Homes range from townhomes to custom estate properties on lots from a fraction of an acre to more than an acre, broadly spanning from under $800,000 to over $3,000,000. The community includes 11 miles of walking and biking paths maintained year-round, minutes from the Old Mill District and the Cascade Lakes Scenic Byway."
+    "Broken Top sits on Bend's west side, where the pine forest of the Cascade foothills meets the high desert. The gated community was established in 1992 and takes its name from the mountain, a 9,177-foot stratovolcano about 20 miles west in the Three Sisters Wilderness. From the golf course, the peak that gave the community its name is part of the view, alongside South Sister and Mt. Bachelor. The 18-hole championship course, designed by Tom Weiskopf and Jay Morrish, opened for play on July 4, 1993.",
+    "The club changed hands in October 2019. Eighty-four percent of the community's 645 homeowners at the time voted to buy the club from Gold Ring Holdings, moving ownership to the Broken Top Community Association, which now contracts with Troon to run day-to-day operations. That history is worth knowing before you assume a home purchase here includes club access. Golf membership is sold separately from the HOA and is also sold to people who live outside the neighborhood, so buying a house does not put you on the course, in the restaurant, or in the fitness center automatically. What residency and HOA dues do buy is the shared ground around the club: 11 miles of paved paths, a six-acre lake stocked with rainbow trout, and the setting around the 27,000-square-foot clubhouse, open to residents whether or not they carry a membership.",
+    "The clubhouse has kept adding capacity in recent years. A Golf Performance Center with Trackman and GC Quad launch monitors opened in 2020. Eight pickleball courts built to Professional Pickleball Association standard and two artificial-turf bocce courts opened in 2024, alongside the Lakehouse, a bistro built into the former pro shop space on a deck above the lake.",
+    "The location does double duty for anyone who splits time between town and trail. Alpine Park, at the edge of the neighborhood, is the primary trail connection east through Broken Top to Cascade Middle School and the Skyline Sports Complex, and the same network runs west to the Haul Road Trail along Century Drive and on to Deschutes National Forest trailheads, according to Bend Park and Recreation District. The Old Mill District is about 5 minutes away off Mt. Washington Drive, and the Cascade Lakes Scenic Byway, the road out to Mt. Bachelor, starts a short drive further west.",
+    "Housing inside the gates is not one product. Streets like Fall Creek Loop and Painted Ridge Loop carry single-family homes on fairway lots, the 10th at Painted Ridge and the 18th along Mount Washington Drive, while Broken Top Drive and the interior loops carry attached townhomes next to custom estates. Lot sizes run from well under a quarter acre up to about 1.3 acres, and floor plans span roughly 800 to 7,400 square feet across Northwest, contemporary, traditional, and craftsman styles. That range covers a retired couple in a townhome near the clubhouse and a family building a custom estate on a full acre, and it is part of why real estate agents who sell across Bend's golf communities describe Broken Top as feeling more like an in-town neighborhood organized around a private club than a resort you visit.",
+    "The trade-off is the one that comes with any gated community built around a golf course. You are inside a gate off Century Drive, several miles from downtown Bend, so getting to the Old Mill District or downtown means a drive, not a walk, even though the trail network reaches the national forest without one. The course itself runs through the middle of the neighborhood, so its upkeep and the HOA structure that supports it are part of living there, whether or not golf is why you moved in."
   ],
   "amenities": [
-    { "category": "Golf", "name": "18-Hole Championship Golf Course", "description": "Par-72 course playing 7,161 yards from the back tees, rated 73.7 with a slope of 142. Four sets of tees, bent-grass greens, and views of the Cascade peaks.", "access": "Members only" },
-    { "category": "Golf", "name": "Golf Performance Center", "description": "Opened in 2020. Two covered, heated driving bays with Trackman and GC Quad launch-monitor technology, a short-game area, an 18-hole putting course, and club-fitting services.", "access": "Members only" },
-    { "category": "Dining", "name": "Broken Top Restaurant", "description": "Full-service restaurant inside the 27,000-square-foot clubhouse, open Wednesday through Sunday with weekend breakfast. Indoor and outdoor dining.", "access": "Members and community residents" },
-    { "category": "Dining", "name": "The Lakehouse", "description": "Bistro repurposed from the former pro shop, with alfresco dining on a shaded patio and a deck overlooking Charley Berry Lake.", "access": "Members only" },
-    { "category": "Recreation", "name": "Pickleball Complex", "description": "Eight courts built to Professional Pickleball Association standards, added in the 2024 amenity program.", "access": "Members only" },
-    { "category": "Recreation", "name": "Tennis Courts", "description": "Two outdoor tennis courts with an active member community.", "access": "Members only" },
-    { "category": "Recreation", "name": "Bocce Ball Courts", "description": "Two tournament-size artificial-turf courts completed in May 2024 on the sunrise patio.", "access": "Members only" },
-    { "category": "Recreation", "name": "Six-Acre Lake", "description": "Stocked with rainbow trout, with mountain views from the clubhouse deck.", "access": "Community" },
-    { "category": "Recreation", "name": "Walking and Biking Paths", "description": "11 miles of private paths maintained year-round throughout the community.", "access": "Community residents" },
-    { "category": "Wellness", "name": "Fitness Center and Yoga Studio", "description": "Equipped fitness facility plus a studio offering yoga, pilates, circuit training, and therapeutic movement.", "access": "Members only" },
-    { "category": "Wellness", "name": "Saltwater Swimming Pool", "description": "Heated seasonal outdoor pool used for family events, water aerobics, and swim lanes, with locker rooms, steam rooms, and jacuzzis.", "access": "Members only" }
+    {
+      "category": "Golf",
+      "name": "18-Hole Championship Golf Course",
+      "description": "Par-72 course playing 7,161 yards from the back tees, rated 73.7 with a slope of 142. Four sets of tees, bent-grass greens, and views of the Cascade peaks.",
+      "access": "Members only"
+    },
+    {
+      "category": "Golf",
+      "name": "Golf Performance Center",
+      "description": "Opened in 2020. Two covered, heated driving bays with Trackman and GC Quad launch-monitor technology, a short-game area, an 18-hole putting course, and club-fitting services.",
+      "access": "Members only"
+    },
+    {
+      "category": "Dining",
+      "name": "Broken Top Restaurant",
+      "description": "Full-service restaurant inside the 27,000-square-foot clubhouse, open Wednesday through Sunday with weekend breakfast. Indoor and outdoor dining.",
+      "access": "Members and community residents"
+    },
+    {
+      "category": "Dining",
+      "name": "The Lakehouse",
+      "description": "Bistro repurposed from the former pro shop, with alfresco dining on a shaded patio and a deck overlooking Charley Berry Lake.",
+      "access": "Members only"
+    },
+    {
+      "category": "Recreation",
+      "name": "Pickleball Complex",
+      "description": "Eight courts built to Professional Pickleball Association standards, added in the 2024 amenity program.",
+      "access": "Members only"
+    },
+    {
+      "category": "Recreation",
+      "name": "Tennis Courts",
+      "description": "Two outdoor tennis courts with an active member community.",
+      "access": "Members only"
+    },
+    {
+      "category": "Recreation",
+      "name": "Bocce Ball Courts",
+      "description": "Two tournament-size artificial-turf courts completed in May 2024 on the sunrise patio.",
+      "access": "Members only"
+    },
+    {
+      "category": "Recreation",
+      "name": "Six-Acre Lake",
+      "description": "Stocked with rainbow trout, with mountain views from the clubhouse deck.",
+      "access": "Community"
+    },
+    {
+      "category": "Recreation",
+      "name": "Walking and Biking Paths",
+      "description": "11 miles of private paths maintained year-round throughout the community.",
+      "access": "Community residents"
+    },
+    {
+      "category": "Wellness",
+      "name": "Fitness Center and Yoga Studio",
+      "description": "Equipped fitness facility plus a studio offering yoga, pilates, circuit training, and therapeutic movement.",
+      "access": "Members only"
+    },
+    {
+      "category": "Wellness",
+      "name": "Saltwater Swimming Pool",
+      "description": "Heated seasonal outdoor pool used for family events, water aerobics, and swim lanes, with locker rooms, steam rooms, and jacuzzis.",
+      "access": "Members only"
+    }
   ],
   "drive_times": [
-    { "minutes": 5, "destination": "Old Mill District", "note": "West side of Bend, just off Mt. Washington Drive" },
-    { "minutes": 25, "destination": "Mt. Bachelor", "note": "About 22 miles southwest via Century Drive" },
-    { "minutes": 30, "destination": "Redmond Airport (RDM)", "note": "About 17 miles north via US-97" }
+    {
+      "minutes": 5,
+      "destination": "Old Mill District",
+      "note": "West side of Bend, just off Mt. Washington Drive"
+    },
+    {
+      "minutes": 25,
+      "destination": "Mt. Bachelor",
+      "note": "About 22 miles southwest via Century Drive"
+    },
+    {
+      "minutes": 30,
+      "destination": "Redmond Airport (RDM)",
+      "note": "About 17 miles north via US-97"
+    }
   ],
-  "course_specs": { "par": 72, "yardage": 7161, "summary": "18-hole private championship course. Rating 73.7, slope 142 from the black tees, four tee options. Bent-grass greens, winter-rye fairways. Practice range, 18-hole putting course, and short-game area on site." },
+  "course_specs": {
+    "par": 72,
+    "yardage": 7161,
+    "summary": "18-hole private championship course. Rating 73.7, slope 142 from the black tees, four tee options. Bent-grass greens, winter-rye fairways. Practice range, 18-hole putting course, and short-game area on site."
+  },
   "membership_office_phone": "541.383.8200",
   "citations": [
-    { "fact": "Course designed by Tom Weiskopf and Jay Morrish; opened July 4, 1993", "source_url": "https://traveloregon.com/things-to-do/outdoor-recreation/golf/broken-top-club/" },
-    { "fact": "Par 72, 7,161 yards, slope 142, rating 73.7 from black tees; open March 15 to November 15", "source_url": "https://www.golfpass.com/travel-advisor/courses/1349-broken-top-club" },
-    { "fact": "Oct 2019, 84% of 645 homeowners voted to buy the club for $6.4M from Gold Ring Holdings", "source_url": "http://cascadebusnews.com/broken-top-community-association-announces-acquisition-of-the-broken-top-club/" },
-    { "fact": "27,000 sq ft clubhouse, managed by Troon; $1.5M+ amenity program incl. pickleball + Lakehouse; bocce May 2024", "source_url": "https://thegolfwire.com/broken-top-club-amenities" },
-    { "fact": "Golf Performance Center opened 2020 with Trackman + GC Quad; amenities incl. pool, tennis, fitness, six-acre stocked lake, 11 miles of paths", "source_url": "https://brokentop.clubhouseonline-e3.net/Membership/Club_Amenities" },
-    { "fact": "Membership phone 541-383-8200; 62000 Broken Top Drive, Bend OR 97702", "source_url": "https://www.golfpass.com/travel-advisor/courses/1349-broken-top-club" }
-  ]
+    {
+      "fact": "Course designed by Tom Weiskopf and Jay Morrish; opened July 4, 1993",
+      "source_url": "https://traveloregon.com/things-to-do/outdoor-recreation/golf/broken-top-club/"
+    },
+    {
+      "fact": "Par 72, 7,161 yards, slope 142, rating 73.7 from black tees; open March 15 to November 15",
+      "source_url": "https://www.golfpass.com/travel-advisor/courses/1349-broken-top-club"
+    },
+    {
+      "fact": "Oct 2019, 84% of 645 homeowners voted to buy the club for $6.4M from Gold Ring Holdings",
+      "source_url": "http://cascadebusnews.com/broken-top-community-association-announces-acquisition-of-the-broken-top-club/"
+    },
+    {
+      "fact": "27,000 sq ft clubhouse, managed by Troon; $1.5M+ amenity program incl. pickleball + Lakehouse; bocce May 2024",
+      "source_url": "https://thegolfwire.com/broken-top-club-amenities"
+    },
+    {
+      "fact": "Golf Performance Center opened 2020 with Trackman + GC Quad; amenities incl. pool, tennis, fitness, six-acre stocked lake, 11 miles of paths",
+      "source_url": "https://brokentop.clubhouseonline-e3.net/Membership/Club_Amenities"
+    },
+    {
+      "fact": "Membership phone 541-383-8200; 62000 Broken Top Drive, Bend OR 97702",
+      "source_url": "https://www.golfpass.com/travel-advisor/courses/1349-broken-top-club"
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://en.wikipedia.org/wiki/Broken_Top",
+      "publisher": "Wikipedia",
+      "supports": "Broken Top mountain elevation (9,177 ft) and location about 20 miles west of Bend inside the Three Sisters Wilderness"
+    },
+    {
+      "url": "https://traveloregon.com/things-to-do/outdoor-recreation/golf/broken-top-club/",
+      "publisher": "Travel Oregon",
+      "supports": "Views of Broken Top, South Sister, and Mt. Bachelor from the golf course; community established 1992; course designed by Tom Weiskopf and Jay Morrish"
+    },
+    {
+      "url": "https://www.golfpass.com/travel-advisor/courses/1349-broken-top-club",
+      "publisher": "GolfPass",
+      "supports": "Course opened July 4, 1993; par 72, 7,161 yards"
+    },
+    {
+      "url": "http://cascadebusnews.com/broken-top-community-association-announces-acquisition-of-the-broken-top-club/",
+      "publisher": "Cascade Business News",
+      "supports": "October 2019 homeowner vote (84 percent of 645 homeowners) to buy the club from Gold Ring Holdings; ownership transferred to the Broken Top Community Association"
+    },
+    {
+      "url": "https://thegolfwire.com/broken-top-club-amenities",
+      "publisher": "The Golf Wire",
+      "supports": "27,000-square-foot clubhouse; Troon club management; pickleball and Lakehouse amenity program; bocce courts completed May 2024"
+    },
+    {
+      "url": "https://brokentop.clubhouseonline-e3.net/Membership/Club_Amenities",
+      "publisher": "Broken Top Club member site",
+      "supports": "Golf Performance Center opened 2020 with Trackman and GC Quad technology; six-acre stocked lake; 11 miles of paths"
+    },
+    {
+      "url": "https://www.bendparksandrec.org/park/alpine-park/",
+      "publisher": "Bend Park and Recreation District",
+      "supports": "Alpine Park is the primary trail connection east through the Broken Top neighborhood to Cascade Middle School and the Skyline Sports Complex, and west to the Haul Road Trail along Century Drive and Forest Service trails"
+    },
+    {
+      "url": "https://bendlifestylerealtors.com/blog/broken-top-vs-other-bend-golf-communities-lifestyle-guide",
+      "publisher": "Bend Lifestyle Realtors",
+      "supports": "Golf club membership is sold separately from home ownership and open to non-residents; comparative description of Broken Top as an in-town club neighborhood versus resort-style communities"
+    },
+    {
+      "url": "https://bernardrealestategroup.com/century-west-bend-or/broken-top/",
+      "publisher": "Bernard Real Estate Group",
+      "supports": "Home lot sizes (about 0.07 to 1.28 acres) and living area range (about 800 to 7,400 square feet) across Northwest, contemporary, traditional, and craftsman architectural styles"
+    },
+    {
+      "url": "https://www.tuttlebendrealestate.com/broken-top/",
+      "publisher": "Tuttle & Tuttle Group",
+      "supports": "Named streets and fairway locations inside Broken Top: Fall Creek Loop, Broken Top Drive, Mount Washington Drive along the 18th fairway, Painted Ridge Loop along the 10th fairway"
+    }
+  ],
+  "last_modified": "2026-08-03T00:00:00Z"
 }
