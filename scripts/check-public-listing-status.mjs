@@ -42,6 +42,13 @@ const ALLOWLIST = new Map([
   ['lib/data/expired/outreach.ts', 'expired-listing outreach: re-list guard'],
   ['components/console/StatusPill.tsx', 'admin console status pill — no public importer'],
   ['lib/spark.ts', 'Spark MLS API client — must request Coming Soon to sync it'],
+  // The broker SMS agent classifies listing state for the BROKER (coming soon /
+  // just listed / price improvement / just sold). Its implementation
+  // (lib/agent/listing-state.ts) imports isComingSoonStatus from the source of
+  // truth and never hardcodes the string; only the test does, because a test
+  // for that classifier has to name the input it classifies. lib/agent/ has no
+  // consumer importer — app/api/**, app/admin/** and server actions only.
+  ['lib/agent/listing-state.test.ts', 'broker-agent state classifier test — asserts detection, never renders'],
   ['app/actions/sync-spark.ts', 'MLS sync action — must ingest Coming Soon'],
   ['lib/video-tours-listing-videos-join.ts', 'shared row helper; callers apply the public predicate'],
   ['app/marketing/request/deliverables.ts', 'broker marketing-request menu (coming-soon teaser is a broker deliverable)'],
