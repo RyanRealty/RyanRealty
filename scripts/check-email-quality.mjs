@@ -42,6 +42,14 @@ const NON_SENDER = new Set([
   // Pipeline heartbeat: consolidated staleness alert to Matt only (G-heartbeat,
   // 2026-07-21) — internal ops mail, not a consumer/marketing send.
   'app/api/cron/loop-health-check/route.ts',
+  // Broker-agent supervision digest (R3.5): the principal broker's daily record
+  // of what the broker SMS agent's brokers did — action rows created, which they
+  // self-approved with the APPROVE token, every law_lookup Q&A. fromMailbox and
+  // to are BOTH the broker mailbox from CRM_MAILBOXES (Matt to Matt), so no lead
+  // recipient is reachable. A CAN-SPAM footer and List-Unsubscribe on a
+  // self-addressed compliance record would be misleading, and an unsubscribe link
+  // on a supervision digest is the wrong affordance entirely.
+  'app/api/cron/broker-agent-digest/route.ts',
   // Broker self-preview: sends the CALLING BROKER'S own email/phone a rendered
   // draft of a template they're editing. Not a marketing/automated send: no real
   // contact is involved, no list targeting, and CAN-SPAM List-Unsubscribe
