@@ -581,9 +581,31 @@ function checkDataflowAndWiring() {
         `${rel}: passes a literal broker (${literalOwner[0]}) to the persist call. Ownership must come from the shared resolver binding, or every deliverable files under one broker.`,
       )
     }
-    if (!new RegExp(`\\b${fnName}\\s*\\(`).test(code)) {
+    // A runner may satisfy the contract THROUGH the module it delegates to.
+    //
+    // WHY (2026-08-02): runProducerRow was extracted from the cron route into
+    // lib/marketing-brain/run-producer-core.ts so the one-shot admin trigger
+    // could share it. The admin route is now a dispatch envelope that calls
+    // runProducerRow, and the core does the persist + ownership resolution
+    // (lines 293-294). Reading only the route's own text, this gate reported
+    // both contract breaches — with the behaviour fully intact. Following one
+    // level of local delegation keeps the contract enforced where it actually
+    // executes, instead of forcing the calls to be duplicated back into every
+    // caller purely to satisfy a text search.
+    //
+    // Only the PRESENCE checks look through the delegate. The literal-owner and
+    // assigned_approver checks stay scoped to the runner's own code, so a
+    // delegate cannot launder a hardcoded broker in the caller.
+    const delegated = [...code.matchAll(/from\s+['"]@\/(lib\/[^'"]+)['"]/g)]
+      .map((m) => join(process.cwd(), `${m[1]}.ts`))
+      .filter((f) => existsSync(f))
+      .map((f) => readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, ''))
+      .join('\n')
+    const effective = `${code}\n${delegated}`
+
+    if (!new RegExp(`\\b${fnName}\\s*\\(`).test(effective)) {
       problems.push(
-        `${rel}: never calls ${fnName}(...). This runner finishes producers, so its output would never reach any broker's library — exactly the regression that left the bucket empty.`,
+        `${rel}: never calls ${fnName}(...), directly or through a module it delegates to. This runner finishes producers, so its output would never reach any broker's library — exactly the regression that left the bucket empty.`,
       )
     }
     // Ownership must come from the ONE shared resolver: either the SQL function
@@ -591,7 +613,8 @@ function checkDataflowAndWiring() {
     // wrapper around it. What is banned is a third, local reading of
     // assigned_approver — that is what misfiled every non-Matt deliverable.
     const usesSharedResolver =
-      /resolve_deliverable_broker_slug/.test(code) || /resolveBrokerSlugForAction\s*\(/.test(code)
+      /resolve_deliverable_broker_slug/.test(effective) ||
+      /resolveBrokerSlugForAction\s*\(/.test(effective)
     if (!usesSharedResolver) {
       problems.push(
         `${rel}: does not resolve ownership through resolve_deliverable_broker_slug (or resolveBrokerSlugForAction). A second implementation of "whose deliverable is this" already sent every non-Matt visual deliverable to the wrong library.`,
