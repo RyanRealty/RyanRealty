@@ -14,6 +14,8 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { fetchCmaMapPngBuffer } from '@/lib/cma-map'
 import { getCmaHtmlBySlug } from '@/lib/data'
+import { assertPdfPageSafety } from '@/lib/pdf/assert-page-safety'
+import { assertPageFit } from '@/lib/pdf/assert-page-fit'
 
 const CHROMIUM_REMOTE =
   'https://github.com/Sparticuz/chromium/releases/download/v138.0.2/chromium-v138.0.2-pack.x64.tar'
@@ -181,14 +183,23 @@ export async function renderCmaPdfBuffer(slug: string): Promise<RenderCmaPdfResu
       .evaluateHandle('document.fonts ? document.fonts.ready : Promise.resolve()')
       .catch(() => {})
     await page.emulateMediaType('print')
+    // Fit before geometry: a sheet holding more than it can show would lose the
+    // excess, and nothing in the finished PDF records what was dropped.
+    await assertPageFit(page, `CMA ${slug}`)
     const pdf = await page.pdf({
       format: 'Letter',
       printBackground: true,
       preferCSSPageSize: false,
       margin: { top: '0', right: '0', bottom: '0', left: '0' },
     })
+    const buffer = Buffer.from(pdf)
+    // THE PAGE CONTRACT, checked on the bytes. The CMA draws its own per-sheet
+    // header and footer, so STRADDLE cannot classify the strips — but a comp
+    // table or a long narrative that grew into the margin still fails here
+    // rather than reaching the client. See lib/pdf/page-contract.ts.
+    await assertPdfPageSafety(buffer, `CMA ${slug}`, { runningMarksInBody: true })
     return {
-      buffer: Buffer.from(pdf),
+      buffer,
       finalized: finalizedSource,
     }
   } finally {

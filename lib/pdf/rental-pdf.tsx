@@ -10,11 +10,13 @@
 
 import React from 'react'
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer'
+import { REACT_PDF_PAGE_STYLE, REACT_PDF_FOOTER_STYLE } from '@/lib/pdf/page-contract'
 import type { RentalAnalysisResult } from '@/lib/rental-analysis'
 
 const NAVY = '#102742'
 const styles = StyleSheet.create({
-  page: { padding: 40, fontSize: 10, color: '#1a1a1a' },
+  page: {
+    ...REACT_PDF_PAGE_STYLE, fontSize: 10, color: '#1a1a1a' },
   navyBar: { backgroundColor: NAVY, padding: 14, marginBottom: 18 },
   logoText: { color: '#faf8f4', fontSize: 16, fontWeight: 'bold' },
   kicker: { color: '#c9d2dd', fontSize: 9, marginTop: 2 },
@@ -32,7 +34,8 @@ const styles = StyleSheet.create({
   tr: { flexDirection: 'row', paddingVertical: 2, borderBottomWidth: 0.5, borderBottomColor: '#e5e7eb' },
   tc: { flex: 1, fontSize: 9 },
   disc: { marginTop: 16, fontSize: 8, color: '#6b7280', lineHeight: 1.4 },
-  footer: { position: 'absolute', bottom: 28, left: 40, right: 40, fontSize: 8, color: '#6b7280', textAlign: 'center' },
+  footer: {
+    ...REACT_PDF_FOOTER_STYLE, fontSize: 8, color: '#6b7280', textAlign: 'center' },
 })
 
 export type RentalPdfData = {

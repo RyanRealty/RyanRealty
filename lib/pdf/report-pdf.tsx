@@ -6,6 +6,7 @@
 
 import React from 'react'
 import { Document, Page, View, Text, Image, StyleSheet, Font } from '@react-pdf/renderer'
+import { REACT_PDF_PAGE_STYLE, REACT_PDF_FOOTER_STYLE } from '@/lib/pdf/page-contract'
 
 // Use Inter from CDN as a fallback since custom fonts (Amboqia, AzoSans) are not bundled.
 Font.register({
@@ -31,7 +32,7 @@ const TEXT_PRIMARY = '#1A1410'
 
 const styles = StyleSheet.create({
   page: {
-    padding: 40,
+    ...REACT_PDF_PAGE_STYLE,
     fontSize: 10,
     fontFamily: 'AzoSans',
     color: TEXT_PRIMARY,
@@ -66,10 +67,7 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   footer: {
-    position: 'absolute' as const,
-    bottom: 30,
-    left: 40,
-    right: 40,
+    ...REACT_PDF_FOOTER_STYLE,
     fontSize: 8,
     color: TEXT_SECONDARY,
     textAlign: 'center' as const,

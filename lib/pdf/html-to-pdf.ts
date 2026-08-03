@@ -10,6 +10,9 @@
 
 import puppeteer, { type Browser } from 'puppeteer-core'
 import chromium from '@sparticuz/chromium-min'
+import { assertPdfPageSafety } from '@/lib/pdf/assert-page-safety'
+import { assertPageFit } from '@/lib/pdf/assert-page-fit'
+import { pdfRenderOptions, type RunningMarks } from '@/lib/pdf/page-contract'
 
 const CHROMIUM_REMOTE =
   'https://github.com/Sparticuz/chromium/releases/download/v138.0.2/chromium-v138.0.2-pack.x64.tar'
@@ -37,8 +40,38 @@ async function getBrowser(): Promise<Browser> {
   })
 }
 
-/** Render a self-contained HTML string to a Letter-format PDF buffer. */
-export async function htmlToPdfBuffer(html: string): Promise<Buffer> {
+export type HtmlToPdfOptions = {
+  /**
+   * Label used in the page-safety error. Name the document, not the function —
+   * this string is what tells you which deliverable failed.
+   */
+  label?: string
+  /**
+   * Running header/footer drawn into the reserved margin strips on every sheet.
+   * Supply these for any document that flows (BPO, market report). Omit only
+   * for documents that draw their own marks per sheet and whose geometry
+   * already matches the contract (the CMA).
+   */
+  marks?: RunningMarks
+  /**
+   * Set when the document draws its own header/footer inside the body. Relaxes
+   * the STRADDLE rule, which cannot classify strips that the document owns.
+   * EDGE and SIDE still apply.
+   */
+  runningMarksInBody?: boolean
+}
+
+/**
+ * Render a self-contained HTML string to a Letter-format PDF buffer.
+ *
+ * The result is inspected against THE PAGE CONTRACT before it is returned, so a
+ * document whose content grew into a header, a footer, or a margin throws here
+ * instead of landing in a client's inbox. See lib/pdf/page-contract.ts.
+ */
+export async function htmlToPdfBuffer(
+  html: string,
+  options: HtmlToPdfOptions = {},
+): Promise<Buffer> {
   let browser: Browser | null = null
   try {
     browser = await getBrowser()
@@ -61,13 +94,23 @@ export async function htmlToPdfBuffer(html: string): Promise<Buffer> {
     })
     await page.evaluateHandle('document.fonts ? document.fonts.ready : Promise.resolve()').catch(() => {})
     await page.emulateMediaType('print')
-    const pdf = await page.pdf({
-      format: 'Letter',
-      printBackground: true,
-      preferCSSPageSize: false,
-      margin: { top: '0', right: '0', bottom: '0', left: '0' },
+    await assertPageFit(page, options.label ?? 'htmlToPdfBuffer')
+    // A document with running marks hands its page box to @page (see the
+    // contract). One without keeps the legacy full-bleed box, where each .page
+    // element is itself a sheet and supplies its own margins as padding.
+    const pdf = options.marks
+      ? await page.pdf(pdfRenderOptions(options.marks))
+      : await page.pdf({
+          format: 'Letter',
+          printBackground: true,
+          preferCSSPageSize: false,
+          margin: { top: '0', right: '0', bottom: '0', left: '0' },
+        })
+    const buffer = Buffer.from(pdf)
+    await assertPdfPageSafety(buffer, options.label ?? 'htmlToPdfBuffer', {
+      runningMarksInBody: options.runningMarksInBody,
     })
-    return Buffer.from(pdf)
+    return buffer
   } finally {
     if (browser) await browser.close().catch(() => {})
   }

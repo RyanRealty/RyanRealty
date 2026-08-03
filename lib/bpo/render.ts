@@ -10,6 +10,7 @@
  * that a broker price opinion is not an appraisal (ORS 696.010 / 696.290).
  */
 
+import { pageContractCss } from '@/lib/pdf/page-contract'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
 import type {
@@ -120,6 +121,8 @@ export interface RenderBpoArgs {
 
 function stylesheet(): string {
   return `
+  ${pageContractCss()}
+
   @font-face {
     font-family: 'Amboqia Boriango';
     src: url('${SITE_URL}/fonts/Amboqia_Boriango.otf') format('opentype');
@@ -137,14 +140,24 @@ function stylesheet(): string {
   html, body { margin: 0; padding: 0; background: #e8e3d8; color: var(--navy);
     font-family: 'Geist', system-ui, -apple-system, sans-serif; font-variant-numeric: tabular-nums;
     -webkit-font-smoothing: antialiased; }
-  .page { width: 8.5in; margin: 0 auto; background: var(--cream);
-    padding: 0.7in 0.75in; position: relative; }
+  /* The reserved bands come from @page in the contract above, NOT from padding
+     here. This rule used to set padding 0.7in 0.75in, and that is the whole
+     bug: CSS padding on a box that fragments across sheets is applied once at
+     the top of the box and once at the bottom, so the FIRST sheet had a top
+     margin, the LAST had a bottom margin, and every interior sheet had neither.
+     Measured on a 5-sheet BPO: body text 1.5pt from the paper edge on sheets 3,
+     4 and 5. Every BPO longer than two sheets printed that way. */
+  .page { max-width: 100%; background: var(--cream); position: relative; }
   /* Page 1 (summary) prints on its own sheet. Page 2 (detail) flows naturally
      across as many sheets as it needs, breaking only between whole blocks. */
-  .page:first-child { page-break-after: always; }
+  .page:first-child { page-break-after: always; break-after: page; }
   .offer, .opinion, .kpis, .facts, table, tr, .sig, ul.signals li, ul.terms li,
   h2.sec, .disclosure { break-inside: avoid; }
-  @media screen { .page { min-height: 10.5in; } }
+  /* Screen only: the on-page preview shows sheets on a desk. Print takes its
+     box from @page, so this must never set a height the printer will honour. */
+  @media screen {
+    .page { width: 8.5in; min-height: 10.5in; margin: 0.4in auto; padding: 0.7in 0.75in; }
+  }
   .amboqia { font-family: 'Amboqia Boriango', 'Geist', serif; font-weight: 400; }
   .eyebrow { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
   h1.addr { font-size: 30px; line-height: 1.05; margin: 6px 0 2px; letter-spacing: -0.01em; }

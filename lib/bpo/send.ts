@@ -31,6 +31,7 @@ import { brokerSendIdentity } from '@/lib/email/broker-identity'
 import { getContactSendTarget } from '@/lib/data/crm/getContactSendTarget'
 import { assertClientSafe, stripOfferStrategy } from '@/lib/bpo/render'
 import { htmlToPdfBuffer } from '@/lib/pdf/html-to-pdf'
+import { CONTACT } from '@/lib/brand/contact'
 import { wrapBrandedEmail, brandedTextFooter, escapeHtml, type ShellBroker } from '@/lib/email/shell'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
 import { isSuppressed } from '@/lib/crm/suppressions'
@@ -321,7 +322,17 @@ export async function sendBpoToLead(opts: {
   }
   let pdf: Buffer
   try {
-    pdf = await htmlToPdfBuffer(docHtml)
+    // Running marks live in the @page margin strips, so body content cannot
+    // reach them on any sheet — including the interior sheets that used to
+    // print with no margin at all. See lib/pdf/page-contract.ts.
+    pdf = await htmlToPdfBuffer(docHtml, {
+      label: `BPO ${(row.subject_address as string) ?? slug}`,
+      marks: {
+        headerLeft: 'RYAN REALTY',
+        headerRight: 'BROKER PRICE OPINION',
+        footerLeft: `Ryan Realty · ${CONTACT.phoneDirect}`,
+      },
+    })
   } catch (e) {
     return { ok: false, error: `PDF render failed: ${e instanceof Error ? e.message : String(e)}` }
   }

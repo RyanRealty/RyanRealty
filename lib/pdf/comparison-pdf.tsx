@@ -5,15 +5,18 @@
 
 import React from 'react'
 import { Document, Page, View, Text, StyleSheet, Image } from '@react-pdf/renderer'
+import { REACT_PDF_PAGE_STYLE, REACT_PDF_FOOTER_STYLE } from '@/lib/pdf/page-contract'
 
 const styles = StyleSheet.create({
-  page: { padding: 40, fontSize: 10 },
+  page: {
+    ...REACT_PDF_PAGE_STYLE, fontSize: 10 },
   navyBar: { backgroundColor: '#102742', padding: 12, marginBottom: 16 },
   logoText: { color: '#f0eeec', fontSize: 18, fontWeight: 'bold' },
   title: { fontSize: 14, fontWeight: 'bold', marginBottom: 12, color: '#102742' },
   row: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 16, marginBottom: 12 },
   col: { width: '48%', minWidth: 200 },
-  footer: { position: 'absolute' as const, bottom: 30, left: 40, right: 40, fontSize: 8, color: '#6b7280', textAlign: 'center' as const },
+  footer: {
+    ...REACT_PDF_FOOTER_STYLE, fontSize: 8, color: '#6b7280', textAlign: 'center' as const },
 })
 
 export type ComparisonListing = {

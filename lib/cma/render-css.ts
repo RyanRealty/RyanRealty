@@ -40,9 +40,20 @@ export function cmaStylesheet(siteUrl: string): string {
     -webkit-font-smoothing: antialiased;
   }
 
+  /* One .page element is one physical sheet. The padding IS the margin — the
+     PDF is rendered full-bleed (puppeteer margin 0), so nothing else reserves
+     the bands. Keep the bottom padding well clear of .pg-footer below.
+
+     min-height and NOT height, and overflow visible and NOT hidden:
+     a fixed height plus overflow:hidden clips whatever does not fit, and the
+     clipped rows are simply gone from the PDF — no error, no ellipsis, no way
+     for a reader to know a comp went missing. Measured on a delivered CMA:
+     9px of a comparable's stat line destroyed at the page boundary. Letting the
+     box grow turns that into an extra sheet, which is ugly, visible, and caught
+     by ci:pdf-page-safety instead of silently wrong. §0 — a document may not
+     drop a number it claims to be showing. */
   .page {
     width: 8.5in;
-    height: 11in;
     min-height: 11in;
     margin: 0.4in auto;
     background: var(--cream);
@@ -50,9 +61,15 @@ export function cmaStylesheet(siteUrl: string): string {
     box-shadow: 0 6px 24px rgba(16, 39, 66, 0.18);
     position: relative;
     page-break-after: always;
-    overflow: hidden;
+    overflow: visible;
   }
   .page:last-child { page-break-after: auto; }
+  @media print {
+    /* The screen view floats sheets on a desk with a drop shadow. On paper the
+       sheet IS the page — any outer margin here shifts every sheet down and
+       pushes the last band off the bottom edge. */
+    .page { margin: 0; box-shadow: none; }
+  }
 
   .pg-header {
     display: flex;
@@ -488,6 +505,10 @@ export function cmaStylesheet(siteUrl: string): string {
   .note-list { margin: 5px 0 8px 16px; padding: 0; }
   .note-list li { font-size: 10.5px; line-height: 1.4; margin-bottom: 3px; }
 
+  /* Full-bleed page box: one .page element IS one sheet and supplies its own
+     margins as padding, so @page reserves nothing. Do not add margins here
+     without removing the padding above — the two would stack and push the
+     footer band off the bottom of the paper. */
   @page { size: Letter; margin: 0; }
   @media print {
     body { background: white; margin: 0; padding: 0; }
@@ -495,13 +516,23 @@ export function cmaStylesheet(siteUrl: string): string {
       box-shadow: none;
       margin: 0;
       width: 8.5in;
-      height: 11in;
       min-height: 11in;
-      max-height: 11in;
-      overflow: hidden;
       page-break-after: always;
       break-after: page;
     }
+    /* NO max-height and NO overflow:hidden here.
+
+       This block is the one that governs the PDF (the renderer prints under
+       print media), and it used to carry max-height 11in plus overflow hidden.
+       That is what silently deleted content from delivered CMAs: a sheet
+       holding one row more than fits rendered without error, and the row was
+       simply absent from the file. Nothing downstream could detect it, because
+       a clipped row leaves no trace in the PDF to measure.
+
+       Overflow must stay visible so that too much content becomes a visible,
+       measurable defect. assertPageFit() then refuses to produce the PDF at
+       all, naming the sheet. A CMA that cannot fit is a build failure Matt can
+       see, never a document a client receives with a comp missing. §0. */
     .page:last-child { page-break-after: auto; break-after: auto; }
     a { text-decoration: none; color: inherit; }
   }

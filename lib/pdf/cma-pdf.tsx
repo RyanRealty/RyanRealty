@@ -12,10 +12,12 @@ import {
   StyleSheet,
   Image,
 } from '@react-pdf/renderer'
+import { REACT_PDF_PAGE_STYLE, REACT_PDF_FOOTER_STYLE } from '@/lib/pdf/page-contract'
 import type { CMAResult } from '@/lib/cma'
 
 const styles = StyleSheet.create({
-  page: { padding: 40, fontSize: 10 },
+  page: {
+    ...REACT_PDF_PAGE_STYLE, fontSize: 10 },
   navyBar: { backgroundColor: '#102742', padding: 12, marginBottom: 16 },
   logoText: { color: '#f0eeec', fontSize: 18, fontWeight: 'bold' },
   title: { fontSize: 16, fontWeight: 'bold', marginBottom: 8, color: '#102742' },
@@ -35,7 +37,8 @@ const styles = StyleSheet.create({
   col4: { width: '20%' },
   col5: { width: '25%' },
   disclaimer: { fontSize: 8, color: '#6b7280', marginTop: 24 },
-  footer: { position: 'absolute', bottom: 30, left: 40, right: 40, fontSize: 8, color: '#6b7280', textAlign: 'center' },
+  footer: {
+    ...REACT_PDF_FOOTER_STYLE, fontSize: 8, color: '#6b7280', textAlign: 'center' },
 })
 
 export type CMAPdfData = {
