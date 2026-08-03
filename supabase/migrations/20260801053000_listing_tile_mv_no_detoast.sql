@@ -187,8 +187,21 @@ select cron.schedule(
        and (a.beds is null or c.beds is null or (c.beds >= greatest(0, a.beds - 1) and c.beds <= (a.beds + 1)))
        and c.photo_url is not null
     )
+    -- No `now() as refreshed_at` column. A volatile per-row value makes every
+    -- row differ on every refresh, so REFRESH CONCURRENTLY rewrites the entire
+    -- MV instead of diffing it — the F7 defect (measured on listing_search_mv:
+    -- 1,161 full rewrites of 593,890 rows, 76% of refresh runs dying at the
+    -- statement timeout, search data 3h stale). Migration
+    -- 20260730000500_listing_search_mv_drop_volatile_refreshed_at.sql dropped
+    -- the identical column from listing_search_mv for this reason.
+    --
+    -- The column is simply gone, not relocated: nothing in the codebase reads
+    -- similar_listings_mv.refreshed_at (grepped app/ and lib/ — the hits are
+    -- listing_search_mv and geo_snapshot). If this MV ever needs a freshness
+    -- stamp, it belongs as one row in public.mv_refresh_state written by the
+    -- refresh function, never as a per-row column.
     select anchor_key, similar_key, rank::smallint as rank,
-           similarity_score::smallint as similarity_score, now() as refreshed_at
+           similarity_score::smallint as similarity_score
     from candidates where rank <= 12;
 
   create unique index if not exists similar_listings_mv_anchor_rank_new
