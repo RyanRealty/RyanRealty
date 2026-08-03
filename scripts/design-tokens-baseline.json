@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-30T07:00:47.470Z",
-  "total": 315,
+  "generatedAt": "2026-08-03T20:35:37.582Z",
+  "total": 314,
   "byFile": {
     "app/actions/auto-response.ts": 3,
     "app/admin/(protected)/analytics/_components/CityReportSection.tsx": 3,
@@ -208,9 +208,8 @@
     "components/site/listing-detail/PriceBlock.tsx": 1,
     "components/site/listing-detail/PropertyHistory.tsx": 1,
     "components/site/listing-detail/PropertySpecs.tsx": 1,
+    "components/site/listing-detail/PublishedCmaDownload.client.tsx": 1,
     "components/site/listing-detail/SchoolsBlock.tsx": 1,
-    "components/site/listing-detail/TransparentCMASummary.tsx": 1,
-    "components/site/listing-detail/VacationRentalPotential.tsx": 1,
     "components/site/nav/MegaMenu.tsx": 3,
     "components/site/primitives/Body.tsx": 2,
     "components/site/primitives/CTA.tsx": 3,
