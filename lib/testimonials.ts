@@ -3,7 +3,7 @@
  *
  * Source of truth: Ryan Realty Google Business Profile. All entries are REAL,
  * verified 5-star reviews pulled live via the GBP API (mybusiness v4 reviews
- * endpoint) on 2026-06-13 — 24 reviews, 5.0 average. Regenerate with
+ * endpoint) on 2026-08-03 — 25 reviews, 5.0 average. Regenerate with
  * scripts/ingest-gbp-reviews.mjs. Never hand-edit quotes or invent attributions
  * (CLAUDE.md §0 + content-provenance gate).
  */
@@ -17,8 +17,14 @@ export type Testimonial = {
   date: string
 }
 
-/** 24 verified 5-star Google reviews, newest first. Pulled 2026-06-13 via GBP API. */
+/** 25 verified 5-star Google reviews, newest first. Pulled 2026-08-03 via GBP API. */
 export const TESTIMONIALS: Testimonial[] = [
+  {
+    quote: "As a California resident, selling my house in Bend was more difficult and complicated than I had ever anticipated - but Matt was always available to make the process as smooth as possible. He exhibited great patience and provided all the information I needed, and worked with my son-in-law and me to navigate our way through the process. Thank you Matt!",
+    author: "MJB",
+    source: "Google",
+    date: "2026-07-10",
+  },
   {
     quote: "I'd highly recommend Matt Ryan as his attention to detail and art of the negotiations with data on both buyers/sellers is impressive. He seems to navigate the process between buyers / sellers to a \"T\" and he exemplifies the communication and clarity. You will not be disappointed ....",
     author: "E Oster",
