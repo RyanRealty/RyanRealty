@@ -83,6 +83,7 @@ import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbAreaGuideVideo } from '@/components/site/kb/KbAreaGuideVideo'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { MarketSources } from '@/components/site/MarketSources'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { kbMoneyFull } from '@/components/site/kb/types'
@@ -505,6 +506,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
             <FAQBlock items={faqs} eyebrow="Common questions" title={`${neighborhood.name} real estate questions`} />
           </section>
         ) : null}
+        <MarketSources sources={['ods']} />
         <KbFooter towns={[]} />
       </SmoothScrollProvider>
     </main>

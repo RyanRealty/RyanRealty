@@ -108,7 +108,7 @@ import { KbBuyCta } from '@/components/site/kb/KbBuyCta.client'
 import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
 import { KbSchools } from '@/components/site/kb/KbSchools'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { MetadataBlock } from '@/components/site/MetadataBlock'; import { MarketSources } from '@/components/site/MarketSources'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
@@ -916,7 +916,7 @@ export default async function CommunityDetailPage({ params }: Props) {
             <FAQBlock items={faqs} eyebrow="Common questions" title={`${community.name} real estate questions`} />
           </section>
         ) : null}
-        <KbFooter towns={[]} />
+        <MarketSources sources={['ods']} /><KbFooter towns={[]} />
       </SmoothScrollProvider>
     </main>
   )

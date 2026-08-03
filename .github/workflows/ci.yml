@@ -93,6 +93,12 @@ jobs:
           fi
           npm run ci:route-smoke
 
+          # Rendered-HTML payload ratchet (audit item 16). Runs here rather than
+          # in the static ci:gates chain because it measures a real built server,
+          # and the server started above is already up. /homes-for-sale drifted
+          # 996 KB -> 1,019,774 bytes with nothing watching it.
+          npm run ci:page-payload
+
       # Lighthouse CI — gates PRs on perf/a11y/BP/SEO regression against
       # lighthouserc.cjs thresholds. Uses start-server-and-test under the hood.
       # Skipped on push events (already run nightly via quality.yml).

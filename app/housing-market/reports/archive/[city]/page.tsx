@@ -27,6 +27,7 @@ import { getCityArchive } from '@/lib/data/market/getCityArchive'
 import { REPORT_CITIES, REPORT_CITY_SLUGS } from '@/lib/data/geo/report-cities'
 import { CityArchiveSection } from '@/components/reports/CityArchiveSection'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { MarketSources } from '@/components/site/MarketSources'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
@@ -142,6 +143,7 @@ export default async function CityArchivePage({ params }: PageProps) {
 
         <CityArchiveSection archive={archive} />
 
+        <MarketSources sources={['ods']} />
         <KbFooter towns={[]} />
       </SmoothScrollProvider>
     </main>

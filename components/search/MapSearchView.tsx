@@ -876,17 +876,34 @@ export default function MapSearchView({
         </ToggleGroup>
       </div>
 
-      {/* Desktop: list + map side by side */}
-      <div className="hidden min-h-0 flex-1 lg:flex">
-        <div className="map-search-rail flex shrink-0 flex-col border-r border-border">
+      {/* List + map, ONE mount each — CSS (not a second render) decides which
+          shows. Payload audit item 16 (2026-08-03): the old markup rendered
+          listPanel (and, when mobileView==="map", mapPanel) into the DOM
+          TWICE — once for this "desktop side by side" block, once for the
+          "mobile: one panel at a time" block below it, toggled with
+          hidden/lg:hidden. Both copies serialize into the SSR HTML regardless
+          of which is visible, doubling every card's markup, image srcset and
+          icons. Below, each slot mounts once; mobileView + the lg breakpoint
+          both gate the same node via Tailwind's hidden/lg:flex pattern. */}
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        <div
+          className={cn(
+            'min-h-0 w-full flex-col lg:w-[420px] lg:min-w-[360px] lg:max-w-[480px] lg:shrink-0 lg:border-r lg:border-border',
+            mobileView === 'list' ? 'flex' : 'hidden',
+            'lg:flex'
+          )}
+        >
           {listPanel}
         </div>
-        {mapPanel}
-      </div>
-
-      {/* Mobile: one panel at a time */}
-      <div className="flex min-h-0 flex-1 lg:hidden">
-        {mobileView === 'list' ? listPanel : mapPanel}
+        <div
+          className={cn(
+            'min-h-0 w-full flex-1',
+            mobileView === 'map' ? 'flex' : 'hidden',
+            'lg:flex'
+          )}
+        >
+          {mapPanel}
+        </div>
       </div>
     </div>
   )

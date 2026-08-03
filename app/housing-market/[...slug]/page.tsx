@@ -107,7 +107,7 @@ import { FAQBlock } from '@/components/site/FAQBlock'
 import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
 import { RelatedAreas, type RelatedAreaItem } from '@/components/site/RelatedAreas'
 import { CTABar } from '@/components/site/CTABar'
-import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { MetadataBlock } from '@/components/site/MetadataBlock'; import { MarketSources } from '@/components/site/MarketSources'
 import { MarketDetailStats } from '@/components/site/MarketDetailStats'
 import { DisplayHeading } from '@/components/site/primitives'
 import { submitMarketPageInquiry } from '@/app/housing-market/actions'
@@ -686,7 +686,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
             eyebrow={`Sell in ${cityName}`}
           />
 
-          <KbFooter towns={siblingCities} />
+          <MarketSources sources={['ods']} /><KbFooter towns={siblingCities} />
         </SmoothScrollProvider>
       </main>
     )
@@ -890,7 +890,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
         secondary={{ href: `tel:${CONTACT.phoneDirectTel}`, label: CONTACT.phoneDirect }}
         tone="navy"
       />
-
+      <MarketSources sources={['ods']} />
     </main>
     <SiteFooter />
     </>

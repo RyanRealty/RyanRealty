@@ -90,6 +90,7 @@ import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbPopularSearches } from '@/components/site/kb/KbPopularSearches'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { MarketSources, type MarketSourceKey } from '@/components/site/MarketSources'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import CityPageTracker from '@/components/city/CityPageTracker'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
@@ -542,6 +543,11 @@ export default async function CityDetailPage({ params }: Props) {
             <FAQBlock items={faqs} eyebrow="Common questions" title={`${cityName} real estate questions`} />
           </section>
         ) : null}
+        {/* Census only when the page actually renders a population figure
+            (quickFacts.population, from CITY_QUICK_FACTS). Never link padding. */}
+        <MarketSources
+          sources={(quickFacts?.population ? ['ods', 'census'] : ['ods']) as MarketSourceKey[]}
+        />
         <KbFooter towns={[]} />
       </SmoothScrollProvider>
     </main>

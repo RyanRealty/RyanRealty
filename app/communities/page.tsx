@@ -38,7 +38,10 @@ import { communityImage, cityHero } from '@/lib/geo-images'
 import { getSurfaceImages, pickSurfaceImage } from '@/lib/data'
 import { subdivisionEntityKey } from '@/lib/slug'
 import CommunityIndexBrowser from '@/components/community/CommunityIndexBrowser'
+import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { MarketSources } from '@/components/site/MarketSources'
+import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
@@ -177,23 +180,58 @@ export default async function CommunitiesPage() {
   const totalActive = allCommunities.reduce((sum, c) => sum + c.activeCount, 0)
   const communityCount = allCommunities.length
 
+  // Dataset JSON-LD from the SAME aggregate the hero tile renders. No pulse
+  // row backs this aggregate, so dateModified stays unset rather than
+  // guessing a refresh time (CLAUDE.md §0: never fabricate a timestamp).
+  //
+  // Unlike every other market surface, this page has NO second source to fall
+  // back to. `totalActive` is already an aggregate over the community index, so
+  // when it is unusable there is no snapshot row to reach for, and the §0-correct
+  // degradation is to publish no Dataset at all rather than a figure nothing
+  // backs. The `pulse ?? fallback` shape below makes that explicit at the call
+  // site instead of burying it in a ternary: the fallback deliberately carries
+  // no figures, buildMarketFaq therefore returns no variables, and the
+  // `communityDatasetVars.length > 0` guard below drops the schema. Same
+  // contract shape as the other KB data pages (G52), honest about having one
+  // source rather than two.
+  const pulse: MarketFaqInput | null = totalActive > 0 ? { activeCount: totalActive } : null
+  const communityFaqInput: MarketFaqInput = pulse ?? { activeCount: null }
+  const { datasetVariables: communityDatasetVars } = buildMarketFaq(
+    'Central Oregon communities',
+    communityFaqInput,
+  )
+
+  const schemas: SchemaInput[] = [
+    {
+      type: 'breadcrumb',
+      items: [
+        { name: 'Home', url: '/' },
+        { name: 'Communities', url: '/communities' },
+      ],
+    },
+  ]
+
+  if (communityDatasetVars.length > 0) {
+    schemas.push({
+      type: 'dataset',
+      name: 'Central Oregon communities, Oregon real estate market statistics',
+      description:
+        'Live single-family home active-inventory count across the 14 registered Central Oregon resort ' +
+        'and master-planned communities. Sourced from Oregon Data Share via Ryan Realty.',
+      url: '/communities',
+      spatialCoverageName: 'Central Oregon, OR',
+      variableMeasured: communityDatasetVars,
+    })
+  }
+
   return (
     <main className="kb-root">
       <KbNav />
       <KbSectionTracker pageType="index" />
 
-      {/* Structured data: CollectionPage + ItemList of the 14 registry communities */}
-      <MetadataBlock
-        schemas={[
-          {
-            type: 'breadcrumb',
-            items: [
-              { name: 'Home', url: '/' },
-              { name: 'Communities', url: '/communities' },
-            ],
-          },
-        ]}
-      />
+      {/* Structured data: BreadcrumbList + Dataset (aggregate active count) +
+          the CollectionPage + ItemList inline script below. */}
+      <MetadataBlock schemas={schemas} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -454,6 +492,7 @@ export default async function CommunitiesPage() {
           </div>
         </section>
 
+        <MarketSources sources={['ods']} />
         <KbFooter towns={[]} />
       </SmoothScrollProvider>
     </main>

@@ -54,6 +54,7 @@ import { getRegionPulse, getMarketPulseCitySnapshots } from '@/lib/data'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE, marketVerdict, type MarketKind } from '@/lib/market/classify'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { formatDateTime } from '@/lib/format/date'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -114,21 +115,13 @@ function capitalize(s: string): string {
 
 function formatRefreshedAt(iso: string | null): string | null {
   if (!iso) return null
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
-  const datePart = d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'America/Los_Angeles',
-  })
-  const timePart = d.toLocaleTimeString('en-US', {
-    timeZone: 'America/Los_Angeles',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  })
-  return `${datePart}, ${timePart} PT`
+  if (Number.isNaN(new Date(iso).getTime())) return null
+  // formatDateTime already renders in the brand timezone (America/Los_Angeles)
+  // in exactly this shape, so this page does not hand-roll a second copy. It
+  // returns an em-dash placeholder for an unusable value, which is the right
+  // answer inside a table cell but not here, where the caller wants null so the
+  // whole freshness line is suppressed.
+  return `${formatDateTime(iso)} PT`
 }
 
 // ---------------------------------------------------------------------------

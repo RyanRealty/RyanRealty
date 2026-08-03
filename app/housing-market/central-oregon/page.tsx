@@ -61,6 +61,7 @@ import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { MarketSources } from '@/components/site/MarketSources'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { ContentSection } from '@/components/site/ContentSection'
 import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
@@ -509,6 +510,7 @@ export default async function CentralOregonRegionPage() {
           eyebrow="Sell in Central Oregon"
         />
 
+        <MarketSources sources={['ods']} />
         <KbFooter towns={cityTowns} />
       </SmoothScrollProvider>
     </main>

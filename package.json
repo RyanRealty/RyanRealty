@@ -181,6 +181,8 @@
     "ci:breadcrumb:baseline": "node scripts/check-breadcrumb.mjs --write-baseline",
     "ci:resort-definitions": "node scripts/check-resort-definitions.mjs",
     "ci:route-smoke": "node scripts/check-route-smoke.mjs",
+    "ci:page-payload": "node scripts/check-page-payload-budget.mjs",
+    "ci:page-payload:baseline": "node scripts/check-page-payload-budget.mjs --write-baseline",
     "ci:route-smoke:start": "start-server-and-test start:ci http://127.0.0.1:3000 ci:route-smoke",
     "smoke:search": "node scripts/smoke-search-renders.mjs",
     "ci:dal-column-quoting": "node scripts/check-dal-column-quoting.mjs",

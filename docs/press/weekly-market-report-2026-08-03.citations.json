@@ -1,0 +1,340 @@
+{
+  "period": "2026-08-03",
+  "fetched_at": "2026-08-03T11:49:20.878Z",
+  "source": "Oregon Data Share (MLS Central Oregon / KCAR / SOMLS), via Spark API",
+  "property_type": "A (single-family residential)",
+  "methodology_clause": "Months of supply = active listings divided by average monthly closings over the last 6 months (homes closed in the last 6 months divided by 6).",
+  "threshold_clause": "Under 4 months is a seller's market, 4 to 6 is balanced, over 6 is a buyer's market.",
+  "figures": [
+    {
+      "geo": "Central Oregon",
+      "figure": "active_listings",
+      "value": 1838,
+      "trace": "1,838 active listings. Source: Supabase market_pulse_live, geo_type='region', geo_slug='central-oregon', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, active_count column = 1838."
+    },
+    {
+      "geo": "Central Oregon",
+      "figure": "median_list_price",
+      "value": 739500,
+      "trace": "$739,500 median list price. Source: Supabase market_pulse_live, geo_type='region', geo_slug='central-oregon', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, median_list_price column = 739500."
+    },
+    {
+      "geo": "Central Oregon",
+      "figure": "months_of_supply",
+      "value": 5.92,
+      "trace": "5.92 months of supply, verdict \"balanced market\". Source: Supabase market_pulse_live, geo_type='region', geo_slug='central-oregon', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, months_of_supply column = 5.92. Verdict computed by marketVerdict() from lib/market/classify.ts against MOS_SELLER_MAX=4 and MOS_BALANCED_MAX=6."
+    },
+    {
+      "geo": "Central Oregon",
+      "figure": "sold_count_30d",
+      "value": 340,
+      "trace": "340 closed sales, trailing 30 days. Source: Supabase market_pulse_live, geo_type='region', geo_slug='central-oregon', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, sold_count_30d column = 340."
+    },
+    {
+      "geo": "Central Oregon",
+      "figure": "sold_count_90d",
+      "value": 1102,
+      "trace": "1,102 closed sales, trailing 90 days. Source: Supabase market_pulse_live, geo_type='region', geo_slug='central-oregon', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, sold_count_90d column = 1102."
+    },
+    {
+      "geo": "Central Oregon",
+      "figure": "median_closed_price_90d",
+      "value": 673500,
+      "trace": "$673,500 median closed price, trailing 90 days. Source: Supabase market_stats_cache, geo_type='region', geo_slug='central-oregon', period_type='rolling_90d', period_start=2026-05-05, period_end=2026-08-03, computed_at=2026-08-03T11:45:00.176836+00:00, methodology_version=v3-2026-05-07, median_sale_price column = 673500."
+    },
+    {
+      "geo": "Central Oregon",
+      "figure": "median_dom_90d",
+      "value": 21,
+      "trace": "21 days median days on market, trailing 90 days. Source: Supabase market_stats_cache, geo_type='region', geo_slug='central-oregon', period_type='rolling_90d', period_start=2026-05-05, period_end=2026-08-03, computed_at=2026-08-03T11:45:00.176836+00:00, methodology_version=v3-2026-05-07, median_dom column = 21."
+    },
+    {
+      "geo": "Central Oregon",
+      "figure": "sale_to_list_90d",
+      "value": 0.9664595515695067,
+      "trace": "96.6% average sale-to-list ratio, trailing 90 days. Source: Supabase market_stats_cache, geo_type='region', geo_slug='central-oregon', period_type='rolling_90d', period_start=2026-05-05, period_end=2026-08-03, computed_at=2026-08-03T11:45:00.176836+00:00, methodology_version=v3-2026-05-07, avg_sale_to_list_ratio column = 0.9664595515695067."
+    },
+    {
+      "geo": "Bend",
+      "figure": "active_listings",
+      "value": 498,
+      "trace": "498 active listings. Source: Supabase market_pulse_live, geo_type='city', geo_slug='bend', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, active_count column = 498."
+    },
+    {
+      "geo": "Bend",
+      "figure": "median_list_price",
+      "value": 755000,
+      "trace": "$755,000 median list price. Source: Supabase market_pulse_live, geo_type='city', geo_slug='bend', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, median_list_price column = 755000."
+    },
+    {
+      "geo": "Bend",
+      "figure": "months_of_supply",
+      "value": 3.68,
+      "trace": "3.68 months of supply, verdict \"seller's market\". Source: Supabase market_pulse_live, geo_type='city', geo_slug='bend', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, months_of_supply column = 3.68. Verdict computed by marketVerdict() from lib/market/classify.ts against MOS_SELLER_MAX=4 and MOS_BALANCED_MAX=6."
+    },
+    {
+      "geo": "Bend",
+      "figure": "sold_count_30d",
+      "value": 151,
+      "trace": "151 closed sales, trailing 30 days. Source: Supabase market_pulse_live, geo_type='city', geo_slug='bend', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, sold_count_30d column = 151."
+    },
+    {
+      "geo": "Bend",
+      "figure": "sold_count_90d",
+      "value": 462,
+      "trace": "462 closed sales, trailing 90 days. Source: Supabase market_pulse_live, geo_type='city', geo_slug='bend', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, sold_count_90d column = 462."
+    },
+    {
+      "geo": "Bend",
+      "figure": "median_closed_price_90d",
+      "value": 767500,
+      "trace": "$767,500 median closed price, trailing 90 days. Source: Supabase market_stats_cache, geo_type='city', geo_slug='bend', period_type='rolling_90d', period_start=2026-05-05, period_end=2026-08-03, computed_at=2026-08-03T11:45:00.176836+00:00, methodology_version=v3-2026-05-07, median_sale_price column = 767500."
+    },
+    {
+      "geo": "Bend",
+      "figure": "median_dom_90d",
+      "value": 16,
+      "trace": "16 days median days on market, trailing 90 days. Source: Supabase market_stats_cache, geo_type='city', geo_slug='bend', period_type='rolling_90d', period_start=2026-05-05, period_end=2026-08-03, computed_at=2026-08-03T11:45:00.176836+00:00, methodology_version=v3-2026-05-07, median_dom column = 16."
+    },
+    {
+      "geo": "Bend",
+      "figure": "sale_to_list_90d",
+      "value": 0.9721816239316239,
+      "trace": "97.2% average sale-to-list ratio, trailing 90 days. Source: Supabase market_stats_cache, geo_type='city', geo_slug='bend', period_type='rolling_90d', period_start=2026-05-05, period_end=2026-08-03, computed_at=2026-08-03T11:45:00.176836+00:00, methodology_version=v3-2026-05-07, avg_sale_to_list_ratio column = 0.9721816239316239."
+    },
+    {
+      "geo": "Redmond",
+      "figure": "active_listings",
+      "value": 183,
+      "trace": "183 active listings. Source: Supabase market_pulse_live, geo_type='city', geo_slug='redmond', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, active_count column = 183."
+    },
+    {
+      "geo": "Redmond",
+      "figure": "median_list_price",
+      "value": 540000,
+      "trace": "$540,000 median list price. Source: Supabase market_pulse_live, geo_type='city', geo_slug='redmond', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, median_list_price column = 540000."
+    },
+    {
+      "geo": "Redmond",
+      "figure": "months_of_supply",
+      "value": 4.39,
+      "trace": "4.39 months of supply, verdict \"balanced market\". Source: Supabase market_pulse_live, geo_type='city', geo_slug='redmond', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, months_of_supply column = 4.39. Verdict computed by marketVerdict() from lib/market/classify.ts against MOS_SELLER_MAX=4 and MOS_BALANCED_MAX=6."
+    },
+    {
+      "geo": "Redmond",
+      "figure": "sold_count_30d",
+      "value": 33,
+      "trace": "33 closed sales, trailing 30 days. Source: Supabase market_pulse_live, geo_type='city', geo_slug='redmond', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, sold_count_30d column = 33."
+    },
+    {
+      "geo": "Redmond",
+      "figure": "sold_count_90d",
+      "value": 152,
+      "trace": "152 closed sales, trailing 90 days. Source: Supabase market_pulse_live, geo_type='city', geo_slug='redmond', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, sold_count_90d column = 152."
+    },
+    {
+      "geo": "Redmond",
+      "figure": "median_closed_price_90d",
+      "value": 515000,
+      "trace": "$515,000 median closed price, trailing 90 days. Source: Supabase market_stats_cache, geo_type='city', geo_slug='redmond', period_type='rolling_90d', period_start=2026-05-05, period_end=2026-08-03, computed_at=2026-08-03T11:45:00.176836+00:00, methodology_version=v3-2026-05-07, median_sale_price column = 515000."
+    },
+    {
+      "geo": "Redmond",
+      "figure": "median_dom_90d",
+      "value": 17,
+      "trace": "17 days median days on market, trailing 90 days. Source: Supabase market_stats_cache, geo_type='city', geo_slug='redmond', period_type='rolling_90d', period_start=2026-05-05, period_end=2026-08-03, computed_at=2026-08-03T11:45:00.176836+00:00, methodology_version=v3-2026-05-07, median_dom column = 17."
+    },
+    {
+      "geo": "Redmond",
+      "figure": "sale_to_list_90d",
+      "value": 0.971075816993464,
+      "trace": "97.1% average sale-to-list ratio, trailing 90 days. Source: Supabase market_stats_cache, geo_type='city', geo_slug='redmond', period_type='rolling_90d', period_start=2026-05-05, period_end=2026-08-03, computed_at=2026-08-03T11:45:00.176836+00:00, methodology_version=v3-2026-05-07, avg_sale_to_list_ratio column = 0.971075816993464."
+    },
+    {
+      "geo": "Sisters",
+      "figure": "active_listings",
+      "value": 36,
+      "trace": "36 active listings. Source: Supabase market_pulse_live, geo_type='city', geo_slug='sisters', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, active_count column = 36."
+    },
+    {
+      "geo": "Sisters",
+      "figure": "median_list_price",
+      "value": 699000,
+      "trace": "$699,000 median list price. Source: Supabase market_pulse_live, geo_type='city', geo_slug='sisters', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, median_list_price column = 699000."
+    },
+    {
+      "geo": "Sisters",
+      "figure": "months_of_supply",
+      "value": 4.8,
+      "trace": "4.80 months of supply, verdict \"balanced market\". Source: Supabase market_pulse_live, geo_type='city', geo_slug='sisters', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, months_of_supply column = 4.8. Verdict computed by marketVerdict() from lib/market/classify.ts against MOS_SELLER_MAX=4 and MOS_BALANCED_MAX=6."
+    },
+    {
+      "geo": "Sisters",
+      "figure": "sold_count_30d",
+      "value": 12,
+      "trace": "12 closed sales, trailing 30 days. Source: Supabase market_pulse_live, geo_type='city', geo_slug='sisters', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, sold_count_30d column = 12."
+    },
+    {
+      "geo": "Sisters",
+      "figure": "sold_count_90d",
+      "value": 33,
+      "trace": "33 closed sales, trailing 90 days. Source: Supabase market_pulse_live, geo_type='city', geo_slug='sisters', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, sold_count_90d column = 33."
+    },
+    {
+      "geo": "Sisters",
+      "figure": "median_closed_price_90d",
+      "value": 725000,
+      "trace": "$725,000 median closed price, trailing 90 days. Source: Supabase market_stats_cache, geo_type='city', geo_slug='sisters', period_type='rolling_90d', period_start=2026-05-05, period_end=2026-08-03, computed_at=2026-08-03T11:45:00.176836+00:00, methodology_version=v3-2026-05-07, median_sale_price column = 725000."
+    },
+    {
+      "geo": "Sisters",
+      "figure": "median_dom_90d",
+      "value": 10,
+      "trace": "10 days median days on market, trailing 90 days. Source: Supabase market_stats_cache, geo_type='city', geo_slug='sisters', period_type='rolling_90d', period_start=2026-05-05, period_end=2026-08-03, computed_at=2026-08-03T11:45:00.176836+00:00, methodology_version=v3-2026-05-07, median_dom column = 10."
+    },
+    {
+      "geo": "Sisters",
+      "figure": "sale_to_list_90d",
+      "value": 0.9984030303030303,
+      "trace": "99.8% average sale-to-list ratio, trailing 90 days. Source: Supabase market_stats_cache, geo_type='city', geo_slug='sisters', period_type='rolling_90d', period_start=2026-05-05, period_end=2026-08-03, computed_at=2026-08-03T11:45:00.176836+00:00, methodology_version=v3-2026-05-07, avg_sale_to_list_ratio column = 0.9984030303030303."
+    },
+    {
+      "geo": "Sunriver",
+      "figure": "active_listings",
+      "value": 50,
+      "trace": "50 active listings. Source: Supabase market_pulse_live, geo_type='city', geo_slug='sunriver', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, active_count column = 50."
+    },
+    {
+      "geo": "Sunriver",
+      "figure": "median_list_price",
+      "value": 949000,
+      "trace": "$949,000 median list price. Source: Supabase market_pulse_live, geo_type='city', geo_slug='sunriver', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, median_list_price column = 949000."
+    },
+    {
+      "geo": "Sunriver",
+      "figure": "months_of_supply",
+      "value": 5.66,
+      "trace": "5.66 months of supply, verdict \"balanced market\". Source: Supabase market_pulse_live, geo_type='city', geo_slug='sunriver', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, months_of_supply column = 5.66. Verdict computed by marketVerdict() from lib/market/classify.ts against MOS_SELLER_MAX=4 and MOS_BALANCED_MAX=6."
+    },
+    {
+      "geo": "Sunriver",
+      "figure": "sold_count_30d",
+      "value": 11,
+      "trace": "11 closed sales, trailing 30 days. Source: Supabase market_pulse_live, geo_type='city', geo_slug='sunriver', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, sold_count_30d column = 11."
+    },
+    {
+      "geo": "Sunriver",
+      "figure": "sold_count_90d",
+      "value": 28,
+      "trace": "28 closed sales, trailing 90 days. Source: Supabase market_pulse_live, geo_type='city', geo_slug='sunriver', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, sold_count_90d column = 28."
+    },
+    {
+      "geo": "Sunriver",
+      "figure": "median_closed_price_90d",
+      "value": 890000,
+      "trace": "$890,000 median closed price, trailing 90 days. Source: Supabase market_stats_cache, geo_type='city', geo_slug='sunriver', period_type='rolling_90d', period_start=2026-05-05, period_end=2026-08-03, computed_at=2026-08-03T11:45:00.176836+00:00, methodology_version=v3-2026-05-07, median_sale_price column = 890000."
+    },
+    {
+      "geo": "Sunriver",
+      "figure": "median_dom_90d",
+      "value": 17,
+      "trace": "17 days median days on market, trailing 90 days. Source: Supabase market_stats_cache, geo_type='city', geo_slug='sunriver', period_type='rolling_90d', period_start=2026-05-05, period_end=2026-08-03, computed_at=2026-08-03T11:45:00.176836+00:00, methodology_version=v3-2026-05-07, median_dom column = 17."
+    },
+    {
+      "geo": "Sunriver",
+      "figure": "sale_to_list_90d",
+      "value": 0.9645928571428571,
+      "trace": "96.5% average sale-to-list ratio, trailing 90 days. Source: Supabase market_stats_cache, geo_type='city', geo_slug='sunriver', period_type='rolling_90d', period_start=2026-05-05, period_end=2026-08-03, computed_at=2026-08-03T11:45:00.176836+00:00, methodology_version=v3-2026-05-07, avg_sale_to_list_ratio column = 0.9645928571428571."
+    },
+    {
+      "geo": "La Pine",
+      "figure": "active_listings",
+      "value": 168,
+      "trace": "168 active listings. Source: Supabase market_pulse_live, geo_type='city', geo_slug='la pine', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, active_count column = 168."
+    },
+    {
+      "geo": "La Pine",
+      "figure": "median_list_price",
+      "value": 514900,
+      "trace": "$514,900 median list price. Source: Supabase market_pulse_live, geo_type='city', geo_slug='la pine', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, median_list_price column = 514900."
+    },
+    {
+      "geo": "La Pine",
+      "figure": "months_of_supply",
+      "value": 10.96,
+      "trace": "10.96 months of supply, verdict \"buyer's market\". Source: Supabase market_pulse_live, geo_type='city', geo_slug='la pine', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, months_of_supply column = 10.96. Verdict computed by marketVerdict() from lib/market/classify.ts against MOS_SELLER_MAX=4 and MOS_BALANCED_MAX=6."
+    },
+    {
+      "geo": "La Pine",
+      "figure": "sold_count_30d",
+      "value": 13,
+      "trace": "13 closed sales, trailing 30 days. Source: Supabase market_pulse_live, geo_type='city', geo_slug='la pine', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, sold_count_30d column = 13."
+    },
+    {
+      "geo": "La Pine",
+      "figure": "sold_count_90d",
+      "value": 57,
+      "trace": "57 closed sales, trailing 90 days. Source: Supabase market_pulse_live, geo_type='city', geo_slug='la pine', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, sold_count_90d column = 57."
+    },
+    {
+      "geo": "La Pine",
+      "figure": "median_closed_price_90d",
+      "value": 425000,
+      "trace": "$425,000 median closed price, trailing 90 days. Source: Supabase market_stats_cache, geo_type='city', geo_slug='la pine', period_type='rolling_90d', period_start=2026-05-05, period_end=2026-08-03, computed_at=2026-08-03T11:45:00.176836+00:00, methodology_version=v3-2026-05-07, median_sale_price column = 425000."
+    },
+    {
+      "geo": "La Pine",
+      "figure": "median_dom_90d",
+      "value": 50,
+      "trace": "50 days median days on market, trailing 90 days. Source: Supabase market_stats_cache, geo_type='city', geo_slug='la pine', period_type='rolling_90d', period_start=2026-05-05, period_end=2026-08-03, computed_at=2026-08-03T11:45:00.176836+00:00, methodology_version=v3-2026-05-07, median_dom column = 50."
+    },
+    {
+      "geo": "La Pine",
+      "figure": "sale_to_list_90d",
+      "value": 0.955635593220339,
+      "trace": "95.6% average sale-to-list ratio, trailing 90 days. Source: Supabase market_stats_cache, geo_type='city', geo_slug='la pine', period_type='rolling_90d', period_start=2026-05-05, period_end=2026-08-03, computed_at=2026-08-03T11:45:00.176836+00:00, methodology_version=v3-2026-05-07, avg_sale_to_list_ratio column = 0.955635593220339."
+    },
+    {
+      "geo": "Terrebonne",
+      "figure": "active_listings",
+      "value": 7,
+      "trace": "7 active listings. Source: Supabase market_pulse_live, geo_type='city', geo_slug='terrebonne', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, active_count column = 7."
+    },
+    {
+      "geo": "Terrebonne",
+      "figure": "median_list_price",
+      "value": 685000,
+      "trace": "$685,000 median list price. Source: Supabase market_pulse_live, geo_type='city', geo_slug='terrebonne', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, median_list_price column = 685000."
+    },
+    {
+      "geo": "Terrebonne",
+      "figure": "months_of_supply",
+      "value": 21,
+      "trace": "21.00 months of supply, verdict \"buyer's market\". Source: Supabase market_pulse_live, geo_type='city', geo_slug='terrebonne', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, months_of_supply column = 21. Verdict computed by marketVerdict() from lib/market/classify.ts against MOS_SELLER_MAX=4 and MOS_BALANCED_MAX=6."
+    },
+    {
+      "geo": "Terrebonne",
+      "figure": "sold_count_30d",
+      "value": 0,
+      "trace": "0 closed sales, trailing 30 days. Source: Supabase market_pulse_live, geo_type='city', geo_slug='terrebonne', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, sold_count_30d column = 0."
+    },
+    {
+      "geo": "Terrebonne",
+      "figure": "sold_count_90d",
+      "value": 0,
+      "trace": "0 closed sales, trailing 90 days. Source: Supabase market_pulse_live, geo_type='city', geo_slug='terrebonne', property_type='A', updated_at=2026-08-03T11:48:47.755307+00:00, methodology_version=v3-2026-05-07, sold_count_90d column = 0."
+    },
+    {
+      "geo": "Terrebonne",
+      "figure": "median_closed_price_90d",
+      "value": null,
+      "trace": "\u0000MISSING\u0000 median closed price, trailing 90 days. Source: Supabase market_stats_cache, geo_type='city', geo_slug='terrebonne', period_type='rolling_90d', period_start=2026-05-05, period_end=2026-08-03, computed_at=2026-08-03T11:45:00.176836+00:00, methodology_version=v3-2026-05-07, median_sale_price column = null."
+    },
+    {
+      "geo": "Terrebonne",
+      "figure": "median_dom_90d",
+      "value": null,
+      "trace": "\u0000MISSING\u0000 median days on market, trailing 90 days. Source: Supabase market_stats_cache, geo_type='city', geo_slug='terrebonne', period_type='rolling_90d', period_start=2026-05-05, period_end=2026-08-03, computed_at=2026-08-03T11:45:00.176836+00:00, methodology_version=v3-2026-05-07, median_dom column = null."
+    }
+  ]
+}

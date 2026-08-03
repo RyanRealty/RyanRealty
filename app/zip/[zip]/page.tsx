@@ -48,6 +48,7 @@ import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { MarketSources } from '@/components/site/MarketSources'
 import type { KbMarketData, KbTownItem, KbFeaturedItem } from '@/components/site/kb/types'
 import '@/components/site/kb/kb.css'
 
@@ -450,6 +451,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           eyebrow={`Sell in ${area}`}
         />
 
+        <MarketSources sources={['ods']} />
         <KbFooter towns={[]} />
       </SmoothScrollProvider>
     </main>

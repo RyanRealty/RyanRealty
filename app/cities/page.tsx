@@ -39,7 +39,9 @@ import { cityHero } from '@/lib/geo-images'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { MarketSources } from '@/components/site/MarketSources'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
@@ -201,6 +203,33 @@ export default async function CitiesPage() {
   const regionMedian = regionPulse?.medianListPrice ?? null
   const regionVerdict = verdictFromMos(regionPulse?.monthsOfSupply ?? null)
 
+  // Dataset JSON-LD from the SAME region pulse the hero tiles render, so
+  // structured data cannot diverge from what a visitor sees. `pulse ?? snapshot`
+  // (G52): getRegionPulse is a guarded 3.5s read, and passing null on a slow row
+  // would delete the Dataset block rather than degrade it. §0 governs what the
+  // fallback may carry: only activeCount, because summing per-city actives is a
+  // real region total (totalActive above), while a region median is NOT the
+  // median of city medians and months of supply is not summable. Both omitted
+  // rather than approximated.
+  const pulse: MarketFaqInput | null = regionPulse
+    ? {
+        activeCount: regionPulse.activeCount,
+        medianListPrice: regionPulse.medianListPrice,
+        monthsOfSupply: regionPulse.monthsOfSupply,
+        medianDaysToPending: regionPulse.medianDaysToPending,
+        refreshedAt: regionPulse.updatedAt,
+      }
+    : null
+  const latestSnapshotAt = allSnapshots.reduce<string | null>(
+    (latest, s) => (latest == null || s.refreshedAt > latest ? s.refreshedAt : latest),
+    null,
+  )
+  const regionFaqInput: MarketFaqInput = pulse ?? { activeCount: totalActive, refreshedAt: latestSnapshotAt }
+  const { datasetVariables: regionDatasetVars, asOfIso: regionAsOfIso } = buildMarketFaq(
+    'Central Oregon',
+    regionFaqInput,
+  )
+
   const schemas: SchemaInput[] = [
     {
       type: 'breadcrumb',
@@ -210,6 +239,20 @@ export default async function CitiesPage() {
       ],
     },
   ]
+
+  if (regionDatasetVars.length > 0) {
+    schemas.push({
+      type: 'dataset',
+      name: `Central Oregon cities, Oregon real estate market statistics${regionAsOfIso ? `, ${regionAsOfIso}` : ''}`,
+      description:
+        'Live single-family home market data across Central Oregon cities. Includes region active inventory, ' +
+        'median list price, and months of supply. Sourced from Oregon Data Share via Ryan Realty.',
+      url: '/cities',
+      dateModified: regionAsOfIso ?? undefined,
+      spatialCoverageName: 'Central Oregon, OR',
+      variableMeasured: regionDatasetVars,
+    })
+  }
 
   return (
     <main className="kb-root">
@@ -545,6 +588,7 @@ export default async function CitiesPage() {
           </div>
         </section>
 
+        <MarketSources sources={['ods']} />
         <KbFooter towns={[]} />
       </SmoothScrollProvider>
     </main>
