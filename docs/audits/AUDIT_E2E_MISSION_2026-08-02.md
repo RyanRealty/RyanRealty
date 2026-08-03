@@ -66,3 +66,59 @@ unasked would be scope invention. They stay open, and the closing summary says s
 | 16:50 | **The sitemap P0 fix did not work.** `core.xml` served locally in 234.7s; `geo.xml` requested straight after still died at 280s. Cause: the shared-universe memo stamped freshness at build START with a 60s TTL against a 115–235s build, so it expired before it ever resolved. Verified against 5 concurrent requests, which is not how crawlers or the warmer fetch |
 | 17:05 | Memo extracted to `lib/sitemap-universe-memo.ts`, stamped on RESOLVE, 6 regression tests. Negative-tested: reintroducing the original stamp fails exactly one test |
 | 17:20 | **§0 defect found off-mission and fixed.** `get_subdivision_status_counts` counts `'%coming soon%'` as active, and the public "Hot communities" cards render it as the for-sale count. Bend: 1,288 shown vs 1,272 correct, 16 pre-marketing listings on a public surface. Migration written |
+
+---
+
+# Phase 2 — items 1–4 (2026-08-02, evening, /endtoend)
+
+Matt: "Yes on 1-3 and do number 4." This phase's goal, written before the work:
+
+## What exists when finished
+
+1. **Coming Soon migration applied to production** and verified live: the Bend
+   "Hot communities" for-sale total equals the count of status-exactly-Active
+   rows (1,272-class, not 1,288-class). §0 closed end to end, not just committed.
+2. **CrUX / PageSpeed Insights callable**: the API enabled on the `ryanrealty`
+   GCP project, a working key stored, `scripts/measure-search-and-analytics.mjs`
+   returning a real CWV answer — including the honest one ("insufficient field
+   data") if 256 sessions/28d is below Chrome's sample floor.
+3. **Quality gates blocking where safe**: pa11y fully blocking; Lighthouse step
+   blocking with accessibility/SEO/CLS/best-practices at error level and
+   performance/LCP at warn (watch 2-3 real PR runs before promoting, per the
+   calibration session).
+4. **Audit items 9–11 built**:
+   - Every geography market surface shows a visible "Data updated <date>" from
+     the pulse row's real refresh stamp (item 9's timestamp half; formula +
+     source already render inline via KbMarketHud/KbTimeframeStats).
+   - The market section heading on every geography page is answer-shaped —
+     "Is <geo> a buyer's or seller's market?" — with the verdict and number in
+     the first line beneath (item 10), in the display face per the heading gate.
+   - All 13 Bend neighborhoods + 14 content-configured resort communities carry
+     long-form editorial (multi-section, question-shaped H2s, 600+ words) in
+     their content configs, rendered by the existing KbResortOverview path.
+     **No market figures in static prose** — live components own every number;
+     durable facts only, each piece carrying a sources list. Enforced by a gate,
+     not a promise: the brand-voice scan extends to the editorial JSON, and a
+     new check refuses $-figures/percentages in editorial sections and requires
+     non-empty sources beside them.
+
+## What a real user does with it
+
+A buyer searching "is Bend a buyer's market 2026" lands on a page whose H2 is
+that question with the answer in the first sentence. An LLM grounding a Central
+Oregon answer finds a dated, sourced, formula-stated stats block it can cite. A
+reader on /cities/bend/awbrey-butte gets a real essay about the neighborhood,
+not 200 words of filler. Nobody anywhere sees a pre-marketing listing counted
+or a formula the data does not use.
+
+## The bar
+
+Live production verification for the migration; a real API response for CrUX;
+rendered HTML checked for the H2s/timestamps; every content piece passing the
+mechanical gates plus a §0 trace; full ci:gates + build green; pushed on main.
+
+## Out of scope, named
+
+The sitemap build-cost root cause (104.7s RPC — needs the listing_tile_mv
+re-source, its own pass). The sibling session's three TOAST migrations (heavy
+MV rebuilds with their own apply plan). Audit items 12–21 beyond the above.
