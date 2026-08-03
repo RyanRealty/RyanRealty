@@ -75,6 +75,77 @@ This was never a discoverability defect.
 | **Lighthouse thresholds calibrated** | `a7451039` | 40+ real passes. Perf ≥0.90 was unachievable on 7 of 8 routes; SEO and CLS could never fail |
 | **§0: Coming Soon counted as "for sale"** | `f4763138` | Bend 1,288 shown vs 1,272 correct. 16 pre-marketing listings on a public surface |
 
+## Phase 2 (evening) — items 1-4 and the §0 formula violation
+
+Matt: "Yes on 1-3 and do number 4."
+
+| Item | State |
+|---|---|
+| **§0 wrong formula, live** | **FIXED.** `components/site/CityComparisonTable.tsx` footnoted a 30-day-doubling months-of-supply method beside a number computed with the 6-month formula, on every subdivision market page. Now renders `MOS_METHODOLOGY_CLAUSE`. `ci:market-formula` scanned only `app/` + `lib/`, which is exactly how the string its own docblock names got shipped; it scans `components/` as of this commit |
+| **1. Coming Soon migration** | **APPLIED and verified in production.** Bend Hot-communities for-sale sum **1,266 → 1,251**, exactly the 15 Coming Soon rows removed, and the post-apply sum equals an independently computed corrected predicate (1,251 = 1,251) |
+| **2. CrUX** | **ENABLED and measured.** CrUX + PSI APIs on the `ryanrealty` project, key restricted to those two, in `.env.local` as `GOOGLE_CRUX_API_KEY`. CLS **0.00** good, TTFB **292 ms** good, LCP **2,692 ms** needs work |
+| **3. Blocking gates** | **DONE.** Lighthouse + pa11y drop `continue-on-error`. A11y/SEO/CLS/BP at error, perf/LCP at **warn** until real runner samples validate the estimated CI headroom. Proves out on the next PR |
+| **4. Items 9 + 10** | **DONE.** Answer-shaped H2 and a real freshness stamp on every geography page |
+| **4. Item 11** | **NOT STARTED.** 27 long-form editorials. See below |
+
+### The LCP finding, and the fix that came out of it
+
+CrUX did not just give a score, it named a cause: **1,239 ms of the 2,692 ms LCP
+is image resource LOAD DELAY** — 46% of the metric elapsing before the hero
+request even starts. TTFB is 292 ms, so never a server problem.
+
+Root cause: `app/layout.tsx` preloaded `/images/hero-poster.webp` at
+`fetchPriority=high` on every route, and **nothing renders that file as a hero**
+(it is a pulse brand card, 12 KB). The hero the site actually paints is
+`poster="/images/hero/hero-old-mill-master-4k.jpg"`, **685 KB, with no preload
+at all**, discovered only when the parser reaches the `<video poster>`
+attribute. Top priority went to an image the browser would never display.
+
+Fixed: dead layout preload removed, `KbHero` preloads its OWN `posterSrc`
+(per-route, so the shared layout cannot know which hero a route paints). The LCP
+number can only be re-measured after CrUX accumulates a new 28-day window, so
+the improvement is deferred by design, not skipped. **685 KB is still heavy for a
+poster** — named, not fixed, because the measured defect was load DELAY not load
+DURATION.
+
+### Items 9 + 10, verified in rendered HTML
+
+`KbMarketHud` gained a `geoName` prop. Every geography section heading is now the
+question a reader types, with the answer directly beneath:
+
+```
+/cities/bend              "Is Bend a buyer's or seller's market?"
+                          -> Seller's market -> 3.7 months of supply   (3.7 <= 4, canon)
+/communities/tetherow     "Is Tetherow a buyer's or seller's market?" -> Buyer's market
+/cities/bend/awbrey-butte "Is Awbrey Butte a buyer's or seller's market?"
+                          all three: "Updated 9:19 PM" from the pulse row
+```
+
+`buildMarketFaq` already generated that exact question but only as an h3 far down
+the page in the FAQ block. It falls back to the old heading when there is no
+verdict, because a question with no answer under it is worse than a label.
+
+Only the homepage passed `asOf` before; the other six showed a ticking wall clock
+over a 10-15 minute cache. `/zip` is a deliberate exception: no pulse binding in
+scope, so it gets the heading and no stamp rather than a fabricated one.
+
+### Item 11 — not started, and why
+
+27 pieces (13 Bend neighborhoods, 14 content-configured resort communities). This
+is authored content, every figure needing a §0 trace, landing on public marketing
+surfaces under a principal broker's license. Starting it at the tail of a long
+session would produce filler. Three things a future session should know first,
+from the recon:
+
+- **13 Bend neighborhoods, not 14** (`lib/neighborhood-areas.ts:24-38`). 19 resort
+  communities registered, 14 with content configs; the other 5 are the G33 backlog.
+- **55 published blog posts, not 12.** Ten are Community Spotlights covering the
+  same geographies, so item 11 collides with them unless canonicalized or repurposed.
+- **The two pages you would extend are frozen**: `housing-market/[...slug]` (898)
+  and `communities/[slug]` (923) are pinned by the file-size ratchet.
+- Existing prose is 113-298 words per community in `data/resort-community-*.json`,
+  rendered by `KbResortOverview`, gated by G33 (`ci:community-content`).
+
 ## Open for Matt
 
 1. **Apply migration `20260802120000_subdivision_status_counts_exclude_coming_soon.sql`.**
