@@ -1,4 +1,109 @@
-> **NEWEST, START HERE: audit follow-through — sitemap P0 actually fixed, CI root-caused, GSC/GA4 measured (2026-08-02, Claude Code local).**
+> **NEWEST, START HERE: the entire audit roadmap closed, 1 to 21 (2026-08-03, Claude Code local).**
+> Prior: audit follow-through, sitemap P0 + CI root cause + GSC/GA4 (2026-08-02).
+
+# Current — 2026-08-03 (Claude Code, local)
+
+Every item on the 2026-08-02 website-audit roadmap is now closed or explicitly
+blocked on Matt. `main` @ `03f2f5d6`, full `ci:gates` chain green, deployed.
+
+## The sitemap P0 is finally closed, and why four passes missed it
+
+Production, sequential, measured after deploy:
+
+```
+core.xml      200    0.96s     159 urls
+geo.xml       200  106.22s   2,728 urls   <- the one cold universe build
+content.xml   200    0.23s      56 urls
+listings.xml  200    0.60s   7,555 urls
+matrix.xml    200    0.18s     296 urls
+```
+
+Before: four of five returned 504 at the 300s ceiling.
+
+The cause was never caching. `buildAllUrls` reached
+`get_subdivision_status_counts` (an unindexable `TRIM("City") ILIKE`, 104.7s for
+eight cities) through THREE separate paths, and each earlier pass fixed a subset:
+
+1. the browse-pair loop
+2. `getIndexableSubdivisions()`, called 15 lines later
+3. `getSearchMatrixSitemapEntries` -> `getSearchMatrix` -> `getSearchMatrixInventory`
+
+All three now read `listing_tile_mv` on the indexed `city_lower`. Equivalence was
+proven against production for each, not assumed: the indexable set is 502 both
+ways with symmetric difference 0, and the search-matrix path matches on 2,205 of
+2,210 shared keys with every divergence individually traced.
+
+**A separate and more serious bug surfaced doing it.** Concurrent `range()`
+pagination with no `ORDER BY`. Postgres guarantees no stable row order across
+separate OFFSET/LIMIT queries. Measured on Bend's 129,192 MV rows:
+
+```
+ORDERED     129,192 rows, 129,192 unique, 0 duplicates
+UNORDERED   129,192 rows, 106,000 unique, 23,192 duplicates
+```
+
+18% of rows returned twice, so an equal number were never seen. Against a
+lifetime-sales floor that means a subdivision near the threshold was admitted or
+dropped at random per build, silently. Both readers now order by
+`(address_slug, listing_key)`.
+
+## Items 9, 10, 11 — the content program
+
+- **11:** all 27 configs rewritten. 4,900 words to **18,859**, median 181 to 708,
+  **0 sources to 285**. Not one market figure in the prose: live components own
+  every number, static copy owns only durable facts, and **G33b enforces that**
+  rather than trusting it. Four frozen market claims were removed from tetherow
+  that had been live, including "Active inventory today: 15 homes from $759K to
+  $4M".
+- What the authors REFUSED to write is the best part: a disputed 1989-vs-1991
+  course opening cut entirely, a different Three Rivers in Jefferson County
+  caught and excluded, an acreage dropped because the source's own numbers do not
+  add up, school attendance zones cut for lack of a boundary document.
+
+## Everything else
+
+| # | State |
+|---|---|
+| 1-8 | closed 2026-08-02 |
+| 9, 10 | dated citable pages + answer-shaped headings, shipped |
+| 12 | `/data/market/[geoType]/[geoSlug].json`, live, cross-checked against the HTML |
+| 13 | Dataset coverage measured and filled |
+| 14 | outbound citations via one shared `MarketSources` component |
+| 15 | `/faq` emitted NO FAQPage JSON-LD at all. Fixed, plus 11 standalone child pages |
+| 16 | payload ratchet gate wired beside route-smoke |
+| 17 | `docs/press/` artifact + generator + pitch draft. **NOTHING SENT** (§1 class 1) |
+| 18 | `/months-of-supply` as a DefinedTerm with live figures |
+| 19 | `PROFILE_CONSISTENCY_2026-08-03.md` + correction packet. **NO OAuth** (§1 class 4) |
+| 20 | `/housing-market/annual-review`, Dataset + Article schema |
+| 21 | closed 2026-08-02 |
+
+## Open for Matt
+
+1. **Send the press pitch** (`docs/press/pitch-email-draft.md`). It uses
+   placeholders deliberately: no verified reporter contact exists in the repo and
+   inventing one is a §0 violation. Look up the real byline first.
+2. **The GBP / Zillow / Yelp corrections** in the profile packet. Each needs an
+   OAuth grant, which is yours alone.
+3. **Promote Lighthouse perf/LCP from warn to error** after 2-3 real PR runs. The
+   thresholds carry an estimated CI-hardware allowance no local run can validate.
+   A11y/SEO/CLS/best-practices already block.
+
+## Known gaps
+
+- **A cold `geo.xml` still costs 106s.** One build instead of three RPC sweeps,
+  well inside the 300s ceiling, but the universe build itself is still heavy.
+  Making a single build cheap is the next real improvement.
+- **Best Practices is pinned at 0.74 sitewide** by the AdSense script, which loads
+  from the root layout on every page while only `/activity` and `/resources`
+  render an ad unit. Named, not fixed: scoping it is revenue-touching.
+- `tetherow`'s `amenities` array had a restaurant that closed (Solomon's became
+  Coorie in 2026). Fixed here, but it suggests other configs carry stale
+  amenity entries that no gate checks.
+- `scripts/check-listing-detail.mjs --json` throws on an undefined `listingKey`.
+- CrUX and PageSpeed APIs are now enabled on the `ryanrealty` project, so field
+  Core Web Vitals are reachable for the first time. Nobody has pulled them yet.
+
+> **Superseded: audit follow-through — sitemap P0 actually fixed, CI root-caused, GSC/GA4 measured (2026-08-02, Claude Code local).**
 > Picks up and closes the "Open for Matt" list from the cloud session below.
 > Prior: website audit + remediation + CI unblock (2026-08-02, cloud); CMA/report depth (2026-07-30).
 
