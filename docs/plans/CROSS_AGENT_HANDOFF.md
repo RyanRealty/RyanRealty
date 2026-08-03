@@ -1,8 +1,127 @@
-> **NEWEST, START HERE: website audit + remediation + CI unblock (2026-08-02, Claude Code on the web).**
-> **This one is NOT on `main`** — it lives on branch `claude/ryan-realty-website-audit-sybjq3`, PR #28, still a draft.
-> Prior: CMA/report depth + valuation correctness + degraded-read class (2026-07-30).
+> **NEWEST, START HERE: audit follow-through — sitemap P0 actually fixed, CI root-caused, GSC/GA4 measured (2026-08-02, Claude Code local).**
+> Picks up and closes the "Open for Matt" list from the cloud session below.
+> Prior: website audit + remediation + CI unblock (2026-08-02, cloud); CMA/report depth (2026-07-30).
 
-# Current — 2026-08-02 (Claude Code, cloud session)
+# Current — 2026-08-02 (Claude Code, local session)
+
+| Field | Value |
+|---|---|
+| Surface | Claude Code, local, in a git worktree at `.claude/worktrees/audit-e2e` |
+| Branch | `claude/ryan-realty-website-audit-sybjq3`, 24 commits ahead of `main` |
+| Why a worktree | `main`'s working tree had a **live sibling session** with 53 uncommitted paths, two files touched 2 minutes before this session opened. Checking out or stashing there would have destroyed work in flight |
+| Credentials | Supabase service role, GSC (`siteOwner`), GA4 (`527333348`) — the three the cloud container lacked |
+
+## Three things the cloud session could not know
+
+**1. The sitemap P0 fix did not work.** It was the highest-value unverified item.
+Measured against a real production build:
+
+```
+core.xml   http=200  234.7s  159 urls
+geo.xml    http=000  280s    0 bytes    <- requested immediately after
+```
+
+The shared-universe memo stamped freshness when the build **started**, with a 60s TTL against
+a 115–235s build. It expired before it ever resolved, so every sequential request rebuilt from
+scratch. It was verified against five *concurrent* cold requests, where single-flight genuinely
+works — but Googlebot fetches children sequentially and the warmer loops. Now stamped on
+resolve, extracted to `lib/sitemap-universe-memo.ts` with 6 regression tests. Verified:
+
+```
+core.xml     200  127.8s     159    <- the one universe build
+geo.xml      200    0.014s  2566
+content.xml  200    0.007s    56
+listings.xml 200    0.016s  7574    <- had NEVER served
+matrix.xml   200    0.006s   296
+```
+
+**2. The three-month CI failure has a root cause.** `middleware.ts` `BAD_BOT_RE` blocks
+automation User-Agents and contains `axios`. `start-server-and-test` waits via `wait-on`, which
+is axios-based. Every readiness probe got 403, `wait-on` accepts only 2xx, so it timed out after
+five minutes printing "Timed out waiting for". The app was healthy throughout. The replacement
+probes went green only because Node's `fetch` sends `User-Agent: node` and someone picked
+`rr-smoke/1.0` — neither on the block list, by coincidence. Gate **G60** (`ci:probe-ua`) now
+reads the live regex out of `middleware.ts` via the TypeScript AST and fails if it would ever
+screen the probe UA. It found 12 more CI probes riding the same accident.
+
+The screen itself is correct: every AI crawler `robots.txt` invites returns 200 in production.
+This was never a discoverability defect.
+
+**3. Two of the audit's conclusions do not survive real data.** See
+[`MEASURED_METRICS_2026-08-02.md`](../audits/MEASURED_METRICS_2026-08-02.md).
+
+- **The sitemap's stated impact was wrong.** Search Console shows all five children downloaded
+  with zero errors, `listings.xml` carrying **7,660 URLs on 2026-08-01**. Google was never
+  missing listing pages. The defect was real; the impact claim was not.
+- **"Zero non-brand discoverability" is the wrong diagnosis.** GSC over 28 days: **35,451
+  impressions, 467 clicks, CTR 1.32%, average position 14.5**, across 1,776 named queries of
+  which 1,769 are non-brand. The site is not absent, it is on page two — **83.4% of named-query
+  impressions sit at position 11 or worse**. (Coverage caveat: those 9,523 impressions are 27%
+  of the total; Google withholds rare queries.)
+- **And one finding that argues FOR the audit, harder than the audit did:** 7 of the top 20
+  pages are blog posts, holding positions 4.5–8.9 against 14.5 site-wide. The single best URL is
+  long-form editorial about a named community. That is audit items 9–11 evidenced from Ryan
+  Realty's own traffic instead of from competitor inference.
+
+## Shipped this session
+
+| Item | Commit | Evidence |
+|---|---|---|
+| **CI root cause + gate G60** | `c6defa1b` | Verified 4 ways: passes at 15 probes, fails when a probe drops the UA, fails when `BAD_BOT_RE` is tightened onto it, keeps a known false positive out |
+| **GSC + GA4 measured (item 21)** | `3f3e1072` | `scripts/measure-search-and-analytics.mjs` reproduces every figure in the doc |
+| **Sitemap P0, actually fixed** | `aa56d308` | Sequential sweep above. 6 tests, negative-tested |
+| **`/admin/media/banners` 38.2s → 0.5s** | `ae42b045` | 277,415 rows → 3,344; 284 round-trips → 14. Output deep-compared byte-identical across 13 cities / 789 subdivisions. Back in the smoke set: **277/277, zero skips** |
+| **pa11y 0/8 → 8/8** | `a7451039` | Real rebuild, 0 errors on all 8 URLs. Three causes separated: contrast, map markers, third-party iframes |
+| **Lighthouse thresholds calibrated** | `a7451039` | 40+ real passes. Perf ≥0.90 was unachievable on 7 of 8 routes; SEO and CLS could never fail |
+| **§0: Coming Soon counted as "for sale"** | `f4763138` | Bend 1,288 shown vs 1,272 correct. 16 pre-marketing listings on a public surface |
+
+## Open for Matt
+
+1. **Apply migration `20260802120000_subdivision_status_counts_exclude_coming_soon.sql`.**
+   Committed but NOT applied — it needs the migration channel. Until it runs, `/cities/[city]`
+   still shows the inflated for-sale count. This is the only §0 item outstanding.
+2. **Enable the Chrome UX Report API** (or PageSpeed Insights API) on the `ryanrealty` Google
+   Cloud project. Core Web Vitals field data is the last audit metric still unmeasured — CrUX
+   403s on the Maps key and the anonymous PSI quota is exhausted. Both are free.
+3. **Flip Lighthouse and pa11y to blocking?** Recommendation, with measurements behind it:
+   accessibility, SEO, CLS and best-practices are safe to block now. Performance and LCP should
+   watch 2–3 real PR runs first, because their headroom is an estimate against CI hardware that
+   could not be timed from here.
+4. **Audit items 9–11 still need your go-ahead** — dated citable market pages, answer-shaped
+   H2s, long-form editorial for the 14 Bend neighborhoods and 14 resort communities. Deliberately
+   not started: they are content programs, every figure needs a §0 trace, and they land on public
+   marketing surfaces under your license. The GSC data above is now the strongest argument for
+   them.
+5. **AdSense caps Best Practices at 0.74 on every page** — the script loads sitewide from the
+   root layout but only `/activity` and `/resources` render an ad unit. Scoping it is a
+   revenue-touching product call, so it is named, not changed.
+
+## Known gaps
+
+- **A cold `core.xml` still costs 127.8s.** One build instead of five is the fix; making a single
+  build cheap is a separate piece of work (build per class rather than build-all-then-filter,
+  which the audit recommended and PR #28 did not do).
+- **`fetchAllRows()` swallows per-page errors** (`lib/supabase/paginate.ts` destructures only
+  `{ data }`). A mid-pagination timeout silently truncates the result for every caller, with no
+  error surfaced anywhere. Found while fixing the banners page; not fixed, blast radius is wide.
+- **`scripts/check-listing-detail.mjs` references an undefined `listingKey`** in its `--json`
+  path — `node scripts/check-listing-detail.mjs --json` throws. Pre-existing.
+- **`npm run ci:lighthouse` never invokes `scripts/pick-lhci-listing.mjs`** despite that file's
+  comment claiming it does; there is no `preci:lighthouse` hook. The hardcoded fallback listing
+  currently resolves, so it has not bitten.
+- **A sign-in modal auto-opens on page load** on `/team` and listing detail. Outside WCAG2AA so
+  pa11y did not flag it; its focus management is unexamined.
+- **`includeWarnings: false`** in `.pa11yci.json` suppresses every WCAG warning-level notice.
+  Nobody has looked at what is in that set.
+- **`ci:css-layers`'s baseline is keyed by `path:line selector`, so it is line-drift fragile.**
+  Adding a comment above an existing offender shifts its line number and the ratchet reports it
+  as a NEW violation. That happened here: the `.topbar` scrim comment shifted 10 identical
+  pre-existing rules by 2 lines and failed the push, with the offender count unchanged at 11.
+  Regenerating was correct (diff is line numbers only, same selectors, same count) but every
+  future edit above line 76 of `kb.css` pays the same tax. G56 already solved this class with
+  per-file counts described as "line-drift-proof"; this baseline should adopt the same keying.
+
+# Superseded — 2026-08-02 (Claude Code, cloud session)
 
 | Field | Value |
 |---|---|
