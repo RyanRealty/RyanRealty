@@ -57,25 +57,50 @@ const MIN_WORDS = 400
 const SOURCES_REQUIRED_ABOVE = 300
 
 /**
- * Market figures that must never be frozen into static prose.
- * Deliberately narrow: it must catch "$875,000", "sell for around $1.2M",
- * "12.4% appreciation", "median price", "months of supply", "days on market" —
- * and NOT catch a street address, a founding year, an acreage, an elevation, or
- * an HOA dues figure, all of which are durable facts this prose SHOULD carry.
+ * What actually makes a figure unsafe to freeze is not that it is money. It is
+ * that it GOES STALE. A 1910 land price and a 2021 pool-rebuild budget are
+ * historical record and are true forever. Active inventory is wrong tomorrow.
+ *
+ * A first cut here flagged any "$" or "%" and produced six false positives out
+ * of ten on real copy: a nonprofit's cumulative giving, two school rankings, a
+ * $23M aquatic-center rebuild, 1910 lot prices, a 1921 park purchase, and a
+ * municipal sewer project. Every one is a durable fact this prose SHOULD carry,
+ * and a gate that flags them teaches authors to strip good material. So the rule
+ * is currency-of-claim, not presence-of-currency.
+ *
+ * A sentence is flagged when it carries a number AND reads as a CURRENT market
+ * claim, and is cleared when it is anchored to a past year.
  */
-const MARKET_FIGURE_PATTERNS = [
-  { re: /\$\s?\d[\d,]*(?:\.\d+)?\s?(?:k|m|million)?\b/i, what: 'a dollar figure' },
-  { re: /\b\d+(?:\.\d+)?\s?%/, what: 'a percentage' },
-  { re: /\bmedian\s+(?:list\s+|sale\s+|sales\s+|home\s+)?price/i, what: 'a median price claim' },
-  { re: /\bmonths?\s+of\s+supply\b/i, what: 'a months-of-supply claim' },
-  { re: /\bdays?\s+on\s+market\b/i, what: 'a days-on-market claim' },
-  { re: /\bprice\s+per\s+(?:square\s+foot|sq\.?\s?ft)/i, what: 'a price-per-sqft claim' },
-  { re: /\bappreciat(?:ed|ion|ing)\b/i, what: 'an appreciation claim' },
-  { re: /\bsell(?:s|ing)?\s+for\s+(?:about|around|roughly|approximately)?\s*\$?\d/i, what: 'a sale-price claim' },
-]
+
+/** Any numeric token that could carry a market figure. */
+const HAS_NUMBER = /\$\s?\d|\b\d+(?:\.\d+)?\s?%|\b\d[\d,]*(?:\.\d+)?\b/
+
+/** Named market metrics. These are stale-by-tomorrow regardless of phrasing. */
+const MARKET_METRIC =
+  /\b(?:median\s+(?:list|close|closing|sale|sales|sold|home)?\s*price|sale[-\s]?to[-\s]?list|days?\s+on\s+market|days?\s+to\s+pending|months?\s+of\s+supply|price\s+per\s+(?:square\s+foot|sq\.?\s?ft)|appreciat(?:ed|ion|ing)|absorption\s+rate|market\s+velocity|active\s+inventory|homes?\s+for\s+sale|currently\s+(?:listed|asking)|list\s+price)\b/i
+
+/** Currency sitting directly on housing stock: "$759,000 townhomes". */
+const PRICE_ON_HOUSING =
+  /\$\s?\d[\d,]*(?:\.\d+)?\s?(?:k|m|mm|million)?\b[^.]{0,40}\b(?:home|homes|house|houses|townhome|townhomes|condo|condos|cabin|cabins|lot|lots|property|properties|residence|residences)\b|\b(?:home|homes|house|houses|townhome|townhomes|condo|condos|lot|lots|property|properties)\b[^.]{0,40}\$\s?\d/i
+
+/** "sell for about $X", "trade at $X", "start in the $Xs". */
+const SALE_CLAIM =
+  /\b(?:sell(?:s|ing)?|sold|trade[ds]?|trading|start(?:s|ing)?|range[sd]?|ranging)\b[^.]{0,30}\$\s?\d/i
+
+/**
+ * A sentence anchored to a past year is a historical record, not a live figure.
+ * Three-year lag so "as of 2025" style recency claims are still caught.
+ */
+const HISTORICAL_CUTOFF = new Date().getFullYear() - 3
+
+function isHistorical(sentence) {
+  const years = sentence.match(/\b(1[6-9]\d{2}|20\d{2})\b/g)
+  if (!years) return false
+  return years.some((y) => Number(y) <= HISTORICAL_CUTOFF)
+}
 
 /** HOA dues are a durable, published fact and live in their own numeric keys. */
-const DUES_CONTEXT = /\b(?:hoa|dues|assessment|association fee)\b/i
+const DUES_CONTEXT = /\b(?:hoa|dues|assessment|association fee|initiation)\b/i
 
 function configFiles() {
   return readdirSync(DATA_DIR)
@@ -93,18 +118,23 @@ function proseOf(config) {
 
 const wordCount = (s) => (s.trim() ? s.trim().split(/\s+/).length : 0)
 
-/** Sentences carrying a banned market figure, with what tripped them. */
+/** Sentences making a CURRENT market claim, with what tripped them. */
 function marketFigureHits(prose) {
   const hits = []
-  // Split on sentence boundaries so the report can quote the offending sentence.
   for (const sentence of prose.split(/(?<=[.!?])\s+/)) {
-    for (const { re, what } of MARKET_FIGURE_PATTERNS) {
-      if (!re.test(sentence)) continue
-      // An HOA dues figure is a durable published fact, not a market figure.
-      if (DUES_CONTEXT.test(sentence) && /\$/.test(sentence)) continue
-      hits.push({ what, sentence: sentence.trim().slice(0, 160) })
-      break
-    }
+    if (!HAS_NUMBER.test(sentence)) continue
+    // Anchored to a past year: historical record, true forever, allowed.
+    if (isHistorical(sentence)) continue
+    // HOA dues are published durable facts with their own numeric keys.
+    if (DUES_CONTEXT.test(sentence)) continue
+
+    let what = null
+    if (MARKET_METRIC.test(sentence)) what = 'a named market metric'
+    else if (PRICE_ON_HOUSING.test(sentence)) what = 'a price attached to housing stock'
+    else if (SALE_CLAIM.test(sentence)) what = 'a sale-price claim'
+    if (!what) continue
+
+    hits.push({ what, sentence: sentence.trim().slice(0, 160) })
   }
   return hits
 }
