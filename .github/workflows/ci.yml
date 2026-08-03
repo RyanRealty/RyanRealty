@@ -107,28 +107,37 @@ jobs:
       # @lhci/cli + lighthouserc.cjs, pa11y-ci + .pa11yci.json), so these run
       # for the first time.
       #
-      # continue-on-error while their thresholds get a first look. Turning on
-      # two never-validated quality gates is a bar-setting decision, not a bug
-      # fix, and failing a PR on numbers nobody has reviewed would be the wrong
-      # default. Flip to false once the first real output has been read.
+      # The first real output HAS now been read (2026-08-02 calibration: 40+
+      # Lighthouse passes, pa11y root-caused from 0/8 to a verified 8/8), which
+      # is what the original continue-on-error was waiting for.
       #
       # Both need a server on 127.0.0.1:3000 and lighthouserc.cjs sets no
       # startServerCommand, so the smoke step above deliberately leaves its
       # server running. Teardown is the runner's job — see the note below.
+      # BLOCKING as of 2026-08-02 (Matt approved the flip). The config runs
+      # accessibility/SEO/CLS/best-practices at error level — measured margin,
+      # not timing-sensitive — while performance/LCP assert at "warn" (printed,
+      # never fatal) until 2-3 real runner samples validate the estimated CI
+      # hardware headroom in lighthouserc.cjs. Promote perf/LCP there, not here.
       - name: Lighthouse CI
         if: github.event_name == 'pull_request'
         run: npm run ci:lighthouse
-        continue-on-error: true
 
       # G23 — pa11y-ci. The Lighthouse a11y category covers aggregate
       # scoring but misses specific WCAG 2.1 failures that show up at
       # component-level (missing alt text, unlabeled inputs, contrast
       # failures on specific elements). pa11y-ci catches those.
       # Closes GAP-3 from out/guardrail-inventory-2026-05-28.md.
+      # BLOCKING as of 2026-08-02. Its first real execution reported 0/8 URLs
+      # passing and the failure rendered as a green check for a day because of
+      # continue-on-error. The causes are fixed (contrast scrim, map-marker
+      # titles, third-party iframes scoped out, stale alias URL) and a real
+      # production build measures 8/8 with 0 errors — WCAG rule evaluation is
+      # not CPU-timing-sensitive, so CI hardware cannot flake it the way perf
+      # numbers can.
       - name: pa11y-ci accessibility
         if: github.event_name == 'pull_request'
         run: npm run ci:a11y
-        continue-on-error: true
 
       # NO explicit teardown step for the smoke server, deliberately.
       #

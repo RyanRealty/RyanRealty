@@ -96,16 +96,14 @@
 //     Thresholds: perf >= 0.72 (local-only: 0.78), LCP <= 3500ms (local-only:
 //     3050ms).
 //
-// RECOMMENDATION: this file is a safe upgrade over the never-validated
-// 0.90/0.95/0.90/0.95/2500/0.10 numbers regardless of blocking status — it
-// replaces guesses with measurement. But do NOT flip ci.yml's Lighthouse step
-// to blocking (continue-on-error: false) purely on this local run. Watch 2-3
-// real `.github/workflows/ci.yml` PR runs (or a quality.yml workflow_dispatch)
-// first — actual GitHub Actions runner timing is the one input this session
-// could not produce, and every perf/LCP number above depends on the estimate
-// above being roughly right. If those runs pass clean, blocking is low-risk.
-// A11y/SEO/CLS/BP have enough measured margin to block immediately; they are
-// not CPU-timing-sensitive the way perf/LCP are.
+// BLOCKING SPLIT (implemented 2026-08-02, Matt: "yes" on flipping): the CI
+// step no longer carries continue-on-error, so error-level assertions BLOCK.
+// A11y/SEO/CLS/BP stay at "error" — measured margin, not CPU-timing-sensitive.
+// Performance and LCP run at "warn": lhci prints the miss but exits 0, because
+// every perf/LCP number above depends on an ESTIMATED CI-hardware allowance no
+// local run can validate. Promote them to "error" after 2-3 real PR runs show
+// the warnings staying quiet — the warn output in the step log is exactly the
+// telemetry that decision needs.
 //
 // The listing-detail URL is resolved at lhci-run time by
 // `scripts/pick-lhci-listing.mjs` and passed in via LHCI_LISTING_URL.
@@ -171,8 +169,8 @@ module.exports = {
             "^http://127\\.0\\.0\\.1:3000/(|cities/bend|cities/bend/awbrey-butte)$",
           assertions: {
             ...SHARED_ASSERTIONS,
-            "categories:performance": ["error", { minScore: 0.65 }],
-            "largest-contentful-paint": ["error", { maxNumericValue: 4200 }],
+            "categories:performance": ["warn", { minScore: 0.65 }],
+            "largest-contentful-paint": ["warn", { maxNumericValue: 4200 }],
           },
         },
         {
@@ -186,8 +184,8 @@ module.exports = {
             "^http://127\\.0\\.0\\.1:3000/(zip/97703|communities/tetherow)$",
           assertions: {
             ...SHARED_ASSERTIONS,
-            "categories:performance": ["error", { minScore: 0.8 }],
-            "largest-contentful-paint": ["error", { maxNumericValue: 2800 }],
+            "categories:performance": ["warn", { minScore: 0.8 }],
+            "largest-contentful-paint": ["warn", { maxNumericValue: 2800 }],
           },
         },
         {
@@ -200,8 +198,8 @@ module.exports = {
           matchingUrlPattern: "^http://127\\.0\\.0\\.1:3000/(team|about|homes-for-sale/.+)$",
           assertions: {
             ...SHARED_ASSERTIONS,
-            "categories:performance": ["error", { minScore: 0.72 }],
-            "largest-contentful-paint": ["error", { maxNumericValue: 3500 }],
+            "categories:performance": ["warn", { minScore: 0.72 }],
+            "largest-contentful-paint": ["warn", { maxNumericValue: 3500 }],
           },
         },
       ],
