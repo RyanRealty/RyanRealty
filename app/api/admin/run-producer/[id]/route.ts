@@ -79,7 +79,9 @@ export async function POST(
           queued_at: queuedAt,
           ready_for_runtime: true,
           runtime_invocation_command: `manual via /api/admin/run-producer/${id}`,
-          runtime_invocation_command_alt: `cd /Users/matthewryan/RyanRealty && claude --skill ${producerPath} --action-row-id ${id}`,
+          // repoRoot, not a hardcoded /Users path — this string is written into the
+          // DB and may be read by an operator working on the Linux VM.
+          runtime_invocation_command_alt: `cd ${process.cwd()} && claude --skill ${producerPath} --action-row-id ${id}`,
         },
       })
       .eq('id', id)

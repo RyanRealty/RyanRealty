@@ -36,7 +36,14 @@ const REFRESH = process.argv.includes('--refresh')
 const RULES = [
   {
     id: 'macos-command',
-    re: /\b(osascript|\bsips\b|afplay|pbcopy|pbpaste)\b/,
+    // Must look like an INVOCATION, not a word that happens to spell a command.
+    // `sips` is also the industry abbreviation for Structural Insulated Panels,
+    // and lib/search/field-registry.ts lists it as a construction-material
+    // search synonym — flagged as a macOS-only dependency (2026-08-02). A bare
+    // quoted token is data; a command is followed by an argument or flag, or
+    // sits in a pipe / substitution / exec call.
+    re: /\b(osascript|sips|afplay|pbcopy|pbpaste)\b(?=\s+[-\w/$'"])/,
+    altRe: /(?:\||\$\(|`)\s*(?:osascript|sips|afplay|pbcopy|pbpaste)\b|(?:exec|execSync|execFile|execFileSync|spawn|spawnSync)\s*\([^)]*\b(?:osascript|sips|afplay|pbcopy|pbpaste)\b/,
     hint: 'macOS-only command. Use lib/platform/notify.mjs (alerts) or sharp (images).',
   },
   {
@@ -87,7 +94,8 @@ for (const file of liveFiles()) {
     const trimmed = line.trim()
     if (trimmed.startsWith('*') || trimmed.startsWith('//') || trimmed.startsWith('#')) continue
     for (const rule of RULES) {
-      if (rule.re.test(line)) violations.push(`${rule.id}\t${file}:${i + 1}`)
+      const hit = rule.re.test(line) || (rule.altRe ? rule.altRe.test(line) : false)
+      if (hit) violations.push(`${rule.id}\t${file}:${i + 1}`)
     }
   }
 }
