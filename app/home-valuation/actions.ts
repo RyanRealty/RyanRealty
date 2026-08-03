@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { renderToBuffer } from '@react-pdf/renderer'
+import { assertPdfPageSafety } from '@/lib/pdf/assert-page-safety'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { sendEvent } from '@/lib/followupboss'
 import { sendEmail } from '@/lib/resend'
@@ -322,6 +323,10 @@ async function runValuationFollowUp(ctx: {
         const doc = React.createElement(CMAPdfDocument, { data: pdfData })
         type DocElement = Parameters<typeof renderToBuffer>[0]
         const buffer = await renderToBuffer(doc as DocElement)
+        // THE PAGE CONTRACT — see lib/pdf/page-contract.ts.
+        await assertPdfPageSafety(Buffer.from(buffer), 'home valuation CMA', {
+          runningMarksInBody: true,
+        })
         const sent = await sendEmail({
           to: email,
           subject: `Your Home Valuation – ${fullAddress || 'Property'}`,

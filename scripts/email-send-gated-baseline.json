@@ -33,9 +33,9 @@
       "kind": "internal",
       "reason": "Internal: weekly pipeline digest to the broker (or the admin-configured Weekly Report Recipients from Company Settings \u2014 staff addresses the owner adds, not leads). Same allowlisted site; line shifted when recipients were wired to crm_company_settings (\u00a715 slice). Line re-synced in the audit cron-auth consolidation."
     },
-    "app/home-valuation/actions.ts:246": {
+    "app/home-valuation/actions.ts:247": {
       "kind": "internal",
-      "reason": "Internal: new-lead notification to ADMIN_EMAIL (the brokerage), not the lead. The two LEAD-facing sends in this action (auto-CMA + acknowledgment) are gated by isSuppressedByEmail. Permanently allowlisted. Line re-keyed 201->245 when the seller-facing hang fix moved the post-response work (broker alert, auto-CMA, acknowledgment) out of the request path into runValuationFollowUp + after() (buyer-journey audit 2026-07-29). Same internal ADMIN_EMAIL send, same recipient; the two LEAD-facing sends in that function remain gated by isSuppressedByEmail. Line +1 (2026-08-03) when the CONTACT import replaced the hardcoded 541.213.6706 literal."
+      "reason": "Internal: new-lead notification to ADMIN_EMAIL (the brokerage), not the lead. The two LEAD-facing sends in this action (auto-CMA + acknowledgment) are gated by isSuppressedByEmail. Permanently allowlisted. Line re-keyed 201->245 when the seller-facing hang fix moved the post-response work (broker alert, auto-CMA, acknowledgment) out of the request path into runValuationFollowUp + after() (buyer-journey audit 2026-07-29). Same internal ADMIN_EMAIL send, same recipient; the two LEAD-facing sends in that function remain gated by isSuppressedByEmail. Line +1 (2026-08-03) when the CONTACT import replaced the hardcoded 541.213.6706 literal. Line shifted +1 by the 2026-08-03 page-contract assertion import."
     },
     "lib/cma-deliver.ts:356": {
       "kind": "internal",
@@ -45,9 +45,9 @@
       "kind": "internal",
       "reason": "Internal: notifies Matt (MATT_ALERT_EMAIL) that a CMA is ready for review, not the client. Permanently allowlisted. Line shifted in the 2026-07-06 lifecycle-workflows integration (W5)."
     },
-    "lib/cma-delivery.ts:383": {
+    "lib/cma-delivery.ts:386": {
       "kind": "internal",
-      "reason": "Internal: broker-review notification to the assigned broker's email with a signed preview link. processCmaDelivery only builds to 'ready'; it never emails the lead. The lead delivery happens in the gated /api/cma-drafts/[id]/send route and contact-cma.ts. Line shifted in the 2026-07-06 lifecycle-workflows integration (W5)."
+      "reason": "Internal: broker-review notification to the assigned broker's email with a signed preview link. processCmaDelivery only builds to 'ready'; it never emails the lead. The lead delivery happens in the gated /api/cma-drafts/[id]/send route and contact-cma.ts. Line shifted in the 2026-07-06 lifecycle-workflows integration (W5). Line shifted +3 by the 2026-08-03 page-contract assertion (import + assertPdfPageSafety call)."
     },
     "lib/cma/request-emails.ts:73": {
       "kind": "internal",

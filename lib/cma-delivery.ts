@@ -34,6 +34,7 @@ import { getFubApiKey } from '@/lib/crm/fub-env'
 
 import React from 'react'
 import { renderToBuffer } from '@react-pdf/renderer'
+import { assertPdfPageSafety } from '@/lib/pdf/assert-page-safety'
 
 import {
   computeCMA,
@@ -277,6 +278,8 @@ export async function processCmaDelivery(deliveryId: string): Promise<{
     })
     type DocElement = Parameters<typeof renderToBuffer>[0]
     pdfBuffer = Buffer.from(await renderToBuffer(doc as DocElement))
+    // THE PAGE CONTRACT on the bytes, before this can be delivered (docs/PAGE_CONTRACT.md).
+    await assertPdfPageSafety(pdfBuffer, 'CMA delivery', { runningMarksInBody: true })
   } catch (e) {
     errors.push({
       step: 'renderToBuffer',

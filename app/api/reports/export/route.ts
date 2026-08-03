@@ -38,6 +38,7 @@
 import { NextResponse } from 'next/server'
 import React from 'react'
 import { renderToBuffer } from '@react-pdf/renderer'
+import { assertPdfPageSafety } from '@/lib/pdf/assert-page-safety'
 import * as XLSX from 'xlsx'
 import { createClient } from '@supabase/supabase-js'
 import { checkRateLimit } from '@/lib/rate-limit'
@@ -213,6 +214,10 @@ async function buildPdf(
   const doc = React.createElement(ReportPdfDocument, { data: pdfData })
   type DocElement = Parameters<typeof renderToBuffer>[0]
   const buffer = await renderToBuffer(doc as DocElement)
+  // THE PAGE CONTRACT — see lib/pdf/page-contract.ts.
+  await assertPdfPageSafety(Buffer.from(buffer), 'market report export', {
+    runningMarksInBody: true,
+  })
   return {
     fileName: `${buildDocumentFilename(geo.fileStem, facts.period)}.pdf`,
     bytes: new Uint8Array(buffer),
