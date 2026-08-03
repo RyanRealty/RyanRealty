@@ -15,6 +15,8 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button'
+import { DscrEmailDialog } from './DscrEmailDialog.client'
 import {
   Select,
   SelectContent,
@@ -46,6 +48,16 @@ export function DscrScreen({ rows, assumptions }: { rows: DscrRow[]; assumptions
   const [maxPrice, setMaxPrice] = useState('')
   const [strOnly, setStrOnly] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>('dealScore')
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [emailOpen, setEmailOpen] = useState(false)
+
+  const toggle = (key: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
 
   const counties = useMemo(
     () => Array.from(new Set(rows.map((r) => r.county).filter(Boolean))).sort() as string[],
@@ -145,7 +157,17 @@ export function DscrScreen({ rows, assumptions }: { rows: DscrRow[]; assumptions
             <Checkbox id="stronly" checked={strOnly} onCheckedChange={(v) => setStrOnly(v === true)} />
             <Label htmlFor="stronly" className="text-sm font-normal">STR permit only</Label>
           </div>
-          <p className="ml-auto pb-2 text-xs text-muted-foreground">
+          <div className="ml-auto flex items-center gap-3 pb-2">
+            {selected.size > 0 ? (
+              <>
+                <Button size="sm" onClick={() => setEmailOpen(true)}>
+                  Email {selected.size} selected
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>Clear</Button>
+              </>
+            ) : null}
+          </div>
+          <p className="pb-2 text-xs text-muted-foreground">
             {assumptions.downPct}% down · {assumptions.ratePct}% · {assumptions.termYears}yr ·
             {' '}{assumptions.vacancyPct + assumptions.mgmtPct + assumptions.maintPct + assumptions.capexPct}% opex
           </p>
@@ -157,6 +179,7 @@ export function DscrScreen({ rows, assumptions }: { rows: DscrRow[]; assumptions
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10"><span className="sr-only">Select</span></TableHead>
                 <TableHead className="w-72">Property</TableHead>
                 <TableHead className="text-right">Score</TableHead>
                 <TableHead className="text-right">Price</TableHead>
@@ -171,7 +194,14 @@ export function DscrScreen({ rows, assumptions }: { rows: DscrRow[]; assumptions
             </TableHeader>
             <TableBody>
               {filtered.slice(0, 300).map((r) => (
-                <TableRow key={r.listingKey}>
+                <TableRow key={r.listingKey} data-state={selected.has(r.listingKey) ? 'selected' : undefined}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selected.has(r.listingKey)}
+                      onCheckedChange={() => toggle(r.listingKey)}
+                      aria-label={`Select ${r.address}`}
+                    />
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="relative size-14 shrink-0 overflow-hidden rounded-md bg-muted">
@@ -261,6 +291,13 @@ export function DscrScreen({ rows, assumptions }: { rows: DscrRow[]; assumptions
           </div>
         </CardContent>
       </Card>
+
+      <DscrEmailDialog
+        open={emailOpen}
+        onOpenChange={setEmailOpen}
+        listingKeys={[...selected]}
+        pricedCount={rows.filter((r) => selected.has(r.listingKey) && r.rent != null).length}
+      />
     </div>
   )
 }

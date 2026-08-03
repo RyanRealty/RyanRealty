@@ -54,7 +54,8 @@ export function wrapNewsletterHtml(args: {
     // heroUrl omitted -> the shell's canonical Old Mill hero.
     senderBroker: args.senderBroker,
     unsubscribeUrl: args.unsubscribeUrl,
-    audienceLine: "You're receiving this because you subscribed to Ryan Realty updates.",
+    // Names the list without narrating the transaction back to the reader.
+    audienceLine: 'Ryan Realty market updates.',
   })
 }
 

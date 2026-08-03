@@ -150,7 +150,9 @@ Ryan Realty${ctx.brokerRow.phone ? `\n${ctx.brokerRow.phone}` : ''}${brandedText
       heroUrl: null,
       senderBroker: shellBroker,
       unsubscribeUrl: null,
-      audienceLine: `You are receiving this because a market analysis was requested for ${ctx.subjectAddress}.`,
+      // No audience line: someone who asked for a market analysis knows why they
+      // got one. Explaining it is the filler §2 bans (Matt 2026-08-03).
+      audienceLine: null,
     })
     return { html, text, subject }
   }
@@ -200,7 +202,9 @@ Ryan Realty${ctx.brokerRow.phone ? `\n${ctx.brokerRow.phone}` : ''}${brandedText
     heroUrl: null,
     senderBroker: shellBroker,
     unsubscribeUrl: null,
-    audienceLine: `You are receiving this because a market analysis was requested for ${ctx.subjectAddress}.`,
+    // No audience line: someone who asked for a market analysis knows why they
+      // got one. Explaining it is the filler §2 bans (Matt 2026-08-03).
+      audienceLine: null,
   })
   return { html, text, subject }
 }

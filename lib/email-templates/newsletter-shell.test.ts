@@ -60,7 +60,7 @@ describe('wrapNewsletterHtml (facade over the shared branded shell)', () => {
       mastheadLine: 'THE BEND BRIEF · JULY',
       senderBroker: broker,
       unsubscribeUrl: UNSUB,
-      audienceLine: "You're receiving this because you subscribed to Ryan Realty updates.",
+      audienceLine: 'Ryan Realty market updates.',
     })
     const viaFacade = wrapNewsletterHtml({
       bodyHtml: '<tr><td style="padding:30px 34px;">Hello Bend.</td></tr>',

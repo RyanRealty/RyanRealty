@@ -60,7 +60,11 @@ export type EmailShellArgs = {
   unsubscribeUrl?: string | null
   /** Optional "Manage preferences" URL rendered next to Unsubscribe. */
   manageUrl?: string | null
-  /** Footer sentence explaining why the recipient got this email. */
+  /**
+   * Footer line naming the list, for opt-in mail. Omitted when absent — do NOT
+   * use it to narrate why the reader is reading ("You're receiving this
+   * because…"); they know. Name the thing: "Ryan Realty listing alerts."
+   */
   audienceLine?: string | null
 }
 
@@ -68,9 +72,11 @@ export function wrapBrandedEmail(args: EmailShellArgs): string {
   const preheader = (args.previewText ?? '').trim()
   const masthead = (args.mastheadLine ?? 'BEND · OREGON').toUpperCase()
   const heroUrl = args.heroUrl === undefined ? BRAND_HERO_URL : args.heroUrl
-  const audience =
-    (args.audienceLine ?? '').trim() ||
-    "You're receiving this because you asked for updates from Ryan Realty."
+  // No default line. The old fallback narrated the transaction back to the
+  // reader, which is the explaining-the-obvious filler §2 bans, and it leaked
+  // onto surfaces where it was also plainly untrue. A caller that wants a line
+  // passes one; everything else omits it (Matt 2026-08-03).
+  const audience = (args.audienceLine ?? '').trim()
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"></head>
 <body style="margin:0;padding:0;background:${CANVAS};font-family:${SANS};">
 ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(preheader)}</div>` : ''}
@@ -98,7 +104,7 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;"
   <!-- FOOTER -->
   <tr><td style="padding:26px 34px 32px;">
     <div style="color:${MUTED};font-size:12px;line-height:1.6;text-align:center;">
-      ${escapeHtml(BROKERAGE_POSTAL_ADDRESS)} &middot; <a href="https://ryan-realty.com" style="color:${MUTED};">ryan-realty.com</a><br>
+      ${escapeHtml(BROKERAGE_POSTAL_ADDRESS)} &middot; <a href="https://ryan-realty.com" style="color:${MUTED};">ryan-realty.com</a>${audience || args.manageUrl || args.unsubscribeUrl ? '<br>' : ''}
       ${escapeHtml(audience)}${args.manageUrl ? `
       <a href="${args.manageUrl}" style="color:${MUTED};text-decoration:underline;">Manage preferences</a>${args.unsubscribeUrl ? ' &middot;' : '.'}` : ''}${args.unsubscribeUrl ? `
       <a href="${args.unsubscribeUrl}" style="color:${MUTED};text-decoration:underline;">Unsubscribe</a>.` : ''}

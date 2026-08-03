@@ -95,7 +95,11 @@ describe('buildListingAlertEmail', () => {
 
   it('carries the audience line, manage link, and unsubscribe URL', () => {
     const out = buildListingAlertEmail(input())
-    expect(out.html).toContain('you asked for listing alerts at ryan-realty.com')
+    // Names the list, without narrating back to the reader why they are reading
+    // it (Matt 2026-08-03). The unsubscribe + manage links below carry the
+    // actual CAN-SPAM weight, not the sentence.
+    expect(out.html).toContain('Ryan Realty listing alerts.')
+    expect(out.html).not.toMatch(/you.{0,3}re receiving this because/i)
     expect(out.html).toContain('https://ryan-realty.com/account/saved-searches')
     expect(out.html).toContain('Manage preferences')
     expect(out.html).toContain(UNSUB)

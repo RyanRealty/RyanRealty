@@ -15,6 +15,7 @@ export const PUNCTUATION_CHARS: readonly string[] = ["—", "–", ";", "!"]
 export const BANNED_WORD_STRINGS: readonly string[] = [
   "act fast",
   "act now",
+  "as you probably know",
   "bespoke",
   "boasts",
   "boutique brokerage",
@@ -78,8 +79,11 @@ export const BANNED_WORD_STRINGS: readonly string[] = [
   "white glove",
   "won't last",
   "won't last long",
+  "you are receiving this because",
   "you have great taste",
+  "you may be wondering why",
   "you won't believe",
+  "you're receiving this because",
   "your real estate journey",
   "your trusted",
 ]
@@ -88,6 +92,7 @@ export const BANNED_WORD_STRINGS: readonly string[] = [
 export const BANNED_WORDS: readonly BannedWord[] = [
   { word: "act fast", category: "fake urgency" },
   { word: "act now", category: "fake urgency" },
+  { word: "as you probably know", category: "pandering" },
   { word: "bespoke", category: "AI filler" },
   { word: "boasts", category: "real-estate cliché" },
   { word: "boutique brokerage", category: "marketing slop" },
@@ -152,8 +157,11 @@ export const BANNED_WORDS: readonly BannedWord[] = [
   { word: "white glove", category: "marketing slop" },
   { word: "won't last", category: "fake urgency" },
   { word: "won't last long", category: "fake urgency" },
+  { word: "you are receiving this because", category: "pandering" },
   { word: "you have great taste", category: "pandering" },
+  { word: "you may be wondering why", category: "pandering" },
   { word: "you won't believe", category: "hype opening" },
+  { word: "you're receiving this because", category: "pandering" },
   { word: "your real estate journey", category: "marketing slop" },
   { word: "your trusted", category: "marketing slop" },
 ]

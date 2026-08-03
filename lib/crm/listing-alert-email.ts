@@ -271,7 +271,7 @@ export function buildListingAlertEmail(input: BuildListingAlertEmailInput): Buil
     senderBroker: input.senderBroker ?? null,
     unsubscribeUrl: input.unsubscribeUrl,
     manageUrl: input.manageUrl?.trim() || null,
-    audienceLine: "You're receiving this because you asked for listing alerts at ryan-realty.com.",
+    audienceLine: 'Ryan Realty listing alerts.',
   })
 
   const textParts: string[] = []

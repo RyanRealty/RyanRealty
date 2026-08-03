@@ -145,6 +145,13 @@ const PANDERING = [
   'we will handle everything',
   'let me explain in simple terms',
   'i know this seems complicated',
+  // Explaining-the-obvious filler (Matt 2026-08-03: "I tried to get rid of that,
+  // but man, it just persists"). A reader who asked for a thing and then
+  // received it does not need the transaction narrated back to them.
+  "you're receiving this because",
+  'you are receiving this because',
+  'you may be wondering why',
+  'as you probably know',
 ]
 
 // Flat banned list with category annotation, used by both consumers.

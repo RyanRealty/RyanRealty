@@ -31,8 +31,11 @@ const SCAN_DIRS = ['app', 'components']
 const SKIP = new Set(['node_modules', '.next', 'out', 'dist'])
 
 // Live send actions — a UI referencing one of these IS a send surface.
+// stageDscrDealListDraftAction stages a Gmail draft rather than sending, but it
+// composes a message a human then sends, so it is a compose surface and belongs
+// under the one-interface rule like the rest.
 const SEND_ACTIONS =
-  /sendCrmSmsAction|sendCrmEmailAction|sendAdminEmail|sendDocEmailAction|sendDocSmsAction|bulkEmailCohortAction|dispatchComposeCohortAction|scheduleComposeCohortAction/
+  /sendCrmSmsAction|sendCrmEmailAction|sendAdminEmail|sendDocEmailAction|sendDocSmsAction|bulkEmailCohortAction|dispatchComposeCohortAction|scheduleComposeCohortAction|stageDscrDealListDraftAction/
 
 const CANONICAL_IMPORT =
   /@\/components\/admin\/crm\/(SmsComposer|EmailComposer|EmailBodyEditor)/

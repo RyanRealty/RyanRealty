@@ -103,7 +103,8 @@ Ryan Realty${opts.brokerPhone ? `\n${opts.brokerPhone}` : ''}${brandedTextFooter
       heroUrl: null,
       senderBroker: opts.broker,
       unsubscribeUrl: null,
-      audienceLine: `You are receiving this because a price opinion was prepared for ${opts.subjectAddress}.`,
+      // No audience line: the recipient asked for this price opinion.
+      audienceLine: null,
     })
     return { html, text, subject }
   }
@@ -142,7 +143,8 @@ Ryan Realty${opts.brokerPhone ? `\n${opts.brokerPhone}` : ''}${brandedTextFooter
     heroUrl: null,
     senderBroker: opts.broker,
     unsubscribeUrl: null,
-    audienceLine: `You are receiving this because a price opinion was prepared for ${opts.subjectAddress}.`,
+    // No audience line: the recipient asked for this price opinion.
+      audienceLine: null,
   })
   return { html, text, subject }
 }
