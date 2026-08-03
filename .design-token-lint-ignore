@@ -546,3 +546,30 @@ components/site/SiteHeaderSearch.client.tsx
 # design system, not shadcn (ci:shadcn-burndown), so the only design-system-
 # compliant table here is a raw one. ODS §5-4 aggregate-only; no shadcn import.
 components/reports/CityArchiveSection.tsx
+
+# Long-form editorial reading measure (2026-08-03): the months-of-supply glossary
+# page, the annual-review market reference, and the shared MarketSources citation
+# block all render long-form prose paragraphs where the correct control is the
+# reading MEASURE (characters per line), not a page container width. max-w-[70ch]
+# sets that measure. The locked layout ladder (max-w-7xl, py-12/14/16, gap-4/5/6,
+# p-5/6, rounded-xl) only expresses page container widths in px. It has no
+# character-measure equivalent. Existing precedent for this exact exception:
+# components/site/SiteFooter.tsx (max-w-[40ch]), components/site/CtaDuo.tsx
+# (max-w-[60ch]), components/site/PriceChart.tsx (max-w-[60ch]). The three files
+# below are standardized on the same 70ch measure so the site reads at one
+# consistent width, rather than three near-identical values (68ch/70ch/72ch).
+app/months-of-supply/page.tsx
+app/housing-market/annual-review/page.tsx
+components/site/MarketSources.tsx
+
+# Search split-view list panel (map-search results list, 2026-08-03): the fixed
+# in-flow list panel next to the map (lg:w-[420px] lg:min-w-[360px]
+# lg:max-w-[480px]) is a component width, not a page container width, so the
+# locked ladder (max-w-7xl etc.) does not reach it. There is no drag-to-resize
+# handle, the width band is a static per-breakpoint clamp. Same exception class
+# already granted to the CRM/BPO/CMA worklist detail-drawer asides above
+# (components/admin/prospecting/ProspectDetailDrawer.client.tsx,
+# components/admin/bpo/worklist/BpoDetailDrawer.client.tsx,
+# components/admin/cma/worklist/CmaBoard.client.tsx, all w-[380px]): a fixed
+# master/detail split-pane width has no locked-ladder equivalent.
+components/search/MapSearchView.tsx
