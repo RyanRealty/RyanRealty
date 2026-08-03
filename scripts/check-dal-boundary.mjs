@@ -106,6 +106,16 @@ const WRITE_PATH_PREFIXES = [
   // consumer-facing, same exemption pattern as lib/tc/. Added 2026-06-27 when
   // fireTrigger was extracted as a shared library callable from multiple action paths.
   'lib/crm/',
+  // The marketing-brain runtime (lib/marketing-brain/) owns producer execution
+  // state: the marketing_brain_actions status machine, the cost ledger, and the
+  // failure log. Server-only — its only importers are app/api/**, app/admin/**
+  // and server actions; no page or component reaches it. Added 2026-08-02 for
+  // the same reason lib/crm/ was: runProducerRow was extracted out of
+  // app/api/cron/producer-runtime/route.ts (already exempt via the app/api/
+  // prefix) so the one-shot admin trigger could share it. The extraction moved
+  // 11 pre-existing calls ACROSS the boundary rather than adding any, which is
+  // why the count jumped with no new database access anywhere.
+  'lib/marketing-brain/',
 ]
 
 // Default-deny (audit p2.1): flag `.from('<table>')` for ANY lowercase snake_case
