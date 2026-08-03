@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { MOS_METHODOLOGY_CLAUSE } from '@/lib/market/classify'
 
 /**
  * CityComparisonTable — per-city market snapshot for "How {geoName} compares".
@@ -141,8 +142,18 @@ export function CityComparisonTable({
           </Table>
         </div>
 
+        {/* §0: the number in the column IS the 6-month cache figure, so the
+            footnote must state THAT formula. This line used to describe a
+            30-day-doubling method the data never used — a wrong formula
+            printed beside a correct number, live on every subdivision market
+            page (found by the 2026-08-02 audit recon; ci:market-formula now
+            scans components/ so the class cannot return). The clause is
+            imported from lib/market/classify.ts so it cannot drift from the
+            computation again, and the internal table name is gone from the
+            public copy. */}
         <p className="mt-3 text-xs text-muted-foreground">
-          Single-family homes only. Months of supply = active listings divided by (closed last 30 days times 2). Source: market_pulse_live via Oregon Data Share.
+          Single-family homes only. {MOS_METHODOLOGY_CLAUSE} Source: Oregon Data Share via Ryan
+          Realty.
         </p>
       </Container>
     </Section>

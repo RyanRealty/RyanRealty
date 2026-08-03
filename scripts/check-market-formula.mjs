@@ -18,7 +18,14 @@ const SELF = new Set([
   'scripts/check-market-formula.mjs',
 ])
 
-const files = [...walkFiles('app'), ...walkFiles('lib')].filter((f) => !SELF.has(f))
+// components/ is IN scope (added 2026-08-02). This gate's own docblock names
+// "closed last 30 days times 2" as the exact string it exists to prevent — and
+// that string shipped, live, in components/site/CityComparisonTable.tsx beside
+// a number computed with the 6-month formula, because the scan stopped at app/
+// and lib/. A presenter component is a public market surface like any page.
+const files = [...walkFiles('app'), ...walkFiles('lib'), ...walkFiles('components')].filter(
+  (f) => !SELF.has(f),
+)
 const formulaHits = files.filter((f) => BAD_FORMULA.test(readFileSync(f, 'utf8')))
 
 // Ban inline MoS verdict thresholds in the data layer (audit p0.4b) — the
