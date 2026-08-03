@@ -9,31 +9,38 @@
  * got an answer: listings.xml and matrix.xml returned http=000 with zero bytes
  * after 100s, reproduced across four attempts.
  *
- * Warming them here means the first REAL request is always a cache hit. The
- * requests are deliberately SEQUENTIAL: firing all five at once is precisely
- * the self-contention that starved the heavy classes in the first place. The
- * in-flight dedupe in app/sitemaps/[cls]/route.ts collapses them onto one
- * shared universe build, so the first child pays for the fan-out and the
- * remaining four are cheap filters over it.
+ * Warming them here means the first REAL request is always a cache hit.
+ *
+ * IN-PROCESS, NOT OVER HTTP (fixed 2026-08-02, third pass). This used to fetch
+ * the five public URLs in sequence, on the stated theory that "the in-flight
+ * dedupe collapses them onto one shared universe build". It does not. Each
+ * fetch is a separate lambda invocation with its own module scope, so the
+ * memo is never shared, and sequential calls have no in-flight overlap to
+ * dedupe anyway. Every class paid a full ~10.7K-URL fan-out.
+ *
+ * Measured in production right after deploy, sequential, cold:
+ *   core 504 @300.6s · geo 504 @300.6s · content 200 @146.7s · listings 504 @300.2s
+ *
+ * One build is ~147s. Five do not fit a 300s ceiling; one plus four in-memory
+ * filters does. Calling getClassRows() directly keeps all five inside ONE
+ * invocation, which is the only place the memo can actually apply, and writes
+ * every per-class unstable_cache entry for the hour ahead.
  *
  * Scheduled hourly in vercel.json to match the routes' revalidate: 3600.
  */
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { SITEMAP_CLASSES } from '@/lib/data/sitemap/classify'
+import { getClassRows } from '@/lib/sitemap-class-rows'
 
-// The first child in the sequence pays for the whole universe build.
+// The first class pays for the whole universe build (~147s); the rest are
+// in-memory filters over it.
 export const maxDuration = 300
 export const dynamic = 'force-dynamic'
-
-function siteBaseUrl(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-}
 
 export async function GET(req: Request) {
   const unauthorized = requireCronAuth(req)
   if (unauthorized) return unauthorized
 
-  const baseUrl = siteBaseUrl()
   const results: Array<{
     cls: string
     ok: boolean
@@ -43,22 +50,14 @@ export async function GET(req: Request) {
     error?: string
   }> = []
 
-  // Sequential on purpose — see the note above. Do not Promise.all this.
+  // Sequential and IN-PROCESS. The first call builds the universe; the other
+  // four reuse it through the module memo, which only works because all five
+  // run inside this one invocation. Do not turn this back into fetch().
   for (const cls of SITEMAP_CLASSES) {
     const startedAt = Date.now()
     try {
-      const res = await fetch(`${baseUrl}/sitemaps/${cls}.xml`, {
-        cache: 'no-store',
-        headers: { 'user-agent': 'ryan-realty-sitemap-warmer' },
-      })
-      const body = res.ok ? await res.text() : ''
-      results.push({
-        cls,
-        ok: res.ok,
-        status: res.status,
-        urls: res.ok ? (body.match(/<loc>/g) ?? []).length : null,
-        ms: Date.now() - startedAt,
-      })
+      const rows = await getClassRows(cls)
+      results.push({ cls, ok: true, status: 200, urls: rows.length, ms: Date.now() - startedAt })
     } catch (err) {
       results.push({
         cls,

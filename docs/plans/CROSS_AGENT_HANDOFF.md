@@ -96,11 +96,54 @@ This was never a discoverability defect.
    root layout but only `/activity` and `/resources` render an ad unit. Scoping it is a
    revenue-touching product call, so it is named, not changed.
 
-## Known gaps
+## The sitemap P0 is improved but NOT closed in production. Read this before touching it.
 
-- **A cold `core.xml` still costs 127.8s.** One build instead of five is the fix; making a single
-  build cheap is a separate piece of work (build per class rather than build-all-then-filter,
-  which the audit recommended and PR #28 did not do).
+Three passes have now been made at this, two of them by me, and **all three treated a symptom.**
+The real cause was measured at the end and is recorded here so the fourth pass starts in the
+right place.
+
+**What is fixed and proven:** the memo TTL bug (freshness stamped at build start against a
+60s TTL), and the warmer, which fetched the five public URLs over HTTP on the stated theory that
+the in-flight dedupe would collapse them onto one build. It cannot: each fetch is a separate
+lambda invocation with its own module scope, and sequential calls have no in-flight overlap
+anyway. The warmer now calls `getClassRows()` in-process, where the memo genuinely applies.
+
+**Production state right now, measured on the deployed commit, sequential, cold:**
+
+```
+core.xml      504  300.6s
+geo.xml       504  300.6s
+content.xml   200  146.7s   <- one build fit, on a warm instance
+listings.xml  504  300.2s
+matrix.xml    504  300.6s
+```
+
+**The actual cause: `get_subdivision_status_counts`.** `buildAllUrls` calls it once per report
+city. Timed directly against production:
+
+```
+Bend        41,254ms      Prineville   1,410ms
+Redmond     14,644ms      Madras       4,685ms
+Sisters     31,959ms      Terrebonne   3,534ms
+La Pine      4,317ms      Sunriver     2,940ms
+                          TOTAL 8 cities: 104.7s
+```
+
+That is 104.7s for eight cities before the paginated listings scan, zips, blog and reports are
+added, and there are more cities than eight. The RPC does
+`WHERE TRIM("City") ILIKE TRIM(p_city)` over a 589K-row table — an unindexable expression, the
+same class of defect commit `5bc16122` fixed for search (11.1s to 1.4s) by letting the planner
+reach the city index.
+
+**No amount of cache engineering fixes a 100s+ build.** The fourth pass should make the build
+cheap, not cache it better: source the subdivision list from `listing_tile_mv` (already indexed
+and already used elsewhere) instead of this RPC, or give the RPC an index the planner can use.
+Until then, `core.xml` will keep hitting the 300s ceiling on a cold lambda.
+
+Worth noting the audit recommended "build per class directly instead of building-all-then-
+filtering" and PR #28 dropped it. That recommendation was right.
+
+## Known gaps
 - **`fetchAllRows()` swallows per-page errors** (`lib/supabase/paginate.ts` destructures only
   `{ data }`). A mid-pagination timeout silently truncates the result for every caller, with no
   error surfaced anywhere. Found while fixing the banners page; not fixed, blast radius is wide.
