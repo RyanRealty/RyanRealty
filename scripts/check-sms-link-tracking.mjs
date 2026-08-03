@@ -38,6 +38,7 @@ const EXEMPT = new Map([
   ['lib/crm/twilio.ts', 'the provider primitive — this IS sendSms/sendSmsViaMessagingService, not a lead-facing caller'],
   ['app/api/twilio/inbound-sms/route.ts', 'forwards an inbound lead text to the BROKER cell (internal, not a lead-facing tracked send) + raw no-contact group replies with no person to key to'],
   ['app/actions/crm-template-test.ts', 'broker self-test template preview to the CALLING BROKER\'S OWN cell (sample merge data) — not a lead-facing send, no person to attribute a click to (already a NON_SENDER in the CAN-SPAM gate for the same reason)'],
+  ['lib/agent/send.ts', 'the broker SMS agent\'s only sender, and it can only reach a REGISTERED BROKER CELL — the recipient is checked against a whitelist built from brokers.forward_to_cell UNION the TWILIO_FORWARD_* env vars. Internal, never lead-facing, so there is no person to key a click to. The single-recipient invariant is not prose: scripts/check-broker-agent-send-safety.mjs AST-verifies that this file builds and applies the whitelist AND that no other module in the agent tree calls a raw sender'],
 ])
 
 // Char-by-char tokenizer: return the source with line comments, block comments,
