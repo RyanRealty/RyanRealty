@@ -3,11 +3,11 @@
   "sites": {
     "app/actions/newsletter.ts:472": {
       "kind": "internal",
-      "reason": "Internal: newsletter test-send (adminTestSendNewsletterAction) to the authenticated admin's OWN inbox (gate.email from requireAdmin()), subject prefixed [TEST]. Never a lead or subscriber — it renders the issue as-broker so the admin can preview real delivery before enqueueing. The actual audience send routes through the gated queue drain (per-row isSuppressedByEmail). Permanently allowlisted. Line shifted -45 when the preview render helpers moved to lib/newsletter/preview.ts (W2 review-surface build 2026-07-06)."
+      "reason": "Internal: newsletter test-send (adminTestSendNewsletterAction) to the authenticated admin's OWN inbox (gate.email from requireAdmin()), subject prefixed [TEST]. Never a lead or subscriber \u2014 it renders the issue as-broker so the admin can preview real delivery before enqueueing. The actual audience send routes through the gated queue drain (per-row isSuppressedByEmail). Permanently allowlisted. Line shifted -45 when the preview render helpers moved to lib/newsletter/preview.ts (W2 review-surface build 2026-07-06)."
     },
     "app/admin/(protected)/crm/inbox/page.tsx:411": {
       "kind": "internal",
-      "reason": "Internal: inbox note @mention notification to the mentioned BROKER's own ryan-realty.com mailbox (spec 08 paragraph 10.2). Never to a lead — the CRM_MAILBOXES lookup only resolves broker addresses. Client-facing sends on this page route through the gated sendCrmEmailAction. Permanently allowlisted. Line re-keyed 409->411 when the RC5 requireAdminPage('inbox.view') guard added 2 lines above it (2026-07-17)."
+      "reason": "Internal: inbox note @mention notification to the mentioned BROKER's own ryan-realty.com mailbox (spec 08 paragraph 10.2). Never to a lead \u2014 the CRM_MAILBOXES lookup only resolves broker addresses. Client-facing sends on this page route through the gated sendCrmEmailAction. Permanently allowlisted. Line re-keyed 409->411 when the RC5 requireAdminPage('inbox.view') guard added 2 lines above it (2026-07-17)."
     },
     "app/api/cma/[slug]/gmail-draft/route.ts:167": {
       "kind": "internal",
@@ -17,53 +17,25 @@
       "kind": "internal",
       "reason": "Internal: one digest email per BROKER (Matt/Rebecca/Paul), not a lead. No consent record applies; permanently allowlisted. Line re-synced in the audit cron-auth consolidation."
     },
+    "app/api/cron/loop-health-check/route.ts:368": {
+      "kind": "internal",
+      "reason": "Internal: consolidated pipeline-heartbeat staleness alert to MATT_ALERT_EMAIL/matt@ryan-realty.com only (G-heartbeat, Wave A 2026-07-21). Never a lead. Healthy runs send nothing. Line shifted 359->368 by the W1.1 westside-probe filter."
+    },
     "app/api/cron/marketing-optimization-report/route.ts:162": {
       "kind": "internal",
       "reason": "Internal: weekly marketing-optimization report to the brokerage's own inbox, not a lead. Permanently allowlisted. Line re-synced in the audit cron-auth consolidation."
     },
-    "app/api/cron/weekly-pipeline-digest/route.ts:183": {
-      "kind": "internal",
-      "reason": "Internal: weekly pipeline digest to the broker (or the admin-configured Weekly Report Recipients from Company Settings — staff addresses the owner adds, not leads). Same allowlisted site; line shifted when recipients were wired to crm_company_settings (§15 slice). Line re-synced in the audit cron-auth consolidation."
-    },
-    "app/home-valuation/actions.ts:245": {
-      "kind": "internal",
-      "reason": "Internal: new-lead notification to ADMIN_EMAIL (the brokerage), not the lead. The two LEAD-facing sends in this action (auto-CMA + acknowledgment) are gated by isSuppressedByEmail. Permanently allowlisted. Line re-keyed 201->245 when the seller-facing hang fix moved the post-response work (broker alert, auto-CMA, acknowledgment) out of the request path into runValuationFollowUp + after() (buyer-journey audit 2026-07-29). Same internal ADMIN_EMAIL send, same recipient; the two LEAD-facing sends in that function remain gated by isSuppressedByEmail."
-    },
-    "lib/deploy-health-alert.ts:53": {
-      "kind": "internal",
-      "reason": "Internal: ops alert to MATT_ALERT_EMAIL when production has fallen behind main (a stuck/failed deploy). No lead recipient. Permanently allowlisted."
-    },
-    "lib/expired-alert.ts:129": {
-      "kind": "internal",
-      "reason": "Internal: expired-listing alert to Matt's inbox (MATT_ALERT_EMAIL), not the homeowner. Permanently allowlisted. Line shifted +21 when resolveAlertFrom() + its doc block were added to fix the unverified-sender bug (expired-workflow audit 2026-07-03)."
-    },
-    "lib/fsbo-alert.ts:113": {
-      "kind": "internal",
-      "reason": "Internal: FSBO alert to Matt's inbox (MATT_ALERT_EMAIL), not the homeowner. Permanently allowlisted."
-    },
-    "lib/marketing-brain/daily-digest.ts:123": {
-      "kind": "internal",
-      "reason": "Internal: marketing-brain daily digest to Matt's inbox (MATT_ALERT_EMAIL), not a lead. Permanently allowlisted."
-    },
-    "lib/seller-lead-alert.ts:109": {
-      "kind": "internal",
-      "reason": "Internal: new seller-lead alert to Matt's inbox (MATT_ALERT_EMAIL), not the lead. Permanently allowlisted."
-    },
-    "lib/tc/signing-emails.ts:102": {
-      "kind": "internal",
-      "reason": "1:1 transactional: signing-progress / completion notice to a transaction party for one specific envelope they are a signer/broker on. CAN-SPAM transactional-message exemption; consent established by being a signing party (ESIGN/Oregon UETA). Not a marketing send."
-    },
-    "lib/tc/signing-emails.ts:53": {
-      "kind": "internal",
-      "reason": "1:1 transactional: e-signature request to a specific signer for one specific envelope and property. CAN-SPAM transactional-message exemption; the recipient is a named party to the transaction. Not a marketing send."
-    },
-    "lib/tc/signing-emails.ts:77": {
-      "kind": "internal",
-      "reason": "1:1 transactional: completed-and-signed copy (sealed PDF + certificate) to a transaction party for one specific envelope. CAN-SPAM transactional-message exemption. Not a marketing send."
-    },
     "app/api/cron/newsletter-monthly-draft/route.ts:51": {
       "kind": "internal",
-      "reason": "Internal: draft-ready notification to matt@ryan-realty.com (MATT only) after the monthly auto-draft cron writes a newsletter DRAFT. Never a lead or subscriber — the draft itself sends nothing until Matt approves and schedules it on the review page. Permanently allowlisted. Line shifted in the 2026-07-06 lifecycle-workflows integration (W5). Line re-synced in the audit cron-auth consolidation."
+      "reason": "Internal: draft-ready notification to matt@ryan-realty.com (MATT only) after the monthly auto-draft cron writes a newsletter DRAFT. Never a lead or subscriber \u2014 the draft itself sends nothing until Matt approves and schedules it on the review page. Permanently allowlisted. Line shifted in the 2026-07-06 lifecycle-workflows integration (W5). Line re-synced in the audit cron-auth consolidation."
+    },
+    "app/api/cron/weekly-pipeline-digest/route.ts:183": {
+      "kind": "internal",
+      "reason": "Internal: weekly pipeline digest to the broker (or the admin-configured Weekly Report Recipients from Company Settings \u2014 staff addresses the owner adds, not leads). Same allowlisted site; line shifted when recipients were wired to crm_company_settings (\u00a715 slice). Line re-synced in the audit cron-auth consolidation."
+    },
+    "app/home-valuation/actions.ts:246": {
+      "kind": "internal",
+      "reason": "Internal: new-lead notification to ADMIN_EMAIL (the brokerage), not the lead. The two LEAD-facing sends in this action (auto-CMA + acknowledgment) are gated by isSuppressedByEmail. Permanently allowlisted. Line re-keyed 201->245 when the seller-facing hang fix moved the post-response work (broker alert, auto-CMA, acknowledgment) out of the request path into runValuationFollowUp + after() (buyer-journey audit 2026-07-29). Same internal ADMIN_EMAIL send, same recipient; the two LEAD-facing sends in that function remain gated by isSuppressedByEmail. Line +1 (2026-08-03) when the CONTACT import replaced the hardcoded 541.213.6706 literal."
     },
     "lib/cma-deliver.ts:356": {
       "kind": "internal",
@@ -79,15 +51,43 @@
     },
     "lib/cma/request-emails.ts:73": {
       "kind": "internal",
-      "reason": "Internal: new-CMA-request notification to the assigned broker (sendBrokerNotification), not the lead — and skipped entirely for broker kick-offs (notifyBroker=false). The lead confirmation (sendLeadConfirmation) in the same module is gated by isSuppressedByEmail on both transports. Site relocated from lib/cma-request.ts:535 (history: 401 -> 434 D8 kick-off inputs, 434 -> 535 version-chain clobber guard) when the email senders were extracted for the 600-LOC file-size budget on 2026-07-17."
+      "reason": "Internal: new-CMA-request notification to the assigned broker (sendBrokerNotification), not the lead \u2014 and skipped entirely for broker kick-offs (notifyBroker=false). The lead confirmation (sendLeadConfirmation) in the same module is gated by isSuppressedByEmail on both transports. Site relocated from lib/cma-request.ts:535 (history: 401 -> 434 D8 kick-off inputs, 434 -> 535 version-chain clobber guard) when the email senders were extracted for the 600-LOC file-size budget on 2026-07-17."
+    },
+    "lib/deploy-health-alert.ts:53": {
+      "kind": "internal",
+      "reason": "Internal: ops alert to MATT_ALERT_EMAIL when production has fallen behind main (a stuck/failed deploy). No lead recipient. Permanently allowlisted."
+    },
+    "lib/expired-alert.ts:129": {
+      "kind": "internal",
+      "reason": "Internal: expired-listing alert to Matt's inbox (MATT_ALERT_EMAIL), not the homeowner. Permanently allowlisted. Line shifted +21 when resolveAlertFrom() + its doc block were added to fix the unverified-sender bug (expired-workflow audit 2026-07-03)."
+    },
+    "lib/fsbo-alert.ts:113": {
+      "kind": "internal",
+      "reason": "Internal: FSBO alert to Matt's inbox (MATT_ALERT_EMAIL), not the homeowner. Permanently allowlisted."
     },
     "lib/market-stat-alert.ts:59": {
       "kind": "internal",
       "reason": "Internal: market-stat consistency alert to MATT_ALERT_EMAIL when the one-number-per-metric contract breaks (design-audit drift gate). No lead recipient. Permanently allowlisted. Line shifted 42 -> 59 when the alert params gained subject/heading/intro/context overrides so the weekly-report generator alarm (conversion-audit 2026-07-15 #6) reuses this ONE allowlisted site instead of minting a new ungated sendEmail call."
     },
-    "app/api/cron/loop-health-check/route.ts:368": {
+    "lib/marketing-brain/daily-digest.ts:123": {
       "kind": "internal",
-      "reason": "Internal: consolidated pipeline-heartbeat staleness alert to MATT_ALERT_EMAIL/matt@ryan-realty.com only (G-heartbeat, Wave A 2026-07-21). Never a lead. Healthy runs send nothing. Line shifted 359->368 by the W1.1 westside-probe filter."
+      "reason": "Internal: marketing-brain daily digest to Matt's inbox (MATT_ALERT_EMAIL), not a lead. Permanently allowlisted."
+    },
+    "lib/seller-lead-alert.ts:109": {
+      "kind": "internal",
+      "reason": "Internal: new seller-lead alert to Matt's inbox (MATT_ALERT_EMAIL), not the lead. Permanently allowlisted."
+    },
+    "lib/tc/signing-emails.ts:103": {
+      "kind": "internal",
+      "reason": "1:1 transactional: signing-progress / completion notice to a transaction party for one specific envelope they are a signer/broker on. CAN-SPAM transactional-message exemption; consent established by being a signing party (ESIGN/Oregon UETA). Not a marketing send. Line +1 (2026-08-03) when the CONTACT import replaced the hardcoded 541.213.6706 literal."
+    },
+    "lib/tc/signing-emails.ts:54": {
+      "kind": "internal",
+      "reason": "1:1 transactional: e-signature request to a specific signer for one specific envelope and property. CAN-SPAM transactional-message exemption; the recipient is a named party to the transaction. Not a marketing send. Line +1 (2026-08-03) when the CONTACT import replaced the hardcoded 541.213.6706 literal."
+    },
+    "lib/tc/signing-emails.ts:78": {
+      "kind": "internal",
+      "reason": "1:1 transactional: completed-and-signed copy (sealed PDF + certificate) to a transaction party for one specific envelope. CAN-SPAM transactional-message exemption. Not a marketing send. Line +1 (2026-08-03) when the CONTACT import replaced the hardcoded 541.213.6706 literal."
     }
   }
 }

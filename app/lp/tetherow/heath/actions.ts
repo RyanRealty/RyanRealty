@@ -11,6 +11,7 @@ import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { resolveLeadSource, resolvePaidAttributionTags } from '@/lib/crm/lead-source'
 import { cookies, headers } from 'next/headers'
+import { CONTACT } from '@/lib/brand/contact'
 
 /**
  * Heath at Tetherow CMA form server action.
@@ -222,7 +223,7 @@ export async function submitHeathCmaForm(
     }).catch((err) => console.warn('[heath-cma] CAPI call failed:', err))
   } catch (err) {
     console.error('[heath-cma] FUB submit failed', err)
-    return { success: false, error: 'Could not submit. Try again shortly or call 541.213.6706.' }
+    return { success: false, error: `Could not submit. Try again shortly or call ${CONTACT.phoneDirect}.` }
   }
 
   return { success: true, eventId, classification }

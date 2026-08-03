@@ -93,12 +93,22 @@ export function KbFooter({
             <div className="foot-contact">
               <a href={`tel:${CONTACT.phoneDirectTel}`}>{CONTACT.phoneDirect}</a>
               <a href="mailto:matt@ryan-realty.com">matt@ryan-realty.com</a>
-              <span>Bend · Oregon</span>
+              {/* Links the place line to the actual Google Business Profile
+                  rather than leaving it inert text. GBP is the entity Google
+                  resolves the brand against, so a real link from the site is a
+                  citation signal that was simply not being spent. */}
+              <a
+                href={BRAND.social.googleBusinessProfile}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Bend · Oregon
+              </a>
             </div>
             <div className="foot-social">
-              <a href="https://instagram.com/ryanrealtybend">Instagram</a>
-              <a href="https://facebook.com/ryanrealtybend">Facebook</a>
-              <a href="https://youtube.com/@ryanrealtybend">YouTube</a>
+              <a href={BRAND.social.instagram}>Instagram</a>
+              <a href={BRAND.social.facebook}>Facebook</a>
+              <a href={BRAND.social.youtube}>YouTube</a>
             </div>
           </div>
           {KB_FOOTER_COLUMNS.map((col) => (

@@ -1,5 +1,6 @@
 // @no-parity — focused public e-signing shell, not a marketing route
 import type { ReactNode } from 'react'
+import { CONTACT } from '@/lib/brand/contact'
 
 /**
  * Minimal, distraction-free shell for the client signing experience. The
@@ -23,7 +24,7 @@ export default function SignLayout({ children }: { children: ReactNode }) {
       </header>
       <div className="flex-1">{children}</div>
       <footer className="border-t border-border px-4 py-5 text-center text-xs text-muted-foreground">
-        Ryan Realty · Bend · Oregon · 541.213.6706 · ryan-realty.com
+        Ryan Realty · Bend · Oregon · {CONTACT.phoneDirect} · ryan-realty.com
       </footer>
     </div>
   )

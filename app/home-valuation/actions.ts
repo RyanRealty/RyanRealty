@@ -8,6 +8,7 @@ import { sendEmail } from '@/lib/resend'
 import { getCachedCMA, computeCMA } from '@/lib/cma'
 import { createServiceClient } from '@/lib/supabase/service'
 import { CMAPdfDocument } from '@/lib/pdf/cma-pdf'
+import { CONTACT } from '@/lib/brand/contact'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
@@ -363,7 +364,7 @@ async function runValuationFollowUp(ctx: {
         'Thanks again,',
         'Matt Ryan',
         'Ryan Realty',
-        '541.213.6706',
+        CONTACT.phoneDirect,
         'ryan-realty.com',
       ].join('\n'),
     }).catch((err) => console.warn('[valuation] acknowledgment email failed (non-blocking):', err))

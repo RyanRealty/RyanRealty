@@ -5,6 +5,7 @@
  */
 import { sendEmail } from '@/lib/resend'
 import { EMAIL_FONT_STACK, EMAIL_NAVY, EMAIL_CREAM } from '@/lib/email/brand'
+import { CONTACT } from '@/lib/brand/contact'
 
 const NAVY = EMAIL_NAVY
 const CREAM = EMAIL_CREAM
@@ -25,7 +26,7 @@ function shell(opts: { heading: string; bodyHtml: string; cta?: { label: string;
           ${button}
           <tr><td style="padding-top:28px;border-top:1px solid rgba(16,39,66,0.08);margin-top:24px;font-size:12px;color:rgba(16,39,66,0.55);line-height:1.6;">
             Ryan Realty · Bend · Oregon<br/>
-            541.213.6706 · ryan-realty.com
+            ${CONTACT.phoneDirect} · ryan-realty.com
           </td></tr>
         </table>
       </td></tr>

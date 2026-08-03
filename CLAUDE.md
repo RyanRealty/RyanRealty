@@ -213,10 +213,9 @@ with a specific concrete fact, or cut it.
 - **"You/your"** is the subject (the reader). **"We/our team"** for brokerage identity.
   **"I"** only when the content is genuinely first-person from Matt (a video VO, a personal
   letter, a review response).
-- **Phone:** `541.213.6706` (dotted, brand voice — Matt's direct).
-  **Bio phone (attribution-tracked):** `541.703.3095` — use on social profiles, ads, and any
-  inbound lead-capture surface so calls carry attribution. Matt's ported primary Twilio line;
-  lands in the in-house CRM.
+- **Phone:** `541.703.3095` is the SOLE public number (2026-06-24 Twilio cutover). Ported, so
+  calls carry attribution into the CRM. `541.213.6706` is a private forward target, never
+  public. Import `CONTACT.phoneDirect` from `lib/brand/contact.ts`, never type it (G38).
 - **Web:** `ryan-realty.com` (hyphenated, lowercase). **Place separator:** middle dot `·` —
   `BEND · OREGON`.
 - **Social handles (LOCKED 2026-05-13):** `@ryanrealtybend` on every platform (IG, TikTok,
