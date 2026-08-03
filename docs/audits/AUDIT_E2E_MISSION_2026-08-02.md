@@ -139,3 +139,40 @@ returned a full histogram for the same origin in the same minute. PSI's
 `loadingExperience` is URL-scoped and falls back inconsistently. Trusting PSI
 would have written "insufficient sample size" into the record as the answer, and
 it was wrong. The script queries CrUX directly.
+
+---
+
+# Phase 3 — every remaining roadmap item (2026-08-03)
+
+Matt: "I told you to work /endtoend on all of these items, no stopping."
+
+Nine items open at phase-3 start: 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, plus the
+sitemap root cause carried from phase 1. Item 21 closed in phase 2.
+
+## What exists when finished
+
+| # | Done means |
+|---|---|
+| **sitemap** | `buildAllUrls` no longer calls `get_subdivision_status_counts` per city (104.7s for 8 cities). Subdivision slugs come from `listing_tile_mv`, which is indexed. All five children serve **in production**, not just locally |
+| **11** | 13 Bend neighborhoods + 14 resort communities carry long-form editorial. No market figures in static prose (live components own every number); durable facts only; sources listed. Gated, not promised |
+| **12** | `/data/<geo>.json` per geography: the published figures, the formula, the period, the source, `Content-Type: application/json`, linked from the page it describes |
+| **13** | Every `/housing-market/*` surface emits `Dataset`. Measured coverage, not assumed |
+| **14** | Outbound citations to OHCS / Census / BLS / FRED / ORMLS on the market surfaces, from a shared component so they cannot drift |
+| **15** | `/faq` emits `FAQPage` JSON-LD (it emits none today), and its answers exist as standalone indexable pages |
+| **16** | `/homes-for-sale` under 1 MB and **ratcheted** so it cannot silently regrow. It drifted 996 KB → 1,019,774 bytes with nobody watching |
+| **17** | The weekly market report exists as a press-citable artifact with a drafted pitch. **NOT SENT** — §1 class 1, Matt's approval per send |
+| **18** | "Months of supply in Central Oregon" is a defined term with its own citable URL |
+| **19** | NAP/profile audit done and a correction packet prepared. **NO OAuth grant performed** — §1 class 4 |
+| **20** | An annual Central Oregon market review, published, linkable, every figure §0-traced |
+
+## The bar
+
+Every number traced live (§0). Brand voice clean. Gates green. Rendered HTML
+checked for what the item claims. Production-verified where production is the
+claim. Pushed on main.
+
+## Approval boundary, stated up front
+
+17 and 19 get built to the edge and stop there. An outbound press pitch and an
+OAuth grant are §1 per-action classes; canon outranks this protocol. The
+deliverable is the artifact plus the draft, not the send.
