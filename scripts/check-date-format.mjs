@@ -2,10 +2,18 @@
 /**
  * check-date-format.mjs (ci:date-format) — audit p1.4.
  *
- * Dates should format through lib/format/date.ts (formatDate / formatDateTime,
- * brand timezone), not inline `toLocaleDateString` / `Intl.DateTimeFormat`.
- * Ratchet: existing inline formatters are baselined; NEW ones fail. Baseline
- * may only shrink as call sites migrate.
+ * Dates DISPLAYED to a human should format through lib/format/date.ts
+ * (formatDate / formatDateTime, brand timezone), not inline
+ * `toLocaleDateString` / `Intl.DateTimeFormat`. Ratchet: existing inline
+ * formatters are baselined; NEW ones fail. Baseline may only shrink.
+ *
+ * ESCAPE (added 2026-08-02): `// date-format-ok: <reason>`. Intl.DateTimeFormat
+ * is also the only correct way to do timezone ARITHMETIC — `formatToParts` to
+ * pull y/m/d and build a UTC day window, for instance. That produces no
+ * user-visible string, so lib/format/date.ts cannot serve it and the rule does
+ * not apply. Founding case: lib/data/agent/cost-ledger.ts computing the
+ * America/Los_Angeles day boundary for a spend query. A reason is required, so
+ * the escape stays auditable rather than becoming a silent opt-out.
  *
  * Usage:
  *   node scripts/check-date-format.mjs                  # check
@@ -21,7 +29,13 @@ const INLINE_DATE = /\.toLocaleDateString\(|Intl\.DateTimeFormat\(/
 const files = [...walkFiles('app'), ...walkFiles('lib'), ...walkFiles('components')].filter(
   (f) => !f.startsWith('lib/format/') && !/\.test\.(ts|tsx)$/.test(f),
 )
-const offenders = files.filter((f) => INLINE_DATE.test(readFileSync(f, 'utf8'))).sort()
+const OK_MARKER = /date-format-ok:\s*\S/
+const offenders = files
+  .filter((f) => {
+    const src = readFileSync(f, 'utf8')
+    return INLINE_DATE.test(src) && !OK_MARKER.test(src)
+  })
+  .sort()
 
 if (WRITE) {
   writeFileSync(BASELINE, JSON.stringify({ note: 'Files with inline date formatting — migrate to lib/format/date.ts. Count may only shrink.', files: offenders }, null, 2) + '\n')

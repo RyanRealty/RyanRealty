@@ -63,7 +63,16 @@ function laOffsetMinutes(reference: Date): number {
   return sign * (hours * 60 + minutes)
 }
 
-/** The [start, end) UTC instants bounding "today" in America/Los_Angeles. */
+/**
+ * The [start, end) UTC instants bounding "today" in America/Los_Angeles.
+ *
+ * date-format-ok: timezone ARITHMETIC, not display. Intl.DateTimeFormat is used
+ * with formatToParts to pull the y/m/d components of the local civil day so the
+ * UTC window can be computed; nothing here produces a user-visible string, so
+ * lib/format/date.ts (which formats FOR DISPLAY in the brand timezone) is the
+ * wrong tool. Doing this with local Date getters would use the SERVER's zone and
+ * silently shift the spend window on any non-Pacific host.
+ */
 export function laDayWindowUtc(now: Date = new Date()): { startUtc: string; endUtc: string } {
   const fmt = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Los_Angeles',
