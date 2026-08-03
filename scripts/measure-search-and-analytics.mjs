@@ -219,42 +219,59 @@ if (ga4Property) {
   say('\n[SKIP] GA4 — GOOGLE_GA4_PROPERTY_ID not set')
 }
 
-// ── Core Web Vitals field data ───────────────────────────────────────────────
-// Both routes to CrUX were blocked on 2026-08-02: the CrUX API is not enabled on
-// the project key, and the anonymous PSI quota was exhausted. Reported rather
-// than silently omitted, so "no CWV row" never reads as "CWV is fine".
-say(''); say(BAR); say('CORE WEB VITALS — CrUX field data via PageSpeed Insights'); say(BAR)
+// ── Core Web Vitals field data (CrUX API) ────────────────────────────────────
+// Queries the Chrome UX Report API DIRECTLY, not PageSpeed Insights. PSI embeds
+// a CrUX view but reported "no field data" for this origin on 2026-08-02 while
+// the CrUX API returned a full histogram for the same origin in the same
+// minute — PSI's loadingExperience is URL-scoped and falls back inconsistently.
+// The CrUX API is the source of record for field data, so ask it.
+//
+// Needs GOOGLE_CRUX_API_KEY (GCP project ryanrealty, Chrome UX Report API +
+// PageSpeed Insights API enabled 2026-08-02). Without it the anonymous quota
+// 429s on every call.
+say(''); say(BAR); say('CORE WEB VITALS — CrUX field data (Chrome UX Report API)'); say(BAR)
 out.cwv = {}
-for (const strategy of ['mobile', 'desktop']) {
-  try {
-    const res = await fetch(
-      `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent('https://ryan-realty.com/')}&strategy=${strategy}`,
-      { signal: AbortSignal.timeout(180_000) }
-    )
-    if (!res.ok) {
-      const detail = res.status === 429
-        ? 'anonymous quota exhausted — enable the PageSpeed Insights or Chrome UX Report API on the project and use a key'
-        : (await res.text()).slice(0, 160)
-      say(`  [${strategy}] HTTP ${res.status}: ${detail}`)
-      out.cwv[strategy] = { measured: false, reason: `HTTP ${res.status}` }
-      continue
+const cruxKey = process.env.GOOGLE_CRUX_API_KEY
+if (!cruxKey) {
+  say('  [SKIP] GOOGLE_CRUX_API_KEY not set — the anonymous PSI quota 429s, so this is unmeasurable without it.')
+  out.cwv = { measured: false, reason: 'GOOGLE_CRUX_API_KEY not set' }
+} else {
+  const GOOD = { largest_contentful_paint: 2500, interaction_to_next_paint: 200, cumulative_layout_shift: 0.1,
+                 first_contentful_paint: 1800, experimental_time_to_first_byte: 800 }
+  for (const formFactor of ['PHONE', 'DESKTOP', null]) {
+    const label = formFactor ? formFactor.toLowerCase() : 'all form factors'
+    try {
+      const res = await fetch(
+        `https://chromeuxreport.googleapis.com/v1/records:queryRecord?key=${cruxKey}`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ origin: 'https://ryan-realty.com', ...(formFactor ? { formFactor } : {}) }),
+          signal: AbortSignal.timeout(60_000),
+        }
+      )
+      if (!res.ok) {
+        const detail = (await res.text()).slice(0, 200)
+        say(`  [${label}] HTTP ${res.status}: ${detail}`)
+        out.cwv[label] = { measured: false, reason: `HTTP ${res.status}` }
+        continue
+      }
+      const d = await res.json()
+      const metrics = d.record?.metrics ?? {}
+      out.cwv[label] = { measured: true, period: d.record?.collectionPeriod ?? null, metrics: {} }
+      say(`  [${label}]`)
+      for (const [name, m] of Object.entries(metrics)) {
+        const p75 = m.percentiles?.p75
+        if (p75 === undefined) continue
+        const good = GOOD[name]
+        const verdict = good === undefined ? '' : (Number(p75) <= good ? '  GOOD' : '  NEEDS WORK')
+        out.cwv[label].metrics[name] = { p75, threshold: good ?? null }
+        say(`      ${name.padEnd(34)} p75=${String(p75).padStart(8)}${verdict}`)
+      }
+    } catch (err) {
+      say(`  [${label}] error: ${String(err.message).slice(0, 160)}`)
+      out.cwv[label] = { measured: false, reason: String(err.message).slice(0, 160) }
     }
-    const d = await res.json()
-    const src = d.loadingExperience?.metrics ? d.loadingExperience : d.originLoadingExperience
-    if (!src?.metrics) {
-      say(`  [${strategy}] no CrUX field data for this origin`)
-      out.cwv[strategy] = { measured: false, reason: 'no field data' }
-      continue
-    }
-    say(`  [${strategy}] overall=${src.overall_category}`)
-    out.cwv[strategy] = { measured: true, overall: src.overall_category, metrics: {} }
-    for (const [name, v] of Object.entries(src.metrics)) {
-      out.cwv[strategy].metrics[name] = { p75: v.percentile, category: v.category }
-      say(`      ${name.padEnd(36)} p75=${String(v.percentile).padStart(7)}  ${v.category}`)
-    }
-  } catch (err) {
-    say(`  [${strategy}] error: ${String(err.message).slice(0, 160)}`)
-    out.cwv[strategy] = { measured: false, reason: String(err.message).slice(0, 160) }
   }
 }
 

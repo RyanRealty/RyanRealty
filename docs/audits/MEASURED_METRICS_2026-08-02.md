@@ -178,26 +178,50 @@ of scope here and not investigated.
 
 ---
 
-## 4. The one metric still not measured
+## 4. Core Web Vitals — now measured (was the last gap)
 
-**Core Web Vitals field data.** Blocked twice, on two different paths:
+The Chrome UX Report API and PageSpeed Insights API were **enabled on the
+`ryanrealty` GCP project on 2026-08-02**, and a key restricted to exactly those
+two APIs is stored as `GOOGLE_CRUX_API_KEY` in `.env.local` (gitignored). The
+earlier 403/429 wall is gone.
 
-- The CrUX API rejects the available key: `403 — Requests to this API chromeuxreport.googleapis.com
-  … are blocked`. The key present in the environment is the Maps key, which does not have the CrUX
-  API enabled.
-- The PageSpeed Insights API returns `429 — Quota exceeded for quota metric 'Queries' … of service
-  'pagespeedonline.googleapis.com'` on the shared anonymous quota, on four attempts across two form
-  factors with a 45s backoff.
+**Real field data, from actual Chrome users on ryan-realty.com** (origin-level,
+all form factors — Google has no separate PHONE or DESKTOP record for this
+origin yet, both return 404 `chrome ux report data not found`, which is a
+sample-size limit not an error):
 
-There is no Search Console API surface for the Core Web Vitals report, so this cannot be routed
-around.
+| Metric | p75 | Good threshold | Verdict |
+|---|---|---|---|
+| Cumulative Layout Shift | **0.00** | ≤ 0.1 | **Good** |
+| Time to First Byte (experimental) | **292 ms** | ≤ 800 ms | **Good** |
+| First Contentful Paint | **2,042 ms** | ≤ 1,800 ms | Needs work |
+| **Largest Contentful Paint** | **2,692 ms** | ≤ 2,500 ms | **Needs work** |
+| Round-trip time | 99 ms | — | — |
 
-**One-step fix:** enable the *Chrome UX Report API* (and/or *PageSpeed Insights API*) on the
-`ryanrealty` Google Cloud project and issue a key with it enabled. Both are free. Then
-`scripts/` can pull p75 LCP/INP/CLS directly. Until then CWV stays a lab-only proxy, as the audit
-had it.
+**The LCP breakdown names the culprit precisely:**
 
----
+```
+LCP image time to first byte        278 ms
+LCP image resource LOAD DELAY     1,239 ms   <- 46% of the whole LCP
+LCP image resource load duration    615 ms
+LCP image element render delay      517 ms
+```
+
+TTFB is excellent (292 ms, matching the audit's 0.25–0.64 s server timing). The
+LCP miss is **not** a server problem: 1,239 ms is spent waiting before the hero
+image request even starts. That is a discovery/priority problem in the critical
+path — the image is not being fetched early enough — and it is the single
+highest-leverage CWV fix available. The audit's "LCP readiness (proxy) — Good,
+`preload` on hero + 3 fonts, `fetchPriority=high`" was optimistic: the preload
+exists and the browser still waits 1.2 s to start the request.
+
+Reproduce: `node scripts/measure-search-and-analytics.mjs` (queries the CrUX API
+directly — PSI's embedded CrUX view reported "no field data" for this origin in
+the same minute the CrUX API returned a full histogram, because PSI's
+`loadingExperience` is URL-scoped and falls back inconsistently. The CrUX API is
+the source of record).
+
+**Still not measured:** backlink profile — needs Ahrefs/Semrush, no access.
 
 ## 5. Scorecard rows the audit could not fill
 
@@ -209,7 +233,7 @@ had it.
 | Dwell | Not measured | 787s average session |
 | Non-brand SERP presence | "0 of 4 queries" | 1,769 non-brand queries, 9,483 impressions, 15 clicks, 83.4% at position 11+ |
 | Search clicks / impressions | Not measured | 467 / 35,451, CTR 1.32%, avg position 14.5 |
-| Core Web Vitals field data | Not measured | **Still not measured** — API not enabled (§4) |
+| Core Web Vitals field data | Not measured | **Measured** (§4): CLS 0.00 good, TTFB 292ms good, LCP 2,692ms needs work — 1,239ms of it is image load delay |
 | Backlink profile | Not measured | **Still not measured** — needs Ahrefs/Semrush, no access |
 
 ---
@@ -224,7 +248,7 @@ had it.
 3. **The goal metric is average position on non-brand queries, not appearance.** The site appears
    35,451 times a month. Moving the 908 queries in the 21–50 bucket up is the measurable objective,
    and Search Console can now report it every cycle.
-4. **Enable the CrUX API** so the last proxy becomes measured.
+4. **CrUX is enabled and LCP is the finding.** 1,239 ms of the 2,692 ms LCP is image resource load DELAY — the hero image request starts late despite a preload. That is the highest-leverage CWV fix and it is a discovery/priority problem, not a server one (TTFB is 292 ms).
 
 ## Reproducing
 
