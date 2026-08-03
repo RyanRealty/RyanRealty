@@ -38,14 +38,14 @@ const usdK = (v: number | null | undefined) =>
   v == null ? '—' : `$${Math.round(v / 1000).toLocaleString()}K`
 const pct = (v: number | null | undefined, d = 1) => (v == null ? '—' : `${v.toFixed(d)}%`)
 
-type SortKey = 'dscr' | 'cashFlow' | 'delta' | 'price' | 'coc'
+type SortKey = 'dealScore' | 'dscr' | 'cashFlow' | 'delta' | 'price' | 'coc'
 
 export function DscrScreen({ rows, assumptions }: { rows: DscrRow[]; assumptions: Record<string, number> }) {
   const [county, setCounty] = useState('all')
   const [minDscr, setMinDscr] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
   const [strOnly, setStrOnly] = useState(false)
-  const [sortKey, setSortKey] = useState<SortKey>('dscr')
+  const [sortKey, setSortKey] = useState<SortKey>('dealScore')
 
   const counties = useMemo(
     () => Array.from(new Set(rows.map((r) => r.county).filter(Boolean))).sort() as string[],
@@ -63,6 +63,7 @@ export function DscrScreen({ rows, assumptions }: { rows: DscrRow[]; assumptions
       return true
     })
     const by: Record<SortKey, (a: DscrRow, b: DscrRow) => number> = {
+      dealScore: (a, b) => (b.dealScore ?? -1) - (a.dealScore ?? -1),
       dscr: (a, b) => (b.dscr ?? -1) - (a.dscr ?? -1),
       cashFlow: (a, b) => (b.cashFlowMonthly ?? -Infinity) - (a.cashFlowMonthly ?? -Infinity),
       delta: (a, b) => (b.priceDeltaPct ?? -Infinity) - (a.priceDeltaPct ?? -Infinity),
@@ -131,6 +132,7 @@ export function DscrScreen({ rows, assumptions }: { rows: DscrRow[]; assumptions
             <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
               <SelectTrigger id="sort" className="mt-1"><SelectValue /></SelectTrigger>
               <SelectContent>
+                <SelectItem value="dealScore">Best deal (composite)</SelectItem>
                 <SelectItem value="dscr">Best DSCR</SelectItem>
                 <SelectItem value="cashFlow">Best cash flow</SelectItem>
                 <SelectItem value="delta">Smallest price gap</SelectItem>
@@ -156,6 +158,7 @@ export function DscrScreen({ rows, assumptions }: { rows: DscrRow[]; assumptions
             <TableHeader>
               <TableRow>
                 <TableHead className="w-72">Property</TableHead>
+                <TableHead className="text-right">Score</TableHead>
                 <TableHead className="text-right">Price</TableHead>
                 <TableHead className="text-right">Rent</TableHead>
                 <TableHead className="text-right">PITIA</TableHead>
@@ -189,6 +192,9 @@ export function DscrScreen({ rows, assumptions }: { rows: DscrRow[]; assumptions
                         {r.strPermit ? <Badge variant="secondary" className="mt-1">STR</Badge> : null}
                       </div>
                     </div>
+                  </TableCell>
+                  <TableCell className="text-right font-semibold tabular-nums">
+                    {r.dealScore?.toFixed(1) ?? <span className="font-normal text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">{usdK(r.price)}</TableCell>
                   <TableCell className="text-right tabular-nums">
@@ -239,6 +245,20 @@ export function DscrScreen({ rows, assumptions }: { rows: DscrRow[]; assumptions
               Showing the top 300 of {filtered.length.toLocaleString()}. Narrow the filters to see more.
             </p>
           ) : null}
+          <div className="space-y-1 border-t border-border p-4 text-xs text-muted-foreground">
+            <p>
+              <strong className="text-foreground">Score</strong> ranks each property against current
+              inventory on four measures: cash-on-cash return (40%), DSCR headroom over 1.00 (25%),
+              monthly cash flow in dollars (20%), and price margin against asking (15%). A property with
+              no rent estimate is left unscored rather than scored zero.
+            </p>
+            <p>
+              DSCR is the lender&apos;s test and ignores operating costs, so roughly{' '}
+              <strong className="text-foreground">1.30</strong> is where a property actually breaks even.
+              Rent on manufactured homes is the least reliable figure here, since the comp sets behind it
+              are thin.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

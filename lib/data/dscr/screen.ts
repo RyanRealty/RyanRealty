@@ -94,6 +94,58 @@ export interface DscrRow {
   /** Dollars off asking required to get there. Negative = must come down. */
   priceDelta: number | null
   priceDeltaPct: number | null
+
+  /**
+   * Composite 0–100 "best investment" rank. Null when the property has no rent
+   * estimate — an unknown is not a bad deal, and scoring it 0 would bury it.
+   */
+  dealScore: number | null
+}
+
+/** Deal Score weights. Printed on the surface so the ranking is auditable. */
+export const DEAL_SCORE_WEIGHTS = {
+  cashOnCash: 0.4,
+  dscrHeadroom: 0.25,
+  cashFlow: 0.2,
+  priceMargin: 0.15,
+} as const
+
+/**
+ * Percentile rank of each value within the set (0–1). Ranking against current
+ * inventory rather than an absolute scale answers the real question — "best
+ * among what is buyable right now" — and stays meaningful as the market moves.
+ * Ties share the lower rank.
+ */
+function percentileRanks(values: number[]): number[] {
+  const sorted = [...values].sort((a, b) => a - b)
+  const idx = new Map<number, number>()
+  for (let i = 0; i < sorted.length; i++) if (!idx.has(sorted[i])) idx.set(sorted[i], i)
+  const denom = Math.max(1, sorted.length - 1)
+  return values.map((v) => (idx.get(v) ?? 0) / denom)
+}
+
+/** Assigns dealScore in place across the scored subset. Exported for testing. */
+export function applyDealScores(rows: DscrRow[]): void {
+  const scored = rows.filter(
+    (r) => r.dscr != null && r.cashFlowMonthly != null && r.cashOnCashPct != null && r.priceDeltaPct != null,
+  )
+  if (scored.length === 0) return
+
+  const coc = percentileRanks(scored.map((r) => r.cashOnCashPct as number))
+  const head = percentileRanks(scored.map((r) => (r.dscr as number) - 1))
+  const cf = percentileRanks(scored.map((r) => r.cashFlowMonthly as number))
+  const margin = percentileRanks(scored.map((r) => r.priceDeltaPct as number))
+
+  scored.forEach((r, i) => {
+    r.dealScore =
+      Math.round(
+        (coc[i] * DEAL_SCORE_WEIGHTS.cashOnCash +
+          head[i] * DEAL_SCORE_WEIGHTS.dscrHeadroom +
+          cf[i] * DEAL_SCORE_WEIGHTS.cashFlow +
+          margin[i] * DEAL_SCORE_WEIGHTS.priceMargin) *
+          1000,
+      ) / 10
+  })
 }
 
 function monthlyPI(loan: number, annualRatePct: number, years: number): number {
@@ -224,9 +276,13 @@ export async function getDscrScreen(
       maxPriceForDscr,
       priceDelta: maxPriceForDscr != null ? maxPriceForDscr - price : null,
       priceDeltaPct: maxPriceForDscr != null ? (maxPriceForDscr / price - 1) * 100 : null,
+
+      dealScore: null,
     }
   })
 
-  // Best first: scored properties by DSCR desc, unscored last.
-  return rows.sort((x, y) => (y.dscr ?? -1) - (x.dscr ?? -1))
+  applyDealScores(rows)
+
+  // Best first by composite score; unscored (no rent estimate) sink to the end.
+  return rows.sort((x, y) => (y.dealScore ?? -1) - (x.dealScore ?? -1))
 }

@@ -154,6 +154,7 @@ export const DESTINATIONS: NavDestination[] = [
       { label: 'Deals', href: '/admin/deals', icon: 'handshake', capability: 'transactions.view' },
       { label: 'Commissions', href: '/admin/commissions', icon: 'dollar', capability: 'commissions.view' },
       { label: 'Financials', href: '/admin/financials', icon: 'wallet', capability: 'financials.view' },
+      { label: 'DSCR deals', href: '/admin/dscr', icon: 'trending-up', capability: 'financials.view' },
       { label: 'Forms', href: '/admin/forms', icon: 'file-text', capability: 'transactions.edit' },
     ],
   },
