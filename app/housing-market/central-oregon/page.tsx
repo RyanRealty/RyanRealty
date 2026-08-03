@@ -422,7 +422,7 @@ export default async function CentralOregonRegionPage() {
         {/* Market HUD — region KbMarketData. §0: all figures from market_pulse_live
             (region row) and market_stats_cache (price history). yearSeries built
             from completePriceMonths via buildYearSeries, same pattern as city page. */}
-        <KbMarketHud data={marketData} eyebrow="Central Oregon · The market" />
+        <KbMarketHud data={marketData} eyebrow="Central Oregon · The market" geoName="Central Oregon" asOf={pulse?.refreshedAt ?? null} />
 
         {/* City tiles — per-city active counts from ONE getMarketPulseCitySnapshots
             call. §0: every count is the exact active_count from market_pulse_live. */}

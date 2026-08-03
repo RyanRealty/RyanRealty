@@ -482,7 +482,7 @@ export default async function CityDetailPage({ params }: Props) {
         {aboutParagraphs.length > 0 ? (
           <KbAbout eyebrow={`${cityName} · Oregon`} heading={`Living in ${cityName}`} paragraphs={aboutParagraphs} facts={aboutFacts} />
         ) : null}
-        <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} byTownKind="neighborhood" />
+        <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} geoName={cityName} asOf={pulse?.refreshedAt ?? null} byTownKind="neighborhood" />
         {coreCharts ? (
           <section className="section" aria-label={`${cityName} market trend charts`}>
             <div className="wrap py-10 sm:py-14">

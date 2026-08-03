@@ -452,7 +452,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         ) : null}
         <KbMarketHud
           data={marketData}
-          eyebrow={`${neighborhood.name} · The market`}
+          eyebrow={`${neighborhood.name} · The market`} geoName={neighborhood.name} asOf={pulse?.refreshedAt ?? null}
           chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
         />
         {subdivisionItems.length > 0 ? (

@@ -817,7 +817,7 @@ export default async function CommunityDetailPage({ params }: Props) {
             HUD section, not a second stacked headed section. */}
         <KbMarketHud
           data={marketData}
-          eyebrow={`${community.name} · The market`}
+          eyebrow={`${community.name} · The market`} geoName={community.name} asOf={pulse?.refreshedAt ?? null}
           chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
         >
           {coreCharts ? (

@@ -398,7 +398,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
             are not cached; the data is city-scoped, not fabricated as ZIP. */}
         <KbMarketHud
           data={marketData}
-          eyebrow={`${zip} · The market`}
+          eyebrow={`${zip} · The market`} geoName={`ZIP ${zip}`}
           chartScopeLabel={`${cityName} (city)`}
         />
 

@@ -606,7 +606,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
               (city row) and market_stats_cache (price history). yearSeries built
               from completePriceMonths via buildYearSeries, same pattern as the
               region and city pages. */}
-          <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} />
+          <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} geoName={cityName} asOf={pulse?.refreshedAt ?? null} />
 
           {/* W8.4 timeframe selector — YTD default; each period is a pre-fetched
               market_stats_cache row (§0-traced, formats only). */}

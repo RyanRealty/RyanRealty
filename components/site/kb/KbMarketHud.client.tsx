@@ -40,6 +40,7 @@ export function KbMarketHud({
   eyebrow = 'The market',
   chartScopeLabel,
   asOf,
+  geoName,
   byTownKind = 'town',
   children,
 }: {
@@ -73,6 +74,22 @@ export function KbMarketHud({
    * the moment a region page fed 7+ real cities (design-audit #115).
    */
   byTownKind?: 'town' | 'neighborhood'
+  /**
+   * The geography this section reports on, e.g. "Bend" or "Awbrey Butte".
+   * When set alongside a live verdict, the section heading becomes the QUESTION
+   * a reader actually types ("Is Bend a buyer's or seller's market?") and the
+   * verdict stamp plus months-of-supply directly beneath is the answer.
+   *
+   * Audit item 10 (2026-08-02): the heading was the fixed phrase "The market, on
+   * record" on every geography, which names no place and answers no question.
+   * buildMarketFaq already emits this exact question, but only as an h3 far down
+   * the page inside the FAQ block. Putting it on the section a reader lands on
+   * is the point.
+   *
+   * Falls back to the original heading when absent, or when no verdict exists,
+   * because a question with no answer under it is worse than a label (§0).
+   */
+  geoName?: string | null
 }) {
   const root = useRef<HTMLElement>(null)
   const pathname = usePathname()
@@ -161,9 +178,15 @@ export function KbMarketHud({
         <div className="sec-head">
           <span className="sec-index">{eyebrow}</span>
           <h2 className="sec-title display">
-            The market,
-            <br />
-            on record
+            {geoName && verdict ? (
+              `Is ${geoName} a buyer's or seller's market?`
+            ) : (
+              <>
+                The market,
+                <br />
+                on record
+              </>
+            )}
           </h2>
         </div>
 
