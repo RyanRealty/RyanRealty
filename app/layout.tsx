@@ -104,10 +104,18 @@ export default function RootLayout({
       <head>
         <GTMHead />
         <link rel="manifest" href="/manifest.json" />
-        {/* Preload hero poster for instant LCP. LP routes don't use it but
-            the extra preload is cheap (browser drops on no-match). Keeping
-            this in the static shell preserves the prerender. */}
-        <link rel="preload" as="image" href="/images/hero-poster.webp" fetchPriority="high" />
+        {/* NO hero preload here, deliberately (2026-08-02).
+            This used to preload /images/hero-poster.webp at fetchPriority=high
+            on EVERY route, and no hero renders that file — it is a pulse brand
+            card (lib/pulse-brand-cards.ts). The hero the site actually paints is
+            KbHero's posterSrc, /images/hero/hero-old-mill-master-4k.jpg at
+            685 KB, which had no preload at all.
+            Measured consequence, CrUX field data: LCP p75 2,692 ms, of which
+            1,239 ms is image resource LOAD DELAY — 46% of the metric spent
+            before the request even starts, while a 12 KB file nothing displays
+            was fetched at top priority.
+            KbHero now preloads its OWN posterSrc, so each route preloads the
+            image that route actually paints. React hoists the link into head. */}
         {/* Spark listing photos serve from this CDN on nearly every route
             (homepage tiles, search, listing detail). Preconnect warms the
             TCP+TLS handshake before the first <img> request fires. */}

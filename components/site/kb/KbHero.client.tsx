@@ -163,6 +163,17 @@ export function KbHero({
 
   return (
     <section className={formSlot ? 'hero has-form' : 'hero'} id="top" ref={root}>
+      {/* Preload THIS hero's poster, the image this route actually paints.
+          It is the LCP element on every KB page, whether it renders as the
+          <video poster> or the fallback <img>, and until 2026-08-02 nothing
+          preloaded it: app/layout.tsx preloaded /images/hero-poster.webp, a
+          12 KB pulse brand card no hero displays. CrUX measured the cost.
+          LCP p75 2,692 ms with 1,239 ms of it image resource LOAD DELAY,
+          meaning time elapsed before the request even started.
+          posterSrc is per-route, so this belongs here rather than in the
+          shared layout, which cannot know which hero a route will paint.
+          React hoists rel=preload into <head>. */}
+      <link rel="preload" as="image" href={posterSrc} fetchPriority="high" />
       <div className="hero-photo" data-parallax>
         {showVideo ? (
           <video
