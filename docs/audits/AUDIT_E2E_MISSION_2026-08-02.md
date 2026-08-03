@@ -122,3 +122,20 @@ mechanical gates plus a §0 trace; full ci:gates + build green; pushed on main.
 The sitemap build-cost root cause (104.7s RPC — needs the listing_tile_mv
 re-source, its own pass). The sibling session's three TOAST migrations (heavy
 MV rebuilds with their own apply plan). Audit items 12–21 beyond the above.
+
+## Phase 2 progress
+
+| Time | Event |
+|---|---|
+| 19:05 | **§0 formula fixed.** `CityComparisonTable` footnoted a 30-day-doubling MoS method beside a 6-month-formula number, on every subdivision market page. Now renders `MOS_METHODOLOGY_CLAUSE`; `ci:market-formula` scans `components/` as of this commit (it had only scanned `app/` + `lib/`, which is how the exact string its own docblock names got shipped) |
+| 19:20 | **Item 1 done, verified live.** Migration applied to production. Bend Hot-communities for-sale sum **1,266 → 1,251**, exactly the 15 Coming Soon rows removed, and the new sum equals an independently computed corrected predicate (1,251 = 1,251) |
+| 19:35 | **Item 3 done.** Lighthouse + pa11y drop `continue-on-error`. A11y/SEO/CLS/BP assert at error; perf/LCP at warn until real runner samples validate the estimated CI headroom. Proves out on the next PR, not this push |
+| 20:10 | **Item 2 done.** CrUX + PSI APIs enabled on the `ryanrealty` GCP project (service account got 403 on serviceusage; done via console under matt@). Key restricted to those two APIs. **CWV measured:** CLS 0.00 good, TTFB 292 ms good, LCP 2,692 ms needs work — **1,239 ms of it is image resource load DELAY**, 46% of the whole metric, before the hero request even starts |
+
+### Item 2's trap, recorded
+
+PageSpeed Insights reported "no field data for this origin" while the CrUX API
+returned a full histogram for the same origin in the same minute. PSI's
+`loadingExperience` is URL-scoped and falls back inconsistently. Trusting PSI
+would have written "insufficient sample size" into the record as the answer, and
+it was wrong. The script queries CrUX directly.
