@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-06-09T00:44:24.055Z",
+  "generatedAt": "2026-08-03T01:36:44.103Z",
   "reason": "Unguarded numeric casts of jsonb details->> extractions (guarded only by IS NOT NULL, not a ~ '^[0-9' regex) at gate-creation time. These live in SUPERSEDED migration files; the live RPC is guarded. NEW unguarded casts fail CI; this list only shrinks.",
-  "total": 50,
+  "total": 48,
   "violators": [
     "supabase/migrations/20250315100000_advanced_search_rpc.sql:108",
     "supabase/migrations/20250315100000_advanced_search_rpc.sql:109",
@@ -37,8 +37,6 @@
     "supabase/migrations/20260405022000_data_architecture_phase10_cma_listing_key.sql:51",
     "supabase/migrations/20260405022000_data_architecture_phase10_cma_listing_key.sql:52",
     "supabase/migrations/20260405022000_data_architecture_phase10_cma_listing_key.sql:73",
-    "supabase/migrations/20260414190000_backfill_close_price_from_history_rpc.sql:106",
-    "supabase/migrations/20260415194600_listing_days_on_market_columns_and_backfill.sql:62",
     "supabase/migrations/20260603140000_fix_golf_course_filter_populated_signals.sql:105",
     "supabase/migrations/20260603140000_fix_golf_course_filter_populated_signals.sql:106",
     "supabase/migrations/20260603140000_fix_golf_course_filter_populated_signals.sql:107",

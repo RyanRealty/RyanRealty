@@ -35,21 +35,87 @@ const JSON_OUT = args.has('--json')
 const WRITE_BASELINE = args.has('--write-baseline')
 
 const NUMERIC_CAST = /\)\s*::\s*(int|integer|numeric|bigint|smallint|float|real|double\s+precision)\b/i
-const GUARD = /~\s*'\^\\?\[0-9/
+
+/**
+ * A numeric-shape regex guard. `-?` and `+?` are accepted before the digit
+ * class: `~ '^-?[0-9]+(\.[0-9]+)?$'` is a CORRECT guard and the original
+ * pattern rejected it, because it only matched `'^[0-9`.
+ */
+const GUARD = /~\s*'\^[-+]?\??\\?\[0-9/
+
+/** The jsonb key in a `details->>'Key'` extraction. */
+const KEY_RE = /details\s*->>\s*'([A-Za-z0-9_]+)'/g
+
+/**
+ * A guard for `key`, anywhere in a statement. `\)?` because the extraction is
+ * commonly parenthesised before the operator:
+ * `(l.details->>'DaysOnMarket') ~ '^[0-9]+$'`.
+ */
+function keyGuardRe(key) {
+  return new RegExp(`details\\s*->>\\s*'${key}'\\s*\\)?\\s*~\\s*'\\^[-+]?\\??\\\\?\\[0-9`)
+}
+
+/**
+ * Split source into `;`-delimited statements, carrying each line's 1-based
+ * number so a violation still reports its real location.
+ *
+ * WHY STATEMENT SCOPE (2026-08-02): this check used to require the guard on the
+ * SAME LINE as the cast, which is not how anyone writes guarded SQL. Both real
+ * shapes span lines, and one puts the guard AFTER the cast:
+ *
+ *     CASE WHEN (l.details->>'DaysOnMarket') ~ '^[0-9]+(\.[0-9]+)?$'
+ *            THEN round((l.details->>'DaysOnMarket')::numeric)::integer
+ *
+ *     UPDATE public.listings l
+ *     SET "OriginalListPrice" = (l.details->>'OriginalListPrice')::numeric
+ *      ...
+ *      AND (l.details->>'OriginalListPrice') ~ '^[0-9]+(\.[0-9]+)?$';
+ *
+ * Both are correctly guarded and the gate called all of them violations — 7
+ * across two migrations. A line-scoped check pressures authors to cram guards
+ * onto one line to satisfy it, which is worse SQL for no safety gain. The unit
+ * that actually matters is the STATEMENT: a cast and the `WHERE` clause that
+ * protects it either execute together or not at all.
+ *
+ * Still strict: the guard must name the SAME jsonb key, so an unrelated guard
+ * elsewhere in the statement cannot launder an unguarded cast.
+ */
+function statements(lines) {
+  const out = []
+  let current = []
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].split('--')[0]
+    current.push({ line, n: i + 1 })
+    if (line.includes(';')) {
+      out.push(current)
+      current = []
+    }
+  }
+  if (current.length) out.push(current)
+  return out
+}
 
 function classifyFile(file) {
   const src = readFileSync(file, 'utf8')
   const lines = src.split('\n')
   const rel = relative(ROOT, file)
   const violations = []
-  for (let i = 0; i < lines.length; i++) {
-    // Strip SQL line comments so a migration's prose description of the bug
-    // (which names the unguarded pattern) is not itself flagged.
-    const line = lines[i].split('--')[0]
-    if (!/details\s*->>/.test(line)) continue
-    if (!NUMERIC_CAST.test(line)) continue
-    if (GUARD.test(line)) continue
-    violations.push(`${rel}:${i + 1}`)
+
+  for (const stmt of statements(lines)) {
+    const stmtText = stmt.map((l) => l.line).join('\n')
+    for (const { line, n } of stmt) {
+      if (!/details\s*->>/.test(line)) continue
+      if (!NUMERIC_CAST.test(line)) continue
+      if (GUARD.test(line)) continue
+
+      // Every key cast on this line must be guarded somewhere in the statement.
+      const keys = [...line.matchAll(KEY_RE)].map((m) => m[1])
+      const guarded =
+        keys.length > 0 && keys.every((key) => keyGuardRe(key).test(stmtText))
+      if (guarded) continue
+
+      violations.push(`${rel}:${n}`)
+    }
   }
   return violations
 }
