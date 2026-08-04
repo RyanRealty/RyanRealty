@@ -1,7 +1,23 @@
-> **NEWEST, START HERE: the entire audit roadmap closed, 1 to 21 (2026-08-03, Claude Code local).**
-> Prior: audit follow-through, sitemap P0 + CI root cause + GSC/GA4 (2026-08-02).
+> **NEWEST, START HERE: Admin Product OS — BOOT + P1 + P2 complete, BLOCKED_ON_MATT: process (2026-08-04, Claude Code local).**
+> Prior: the entire audit roadmap closed, 1 to 21 (2026-08-03).
 
-# Current — 2026-08-03 (Claude Code, local)
+# Current — 2026-08-04 (Claude Code, local) — Admin Product OS
+
+`main` @ `36df337f`, pushed. The Admin Product OS ran BOOT → P1 → all of P2 in one
+day. State lives on disk, chat is disposable:
+
+- `docs/plans/ADMIN_PRODUCT/state.json` — phase `P3_PROCESS_LOCK`, `awaiting_lock: process`
+- `docs/plans/ADMIN_PRODUCT/decisions.md` — **the P3 decision package awaiting Matt**
+  (verdict table 15 KEEP / 4 MERGE / 1 thin / deal-track = his call, 7 fix-the-class
+  improvements, 5 open questions). A lock counts ONLY when written into this file.
+- `docs/plans/ADMIN_PRODUCT/processes/` — 21 complete PDS files, file:line-cited
+- `docs/plans/ADMIN_PRODUCT/SESSION_BOOT.md` — resume ritual for any agent/tool
+
+Next unit (any tool): NOTHING until Matt writes the process lock into decisions.md;
+then advance state to P4_DATA and build the data atlas for KEEP processes only.
+Do not start IA (P5) or visuals (P6) — locks do not exist yet.
+
+# Prior — 2026-08-03 (Claude Code, local)
 
 Every item on the 2026-08-02 website-audit roadmap is now closed or explicitly
 blocked on Matt. `main` @ `03f2f5d6`, full `ci:gates` chain green, deployed.
