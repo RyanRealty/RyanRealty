@@ -25,8 +25,10 @@
 import {
   BLEED_TOLERANCE_PT,
   EDGE_SAFE_PT,
-  MARGIN_PT,
+  MARGIN_IN,
   PT_PER_IN,
+  marginsToPt,
+  type Margins,
 } from '@/lib/pdf/page-contract'
 
 export type PageSafetyViolation = {
@@ -135,6 +137,11 @@ export type PageSafetyOptions = {
    * against, so STRADDLE cannot apply. EDGE and SIDE still do.
    */
   runningMarksInBody?: boolean
+  /**
+   * The bands this document actually declared to `pageContractCss`. Must match,
+   * or the check polices a box the document never used. Defaults to MARGIN_IN.
+   */
+  margins?: Margins
 }
 
 /** Inspect a PDF and report every place text left the contract. */
@@ -150,6 +157,7 @@ export async function inspectPdfPageSafety(
 
   const violations: PageSafetyViolation[] = []
   const tol = BLEED_TOLERANCE_PT
+  const MARGIN_PT = marginsToPt(options.margins ?? MARGIN_IN)
 
   pages.forEach((runs, idx) => {
     const { w, h } = sizes[idx]

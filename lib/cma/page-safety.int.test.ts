@@ -17,7 +17,7 @@ import puppeteer, { type Browser } from 'puppeteer-core'
 import { renderCmaHtml, type RenderCmaArgs } from './render'
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types'
 import { inspectPdfPageSafety, formatViolations } from '@/lib/pdf/assert-page-safety'
-import { assertPageFit, measurePageFit, PdfPageFitError } from '@/lib/pdf/assert-page-fit'
+import { pdfRenderOptions, CMA_MARGIN_IN } from '@/lib/pdf/page-contract'
 
 const CHROME =
   process.env.PUPPETEER_EXECUTABLE_PATH ||
@@ -166,12 +166,9 @@ async function renderPdf(html: string): Promise<Buffer> {
     })
     await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 45_000 })
     await page.emulateMediaType('print')
-    const pdf = await page.pdf({
-      format: 'Letter',
-      printBackground: true,
-      preferCSSPageSize: false,
-      margin: { top: '0', right: '0', bottom: '0', left: '0' },
-    })
+    const pdf = await page.pdf(
+      pdfRenderOptions({ footerLeft: 'Ryan Realty · 541.703.3095' }, CMA_MARGIN_IN),
+    )
     return Buffer.from(pdf)
   } finally {
     if (browser) await browser.close().catch(() => {})
@@ -181,7 +178,7 @@ async function renderPdf(html: string): Promise<Buffer> {
 async function expectClean(a: RenderCmaArgs, label: string) {
   const { html } = renderCmaHtml(a)
   const pdf = await renderPdf(html)
-  const report = await inspectPdfPageSafety(pdf, { runningMarksInBody: true })
+  const report = await inspectPdfPageSafety(pdf, { margins: CMA_MARGIN_IN })
   if (!report.ok) {
     throw new Error(
       `${label}: ${report.violations.length} violation(s) over ${report.pageCount} sheet(s): ${formatViolations(report.violations)}`,
@@ -196,49 +193,38 @@ describe.skipIf(!hasChrome)('CMA page safety', () => {
     expect(report.pageCount).toBeGreaterThan(3)
   }, 90_000)
 
-  it('an overstuffed CMA is caught, not quietly delivered short', async () => {
-    // Twelve comps and a long improvements narrative — past what a fixed sheet
-    // holds. Under the old CSS this rendered "successfully" with the excess
-    // clipped away. The contract's job is not to make this fit; it is to make
-    // it impossible to send without anyone noticing.
+  it('an overstuffed CMA FLOWS onto clean extra sheets', async () => {
+    // Twelve comps and a long improvements narrative — far past what one sheet
+    // holds. Under the old fixed-height model this rendered "successfully" with
+    // the excess clipped away and gone. Under the flowing model it becomes more
+    // sheets, every one of them inside the contract.
     const long = Array.from(
       { length: 60 },
       (_, i) =>
         `Seller improvement ${i + 1}: full interior repaint, new hardware, and refinished flooring throughout the main level.`,
     ).join(' ')
-    const { html } = renderCmaHtml(
+    const report = await expectClean(
       args({
         comps: Array.from({ length: 12 }, (_, i) => comp(i + 1)),
         sellerImprovementsText: long,
         compTrace: Array.from({ length: 24 }, (_, i) => `comp trace row ${i + 1} with a long source citation`),
       }),
+      'overstuffed',
     )
+    expect(report.pageCount).toBeGreaterThan(6)
+  }, 120_000)
 
-    let browser: Browser | null = null
-    try {
-      browser = await puppeteer.launch({
-        executablePath: CHROME,
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      })
-      const page = await browser.newPage()
-      await page.setViewport({ width: 1024, height: 1320, deviceScaleFactor: 1 })
-      await page.setRequestInterception(true)
-      page.on('request', (r) => {
-        if (/^https?:/.test(r.url())) r.abort().catch(() => {})
-        else r.continue().catch(() => {})
-      })
-      await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 45_000 })
-      await page.emulateMediaType('print')
-
-      const overflows = await measurePageFit(page)
-      expect(overflows.length).toBeGreaterThan(0)
-      // And it must be reported as overflow, never as a silent clip.
-      expect(overflows.every((o) => !o.clips)).toBe(true)
-      await expect(assertPageFit(page, 'overstuffed')).rejects.toThrow(PdfPageFitError)
-    } finally {
-      if (browser) await browser.close().catch(() => {})
-    }
+  it('a section long enough to spill gets a properly margined continuation sheet', async () => {
+    // The exact shape that broke the library: one section holding more than a
+    // sheet. The old model clipped it; the intermediate un-clipped model let it
+    // run to the paper edge on the continuation sheet. It must now simply be
+    // two clean sheets.
+    const huge = Array.from(
+      { length: 200 },
+      (_, i) => `Improvement note ${i + 1} describing work completed on the property in detail.`,
+    ).join(' ')
+    const report = await expectClean(args({ sellerImprovementsText: huge }), 'spilling-section')
+    expect(report.pageCount).toBeGreaterThan(4)
   }, 120_000)
 
   it('.page never clips its own overflow', async () => {
@@ -251,5 +237,10 @@ describe.skipIf(!hasChrome)('CMA page safety', () => {
     // stylesheet top to bottom.
     expect(html).not.toMatch(/\.page\s*\{[^}]*overflow:\s*(hidden|clip)/)
     expect(html).not.toMatch(/\.page\s*\{[^}]*max-height:/)
+    // And the bands must come from @page, not from padding on the section box.
+    expect(html).toMatch(/@page\s*\{[^}]*margin:\s*0\.4in/)
+    // The in-body absolute footer is gone — it could not follow a spilled
+    // section, so it printed mid-document with the tail running under it.
+    expect(html).not.toContain('class="pg-footer"')
   })
 })

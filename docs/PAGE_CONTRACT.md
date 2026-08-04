@@ -59,18 +59,31 @@ BPO longer than two sheets printed that way, which is most of them.
 - **Never `overflow: hidden`, `overflow: clip`, or `max-height` on a sheet container.** Overflow
   must stay visible so it stays measurable. Too much content is a build failure Matt can see,
   never a document a client receives short.
-- **A document whose `.page` maps 1:1 to a physical sheet** (the CMA) may keep its own padding
-  and a full-bleed `@page { margin: 0 }` — its box never fragments, so padding is a correct way
-  to reserve its bands. It still may not clip.
+- **Let sections FLOW.** A `.page` element is a logical section that starts on fresh paper
+  (`break-before: page`), not a fixed sheet. A section long enough to spill then gets a properly
+  margined continuation sheet instead of clipping or running off the edge. The CMA was migrated
+  to this on 2026-08-04; nothing in the codebase still models a `.page` as one physical sheet.
 
 ### Geometry
 
 | | |
 |---|---|
 | Paper | US Letter, portrait, 612 × 792 pt |
-| Margins | top 0.75in · right 0.6in · bottom 0.7in · left 0.6in |
+| Default bands (`MARGIN_IN`) | top 0.75in · right 0.6in · bottom 0.7in · left 0.6in |
+| CMA bands (`CMA_MARGIN_IN`) | top 0.4in · right 0.6in · bottom 0.7in · left 0.6in |
 | No-ink zone | 0.25in from every paper edge — nothing enters it, running marks included |
 | Bleed tolerance | 2pt (glyph boxes carry ascender/descender slack; a hairline tolerance false-alarms) |
+
+**A document may declare its own bands.** The contract is *"nothing may enter the
+bands"*, not one universal band size. The CMA runs a smaller top band because its
+section header is an ordinary in-flow element at the top of each section rather
+than a running mark in the margin — forcing the BPO's 0.75in top on it would
+waste 0.35in of every sheet and push more content into overflow.
+
+Whatever a document declares, it must pass the SAME margins to
+`pageContractCss`, `pdfRenderOptions`, and `assertPdfPageSafety`. The CSS that
+reserves the band and the check that polices it have to agree, or the check is
+measuring a box the document never used.
 
 ---
 
@@ -90,8 +103,10 @@ The byte-level rules:
   reserved band.
 - **SIDE** — no text in the left/right margins at all. There is no legitimate side strip.
 
-`runningMarksInBody: true` relaxes STRADDLE for documents that draw their own per-sheet marks
-(the CMA). EDGE and SIDE always apply.
+`runningMarksInBody: true` relaxes STRADDLE for documents that draw their own marks inside the
+body instead of in the margin strips — the `@react-pdf/renderer` surfaces (market report,
+listing, rental, comparison), whose `fixed` footer is a page element. EDGE and SIDE always
+apply. The CMA and BPO both use real margin-strip marks, so STRADDLE applies to them in full.
 
 ### Rendered proof
 
@@ -102,7 +117,9 @@ npm run test:int -- lib/pdf/page-contract lib/cma/page-safety lib/bpo/page-safet
 - [`lib/pdf/page-contract.int.test.ts`](../lib/pdf/page-contract.int.test.ts) — torture fixtures:
   220 flowing paragraphs, a 160-row table, an image taller than the sheet, six forced breaks.
 - [`lib/cma/page-safety.int.test.ts`](../lib/cma/page-safety.int.test.ts) — baseline CMA clean;
-  an overstuffed one caught rather than delivered short.
+  an overstuffed one (12 comps + a 60-sentence narrative) flowing onto clean extra sheets; and a
+  single section long enough to spill, which must produce a properly margined continuation
+  sheet rather than the paper-edge bleed the un-clipped fixed model produced.
 - [`lib/bpo/page-safety.int.test.ts`](../lib/bpo/page-safety.int.test.ts) — a fixture long enough
   to produce interior sheets, because a two-sheet fixture cannot reproduce the defect.
 
@@ -110,6 +127,36 @@ npm run test:int -- lib/pdf/page-contract lib/cma/page-safety lib/bpo/page-safet
 has never failed is not known to work.
 
 ---
+
+## Stored documents freeze their CSS
+
+`public.cmas.html_content` holds the fully rendered document, and
+`lib/cma-pdf.ts` serves that string — it does not re-render. **A stylesheet fix
+therefore reaches new builds only.** Every document already in the table keeps
+the CSS it was born with.
+
+On 2026-08-03 that meant 219 of 243 stored CMAs still carried the sheet-clipper
+after the renderer was fixed, and **77 of them were actively deleting content**
+(worst: 247px, ~2.6in, off the sheet-3 description block).
+
+Two lessons, both paid for:
+
+1. **When a document stylesheet changes, ask what it does to the STORED corpus,
+   not just to the next build.** The remediation scripts are
+   `scripts/_cma-unclip-stored-html.mjs` (surgical string fix) and
+   `scripts/_cma-rerender-stored.mjs` (true re-render under the flowing model).
+2. **Re-measure before writing.** The first remediation pass patched only the
+   `@media print` rule; the base `.page` rule's `height: 11in; overflow: hidden`
+   still applied, because a print block overrides only the properties it
+   restates. The script re-measured each patched document and refused to write
+   77 of them. Without that step those 77 would be recorded as fixed and still
+   be losing content.
+
+A re-render is safe precisely because `renderCmaHtml` is a pure function of
+`render_args` — it cannot move a figure. `_cma-rerender-stored.mjs` still
+verifies that claim per document by diffing every currency, percentage and date
+token between the old and new HTML, and refuses the write on any drift. §0 does
+not accept "correct by construction" as a substitute for checking.
 
 ## Escape hatches
 

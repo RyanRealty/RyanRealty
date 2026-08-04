@@ -42,16 +42,46 @@ export const PAPER = {
   heightPt: inches(11),
 }
 
+export type Margins = { top: number; right: number; bottom: number; left: number }
+
 /**
- * Reserved bands, in inches. `top`/`bottom` hold the running header/footer;
- * `left`/`right` are the side margins. Body content lives strictly inside.
+ * Default reserved bands, in inches. `top`/`bottom` hold the running
+ * header/footer; `left`/`right` are the side margins. Body content lives
+ * strictly inside.
+ *
+ * A document may declare its own bands (see `Margins` on the functions below).
+ * The CONTRACT is "nothing may enter the bands" — not one universal band size.
+ * The CMA needs a smaller top band than the BPO because its header is a normal
+ * in-flow element at the start of each section rather than a running mark in
+ * the margin, so forcing the BPO's 0.75in top on it would waste 0.35in of every
+ * sheet and push more content into overflow.
+ *
+ * Whatever a document declares, it must declare the SAME numbers to
+ * `pageContractCss`, `pdfRenderOptions`, and `assertPdfPageSafety` — the CSS
+ * that reserves the band and the check that polices it have to agree, or the
+ * check is measuring a box the document never used.
  */
-export const MARGIN_IN = {
+export const MARGIN_IN: Margins = {
   top: 0.75,
   right: 0.6,
   bottom: 0.7,
   left: 0.6,
-} as const
+}
+
+/** Bands for the CMA: in-body per-section header, running footer in the margin. */
+export const CMA_MARGIN_IN: Margins = {
+  top: 0.4,
+  right: 0.6,
+  bottom: 0.7,
+  left: 0.6,
+}
+
+export const marginsToPt = (m: Margins) => ({
+  top: inches(m.top),
+  right: inches(m.right),
+  bottom: inches(m.bottom),
+  left: inches(m.left),
+})
 
 export const MARGIN_PT = {
   top: inches(MARGIN_IN.top),
@@ -93,11 +123,11 @@ export const BLEED_TOLERANCE_PT = 2
  * `@page` is what makes the guarantee hold across sheets. Do not restate
  * margins as padding on a wrapper div — that is the bug this replaces.
  */
-export function pageContractCss(): string {
+export function pageContractCss(m: Margins = MARGIN_IN): string {
   return `
   @page {
     size: ${PAPER.format};
-    margin: ${MARGIN_IN.top}in ${MARGIN_IN.right}in ${MARGIN_IN.bottom}in ${MARGIN_IN.left}in;
+    margin: ${m.top}in ${m.right}in ${m.bottom}in ${m.left}in;
   }
 
   /* The reserved bands belong to @page. A document that also pads its own
@@ -120,7 +150,7 @@ export function pageContractCss(): string {
   /* An element taller than the content box cannot be paginated and WILL clip.
      Capping it at the content height turns a silent truncation into a visible
      scale-down. */
-  img, svg, canvas { max-width: 100%; max-height: ${(CONTENT_BOX_PT.y1 - CONTENT_BOX_PT.y0) / PT_PER_IN}in; }
+  img, svg, canvas { max-width: 100%; max-height: ${(PAPER.heightPt / PT_PER_IN) - m.top - m.bottom}in; }
 
   /* overflow:hidden on a paged container destroys content instead of moving it
      to the next sheet. It is banned by ci:pdf-page-safety; this is the backstop
@@ -140,12 +170,10 @@ export function pageContractCss(): string {
  *
  * Padding keeps the strip clear of EDGE_SAFE_PT on both axes.
  */
-const STRIP_SIDE_PAD_IN = MARGIN_IN.left
-
-function strip(inner: string, extra: string): string {
+function strip(inner: string, extra: string, sidePadIn: number): string {
   return (
     `<div style="-webkit-print-color-adjust:exact;print-color-adjust:exact;` +
-    `width:100%;box-sizing:border-box;padding:0 ${STRIP_SIDE_PAD_IN}in;${extra}` +
+    `width:100%;box-sizing:border-box;padding:0 ${sidePadIn}in;${extra}` +
     `font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;` +
     `font-size:8px;color:#102742;display:flex;justify-content:space-between;` +
     `align-items:center;letter-spacing:0.04em;">${inner}</div>`
@@ -167,18 +195,18 @@ export type RunningMarks = {
   footerRight?: string
 }
 
-export function headerTemplate(m: RunningMarks): string {
-  const l = m.headerLeft ?? ''
-  const r = m.headerRight ?? ''
+export function headerTemplate(marks: RunningMarks, m: Margins = MARGIN_IN): string {
+  const l = marks.headerLeft ?? ''
+  const r = marks.headerRight ?? ''
   if (!l && !r) return '<div></div>'
   // Sits just below the no-ink zone, at the top of its reserved band.
-  return strip(`<span>${l}</span><span>${r}</span>`, `padding-top:${EDGE_SAFE_IN}in;`)
+  return strip(`<span>${l}</span><span>${r}</span>`, `padding-top:${EDGE_SAFE_IN}in;`, m.left)
 }
 
-export function footerTemplate(m: RunningMarks): string {
-  const l = m.footerLeft ?? ''
-  const r = m.footerRight ?? 'Page <span class="pageNumber"></span> of <span class="totalPages"></span>'
-  return strip(`<span>${l}</span><span>${r}</span>`, `padding-bottom:${EDGE_SAFE_IN}in;`)
+export function footerTemplate(marks: RunningMarks, m: Margins = MARGIN_IN): string {
+  const l = marks.footerLeft ?? ''
+  const r = marks.footerRight ?? 'Page <span class="pageNumber"></span> of <span class="totalPages"></span>'
+  return strip(`<span>${l}</span><span>${r}</span>`, `padding-bottom:${EDGE_SAFE_IN}in;`, m.left)
 }
 
 /**
@@ -190,15 +218,15 @@ export function footerTemplate(m: RunningMarks): string {
  * own wrapper double-counts, and one that does not pad at all gets whatever
  * puppeteer was told — historically `0`.
  */
-export function pdfRenderOptions(marks: RunningMarks) {
+export function pdfRenderOptions(marks: RunningMarks, m: Margins = MARGIN_IN) {
   const hasHeader = Boolean(marks.headerLeft || marks.headerRight)
   return {
     format: PAPER.format,
     printBackground: true,
     preferCSSPageSize: true,
     displayHeaderFooter: true,
-    headerTemplate: hasHeader ? headerTemplate(marks) : '<div></div>',
-    footerTemplate: footerTemplate(marks),
+    headerTemplate: hasHeader ? headerTemplate(marks, m) : '<div></div>',
+    footerTemplate: footerTemplate(marks, m),
   }
 }
 

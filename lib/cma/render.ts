@@ -98,7 +98,21 @@ interface PageDef {
   toc?: string
 }
 
-function wrapPage(page: PageDef, index: number, total: number, brokerPhone: string): string {
+/**
+ * The section header stays in the body — it is per-section ("… · Your Next
+ * Step"), so it cannot be a running mark, which Chrome draws identically on
+ * every sheet. As a normal in-flow element it appears once, at the top of its
+ * section, which is what a continued section should look like.
+ *
+ * The FOOTER is gone from the body deliberately. It used to be
+ * `position: absolute; bottom: 0.32in` inside a fixed 11in `.page`, which
+ * breaks the moment a section flows onto a second sheet — the footer follows
+ * the box, so it lands mid-document and the spilled text runs under it. It is
+ * now a running mark drawn by Chrome into the reserved bottom margin of EVERY
+ * sheet (lib/cma-pdf.ts), which also means the page numbers are the real sheet
+ * count instead of a section count guessed before pagination.
+ */
+function wrapPage(page: PageDef): string {
   return `
 <section class="page">
   <header class="pg-header">
@@ -106,10 +120,6 @@ function wrapPage(page: PageDef, index: number, total: number, brokerPhone: stri
     <div class="pg-meta">${page.meta}</div>
   </header>
   ${page.body}
-  <footer class="pg-footer">
-    <span>Ryan Realty · ${esc(brokerPhone)}</span>
-    <span>Page ${index + 1} of ${total}</span>
-  </footer>
 </section>`
 }
 
@@ -858,8 +868,7 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   rest.push(nextStepPage(a))
 
   const pages: PageDef[] = [coverPage(a), contentsPage(rest, a), ...rest]
-  const brokerPhone = dottedPhone(a.broker.phone) ?? '541.213.6706'
-  const body = pages.map((p, i) => wrapPage(p, i, pages.length, brokerPhone)).join('\n')
+  const body = pages.map((p) => wrapPage(p)).join('\n')
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>

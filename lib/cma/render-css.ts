@@ -9,9 +9,12 @@
  */
 
 import { cmaSectionStyles } from '@/lib/cma/render-css-sections'
+import { pageContractCss, CMA_MARGIN_IN } from '@/lib/pdf/page-contract'
 
 export function cmaStylesheet(siteUrl: string): string {
   return `
+  ${pageContractCss(CMA_MARGIN_IN)}
+
   @font-face {
     font-family: 'Amboqia Boriango';
     src: url('${siteUrl}/fonts/Amboqia_Boriango.otf') format('opentype');
@@ -40,35 +43,35 @@ export function cmaStylesheet(siteUrl: string): string {
     -webkit-font-smoothing: antialiased;
   }
 
-  /* One .page element is one physical sheet. The padding IS the margin — the
-     PDF is rendered full-bleed (puppeteer margin 0), so nothing else reserves
-     the bands. Keep the bottom padding well clear of .pg-footer below.
+  /* A .page is a logical SECTION, not a physical sheet.
 
-     min-height and NOT height, and overflow visible and NOT hidden:
-     a fixed height plus overflow:hidden clips whatever does not fit, and the
-     clipped rows are simply gone from the PDF — no error, no ellipsis, no way
-     for a reader to know a comp went missing. Measured on a delivered CMA:
-     9px of a comparable's stat line destroyed at the page boundary. Letting the
-     box grow turns that into an extra sheet, which is ugly, visible, and caught
-     by ci:pdf-page-safety instead of silently wrong. §0 — a document may not
-     drop a number it claims to be showing. */
+     It used to be a fixed 11in box with overflow:hidden, which deleted whatever
+     did not fit — silently, because a clipped row is never drawn and leaves no
+     trace in the PDF. 77 delivered-library CMAs were losing up to 2.6in of the
+     description block that way.
+
+     Now each section starts on fresh paper and flows for as many sheets as its
+     content needs. The reserved bands come from @page (see the contract above),
+     so a section that spills gets a properly margined continuation sheet
+     instead of running off the edge. No height, no padding, no overflow rule —
+     all three belong to @page now. */
   .page {
-    width: 8.5in;
-    min-height: 11in;
-    margin: 0.4in auto;
     background: var(--cream);
-    padding: 0.4in 0.6in 0.85in 0.6in;
-    box-shadow: 0 6px 24px rgba(16, 39, 66, 0.18);
     position: relative;
-    page-break-after: always;
-    overflow: visible;
+    break-before: page;
+    page-break-before: always;
   }
-  .page:last-child { page-break-after: auto; }
-  @media print {
-    /* The screen view floats sheets on a desk with a drop shadow. On paper the
-       sheet IS the page — any outer margin here shifts every sheet down and
-       pushes the last band off the bottom edge. */
-    .page { margin: 0; box-shadow: none; }
+  .page:first-child { break-before: auto; page-break-before: auto; }
+
+  @media screen {
+    /* Screen only: show sheets on a desk. Print takes its box from @page. */
+    .page {
+      width: 8.5in;
+      min-height: 11in;
+      margin: 0.4in auto;
+      padding: 0.4in 0.6in 0.7in 0.6in;
+      box-shadow: 0 6px 24px rgba(16, 39, 66, 0.18);
+    }
   }
 
   .pg-header {
@@ -505,35 +508,32 @@ export function cmaStylesheet(siteUrl: string): string {
   .note-list { margin: 5px 0 8px 16px; padding: 0; }
   .note-list li { font-size: 10.5px; line-height: 1.4; margin-bottom: 3px; }
 
-  /* Full-bleed page box: one .page element IS one sheet and supplies its own
-     margins as padding, so @page reserves nothing. Do not add margins here
-     without removing the padding above — the two would stack and push the
-     footer band off the bottom of the paper. */
-  @page { size: Letter; margin: 0; }
+  /* The page box now comes from @page in the contract at the top of this
+     stylesheet (CMA_MARGIN_IN: 0.4in top for the in-body section header, 0.7in
+     bottom for the running footer Chrome draws into the margin strip).
+
+     There is deliberately NO @page rule here. An 0-margin @page plus .page
+     padding was the old model, and it could not give a spilled section a
+     margin — the padding lands once at the top of the box and once at the
+     bottom, never at an interior sheet boundary. */
   @media print {
     body { background: white; margin: 0; padding: 0; }
     .page {
       box-shadow: none;
       margin: 0;
-      width: 8.5in;
-      min-height: 11in;
-      page-break-after: always;
-      break-after: page;
+      width: auto;
+      /* Fill the sheet so the cover's absolutely-positioned "presented by"
+         block still anchors to the bottom of the paper, while still being free
+         to grow past it when a section runs long. Content-box height =
+         11in - 0.4in top - 0.7in bottom. */
+      min-height: 9.9in;
+      padding: 0;
     }
-    /* NO max-height and NO overflow:hidden here.
-
-       This block is the one that governs the PDF (the renderer prints under
-       print media), and it used to carry max-height 11in plus overflow hidden.
-       That is what silently deleted content from delivered CMAs: a sheet
-       holding one row more than fits rendered without error, and the row was
-       simply absent from the file. Nothing downstream could detect it, because
-       a clipped row leaves no trace in the PDF to measure.
-
-       Overflow must stay visible so that too much content becomes a visible,
-       measurable defect. assertPageFit() then refuses to produce the PDF at
-       all, naming the sheet. A CMA that cannot fit is a build failure Matt can
-       see, never a document a client receives with a comp missing. §0. */
-    .page:last-child { page-break-after: auto; break-after: auto; }
+    /* NO height, NO max-height, NO overflow:hidden — all three delete content.
+       A clipped row is never drawn, so it leaves no trace in the PDF for any
+       downstream check to find. That is how 77 CMAs in the library were losing
+       up to 2.6in of the description block with no error. Overflow stays
+       visible; @page gives the spill a properly margined sheet. §0. */
     a { text-decoration: none; color: inherit; }
   }
 `+ cmaSectionStyles()
