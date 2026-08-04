@@ -6,8 +6,8 @@ lock. `ADMIN_REBUILD/PHASE-0-ANSWERS.md` is input evidence only, never a lock so
 
 ## Lock status
 
-- Process lock (P3): **not granted**
-- IA lock (P5): **not granted** — may not be granted before the process lock exists here
+- Process lock (P3): **GRANTED 2026-08-04** — see "P3 PROCESS LOCK PACKAGE — LOCKED"
+- IA lock (P5): **not granted**
 - Visual lock (P6): **not granted**
 - Litmus sign-off (P8): **not granted**
 
@@ -65,11 +65,12 @@ decisions and must not be pre-locked before the processes are deepened.
 
 ---
 
-## 2026-08-04 — P3 PROCESS LOCK PACKAGE — AWAITING MATT
+## 2026-08-04 — P3 PROCESS LOCK PACKAGE — ✅ LOCKED BY MATT 2026-08-04
 
 All 21 processes are deepened (full PDS files in `processes/`, every claim file:line-cited).
-**To lock: reply with edits or "process locked", and this section gets stamped. Until then
-`state.json.awaiting_lock = process` and P4/P5 do not start.**
+**LOCKED: Matt granted the process lock 2026-08-04 (in-session structured answers, recorded
+below as "Process lock — Matt's answers"). The verdict table below is the locked set, with
+deal-track resolved to MERGE (one deal entity with tc-close).**
 
 ### Proposed verdict table
 
@@ -128,6 +129,28 @@ All 21 processes are deepened (full PDS files in `processes/`, every claim file:
    of 5 tabs — confirm it earns a primary slot when IA is derived in P5.
 5. **CMA signing broker:** confirm CMAs should sign as the lead's assigned broker (code TODO
    currently defaults everything to you).
+
+### 2026-08-04 — Process lock — Matt's answers (LOCK GRANTED)
+
+Matt answered the five open questions directly and chose "Lock it now":
+
+1. **deal-track → MERGE into one deal entity.** One "deal" concept: pre-close interest is
+   a thin stage on it; post-acceptance is tc-close. Kills the two-stores split.
+2. **Supervision alarms OFF the wake rail.** Health/system alarms land in the supervision
+   view + daily digest; only inbound-human events text brokers.
+3. **Reply-on-existing-thread JOINS the wake rail.** Full alert with deep link into the
+   thread, same delivery guarantees as new-lead alerts.
+4. **Prospecting earns a PRIMARY surface in P5 IA.** Phone-capable, sized for the weekly
+   send-N-intros pass.
+5. **CMAs sign as the lead's ASSIGNED broker** (their mailbox sends via Gmail DWD); Matt
+   remains the fallback when unassigned.
+
+**Locked verdict set:** the table above with deal-track = MERGE→tc-close (one deal
+entity). Net: 15 KEEP · 5 MERGE (visitor-escalate→broker-alert, bpo-deliver→cma-deliver
+surface, data-curate→sync-ops, weekly-sla-review→supervision view, deal-track→tc-close
+entity) · 1 KEEP-thin (site-content-ops). No KILLs, no DEFERs.
+
+`state.json`: `locks.process = 2026-08-04`, `awaiting_lock` cleared, phase → `P4_DATA`.
 
 ### What must be true before IA (P5)
 

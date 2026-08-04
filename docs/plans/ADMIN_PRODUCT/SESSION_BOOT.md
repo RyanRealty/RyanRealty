@@ -41,13 +41,16 @@ do not assume slash commands or autoload worked.
 
 ## Current program state (maintained by the agent)
 
-- BOOT + P1 + all of P2 completed 2026-08-04. Phase is `P3_PROCESS_LOCK`,
-  `awaiting_lock: process`.
-- 21 processes deepened — full PDS files in `processes/`, registry all `deepened`,
+- BOOT + P1 + P2 + P3 completed 2026-08-04. **Process lock GRANTED** (decisions.md,
+  Matt 2026-08-04). Phase is `P4_DATA`, no lock awaited.
+- Locked set: 15 KEEP / 5 MERGE / 1 thin — plus 5 locked directives (one deal entity;
+  supervision alarms off the wake rail; reply-on-thread joins the wake rail; prospecting
+  primary in P5; CMA signs as assigned broker). All in decisions.md.
+- 21 PDS files in `processes/`; registry rows `locked` with verdicts;
   `page-inventory.json` maps 160 routes.
-- The P3 decision package (verdict table, fix-the-class list, 5 open questions) is in
-  `decisions.md` under "P3 PROCESS LOCK PACKAGE — AWAITING MATT".
-- **Next unit: NOTHING until Matt writes the process lock into `decisions.md`.** When he
-  does: append his verdicts, set `locks.process`, clear `awaiting_lock`, advance phase to
-  `P4_DATA`, and run the P4 block (data atlas for KEEP processes only — P4-flagged
-  unknowns are listed at the end of the decision package).
+- **Next unit: `data-atlas` (P4)** — writer→store→reader→outcome chains for KEEP
+  processes only; resolve the P4-flagged unknowns listed at the end of the P3 package
+  (listing-edit sync survival, awaiting_broker_next visibility, place-copy edit
+  precedence, CRM↔TC link shape); fold merged processes into their targets. No new
+  schema unless a KEEP process cannot be correct — justify with a failed chain.
+- After P4: P5 IA derivation → STOP for IA lock. Never start P6 visuals before that lock.

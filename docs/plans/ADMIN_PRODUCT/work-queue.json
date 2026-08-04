@@ -1,7 +1,7 @@
 [
   {
-    "id": "process-lock-package",
-    "phase": "P3",
-    "note": "package written to decisions.md 2026-08-04; awaiting Matt process lock"
+    "id": "data-atlas",
+    "phase": "P4",
+    "note": "writer->store->reader->outcome chains for KEEP processes only; include the P4-flagged unknowns listed at the end of the P3 package in decisions.md; fold merged processes into their targets"
   }
 ]
