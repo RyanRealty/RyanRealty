@@ -98,20 +98,9 @@ interface PageDef {
   toc?: string
 }
 
-/**
- * The section header stays in the body — it is per-section ("… · Your Next
- * Step"), so it cannot be a running mark, which Chrome draws identically on
- * every sheet. As a normal in-flow element it appears once, at the top of its
- * section, which is what a continued section should look like.
- *
- * The FOOTER is gone from the body deliberately. It used to be
- * `position: absolute; bottom: 0.32in` inside a fixed 11in `.page`, which
- * breaks the moment a section flows onto a second sheet — the footer follows
- * the box, so it lands mid-document and the spilled text runs under it. It is
- * now a running mark drawn by Chrome into the reserved bottom margin of EVERY
- * sheet (lib/cma-pdf.ts), which also means the page numbers are the real sheet
- * count instead of a section count guessed before pagination.
- */
+/** Header stays in the body (per-section). The footer does not: an absolute
+ *  footer follows its box when a section spills, landing mid-document with the
+ *  tail under it. It is a Chrome running mark now. See docs/PAGE_CONTRACT.md. */
 function wrapPage(page: PageDef): string {
   return `
 <section class="page">
