@@ -1,9 +1,9 @@
 {
-  "phase": "P4_DATA",
+  "phase": "P5_IA",
   "locks": {
     "process": "2026-08-04"
   },
   "awaiting_lock": null,
   "current_process": null,
-  "updated_at": "2026-08-04T23:45:00Z"
+  "updated_at": "2026-08-05T00:30:00Z"
 }

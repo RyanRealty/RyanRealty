@@ -1,7 +1,7 @@
 [
   {
-    "id": "data-atlas",
-    "phase": "P4",
-    "note": "writer->store->reader->outcome chains for KEEP processes only; include the P4-flagged unknowns listed at the end of the P3 package in decisions.md; fold merged processes into their targets"
+    "id": "ia-derivation",
+    "phase": "P5",
+    "note": "derive destinations from KEEP processes only (amnesia: zero naming/grouping carryover); one primary destination per job; map all 160 routes -> destination or cut-list; re-derive the mobile tab set from weekly-use evidence (prospecting is locked primary); write ia-lock.md as a decision pack; STOP for Matt IA lock. NOT STARTED - Matt said do not start P5 this session."
   }
 ]

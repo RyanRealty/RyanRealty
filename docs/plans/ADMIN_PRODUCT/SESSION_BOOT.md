@@ -48,9 +48,16 @@ do not assume slash commands or autoload worked.
   primary in P5; CMA signs as assigned broker). All in decisions.md.
 - 21 PDS files in `processes/`; registry rows `locked` with verdicts;
   `page-inventory.json` maps 160 routes.
-- **Next unit: `data-atlas` (P4)** — writer→store→reader→outcome chains for KEEP
-  processes only; resolve the P4-flagged unknowns listed at the end of the P3 package
-  (listing-edit sync survival, awaiting_broker_next visibility, place-copy edit
-  precedence, CRM↔TC link shape); fold merged processes into their targets. No new
-  schema unless a KEEP process cannot be correct — justify with a failed chain.
-- After P4: P5 IA derivation → STOP for IA lock. Never start P6 visuals before that lock.
+- **P4 COMPLETE 2026-08-05** — `data-atlas.md`: 17 chains, 4 MERGEs folded,
+  weekly-sla-review has its own chain (its destination is a P5 decision). All four
+  flagged unknowns resolved with evidence (investigation record at the bottom of the
+  atlas): listing edits revert on re-sync (chain broken); awaiting_broker_next is
+  visible (P2 assessment corrected); place copy has no manual surface and regenerates
+  unconditionally; CRM↔TC has zero bridge and /admin/deals reads the legacy
+  skyslope_transactions mirror.
+- **Next unit: `ia-derivation` (P5)** — derive destinations from KEEP processes only
+  (amnesia: zero naming/grouping/route carryover — Matt 2026-08-04); one primary
+  destination per job; map all 160 routes → destination or cut-list; re-derive the
+  mobile tab set from weekly-use evidence (prospecting is locked as a primary surface);
+  write `ia-lock.md` as a decision pack; **STOP for Matt's IA lock.** Never start P6
+  visuals before that lock exists in decisions.md.

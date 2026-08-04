@@ -53,7 +53,7 @@ An accepted offer becomes a closed, compliant Oregon transaction: documents anti
 
 ## 10. Current implementation map
 - Routes: `/admin/deals` (+`[key]`), `/admin/signing` (+`[envelopeId]`), `/admin/sign-off`, `/admin/financials`, `/admin/commissions`, `/admin/forms` (+ redirect `/admin/transactions`).
-- Known defects: (a) no link from CRM person/deal-track → TC deal (the two-stores split); (b) PB sign-off backlog has no supervision-class signal; (c) TC architecture backlog is a live plan doc (TC_ARCHITECTURE_REVIEW.md) — items tracked there, not re-derived here.
+- Known defects: (a) no link from CRM person/deal-track → TC deal (the two-stores split) — **P4-proven: zero FK/shared column/code path in either direction; `tc_deals.fub_person_ids` is dead legacy**; (b) PB sign-off backlog has no supervision-class signal; (c) TC architecture backlog is a live plan doc (TC_ARCHITECTURE_REVIEW.md) — items tracked there, not re-derived here; (d) **P4 discovery: `/admin/deals` dashboard reads the legacy `skyslope_transactions`/`skyslope_dashboard_meta` mirror (`app/actions/deals.ts:123,137-138`), NOT `tc_deals`** — the TC landing page renders pre-Vault data while detail pages read `tc_deals`; both TC readers live in `app/actions/`, not `lib/data/`. See data-atlas.md chain 16.
 - Duplicate paths: deal-track overlap (see its PDS).
 
 ## 11. Target shape (process-level, not pixels)

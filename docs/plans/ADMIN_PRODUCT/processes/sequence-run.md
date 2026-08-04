@@ -55,7 +55,7 @@ Every new lead gets a timely, compliant, personalized touch stream without a bro
 ## 7. Completion
 - Done-when: enrollment reaches a terminal/parked state with every sent touch mirrored in timeline.
 - Terminal/parked states: `completed` · `paused_reply` · `suppressed` · `stopped` · `paused` (sibling-stopped) · `awaiting_broker_next`.
-- Signals: none today on completion (fine); parked `awaiting_broker_next` NEEDS a broker signal — verify wiring in P4 (gap candidate).
+- Signals: none today on completion (fine); parked `awaiting_broker_next` — **P4 RESOLVED (2026-08-04): visible** via broker-dashboard "Needs your action" queue (`getBrokerActionQueue`, `app/actions/crm.ts:1739`, confirm/skip `:1869`) and the person right-rail. Residual gaps: sequences page computes `awaitingBroker` and discards it; `daily-broker-digest` cron reads it but is unregistered. See data-atlas.md chain 6.
 
 ## 8. Time & SLA
 - Touch precision: ±15 min (engine cadence). Email window 7–19 LA; SMS quiet-hours windows.
@@ -68,7 +68,7 @@ Every new lead gets a timely, compliant, personalized touch stream without a bro
 ## 10. Current implementation map
 - Routes: `/admin/crm/sequences` (+`[id]/edit`), `/admin/crm/workflows`, `/admin/crm/automations` (redirect).
 - Crons: crm-auto-enroll, crm-sequence-engine. Libs: `enroll.ts`, engine route, `record-message.ts`.
-- Known defects: (a) monitoring is the weekly job but the surface is authoring-shaped — no "ran/broke" health lane; (b) `awaiting_broker_next` visibility unverified; (c) legacy RULES fallback carries FUB plan ids (dead vocabulary); (d) sequence SMS shares the global A2P/cap posture with no per-sequence budget.
+- Known defects: (a) monitoring is the weekly job but the surface is authoring-shaped — no "ran/broke" health lane; (b) ~~`awaiting_broker_next` visibility unverified~~ P4-resolved: visible on broker-dashboard + person rail; remaining: sequences page discards the count, digest cron unregistered; (c) legacy RULES fallback carries FUB plan ids (dead vocabulary); (d) sequence SMS shares the global A2P/cap posture with no per-sequence budget.
 - Duplicate paths: workflows vs sequences vs automations naming (three labels, one machine).
 
 ## 11. Target shape (process-level, not pixels)
