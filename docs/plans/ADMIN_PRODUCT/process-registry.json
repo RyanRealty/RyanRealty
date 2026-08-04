@@ -1,3 +1,223 @@
 {
-  "processes": []
+  "updated_at": "2026-08-04T23:05:00Z",
+  "note": "P1 thin rows. status: stub|in_deepening|deepened|locked. Verdicts are P3 \u2014 none pre-locked. Evidence pointers are file:line proven this session (2026-08-04).",
+  "processes": [
+    {
+      "id": "broker-alert",
+      "name": "Broker notified now",
+      "seed": true,
+      "inception": "Qualifying event (new lead, inbound from new number, CMA ready, auto-enroll first touch) queues a broker alert row",
+      "completion": "Alert delivered (SMS to Matt/Rebecca/Paul whitelist or web push) with deep link, or refused/dropped with reason",
+      "evidence": "lib/crm/broker-alerts.ts:141-193; app/api/cron/crm-alert-drain/route.ts:60-138; lib/crm/alert-drain-core.ts:22-54; lib/crm/enroll.ts:307-390",
+      "cadence": "continuous",
+      "status": "deepened"
+    },
+    {
+      "id": "inbound-respond",
+      "name": "Human responds to inbound",
+      "seed": true,
+      "inception": "Inbound SMS (app/api/twilio/inbound-sms/route.ts:105-379), inbound email (crm-gmail-sync -> crm_timeline email_in), or alert deep-link open",
+      "completion": "First outbound reply logged to crm_timeline / conversation, task closed or dismissed",
+      "evidence": "app/api/twilio/inbound-sms/route.ts; /admin/crm/inbox (getInboxQueue, getConversationThreadFull); app/actions/crm.ts:743-960; lib/crm/record-message.ts",
+      "cadence": "daily",
+      "status": "deepened"
+    },
+    {
+      "id": "cma-deliver",
+      "name": "CMA request to build to review to send",
+      "seed": true,
+      "litmus": true,
+      "inception": "Seller-intent lead with address (LP actions.ts:611-629, Meta webhook :631-652), broker kickoff from alert, or /admin/cmas/new",
+      "completion": "Lead received the send (sendCmaToLeadAction) or broker abandoned/killed the draft",
+      "evidence": "app/lp/seller-home-value/actions.ts:604-629; app/api/cron/cma-build-worker (lib/cma/worker.ts:107-156, lib/cma/build.ts:666); /admin/cmas approve+send actions; public.cmas + marketing_brain_actions content:cma",
+      "cadence": "event-driven",
+      "status": "deepened"
+    },
+    {
+      "id": "prospecting",
+      "name": "Outbound prospecting (expired + FSBO)",
+      "seed": true,
+      "inception": "Expired detection inside sync-delta (lib/sync/deltaSync.ts) or detect-fsbo-listings cron (lib/fsbo-processor.ts:66-90) surfaces a prospect",
+      "completion": "Audit/CMA sent to owner (approve-and-send in /admin/prospecting) or prospect dismissed; stop rules honored",
+      "evidence": "/admin/prospecting + [kind]/[id] (listProspects, getProspectDetail, app/actions/prospecting); 5 legacy routes now redirect in; skip-trace via BatchData; expired first touch is manual (memory)",
+      "cadence": "weekly",
+      "status": "deepened"
+    },
+    {
+      "id": "suppression-guard",
+      "name": "Outbound compliance gate (TCPA / quiet hours / suppression)",
+      "seed": true,
+      "inception": "Any outbound send attempt (sequence step, bulk job, manual composer, market-report send, prospecting send)",
+      "completion": "Send allowed, rescheduled to window, or hard-blocked with recorded reason; STOP/START keywords maintain the list",
+      "evidence": "lib/comms/sendGovernedSms.ts:30-101; lib/comms/guards.ts:28-49; lib/crm/suppressions.ts:31-57; lib/crm/quiet-hours.ts:23-26; inbound-sms route :194-218 (STOP/START); A2P gate crm-sequence-engine:392-470; /admin/crm/settings/suppression",
+      "cadence": "continuous",
+      "status": "deepened"
+    },
+    {
+      "id": "sequence-run",
+      "name": "Sequence enrollment to touches to exit",
+      "seed": true,
+      "inception": "Auto-enroll at ingress (lib/crm/enroll.ts autoEnrollByFubId), crm-auto-enroll 7-day sweep, or manual enroll",
+      "completion": "Enrollment completed / paused_reply / suppressed / stopped / awaiting_broker_next",
+      "evidence": "lib/crm/enroll.ts:40-392; app/api/cron/crm-auto-enroll/route.ts:39-183; app/api/cron/crm-sequence-engine/route.ts:52-598; crm_sequence_enrollments/sends; /admin/crm/sequences editor",
+      "cadence": "continuous",
+      "status": "deepened"
+    },
+    {
+      "id": "lead-ingress",
+      "name": "Lead becomes a person",
+      "seed": true,
+      "inception": "LP form, Meta lead webhook, inbound SMS from unknown number, portal lead email (Zillow/Realtor), saved-search signup, sign-in capture, FSBO detection, CSV import",
+      "completion": "crm_people row + contact points + timeline origin note; hot-lead task; downstream alert + auto-enroll fired",
+      "evidence": "lib/data/crm/ensureNativeLead.ts:158-246; lib/followupboss.ts:101-176; app/api/meta/lead-webhook/route.ts:420-806; app/api/cron/crm-portal-lead-intake:94-151; app/actions/crm-import",
+      "cadence": "continuous",
+      "status": "deepened"
+    },
+    {
+      "id": "identity-dedup",
+      "name": "Person identity resolution",
+      "seed": true,
+      "inception": "New contact point arrives (email-first then phone lookup) or broker triggers merge",
+      "completion": "Single person row; dupes merged via mergePeopleCore; enrichment unioned",
+      "evidence": "lib/data/crm/ensureNativeLead.ts:139-149,266-309; lib/data/crm/findOrCreatePersonByPhone.ts:61-107; mergePeopleCore (memory: the ONE merge path)",
+      "cadence": "event-driven",
+      "status": "deepened"
+    },
+    {
+      "id": "content-approve",
+      "name": "Draft to approval to publish/send",
+      "seed": true,
+      "inception": "marketing_brain_actions row reaches ready (producer-runtime), or broker SMS agent drafts content:*",
+      "completion": "Approved and executed (publisher-sweep) then measured, or killed",
+      "evidence": "producer-dispatcher/producer-runtime/publisher-sweep crons; /admin/approval-queue; /admin/crm/approvals; broker self-approval (CLAUDE.md 1); marketing-measurement-loop",
+      "cadence": "daily",
+      "status": "deepened"
+    },
+    {
+      "id": "sync-ops",
+      "name": "Listing/CRM sync health",
+      "seed": true,
+      "inception": "Cron cadence (sync-delta 4x/hr, sync-full weekly, refresh-mvs hourly, crm-gmail-sync 4x/hr) or health-check alarm",
+      "completion": "Health known; backlog actioned or accepted; broker paged on alarm",
+      "evidence": "app/api/cron/sync-delta (lib/sync/deltaSync.ts:532); refresh-mvs:59-106; crm-health-check:130-208; /admin/sync + /admin/crm/health; deploy-health; loop-health-check:368-402",
+      "cadence": "continuous",
+      "status": "deepened"
+    },
+    {
+      "id": "listing-alert-care",
+      "name": "Consumer listing alerts (saved searches)",
+      "seed": true,
+      "inception": "Consumer saves a search / signs up for alerts (app/actions/saved-searches.ts:182, search-alert-capture.ts:103)",
+      "completion": "Due alerts scanned, events detected, emails sent to owners; broker sees approvals for pending alert groups",
+      "evidence": "app/api/cron/saved-search-alerts (lib/alerts/send.ts:20); listing_alerts + listing_alert_queue; /admin/crm/subscriptions (listPendingAlertApprovalGroups)",
+      "cadence": "continuous",
+      "status": "deepened"
+    },
+    {
+      "id": "visitor-escalate",
+      "name": "Hot visitor escalation",
+      "seed": false,
+      "inception": "visitor-hot-lead-escalation cron (*/15) finds hot sessions in visitor_sessions/events",
+      "completion": "Call task created + email to Matt; broker acted or dismissed",
+      "evidence": "app/api/cron/visitor-hot-lead-escalation/route.ts:246-305; /admin/visitors/live + [sessionId]",
+      "cadence": "continuous",
+      "status": "deepened",
+      "notes": "Candidate MERGE into broker-alert or lead-ingress at P3"
+    },
+    {
+      "id": "deal-track",
+      "name": "CRM sales pipeline (pre-close)",
+      "seed": true,
+      "inception": "Broker creates a deal on the pipeline board",
+      "completion": "Deal closed/lost; NOTE: Vault-backed truth lives in tc-close, not here",
+      "evidence": "/admin/crm/deals (+[id], /pipelines) via listDealsBoard/getCrmDeal/getDealPipelines; ~21 rows across 6 surfaces incl. the separate /admin/deals TC store (PHASE-0 Q2 evidence)",
+      "cadence": "rare",
+      "status": "deepened"
+    },
+    {
+      "id": "tc-close",
+      "name": "Transaction coordination to close",
+      "seed": false,
+      "inception": "Accepted offer -> TC deal created (post-acceptance)",
+      "completion": "Docs complete, envelopes signed/sealed, commissions computed, principal sign-off, closed; Vault is SoR",
+      "evidence": "/admin/deals (+[key]) getDealDashboard/getTcDeal/getAnticipatedDocuments/getDealContacts/getCommissionsForCycles; /admin/signing, /admin/sign-off, /admin/financials, /admin/commissions, /admin/forms",
+      "cadence": "event-driven",
+      "status": "deepened"
+    },
+    {
+      "id": "weekly-sla-review",
+      "name": "Response / pipeline hygiene ritual",
+      "seed": true,
+      "inception": "Weekly ritual (human); crm-task-reminders daily rollup; speed-to-lead + agent-goals reports",
+      "completion": "Matt reviewed; next actions set",
+      "evidence": "/admin/crm/reporting/speed-to-lead, agent-activity, agent-goals; crm-task-reminders cron :67-121; ritual itself is human, not in code",
+      "cadence": "weekly",
+      "status": "deepened"
+    },
+    {
+      "id": "reporting-truth",
+      "name": "Metric definition to dashboard",
+      "seed": true,
+      "inception": "Scheduled digests (analytics-daily-digest, marketing-optimization-report) or on-demand report view",
+      "completion": "One definition rendered, no placebo; drift alarmed by market-stat-consistency",
+      "evidence": "13 /admin/crm/reporting/* screens; /admin/analytics (13) + /admin/reports (9) with getLeadIntake rendered 5 ways; market-stat-consistency cron :58-181",
+      "cadence": "weekly",
+      "status": "deepened",
+      "notes": "Duplicate-surface sprawl is the defect signal; definitions scattered"
+    },
+    {
+      "id": "bpo-deliver",
+      "name": "BPO path",
+      "seed": true,
+      "inception": "Broker/request creates BPO at /admin/bpo/new",
+      "completion": "finalizeBpoAction + sendBpoDeliverable, or abandoned",
+      "evidence": "/admin/bpo (+[slug], /new) listBposForAdmin/getBpoAdminRowBySlug; structurally parallel to cma-deliver",
+      "cadence": "rare",
+      "status": "deepened"
+    },
+    {
+      "id": "newsletter-run",
+      "name": "Newsletter draft to send to reconcile",
+      "seed": false,
+      "inception": "newsletter-monthly-draft cron (1st of month) auto-drafts from market data, alerts Matt; or manual /admin/newsletters/new",
+      "completion": "Send queue drained (newsletter-send */2), reconciled (newsletter-reconcile), delivery summary visible",
+      "evidence": "newsletter-send/route.ts:25 (lib/newsletter/send-queue.ts:422); newsletter-monthly-draft:51-64; 6 /admin/newsletters routes; cohort enrollment fail-closed (lib/newsletter/cohort-enrollment)",
+      "cadence": "monthly",
+      "status": "deepened"
+    },
+    {
+      "id": "market-report-deliver",
+      "name": "Market report publish + subscriber cadence sends",
+      "seed": false,
+      "inception": "Weekly market-report cron builds/publishes; crm-market-report-send (4x/day) finds due subscriptions",
+      "completion": "Subscribed contact received report on their cadence; suppression fail-closed inside",
+      "evidence": "app/api/cron/market-report (generate-market-report.ts:285); crm-market-report-send :44 (lib/crm/market-report-send.ts:170); /admin/crm/subscriptions; /admin/crm/settings/market-reports; app/actions/crm-send-now.ts:90-103",
+      "cadence": "continuous",
+      "status": "deepened"
+    },
+    {
+      "id": "site-content-ops",
+      "name": "Site content curation (blog, guides, media, help, site pages)",
+      "seed": false,
+      "inception": "Broker/Matt edits content or media library; place-content pipeline refreshes About copy nightly",
+      "completion": "Content saved/published on the live site",
+      "evidence": "/admin/blog, /admin/guides, /admin/media/* (+3 redirects), /admin/help, /admin/site-pages, /admin/content-library; refresh-place-content cron",
+      "cadence": "rare",
+      "status": "deepened"
+    },
+    {
+      "id": "data-curate",
+      "name": "Listing + geography data correction",
+      "seed": false,
+      "inception": "Broker spots wrong listing data or unassigned geography",
+      "completion": "Listing row edited / geo assigned; MVs pick it up on next refresh",
+      "evidence": "/admin/listings (+[listingKey]) getAdminListingsPage/getAdminListingEditableData; /admin/geo (+resort-communities, area-guide-upload) listGeoPlaces/listSubdivisionsWithFlags",
+      "cadence": "rare",
+      "status": "deepened",
+      "notes": "Candidate MERGE into sync-ops at P3"
+    }
+  ],
+  "seed_not_found": [],
+  "seed_catalog_disposition": "All 15 seed processes CONFIRMED from code. 6 additional processes discovered in code: visitor-escalate, tc-close, newsletter-run, market-report-deliver, site-content-ops, data-curate.",
+  "summary": "P2 complete 2026-08-04: all 21 processes deepened with full PDS files under processes/. Proposed verdicts (P3, Matt to lock): KEEP 15 (broker-alert, inbound-respond, cma-deliver, prospecting, suppression-guard, sequence-run, lead-ingress, identity-dedup, content-approve, sync-ops, listing-alert-care, weekly-sla-review, reporting-truth, newsletter-run, market-report-deliver, tc-close minus overlaps below); MERGE 4 (visitor-escalate->broker-alert, bpo-deliver->cma-deliver surface, data-curate->sync-ops, weekly-sla-review->supervision view with sync-ops); DECIDE 1 (deal-track: kill standalone board or merge into tc-close); KEEP-THIN 1 (site-content-ops)."
 }

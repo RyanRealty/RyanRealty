@@ -1,3 +1,7 @@
 [
-  { "id": "registry-pass", "phase": "P1" }
+  {
+    "id": "process-lock-package",
+    "phase": "P3",
+    "note": "package written to decisions.md 2026-08-04; awaiting Matt process lock"
+  }
 ]

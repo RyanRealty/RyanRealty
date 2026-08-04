@@ -1,7 +1,7 @@
 {
-  "phase": "P1_REGISTRY",
+  "phase": "P3_PROCESS_LOCK",
   "locks": {},
-  "awaiting_lock": null,
+  "awaiting_lock": "process",
   "current_process": null,
-  "updated_at": "2026-08-04T20:32:30Z"
+  "updated_at": "2026-08-04T23:05:00Z"
 }

@@ -41,7 +41,13 @@ do not assume slash commands or autoload worked.
 
 ## Current program state (maintained by the agent)
 
-- BOOT completed 2026-08-04. Phase is `P1_REGISTRY`; top queue item is `registry-pass`.
-- Next unit: Block P1 in the pack — thin-stub every process (seed catalog + code
-  discovery), fill `process-registry.json`, write the `page-inventory.json` stub, queue
-  the P2 deepen order, set `state.json.phase` to `P2_DEEPEN`.
+- BOOT + P1 + all of P2 completed 2026-08-04. Phase is `P3_PROCESS_LOCK`,
+  `awaiting_lock: process`.
+- 21 processes deepened — full PDS files in `processes/`, registry all `deepened`,
+  `page-inventory.json` maps 160 routes.
+- The P3 decision package (verdict table, fix-the-class list, 5 open questions) is in
+  `decisions.md` under "P3 PROCESS LOCK PACKAGE — AWAITING MATT".
+- **Next unit: NOTHING until Matt writes the process lock into `decisions.md`.** When he
+  does: append his verdicts, set `locks.process`, clear `awaiting_lock`, advance phase to
+  `P4_DATA`, and run the P4 block (data atlas for KEEP processes only — P4-flagged
+  unknowns are listed at the end of the decision package).
