@@ -3,7 +3,7 @@
   "locks": {
     "process": "2026-08-04"
   },
-  "awaiting_lock": null,
+  "awaiting_lock": "ia",
   "current_process": null,
-  "updated_at": "2026-08-05T00:30:00Z"
+  "updated_at": "2026-08-05T01:20:00Z"
 }

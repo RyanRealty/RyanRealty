@@ -1,165 +1,646 @@
 {
-  "updated_at": "2026-08-04T21:20:00Z",
-  "note": "P1 best-effort stub: route -> process_id | REDIRECT (bridge, no job) | UNMAPPED (no process claim yet). 160 page.tsx routes enumerated 2026-08-04. Refined during P2/P5; cut decisions are P5.",
-  "routes": {
-    "/admin": "REDIRECT",
-    "/admin/setup": "UNMAPPED",
-    "/admin/login": "UNMAPPED",
-    "/admin/access-denied": "UNMAPPED",
-    "/admin/console": "REDIRECT",
-    "/admin/console/leads": "REDIRECT",
-    "/admin/console/leads/[id]": "REDIRECT",
-    "/admin/broker-dashboard": "inbound-respond",
-    "/admin/operations": "sync-ops",
-    "/admin/analytics": "reporting-truth",
-    "/admin/analytics/action-required": "reporting-truth",
-    "/admin/analytics/ad-roi": "reporting-truth",
-    "/admin/analytics/cost-per-lead": "reporting-truth",
-    "/admin/analytics/demographics": "reporting-truth",
-    "/admin/analytics/social": "reporting-truth",
-    "/admin/analytics/google-search": "reporting-truth",
-    "/admin/analytics/listing-performance": "reporting-truth",
-    "/admin/analytics/lp-leaderboard": "reporting-truth",
-    "/admin/analytics/funnel-breakdown": "reporting-truth",
-    "/admin/analytics/google-business-profile": "reporting-truth",
-    "/admin/analytics/meta-health": "reporting-truth",
-    "/admin/reports": "REDIRECT",
-    "/admin/reports/brokers": "reporting-truth",
-    "/admin/reports/cma-performance": "reporting-truth",
-    "/admin/reports/custom": "reporting-truth",
-    "/admin/reports/emails": "reporting-truth",
-    "/admin/reports/lead-flow": "reporting-truth",
-    "/admin/reports/leads": "reporting-truth",
-    "/admin/reports/market": "reporting-truth",
-    "/admin/reports/traffic-sources": "reporting-truth",
-    "/admin/crm": "lead-ingress",
-    "/admin/crm/[id]": "inbound-respond",
-    "/admin/crm/[id]/portal": "inbound-respond",
-    "/admin/crm/new": "lead-ingress",
-    "/admin/crm/activity": "weekly-sla-review",
-    "/admin/crm/approvals": "content-approve",
-    "/admin/crm/automations": "REDIRECT",
-    "/admin/crm/calendar": "inbound-respond",
-    "/admin/crm/health": "sync-ops",
-    "/admin/crm/import": "lead-ingress",
-    "/admin/crm/import/new": "lead-ingress",
-    "/admin/crm/import/new/map": "lead-ingress",
-    "/admin/crm/import/new/preview": "lead-ingress",
-    "/admin/crm/import/[id]": "lead-ingress",
-    "/admin/crm/inbox": "inbound-respond",
-    "/admin/crm/referrals": "deal-track",
-    "/admin/crm/subscriptions": "market-report-deliver",
-    "/admin/crm/tasks": "inbound-respond",
-    "/admin/crm/workflows": "sequence-run",
-    "/admin/crm/deals": "deal-track",
-    "/admin/crm/deals/[id]": "deal-track",
-    "/admin/crm/deals/pipelines": "deal-track",
-    "/admin/crm/reporting/deals": "REDIRECT",
-    "/admin/crm/sequences": "sequence-run",
-    "/admin/crm/sequences/[id]/edit": "sequence-run",
-    "/admin/crm/reporting": "reporting-truth",
-    "/admin/crm/reporting/agent-activity": "weekly-sla-review",
-    "/admin/crm/reporting/agent-goals": "weekly-sla-review",
-    "/admin/crm/reporting/appointments": "reporting-truth",
-    "/admin/crm/reporting/batch-emails": "reporting-truth",
-    "/admin/crm/reporting/call-logs": "reporting-truth",
-    "/admin/crm/reporting/calls": "reporting-truth",
-    "/admin/crm/reporting/contact-attempts": "reporting-truth",
-    "/admin/crm/reporting/lead-sources": "reporting-truth",
-    "/admin/crm/reporting/marketing": "reporting-truth",
-    "/admin/crm/reporting/overview": "reporting-truth",
-    "/admin/crm/reporting/properties": "reporting-truth",
-    "/admin/crm/reporting/speed-to-lead": "weekly-sla-review",
-    "/admin/crm/reporting/texts": "reporting-truth",
-    "/admin/crm/reporting/westside": "reporting-truth",
-    "/admin/crm/settings": "UNMAPPED",
-    "/admin/crm/settings/appointments": "UNMAPPED",
-    "/admin/crm/settings/areas": "reporting-truth",
-    "/admin/crm/settings/assignment": "lead-ingress",
-    "/admin/crm/settings/brokers": "lead-ingress",
-    "/admin/crm/settings/company": "UNMAPPED",
-    "/admin/crm/settings/company/block-list": "suppression-guard",
-    "/admin/crm/settings/company/registration": "suppression-guard",
-    "/admin/crm/settings/custom-fields": "UNMAPPED",
-    "/admin/crm/settings/groups": "UNMAPPED",
-    "/admin/crm/settings/lead-flows": "lead-ingress",
-    "/admin/crm/settings/market-reports": "market-report-deliver",
-    "/admin/crm/settings/ponds": "lead-ingress",
-    "/admin/crm/settings/segments": "newsletter-run",
-    "/admin/crm/settings/stages": "UNMAPPED",
-    "/admin/crm/settings/suppression": "suppression-guard",
-    "/admin/crm/settings/tags": "UNMAPPED",
-    "/admin/crm/settings/team": "UNMAPPED",
-    "/admin/crm/settings/templates": "sequence-run",
-    "/admin/deals": "tc-close",
-    "/admin/deals/[key]": "tc-close",
-    "/admin/transactions": "REDIRECT",
-    "/admin/financials": "tc-close",
-    "/admin/forms": "tc-close",
-    "/admin/commissions": "tc-close",
-    "/admin/sign-off": "tc-close",
-    "/admin/signing": "tc-close",
-    "/admin/signing/[envelopeId]": "tc-close",
-    "/admin/prospecting": "prospecting",
-    "/admin/prospecting/[kind]/[id]": "prospecting",
-    "/admin/expired-listings": "REDIRECT",
-    "/admin/expired-listings/[key]": "REDIRECT",
-    "/admin/expired-outreach": "REDIRECT",
-    "/admin/expireds": "REDIRECT",
-    "/admin/fsbos": "REDIRECT",
-    "/admin/cmas": "cma-deliver",
-    "/admin/cmas/[slug]": "cma-deliver",
-    "/admin/cmas/new": "cma-deliver",
-    "/admin/bpo": "bpo-deliver",
-    "/admin/bpo/[slug]": "bpo-deliver",
-    "/admin/bpo/new": "bpo-deliver",
-    "/admin/listings": "data-curate",
-    "/admin/listings/[listingKey]": "data-curate",
-    "/admin/media": "site-content-ops",
-    "/admin/media/banners": "site-content-ops",
-    "/admin/media/photos": "site-content-ops",
-    "/admin/media/stock-photos": "site-content-ops",
-    "/admin/banners": "REDIRECT",
-    "/admin/photos": "REDIRECT",
-    "/admin/stock-photos": "REDIRECT",
-    "/admin/geo": "data-curate",
-    "/admin/geo/resort-communities": "data-curate",
-    "/admin/geo/area-guide-upload": "data-curate",
-    "/admin/resort-communities": "REDIRECT",
-    "/admin/newsletters": "newsletter-run",
-    "/admin/newsletters/[id]": "newsletter-run",
-    "/admin/newsletters/new": "newsletter-run",
-    "/admin/newsletters/enroll": "newsletter-run",
-    "/admin/newsletters/subscribers": "newsletter-run",
-    "/admin/newsletters/analytics": "newsletter-run",
-    "/admin/blog": "site-content-ops",
-    "/admin/guides": "site-content-ops",
-    "/admin/help": "site-content-ops",
-    "/admin/help/[slug]": "site-content-ops",
-    "/admin/content-library": "site-content-ops",
-    "/admin/site-pages": "site-content-ops",
-    "/admin/email": "REDIRECT",
-    "/admin/email/compose": "sequence-run",
-    "/admin/email/campaigns": "reporting-truth",
-    "/admin/sync": "sync-ops",
-    "/admin/sync/spark": "sync-ops",
-    "/admin/spark-status": "REDIRECT",
-    "/admin/brokers": "UNMAPPED",
-    "/admin/brokers/new": "UNMAPPED",
-    "/admin/brokers/edit": "UNMAPPED",
-    "/admin/users": "UNMAPPED",
-    "/admin/settings": "UNMAPPED",
-    "/admin/broker-links": "UNMAPPED",
-    "/admin/people": "REDIRECT",
-    "/admin/people/[legacyId]": "REDIRECT",
-    "/admin/query-builder": "REDIRECT",
-    "/admin/search": "REDIRECT",
-    "/admin/performance": "REDIRECT",
-    "/admin/visitors": "REDIRECT",
-    "/admin/visitors/live": "visitor-escalate",
-    "/admin/visitors/[sessionId]": "visitor-escalate",
-    "/admin/dscr": "UNMAPPED",
-    "/admin/approval-queue": "content-approve",
-    "/admin/audit-log": "UNMAPPED"
+ "updated_at": "2026-08-05T01:00:00Z",
+ "note": "P5 2026-08-05: destination column derived from the locked KEEP set (ia-lock.md). CUT = route ceases to exist as a distinct surface. SYSTEM = auth/setup chrome, outside IA. 160/160 page.tsx routes verified against disk this session.",
+ "routes": {
+  "/admin": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/setup": {
+   "process": "UNMAPPED",
+   "destination": "SYSTEM"
+  },
+  "/admin/login": {
+   "process": "UNMAPPED",
+   "destination": "SYSTEM"
+  },
+  "/admin/access-denied": {
+   "process": "UNMAPPED",
+   "destination": "SYSTEM"
+  },
+  "/admin/console": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/console/leads": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/console/leads/[id]": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/broker-dashboard": {
+   "process": "inbound-respond",
+   "destination": "Today"
+  },
+  "/admin/operations": {
+   "process": "sync-ops",
+   "destination": "Oversight"
+  },
+  "/admin/analytics": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/analytics/action-required": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/analytics/ad-roi": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/analytics/cost-per-lead": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/analytics/demographics": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/analytics/social": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/analytics/google-search": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/analytics/listing-performance": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/analytics/lp-leaderboard": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/analytics/funnel-breakdown": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/analytics/google-business-profile": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/analytics/meta-health": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/reports": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/reports/brokers": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/reports/cma-performance": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/reports/custom": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/reports/emails": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/reports/lead-flow": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/reports/leads": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/reports/market": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/reports/traffic-sources": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/crm": {
+   "process": "lead-ingress",
+   "destination": "People"
+  },
+  "/admin/crm/[id]": {
+   "process": "inbound-respond",
+   "destination": "People"
+  },
+  "/admin/crm/[id]/portal": {
+   "process": "inbound-respond",
+   "destination": "People"
+  },
+  "/admin/crm/new": {
+   "process": "lead-ingress",
+   "destination": "People"
+  },
+  "/admin/crm/activity": {
+   "process": "weekly-sla-review",
+   "destination": "Oversight"
+  },
+  "/admin/crm/approvals": {
+   "process": "content-approve",
+   "destination": "Today"
+  },
+  "/admin/crm/automations": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/crm/calendar": {
+   "process": "inbound-respond",
+   "destination": "Today"
+  },
+  "/admin/crm/health": {
+   "process": "sync-ops",
+   "destination": "Oversight"
+  },
+  "/admin/crm/import": {
+   "process": "lead-ingress",
+   "destination": "People"
+  },
+  "/admin/crm/import/new": {
+   "process": "lead-ingress",
+   "destination": "People"
+  },
+  "/admin/crm/import/new/map": {
+   "process": "lead-ingress",
+   "destination": "People"
+  },
+  "/admin/crm/import/new/preview": {
+   "process": "lead-ingress",
+   "destination": "People"
+  },
+  "/admin/crm/import/[id]": {
+   "process": "lead-ingress",
+   "destination": "People"
+  },
+  "/admin/crm/inbox": {
+   "process": "inbound-respond",
+   "destination": "Messages"
+  },
+  "/admin/crm/referrals": {
+   "process": "deal-track",
+   "destination": "Closings"
+  },
+  "/admin/crm/subscriptions": {
+   "process": "market-report-deliver",
+   "destination": "Audiences"
+  },
+  "/admin/crm/tasks": {
+   "process": "inbound-respond",
+   "destination": "Today"
+  },
+  "/admin/crm/workflows": {
+   "process": "sequence-run",
+   "destination": "Settings"
+  },
+  "/admin/crm/deals": {
+   "process": "deal-track",
+   "destination": "Closings"
+  },
+  "/admin/crm/deals/[id]": {
+   "process": "deal-track",
+   "destination": "Closings"
+  },
+  "/admin/crm/deals/pipelines": {
+   "process": "deal-track",
+   "destination": "Closings"
+  },
+  "/admin/crm/reporting/deals": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/crm/sequences": {
+   "process": "sequence-run",
+   "destination": "Oversight"
+  },
+  "/admin/crm/sequences/[id]/edit": {
+   "process": "sequence-run",
+   "destination": "Settings"
+  },
+  "/admin/crm/reporting": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/crm/reporting/agent-activity": {
+   "process": "weekly-sla-review",
+   "destination": "Oversight"
+  },
+  "/admin/crm/reporting/agent-goals": {
+   "process": "weekly-sla-review",
+   "destination": "Oversight"
+  },
+  "/admin/crm/reporting/appointments": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/crm/reporting/batch-emails": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/crm/reporting/call-logs": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/crm/reporting/calls": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/crm/reporting/contact-attempts": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/crm/reporting/lead-sources": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/crm/reporting/marketing": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/crm/reporting/overview": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/crm/reporting/properties": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/crm/reporting/speed-to-lead": {
+   "process": "weekly-sla-review",
+   "destination": "Oversight"
+  },
+  "/admin/crm/reporting/texts": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/crm/reporting/westside": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/crm/settings": {
+   "process": "UNMAPPED",
+   "destination": "Settings"
+  },
+  "/admin/crm/settings/appointments": {
+   "process": "UNMAPPED",
+   "destination": "Settings"
+  },
+  "/admin/crm/settings/areas": {
+   "process": "reporting-truth",
+   "destination": "Settings"
+  },
+  "/admin/crm/settings/assignment": {
+   "process": "lead-ingress",
+   "destination": "Settings"
+  },
+  "/admin/crm/settings/brokers": {
+   "process": "lead-ingress",
+   "destination": "Settings"
+  },
+  "/admin/crm/settings/company": {
+   "process": "UNMAPPED",
+   "destination": "Settings"
+  },
+  "/admin/crm/settings/company/block-list": {
+   "process": "suppression-guard",
+   "destination": "Settings"
+  },
+  "/admin/crm/settings/company/registration": {
+   "process": "suppression-guard",
+   "destination": "Settings"
+  },
+  "/admin/crm/settings/custom-fields": {
+   "process": "UNMAPPED",
+   "destination": "Settings"
+  },
+  "/admin/crm/settings/groups": {
+   "process": "UNMAPPED",
+   "destination": "Settings"
+  },
+  "/admin/crm/settings/lead-flows": {
+   "process": "lead-ingress",
+   "destination": "Settings"
+  },
+  "/admin/crm/settings/market-reports": {
+   "process": "market-report-deliver",
+   "destination": "Audiences"
+  },
+  "/admin/crm/settings/ponds": {
+   "process": "lead-ingress",
+   "destination": "Settings"
+  },
+  "/admin/crm/settings/segments": {
+   "process": "newsletter-run",
+   "destination": "Audiences"
+  },
+  "/admin/crm/settings/stages": {
+   "process": "UNMAPPED",
+   "destination": "Settings"
+  },
+  "/admin/crm/settings/suppression": {
+   "process": "suppression-guard",
+   "destination": "Settings"
+  },
+  "/admin/crm/settings/tags": {
+   "process": "UNMAPPED",
+   "destination": "Settings"
+  },
+  "/admin/crm/settings/team": {
+   "process": "UNMAPPED",
+   "destination": "Settings"
+  },
+  "/admin/crm/settings/templates": {
+   "process": "sequence-run",
+   "destination": "Settings"
+  },
+  "/admin/deals": {
+   "process": "tc-close",
+   "destination": "Closings"
+  },
+  "/admin/deals/[key]": {
+   "process": "tc-close",
+   "destination": "Closings"
+  },
+  "/admin/transactions": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/financials": {
+   "process": "tc-close",
+   "destination": "Closings"
+  },
+  "/admin/forms": {
+   "process": "tc-close",
+   "destination": "Closings"
+  },
+  "/admin/commissions": {
+   "process": "tc-close",
+   "destination": "Closings"
+  },
+  "/admin/sign-off": {
+   "process": "tc-close",
+   "destination": "Closings"
+  },
+  "/admin/signing": {
+   "process": "tc-close",
+   "destination": "Closings"
+  },
+  "/admin/signing/[envelopeId]": {
+   "process": "tc-close",
+   "destination": "Closings"
+  },
+  "/admin/prospecting": {
+   "process": "prospecting",
+   "destination": "Prospecting"
+  },
+  "/admin/prospecting/[kind]/[id]": {
+   "process": "prospecting",
+   "destination": "Prospecting"
+  },
+  "/admin/expired-listings": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/expired-listings/[key]": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/expired-outreach": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/expireds": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/fsbos": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/cmas": {
+   "process": "cma-deliver",
+   "destination": "Valuations"
+  },
+  "/admin/cmas/[slug]": {
+   "process": "cma-deliver",
+   "destination": "Valuations"
+  },
+  "/admin/cmas/new": {
+   "process": "cma-deliver",
+   "destination": "Valuations"
+  },
+  "/admin/bpo": {
+   "process": "bpo-deliver",
+   "destination": "Valuations"
+  },
+  "/admin/bpo/[slug]": {
+   "process": "bpo-deliver",
+   "destination": "Valuations"
+  },
+  "/admin/bpo/new": {
+   "process": "bpo-deliver",
+   "destination": "Valuations"
+  },
+  "/admin/listings": {
+   "process": "data-curate",
+   "destination": "Oversight"
+  },
+  "/admin/listings/[listingKey]": {
+   "process": "data-curate",
+   "destination": "Oversight"
+  },
+  "/admin/media": {
+   "process": "site-content-ops",
+   "destination": "Content"
+  },
+  "/admin/media/banners": {
+   "process": "site-content-ops",
+   "destination": "Content"
+  },
+  "/admin/media/photos": {
+   "process": "site-content-ops",
+   "destination": "Content"
+  },
+  "/admin/media/stock-photos": {
+   "process": "site-content-ops",
+   "destination": "Content"
+  },
+  "/admin/banners": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/photos": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/stock-photos": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/geo": {
+   "process": "data-curate",
+   "destination": "Oversight"
+  },
+  "/admin/geo/resort-communities": {
+   "process": "data-curate",
+   "destination": "Oversight"
+  },
+  "/admin/geo/area-guide-upload": {
+   "process": "data-curate",
+   "destination": "Oversight"
+  },
+  "/admin/resort-communities": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/newsletters": {
+   "process": "newsletter-run",
+   "destination": "Content"
+  },
+  "/admin/newsletters/[id]": {
+   "process": "newsletter-run",
+   "destination": "Content"
+  },
+  "/admin/newsletters/new": {
+   "process": "newsletter-run",
+   "destination": "Content"
+  },
+  "/admin/newsletters/enroll": {
+   "process": "newsletter-run",
+   "destination": "Content"
+  },
+  "/admin/newsletters/subscribers": {
+   "process": "newsletter-run",
+   "destination": "Audiences"
+  },
+  "/admin/newsletters/analytics": {
+   "process": "newsletter-run",
+   "destination": "Reports"
+  },
+  "/admin/blog": {
+   "process": "site-content-ops",
+   "destination": "Content"
+  },
+  "/admin/guides": {
+   "process": "site-content-ops",
+   "destination": "Content"
+  },
+  "/admin/help": {
+   "process": "site-content-ops",
+   "destination": "Content"
+  },
+  "/admin/help/[slug]": {
+   "process": "site-content-ops",
+   "destination": "Content"
+  },
+  "/admin/content-library": {
+   "process": "site-content-ops",
+   "destination": "Content"
+  },
+  "/admin/site-pages": {
+   "process": "site-content-ops",
+   "destination": "Content"
+  },
+  "/admin/email": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/email/compose": {
+   "process": "sequence-run",
+   "destination": "Audiences"
+  },
+  "/admin/email/campaigns": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
+  "/admin/sync": {
+   "process": "sync-ops",
+   "destination": "Oversight"
+  },
+  "/admin/sync/spark": {
+   "process": "sync-ops",
+   "destination": "Oversight"
+  },
+  "/admin/spark-status": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/brokers": {
+   "process": "UNMAPPED",
+   "destination": "Settings"
+  },
+  "/admin/brokers/new": {
+   "process": "UNMAPPED",
+   "destination": "Settings"
+  },
+  "/admin/brokers/edit": {
+   "process": "UNMAPPED",
+   "destination": "Settings"
+  },
+  "/admin/users": {
+   "process": "UNMAPPED",
+   "destination": "Settings"
+  },
+  "/admin/settings": {
+   "process": "UNMAPPED",
+   "destination": "Settings"
+  },
+  "/admin/broker-links": {
+   "process": "UNMAPPED",
+   "destination": "Settings"
+  },
+  "/admin/people": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/people/[legacyId]": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/query-builder": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/search": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/performance": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/visitors": {
+   "process": "REDIRECT",
+   "destination": "CUT"
+  },
+  "/admin/visitors/live": {
+   "process": "visitor-escalate",
+   "destination": "Oversight"
+  },
+  "/admin/visitors/[sessionId]": {
+   "process": "visitor-escalate",
+   "destination": "Oversight"
+  },
+  "/admin/dscr": {
+   "process": "UNMAPPED",
+   "destination": "Prospecting"
+  },
+  "/admin/approval-queue": {
+   "process": "content-approve",
+   "destination": "Today"
+  },
+  "/admin/audit-log": {
+   "process": "UNMAPPED",
+   "destination": "Oversight"
+  },
+  "/admin/inbox": {
+   "process": "REDIRECT",
+   "destination": "CUT"
   }
+ }
 }

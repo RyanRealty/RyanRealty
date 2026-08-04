@@ -1,7 +1,7 @@
 [
   {
-    "id": "ia-derivation",
+    "id": "ia-lock-wait",
     "phase": "P5",
-    "note": "derive destinations from KEEP processes only (amnesia: zero naming/grouping carryover); one primary destination per job; map all 160 routes -> destination or cut-list; re-derive the mobile tab set from weekly-use evidence (prospecting is locked primary); write ia-lock.md as a decision pack; STOP for Matt IA lock. NOT STARTED - Matt said do not start P5 this session."
+    "note": "ia-lock.md decision package written 2026-08-05; awaiting Matt IA lock in decisions.md (5 open questions inside the package). After lock: freeze cut-list.md, set locks.ia, phase=P6_VISUAL, next unit = visual-language (greenfield design_system/admin/, external standards only)."
   }
 ]

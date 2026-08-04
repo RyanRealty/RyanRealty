@@ -78,7 +78,9 @@ afterAll(() => {
   rmSync(SANDBOX, { recursive: true, force: true })
 })
 
-describe('ci:search-perf-budget', () => {
+// timeout: the fixture reset() copies repo files per test (~0.6-1.3s idle); under
+// disk load (hook runs after builds) it can exceed the 5s default by 4-8x.
+describe('ci:search-perf-budget', { timeout: 30_000 }, () => {
   it('passes on an untouched copy of the tree', () => {
     reset()
     const result = runGate()

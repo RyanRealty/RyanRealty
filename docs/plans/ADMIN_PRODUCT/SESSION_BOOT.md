@@ -55,9 +55,13 @@ do not assume slash commands or autoload worked.
   visible (P2 assessment corrected); place copy has no manual surface and regenerates
   unconditionally; CRM↔TC has zero bridge and /admin/deals reads the legacy
   skyslope_transactions mirror.
-- **Next unit: `ia-derivation` (P5)** — derive destinations from KEEP processes only
-  (amnesia: zero naming/grouping/route carryover — Matt 2026-08-04); one primary
-  destination per job; map all 160 routes → destination or cut-list; re-derive the
-  mobile tab set from weekly-use evidence (prospecting is locked as a primary surface);
-  write `ia-lock.md` as a decision pack; **STOP for Matt's IA lock.** Never start P6
-  visuals before that lock exists in decisions.md.
+- **P5 PACKAGE WRITTEN 2026-08-05, AWAITING IA LOCK** — `ia-lock.md`: 11 job-named
+  destinations (Today, Messages, People, Prospecting, Valuations, Closings, Oversight,
+  Reports, Audiences, Content, Settings), 5-tab mobile set (Today · Messages ·
+  Prospecting · People · Oversight), 160/160 routes dispositioned in
+  `page-inventory.json` (26 CUT — enumerated in `cut-list.md` — 3 SYSTEM, 131
+  absorbed), amnesia test recorded, 5 open questions for Matt inside the package.
+- **Next unit: NOTHING until Matt writes the IA lock into `decisions.md`.** When he
+  does: record his answers/renames, set `locks.ia`, clear `awaiting_lock`, freeze
+  `cut-list.md`, advance phase to `P6_VISUAL` (greenfield `design_system/admin/`,
+  external standards only, amnesia test required). Never start P6 before that lock.
