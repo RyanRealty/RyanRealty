@@ -232,8 +232,12 @@ export const CO_EVENTS: CoEvent[] = [
     lat: 44.254,
     lng: -121.158,
     recurrence: 'Annually, late July into early August',
-    nextConfirmedDate: '2026-07-29',
-    endDate: '2026-08-02',
+    // The 2026 fair ran 2026-07-29 to 2026-08-02 and is over. The 2027 dates
+    // are not published on expo.deschutes.org yet, and inventing one would be a
+    // fabricated number (§0), so the date goes null and the page renders the
+    // recurrence descriptor until the organizer posts the real dates.
+    nextConfirmedDate: null,
+    endDate: null,
     priceInfo: 'Ticketed',
     organizer: 'Deschutes County Fair & Expo Center',
     officialUrl: 'https://expo.deschutes.org/p/fair',
