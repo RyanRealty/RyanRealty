@@ -1,5 +1,13 @@
 # Ryan Realty Admin + CRM — Ground-Up Rebuild · Specification Package
 
+> **SUPERSEDED AS AN EXECUTION TARGET (2026-08-04).**
+> The active program is the Admin Product OS:
+> [`ADMIN-UI-UNIFICATION-PROMPT.md`](./ADMIN-UI-UNIFICATION-PROMPT.md).
+> This package and `specs/` are **evidence, not approved design** — the OS
+> precedence ladder explicitly retires "implement ADMIN_REBUILD/specs as already
+> approved." `audit-reports/` remains allowlisted as factual evidence.
+> Process, data, IA, and visual truth now live in `docs/plans/ADMIN_PRODUCT/`.
+
 **Status:** specification complete, awaiting Matt's sign-off + the §D decisions.
 **No code until this package is approved.**
 

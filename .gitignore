@@ -86,6 +86,10 @@ next-env.d.ts
 !.claude/skills/experience-rollout/
 # ...and endtoend — the /endtoend mission protocol (2026-07-30), tracked so it survives clones + is visible to Cursor
 !.claude/skills/endtoend/
+# ...and admin-product-os — the runner half of the Admin Product OS (2026-08-04). Its memory
+# lives in docs/plans/ADMIN_PRODUCT/ (tracked); leaving the runner local-only would strand the
+# OS on one machine and hide it from Cursor, breaking the pack's own cross-agent handoff story.
+!.claude/skills/admin-product-os/
 .claude/worktrees
 .claude/cache
 .claude/projects
