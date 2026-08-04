@@ -90,6 +90,7 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 |---|---|
 | `PROGRAM_2026-07-21/` | **live** — the RR-PLATFORM-DECISIONS completion program package (master spec, recorded decisions, audits, completion ledger, preserved skills). One of the two sanctioned plan homes; every file within it is covered by this row. |
 | `ADMIN_REBUILD/` | **live** — the admin/CRM rebuild package (specs, audit reports). The second sanctioned plan home; every file within it is covered by this row. |
+| `ADMIN_PRODUCT/` | **live** — Admin Product OS memory root (state, registry, process specs). Every file within is covered by this row. |
 | `master-plan.md`, `data-architecture-plan.md`, `continuous-improvement.md` | superseded by this canon for process authority; still on disk as orchestrate/ownership reference inputs (W13.1 keep) |
 | `money-path-contract-plan-2026-06-04.md` | open input — feed into the loop's backlog |
 | `DSCR_DEAL_FINDER_2026-08-03.md` | **live** — DSCR acquisition screen at `/admin/dscr`: composite Deal Score, admin-nav discoverability, and a draft-first emailable deal list. Rent is sourced per-property (Zillow rentZestimate) into `public.dscr_rent_estimates` because the MLS carries a rent figure on ~4% of listings. Sending stays per-action approval under §1. |
