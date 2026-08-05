@@ -3,5 +3,10 @@
     "id": "matt-inputs",
     "phase": "AWAITING_MATT",
     "note": "(1) The cut-off sentence from 2026-08-05 ('...and then ensure that our') — completes the CMA section list if it named more. (2) Fixture 'done' -> clean: person 60610, cma-20695-town + action row, auth users cma-fixture-viewer@/cma-fixture-wrong@ryan-realty.com. (3) Optional polish parked: net-sheet section could return as an opt-in CMA section if Matt wants it back (it was cut per 'don't overcomplicate')."
+  },
+  {
+    "id": "pricing-depth-followons",
+    "phase": "BACKLOG",
+    "note": "Round 4 shipped the reproducible metric (cma-backtest, 3,394 pairs), resort guard, quantile clamps, five report sections, interactive layer. Parked deeper ideas Matt spitballed: photo/vision condition scoring on the subject (asset-library vision grades exist for our photos, not arbitrary MLS subjects), deferred-maintenance factor, ratio-vs-overprice-degree segmentation of the backtest (does close/ask ratio depend on how far above comp-value the failed ask sat). Re-run scripts/cma-backtest.mjs quarterly and refresh FAILED_ASK_BACKTEST constants (test locks them to the artifact)."
   }
 ]
