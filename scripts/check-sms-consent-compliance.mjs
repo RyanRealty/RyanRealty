@@ -23,6 +23,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 const CONSENT = 'components/site/SmsConsentDisclosure.tsx'
+const CONSENT_SOURCE = 'lib/crm/sms-consent-text.ts'
 const PRIVACY = 'app/privacy/page.tsx'
 const TERMS = 'app/terms/page.tsx'
 const ENROLL = 'lib/crm/enroll.ts'
@@ -39,13 +40,19 @@ const read = (p) => {
 }
 
 // ── 1. consent disclosure component ─────────────────────────────────────────
+const consentSource = read(CONSENT_SOURCE)
 const consent = read(CONSENT)
 // The exact sentence carriers verify word-for-word on every lead form.
 const EXACT =
   'I agree to receive text messages from Ryan Realty about my request, including property and home-value updates, scheduling, and replies from our team, at the phone number I provided. Consent is not a condition of any purchase or service. Message frequency varies. Msg & data rates may apply. Reply STOP to opt out, HELP for help.'
-if (consent && !consent.includes(EXACT)) {
+if (consentSource && !consentSource.includes(EXACT)) {
   fails.push(
-    `${CONSENT}: the carrier-verified consent sentence was changed. It must read EXACTLY:\n      "${EXACT}"`,
+    `${CONSENT_SOURCE}: the carrier-verified consent sentence was changed. It must read EXACTLY:\n      "${EXACT}"`,
+  )
+}
+if (consent && !consent.includes("from '@/lib/crm/sms-consent-text'")) {
+  fails.push(
+    `${CONSENT}: must import SMS_CONSENT_TEXT from lib/crm/sms-consent-text (the one source of truth the server surfaces share).`,
   )
 }
 // Twilio Trust&Safety (ticket 27497858) requires an EXPLICIT, unchecked-by-default
@@ -55,9 +62,8 @@ if (consent && !/data-sms-consent-checkbox/.test(consent)) {
     `${CONSENT}: missing the SMS consent CHECKBOX (data-sms-consent-checkbox). A2P 10DLC requires an explicit, unchecked-by-default checkbox dedicated to SMS, separate from voice.`,
   )
 }
-if (consent && !/Consent is not a condition of any purchase or service/.test(consent)) {
-  fails.push(`${CONSENT}: missing the "Consent is not a condition of any purchase or service" clause (carrier-required).`)
-}
+// The condition clause lives in the imported sentence; the SOURCE carries it
+// (verified above via EXACT), and the component renders the import.
 if (consent && !/href="\/privacy"/.test(consent)) {
   fails.push(`${CONSENT}: missing the /privacy link (A2P 30917 requires a privacy policy link in the disclosure).`)
 }

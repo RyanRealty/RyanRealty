@@ -528,6 +528,7 @@ export type { CmaListingRow, CmaMarketStatsRow, CmaMarketPulseRow } from '@/lib/
 export {
   getCmaAdminRowBySlug,
   getCmaHtmlBySlug,
+  getCmaAccessIdentity,
   updateCmaRowFieldsBySlug,
   deleteCmaRowById,
   replaceCmaComps,

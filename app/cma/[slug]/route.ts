@@ -17,9 +17,22 @@
  */
 
 import { NextResponse } from 'next/server'
-import { getCmaHtmlBySlug } from '@/lib/data'
+import { getCmaHtmlBySlug, getCmaAccessIdentity } from '@/lib/data'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import {
+  decideCmaAccess,
+  renderRegisterShell,
+  renderConsentShell,
+  renderWrongPersonShell,
+} from '@/lib/cma/register-gate'
+import { SMS_CONSENT_TEXT } from '@/lib/crm/sms-consent-text'
+
+const SHELL_HEADERS = {
+  'Content-Type': 'text/html',
+  'X-Robots-Tag': 'noindex, nofollow',
+  'Cache-Control': 'private, no-store',
+} as const
 
 // Always render per-request (the handler reads the request URL and the DB row,
 // which opts the route out of static handling — revalidate 0 makes it explicit).
@@ -47,12 +60,55 @@ export async function GET(
     // never leaks one to the public.
     const status = String(row.status ?? '')
     const isPublicStatus = status === 'finalized' || status === 'delivered'
-    if (!isPublicStatus) {
-      const session = await getSession()
-      const role = await getAdminRoleForEmail(session?.user?.email ?? null)
-      const isAdmin = Boolean(role && role.role !== 'report_viewer')
-      if (!isAdmin) {
-        return NextResponse.json({ error: 'CMA not found' }, { status: 404 })
+    const session = await getSession()
+    const viewerEmail = session?.user?.email?.trim().toLowerCase() ?? null
+    const role = await getAdminRoleForEmail(viewerEmail)
+    const isAdmin = Boolean(role && role.role !== 'report_viewer')
+    if (!isPublicStatus && !isAdmin) {
+      return NextResponse.json({ error: 'CMA not found' }, { status: 404 })
+    }
+
+    // Registration gate (Matt 2026-08-05): the client-ready web page is the
+    // consent door — the recipient signs in, ONLY the lead the doc was built
+    // for gets through, and the one-time consent ask happens on entry.
+    // Admins pass (review iframe, broker preview).
+    if (isPublicStatus && !isAdmin) {
+      const identity = await getCmaAccessIdentity(safeSlug)
+      const decision = decideCmaAccess({
+        isAdmin: false,
+        viewerEmail,
+        clientEmail: identity?.clientEmail ?? null,
+        personEmails: identity?.personEmails ?? [],
+        claimedBy: identity?.claimedBy ?? null,
+        consentRecorded: identity?.consentRecorded ?? false,
+      })
+      if (decision.kind === 'register') {
+        return new NextResponse(
+          renderRegisterShell({
+            slug: safeSlug,
+            address: identity?.subjectAddress ?? null,
+            clientName: identity?.clientName ?? null,
+          }),
+          { status: 200, headers: SHELL_HEADERS },
+        )
+      }
+      if (decision.kind === 'consent' || decision.kind === 'claim-and-consent') {
+        return new NextResponse(
+          renderConsentShell({
+            slug: safeSlug,
+            address: identity?.subjectAddress ?? null,
+            viewerEmail: viewerEmail ?? '',
+            smsConsentText: SMS_CONSENT_TEXT,
+            claiming: decision.kind === 'claim-and-consent',
+          }),
+          { status: 200, headers: SHELL_HEADERS },
+        )
+      }
+      if (decision.kind === 'wrong-person') {
+        return new NextResponse(renderWrongPersonShell({ viewerEmail: viewerEmail ?? '' }), {
+          status: 403,
+          headers: SHELL_HEADERS,
+        })
       }
     }
     // The stored document embeds absolute asset URLs from build time (the PDF

@@ -22,8 +22,11 @@ import { cn } from '@/lib/utils'
  * sms channel. Email + voice are unaffected. Compliance language is exempt from
  * brand-voice styling per CLAUDE.md.
  */
-export const SMS_CONSENT_TEXT =
-  'I agree to receive text messages from Ryan Realty about my request, including property and home-value updates, scheduling, and replies from our team, at the phone number I provided. Consent is not a condition of any purchase or service. Message frequency varies. Msg & data rates may apply. Reply STOP to opt out, HELP for help.'
+// Re-exported from the ONE server-safe source of truth (lib/crm/sms-consent-text)
+// so server surfaces (the CMA registration door) present the identical
+// carrier-verified sentence. ci:sms-consent enforces this wiring.
+export { SMS_CONSENT_TEXT } from '@/lib/crm/sms-consent-text'
+import { SMS_CONSENT_TEXT } from '@/lib/crm/sms-consent-text'
 
 export function SmsConsentDisclosure({
   className,

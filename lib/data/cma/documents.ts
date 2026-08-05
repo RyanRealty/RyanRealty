@@ -94,3 +94,53 @@ export async function replaceCmaComps(
   const { error } = await sb.from('cma_comps').insert(comps)
   return error ? { ok: false, error: error.message } : { ok: true }
 }
+
+/**
+ * Identity + registration state for the /cma/[slug] access gate (Matt
+ * 2026-08-05: only the lead the CMA was built for may view the web page,
+ * behind registration). Returns the emails that may claim the doc and the
+ * per-person registration marker the gate reads.
+ */
+export async function getCmaAccessIdentity(slug: string): Promise<{
+  personId: number | null
+  clientEmail: string | null
+  clientName: string | null
+  subjectAddress: string | null
+  personEmails: string[]
+  claimedBy: string | null
+  consentRecorded: boolean
+} | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data: row } = await sb
+    .from('cmas')
+    .select('person_id, client_email, client_name, subject_address')
+    .eq('slug', slug.trim().toLowerCase())
+    .maybeSingle()
+  if (!row) return null
+  const personId = (row.person_id as number | null) ?? null
+  let personEmails: string[] = []
+  let claimedBy: string | null = null
+  let consentRecorded = false
+  if (personId) {
+    const { data: person } = await sb
+      .from('crm_people')
+      .select('emails, custom')
+      .eq('id', personId)
+      .maybeSingle()
+    const emails = (person?.emails as Array<{ value?: string }> | null) ?? []
+    personEmails = emails.map((e) => String(e?.value ?? '').trim().toLowerCase()).filter(Boolean)
+    const custom = (person?.custom as Record<string, unknown> | null) ?? {}
+    claimedBy = typeof custom.cmaClaimedBy === 'string' ? custom.cmaClaimedBy : null
+    consentRecorded = Boolean(custom.cmaConsent)
+  }
+  return {
+    personId,
+    clientEmail: ((row.client_email as string | null) ?? '').trim().toLowerCase() || null,
+    clientName: (row.client_name as string | null) ?? null,
+    subjectAddress: (row.subject_address as string | null) ?? null,
+    personEmails,
+    claimedBy,
+    consentRecorded,
+  }
+}
