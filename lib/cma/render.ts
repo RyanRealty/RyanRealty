@@ -17,31 +17,22 @@
 
 import { cmaStylesheet } from '@/lib/cma/render-css'
 import {
-  buyerOptionsBlock,
-  chunk,
   cleanText,
   collectHighlights,
   dateLong,
   dec,
-  developmentItemsBlock,
-  developmentLeadLine,
   dottedPhone,
   escapeHtml,
-  hoaBlock,
   int,
   marketingHighlightsBlock,
   monthYear,
   phoneHref,
   propertyIntelligenceBlock,
-  rentalIncomeBlock,
-  rentalLeadLine,
-  rentalTenuresBlock,
   sparkPhotoAt,
   trimRemarks,
   usd,
   usdSigned,
   verifyResourcesBlock,
-  zoningExplainerBlock,
 } from '@/lib/cma/render-blocks'
 import type {
   CmaAdjustedComp,
@@ -83,7 +74,7 @@ export interface RenderCmaArgs {
   excludedOutliers: Array<{ address: string; closePrice: number; ppsf: number; reason: string }>
   sellerImprovementsText?: string | null
   site?: CmaSiteData | null
-  /** Present = render as an EXPIRED AUDIT (failure analysis + services + net sheet). */
+  /** Present = the subject's last cycle failed; renders the last-listing review section. */
   expiredAudit?: ExpiredAuditData | null
   /** Zoning read, buildability answers, buyer options, HOA, marketing highlights. */
   development?: DevelopmentOpportunities | null
@@ -580,93 +571,44 @@ function highlightsPage(a: RenderCmaArgs): PageDef | null {
   }
 }
 
-function zoningPage(a: RenderCmaArgs): PageDef | null {
-  const block = zoningExplainerBlock(a.development)
-  if (!block) return null
-  return {
-    meta: `${esc(a.subject.streetAddress)} · Zoning Explained`,
-    toc: 'Zoning, in plain language',
-    body: `
-  <h2 class="section">Zoning, In Plain Language</h2>
-  <p>Zoning decides what a buyer is allowed to do here, and it is the first question a builder, an investor, or a second-home buyer asks. Here is the zone of record and what the code lets it be used for.</p>
-  ${block}`,
-  }
-}
-
-/** Development answers, chunked so a fixed-height page never clips one. */
-function developmentPages(a: RenderCmaArgs): PageDef[] {
+/**
+ * "What you can do with this property" (Matt 2026-08-05: summarize zoning +
+ * rental to the basics). ONE page: the zone, each buildability answer as its
+ * verdict-first one-liner, and each rental tenure the same way. The detail
+ * paragraphs, requirement lists, income tables, and buyer-option spreads are
+ * retired from the doc — the one-line headlines were already written to lead
+ * with the capability, so this page IS the summary. The disclaimer + a single
+ * verified-against line keep the §0 sourcing honest.
+ */
+function whatYouCanDoPage(a: RenderCmaArgs): PageDef | null {
   const dev = a.development
-  if (!dev || dev.items.length === 0) return []
-  const groups = chunk(dev.items, 3)
-  return groups.map((_, i) => {
-    const slice = { ...dev, items: groups[i]! }
-    return {
-      meta: `${esc(a.subject.streetAddress)} · What You Can Build Here`,
-      toc: i === 0 ? 'What you can build here' : undefined,
-      body: `
-  <h2 class="section">What You Can Build Here${groups.length > 1 ? ` (${i + 1} of ${groups.length})` : ''}</h2>
-  ${i === 0 ? developmentLeadLine(dev) : ''}
-  ${developmentItemsBlock(slice)}`,
-    }
-  })
-}
-
-function buyerOptionsPages(a: RenderCmaArgs): PageDef[] {
-  const options = a.development?.buyerOptions ?? []
-  if (options.length === 0) return []
-  const groups = chunk(options, 5)
-  return groups.map((group, i) => ({
-    meta: `${esc(a.subject.streetAddress)} · What A Buyer Could Do`,
-    toc: i === 0 ? 'What a buyer could do with it' : undefined,
-    body: `
-  <h2 class="section">What A Buyer Could Do With It${groups.length > 1 ? ` (${i + 1} of ${groups.length})` : ''}</h2>
-  ${i === 0 ? '<p>Each option below is drawn from the parcel facts and the code sections already cited in this report. None of it is a promise about what will be approved. It is the range a buyer can picture, which is what widens the pool of people who want the house.</p>' : ''}
-  ${buyerOptionsBlock({ ...a.development!, buyerOptions: group })}`,
-  }))
-}
-
-/** Rental read, with the income basis on the closing page of the run. */
-function rentalPages(a: RenderCmaArgs): PageDef[] {
-  const r = a.rental
-  if (!r || (r.tenures.length === 0 && r.income.length === 0)) return []
-  const groups = r.tenures.length > 0 ? chunk(r.tenures, 1) : [[]]
-  const income = rentalIncomeBlock(r.income)
-  const pages: PageDef[] = []
-  if (income) {
-    pages.push({
-      meta: `${esc(a.subject.streetAddress)} · What It Could Bring In`,
-      toc: 'What it could bring in',
-      body: `
-  <h2 class="section">What It Could Bring In</h2>
-  <p>These are the rental figures for this address that trace to a named source, in ${esc(r.jurisdiction)} as of ${esc(r.verifiedAsOf)}. Each one prints the record it came from, and nothing is estimated to fill the table.</p>
-  ${income}
-  ${r.economicsNote ? `<p class="small">${esc(r.economicsNote)}</p>` : ''}`,
-    })
-  }
-  groups.forEach((group, i) => {
-    if (group.length === 0) return
-    pages.push({
-      meta: `${esc(a.subject.streetAddress)} · Renting It Out`,
-      toc: i === 0 ? 'Renting it out, tenure by tenure' : undefined,
-      body: `
-  <h2 class="section">Renting It Out${groups.length > 1 ? ` (${i + 1} of ${groups.length})` : ''}</h2>
-  ${i === 0 ? rentalLeadLine(r) : ''}
-  ${rentalTenuresBlock(group)}`,
-    })
-  })
-  return pages
-}
-
-function hoaPage(a: RenderCmaArgs): PageDef | null {
-  const block = hoaBlock(a.development)
-  if (!block) return null
+  const rental = a.rental
+  const buildRows = (dev?.items ?? []).map(
+    (i) => `<li><strong>${esc(i.topic)}:</strong> ${esc(i.headline)}</li>`,
+  )
+  const rentRows = (rental?.tenures ?? []).map(
+    (t) => `<li><strong>${esc(t.tenure)} rental:</strong> ${esc(t.headline)}</li>`,
+  )
+  if (buildRows.length === 0 && rentRows.length === 0) return null
+  const hoa = dev?.hoa
+  const hoaLine =
+    hoa?.hasAssociation === true
+      ? `<p class="small">There is a homeowners association on record. Recorded covenants can be stricter than zoning, so the CC&amp;Rs get confirmed before any of the above is acted on.</p>`
+      : ''
+  const verified = [dev ? `${dev.jurisdiction} code, verified ${dev.verifiedAsOf}` : null, rental ? `rental rules for ${rental.jurisdiction}, verified ${rental.verifiedAsOf}` : null]
+    .filter(Boolean)
+    .join(' · ')
   return {
-    meta: `${esc(a.subject.streetAddress)} · HOA and CC&Rs`,
-    toc: 'HOA and CC&Rs',
+    meta: `${esc(a.subject.streetAddress)} · What You Can Do With It`,
+    toc: 'What you can do with this property',
     body: `
-  <h2 class="section">HOA and CC&amp;Rs</h2>
-  <p>Recorded covenants sit on top of the zoning code and can be stricter than it. A buyer's lender, insurer, and rental plan all turn on what they say, so this is confirmed from the recorded documents before the listing goes live.</p>
-  ${block}`,
+  <h2 class="section">What You Can Do With This Property</h2>
+  ${dev ? `<p>The parcel is zoned <strong>${esc(dev.zone)}</strong> in ${esc(dev.jurisdiction)}. In plain terms, here is what that allows.</p>` : ''}
+  ${buildRows.length > 0 ? `<h3 class="subhead">Building and use</h3><ul class="note-list">${buildRows.join('')}</ul>` : ''}
+  ${rentRows.length > 0 ? `<h3 class="subhead">Renting it out</h3><ul class="note-list">${rentRows.join('')}</ul>` : ''}
+  ${hoaLine}
+  ${verified ? `<p class="small">Sources: ${esc(verified)}.</p>` : ''}
+  ${dev?.disclaimer ? `<p class="small">${esc(dev.disclaimer)}</p>` : rental?.disclaimer ? `<p class="small">${esc(rental.disclaimer)}</p>` : ''}`,
   }
 }
 
@@ -807,13 +749,8 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   // that backs them, then the ways a buyer can use the parcel.
   const highlights = highlightsPage(a)
   if (highlights) rest.push(highlights)
-  const zoning = zoningPage(a)
-  if (zoning) rest.push(zoning)
-  rest.push(...developmentPages(a))
-  rest.push(...buyerOptionsPages(a))
-  rest.push(...rentalPages(a))
-  const hoa = hoaPage(a)
-  if (hoa) rest.push(hoa)
+  const canDo = whatYouCanDoPage(a)
+  if (canDo) rest.push(canDo)
   const verify = verifyPage(a)
   if (verify) rest.push(verify)
   // Last-listing review (Matt 2026-08-05: ONE doc — the expired story is a
