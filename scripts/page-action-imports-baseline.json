@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-07-22T12:45:17.013Z",
-  "reason": "Audit #4: pages importing read symbols from app/actions instead of @/lib/data. Ratchet — may only shrink as reads migrate to the DAL.",
+  "reason": "Audit #4: pages importing read symbols from app/actions instead of @/lib/data. Ratchet \u2014 may only shrink as reads migrate to the DAL.",
   "total": 313,
   "violations": [
     "app/about/page.tsx :: getCitiesForIndex <- @/app/actions/cities",
@@ -205,8 +205,8 @@
     "app/admin/(protected)/reports/layout.tsx :: getAdminRoleForEmail <- @/app/actions/admin-roles",
     "app/admin/(protected)/reports/layout.tsx :: getSession <- @/app/actions/auth",
     "app/admin/(protected)/reports/market/page.tsx :: getReportCities <- @/app/actions/reports",
-    "app/admin/(protected)/settings/page.tsx :: getAdminRoleForEmail <- @/app/actions/admin-roles",
-    "app/admin/(protected)/settings/page.tsx :: getSession <- @/app/actions/auth",
+    "app/admin/(protected)/settings/account/page.tsx :: getAdminRoleForEmail <- @/app/actions/admin-roles",
+    "app/admin/(protected)/settings/account/page.tsx :: getSession <- @/app/actions/auth",
     "app/admin/(protected)/sign-off/page.tsx :: getPrincipalSignOffQueue <- @/app/actions/tc-signoff",
     "app/admin/(protected)/signing/[envelopeId]/page.tsx :: getEnvelopeDetail <- @/app/actions/tc-envelopes",
     "app/admin/(protected)/signing/page.tsx :: getEnvelopesOverview <- @/app/actions/tc-envelopes",

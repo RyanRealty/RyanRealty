@@ -76,7 +76,9 @@ const REQUIRED_KIT_PAGES = [
   // app/admin/(protected)/people/page.tsx — REMOVED 2026-07-07: pure redirect
   // to /admin/crm (admin consolidation — the people index merged into the
   // contacts list + person page, both under stricter parity contracts).
-  'app/admin/(protected)/deals/page.tsx',
+  // app/admin/(protected)/deals/page.tsx — REMOVED 2026-08-05 (P9 Closings
+  // roll): pure redirect bridge to /admin/closings, which reads TC truth on
+  // the admin v2 language (ci:admin-v2-tokens owns that surface's discipline).
   'app/admin/(protected)/financials/page.tsx',
   'app/admin/(protected)/commissions/page.tsx',
   // app/admin/(protected)/cmas/page.tsx — REMOVED 2026-07-18: ground-up rebuilt

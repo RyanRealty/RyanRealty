@@ -345,7 +345,7 @@ export async function autoEnrollByFubId(
         body = [
           `Website sign-in (browsing), low intent.`,
           `${p.name ?? 'Someone'} just signed in on ryan-realty.com. No phone, no message, no form submission. They are browsing, not an inquiry.`,
-          `Open the lead: ryan-realty.com/admin/crm/${p.id}`,
+          `Open the lead: ryan-realty.com/admin/people/${p.id}`,
         ].join('\n')
       } else if (result.enrolled) {
         const leadType = tags.includes('intent:expired-listing')
@@ -369,7 +369,7 @@ export async function autoEnrollByFubId(
           preview
             ? `First ${preview.channel === 'sms' ? 'text' : 'email'} sending now: "${preview.body}"`
             : `Enrolled in "${result.sequence}". First touch sending now.`,
-          `Open the lead: ryan-realty.com/admin/crm/${p.id}`,
+          `Open the lead: ryan-realty.com/admin/people/${p.id}`,
         ].join('\n')
       } else {
         body = newLeadAlertBody({

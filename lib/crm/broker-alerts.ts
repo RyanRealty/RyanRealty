@@ -104,7 +104,7 @@ export async function queueReturnVisitAlert(params: {
       `${name} is back on your site right now.`,
       `Why: ${describeWhy(path, params.pageTitle)}`,
       `From: ${describeFrom(params.referrer, params.utmSource, params.utmMedium, params.utmCampaign)}`,
-      `Open the lead: https://ryan-realty.com/admin/crm/${person.id}`,
+      `Open the lead: https://ryan-realty.com/admin/people/${person.id}`,
     ].join('\n')
     return queueBrokerAlert({
       broker: person.assigned_broker as string | null,
@@ -273,7 +273,7 @@ export function newLeadAlertBody(p: {
   const lines = [
     `New lead: ${p.name ?? 'Unknown'}${p.source ? ` (${p.source})` : ''}`,
     p.detail ?? null,
-    `ryan-realty.com/admin/crm/${p.personId}${p.intent ? `?intent=${p.intent}` : ''}`,
+    `ryan-realty.com/admin/people/${p.personId}${p.intent ? `?intent=${p.intent}` : ''}`,
   ].filter(Boolean)
   return lines.join('\n')
 }

@@ -99,6 +99,13 @@ recompute with any WCAG contrast tool to audit). Normal text needs 4.5:1, large 
 Two candidate pairs FAILED at body size during derivation and were corrected before
 shipping: white on `#0090FF` (3.26) and white on `#E5484D` (3.91) — light-mode solid
 buttons therefore use `#0D74CE` / `#CE2C31`; dark-mode solids flip to dark text.
+
+P10 correction (2026-08-05, `ci:admin-contrast` — the derivation missed the
+state-word-on-wash pairs): light `--a-accent-wash` `#E6F4FE→#F3FAFF`,
+`--a-ok-wash` `#E6F6EB→#F6FCF8`, `--a-warn-wash` `#FFF7C2→#FFFDED`, lifting
+accent/ok/warn text on their washes from ~4.2:1 to ≥4.5:1. Dark washes already
+passed. The gate now recomputes all ten pairs in both themes on every commit,
+so a token edit can never silently break AA again.
 Beyond contrast: text + shape carry every status (1.4.1); focus visible everywhere
 (2.4.7); 44px targets (2.5.8); composites follow APG (listbox, tabs, dialog).
 

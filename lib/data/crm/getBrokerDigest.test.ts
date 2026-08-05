@@ -25,7 +25,7 @@ function baseRows(over: Partial<BrokerDigestRows> = {}): BrokerDigestRows {
 describe('getBrokerDigest pure helpers (10.4)', () => {
   describe('crmContactUrl', () => {
     it('builds the CRM admin deep link, not a FUB url', () => {
-      expect(crmContactUrl(4821)).toBe('https://ryan-realty.com/admin/crm/4821')
+      expect(crmContactUrl(4821)).toBe('https://ryan-realty.com/admin/people/4821')
       expect(crmContactUrl(4821)).not.toContain('followupboss')
     })
   })
@@ -192,7 +192,7 @@ describe('getBrokerDigest pure helpers (10.4)', () => {
 
       expect(s.leads[0].name).toBe('Jane Doe')
       expect(s.leads[0].audience).toBe('seller')
-      expect(s.leads[0].crmUrl).toBe('https://ryan-realty.com/admin/crm/10')
+      expect(s.leads[0].crmUrl).toBe('https://ryan-realty.com/admin/people/10')
       // name falls back to first+last, then email, then Contact {id}
       expect(s.leads[1].name).toBe('Bob')
       expect(s.leads[2].name).toBe('Contact 12')

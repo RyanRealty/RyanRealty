@@ -155,7 +155,7 @@ const AWAITING_STATUSES = new Set(['awaiting_broker', 'awaiting_broker_next', 'p
 
 /** The CRM deep link for a contact (our own admin, not FUB). */
 export function crmContactUrl(personId: number): string {
-  return `https://ryan-realty.com/admin/crm/${personId}`
+  return `https://ryan-realty.com/admin/people/${personId}`
 }
 
 /** Pure: classify a lead's audience from its tags, matching the digest crons. */

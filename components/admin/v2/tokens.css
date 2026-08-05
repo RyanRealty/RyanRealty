@@ -26,16 +26,16 @@
   /* ---- the one accent (action) ---- */
   --a-accent:        #0D74CE; /* links + accent text — 4.65:1 on bg */
   --a-accent-strong: #113264; /* pressed / high-emph — 12.62:1 w/ white */
-  --a-accent-wash:   #E6F4FE; /* selected row / focus wash */
+  --a-accent-wash:   #F3FAFF; /* selected row / focus wash */
   --a-btn-bg:        #0D74CE; /* solid button bg */
   --a-btn-fg:        #FFFFFF; /* solid button text — 4.77:1 */
 
   /* ---- status semantics (never decorative) ---- */
   --a-ok:        #218358;  /* 4.60:1 as text on bg; 4.72:1 w/ white as solid */
-  --a-ok-wash:   #E6F6EB;
+  --a-ok-wash:   #F6FCF8;
   --a-warn:      #AB6400;  /* 4.50:1 as text on bg */
   --a-warn-chip: #FFC53D;  /* chip bg, carries dark text — 10.38:1 */
-  --a-warn-wash: #FFF7C2;
+  --a-warn-wash: #FFFDED;
   --a-danger:    #CE2C31;  /* 5.08:1 as text on bg; 5.21:1 w/ white as solid */
   --a-danger-wash:#FEEBEC;
 

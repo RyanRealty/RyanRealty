@@ -1,22 +1,12 @@
 [
   {
-    "id": "roll:remaining-families",
-    "phase": "P9",
-    "note": "One commit each, order: Valuations, Closings, Reports, Audiences, Content, Settings per locked IA + FINISH-ROUND-PROMPT scope notes. Valuations page already drafted in session scratch."
-  },
-  {
-    "id": "litmus-deeplink-repoint",
-    "phase": "P9",
-    "note": "Micro-unit: repoint alert deep links /admin/crm/[id] -> /admin/people/[id] + litmus RE-TIMING in the same unit (tmp/litmus-timing.mjs). Never silently (landmine)."
-  },
-  {
-    "id": "verify:delta-cursor-healed",
-    "phase": "P9",
-    "note": "After the aaacadb0 mapper-clamp fix deploys READY: wait one sync-delta window (15 min), then confirm sync_state.last_delta_sync_at advanced past 2026-08-04T17:33Z. If still stuck, pull the cron's new logs — a second overflow class may exist."
-  },
-  {
-    "id": "gates",
+    "id": "verify:post-deploy",
     "phase": "P10",
-    "note": "Extend check-admin-v2-tokens to everything rolled; nav<->inventory parity check; computed AA contrast spot-check; wire into ci:gates. Then the final program report."
+    "note": "After the finish-round push deploys READY: (1) delta cursor healed — sync_state.last_delta_sync_at advanced past 2026-08-04T17:33Z within one 15-min window of the aaacadb0 clamp fix serving (if stuck, pull the new deployment's logs — a second overflow class may exist); (2) litmus RE-TIMING on the repointed deep links (tmp/litmus-timing.mjs) — alert -> /admin/people/[id] -> kickoff must hold the <=3 taps / ~4s kickoff bar; (3) spot-check /admin/oversight + /admin/closings + hubs serve on production."
+  },
+  {
+    "id": "final-report",
+    "phase": "P10",
+    "note": "The finish-round program report: scoreboard (11/11 destinations live), defects found/fixed this round, chips outstanding, what P11 would be."
   }
 ]

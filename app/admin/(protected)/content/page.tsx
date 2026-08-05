@@ -52,7 +52,7 @@ export default async function ContentHomePage() {
         <Link href="/admin/oversight" style={{ color: 'var(--a-accent)' }}>
           Oversight
         </Link>
-        's data tools.
+        &apos;s data tools.
       </p>
     </main>
   )
