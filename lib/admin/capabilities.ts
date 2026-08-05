@@ -31,6 +31,7 @@ export type Capability =
   | 'inbox.view'
   | 'people.view'
   | 'prospecting.view'
+  | 'oversight.view'
   | 'transactions.view'
   | 'performance.view'
   | 'content.view'
@@ -92,6 +93,10 @@ export const CAPABILITY_ROLES: Record<Capability, AdminRoleType[]> = {
   'inbox.view': ['broker'],
   'people.view': ['broker'],
   'prospecting.view': ['broker'],
+  // P9 roll:oversight (locked tab 5): brokers supervise their own book —
+  // sequences, week strip, parked steps. System plumbing lanes render for the
+  // principal only (page-level branch, same scoping the data reads carry).
+  'oversight.view': ['broker'],
   'transactions.view': ['broker'],
   // D3's end-state grants brokers a SCOPED own-book Performance overview — but that
   // page doesn't exist yet (spec 06). The only Performance surface today is

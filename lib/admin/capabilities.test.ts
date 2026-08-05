@@ -110,10 +110,10 @@ describe('nav generator projects the capability map', () => {
 })
 
 describe('shell projection (one nav source for every surface)', () => {
-  it('renders the D9.2 budget: 40 superuser items, 22 broker items (2026-08-03 added the DSCR deals nav child, capability financials.view, superuser-only, so superuser rose one from 39 and broker held at 22; W10.2 added the Content library nav item, capability content.view, granted to both roles, so both counts rose one from 38/21; Wave D had added the CRM Referrals child; was 37/20 after spec 07 folded 3 expired/FSBO nav children into 1 Prospecting hub)', () => {
+  it('renders the nav budget: 38 superuser items, 23 broker items (P9 roll:oversight moved Activity + Operations + System health + CRM health behind the Oversight destination: superuser 41−4+1=38; broker 23−1+1=23 since the settings.system children were superuser-only)', () => {
     const count = (role: AdminRoleType) =>
       toShellSections(buildNav(ctx(role))).reduce((n, s) => n + s.items.length, 0)
-    expect(count('superuser')).toBe(41)
+    expect(count('superuser')).toBe(38)
     expect(count('broker')).toBe(23)
   })
 
@@ -126,15 +126,16 @@ describe('shell projection (one nav source for every surface)', () => {
     expect(people.items.map((i) => i.label)).not.toContain('People')
   })
 
-  it('mobile tabs follow the locked IA bar (Today · Messages · Prospecting · People; Oversight lands with its roll) for superuser AND broker', () => {
+  it('mobile tabs are the locked IA five (Today · Messages · Prospecting · People · Oversight) for superuser AND broker', () => {
     for (const role of ['superuser', 'broker'] as const) {
       const tabs = buildMobileTabs(buildNav(ctx(role)))
-      expect(tabs.map((t) => t.label)).toEqual(['Today', 'Messages', 'Prospecting', 'People'])
+      expect(tabs.map((t) => t.label)).toEqual(['Today', 'Messages', 'Prospecting', 'People', 'Oversight'])
       expect(tabs.map((t) => t.href)).toEqual([
         '/admin/today',
         '/admin/messages',
         '/admin/prospecting',
         '/admin/people',
+        '/admin/oversight',
       ])
       expect(tabs.find((t) => t.label === 'Messages')?.badge).toBe('inbox')
     }

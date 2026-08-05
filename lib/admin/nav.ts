@@ -123,7 +123,8 @@ export const DESTINATIONS: NavDestination[] = [
       // Oversight (menu children remain until their families roll).
       { label: 'Search', href: '/admin/people', icon: 'users', capability: 'people.view', tab: { order: 4, label: 'People' } },
       { label: 'Pipeline', href: '/admin/crm/deals', icon: 'layers', capability: 'people.view' },
-      { label: 'Activity', href: '/admin/crm/activity', icon: 'activity', capability: 'people.view' },
+      // Activity moved to Oversight (P9 roll:oversight — it is a supervision
+      // feed, not a people job; reachable under Oversight's All tools).
       { label: 'Tasks', href: '/admin/crm/tasks', icon: 'list-todo', capability: 'tasks.use' },
       { label: 'Calendar', href: '/admin/crm/calendar', icon: 'calendar', capability: 'calendar.use' },
       { label: 'Approvals', href: '/admin/crm/approvals', icon: 'clipboard-check', capability: 'people.view' },
@@ -169,6 +170,20 @@ export const DESTINATIONS: NavDestination[] = [
       { label: 'DSCR deals', href: '/admin/dscr', icon: 'trending-up', capability: 'financials.view' },
       { label: 'Forms', href: '/admin/forms', icon: 'file-text', capability: 'transactions.edit' },
     ],
+  },
+  {
+    // P9 roll:oversight (IA lock 2026-08-05): supervise without being woken —
+    // the verdict + needs-you view. Locked phone tab 5. Absorbs the JOBS of
+    // operations / sync / crm-health / activity / weekly reports; that legacy
+    // machinery stays reachable from the page's All-tools links until each
+    // migrates (their nav children die here — single source, one destination).
+    key: 'oversight',
+    label: 'Oversight',
+    href: '/admin/oversight',
+    icon: 'activity',
+    capability: 'oversight.view',
+    defaultOpen: true,
+    tab: { order: 5 },
   },
   {
     key: 'performance',
@@ -219,9 +234,8 @@ export const DESTINATIONS: NavDestination[] = [
       { label: 'Brokers', href: '/admin/brokers', icon: 'user', capability: 'settings.profile' },
       { label: 'Site users', href: '/admin/users', icon: 'users', capability: 'settings.team' },
       { label: 'Audit log', href: '/admin/audit-log', icon: 'scroll-text', capability: 'audit.view' },
-      { label: 'Operations', href: '/admin/operations', icon: 'gauge', capability: 'settings.system' },
-      { label: 'System health', href: '/admin/sync', icon: 'refresh', capability: 'settings.system' },
-      { label: 'CRM health', href: '/admin/crm/health', icon: 'activity', capability: 'settings.system' },
+      // Operations / System health / CRM health moved under Oversight
+      // (P9 roll:oversight) — supervision surfaces, linked from its All tools.
     ],
   },
 ]

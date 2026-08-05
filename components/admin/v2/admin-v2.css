@@ -66,6 +66,15 @@ a.av2-chip { text-decoration:none; display:inline-block; }
   .av2-qrow__age { justify-self:end; }
 }
 
+/* ---- quiet list wrapper + week strip (pattern 3, Oversight) ---- */
+.av2-quietlist { list-style:none; margin:0 0 var(--a-s5); padding:0;
+  border-top:1px solid var(--a-border); }
+.av2-week { display:flex; flex-wrap:wrap; gap:var(--a-s2) var(--a-s6);
+  border-top:1px solid var(--a-border); padding-top:var(--a-s3); }
+.av2-wk { display:flex; align-items:baseline; gap:6px; }
+.av2-wk__n { font-size:var(--a-text-lg); font-weight:600; font-variant-numeric:tabular-nums; }
+.av2-wk__l { font-size:var(--a-text-sm); color:var(--a-text-2); }
+
 /* ---- QuietRow (healthy = near-zero weight) ---- */
 .av2-quiet { display:flex; align-items:baseline; gap:var(--a-s3); padding:10px 2px;
   border-bottom:1px solid var(--a-border); font-size:var(--a-text-sm); color:var(--a-text-2); }
