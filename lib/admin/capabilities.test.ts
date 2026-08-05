@@ -74,8 +74,8 @@ describe('nav generator projects the capability map', () => {
   it('superuser sees every destination with all children', () => {
     const nav = buildNav(ctx('superuser'))
     expect(nav.map((s) => s.key)).toEqual(DESTINATIONS.map((d) => d.key))
-    const transactions = nav.find((s) => s.key === 'transactions')!
-    expect(transactions.children.map((c) => c.label)).toContain('Financials')
+    const closings = nav.find((s) => s.key === 'closings')!
+    expect(closings.children.map((c) => c.label)).toContain('Financials')
   })
 
   it('broker gets a subset and NO dead-end children', () => {
@@ -83,11 +83,11 @@ describe('nav generator projects the capability map', () => {
     const keys = nav.map((s) => s.key)
     expect(keys).toContain('people')
     expect(keys).toContain('inbox')
-    expect(keys).toContain('transactions')
-    // Transactions shows for a broker but Financials (superuser-only) is filtered out.
-    const transactions = nav.find((s) => s.key === 'transactions')!
-    expect(transactions.children.map((c) => c.label)).not.toContain('Financials')
-    expect(transactions.children.map((c) => c.label)).toContain('Deals')
+    expect(keys).toContain('closings')
+    // Closings shows for a broker but Financials (superuser-only) is filtered out.
+    const closings = nav.find((s) => s.key === 'closings')!
+    expect(closings.children.map((c) => c.label)).not.toContain('Financials')
+    expect(closings.children.map((c) => c.label)).toContain('Board')
     // Every rendered child is one the broker actually holds (no dead-ends).
     for (const s of nav) for (const c of s.children) expect(hasCapability(ctx('broker'), c.capability)).toBe(true)
   })

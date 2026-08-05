@@ -166,16 +166,20 @@ export const DESTINATIONS: NavDestination[] = [
     ],
   },
   {
-    key: 'transactions',
-    label: 'Transactions',
-    href: '/admin/deals',
+    // P9 Closings roll (IA lock 2026-08-05): named for the outcome — the one
+    // deal entity rooted in TC truth. The legacy skyslope-mirror list at
+    // /admin/deals is a redirect bridge; /admin/deals/[key] stays the deal page.
+    key: 'closings',
+    label: 'Closings',
+    href: '/admin/closings',
     icon: 'handshake',
     capability: 'transactions.view',
     defaultOpen: true,
     // e-sign Signing + Sign-off are PARKED for v1 (D1) — pages stay live at
-    // their URLs, deliberately un-navigated.
+    // their URLs, deliberately un-navigated (Sign-off is linked from Oversight
+    // and the Closings board).
     children: [
-      { label: 'Deals', href: '/admin/deals', icon: 'handshake', capability: 'transactions.view' },
+      { label: 'Board', href: '/admin/closings', icon: 'handshake', capability: 'transactions.view' },
       { label: 'Commissions', href: '/admin/commissions', icon: 'dollar', capability: 'commissions.view' },
       { label: 'Financials', href: '/admin/financials', icon: 'wallet', capability: 'financials.view' },
       { label: 'DSCR deals', href: '/admin/dscr', icon: 'trending-up', capability: 'financials.view' },
