@@ -125,7 +125,11 @@ export async function GET(
     // documents. The site's React trackers never run here, so without this
     // script a CMA opened from a tracked email records the click but never
     // creates or identifies a web session. See public/rr-doc-tracker.js.
-    const tracker = '<script src="/rr-doc-tracker.js" defer></script>'
+    // The interactive layer (sticky contents bar, reveal motion, count-up) is
+    // ALSO serve-time-only: the stored artifact stays print-pure so the PDF
+    // path renders identical numbers with zero screen chrome, and every
+    // already-delivered CMA gains the layer without a rebuild.
+    const tracker = '<script src="/rr-doc-tracker.js" defer></script><script src="/rr-cma-doc.js" defer></script>'
     html = html.includes('</body>')
       ? html.replace('</body>', `${tracker}</body>`)
       : html + tracker
