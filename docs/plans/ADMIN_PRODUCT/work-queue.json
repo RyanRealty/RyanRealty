@@ -1,7 +1,34 @@
 [
   {
-    "id": "litmus-signoff-wait",
-    "phase": "P8",
-    "note": "Re-proof done 2026-08-05 (LITMUS.md re-proof section; litmus HOLDS on current main). Awaiting Matt litmus sign-off in decisions.md + his call on the scoping question: v2 kickoff rebuild inside P8 vs folded into P9 family rolls (recommended). After sign-off: phase=P9_ROLL, first family per pain ranking."
+    "id": "roll:today",
+    "phase": "P9",
+    "note": "First family by pain: build the Today destination on v2 primitives (queue of mixed items: triage, parked steps, unified approvals, CMA-ready, due tasks), phone-first per the locked screens. One family, one commit, browser-verified at 375+1280 both themes. Absorbs broker-dashboard jobs + both approval queues + tasks/calendar per the frozen cut-list."
+  },
+  {
+    "id": "roll:messages",
+    "phase": "P9"
+  },
+  {
+    "id": "roll:people",
+    "phase": "P9",
+    "note": "carries the v2 kickoff surface (Matt 2026-08-05: whatever is recommended)"
+  },
+  {
+    "id": "roll:prospecting",
+    "phase": "P9"
+  },
+  {
+    "id": "roll:oversight",
+    "phase": "P9"
+  },
+  {
+    "id": "roll:remaining-families",
+    "phase": "P9",
+    "note": "Valuations, Closings, Reports, Audiences, Content, Settings per locked IA"
+  },
+  {
+    "id": "gates",
+    "phase": "P10",
+    "note": "axe + admin-ui checks + contrast + visual regression; ratchet shrink-only"
   }
 ]

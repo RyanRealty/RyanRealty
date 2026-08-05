@@ -72,8 +72,14 @@ do not assume slash commands or autoload worked.
   brand-leak + legacy-import ban — in the ci:gates chain. Brand token gate now
   exempts `app/admin/` + `components/admin/v2/` (baseline ratcheted 314→267).
   No pages migrated (by design).
-- **Next unit: `litmus-pilot` (P8)** — the smallest slice making LITMUS true on a
-  phone (alert SMS → person → CMA kickoff ≤3 taps / ≤30s) built on the v2
-  primitives; delete replaced forks; timed proof + screenshots on the real path.
-  Re-prove LITMUS.md, never trust its prior numbers. Ends **BLOCKED_ON_MATT:
-  litmus**. Fresh session recommended.
+- **P8 COMPLETE, LITMUS SIGNED OFF 2026-08-05** (decisions.md "P8 LITMUS
+  SIGN-OFF") — re-proof on current main (LITMUS.md re-proof section: 2 taps,
+  ~4.2s kickoff, real SMS rail, worker draft 44s, zero-residue cleanup) + the
+  stale-session deep-link defect Matt's phone found, fixed at 3 redirect sites
+  (2b0286b5), deployed, confirmed live. ALL FOUR LOCKS GRANTED.
+- **Next unit: `roll:today` (P9)** — first family by pain: build the Today
+  destination on the v2 primitives, phone-first per the locked screens; absorbs
+  broker-dashboard jobs + BOTH approval queues + tasks/calendar (frozen
+  cut-list). One family per commit, browser-verified 375+1280 both themes,
+  never resurrect cut-list items. Then messages → people (carries the v2
+  kickoff surface) → prospecting → oversight → remaining → P10 gates.

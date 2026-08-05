@@ -9,7 +9,7 @@ lock. `ADMIN_REBUILD/PHASE-0-ANSWERS.md` is input evidence only, never a lock so
 - Process lock (P3): **GRANTED 2026-08-04** — see "P3 PROCESS LOCK PACKAGE — LOCKED"
 - IA lock (P5): **GRANTED 2026-08-05** — see "P5 IA LOCK" below
 - Visual lock (P6): **GRANTED 2026-08-05** — see "P6 VISUAL LOCK" below
-- Litmus sign-off (P8): **not granted**
+- Litmus sign-off (P8): **GRANTED 2026-08-05** — see "P8 LITMUS SIGN-OFF" below
 
 ---
 
@@ -208,3 +208,25 @@ The locked package is `design_system/admin/` v1 as of commit a3c58038:
 `state.json`: `locks.visual = 2026-08-05`, `awaiting_lock` cleared, phase →
 `P7_PRIMITIVES`. P7 (components/admin/v2 primitives + token-gate exemption) starts
 next session; P8 timed litmus follows.
+
+
+---
+
+## 2026-08-05 — P8 LITMUS SIGN-OFF — GRANTED BY MATT
+
+Matt signed off the litmus ("Ok litmus signed off") after: (1) the full re-proof
+on current main (LITMUS.md re-proof section — 2 taps, ~4.2s kickoff RTT, real
+SMS rail, worker draft in 44s, zero-residue cleanup), and (2) the stale-session
+deep-link defect his own phone tap exposed, fixed at three redirect sites
+(commit 2b0286b5), deployed, and confirmed serving live.
+
+**Scoping call (Matt: "Do whatever is recommended"):** the v2-language kickoff
+surface ships with the P9 family rolls (People/Today families), not as a
+separate P8 slice — the litmus passes on the existing surface.
+
+`state.json`: `locks.litmus = 2026-08-05`, `awaiting_lock` cleared, phase →
+`P9_ROLL`. P9 rolls the locked destinations family-by-family onto the v2
+language, by pain: Today first (the "what am I supposed to do" answer), then
+Messages, People (carries the v2 kickoff surface), Prospecting, Oversight, and
+the rest per the locked IA. One family per commit, browser-verified, cut-list
+items never resurrected. P10 lands the closing mechanical gates.

@@ -1,11 +1,12 @@
 {
-  "phase": "P8_LITMUS",
+  "phase": "P9_ROLL",
   "locks": {
     "process": "2026-08-04",
     "ia": "2026-08-05",
-    "visual": "2026-08-05"
+    "visual": "2026-08-05",
+    "litmus": "2026-08-05"
   },
-  "awaiting_lock": "litmus",
+  "awaiting_lock": null,
   "current_process": null,
-  "updated_at": "2026-08-05T05:50:00Z"
+  "updated_at": "2026-08-05T07:10:00Z"
 }
