@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Today — admin visual language (SAMPLE DATA)</title>
+<link rel="stylesheet" href="../tokens.css">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--a-font); font-size:var(--a-text-md); line-height:var(--a-leading);
+         color:var(--a-text); background:var(--a-bg); }
+  .app { display:grid; grid-template-columns:1fr; min-height:100vh; }
+  /* ---- nav rail (desktop) ---- */
+  .rail { display:none; }
+  /* ---- phone tab bar ---- */
+  .tabbar { position:fixed; bottom:0; left:0; right:0; height:var(--a-tabbar-h);
+    display:flex; background:var(--a-surface); border-top:1px solid var(--a-border); z-index:10; }
+  .tab { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:2px; font-size:var(--a-text-xs); color:var(--a-text-2); text-decoration:none; min-height:var(--a-touch); position:relative; }
+  .tab[aria-current="page"] { color:var(--a-accent); font-weight:600; }
+  .tab .dot { width:18px; height:18px; border-radius:6px; background:currentColor; opacity:.18; }
+  .tab .badge { position:absolute; top:6px; right:calc(50% - 22px); background:var(--a-danger);
+    color:#fff; font-size:10px; font-weight:600; border-radius:8px; padding:0 5px; line-height:15px; }
+  /* ---- main ---- */
+  main { padding:var(--a-s4); padding-bottom:calc(var(--a-tabbar-h) + var(--a-s4)); max-width:760px; min-width:0; }
+  .pagehead { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:var(--a-s3); }
+  h1 { font-size:var(--a-text-xl); font-weight:600; letter-spacing:-0.01em; }
+  .count { color:var(--a-text-2); font-size:var(--a-text-sm); }
+  .filters { display:flex; gap:var(--a-s2); margin-bottom:var(--a-s4); overflow-x:auto; }
+  .chip { border:1px solid var(--a-border); background:var(--a-surface); color:var(--a-text-2);
+    border-radius:999px; padding:5px 12px; font-size:var(--a-text-sm); white-space:nowrap; cursor:pointer; }
+  .chip[aria-pressed="true"] { background:var(--a-accent-wash); border-color:var(--a-accent); color:var(--a-accent); font-weight:500; }
+  /* ---- queue rows ---- */
+  .queue { display:flex; flex-direction:column; gap:var(--a-s2); list-style:none; }
+  /* phone-first: chip+age on line 1, text full-width, action bottom-right */
+  .row { display:grid; grid-template-columns:1fr auto; grid-template-areas:"kind age" "body body" "gap act";
+    gap:var(--a-s2) var(--a-s3); align-items:center;
+    background:var(--a-surface); border:1px solid var(--a-border); border-radius:var(--a-r-lg);
+    padding:var(--a-s3) var(--a-s4); min-height:56px; }
+  .row .kind { grid-area:kind; justify-self:start; }
+  .row .body { grid-area:body; min-width:0; }
+  .row .side { display:contents; }
+  .row .age { grid-area:age; }
+  .row .act { grid-area:act; }
+  .kind { font-size:var(--a-text-xs); font-weight:600; letter-spacing:.04em; text-transform:uppercase;
+    padding:3px 8px; border-radius:var(--a-r-sm); align-self:start; margin-top:2px; }
+  .k-reply   { background:var(--a-accent-wash); color:var(--a-accent); }
+  .k-approve { background:var(--a-warn-wash);   color:var(--a-warn); }
+  .k-cma     { background:var(--a-ok-wash);     color:var(--a-ok); }
+  .k-parked  { background:var(--a-inset);       color:var(--a-text-2); }
+  .k-task    { background:var(--a-inset);       color:var(--a-text-2); }
+  .row .body .title { font-weight:600; font-size:var(--a-text-md); overflow-wrap:anywhere; }
+  .row .body .ctx { color:var(--a-text-2); font-size:var(--a-text-sm); margin-top:1px; overflow-wrap:anywhere; }
+  .age { color:var(--a-text-2); font-size:var(--a-text-xs); font-variant-numeric:tabular-nums; }
+  .age.hot { color:var(--a-danger); font-weight:600; }
+  .act { min-height:36px; padding:0 14px; border-radius:var(--a-r-md); border:1px solid transparent;
+    font:inherit; font-size:var(--a-text-sm); font-weight:600; cursor:pointer;
+    background:var(--a-btn-bg); color:var(--a-btn-fg); }
+  .act.quiet { background:var(--a-surface); color:var(--a-accent); border-color:var(--a-border); }
+  .act:focus-visible { outline:none; box-shadow:var(--a-focus); }
+  .mono { font-family:var(--a-font-mono); font-size:var(--a-text-sm); }
+  .sample { position:fixed; top:6px; right:8px; font-size:10px; color:var(--a-text-2);
+    letter-spacing:.08em; text-transform:uppercase; z-index:20; }
+  /* ---- desktop ≥1024: rail appears, tabbar hides ---- */
+  @media (min-width:1024px) {
+    .app { grid-template-columns:var(--a-rail-w) 1fr; }
+    .tabbar { display:none; }
+    main { padding:var(--a-s8); padding-bottom:var(--a-s8); }
+    /* desktop: single-line rows */
+    .row { grid-template-columns:auto 1fr auto auto; grid-template-areas:"kind body age act"; min-height:48px; }
+    .row .age { justify-self:end; }
+    .rail { display:flex; flex-direction:column; gap:var(--a-s1); background:var(--a-surface);
+      border-right:1px solid var(--a-border); padding:var(--a-s4) var(--a-s3); position:sticky; top:0; height:100vh; }
+    .search { display:flex; justify-content:space-between; align-items:center; border:1px solid var(--a-border);
+      border-radius:var(--a-r-md); padding:7px 10px; color:var(--a-text-2); font-size:var(--a-text-sm);
+      background:var(--a-bg); margin-bottom:var(--a-s4); }
+    .kbd { font-family:var(--a-font-mono); font-size:11px; border:1px solid var(--a-border);
+      border-radius:4px; padding:0 4px; background:var(--a-inset); }
+    .group { font-size:var(--a-text-xs); font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+      color:var(--a-text-2); padding:var(--a-s3) var(--a-s2) var(--a-s1); }
+    .nav { display:flex; align-items:center; justify-content:space-between; gap:var(--a-s2);
+      padding:7px 10px; border-radius:var(--a-r-md); color:var(--a-text); text-decoration:none; font-size:var(--a-text-md); }
+    .nav:hover { background:var(--a-inset); }
+    .nav[aria-current="page"] { background:var(--a-accent-wash); color:var(--a-accent); font-weight:600; }
+    .nav .n { font-size:var(--a-text-xs); color:var(--a-text-2); font-variant-numeric:tabular-nums; }
+  }
+</style>
+</head>
+<body>
+<span class="sample">Sample data</span>
+<div class="app">
+  <nav class="rail" aria-label="Destinations">
+    <div class="search">Search people, listings…<span class="kbd">⌘K</span></div>
+    <div class="group">Do</div>
+    <a class="nav" href="#" aria-current="page">Today <span class="n">7</span></a>
+    <a class="nav" href="#">Messages <span class="n">3</span></a>
+    <a class="nav" href="#">People</a>
+    <div class="group">Move</div>
+    <a class="nav" href="#">Prospecting</a>
+    <a class="nav" href="#">Valuations</a>
+    <a class="nav" href="#">Closings</a>
+    <div class="group">Watch</div>
+    <a class="nav" href="#">Oversight</a>
+    <a class="nav" href="#">Reports</a>
+    <div class="group">Reach</div>
+    <a class="nav" href="#">Audiences</a>
+    <a class="nav" href="#">Content</a>
+    <div class="group"> </div>
+    <a class="nav" href="#">Settings</a>
+  </nav>
+
+  <main>
+    <div class="pagehead">
+      <h1>Today</h1><span class="count a-num">7 items · oldest 3h</span>
+    </div>
+    <div class="filters" role="group" aria-label="Filter by kind">
+      <button class="chip" aria-pressed="true">All 7</button>
+      <button class="chip" aria-pressed="false">Replies 2</button>
+      <button class="chip" aria-pressed="false">Approvals 2</button>
+      <button class="chip" aria-pressed="false">Valuations 1</button>
+      <button class="chip" aria-pressed="false">Sequences 1</button>
+      <button class="chip" aria-pressed="false">Tasks 1</button>
+    </div>
+
+    <ul class="queue">
+      <li class="row">
+        <span class="kind k-reply">Reply</span>
+        <div class="body">
+          <div class="title">Dana Whitfield texted back</div>
+          <div class="ctx">"Yes, Saturday morning works for the walkthrough" · SMS · Rebecca's line</div>
+        </div>
+        <div class="side"><span class="age hot">3h</span><button class="act">Open thread</button></div>
+      </li>
+      <li class="row">
+        <span class="kind k-cma">CMA ready</span>
+        <div class="body">
+          <div class="title">2417 NW Sample Ct draft built</div>
+          <div class="ctx">Seller inquiry · needs review before send · signs as Rebecca</div>
+        </div>
+        <div class="side"><span class="age">1h</span><button class="act">Review draft</button></div>
+      </li>
+      <li class="row">
+        <span class="kind k-approve">Approve</span>
+        <div class="body">
+          <div class="title">Market-report social post ready</div>
+          <div class="ctx">Producer draft · stamp expires in 6 days</div>
+        </div>
+        <div class="side"><span class="age">2h</span><button class="act quiet">See draft</button></div>
+      </li>
+      <li class="row">
+        <span class="kind k-parked">Parked</span>
+        <div class="body">
+          <div class="title">Sequence step waiting on you — J. Alvarez</div>
+          <div class="ctx">Step 4 of Seller Nurture asks confirmation before the check-in text</div>
+        </div>
+        <div class="side"><span class="age">5h</span><button class="act quiet">Confirm / skip</button></div>
+      </li>
+      <li class="row">
+        <span class="kind k-reply">Reply</span>
+        <div class="body">
+          <div class="title">New email from Tom Okafor</div>
+          <div class="ctx">"Question about the inspection window" · Gmail · your mailbox</div>
+        </div>
+        <div class="side"><span class="age">6h</span><button class="act">Open thread</button></div>
+      </li>
+      <li class="row">
+        <span class="kind k-task">Task due</span>
+        <div class="body">
+          <div class="title">Log showing notes — 61200 SE Placeholder Ln</div>
+          <div class="ctx">Saturday 10am showing · due today</div>
+        </div>
+        <div class="side"><span class="age">today</span><button class="act quiet">Log note</button></div>
+      </li>
+      <li class="row">
+        <span class="kind k-approve">Approve</span>
+        <div class="body">
+          <div class="title">Newsletter draft for September</div>
+          <div class="ctx">Auto-drafted from market data · audience 1,204 (sample)</div>
+        </div>
+        <div class="side"><span class="age">1d</span><button class="act quiet">See draft</button></div>
+      </li>
+    </ul>
+  </main>
+</div>
+
+<nav class="tabbar" aria-label="Primary">
+  <a class="tab" href="#" aria-current="page"><span class="dot"></span>Today<span class="badge">7</span></a>
+  <a class="tab" href="#"><span class="dot"></span>Messages<span class="badge">3</span></a>
+  <a class="tab" href="#"><span class="dot"></span>Prospecting</a>
+  <a class="tab" href="#"><span class="dot"></span>People</a>
+  <a class="tab" href="#"><span class="dot"></span>Oversight</a>
+</nav>
+</body>
+</html>

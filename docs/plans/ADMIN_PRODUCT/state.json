@@ -4,7 +4,7 @@
     "process": "2026-08-04",
     "ia": "2026-08-05"
   },
-  "awaiting_lock": null,
+  "awaiting_lock": "visual",
   "current_process": null,
-  "updated_at": "2026-08-05T02:00:00Z"
+  "updated_at": "2026-08-05T03:10:00Z"
 }

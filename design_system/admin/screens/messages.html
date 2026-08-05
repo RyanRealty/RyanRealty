@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Messages — admin visual language (SAMPLE DATA)</title>
+<link rel="stylesheet" href="../tokens.css">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--a-font); font-size:var(--a-text-md); line-height:var(--a-leading);
+         color:var(--a-text); background:var(--a-bg); }
+  .sample { position:fixed; top:6px; right:8px; font-size:10px; color:var(--a-text-2);
+    letter-spacing:.08em; text-transform:uppercase; z-index:20; }
+  .app { display:grid; grid-template-columns:1fr; height:100vh; }
+  .list, .context { display:none; }
+  /* ---- thread (all widths) ---- */
+  .thread { display:flex; flex-direction:column; height:100vh; }
+  .threadhead { display:flex; align-items:center; gap:var(--a-s3); padding:var(--a-s3) var(--a-s4);
+    border-bottom:1px solid var(--a-border); background:var(--a-surface); }
+  .back { border:0; background:none; color:var(--a-accent); font:inherit; font-weight:600; cursor:pointer; min-height:var(--a-touch); }
+  .who .name { font-weight:600; }
+  .who .meta { font-size:var(--a-text-sm); color:var(--a-text-2); }
+  .scroll { flex:1; overflow-y:auto; padding:var(--a-s4); display:flex; flex-direction:column; gap:var(--a-s3); }
+  .day { align-self:center; font-size:var(--a-text-xs); color:var(--a-text-2);
+    background:var(--a-inset); border-radius:999px; padding:2px 10px; }
+  .msg { max-width:78%; border-radius:var(--a-r-lg); padding:var(--a-s2) var(--a-s3); position:relative; }
+  .msg .txt { font-size:var(--a-text-md); }
+  .msg .stamp { font-size:var(--a-text-xs); color:var(--a-text-2); margin-top:3px;
+    display:flex; gap:var(--a-s2); align-items:center; }
+  .in  { align-self:flex-start; background:var(--a-surface); border:1px solid var(--a-border); }
+  .out { align-self:flex-end; background:var(--a-accent-wash); border:1px solid transparent; }
+  .chan { font-size:10px; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
+    border:1px solid var(--a-border); border-radius:4px; padding:0 4px; color:var(--a-text-2); background:var(--a-bg); }
+  .sysnote { align-self:center; font-size:var(--a-text-xs); color:var(--a-text-2); }
+  /* ---- composer, fixed below history (Matt Q3 verbatim) ---- */
+  .composer { border-top:1px solid var(--a-border); background:var(--a-surface); padding:var(--a-s3) var(--a-s4); }
+  .cbox { display:flex; gap:var(--a-s2); align-items:flex-end; }
+  textarea { flex:1; font:inherit; resize:none; min-height:var(--a-touch); max-height:120px;
+    border:1px solid var(--a-border); border-radius:var(--a-r-md); padding:10px 12px; background:var(--a-bg); color:var(--a-text); }
+  textarea:focus-visible { outline:none; box-shadow:var(--a-focus); }
+  .send { min-height:var(--a-touch); min-width:76px; border:0; border-radius:var(--a-r-md);
+    background:var(--a-btn-bg); color:var(--a-btn-fg); font:inherit; font-weight:600; cursor:pointer; }
+  .send:focus-visible { outline:none; box-shadow:var(--a-focus); }
+  .crow { display:flex; justify-content:space-between; align-items:center; margin-top:var(--a-s2);
+    font-size:var(--a-text-sm); color:var(--a-text-2); }
+  .tpl { border:0; background:none; color:var(--a-accent); font:inherit; font-size:var(--a-text-sm); font-weight:500; cursor:pointer; }
+  .okword { color:var(--a-ok); font-weight:500; }
+  /* ---- desktop ≥1024: 3 panes ---- */
+  @media (min-width:1024px) {
+    .app { grid-template-columns:320px 1fr 300px; }
+    .back { display:none; }
+    .list { display:flex; flex-direction:column; border-right:1px solid var(--a-border); background:var(--a-surface); overflow-y:auto; }
+    .listhead { padding:var(--a-s4); font-size:var(--a-text-xl); font-weight:600; }
+    .conv { display:grid; grid-template-columns:1fr auto; gap:2px var(--a-s2); padding:var(--a-s3) var(--a-s4);
+      border-left:2px solid transparent; cursor:pointer; }
+    .conv:hover { background:var(--a-inset); }
+    .conv[aria-current="true"] { background:var(--a-accent-wash); border-left-color:var(--a-accent); }
+    .conv .n { font-weight:600; }
+    .conv .t { font-size:var(--a-text-xs); color:var(--a-text-2); font-variant-numeric:tabular-nums; }
+    .conv .p { grid-column:1 / -1; font-size:var(--a-text-sm); color:var(--a-text-2);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .conv .unread { width:8px; height:8px; border-radius:50%; background:var(--a-accent); align-self:center; }
+    .context { display:block; border-left:1px solid var(--a-border); background:var(--a-surface);
+      padding:var(--a-s4); overflow-y:auto; }
+    .cxname { font-size:var(--a-text-lg); font-weight:600; }
+    .cxmeta { font-size:var(--a-text-sm); color:var(--a-text-2); margin-bottom:var(--a-s4); }
+    .cxh { font-size:var(--a-text-xs); font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+      color:var(--a-text-2); margin:var(--a-s4) 0 var(--a-s2); }
+    .cxrow { font-size:var(--a-text-sm); padding:var(--a-s2) 0; border-bottom:1px solid var(--a-border); }
+    .cxrow b { font-weight:600; }
+    .chipline { display:flex; gap:var(--a-s1); flex-wrap:wrap; }
+    .pchip { font-size:var(--a-text-xs); border:1px solid var(--a-border); border-radius:999px;
+      padding:2px 8px; color:var(--a-text-2); }
+  }
+</style>
+</head>
+<body>
+<span class="sample">Sample data</span>
+<div class="app">
+  <aside class="list" aria-label="Conversations">
+    <div class="listhead">Messages</div>
+    <div class="conv" aria-current="true">
+      <span class="n">Dana Whitfield</span><span class="t">3h</span>
+      <span class="p">Yes, Saturday morning works for the walkthrough</span>
+    </div>
+    <div class="conv">
+      <span class="n">Tom Okafor</span><span class="t">6h</span>
+      <span class="p">Question about the inspection window — does the…</span>
+    </div>
+    <div class="conv">
+      <span class="n">Priya Natarajan</span><span class="t">1d</span>
+      <span class="p">Thanks, got the report. We'll read it this week.</span>
+    </div>
+  </aside>
+
+  <section class="thread" aria-label="Thread with Dana Whitfield">
+    <header class="threadhead">
+      <button class="back">‹ Back</button>
+      <div class="who">
+        <div class="name">Dana Whitfield</div>
+        <div class="meta">SMS · Rebecca's line · seller lead · Westside (sample)</div>
+      </div>
+    </header>
+    <div class="scroll">
+      <span class="day">Yesterday</span>
+      <div class="msg out"><div class="txt">Hi Dana, Rebecca here. Your valuation review is ready — want to walk the property together before we finalize a number?</div>
+        <div class="stamp"><span class="chan">SMS</span> 4:12 PM · delivered</div></div>
+      <div class="msg in"><div class="txt">Possibly! What times do you have this weekend?</div>
+        <div class="stamp"><span class="chan">SMS</span> 5:03 PM</div></div>
+      <div class="msg out"><div class="txt">Saturday 9–11am or Sunday after 1pm both work.</div>
+        <div class="stamp"><span class="chan">SMS</span> 5:10 PM · delivered</div></div>
+      <span class="day">Today</span>
+      <div class="msg in"><div class="txt">Yes, Saturday morning works for the walkthrough</div>
+        <div class="stamp"><span class="chan">SMS</span> 9:41 AM</div></div>
+      <div class="sysnote">Sequence "Seller Nurture" paused — Dana replied</div>
+    </div>
+    <div class="composer">
+      <div class="cbox">
+        <textarea rows="1" aria-label="Reply to Dana Whitfield" placeholder="Reply to Dana…"></textarea>
+        <button class="send">Send</button>
+      </div>
+      <div class="crow">
+        <button class="tpl">Insert template ▾</button>
+        <span class="okword">Inside send window · 9:41 AM PT</span>
+      </div>
+    </div>
+  </section>
+
+  <aside class="context" aria-label="Person context">
+    <div class="cxname">Dana Whitfield</div>
+    <div class="cxmeta">Seller lead · assigned Rebecca · since Jul 28 (sample)</div>
+    <div class="chipline"><span class="pchip">seller:warm</span><span class="pchip">source: valuation LP</span><span class="pchip">SMS consent ✓</span></div>
+    <div class="cxh">Next step</div>
+    <div class="cxrow"><b>Walkthrough Saturday 9am</b> — add to calendar</div>
+    <div class="cxh">Recent</div>
+    <div class="cxrow">CMA draft built · awaiting review</div>
+    <div class="cxrow">Viewed valuation page 3× this week</div>
+    <div class="cxrow">Sequence paused on reply</div>
+    <div class="cxh">Contact</div>
+    <div class="cxrow" style="font-family:var(--a-font-mono)">(541) 555-0100 · dana@example.com</div>
+  </aside>
+</div>
+</body>
+</html>

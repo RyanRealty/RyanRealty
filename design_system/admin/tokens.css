@@ -1,0 +1,107 @@
+/* ============================================================
+   Ryan Realty ADMIN visual language — tokens v1 (P6, 2026-08-05)
+   Greenfield. Derived from EXTERNAL standards only:
+   - Color scales: Radix Colors (slate / blue / green / amber / red),
+     steps re-verified with computed WCAG ratios (see ADMIN_UI.md §4).
+   - Type: Inter (product-UI standard; Linear, Radix Themes), tabular
+     numerals on all data per practice at Stripe.
+   - Density/spacing: 4px base grid (Carbon, Polaris).
+   The PUBLIC brand (navy/cream/Amboqia) is blacklisted as input here.
+   Theme: light default; dark via [data-theme="dark"] or OS preference
+   when [data-theme="auto"]. All pairs AA-proven at shipped values.
+   ============================================================ */
+
+:root {
+  /* ---- surfaces (light) ---- */
+  --a-bg:        #FCFCFD;  /* app background */
+  --a-surface:   #F9F9FB;  /* cards, panels */
+  --a-inset:     #F0F0F3;  /* wells, input bg, hover */
+  --a-border:    #D9D9E0;  /* hairlines */
+  --a-border-strong: #B9BBC6;
+
+  /* ---- text ---- */
+  --a-text:      #1C2024;  /* primary   — 15.98:1 on bg */
+  --a-text-2:    #60646C;  /* secondary —  5.79:1 on bg */
+
+  /* ---- the one accent (action) ---- */
+  --a-accent:        #0D74CE; /* links + accent text — 4.65:1 on bg */
+  --a-accent-strong: #113264; /* pressed / high-emph — 12.62:1 w/ white */
+  --a-accent-wash:   #E6F4FE; /* selected row / focus wash */
+  --a-btn-bg:        #0D74CE; /* solid button bg */
+  --a-btn-fg:        #FFFFFF; /* solid button text — 4.77:1 */
+
+  /* ---- status semantics (never decorative) ---- */
+  --a-ok:        #218358;  /* 4.60:1 as text on bg; 4.72:1 w/ white as solid */
+  --a-ok-wash:   #E6F6EB;
+  --a-warn:      #AB6400;  /* 4.50:1 as text on bg */
+  --a-warn-chip: #FFC53D;  /* chip bg, carries dark text — 10.38:1 */
+  --a-warn-wash: #FFF7C2;
+  --a-danger:    #CE2C31;  /* 5.08:1 as text on bg; 5.21:1 w/ white as solid */
+  --a-danger-wash:#FEEBEC;
+
+  /* ---- type ---- */
+  --a-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --a-font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+  --a-text-xs: 11px;  /* meta, timestamps */
+  --a-text-sm: 12.5px;/* secondary rows, chips */
+  --a-text-md: 14px;  /* body / controls (default) */
+  --a-text-lg: 16px;  /* item titles, section heads */
+  --a-text-xl: 20px;  /* page title */
+  --a-text-num: 26px; /* stat figures */
+  --a-leading: 1.45;
+
+  /* ---- space (4px grid) ---- */
+  --a-s1: 4px; --a-s2: 8px; --a-s3: 12px; --a-s4: 16px;
+  --a-s5: 20px; --a-s6: 24px; --a-s8: 32px; --a-s10: 40px;
+
+  /* ---- shape ---- */
+  --a-r-sm: 6px;   /* chips, inputs */
+  --a-r-md: 8px;   /* buttons, list rows */
+  --a-r-lg: 12px;  /* cards, panels */
+
+  /* ---- elevation (borders first; shadow only for overlays) ---- */
+  --a-shadow-overlay: 0 8px 24px rgb(28 32 36 / 0.12), 0 2px 6px rgb(28 32 36 / 0.08);
+
+  /* ---- focus (always visible, never color-only) ---- */
+  --a-focus: 0 0 0 2px var(--a-bg), 0 0 0 4px var(--a-accent);
+
+  /* ---- motion (calm; respects prefers-reduced-motion) ---- */
+  --a-t-fast: 120ms ease-out;
+  --a-t-med:  200ms ease-out;
+
+  /* ---- layout ---- */
+  --a-rail-w: 216px;      /* desktop nav rail */
+  --a-tabbar-h: 56px;     /* phone tab bar */
+  --a-touch: 44px;        /* min target (Apple HIG / WCAG 2.5.8) */
+}
+
+[data-theme="dark"] {
+  --a-bg:        #111113;
+  --a-surface:   #18191B;
+  --a-inset:     #212225;
+  --a-border:    #2E3135;
+  --a-border-strong: #43484E;
+  --a-text:      #EDEEF0;  /* 16.25:1 on bg */
+  --a-text-2:    #B0B4BA;  /*  9.06:1 on bg */
+  --a-accent:        #70B8FF; /* text/links — 8.97:1 on bg */
+  --a-btn-bg:        #0090FF; /* solid buttons flip to DARK text in dark mode */
+  --a-btn-fg:        #0B0B0C; /* — 6.03:1 */
+  --a-accent-strong: #C2E6FF;
+  --a-accent-wash:   #113264;
+  --a-ok:        #3DD68C;  /* 10.06:1 on bg */
+  --a-ok-wash:   #132D21;
+  --a-warn:      #FFCA16;  /* carries dark text — 12.85:1 */
+  --a-warn-chip: #FFC53D;
+  --a-warn-wash: #302008;
+  --a-danger:    #FF9592;  /* 8.95:1 on bg */
+  --a-danger-wash:#3B1219;
+  --a-shadow-overlay: 0 8px 24px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.4);
+  --a-focus: 0 0 0 2px var(--a-bg), 0 0 0 4px var(--a-accent);
+}
+
+/* numerals are ALWAYS tabular on data surfaces */
+.a-num { font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --a-t-fast: 0ms; --a-t-med: 0ms; }
+}

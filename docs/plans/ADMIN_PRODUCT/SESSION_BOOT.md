@@ -60,11 +60,13 @@ do not assume slash commands or autoload worked.
   Audiences, Content, Settings); tabs Today · Messages · Prospecting · People ·
   Oversight; amendment: DSCR → Reports; `cut-list.md` FROZEN; 160/160 routes
   dispositioned in `page-inventory.json`. Phase is `P6_VISUAL`.
-- **Next unit: `visual-language` (P6)** — greenfield `design_system/admin/` from
-  EXTERNAL standards only (WCAG 2.2 AA + APG → Radix Colors → GOV.UK →
-  Carbon/Lightning → Polaris → NN/g; discipline: Linear, Vercel, Stripe, Attio,
-  Height, Retool, Superhuman). Public brand (navy/cream, Amboqia) is BLACKLISTED as
-  design input. Deliverables: thesis, patterns, tokens + AA proof, 3 hard screens at
-  desktop + 390px, ADMIN_UI.md, header options, dark-mode decision, amnesia test,
-  craft scorecard ≥8. **STOP for Matt's visual lock in decisions.md.** Never start P7
-  primitives before that lock.
+- **P6 PACKAGE WRITTEN 2026-08-05, AWAITING VISUAL LOCK** — `design_system/admin/`:
+  `tokens.css` (Radix-derived light+dark, every pair contrast-computed),
+  `ADMIN_UI.md` (thesis, 6 patterns, computed AA tables, header Option A left-rail
+  recommended vs Option B, dark-mode ship-both, amnesia test, scorecard 8.5),
+  `screens/{today,messages,oversight}.html` — browser-verified at 1280 + 375 in both
+  themes (server: `admin-mockups` in `.claude/launch.json`, port 8094).
+- **Next unit: NOTHING until Matt writes the visual lock into `decisions.md`.** When
+  he does (header option + dark-mode + overall approval): set `locks.visual`, clear
+  `awaiting_lock`, advance phase to `P7_PRIMITIVES` (components/admin/v2 primitives
+  from the locked language + token-gate exemption widening). P8 litmus after that.

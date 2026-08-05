@@ -1,7 +1,7 @@
 [
   {
-    "id": "visual-language",
+    "id": "visual-lock-wait",
     "phase": "P6",
-    "note": "NOT STARTED. Greenfield design_system/admin/ from external standards only (WCAG 2.2 AA + APG -> Radix Colors -> GOV.UK -> Carbon/Lightning -> Polaris -> NN/g; discipline products: Linear, Vercel, Stripe, Attio, Height, Retool, Superhuman). Amnesia test required. Deliverables per pack P6 block: thesis, patterns, tokens+AA, 3 hard screens desktop+390, ADMIN_UI.md, header options, dark-mode decision. Craft scorecard >=8. STOP for Matt visual lock."
+    "note": "design_system/admin/ v1 written + browser-verified 2026-08-05 (tokens.css, ADMIN_UI.md, 3 screens at 1280+375, light+dark). Awaiting Matt visual lock in decisions.md. Decisions in the package: header Option A (left rail) recommended over B (top bar); dark mode ship-both. After lock: locks.visual, phase=P7_PRIMITIVES, next unit = components/admin/v2 primitives + token-gate exemption."
   }
 ]

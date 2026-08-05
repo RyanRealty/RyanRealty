@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oversight — admin visual language (SAMPLE DATA)</title>
+<link rel="stylesheet" href="../tokens.css">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--a-font); font-size:var(--a-text-md); line-height:var(--a-leading);
+         color:var(--a-text); background:var(--a-bg); }
+  .sample { position:fixed; top:6px; right:8px; font-size:10px; color:var(--a-text-2);
+    letter-spacing:.08em; text-transform:uppercase; z-index:20; }
+  main { padding:var(--a-s4); max-width:1040px; margin:0 auto; padding-bottom:80px; }
+  h1 { font-size:var(--a-text-xl); font-weight:600; letter-spacing:-0.01em; margin-bottom:var(--a-s1); }
+  .sub { color:var(--a-text-2); font-size:var(--a-text-sm); margin-bottom:var(--a-s5); }
+  h2 { font-size:var(--a-text-lg); font-weight:600; margin:var(--a-s6) 0 var(--a-s3); }
+  .a-num { font-variant-numeric:tabular-nums; }
+
+  /* ---- alarm rows (persist until acknowledged) ---- */
+  .alarm { display:grid; grid-template-columns:auto 1fr auto; gap:var(--a-s3); align-items:center;
+    border:1px solid var(--a-border); border-left:3px solid var(--a-danger); border-radius:var(--a-r-lg);
+    background:var(--a-danger-wash); padding:var(--a-s3) var(--a-s4); margin-bottom:var(--a-s2); }
+  .alarm.warn { border-left-color:var(--a-warn); background:var(--a-warn-wash); }
+  .aword { font-size:var(--a-text-xs); font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
+  .alarm .aword { color:var(--a-danger); } .alarm.warn .aword { color:var(--a-warn); }
+  .alarm .atext b { font-weight:600; }
+  .alarm .atime { font-size:var(--a-text-xs); color:var(--a-text-2); }
+  .ack { min-height:36px; padding:0 12px; border-radius:var(--a-r-md); border:1px solid var(--a-border);
+    background:var(--a-surface); color:var(--a-text); font:inherit; font-size:var(--a-text-sm); font-weight:600; cursor:pointer; }
+  .ack:focus-visible { outline:none; box-shadow:var(--a-focus); }
+
+  /* ---- status board ---- */
+  .board { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:var(--a-s3); }
+  .tile { border:1px solid var(--a-border); border-radius:var(--a-r-lg); background:var(--a-surface);
+    padding:var(--a-s3) var(--a-s4); display:flex; flex-direction:column; gap:2px; }
+  .tname { font-size:var(--a-text-sm); color:var(--a-text-2); }
+  .tstate { display:flex; align-items:center; gap:6px; font-weight:600; }
+  .dot { width:8px; height:8px; border-radius:50%; }
+  .ok .dot { background:var(--a-ok); } .ok .tstate { color:var(--a-ok); }
+  .warn .dot { background:var(--a-warn); } .warn .tstate { color:var(--a-warn); }
+  .bad .dot { background:var(--a-danger); } .bad .tstate { color:var(--a-danger); }
+  .tfig { font-size:var(--a-text-sm); color:var(--a-text); }
+  .tage { font-size:var(--a-text-xs); color:var(--a-text-2); }
+
+  /* ---- weekly cockpit ---- */
+  .cockpit { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:var(--a-s3); }
+  .stat { border:1px solid var(--a-border); border-radius:var(--a-r-lg); background:var(--a-surface); padding:var(--a-s4); }
+  .sfig { font-size:var(--a-text-num); font-weight:600; letter-spacing:-0.02em; font-variant-numeric:tabular-nums; }
+  .sfig .unit { font-size:var(--a-text-sm); font-weight:500; color:var(--a-text-2); }
+  .slbl { font-size:var(--a-text-sm); color:var(--a-text-2); margin-top:2px; }
+  .sflag { font-size:var(--a-text-xs); font-weight:600; margin-top:var(--a-s2); }
+  .sflag.bad { color:var(--a-danger); } .sflag.ok { color:var(--a-ok); }
+
+  /* ---- lanes (sequences ran/broke, parked, sign-off) ---- */
+  .lane { border:1px solid var(--a-border); border-radius:var(--a-r-lg); background:var(--a-surface); }
+  .lrow { display:grid; grid-template-columns:1fr auto auto; gap:var(--a-s3); align-items:center;
+    padding:var(--a-s3) var(--a-s4); border-bottom:1px solid var(--a-border); min-height:48px; }
+  .lrow:last-child { border-bottom:0; }
+  .lrow .t { font-weight:500; } .lrow .m { font-size:var(--a-text-sm); color:var(--a-text-2); }
+  .state { font-size:var(--a-text-sm); font-weight:600; }
+  .state.ok { color:var(--a-ok); } .state.warn { color:var(--a-warn); } .state.bad { color:var(--a-danger); }
+  .go { border:0; background:none; color:var(--a-accent); font:inherit; font-size:var(--a-text-sm); font-weight:600; cursor:pointer; }
+  .go:focus-visible { outline:none; box-shadow:var(--a-focus); border-radius:4px; }
+
+  @media (min-width:1024px) { main { padding:var(--a-s8); } }
+  /* phone: alarms stack — word on top, text full width, ack bottom-right */
+  @media (max-width:639px) {
+    .alarm { grid-template-columns:1fr auto; grid-template-areas:"word word" "text text" "gap ack"; }
+    .alarm .aword { grid-area:word; }
+    .alarm .atext { grid-area:text; }
+    .alarm .ack { grid-area:ack; }
+  }
+</style>
+</head>
+<body>
+<span class="sample">Sample data</span>
+<main>
+  <h1>Oversight</h1>
+  <div class="sub">Supervision without interruption — alarms land here and in the daily digest, never on your phone.</div>
+
+  <section aria-label="Alarms">
+    <div class="alarm">
+      <span class="aword">Down</span>
+      <div class="atext"><b>MLS delta sync failing since 6:18 AM</b> — 3 consecutive runs errored; listings are up to 4h stale.
+        <div class="atime">Detected 7:02 AM · sync-delta</div></div>
+      <button class="ack">Acknowledge</button>
+    </div>
+    <div class="alarm warn">
+      <span class="aword">Degraded</span>
+      <div class="atext"><b>Search views refreshed 96 min ago</b> — hourly refresh missed one window.
+        <div class="atime">Detected 8:11 AM · refresh-mvs</div></div>
+      <button class="ack">Acknowledge</button>
+    </div>
+  </section>
+
+  <h2>Systems</h2>
+  <section class="board" aria-label="System status">
+    <div class="tile bad"><span class="tname">MLS sync</span><span class="tstate"><span class="dot"></span>Down</span><span class="tfig a-num">last good 6:03 AM</span><span class="tage">checked 1 min ago</span></div>
+    <div class="tile warn"><span class="tname">Search views</span><span class="tstate"><span class="dot"></span>Degraded</span><span class="tfig a-num">96 min since refresh</span><span class="tage">checked 4 min ago</span></div>
+    <div class="tile ok"><span class="tname">Outbound SMS</span><span class="tstate"><span class="dot"></span>Healthy</span><span class="tfig a-num">14 sent · 0 failed today</span><span class="tage">checked 2 min ago</span></div>
+    <div class="tile ok"><span class="tname">Email mirror</span><span class="tstate"><span class="dot"></span>Healthy</span><span class="tfig a-num">3 mailboxes · 8 min lag</span><span class="tage">checked 8 min ago</span></div>
+    <div class="tile ok"><span class="tname">Alert rail</span><span class="tstate"><span class="dot"></span>Healthy</span><span class="tfig a-num">queue empty</span><span class="tage">checked 1 min ago</span></div>
+    <div class="tile ok"><span class="tname">Deploys</span><span class="tstate"><span class="dot"></span>Current</span><span class="tfig a-num">live = main</span><span class="tage">checked 12 min ago</span></div>
+  </section>
+
+  <h2>This week</h2>
+  <section class="cockpit" aria-label="Weekly cockpit">
+    <div class="stat"><div class="sfig">11<span class="unit"> min</span></div><div class="slbl">median first response</div><div class="sflag ok">within the 15-min bar</div></div>
+    <div class="stat"><div class="sfig">2</div><div class="slbl">inbound unanswered &gt; 24h</div><div class="sflag bad">both on Paul's book</div></div>
+    <div class="stat"><div class="sfig">9</div><div class="slbl">overdue tasks (3 brokers)</div><div class="sflag bad">oldest 6 days</div></div>
+    <div class="stat"><div class="sfig">3</div><div class="slbl">parked sequence steps</div><div class="sflag ok">all surfaced in Today</div></div>
+    <div class="stat"><div class="sfig">1</div><div class="slbl">closing awaiting sign-off</div><div class="sflag ok">docs complete</div></div>
+  </section>
+
+  <h2>Sequences — ran / broke / parked</h2>
+  <section class="lane" aria-label="Sequence health">
+    <div class="lrow"><div><div class="t">Seller Nurture</div><div class="m a-num">41 touches this week · 2 paused on reply</div></div><span class="state ok">Ran clean</span><button class="go">Detail</button></div>
+    <div class="lrow"><div><div class="t">Buyer Alert Warmup</div><div class="m a-num">17 touches · 1 blocked: unresolved merge token</div></div><span class="state bad">1 stopped</span><button class="go">Fix step</button></div>
+    <div class="lrow"><div><div class="t">Past-Client Check-in</div><div class="m a-num">0 due this week</div></div><span class="state ok">Idle</span><button class="go">Detail</button></div>
+  </section>
+
+  <h2>Needs your sign-off</h2>
+  <section class="lane" aria-label="Principal broker sign-off">
+    <div class="lrow"><div><div class="t">61200 SE Placeholder Ln — closing packet</div><div class="m">All documents executed · commission math verified</div></div><span class="state warn">Waiting 2 days</span><button class="go">Review</button></div>
+  </section>
+</main>
+</body>
+</html>
