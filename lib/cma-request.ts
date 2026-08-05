@@ -52,12 +52,10 @@ export type CreateCmaRequestInput = {
   } | null
   /** Where the request came from. Default 'seller-lp'. */
   requestSource?: 'seller-lp' | 'expired-listing-cron' | 'fsbo-lp' | 'fsbo-cron' | 'crm-kickoff'
-  /** Which document variant the build worker should produce (spec 07 §4.1).
-   *  'expired-audit' → the failure-analysis + services-standard + 2.5% net-sheet
-   *  variant for expired-listing owners; default 'cma' (sellers + FSBO). Written
-   *  to payload.doc_type and read by lib/cma/worker.ts → buildCma. This is the
-   *  fix for Defect 4: before, cron-built expired docs defaulted to 'cma' and the
-   *  prospecting surface refused to send them. */
+  /** Doc-type LABEL for the cmas row. Since 2026-08-05 (Matt: one CMA) the
+   *  content no longer varies by this — the last-listing review section is
+   *  driven by listing history inside buildCma. 'expired-audit' remains a
+   *  legal input for compat only; every caller now sends 'cma'. */
   docType?: 'cma' | 'expired-audit'
   /** Send the "we received your request" email to the lead. Default true.
    *  MUST be false for outbound-originated requests (expired) — the owner
@@ -273,9 +271,8 @@ export async function createCmaRequest(
         assigned_producer: 'marketing_brain_skills/producers/cma',
         payload: {
           cma_slug: slug,
-          // Spec 07 §4.1 — threaded to lib/cma/worker.ts so the built cmas row
-          // lands as the correct doc_type. Default 'cma'; expired detection sends
-          // 'expired-audit'. Fixes Defect 4 (auto-CMA built as the wrong type).
+          // Doc-type label only (2026-08-05: one CMA; the expired review is a
+          // history-driven section). Every caller sends 'cma' now.
           doc_type: input.docType ?? 'cma',
           subject_address: rawAddress,
           subject_city: input.parsedCity,

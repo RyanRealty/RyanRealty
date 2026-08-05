@@ -683,7 +683,7 @@ function verifyPage(a: RenderCmaArgs): PageDef | null {
   }
 }
 
-// ── EXPIRED AUDIT pages (doc_type='expired-audit' only) ─────────────────────
+// ── The last-listing review (history-driven, 2026-08-05 single-doc fold) ────
 // Voice per voice_guidelines §4.7 + the expired-listing-lp SKILL: the data
 // tells the story. No editorializing, no blame on the prior agent, no
 // "most agents do X" framing. Every number here was verified by the engine.
