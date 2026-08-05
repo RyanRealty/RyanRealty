@@ -13,6 +13,7 @@ import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getInboxContactCard } from '@/lib/data/crm/getInboxThread'
 import { getContactActivityFeed } from '@/lib/data/crm/getContactActivityFeed'
 import { getPersonIdByLegacyId } from '@/lib/data/crm/getPersonIdByLegacyId'
+import { extractAddressCandidate } from '@/lib/crm/seller-intent'
 import { Button, StateWord, TextField } from '@/components/admin/v2'
 import { kickoffCmaFromPerson } from '../actions'
 
@@ -47,6 +48,11 @@ export default async function PersonPage({
   const feed = await getContactActivityFeed(idNum, 20)
   const showKickoff = sp.intent === 'cma' || sp.kicked === '1'
   const kicked = sp.kicked === '1'
+  // Litmus parity with the legacy sheet (P8 bar: alert → 2 taps, no typing):
+  // suggest the address parsed from the latest inbound text. Editable — the
+  // broker confirms it before building.
+  const latestInbound = feed.find((t) => t.kind === 'sms_in')?.snippet ?? null
+  const suggestedAddress = extractAddressCandidate(latestInbound)
 
   return (
     <main className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
@@ -96,8 +102,13 @@ export default async function PersonPage({
                 label="Property address"
                 name="address"
                 required
+                defaultValue={suggestedAddress ?? undefined}
                 placeholder="123 NW Bond St, Bend"
-                hint="Include the city so comps resolve. Confirm it before building."
+                hint={
+                  suggestedAddress
+                    ? 'Parsed from their text — confirm it before building.'
+                    : 'Include the city so comps resolve. Confirm it before building.'
+                }
                 error={sp.err ? decodeURIComponent(sp.err) : undefined}
               />
               <div style={{ display: 'flex', gap: 8 }}>
