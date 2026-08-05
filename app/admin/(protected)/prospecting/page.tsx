@@ -17,6 +17,7 @@ import { formatDate } from '@/lib/format/date'
 import { Button, QueueRow, VerdictLine } from '@/components/admin/v2'
 import type { AdminState } from '@/components/admin/v2'
 import { buildProspectDocFromWorklist } from './actions'
+import { ProspectFilterSelect } from './FilterSelect'
 
 export const dynamic = 'force-dynamic'
 // "Build audit" runs the deterministic CMA builder inline (~30–60s); give the
@@ -75,7 +76,12 @@ function rowContext(row: ProspectRow, bucket: ProspectBucket): string {
     const doc = row.doc
     const rec = doc.state === 'ready' ? price(doc.recommendedList) : null
     bits.push(rec ? `audit ready, recommends ${rec}` : 'audit ready')
-    bits.push('phone on file')
+    // Channel-aware (never a flat wall): say exactly what is open and why.
+    const smsOpen = !row.compliance.channels.sms.blocked
+    const emailOpen = !row.compliance.channels.email.blocked
+    if (smsOpen && emailOpen) bits.push('text + email open')
+    else if (emailOpen) bits.push(`email only (${row.compliance.channels.sms.reason?.toLowerCase() ?? 'texts blocked'})`)
+    else bits.push('text only (no email on file)')
   } else if (bucket === 'needs-audit') {
     if (row.doc.state === 'building') bits.push('audit building now')
     else if (row.doc.state === 'failed') bits.push(`build failed: ${row.doc.reason ?? 'unknown error'}`)
@@ -123,73 +129,27 @@ export default async function ProspectingPage({
   const { summary } = result
   const totalPages = Math.max(1, Math.ceil(result.total / PAGE_SIZE))
 
-  const kindLabel = kind === 'expired' ? 'expired listings' : 'FSBOs'
-  const chips: Array<{ status: ProspectStatusFilter; label: string; count: number }> = [
-    { status: 'all', label: 'All', count: summary.total },
-    { status: 'sendable', label: 'Ready to send', count: summary.sendable },
-    { status: 'needs-audit', label: 'Needs audit', count: summary.needsAudit },
-    { status: 'no-phone', label: 'No phone', count: summary.noPhone },
-    { status: 'sent', label: 'Sent', count: summary.sent },
-    { status: 'excluded', label: 'Blocked', count: summary.excluded },
-  ]
+  const counts: Record<string, number> = {
+    all: summary.total,
+    sendable: summary.sendable,
+    'needs-audit': summary.needsAudit,
+    'no-phone': summary.noPhone,
+    sent: summary.sent,
+    excluded: summary.excluded,
+  }
 
   return (
     <main className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
-      <h1 style={{ fontSize: 'var(--a-text-xl)', fontWeight: 600, letterSpacing: '-0.01em' }}>Prospecting</h1>
-      <div style={{ margin: '8px 0 4px' }}>
-        <VerdictLine tone={summary.sendable > 0 || summary.needsAudit > 0 ? 'attention' : 'ok'}>
-          {summary.sendable > 0 ? (
-            <>
-              <b>
-                {summary.sendable} intro{summary.sendable === 1 ? '' : 's'} ready to send
-              </b>{' '}
-              across {kindLabel}. Open a row to review and send — nothing goes out on its own.
-            </>
-          ) : summary.needsAudit > 0 ? (
-            <>
-              <b>No intros ready.</b> {summary.needsAudit}{' '}
-              {kind === 'expired'
-                ? summary.needsAudit === 1
-                  ? 'expired listing needs'
-                  : 'expired listings need'
-                : summary.needsAudit === 1
-                  ? 'FSBO needs'
-                  : 'FSBOs need'}{' '}
-              an audit built first.
-            </>
-          ) : (
-            <>
-              <b>Nothing waiting on {kindLabel}.</b> {summary.sent} sent so far.
-            </>
-          )}
-        </VerdictLine>
+      {/* Compact header (Matt 2026-08-05): no page title, no chip walls — one
+          verdict line and one dropdown share a row. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', margin: '0 0 10px' }}>
+        <div style={{ flex: '1 1 260px', minWidth: 220 }}>
+          <VerdictLine tone={summary.sendable > 0 || summary.needsAudit > 0 ? 'attention' : 'ok'}>
+            <b>{summary.sendable} ready to send</b> · {summary.needsAudit} need an audit · {summary.sent} sent
+          </VerdictLine>
+        </div>
+        <ProspectFilterSelect kind={kind} status={status} q={q} counts={counts} />
       </div>
-
-      <nav className="av2-chiprow" aria-label="Prospect kind">
-        {(['expired', 'fsbo'] as ProspectKind[]).map((k) => (
-          <Link
-            key={k}
-            href={hrefFor(k, status, q)}
-            className={`av2-chip${k === kind ? ' av2-chip--on' : ''}`}
-            aria-current={k === kind ? 'page' : undefined}
-          >
-            {k === 'expired' ? 'Expired' : 'FSBO'}
-          </Link>
-        ))}
-      </nav>
-
-      <nav className="av2-chiprow" aria-label="Bucket">
-        {chips.map((c) => (
-          <Link
-            key={c.status}
-            href={hrefFor(kind, c.status, q)}
-            className={`av2-chip${c.status === status ? ' av2-chip--on' : ''}`}
-            aria-current={c.status === status ? 'page' : undefined}
-          >
-            {c.label} ({c.count})
-          </Link>
-        ))}
-      </nav>
 
       <form method="GET" style={{ margin: '4px 0 16px' }}>
         {kind !== 'expired' ? <input type="hidden" name="kind" value={kind} /> : null}
@@ -257,7 +217,7 @@ export default async function ProspectingPage({
             {q
               ? 'No prospects match. Try fewer letters or a street name.'
               : status === 'all'
-                ? `No ${kindLabel} captured yet.`
+                ? `No ${kind === 'expired' ? 'expired listings' : 'FSBOs'} captured yet.`
                 : `Nothing in this bucket right now.`}
           </li>
         ) : null}

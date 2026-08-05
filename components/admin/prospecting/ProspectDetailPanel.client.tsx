@@ -140,9 +140,19 @@ export function ProspectDetailPanel({
         </div>
       </div>
 
-      {/* Identity */}
+      {/* Identity — the owner name IS the door to their person page (Matt
+          2026-08-05: "I should be able to click on that owner's name"). */}
       <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-foreground">{detail.ownerName ?? 'Owner unknown'}</h2>
+        {detail.personId ? (
+          <Link
+            href={`/admin/people/${detail.personId}`}
+            className="text-lg font-semibold text-foreground underline-offset-4 hover:underline"
+          >
+            {detail.ownerName ?? 'Owner unknown'}
+          </Link>
+        ) : (
+          <h2 className="text-lg font-semibold text-foreground">{detail.ownerName ?? 'Owner unknown'}</h2>
+        )}
         <p className="text-sm text-muted-foreground">
           {/* fullAddress already includes city + zip; only compose from parts when it is absent. */}
           {detail.fullAddress ??
@@ -158,6 +168,13 @@ export function ProspectDetailPanel({
 
       <div className="flex items-center gap-2">
         <ProspectDocPill doc={detail.doc} />
+        {/* Direct door to the audit itself (Matt 2026-08-05: "no way for me to
+            immediately see the audits") — admin review page for the built doc. */}
+        {detail.doc.state === 'ready' || detail.doc.state === 'sent' ? (
+          <Button asChild size="sm" variant="outline">
+            <Link href={`/admin/cmas/${detail.doc.slug}`}>Review audit</Link>
+          </Button>
+        ) : null}
         {/* Tenure chip — shown only when a source proves the date (DAL
             deriveOwnershipSince). 0 = proven but under a year. */}
         {detail.ownershipYears != null ? (

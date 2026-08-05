@@ -141,10 +141,18 @@ export function classifyProspect(
 function classify(doc: ProspectDocState, compliance: ProspectRowSkeleton['compliance'], sendable: boolean): Bucket {
   if (doc.state === 'sent') return 'sent'
   if (doc.state !== 'ready') return 'needs-audit'
-  // doc is ready and not yet sent.
-  const blockedOnlyByPhone =
-    compliance.noPhone && !compliance.hardStop && !compliance.relisted && !compliance.offMarket && !compliance.suppressedSms
-  if (blockedOnlyByPhone) return 'no-phone'
+  // Doc ready, not yet sent. CHANNEL-AWARE (Matt 2026-08-05, the same collapse
+  // Brain Dump 2 banned): a DNC contact with an open email channel is a
+  // legitimately emailable prospect, not a red "Blocked" wall. A row is
+  // sendable when ANY deliverable channel (sms or email) is open — the
+  // channels map already folds compliance AND reachability per channel.
+  if (compliance.relisted || compliance.offMarket || compliance.allChannelsBlocked) return 'excluded'
+  const smsOpen = !compliance.channels.sms.blocked
+  const emailOpen = !compliance.channels.email.blocked
+  if (smsOpen || emailOpen) return 'sendable'
+  // Nothing deliverable. Pure missing-contact-info (no compliance block in
+  // play) stays the reachability bucket; anything else is a true exclusion.
+  if (compliance.noPhone && compliance.noEmail && !compliance.hardStop && !compliance.suppressedSms) return 'no-phone'
   return sendable ? 'sendable' : 'excluded'
 }
 
