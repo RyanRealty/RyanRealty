@@ -26,7 +26,18 @@ import { join, relative } from 'node:path'
 const ROOT = process.cwd()
 const SPEC = join(ROOT, 'design_system/admin/tokens.css')
 const COPY = join(ROOT, 'components/admin/v2/tokens.css')
-const SCAN_DIRS = ['components/admin/v2', 'app/admin/(protected)/today', 'app/admin/(protected)/messages', 'app/admin/(protected)/people']
+// Entries may be directories (scanned recursively) or single files — the file
+// form scopes a route whose subtree still holds un-migrated legacy machinery
+// (prospecting's [kind]/[id] review page migrates with a later unit; flip the
+// entry to the bare dir when it does).
+const SCAN_DIRS = [
+  'components/admin/v2',
+  'app/admin/(protected)/today',
+  'app/admin/(protected)/messages',
+  'app/admin/(protected)/people',
+  'app/admin/(protected)/prospecting/page.tsx',
+  'app/admin/(protected)/prospecting/actions.ts',
+]
 const EXT = new Set(['.ts', '.tsx', '.css'])
 
 const failures = []
@@ -67,8 +78,12 @@ function report(file, lineIdx, rule, snippet) {
 
 for (const dir of SCAN_DIRS) {
   const abs = join(ROOT, dir)
-  if (!existsSync(abs) || !statSync(abs).isDirectory()) continue
-  for (const file of walk(abs)) {
+  if (!existsSync(abs)) {
+    failures.push(`SCAN_DIRS entry missing on disk: ${dir}`)
+    continue
+  }
+  const files = statSync(abs).isDirectory() ? walk(abs) : [abs]
+  for (const file of files) {
     const isTokens = file === COPY
     const lines = readFileSync(file, 'utf8').split('\n')
     lines.forEach((line, i) => {

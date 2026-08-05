@@ -33,4 +33,4 @@ export {
   type DripSequence,
 } from './drip'
 
-export { listProspects } from './list'
+export { listProspects, classifyProspect, type ProspectBucket } from './list'

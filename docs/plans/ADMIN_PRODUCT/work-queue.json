@@ -1,20 +1,22 @@
 [
   {
-    "id": "roll:prospecting",
-    "phase": "P9"
-  },
-  {
     "id": "roll:oversight",
-    "phase": "P9"
+    "phase": "P9",
+    "note": "Verdict + needs-you pattern (tile boards retired): one attention list (alarms, broken sequences, PB sign-off waits), quiet rows for healthy systems, week strip. Absorbs /admin/operations, /admin/crm/health, /admin/sync*, /admin/crm/activity, weekly reports jobs. New route /admin/oversight, tab 5, capability oversight.view (broker-granted, scoped)."
   },
   {
     "id": "roll:remaining-families",
     "phase": "P9",
-    "note": "Valuations, Closings, Reports, Audiences, Content, Settings per locked IA"
+    "note": "One commit each, order: Valuations, Closings, Reports, Audiences, Content, Settings per locked IA + FINISH-ROUND-PROMPT scope notes."
+  },
+  {
+    "id": "litmus-deeplink-repoint",
+    "phase": "P9",
+    "note": "Micro-unit: repoint alert deep links /admin/crm/[id] -> /admin/people/[id] + litmus RE-TIMING in the same unit (tmp/litmus-timing.mjs). Never silently (landmine)."
   },
   {
     "id": "gates",
     "phase": "P10",
-    "note": "axe + admin-ui checks + contrast + visual regression; ratchet shrink-only"
+    "note": "Extend check-admin-v2-tokens to everything rolled; nav<->inventory parity check; computed AA contrast spot-check; wire into ci:gates. Then the final program report."
   }
 ]

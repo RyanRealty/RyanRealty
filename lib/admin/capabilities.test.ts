@@ -126,16 +126,15 @@ describe('shell projection (one nav source for every surface)', () => {
     expect(people.items.map((i) => i.label)).not.toContain('People')
   })
 
-  it('mobile tabs are the D9.4 five for superuser AND broker, from the annotations', () => {
+  it('mobile tabs follow the locked IA bar (Today · Messages · Prospecting · People; Oversight lands with its roll) for superuser AND broker', () => {
     for (const role of ['superuser', 'broker'] as const) {
       const tabs = buildMobileTabs(buildNav(ctx(role)))
-      expect(tabs.map((t) => t.label)).toEqual(['Today', 'Messages', 'People', 'Deals', 'Activity'])
+      expect(tabs.map((t) => t.label)).toEqual(['Today', 'Messages', 'Prospecting', 'People'])
       expect(tabs.map((t) => t.href)).toEqual([
         '/admin/today',
         '/admin/messages',
+        '/admin/prospecting',
         '/admin/people',
-        '/admin/crm/deals',
-        '/admin/crm/activity',
       ])
       expect(tabs.find((t) => t.label === 'Messages')?.badge).toBe('inbox')
     }

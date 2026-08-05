@@ -118,9 +118,12 @@ export const DESTINATIONS: NavDestination[] = [
     capability: 'people.view',
     defaultOpen: true,
     children: [
-      { label: 'Search', href: '/admin/people', icon: 'users', capability: 'people.view', tab: { order: 3, label: 'People' } },
-      { label: 'Pipeline', href: '/admin/crm/deals', icon: 'layers', capability: 'people.view', tab: { order: 4, label: 'Deals' } },
-      { label: 'Activity', href: '/admin/crm/activity', icon: 'activity', capability: 'people.view', tab: { order: 5 } },
+      // Locked phone bar (IA lock 2026-08-05): Today · Messages · Prospecting ·
+      // People · Oversight. Deals + Activity lost their tabs to Prospecting and
+      // Oversight (menu children remain until their families roll).
+      { label: 'Search', href: '/admin/people', icon: 'users', capability: 'people.view', tab: { order: 4, label: 'People' } },
+      { label: 'Pipeline', href: '/admin/crm/deals', icon: 'layers', capability: 'people.view' },
+      { label: 'Activity', href: '/admin/crm/activity', icon: 'activity', capability: 'people.view' },
       { label: 'Tasks', href: '/admin/crm/tasks', icon: 'list-todo', capability: 'tasks.use' },
       { label: 'Calendar', href: '/admin/crm/calendar', icon: 'calendar', capability: 'calendar.use' },
       { label: 'Approvals', href: '/admin/crm/approvals', icon: 'clipboard-check', capability: 'people.view' },
@@ -134,13 +137,18 @@ export const DESTINATIONS: NavDestination[] = [
   },
   {
     key: 'prospecting',
+    // P9 roll:prospecting (IA lock 2026-08-05): the weekly outbound pass earns
+    // its locked primary phone slot (tab 3). Child renamed Worklist — a child
+    // never repeats the hub label. CMAs + Price opinions move to the Valuations
+    // destination when that family rolls.
     label: 'Prospecting',
     href: '/admin/prospecting',
     icon: 'target',
     capability: 'prospecting.view',
     defaultOpen: true,
+    tab: { order: 3 },
     children: [
-      { label: 'Prospecting', href: '/admin/prospecting', icon: 'clock', capability: 'prospecting.view' },
+      { label: 'Worklist', href: '/admin/prospecting', icon: 'clock', capability: 'prospecting.view' },
       { label: 'CMAs', href: '/admin/cmas', icon: 'file-search', capability: 'prospecting.view' },
       { label: 'Price opinions', href: '/admin/bpo', icon: 'gauge', capability: 'prospecting.view' },
     ],

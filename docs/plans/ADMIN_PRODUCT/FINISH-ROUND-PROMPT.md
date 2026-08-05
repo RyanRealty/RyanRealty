@@ -77,7 +77,21 @@ P10 gates — stopping only for: a defect that needs my call, context exhaustion
   into `ci:gates` (the meta-gate requires it). Then the final program report:
   scoreboard, defects found/fixed, chips outstanding, and what P11 would be.
 
+### FIRST ACTION of the finish round (before any family)
+
+Heal the People deploy gap (progress.txt 2026-08-06T01:45): the 84ef6c8 build
+was canceled by a superseding docs-only push that then skipped itself, so
+production likely lacks /admin/people. Verify what production serves; if
+stale, trigger a real build of current main (the first family push does it,
+or redeploy the current SHA), then deploy:verify and confirm /admin/people
+is live.
+
 ### Landmines already hit once — do not relearn them
+
+- A docs-only push while a code deploy is BUILDING cancels the code build and
+  then skips itself — production silently stays stale. Never push docs-only
+  while a code deploy is in flight; always deploy:verify the CODE SHA through
+  to READY before any follow-up push.
 
 - First manual browser click after paint can be a harness artifact (2× image
   scaling; Radix pointer synthesis) — click by ref or DOM dispatch, and treat

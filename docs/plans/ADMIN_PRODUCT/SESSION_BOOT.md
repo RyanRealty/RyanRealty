@@ -77,9 +77,14 @@ do not assume slash commands or autoload worked.
   ~4.2s kickoff, real SMS rail, worker draft 44s, zero-residue cleanup) + the
   stale-session deep-link defect Matt's phone found, fixed at 3 redirect sites
   (2b0286b5), deployed, confirmed live. ALL FOUR LOCKS GRANTED.
-- **Next unit: `roll:today` (P9)** — first family by pain: build the Today
-  destination on the v2 primitives, phone-first per the locked screens; absorbs
-  broker-dashboard jobs + BOTH approval queues + tasks/calendar (frozen
-  cut-list). One family per commit, browser-verified 375+1280 both themes,
-  never resurrect cut-list items. Then messages → people (carries the v2
-  kickoff surface) → prospecting → oversight → remaining → P10 gates.
+- **P9 rolls SHIPPED so far:** Today (+ full absorption: /admin dispatcher,
+  console, broker-dashboard bridge), Messages, People (v2 CMA kickoff),
+  Prospecting (v2 worklist; send stays on the prospect page through the guard
+  chain; locked tab bar now Today · Messages · Prospecting · People, Oversight
+  tab lands with its roll). One family per commit, browser-verified 375+≥1024
+  on real data, cut-list never resurrected.
+- **FINISH-ROUND mode active** (docs/plans/ADMIN_PRODUCT/FINISH-ROUND-PROMPT.md,
+  Matt 2026-08-06): chain every remaining unit back to back. Queue:
+  roll:oversight → roll:remaining-families (Valuations, Closings, Reports,
+  Audiences, Content, Settings — one commit each) → litmus-deeplink-repoint
+  micro-unit → P10 gates + final program report.

@@ -122,7 +122,21 @@ const cachedFetchFsboRows = makeResilientCached(
   [] as RawRow[],
 )
 
-type Bucket = 'sendable' | 'needs-audit' | 'sent' | 'excluded' | 'no-phone'
+export type ProspectBucket = 'sendable' | 'needs-audit' | 'sent' | 'excluded' | 'no-phone'
+type Bucket = ProspectBucket
+
+/**
+ * The ONE bucket rule (worklist chips, summary counts, and the v2 page's
+ * per-row state word all read this) — exported so the UI can never drift from
+ * the classification the summary was computed with.
+ */
+export function classifyProspect(
+  doc: ProspectDocState,
+  compliance: ProspectRowSkeleton['compliance'],
+  sendable: boolean,
+): Bucket {
+  return classify(doc, compliance, sendable)
+}
 
 function classify(doc: ProspectDocState, compliance: ProspectRowSkeleton['compliance'], sendable: boolean): Bucket {
   if (doc.state === 'sent') return 'sent'
