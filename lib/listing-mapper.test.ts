@@ -59,6 +59,34 @@ describe('computeTier1 (sync derived fields, audit p3.2)', () => {
   })
 })
 
+describe('numeric(p,s) bound clamp (delta-cursor incident 2026-08-05)', () => {
+  it('an out-of-range derived metric stores NULL instead of overflowing the column', async () => {
+    const { sparkToListingRow } = await import('./listing-mapper')
+    // $99M on a 0.0001-acre "lot": price_per_acre = 9.9e11... fits 1e12; push
+    // harder with 0.00001 → 9.9e12, over numeric(14,2). Also 0.01 baths on 4
+    // beds → bed_bath_ratio 400, over numeric(4,2).
+    const row = sparkToListingRow({
+      ListingKey: '999', ListNumber: '220000002', StandardStatus: 'Active',
+      ListPrice: 99_000_000, LotSizeAcres: 0.00001, BathroomsTotal: 0.01,
+      BedroomsTotal: 4,
+    } as Record<string, unknown>)
+    expect(row.price_per_acre).toBeNull()
+    expect(row.bed_bath_ratio).toBeNull()
+    // Sane fields on the same row survive untouched.
+    expect(row.ListPrice).toBe(99_000_000)
+    expect(row.price_per_bedroom).toBe(24_750_000)
+  })
+
+  it('an out-of-range SOURCE numeric also stores NULL (same chokepoint)', async () => {
+    const { sparkToListingRow } = await import('./listing-mapper')
+    const row = sparkToListingRow({
+      ListingKey: '998', ListNumber: '220000003', StandardStatus: 'Active',
+      LotSizeSquareFeet: 99_000_000_000,
+    } as Record<string, unknown>)
+    expect(row.lot_size_sqft).toBeNull()
+  })
+})
+
 describe('private-detail redaction (attack finding 2026-07-11)', () => {
   it('sparkToListingRow.details NEVER contains any confidential key', async () => {
     const { sparkToListingRow, PRIVATE_DETAIL_KEYS } = await import('./listing-mapper')
