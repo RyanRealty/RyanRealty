@@ -516,6 +516,11 @@ export function cmaStylesheet(siteUrl: string): string {
      padding was the old model, and it could not give a spilled section a
      margin — the padding lands once at the top of the box and once at the
      bottom, never at an interior sheet boundary. */
+  /* ONE artifact, two media (Matt 2026-08-05): the per-page header (and the
+     running footer Chrome draws in the print margin) are PRINT chrome. The
+     web view is the same document without them. */
+  @media screen { .pg-header { display: none; } }
+
   @media print {
     body { background: white; margin: 0; padding: 0; }
     .page {

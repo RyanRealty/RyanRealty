@@ -361,9 +361,19 @@ export function isUndefinedColumnError(
   return /column .* does not exist/i.test(error.message ?? '')
 }
 
-/** expired → 'expired-audit', fsbo → 'cma' (spec §4.1). */
-export function expectedDocTypeFor(kind: ProspectKind): 'expired-audit' | 'cma' {
-  return kind === 'expired' ? 'expired-audit' : 'cma'
+/**
+ * New builds are ONE doc for both kinds (Matt 2026-08-05: single CMA — the
+ * expired review is a section inside it, driven by listing history). The
+ * legacy 'expired-audit' rows already built keep satisfying the expired kind
+ * via acceptedDocTypesFor, so no sent/ready row regresses.
+ */
+export function expectedDocTypeFor(_kind: ProspectKind): 'expired-audit' | 'cma' {
+  return 'cma'
+}
+
+/** Doc types that satisfy a kind's "built doc" check (legacy audits included). */
+export function acceptedDocTypesFor(kind: ProspectKind): ReadonlyArray<string> {
+  return kind === 'expired' ? ['cma', 'expired-audit'] : ['cma']
 }
 
 /**

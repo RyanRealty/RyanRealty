@@ -13,7 +13,7 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { slugifyAddress, pickLatestCmaVersion } from '@/lib/cma/address-slug'
 import { findOpenCmaActionBySlug } from '@/lib/data/cma/queue'
-import { expectedDocTypeFor, mergeChannelSentState, type ProspectDocState, type ProspectKind } from './types'
+import { acceptedDocTypesFor, expectedDocTypeFor, mergeChannelSentState, type ProspectDocState, type ProspectKind } from './types'
 
 export { expectedDocTypeFor, introTemplateKeyFor } from './types'
 
@@ -122,9 +122,10 @@ export async function getBuiltDocForProspect(
     cma = null
   }
 
+  const accepted = acceptedDocTypesFor(kind)
   const ready =
     !!cma &&
-    cma.doc_type === expectedType &&
+    accepted.includes(cma.doc_type ?? 'cma') &&
     isSendableStatus(cma.status) &&
     !!cma.html_path &&
     !cma.html_path.startsWith('pending:')

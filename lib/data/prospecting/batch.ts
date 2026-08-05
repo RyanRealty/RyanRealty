@@ -16,6 +16,7 @@ import { slugifyAddress } from '@/lib/cma/address-slug'
 import { TAG_CHANNEL } from '@/lib/crm/suppressions'
 import {
   blockAllChannels,
+  acceptedDocTypesFor,
   expectedDocTypeFor,
   hasSendableEmail,
   hasSendablePhone,
@@ -68,6 +69,7 @@ export async function resolveDocsBatch(
   const sb = createServiceClient()
   const idKey = kind === 'expired' ? 'listing_key' : 'fsbo_url'
   const expected = expectedDocTypeFor(kind)
+  const accepted = acceptedDocTypesFor(kind)
 
   // ONE cmas read (the table is ~170 rows total; project only what we classify).
   const { data: cmaData, error: cmaErr } = await sb
@@ -112,7 +114,7 @@ export async function resolveDocsBatch(
     if (!group || group.length === 0) return null
     // Prefer the highest-version BUILT doc of the expected type; else the highest-version built of any type.
     const built = group.filter((c) => isBuiltStatus(c.status, c.htmlPath))
-    const expectedBuilt = built.filter((c) => c.docType === expected)
+    const expectedBuilt = built.filter((c) => accepted.includes(c.docType ?? 'cma'))
     const pool = expectedBuilt.length ? expectedBuilt : built.length ? built : group
     return pool.slice().sort((a, b) => versionOfSlug(b.slug) - versionOfSlug(a.slug))[0] ?? null
   }
@@ -132,7 +134,7 @@ export async function resolveDocsBatch(
 
     const cma = (cmaId ? byId.get(cmaId) : null) ?? (base ? pickForBase(base) : null)
 
-    if (cma && cma.docType === expected && isBuiltStatus(cma.status, cma.htmlPath)) {
+    if (cma && accepted.includes(cma.docType ?? 'cma') && isBuiltStatus(cma.status, cma.htmlPath)) {
       if (sent) {
         out.set(id, {
           state: 'sent',

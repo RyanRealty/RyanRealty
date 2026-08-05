@@ -365,12 +365,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           .join(' ')
     }
 
-    // 4.7. EXPIRED AUDIT variant (Matt directive 2026-07-14): same engine, the
-    // output adds a deterministic failure analysis (listing history + verified
-    // numbers), the services standard, and a net sheet at the 2.5% expired rate.
-    // All derive from data already gated above — no new unverified facts here.
+    // 4.7. LAST-LISTING REVIEW (Matt 2026-08-05, superseding the 2026-07-14
+    // separate audit doc): there is ONE CMA document. When the subject's most
+    // recent MLS cycle came off the market without selling, the doc gains a
+    // "your last listing — what happened and our take" section built from the
+    // same deterministic failure analysis. No separate docType decides this —
+    // the LISTING HISTORY does, so an expired subject kicked off from any door
+    // gets the review and a clean-history subject never does. (The legacy
+    // 'expired-audit' docType is still accepted as input for compat; it no
+    // longer changes the document.)
     let expiredAudit: ExpiredAuditData | null = null
-    if (docType === 'expired-audit') {
+    {
       const tokens = subject.streetAddress.trim().split(/\s+/)
       const streetNumber = tokens[0] && /^\d+$/.test(tokens[0]) ? tokens[0] : null
       const namePrefix = streetNumber ? tokens.slice(1).join(' ') : null
@@ -383,13 +388,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
               postalCode: subject.postalCode,
             })
           : []
-      const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
-      const photosCount = subject.listingKey ? await getListingPhotosCount(subject.listingKey) : null
-      expiredAudit = {
-        findings: buildFailureFindings({ subject, pricing, market, history, photosCount, ownershipSince: await getExpiredOwnershipSince(subject.mlsNumber) }),
-        services: buildServicesList(),
-        netSheet: buildNetSheet(pricing),
-        feeLine: feeLine(),
+      const lastStatus = String(cycleRows[0]?.['StandardStatus'] ?? '')
+      const lastCycleFailed = ['Expired', 'Canceled', 'Withdrawn'].includes(lastStatus)
+      if (lastCycleFailed) {
+        const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
+        const photosCount = subject.listingKey ? await getListingPhotosCount(subject.listingKey) : null
+        expiredAudit = {
+          findings: buildFailureFindings({ subject, pricing, market, history, photosCount, ownershipSince: await getExpiredOwnershipSince(subject.mlsNumber) }),
+          services: buildServicesList(),
+          netSheet: buildNetSheet(pricing),
+          feeLine: feeLine(),
+        }
       }
     }
 

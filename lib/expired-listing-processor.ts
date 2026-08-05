@@ -404,11 +404,12 @@ export async function processNewExpiredListings(
             crmPersonId,
             requestSource: 'expired-listing-cron',
             notifyLead: false,
-            // Spec 07 §4.1 — expired listings get an AUDIT (failure analysis +
-            // services standard + 2.5% net sheet), not a plain CMA. This is the
-            // Defect-4 fix: the built doc now lands as doc_type='expired-audit'
-            // so /admin/prospecting shows "Send intro" with no manual rebuild.
-            docType: 'expired-audit',
+            // ONE doc (Matt 2026-08-05, supersedes spec 07 §4.1's separate
+            // audit): expired subjects build a plain CMA and the builder adds
+            // the last-listing review section from the listing history itself.
+            // Legacy 'expired-audit' rows still satisfy the worklist via
+            // acceptedDocTypesFor.
+            docType: 'cma',
           })
           if (cmaRes.ok) {
             stats.cmas_queued++

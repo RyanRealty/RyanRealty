@@ -143,7 +143,9 @@ function subjectStatStrip(subject: CmaSubject): string {
 function coverPage(a: RenderCmaArgs): PageDef {
   const hero = heroForSubject(a.subject)
   const p = a.pricing
-  const docLabel = a.expiredAudit ? 'Listing Audit & Market Analysis' : 'Comparative Market Analysis'
+  // ONE document (Matt 2026-08-05): the expired review is a section, not a
+  // different doc — the label never changes with it.
+  const docLabel = 'Comparative Market Analysis'
   const clientLine = a.client.name ? `Prepared for ${esc(a.client.name)}` : docLabel
   return {
     meta: `${docLabel} · ${dateLong(a.generatedAtIso)}`,
@@ -520,6 +522,50 @@ function rationalePage(a: RenderCmaArgs): PageDef {
  * This is the answer to "what makes this property worth the top of the range",
  * and every line carries the record it came from.
  */
+/**
+ * "What we like about this home" (Matt 2026-08-05) — the warm read, assembled
+ * ONLY from verified record facts (§0: nothing editorial is invented; every
+ * bullet traces to a subject field or an already-gated highlight). Renders
+ * only when at least two concrete things earn a mention.
+ */
+function whatWeLikePage(a: RenderCmaArgs): PageDef | null {
+  const s = a.subject
+  const items: Array<{ headline: string; detail: string | null }> = []
+  const view = cleanText(s.viewDescription)
+  if (view) items.push({ headline: `The view: ${view.replace(/\s*,\s*/g, ', ')}`, detail: 'From the MLS record for this parcel.' })
+  if (s.lotAcres != null && s.lotAcres >= 0.5) {
+    items.push({ headline: `${dec(s.lotAcres, 2)} acres of ground`, detail: 'Lot size from the county record on the listing.' })
+  }
+  if (s.garageSpaces != null && s.garageSpaces >= 3) {
+    items.push({ headline: `${s.garageSpaces}-car garage`, detail: null })
+  }
+  if (s.yearBuilt != null && s.yearBuilt >= 2018) {
+    items.push({ headline: `Built in ${s.yearBuilt}`, detail: 'Current-code construction: newer roof, systems, and envelope.' })
+  }
+  if (s.sqft != null && s.sqft >= 3000) {
+    items.push({ headline: `${int(s.sqft)} square feet of living space`, detail: null })
+  }
+  if (s.beds != null && s.beds >= 4) {
+    items.push({ headline: `${s.beds} bedrooms`, detail: null })
+  }
+  // Parcel-capability and rental highlights keep their own pages ("What We
+  // Lead With") — mixing rule explainers into the warm read was wrong on the
+  // first render. This section is the HOME's own attributes only.
+  if (items.length < 2) return null
+  const lis = items
+    .slice(0, 6)
+    .map((i) => `<li><strong>${esc(i.headline)}</strong>${i.detail ? `<div class="small">${esc(i.detail)}</div>` : ''}</li>`)
+    .join('')
+  return {
+    meta: `${esc(a.subject.streetAddress)} · What We Like`,
+    toc: 'What we like about this home',
+    body: `
+  <h2 class="section">What We Like About This Home</h2>
+  <p>Before the numbers, the concrete things this property has going for it. Each one comes from the record.</p>
+  <ul class="note-list like-list">${lis}</ul>`,
+  }
+}
+
 function highlightsPage(a: RenderCmaArgs): PageDef | null {
   const highlights = collectHighlights(a.development, a.rental)
   const block = marketingHighlightsBlock(highlights)
@@ -662,92 +708,15 @@ function expiredAuditPage(a: RenderCmaArgs): PageDef | null {
     )
     .join('')
   return {
-    meta: `${esc(a.subject.streetAddress)} · What Happened`,
-    toc: 'What happened on the last listing',
+    meta: `${esc(a.subject.streetAddress)} · Your Last Listing`,
+    toc: 'Your last listing, and our take',
     body: `
-  <h2 class="section">What Happened</h2>
-  <p>Your home came off the market without selling. Before anything else, you deserve a straight answer about why. The numbers below come straight from the MLS record and the verified comparable sales in this report. Under each one is what we read from it.</p>
+  <h2 class="section">Your Last Listing</h2>
+  <p>Your home came off the market without selling. Before anything else, you deserve a straight answer about why. The numbers below come straight from the MLS record and the verified comparable sales in this report. Under each one is our take.</p>
   ${blocks}`,
   }
 }
 
-function servicesPage(a: RenderCmaArgs): PageDef | null {
-  const ea = a.expiredAudit
-  if (!ea) return null
-  return {
-    meta: `${esc(a.subject.streetAddress)} · The Relist`,
-    toc: 'What every listing gets',
-    body: `
-  <h2 class="section">What Every Listing Gets</h2>
-  <p>If you decide to try again, this is the standard. Every item below is on every Ryan Realty listing agreement, not a premium tier.</p>
-  <ul class="note-list">${ea.services.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>
-  <h3 class="subhead">The fee</h3>
-  <p>${esc(ea.feeLine)}</p>`,
-  }
-}
-
-function netSheetPage(a: RenderCmaArgs): PageDef | null {
-  const ea = a.expiredAudit
-  if (!ea) return null
-  const ns = ea.netSheet
-  const rows = ns.lines
-    .map(
-      (l) => `
-      <tr>
-        <td>${esc(l.label)}${l.note ? `<div class="small" style="margin-top:2px;">${esc(l.note)}</div>` : ''}</td>
-        <td class="num">${l.amount === 0 ? '$0' : l.amount != null ? `(${usd(Math.abs(l.amount))})` : '—'}</td>
-      </tr>`,
-    )
-    .join('')
-  return {
-    meta: `${esc(a.subject.streetAddress)} · Estimated Seller Net Sheet`,
-    toc: 'What you would net',
-    body: `
-  <h2 class="section">Estimated Seller Net Sheet</h2>
-  <p>What a sale at the recommended list price of ${usd(ns.salePrice)} would put in your pocket before your mortgage payoff, at the expired-listing rate.</p>
-  <table class="comps" style="margin-top:10px;">
-    <thead><tr><th>Line</th><th class="num">Amount</th></tr></thead>
-    <tbody>
-      <tr><td><strong>Sale price (recommended list)</strong></td><td class="num"><strong>${usd(ns.salePrice)}</strong></td></tr>
-      ${rows}
-      <tr><td><strong>Estimated costs of sale</strong></td><td class="num"><strong>(${usd(ns.totalCosts)})</strong></td></tr>
-      <tr><td><strong>Estimated net before mortgage payoff</strong></td><td class="num"><strong>${usd(ns.estimatedNet)}</strong></td></tr>
-    </tbody>
-  </table>
-  <div class="tier-grid" style="margin-top:14px;">
-    ${
-      a.pricing.conservative !== ns.salePrice
-        ? `<div class="tier">
-      <div class="t-lbl">At conservative ${usd(a.pricing.conservative)}</div>
-      <div class="t-val">${usd(ns.netConservative)}</div>
-      <div class="t-note">Same cost structure at the bottom of the supported range.</div>
-    </div>`
-        : ''
-    }
-    <div class="tier featured">
-      <div class="t-lbl">At recommended ${usd(ns.salePrice)}</div>
-      <div class="t-val">${usd(ns.estimatedNet)}</div>
-      <div class="t-note">Estimated net before payoff.</div>
-    </div>
-    ${
-      a.pricing.highEnd !== ns.salePrice
-        ? `<div class="tier">
-      <div class="t-lbl">At high end ${usd(a.pricing.highEnd)}</div>
-      <div class="t-val">${usd(ns.netHighEnd)}</div>
-      <div class="t-note">Same cost structure at the top of the supported range.</div>
-    </div>`
-        : ''
-    }
-  </div>
-  <h3 class="subhead" style="margin-top:14px;">Assumptions</h3>
-  <ul class="note-list">${ns.assumptions.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>`,
-  }
-}
-
-/**
- * Closing next-step page: the document used to END on disclosure paragraphs
- * with zero tel:/sms:/mailto: links anywhere — a long trust build with no ask.
- */
 function nextStepPage(a: RenderCmaArgs): PageDef {
   const b = a.broker
   const isAudit = Boolean(a.expiredAudit)
@@ -823,6 +792,8 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   // disclosure and the ask.
   const rest: PageDef[] = []
   rest.push(subjectPage(a))
+  const likes = whatWeLikePage(a)
+  if (likes) rest.push(likes)
   const map = mapPage(a)
   if (map) rest.push(map)
   rest.push(compCardsAndTablePage(a))
@@ -845,13 +816,10 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   if (hoa) rest.push(hoa)
   const verify = verifyPage(a)
   if (verify) rest.push(verify)
-  // EXPIRED AUDIT variant: failure analysis → services standard → net sheet.
-  const audit = expiredAuditPage(a)
-  if (audit) rest.push(audit)
-  const services = servicesPage(a)
-  if (services) rest.push(services)
-  const netSheet = netSheetPage(a)
-  if (netSheet) rest.push(netSheet)
+  // Last-listing review (Matt 2026-08-05: ONE doc — the expired story is a
+  // section; the old audit-only services + net-sheet pages are retired).
+  const lastListing = expiredAuditPage(a)
+  if (lastListing) rest.push(lastListing)
   rest.push(disclosurePage(a))
   // The ask comes LAST — the document must not end on disclaimers.
   rest.push(nextStepPage(a))
@@ -863,7 +831,7 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
 <head>
 <meta charset="UTF-8" />
 <meta name="robots" content="noindex,nofollow" />
-<title>${a.expiredAudit ? 'Listing Audit' : 'CMA'} · ${esc(a.subject.streetAddress)} · ${esc(a.subject.city)}, OR ${esc(a.subject.postalCode ?? '')}</title>
+<title>CMA · ${esc(a.subject.streetAddress)} · ${esc(a.subject.city)}, OR ${esc(a.subject.postalCode ?? '')}</title>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
 <style>${cmaStylesheet(SITE_URL)}</style>
 </head>
