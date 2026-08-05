@@ -180,3 +180,13 @@ The IA in `ia-lock.md` is LOCKED with one amendment. Matt's answers:
 `cut-list.md` is FROZEN (26 route cuts + 12 surface cuts — never resurrect).
 `state.json`: `locks.ia = 2026-08-05`, `awaiting_lock` cleared, phase → `P6_VISUAL`.
 P6 (greenfield visual language, external standards only) starts next session.
+
+## 2026-08-05 — P6 partial decisions (Matt) + Oversight rework
+
+Matt reviewed the P6 package: **header = Option A (left rail)** and **dark mode =
+ship both** are GRANTED. The Oversight screen was REJECTED as "very confusing and
+cluttered" — reworked same session to the verdict + needs-you-list pattern (one
+sentence answer, one unified attention list sharing Today's row grammar, healthy
+systems as quiet hairline rows, one numbers strip). ADMIN_UI.md pattern 3 updated;
+the tile status board is retired from the language. **Visual lock still pending**
+Matt's review of the reworked screen.

@@ -52,9 +52,14 @@ built on four commitments:
    day dividers, inbound left-aligned surface / outbound right-aligned accent-wash,
    channel chip (SMS/email) per message. Composer holds send + template + quiet-hours
    state inline.
-3. **Status board** — Oversight: tile = [system name] [state word + dot] [one figure]
-   [last-checked]. State words are text + color, never color alone (WCAG 1.4.1).
-   Alarms are rows, not toasts — they persist until acknowledged.
+3. **Verdict + needs-you list** — Oversight (v2, reworked 2026-08-05 after Matt's
+   review: v1's tile board read as clutter). The screen answers its question in ONE
+   sentence ("4 things need you"), then ONE unified attention list (alarms, broken
+   sequences, sign-off waits — same row grammar as Today, plain state words: Down /
+   Slow / Broken / Waiting), then everything healthy collapses to quiet single-line
+   hairline rows with NO boxes, then one numbers strip for the week. Healthy state
+   earns near-zero visual weight (GOV.UK: lead with the answer; state words are text
+   + color, never color alone — WCAG 1.4.1). Alarms persist until acknowledged.
 4. **Worklist** — Prospecting/Valuations: filterable rows with per-row readiness
    (sendable / blocked-with-reason) and inline primary action. Blocked reasons print
    in plain words (suppressed · quiet hours · relisted), never just a disabled button.
@@ -109,13 +114,16 @@ truncation.
 center. One more click to switch destinations; considered and not recommended —
 recorded for the lock decision.
 
+**DECIDED (Matt, 2026-08-05): Option A — left rail.**
+
 **Phone (both options): the locked 5-tab bar** — Today · Messages · Prospecting ·
 People · Oversight, 56px, labels always visible (no icon-only tabs, NN/g), badge
 counts on Today and Messages only (two badge sources max — attention economy).
 
 ## 6. Dark mode — decision
 
-**Ship BOTH from day one; light default; `auto` honors the OS.** Rationale: the wake-up
+**Ship BOTH from day one; light default; `auto` honors the OS.**
+**DECIDED (Matt, 2026-08-05): ship both.** Rationale: the wake-up
 loop (alert SMS → Today/Messages at night) is a core phone path — a white flash at
 2am is hostile; and the Radix-derived scales make dark a token swap, not a redesign
 (every dark pair proven §4). Implementation: `[data-theme]` attribute, no
