@@ -215,17 +215,34 @@ describe('the failed-ask ceiling (applyFailedAskCap)', () => {
     return { ...pricing, notes: [] as string[], needsReview: false, reviewReason: null, ...over }
   }
 
-  it('caps every list tier at a recently failed ask and flags review', async () => {
+  it('clamps list tiers to the backtest quantiles of a recently failed ask', async () => {
     const { applyFailedAskCap } = await import('./expired-audit')
     const x = p({ conservative: 2100000, recommended: 2275000, highEnd: 2455000 })
     const r = applyFailedAskCap(x, { lastFailedListPrice: 1675000, offMarketDate: recentOff })
     expect(r.applied).toBe(true)
-    expect(x.recommended).toBe(1675000)
+    // 0.942 and 0.982 of the $1,675,000 failed ask, rounded to $1K.
+    expect(x.conservative).toBe(1578000)
+    expect(x.recommended).toBe(1645000)
     expect(x.highEnd).toBe(1675000)
-    expect(x.conservative).toBeLessThanOrEqual(1675000)
+    expect(x.conservative).toBeLessThanOrEqual(x.recommended)
+    expect(x.recommended).toBeLessThanOrEqual(x.highEnd)
+    expect(r.cappedTo).toBe(1645000)
     expect(x.needsReview).toBe(true)
     expect(x.reviewReason).toContain('$2,275,000')
-    expect(x.notes.join(' ')).toContain('will not recommend relisting above')
+    expect(x.notes.join(' ')).toContain('3,394')
+    expect(x.notes.join(' ')).toContain('94.2%')
+  })
+
+  it('the calibration constants match the committed research artifact', async () => {
+    const { FAILED_ASK_BACKTEST } = await import('./expired-audit')
+    const { readFileSync } = await import('node:fs')
+    const artifact = JSON.parse(
+      readFileSync(`docs/research/cma-backtest-${FAILED_ASK_BACKTEST.runstamp}.json`, 'utf8'),
+    )
+    expect(artifact.summary.pairs).toBe(FAILED_ASK_BACKTEST.pairs)
+    expect(Math.round(artifact.summary.closeVsFailedAsk.median * 1000) / 1000).toBe(FAILED_ASK_BACKTEST.closeMedianRatio)
+    expect(Math.round(artifact.summary.closeVsFailedAsk.p75 * 1000) / 1000).toBe(FAILED_ASK_BACKTEST.closeP75Ratio)
+    expect(artifact.summary.shareClosedAboveFailedAsk).toBe(FAILED_ASK_BACKTEST.shareClosedAboveAskPct)
   })
 
   it('does nothing when the recommendation already respects the failed ask', async () => {

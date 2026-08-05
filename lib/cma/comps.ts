@@ -49,6 +49,7 @@ import {
   type CompTierTrace,
 } from '@/lib/cma/comp-trace'
 import { compTierLadder, isRuralAcreage, realSubdivision } from '@/lib/cma/comp-tiers'
+import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 
 export { realSubdivision }
 
@@ -299,6 +300,15 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
       // are different products with different buyer pools, at any distance.
       if (!lotCharacterCompatible(subject.lotAcres, comp.lotAcres)) {
         rung.excluded.lot_character++
+        continue
+      }
+
+      // HARD EXCLUSION at every tier (Matt 2026-08-05, the no-brainer): a
+      // resort-community sale (Crosswater, Caldera Springs, ...) only prices
+      // a home in the SAME resort community — and a plain-town sale never
+      // prices a resort subject. Registry-driven, symmetric.
+      if (!resortCommunityCompatible(subject.subdivision, comp.subdivision)) {
+        rung.excluded.resort_premium++
         continue
       }
 

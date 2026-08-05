@@ -370,6 +370,28 @@ export function feeLine(): string {
  *  market that rejected it is a different market. */
 export const FAILED_ASK_RECENCY_MONTHS = 12
 
+/**
+ * Failed→sold backtest calibration. Source of every ratio below:
+ * docs/research/cma-backtest-2026-08-05.json, produced by
+ * scripts/cma-backtest.mjs over the live corpus — 3,394 same-address pairs
+ * (a cycle ending Expired/Canceled/Withdrawn followed by a Closed sale
+ * within 18 months), PropertyType 'A', 2023-08-06..2026-08-05. Re-run the
+ * script and update this block together; never edit one without the other.
+ */
+export const FAILED_ASK_BACKTEST = {
+  runstamp: '2026-08-05',
+  pairs: 3394,
+  /** Median eventual close ÷ the ask that failed. */
+  closeMedianRatio: 0.942,
+  /** 75th percentile of the same ratio. */
+  closeP75Ratio: 0.982,
+  /** Share of pairs that ever closed above the failed ask. */
+  shareClosedAboveAskPct: 12.3,
+  /** Median relist ask ÷ failed ask among sellers who then sold. */
+  relistAskMedianRatio: 0.964,
+  medianMonthsToClose: 5.8,
+} as const
+
 export interface FailedAskCapResult {
   applied: boolean
   /** The ceiling used, when applied. */
@@ -413,21 +435,29 @@ export function applyFailedAskCap(
   const asOf = args.asOf ?? new Date()
   const months = (asOf.getTime() - off.getTime()) / (30.44 * 24 * 3600 * 1000)
   if (months > FAILED_ASK_RECENCY_MONTHS || months < 0) return none
-  if (pricing.recommended <= ask && pricing.highEnd <= ask) return none
+
+  // Backtest-calibrated ceilings, tightest to loosest: the median outcome
+  // bounds the conservative tier, the 75th percentile bounds the
+  // recommendation, and the failed ask itself stays the hard cap on the
+  // stretch tier. Ratios ordered median < p75 < 1, so tier ordering holds.
+  const round1k = (n: number) => Math.round(n / 1000) * 1000
+  const consCeil = round1k(FAILED_ASK_BACKTEST.closeMedianRatio * ask)
+  const recCeil = round1k(FAILED_ASK_BACKTEST.closeP75Ratio * ask)
+  if (pricing.conservative <= consCeil && pricing.recommended <= recCeil && pricing.highEnd <= ask) return none
 
   const uncapped = pricing.recommended
-  pricing.recommended = Math.min(pricing.recommended, ask)
+  pricing.conservative = Math.min(pricing.conservative, consCeil)
+  pricing.recommended = Math.min(pricing.recommended, recCeil)
   pricing.highEnd = Math.min(pricing.highEnd, ask)
-  pricing.conservative = Math.min(pricing.conservative, pricing.recommended)
   pricing.needsReview = true
   pricing.reviewReason = [
     pricing.reviewReason,
-    `Comp evidence supported ${usd(uncapped)}, above the ${usd(ask)} asking that just failed. List tiers capped at the failed ask.`,
+    `Comp evidence supported ${usd(uncapped)} against the ${usd(ask)} asking that just failed. List tiers clamped to the failed-ask backtest quantiles (median ${FAILED_ASK_BACKTEST.closeMedianRatio}, p75 ${FAILED_ASK_BACKTEST.closeP75Ratio}, cap 1.00).`,
   ]
     .filter(Boolean)
     .join(' ')
   pricing.notes.push(
-    `Your last asking price was ${usd(ask)} and the market did not take it. Whatever the comparable math supports, we will not recommend relisting above a number buyers already passed on. The evidence range in this report stays as computed. The gap between it and the recommendation is the part we fix together: condition, presentation, and timing.`,
+    `Your last asking price was ${usd(ask)} and the market did not take it. We measured every Central Oregon home in the last three years that failed to sell and then sold: ${FAILED_ASK_BACKTEST.pairs.toLocaleString('en-US')} of them. The median one closed at ${(FAILED_ASK_BACKTEST.closeMedianRatio * 100).toFixed(1)}% of the ask that failed, and only ${FAILED_ASK_BACKTEST.shareClosedAboveAskPct}% ever beat it. That history is built into the numbers in this report. The gap between the comparable math and the recommendation is the part we fix together: condition, presentation, and timing.`,
   )
-  return { applied: true, cappedTo: ask, uncappedRecommended: uncapped }
+  return { applied: true, cappedTo: recCeil, uncappedRecommended: uncapped }
 }
