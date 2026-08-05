@@ -182,7 +182,7 @@ export const DESTINATIONS: NavDestination[] = [
       { label: 'Board', href: '/admin/closings', icon: 'handshake', capability: 'transactions.view' },
       { label: 'Commissions', href: '/admin/commissions', icon: 'dollar', capability: 'commissions.view' },
       { label: 'Financials', href: '/admin/financials', icon: 'wallet', capability: 'financials.view' },
-      { label: 'DSCR deals', href: '/admin/dscr', icon: 'trending-up', capability: 'financials.view' },
+      // DSCR moved to Reports (Matt's IA amendment 2026-08-05: a tool, not a deal lane).
       { label: 'Forms', href: '/admin/forms', icon: 'file-text', capability: 'transactions.edit' },
     ],
   },
@@ -201,17 +201,19 @@ export const DESTINATIONS: NavDestination[] = [
     tab: { order: 5 },
   },
   {
-    key: 'performance',
-    label: 'Performance',
-    href: '/admin/analytics',
+    // P9 Reports roll (IA lock 2026-08-05): one reporting home over the three
+    // legacy namespaces; the hub is definition-first (every report states the
+    // question it answers). DSCR lives here as a tool (Matt's amendment).
+    key: 'reports',
+    label: 'Reports',
+    href: '/admin/reports',
     icon: 'bar-chart',
     capability: 'performance.view',
     defaultOpen: false,
     children: [
-      { label: 'Overview', href: '/admin/analytics', icon: 'bar-chart', capability: 'performance.view' },
+      { label: 'Home', href: '/admin/reports', icon: 'bar-chart', capability: 'performance.view' },
       { label: 'Marketing approvals', href: '/admin/approval-queue', icon: 'badge-check', capability: 'approvals.act' },
-      // Hot leads, Live visitors, and the 9 report children live in the
-      // /admin/analytics ReportCatalog hub — hub-and-spoke, not spoke-list (D9.2).
+      { label: 'DSCR screen', href: '/admin/dscr', icon: 'trending-up', capability: 'financials.view' },
     ],
   },
   {
