@@ -259,6 +259,40 @@ async function fetchOnMarketRows(statuses) {
  * cached CI run obvious in the log.
  */
 const ROW_CACHE = process.env.RR_VIEW_PRESET_ROW_CACHE?.trim() || null
+
+/**
+ * Re-verify candidate mismatch rows against the SOURCE OF TRUTH before
+ * failing. listing_search_mv refreshes on a cadence, so a listing that
+ * changes status mid-run can leave an internally inconsistent MV row —
+ * status still on-market, view columns already wiped — that reads as a
+ * phantom equivalence break (live false positive 2026-08-05: 220215734
+ * canceled 28 seconds before the MV refresh; the MV kept
+ * standard_status='Active' with view_types NULL while
+ * listing_feature_flags still carried the Mountain view_text). A row that
+ * is no longer on-market in public.listings is outside the equivalence
+ * claim, whatever the stale MV row says. This filters ONLY rows the source
+ * of truth disowns; every genuinely on-market mismatch still fails the
+ * gate.
+ */
+async function confirmOnMarket(listNumbers, statuses) {
+  if (listNumbers.length === 0) return []
+  const statusList = statuses
+    .map((s) => (s.includes(' ') ? `"${s}"` : s))
+    .map(encodeURIComponent)
+    .join(',')
+  const keep = new Set()
+  for (let i = 0; i < listNumbers.length; i += 100) {
+    const chunk = listNumbers.slice(i, i + 100)
+    const rows = await getRows(
+      `listings?select=ListNumber,StandardStatus&ListNumber=in.(${chunk
+        .map(encodeURIComponent)
+        .join(',')})&StandardStatus=in.(${statusList})`,
+    )
+    for (const r of rows) keep.add(String(r.ListNumber))
+  }
+  return listNumbers.filter((n) => keep.has(String(n)))
+}
+
 async function loadRows(statuses) {
   if (ROW_CACHE && existsSync(ROW_CACHE)) {
     console.log(`  ⚠ USING CACHED ROWS (RR_VIEW_PRESET_ROW_CACHE=${ROW_CACHE}) — not a live read.`)
@@ -389,23 +423,27 @@ async function main() {
       if (text && !arr) textOnly.push(row.list_number)
       else if (arr && !text) arrOnly.push(row.list_number)
     }
+    // Mid-run status flips leave phantom mismatches — keep only rows the
+    // source of truth still calls on-market before failing anything.
+    const confirmedTextOnly = textOnly.length ? await confirmOnMarket(textOnly, STATUSES) : []
+    const confirmedArrOnly = arrOnly.length ? await confirmOnMarket(arrOnly, STATUSES) : []
     t.textMatches = textN
     t.arrayMatches = arrN
-    t.textOnly = textOnly.length
-    t.arrayOnly = arrOnly.length
-    t.textOnlySamples = textOnly.slice(0, 5)
-    t.arrayOnlySamples = arrOnly.slice(0, 5)
+    t.textOnly = confirmedTextOnly.length
+    t.arrayOnly = confirmedArrOnly.length
+    t.textOnlySamples = confirmedTextOnly.slice(0, 5)
+    t.arrayOnlySamples = confirmedArrOnly.slice(0, 5)
 
-    if (textOnly.length)
+    if (confirmedTextOnly.length)
       fail(
         'B2 under-return',
-        `viewContains '${t.term}' (/search/${t.slug}) UNDER-RETURNS: ${textOnly.length} on-market listing(s) match the legacy predicate view_text ILIKE '%${t.term}%' but NOT view_types && {${t.resolved.join(', ')}}. Those homes have silently dropped off a live, indexable page. Examples (list_number): ${t.textOnlySamples.join(', ')}. Fix the vocabulary/map in ${PRESETS_MODULE}, do not relax this gate.`,
+        `viewContains '${t.term}' (/search/${t.slug}) UNDER-RETURNS: ${confirmedTextOnly.length} on-market listing(s) match the legacy predicate view_text ILIKE '%${t.term}%' but NOT view_types && {${t.resolved.join(', ')}}. Those homes have silently dropped off a live, indexable page. Examples (list_number): ${t.textOnlySamples.join(', ')}. Fix the vocabulary/map in ${PRESETS_MODULE}, do not relax this gate.`,
       )
 
-    if (arrOnly.length && !t.declaredIntent)
+    if (confirmedArrOnly.length && !t.declaredIntent)
       fail(
         'B3 widening',
-        `viewContains '${t.term}' (/search/${t.slug}) resolves BROADER than its literal meaning: ${arrOnly.length} on-market listing(s) match view_types && {${t.resolved.join(', ')}} but NOT view_text ILIKE '%${t.term}%'. A literal term must be exactly the old predicate. Examples (list_number): ${t.arrayOnlySamples.join(', ')}. If this widening is deliberate, declare '${t.needle}' in DECLARED_INTENT_TERMS with the measured reason.`,
+        `viewContains '${t.term}' (/search/${t.slug}) resolves BROADER than its literal meaning: ${confirmedArrOnly.length} on-market listing(s) match view_types && {${t.resolved.join(', ')}} but NOT view_text ILIKE '%${t.term}%'. A literal term must be exactly the old predicate. Examples (list_number): ${t.arrayOnlySamples.join(', ')}. If this widening is deliberate, declare '${t.needle}' in DECLARED_INTENT_TERMS with the measured reason.`,
       )
 
     if (t.widened.length && !t.declaredIntent)
