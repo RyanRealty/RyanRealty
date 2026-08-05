@@ -1,10 +1,5 @@
 [
   {
-    "id": "roll:today",
-    "phase": "P9",
-    "note": "First family by pain: build the Today destination on v2 primitives (queue of mixed items: triage, parked steps, unified approvals, CMA-ready, due tasks), phone-first per the locked screens. One family, one commit, browser-verified at 375+1280 both themes. Absorbs broker-dashboard jobs + both approval queues + tasks/calendar per the frozen cut-list."
-  },
-  {
     "id": "roll:messages",
     "phase": "P9"
   },

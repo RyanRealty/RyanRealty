@@ -91,8 +91,9 @@ export interface MobileTab {
 export const DESTINATIONS: NavDestination[] = [
   {
     key: 'home',
-    label: 'Home',
-    href: '/admin/broker-dashboard',
+    // P9 roll:today (IA lock 2026-08-05): the home job is the action queue.
+    label: 'Today',
+    href: '/admin/today',
     icon: 'dashboard',
     capability: 'today.view',
     defaultOpen: true,

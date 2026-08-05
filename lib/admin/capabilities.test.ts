@@ -119,8 +119,8 @@ describe('shell projection (one nav source for every surface)', () => {
 
   it('leaf destinations render as single items; hubs as their children', () => {
     const sections = toShellSections(buildNav(ctx('superuser')))
-    const home = sections.find((s) => s.label === 'Home')!
-    expect(home.items).toEqual([{ label: 'Home', href: '/admin/broker-dashboard', icon: 'dashboard' as const }])
+    const home = sections.find((s) => s.label === 'Today')!
+    expect(home.items).toEqual([{ label: 'Today', href: '/admin/today', icon: 'dashboard' as const }])
     const people = sections.find((s) => s.label === 'People')!
     expect(people.items.map((i) => i.label)).toContain('Pipeline')
     expect(people.items.map((i) => i.label)).not.toContain('People')
@@ -129,9 +129,9 @@ describe('shell projection (one nav source for every surface)', () => {
   it('mobile tabs are the D9.4 five for superuser AND broker, from the annotations', () => {
     for (const role of ['superuser', 'broker'] as const) {
       const tabs = buildMobileTabs(buildNav(ctx(role)))
-      expect(tabs.map((t) => t.label)).toEqual(['Home', 'Inbox', 'People', 'Deals', 'Activity'])
+      expect(tabs.map((t) => t.label)).toEqual(['Today', 'Inbox', 'People', 'Deals', 'Activity'])
       expect(tabs.map((t) => t.href)).toEqual([
-        '/admin/broker-dashboard',
+        '/admin/today',
         '/admin/crm/inbox',
         '/admin/crm',
         '/admin/crm/deals',
@@ -143,7 +143,7 @@ describe('shell projection (one nav source for every surface)', () => {
 
   it('a role missing a tab surface loses the tab, never gets a dead one', () => {
     const tabs = buildMobileTabs(buildNav(ctx('report_viewer')))
-    expect(tabs.map((t) => t.label)).toEqual(['Home'])
+    expect(tabs.map((t) => t.label)).toEqual(['Today'])
   })
 
   it('exactly ONE top-bar section lights per route (longest-match, no double-highlight)', () => {
@@ -162,7 +162,7 @@ describe('shell projection (one nav source for every surface)', () => {
     expect(activeSections('/admin/crm/sequences')).toEqual(['Settings'])
     expect(activeSections('/admin/crm/57297')).toEqual(['People']) // lead detail → People
     expect(activeSections('/admin/crm/deals')).toEqual(['People']) // pipeline, NOT Transactions
-    expect(activeSections('/admin/broker-dashboard')).toEqual(['Home'])
+    expect(activeSections('/admin/today')).toEqual(['Today'])
     expect(activeSections('/admin/help')).toEqual([]) // non-nav route lights nothing
   })
 })

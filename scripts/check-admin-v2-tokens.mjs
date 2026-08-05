@@ -26,7 +26,7 @@ import { join, relative } from 'node:path'
 const ROOT = process.cwd()
 const SPEC = join(ROOT, 'design_system/admin/tokens.css')
 const COPY = join(ROOT, 'components/admin/v2/tokens.css')
-const SCAN_DIRS = ['components/admin/v2']
+const SCAN_DIRS = ['components/admin/v2', 'app/admin/(protected)/today']
 const EXT = new Set(['.ts', '.tsx', '.css'])
 
 const failures = []
@@ -49,7 +49,7 @@ const COLOR_FN = /\b(?:rgb|rgba|hsl|hsla|oklch|color-mix)\s*\(/g
 const TW_PALETTE =
   /\b(?:bg|text|border|from|to|via)-(?:white|black|gray|slate|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)(?:-\d{1,3})?(?:\/\d{1,3})?\b/g
 const BRAND_LEAK = /--rr-|Amboqia|AmboqiaBoriango|\bGeist\b/g
-const LEGACY_IMPORT = /from\s+['"](?:@\/)?components\/(?:admin\/(?!v2\/)|ui\/)/g
+const LEGACY_IMPORT = /from\s+['"](?:@\/)?components\/(?:admin\/(?!v2(?:\/|['"]))|ui\/)/g
 
 function walk(dir) {
   const out = []
