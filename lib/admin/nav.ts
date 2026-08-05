@@ -139,17 +139,28 @@ export const DESTINATIONS: NavDestination[] = [
   {
     key: 'prospecting',
     // P9 roll:prospecting (IA lock 2026-08-05): the weekly outbound pass earns
-    // its locked primary phone slot (tab 3). Child renamed Worklist — a child
-    // never repeats the hub label. CMAs + Price opinions move to the Valuations
-    // destination when that family rolls.
+    // its locked primary phone slot (tab 3). Leaf — the worklist IS the
+    // destination; valuation docs moved to the Valuations destination.
     label: 'Prospecting',
     href: '/admin/prospecting',
     icon: 'target',
     capability: 'prospecting.view',
     defaultOpen: true,
     tab: { order: 3 },
+  },
+  {
+    // P9 Valuations (IA lock 2026-08-05): get valuation documents built,
+    // reviewed, delivered — CMA + BPO one worklist (P3 lock: bpo-deliver
+    // MERGE→cma-deliver surface). Children keep the board pages' own
+    // capability so nav visibility and page access never disagree.
+    key: 'valuations',
+    label: 'Valuations',
+    href: '/admin/valuations',
+    icon: 'file-search',
+    capability: 'valuations.view',
+    defaultOpen: true,
     children: [
-      { label: 'Worklist', href: '/admin/prospecting', icon: 'clock', capability: 'prospecting.view' },
+      { label: 'Worklist', href: '/admin/valuations', icon: 'file-search', capability: 'valuations.view' },
       { label: 'CMAs', href: '/admin/cmas', icon: 'file-search', capability: 'prospecting.view' },
       { label: 'Price opinions', href: '/admin/bpo', icon: 'gauge', capability: 'prospecting.view' },
     ],

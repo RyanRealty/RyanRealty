@@ -31,6 +31,7 @@ export type Capability =
   | 'inbox.view'
   | 'people.view'
   | 'prospecting.view'
+  | 'valuations.view'
   | 'oversight.view'
   | 'transactions.view'
   | 'performance.view'
@@ -93,6 +94,9 @@ export const CAPABILITY_ROLES: Record<Capability, AdminRoleType[]> = {
   'inbox.view': ['broker'],
   'people.view': ['broker'],
   'prospecting.view': ['broker'],
+  // P9 Valuations destination (P3 lock: cma + bpo are one worklist over one
+  // build engine). Brokers hold it; the underlying boards already allow them.
+  'valuations.view': ['broker'],
   // P9 roll:oversight (locked tab 5): brokers supervise their own book —
   // sequences, week strip, parked steps. System plumbing lanes render for the
   // principal only (page-level branch, same scoping the data reads carry).

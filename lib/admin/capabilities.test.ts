@@ -71,7 +71,7 @@ describe('capability model', () => {
 })
 
 describe('nav generator projects the capability map', () => {
-  it('superuser sees all 8 destinations with all children', () => {
+  it('superuser sees every destination with all children', () => {
     const nav = buildNav(ctx('superuser'))
     expect(nav.map((s) => s.key)).toEqual(DESTINATIONS.map((d) => d.key))
     const transactions = nav.find((s) => s.key === 'transactions')!
@@ -110,11 +110,11 @@ describe('nav generator projects the capability map', () => {
 })
 
 describe('shell projection (one nav source for every surface)', () => {
-  it('renders the nav budget: 38 superuser items, 23 broker items (P9 roll:oversight moved Activity + Operations + System health + CRM health behind the Oversight destination: superuser 41−4+1=38; broker 23−1+1=23 since the settings.system children were superuser-only)', () => {
+  it('renders the nav budget: 39 superuser items, 24 broker items (P9: Oversight absorbed 4 items and added 1; Valuations became its own 3-item destination while Prospecting went leaf, net +1 both roles)', () => {
     const count = (role: AdminRoleType) =>
       toShellSections(buildNav(ctx(role))).reduce((n, s) => n + s.items.length, 0)
-    expect(count('superuser')).toBe(38)
-    expect(count('broker')).toBe(23)
+    expect(count('superuser')).toBe(39)
+    expect(count('broker')).toBe(24)
   })
 
   it('leaf destinations render as single items; hubs as their children', () => {
