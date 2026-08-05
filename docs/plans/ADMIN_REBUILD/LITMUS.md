@@ -185,3 +185,17 @@ Verdict: **LITMUS holds on current main.** The v2-language kickoff surface
 was NOT rebuilt in this pass — scoping question for Matt at the litmus stop:
 fold the v2 rebuild into P9's People/Today family rolls (recommended, since
 the litmus passes on the existing surface) or require it inside P8.
+
+### Addendum 2026-08-05 — Matt's real tap found the defect the harness could not
+
+Matt tapped both alert texts on his phone within the fixture rows' lifetime and
+hit a "Sign-in issue" wall both times. Root cause: every unauthenticated/stale-
+session admin request redirected to the `/auth-error` dead-end (consumer chrome,
+recovery buried behind "Try again") instead of `/admin/login`, which has carried
+`next` through sign-in since RC5. The `next` preservation this doc celebrates
+worked; the surface it landed on was wrong. Fixed at all three redirect sites
+(commit 2b0286b5), verified on a production build (cookie-less deep link streams
+a 307 to `/admin/login?next=<deep-link>`), deployed and confirmed serving live.
+Lesson for the record: the timed harness pass ran with a warm session and could
+never see this — the stale-session tap is part of the real litmus path and now
+routes: SMS tap → broker sign-in → lead with the CMA sheet open.
