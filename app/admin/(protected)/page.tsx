@@ -15,5 +15,5 @@ export const dynamic = 'force-dynamic'
 export default async function AdminHomeRedirect() {
   const setupComplete = await getSetupComplete()
   if (!setupComplete) redirect('/admin/setup')
-  redirect('/admin/broker-dashboard')
+  redirect('/admin/today')
 }

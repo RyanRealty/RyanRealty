@@ -9,5 +9,5 @@ import { redirect } from 'next/navigation'
  * the dashboard itself.
  */
 export default function ConsoleHomeRedirect() {
-  redirect('/admin/broker-dashboard')
+  redirect('/admin/today')
 }

@@ -114,7 +114,7 @@ export default function MobileSettingsScreen({
 
   function close() {
     if (typeof window !== 'undefined' && window.history.length > 1) router.back()
-    else router.push('/admin/broker-dashboard')
+    else router.push('/admin/today')
   }
 
   return (

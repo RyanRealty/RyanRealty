@@ -1818,7 +1818,7 @@ export async function dismissTriageItemAction(input: {
     const { snoozeCrmTaskAction } = await import('@/app/actions/crm-tasks')
     const snoozed = await snoozeCrmTaskAction(taskId, 1)
     if (!snoozed.ok) return snoozed
-    revalidatePath('/admin/broker-dashboard')
+    revalidatePath('/admin/today')
     return { ok: true }
   }
 
@@ -1851,7 +1851,7 @@ export async function dismissTriageItemAction(input: {
     if (error) return { ok: false, error: error.message }
   }
   revalidateCrm(personId)
-  revalidatePath('/admin/broker-dashboard')
+  revalidatePath('/admin/today')
   return { ok: true }
 }
 

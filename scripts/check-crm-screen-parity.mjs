@@ -13,7 +13,7 @@
  *     "id": "person-detail-mobile",
  *     "specRef": "docs/fub-crm-spec/25-mobile-contact-detail.md",   // the reference to match
  *     "route": "app/admin/console/leads/[id]/mobile-detail.tsx",     // the built file
- *     "status": "todo" | "wip" | "done",
+ *     "status": "todo" | "wip" | "done" | "superseded" (retired by a locked decision; needs supersededBy),
  *     "requiredComponents": ["MobileLeadHeader", "MobileSubTabStrip", "MobileInfoTab", ...],
  *     "verify": "docs/fub-crm-spec/_verify/mob-contact-detail.png"   // committed side-by-side/screenshot
  *   }
@@ -70,6 +70,14 @@ for (const s of screens) {
   const id = s?.id ?? '(no id)'
   const status = s?.status ?? 'todo'
   counts[status] = (counts[status] ?? 0) + 1
+
+  if (status === 'superseded') {
+    // A locked product decision retired this screen's parity contract. The
+    // entry must SAY what replaced it — a bare 'superseded' is a silent hole.
+    if (!s?.supersededBy) problems.push(`[${id}] status=superseded but no supersededBy pointer`)
+    if (REPORT) console.log(`  · supr ${id} -> ${s?.supersededBy ?? '?'}`)
+    continue
+  }
 
   if (status !== 'done') {
     if (REPORT) console.log(`  · ${status.padEnd(4)} ${id}`)
