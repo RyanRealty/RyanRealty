@@ -34,6 +34,7 @@ import { getListingPhotosCount } from '@/lib/data/cma/builderReads'
 import { getExpiredOwnershipSince } from '@/lib/data/prospecting/get'
 import { analyzeListingHistory } from '@/lib/bpo/history'
 import {
+  applyFailedAskCap,
   buildFailureFindings,
   buildServicesList,
   buildNetSheet,
@@ -391,6 +392,21 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       const lastStatus = String(cycleRows[0]?.['StandardStatus'] ?? '')
       const lastCycleFailed = ['Expired', 'Canceled', 'Withdrawn'].includes(lastStatus)
       if (lastCycleFailed) {
+        // The failed-ask ceiling (Matt 2026-08-05): never recommend above the
+        // price this market just rejected. Runs for EVERY door into the one
+        // engine; the trace records what the comps wanted.
+        const row0 = cycleRows[0] ?? {}
+        const lastAsk = Number(row0['ListPrice'] ?? row0['OriginalListPrice'])
+        const offDate = String(row0['off_market_date'] ?? row0['status_change_timestamp'] ?? '') || null
+        const cap = applyFailedAskCap(pricing, {
+          lastFailedListPrice: Number.isFinite(lastAsk) ? lastAsk : null,
+          offMarketDate: offDate,
+        })
+        if (cap.applied) {
+          console.warn(
+            `[cma/build] failed-ask ceiling: comps supported ${cap.uncappedRecommended} > failed ask ${cap.cappedTo} — list tiers capped (${slug})`,
+          )
+        }
         const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
         const photosCount = subject.listingKey ? await getListingPhotosCount(subject.listingKey) : null
         expiredAudit = {

@@ -207,3 +207,47 @@ describe('the single-doc fold', () => {
     expect(html).toContain('@media print')
   })
 })
+
+describe('the failed-ask ceiling (applyFailedAskCap)', () => {
+  const recentOff = new Date(Date.now() - 60 * 24 * 3600 * 1000).toISOString()
+  const staleOff = new Date(Date.now() - 400 * 24 * 3600 * 1000).toISOString()
+  function p(over: Partial<CmaPricing> = {}) {
+    return { ...pricing, notes: [] as string[], needsReview: false, reviewReason: null, ...over }
+  }
+
+  it('caps every list tier at a recently failed ask and flags review', async () => {
+    const { applyFailedAskCap } = await import('./expired-audit')
+    const x = p({ conservative: 2100000, recommended: 2275000, highEnd: 2455000 })
+    const r = applyFailedAskCap(x, { lastFailedListPrice: 1675000, offMarketDate: recentOff })
+    expect(r.applied).toBe(true)
+    expect(x.recommended).toBe(1675000)
+    expect(x.highEnd).toBe(1675000)
+    expect(x.conservative).toBeLessThanOrEqual(1675000)
+    expect(x.needsReview).toBe(true)
+    expect(x.reviewReason).toContain('$2,275,000')
+    expect(x.notes.join(' ')).toContain('will not recommend relisting above')
+  })
+
+  it('does nothing when the recommendation already respects the failed ask', async () => {
+    const { applyFailedAskCap } = await import('./expired-audit')
+    const x = p({ conservative: 590000, recommended: 610000, highEnd: 640000 })
+    const r = applyFailedAskCap(x, { lastFailedListPrice: 715000, offMarketDate: recentOff })
+    expect(r.applied).toBe(false)
+    expect(x.recommended).toBe(610000)
+    expect(x.needsReview).toBe(false)
+  })
+
+  it('a stale failure (past the recency window) does not bind', async () => {
+    const { applyFailedAskCap } = await import('./expired-audit')
+    const x = p({ recommended: 800000, highEnd: 830000 })
+    const r = applyFailedAskCap(x, { lastFailedListPrice: 600000, offMarketDate: staleOff })
+    expect(r.applied).toBe(false)
+    expect(x.recommended).toBe(800000)
+  })
+
+  it('missing ask or date fails open (no cap, no crash)', async () => {
+    const { applyFailedAskCap } = await import('./expired-audit')
+    expect(applyFailedAskCap(p(), { lastFailedListPrice: null, offMarketDate: recentOff }).applied).toBe(false)
+    expect(applyFailedAskCap(p(), { lastFailedListPrice: 500000, offMarketDate: null }).applied).toBe(false)
+  })
+})

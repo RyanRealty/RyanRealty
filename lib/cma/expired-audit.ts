@@ -363,3 +363,71 @@ export function buildNetSheet(pricing: CmaPricing): ExpiredNetSheet {
 export function feeLine(): string {
   return `For an expired listing we list at ${EXPIRED_LISTING_FEE_PCT}% of the sale price, where our standard Enhanced plan runs ${STANDARD_LISTING_FEE_PCT}%. Every service above is included at that rate. Commission is negotiable and every listing agreement is its own conversation.`
 }
+
+// ── The failed-ask ceiling (Matt 2026-08-05) ────────────────────────────────
+
+/** How long a failed asking price stays binding evidence. Past this, the
+ *  market that rejected it is a different market. */
+export const FAILED_ASK_RECENCY_MONTHS = 12
+
+export interface FailedAskCapResult {
+  applied: boolean
+  /** The ceiling used, when applied. */
+  cappedTo: number | null
+  /** What the comp engine wanted before the ceiling. */
+  uncappedRecommended: number | null
+}
+
+/**
+ * A CMA must never recommend listing ABOVE a price the market just rejected
+ * (Matt 2026-08-05: 33% of expired-prospect docs did — up to +36% — because
+ * the comp engine carried zero weight for the subject's own failed market
+ * test). When the subject's most recent cycle ended without selling within
+ * FAILED_ASK_RECENCY_MONTHS, the failed asking price becomes a hard ceiling
+ * on every LIST-strategy tier (conservative / recommended / highEnd). The
+ * EVIDENCE range (valueLow/valueHigh) stays untouched — it is the comp math,
+ * and the gap between it and the ceiling is part of the story the broker and
+ * the owner need to see. Capping sets needsReview so a broker looks before
+ * anything ships.
+ *
+ * Mutates `pricing` in place (same contract as the sanitize pass) and returns
+ * what happened for the build trace.
+ */
+export function applyFailedAskCap(
+  pricing: {
+    conservative: number
+    recommended: number
+    highEnd: number
+    needsReview: boolean
+    reviewReason: string | null
+    notes: string[]
+  },
+  args: { lastFailedListPrice: number | null; offMarketDate: string | null; asOf?: Date },
+): FailedAskCapResult {
+  const none: FailedAskCapResult = { applied: false, cappedTo: null, uncappedRecommended: null }
+  const ask = args.lastFailedListPrice
+  if (ask == null || !Number.isFinite(ask) || ask <= 0) return none
+  if (!args.offMarketDate) return none
+  const off = new Date(args.offMarketDate)
+  if (Number.isNaN(off.getTime())) return none
+  const asOf = args.asOf ?? new Date()
+  const months = (asOf.getTime() - off.getTime()) / (30.44 * 24 * 3600 * 1000)
+  if (months > FAILED_ASK_RECENCY_MONTHS || months < 0) return none
+  if (pricing.recommended <= ask && pricing.highEnd <= ask) return none
+
+  const uncapped = pricing.recommended
+  pricing.recommended = Math.min(pricing.recommended, ask)
+  pricing.highEnd = Math.min(pricing.highEnd, ask)
+  pricing.conservative = Math.min(pricing.conservative, pricing.recommended)
+  pricing.needsReview = true
+  pricing.reviewReason = [
+    pricing.reviewReason,
+    `Comp evidence supported ${usd(uncapped)}, above the ${usd(ask)} asking that just failed. List tiers capped at the failed ask.`,
+  ]
+    .filter(Boolean)
+    .join(' ')
+  pricing.notes.push(
+    `Your last asking price was ${usd(ask)} and the market did not take it. Whatever the comparable math supports, we will not recommend relisting above a number buyers already passed on. The evidence range in this report stays as computed. The gap between it and the recommendation is the part we fix together: condition, presentation, and timing.`,
+  )
+  return { applied: true, cappedTo: ask, uncappedRecommended: uncapped }
+}
