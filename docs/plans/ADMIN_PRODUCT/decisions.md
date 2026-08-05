@@ -7,7 +7,7 @@ lock. `ADMIN_REBUILD/PHASE-0-ANSWERS.md` is input evidence only, never a lock so
 ## Lock status
 
 - Process lock (P3): **GRANTED 2026-08-04** — see "P3 PROCESS LOCK PACKAGE — LOCKED"
-- IA lock (P5): **not granted**
+- IA lock (P5): **GRANTED 2026-08-05** — see "P5 IA LOCK" below
 - Visual lock (P6): **not granted**
 - Litmus sign-off (P8): **not granted**
 
@@ -160,3 +160,23 @@ entity) · 1 KEEP-thin (site-content-ops). No KILLs, no DEFERs.
   precedence, CRM↔TC link shape).
 - No IA naming/grouping inherited from current routes (amnesia holds; destinations derive
   from these processes only).
+
+---
+
+## 2026-08-05 — P5 IA LOCK — GRANTED BY MATT (in-session structured answers)
+
+The IA in `ia-lock.md` is LOCKED with one amendment. Matt's answers:
+
+1. **Names: keep all three** — Today · Oversight · Closings ship as proposed (full set:
+   Today, Messages, People, Prospecting, Valuations, Closings, Oversight, Reports,
+   Audiences, Content, Settings).
+2. **Tab 5 = Oversight.** Mobile tabs locked: Today · Messages · Prospecting · People ·
+   Oversight.
+3. **AMENDMENT — DSCR lives in Reports** (as a tool), not Prospecting.
+   `page-inventory.json` updated: `/admin/dscr` → Reports.
+4. **Sequence/template authoring under Settings** confirmed; monitoring in Oversight.
+5. **Tasks + Calendar fold into Today** confirmed — no standalone destinations.
+
+`cut-list.md` is FROZEN (26 route cuts + 12 surface cuts — never resurrect).
+`state.json`: `locks.ia = 2026-08-05`, `awaiting_lock` cleared, phase → `P6_VISUAL`.
+P6 (greenfield visual language, external standards only) starts next session.

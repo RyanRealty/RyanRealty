@@ -1,7 +1,9 @@
 # IA Lock — decision package (P5)
 
-Status: **PROPOSED 2026-08-05 — AWAITING MATT'S IA LOCK.** Locks only when Matt writes
-the lock into `decisions.md`. Derived from the locked KEEP set (process lock
+Status: **✅ LOCKED BY MATT 2026-08-05** (recorded in `decisions.md` → "P5 IA LOCK").
+All five open questions answered; one amendment: **DSCR lives in Reports** (as a tool),
+not Prospecting — `page-inventory.json` updated accordingly. Names, tab set, and cuts
+below are final; `cut-list.md` is frozen. Derived from the locked KEEP set (process lock
 2026-08-04), the Phase-0 evidence in `decisions.md`, the five locked directives, and
 `data-atlas.md`. Amnesia held: zero carryover of current route names, menu structure,
 groupings, or the mobile tab bar — every destination below is named from the job it

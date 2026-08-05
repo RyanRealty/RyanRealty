@@ -1,6 +1,6 @@
 # Cut list (P5) — surfaces that do not exist in the new IA
 
-Status: PROPOSED 2026-08-05, frozen only when the IA lock lands in decisions.md.
+Status: **FROZEN 2026-08-05** (IA lock granted — decisions.md "P5 IA LOCK").
 Two kinds of cut: **route cuts** (the URL/page dies) and **surface cuts** (the job
 survives inside a destination, but the standalone surface dies). Never resurrect a
 cut item during P9 rolls.
@@ -51,7 +51,7 @@ route at P9; default die):
 
 ## Explicitly NOT cut
 
-- `/admin/dscr` — maps to Prospecting (investor lane); open question #3 in ia-lock.md.
+- `/admin/dscr` — maps to Reports as a tool (Matt's IA-lock amendment, 2026-08-05).
 - Sequence editor + templates — survive under Settings (rare-use authoring).
 - CSV import wizard — survives under People.
 - Every TC surface — composes into Closings (six routes become lenses, none die).

@@ -1,7 +1,7 @@
 [
   {
-    "id": "ia-lock-wait",
-    "phase": "P5",
-    "note": "ia-lock.md decision package written 2026-08-05; awaiting Matt IA lock in decisions.md (5 open questions inside the package). After lock: freeze cut-list.md, set locks.ia, phase=P6_VISUAL, next unit = visual-language (greenfield design_system/admin/, external standards only)."
+    "id": "visual-language",
+    "phase": "P6",
+    "note": "NOT STARTED. Greenfield design_system/admin/ from external standards only (WCAG 2.2 AA + APG -> Radix Colors -> GOV.UK -> Carbon/Lightning -> Polaris -> NN/g; discipline products: Linear, Vercel, Stripe, Attio, Height, Retool, Superhuman). Amnesia test required. Deliverables per pack P6 block: thesis, patterns, tokens+AA, 3 hard screens desktop+390, ADMIN_UI.md, header options, dark-mode decision. Craft scorecard >=8. STOP for Matt visual lock."
   }
 ]

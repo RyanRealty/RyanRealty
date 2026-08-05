@@ -55,13 +55,16 @@ do not assume slash commands or autoload worked.
   visible (P2 assessment corrected); place copy has no manual surface and regenerates
   unconditionally; CRM↔TC has zero bridge and /admin/deals reads the legacy
   skyslope_transactions mirror.
-- **P5 PACKAGE WRITTEN 2026-08-05, AWAITING IA LOCK** — `ia-lock.md`: 11 job-named
-  destinations (Today, Messages, People, Prospecting, Valuations, Closings, Oversight,
-  Reports, Audiences, Content, Settings), 5-tab mobile set (Today · Messages ·
-  Prospecting · People · Oversight), 160/160 routes dispositioned in
-  `page-inventory.json` (26 CUT — enumerated in `cut-list.md` — 3 SYSTEM, 131
-  absorbed), amnesia test recorded, 5 open questions for Matt inside the package.
-- **Next unit: NOTHING until Matt writes the IA lock into `decisions.md`.** When he
-  does: record his answers/renames, set `locks.ia`, clear `awaiting_lock`, freeze
-  `cut-list.md`, advance phase to `P6_VISUAL` (greenfield `design_system/admin/`,
-  external standards only, amnesia test required). Never start P6 before that lock.
+- **P5 IA LOCKED 2026-08-05** (decisions.md "P5 IA LOCK") — 11 destinations final
+  (Today, Messages, People, Prospecting, Valuations, Closings, Oversight, Reports,
+  Audiences, Content, Settings); tabs Today · Messages · Prospecting · People ·
+  Oversight; amendment: DSCR → Reports; `cut-list.md` FROZEN; 160/160 routes
+  dispositioned in `page-inventory.json`. Phase is `P6_VISUAL`.
+- **Next unit: `visual-language` (P6)** — greenfield `design_system/admin/` from
+  EXTERNAL standards only (WCAG 2.2 AA + APG → Radix Colors → GOV.UK →
+  Carbon/Lightning → Polaris → NN/g; discipline: Linear, Vercel, Stripe, Attio,
+  Height, Retool, Superhuman). Public brand (navy/cream, Amboqia) is BLACKLISTED as
+  design input. Deliverables: thesis, patterns, tokens + AA proof, 3 hard screens at
+  desktop + 390px, ADMIN_UI.md, header options, dark-mode decision, amnesia test,
+  craft scorecard ≥8. **STOP for Matt's visual lock in decisions.md.** Never start P7
+  primitives before that lock.
