@@ -268,3 +268,71 @@ describe('the failed-ask ceiling (applyFailedAskCap)', () => {
     expect(applyFailedAskCap(p(), { lastFailedListPrice: 500000, offMarketDate: null }).applied).toBe(false)
   })
 })
+
+describe('report extras pages (when-to-list + competition)', () => {
+  const extras = {
+    seasonality: {
+      byMonth: Array.from({ length: 12 }, (_, i) => ({
+        month: i + 1,
+        monthName: ['January','February','March','April','May','June','July','August','September','October','November','December'][i],
+        closedCount: 40,
+        medianDaysToPending: i === 4 ? 9 : i === 10 ? 41 : 20,
+      })),
+      fastestMonths: ['May', 'April'],
+      slowestMonths: ['October', 'November'],
+      yearsCovered: 3,
+      totalClosed: 480,
+      source: "Supabase listings, City='Bend', seasonality fixture",
+    },
+    band: {
+      lo: 675000, hi: 825000, activeCount: 14, pendingCount: 5,
+      activeMedianAsk: 749000, activeMedianDom: 31,
+      source: "Supabase listings, City='Bend', band fixture",
+    },
+    subdivisionPulse: {
+      name: 'Kenwood', closedCount: 7, medianClose: 712000, low: 640000, high: 815000, months: 12,
+      source: "Supabase listings, SubdivisionName='Kenwood' fixture",
+    },
+    financing: {
+      sampleCount: 500, cashPct: 31.5, conventionalPct: 55.2, fhaVaPct: 9.1, otherPct: 4.2,
+      source: "Supabase listings, City='Bend', financing fixture",
+    },
+    photoBench: {
+      subjectPhotos: 11, compPhotos: [{ address: 'a', photos: 38 }, { address: 'b', photos: 42 }, { address: 'c', photos: 40 }],
+      compMedianPhotos: 40,
+      source: 'Supabase listings photos_count fixture',
+    },
+  }
+
+  it('renders both pages with every block and its source trace', () => {
+    const { html } = renderCmaHtml(args({}, { extras }))
+    expect(html).toContain('When to List')
+    expect(html).toContain('480')
+    expect(html).toContain('Median days to pending by close month')
+    expect(html).toContain('May (9 days) and April')
+    expect(html).toContain('Your Competition Right Now')
+    expect(html).toContain('14 active listings')
+    expect(html).toContain('$749,000')
+    expect(html).toContain('Kenwood, the last 12 months')
+    expect(html).toContain('31.5% closed in cash')
+    expect(html).toContain('median of 40 photos')
+    expect(html).toContain('seasonality fixture')
+    expect(html).toContain('band fixture')
+    expect(html).toContain('financing fixture')
+  })
+
+  it('absent extras render neither page and no empty headings', () => {
+    const { html } = renderCmaHtml(args({}))
+    expect(html).not.toContain('When to List')
+    expect(html).not.toContain('Your Competition Right Now')
+  })
+
+  it('a lone financing block still gets the competition page, without the others', () => {
+    const { html } = renderCmaHtml(args({}, { extras: { ...extras, seasonality: null, band: null, subdivisionPulse: null, photoBench: null } }))
+    expect(html).not.toContain('When to List')
+    expect(html).toContain('Your Competition Right Now')
+    expect(html).toContain('Who is buying here')
+    expect(html).not.toContain('Your price band, live')
+    expect(html).not.toContain('Presentation bench')
+  })
+})

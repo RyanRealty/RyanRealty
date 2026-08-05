@@ -27,6 +27,7 @@ import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { judgeComps } from '@/lib/cma/judge'
 import { hydratePhotoUrls } from '@/lib/cma/photos'
 import { resolveCmaSiteData } from '@/lib/cma/county'
+import { buildCmaExtras } from '@/lib/cma/extras'
 import { auditCma } from '@/lib/cma/audit'
 import { evaluateAccuracyContract } from '@/lib/cma/contract'
 import { getBpoListingCyclesByAddress } from '@/lib/data/bpo/reads'
@@ -418,6 +419,13 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       }
     }
 
+    // 4.75. Report extras (Matt 2026-08-05): seasonality, price-band
+    // competition, subdivision pulse, financing profile, photo bench. Runs
+    // AFTER the failed-ask cap so the band centers on the final recommended
+    // price. Each block is independently nullable (§0: cut, don't guess).
+    const subjectPhotosCount = subject.listingKey ? await getListingPhotosCount(subject.listingKey) : null
+    const extras = await buildCmaExtras({ subject, comps: adjusted, pricing, subjectPhotosCount })
+
     // 4.8. Development potential — pure function over the verified zone +
     // acreage (no new fetches). Every item carries its code citation; the
     // section always renders with the disclaimer + agency directory.
@@ -518,6 +526,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       expiredAudit,
       development,
       rental,
+      extras,
     }
 
     // Spread, never a second hand-written list: a field added to one list and
@@ -576,6 +585,15 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         weight: c.weight,
         selection_tier: c.selectionTier,
       })),
+      report_extras: {
+        seasonality: extras.seasonality ? { source: extras.seasonality.source, by_month: extras.seasonality.byMonth } : { source: 'none' },
+        price_band: extras.band ?? { source: 'none' },
+        subdivision_pulse: extras.subdivisionPulse ?? { source: 'none' },
+        financing: extras.financing ?? { source: 'none' },
+        photo_bench: extras.photoBench
+          ? { source: extras.photoBench.source, subject_photos: extras.photoBench.subjectPhotos, comp_median: extras.photoBench.compMedianPhotos }
+          : { source: 'none' },
+      },
       market_context: market
         ? {
             source: 'market_stats_cache (rolling_365d) + market_pulse_live',

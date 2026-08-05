@@ -322,3 +322,120 @@ export async function listActiveBrokersForCma(): Promise<Array<Record<string, un
     .order('sort_order', { ascending: true })
   return (data ?? []) as Array<Record<string, unknown>>
 }
+
+// ── Report-extras reads (Matt 2026-08-05: when-to-list, price-band,
+//    subdivision pulse, buyer-financing) ────────────────────────────────────
+
+export type CmaClosedSkinnyRow = {
+  CloseDate: string
+  days_to_pending: number | null
+  buyer_financing: string | null
+}
+
+/**
+ * Skinny city-wide closed pull for seasonality + financing profile: three
+ * columns over ~36 months (~6K rows for Bend). market_stats_cache cannot
+ * serve this — its periods are rolling 30-day windows, not calendar months,
+ * so month-of-year seasonality has to come off the cycles themselves.
+ */
+export async function getCmaCityClosedSkinny(city: string, sinceIso: string): Promise<CmaClosedSkinnyRow[]> {
+  const sb = client()
+  if (!sb) return []
+  const out: CmaClosedSkinnyRow[] = []
+  const SIZE = 1000
+  for (let from = 0; from < 20000; from += SIZE) {
+    const { data, error } = await sb
+      .from('listings')
+      .select('CloseDate, days_to_pending, buyer_financing')
+      .eq('City', city)
+      .eq('PropertyType', 'A')
+      .eq('StandardStatus', 'Closed')
+      .gte('CloseDate', sinceIso)
+      .order('CloseDate', { ascending: true })
+      .order('ListingKey', { ascending: true })
+      .range(from, from + SIZE - 1)
+    if (error) {
+      console.error('[getCmaCityClosedSkinny]', error.message)
+      return out
+    }
+    out.push(...((data ?? []) as unknown as CmaClosedSkinnyRow[]))
+    if (!data || data.length < SIZE) break
+  }
+  return out
+}
+
+export type CmaBandInventory = {
+  activeAsks: number[]
+  activeDaysOnMarket: number[]
+  pendingCount: number
+}
+
+/** Live competition in the subject's price band: every Active ask + DOM in
+ *  [lo, hi] for the city, plus the Pending count in the same band. */
+export async function getCmaBandInventory(city: string, lo: number, hi: number): Promise<CmaBandInventory | null> {
+  const sb = client()
+  if (!sb) return null
+  const [actives, pendings] = await Promise.all([
+    sb
+      .from('listings')
+      .select('ListPrice, CumulativeDaysOnMarket, DaysOnMarket')
+      .eq('City', city)
+      .eq('PropertyType', 'A')
+      .eq('StandardStatus', 'Active')
+      .gte('ListPrice', lo)
+      .lte('ListPrice', hi)
+      .limit(1000),
+    sb
+      .from('listings')
+      .select('ListingKey', { count: 'exact', head: true })
+      .eq('City', city)
+      .eq('PropertyType', 'A')
+      .eq('StandardStatus', 'Pending')
+      .gte('ListPrice', lo)
+      .lte('ListPrice', hi),
+  ])
+  if (actives.error || pendings.error) {
+    console.error('[getCmaBandInventory]', actives.error?.message ?? pendings.error?.message)
+    return null
+  }
+  const rows = (actives.data ?? []) as Array<{
+    ListPrice: number | null
+    CumulativeDaysOnMarket: number | null
+    DaysOnMarket: number | null
+  }>
+  return {
+    activeAsks: rows.map((r) => Number(r.ListPrice)).filter((n) => Number.isFinite(n) && n > 0),
+    // Active rows carry DaysOnMarket; CumulativeDaysOnMarket is only stamped
+    // on closed cycles (verified live 2026-08-05: 0/131 actives had CDOM).
+    activeDaysOnMarket: rows
+      .map((r) => Number(r.CumulativeDaysOnMarket ?? r.DaysOnMarket))
+      .filter((n) => Number.isFinite(n) && n >= 0),
+    pendingCount: pendings.count ?? 0,
+  }
+}
+
+export type CmaSubdivisionSaleRow = {
+  ClosePrice: number
+  CloseDate: string
+}
+
+/** Closed sales inside the subject's exact MLS subdivision since sinceIso. */
+export async function getCmaSubdivisionClosed(subdivision: string, sinceIso: string): Promise<CmaSubdivisionSaleRow[]> {
+  const sb = client()
+  if (!sb || !subdivision.trim()) return []
+  const { data, error } = await sb
+    .from('listings')
+    .select('ClosePrice, CloseDate')
+    .eq('SubdivisionName', subdivision)
+    .eq('PropertyType', 'A')
+    .eq('StandardStatus', 'Closed')
+    .gte('CloseDate', sinceIso)
+    .not('ClosePrice', 'is', null)
+    .order('CloseDate', { ascending: false })
+    .limit(500)
+  if (error) {
+    console.error('[getCmaSubdivisionClosed]', error.message)
+    return []
+  }
+  return (data ?? []) as unknown as CmaSubdivisionSaleRow[]
+}

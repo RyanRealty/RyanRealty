@@ -523,8 +523,11 @@ export {
   getCmaMarketPulseRow,
   getCmaBrokerBySlugOrEmail,
   listActiveBrokersForCma,
+  getCmaCityClosedSkinny,
+  getCmaBandInventory,
+  getCmaSubdivisionClosed,
 } from '@/lib/data/cma/builderReads'
-export type { CmaListingRow, CmaMarketStatsRow, CmaMarketPulseRow } from '@/lib/data/cma/builderReads'
+export type { CmaListingRow, CmaMarketStatsRow, CmaMarketPulseRow, CmaClosedSkinnyRow, CmaBandInventory, CmaSubdivisionSaleRow } from '@/lib/data/cma/builderReads'
 export {
   getCmaAdminRowBySlug,
   getCmaHtmlBySlug,

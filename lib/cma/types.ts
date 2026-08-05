@@ -74,6 +74,8 @@ export interface CmaComp {
   proximity?: string | null
   /** Set when the comp came from a competing market area; the render must disclose it. */
   competingArea?: string | null
+  /** MLS photo count on the sold listing — feeds the presentation bench. */
+  photosCount?: number | null
 }
 
 export interface CmaAdjustedComp extends CmaComp {

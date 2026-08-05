@@ -112,6 +112,7 @@ function rowToComp(row: CmaListingRow, tier: string): CmaComp | null {
     daysToOffer,
     domTotal: num(row['CumulativeDaysOnMarket']) ?? num(row['DaysOnMarket']),
     selectionTier: tier,
+    photosCount: num(row['photos_count']),
   }
 }
 

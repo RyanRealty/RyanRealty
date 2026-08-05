@@ -42,6 +42,7 @@ import type {
   CmaPricing,
   CmaSubject,
 } from '@/lib/cma/types'
+import type { CmaExtras } from '@/lib/cma/extras'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
@@ -80,6 +81,8 @@ export interface RenderCmaArgs {
   development?: DevelopmentOpportunities | null
   /** Long / mid / short-term rental read for the same parcel. */
   rental?: RentalPotential | null
+  /** Data-backed report extras: seasonality, band, subdivision, financing, photos. */
+  extras?: CmaExtras | null
 }
 
 interface PageDef {
@@ -612,6 +615,110 @@ function whatYouCanDoPage(a: RenderCmaArgs): PageDef | null {
   }
 }
 
+
+// ── Report extras (Matt 2026-08-05): when-to-list + competition ────────────
+
+function seasonalityChartSvg(x: NonNullable<CmaExtras['seasonality']>): string {
+  const W = 720
+  const H = 210
+  const plotTop = 18
+  const plotBottom = 168
+  const barW = 40
+  const gap = (W - 12 * barW) / 13
+  const vals = x.byMonth.map((m) => m.medianDaysToPending).filter((v): v is number => v != null)
+  const max = Math.max(...vals, 1)
+  const fastest = new Set(x.fastestMonths)
+  const bars = x.byMonth
+    .map((m, i) => {
+      const cx = gap + i * (barW + gap)
+      const label = `<text x="${cx + barW / 2}" y="${plotBottom + 16}" text-anchor="middle" font-size="11" fill="#102742" opacity="0.75">${m.monthName.slice(0, 3)}</text>`
+      if (m.medianDaysToPending == null) {
+        return `${label}<text x="${cx + barW / 2}" y="${plotBottom - 6}" text-anchor="middle" font-size="10" fill="#102742" opacity="0.4">n/a</text>`
+      }
+      const h = Math.max(6, ((plotBottom - plotTop) * m.medianDaysToPending) / max)
+      const y = plotBottom - h
+      const hot = fastest.has(m.monthName)
+      return `${label}
+      <rect x="${cx}" y="${y}" width="${barW}" height="${h}" rx="4" fill="#102742" opacity="${hot ? '1' : '0.35'}"/>
+      <text x="${cx + barW / 2}" y="${y - 6}" text-anchor="middle" font-size="12" font-weight="600" fill="#102742">${Math.round(m.medianDaysToPending)}</text>`
+    })
+    .join('\n')
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Median days to pending by close month" style="width:100%;height:auto;display:block;">
+    <line x1="0" y1="${plotBottom}" x2="${W}" y2="${plotBottom}" stroke="#102742" stroke-opacity="0.25" stroke-width="1"/>
+    ${bars}
+  </svg>`
+}
+
+function whenToListPage(a: RenderCmaArgs): PageDef | null {
+  const x = a.extras?.seasonality
+  if (!x) return null
+  const byName = new Map(x.byMonth.map((m) => [m.monthName, m]))
+  const fastRow = x.fastestMonths.map((n) => byName.get(n)).filter((m): m is NonNullable<typeof m> => m != null)
+  const slowRow = x.slowestMonths.map((n) => byName.get(n)).filter((m): m is NonNullable<typeof m> => m != null)
+  const fmtList = (ms: typeof fastRow) => ms.map((m) => `${m.monthName} (${Math.round(m.medianDaysToPending!)} days)`).join(' and ')
+  return {
+    meta: `${esc(a.subject.streetAddress)} · When to List`,
+    toc: 'When to list',
+    body: `
+  <h2 class="section">When to List</h2>
+  <p>Every ${esc(a.subject.city)} single-family sale of the last ${dec(x.yearsCovered, 1)} years, ${int(x.totalClosed)} of them, grouped by the month it closed. The bar is the median number of days those homes took to go pending. Lower is faster.</p>
+  <div class="chart-block" data-anim="chart">${seasonalityChartSvg(x)}</div>
+  <p>Homes that closed in ${fmtList(fastRow)} went pending fastest. The slow end was ${fmtList(slowRow)}. This is history, not a forecast: it tells you when ${esc(a.subject.city)} buyers have been most active, and a home priced on the evidence in this report does not need to wait for a hot month to sell.</p>
+  <div class="trace"><div class="t-hd">Source</div>${esc(x.source)}</div>`,
+  }
+}
+
+function competitionPage(a: RenderCmaArgs): PageDef | null {
+  const b = a.extras?.band
+  const sub = a.extras?.subdivisionPulse
+  const fin = a.extras?.financing
+  const bench = a.extras?.photoBench
+  if (!b && !sub && !fin && !bench) return null
+  const blocks: string[] = []
+  if (b) {
+    blocks.push(`
+  <h3 class="subhead">Your price band, live</h3>
+  <p>Between ${usd(b.lo)} and ${usd(b.hi)} in ${esc(a.subject.city)} right now, a buyer sees ${int(b.activeCount)} active listing${b.activeCount === 1 ? '' : 's'}${b.activeMedianAsk != null ? ` at a median ask of ${usd(Math.round(b.activeMedianAsk))}` : ''}${b.activeMedianDom != null ? `, sitting a median of ${int(b.activeMedianDom)} days on market` : ''}. ${int(b.pendingCount)} more ${b.pendingCount === 1 ? 'is' : 'are'} already pending in the same band. Those are the homes yours is judged against on day one.</p>
+  <div class="stat-strip" style="grid-template-columns: repeat(3, 1fr);">
+    <div class="stat"><div class="lbl">Active in Band</div><div class="val" data-count>${int(b.activeCount)}</div></div>
+    <div class="stat"><div class="lbl">Pending in Band</div><div class="val" data-count>${int(b.pendingCount)}</div></div>
+    <div class="stat"><div class="lbl">Median Days on Market</div><div class="val">${b.activeMedianDom != null ? `${int(b.activeMedianDom)} days` : '—'}</div></div>
+  </div>
+  <div class="trace"><div class="t-hd">Source</div>${esc(b.source)}</div>`)
+  }
+  if (sub) {
+    blocks.push(`
+  <h3 class="subhead">${esc(sub.name)}, the last ${int(sub.months)} months</h3>
+  <p>${int(sub.closedCount)} home${sub.closedCount === 1 ? '' : 's'} in your subdivision closed in the last ${int(sub.months)} months, from ${usd(sub.low)} to ${usd(sub.high)}${sub.medianClose != null ? `, with a median of ${usd(Math.round(sub.medianClose))}` : ''}. Buyers shopping your street have seen these numbers.</p>
+  <div class="trace"><div class="t-hd">Source</div>${esc(sub.source)}</div>`)
+  }
+  if (fin) {
+    blocks.push(`
+  <h3 class="subhead">Who is buying here</h3>
+  <p>Of the ${int(fin.sampleCount)} ${esc(a.subject.city)} sales in the last 12 months that reported financing, ${dec(fin.cashPct, 1)}% closed in cash, ${dec(fin.conventionalPct, 1)}% with conventional loans, and ${dec(fin.fhaVaPct, 1)}% FHA or VA. A cash-heavy market moves faster and negotiates harder on price than on terms, which is one more reason the list price has to be right on day one.</p>
+  <div class="stat-strip" style="grid-template-columns: repeat(3, 1fr);">
+    <div class="stat"><div class="lbl">Cash</div><div class="val">${dec(fin.cashPct, 1)}%</div></div>
+    <div class="stat"><div class="lbl">Conventional</div><div class="val">${dec(fin.conventionalPct, 1)}%</div></div>
+    <div class="stat"><div class="lbl">FHA / VA</div><div class="val">${dec(fin.fhaVaPct, 1)}%</div></div>
+  </div>
+  <div class="trace"><div class="t-hd">Source</div>${esc(fin.source)}</div>`)
+  }
+  if (bench) {
+    blocks.push(`
+  <h3 class="subhead">Presentation bench</h3>
+  <p>The sold comps in this report marketed with a median of ${int(bench.compMedianPhotos)} photos. Your last listing carried ${int(bench.subjectPhotos)}. Photo count is not the whole story, but it is the first thing a buyer scrolls, and it is fully in your control before the next listing goes live.</p>
+  <div class="trace"><div class="t-hd">Source</div>${esc(bench.source)}</div>`)
+  }
+  return {
+    meta: `${esc(a.subject.streetAddress)} · Your Competition`,
+    toc: 'Your competition right now',
+    body: `
+  <h2 class="section">Your Competition Right Now</h2>
+  <p>Pricing sets the list price. Competition decides how it lands. These are the live numbers around yours.</p>
+  ${blocks.join('\n')}`,
+  }
+}
+
 function verifyPage(a: RenderCmaArgs): PageDef | null {
   const block = verifyResourcesBlock(a.development, a.rental)
   if (!block) return null
@@ -743,7 +850,11 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   a.comps.forEach((c, i) => rest.push(compFlyerPage(a, c, i)))
   const market = marketPage(a)
   if (market) rest.push(market)
+  const whenToList = whenToListPage(a)
+  if (whenToList) rest.push(whenToList)
   rest.push(pricingPage(a))
+  const competition = competitionPage(a)
+  if (competition) rest.push(competition)
   rest.push(rationalePage(a))
   // What the comp grid does not price: the sellable facts first, then the code
   // that backs them, then the ways a buyer can use the parcel.
