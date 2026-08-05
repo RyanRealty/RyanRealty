@@ -138,18 +138,52 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
 
   return (
     <Dialog open={show} onOpenChange={(open) => { if (!open) handleMaybeLater() }}>
-      <DialogContent showCloseButton={false} className="max-w-md p-6 sm:p-8">
-        <DialogTitle className="text-xl font-semibold text-foreground">
-          Get the most out of Ryan Realty
-        </DialogTitle>
-        <DialogDescription className="mt-2 text-sm text-muted-foreground">
-          Sign in with Google or Facebook. No new password needed.
-        </DialogDescription>
-        <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-muted-foreground" aria-hidden>
-          <li>Save searches and get new listing alerts</li>
-          <li>Pick up where you left off on any device</li>
-        </ul>
-        <div className="mt-6 space-y-3">
+      <DialogContent showCloseButton={false} className="max-w-md overflow-hidden p-0">
+        {/* Benefits-forward treatment (Matt 2026-08-05: the plain prompt sold
+            nothing). Same engagement gating; the pitch is now three concrete
+            things a signed-in visitor actually gets. */}
+        <div className="bg-primary px-6 pb-5 pt-6 sm:px-8">
+          <p className="text-xs font-semibold uppercase tracking-widest text-primary-foreground/70">
+            Free member access
+          </p>
+          <DialogTitle className="mt-1 text-2xl font-semibold leading-tight text-primary-foreground">
+            The listings come to you
+          </DialogTitle>
+          <DialogDescription className="mt-1.5 text-sm text-primary-foreground/80">
+            One tap with Google or Facebook. No new password.
+          </DialogDescription>
+        </div>
+        <div className="px-6 pt-5 sm:px-8">
+          <ul className="space-y-3.5">
+            {[
+              {
+                title: 'New matches, the morning they list',
+                sub: 'Save any search and we watch the MLS for you.',
+              },
+              {
+                title: 'Price changes on homes you follow',
+                sub: 'Track a home and see every cut the day it happens.',
+              },
+              {
+                title: 'Your own portal',
+                sub: 'Saved homes, alerts, and reports in one place, on any device.',
+              },
+            ].map((b) => (
+              <li key={b.title} className="flex items-start gap-3">
+                <span className="mt-1 flex size-5 flex-none items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <svg viewBox="0 0 16 16" className="size-3" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M2.5 8.5l3.5 3.5 7.5-8" />
+                  </svg>
+                </span>
+                <span>
+                  <span className="block text-sm font-semibold text-foreground">{b.title}</span>
+                  <span className="block text-sm text-muted-foreground">{b.sub}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="space-y-3 px-6 pb-6 pt-6 sm:px-8">
           <Button
             type="button"
             disabled={!!loading}
@@ -168,15 +202,15 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
             <FacebookIcon className="size-5" />
             {loading === 'facebook' ? 'Redirecting…' : 'Continue with Facebook'}
           </Button>
+          <Button
+            type="button"
+            onClick={handleMaybeLater}
+            variant="ghost"
+            className="w-full text-sm text-muted-foreground hover:text-muted-foreground"
+          >
+            Not now
+          </Button>
         </div>
-        <Button
-          type="button"
-          onClick={handleMaybeLater}
-          variant="ghost"
-          className="mt-4 w-full text-sm text-muted-foreground hover:text-muted-foreground"
-        >
-          Maybe later
-        </Button>
       </DialogContent>
     </Dialog>
   )
