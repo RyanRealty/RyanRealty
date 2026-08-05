@@ -26,7 +26,7 @@ import { join, relative } from 'node:path'
 const ROOT = process.cwd()
 const SPEC = join(ROOT, 'design_system/admin/tokens.css')
 const COPY = join(ROOT, 'components/admin/v2/tokens.css')
-const SCAN_DIRS = ['components/admin/v2', 'app/admin/(protected)/today']
+const SCAN_DIRS = ['components/admin/v2', 'app/admin/(protected)/today', 'app/admin/(protected)/messages']
 const EXT = new Set(['.ts', '.tsx', '.css'])
 
 const failures = []

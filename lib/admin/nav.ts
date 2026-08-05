@@ -101,8 +101,9 @@ export const DESTINATIONS: NavDestination[] = [
   },
   {
     key: 'inbox',
-    label: 'Inbox',
-    href: '/admin/crm/inbox',
+    // P9 roll:messages (IA lock 2026-08-05): the job is the thread surface.
+    label: 'Messages',
+    href: '/admin/messages',
     icon: 'inbox',
     capability: 'inbox.view',
     defaultOpen: true,

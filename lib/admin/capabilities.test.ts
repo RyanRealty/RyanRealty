@@ -129,15 +129,15 @@ describe('shell projection (one nav source for every surface)', () => {
   it('mobile tabs are the D9.4 five for superuser AND broker, from the annotations', () => {
     for (const role of ['superuser', 'broker'] as const) {
       const tabs = buildMobileTabs(buildNav(ctx(role)))
-      expect(tabs.map((t) => t.label)).toEqual(['Today', 'Inbox', 'People', 'Deals', 'Activity'])
+      expect(tabs.map((t) => t.label)).toEqual(['Today', 'Messages', 'People', 'Deals', 'Activity'])
       expect(tabs.map((t) => t.href)).toEqual([
         '/admin/today',
-        '/admin/crm/inbox',
+        '/admin/messages',
         '/admin/crm',
         '/admin/crm/deals',
         '/admin/crm/activity',
       ])
-      expect(tabs.find((t) => t.label === 'Inbox')?.badge).toBe('inbox')
+      expect(tabs.find((t) => t.label === 'Messages')?.badge).toBe('inbox')
     }
   })
 
@@ -157,7 +157,7 @@ describe('shell projection (one nav source for every surface)', () => {
         .filter((s) => best !== '' && s.items.some((i) => i.href.split('?')[0] === best))
         .map((s) => s.label)
     }
-    expect(activeSections('/admin/crm/inbox')).toEqual(['Inbox'])
+    expect(activeSections('/admin/messages')).toEqual(['Messages'])
     expect(activeSections('/admin/crm/settings/templates')).toEqual(['Settings'])
     expect(activeSections('/admin/crm/sequences')).toEqual(['Settings'])
     expect(activeSections('/admin/crm/57297')).toEqual(['People']) // lead detail → People

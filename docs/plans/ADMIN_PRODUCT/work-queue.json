@@ -1,9 +1,5 @@
 [
   {
-    "id": "roll:messages",
-    "phase": "P9"
-  },
-  {
     "id": "roll:people",
     "phase": "P9",
     "note": "carries the v2 kickoff surface (Matt 2026-08-05: whatever is recommended)"
