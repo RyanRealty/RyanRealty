@@ -37,6 +37,7 @@ const SCAN_DIRS = [
   'app/admin/(protected)/people',
   'app/admin/(protected)/prospecting/page.tsx',
   'app/admin/(protected)/prospecting/actions.ts',
+  'app/admin/(protected)/prospecting/FilterSelect.tsx',
   'app/admin/(protected)/oversight',
   'app/admin/(protected)/valuations',
   'app/admin/(protected)/closings',
@@ -106,6 +107,11 @@ for (const dir of SCAN_DIRS) {
       BRAND_LEAK.lastIndex = 0
       if (LEGACY_IMPORT.test(line)) report(file, i, 'import from legacy components/admin or components/ui (blacklisted)', line)
       LEGACY_IMPORT.lastIndex = 0
+      // Rule 4 — chrome ban (ADMIN_UI §3 acceptance bar, Matt 2026-08-05):
+      // filter sets are ONE compact control, never pill rows.
+      if (line.includes('av2-chiprow')) {
+        report(file, i, 'chip wall (acceptance bar #2: filters are one dropdown, not pill rows)', line)
+      }
     })
   }
 }

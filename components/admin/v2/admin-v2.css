@@ -41,14 +41,6 @@
   color:var(--a-accent); font-weight:500; }
 .av2-chip:focus-visible { outline:none; box-shadow:var(--a-focus); }
 
-/* Chips rendered as links (server pages filter by URL, not client state) —
-   same visual grammar as the button chip; the --on modifier mirrors
-   [aria-pressed="true"] because aria-pressed is button-only vocabulary. */
-a.av2-chip { text-decoration:none; display:inline-block; }
-.av2-chip--on { background:var(--a-accent-wash); border-color:var(--a-accent);
-  color:var(--a-accent); font-weight:500; }
-.av2-chiprow { display:flex; flex-wrap:wrap; gap:var(--a-s2); margin:var(--a-s3) 0; }
-
 /* ---- QueueRow (pattern 1: phone-first stack, desktop single line) ---- */
 .av2-qrow { display:grid; grid-template-columns:1fr auto; grid-template-areas:"kind age" "body body" "gap act";
   gap:var(--a-s2) var(--a-s3); align-items:center; background:var(--a-surface);

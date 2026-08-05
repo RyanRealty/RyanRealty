@@ -28,8 +28,7 @@ export default async function ContentHomePage() {
 
   return (
     <main className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
-      <h1 style={{ fontSize: 'var(--a-text-xl)', fontWeight: 600, letterSpacing: '-0.01em' }}>Content</h1>
-      <div style={{ margin: '8px 0 20px' }}>
+      <div style={{ margin: '0 0 14px' }}>
         <VerdictLine tone="ok">
           <b>One home for everything we publish.</b> {DOORS.length} doors, each owning its lane.
         </VerdictLine>

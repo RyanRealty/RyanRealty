@@ -180,3 +180,15 @@ First line of every firing after orient: state what you verified on disk
 - Cross-agent: when stopping, update `docs/plans/CROSS_AGENT_HANDOFF.md` Current block
   with paths to `ADMIN_PRODUCT/state.json` — only if that handoff file exists; if it
   doesn’t, say so and still leave `progress.txt` complete.
+
+---
+
+## Surface acceptance bar (Matt 2026-08-05 — check BEFORE showing any surface)
+
+Canonical list: `design_system/admin/ADMIN_UI.md` §3 "Surface acceptance bar".
+Short form: no page-title chrome (nav names the page) · no chip walls (filters
+are ONE dropdown — `av2-chiprow` is gate-banned) · every entity name links to
+its page · every artifact state links to the artifact · compliance words are
+channel-aware, "Blocked" ONLY when allChannelsBlocked · a wall of identical
+states on real data is a STOP-and-probe, never a ship. A surface failing any
+of these is not done, regardless of green gates.

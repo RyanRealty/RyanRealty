@@ -46,6 +46,28 @@ built on four commitments:
 
 ## 3. Patterns (the six that build every destination)
 
+**Surface acceptance bar (Matt 2026-08-05, after the prospecting review — every
+v2 page must pass ALL of these before it ships; violations were shipped once
+and will not be re-litigated):**
+
+1. **No page-title chrome.** The nav names the page; a standalone `<h1>` above
+   the verdict is wasted height. (An ENTITY page's h1 is the entity's name —
+   that is content, allowed.)
+2. **No chip walls.** A filter set is ONE compact control (a dropdown), never
+   rows of pills. `av2-chiprow` in a page file is gate-banned.
+3. **Every entity name is a door.** A person/property/deal name rendered
+   anywhere links to that entity's page. Dead text naming a linkable thing is
+   a defect.
+4. **Every artifact state is a door.** "Audit ready", "draft", "sent" — the
+   words link to the artifact itself, never make the broker hunt for it.
+5. **Channel-aware compliance words, never a wall.** A row is "Blocked" ONLY
+   when every channel is blocked (`allChannelsBlocked`). SMS-blocked with
+   email open reads "email only (+why)". Collapsing per-channel state into one
+   red wall is the 2026-06-16 / 2026-08-05 incident class.
+6. **A wall of identical states on real data is a STOP.** Before shipping a
+   page where most rows show the same state, probe the source tables and prove
+   the distribution is real — never assume the read is right because it renders.
+
 1. **Queue row** — the Today unit: [kind chip] [title + one-line context] [age]
    [ONE primary action + overflow]. Row height ≥56px phone / 48px desktop. Swipe-free:
    actions are buttons, not gestures (discoverability, NN/g).

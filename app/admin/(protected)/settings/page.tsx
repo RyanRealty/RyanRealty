@@ -80,8 +80,7 @@ export default async function SettingsHubPage() {
 
   return (
     <main className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
-      <h1 style={{ fontSize: 'var(--a-text-xl)', fontWeight: 600, letterSpacing: '-0.01em' }}>Settings</h1>
-      <div style={{ margin: '8px 0 20px' }}>
+      <div style={{ margin: '0 0 14px' }}>
         <VerdictLine tone="ok">
           <b>Configure the machine.</b> {total} doors you hold, grouped by job.
         </VerdictLine>

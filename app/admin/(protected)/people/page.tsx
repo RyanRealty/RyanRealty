@@ -25,7 +25,6 @@ export default async function PeoplePage({
 
   return (
     <main className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
-      <h1 style={{ fontSize: 'var(--a-text-xl)', fontWeight: 600, letterSpacing: '-0.01em' }}>People</h1>
       <form method="GET" style={{ margin: '12px 0 20px' }}>
         <input
           className="av2-input"
