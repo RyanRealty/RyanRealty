@@ -31,7 +31,15 @@ const EXCLUDED_PATHS = [
   // the brand design-token gate does not apply here. It still uses shadcn/ui
   // components + semantic token classes by convention; it is simply exempt from
   // the brand-enforcement primitives/color/hex checks.
-  "app/admin/console/",
+  // Admin Product OS (P7, 2026-08-05, visual lock in
+  // docs/plans/ADMIN_PRODUCT/decisions.md): the admin runs its OWN locked
+  // language (design_system/admin/), not the public brand — so the brand gate
+  // exempts all of app/admin plus the greenfield components/admin/v2. The
+  // replacement enforcement is scripts/check-admin-v2-tokens.mjs
+  // (ci:admin-v2-tokens): tokens parity + var(--a-*)-only color + brand-leak
+  // ban. Legacy components/admin/* (non-v2) stays brand-gated until migrated.
+  "app/admin/",
+  "components/admin/v2/",
   "components/console/",
   "_style_backup/",
   "app/globals.css",

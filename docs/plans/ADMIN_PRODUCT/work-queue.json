@@ -1,7 +1,7 @@
 [
   {
-    "id": "primitives",
-    "phase": "P7",
-    "note": "NOT STARTED. Build components/admin/v2/ primitives from the locked language (tokens.css + six patterns): Button, QueueRow, StateWord, Chip, ThreadBubble, QuietRow, VerdictLine, RailNav, TabBar, form controls. Widen the design-token gate exemption to app/admin + components/admin/v2 with a functional admin color gate (pack P7 block). No mass migration. Then P8: smallest litmus slice on a real phone, timed proof."
+    "id": "litmus-pilot",
+    "phase": "P8",
+    "note": "NOT STARTED. Build the smallest slice that makes LITMUS true on a phone: alert SMS -> person -> CMA kickoff in <=3 taps / <=30s, using components/admin/v2 primitives. Delete replaced forks. Timed proof + screenshots on the real path (production-shaped). Ends BLOCKED_ON_MATT: litmus. Read ADMIN_REBUILD/LITMUS.md and re-prove, do not trust its prior numbers."
   }
 ]

@@ -66,9 +66,14 @@ do not assume slash commands or autoload worked.
   three reference screens. Header Option A left rail; dark mode ship both; the
   locked 5-tab phone bar. Local preview server: `admin-mockups` (port 8094,
   launch.json is gitignored/local).
-- **Next unit: `primitives` (P7)** — build `components/admin/v2/` from the locked
-  language: Button, QueueRow, StateWord, Chip, ThreadBubble, QuietRow, VerdictLine,
-  RailNav, TabBar, form controls. Widen the design-token gate exemption to
-  app/admin + components/admin/v2 with a functional admin color gate (pack P7
-  block). No mass migration of existing pages. After P7: P8 = smallest slice that
-  makes LITMUS true on a real phone, timed proof + screenshots, then STOP for Matt.
+- **P7 COMPLETE 2026-08-05** — `components/admin/v2/`: 10 primitives + admin-v2.css
+  + tokens.css (byte-copy of the locked spec). New gate `ci:admin-v2-tokens`
+  (`scripts/check-admin-v2-tokens.mjs`): tokens parity, var(--a-*)-only color,
+  brand-leak + legacy-import ban — in the ci:gates chain. Brand token gate now
+  exempts `app/admin/` + `components/admin/v2/` (baseline ratcheted 314→267).
+  No pages migrated (by design).
+- **Next unit: `litmus-pilot` (P8)** — the smallest slice making LITMUS true on a
+  phone (alert SMS → person → CMA kickoff ≤3 taps / ≤30s) built on the v2
+  primitives; delete replaced forks; timed proof + screenshots on the real path.
+  Re-prove LITMUS.md, never trust its prior numbers. Ends **BLOCKED_ON_MATT:
+  litmus**. Fresh session recommended.

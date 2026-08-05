@@ -1,0 +1,114 @@
+/* admin v2 component styles — the LOCKED admin visual language (P7).
+   Canonical spec: design_system/admin/ADMIN_UI.md (visual lock 2026-08-05).
+   tokens.css here is a byte-identical runtime copy of the locked tokens —
+   parity enforced by scripts/check-admin-v2-tokens.mjs. All color goes
+   through var(--a-*); raw hex is banned in this directory outside tokens.css. */
+@import './tokens.css';
+
+/* ---- Button ---- */
+.av2-btn { display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  min-height:36px; padding:0 14px; border-radius:var(--a-r-md); border:1px solid transparent;
+  font-family:var(--a-font); font-size:var(--a-text-sm); font-weight:600; cursor:pointer;
+  background:var(--a-btn-bg); color:var(--a-btn-fg); transition:background var(--a-t-fast); }
+.av2-btn--quiet { background:var(--a-surface); color:var(--a-accent); border-color:var(--a-border); }
+.av2-btn--danger { background:var(--a-danger); color:var(--a-bg); }
+.av2-btn--touch { min-height:var(--a-touch); }
+.av2-btn:focus-visible { outline:none; box-shadow:var(--a-focus); }
+.av2-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+/* ---- StateWord (status = text + color, never color alone) ---- */
+.av2-state { display:inline-block; font-size:var(--a-text-xs); font-weight:700;
+  letter-spacing:.05em; text-transform:uppercase; padding:2px 8px; border-radius:var(--a-r-sm); }
+.av2-state--down    { background:var(--a-danger-wash); color:var(--a-danger); }
+.av2-state--slow    { background:var(--a-warn-wash);   color:var(--a-warn); }
+.av2-state--waiting { background:var(--a-inset);       color:var(--a-text-2); }
+.av2-state--ok      { background:var(--a-ok-wash);     color:var(--a-ok); }
+.av2-state--accent  { background:var(--a-accent-wash); color:var(--a-accent); }
+
+/* ---- Chip (filter) ---- */
+.av2-chip { border:1px solid var(--a-border); background:var(--a-surface); color:var(--a-text-2);
+  border-radius:999px; padding:5px 12px; font-family:var(--a-font); font-size:var(--a-text-sm);
+  white-space:nowrap; cursor:pointer; }
+.av2-chip[aria-pressed="true"] { background:var(--a-accent-wash); border-color:var(--a-accent);
+  color:var(--a-accent); font-weight:500; }
+.av2-chip:focus-visible { outline:none; box-shadow:var(--a-focus); }
+
+/* ---- QueueRow (pattern 1: phone-first stack, desktop single line) ---- */
+.av2-qrow { display:grid; grid-template-columns:1fr auto; grid-template-areas:"kind age" "body body" "gap act";
+  gap:var(--a-s2) var(--a-s3); align-items:center; background:var(--a-surface);
+  border:1px solid var(--a-border); border-radius:var(--a-r-lg);
+  padding:var(--a-s3) var(--a-s4); min-height:56px; }
+.av2-qrow__kind { grid-area:kind; justify-self:start; }
+.av2-qrow__body { grid-area:body; min-width:0; }
+.av2-qrow__title { font-weight:600; font-size:var(--a-text-md); color:var(--a-text); overflow-wrap:anywhere; }
+.av2-qrow__ctx { color:var(--a-text-2); font-size:var(--a-text-sm); margin-top:1px; overflow-wrap:anywhere; }
+.av2-qrow__age { grid-area:age; color:var(--a-text-2); font-size:var(--a-text-xs); font-variant-numeric:tabular-nums; }
+.av2-qrow__age--hot { color:var(--a-danger); font-weight:600; }
+.av2-qrow__act { grid-area:act; }
+@media (min-width:1024px) {
+  .av2-qrow { grid-template-columns:auto 1fr auto auto; grid-template-areas:"kind body age act"; min-height:48px; }
+  .av2-qrow__age { justify-self:end; }
+}
+
+/* ---- QuietRow (healthy = near-zero weight) ---- */
+.av2-quiet { display:flex; align-items:baseline; gap:var(--a-s3); padding:10px 2px;
+  border-bottom:1px solid var(--a-border); font-size:var(--a-text-sm); color:var(--a-text-2); }
+.av2-quiet__name { color:var(--a-text); font-weight:500; min-width:130px; }
+.av2-quiet__ok { color:var(--a-ok); font-weight:600; }
+.av2-quiet__fig { margin-left:auto; font-variant-numeric:tabular-nums; }
+
+/* ---- VerdictLine (the screen answers first) ---- */
+.av2-verdict { display:flex; align-items:center; gap:var(--a-s2); font-size:var(--a-text-lg);
+  color:var(--a-text); }
+.av2-verdict__dot { width:10px; height:10px; border-radius:50%; flex:none; }
+.av2-verdict--ok .av2-verdict__dot { background:var(--a-ok); }
+.av2-verdict--attention .av2-verdict__dot { background:var(--a-warn); }
+.av2-verdict b { font-weight:600; }
+
+/* ---- ThreadBubble (pattern 2) ---- */
+.av2-bubble { max-width:78%; border-radius:var(--a-r-lg); padding:var(--a-s2) var(--a-s3); }
+.av2-bubble--in  { align-self:flex-start; background:var(--a-surface); border:1px solid var(--a-border); }
+.av2-bubble--out { align-self:flex-end; background:var(--a-accent-wash); border:1px solid transparent; }
+.av2-bubble__txt { font-size:var(--a-text-md); color:var(--a-text); }
+.av2-bubble__stamp { font-size:var(--a-text-xs); color:var(--a-text-2); margin-top:3px;
+  display:flex; gap:var(--a-s2); align-items:center; }
+.av2-bubble__chan { font-size:10px; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
+  border:1px solid var(--a-border); border-radius:4px; padding:0 4px; color:var(--a-text-2); background:var(--a-bg); }
+
+/* ---- RailNav (header Option A, locked) ---- */
+.av2-rail { display:flex; flex-direction:column; gap:var(--a-s1); background:var(--a-surface);
+  border-right:1px solid var(--a-border); padding:var(--a-s4) var(--a-s3);
+  width:var(--a-rail-w); min-height:100vh; font-family:var(--a-font); }
+.av2-rail__group { font-size:var(--a-text-xs); font-weight:600; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--a-text-2); padding:var(--a-s3) var(--a-s2) var(--a-s1); }
+.av2-rail__item { display:flex; align-items:center; justify-content:space-between; gap:var(--a-s2);
+  padding:7px 10px; border-radius:var(--a-r-md); color:var(--a-text); text-decoration:none;
+  font-size:var(--a-text-md); }
+.av2-rail__item:hover { background:var(--a-inset); }
+.av2-rail__item[aria-current="page"] { background:var(--a-accent-wash); color:var(--a-accent); font-weight:600; }
+.av2-rail__item:focus-visible { outline:none; box-shadow:var(--a-focus); }
+.av2-rail__count { font-size:var(--a-text-xs); color:var(--a-text-2); font-variant-numeric:tabular-nums; }
+
+/* ---- TabBar (locked 5-tab phone bar) ---- */
+.av2-tabbar { position:fixed; bottom:0; left:0; right:0; height:var(--a-tabbar-h);
+  display:flex; background:var(--a-surface); border-top:1px solid var(--a-border); z-index:10; }
+.av2-tab { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:2px; font-family:var(--a-font); font-size:var(--a-text-xs); color:var(--a-text-2);
+  text-decoration:none; min-height:var(--a-touch); position:relative; }
+.av2-tab[aria-current="page"] { color:var(--a-accent); font-weight:600; }
+.av2-tab:focus-visible { outline:none; box-shadow:var(--a-focus); }
+.av2-tab__badge { position:absolute; top:6px; right:calc(50% - 22px); background:var(--a-danger);
+  color:var(--a-bg); font-size:10px; font-weight:600; border-radius:8px; padding:0 5px; line-height:15px; }
+@media (min-width:1024px) { .av2-tabbar { display:none; } }
+
+/* ---- Form field (pattern 6: label above, single column) ---- */
+.av2-field { display:flex; flex-direction:column; gap:var(--a-s1); max-width:640px; font-family:var(--a-font); }
+.av2-field__label { font-size:var(--a-text-sm); font-weight:600; color:var(--a-text); }
+.av2-field__hint { font-size:var(--a-text-sm); color:var(--a-text-2); }
+.av2-field__error { font-size:var(--a-text-sm); color:var(--a-danger); font-weight:500; }
+.av2-input { font-family:var(--a-font); font-size:var(--a-text-md); color:var(--a-text);
+  background:var(--a-bg); border:1px solid var(--a-border); border-radius:var(--a-r-md);
+  padding:10px 12px; min-height:var(--a-touch); }
+.av2-input:focus-visible { outline:none; box-shadow:var(--a-focus); }
+.av2-input[aria-invalid="true"] { border-color:var(--a-danger); }
+textarea.av2-input { min-height:88px; resize:vertical; }
