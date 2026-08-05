@@ -1,7 +1,17 @@
 [
   {
+    "id": "cma-doc-v2",
+    "phase": "ROUND2",
+    "note": "The CMA document itself (Matt 2026-08-05 spec, pinned in progress 18:20/19:10): (1) add a 'What we like about this home' section to every CMA; (2) expired listings get a 'Your last listing — what happened and our take' section INSIDE the one CMA doc, and the separate expired-audit docType folds away (single doc going forward; prospecting expectedDocTypeFor + builder + send templates follow); (3) PDF and web page are IDENTICAL except the web page drops the print headers/footers (likely @media print CSS in the one artifact — confirm how the PDF is produced first); (4) Matt's cut-off sentence 'and then ensure that our…' needs his completion before locking the section list."
+  },
+  {
+    "id": "signin-prompt-v2",
+    "phase": "ROUND2",
+    "note": "Site-wide SignInPrompt.tsx upgrade (Matt: 'super plain and not good'): benefits copy, engaging/interactive, same treatment as the CMA register shell. Public brand + §2 voice + design-token gate apply."
+  },
+  {
     "id": "fixture-cleanup",
-    "phase": "P10",
-    "note": "Fixture person 60610 (+ its CMA action/draft) is LIVE for Matt's real-phone walkthrough (alert SMS + ready text + /admin/people/60610). Clean via tmp/litmus-cleanup.mjs pattern ONLY on Matt's explicit done, or at next-session start."
+    "phase": "HOUSEKEEPING",
+    "note": "On Matt's explicit done: person 60610, cmas cma-20695-town (+ its action row), auth users cma-fixture-viewer@ / cma-fixture-wrong@ryan-realty.com. tmp/litmus-cleanup.mjs pattern."
   }
 ]
