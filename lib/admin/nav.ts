@@ -228,23 +228,22 @@ export const DESTINATIONS: NavDestination[] = [
     defaultOpen: false,
   },
   {
+    // P9 Content roll (IA lock 2026-08-05): one content home; the hub carries
+    // the doors, the menu stays lean. Listings + Geography moved to Oversight's
+    // data tools (data-curate fold — curation, not publishing).
     key: 'content',
     label: 'Content',
-    href: '/admin/listings',
+    href: '/admin/content',
     icon: 'files',
     capability: 'content.view',
     defaultOpen: false,
     children: [
-      { label: 'Listings', href: '/admin/listings', icon: 'home', capability: 'content.listings' },
+      { label: 'Home', href: '/admin/content', icon: 'files', capability: 'content.view' },
       { label: 'Blog', href: '/admin/blog', icon: 'file-text', capability: 'content.blog' },
       { label: 'Guides', href: '/admin/guides', icon: 'files', capability: 'content.guides' },
-      { label: 'Geography', href: '/admin/geo', icon: 'map', capability: 'content.communities' },
       { label: 'Media library', href: '/admin/media', icon: 'folder-open', capability: 'content.media' },
-      { label: 'Content library', href: '/admin/content-library', icon: 'folder-open', capability: 'content.view' },
-      { label: 'Site pages', href: '/admin/site-pages', icon: 'files', capability: 'content.site' },
       { label: 'Newsletters', href: '/admin/newsletters', icon: 'mail', capability: 'content.marketing' },
-      { label: 'Email campaigns', href: '/admin/email/campaigns', icon: 'mail', capability: 'content.marketing' },
-      { label: 'Ad links', href: '/admin/broker-links', icon: 'megaphone', capability: 'content.marketing' },
+      // Content library, Site pages, Email campaigns, Ad links live on the hub.
     ],
   },
   {

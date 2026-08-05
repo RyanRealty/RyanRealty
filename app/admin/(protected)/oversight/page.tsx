@@ -365,6 +365,14 @@ export default async function OversightPage() {
         <Link href="/admin/sign-off" style={{ color: 'var(--a-accent)' }}>
           Sign-off
         </Link>
+        {' · '}
+        <Link href="/admin/listings" style={{ color: 'var(--a-accent)' }}>
+          Listing data
+        </Link>
+        {' · '}
+        <Link href="/admin/geo" style={{ color: 'var(--a-accent)' }}>
+          Geography
+        </Link>
       </p>
     </main>
   )
