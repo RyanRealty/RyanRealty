@@ -60,13 +60,15 @@ do not assume slash commands or autoload worked.
   Audiences, Content, Settings); tabs Today · Messages · Prospecting · People ·
   Oversight; amendment: DSCR → Reports; `cut-list.md` FROZEN; 160/160 routes
   dispositioned in `page-inventory.json`. Phase is `P6_VISUAL`.
-- **P6 PACKAGE WRITTEN 2026-08-05, AWAITING VISUAL LOCK** — `design_system/admin/`:
-  `tokens.css` (Radix-derived light+dark, every pair contrast-computed),
-  `ADMIN_UI.md` (thesis, 6 patterns, computed AA tables, header Option A left-rail
-  recommended vs Option B, dark-mode ship-both, amnesia test, scorecard 8.5),
-  `screens/{today,messages,oversight}.html` — browser-verified at 1280 + 375 in both
-  themes (server: `admin-mockups` in `.claude/launch.json`, port 8094).
-- **Next unit: NOTHING until Matt writes the visual lock into `decisions.md`.** When
-  he does (header option + dark-mode + overall approval): set `locks.visual`, clear
-  `awaiting_lock`, advance phase to `P7_PRIMITIVES` (components/admin/v2 primitives
-  from the locked language + token-gate exemption widening). P8 litmus after that.
+- **P6 VISUAL LOCKED 2026-08-05** (decisions.md "P6 VISUAL LOCK") — locked language:
+  `design_system/admin/tokens.css` + `ADMIN_UI.md` (six patterns; tile boards
+  retired; Oversight = verdict + needs-you pattern after Matt's rework round) +
+  three reference screens. Header Option A left rail; dark mode ship both; the
+  locked 5-tab phone bar. Local preview server: `admin-mockups` (port 8094,
+  launch.json is gitignored/local).
+- **Next unit: `primitives` (P7)** — build `components/admin/v2/` from the locked
+  language: Button, QueueRow, StateWord, Chip, ThreadBubble, QuietRow, VerdictLine,
+  RailNav, TabBar, form controls. Widen the design-token gate exemption to
+  app/admin + components/admin/v2 with a functional admin color gate (pack P7
+  block). No mass migration of existing pages. After P7: P8 = smallest slice that
+  makes LITMUS true on a real phone, timed proof + screenshots, then STOP for Matt.

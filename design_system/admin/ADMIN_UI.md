@@ -1,7 +1,8 @@
 # ADMIN_UI — the admin visual language (P6, v1)
 
-Status: **PROPOSED 2026-08-05 — awaiting Matt's visual lock** (`decisions.md` is the only
-lock location). Applies to the 11 locked IA destinations. Greenfield: the public brand
+Status: **✅ LOCKED BY MATT 2026-08-05** (recorded in `docs/plans/ADMIN_PRODUCT/decisions.md`
+→ "P6 VISUAL LOCK"; header = Option A left rail, dark mode = ship both, Oversight
+locked as the v2 verdict + needs-you pattern). Applies to the 11 locked IA destinations. Greenfield: the public brand
 (navy `#102742`, cream, Amboqia) is **blacklisted as design input** for the admin — the
 admin is a work instrument for three brokers, not a marketing surface. Canonical tokens:
 [`tokens.css`](tokens.css). Hard screens: [`screens/`](screens/).

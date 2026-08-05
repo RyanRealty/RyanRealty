@@ -1,7 +1,7 @@
 [
   {
-    "id": "visual-lock-wait",
-    "phase": "P6",
-    "note": "design_system/admin/ v1 written + browser-verified 2026-08-05 (tokens.css, ADMIN_UI.md, 3 screens at 1280+375, light+dark). Awaiting Matt visual lock in decisions.md. Decisions in the package: header Option A (left rail) recommended over B (top bar); dark mode ship-both. After lock: locks.visual, phase=P7_PRIMITIVES, next unit = components/admin/v2 primitives + token-gate exemption."
+    "id": "primitives",
+    "phase": "P7",
+    "note": "NOT STARTED. Build components/admin/v2/ primitives from the locked language (tokens.css + six patterns): Button, QueueRow, StateWord, Chip, ThreadBubble, QuietRow, VerdictLine, RailNav, TabBar, form controls. Widen the design-token gate exemption to app/admin + components/admin/v2 with a functional admin color gate (pack P7 block). No mass migration. Then P8: smallest litmus slice on a real phone, timed proof."
   }
 ]

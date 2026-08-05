@@ -8,7 +8,7 @@ lock. `ADMIN_REBUILD/PHASE-0-ANSWERS.md` is input evidence only, never a lock so
 
 - Process lock (P3): **GRANTED 2026-08-04** — see "P3 PROCESS LOCK PACKAGE — LOCKED"
 - IA lock (P5): **GRANTED 2026-08-05** — see "P5 IA LOCK" below
-- Visual lock (P6): **not granted**
+- Visual lock (P6): **GRANTED 2026-08-05** — see "P6 VISUAL LOCK" below
 - Litmus sign-off (P8): **not granted**
 
 ---
@@ -190,3 +190,21 @@ sentence answer, one unified attention list sharing Today's row grammar, healthy
 systems as quiet hairline rows, one numbers strip). ADMIN_UI.md pattern 3 updated;
 the tile status board is retired from the language. **Visual lock still pending**
 Matt's review of the reworked screen.
+
+## 2026-08-05 — P6 VISUAL LOCK — GRANTED BY MATT
+
+Matt locked the admin visual language after the Oversight rework ("visual locked").
+The locked package is `design_system/admin/` v1 as of commit a3c58038:
+
+- `tokens.css` — Radix-derived light + dark, all pairs contrast-computed; solid
+  buttons via `--a-btn-bg/--a-btn-fg` (dark flips to dark text).
+- `ADMIN_UI.md` — thesis, six patterns (pattern 3 = verdict + needs-you list; tile
+  boards retired), computed AA tables, amnesia test, scorecard.
+- Header: **Option A, left rail** (granted earlier same day). Dark mode: **ship
+  both**, light default. Mobile: the locked 5-tab bar.
+- Screens locked as the visual reference: today.html, messages.html,
+  oversight.html (v2).
+
+`state.json`: `locks.visual = 2026-08-05`, `awaiting_lock` cleared, phase →
+`P7_PRIMITIVES`. P7 (components/admin/v2 primitives + token-gate exemption) starts
+next session; P8 timed litmus follows.
