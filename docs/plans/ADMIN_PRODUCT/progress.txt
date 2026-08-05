@@ -56,3 +56,32 @@ Ship bar: each unit committed separately, pushed, deploy-verified READY, product
 (1) FAILED-ASK CEILING — instances reviewed first: 57 of 173 expired-prospect docs (33%) recommended ABOVE the ask the market rejected, up to +36% (19635 Clear Night: asked $1.675M Withdrawn, engine said $2.275M off 4 big comps). Diagnosis: no arithmetic bug — the engine carried ZERO weight for the subject's own failed market test. Class rule in the ONE engine: applyFailedAskCap (lib/cma/expired-audit.ts, wired in build.ts) — when the last cycle failed within 12 months, every LIST tier caps at the failed ask; the EVIDENCE range stays printed; needsReview + reviewReason carry what the comps wanted; client note explains the gap honestly. 8 tests.
 (2) BASIC ZONING+RENTAL — the zoning explainer, chunked development pages, buyer-option spread, rental tenure/income pages, and HOA page collapse into ONE "What You Can Do With This Property" page: zone one-liner, verdict-first build/use one-liners, Short/Mid/Long rental one-liners, HOA caveat, one sources line + disclaimer. Verify-it-yourself page stays.
 (3) FULL RECIPIENT JOURNEY — proven live end to end: SEND: real rail delivered the fixture CMA to matt@ (gmail id 19fd3d7608807df8, PDF attached, delivered_at stamped, status delivered; driven via the engine directly — the Send-to-lead button opens a Radix dialog the harness cannot click, known limit, NOT a product defect). SIGN-IN: register/consent door incl. SMS consent (proven earlier, all 4 branches). TRACKING: rr-doc-tracker now also posts cta_click on every anchor (site parity) + rides the gate shells; /api/visitors/track accepts same-origin posts (the prod-only origin allowlist 403'd every local verification); VERIFIED: page_view + cta_click rows landed in visitor_events from a live doc visit + tel-link tap. 653 tests green.
+
+[2026-08-05 15:50] ROUND 4 — pricing ground truth + report v3 (Matt directives, all shipped)
+  77d8dc75 pricing calibration: resort comp guard (registry-driven symmetric hard
+           exclusion + resort_premium trace counter, 14 tests) + scripts/cma-backtest.mjs
+           (reproducible failed→sold metric: 3,394 same-address pairs / 3y — median
+           eventual close 94.2% of failed ask, p75 98.2%, only 12.3% ever beat it;
+           artifact docs/research/cma-backtest-2026-08-05.json) + applyFailedAskCap now
+           clamps cons/rec/high to 0.942/0.982/1.00 × failed ask, constants locked to the
+           committed artifact by test.
+  9660f59f five report sections, all deterministic + §0-cited, thin data = no section:
+           When to List (3y month-of-year seasonality, SVG chart, Bend April = 9-day
+           median to pending over 635 sales) · price band (131 active / 68 pending ±10%
+           of recommended) · subdivision pulse (Acadia Pointe 20 sales, median $599,900)
+           · financing (30.1% cash / 59.8% conventional over 2,486 sales; buyer_financing
+           ships in TWO formats — JSON-keyed + bare word — both classified) · photo bench
+           (subject 47 vs comp median 25). Landmines fixed: actives carry DaysOnMarket
+           not CDOM (0/131 had CDOM); market_stats_cache is rolling windows, not calendar
+           months → dedicated skinny DAL read.
+  6c97eb73 interactive layer, serve-time-only (stored artifact stays print-pure, PDF
+           identical, retroactive to every delivered CMA): sticky contents bar + progress
+           + scroll-spy + jump menu, fade-up reveals w/ 4s failsafe (content can never
+           stay hidden), count-up snapped to exact markup number on beforeprint/tab-hide.
+           Hardened: no rAF scroll throttle (wedges in hidden-loaded tabs).
+  827c276e file-size rebaseline (feature growth).
+  Verified: engine rebuild of cma-20695-town on live data, browser DOM + real-Chrome
+  session (bar/spy/jump live), DB ground-truth probes per figure, tracker page_views
+  recording, stored html 0 script tags. Pushed d79f48bf..827c276e; deploy:verify running.
+  NEXT: production spot-check after deploy; then remaining queue (matt-inputs: cut-off
+  sentence "ensure that our…", fixture cleanup on Matt's done).
