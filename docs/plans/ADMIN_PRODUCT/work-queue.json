@@ -1,12 +1,7 @@
 [
   {
-    "id": "verify:post-deploy",
+    "id": "fixture-cleanup",
     "phase": "P10",
-    "note": "After the finish-round push deploys READY: (1) delta cursor healed — sync_state.last_delta_sync_at advanced past 2026-08-04T17:33Z within one 15-min window of the aaacadb0 clamp fix serving (if stuck, pull the new deployment's logs — a second overflow class may exist); (2) litmus RE-TIMING on the repointed deep links (tmp/litmus-timing.mjs) — alert -> /admin/people/[id] -> kickoff must hold the <=3 taps / ~4s kickoff bar; (3) spot-check /admin/oversight + /admin/closings + hubs serve on production."
-  },
-  {
-    "id": "final-report",
-    "phase": "P10",
-    "note": "The finish-round program report: scoreboard (11/11 destinations live), defects found/fixed this round, chips outstanding, what P11 would be."
+    "note": "Fixture person 60610 (+ its CMA action/draft) is LIVE for Matt's real-phone walkthrough (alert SMS + ready text + /admin/people/60610). Clean via tmp/litmus-cleanup.mjs pattern ONLY on Matt's explicit done, or at next-session start."
   }
 ]

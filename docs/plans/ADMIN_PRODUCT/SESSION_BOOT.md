@@ -77,14 +77,14 @@ do not assume slash commands or autoload worked.
   ~4.2s kickoff, real SMS rail, worker draft 44s, zero-residue cleanup) + the
   stale-session deep-link defect Matt's phone found, fixed at 3 redirect sites
   (2b0286b5), deployed, confirmed live. ALL FOUR LOCKS GRANTED.
-- **P9 rolls SHIPPED so far:** Today (+ full absorption: /admin dispatcher,
-  console, broker-dashboard bridge), Messages, People (v2 CMA kickoff),
-  Prospecting (v2 worklist; send stays on the prospect page through the guard
-  chain; locked tab bar now Today · Messages · Prospecting · People, Oversight
-  tab lands with its roll). One family per commit, browser-verified 375+≥1024
-  on real data, cut-list never resurrected.
-- **FINISH-ROUND mode active** (docs/plans/ADMIN_PRODUCT/FINISH-ROUND-PROMPT.md,
-  Matt 2026-08-06): chain every remaining unit back to back. Queue:
-  roll:oversight → roll:remaining-families (Valuations, Closings, Reports,
-  Audiences, Content, Settings — one commit each) → litmus-deeplink-repoint
-  micro-unit → P10 gates + final program report.
+- **PROGRAM COMPLETE (finish round, 2026-08-05, prod c48f653):** all 11 locked
+  destinations LIVE on the v2 language (Today, Messages, People, Prospecting,
+  Valuations, Closings, Oversight, Reports, Audiences, Content, Settings);
+  locked 5-tab bar complete; P10 gates landed (ci:admin-nav-ia parity +
+  ci:admin-contrast computed-AA, both in ci:gates); wake-up deep links repointed
+  to /admin/people/[id] and the litmus RE-TIMED on production (2 taps, address
+  prefilled, ~3.5s kickoff). Bonus incident closed: the 23h-stuck delta cursor
+  (numeric overflow class) — clamp at the mapper chokepoint, heal verified.
+- Remaining housekeeping only: fixture 60610 cleanup on Matt's word (see
+  work-queue.json). Heavy legacy machinery behind All-tools escapes is the
+  natural P11 (see the final report in progress.txt).
