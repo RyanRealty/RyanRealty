@@ -169,6 +169,15 @@ async function processOne(action: CmaActionRow): Promise<{ slug: string; status:
     try {
       const freshPayload = (await getCmaActionPayload(action.id)) ?? payload
       const entries = notifyEntries(freshPayload)
+      // W5.1 person link: a kicked-off build knows its lead — stamp
+      // cmas.person_id so person-scoped reads (getContactCmas, the person
+      // page's Valuations lane) can see the doc. Fill-only; found live
+      // 2026-08-05 with person_id null on a person-kicked CMA.
+      const kickPersonId = entries[0]?.personId
+      if (kickPersonId) {
+        const { stampCmaPersonId } = await import('@/lib/data')
+        await stampCmaPersonId(slug, kickPersonId)
+      }
       if (entries.length > 0) {
         const { queueCmaReadyAlert } = await import('@/lib/crm/broker-alerts')
         for (const entry of entries) {

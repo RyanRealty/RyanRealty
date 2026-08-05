@@ -78,3 +78,24 @@ export async function logCmaTimelineEvent(
     console.warn('[logCmaTimelineEvent]', e instanceof Error ? e.message : String(e))
   }
 }
+
+/**
+ * Stamp cmas.person_id for a kicked-off build (W5.1 person link). The build
+ * engine has no person concept; the kickoff DOES — without this stamp the
+ * person page's Valuations lane cannot see the doc (found live 2026-08-05 on
+ * the litmus fixture: person_id null on a person-kicked CMA). Fills only when
+ * unset — never re-links a row that already belongs to someone.
+ */
+export async function stampCmaPersonId(slug: string, personId: number): Promise<void> {
+  const sb = client()
+  if (!sb) return
+  try {
+    await sb
+      .from('cmas')
+      .update({ person_id: personId })
+      .eq('slug', slug)
+      .is('person_id', null)
+  } catch (e) {
+    console.warn('[stampCmaPersonId]', e instanceof Error ? e.message : String(e))
+  }
+}

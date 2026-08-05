@@ -13,6 +13,9 @@ import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getInboxContactCard } from '@/lib/data/crm/getInboxThread'
 import { getContactActivityFeed } from '@/lib/data/crm/getContactActivityFeed'
 import { getPersonIdByLegacyId } from '@/lib/data/crm/getPersonIdByLegacyId'
+import { getContactCmas } from '@/lib/data/crm/getContactCmas'
+import { getContactBpos } from '@/lib/data/crm/getContactBpos'
+import { getContactProspectStory } from '@/lib/data/crm/getContactProspectStory'
 import { extractAddressCandidate } from '@/lib/crm/seller-intent'
 import { Button, StateWord, TextField } from '@/components/admin/v2'
 import { kickoffCmaFromPerson } from '../actions'
@@ -45,7 +48,12 @@ export default async function PersonPage({
     notFound()
   }
 
-  const feed = await getContactActivityFeed(idNum, 20)
+  const [feed, cmas, bpos, prospectStory] = await Promise.all([
+    getContactActivityFeed(idNum, 30),
+    getContactCmas({ crmPersonId: idNum, emails: card.email ? [card.email] : [] }),
+    getContactBpos({ crmPersonId: idNum }),
+    getContactProspectStory({ personId: idNum }),
+  ])
   const showKickoff = sp.intent === 'cma' || sp.kicked === '1'
   const kicked = sp.kicked === '1'
   // Litmus parity with the legacy sheet (P8 bar: alert → 2 taps, no typing):
@@ -65,14 +73,46 @@ export default async function PersonPage({
           <span style={{ color: 'var(--a-text-2)', fontSize: 'var(--a-text-sm)' }}>assigned {card.assignedBroker}</span>
         ) : null}
       </div>
-      <div style={{ margin: '4px 0 16px', color: 'var(--a-text-2)', fontSize: 'var(--a-text-sm)', fontFamily: 'var(--a-font-mono)' }}>
-        {[card.phone, card.email].filter(Boolean).join(' · ') || 'No contact points'}
+      {/* Contact points are doors (acceptance bar #3): tap to call/email. */}
+      <div style={{ margin: '4px 0 4px', fontSize: 'var(--a-text-sm)', fontFamily: 'var(--a-font-mono)' }}>
+        {card.phone ? (
+          <a href={`tel:${card.phone}`} style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
+            {card.phone}
+          </a>
+        ) : null}
+        {card.phone && card.email ? <span style={{ color: 'var(--a-text-2)' }}> · </span> : null}
+        {card.email ? (
+          <a href={`mailto:${card.email}`} style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
+            {card.email}
+          </a>
+        ) : null}
+        {!card.phone && !card.email ? <span style={{ color: 'var(--a-text-2)' }}>No contact points</span> : null}
+      </div>
+      <div style={{ margin: '0 0 14px', color: 'var(--a-text-2)', fontSize: 'var(--a-text-sm)' }}>
+        {[
+          card.source ? `source ${card.source}` : null,
+          card.price != null ? `budget $${Math.round(card.price).toLocaleString('en-US')}` : null,
+          card.timeframe ?? null,
+          card.tags.length > 0 ? card.tags.slice(0, 4).join(', ') : null,
+        ]
+          .filter(Boolean)
+          .join(' · ') || '—'}
       </div>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
         <Link href={`/admin/messages?c=${card.personId}`}>
           <Button>Message</Button>
         </Link>
+        {card.phone ? (
+          <a href={`tel:${card.phone}`} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+            Call
+          </a>
+        ) : null}
+        {card.email ? (
+          <a href={`mailto:${card.email}`} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+            Email
+          </a>
+        ) : null}
         {!showKickoff ? (
           <Link href={`/admin/people/${card.personId}?intent=cma`}>
             <Button variant="quiet">Build a CMA</Button>
@@ -128,6 +168,54 @@ export default async function PersonPage({
           )}
         </section>
       ) : null}
+
+      {prospectStory.length > 0 && (
+        <section aria-label="Prospect story">
+          <h2 className="av2-lane-head">Prospecting</h2>
+          <ul className="av2-quietlist">
+            {prospectStory.map((s) => (
+              <li key={s.prospectId} className="av2-quiet">
+                <Link href={s.detailHref} className="av2-quiet__name" style={{ textDecoration: 'none', color: 'var(--a-text)', minWidth: 180 }}>
+                  {[s.streetAddress, s.city].filter(Boolean).join(', ') || s.prospectId}
+                </Link>
+                <span style={{ color: 'var(--a-text-2)' }}>
+                  {s.kind === 'expired' ? s.status : 'FSBO'}
+                  {s.lastListPrice != null ? ` · was $${Math.round(s.lastListPrice).toLocaleString('en-US')}` : ''}
+                  {s.priorAgentName ? ` · prior agent ${s.priorAgentName}` : ''}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {(cmas.length > 0 || bpos.length > 0) && (
+        <section aria-label="Valuations">
+          <h2 className="av2-lane-head">Valuations</h2>
+          <ul className="av2-quietlist">
+            {cmas.map((c) => (
+              <li key={c.slug} className="av2-quiet">
+                <Link href={c.reviewUrl} className="av2-quiet__name" style={{ textDecoration: 'none', color: 'var(--a-text)', minWidth: 180 }}>
+                  {c.subjectAddress}
+                </Link>
+                <span className="av2-quiet__ok" style={{ color: c.buildState === 'failed' ? 'var(--a-danger)' : undefined }}>
+                  {c.status}
+                </span>
+                <span className="av2-quiet__fig">{c.valueLine ?? ''}</span>
+              </li>
+            ))}
+            {bpos.map((b) => (
+              <li key={b.slug} className="av2-quiet">
+                <Link href={b.previewUrl} className="av2-quiet__name" style={{ textDecoration: 'none', color: 'var(--a-text)', minWidth: 180 }}>
+                  {b.subjectAddress}
+                </Link>
+                <span className="av2-quiet__ok">{b.status} BPO</span>
+                <span className="av2-quiet__fig">{b.opinionLine ?? ''}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <h2 className="av2-lane-head">Recent activity</h2>
       <ul className="av2-quiet-list" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
