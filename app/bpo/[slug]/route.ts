@@ -71,9 +71,10 @@ export async function GET(request: Request, context: { params: Promise<{ slug: s
   // never blocks the brand display font (same fix as /cma/[slug]).
   const origin = new URL(request.url).origin
   let html = base.replace(/https?:\/\/[^'")\s]+(\/fonts\/[^'")\s]+)/g, `${origin}$1`)
-  // Visitor tracking + email-click identity for raw-HTML documents (same
-  // injection as /cma/[slug]). See public/rr-doc-tracker.js.
-  const tracker = '<script src="/rr-doc-tracker.js" defer></script>'
+  // Visitor tracking + email-click identity for raw-HTML documents, plus the
+  // serve-time interactive layer (same injection as /cma/[slug]; the script
+  // self-guards on documents whose structure it does not recognize).
+  const tracker = '<script src="/rr-doc-tracker.js" defer></script><script src="/rr-cma-doc.js" defer></script>'
   html = html.includes('</body>') ? html.replace('</body>', `${tracker}</body>`) : html + tracker
 
   return new NextResponse(html, {
