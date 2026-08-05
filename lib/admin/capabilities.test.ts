@@ -97,7 +97,7 @@ describe('nav generator projects the capability map', () => {
     expect(nav.map((s) => s.key).sort()).toEqual(['home', 'settings'])
     // …and its Settings section carries only My settings (the account page).
     const settings = nav.find((s) => s.key === 'settings')!
-    expect(settings.children.map((c) => c.label)).toEqual(['My settings'])
+    expect(settings.children.map((c) => c.label)).toEqual(['Home', 'My settings'])
   })
 
   it('every destination + child capability is a real enum member', () => {
@@ -110,11 +110,11 @@ describe('nav generator projects the capability map', () => {
 })
 
 describe('shell projection (one nav source for every surface)', () => {
-  it('renders the nav budget: 35 superuser items, 24 broker items (P9 rolls: Oversight −4+1, Valuations +3 w/ Prospecting leaf −2, Reports net 0, Audiences +1 su-only, Content hub −5 su / net 0 broker)', () => {
+  it('renders the nav budget: 36 superuser items, 25 broker items (P9 end-state: Oversight −4+1, Valuations +3 / Prospecting leaf −2, Reports 0, Audiences +1 su, Content −5 su, Settings hub +1 both)', () => {
     const count = (role: AdminRoleType) =>
       toShellSections(buildNav(ctx(role))).reduce((n, s) => n + s.items.length, 0)
-    expect(count('superuser')).toBe(35)
-    expect(count('broker')).toBe(24)
+    expect(count('superuser')).toBe(36)
+    expect(count('broker')).toBe(25)
   })
 
   it('leaf destinations render as single items; hubs as their children', () => {

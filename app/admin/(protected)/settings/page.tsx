@@ -1,108 +1,107 @@
 // @no-parity — internal admin surface, no public mockup contract
-import { redirect } from 'next/navigation'
-import { getSession } from '@/app/actions/auth'
-import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import { createServiceClient } from '@/lib/supabase/service'
-import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
-import { BROKER_HEADSHOTS } from '@/components/admin/crm/inbox/mobile/mobile-data'
-import MySettingsForm from './MySettingsForm'
-import MobileSettingsScreen from './MobileSettingsScreen'
-import BrokerPushOptIn from '@/components/admin/push/BrokerPushOptIn'
-import pkg from '@/package.json'
+// Settings (P9 roll:remaining-families, IA lock 2026-08-05): configure the
+// machine — one config hub over messaging, compliance, routing, data model,
+// team, and system doors (sequence authoring lives here per the IA lock;
+// monitoring stays in Oversight). Rows are capability-filtered so nothing
+// shown dead-ends. The personal account page moved to /admin/settings/account.
+import Link from 'next/link'
+import { requireAdminPage } from '@/lib/admin/require-admin'
+import { hasCapability, type Capability } from '@/lib/admin/capabilities'
+import { VerdictLine } from '@/components/admin/v2'
 
-export const metadata = { title: 'My settings | Admin' }
 export const dynamic = 'force-dynamic'
 
-/**
- * /admin/settings — §9 My Settings.
- *
- * The signed-in broker edits their own notification preferences and email
- * signature. Superusers see their own row (by email match). Brokers are
- * restricted to their own row. report_viewers have no broker row so the page
- * shows a message.
- *
- * < md this renders the mob-06 FUB-iOS Settings modal structure
- * (MobileSettingsScreen — full-screen sheet, navy header, profile card,
- * icon-circle feature rows, support links) re-skinned to Ryan Realty tokens.
- * Desktop keeps the MySettingsForm surface unchanged.
- */
-export default async function MySettingsPage() {
-  const session = await getSession()
-  const email = session?.user?.email?.trim().toLowerCase()
-  if (!email) redirect('/admin/access-denied')
+type Door = { name: string; href: string; what: string; cap: Capability }
+type Group = { title: string; doors: Door[] }
 
-  const roleRow = await getAdminRoleForEmail(email)
-  if (!roleRow) redirect('/admin/access-denied')
+const GROUPS: Group[] = [
+  {
+    title: 'You',
+    doors: [
+      { name: 'My account', href: '/admin/settings/account', what: 'Notifications, signature, push.', cap: 'settings.account' },
+    ],
+  },
+  {
+    title: 'Messaging',
+    doors: [
+      { name: 'Templates', href: '/admin/crm/settings/templates', what: 'Every canned message, one library.', cap: 'settings.templates' },
+      { name: 'Sequence authoring', href: '/admin/crm/sequences', what: 'Write and edit automated sequences (monitoring lives in Oversight).', cap: 'settings.automations' },
+    ],
+  },
+  {
+    title: 'Compliance',
+    doors: [
+      { name: 'Suppression list', href: '/admin/crm/settings/suppression', what: 'Who we must never text or email, and why.', cap: 'settings.compliance' },
+      { name: 'Block list', href: '/admin/crm/settings/company/block-list', what: 'Company-wide hard blocks.', cap: 'settings.compliance' },
+    ],
+  },
+  {
+    title: 'Routing & intake',
+    doors: [
+      { name: 'Assignment', href: '/admin/crm/settings/assignment', what: 'Who gets which new lead.', cap: 'settings.routing' },
+      { name: 'Lead flows', href: '/admin/crm/settings/lead-flows', what: 'Per-source intake behavior.', cap: 'settings.routing' },
+      { name: 'Ponds', href: '/admin/crm/settings/ponds', what: 'Shared unassigned pools.', cap: 'settings.routing' },
+    ],
+  },
+  {
+    title: 'Data model',
+    doors: [
+      { name: 'Stages', href: '/admin/crm/settings/stages', what: 'The pipeline vocabulary.', cap: 'settings.stages' },
+      { name: 'Tags', href: '/admin/crm/settings/tags', what: 'Freeform labels, governed.', cap: 'settings.stages' },
+      { name: 'Custom fields', href: '/admin/crm/settings/custom-fields', what: 'Extra person fields.', cap: 'settings.stages' },
+      { name: 'Groups', href: '/admin/crm/settings/groups', what: 'People groupings.', cap: 'settings.stages' },
+      { name: 'Areas', href: '/admin/crm/settings/areas', what: 'Geography vocabulary for people.', cap: 'settings.stages' },
+      { name: 'Appointments', href: '/admin/crm/settings/appointments', what: 'Appointment types + outcomes.', cap: 'settings.appointments' },
+    ],
+  },
+  {
+    title: 'Team & company',
+    doors: [
+      { name: 'Brokers', href: '/admin/brokers', what: 'Roster, profiles, licenses.', cap: 'settings.profile' },
+      { name: 'Site users', href: '/admin/users', what: 'Admin access and roles.', cap: 'settings.team' },
+      { name: 'Company', href: '/admin/crm/settings/company', what: 'Company record + registration.', cap: 'settings.company' },
+    ],
+  },
+  {
+    title: 'System',
+    doors: [
+      { name: 'CRM settings launchpad', href: '/admin/crm/settings', what: 'The full 19-card configuration surface.', cap: 'settings.crm' },
+      { name: 'Audit log', href: '/admin/audit-log', what: 'Who changed what, when.', cap: 'audit.view' },
+    ],
+  },
+]
 
-  // Find the matching broker row by email
-  const sb = createServiceClient()
-  const { data: broker } = await sb
-    .from('brokers')
-    .select('id, display_name, email, notify_new_leads, notify_deal_activity, notify_task_due, notify_sms, email_signature, gmail_signature_html, gmail_signature_synced_at')
-    .eq('email', email)
-    .maybeSingle()
-
-  // Mobile audit P2-8 (2026-07-02): the profile card wears the same broker
-  // headshot the navy CRM headers use — the real headshot for the three
-  // brokers, falling back to the OAuth avatar (then initials) for others.
-  const crmSlug = CRM_BROKER_BY_EMAIL[email] ?? null
-  const avatarUrl: string | null =
-    (crmSlug ? BROKER_HEADSHOTS[crmSlug] : null) ??
-    session?.user?.user_metadata?.avatar_url ??
-    session?.user?.user_metadata?.picture ??
-    null
-
-  const mobileBroker = broker
-    ? {
-        id: broker.id as string,
-        displayName: (broker.display_name as string | null) ?? email,
-        notifyNewLeads: (broker.notify_new_leads as boolean | null) ?? true,
-        notifyDealActivity: (broker.notify_deal_activity as boolean | null) ?? true,
-        notifyTaskDue: (broker.notify_task_due as boolean | null) ?? true,
-        notifySms: (broker.notify_sms as boolean | null) ?? false,
-        emailSignature: (broker.email_signature as string | null) ?? '',
-      }
-    : null
+export default async function SettingsHubPage() {
+  const ctx = await requireAdminPage('settings.view')
+  const groups = GROUPS.map((g) => ({ ...g, doors: g.doors.filter((d) => hasCapability(ctx, d.cap)) })).filter(
+    (g) => g.doors.length > 0,
+  )
+  const total = groups.reduce((n, g) => n + g.doors.length, 0)
 
   return (
-    <>
-      {/* < md — mob-06 Settings modal structure */}
-      <MobileSettingsScreen
-        broker={mobileBroker}
-        role={roleRow.role}
-        email={email}
-        avatarUrl={avatarUrl}
-        appVersion={pkg.version}
-      />
+    <main className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
+      <h1 style={{ fontSize: 'var(--a-text-xl)', fontWeight: 600, letterSpacing: '-0.01em' }}>Settings</h1>
+      <div style={{ margin: '8px 0 20px' }}>
+        <VerdictLine tone="ok">
+          <b>Configure the machine.</b> {total} doors you hold, grouped by job.
+        </VerdictLine>
+      </div>
 
-      {/* md+ — the desktop My Settings surface, unchanged */}
-      <main className="mx-auto hidden max-w-2xl px-4 py-8 sm:px-6 md:block">
-        <h1 className="text-2xl font-bold text-foreground mb-1">My settings</h1>
-        <p className="text-sm text-muted-foreground mb-8">
-          Notification preferences and email signature for {email}.
-        </p>
-
-        {!broker ? (
-          <div className="rounded-xl border border-border bg-card px-6 py-8 text-sm text-muted-foreground text-center">
-            No broker profile found for {email}. Settings are only available for active brokers.
-          </div>
-        ) : (
-          <MySettingsForm
-            brokerId={broker.id}
-            displayName={broker.display_name ?? email}
-            notifyNewLeads={broker.notify_new_leads ?? true}
-            notifyDealActivity={broker.notify_deal_activity ?? true}
-            notifyTaskDue={broker.notify_task_due ?? true}
-            notifySms={broker.notify_sms ?? false}
-            emailSignature={broker.email_signature ?? ''}
-            gmailSignatureHtml={broker.gmail_signature_html ?? null}
-            gmailSignatureSyncedAt={broker.gmail_signature_synced_at ?? null}
-          />
-        )}
-
-        {/* W5.5 leg b — the durable web-push channel opt-in, next to the SMS toggle. */}
-        <BrokerPushOptIn />
-      </main>
-    </>
+      {groups.map((g) => (
+        <section key={g.title} aria-label={g.title}>
+          <h2 className="av2-lane-head">{g.title}</h2>
+          <ul className="av2-quietlist">
+            {g.doors.map((d) => (
+              <li key={d.href} className="av2-quiet">
+                <Link href={d.href} className="av2-quiet__name" style={{ textDecoration: 'none', color: 'var(--a-text)', minWidth: 190 }}>
+                  {d.name}
+                </Link>
+                <span style={{ color: 'var(--a-text-2)' }}>{d.what}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </main>
   )
 }

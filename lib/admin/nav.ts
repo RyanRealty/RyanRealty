@@ -254,7 +254,10 @@ export const DESTINATIONS: NavDestination[] = [
     capability: 'settings.view',
     defaultOpen: false,
     children: [
-      { label: 'My settings', href: '/admin/settings', icon: 'user-cog', capability: 'settings.account' },
+      // P9 Settings roll: /admin/settings is the config hub; the personal
+      // account page moved to /admin/settings/account.
+      { label: 'Home', href: '/admin/settings', icon: 'user-cog', capability: 'settings.view' },
+      { label: 'My settings', href: '/admin/settings/account', icon: 'user-cog', capability: 'settings.account' },
       { label: 'Templates', href: '/admin/crm/settings/templates', icon: 'file-text', capability: 'settings.templates' },
       { label: 'Workflows', href: '/admin/crm/sequences', icon: 'zap', capability: 'settings.automations' },
       { label: 'CRM settings', href: '/admin/crm/settings', icon: 'gauge', capability: 'settings.crm' },
