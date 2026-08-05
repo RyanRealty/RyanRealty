@@ -112,12 +112,13 @@ export const DESTINATIONS: NavDestination[] = [
   {
     key: 'people',
     label: 'People',
-    href: '/admin/crm',
+    // P9 roll:people (IA lock 2026-08-05): search-first lookup is the landing.
+    href: '/admin/people',
     icon: 'users',
     capability: 'people.view',
     defaultOpen: true,
     children: [
-      { label: 'Contacts', href: '/admin/crm', icon: 'users', capability: 'people.view', tab: { order: 3, label: 'People' } },
+      { label: 'Search', href: '/admin/people', icon: 'users', capability: 'people.view', tab: { order: 3, label: 'People' } },
       { label: 'Pipeline', href: '/admin/crm/deals', icon: 'layers', capability: 'people.view', tab: { order: 4, label: 'Deals' } },
       { label: 'Activity', href: '/admin/crm/activity', icon: 'activity', capability: 'people.view', tab: { order: 5 } },
       { label: 'Tasks', href: '/admin/crm/tasks', icon: 'list-todo', capability: 'tasks.use' },
@@ -125,6 +126,7 @@ export const DESTINATIONS: NavDestination[] = [
       { label: 'Approvals', href: '/admin/crm/approvals', icon: 'clipboard-check', capability: 'people.view' },
       { label: 'Referrals', href: '/admin/crm/referrals', icon: 'handshake', capability: 'people.view' },
       { label: 'Reporting', href: '/admin/crm/reporting', icon: 'bar-chart', capability: 'people.view' },
+      { label: 'Full list', href: '/admin/crm', icon: 'list-todo', capability: 'people.view' },
       // Cut from the menu, still linked live: New contact (FAB quick action),
       // Compose email (FAB + campaigns page), Alerts & reports (dashboard
       // delivery panel + per-contact panel), Import (CRM settings hub + people list).

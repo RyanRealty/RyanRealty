@@ -113,8 +113,8 @@ describe('shell projection (one nav source for every surface)', () => {
   it('renders the D9.2 budget: 40 superuser items, 22 broker items (2026-08-03 added the DSCR deals nav child, capability financials.view, superuser-only, so superuser rose one from 39 and broker held at 22; W10.2 added the Content library nav item, capability content.view, granted to both roles, so both counts rose one from 38/21; Wave D had added the CRM Referrals child; was 37/20 after spec 07 folded 3 expired/FSBO nav children into 1 Prospecting hub)', () => {
     const count = (role: AdminRoleType) =>
       toShellSections(buildNav(ctx(role))).reduce((n, s) => n + s.items.length, 0)
-    expect(count('superuser')).toBe(40)
-    expect(count('broker')).toBe(22)
+    expect(count('superuser')).toBe(41)
+    expect(count('broker')).toBe(23)
   })
 
   it('leaf destinations render as single items; hubs as their children', () => {
@@ -133,7 +133,7 @@ describe('shell projection (one nav source for every surface)', () => {
       expect(tabs.map((t) => t.href)).toEqual([
         '/admin/today',
         '/admin/messages',
-        '/admin/crm',
+        '/admin/people',
         '/admin/crm/deals',
         '/admin/crm/activity',
       ])
