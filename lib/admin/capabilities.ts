@@ -33,6 +33,7 @@ export type Capability =
   | 'prospecting.view'
   | 'valuations.view'
   | 'oversight.view'
+  | 'audiences.view'
   | 'transactions.view'
   | 'performance.view'
   | 'content.view'
@@ -101,6 +102,10 @@ export const CAPABILITY_ROLES: Record<Capability, AdminRoleType[]> = {
   // sequences, week strip, parked steps. System plumbing lanes render for the
   // principal only (page-level branch, same scoping the data reads carry).
   'oversight.view': ['broker'],
+  // P9 Audiences destination: cadence-send administration is a principal
+  // surface — the doors it fronts (subscriptions/segments/compose admin) are
+  // superuser-gated today.
+  'audiences.view': [],
   'transactions.view': ['broker'],
   // D3's end-state grants brokers a SCOPED own-book Performance overview — but that
   // page doesn't exist yet (spec 06). The only Performance surface today is

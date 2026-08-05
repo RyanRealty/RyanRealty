@@ -110,10 +110,10 @@ describe('nav generator projects the capability map', () => {
 })
 
 describe('shell projection (one nav source for every surface)', () => {
-  it('renders the nav budget: 39 superuser items, 24 broker items (P9: Oversight absorbed 4 items and added 1; Valuations became its own 3-item destination while Prospecting went leaf, net +1 both roles)', () => {
+  it('renders the nav budget: 40 superuser items, 24 broker items (P9 rolls: Oversight −4+1, Valuations +3 w/ Prospecting leaf −2, Reports net 0, Audiences leaf +1 superuser-only)', () => {
     const count = (role: AdminRoleType) =>
       toShellSections(buildNav(ctx(role))).reduce((n, s) => n + s.items.length, 0)
-    expect(count('superuser')).toBe(39)
+    expect(count('superuser')).toBe(40)
     expect(count('broker')).toBe(24)
   })
 

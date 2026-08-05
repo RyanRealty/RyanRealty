@@ -217,6 +217,17 @@ export const DESTINATIONS: NavDestination[] = [
     ],
   },
   {
+    // P9 Audiences roll (IA lock 2026-08-05): manage what we send to whom on
+    // cadence — subscriptions, alerts, newsletter list, segments, cohort
+    // compose behind one home. Leaf; the doors live on the page.
+    key: 'audiences',
+    label: 'Audiences',
+    href: '/admin/audiences',
+    icon: 'mail',
+    capability: 'audiences.view',
+    defaultOpen: false,
+  },
+  {
     key: 'content',
     label: 'Content',
     href: '/admin/listings',

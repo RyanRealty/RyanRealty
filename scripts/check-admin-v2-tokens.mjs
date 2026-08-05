@@ -41,6 +41,7 @@ const SCAN_DIRS = [
   'app/admin/(protected)/valuations',
   'app/admin/(protected)/closings',
   'app/admin/(protected)/reports/page.tsx',
+  'app/admin/(protected)/audiences',
 ]
 const EXT = new Set(['.ts', '.tsx', '.css'])
 
