@@ -91,7 +91,9 @@ function shell(title: string, body: string): string {
     align-items:center; justify-content:center; font-weight:700; color:${NAVY}; font-size:13px; }
 </style>
 </head>
-<body><div class="card">${body}</div></body>
+<body><div class="card">${body}</div>
+<script src="/rr-doc-tracker.js" defer></script>
+</body>
 </html>`
 }
 

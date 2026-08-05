@@ -50,8 +50,12 @@ const ALLOWED_EXACT_ORIGINS = new Set<string>([
   'https://ryanrealty.vercel.app', // staging-host-ok: incoming CORS origin (not an outgoing URL); keep through cutover
 ])
 
-function isAllowedOrigin(origin: string | null): boolean {
+function isAllowedOrigin(origin: string | null, selfOrigin?: string | null): boolean {
   if (!origin) return false
+  // Same-origin posts always pass: only pages WE serve carry our own origin
+  // (rr-doc-tracker on /cma|/bpo documents, and any local production build —
+  // the exact-origin list alone 403'd every localhost verification run).
+  if (selfOrigin && origin === selfOrigin) return true
   if (ALLOWED_EXACT_ORIGINS.has(origin)) return true
   try {
     const u = new URL(origin)
@@ -212,7 +216,8 @@ function readIpGeo(req: NextRequest): { country?: string; region?: string; city?
 
 export async function POST(request: NextRequest) {
   const origin = request.headers.get('origin')
-  if (!isAllowedOrigin(origin)) {
+  const selfOrigin = new URL(request.url).origin
+  if (!isAllowedOrigin(origin, selfOrigin)) {
     return jsonError(403, 'Origin not allowed', origin)
   }
 

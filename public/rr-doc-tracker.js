@@ -72,5 +72,38 @@
     }
     if (track && track.finally) track.finally(finish)
     else finish()
+
+    // Click tracking (Matt 2026-08-05: the document tracks every click like
+    // the site's pages). One delegated listener; every anchor tap posts a
+    // cta_click with the destination + the link text, same endpoint, same
+    // essential-consent record. Fails silent; navigation is never blocked.
+    document.addEventListener(
+      'click',
+      function (ev) {
+        try {
+          var el = ev.target
+          while (el && el !== document && el.tagName !== 'A') el = el.parentNode
+          if (!el || el.tagName !== 'A') return
+          var href = el.getAttribute('href') || ''
+          if (!href || href.charAt(0) === '#') return
+          fetch('/api/visitors/track', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            keepalive: true,
+            credentials: 'same-origin',
+            body: JSON.stringify({
+              sessionId: sid,
+              sourceDomain: 'ryan-realty.com',
+              eventType: 'cta_click',
+              pageUrl: cleanUrl,
+              pageTitle: (el.textContent || '').trim().slice(0, 80) || href.slice(0, 80),
+              pageCategory: 'client-document',
+              consent: 'essential',
+            }),
+          }).catch(function () {})
+        } catch (e) { /* never break a click */ }
+      },
+      true,
+    )
   } catch (e) { /* never break the document */ }
 })()
