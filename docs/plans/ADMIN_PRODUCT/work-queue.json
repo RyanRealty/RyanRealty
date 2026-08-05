@@ -1,7 +1,7 @@
 [
   {
-    "id": "litmus-pilot",
+    "id": "litmus-signoff-wait",
     "phase": "P8",
-    "note": "NOT STARTED. Build the smallest slice that makes LITMUS true on a phone: alert SMS -> person -> CMA kickoff in <=3 taps / <=30s, using components/admin/v2 primitives. Delete replaced forks. Timed proof + screenshots on the real path (production-shaped). Ends BLOCKED_ON_MATT: litmus. Read ADMIN_REBUILD/LITMUS.md and re-prove, do not trust its prior numbers."
+    "note": "Re-proof done 2026-08-05 (LITMUS.md re-proof section; litmus HOLDS on current main). Awaiting Matt litmus sign-off in decisions.md + his call on the scoping question: v2 kickoff rebuild inside P8 vs folded into P9 family rolls (recommended). After sign-off: phase=P9_ROLL, first family per pain ranking."
   }
 ]

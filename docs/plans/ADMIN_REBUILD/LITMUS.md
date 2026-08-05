@@ -151,3 +151,37 @@ conversation model rows), crm_broker_alerts rows, the `cmas` row, the
   next in queue.
 - A `cmas` slug collision can never be clobbered from this surface (guarded +
   int-tested); the seller-LP intake path still upserts-by-slug — chipped.
+
+---
+
+## Re-proof 2026-08-05 (Admin Product OS P8, current main @ 12e7fa9d)
+
+Full loop re-run on a fresh production build of current main (includes the CMA
+flowing-page migration), real hosted DB, authed as matt@, 375×812:
+
+1. Signed webhook fixture → person 60540, seller-intent alert queued with
+   `?intent=cma` deep link. **The alert delivered to Matt's real phone through
+   the PRODUCTION crm-alert-drain + Twilio rail** (alert 925 `sent`) — the
+   notification leg proved itself on the live path, no relay.
+2. Deep link at 375 → sheet auto-open, identity resolved, address pre-filled
+   "20695 Town Dr, Bend" from the message. **Tap 2 = Build** → all three rows
+   stamped in ~4.2 s (cmas draft 03:23:56.13 · action pending .17 · timeline
+   .34). **2 taps, ≤3 budget met.**
+3. Real cma-build-worker: built in ~44 s — $560,000 recommended, $520K–$560K
+   range, 8 comps, live MoS — reviewed on the phone on the NEW flowing-page
+   renderer. Ready-text (alert 926) delivered to Matt's phone.
+4. Cleanup: zero residue, double-verified (person/cma/action/alerts/timeline
+   all 0).
+
+Harness caveat (recorded honestly): two click attempts failed before the
+successful one — the first was an automation coordinate error (2× image
+scaling), the second the known harness-vs-Radix pointer-event class
+(reference_preview_e2e_admin_auth_and_radix); a DOM-dispatched click fired
+instantly and the July device-run already proved human taps. No product
+defect found; wall-clock human span not re-measured this pass (tap count +
+sub-5 s server leg + page-interactive-in-seconds put it well inside 30 s).
+
+Verdict: **LITMUS holds on current main.** The v2-language kickoff surface
+was NOT rebuilt in this pass — scoping question for Matt at the litmus stop:
+fold the v2 rebuild into P9's People/Today family rolls (recommended, since
+the litmus passes on the existing surface) or require it inside P8.

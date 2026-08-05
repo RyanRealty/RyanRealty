@@ -5,7 +5,7 @@
     "ia": "2026-08-05",
     "visual": "2026-08-05"
   },
-  "awaiting_lock": null,
+  "awaiting_lock": "litmus",
   "current_process": null,
-  "updated_at": "2026-08-05T05:00:00Z"
+  "updated_at": "2026-08-05T05:50:00Z"
 }
