@@ -148,17 +148,25 @@ describe('buildCrmPeopleQuery — AST translation', () => {
     expect(orCalls(calls)).toContain('not.tags.cs.{"compliance:hard-stop"}')
   })
 
-  it('expands a free-text q across name + emails + phones (no contact-point cap)', () => {
+  it('compiles free-text q to the search_blob (casts are illegal in or(); no contact-point cap)', () => {
     const { sb, calls } = makeMockSb()
-    const ast: CrmSegment = { type: 'group', op: 'and', nodes: [{ field: 'q', value: 'jane' }] }
+    const ast: CrmSegment = { type: 'group', op: 'and', nodes: [{ field: 'q', value: 'Jane' }] }
     buildCrmPeopleQuery(sb, ast, null)
     const ors = orCalls(calls)
-    // The %...% pattern carries LIKE wildcards, so PostgREST-quotes the value.
-    expect(ors).toContain(
-      'or(name.ilike."%jane%",emails::text.ilike."%jane%",phones::text.ilike."%jane%")',
-    )
+    // Lowercased (the blob is lowercased at generation); no ::text casts —
+    // PostgREST's or() grammar rejects them (chip task_cb8a89a8).
+    expect(ors).toContain('or(search_blob.ilike."%jane%")')
+    expect(ors.join()).not.toContain('::text')
     // No .in() id-cap call (the old 200-id contact-point path).
     expect(calls.find((c) => c.method === 'in')).toBeUndefined()
+  })
+
+  it('a phone-ish q also searches its stripped digits against the blob', () => {
+    const { sb, calls } = makeMockSb()
+    const ast: CrmSegment = { type: 'group', op: 'and', nodes: [{ field: 'q', value: '500-555-0006' }] }
+    buildCrmPeopleQuery(sb, ast, null)
+    const ors = orCalls(calls)
+    expect(ors).toContain('or(search_blob.ilike."%500-555-0006%",search_blob.ilike."%5005550006%")')
   })
 
   it('expands a between created condition into two COALESCE(fub_created_at, created_at) bounds', () => {

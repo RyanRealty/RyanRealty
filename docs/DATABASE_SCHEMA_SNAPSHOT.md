@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-08-05T16:01:38.321Z
+**Generated:** 2026-08-05T17:13:22.624Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -417,7 +417,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 12,617**
+### `market_stats_cache` · **rows ≈ 13,902**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -594,7 +594,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 252**
+### `cmas` · **rows ≈ 255**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -742,7 +742,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_email_claim_at` | timestamp with time zone | yes |  |
 | `outreach_email_idempotency_key` | text | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 635**
+### `marketing_brain_actions` · **rows ≈ 637**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -1996,6 +1996,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `subdivision` | text | yes |  |
 | `is_resort` | boolean | yes |  |
 | `neighborhood_source` | text | yes |  |
+| `search_blob` | text | yes |  |
 
 ### `crm_people_collaborators`
 

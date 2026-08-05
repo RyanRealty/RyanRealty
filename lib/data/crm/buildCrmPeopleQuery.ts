@@ -14,8 +14,11 @@
  *      as a hard .eq('assigned_broker', slug) AND-ed onto whatever the AST says.
  *      A hand-crafted AST can never widen past the caller's book.
  *   2. .eq('deleted', false) baselined on every query (no soft-deleted rows leak).
- *   3. No 200-id contact-point cap. Free-text q searches name + the emails/phones
- *      jsonb directly via PostgREST `or`, so a phone/email match returns ALL hits.
+ *   3. No 200-id contact-point cap. Free-text q searches the generated
+ *      `search_blob` column (name + emails + phones + digits-only phones,
+ *      migration 20260805180000) via PostgREST `or`, so a phone/email match
+ *      returns ALL hits. (::text casts inside or() are illegal — the original
+ *      q compilation errored on every free-text segment, chip task_cb8a89a8.)
  *
  * The AST -> PostgREST translation uses PostgREST's `or=(...)` / `and=(...)` filter
  * grammar (via .or(string, { referencedTable })). For an AND group we apply each
@@ -160,13 +163,19 @@ function conditionFragments(cond: CrmCondition): { joiner: 'and' | 'or'; fragmen
       }
     }
     case 'q': {
-      // Search across name + the emails/phones jsonb (cast to text) — no 200-id
-      // contact-point cap. PostgREST allows ilike on a jsonb column cast to text.
-      const pat = pgrstLikePattern(cond.value)
-      return {
-        joiner: 'or',
-        fragments: [`name.ilike.${pat}`, `emails::text.ilike.${pat}`, `phones::text.ilike.${pat}`],
+      // Search the generated search_blob (migration 20260805180000): name +
+      // emails + phones + digits-only phones in one lowercased text column.
+      // The previous `emails::text.ilike` fragments were ILLEGAL in PostgREST's
+      // or() grammar (casts are rejected — chip task_cb8a89a8; verified live:
+      // the whole filter errored). A phone-ish term also searches its stripped
+      // digits so "500-555" matches a stored "+15005550006".
+      const pat = pgrstLikePattern(cond.value.toLowerCase())
+      const digits = cond.value.replace(/\D/g, '')
+      const fragments = [`search_blob.ilike.${pat}`]
+      if (digits.length >= 4 && digits !== cond.value.trim()) {
+        fragments.push(`search_blob.ilike.${pgrstLikePattern(digits)}`)
       }
+      return { joiner: 'or', fragments }
     }
     case 'custom': {
       const key = cond.key
