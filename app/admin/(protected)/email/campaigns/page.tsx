@@ -40,7 +40,7 @@ type CampaignViewRow = {
 export default async function AdminEmailCampaignsPage() {
   await requireAdminPage('content.marketing')
   const session = await getSession()
-  if (!session?.user) redirect('/auth-error?next=/admin')
+  if (!session?.user) redirect('/admin/login?next=%2Fadmin%2Femail%2Fcampaigns')
   const role = await getAdminRoleForEmail(session.user.email)
   if (!role) redirect('/admin/access-denied')
 

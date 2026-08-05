@@ -44,7 +44,11 @@ export default async function AdminProtectedLayout({
     const rawSearch = h.get('x-search') ?? ''
     const search = rawSearch.startsWith('?') ? rawSearch : ''
     const next = safeRedirectPath(`${h.get('x-pathname') ?? ''}${search}`, '/admin')
-    redirect(`/auth-error?next=${encodeURIComponent(next)}`)
+    // Straight to the broker login, which completes back to `next` (RC5).
+    // /auth-error is for CALLBACK failures only — sending a signed-out broker
+    // there dead-ends an SMS deep link on a "Sign-in issue" page (litmus
+    // defect, Matt's phone 2026-08-05: stale session + alert tap = wall).
+    redirect(`/admin/login?next=${encodeURIComponent(next)}`)
   }
   const adminRole = await getAdminRoleForEmail(session.user.email)
   if (!adminRole) {

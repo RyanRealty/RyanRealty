@@ -103,7 +103,9 @@ export async function requireAdminPage(cap: Capability): Promise<AdminCapability
   const ctx = await getAdminCapabilityContext()
   if (!ctx) {
     const next = safeRedirectPath(await currentPath(), '/admin')
-    redirect(`/auth-error?next=${encodeURIComponent(next)}`)
+    // Broker login (which completes back to `next`), not the /auth-error
+    // dead-end — same litmus defect class as the (protected) layout gate.
+    redirect(`/admin/login?next=${encodeURIComponent(next)}`)
   }
   if (!hasCapability(ctx, cap)) {
     redirect(`/admin/access-denied?cap=${encodeURIComponent(cap)}`)
