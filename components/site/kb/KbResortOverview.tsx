@@ -269,21 +269,11 @@ export function KbResortOverview({
                       {t.details.map((d, j) => (
                         <div key={j} className="ov-fact">
                           <dt>{d.label}</dt>
-                          {/* "Confirmed at office" read as a placeholder with
-                              no next step — the club's own phone (below the
-                              tier cards) answered it, but nothing pointed a
-                              reader there (design-audit P3). Link straight
-                              to it when the value is this unpublished-price
-                              placeholder and a number exists. */}
-                          {d.value === 'Confirmed at office' && content.membershipOfficePhone ? (
-                            <dd className="mono-num">
-                              <a href={`tel:${content.membershipOfficePhone.replace(/[^0-9+]/g, '')}`}>
-                                Ask the club · {content.membershipOfficePhone}
-                              </a>
-                            </dd>
-                          ) : (
-                            <dd className="mono-num">{d.value}</dd>
-                          )}
+                          {/* One value per row, or an em-dash. The club's number
+                              lives ONCE, at the foot of the block — repeating it
+                              per row printed "Ask the club · <phone>" six times
+                              on Tetherow (C-08). */}
+                          <dd className="mono-num">{d.value}</dd>
                         </div>
                       ))}
                     </dl>
@@ -293,7 +283,7 @@ export function KbResortOverview({
               ))}
             </div>
             {content.membershipOfficePhone ? (
-              <p className="ov-note mono-num">Membership office: {content.membershipOfficePhone}</p>
+              <p className="ov-note mono-num">Membership questions: {name} membership office <a href={`tel:${content.membershipOfficePhone.replace(/[^0-9+]/g, '')}`}>{content.membershipOfficePhone}</a></p>
             ) : null}
           </div>
         </section>

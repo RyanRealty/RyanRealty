@@ -305,11 +305,11 @@
       "details": [
         {
           "label": "Initiation",
-          "value": "Confirmed at office"
+          "value": "\u2014"
         },
         {
           "label": "Monthly dues",
-          "value": "Confirmed at office"
+          "value": "\u2014"
         },
         {
           "label": "Food + bev minimum",
@@ -320,7 +320,7 @@
           "value": "Included"
         }
       ],
-      "waitlist_status": "Typically waitlisted · ask current status",
+      "waitlist_status": "Typically waitlisted",
       "featured": true
     },
     {
@@ -331,11 +331,11 @@
       "details": [
         {
           "label": "Initiation",
-          "value": "Confirmed at office"
+          "value": "\u2014"
         },
         {
           "label": "Monthly dues",
-          "value": "Confirmed at office"
+          "value": "\u2014"
         },
         {
           "label": "F&B minimum",
@@ -346,7 +346,7 @@
           "value": "Pay per round"
         }
       ],
-      "waitlist_status": "Generally open · check current cap",
+      "waitlist_status": "Generally open",
       "featured": false
     },
     {
@@ -357,11 +357,11 @@
       "details": [
         {
           "label": "Initiation",
-          "value": "Confirmed at office"
+          "value": "\u2014"
         },
         {
           "label": "Monthly dues",
-          "value": "Confirmed at office"
+          "value": "\u2014"
         },
         {
           "label": "F&B minimum",
