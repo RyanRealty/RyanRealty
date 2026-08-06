@@ -1083,10 +1083,16 @@ html.lenis, html.lenis body{height:auto;}
 
 /* Breadcrumb overlay variant — sits OVER the hero (not a cream strip pushing it down) */
 .kb-root{position:relative;}
-.kb-root .kb-bc.overlay{position:absolute;top:60px;left:0;right:0;z-index:80;background:transparent;border-bottom:0;pointer-events:none;}
+/* top clears the fixed .topbar, whose height is content-driven (logo + 16px
+   padding): measured 66px at 375/768 and 67.9px at 1280 on 2026-08-06. 76px
+   leaves ~8px of air at every width. The old 60px (and the 52px mobile
+   override below it) printed the trail UNDER the wordmark — 14px of overlap at
+   375px. Same defect the `belowNav` prop fixed for no-hero pages on
+   2026-07-15; the ten `overlay` callers never got it (C-14). */
+.kb-root .kb-bc.overlay{position:absolute;top:76px;left:0;right:0;z-index:80;background:transparent;border-bottom:0;pointer-events:none;}
 .kb-root .kb-bc.overlay .wrap{pointer-events:auto;padding-top:6px;padding-bottom:6px;}
 .kb-root .kb-bc.overlay .kb-bc-link,.kb-root .kb-bc.overlay .kb-bc-current,.kb-root .kb-bc.overlay .kb-bc-sep{text-shadow:0 1px 5px rgba(0,0,0,.55);}
-@media(max-width:760px){.kb-root .kb-bc.overlay{top:52px;}}
+/* no mobile override: the topbar is the same 66px at 375 as at 768. */
 
 /* ===== KB redesigns: open houses (editorial) + testimonials (animated stars) ===== */
 /* --- KbOpenHouses --- */
