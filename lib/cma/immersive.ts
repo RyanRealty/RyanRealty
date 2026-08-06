@@ -101,7 +101,7 @@ function seasonalityScene(a: ImmersiveArgs): string {
       <p class="lede r">${int(x.totalClosed)} single-family sales closed in ${esc(a.subject.city)} over the last ${dec(x.yearsCovered, 1)} years, grouped by close month. Each bar is the median days those homes took to go pending.</p>
       <div class="szn r" role="img" aria-label="Median days to pending by close month">${bars}</div>
       <p class="body r">Fastest: ${esc(fastLine)}. Slowest: ${esc(slowLine)}. Months with fewer than 12 sales make no claim.</p>
-      <div class="src r">${esc(x.source)}</div>
+      
     </div>
   </section>`
 }
@@ -170,26 +170,36 @@ function planScene(a: ImmersiveArgs): string {
       <h2 class="h r">${int(p.items.length)} things this home needs, measured</h2>
       <p class="lede r">Every line comes from a number in this report.</p>
       <div class="plan-grid">${cards}</div>
-      <div class="src r">${esc(p.source)}</div>
+      
     </div>
   </section>`
 }
 
-function equityScene(a: ImmersiveArgs): string {
-  const e = a.equity
-  if (!e) return ''
-  const up = e.gainDollars >= 0
+
+function sourcesScene(a: ImmersiveArgs): string {
+  const rows: Array<[string, string | null | undefined]> = [
+    ['Comparable sales', `Supabase listings, closed sales near ${a.subject.streetAddress}, adjusted for close date and living area`],
+    ['Market conditions', a.market ? `market_stats_cache ${a.market.geoSlug}, ${a.market.periodStart} to ${a.market.periodEnd}, live inventory ${a.market.pulseUpdatedAt ?? a.market.computedAt ?? ''}` : null],
+    [`${a.subdivisionStory?.facts.name ?? 'Subdivision'} sales`, a.subdivisionStory?.facts.source],
+    ['When homes go pending', a.extras?.seasonality?.source],
+    ['Active competition', a.extras?.band?.source],
+    ['Recent subdivision sales', a.extras?.subdivisionPulse?.source],
+    ['How buyers paid', a.extras?.financing?.source],
+    ['Photo counts', a.extras?.photoBench?.source],
+    ['Land use and rental rules', a.development || a.rental ? 'County and city code as published, read for this parcel' : null],
+  ]
+  const items = rows
+    .filter(([, v]) => Boolean(v))
+    .map(([k, v]) => `<div class="srcrow"><div class="srck">${esc(k)}</div><div class="srcv">${esc(String(v))}</div></div>`)
+    .join('')
+  if (!items) return ''
   return `
-  <section class="sc sc-navy" id="what-you-own">
+  <section class="sc sc-cream tight" id="sources">
     <div class="in">
-      <div class="kick r">What you own</div>
-      <h2 class="h r">You bought this home for ${usd(e.purchasePrice)} in ${dateLong(e.purchaseDate)}.</h2>
-      <div class="stat3 r">
-        <div class="st"><div class="st-n" data-count>${usd(Math.abs(e.gainDollars))}</div><div class="st-l">${up ? 'above' : 'below'} what you paid, at the recommended price</div></div>
-        <div class="st"><div class="st-n">${up ? '' : '-'}${dec(Math.abs(e.gainPct), 1)}%</div><div class="st-l">change over ${dec(e.yearsHeld, 1)} years of ownership</div></div>
-        ${e.annualizedPct != null ? `<div class="st"><div class="st-n">${e.annualizedPct < 0 ? '-' : ''}${dec(Math.abs(e.annualizedPct), 1)}%</div><div class="st-l">a year, compounded</div></div>` : ''}
-      </div>
-      <div class="src r">${esc(e.source)}</div>
+      <div class="kick r">Where these numbers come from</div>
+      <h2 class="h r">Every figure, and its source</h2>
+      <div class="srcgrid r">${items}</div>
+      ${a.subdivisionStory?.model ? `<p class="body r">The ${esc(a.subdivisionStory.facts.name)} section was written by ${esc(a.subdivisionStory.model)} from those sales, the listing remarks, and the photos of the ${int(a.subdivisionStory.photoSalesReviewed)} most recent sales. Every number in it appears in the table above it.</p>` : ''}
     </div>
   </section>`
 }
@@ -245,7 +255,7 @@ function subdivisionStoryScene(a: ImmersiveArgs): string {
       ${sections ? `<div class="sty-grid">${sections}</div>` : ''}
       ${notable ? `<h3 class="sub r">Recent sales</h3><div class="nb-grid">${notable}</div>` : ''}
       ${position ? `<p class="body r pos">${position}</p>` : ''}
-      <div class="src r">${esc(f.source)}${st.model ? ` · Narrative written by ${esc(st.model)} from these rows, the listing remarks, and the hero photos of the ${st.photoSalesReviewed} most recent sales, then vetted against the house style. Every number in it appears in the data above.` : ''}</div>
+      
     </div>
   </section>`
 }
@@ -276,7 +286,7 @@ function compsScene(a: ImmersiveArgs): string {
       <h2 class="h r">${a.comps.length} closed sales set this price</h2>
       <p class="lede r">Each sale is adjusted for its close date and its size against yours. The full report prints every adjustment line by line.</p>
       <div class="cmp-grid">${cards}</div>
-      <p class="src r">Selection rules, exclusions, and the per-comp adjustment grid are in the full report.</p>
+      
     </div>
   </section>`
 }
@@ -297,7 +307,7 @@ function marketScene(a: ImmersiveArgs): string {
         <div class="st"><div class="st-n">${m.medianDom != null ? `${int(m.medianDom)}` : '—'}</div><div class="st-l">median days on market</div></div>
         <div class="st"><div class="st-n">${m.saleToListRatio != null ? `${dec(m.saleToListRatio * 100, 1)}%` : '—'}</div><div class="st-l">of asking is what sellers actually get</div></div>
       </div>
-      <div class="src r">market_stats_cache ${esc(m.geoSlug)} · period ${esc(m.periodStart)} to ${esc(m.periodEnd)} · live inventory ${esc(m.pulseUpdatedAt ?? m.computedAt ?? '')}</div>
+      
     </div>
   </section>`
 }
@@ -377,7 +387,6 @@ function canDoScene(a: ImmersiveArgs): string {
       <div class="kick r">What you can do with it</div>
       <h2 class="h r">The parcel, in plain English</h2>
       <div class="cando-grid">${devRows}${rentRows}</div>
-      <p class="src r">Preliminary reads of published code, each one checkable at the source. The full report lists who holds each record and how to reach them.</p>
     </div>
   </section>`
 }
@@ -512,6 +521,12 @@ img{max-width:100%}
 .szn-na{font-size:11px;opacity:.4}
 .szn-m{font-size:12px;opacity:.65;margin-top:8px}
 .on .szn-bar{transform:scaleY(1)}
+/* sources appendix */
+.srcgrid{display:grid;gap:10px;margin-top:8px}
+.srcrow{display:grid;grid-template-columns:220px 1fr;gap:16px;padding:12px 0;border-top:1px solid var(--ink12);font-size:13px}
+.srck{font-weight:600}
+.srcv{opacity:.7;font-variant-numeric:tabular-nums}
+@media (max-width:700px){.srcrow{grid-template-columns:1fr;gap:4px}}
 /* the plan */
 .plan-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:8px}
 .plan{background:rgba(250,248,244,.06);border:1px solid rgba(250,248,244,.14);border-radius:16px;padding:20px}
@@ -632,7 +647,6 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
   </div>
 </section>
 
-${equityScene(a)}
 ${subdivisionStoryScene(a)}
 ${compsScene(a)}
 ${storyScene(a)}
@@ -643,6 +657,7 @@ ${likesScene(a)}
 ${canDoScene(a)}
 ${planScene(a)}
 ${nextScene(a)}
+${sourcesScene(a)}
 
 <script>
 (function(){

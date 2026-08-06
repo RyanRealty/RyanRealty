@@ -684,25 +684,6 @@ function listingPlanPage(a: RenderCmaArgs): PageDef | null {
   }
 }
 
-function equityPage(a: RenderCmaArgs): PageDef | null {
-  const e = a.equity
-  if (!e) return null
-  const up = e.gainDollars >= 0
-  return {
-    meta: `${esc(a.subject.streetAddress)} · What You Own`,
-    toc: 'What you own',
-    body: `
-  <h2 class="section">What You Own</h2>
-  <p>You bought this home for ${usd(e.purchasePrice)} in ${dateLong(e.purchaseDate)}. At the recommended price it is ${usd(Math.abs(e.gainDollars))} ${up ? 'above' : 'below'} that, ${up ? 'up' : 'down'} ${dec(Math.abs(e.gainPct), 1)}% over ${dec(e.yearsHeld, 1)} years${e.annualizedPct != null ? `, or ${dec(Math.abs(e.annualizedPct), 1)}% a year compounded` : ''}.</p>
-  <div class="stat-strip" style="grid-template-columns: repeat(3, 1fr);">
-    <div class="stat"><div class="lbl">You Paid</div><div class="val">${usd(e.purchasePrice)}</div></div>
-    <div class="stat"><div class="lbl">Recommended</div><div class="val">${usd(a.pricing.recommended)}</div></div>
-    <div class="stat"><div class="lbl">${up ? 'Gain' : 'Change'}</div><div class="val">${up ? '' : '-'}${usd(Math.abs(e.gainDollars))}</div></div>
-  </div>
-  <div class="trace"><div class="t-hd">Source</div>${esc(e.source)}</div>`,
-  }
-}
-
 function subdivisionStoryPage(a: RenderCmaArgs): PageDef | null {
   const st = a.subdivisionStory
   if (!st) return null
@@ -937,8 +918,6 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   // disclosure and the ask.
   const rest: PageDef[] = []
   rest.push(subjectPage(a))
-  const equity = equityPage(a)
-  if (equity) rest.push(equity)
   const likes = whatWeLikePage(a)
   if (likes) rest.push(likes)
   const map = mapPage(a)
