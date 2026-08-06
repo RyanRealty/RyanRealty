@@ -97,7 +97,7 @@ const HERO_CHIPS = [
 // Why work with us — value-prop grid (copy preserved verbatim).
 const VALUE_PROPS = [
   {
-    heading: 'Which streets flood in spring',
+    heading: 'Wells, septic, and HOA history',
     body: 'Our brokers live in Central Oregon. Ask about the well and septic on a rural parcel, the HOA history in a resort community, or what the last four homes on that street closed for, and you get the answer from the person standing in the driveway with you.',
   },
   {
