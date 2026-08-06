@@ -346,8 +346,22 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // not to talk the auditor out of a real finding.
     let narrativeRepair: { model: string; costUsd: number; accepted: boolean } | null = null
     if (audit && audit.verdict !== 'pass' && judgment && !isCurated) {
+      // Eligibility is "the comp repair did not already answer this", NOT
+      // "the finding mentions no comp". Naming a comp does not make a finding
+      // about the comp: the second Byron rebuild failed on "the narrative
+      // falsely claims the 3-bed comp is weighted half when the actual weight
+      // is 0.3249", which cites 20603 Kira and is nonetheless a sentence
+      // problem about a sale we correctly kept. Filtering on compListingKey
+      // sent it to the comp-dropping path, which had nothing to drop, so
+      // nothing repaired it. Anything 4.45 already resolved by removing the
+      // sale is excluded here; everything else that still fails is prose the
+      // model gets one chance to correct.
       const proseFindings = audit.findings
-        .filter((f) => (f.severity === 'critical' || f.severity === 'major') && !f.compListingKey)
+        .filter(
+          (f) =>
+            (f.severity === 'critical' || f.severity === 'major') &&
+            !(f.compListingKey && repairedKeys.includes(f.compListingKey)),
+        )
         .map((f) => `${f.claim} ${f.evidence}`.trim())
         .filter(Boolean)
       if (proseFindings.length > 0) {
@@ -382,6 +396,15 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           } else {
             narrativeRepair = { model: repair.model, costUsd: repair.costUsd, accepted: false }
           }
+        } else {
+          // The repair declined: no API key, or the model returned nothing
+          // usable. Silence here is indistinguishable from "the branch never
+          // ran", which cost a debugging cycle on 2026-08-06 — three rebuilds
+          // where the trace was empty and there was no way to tell whether the
+          // repair had been skipped or had simply failed.
+          selection.trace.push(
+            `Adversarial audit narrative repair: ${proseFindings.length} prose finding(s) were eligible, but the repair returned nothing usable. The audited narrative and the review flag stand.`,
+          )
         }
       }
     }
