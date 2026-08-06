@@ -120,7 +120,13 @@ afterAll(() => {
   rmSync(SANDBOX, { recursive: true, force: true })
 })
 
-describe.skipIf(!HAS_CREDS)('ci:view-preset-equivalence (G63)', () => {
+// Every case here shells out to the real gate against LIVE Supabase rows, so a
+// case costs seconds, not milliseconds. Vitest's 5s default is fine when this
+// file runs alone (22/22, ~18s) and flaky under the full suite, where these
+// queries compete with 380 other test files for the connection — a green test
+// that fails only in the pre-commit hook is worse than a slow one. Timed to the
+// work, not to the default.
+describe.skipIf(!HAS_CREDS)('ci:view-preset-equivalence (G63)', { timeout: 60_000 }, () => {
   it('passes on an untouched copy, over a real on-market row set', () => {
     reset()
     const result = run()
