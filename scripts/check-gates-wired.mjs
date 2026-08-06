@@ -50,7 +50,7 @@ try {
 }
 
 // Helper/dev variants are not gates themselves — they support a gate.
-const isVariant = (k) => /:(report|baseline|refresh|start|postbuild)$/.test(k)
+const isVariant = (k) => /:(report|baseline|refresh|start|postbuild|worklist)$/.test(k)
 // The chain + its postbuild are the runner, not a gate to wire.
 const isRunner = (k) => k === 'ci:gates' || k === 'ci:gates:postbuild'
 

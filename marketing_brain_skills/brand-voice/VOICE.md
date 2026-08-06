@@ -227,6 +227,36 @@ apology theater.
 
 ---
 
+## Search traffic
+
+Cutting editorializing does not cost search traffic. It is the thing that earns it.
+
+The anchor for report structure, Redfin, runs the most-cited real-estate data
+operation in the country on exactly these rules, and their pages rank nationally on
+the strength of specific numbers, not adjectives. A sentence that explains another
+sentence adds no query coverage. Nobody searches "what this means for you."
+
+Four rules so a voice pass never costs a ranking:
+
+1. **Never delete a fact to shorten a page.** Delete interpretation, keep evidence.
+   Thin content loses; padded content also loses. What wins is a page that answers
+   more real questions than the competing page. Cutting a sermon clause removes zero
+   answers. If a rewrite ends shorter and less useful, it was done wrong: cut the
+   editorializing and add another verified fact.
+2. **Headings state what someone would search.** "When Bend homes go pending" earns
+   the query. "450 sales say the calendar matters" earns nothing, because nobody
+   types that. Rule 8 and search intent point the same direction.
+3. **Keep the entities.** Place names, subdivision names, school names, street names,
+   prices, dates, and property types are how a page gets found. They are specifics,
+   which the canon wants anyway. Never trade a proper noun for a pronoun to make a
+   sentence read smoother.
+4. **Titles and meta descriptions are governed by this file.** State the page's
+   actual content with its number. No hype, no "discover," no "your dream home
+   awaits." A meta description is a promise the page has to keep.
+
+The deleted material was never doing SEO work. Editorializing is what a page says
+about itself; search rewards what a page can prove.
+
 ## Mechanics
 
 **Punctuation.** No em or en dashes in prose a reader sees. No semicolons: use a

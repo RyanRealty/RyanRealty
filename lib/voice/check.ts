@@ -49,13 +49,14 @@
  *     mirror).
  */
 import { PUNCTUATION_CHARS, BANNED_WORD_STRINGS } from '@/lib/brand-voice/generated-vocabulary'
+import { VOICE_CONSTRUCTIONS } from '@/lib/brand-voice/constructions'
 
 /** A single brand-voice violation. `field` is set only for object-input calls. */
 export type VoiceViolation = {
   /** The offending punctuation char or banned word/phrase (lowercase for words). */
   term: string
   /** Human-readable category. */
-  kind: 'punctuation' | 'word'
+  kind: 'punctuation' | 'word' | 'construction'
   /** Which input field carried the violation (object-input calls only). */
   field?: string
 }
@@ -124,6 +125,18 @@ function scanText(text: string, field: string | undefined, punctuationChars: rea
     if (text.includes(ch) && !seen.has(`p:${ch}`)) {
       seen.add(`p:${ch}`)
       violations.push(field !== undefined ? { term: ch, kind: 'punctuation', field } : { term: ch, kind: 'punctuation' })
+    }
+  }
+
+  // Banned CONSTRUCTIONS (Matt 2026-08-05). A word list cannot catch "Pricing
+  // sets the number. Competition decides how it lands." — no banned word in it,
+  // banned by its SHAPE. Same source of truth as ci:voice-constructions.
+  for (const c of VOICE_CONSTRUCTIONS) {
+    if (seen.has(`c:${c.id}`)) continue
+    if (new RegExp(c.source, 'i').test(text)) {
+      seen.add(`c:${c.id}`)
+      const term = `${c.id} (rule ${c.rule}: ${c.label})`
+      violations.push(field !== undefined ? { term, kind: 'construction', field } : { term, kind: 'construction' })
     }
   }
 

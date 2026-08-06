@@ -105,7 +105,7 @@ export function captionFor(actionTypeOrFilename: string): string {
     'content-listing-reel': 'Take the tour. Reach out for a private showing or the full details.',
     'content-listing-image': 'Now on the market in Central Oregon. Message for the full details and a showing.',
     'content-just-listed-flyer': 'Just listed in Central Oregon. Ask for the details or book a showing.',
-    'content-news-clip': 'What this means for the Central Oregon market, in under a minute.',
+    'content-news-clip': 'The Central Oregon market this week, in under a minute.',
     'content-sold-deal-summary': 'Another one closed in Central Oregon. Thinking about your own move. Let us talk.',
     'content-newsletter': 'This month from Ryan Realty. The Central Oregon market, the numbers that matter, and what to watch.',
     'content-gbp-post': 'The latest from Ryan Realty in Bend. Reach out any time.',

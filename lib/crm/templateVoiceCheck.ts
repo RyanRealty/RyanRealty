@@ -39,7 +39,7 @@ export type VoiceViolation = {
   /** The offending punctuation char or banned word/phrase. */
   term: string
   /** Human-readable category for the surfaced error. */
-  kind: 'punctuation' | 'word'
+  kind: 'punctuation' | 'word' | 'construction'
 }
 
 export type VoiceCheckResult =

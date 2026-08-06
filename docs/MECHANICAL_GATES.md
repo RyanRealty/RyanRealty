@@ -13,8 +13,11 @@ keeps being violated, the answer is a new gate, not more prose.
 | # | Gate | Mechanism | Source |
 |---|---|---|---|
 | G1 | DAL boundary — no raw `from('<table>')` outside `lib/data/` | ESLint `no-restricted-syntax` (error) + `scripts/check-dal-boundary.mjs` (ratcheted) | Plan §4 + CLAUDE.md §6 |
-| G2 | Brand voice §6.1 + §6.2 in JSX text + string attrs | ESLint plugin `rr-brand-voice/no-violations` (error) | CLAUDE.md §3 |
-| G3 | Brand voice across content files | `scripts/check-brand-voice.mjs` (ratcheted) | CLAUDE.md §3 |
+| G2 | Brand voice §6.1 + §6.2 in JSX text + string attrs | ESLint plugin `rr-brand-voice/no-violations` (error) | CLAUDE.md §2 |
+| G3 | Brand voice across content files | `scripts/check-brand-voice.mjs` (ratcheted) | CLAUDE.md §2 |
+| **G3b** | **Voice CONSTRUCTIONS** — the sentence SHAPES a word list cannot catch: coined maxims, a sentence that explains the sentence before it, sermon clauses, data-speaks headlines, throat-clears, pandering, manufactured urgency, false certainty. Patterns in `scripts/voice-constructions.cjs`, the machine-readable form of VOICE.md. Ratcheted. Scans the site, client documents, email + SMS builders, the content registries, AND the marketing brain with every producer SKILL.md. | `scripts/check-voice-constructions.mjs` (`ci:voice-constructions`, in `ci:gates`) | `marketing_brain_skills/brand-voice/VOICE.md` |
+| **G3c** | **Construction parity** — `lib/brand-voice/constructions.ts` (the in-bundle mirror the runtime checker reads) must match `scripts/voice-constructions.cjs`. Without this the CI gate and the runtime gate can silently diverge. | `scripts/gen-voice-constructions.mjs` (`ci:voice-constructions-parity`, in `ci:gates`) | same |
+| **G3d** | **Runtime construction block** — the constructions run inside `lib/voice/check.ts`, the one chokepoint every content path calls and blocks on (blog save, CMA build, BPO build, social publish, CRM templates, newsletters). Matt 2026-08-05: "anytime any content / copy is created it is run through this voice. Period." Path wiring is asserted by G-runtime/`ci:voice-send-paths`. | `lib/voice/constructions.test.ts` + `scripts/check-voice-send-paths.mjs` | same |
 | G4 | Design tokens — no raw hex, no retired fonts, no bg-image hero | `scripts/lint-design-tokens.js --base-diff` | CLAUDE.md §5 / Plan §10 |
 | G5 | SEO route metadata + JSON-LD authoring | `scripts/check-seo-routes.mjs` + `scripts/check-seo-authoring.mjs` | Plan §1 |
 | G6 | **Mockup parity** — every gated route imports every component the matching mockup contract requires | `scripts/check-mockup-parity.mjs` (ratcheted) + per-route `design_system/ryan-realty/ui_kits/<route>/parity.json` | Plan §1 + Wave 3 §9 |

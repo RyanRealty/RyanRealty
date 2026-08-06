@@ -140,7 +140,7 @@ export function buildMarketNarrative(s: NarrativeStats): MarketNarrative {
     `The median sale price was ${median}${s.medianPpsf != null ? `, or ${ppsf} per square foot` : ''}. ` +
     `That is ${yoyArrow(s.yoyMedianPriceDeltaPct)}. ` +
     (s.avgSaleToListRatio != null
-      ? `Homes sold for ${stl} of asking on average, which tells you how much room there was between list and close.`
+      ? `Homes sold for ${stl} of asking on average.`
       : `Sale-to-list data was thin this period, so read the median with that in mind.`)
 
   const speedAnalysis =
