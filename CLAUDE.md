@@ -156,6 +156,15 @@ send paths hard-fail through `lib/voice/check.ts` (`ci:voice-send-paths`).
 **The rule broken most often:** state the fact, then stop. Never write a sentence
 whose job is to explain the sentence before it.
 
+**Standing rule:** any copy created for the public runs through this canon. It is
+mechanical at both ends, so nobody has to remember: `ci:voice-constructions` fails
+the commit, and the same patterns run inside `lib/voice/check.ts`, the chokepoint
+every content path already blocks on. The repo-wide rewrite is a grinder, `/voice-canon`
+([`.claude/skills/voice-canon/SKILL.md`](.claude/skills/voice-canon/SKILL.md));
+where it left off is machine-written to
+[`scripts/voice-canon-state.json`](scripts/voice-canon-state.json) on every scan,
+never hand-maintained.
+
 
 ---
 

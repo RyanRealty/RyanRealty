@@ -160,6 +160,7 @@
     "ci:gates-wired:baseline": "node scripts/check-gates-wired.mjs --write-baseline",
     "ci:voice-vocab-parity": "node scripts/check-voice-vocab-parity.mjs",
     "ci:voice-constructions": "node scripts/check-voice-constructions.mjs",
+    "ci:voice-constructions:next": "node scripts/check-voice-constructions.mjs --next",
     "ci:voice-constructions:report": "node scripts/check-voice-constructions.mjs --report",
     "ci:voice-constructions:worklist": "node scripts/check-voice-constructions.mjs --worklist",
     "ci:voice-constructions:baseline": "node scripts/check-voice-constructions.mjs --write-baseline",
