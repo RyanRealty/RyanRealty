@@ -371,7 +371,7 @@
       "id": "C-21",
       "phase": 5,
       "title": "Available spatial data not rendered",
-      "status": "BLOCKED_MATT",
+      "status": "TODO",
       "depends_on": [
         "C-18"
       ],
@@ -380,7 +380,7 @@
       "sha": null,
       "gate": null,
       "evidence": null,
-      "notes": "DATA NOT AVAILABLE. report:geo-coverage (C-18): Tetherow has 1 of 8 child plats with a boundary row. Sunriver 7/30, Three Rivers 1/11, Black Butte Ranch 0/4, Inn of 7th 0/2, Rivers Edge 0/2, Brasada 0/1. The map component is READY (takes N polygons, frames polygon bounds first) \u2014 the plats do not exist in `boundaries`. D4 assumed partial coverage, not 1 of 8. Matt's call: (1) ingest Deschutes County DIAL plats, (2) ship only where coverage clears a bar, (3) drop the layer. Hull-filling is banned (\u00a77/C6)."
+      "notes": "CORRECTED 2026-08-06 \u2014 my first coverage report was WRONG and its conclusion (BLOCKED_MATT, 'source the plats from DIAL') was wrong with it. The plats ARE ingested: boundaries holds 3,213 geo_type='subdivision' rows. The report exact-matched slugify(MLS alias) against geo_slug; recorded plat names are PHASED and differently worded, so it found almost nothing. Braeburn -> braeburn-phase-i..iv. Westbrook Meadows -> westbrook-meadows-p-u-d-*. Lodges at Bachelor V -> lodges-at-bachelor-view-*. Tetherow itself has 21 own-name plats. Prefix re-measure: Tetherow 7/8 aliases resolve; 51/85 across all resorts. NOT a data-acquisition job \u2014 a NAME-MAPPING job. Build a verified MLS-alias -> plat-slug map; do NOT ship the fuzzy prefix rule: it over-matched 'Triple' to triple-ridge-* when this repo's own note says the MLS truncation means Triple KNOT, and it under-matches MLS abbreviations (Bbr, Oww, DrrhTrs, Mtn High, Inn Of The 7th)."
     },
     {
       "id": "C-22",
