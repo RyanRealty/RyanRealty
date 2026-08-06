@@ -77,13 +77,17 @@ export function prepareDeliverableEmail(input: PrepareEmailInput): PreparedEmail
   const unsubUrl =
     input.unsubscribeUrl ?? (input.personId ? buildUnsubscribeUrl(input.personId) : undefined)
 
+  // No "You are receiving this email from Ryan Realty" narration — the reader
+  // knows why they're reading it, and the From header already names the
+  // sender. Matches the branded shell's own footer (lib/email/shell.ts):
+  // name the thing (address, unsubscribe), never narrate the transaction.
   const footerHtml = unsubUrl
-    ? `<hr style="border:none;border-top:1px solid #e6e2da;margin:24px 0 12px"><p style="font-size:12px;color:#667085;line-height:1.5">You are receiving this email from Ryan Realty. <a href="${unsubUrl}" style="color:#667085">Unsubscribe</a>.<br>${escapeHtml(BROKERAGE_POSTAL_ADDRESS)}</p>`
-    : `<hr style="border:none;border-top:1px solid #e6e2da;margin:24px 0 12px"><p style="font-size:12px;color:#667085;line-height:1.5">You are receiving this email from Ryan Realty.<br>${escapeHtml(BROKERAGE_POSTAL_ADDRESS)}</p>`
+    ? `<hr style="border:none;border-top:1px solid #e6e2da;margin:24px 0 12px"><p style="font-size:12px;color:#667085;line-height:1.5">${escapeHtml(BROKERAGE_POSTAL_ADDRESS)} &middot; <a href="${unsubUrl}" style="color:#667085">Unsubscribe</a>.</p>`
+    : `<hr style="border:none;border-top:1px solid #e6e2da;margin:24px 0 12px"><p style="font-size:12px;color:#667085;line-height:1.5">${escapeHtml(BROKERAGE_POSTAL_ADDRESS)}</p>`
 
   const footerText = unsubUrl
-    ? `\n\n--\nYou are receiving this email from Ryan Realty.\nUnsubscribe: ${unsubUrl}\n${BROKERAGE_POSTAL_ADDRESS}`
-    : `\n\n--\nYou are receiving this email from Ryan Realty.\n${BROKERAGE_POSTAL_ADDRESS}`
+    ? `\n\n--\n${BROKERAGE_POSTAL_ADDRESS}\nUnsubscribe: ${unsubUrl}`
+    : `\n\n--\n${BROKERAGE_POSTAL_ADDRESS}`
 
   const html = input.html + footerHtml
   const baseText = (input.text ?? '').trim() || htmlToPlainText(input.html)

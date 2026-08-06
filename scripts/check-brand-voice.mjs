@@ -33,6 +33,27 @@ const require = createRequire(import.meta.url)
 const VOCAB = require('./brand-voice-vocabulary.cjs')
 const ts = require('typescript')
 
+// WHY lib/ IS NOT HERE, measured 2026-08-06 rather than assumed.
+//
+// VOICE.md governs email bodies, SMS bodies and listing alerts, which live in
+// lib/crm, lib/email and lib/alerts — so this scan looks like it has a hole,
+// and the obvious fix is to widen it. I tried. Adding lib/ wholesale reports
+// 305 violations; excluding colocated test files (see TEST_FILE below) brings
+// that to 17; reading all 17 shows they are code comments, a regex literal, an
+// admin validation hint, and internal health diagnostics. Not one is copy a
+// lead reads.
+//
+// The reason is structural. This scanner extracts string literals and assumes
+// most of them are reader-facing, which holds in app/ and components/ and does
+// not hold in lib/, where literals are overwhelmingly logs, errors and
+// developer prose. Widening the scan would trade a precise gate for a noisy
+// one, and a noisy gate gets ignored.
+//
+// Send-path copy IS gated, by different machinery: ci:voice-constructions
+// sweeps the whole repo including lib/, and lib/voice/check.ts hard-fails at
+// runtime on all five send paths (ci:voice-send-paths). What was missing was
+// never a gate — it was that nobody had READ that copy against the canon. That
+// read happened 2026-08-06.
 const SCAN_DIRS = ['app', 'components']
 const EXCLUDED_DIRS = new Set(['node_modules', '.next', 'out', 'build', 'dist', '__tests__'])
 const FILE_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx'])
