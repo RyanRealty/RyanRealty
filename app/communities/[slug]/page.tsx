@@ -779,7 +779,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           items={featuredItems}
           eyebrow={`${community.name} · For sale`}
           viewAllHref={homesForSalePath(cityName, community.name)}
-          viewAllLabel={`See every ${community.name} home for sale`}
+          viewAllLabel={`See every ${community.name} home for sale`} viewAllPlace={community.name}
           totalCount={activeCount || null}
         />
         <KbTicker items={tickerItems} />

@@ -473,7 +473,7 @@ export default async function CityDetailPage({ params }: Props) {
         />
         {/* Inventory first (shared place template with community pages). The grid
             caps at 12 tiles, so the footer link must reach the REST of the city. */}
-        <KbFeatured items={featuredItems} eyebrow={`${cityName} · For sale`} viewAllHref={homesForSalePath(cityName)} viewAllLabel={`See every ${cityName} home for sale`} totalCount={activeCount || null} />
+        <KbFeatured items={featuredItems} eyebrow={`${cityName} · For sale`} viewAllHref={homesForSalePath(cityName)} viewAllLabel={`See every ${cityName} home for sale`} viewAllPlace={cityName} totalCount={activeCount || null} />
         <KbTicker items={tickerItems} />
         <KbListingMap
           geojson={mapGeo}

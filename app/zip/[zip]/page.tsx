@@ -408,6 +408,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           eyebrow={`${zip} · For sale`}
           viewAllHref={homesForSalePath(cityName)}
           viewAllLabel={`See every ${cityName} home for sale`}
+          viewAllPlace={cityName}
           totalCount={activeCount || null}
         />
 

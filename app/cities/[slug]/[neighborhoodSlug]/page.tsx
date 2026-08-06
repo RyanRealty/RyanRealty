@@ -427,6 +427,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           eyebrow={`${neighborhood.name} · For sale`}
           viewAllHref={subdivisionListingsPath(cityName, neighborhood.name)}
           viewAllLabel={`See every ${neighborhood.name} home for sale`}
+          viewAllPlace={neighborhood.name}
           totalCount={activeCount || null}
         />
         <KbTicker items={tickerItems} />

@@ -20,6 +20,7 @@ export function KbFeatured({
   eyebrow = 'Featured homes',
   viewAllHref = '/homes-for-sale',
   viewAllLabel = 'Browse homes',
+  viewAllPlace,
   totalCount = null,
 }: {
   items: KbFeaturedItem[]
@@ -32,7 +33,16 @@ export function KbFeatured({
    * through to the rest (Brain Dump 2, 2026-07-28).
    */
   viewAllHref?: string
+  /** Shown when there is no count to fold in (totalCount null, or <= tiles shown). */
   viewAllLabel?: string
+  /**
+   * The geography this rail belongs to ("Bend", "Tetherow", "Awbrey Butte"). When a
+   * count is present the CTA composes both: "See all 38 Tetherow homes for sale".
+   * Before this existed the count branch REPLACED the caller's label outright, so
+   * every geography page — 18 mounts — rendered a placeless "See all N homes for
+   * sale" no matter what it passed (C-09).
+   */
+  viewAllPlace?: string
   /** Active listing count for this geography — renders as the real number. */
   totalCount?: number | null
 }) {
@@ -176,7 +186,7 @@ export function KbFeatured({
         <div className="lst-foot">
           <a href={viewAllHref} className="btn alt">
             {totalCount != null && totalCount > shown.length
-              ? `See all ${totalCount.toLocaleString('en-US')} homes for sale`
+              ? `See all ${totalCount.toLocaleString('en-US')} ${viewAllPlace ? `${viewAllPlace} ` : ''}homes for sale`
               : viewAllLabel}{' '}
             <span className="arr">→</span>
           </a>

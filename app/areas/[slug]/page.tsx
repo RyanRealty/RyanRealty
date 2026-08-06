@@ -271,6 +271,7 @@ export default async function AreaPage({ params }: Props) {
             eyebrow={`${area.name} · For sale`}
             viewAllHref="/homes-for-sale"
             viewAllLabel="Browse every Central Oregon home for sale"
+            viewAllPlace={area.name}
             totalCount={activeCount || null}
           />
         ) : (

@@ -493,6 +493,7 @@ export default async function SubdivisionPage({ params }: Props) {
             eyebrow={`${displayName} · For sale`}
             viewAllHref={subdivisionListingsPath(cityName, displayName)}
             viewAllLabel={`See every ${displayName} home for sale`}
+            viewAllPlace={displayName}
             totalCount={activeCount || null}
           />
         ) : (
