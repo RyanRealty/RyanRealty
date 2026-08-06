@@ -201,7 +201,7 @@ run(
     tool_name: 'Write',
     tool_input: {
       file_path: 'app/sell/page.tsx',
-      content: 'export default function P() {\n  return <div>This stunning home awaits.</div>\n}',
+      content: 'export default function P() {\n  return <div>Act fast, this one will not last long.</div>\n}',
     },
   },
   { deny: true, contains: 'WRITE-BRAND-VOICE' },
@@ -212,7 +212,7 @@ run(
     tool_name: 'Edit',
     tool_input: {
       file_path: 'components/site/listing-detail/Hero.tsx',
-      new_string: '<div>A truly breathtaking property.</div>',
+      new_string: '<div>Your local experts are standing by.</div>',
     },
   },
   { deny: true, contains: 'WRITE-BRAND-VOICE' },
@@ -278,7 +278,7 @@ run(
     tool_name: 'Write',
     tool_input: {
       file_path: 'components/site/Hero.test.tsx',
-      content: '// test: stunning is a banned word — verify the rule catches it',
+      content: '// test: act fast is a canon-banned phrase, verify the rule catches it',
     },
   },
   { deny: false },

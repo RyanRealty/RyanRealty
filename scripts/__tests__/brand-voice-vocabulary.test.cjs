@@ -25,8 +25,12 @@ const VOCAB = require('../brand-voice-vocabulary.cjs')
 // 1. The vocabulary module exports the expected shape.
 assert.ok(Array.isArray(VOCAB.PUNCTUATION) && VOCAB.PUNCTUATION.length === 4,
   'PUNCTUATION must export 4 banned characters (em-dash, en-dash, semicolon, exclamation)')
-assert.ok(Array.isArray(VOCAB.BANNED_WORDS) && VOCAB.BANNED_WORDS.length > 50,
-  'BANNED_WORDS must carry > 50 entries (clichés + AI filler + qualifiers + slop + urgency + hype + pandering)')
+// Rebuilt 2026-08-05: the list is exactly what VOICE.md's "Banned
+// constructions" section names, not the old regime's 100+ word inventory. It
+// stays non-empty (the canon does name phrases) but a size floor tied to
+// deleted categories would just re-encode the rules we removed.
+assert.ok(Array.isArray(VOCAB.BANNED_WORDS) && VOCAB.BANNED_WORDS.length > 0,
+  'BANNED_WORDS must carry the phrases VOICE.md names (pandering, fake urgency, self-praise, category positioning)')
 assert.ok(Array.isArray(VOCAB.BANNED_WORD_STRINGS) && VOCAB.BANNED_WORD_STRINGS.length > 0,
   'BANNED_WORD_STRINGS must carry the deduped lowercase string list')
 
