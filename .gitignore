@@ -66,6 +66,9 @@ next-env.d.ts
 .claude/settings.local.json
 .claude/launch.json
 .claude/skills/*
+# Tracked on purpose: the voice canon grinder must survive a fresh clone and a
+# fresh session. An untracked skill is exactly how this gets lost.
+!.claude/skills/voice-canon/
 # ...except the SkySlope form-compliance skill — tracked so it survives clones + is visible to Cursor (it is the audit-defensible compliance pipeline, not a throwaway local skill)
 !.claude/skills/skyslope-form-compliance/
 # ...and the growth-loop orchestrator skill — Loop 1 of the canon topology (docs/DEVELOPMENT_PROCESS.md §Loop topology)
