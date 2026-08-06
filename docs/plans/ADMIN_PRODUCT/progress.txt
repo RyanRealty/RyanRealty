@@ -106,3 +106,35 @@ Ship bar: each unit committed separately, pushed, deploy-verified READY, product
   21635409 immersive dates via formatDate (date-format gate catch).
   17f95086 file-size rebaseline. Pushed; deploy watching. Byron (cma-20513-byron) is the
   showcase doc: Stone Creek story w/ AI narrative + 4 photo cards verified vs DB.
+
+[2026-08-05 21:10] VOICE CANON — Matt rejected the house voice ("you constantly
+  overeditorialize... these reports sound so freaking dumb"), asked for an existing
+  documented voice + a prompt that nukes every conflicting rule permanently.
+  Research: 4 parallel tracks, 10 voices, every URL verified live →
+  docs/research/brand-voice-anchors-2026-08-05.md. Matt picked Buffett.
+  6c69d7d0 canon rewritten: marketing_brain_skills/brand-voice/VOICE.md, Buffett
+           anchor + GOV.UK sentence law + Redfin structure (interpretation only inside
+           a named broker quote). Eight rules, led by "state the fact, then stop."
+           Banned-constructions section names the exact shapes with the real killed
+           copy. Scope covers email/SMS/alerts/reports/pages/LPs/listings/ads/docs.
+           Caught a live defect the duplicate docs hid: old VOICE.md named the PRIVATE
+           forward number as the public phone.
+           + docs/plans/VOICE-CANON-2026-08-05.md, the executable migration (registered
+           per G44): self-running discovery, nuke, vocabulary rebuild from canon only,
+           copy rewrite by reader volume, and two gates. Gate 2 (canon singularity,
+           scripts/check-voice-canon.mjs) is the "never again" mechanism — NOT YET BUILT.
+  a53ea2b7 Phase 4 reports + Phase 2 in-code doctrine: every aphorism/sermon/
+           meaning-narration removed from immersive.ts + render.ts + the failed-ask
+           note; STORY_SYSTEM and judge.ts narrative prompts repointed at the canon
+           (both had drifted, still banning turnkey).
+  ae94b7e5 Phase 2 nuke: voice_guidelines.md (640 lines) + voice_system_v2.md deleted,
+           87 files repointed. Producer gate 51/51 with them off disk.
+  c91297fc CLAUDE.md §2 collapsed 120 lines → 25, a pointer only. ci:claude-canon
+           caught the dangling link, which is the gate working.
+  734743aa baseline. Pushed 17f95086..734743aa; deploy watching.
+  REMAINING (all in the prompt): vocabulary rebuild from canon (Phase 3), the other
+  ~570 copy files (email/SMS/LP/site/data), DB copy (crm_templates, crm_sequences,
+  blog_posts), both gates (Phase 5), full read-through verification (Phase 6).
+  Audits found 2 more frameworks (design_system SKILL/MANIFEST, youtube-market-reports)
+  + humor-voice docs + a stale .auto-memory line + 22 dangling ANTI_SLOP refs + 15 files
+  citing "CLAUDE.md §3" for voice when it is §2. All named in the prompt appendix.
