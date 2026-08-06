@@ -42,6 +42,30 @@ const FILE_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx'])
 // not here. The full canonical reference is CLAUDE.md §3.
 const BANNED_WORDS = VOCAB.BANNED_WORD_STRINGS
 
+// PROJECTION CHECK — the canon reaching the machine list, verified.
+//
+// The vocabulary file's contract was only ever enforced in one direction: a word
+// is banned here only because VOICE.md bans it. The reverse — every word VOICE.md
+// bans arriving here — was enforced by nobody, so four of the canon's six
+// self-praise terms were never projected and `lead="Honest answers to the
+// questions Bend buyers and sellers ask us"` shipped live on /faq while this gate
+// reported clean (Matt, 2026-08-06). A gate that is green for the wrong reason is
+// worse than no gate, because it is trusted.
+//
+// This runs before any file is scanned: if a canon term has no covering phrasing,
+// the gate fails on itself rather than silently under-enforcing.
+for (const { canon, covered } of VOCAB.PROJECTION_REQUIRED ?? []) {
+  if (!BANNED_WORDS.some((w) => w.includes(covered))) {
+    console.error(
+      `\n✖ brand-voice vocabulary is out of sync with the canon.\n` +
+        `  VOICE.md bans "${canon}", and the phrasing that projects it ` +
+        `("${covered}") is missing from scripts/brand-voice-vocabulary.cjs.\n` +
+        `  Add it to SELF_PRAISE, or correct PROJECTION_REQUIRED if the canon changed.\n`
+    )
+    process.exit(1)
+  }
+}
+
 // SCOPE — our language only (VOICE.md): the laws bind Ryan Realty's own
 // authored marketing copy. Reviews/testimonials and broker-written listing
 // remarks render from DATA (variables), never literals, so they are never

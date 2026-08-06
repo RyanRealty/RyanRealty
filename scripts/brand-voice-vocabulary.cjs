@@ -55,7 +55,51 @@ const FAKE_URGENCY = ['act fast', "don't miss out", 'dont miss out', "won't last
 // Scoped to US, because that is how the canon means them. "Boutique brokerage"
 // is NOT here: Matt 2026-08-05, "We are a boutique brokerage." It is an
 // accurate description of the firm, not a virtue we are claiming.
-const SELF_PRAISE = ['your local experts', 'premier brokerage', 'top producing']
+//
+// The canon (VOICE.md line 178) bans six: "Honest," "trusted," "dedicated,"
+// "your local experts," "premier," "top producing." Four of them went
+// unprojected until 2026-08-06, which is why `lead="Honest answers to the
+// questions Bend buyers and sellers ask us"` shipped on /faq against a green
+// gate. They are listed as the self-praise PHRASINGS rather than as bare words:
+// the canon bans claiming the virtue, not the adjective. "An honest empty
+// state" in a docstring is not a brag, and PROJECTION_REQUIRED below is what
+// mechanically proves each canon term reached this list.
+const SELF_PRAISE = [
+  'your local experts',
+  'premier brokerage',
+  'top producing',
+  'honest answers',
+  'honest advice',
+  'honest broker',
+  'we are honest',
+  "we're honest",
+  'trusted advisor',
+  'trusted partner',
+  'trusted name',
+  'trusted brokerage',
+  'most trusted',
+  'dedicated team',
+  'dedicated agent',
+  'dedicated broker',
+  'dedicated to your',
+  'premier real estate',
+  'premier agent',
+  'premier destination',
+]
+
+// Every self-praise term the canon names, and the substring of SELF_PRAISE that
+// carries it. check-brand-voice.mjs asserts each one is covered, so a term
+// bolded in VOICE.md can never again be absent from the machine list — the
+// failure class that produced the /faq leak. Adding a term to VOICE.md without
+// a phrasing here fails the gate.
+const PROJECTION_REQUIRED = [
+  { canon: 'honest', covered: 'honest answers' },
+  { canon: 'trusted', covered: 'trusted advisor' },
+  { canon: 'dedicated', covered: 'dedicated team' },
+  { canon: 'your local experts', covered: 'your local experts' },
+  { canon: 'premier', covered: 'premier brokerage' },
+  { canon: 'top producing', covered: 'top producing' },
+]
 
 // VOICE.md > Banned constructions > Category and headcount as position.
 const CATEGORY_POSITIONING = [
@@ -109,6 +153,7 @@ const BANNED_WORD_STRINGS = [...new Set(BANNED_WORDS.map((b) => b.word.toLowerCa
 // The larger shape patterns (coined maxims, meaning-narration, sermon clauses)
 // live in scripts/voice-constructions.cjs and run in the same gates.
 module.exports = {
+  PROJECTION_REQUIRED,
   PUNCTUATION,
   CLICHES,
   AI_FILLER,

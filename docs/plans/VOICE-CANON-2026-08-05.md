@@ -334,3 +334,47 @@ Work completed before this prompt was handed off, so a fresh agent does not redo
   rewritten against the canon.
 
 Everything else in Phases 1 through 7 remains.
+
+---
+
+## Recovery run, 2026-08-06 — finishing the stranded rewrite
+
+The rewrite was dispatched across 13 background agents on 2026-08-06. The Claude
+Code process exited while all 13 were mid-task, so their edits are on disk and
+uncommitted, and none of them reached the end of its file list. Their transcripts
+survive at `~/.claude/projects/-Users-matthewryan-RyanRealty/dfae0324-.../subagents/`.
+
+**Measured state at pickup**, not claimed: 97 files dirty, 646 files assigned.
+Per-agent landed-vs-lost, computed from the transcripts against `git status`:
+
+| Agent | Edits landed | Stopped at |
+|---|---|---|
+| portal auth + states | 24 | running the brand-voice check |
+| remaining site components | 15 | "next batch: RelatedAreas, ResortCommunities, ReviewsBlock" |
+| root components | 14 | starting the verification suite |
+| geo pages | 12 | the duplicate "homes for sale" construction |
+| site page prose | 11 | the commission section |
+| legal pages + blog | 1 of ~30 | applying its first edits |
+| content registries | 1 of ~12 | `data/golf-landing.ts` |
+| remaining LPs | 0 | about to edit `app/lp/tetherow/page.tsx` |
+| CMA publication gate | 0 | still reading the architecture |
+
+### What done means for this run
+
+1. The canon→vocabulary projection is mechanically proven, so the gate cannot be
+   green for the wrong reason again.
+2. Every public surface the 13 agents never reached is rewritten to the canon.
+3. Gates green, typecheck clean, and the result read in a browser rather than
+   asserted from a diff.
+4. Committed and pushed.
+
+### Root cause fixed first
+
+`VOICE.md` line 178 bans six self-praise terms. `brand-voice-vocabulary.cjs`
+projected three. `lead="Honest answers to the questions Bend buyers and sellers
+ask us every week"` therefore shipped live on `/faq` while `ci:brand-voice`
+reported clean. The vocabulary file's contract was only ever enforced downstream
+(canon → consumers, by `ci:voice-vocab-parity`); upstream (canon → vocabulary) was
+enforced by nobody. `PROJECTION_REQUIRED` + the assertion in `check-brand-voice.mjs`
+close it, and the check is verified by deliberately removing a term and confirming
+exit 1.
