@@ -497,3 +497,49 @@ export async function getCmaSubdivisionHistory(subdivision: string, sinceIso: st
   }
   return out
 }
+
+// ── Prior-sale read (Matt 2026-08-06: CMA equity-position section — "what
+//    have you actually made on this house?") ──────────────────────────────
+
+export type CmaPriorSaleRow = {
+  ClosePrice: number
+  CloseDate: string
+  TotalLivingAreaSqFt: number | null
+}
+
+/**
+ * The subject's own most recent CLOSED sale at its address, newest CloseDate
+ * first. Feeds lib/cma/equity.ts's computeEquityPosition, which is the one
+ * that decides whether the sale is actually usable (before the current
+ * listing cycle, held long enough, priced > 0) — this read just finds it.
+ */
+export async function getCmaPriorSaleAtAddress(
+  streetNumber: string,
+  streetName: string,
+  city: string,
+): Promise<CmaPriorSaleRow | null> {
+  const sb = client()
+  if (!sb) return null
+  const num = streetNumber.trim()
+  const name = streetName.trim()
+  const cty = city.trim()
+  if (!num || !name) return null
+  let q = sb
+    .from('listings')
+    .select('ClosePrice, CloseDate, TotalLivingAreaSqFt')
+    .eq('StreetNumber', num)
+    .ilike('StreetName', name)
+    .eq('StandardStatus', 'Closed')
+    .not('ClosePrice', 'is', null)
+    .not('CloseDate', 'is', null)
+  if (cty) q = q.ilike('City', cty)
+  const { data, error } = await q
+    .order('CloseDate', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) {
+    console.error('[getCmaPriorSaleAtAddress]', error.message)
+    return null
+  }
+  return (data ?? null) as CmaPriorSaleRow | null
+}

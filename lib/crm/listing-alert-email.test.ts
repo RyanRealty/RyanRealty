@@ -201,7 +201,7 @@ describe('buildListingAlertEmail — typed-event sections (Phase 3)', () => {
     const out = buildListingAlertEmail({ ...base(), sections: sections(), totalNewCount: 7 })
     expect(out.subject).toBe('7 updates for Bend under 800k')
     expect(out.html).toContain('LISTING UPDATES · BEND UNDER 800K')
-    expect(out.html).toContain('7 updates for your search')
+    expect(out.html).toContain('7 updates')
   })
 
   it('a single update keeps singular grammar', () => {

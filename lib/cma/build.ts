@@ -28,6 +28,9 @@ import { judgeComps } from '@/lib/cma/judge'
 import { hydratePhotoUrls } from '@/lib/cma/photos'
 import { resolveCmaSiteData } from '@/lib/cma/county'
 import { buildCmaExtras } from '@/lib/cma/extras'
+import { computeEquityPosition } from '@/lib/cma/equity'
+import { buildListingPlan } from '@/lib/cma/listing-plan'
+import { getCmaPriorSaleAtAddress } from '@/lib/data/cma/builderReads'
 import { buildSubdivisionStory, SUBDIVISION_STORY_YEARS } from '@/lib/cma/subdivision-story'
 import { getCmaSubdivisionHistory } from '@/lib/data/cma/builderReads'
 import { auditCma } from '@/lib/cma/audit'
@@ -428,6 +431,16 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     const subjectPhotosCount = subject.listingKey ? await getListingPhotosCount(subject.listingKey) : null
     const extras = await buildCmaExtras({ subject, comps: adjusted, pricing, subjectPhotosCount })
 
+    // 4.76. What they own: the prior purchase at this address, and what the
+    // recommendation says it has done since. Honest in both directions; a loss
+    // renders exactly like a gain.
+    const priorSale = await getCmaPriorSaleAtAddress(
+      subject.streetAddress.split(' ')[0] ?? '',
+      subject.streetAddress.split(' ').slice(1).join(' '),
+      subject.city,
+    ).catch(() => null)
+    const equity = computeEquityPosition({ priorSale, recommendedPrice: pricing.recommended, asOf: new Date() })
+
     // 4.77. The subdivision story (Matt 2026-08-05: the homeowner's deep read
     // on their own street; "this is where we provide our value"). Facts are
     // deterministic over the FULL history; the AI narrative is grounded on
@@ -446,6 +459,22 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     const development = resolveDevelopmentOpportunities(site, subject)
     // 4.9. Rental potential — same pure-function contract, cited per tenure.
     const rental = resolveRentalPotential(subject, site)
+
+    // 4.9. What we would do about it, derived only from this home's own
+    // measured gaps. Every line cites a figure computed above.
+    const rawPlan = buildListingPlan({ subject, pricing, extras, expiredAudit, market })
+    // Plan lines cite source strings computed elsewhere, so they inherit that
+    // punctuation. Sanitize at the boundary rather than trusting every source.
+    const listingPlan = rawPlan
+      ? {
+          source: sanitizeClientProse(rawPlan.source),
+          items: rawPlan.items.map((i) => ({
+            trigger: sanitizeClientProse(i.trigger),
+            action: sanitizeClientProse(i.action),
+            basis: sanitizeClientProse(i.basis),
+          })),
+        }
+      : null
 
     // 5. Map (best effort — the report ships without it if the key is absent).
     const map = await buildCmaMapDataUri(subject, adjusted)
@@ -476,6 +505,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       pricing.confidenceReason,
       ...(development ? [development.disclaimer, ...development.items.flatMap((i) => [i.headline, i.detail]), ...development.buyerOptions.flatMap((o) => [o.headline, o.detail]), ...development.marketingHighlights.map((h) => h.headline)] : []),
       ...(rental ? [rental.disclaimer, rental.economicsNote, ...rental.tenures.flatMap((t) => [t.headline, t.detail]), ...rental.marketingHighlights.map((h) => h.headline)] : []),
+      ...(listingPlan ? listingPlan.items.flatMap((i) => [i.trigger, i.action, i.basis]) : []),
       ...(subdivisionStory
         ? [
             ...subdivisionStory.sections.flatMap((sec) => [sec.heading, sec.body]),
@@ -548,6 +578,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       rental,
       extras,
       subdivisionStory,
+      equity,
+      listingPlan,
     }
 
     // Spread, never a second hand-written list: a field added to one list and
@@ -616,6 +648,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             photo_sales: subdivisionStory.notableSales.map((n) => ({ mls: n.listNumber, address: n.address })),
           }
         : { source: 'none' },
+      equity_position: equity ?? { source: 'none' },
+      listing_plan: listingPlan ?? { source: 'none' },
       report_extras: {
         seasonality: extras.seasonality ? { source: extras.seasonality.source, by_month: extras.seasonality.byMonth } : { source: 'none' },
         price_band: extras.band ?? { source: 'none' },

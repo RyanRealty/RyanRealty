@@ -135,7 +135,7 @@ function brokerClose(b: ShellBroker): string {
         <td width="16"></td>
         <td valign="top" style="color:#dbe2ec;font-size:16px;line-height:1.6;">
           <div style="font-family:${SERIF};color:${EMAIL_CREAM};font-size:22px;line-height:1.2;margin-bottom:10px;">Buying, selling, or just weighing it up.</div>
-          I'm ${escapeHtml(b.name)}${whoami}. For a straight read on what your home is worth, or what your budget actually buys in this market,${phoneLine}.
+          I'm ${escapeHtml(b.name)}${whoami}. For a straight read on what your home is worth, or what your budget buys right now,${phoneLine}.
         </td>
       </tr></table>
       <div style="text-align:center;margin-top:22px;">

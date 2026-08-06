@@ -635,7 +635,7 @@ export default async function BuyerLPPage() {
             <FAQ
               value="faq-remote"
               q="I am not in Bend. Can I still look?"
-              a="Yes. A large share of our buyers start from out of the area. Video walk-throughs, document review by email, and showings scheduled around your visits make the distance workable."
+              a="Yes. Video walk-throughs, document review by email, and showings scheduled around your visits make the distance workable."
             />
           </Accordion>
         </div>

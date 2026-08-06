@@ -30,7 +30,7 @@ export async function sendBrokerNotification(params: {
   const firstName = params.brokerName?.split(/\s+/)[0] ?? 'team'
   const leadDisplay = params.leadName ?? params.leadEmail
   const queueUrl = `${SITE_URL}/admin/cmas`
-  const subject = `New CMA request — ${params.subjectAddress}`
+  const subject = `New CMA request for ${params.subjectAddress}`
   const text = [
     `Hi ${firstName},`,
     '',
@@ -48,7 +48,7 @@ export async function sendBrokerNotification(params: {
     '',
     `Open the queue: ${queueUrl}`,
     '',
-    `— Ryan Realty automation`,
+    `Ryan Realty automation`,
   ]
     .filter((line) => line !== null)
     .join('\n')
@@ -66,7 +66,7 @@ export async function sendBrokerNotification(params: {
   </table>
   <p>The request is queued in <strong>/admin/cmas</strong> (slug: <code>${escapeHtml(params.cmaSlug)}</code>). The CMA builds automatically within about 30 minutes and lands there as a draft. Approve it on the review page, then send it to the lead.</p>
   <p><a href="${queueUrl}" style="display:inline-block;background:#102742;color:#faf8f4;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:600;">Open the CMA queue</a></p>
-  <p style="margin-top:24px;color:#5b6473;font-size:13px;">— Ryan Realty automation</p>
+  <p style="margin-top:24px;color:#5b6473;font-size:13px;">Ryan Realty automation</p>
 </div>
 `.trim()
 
@@ -93,7 +93,7 @@ export async function sendLeadConfirmation(params: {
 
   const firstName = params.leadName?.split(/\s+/)[0] ?? 'there'
   const brokerFirst = params.brokerName?.split(/\s+/)[0] ?? 'one of our brokers'
-  const subject = `We got your home value request — ${params.subjectAddress}`
+  const subject = `Your home value request for ${params.subjectAddress}`
   const text = [
     `Hi ${firstName},`,
     '',

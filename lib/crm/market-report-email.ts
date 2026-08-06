@@ -530,8 +530,8 @@ export function renderMarketReportEmail(
   // Raw for the preheader (the shell escapes it), escaped inline for the body.
   const introRaw =
     areas.length === 1
-      ? `Here is where the ${areas[0].areaLabel} market stands as of ${asOf}, with the context to read the numbers the way we do.`
-      : `Here is where your Central Oregon markets stand as of ${asOf}, with the context to read the numbers the way we do.`
+      ? `Here is where the ${areas[0].areaLabel} market stands as of ${asOf}.`
+      : `Here is where your Central Oregon markets stand as of ${asOf}.`
   const introLine = escapeHtml(introRaw)
 
   const headerHtml = `<tr><td style="padding:30px 34px 0;">

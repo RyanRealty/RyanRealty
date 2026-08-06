@@ -534,7 +534,7 @@ export default async function SellerHomeValuePage({
             <FAQ
               value="faq-list"
               q="Do I have to list with you to get the value?"
-              a="No. Many of the homeowners we send valuations to decide to stay another year, or longer. We send it anyway. We are here when the timing is right, whether that is next month or three years from now."
+              a="No. Many of the homeowners we send valuations to decide to stay another year, or longer. We send it anyway."
             />
             <FAQ
               value="faq-accuracy"

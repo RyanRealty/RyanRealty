@@ -198,8 +198,8 @@ export default async function ExpiredListingPage() {
         <div className="mx-auto max-w-3xl px-4 py-12 text-center sm:px-6 sm:py-14">
           <ScrollReveal>
             <p className="font-display text-2xl uppercase leading-snug tracking-[-0.01em] text-[#102742] sm:text-3xl">
-              The market did not reject your home. The strategy missed. Those are different
-              problems with different fixes.
+              One of five things usually breaks a listing. The audit tells you which one broke
+              yours.
             </p>
           </ScrollReveal>
         </div>

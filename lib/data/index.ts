@@ -527,8 +527,9 @@ export {
   getCmaSubdivisionHistory,
   getCmaBandInventory,
   getCmaSubdivisionClosed,
+  getCmaPriorSaleAtAddress,
 } from '@/lib/data/cma/builderReads'
-export type { CmaListingRow, CmaMarketStatsRow, CmaMarketPulseRow, CmaClosedSkinnyRow, CmaBandInventory, CmaSubdivisionSaleRow, CmaSubdivisionHistoryRow } from '@/lib/data/cma/builderReads'
+export type { CmaListingRow, CmaMarketStatsRow, CmaMarketPulseRow, CmaClosedSkinnyRow, CmaBandInventory, CmaSubdivisionSaleRow, CmaSubdivisionHistoryRow, CmaPriorSaleRow } from '@/lib/data/cma/builderReads'
 export {
   getCmaAdminRowBySlug,
   getCmaHtmlBySlug,

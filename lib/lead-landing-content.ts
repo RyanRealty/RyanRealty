@@ -40,7 +40,7 @@ export const SELL_INTENT_PAGES: Record<string, LeadLandingConfig> = {
     trustBullets: [
       'No pressure consultation',
       'Pricing and offer strategy backed by local data',
-      'Showings negotiation and paperwork guidance',
+      'Guidance on showings, negotiation, and paperwork',
     ],
     challengeTitle: 'Common FSBO pressure points',
     challengeBullets: [
@@ -193,7 +193,7 @@ export const BUY_INTENT_PAGES: Record<string, LeadLandingConfig> = {
       },
       {
         question: 'Can I buy while rates are higher',
-        answer: 'Yes. We focus on payment comfort and long term fit so you can decide with confidence.',
+        answer: 'Yes. A higher rate raises your monthly payment. It does not decide whether buying makes sense for you. We run the actual payment at today’s rate before you write an offer, so you decide on real numbers.',
       },
     ],
     formTitle: 'Request your first time buyer plan',
@@ -236,7 +236,7 @@ export const BUY_INTENT_PAGES: Record<string, LeadLandingConfig> = {
       },
       {
         question: 'Which cities should we consider first',
-        answer: 'That depends on budget lifestyle and commute. We help narrow options quickly with local context.',
+        answer: 'That depends on your budget, your commute tolerance, and how much space matters to you. We ask those questions first, then narrow the city list before you tour.',
       },
     ],
     formTitle: 'Request your relocation consultation',
@@ -256,7 +256,7 @@ export const BUY_INTENT_PAGES: Record<string, LeadLandingConfig> = {
     secondaryCtaLabel: 'View market reports',
     secondaryCtaHref: '/housing-market',
     trustBullets: [
-      'Data first buy box planning',
+      'A buy box built from data',
       'Neighborhood and inventory intelligence',
       'Clear underwriting assumptions before offers',
     ],

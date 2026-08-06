@@ -54,8 +54,8 @@ export async function sendSigningInvite(params: {
   return sendEmail({
     to: params.to,
     subject: params.reminder
-      ? `Reminder: signature requested for ${params.propertyAddress}`
-      : `Signature requested: ${params.propertyAddress}`,
+      ? `Your signature is still needed for ${params.propertyAddress}`
+      : `Your signature is requested for ${params.propertyAddress}`,
     html: shell({ heading, bodyHtml: body, cta: { label: 'Review and sign', url: params.signUrl } }),
     replyTo: params.replyTo,
   })
@@ -77,7 +77,7 @@ export async function sendCompletionCopy(params: {
   `
   return sendEmail({
     to: params.to,
-    subject: `Signed and complete: ${params.propertyAddress}`,
+    subject: `Your signed documents for ${params.propertyAddress}`,
     html: shell({ heading: `Your signed documents for ${params.propertyAddress}`, bodyHtml: body }),
     replyTo: params.replyTo,
     attachments: [{ filename: params.pdfName, content: params.pdf }],
@@ -104,8 +104,8 @@ export async function sendBrokerSignedNotice(params: {
     to: params.to,
     subject:
       params.remaining > 0
-        ? `Signed: ${params.signerName} on ${params.propertyAddress}`
-        : `Complete: ${params.propertyAddress} is fully signed`,
+        ? `${params.signerName} signed for ${params.propertyAddress}`
+        : `All signatures complete for ${params.propertyAddress}`,
     html: shell({ heading, bodyHtml: body, cta: { label: 'Open the deal', url: params.dealUrl } }),
   })
 }

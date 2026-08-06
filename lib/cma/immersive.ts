@@ -18,6 +18,8 @@
 import type { RenderCmaArgs } from '@/lib/cma/render'
 import type { CmaBroker } from '@/lib/cma/types'
 import { FAILED_ASK_BACKTEST } from '@/lib/cma/expired-audit'
+import type { CmaEquityPosition } from '@/lib/cma/equity'
+import type { ListingPlan } from '@/lib/cma/listing-plan'
 import { formatDate } from '@/lib/format/date'
 
 type ImmersiveArgs = RenderCmaArgs & { broker: CmaBroker }
@@ -146,6 +148,51 @@ function storyScene(a: ImmersiveArgs): string {
   </section>`
 }
 
+
+
+
+function planScene(a: ImmersiveArgs): string {
+  const p = a.listingPlan
+  if (!p) return ''
+  const cards = p.items
+    .map(
+      (i) => `<div class="plan r">
+      <div class="plan-t">${esc(i.trigger)}</div>
+      <div class="plan-a">${esc(i.action)}</div>
+      <div class="plan-b">${esc(i.basis)}</div>
+    </div>`,
+    )
+    .join('')
+  return `
+  <section class="sc sc-navy" id="what-we-would-do">
+    <div class="in wide">
+      <div class="kick r">What we would do</div>
+      <h2 class="h r">${int(p.items.length)} things this home needs, measured</h2>
+      <p class="lede r">Every line comes from a number in this report.</p>
+      <div class="plan-grid">${cards}</div>
+      <div class="src r">${esc(p.source)}</div>
+    </div>
+  </section>`
+}
+
+function equityScene(a: ImmersiveArgs): string {
+  const e = a.equity
+  if (!e) return ''
+  const up = e.gainDollars >= 0
+  return `
+  <section class="sc sc-navy" id="what-you-own">
+    <div class="in">
+      <div class="kick r">What you own</div>
+      <h2 class="h r">You bought this home for ${usd(e.purchasePrice)} in ${dateLong(e.purchaseDate)}.</h2>
+      <div class="stat3 r">
+        <div class="st"><div class="st-n" data-count>${usd(Math.abs(e.gainDollars))}</div><div class="st-l">${up ? 'above' : 'below'} what you paid, at the recommended price</div></div>
+        <div class="st"><div class="st-n">${up ? '' : '-'}${dec(Math.abs(e.gainPct), 1)}%</div><div class="st-l">change over ${dec(e.yearsHeld, 1)} years of ownership</div></div>
+        ${e.annualizedPct != null ? `<div class="st"><div class="st-n">${e.annualizedPct < 0 ? '-' : ''}${dec(Math.abs(e.annualizedPct), 1)}%</div><div class="st-l">a year, compounded</div></div>` : ''}
+      </div>
+      <div class="src r">${esc(e.source)}</div>
+    </div>
+  </section>`
+}
 
 function subdivisionStoryScene(a: ImmersiveArgs): string {
   const st = a.subdivisionStory
@@ -465,6 +512,12 @@ img{max-width:100%}
 .szn-na{font-size:11px;opacity:.4}
 .szn-m{font-size:12px;opacity:.65;margin-top:8px}
 .on .szn-bar{transform:scaleY(1)}
+/* the plan */
+.plan-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:8px}
+.plan{background:rgba(250,248,244,.06);border:1px solid rgba(250,248,244,.14);border-radius:16px;padding:20px}
+.plan-t{font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.7;margin-bottom:8px}
+.plan-a{font-size:16px;font-weight:600;line-height:1.45}
+.plan-b{font-size:13px;opacity:.7;margin-top:8px}
 /* subdivision story */
 .yr{display:flex;gap:10px;align-items:flex-end;height:300px;margin:10px 0 18px;overflow-x:auto;padding-bottom:6px}
 .yr-col{flex:1;min-width:64px;display:flex;flex-direction:column;align-items:center;height:100%}
@@ -530,7 +583,7 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
 @keyframes kb{from{transform:scale(1)}to{transform:scale(1.08)}}
 @media (max-width:860px){
   .stat3,.stat4{grid-template-columns:1fr 1fr}
-  .cmp-grid,.story-grid,.like-grid,.cando-grid,.sty-grid{grid-template-columns:1fr}
+  .cmp-grid,.story-grid,.like-grid,.cando-grid,.sty-grid,.plan-grid{grid-template-columns:1fr}
   .nb-grid{grid-template-columns:1fr 1fr}
   .yr{height:220px}
   .next-in{flex-direction:column;align-items:flex-start}
@@ -579,14 +632,16 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
   </div>
 </section>
 
+${equityScene(a)}
 ${subdivisionStoryScene(a)}
-${storyScene(a)}
 ${compsScene(a)}
-${marketScene(a)}
-${seasonalityScene(a)}
+${storyScene(a)}
 ${competitionScene(a)}
+${seasonalityScene(a)}
+${marketScene(a)}
 ${likesScene(a)}
 ${canDoScene(a)}
+${planScene(a)}
 ${nextScene(a)}
 
 <script>

@@ -151,7 +151,7 @@ export default async function ListYourHomePage() {
                 Bend · Oregon · List your home
               </p>
               <h1 className="mt-4 font-display text-4xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-5xl lg:text-6xl">
-                The proof is the page.
+                {"That's Every Bend Sale We've Closed."}
               </h1>
               <p className="mt-5 text-lg leading-relaxed text-[#102742]/75">
                 Ryan Realty has represented sellers through every kind of Bend market. Real data, real broker, from your first call to closing day.
@@ -222,7 +222,7 @@ export default async function ListYourHomePage() {
             />
             <WhyPoint
               title="Marketing built for your home"
-              body="Professional photography, a full MLS listing with wide syndication, and targeted local promotion. Your interests, not a template."
+              body="Professional photography, a full MLS listing with wide syndication, and targeted local promotion."
             />
           </div>
         </div>

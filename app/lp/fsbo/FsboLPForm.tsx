@@ -307,6 +307,9 @@ export default function FsboLPForm({ heroVariant = false, formId = 'fsbo-form' }
             How is the sale going so far?{' '}
             <span className="text-sm font-normal text-muted-foreground">(optional)</span>
           </Label>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Helps us tailor the report. Skip it if there is nothing to add.
+          </p>
           <Textarea
             id={`${formId}-notes`}
             name="notes"

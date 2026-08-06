@@ -124,7 +124,7 @@ export default function ExpiredLPForm() {
           </Select>
         </div>
         <Button type="submit" className="w-full">
-          Continue
+          Continue to contact info
         </Button>
         <p className="text-center text-xs text-muted-foreground">
           No commitment. You get the audit either way.

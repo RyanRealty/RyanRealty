@@ -229,9 +229,9 @@ export function marketIntroLine(cities: MarketCity[], noun: 'cities' | 'areas' =
   }
   const bend = cities.find((c) => c.slug === 'bend')
   if (bend && bend.medianPrice != null) {
-    return `Across the ${cities.length} ${noun} we cover, the median home in Bend closed at ${currencyRounded(bend.medianPrice)}. They are not one market.`
+    return `Across the ${cities.length} ${noun} we cover, the median home in Bend closed at ${currencyRounded(bend.medianPrice)}.`
   }
-  return `Across the ${cities.length} ${noun} we cover, no two are the same market.`
+  return `Here is where each of the ${cities.length} ${noun} we cover stands today.`
 }
 
 /** Evergreen For Sellers copy. No market number (adapted from approved email.html). */

@@ -250,8 +250,8 @@ export default function SellerLPForm({
           Your report lands in your inbox within one business day.
         </p>
         <p className="mt-3 text-base text-foreground/75">
-          No obligation, and no pressure. We are here as a resource whenever you
-          are ready, whether that is this year or a few years out.
+          No obligation, no pressure. Reach out whenever you are ready, this year or years from
+          now.
         </p>
         <p className="mt-3 text-base text-muted-foreground">
           Prefer to talk right now? Call Matt directly at{' '}

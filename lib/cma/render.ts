@@ -44,6 +44,8 @@ import type {
 } from '@/lib/cma/types'
 import type { CmaExtras } from '@/lib/cma/extras'
 import type { SubdivisionStory } from '@/lib/cma/subdivision-story'
+import type { CmaEquityPosition } from '@/lib/cma/equity'
+import type { ListingPlan } from '@/lib/cma/listing-plan'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
@@ -86,6 +88,10 @@ export interface RenderCmaArgs {
   extras?: CmaExtras | null
   /** The subdivision deep story: deterministic facts + grounded AI narrative. */
   subdivisionStory?: SubdivisionStory | null
+  /** What they paid, and what the recommendation says it has done since. */
+  equity?: CmaEquityPosition | null
+  /** What we would do about this home, derived from its own measured gaps. */
+  listingPlan?: ListingPlan | null
 }
 
 interface PageDef {
@@ -654,6 +660,49 @@ function seasonalityChartSvg(x: NonNullable<CmaExtras['seasonality']>): string {
 
 
 // ── The subdivision story (Matt 2026-08-05: the homeowner's deep read) ─────
+
+// ── What you own (the prior purchase and what it has done) ────────────────
+
+// ── What we would do about it (the plan, from this home's own numbers) ────
+function listingPlanPage(a: RenderCmaArgs): PageDef | null {
+  const p = a.listingPlan
+  if (!p) return null
+  const rows = p.items
+    .map(
+      (i) =>
+        `<li><strong>${esc(i.trigger)}</strong><div>${esc(i.action)}</div><div class="small">${esc(i.basis)}</div></li>`,
+    )
+    .join('')
+  return {
+    meta: `${esc(a.subject.streetAddress)} · What We Would Do`,
+    toc: 'What we would do',
+    body: `
+  <h2 class="section">What We Would Do</h2>
+  <p>Every line below comes from a number in this report, measured on your home.</p>
+  <ul class="note-list">${rows}</ul>
+  <div class="trace"><div class="t-hd">Source</div>${esc(p.source)}</div>`,
+  }
+}
+
+function equityPage(a: RenderCmaArgs): PageDef | null {
+  const e = a.equity
+  if (!e) return null
+  const up = e.gainDollars >= 0
+  return {
+    meta: `${esc(a.subject.streetAddress)} · What You Own`,
+    toc: 'What you own',
+    body: `
+  <h2 class="section">What You Own</h2>
+  <p>You bought this home for ${usd(e.purchasePrice)} in ${dateLong(e.purchaseDate)}. At the recommended price it is ${usd(Math.abs(e.gainDollars))} ${up ? 'above' : 'below'} that, ${up ? 'up' : 'down'} ${dec(Math.abs(e.gainPct), 1)}% over ${dec(e.yearsHeld, 1)} years${e.annualizedPct != null ? `, or ${dec(Math.abs(e.annualizedPct), 1)}% a year compounded` : ''}.</p>
+  <div class="stat-strip" style="grid-template-columns: repeat(3, 1fr);">
+    <div class="stat"><div class="lbl">You Paid</div><div class="val">${usd(e.purchasePrice)}</div></div>
+    <div class="stat"><div class="lbl">Recommended</div><div class="val">${usd(a.pricing.recommended)}</div></div>
+    <div class="stat"><div class="lbl">${up ? 'Gain' : 'Change'}</div><div class="val">${up ? '' : '-'}${usd(Math.abs(e.gainDollars))}</div></div>
+  </div>
+  <div class="trace"><div class="t-hd">Source</div>${esc(e.source)}</div>`,
+  }
+}
+
 function subdivisionStoryPage(a: RenderCmaArgs): PageDef | null {
   const st = a.subdivisionStory
   if (!st) return null
@@ -888,6 +937,8 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   // disclosure and the ask.
   const rest: PageDef[] = []
   rest.push(subjectPage(a))
+  const equity = equityPage(a)
+  if (equity) rest.push(equity)
   const likes = whatWeLikePage(a)
   if (likes) rest.push(likes)
   const map = mapPage(a)
@@ -911,6 +962,8 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   if (highlights) rest.push(highlights)
   const canDo = whatYouCanDoPage(a)
   if (canDo) rest.push(canDo)
+  const plan = listingPlanPage(a)
+  if (plan) rest.push(plan)
   const verify = verifyPage(a)
   if (verify) rest.push(verify)
   // Last-listing review (Matt 2026-08-05: ONE doc — the expired story is a

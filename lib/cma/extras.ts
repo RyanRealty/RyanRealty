@@ -127,7 +127,7 @@ export function computeSeasonality(rows: CmaClosedSkinnyRow[], city: string, sin
     slowestMonths: ranked.slice(-2).map((m) => m.monthName),
     yearsCovered: years,
     totalClosed: rows.length,
-    source: `Supabase listings, City='${city}', PropertyType='A', Closed, CloseDate ≥ ${sinceIso}: ${rows.length} sales grouped by close month; median days_to_pending per month (months with ≥ 12 datapoints only)`,
+    source: `Supabase listings, City='${city}', PropertyType='A', Closed, CloseDate ≥ ${sinceIso}: ${rows.length} sales grouped by close month, median days_to_pending per month (months with at least 12 datapoints)`,
   }
 }
 

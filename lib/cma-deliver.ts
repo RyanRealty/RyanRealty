@@ -124,17 +124,17 @@ function buildLeadEmailBody(params: {
     params.valueHigh != null
 
   const numbersHtml = hasNumbers
-    ? `<p style="margin:0 0 14px 0;">Here's the short version. Based on what's actually sold near you, your home lands in a range of <strong>${formatPrice(params.valueLow)} to ${formatPrice(params.valueHigh)}</strong>, and I'd price it around <strong>${formatPrice(params.recommendedList)}</strong>.</p>`
+    ? `<p style="margin:0 0 14px 0;">Based on what's sold near you, your home lands in a range of <strong>${formatPrice(params.valueLow)} to ${formatPrice(params.valueHigh)}</strong>, and I'd price it around <strong>${formatPrice(params.recommendedList)}</strong>.</p>`
     : ''
 
   const numbersText = hasNumbers
-    ? `Here's the short version. Based on what's actually sold near you, your home lands in a range of ${formatPrice(params.valueLow)} to ${formatPrice(params.valueHigh)}, and I'd price it around ${formatPrice(params.recommendedList)}.\n\n`
+    ? `Based on what's sold near you, your home lands in a range of ${formatPrice(params.valueLow)} to ${formatPrice(params.valueHigh)}, and I'd price it around ${formatPrice(params.recommendedList)}.\n\n`
     : ''
 
   const html = `
 <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#102742;max-width:600px;line-height:1.6;">
   <p style="margin:0 0 14px 0;">Hi ${escapeHtml(params.firstName)},</p>
-  <p style="margin:0 0 14px 0;">Thanks for reaching out. I put together a full market analysis for <strong>${escapeHtml(params.subjectAddress)}</strong>, and it's attached as a PDF.</p>
+  <p style="margin:0 0 14px 0;">I put together a full market analysis for <strong>${escapeHtml(params.subjectAddress)}</strong>. It's attached as a PDF.</p>
   ${numbersHtml}
   <p style="margin:0 0 14px 0;">The report walks through the comparable sales and where the Bend market sits right now. I'm happy to talk it through whenever works for you, no pressure.</p>
   <p style="margin:18px 0 0 0;">${escapeHtml(params.signOff)}<br/>Ryan Realty<br/>541.703.3095</p>
@@ -143,7 +143,7 @@ function buildLeadEmailBody(params: {
 
   const text = `Hi ${params.firstName},
 
-Thanks for reaching out. I put together a full market analysis for ${params.subjectAddress}, and it's attached as a PDF.
+I put together a full market analysis for ${params.subjectAddress}. It's attached as a PDF.
 
 ${numbersText}The report walks through the comparable sales and where the Bend market sits right now. I'm happy to talk it through whenever works for you, no pressure.
 

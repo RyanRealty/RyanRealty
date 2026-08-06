@@ -119,7 +119,9 @@ export default function BuyerLPForm() {
         <Input id="email" name="email" type="email" required placeholder="you@example.com" className="mt-1" />
       </div>
       <div>
-        <Label htmlFor="phone">Phone</Label>
+        <Label htmlFor="phone">
+          Phone <span className="text-sm font-normal text-muted-foreground">(optional)</span>
+        </Label>
         <Input id="phone" name="phone" type="tel" placeholder={CONTACT.phoneFub} className="mt-1" />
       </div>
 

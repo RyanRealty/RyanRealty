@@ -377,7 +377,7 @@ export default function FsboLPPage() {
             <FAQ
               value="faq-catch"
               q="What is the catch on the free report?"
-              a="There is no condition attached. You get the report whether or not you ever talk to us again. Owners who get an honest number remember where it came from. That is the whole business case."
+              a="There is no condition attached. You get the report whether or not you ever talk to us again. Owners who get an honest number remember where it came from."
             />
             <FAQ
               value="faq-pitch"

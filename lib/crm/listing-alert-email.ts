@@ -229,8 +229,8 @@ export function buildListingAlertEmail(input: BuildListingAlertEmailInput): Buil
       : buildListingAlertSubject(total, searchName)
   const countLine =
     hasSections && !newOnly
-      ? `${total} ${total === 1 ? 'update' : 'updates'} for your search`
-      : `${total} new ${total === 1 ? 'listing matches' : 'listings match'} your search`
+      ? `${total} ${total === 1 ? 'update' : 'updates'}`
+      : `${total} new ${total === 1 ? 'listing' : 'listings'}`
   const intro = (input.intro ?? '').trim()
   const filtersSummary = (input.filtersSummary ?? '').trim()
   const browseHref = escapeHtml(input.browseAllUrl)
