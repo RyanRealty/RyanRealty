@@ -85,3 +85,24 @@ Ship bar: each unit committed separately, pushed, deploy-verified READY, product
   recording, stored html 0 script tags. Pushed d79f48bf..827c276e; deploy:verify running.
   NEXT: production spot-check after deploy; then remaining queue (matt-inputs: cut-off
   sentence "ensure that our…", fixture cleanup on Matt's done).
+
+[2026-08-05 17:45] ROUND 5 — the immersive homeowner experience (Matt: "must be immersive...
+  review all past sales and photos, tell a story... everything I could possibly want to know
+  about my home. This is where we provide our value.")
+  6cbc4a94 TWO PRESENTATIONS, ONE DATA SOURCE: /cma/[slug] default = full-viewport
+           scrollytelling rendered per-request from the persisted render_args (hero photo,
+           answer-first price band, subdivision story, failed-listing story w/ backtest,
+           comp photo cards, market, when-to-list, competition, warm read, broker close).
+           ?print=1 = stored print artifact; PDF path untouched; register/consent door runs
+           before either. Older rows w/o render_args fall back automatically.
+           SUBDIVISION STORY ENGINE (lib/cma/subdivision-story.ts): deterministic facts over
+           the FULL subdivision history (paged; 400-cap truncation found+fixed vs ground
+           truth: Stone Creek 450 sales, 2019 median $407,990) + one grounded sonnet pass
+           (~$0.03/doc) over facts + remarks + 4 recent hero photos fetched server-side as
+           base64 (MLS CDN robots.txt blocks Anthropic URL fetch). Prompt forbids
+           non-verbatim numbers; voice-sanitized; through the brand-voice gate; fails open.
+           Renders in both presentations. 648 lib/cma tests green.
+  c089756d gate fix: commit-compiles tsc got the standard 8GB heap (SIGABRT'd 3 pushes).
+  21635409 immersive dates via formatDate (date-format gate catch).
+  17f95086 file-size rebaseline. Pushed; deploy watching. Byron (cma-20513-byron) is the
+  showcase doc: Stone Creek story w/ AI narrative + 4 photo cards verified vs DB.
