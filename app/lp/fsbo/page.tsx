@@ -449,7 +449,7 @@ export default function FsboLPPage() {
       {/* Exit-intent prompt — desktop-only, once per session. */}
       <ExitIntentPrompt
         headline="Keep the report for later?"
-        body="See what Bend homes are actually selling for first. Real closed-sale data, no email required."
+        body="See what Bend homes are selling for first. Closed-sale data, no email required."
         ctaLabel="See the market"
         ctaTarget="/housing-market"
       />

@@ -501,7 +501,7 @@ export default async function BuyerLPPage() {
               <ProcessStep
                 num="2"
                 title="A broker reviews every match"
-                body="Not just a saved search. A person who knows the streets filters what actually fits."
+                body="A broker reads each match against what you asked for before it reaches you."
               />
             </ScrollReveal>
             <ScrollReveal delayMs={150}>

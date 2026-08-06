@@ -587,7 +587,7 @@ export default async function SellerHomeValuePage({
       {/* Exit-intent prompt — desktop-only, once per session. */}
       <ExitIntentPrompt
         headline="Not ready for a valuation?"
-        body="See what Bend homes are actually selling for. Real closed-sale data, no email required."
+        body="See what Bend homes are selling for. Closed-sale data, no email required."
         ctaLabel="See the market"
         ctaTarget="/housing-market"
       />

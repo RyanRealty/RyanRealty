@@ -715,7 +715,7 @@ export default async function TetherowLandingPage() {
         <SectionHead
           eyebrow="Lifestyle + amenities"
           headline="What you actually live with, day to day."
-          body="Tetherow is not just a golf course with houses around it. Eight on-property assets plus the Shevlin Park trail network across the road. What follows is the full inventory."
+          body="Eight on-property assets, plus the Shevlin Park trail network across the road."
         />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {cfg.amenities.map((a) => (
@@ -890,7 +890,7 @@ export default async function TetherowLandingPage() {
         <SectionHead
           eyebrow="Looking to buy"
           headline="Ready to buy in Tetherow?"
-          body="Three doors in. Schedule a showing on a specific home, get on the list for new Tetherow matches, or request the buyer's guide if you're still in research mode."
+          body="Schedule a showing on a specific home, get on the list for new Tetherow matches, or request the buyer's guide."
           onDark
         />
         <p className="-mt-4 mb-7 text-[14.5px] text-[rgba(250,248,244,0.92)]">
@@ -987,7 +987,7 @@ export default async function TetherowLandingPage() {
         <SectionHead
           eyebrow="Sub-communities"
           headline={`${cfg.sub_neighborhoods.length} neighborhoods inside the ${cfg.acres}-acre master plan.`}
-          body="Each with its own architectural guidelines, lot size, dues schedule, and turnover pattern. Drag, scroll, or use the arrows to browse. Tap any card for the sub-neighborhood profile."
+          body="Each with its own architectural guidelines, lot size, dues schedule, and turnover pattern."
         />
         <TetherowScroller cards={scrollerCards} />
       </Section>
@@ -1210,8 +1210,8 @@ export default async function TetherowLandingPage() {
             </p>
             <ul className="mt-6 list-none space-y-3 p-0">
               {[
-                'Signed by a licensed Oregon principal broker, not an automated estimate like Zillow\'s',
-                'Built on actual Tetherow sales, not citywide averages',
+                'Signed by a licensed Oregon principal broker',
+                'Built on Tetherow sales, not citywide averages',
                 'Shows how close homes are selling to list price, how long they\'re taking to sell, and which homes near you sold for what',
                 'Delivered as a PDF. Yours to keep, share, or compare with another broker',
                 'To your inbox with a confirmation text. No phone tag.',
