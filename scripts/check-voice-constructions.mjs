@@ -300,7 +300,10 @@ if (MODE === 'worklist') {
 
 if (MODE === 'baseline') {
   const byFile = Object.fromEntries(results.map((r) => [r.file, r.hits.length]))
-  writeFileSync(BASELINE_PATH, `${JSON.stringify({ total, byFile }, null, 2)}\n`)
+  writeFileSync(
+    BASELINE_PATH,
+    `${JSON.stringify({ total, exemptions: EXEMPT.length, skipTop: SKIP_TOP.size, byFile }, null, 2)}\n`,
+  )
   console.log(`✓ Baseline written: ${total} construction violation(s) across ${results.length} file(s) → ${relative(ROOT, BASELINE_PATH)}`)
   process.exit(0)
 }
@@ -331,6 +334,22 @@ if (!existsSync(BASELINE_PATH)) {
 const baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'))
 const baseTotal = baseline.total ?? 0
 const baseByFile = baseline.byFile ?? {}
+
+// ANTI-GAMING. The cheapest way to make this number fall is to stop looking:
+// add a path to EXEMPT, or a directory to SKIP_TOP. That is not progress, it
+// is hiding. Scope may only widen. Narrowing it requires deleting a rule from
+// VOICE.md first, which is a decision, not a convenience.
+const baseExempt = baseline.exemptions ?? EXEMPT.length
+const baseSkip = baseline.skipTop ?? SKIP_TOP.size
+if (EXEMPT.length > baseExempt || SKIP_TOP.size > baseSkip) {
+  console.error('✗ Voice scan scope NARROWED:')
+  if (EXEMPT.length > baseExempt) console.error(`    exempt paths ${baseExempt} → ${EXEMPT.length}`)
+  if (SKIP_TOP.size > baseSkip) console.error(`    skipped roots ${baseSkip} → ${SKIP_TOP.size}`)
+  console.error('\n  Fewer files scanned is not fewer violations. If a pattern is genuinely')
+  console.error('  wrong, fix the pattern in scripts/voice-constructions.cjs and say so in')
+  console.error('  the commit. Do not exempt real copy to make the count drop.')
+  process.exit(1)
+}
 
 const regressions = []
 for (const r of results) {

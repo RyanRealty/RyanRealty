@@ -68,7 +68,30 @@ to work through, not a reason to stop.
 boundary, whichever comes first. Push whenever a batch is green. Never hold 40 files
 of edits in an uncommitted tree.
 
-## The loop
+## Parallelize. The work is independent.
+
+Rewriting file A cannot affect file B. Grinding 80 files one at a time wastes the
+largest advantage available. **Default to fan-out:**
+
+```bash
+npm run ci:voice-constructions:worklist > /tmp/voice-worklist.json
+```
+
+Partition into batches of 5 to 8 files with **disjoint file sets** and dispatch one
+subagent per batch, in a single message so they run concurrently. Each brief carries:
+its exact file list (no overlap, ever), the canon path, the hits for those files from
+the worklist, the never-touch list, and "do not commit; report the diff summary."
+
+You keep: the canon judgment calls, the final read, the commits, the push.
+
+Serialize only when files genuinely couple: a shared constants module and its
+consumers, or a component and the test that asserts its copy. Two agents editing one
+file is a merge conflict you created for no reason.
+
+After the batches return, re-run `--next` yourself. Subagents overstate completion;
+the number is the only claim you trust.
+
+## The loop (single file, or inside a batch brief)
 
 Repeat until `--next` says DONE. Each pass:
 
@@ -97,12 +120,62 @@ Repeat until `--next` says DONE. Each pass:
    there. Then immediately start the next file. Do not stop to report progress
    between files.
 
-When the number stops moving because the remaining hits are false positives,
-do **not** widen the exemption list to make them disappear. Either the pattern is
-wrong (fix `scripts/voice-constructions.cjs`, regenerate the mirror with
-`node scripts/gen-voice-constructions.mjs --write`, and say so in the commit) or
-the copy is genuinely bad. Silencing a true positive is the failure mode this whole
-system exists to prevent.
+## The number must fall from edits, not from looking away
+
+The cheapest way to make this count drop is to stop scanning: add a path to `EXEMPT`,
+add a directory to `SKIP_TOP`, or loosen a pattern. **The gate blocks all three.**
+The baseline records the exemption count and the skipped-root count, and the scan
+fails if either grows. Verified: adding one exemption exits 1 with
+`✗ Voice scan scope NARROWED`.
+
+The other way to fake progress is deleting copy instead of rewriting it. Deleting a
+paragraph that carried three facts to clear one violation makes the number better
+and the page worse. Rule: **delete interpretation, never evidence.** If a rewrite
+drops a number, a source line, or a citation, it is wrong regardless of what the
+scanner says.
+
+If a hit is genuinely a false positive, fix the pattern in
+`scripts/voice-constructions.cjs`, regenerate the mirror with
+`node scripts/gen-voice-constructions.mjs --write`, and say so in the commit
+message. That is a change to the rules, made deliberately and reviewably. Silencing
+a true positive is the failure this entire system exists to prevent.
+
+## Calibration: what a good rewrite looks like
+
+Three real ones from this codebase. Notice that every fact survives and the numbers
+are untouched. Only interpretation dies.
+
+**Killed a sermon clause. Kept every figure.**
+> Before: "Of the 2,486 Bend sales in the last 12 months that reported financing,
+> 30.1% closed in cash. A cash-heavy market moves faster and negotiates harder on
+> price than on terms, which is one more reason the list price has to be right on
+> day one."
+> After: "Of the 2,486 Bend sales in the last 12 months that reported financing,
+> 30.1% closed in cash."
+
+**Killed a data-speaks headline. The replacement is also better for search.**
+> Before: "450 sales say the calendar matters"
+> After: "April homes went pending in 9 days. December homes took 39."
+
+**Killed a drama header by using the fact as the header.**
+> Before: "The market gave its answer. Here is what it was worth hearing."
+> After: "Your last listing asked $619,999 and did not sell."
+
+If your rewrite is longer than the original, you probably explained something.
+
+## Context discipline
+
+The worklist gives you `file:line`. Use it.
+
+- Open the flagged region plus enough surrounding lines to keep the paragraph
+  coherent. On a 1,700-line landing page, do not read the whole file to fix four
+  sentences.
+- Prefer targeted edits over rewriting a file wholesale. A whole-file rewrite risks
+  changing a number, which is the one unrecoverable mistake here.
+- Batch the cheap mechanical checks: run `tsc` and the test suite once per batch,
+  not once per file.
+- Never ask permission mid-run. Fix, verify, commit, continue. The only questions
+  worth surfacing are the ones in stop condition 3.
 
 ## Surfaces the scanner cannot see
 

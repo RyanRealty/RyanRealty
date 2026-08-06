@@ -1,5 +1,7 @@
 {
   "total": 126,
+  "exemptions": 13,
+  "skipTop": 18,
   "byFile": {
     "scripts/build-youtube-long.mjs": 6,
     "marketing_brain_skills/brand-voice/SKILL.md": 5,
