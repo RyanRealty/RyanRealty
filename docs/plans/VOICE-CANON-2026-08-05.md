@@ -378,3 +378,36 @@ reported clean. The vocabulary file's contract was only ever enforced downstream
 enforced by nobody. `PROJECTION_REQUIRED` + the assertion in `check-brand-voice.mjs`
 close it, and the check is verified by deliberately removing a term and confirming
 exit 1.
+
+### Outcome, 2026-08-06
+
+Shipped `03105634..cd874778`, 12 commits. Twelve agents over disjoint file sets,
+every report verified against the diff rather than taken at its word.
+
+Three gates added, each because something had already shipped past the existing
+ones:
+
+| Gate | Catches | Found because |
+|---|---|---|
+| canon→vocabulary projection | a VOICE.md term absent from the machine list | "Honest answers" live on /faq, gate green |
+| `affordance-instruction` | copy explaining that a control works | "Click any dot" on nine route families |
+| `reassurance-no-receipt` | character claims with nothing behind them | "No pressure" on twelve pages |
+| `ci:private-phone` | a demoted number republished | 541.213.6706 live on three client surfaces |
+
+Two findings outrank the copy work and are worth reading on their own:
+
+1. **The city map contradicted itself.** `app/cities/[slug]/page.tsx:183` queried
+   all property types while the subtitle promised single-family, which is why the
+   map badge read 1,000 beside a hero reading 491. The sentence moved to match the
+   data, because that query also feeds a ticker and two other consumers.
+2. **The private forward number was published.** Golf landing page with a live
+   `tel:` link, the Tetherow broker block, and the e-signing page. Its own test
+   asserted the old number as "brand-locked."
+
+**Open, needs Matt.** `buildRegionNarrative()` in
+`app/housing-market/central-oregon/page.tsx` and `buildNarrative()` in
+`app/housing-market/[...slug]/page.tsx` generate unattributed market-behavior
+judgments ("Buyers have more room to negotiate on price and terms"). Rule 3 says
+a judgment goes in a quote under a name. There is no attribution component on
+those pages to reuse, so a compliant fix is a product decision, not a word swap,
+and nobody should put words in a broker's mouth without asking.
