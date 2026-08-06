@@ -3,6 +3,7 @@
 import type { Metadata } from 'next'
 import { getAnimatedSalesMapData } from '@/lib/data'
 import AnimatedSalesMap from '@/components/geo-page/AnimatedSalesMap.client'
+import SiteFooter from '@/components/site/SiteFooter'
 
 // Internal harness, same posture as /dev/components: noindex, and a canonical
 // so ci:canonical-integrity does not count it as a public page missing one.
@@ -31,6 +32,7 @@ export default async function Page() {
   })
 
   return (
+    <>
     <main style={{ padding: 24, display: 'grid', gap: 32, maxWidth: 900, margin: '0 auto' }}>
       <pre id="trace" style={{ fontSize: 12 }}>
         {JSON.stringify(
@@ -70,6 +72,8 @@ export default async function Page() {
         <h2>No data at all (must render nothing)</h2>
         <AnimatedSalesMap boundary={null} sales={[]} audience="vow" />
       </section>
-    </main>
+      </main>
+      <SiteFooter />
+    </>
   )
 }
