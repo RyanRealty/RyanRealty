@@ -74,7 +74,7 @@ Tie-breaking: severity descending, then source priority (crm > ads > website > c
 
 ## Brand voice enforcement: applyBrandVoice
 
-Every brief's hook, body, and CTA are concatenated and checked against `marketing_brain_skills/brand-voice/voice_guidelines.md` §6 hard-fail rules in four layers:
+Every brief's hook, body, and CTA are concatenated and checked against `marketing_brain_skills/brand-voice/VOICE.md` hard-fail rules in four layers:
 
 1. **§6.1 Banned punctuation**.  em dash (. ), semicolon (;), dramatic ellipsis-colon pattern. Checked by regex.
 2. **§6.2 Banned words**.  31 real-estate clichés + AI-filler words + vague qualifiers. Checked by whole-word regex, case-insensitive.

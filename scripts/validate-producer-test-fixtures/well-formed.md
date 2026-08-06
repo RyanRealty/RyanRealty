@@ -125,7 +125,7 @@ Immediately UPDATE status to in_production and executed_at to now() via Supabase
 **Step 2. Load mandatory references.**
 Before touching any deliverable, read:
 CLAUDE.md §0 (Data Accuracy), CLAUDE.md §0.5 (Draft-First Commit-Last),
-design_system/ryan-realty/SKILL.md, marketing_brain_skills/brand-voice/voice_guidelines.md,
+design_system/ryan-realty/SKILL.md, marketing_brain_skills/brand-voice/VOICE.md,
 marketing_brain_skills/research/tool-inventory.md,
 marketing_brain_skills/research/platform-bible.md,
 marketing_brain_skills/research/asset-library-map.md,
@@ -285,7 +285,7 @@ All of these must be read in full before executing this producer:
 - CLAUDE.md §0 (Data Accuracy, outranks everything)
 - CLAUDE.md §0.5 (Draft-First, Commit-Last, outranks everything)
 - design_system/ryan-realty/SKILL.md (brand visual system)
-- marketing_brain_skills/brand-voice/voice_guidelines.md (voice enforcement)
+- marketing_brain_skills/brand-voice/VOICE.md (voice enforcement)
 - marketing_brain_skills/research/tool-inventory.md (tool capabilities and costs)
 - marketing_brain_skills/research/platform-bible.md (2026 platform specs)
 - marketing_brain_skills/research/asset-library-map.md (storage and reuse)

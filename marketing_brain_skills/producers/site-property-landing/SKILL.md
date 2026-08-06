@@ -12,7 +12,7 @@ description: >
   Realtor.com, IG bio, email blast, and GBP post. Stays live through close and
   remains as an archived "Sold" page after close.  URL preserved for SEO long-tail.
   Voice and data accuracy enforced per CLAUDE.md §0 (every figure traces) and
-  voice_guidelines.md (banned vocab stripped from PublicRemarks). shadcn/ui only
+  `marketing_brain_skills/brand-voice/VOICE.md` (banned vocab stripped from PublicRemarks). shadcn/ui only
   per CLAUDE.md "Design System Rules.  MANDATORY." Use whenever Matt says "property
   landing page for <address>", "build the landing page for <MLS#>", "listing landing
   page for <address>", or "property page for <address>". For a brand-new informational
@@ -164,7 +164,7 @@ Before reading the Supabase row:
 - `CLAUDE.md` "Supabase listings Schema".  mixed-case column quoting
 - `design_system/ryan-realty/SKILL.md`.  color tokens, type tiers, asset paths
 - `design_system/ryan-realty/colors_and_type.css`.  CSS variable definitions
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice + banned vocab union
+- `marketing_brain_skills/brand-voice/VOICE.md`.  voice + banned vocab union
 - `app/actions/lead-capture.ts`.  server-action signature for the showing form
 - `app/sitemap.ts`.  existing sitemap structure to extend
 - `app/listings/[listingKey]/page.tsx`.  reference for the listing data-pull pattern
@@ -243,7 +243,7 @@ Every figure that appears anywhere on the page (hero, specs grid, market context
 schema.org JSON-LD) gets a trace. Numbers that can't be verified are omitted.  not
 estimated, not "approximately." Per CLAUDE.md §0 forbidden list.
 
-**Rounding rules (per voice_guidelines.md):**
+**Rounding rules (per `marketing_brain_skills/brand-voice/VOICE.md`):**
 - Currency rounded to the nearest thousand: `$895,000` not `$894,750`
 - Days = integer + "days": `12 days`
 - Acres to 2 decimals: `1.20 acres`
@@ -254,7 +254,7 @@ estimated, not "approximately." Per CLAUDE.md §0 forbidden list.
 ### Step 6.  Sanitize PublicRemarks
 
 `PublicRemarks` is MLS-supplied prose. Run it through the banned vocab union before
-rendering. Banned word list (voice_guidelines.md + CLAUDE.md):
+rendering. Banned word list (`marketing_brain_skills/brand-voice/VOICE.md` + CLAUDE.md):
 
 - Real-estate clichés: stunning, nestled, boasts, charming, pristine, gorgeous,
   breathtaking, must-see, dream home, meticulously maintained, entertainer's dream,
@@ -613,7 +613,7 @@ gh pr create \
 `app/listings/<slug>/_data/listing.json` → `verification_traces`. No "approximately,"
 no estimates, no inherited numbers.
 
-## Voice (voice_guidelines.md)
+## Voice (`marketing_brain_skills/brand-voice/VOICE.md`)
 PublicRemarks sanitized.  <N> banned-word sentences stripped. Page copy direct,
 specific, no clichés, no exclamation marks in body, no em-dashes or semicolons.
 
@@ -856,7 +856,7 @@ WHERE id='<id>';
 | Route missing (update) | `app/listings/<slug>/page.tsx` not on disk | `status='killed'`. Suggest `site:property_landing_create` instead. |
 | Slug collision (different MLS#) | Two listings hash to same slug | Append last 4 chars of MlsId to slug: `1234-nw-riverview-dr-9422`. Document in PR description. Do not silently overwrite the existing page. |
 | Photos missing from PhotoURL | `"PhotoURL"` is null or empty array | Surface to Matt. Offer: pull from Spark API (`SPARK_API_BASE_URL`), wait for MLS photo upload, or scaffold the page with a hero placeholder + flag. Never invent or AI-generate property photos (ANTI_SLOP_MANIFESTO hard fail). |
-| PublicRemarks empty after sanitize | All sentences contained banned vocab | Continue. Render the description block as empty. Per voice_guidelines.md: do not rewrite MLS prose to fill gaps.  that introduces MLS dispute risk and violates the "honest" voice rule. |
+| PublicRemarks empty after sanitize | All sentences contained banned vocab | Continue. Render the description block as empty. Per `marketing_brain_skills/brand-voice/VOICE.md`: do not rewrite MLS prose to fill gaps.  that introduces MLS dispute risk and violates the "honest" voice rule. |
 | TypeScript error unfixable in 2 iterations | Persistent type mismatch (e.g. shadcn/ui Form API changed) | `status='killed'`. Surface the full `tsc` output. Explain what needs manual resolution. Do not push a branch that fails to compile. |
 | Lead-capture action signature drift | `app/actions/lead-capture.ts` changed since producer was written | Read the current action file in this session. Adapt the form server action call. If the API changed in a breaking way (renamed export, new required arg), escalate to Matt before guessing. |
 | Sitemap parse error | `app/sitemap.ts` uses an unexpected structure | Read the file. Adapt the append logic to match the current structure. Never rewrite the whole sitemap from scratch. |
@@ -882,7 +882,7 @@ WHERE id='<id>';
 - `CLAUDE.md` "Always push directly to main".  single-checkout exception for site PRs
 - `design_system/ryan-realty/SKILL.md`.  brand register, type tiers, asset paths
 - `design_system/ryan-realty/colors_and_type.css`.  CSS variable tokens
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice attributes + banned vocab union
+- `marketing_brain_skills/brand-voice/VOICE.md`.  voice attributes + banned vocab union
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's writing fingerprint
 - `marketing_brain_skills/producers/TEMPLATE.md`.  producer template
 - `marketing_brain_skills/producers/REGISTRY.md`.  Section C entry
@@ -919,7 +919,7 @@ WHERE id='<id>';
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ---
 

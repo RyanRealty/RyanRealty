@@ -85,7 +85,7 @@ This producer MUST load in order before executing:
 1. `CLAUDE.md` §0 - Data Accuracy mandate (non-negotiable)
 2. `CLAUDE.md` §0.5 - Draft-First, Commit-Last
 3. `design_system/ryan-realty/SKILL.md` - brand visual system
-4. `marketing_brain_skills/brand-voice/SKILL.md` + `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md` - voice enforcement
+4. `marketing_brain_skills/brand-voice/SKILL.md` + `marketing_brain_skills/brand-voice/VOICE.md` - voice enforcement
 5. `automation_skills/content_engine/SKILL.md` - routing bus
 6. `social_media_skills/platform-best-practices/SKILL.md` - 2026 platform rule layer
 
@@ -195,7 +195,7 @@ write a card brief JSON alongside the caption:
 Before surfacing to Matt, run the brand-voice grep on `caption.txt`:
 
 1. Grep for em-dash, en-dash, semicolon - must be zero hits
-2. Grep for each banned word in `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md` §6.2 - must be zero hits
+2. Grep for each banned word in `marketing_brain_skills/brand-voice/VOICE.md` §6.2 - must be zero hits
 3. Verify every figure in the caption appears verbatim in `digest.json` (data trace)
 4. Confirm the CTA link is `/price-drops` or `/price-drops/<city>` (real route)
 
@@ -218,7 +218,7 @@ Present as:
 | tool | purpose |
 |---|---|
 | `lib/data/listings/getPriceDrops.ts` → `getPriceDropDigest()` | Live data pull - city or region aggregate |
-| `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` | Voice enforcement |
+| `marketing_brain_skills/brand-voice/VOICE.md` | Voice enforcement |
 | `social_media_skills/platform-best-practices/SKILL.md` | Channel-specific caption length + hashtag guidance |
 
 No paid APIs required. No MLS re-queries - the DAL handles all data access.
@@ -277,7 +277,7 @@ pending
 - `app/price-drops/page.tsx` + `app/price-drops/[city]/page.tsx` - the web surface this digest promotes
 - `social_media_skills/ig-single-post/SKILL.md` - renders the static card (template S10)
 - `video_production_skills/market_pulse_short/SKILL.md` - if the digest should become a short-form video
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - voice enforcement
+- `marketing_brain_skills/brand-voice/VOICE.md` - voice enforcement
 - `social_media_skills/platform-best-practices/SKILL.md` - channel rules
 
 ---
@@ -291,7 +291,6 @@ Every run of this producer MUST load all of the following before generating any 
 - CLAUDE.md §0 - Data Accuracy mandate (non-negotiable)
 - CLAUDE.md §0.5 - Draft-First, Commit-Last
 - design_system/ryan-realty/SKILL.md - brand visual system
-- voice_guidelines.md - brand voice enforcement
 
 ### Tier 2 - Content producers
 

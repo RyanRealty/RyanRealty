@@ -215,7 +215,7 @@ Compute `slug` from the subject address (e.g. `cma-21042-robin`).  kebab-case, �
 
 - `CLAUDE.md` §0 (Data Accuracy) and §0.5 (Draft-First, Commit-Last)
 - `design_system/ryan-realty/SKILL.md`.  brand register
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice enforcement (banned words apply to the CMA narrative)
+- `marketing_brain_skills/brand-voice/VOICE.md`.  voice enforcement (banned words apply to the CMA narrative)
 - This file (you are here)
 
 **Step 3.  Resolve subject from Supabase, ALWAYS the MOST RECENT listing of the property**
@@ -803,7 +803,7 @@ The `measured` step for a CMA is light.  90 days after delivery, the `performanc
 - `CLAUDE.md` §0.  Data Accuracy (outranks everything)
 - `CLAUDE.md` §0.5.  Draft-First, Commit-Last (outranks everything)
 - `design_system/ryan-realty/SKILL.md`.  brand visual system + headshot composite rule
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice enforcement
+- `marketing_brain_skills/brand-voice/VOICE.md`.  voice enforcement
 
 **Capabilities used:**
 - `app/api/listings/[listingKey]/photos/route.ts`.  Spark photo fetcher (added 2026-05-14)
@@ -849,7 +849,7 @@ The `measured` step for a CMA is light.  90 days after delivery, the `performanc
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ---
 

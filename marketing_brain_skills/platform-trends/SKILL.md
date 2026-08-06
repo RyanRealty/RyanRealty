@@ -95,7 +95,7 @@ After scraping, `applyToRyanRealty()` runs every trend through the voice guideli
 
 ### Step 1: Voice violation check
 
-Each trend's label and description are checked against `VOICE_VIOLATION_PATTERNS`, an array of regex patterns locked to specific rules in `voice_guidelines.md`:
+Each trend's label and description are checked against `VOICE_VIOLATION_PATTERNS`, an array of regex patterns locked to specific rules in `marketing_brain_skills/brand-voice/VOICE.md`:
 
 | Pattern category | Voice rule violated |
 |---|---|
@@ -187,7 +187,7 @@ If `APIFY_API_TOKEN` is absent, the route returns 500 and writes a `trend_check_
 ## Adding a new voice violation pattern
 
 1. Add an entry to `VOICE_VIOLATION_PATTERNS` in `lib/marketing-brain/platform-trends.ts`.
-2. Set `voice_rule` to the exact section citation from `voice_guidelines.md`.
+2. Set `voice_rule` to the exact rule citation from `marketing_brain_skills/brand-voice/VOICE.md`.
 3. Set `reason` to a one-sentence explanation of why the pattern conflicts with that rule.
 4. Update the pattern table in this SKILL.md.
 5. Run `npx tsc --noEmit` to confirm no type errors.
@@ -199,4 +199,4 @@ If `APIFY_API_TOKEN` is absent, the route returns 500 and writes a `trend_check_
 - `marketing-brain:competitor-recon`.  runs at 07:00 Monday; shares `runApifyActor` helper and `competitor_intel` table.
 - `marketing-brain:generate-briefs`.  downstream; reads `ryan_realty_adaptations.act_on` to inform format and audio choices in new content briefs.
 - `marketing-brain:weekly-cycle`.  orchestrates snapshot → competitor-recon → platform-trends → generate-briefs in sequence.
-- `marketing-brain:brand-voice`.  the voice guidelines this skill enforces are canonical at `marketing_brain_skills/brand-voice/voice_guidelines.md`.
+- `marketing-brain:brand-voice`.  the voice rules this skill enforces are canonical at `marketing_brain_skills/brand-voice/VOICE.md`.

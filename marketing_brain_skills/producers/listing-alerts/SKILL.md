@@ -520,7 +520,7 @@ pending -> in_production -> executed (DB row updated)
 - `CLAUDE.md` §0.5. Draft-First, Commit-Last
 - `CLAUDE.md` "Supabase Database, MANDATORY READ before any SQL"
 - `docs/DATABASE_FOR_AI_AGENTS.md`. Listings table mixed-case columns + the SFR-only convention
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`. Email digest copy must pass the same voice guardrail
+- `marketing_brain_skills/brand-voice/VOICE.md`. Email digest copy must pass the same voice guardrail
 - `docs/archive/fub-era/README.md`. FUB integration pattern (we mirror this for the buyer side)
 - `docs/MARKETING_LEAD_FLOW.md`. Webhook + dedup detail
 
@@ -561,7 +561,7 @@ pending -> in_production -> executed (DB row updated)
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 - `docs/DATABASE_FOR_AI_AGENTS.md`
 - `docs/MARKETING_LEAD_FLOW.md`
 - `docs/archive/fub-era/README.md`

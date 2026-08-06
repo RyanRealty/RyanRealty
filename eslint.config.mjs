@@ -38,7 +38,7 @@ const eslintConfig = defineConfig([
       // Brand-voice gate: block em-dash, en-dash, semicolon, exclamation,
       // and the §6.2 banned-word list in JSX text + string-literal JSX
       // attribute values. Standalone "—" stays allowed as data placeholder.
-      // Canonical source: marketing_brain_skills/brand-voice/voice_guidelines.md §6.1 + §6.2.
+      // Canonical source: marketing_brain_skills/brand-voice/VOICE.md.
       "rr-brand-voice/no-violations": "error",
       // Design-system compliance is enforced by scripts/lint-design-tokens.sh
       // Run: npm run lint:design-tokens

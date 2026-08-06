@@ -48,7 +48,7 @@ reporting or bid analysis. Does NOT produce Meta ad copy (that is `facebook-lead
 - Generating up to 15 RSA headlines (30 chars max each), 4 RSA descriptions (90 chars max each)
 - Generating one PMax asset group (5 headlines, 5 long headlines up to 90 chars, 5 descriptions)
 - Generating 4 sitelinks (25-char title, 2 × 35-char description lines each)
-- Voice-validating every character against `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- Voice-validating every character against `marketing_brain_skills/brand-voice/VOICE.md`
 - Producing `ads-bundle.txt` and `contact-sheet.html` for Matt's review
 - Producing `citations.json` tracing any market figure used in copy to a live Supabase query
 
@@ -121,7 +121,7 @@ Before writing a single word of copy:
 - `CLAUDE.md` §0: Data Accuracy (any market stat in copy must trace to a live query)
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md`: brand register
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: full banned-word and banned-phrase list
+- `marketing_brain_skills/brand-voice/VOICE.md`: full banned-word and banned-phrase list
 - `automation_skills/content_engine/SKILL.md`: routing context
 - `social_media_skills/platform-best-practices/SKILL.md`: §21 cross-cutting compliance
 
@@ -160,7 +160,7 @@ estimated. Per CLAUDE.md §0 rule 7.
 
 Write with intent signals from `target_queries`. Each headline must:
 - Be direct and specific. Use a place name, a number, or a factual claim.
-- Avoid all banned words from voice_guidelines.md §6.2 and CLAUDE.md brand voice section.
+- Avoid all banned words from `marketing_brain_skills/brand-voice/VOICE.md` and CLAUDE.md brand voice section.
 - Use sentence case (no ALL CAPS except abbreviations like OR).
 - Not contain em-dashes, semicolons, or exclamation marks.
 - Include the geo modifier in at least 3 headlines (e.g., "Bend, OR").
@@ -201,7 +201,7 @@ Grep every headline, description, long headline, and sitelink text for:
 - Em-dash (U+2014), en-dash (U+2013): hard fail
 - Semicolons: hard fail
 - Exclamation marks: hard fail
-- Every word in voice_guidelines.md §6.2 banned list
+- Every word in `marketing_brain_skills/brand-voice/VOICE.md` banned list
 - Every phrase in §6.3 banned phrase list
 - Hedging words ("approximately," "roughly," "about")
 - Marketing slop ("premier," "boutique," "passionate," "dedicated")
@@ -399,7 +399,7 @@ measured
 - `CLAUDE.md` §0: Data Accuracy (outranks everything)
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md`: brand visual system
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: voice enforcement
+- `marketing_brain_skills/brand-voice/VOICE.md`: voice enforcement
 - `automation_skills/content_engine/SKILL.md`: content routing
 - `social_media_skills/platform-best-practices/SKILL.md`: 2026 platform rule layer
 
@@ -424,7 +424,7 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ---
 

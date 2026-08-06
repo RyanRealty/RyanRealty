@@ -129,7 +129,7 @@ Before producing any copy:
 - `CLAUDE.md` §0 (Data Accuracy - all property facts trace to MLS data, never invented)
 - `CLAUDE.md` §0.5 (Draft-First, Commit-Last)
 - `design_system/ryan-realty/SKILL.md` (brand register and voice)
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` (full load - listing descriptions are external-facing prose)
+- `marketing_brain_skills/brand-voice/VOICE.md` (full load - listing descriptions are external-facing prose)
 
 **Step 3 - Pull property data from Supabase**
 
@@ -244,7 +244,7 @@ No marketing language. Purely operational.
 Run the mandatory grep:
 - Em-dash (U+2014), en-dash (U+2013): zero occurrences allowed
 - Semicolons: zero occurrences allowed
-- Every banned word from voice_guidelines.md §6.2: zero occurrences allowed
+- Every banned word from `marketing_brain_skills/brand-voice/VOICE.md`: zero occurrences allowed
 - Fair-housing protected-class language: zero occurrences allowed
 - "Approximately", "roughly", "about" as substitute for a real number: zero occurrences allowed
 
@@ -390,7 +390,7 @@ measured          <- DOM, close price vs list price, showing volume if available
 - `CLAUDE.md` §0 - Data Accuracy (all property facts trace to MLS, never invented)
 - `CLAUDE.md` §0.5 - Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md` - brand voice, banned vocabulary
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - full load (external-facing prose)
+- `marketing_brain_skills/brand-voice/VOICE.md` - full load (external-facing prose)
 
 **Fair housing authority:**
 - Fair Housing Act 42 U.S.C. § 3604 (federal protected classes)
@@ -423,7 +423,7 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ---
 

@@ -201,13 +201,13 @@ function resolveCaption(body: PublishRequest, platform: Platform): string {
   const finalCaption = stampPlatformUtm(`${base}${hashtagSuffix}`.trim(), platform)
 
   // P0 hard-fail guard: em-dash + en-dash ban at the platform boundary.
-  // Per voice_guidelines.md section 6.1 and CLAUDE.md. Locked 2026-05-15;
+  // Per marketing_brain_skills/brand-voice/VOICE.md and CLAUDE.md. Locked 2026-05-15;
   // code-level enforcement re-applied 2026-05-18 (parallel-session regression).
   assertNoDashes(finalCaption, { source: `publish:${platform}:caption` })
 
   // Brand-voice hard-fail gate (W11.2 / CLAUDE.md §"Brand Voice"). Exclamation
   // marks are allowed at this boundary (one per piece is fine in a social
-  // caption per voice_guidelines); em-dash/en-dash/semicolon + the banned
+  // caption per VOICE.md); em-dash/en-dash/semicolon + the banned
   // word/phrase list are still hard fails.
   const voice = checkBrandVoice(finalCaption, { allowExclamation: true })
   if (!voice.ok) {

@@ -18,7 +18,7 @@
  *   - design_system/ryan-realty/SKILL.md (palette navy + cream, three brokers)
  *   - marketing_brain_skills/competitor-design-recon/SKILL.md
  *   - out/design-recon/fb-lead-gen-ad/recon.md (Pattern 1 winner)
- *   - marketing_brain_skills/brand-voice/voice_guidelines.md (banned words)
+ *   - marketing_brain_skills/brand-voice/VOICE.md (banned words)
  *
  * Verified social proof:
  *   - 24 reviews total per GBP audit pull 2026-05-22

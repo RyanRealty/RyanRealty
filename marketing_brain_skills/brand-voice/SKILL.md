@@ -7,9 +7,9 @@ description: Enforce Ryan Realty brand voice on every piece of marketing content
 
 This is the canonical voice enforcement skill for the marketing brain and every subagent generating Ryan Realty content. Every piece of content runs through this skill before publish.
 
-The full ruleset lives at `marketing_brain_skills/brand-voice/voice_guidelines.md` (~13 sections, all rules with examples). The training corpus lives at `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` (22 Matt Ryan first-party writing samples).
+The full ruleset lives at `marketing_brain_skills/brand-voice/VOICE.md`. The training corpus lives at `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` (22 Matt Ryan first-party writing samples).
 
-This SKILL.md is the operational entry point. Load `voice_guidelines.md` for full detail when generating long-form content, when validating edge cases, or when updating the rules.
+This SKILL.md is the operational entry point. Load `VOICE.md` for full detail when generating long-form content, when validating edge cases, or when updating the rules.
 
 ---
 
@@ -39,7 +39,7 @@ first; this skill is workflow on top of it, never a replacement.
 
 Then the Orwell rules (`VOICE.md` "The Orwell rules") decide how the sentence
 reads, and the two tests (competitor test, receipt test) decide whether it ships.
-The mechanical floor (`voice_guidelines.md` + `scripts/brand-voice-vocabulary.cjs`)
+The mechanical floor (`VOICE.md` + `scripts/brand-voice-vocabulary.cjs`)
 is the enforced punctuation/vocabulary layer under all of it.
 
 The older five-attribute model (trustworthy / honest / knowledgeable /
@@ -55,7 +55,7 @@ moves, and Law 1 forbids the site from saying any of those words out loud.
 - The deal is never the subject. The client's situation is.
 - Never talk down. Never pander.
 
-Full POV rules in `voice_guidelines.md` §5.
+Full POV rules in `VOICE.md`.
 
 ---
 
@@ -70,7 +70,7 @@ A piece that contains any of these stops at validation. No publish.
 
 Compound hyphens are allowed when standard English requires them (single-family, out-of-state, 30-year fixed, first-time buyer, well-maintained).
 
-### Banned words (representative; full list in voice_guidelines.md §6.2)
+### Banned words (representative; full list in `VOICE.md`)
 
 **Real estate clichés.** stunning, breathtaking, gorgeous, charming, pristine, nestled, boasts, must-see, dream home, meticulously maintained, hidden gem, truly, spacious, cozy, luxurious, turnkey, immaculate, captivating, exquisite
 
@@ -162,13 +162,13 @@ Two-tier classification (locked 2026-05-20):
 - **`HARD_BANNED`** — substring match, always a ship-blocker. All §6.2 clichés + AI filler, all §6.3 hype openings + pandering phrases + talking-down constructions + marketing slop + fake urgency, all §4.7 salesy script language, all §11.0 anti-pattern phrases.
 - **`SOFT_FLAGGED`** — substring match, flag for human review. Vague qualifiers from §6.2 (`about`, `around`, `approximately`, `roughly`, `fairly`, `somewhat`) that have legitimate non-hedge uses.
 
-When this list and `voice_guidelines.md` §6 disagree, **the `.md` is the source of truth.** Update both together — never let them drift.
+When this list and `VOICE.md` disagree, **`VOICE.md` is the source of truth.** Update both together, never let them drift.
 
 ---
 
 ## Calibration per channel
 
-The voice does not change across channels. The calibration does. Full details in `voice_guidelines.md` §11.
+The voice does not change across channels. The calibration does. Full details in `VOICE.md`.
 
 | Channel | Key calibration |
 |---|---|
@@ -191,19 +191,19 @@ The voice does not change across channels. The calibration does. Full details in
 
 **The Out-of-State Owner Selling Bend.** Default reader for seller-aimed content unless another audience is named. Drawn from review patterns (SwankHQ, Jim Creekmore, Stephen Graham, samuel hay, Audra Hedberg). They were geographically remote, needed someone they could trust to physically handle the property, and were earned by Matt's weekly updates, on-site repair checks, and same-day responsiveness.
 
-Full persona in `voice_guidelines.md` §9.
+Full persona in `VOICE.md`.
 
 ---
 
 ## Skill maintenance
 
-Update `voice_guidelines.md` (the source of truth) when:
+Update `VOICE.md` (the source of truth) when:
 - A new piece of content gets approved that uses a pattern not represented here.
 - A piece of content gets rejected for a reason not currently in the banned list.
 - Matt explicitly issues a new voice rule in chat.
 - The corpus grows (new long-form writing by Matt gets appended).
 
-This SKILL.md is updated to reflect changes to the guidelines doc. Both files commit together.
+This SKILL.md is updated to reflect changes to VOICE.md. Both files commit together.
 
 The corpus at `corpus/gbp_responses.md` grows over time. Matt's own writing in approved blog posts, email drafts, video VO scripts, and other first-party content gets appended.
 
@@ -216,4 +216,4 @@ The corpus at `corpus/gbp_responses.md` grows over time. Matt's own writing in a
 - `marketing-brain:weekly-cycle`.  invokes this skill as part of the publish gate.
 - `engineering:code-review`.  when this skill itself is being edited.
 
-Read `voice_guidelines.md` for the full rulebook. Read `corpus/gbp_responses.md` when measuring fingerprint match.
+Read `VOICE.md` for the full rulebook. Read `corpus/gbp_responses.md` when measuring fingerprint match.

@@ -29,7 +29,7 @@ import LandingPageTracker from '@/components/LandingPageTracker'
  * The lead form (ExpiredLPForm) + its CAPI/tracking are revenue machinery and
  * are preserved byte-for-byte. Only page presentation changed.
  *
- * Voice: docs/voice_guidelines.md §4.7 — never pander, never editorialize,
+ * Voice: marketing_brain_skills/brand-voice/VOICE.md — never pander, never editorialize,
  * authentic, honest, transparent, not salesy.
  */
 export const metadata: Metadata = {

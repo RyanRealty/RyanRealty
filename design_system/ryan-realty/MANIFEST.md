@@ -101,14 +101,14 @@ Source-of-truth headshots in `assets/team/`. Each broker has `.png` (transparent
 - **No emoji.** Anywhere. Ever.
 - **No exclamation marks** in body. **No pressure / scarcity framing.**
 
-Full banned vocabulary — clichés, AI filler, meta-tone words, vague qualifiers, banned phrases, banned tropes — lives in the `voice-banned.html` preview card and in `marketing_brain_skills/brand-voice/voice_guidelines.md` §6.
+Full banned vocabulary — clichés, AI filler, meta-tone words, vague qualifiers, banned phrases, banned tropes — lives in the `voice-banned.html` preview card and in `marketing_brain_skills/brand-voice/VOICE.md`.
 
 ## Content engine integration
 
 This kit is the **mandate-load** for every producer in `marketing_brain_skills/producers/`. When a producer picks up an action row from `marketing_brain_actions`, it loads:
 
 1. **`SKILL.md`** (this kit) — visual brand spec
-2. **`marketing_brain_skills/brand-voice/voice_guidelines.md`** — voice + banned vocabulary
+2. **`marketing_brain_skills/brand-voice/VOICE.md`** — voice + banned vocabulary
 3. **`social_media_skills/platform-best-practices/SKILL.md`** — 2026 platform rule layer
 
 Edit a swatch or banned word here and every listing reel + flyer + IG carousel + GBP reply + email blast picks it up on the next run. See the *Content engine map* preview card for the per-action-type pull list.

@@ -125,7 +125,7 @@ Before touching any file:
 - `CLAUDE.md` §0.  Data Accuracy mandate (any market figures in copy must be verified)
 - `CLAUDE.md` "Draft-First, Commit-Last".  the PR is the draft; Matt merges; never push to main
 - `design_system/ryan-realty/SKILL.md`.  brand register; shadcn token system
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice validation
+- `marketing_brain_skills/brand-voice/VOICE.md`.  voice validation
 
 **Step 3.  Resolve the file path**
 
@@ -141,7 +141,7 @@ Read the resolved file in full before making any edit.
 **Step 4.  Validate brand voice on all `after_text` values**
 
 For each change in `payload.changes`, check `after_text` against
-`marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`. Specifically verify:
+`marketing_brain_skills/brand-voice/VOICE.md`. Specifically verify:
 
 - No banned words: stunning, nestled, boasts, charming, pristine, gorgeous,
   breathtaking, must-see, dream home, meticulously maintained, entertainer's dream,
@@ -258,7 +258,7 @@ gh pr create \
 
 ## Voice validation
 All after_text values passed brand voice check against
-`marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.
+`marketing_brain_skills/brand-voice/VOICE.md`.
 
 ## TypeScript
 `npx tsc --noEmit` returned zero errors.
@@ -424,7 +424,7 @@ WHERE id='<id>';
 - `CLAUDE.md` "Design System Rules.  MANDATORY".  shadcn/ui only; no raw HTML; no hex colors
 - `CLAUDE.md` "Design System v2.  Heritage + Web Registers".  navy `#102742` primary; Geist body
 - `design_system/ryan-realty/SKILL.md`.  brand visual system (color tokens, type, registers)
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice enforcement (mandatory before every edit)
+- `marketing_brain_skills/brand-voice/VOICE.md`.  voice enforcement (mandatory before every edit)
 
 **Playbooks and pipeline docs:**
 - `marketing_brain_skills/producers/REGISTRY.md`.  Section C, row `site-edit`
@@ -441,7 +441,7 @@ WHERE id='<id>';
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ---
 

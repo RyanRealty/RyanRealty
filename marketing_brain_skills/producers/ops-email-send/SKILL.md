@@ -127,7 +127,7 @@ If row is not `status='pending'`, halt silently.
 
 - `CLAUDE.md` §0.  Data Accuracy mandate
 - `CLAUDE.md` §0.5.  Draft-First, Commit-Last
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice validation rules
+- `marketing_brain_skills/brand-voice/VOICE.md`.  voice validation rules
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's voice
   patterns (warmth, specificity, forward-looking close, first-name usage)
 
@@ -188,7 +188,7 @@ contacts in FUB. Verify the segment name or filter is correct before proceeding.
 ### Step 5.  Voice validation
 
 Run the subject line, preview text, and body against the voice validation rules
-from `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`. Specifically check:
+from `marketing_brain_skills/brand-voice/VOICE.md`. Specifically check:
 
 **Banned in subject lines:**
 - Exclamation marks (unless the subject contains a factual number or
@@ -442,7 +442,7 @@ killed          ← domain unverified, segment empty, voice validation fails
 **Required reading before executing:**
 - `CLAUDE.md` §0.  Data Accuracy mandate (every stat needs a trace)
 - `CLAUDE.md` §0.5.  Draft-First, Commit-Last
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice enforcement
+- `marketing_brain_skills/brand-voice/VOICE.md`.  voice enforcement
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's voice patterns
 
 **Capabilities used:**
@@ -464,7 +464,7 @@ killed          ← domain unverified, segment empty, voice validation fails
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ---
 

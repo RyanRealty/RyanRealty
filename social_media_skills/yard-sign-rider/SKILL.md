@@ -65,7 +65,7 @@ proof PNG ships back to Matt for review.
 | `design_system/ryan-realty/SKILL.md` | Heritage register, navy `#102742` on cream `#faf8f4`, Amboqia Boriango display + Geist body + Azo Sans Medium accent. |
 | `design_system/ryan-realty/colors_and_type.css` | Authoritative color and type tokens. |
 | `design_system/ryan-realty/MANIFEST.md` §"assets/brand/" | `logo-blue.png` is the heritage wordmark; never re-typeset. |
-| `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` | Banned vocab union; voice attributes. |
+| `marketing_brain_skills/brand-voice/VOICE.md` | Banned vocab union; voice attributes. |
 | `social_media_skills/flyer-design/SKILL.md` | Sibling static-print producer.  share bleed, font load, color profile, and asset-audit conventions. |
 | `marketing_brain_skills/producers/TEMPLATE.md` | Producer skeleton. |
 | `marketing_brain_skills/producers/REGISTRY.md` | Section B row pointer. |
@@ -444,7 +444,7 @@ non-ship.
 | 11 | Listing agent resolution | `ListAgentEmail` mapped to one of matt-ryan / paul-stevenson / rebecca-peterson; name + title correct |
 | 12 | Phone format | Exactly `541.213.6706` (dotted, brand phone.  NOT the FUB bio phone) |
 | 13 | Web format | Exactly `ryan-realty.com` (hyphenated, lowercase) |
-| 14 | Banned vocab | Grep all on-canvas text against `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md` §6 union.  zero hits |
+| 14 | Banned vocab | Grep all on-canvas text against `marketing_brain_skills/brand-voice/VOICE.md` §6 union.  zero hits |
 | 15 | No exclamation marks | Grep PDFs for `!`.  zero hits |
 | 16 | No emoji | Grep PDFs for any non-ASCII glyph except em-dash placeholder and middle-dot separator.  zero unauthorized hits |
 | 17 | Open-house data integrity | If `rider_variant='open_house'`: date, start, end all present, formatted correctly, year omitted if current |
@@ -546,7 +546,7 @@ WHERE id='<id>';
 - `design_system/ryan-realty/SKILL.md`.  brand visual system
 - `design_system/ryan-realty/colors_and_type.css`.  color + type tokens
 - `design_system/ryan-realty/MANIFEST.md`.  asset paths
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab union
+- `marketing_brain_skills/brand-voice/VOICE.md`.  banned vocab union
 
 **Sibling print producers:**
 - `social_media_skills/flyer-design/SKILL.md`.  handout flyer producer (shares font load, bleed conventions)
@@ -573,7 +573,7 @@ WHERE id='<id>';
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ## Content-producer additional references
 

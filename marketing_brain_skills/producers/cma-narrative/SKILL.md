@@ -160,7 +160,7 @@ Before writing any prose:
 - `CLAUDE.md` §0 (Data Accuracy - all figures in the narrative trace to payload fields verified by the parent cma producer)
 - `CLAUDE.md` §0.5 (Draft-First, Commit-Last)
 - `design_system/ryan-realty/SKILL.md` (brand voice - Heritage register for CMA prose: formal, direct, trustworthy)
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` (full load - long-form external prose)
+- `marketing_brain_skills/brand-voice/VOICE.md` (full load - long-form external prose)
 - `marketing_brain_skills/producers/cma/SKILL.md` (parent producer - understand the full CMA structure)
 
 **Step 3 - Validate all figures in the payload**
@@ -190,12 +190,12 @@ Structure:
 2. Purpose statement: what the CMA does and does not do (not an appraisal, is an informed professional opinion)
 3. Market context paragraph: current Bend SFR market conditions in one to two sentences. Reference the MoS verdict and median price from the payload. Frame it neutrally, not as hype.
 4. Confidence statement: brief note on why the comp set is credible (subdivision proximity, time window, size similarity)
-5. Close: "I am available to walk through this analysis with you at your convenience." Canonical phrase from voice_guidelines.md. Sign with broker's name, title, phone.
+5. Close: "I am available to walk through this analysis with you at your convenience." Canonical phrase from `marketing_brain_skills/brand-voice/VOICE.md`. Sign with broker's name, title, phone.
 
 Voice rules:
 - First-person ("I") is correct here - this is a personal professional letter from the broker
 - No em-dashes. No semicolons. No exclamation marks.
-- No banned words (see voice_guidelines.md §6.2 complete list)
+- No banned words (see `marketing_brain_skills/brand-voice/VOICE.md` complete list)
 - "Honored" and "privilege" are acceptable in the opening - see canonical phrases
 - Phone format: 541.213.6706 (dotted)
 - Currency rounded to the nearest thousand: $1,225,000 not $1,224,750
@@ -240,7 +240,7 @@ Mandatory grep before surfacing:
 - Em-dash (U+2014), en-dash (U+2013): zero allowed. Replace with period or comma.
 - Semicolons: zero allowed. Replace with period.
 - Exclamation marks: zero allowed in CMA narrative (formal document).
-- Banned words from voice_guidelines.md §6.2: zero allowed. The banned word list applies equally to CMA prose as to marketing copy.
+- Banned words from `marketing_brain_skills/brand-voice/VOICE.md`: zero allowed. The banned word list applies equally to CMA prose as to marketing copy.
 - "Approximately", "roughly", "about" as number substitutes: zero allowed. Use the actual number.
 - Fair-housing check: no protected-class language. The neighborhood descriptor for any subdivision must be physical and geographic, not demographic.
 
@@ -354,7 +354,7 @@ killed            <- if voice/fair-housing gate fails after 2 auto-fixes
 - `CLAUDE.md` §0 - Data Accuracy (all figures trace to payload from parent producer)
 - `CLAUDE.md` §0.5 - Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md` - brand voice (Heritage register: formal, direct)
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - full load (long-form external)
+- `marketing_brain_skills/brand-voice/VOICE.md` - full load (long-form external)
 - `marketing_brain_skills/producers/cma/SKILL.md` - parent producer (delegator)
 
 **Pipeline:**
@@ -386,7 +386,7 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ---
 

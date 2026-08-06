@@ -97,7 +97,7 @@ S-template. Does NOT generate caption text.  captions are emitted by the caller 
 | `CLAUDE.md` "Voice + content".  #RyanRealtyBend HARD RULE | Captions emitted by caller must include `#RyanRealtyBend` first in hashtag block. |
 | `design_system/ryan-realty/SKILL.md` | Heritage register, navy/cream, Amboqia/Geist/Azo Sans Medium type tiers. |
 | `design_system/ryan-realty/colors_and_type.css` | Authoritative color + type tokens. |
-| `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` | Banned vocab union; voice attributes. |
+| `marketing_brain_skills/brand-voice/VOICE.md` | Banned vocab union; voice attributes. |
 | `social_media_skills/instagram-carousel/SKILL.md` | Footer band spec, broker headshot rule, photo discipline.  single-post inherits these conventions. |
 | `social_media_skills/platform-best-practices/SKILL.md` | 2026 platform rule layer. |
 | `automation_skills/content_engine/SKILL.md` | Content routing bus. |
@@ -439,7 +439,7 @@ Run before surfacing the draft. Write results to `design_scorecard.json`. Any `f
 | 7 | Photo integrity | If template uses a hero, photo is from MLS / approved source, traced in `provenance.json`, no watermarks, no AI fake |
 | 8 | Safe zone | No critical content within 54 px of left/right or 40 px of top |
 | 9 | Color compliance | Navy `#102742` + cream `#faf8f4` only. No gold. No off-brand hex |
-| 10 | Banned words clean | Grep all on-image text against `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md` §6 union.  zero hits |
+| 10 | Banned words clean | Grep all on-image text against `marketing_brain_skills/brand-voice/VOICE.md` §6 union.  zero hits |
 | 11 | Broker resolution | S1-S6: `list_agent` resolved to one of three brokers. Headshot present |
 | 12 | Pattern C font discipline | If the post is editorial (S6), body uses Geist 500.  not Azo Sans Medium |
 | 13 | File size | < 3 MB PNG |
@@ -535,7 +535,7 @@ The producer transitions:
 - `marketing_brain_skills/producers/TEMPLATE.md`.  producer skeleton
 - `marketing_brain_skills/producers/REGISTRY.md`.  Section B row
 - `automation_skills/content_engine/SKILL.md`.  content routing bus
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab union
+- `marketing_brain_skills/brand-voice/VOICE.md`.  banned vocab union
 - `design_system/ryan-realty/SKILL.md`.  brand system
 
 ---
@@ -545,7 +545,7 @@ The producer transitions:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ## Content-producer additional references
 

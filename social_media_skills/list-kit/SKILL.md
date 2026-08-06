@@ -101,7 +101,7 @@ read from a single source pull, not from memory, a brief, or prior chat turns.
 | `CLAUDE.md` "Voice + content".  #RyanRealtyBend HARD RULE | Every caption on every hashtag-supporting platform leads its hashtag block with `#RyanRealtyBend`. Locked 2026-05-14. |
 | `design_system/ryan-realty/SKILL.md` | Brand registers (heritage vs web), color/type decision tree, asset cheat sheet. |
 | `design_system/ryan-realty/colors_and_type.css` | CSS variables (color tokens, type families, spacing, radii, shadows). |
-| `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` | Voice attributes, banned vocab/phrases/tropes, do/don't pairs per channel. |
+| `marketing_brain_skills/brand-voice/VOICE.md` | Voice attributes, banned vocab/phrases/tropes, do/don't pairs per channel. |
 | `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` | Matt's actual writing.  voice fingerprint reference. |
 | `automation_skills/content_engine/SKILL.md` | All content actions route through here. Never bypass. |
 | `video_production_skills/listing-tour-video/SKILL.md` | Listing video sub-skill.  locked architecture, beats, Ken Burns curves. |
@@ -429,7 +429,7 @@ SWIPE → | [hook]
 1. **`#RyanRealtyBend` MUST be the first hashtag in the trailing block.** This is the locked rule
    from CLAUDE.md "Voice + content" (2026-05-14). Captions missing it are non-compliant.
 2. **No banned vocab.** Run captions through the brand-voice validator against the full union
-   from `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` §6.
+   from `marketing_brain_skills/brand-voice/VOICE.md` §6.
 3. **No exclamation marks** in body prose. (One per caption max if absolutely needed at the close.  but the brand voice rules say "rare." Default is zero.)
 4. **No em-dashes, no semicolons** in caption body. The 》separator IS allowed (it's a glyph,
    not punctuation).
@@ -640,7 +640,7 @@ pending → in_production → ready → approved → executed → measured
    the v2 brand. `#D4AF37` / `#C8A864` are retired tokens.
 7. **Never re-typeset the wordmark.** Use pre-rendered images from `assets/brand/` only.
 8. **Never use banned vocab.** Run every caption / VO / flyer copy / carousel text through the
-   voice_guidelines.md banned list before render.
+   `marketing_brain_skills/brand-voice/VOICE.md` banned list before render.
 9. **Never skip the carousel pattern decision.** Default A is fine, but the decision is recorded
    in `pattern.json` and `kit-manifest.json`.  never silent.
 10. **Never publish to social without separate caption review.** Commit + push is the default.
@@ -680,7 +680,7 @@ pending → in_production → ready → approved → executed → measured
 - `marketing_brain_skills/producers/REGISTRY.md`.  Section A row
 - `automation_skills/content_engine/SKILL.md`.  content routing bus
 - `social_media_skills/platform-best-practices/SKILL.md`.  2026 platform rules
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice + banned vocab
+- `marketing_brain_skills/brand-voice/VOICE.md`.  voice + banned vocab
 - `design_system/ryan-realty/SKILL.md`.  brand system
 
 **Related listing-moment producers** (separate triggers, not in this kit):
@@ -708,7 +708,7 @@ pending → in_production → ready → approved → executed → measured
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ## Content-producer additional references
 

@@ -804,7 +804,7 @@ export default async function MarketingBrainPage() {
                   {voiceFailures7d === 0 ? 'clean' : 'review'}
                 </Badge>
                 <p className="text-xs text-muted-foreground">
-                  Briefs blocked by voice_guidelines.md §6
+                  Briefs blocked by VOICE.md
                 </p>
               </div>
             </div>

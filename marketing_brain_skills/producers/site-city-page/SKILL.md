@@ -396,7 +396,7 @@ Same as community-page: pending → in_production → ready → approved → exe
 - `CLAUDE.md` §0, §0.5
 - `CLAUDE.md` "Design System Rules: MANDATORY" + "Design System v2"
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 - `data/resort-communities.json` (all rows for the target city)
 - `public/lp/tetherow/index.html` (visual exemplar)
 - `app/sitemap.ts`
@@ -438,6 +438,6 @@ Same as community-page: pending → in_production → ready → approved → exe
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 - `data/resort-communities.json`
 - `marketing_brain_skills/producers/site-community-page/SKILL.md` (Tier 2 child producer)

@@ -11,7 +11,7 @@ This skill complements the meme producers (`meme_lord`, `meme_content`). Per CLA
 
 1. `CLAUDE.md` §0 + §0.5 — data accuracy + draft-first
 2. `design_system/ryan-realty/SKILL.md` — brand register
-3. `marketing_brain_skills/brand-voice/voice_guidelines.md` — voice rules
+3. `marketing_brain_skills/brand-voice/VOICE.md` — voice rules
 4. `social_media_skills/platform-best-practices/SKILL.md` — platform rule layer
 6. This skill — humor pattern library
 
@@ -147,7 +147,7 @@ The producer's `citations.json` records the source meme's `id` so Matt can trace
 | Using a `REJECT`-flagged pattern under Ryan Realty | Voice violation |
 | Punching down at first-time buyers, working families, or any client cohort | Off-brand per §4.7 authentic-not-salesy |
 | Market-doom or market-hype humor ("crashing!" "on fire!") | Banned per CLAUDE.md video rules |
-| Broker-as-hero arc memes ("most agents do X, we do Y") | Banned trope per voice_guidelines.md |
+| Broker-as-hero arc memes ("most agents do X, we do Y") | Banned trope per `marketing_brain_skills/brand-voice/VOICE.md` |
 | Generic AI-template humor ("Me: a tree. Person who didn't put a contingency on the offer: ...") | Reads as AI; banned per ANTI_SLOP_MANIFESTO |
 
 ---

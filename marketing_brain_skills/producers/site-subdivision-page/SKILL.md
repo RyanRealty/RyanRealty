@@ -426,7 +426,7 @@ Same as `site-community-page`: pending -> in_production -> ready -> approved -> 
 - `CLAUDE.md` "Design System Rules: MANDATORY"
 - `CLAUDE.md` "Design System v2: Heritage + Web Registers"
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 - `data/resort-communities.json`
 - The parent community's `app/lp/<community>/page.tsx`
 - `public/lp/tetherow/index.html` (visual exemplar at the parent tier)
@@ -463,6 +463,6 @@ Same as `site-community-page`: pending -> in_production -> ready -> approved -> 
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 - `data/resort-communities.json`
 - `marketing_brain_skills/producers/site-community-page/SKILL.md` (parent tier)

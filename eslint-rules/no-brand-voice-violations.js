@@ -5,7 +5,7 @@
  * fails from appearing in JSX text and string-literal JSX attribute
  * values. Canonical source for the banned set:
  *
- *   marketing_brain_skills/brand-voice/voice_guidelines.md §6.1 + §6.2
+ *   marketing_brain_skills/brand-voice/VOICE.md
  *   CLAUDE.md §3 (Brand Voice — ABSOLUTE)
  *
  * What gets flagged:
@@ -17,7 +17,7 @@
  * Allowed exception:
  *   - A standalone em-dash whose trimmed text is exactly "—" — that's
  *     the canonical data-placeholder pattern used in stats tables to
- *     mean "unavailable" (CLAUDE.md §3 + voice_guidelines.md §6.1).
+ *     mean "unavailable" (CLAUDE.md §3 + VOICE.md).
  *
  * Scope (only surfaces a person actually reads, per CLAUDE.md §3):
  *   - JSXText nodes (text between JSX tags)

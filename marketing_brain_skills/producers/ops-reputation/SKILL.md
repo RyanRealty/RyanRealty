@@ -139,7 +139,7 @@ WHERE id = '<action_id>' AND status = 'pending';
 Before drafting anything:
 - `CLAUDE.md` §0.  Data Accuracy mandate
 - `CLAUDE.md` §0.5.  Draft-First, Commit-Last
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice rules
+- `marketing_brain_skills/brand-voice/VOICE.md`.  voice rules
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  22 canonical
   Matt responses; read at least 5 examples before drafting a review response
 - `marketing_brain_skills/platforms/gbp/SKILL.md`.  GBP post best practices,
@@ -182,7 +182,7 @@ for SEO ("best real estate agent in Bend"), promises about future outcomes.
 ### Step 4 (review_response).  Voice validation
 
 Run the draft against the voice rules. Specifically:
-- No banned words (from the full banned vocabulary in `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md` + CLAUDE.md)
+- No banned words (from the full banned vocabulary in `marketing_brain_skills/brand-voice/VOICE.md` + CLAUDE.md)
 - No exclamation marks in body (1 max if genuinely warranted)
 - No emoji
 - No promotional language ("best," "premier," "top-rated")
@@ -504,7 +504,7 @@ killed          ← voice validation fails after 2 attempts, Matt says "no",
 **Required reading before executing:**
 - `CLAUDE.md` §0.  Data Accuracy mandate
 - `CLAUDE.md` §0.5.  Draft-First, Commit-Last
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice enforcement
+- `marketing_brain_skills/brand-voice/VOICE.md`.  voice enforcement
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  22 Matt GBP
   responses; read at least 5 before drafting any review response
 - `marketing_brain_skills/platforms/gbp/SKILL.md`.  full GBP playbook (algorithm
@@ -532,7 +532,7 @@ killed          ← voice validation fails after 2 attempts, Matt says "no",
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ---
 

@@ -49,7 +49,7 @@ handle performance fixes (that is `site-performance`).
   form, wired to `app/actions/lead-capture.ts` and the CAPI fan-out
 - Adding the new route to `app/sitemap.ts`
 - Setting `export const metadata` (title, description, OG, Twitter) in the new file
-- Writing all copy in brand voice per `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- Writing all copy in brand voice per `marketing_brain_skills/brand-voice/VOICE.md`
 - TypeScript compile verification before PR opens
 
 ### Out of scope
@@ -140,7 +140,7 @@ Before writing a single line of code:
 - `CLAUDE.md` "Design System Rules.  MANDATORY".  shadcn/ui only; no raw HTML elements
 - `CLAUDE.md` "Design System v2.  Heritage + Web Registers".  Web register for UI pages
 - `design_system/ryan-realty/SKILL.md`.  brand register; fonts; color tokens; radii
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice; banned words
+- `marketing_brain_skills/brand-voice/VOICE.md`.  voice; banned words
 - `app/actions/lead-capture.ts`.  if `lead_form` is present, read the existing action signature
 
 **Step 3.  Confirm the route does not already exist**
@@ -153,7 +153,7 @@ Check that `app/<page_path>/page.tsx` does NOT exist. If it does:
 **Step 4.  Validate all copy for brand voice**
 
 Before generating any file, validate every string that will appear in the page against
-`marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`:
+`marketing_brain_skills/brand-voice/VOICE.md`:
 
 - `payload.hero.headline`.  no clichés, no banned words, no exclamation marks
 - `payload.hero.subhead`.  direct, specific, one clause max
@@ -515,7 +515,7 @@ WHERE id='<id>';
 - `CLAUDE.md` "Design System v2.  Heritage + Web Registers".  Web register for new pages
 - `design_system/ryan-realty/SKILL.md`.  color tokens, type families, radii, shadow ladder
 - `design_system/ryan-realty/colors_and_type.css`.  CSS variable definitions
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice enforcement
+- `marketing_brain_skills/brand-voice/VOICE.md`.  voice enforcement
 - `app/actions/lead-capture.ts`.  read before implementing any lead form
 
 **Codebase patterns to match:**
@@ -533,7 +533,7 @@ WHERE id='<id>';
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ---
 

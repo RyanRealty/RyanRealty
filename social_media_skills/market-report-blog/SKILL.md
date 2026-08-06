@@ -130,7 +130,7 @@ Before producing any copy or data pull:
 - `CLAUDE.md` §0 (Data Accuracy - every stat traces to a live query run in this session)
 - `CLAUDE.md` §0.5 (Draft-First, Commit-Last)
 - `design_system/ryan-realty/SKILL.md` (brand register, voice, fonts)
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` (full load - 1500-2500 word long-form)
+- `marketing_brain_skills/brand-voice/VOICE.md` (full load - 1500-2500 word long-form)
 - `social_media_skills/blog-post/SKILL.md` (sibling skill - inherit SEO spec §3 fully)
 - `video_production_skills/market-data-video/SKILL.md` §22 (data dictionary for market_stats_cache and market_pulse_live columns)
 
@@ -271,7 +271,7 @@ Closing (100-150 words):
 
 Voice self-check (mandatory before Step 7):
 - Grep for em-dash, en-dash, semicolons: zero allowed
-- Grep for every banned word in voice_guidelines.md §6.2: zero allowed
+- Grep for every banned word in `marketing_brain_skills/brand-voice/VOICE.md`: zero allowed
 - Grep for exclamation marks: maximum one per post, none in data sections
 - Grep for "approximately", "roughly", "about" as number substitutes: zero allowed
 - Verify all numbers carry units: "$699,000" not "$699k"; "46 days" not "46d"; "4.3 months" not "4.3 MoS"
@@ -531,7 +531,7 @@ measured
 - `CLAUDE.md` §0 - Data Accuracy (every stat traces to a live query in this session)
 - `CLAUDE.md` §0.5 - Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md` - brand visual and voice system
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - full load (1500-2500 word long-form)
+- `marketing_brain_skills/brand-voice/VOICE.md` - full load (1500-2500 word long-form)
 
 **Sibling and delegating producers:**
 - `social_media_skills/blog-post/SKILL.md` - sibling (shorter general posts; inherit SEO spec §3)
@@ -561,7 +561,7 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ---
 

@@ -134,10 +134,10 @@ the last full word before char 60. Log the truncation in `executor_response.warn
 **Step 3.  Voice validation**
 
 Before sending, run the body through the brand-voice checklist from
-`marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`:
+`marketing_brain_skills/brand-voice/VOICE.md`:
 
 Hard-fail checks (stop delivery and return `killed` if any hit):
-- Any banned word (see §6.2 of voice_guidelines.md)
+- Any banned word (see the banned constructions section of `marketing_brain_skills/brand-voice/VOICE.md`)
 - Any banned phrase (§6.3)
 - Em dash, semicolon, or dramatic colon in the body
 - "guaranteed" outcome claim
@@ -377,11 +377,11 @@ WHERE id = '<id>';
 ## 10. Related skills and references
 
 **Required reading before executing:**
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice validation rules (§6 banned list, §4 attributes, §11 per-channel calibration)
+- `marketing_brain_skills/brand-voice/VOICE.md`.  voice validation rules (§6 banned list, §4 attributes, §11 per-channel calibration)
 - `CLAUDE.md` §0.  Data Accuracy (alerts citing market data must trace to a source)
 - `CLAUDE.md` §0.5.  Draft-First rule does NOT apply to critical/high alerts (they ship immediately); it does apply if this producer is ever extended to publish content
 
-**Canonical voice check pairs (§8 of voice_guidelines.md):**
+**Canonical voice check pairs (`marketing_brain_skills/brand-voice/VOICE.md`):**
 - For market-data alerts: use §8.2 (market data do/don't pairs)
 - For lead alerts: use §8.3 (social caption pairs adapted to direct alert tone)
 - For email digests: use §8.4 (email subject line pairs)
@@ -401,7 +401,7 @@ WHERE id = '<id>';
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ---
 

@@ -110,7 +110,7 @@ export interface AdaptationItem {
    */
   reason: string
   /**
-   * The voice attribute rule section from voice_guidelines.md that was the
+   * The voice attribute rule section from VOICE.md that was the
    * decisive factor, e.g. "§4.4 Professional" or "§6.4 Banned tropes:
    * market-doom take". Only set when applicable is false.
    */

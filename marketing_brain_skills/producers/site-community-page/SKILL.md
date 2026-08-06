@@ -192,7 +192,7 @@ In order:
 4. `CLAUDE.md` "Design System v2: Heritage + Web Registers" --EMDASH-- Web register
 5. `design_system/ryan-realty/SKILL.md` --EMDASH-- color tokens, type families, shadow ladder, radii
 6. `design_system/ryan-realty/colors_and_type.css` --EMDASH-- CSS variable definitions
-7. `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` --EMDASH-- voice enforcement (the hard fail list)
+7. `marketing_brain_skills/brand-voice/VOICE.md` --EMDASH-- voice enforcement (the hard fail list)
 9. `data/resort-communities.json` --EMDASH-- find the row for `payload.community_slug`
 10. `public/lp/tetherow/index.html` --EMDASH-- visual + content reference (2,495 lines, the gold-standard exemplar)
 11. `app/sitemap.ts` --EMDASH-- sitemap structure to extend
@@ -831,7 +831,7 @@ measured
 - `CLAUDE.md` "Design System v2: Heritage + Web Registers"
 - `design_system/ryan-realty/SKILL.md` --EMDASH-- color tokens, type families, radii, shadows
 - `design_system/ryan-realty/colors_and_type.css` --EMDASH-- CSS variable definitions
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` --EMDASH-- voice enforcement
+- `marketing_brain_skills/brand-voice/VOICE.md` --EMDASH-- voice enforcement
 - `automation_skills/content_engine/SKILL.md` --EMDASH-- content routing bus
 - `social_media_skills/platform-best-practices/SKILL.md` --EMDASH-- 2026 platform rule layer for the on-page CTAs
 - `data/resort-communities.json` --EMDASH-- the canonical community config
@@ -879,7 +879,7 @@ What would make this skill 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 - `automation_skills/content_engine/SKILL.md`
 - `social_media_skills/platform-best-practices/SKILL.md`
 - `data/resort-communities.json`

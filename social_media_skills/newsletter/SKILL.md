@@ -115,7 +115,7 @@ Before producing any copy:
 - `CLAUDE.md` §0 (Data Accuracy - every market figure traces to a live query)
 - `CLAUDE.md` §0.5 (Draft-First, Commit-Last)
 - `design_system/ryan-realty/SKILL.md` (brand register: navy `#102742`, cream `#faf8f4`, Geist body, Amboqia display)
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` (full load required for long-form)
+- `marketing_brain_skills/brand-voice/VOICE.md` (full load required for long-form)
 
 **Step 3 - Pull and verify market data from Supabase**
 
@@ -208,12 +208,12 @@ Structure:
 5. Featured listing or recent sale (5-7 sentences, no banned adjectives, verified figures)
 6. Neighborhood spotlight (4-6 sentences, factual, sourced from bible + live query)
 7. Community event item (2-3 sentences, no promotional language, factual)
-8. Closing (2-3 sentences in Matt's voice - see canonical phrases in voice_guidelines.md)
+8. Closing (2-3 sentences in Matt's voice - see canonical phrases in `marketing_brain_skills/brand-voice/VOICE.md`)
 9. Signature block: Matt Ryan, Principal Broker, Ryan Realty, 541.213.6706, ryan-realty.com
 
 Voice self-check before proceeding to Step 8:
 - Grep for em-dash (U+2014), en-dash (U+2013) - replace with period or comma
-- Grep for every banned word from voice_guidelines.md §6.2 (stunning, nestled, boasts, charming, pristine, gorgeous, breathtaking, must-see, dream home, meticulously maintained, entertainer's dream, tucked away, hidden gem, truly, spacious, cozy, luxurious, updated throughout, turnkey, immaculate, captivating, exquisite, delve, leverage, tapestry, navigate, robust, seamless, comprehensive, elevate, unlock, holistic, dynamic, vibrant, bustling, eclectic, curated, bespoke, foster)
+- Grep for every banned word from `marketing_brain_skills/brand-voice/VOICE.md` (stunning, nestled, boasts, charming, pristine, gorgeous, breathtaking, must-see, dream home, meticulously maintained, entertainer's dream, tucked away, hidden gem, truly, spacious, cozy, luxurious, updated throughout, turnkey, immaculate, captivating, exquisite, delve, leverage, tapestry, navigate, robust, seamless, comprehensive, elevate, unlock, holistic, dynamic, vibrant, bustling, eclectic, curated, bespoke, foster)
 - Grep for semicolons - replace with period
 - Grep for exclamation marks - maximum one per newsletter, none in market-data sections
 - Verify "you/your" is the subject throughout
@@ -411,7 +411,7 @@ SQL transitions follow the TEMPLATE.md standard.
 - `CLAUDE.md` §0 - Data Accuracy (outranks everything)
 - `CLAUDE.md` §0.5 - Draft-First, Commit-Last (outranks everything)
 - `design_system/ryan-realty/SKILL.md` - brand visual system (v2 two-color palette: navy + cream)
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - voice enforcement (full load for long-form)
+- `marketing_brain_skills/brand-voice/VOICE.md` - voice enforcement (full load for long-form)
 
 **Pipeline docs:**
 - `automation_skills/content_engine/SKILL.md` - content routing; all content:* actions go through here
@@ -457,4 +457,4 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`

@@ -67,7 +67,7 @@ are handled by `ops/postcard-print-order/` (TODO) and the FUB inbound webhook re
 | `CLAUDE.md` "Supabase listings Schema" | Mixed-case quoted column names. PostGIS on `"Latitude"` / `"Longitude"`. |
 | `design_system/ryan-realty/SKILL.md` | Heritage register (navy `#102742` monochrome on cream `#faf8f4`), Amboqia display, Geist body, pre-rendered wordmark. |
 | `design_system/ryan-realty/colors_and_type.css` | Authoritative color + type tokens. |
-| `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` | Banned vocab union; voice attributes (honest, transparent, neighborly). |
+| `marketing_brain_skills/brand-voice/VOICE.md` | Banned vocab union; voice attributes (honest, transparent, neighborly). |
 | `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` | Matt's writing fingerprint. |
 | `automation_skills/content_engine/SKILL.md` | Content routing bus.  every `content:*` action dispatches through here. |
 | `marketing_brain_skills/producers/TEMPLATE.md` | Producer skeleton (10 sections). |
@@ -348,7 +348,7 @@ texture. No drop shadow on the wordmark. No drop shadow on the QR.
 - **Sentence case + period.** Not "JUST LISTED" or "Just Listed!".  declarative.
 - **No exclamation marks anywhere on the postcard.**
 - **No "stunning," "must-see," "won't last," "hidden gem,"** any banned-vocab union word.
-  See `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.
+  See `marketing_brain_skills/brand-voice/VOICE.md`.
 
 ---
 
@@ -404,7 +404,7 @@ Any `fail` = non-ship.
 | 9 | QR scans | Decode QR with a QR reader; URL matches `ryan-realty.com/listing/<mls_id>?utm_source=postcard&...` |
 | 10 | Phone discipline | Front uses `541.213.6706` (direct). Back uses `541.703.3095` (FUB-tracked). Never reversed |
 | 11 | Headline format | Sentence case, ends with period, no exclamation, no address number |
-| 12 | Banned vocab clean | Grep all on-canvas text against voice_guidelines.md §6 union.  zero hits |
+| 12 | Banned vocab clean | Grep all on-canvas text against `marketing_brain_skills/brand-voice/VOICE.md` union.  zero hits |
 | 13 | Data verified | Every figure traces to `citations.json` with source/filter/value/fetched_at |
 | 14 | Sold variant has sold_price | If `postcard_moment='at_sold'`, `"ClosePrice"` is non-null in source |
 | 15 | Font integrity | Amboqia Boriango + Geist loaded from disk; no system fallback in render |
@@ -607,7 +607,7 @@ action, dispatched by the orchestrator AFTER `approved`. This producer does not 
 - `CLAUDE.md` "Voice + content".  phone discipline (direct vs FUB-tracked)
 - `CLAUDE.md` "Supabase listings Schema".  mixed-case quoted columns
 - `design_system/ryan-realty/SKILL.md`.  heritage register
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab + tone
+- `marketing_brain_skills/brand-voice/VOICE.md`.  banned vocab + tone
 
 **Sibling producers:**
 - `social_media_skills/flyer-design/SKILL.md`.  print/digital flyer companion (Just Listed,
@@ -643,7 +643,7 @@ action, dispatched by the orchestrator AFTER `approved`. This producer does not 
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ## Content-producer additional references
 

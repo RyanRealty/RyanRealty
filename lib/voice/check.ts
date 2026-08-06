@@ -27,7 +27,7 @@
  *     consumers.mjs). Never hand-typed here. ci:voice-vocab-parity guards it.
  *   - Punctuation: em-dash / en-dash / semicolon are ALWAYS banned. '!' is
  *     banned only when `opts.allowExclamation` is false (the default) —
- *     voice_guidelines allows one exclamation per piece, so callers whose
+ *     VOICE.md allows one exclamation per piece, so callers whose
  *     surface tolerates that (a template body, a social caption) opt in.
  *   - Word matching uses the `(^|[^a-z0-9])word([^a-z0-9]|$)` boundary style
  *     from templateVoiceCheck.ts's scanTemplateField — more robust than `\b`

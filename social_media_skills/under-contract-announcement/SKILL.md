@@ -457,7 +457,7 @@ WHERE id='<id>';
 | Spark MLS API | Hero photo media fallback when `PhotoURL` is null | `SPARK_API_BASE_URL`, `SPARK_API_KEY` |
 | Local Node renderer | 1080×1350 PNG composite | `lib/render-under-contract.mjs` (extends `lib/render-ig-single-post.mjs`) |
 | Brand asset bundle | Logo, fonts, broker headshots | `design_system/ryan-realty/assets/` |
-| Banned-vocab linter | Caption + on-canvas text gate | `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` (the union list) |
+| Banned-vocab linter | Caption + on-canvas text gate | `marketing_brain_skills/brand-voice/VOICE.md` (the union list) |
 
 ---
 
@@ -470,7 +470,7 @@ WHERE id='<id>';
 - `CLAUDE.md` "Voice + content".  #RyanRealtyBend HARD RULE.
 - `design_system/ryan-realty/SKILL.md`.  brand visual system, navy/cream, type tiers.
 - `design_system/ryan-realty/colors_and_type.css`.  authoritative tokens.
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice attributes + banned vocab.
+- `marketing_brain_skills/brand-voice/VOICE.md`.  voice attributes + banned vocab.
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's writing fingerprint.
 - `social_media_skills/ig-single-post/SKILL.md` §4.  footer + broker headshot inherited verbatim.
 - `social_media_skills/platform-best-practices/SKILL.md`.  2026 platform rule layer.
@@ -514,7 +514,7 @@ WHERE id='<id>';
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ## Content-producer additional references
 

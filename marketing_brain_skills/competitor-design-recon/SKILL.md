@@ -11,7 +11,7 @@ Every design recon run loads:
 
 1. [`CLAUDE.md`](../../CLAUDE.md) — brand voice + draft-first + design system rules
 2. [`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md) — what we're adapting INTO
-3. [`marketing_brain_skills/brand-voice/voice_guidelines.md`](../brand-voice/voice_guidelines.md) — copy rules for any text in the recon
+3. [`marketing_brain_skills/brand-voice/VOICE.md`](../brand-voice/VOICE.md) — copy rules for any text in the recon
 4. [`marketing_brain_skills/competitor-recon/SKILL.md`](../competitor-recon/SKILL.md) — sibling skill (WHO + WHEN); this skill is the HOW
 
 ---

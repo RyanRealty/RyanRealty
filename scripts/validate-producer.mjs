@@ -53,8 +53,8 @@ const MANDATORY_REFS_BASE = [
   'CLAUDE.md §0',
   'CLAUDE.md §0.5',
   'design_system/ryan-realty/SKILL.md',
-  // W11.4: repointed from voice_guidelines.md (now only the mechanical-floor
-  // companion) to VOICE.md — the canonical voice source every producer must cite.
+  // W11.4: repointed from voice_guidelines.md to VOICE.md, the sole canonical
+  // voice source every producer must cite (voice_guidelines.md deleted 2026-08-05).
   'VOICE.md',
   // W13.1 Batch 3: research bibles (tool-inventory / platform-bible /
   // asset-library-map / bend-market-bible) deleted; citations unwired.
@@ -509,7 +509,7 @@ export function runGates(skillPath) {
       message: `${dashFindings.length} banned dash character(s) found.`,
       lines: dashFindings.map((f) => f.line),
       findings: dashFindings,
-      remediation: `Replace em-dashes and en-dashes with periods or commas per voice_guidelines.md §6.1.`,
+      remediation: `Replace em-dashes and en-dashes with periods or commas per marketing_brain_skills/brand-voice/VOICE.md.`,
     })
   }
 

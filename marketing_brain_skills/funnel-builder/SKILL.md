@@ -47,7 +47,7 @@ above everything.
 | What | Path | Why |
 |---|---|---|
 | Brand voice (canonical) | `marketing_brain_skills/brand-voice/VOICE.md` | Five Laws + competitor/receipt tests |
-| Voice hard-fails (full) | `marketing_brain_skills/brand-voice/voice_guidelines.md` | The ban lists for long-form copy |
+| Voice hard-fails (full) | `marketing_brain_skills/brand-voice/VOICE.md` | The ban lists for long-form copy |
 | Voice gate (run it) | `scripts/check-brand-voice.mjs` + `scripts/brand-voice-vocabulary.cjs` | Mechanical banned-word scan |
 | Design system | `design_system/ryan-realty/SKILL.md` + `MANIFEST.md` | Navy #102742 / cream #faf8f4, Amboqia + Geist, asset paths |
 | FB ad spec | `social_media_skills/facebook-lead-gen-ad/SKILL.md` | Lead-form template, creative spec, FUB webhook |

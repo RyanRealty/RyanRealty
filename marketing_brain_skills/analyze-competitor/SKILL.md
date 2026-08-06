@@ -134,7 +134,7 @@ WHERE id = '<id>' AND status = 'pending';
 - `CLAUDE.md` §0: Data Accuracy (all figures traced to live queries in this session)
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last (no published output from this producer)
 - `design_system/ryan-realty/SKILL.md`: brand context (for framing findings)
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`: findings are internal, but all
+- `marketing_brain_skills/brand-voice/VOICE.md`: findings are internal, but all
   quoted competitor copy must be clearly attributed and not misrepresented
   verify `APIFY_API_TOKEN` is set
   used as comparison benchmarks
@@ -544,7 +544,7 @@ No `ready` or `approved` states. No draft surface to Matt from this producer.
 - `CLAUDE.md` §0: Data Accuracy
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last (no published output)
 - `design_system/ryan-realty/SKILL.md`: brand context for framing findings
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`: all quoted text properly attributed
+- `marketing_brain_skills/brand-voice/VOICE.md`: all quoted text properly attributed
 
 **Sister skill (data collection):**
 - `marketing_brain_skills/competitor-recon/SKILL.md`: weekly Apify scrape; feeds `competitor_intel`
@@ -571,7 +571,7 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ---
 

@@ -9,7 +9,7 @@
  * on-screen text, listing descriptions, flyers, signage, on-air VO.
  *
  * This file is the code-level enforcement. Voice rule is documented at
- * marketing_brain_skills/brand-voice/voice_guidelines.md §6.1.
+ * marketing_brain_skills/brand-voice/VOICE.md.
  *
  * Usage:
  *   import { assertNoDashes, stripDashes, hasDashes } from '@/lib/punctuation-guard';
@@ -109,7 +109,7 @@ export class DashViolationError extends Error {
     super(
       `Banned dash character ${head.codepoint} (${head.char}) found${where}. ` +
         `${findings.length} violation(s). Context: "${head.context}". ` +
-        `Em-dashes and en-dashes are banned per voice_guidelines.md §6.1. ` +
+        `Em-dashes and en-dashes are banned per marketing_brain_skills/brand-voice/VOICE.md. ` +
         `Use period or comma. Auto-fix via stripDashes() if accepting external copy.`,
     );
     this.name = 'DashViolationError';

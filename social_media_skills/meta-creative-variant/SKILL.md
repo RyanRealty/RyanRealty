@@ -137,7 +137,7 @@ Before generating any copy:
 - `CLAUDE.md` §0 (Data Accuracy - all market stats cited in copy trace to live queries)
 - `CLAUDE.md` §0.5 (Draft-First, Commit-Last)
 - `design_system/ryan-realty/SKILL.md` (brand voice, navy/cream palette, banned vocabulary)
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` (inline rules plus full §6.2 banned list)
+- `marketing_brain_skills/brand-voice/VOICE.md` (inline rules plus full §6.2 banned list)
 - `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md` (live seller-funnel pipeline: CAPI, FUB wiring, campaign structure, approved budget bands, weekly optimization loop)
 - `docs/MARKETING_LEAD_FLOW.md` (webhook path, FUB dedup, lead routing detail)
 - `automation_skills/content_engine/SKILL.md` (content routing)
@@ -211,7 +211,7 @@ Fair housing check: PASS / <flag any issues>
 Voice check: PASS / <flag any issues>
 ```
 
-Voice rules for paid-ad copy (from voice_guidelines.md and ANTI_SLOP_MANIFESTO):
+Voice rules for paid-ad copy (from `marketing_brain_skills/brand-voice/VOICE.md`):
 - No em-dashes. No semicolons. No exclamation marks.
 - No banned words (the full §6.2 list applies equally to ad copy as to editorial content)
 - No fake urgency: "act fast", "don't miss out", "won't last long", "limited time"
@@ -243,7 +243,7 @@ Image concepts must follow the logo-is-a-closer doctrine (from design_system/rya
 Run the mandatory scan on every headline, primary text, description, and on-image text:
 - Em-dash (U+2014), en-dash (U+2013): zero allowed
 - Semicolons: zero allowed
-- Banned words (voice_guidelines.md §6.2 complete list): zero allowed
+- Banned words (`marketing_brain_skills/brand-voice/VOICE.md` complete list): zero allowed
 - Fake urgency phrases: zero allowed
 - Protected-class language or demographic descriptors: zero allowed
 
@@ -439,7 +439,7 @@ killed            <- Matt rejects all variants, or any gate fails after 2 auto-f
 - `CLAUDE.md` §0 - Data Accuracy (all stats in copy trace to live queries)
 - `CLAUDE.md` §0.5 - Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md` - brand voice, logo-is-a-closer doctrine, navy/cream palette
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - inline rules (banned words, punctuation, fake urgency)
+- `marketing_brain_skills/brand-voice/VOICE.md` - inline rules (banned words, punctuation, fake urgency)
 - `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md` - live seller-funnel pipeline (read before any Meta campaign work)
 - `docs/MARKETING_LEAD_FLOW.md` - lead routing detail (webhook, FUB dedup)
 
@@ -476,7 +476,7 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ---
 

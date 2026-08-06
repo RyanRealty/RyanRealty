@@ -6,7 +6,7 @@ description: >
   hourly /api/cron/detect-expired-listings detection cron OR direct
   invocation ("create an expired-listing audit for 1234 Main St"). Voice is
   honest + transparent + never pandering + never editorializing per
-  voice_guidelines.md §4.7.
+  marketing_brain_skills/brand-voice/VOICE.md.
 action_types:
   - content:expired-listing-audit
   - content:expired-listing-lp-update
@@ -34,7 +34,7 @@ example_outputs:
 
 **Status:** Canonical
 **Locked:** 2026-05-18
-**Voice:** docs/voice_guidelines.md §4.7 "Authentic, not salesy". Never pander, never editorialize, honest + transparent, never overtly state value, let language speak for itself.
+**Voice:** `marketing_brain_skills/brand-voice/VOICE.md`. Never pander, never editorialize, honest + transparent, never overtly state value, let language speak for itself.
 
 ---
 
@@ -42,7 +42,7 @@ example_outputs:
 
 **Read these BEFORE writing any expired-listing copy:**
 
-1. `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`. Especially §4.7.
+1. `marketing_brain_skills/brand-voice/VOICE.md`. Especially §4.7.
 2. `docs/archive/fub-era/README.md`. FUB-era research that drove LP voice + sentiments (archived, not a build target).
 3. `CLAUDE.md` §0.3. Banned words, em-dashes, etc.
 
@@ -278,7 +278,7 @@ WHERE id='<id>';
 - `marketing_brain_skills/producers/cma/SKILL.md`. Same architecture pattern (per-property HTML deliverable with verification trace + PDF render)
 - `marketing_brain_skills/producers/ops-email-send/SKILL.md`. For outbound delivery once audit is approved
 - `marketing_brain_skills/producers/comms-matt-alert/SKILL.md`. Fires when the detection cron creates a new FUB record so Matt sees it immediately
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` §4.7. Voice rules this producer is gated against
+- `marketing_brain_skills/brand-voice/VOICE.md` §4.7. Voice rules this producer is gated against
 - `docs/archive/fub-era/README.md`. FUB-era research that drove the LP voice + content
 - `app/lp/expired-listing/page.tsx`. Live LP source
 - `app/api/cron/detect-expired-listings/route.ts`. Hourly cron that creates FUB records + alerts Matt
@@ -301,7 +301,7 @@ Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ## Content-producer additional references
 

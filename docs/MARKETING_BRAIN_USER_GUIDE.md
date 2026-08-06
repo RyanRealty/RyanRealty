@@ -172,7 +172,7 @@ A producer that exceeds its `cost_usd_estimate` (frontmatter field) by more than
 | Symptom | Likely cause | Where to look |
 |---|---|---|
 | Action rows stuck in `pending` | content_engine routing broken, or producer slug mismatch | `automation_skills/content_engine/SKILL.md`, REGISTRY.md row for that action_type |
-| Drafts pass scorecard but voice fails | Banned word slipped into a producer's recipe template | Producer's §5 recipe, voice_guidelines.md §11.0 |
+| Drafts pass scorecard but voice fails | Banned word slipped into a producer's recipe template | Producer's §5 recipe, `marketing_brain_skills/brand-voice/VOICE.md` |
 | Publish 401s | OAuth token expired or never wired | `marketing-snapshot-meta-page` log + the platform's authorize endpoint |
 | Caption renders with em-dash | Producer wrote the dash, publish guard caught it | `lib/punctuation-guard.ts` + the producer's draft step |
 | Wrong CPL on FB seller funnel | Audience saturation or creative fatigue | `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md` + `audit-ads` findings |
@@ -233,7 +233,7 @@ The agent now has the full context and the operating model.
 ## When in doubt
 
 The brief is the contract: `marketing_brain_skills/research/AUTONOMOUS_PIPELINE_BRIEF.md`.
-The voice is the constraint: `marketing_brain_skills/brand-voice/voice_guidelines.md`.
+The voice is the constraint: `marketing_brain_skills/brand-voice/VOICE.md`.
 The data is the ground truth: Supabase project `dwvlophlbvvygjfxcrhm`.
 
 Everything else is plumbing.

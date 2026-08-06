@@ -157,7 +157,7 @@ Before pulling any data:
 - `CLAUDE.md` §0.5.  Draft-First, Commit-Last (Matt sees the bundle before publish)
 - `CLAUDE.md` "Voice + content".  voice attributes, banned vocab, phone + web format
 - `design_system/ryan-realty/SKILL.md`.  heritage register (the photos and prose carry the brand here; no on-canvas typography)
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab union
+- `marketing_brain_skills/brand-voice/VOICE.md`.  banned vocab union
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's writing fingerprint (Marketplace prose mirrors GBP response register: direct, factual, neutral, no clichés)
 - `marketing_brain_skills/producers/TEMPLATE.md`.  producer skeleton
 
@@ -274,7 +274,7 @@ Brokerage licensed in Oregon.
 
 **Cleaning the PublicRemarks body:**
 
-1. Grep against the banned vocab union from `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md` §6. Substitution table:
+1. Grep against the banned vocab union from `marketing_brain_skills/brand-voice/VOICE.md` §6. Substitution table:
 
    | Banned | Substitution |
    |---|---|
@@ -450,7 +450,7 @@ to `measured`.
 |---|---|---|
 | Supabase MCP | `listings` query + action row updates | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (project `dwvlophlbvvygjfxcrhm`) |
 | `lib/asset-library.mjs` | Download + resize photos | per `video_production_skills/asset-library/SKILL.md` |
-| `lib/voice-validate.mjs` | Banned-vocab grep on title + description | per `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` |
+| `lib/voice-validate.mjs` | Banned-vocab grep on title + description | per `marketing_brain_skills/brand-voice/VOICE.md` |
 | `sips` (macOS) or `sharp` (node) | Image resize to 1080×1080 JPEG q90 | local binary |
 | File system | Write the bundle to `out/fb-marketplace/<slug>/` | `out/` is gitignored |
 
@@ -616,13 +616,13 @@ WHERE id = '<id>';
 - `CLAUDE.md` "Voice + content".  voice attributes, banned vocab, phone/web format
 - `CLAUDE.md` "Supabase listings Schema".  mixed-case column quoting
 - `design_system/ryan-realty/SKILL.md`.  brand register (Marketplace is voice-first, not visual; SKILL grounds the prose tone)
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab union
+- `marketing_brain_skills/brand-voice/VOICE.md`.  banned vocab union
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's writing fingerprint (Marketplace prose mirrors GBP register)
 
 **Capabilities used inside this producer:**
 
 - `lib/asset-library.mjs` per `video_production_skills/asset-library/SKILL.md`.  photo download + resize
-- `lib/voice-validate.mjs` per `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned-vocab grep
+- `lib/voice-validate.mjs` per `marketing_brain_skills/brand-voice/VOICE.md`.  banned-vocab grep
 
 **Companion producers:**
 
@@ -660,4 +660,4 @@ WHERE id = '<id>';
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`

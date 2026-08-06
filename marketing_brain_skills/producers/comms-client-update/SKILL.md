@@ -142,7 +142,7 @@ WHERE id = '<id>' AND status = 'pending';
 - `CLAUDE.md` §0: Data Accuracy (market figures verified live)
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md`: brand tone anchors
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: full voice rules
+- `marketing_brain_skills/brand-voice/VOICE.md`: full voice rules
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`: Matt's actual writing; use as tone reference for warmth and brevity
 
 **Step 3: Pull listing data (client_weekly and client_milestone)**
@@ -273,7 +273,7 @@ Grep every field for:
 - Em-dash (U+2014), en-dash (U+2013): hard fail
 - Semicolons: hard fail
 - Exclamation marks in body: hard fail
-- All words in voice_guidelines.md §6.2 banned list
+- All words in `marketing_brain_skills/brand-voice/VOICE.md`'s banned list
 - Vague qualifiers ("approximately," "roughly," "about"): hard fail; use the number
 - Fake urgency ("don't miss out," "act now," "won't last"): hard fail
 - Marketing slop ("boutique brokerage," "premier," "passionate"): hard fail
@@ -480,7 +480,7 @@ measured
 - `CLAUDE.md` §0: Data Accuracy
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md`: brand tone anchors
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: voice enforcement
+- `marketing_brain_skills/brand-voice/VOICE.md`: voice enforcement
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`: Matt's actual writing register
 
 **Related producers:**
@@ -506,7 +506,7 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ---
 

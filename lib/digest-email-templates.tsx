@@ -6,7 +6,7 @@
  *   /api/cron/daily-broker-digest   — 8am Pacific, one email per broker
  *   /api/cron/weekly-pipeline-digest — Mon 8am Pacific, Matt only
  *
- * Voice: brand voice rules from §4.7 of voice_guidelines.md. Sentence case,
+ * Voice: brand voice rules from marketing_brain_skills/brand-voice/VOICE.md. Sentence case,
  * no em-dashes, no banned cliches, direct and kind. Numbers carry units.
  */
 import * as React from 'react'

@@ -14,7 +14,7 @@ import {
  * Each testimonial is a Quote + Attribution pair (name + optional city +
  * optional closed-deal year). Brand voice is honest and grateful — Matt's
  * canonical phrase "It was genuinely a pleasure working with you" is the
- * template the agent encouraged in voice_guidelines.md §4.6.
+ * template the agent encouraged in marketing_brain_skills/brand-voice/VOICE.md.
  *
  * Layout switches by item count:
  *   1 item    — single centered "hero" quote (large display Body)

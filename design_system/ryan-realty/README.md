@@ -277,7 +277,7 @@ Files: `matt-ryan.png` / `paul-stevenson.png` / `rebecca-peterson.png` (transpar
 This design system is the **mandate-load** for every producer in the marketing brain. When a producer in `marketing_brain_skills/producers/` picks up an action row from `marketing_brain_actions`, it loads:
 
 1. **This kit's `SKILL.md`** — the visual brand spec (colors, type, layout, motion, asset paths)
-2. **`marketing_brain_skills/brand-voice/voice_guidelines.md`** — voice + banned vocabulary (regex'd before publish)
+2. **`marketing_brain_skills/brand-voice/VOICE.md`** — voice + banned vocabulary (regex'd before publish)
 3. **`social_media_skills/platform-best-practices/SKILL.md`** — 2026 platform rule layer
 
 That means **whatever lands here, every producer sees on the next run.** Edit one swatch or banned word, and every listing reel + flyer + IG carousel + GBP reply + email blast picks it up automatically.

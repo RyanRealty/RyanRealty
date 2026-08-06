@@ -9,7 +9,7 @@
  * Top-level entry point: generateWeeklyBriefs(asOfDate, opts)
  *
  * Voice rules enforced against:
- *   - marketing_brain_skills/brand-voice/voice_guidelines.md §4 (anchors)
+ *   - marketing_brain_skills/brand-voice/VOICE.md (anchors)
  *   - §6 (banned territory: punctuation, words, phrases, tropes)
  *   - §11 (per-channel calibration)
  *
@@ -1229,7 +1229,7 @@ export function synthesizeOpportunities(signals: SignalBundle): RankedOpportunit
 // ---------------------------------------------------------------------------
 
 /**
- * Validates a brief's hook, body, and CTA against voice_guidelines.md §6
+ * Validates a brief's hook, body, and CTA against VOICE.md
  * hard-fail rules. Returns all violations found (not just the first).
  *
  * Algorithm:
@@ -2605,7 +2605,7 @@ export async function persistBriefs(
       },
       rules_cited: brief.voice_validation.violations.length > 0
         ? brief.voice_validation.violations
-        : ['voice_guidelines.md §4 anchors checked', 'voice_guidelines.md §6 banned territory checked'],
+        : ['VOICE.md anchors checked', 'VOICE.md banned territory checked'],
       predicted_outcome: brief.predicted_outcome,
       actual_outcome: {},
       reviewer: 'marketing_brain:generate-briefs',

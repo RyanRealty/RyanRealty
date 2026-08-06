@@ -49,7 +49,7 @@ export type VoiceCheckResult =
 /**
  * Punctuation that hard-fails a save. Derived from the canonical
  * PUNCTUATION_CHARS. The exclamation mark is NOT a hard fail here:
- * voice_guidelines allows one exclamation per piece, and a single "!" in
+ * VOICE.md allows one exclamation per piece, and a single "!" in
  * a short SMS is legitimate, so the gate would over-block. Em/en-dash and
  * semicolon are unconditional hard fails per CLAUDE.md §3.
  */

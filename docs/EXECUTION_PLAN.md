@@ -50,7 +50,7 @@ Best real estate website in Central Oregon. Listing detail BEATS Zillow Showcase
 - Heritage kit: Jax mascot, 14 wordmarks, 2 scene illustrations
 - Canonical hero photos in `design_system/ryan-realty/assets/hero/`
 - 3 broker headshots (transparent PNG, 800×1200 normalized) at `design_system/ryan-realty/assets/team/`
-- Brand voice locked at `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- Brand voice locked at `marketing_brain_skills/brand-voice/VOICE.md`
 
 **Brokers (the people):**
 - Matt Ryan (Principal) — `541.703.3095` FUB / `541.213.6706` direct

@@ -110,7 +110,7 @@ Before touching any deliverable, read the tier references that apply to this pro
 - `CLAUDE.md` §0 — Data Accuracy mandate
 - `CLAUDE.md` §0.5 — Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md` — brand visual system
-- `marketing_brain_skills/brand-voice/SKILL.md` + `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md` — voice enforcement (use `scripts/_producer_lib.has_hard_fail()` to validate every piece of text before surfacing)
+- `marketing_brain_skills/brand-voice/SKILL.md` + `marketing_brain_skills/brand-voice/VOICE.md` — voice enforcement (use `scripts/_producer_lib.has_hard_fail()` to validate every piece of text before surfacing)
 
 **Tier 2 — every content producer (every `content:*` action_type):**
 - `automation_skills/content_engine/SKILL.md` — routing bus
@@ -325,7 +325,7 @@ WHERE id='<id>';
 - `CLAUDE.md` §0 — Data Accuracy (outranks everything)
 - `CLAUDE.md` §0.5 — Draft-First, Commit-Last (outranks everything)
 - `design_system/ryan-realty/SKILL.md` — brand visual system
-- `marketing_brain_skills/brand-voice/SKILL.md` + `marketing_brain_skills/brand-voice/VOICE.md` + `voice_guidelines.md` — voice enforcement
+- `marketing_brain_skills/brand-voice/SKILL.md` + `marketing_brain_skills/brand-voice/VOICE.md` — voice enforcement
 - `scripts/_producer_lib.py` — `has_hard_fail()`, `grep_banned_categorized()`, `brand_stamp()`, `font()`, brand colors
 
 **Tier 2 — every content producer:**

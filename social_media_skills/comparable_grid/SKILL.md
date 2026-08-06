@@ -324,7 +324,7 @@ pending  ->  in_production  ->  ready  ->  approved  ->  executed  ->  measured
 1. `CLAUDE.md` §0 - Data Accuracy (non-negotiable; this producer's core value is source-verified comp data)
 2. `CLAUDE.md` §0.5 - Draft-First, Commit-Last (non-negotiable)
 3. `design_system/ryan-realty/SKILL.md` - brand visual system
-4. `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md` - voice enforcement
+4. `marketing_brain_skills/brand-voice/VOICE.md` - voice enforcement
 9. `automation_skills/content_engine/SKILL.md` - content routing
 10. `social_media_skills/platform-best-practices/SKILL.md` - 2026 platform rule layer
 
@@ -350,7 +350,7 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ---
 

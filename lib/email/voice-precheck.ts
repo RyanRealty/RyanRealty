@@ -49,7 +49,7 @@ export interface VoicePrecheckResult {
  * brand-voice fails. Returns every violation so the admin can fix before send.
  *
  * The exclamation mark is intentionally allowed here (allowExclamation: true):
- * one exclamation per piece is allowed per voice_guidelines, so a blanket
+ * one exclamation per piece is allowed per VOICE.md, so a blanket
  * hard-fail would over-block. bodyHtml is tag-stripped + entity-decoded;
  * subject/bodyText get the lighter entity clean-up only (matches the prior
  * behavior, which never ran subject/bodyText through htmlToText).

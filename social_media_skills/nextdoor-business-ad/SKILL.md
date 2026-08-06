@@ -117,7 +117,7 @@ WHERE id = '<id>' AND status = 'pending';
 - `CLAUDE.md` §0: Data Accuracy (any market stat must trace to a live Supabase query)
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md`: brand register
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: full banned-word list and neighbor-tone rules
+- `marketing_brain_skills/brand-voice/VOICE.md`: full banned-word list and neighbor-tone rules
 - `automation_skills/content_engine/SKILL.md`: routing context
 - `social_media_skills/platform-best-practices/SKILL.md`: §19 Nextdoor + §24 compliance
 
@@ -218,7 +218,7 @@ Grep every field for:
 - Em-dash (U+2014), en-dash (U+2013): hard fail
 - Semicolons: hard fail
 - Exclamation marks in body: hard fail
-- All words in voice_guidelines.md §6.2 banned list
+- All words in `marketing_brain_skills/brand-voice/VOICE.md` banned list
 - First-person "I" in brand-voice context: hard fail for this surface
 - "approximately," "roughly," "about": hard fail
 - "passionate," "dedicated," "premier," "boutique": hard fail
@@ -398,7 +398,7 @@ measured
 - `CLAUDE.md` §0: Data Accuracy
 - `CLAUDE.md` §0.5: Draft-First, Commit-Last
 - `design_system/ryan-realty/SKILL.md`: brand register
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`: voice enforcement + neighbor-tone rules
+- `marketing_brain_skills/brand-voice/VOICE.md`: voice enforcement + neighbor-tone rules
 - `automation_skills/content_engine/SKILL.md`: routing context
 - `social_media_skills/platform-best-practices/SKILL.md`: 2026 platform rules
 
@@ -420,7 +420,7 @@ What would make this 10x better:
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
-- `marketing_brain_skills/brand-voice/VOICE.md` + `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/brand-voice/VOICE.md`
 
 ---
 
