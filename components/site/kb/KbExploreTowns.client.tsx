@@ -14,16 +14,17 @@ import { kbMoneyFull, type KbTownItem } from './types'
  */
 export function KbExploreTowns({
   towns,
-  eyebrow = 'Explore',
-  title = 'Explore',
+  eyebrow,
+  title,
   sectionId = 'towns',
   // "Browse homes" is the one verb pair for every /homes-for-sale CTA on a page
   // (design-audit P3: six different labels read as six different destinations).
   cta = { href: '/homes-for-sale', label: 'Browse homes' },
 }: {
   towns: KbTownItem[]
-  eyebrow?: string
-  title?: string
+  /** Required: a placeholder default here shipped a naked-verb heading for months (C-07). */
+  eyebrow: string
+  title: string
   sectionId?: string
   cta?: { href: string; label: string } | null
 }) {

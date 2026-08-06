@@ -207,10 +207,12 @@ export default async function Home() {
           }}
           lead="on the MLS, from La Pine to Terrebonne."
         />
-        {/* Eyebrows carry distinct scent copy — the defaults echoed the display
-            title verbatim ("Explore"/"EXPLORE"), reading as template filler
-            (design-audit P3). */}
-        <KbExploreTowns towns={towns} eyebrow="The six towns" />
+        {/* C-07: the homepage was the only one of four callers omitting `title`, so
+            it inherited the placeholder default and rendered a naked verb, "EXPLORE".
+            The eyebrow had been given scent copy to compensate for a heading that said
+            nothing — the fix belongs one line down. "The six towns" also went: it reads
+            as a claim about the region, and the site carries Prineville and Madras too. */}
+        <KbExploreTowns towns={towns} eyebrow="Central Oregon" title={'Where people\nare buying'} />
         <KbCommunities communities={communityItems} eyebrow="Resort & master-planned" />
         <KbFeatured items={featuredItems} eyebrow="On the market now" />
         {/* fitToFeatures frames the actual inventory — the REGION box in this
