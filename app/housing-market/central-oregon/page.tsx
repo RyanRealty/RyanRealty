@@ -138,13 +138,22 @@ function buildRegionNarrative(
   const parts: string[] = []
 
   if (mos != null) {
+    // The verdict is a FACT: it falls out of months of supply against the
+    // thresholds in CLAUDE.md §0, and check-market-formula.mjs enforces the
+    // mapping. It needs no attribution.
+    //
+    // The sentence after it is a JUDGMENT — what the verdict means for someone
+    // deciding to buy or sell — and VOICE.md rule 3 says a judgment goes in a
+    // quote, under a name. These shipped as flat unattributed assertions, which
+    // is the site telling a reader what to think in nobody's voice. Matt is the
+    // principal broker and the opinion is his, so it says so.
     parts.push(`Central Oregon is in ${verdict} right now.`)
     if (verdict === "a seller's market") {
-      parts.push('Well-priced homes are moving fast and sellers have more room to hold their price.')
+      parts.push('Matt Ryan, principal broker: well-priced homes are moving fast, and sellers have more room to hold their price.')
     } else if (verdict === "a buyer's market") {
-      parts.push('Buyers have more inventory to choose from and more room to negotiate on price and terms.')
+      parts.push('Matt Ryan, principal broker: buyers have more inventory to choose from and more room to negotiate on price and terms.')
     } else {
-      parts.push('Neither side has a strong structural edge. Pricing and presentation still decide the outcome.')
+      parts.push('Matt Ryan, principal broker: neither side has a structural edge, so pricing and presentation decide the outcome.')
     }
   }
 
