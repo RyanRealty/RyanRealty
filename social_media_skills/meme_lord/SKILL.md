@@ -315,7 +315,7 @@ Open `voice_grader.md`. Run the 8-question checklist on the rendered meme. Sampl
 2. Punctuation: any semicolons, em-dashes, or exclamation points (outside genuine surprise)?
 3. Specificity: is there at least one concrete noun (number, place, brokerage, MLS field, listing detail)?
 4. Voice test: read aloud. Does it sound like a 40-something Bend principal broker, or like a chatbot trying to be funny?
-5. Setup-punchline structure: is the punchline at the end, not the start?
+5. Setup-punchline structure: does the punchline land at the end, after the setup?
 6. Caption explanation: does the caption explain the joke? (it should not)
 7. Engagement bait: does the caption use "tag a friend", "double tap if", "comment below"? (banned)
 8. Insider-only check: would a non-agent get the joke? If only agents get it, you're capping reach.

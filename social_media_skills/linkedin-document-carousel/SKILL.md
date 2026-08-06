@@ -397,8 +397,8 @@ fir green. No sky blue. Two-color palette per CLAUDE.md (locked 2026-05-13).
 **Persistent footer band** (every slide, byte-identical across the deck):
 
 - Height: `120 px` (square 1080×1080) / `150 px` (portrait 1080×1350).
-- Background: cream `#faf8f4` (deck is monochrome; the footer is a separator strip, not a navy
-  band like the IG carousels). Thin top border: `1 px solid rgba(16,39,66,0.12)`.
+- Background: cream `#faf8f4` (deck is monochrome; the footer is a separator strip. The IG
+  carousels use a navy band instead). Thin top border: `1 px solid rgba(16,39,66,0.12)`.
 - Left: `design_system/ryan-realty/assets/brand/logo-blue.png`, height `48 px` (square) / `56 px`
   (portrait), vertically centered, `40 px` from left edge.
 - Right: slide numeral. Geist 500, `14 px` (square) / `16 px` (portrait), `rgba(16,39,66,0.65)`,
@@ -523,7 +523,7 @@ The pull quote slide. One idea that ties the data back to a buyer or seller deci
 - **Background:** cream `#faf8f4` (or navy `#102742` for emphasis.  pick one rhythm and hold
   it; never alternate). Default cream.
 - **Category kicker** (Azo Sans Medium, 14 px, navy, UPPERCASE, letter-spacing `0.16em`,
-  `y = 80, x = 56`): `WHAT THIS MEANS`.
+  `y = 80, x = 56`): `THE IMPLICATION`.
 - **Pull quote** (Amboqia Boriango, 48 px, navy if cream bg / cream if navy bg, line-height
   `1.20`, max 4 lines, centered vertically in content area):
   E.g. `A buyer with $1.1M can step into Tumalo rural at 8% less per square foot than the Bend
@@ -532,7 +532,7 @@ The pull quote slide. One idea that ties the data back to a buyer or seller deci
   on navy, centered, `40 px` above footer):
   `Ryan Realty market analysis · <month YYYY>`.
 
-No exclamation marks. No "Don't miss out." No hype.
+No exclamation marks. No manufactured urgency. No hype.
 
 ### 7.6 Slide 9.  CTA (DM-for-the-brief offer)
 
@@ -755,8 +755,8 @@ AI filler: `delve`, `leverage`, `tapestry`, `navigate`, `robust`, `seamless`, `c
 Hedging: `approximately`, `roughly`, `about`, `around`, `fairly`, `somewhat`, `may`, `could`,
 `potentially`.
 
-Marketing exhortations: `Don't miss out`, `Act now`, `Limited time`, `won't last`,
-`Your real estate journey`.
+Marketing exhortations: manufactured urgency and scarcity phrasing (pressure to act
+immediately, claims of limited availability), `Your real estate journey`.
 
 Punctuation in body: em-dashes, semicolons, dramatic colons. (Em-dash allowed only as a "no
 data" placeholder.)

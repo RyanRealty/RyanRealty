@@ -377,8 +377,8 @@ Address-block side per USPS Domestic Mail Manual section 202.4. Reference: USPS 
 - **Phone discipline.** Direct phone `541.213.6706` is used on the FRONT only. The BACK uses
   the FUB-tracked `541.703.3095` because the back is the inbound-CTA surface.  calls must
   route through Follow Up Boss for attribution.
-- **No banned vocab.** "Curious," "scan," "call us".  neighbor-tone. Not "Don't miss out,"
-  "Act fast," "Find out today!"
+- **No banned vocab.** "Curious," "scan," "call us".  neighbor-tone. No manufactured urgency
+  phrasing.
 - **Indicia is a placeholder.** Real permit number comes from the mail house. If unset,
   surface the missing field to Matt.
 - **Address-block clear zone is sacred.** Nothing in that rectangle. The USPS automated mail

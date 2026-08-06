@@ -263,7 +263,8 @@ Thanks to our buyers, the seller, and the agent across the table for a clean dea
 - **No celebration language.** "Just sold!" / "We did it!" / "Off the market!" / "Another one
   in the books" / "Honored" / "Blessed" / "Humbled" / "Thrilled".  all non-compliant.
 - **No emoji.** Anywhere. Banned per CLAUDE.md "Voice + content."
-- **No manufactured scarcity.** "Act fast," "won't last," "before it's gone".  banned.
+- **No manufactured scarcity.** Any phrasing that pressures the reader to move immediately or
+  implies the window is closing is banned.
 - **No em-dashes (. ) or semicolons in body.** Em-dash is missing-data placeholder only.
 - **`#RyanRealtyBend` leads the hashtag block.** HARD RULE (CLAUDE.md "Voice + content").
 - **Currency rounded to nearest thousand.** `$895,000` in body; `$895K` in the 》 line.

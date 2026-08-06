@@ -275,7 +275,7 @@ Grep every field for:
 - Exclamation marks in body: hard fail
 - All words in `marketing_brain_skills/brand-voice/VOICE.md`'s banned list
 - Vague qualifiers ("approximately," "roughly," "about"): hard fail; use the number
-- Fake urgency ("don't miss out," "act now," "won't last"): hard fail
+- Fake urgency (deadline pressure, false scarcity, rush-to-decide phrasing): hard fail
 - Marketing slop ("boutique brokerage," "premier," "passionate"): hard fail
 
 Fix every hit. Do not surface a draft with a single violation.

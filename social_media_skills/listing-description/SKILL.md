@@ -176,7 +176,7 @@ Length target: 800-950 characters (max 1000 per COCAR field limit).
 Structure:
 1. Opening sentence: one specific factual detail that differentiates this property. Not a generic statement. Lead with a physical fact (the view, the acreage, the garage, the school, the trail access).
 2. Property description body: beds, baths, sqft, lot size, year built, key features from seller_notes (if verified against MLS data). Two to three sentences maximum.
-4. Close: one sentence about the listing status or opportunity. No urgency language ("act fast", "won't last", "don't miss out").
+4. Close: one sentence about the listing status or opportunity. No manufactured urgency language.
 
 Voice rules for Public Remarks (mandatory):
 - "You/your" is the subject (talking to the buyer reading this)

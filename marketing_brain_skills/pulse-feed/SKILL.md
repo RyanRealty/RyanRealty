@@ -302,7 +302,7 @@ const HOOKS = {
 - Lower case feels conversational; upper case feels corporate
 - No real-estate clichés (stunning, must-see, dream home, gorgeous)
 - No AI filler (delve, leverage, robust, seamless, comprehensive)
-- No exclamation marks. No "act fast"
+- No exclamation marks. No manufactured urgency or rushed calls-to-action
 - One emoji MAX across the entire pool, and only where it earns the spot
 - The video carries the visual energy; the hook gives it voice
 

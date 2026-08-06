@@ -127,7 +127,7 @@ Three creative non-negotiables:
 
 **For stat cards:**
 - Minimal motion: 1.0x → 1.03x (barely perceptible)
-- The data is the focus, not the movement
+- Motion stays subliminal so the data holds focus
 - Slight upward drift (1-2% over scene duration) creates subliminal energy
 
 ### Scene Transitions
@@ -220,7 +220,7 @@ The first frame IS the thumbnail on most platforms. Design it as a standalone im
 
 **Facebook Reels:**
 - Slightly more polished than TikTok, slightly less editorial than IG
-- Wider age demo — make stats contextual ("Here's what this means for your home's value")
+- Wider age demo — tie stats directly to home value ("Your home's value, up 34 percent")
 - Trending: educational explainers, before/after market comparisons
 - Anti-trend: TikTok watermarks (Facebook suppresses these), overly young aesthetic
 

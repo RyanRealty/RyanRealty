@@ -103,7 +103,7 @@ Pass `docType: 'expired-audit'` to `buildCma` for expired-listing subjects. `reb
 - Storage in `public.cmas` table with `cma_comps` linking the comps used
 
 ### Out of scope
-- Formal appraisal (this is an estimate, not a USPAP appraisal).  disclaim explicitly on the last page
+- Formal appraisal. The CMA is priced and labeled throughout as an estimate. The last page carries an explicit disclaimer that it is not a USPAP appraisal
 - Listing agreement, seller net sheet, transaction coordination.  those are separate producers
 - Marketing flyer for the subject after it's listed.  that's `flyer-design` for `content:just_listed_flyer` etc.
 - Email delivery of the finalized PDF.  on finalization the canonical delivery is a **Gmail DRAFT** created via `POST /api/cma/[slug]/gmail-draft` (addressed to the lead, CMA PDF attached, BCC `ryan.realty@followupboss.me` so FUB logs it the moment it's sent). The signing broker reviews the draft in Gmail and sends it personally.  keeps a human on the pricing numbers (CLAUDE.md §0) and lands the email from a real mailbox instead of a no-reply. The Resend path (`ops-email-send` / `/api/cma/[slug]/email`) is the fallback when the `gmail.modify` DWD scope is unavailable. (This also satisfies the old "wire delivery to FUB" item.  the BCC logs the sent email on the lead's record.)

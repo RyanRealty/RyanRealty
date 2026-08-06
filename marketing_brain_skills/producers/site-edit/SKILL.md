@@ -149,7 +149,7 @@ For each change in `payload.changes`, check `after_text` against
 - No banned punctuation: em-dashes as punctuation, semicolons, exclamation marks in body
 - No banned AI filler: delve, leverage, tapestry, navigate, robust, seamless,
   comprehensive, elevate, unlock, passionate, dedicated, premier, boutique
-- No pressure/scarcity framing: "Don't miss out!", "Act now!", "Limited time"
+- No pressure/scarcity framing: deadline callouts, exclamation-driven urgency, limited-availability claims
 - No emoji anywhere
 - No hedging: may, could, potentially (as substitutes for facts)
 - Voice is direct, specific, kind, honest

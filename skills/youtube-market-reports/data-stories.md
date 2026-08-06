@@ -716,7 +716,7 @@ ORDER BY listing_count DESC;
 
 ### 18. Seller Concession Trends Over 12 Months
 
-**Angle:** The share of sellers offering concessions has been creeping upward for months — here is the exact trend line, not a one-quarter snapshot.
+**Angle:** The share of sellers offering concessions has been creeping upward for months. This is the full 12-month trend line.
 
 **Why unique:** Month-over-month concession rate and median concession amount requires `concessions_amount` trended over time. No local market report publishes this trend.
 
@@ -865,7 +865,7 @@ ORDER BY MIN((details->>'LotSizeSquareFeet')::numeric);
 
 ### 22. The Relisting Penalty
 
-**Angle:** Homes that were withdrawn and relisted at a new price face a credibility penalty — buyers know it sat before, and the data proves they negotiate accordingly.
+**Angle:** Homes that were withdrawn and relisted at a new price face a credibility penalty. Buyers know it sat before, and the numbers show a lower final price.
 
 **Why unique:** Requires matching `back_on_market_count >= 1` with `price_history` to isolate relist price changes versus simple BOM at same price. Reveals a market dynamic invisible to buyers and sellers without this data.
 

@@ -15,8 +15,9 @@ description: >
   producer ALSO handles the Supabase migration that creates the
   listing_alerts + listing_alert_matches tables, the Vercel cron route at
   /api/cron/listing-alerts-digest, the Resend email template, and the FUB
-  webhook that pauses alerts when a subscriber replies to a broker. The
-  output is a working backend, not a static asset.
+  webhook that pauses alerts when a subscriber replies to a broker. This
+  producer ships real backend infrastructure: cron jobs, database tables, and
+  scheduled email delivery, on top of the saved-search UI.
 action_types:
   - ops:listing_alerts_setup
   - ops:listing_alerts_digest_send

@@ -80,16 +80,16 @@ Compound hyphens are allowed when standard English requires them (single-family,
 
 ### Banned phrases
 - Hype openings: "Get ready to fall in love," "You won't believe," "Introducing," "Stunning new listing"
-- Pandering: "What a beautiful home," "You have great taste"
-- Talking down: "Don't worry, we will handle everything for you," "Let me explain in simple terms"
-- Marketing slop: "Top producing," "Top 1 percent," "White glove service," "Luxury concierge," "Premier brokerage," "Exclusive," "Boutique brokerage," "Your real estate journey," "We are passionate about..," "We pride ourselves on.."
-- Fake urgency: "Act fast," "Don't miss out," "Won't last long"
+- Pandering: complimenting the reader's taste, or opening with a gushing reaction to the home
+- Talking down: reassuring the reader not to worry, or offering to simplify things for them
+- Marketing slop: unearned superlatives ("top producing," "top 1 percent," "white glove," "luxury concierge," "premier," "exclusive," "boutique," "your real estate journey") and self-congratulation about being passionate or proud, with no receipt attached
+- Fake urgency: pushing a deadline or scarcity that the numbers do not support
 
 ### Banned tropes
 - Dramatic before-and-after ("Most agents do X. We do Y.")
 - Fake humility brag ("We are just so honored to be voted..")
 - Market-doom or market-hype ("The market is crashing," "The market is on fire")
-- Agent-as-hero arc (content where the broker is the protagonist, not the client)
+- Agent-as-hero arc (content that puts the broker at the center of the story instead of the client)
 
 ### Other hard fails
 - Any unsourced market statistic.

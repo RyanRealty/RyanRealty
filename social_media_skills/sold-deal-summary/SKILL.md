@@ -261,7 +261,7 @@ Structure:
 LinkedIn-specific voice rules:
 - Direct. Specific. Useful. Professional but not stiff.
 - NO "honored to" / "humbled to" / "what a journey" / "blessed" / "grateful."
-- NO "Don't miss out!" / "Act now!" / "Won't last long" / urgency framing.
+- NO manufactured urgency framing of any kind.
 - NO exclamation marks. NO emoji. NO hashtags.
 - One topic per paragraph; line breaks between paragraphs.
 - Banned vocab union applies per `marketing_brain_skills/brand-voice/VOICE.md`.

@@ -141,7 +141,7 @@ Hard-fail checks (stop delivery and return `killed` if any hit):
 - Any banned phrase (§6.3)
 - Em dash, semicolon, or dramatic colon in the body
 - "guaranteed" outcome claim
-- Fake urgency language ("Act fast", "Don't miss out") unless `urgency='critical'`
+- Manufactured urgency phrasing (deadline pressure, rushed calls to action) unless `urgency='critical'`
   AND the urgency is genuine (hot lead SLA, broken campaign)
 
 Soft-flag check (log in `executor_response.warnings`, proceed):

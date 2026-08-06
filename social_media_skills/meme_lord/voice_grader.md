@@ -2,7 +2,7 @@
 
 Run this checklist on every meme caption and on every text slot rendered onto the image. A single fail blocks publish until rewrite.
 
-This grader exists because **Anti-Slop Rule 9** bans AI-written humor. The skill never writes punchlines. Matt writes them. The grader confirms what Matt wrote actually sounds like Matt.
+This grader exists because CLAUDE.md §4 bans AI-written humor and engagement bait. The skill never writes punchlines. Matt writes them. The grader confirms what Matt wrote actually sounds like Matt.
 
 ---
 
@@ -10,15 +10,15 @@ This grader exists because **Anti-Slop Rule 9** bans AI-written humor. The skill
 
 ### 1. Banned-word grep — clean?
 
-Run a case-insensitive search on the caption and every text slot. The list (full version in `ANTI_SLOP_MANIFESTO.md`):
+Run a case-insensitive search on the caption and every text slot against the canonical vocabulary
+and construction rules, not a second list maintained here. Source of truth:
+`marketing_brain_skills/brand-voice/VOICE.md` (the Five Laws + banned constructions), the
+machine-readable vocabulary at `scripts/brand-voice-vocabulary.cjs`, and the shapes in
+`scripts/voice-constructions.cjs` — enforced by `scripts/check-brand-voice.mjs` and
+`scripts/check-voice-constructions.mjs`. If a word or opener needs to be added to the ban list,
+it gets added there, never re-invented in this file.
 
-`delve, leverage, navigate, robust, seamless, comprehensive, pivotal, transformative, elevate, empower, unlock, unleash, harness, foster, facilitate, in the realm of, at the intersection of, in this rapidly evolving landscape, in today's market, dream home, charming, must-see, gorgeous, pristine, meticulously maintained, entertainer's dream, truly, breathtaking, spacious, cozy, luxurious, updated throughout, a rare opportunity, this won't last long, priced to sell, hidden gem, tucked away, stunning, nestled, boasts, coveted`
-
-Plus opening patterns:
-
-`In today's real estate market, Have you ever wondered, Did you know that, Let's talk about, Are you thinking about buying, Welcome to, Today we're going to, Hey guys, What's up`
-
-**Pass condition:** zero hits. **Fail action:** rewrite the offending phrase to something specific.
+**Pass condition:** zero hits against the canon. **Fail action:** rewrite the offending phrase to something specific.
 
 ### 2. Punctuation — clean?
 

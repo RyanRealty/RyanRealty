@@ -337,7 +337,7 @@ union in `marketing_brain_skills/brand-voice/VOICE.md` §6. Also grep for:
   which is allowed ONLY as a signature dash. Body sentences may not contain `. `.
 - Semicolons.
 - AI filler: "delve," "leverage," "tapestry," "robust," "seamless," etc.
-- Banned phrases: "your real estate journey," "we are passionate," "premier brokerage," etc.
+- Banned phrases: generic journey framing ("your real estate journey"), self-congratulatory passion claims, unearned superlatives ("premier brokerage"), etc.
 
 Any hit → halt. Re-write the offending copy. Re-validate. Do not relax the gate.
 

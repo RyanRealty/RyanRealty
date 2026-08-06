@@ -266,7 +266,7 @@ FAQ section (H2: "Frequently asked questions") (300-400 words):
 - Do not repeat information already in the body - the FAQ adds incremental coverage.
 
 Closing (100-150 words):
-- One paragraph offering the reader a next step (no urgency language, no "act fast").
+- One paragraph offering the reader a next step (no manufactured urgency language).
 - CTA: link to the contact form or listing search. Matt's phone 541.213.6706. ryan-realty.com.
 
 Voice self-check (mandatory before Step 7):

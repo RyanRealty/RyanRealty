@@ -80,7 +80,7 @@ When followers DM specific keywords, deliver the mapped lead magnet + capture co
 - Example question: "How long does closing take?" Example response: "Usually 30-45 days from accepted offer to close. Lots of variables (inspection, appraisal, financing), but that's the standard window."
 
 **Rule 2: Objections / concerns → Deflect to DM**
-- If comment is expressing doubt / concern / pushback, respond with: "Great question, DM me and let's dig into that. Easier in a conversation."
+- If comment is expressing doubt / concern / pushback, respond with: "DM me and let's dig into that. Easier in a conversation."
 - Example: Comment: "Real estate agents are all the same." Response: "Ha, I get that pushback, that's exactly why I left [Franchise] for independent brokerage. DM me 'independent' if you want the full story."
 - Deflection goal: Move conversation to DM to capture contact (objection handling = high conversion)
 
@@ -123,7 +123,7 @@ Examples:
 **For reviews (Google Business Profile, Yelp, Zillow):**
 
 Same framework: Acknowledge, empathize, offer offline conversation. Example:
-- Review: "Slow communication and overpriced." Response: "Thanks for taking the time to review. Communication is something we pride ourselves on, I'd like to understand where we fell short. Please DM me or call 541.213.6706."
+- Review: "Slow communication and overpriced." Response: "Thanks for taking the time to review. I'd like to understand where communication fell short here. Please DM me or call 541.213.6706."
 
 ---
 
@@ -195,7 +195,7 @@ Example responses:
 ✓ **Good:** "Thanks for the question! [Answer]. If you want to dig deeper, happy to chat over the phone, [Calendly link]"
 
 ❌ **Bad:** "DM me for more information about this listing."
-✓ **Good:** "Great question! The property is 2.28 acres with 1500 sqft of living space. Want to schedule a showing? [Calendly link]"
+✓ **Good:** "The property is 2.28 acres with 1500 sqft of living space. Want to schedule a showing? [Calendly link]"
 
 ❌ **Bad:** "We apologize for your experience. We take all feedback seriously." [Then silence]
 ✓ **Good:** "I hear you, that's not the experience we want. DM me so we can talk through what happened."

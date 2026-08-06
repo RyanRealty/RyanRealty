@@ -590,7 +590,7 @@ Banned-vocab grep covers (from `marketing_brain_skills/brand-voice/VOICE.md`): s
 gorgeous, breathtaking, must-see, dream home, meticulously maintained, entertainer's dream,
 hidden gem, truly, spacious, cozy, luxurious, turnkey, immaculate, premier, luxury, boutique,
 delve, leverage, tapestry, navigate, robust, seamless, comprehensive, elevate, unlock,
-approximately, roughly, about, around, "won't last", "act fast", "don't miss out".
+approximately, roughly, about, around, manufactured urgency phrasing.
 
 ---
 

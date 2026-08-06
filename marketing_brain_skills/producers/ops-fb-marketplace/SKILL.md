@@ -307,7 +307,7 @@ Brokerage licensed in Oregon.
 - Sentence case (no Title Case mid-sentence).
 - Plain neutral pro tone.  Marketplace audience skews value-conscious; aspirational marketing prose underperforms factual specs. Mirror Matt's GBP-response register.
 - No hashtags anywhere.  Marketplace's description doesn't honor them and they look like spam to the audience.
-- No "Don't miss out!" / "Won't last!" / "Act fast!" / "Schedule today!" pressure or scarcity framing.
+- No pressure or scarcity framing: deadline callouts, "limited availability," or rushed calls to schedule.
 - No emoji.
 
 ### Step 7.  Download and resize photos

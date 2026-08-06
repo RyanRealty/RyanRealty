@@ -597,7 +597,7 @@ carousel copy.  captions, slide text, kickers, attribution lines:
 - Hedging: `approximately`, `roughly`, `about` as a substitute for the real number
 - Generic superlatives: `#1`, `top-rated`, `award-winning`, `best-in-class` without evidence
   cited in the same slide
-- Pressure/scarcity framing: `Act now`, `Don't miss out`, `Limited time`
+- Pressure/scarcity framing: calls to act immediately, manufactured scarcity, limited-time framing
 - Sentences that claim a quality instead of demonstrating it:
   `"Our team is passionate about helping you"`.  no. `"38 closings in Bend last year."`.  yes.
 

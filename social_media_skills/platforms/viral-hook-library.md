@@ -56,7 +56,7 @@ Hook the viewer with a specific, recent number that creates emotion or surprise.
 - "Bend home prices jumped 8 percent this month alone."
 - "The average days-on-market just hit 47. That's the slowest in two years."
 - "Three neighborhoods just crossed the 1-million-dollar threshold."
-- "Inventory is up 23 percent. Here's what that means for your offer."
+- "Inventory is up 23 percent. Your offer just gained leverage."
 - "We've closed 12 sales over 2 million this quarter."
 
 **How to execute**: Lead with the number in all caps or as a bold visual reveal. Always cite the source (listings data, MLS, market report). End with "DM me 'market'" for non-listing, or "DM me 'tour'" if promoting a specific property in that market.
@@ -127,7 +127,7 @@ These patterns violate Ryan Realty brand voice and algorithm best practices:
 - "Your dream home awaits"
 - "You won't believe what I found"
 - "Tag someone who wants to buy" / "Tag your Bend bestie"
-- "Don't miss out on this opportunity"
+- Manufactured FOMO / scarcity-baiting phrasing
 - "DM me NOW" (urgency-baiting kills algorithm)
 - Any hook that sounds like a real estate ad
 - "Swipe to see the rest" without the hook standing alone
@@ -178,10 +178,10 @@ Once a hook proves high-retention, create 5-7 variations on the same core idea a
 Each entry follows: `[CATEGORY] Opening Line | Retention Beat | Payoff`
 
 **MARKET STAT SHOCK**
-1. [STAT] "Bend's average home price just jumped 12 percent in 90 days." | Show the price chart. | "Here's what that means if you're buying or selling. DM me 'market'."
+1. [STAT] "Bend's average home price just jumped 12 percent in 90 days." | Show the price chart. | "That changes what you offer. DM me 'market'."
 2. [STAT] "Three neighborhoods just crossed the million-dollar mark." | Name them on-screen. | "Five years ago, that would have been impossible. DM me 'Bend'."
 3. [STAT] "Inventory is up 34 percent. That's huge." | Show supply vs. previous year. | "If you've been waiting, this changes everything. DM me 'strategy'."
-4. [STAT] "Days-on-market hit 51. That's a real shift." | Timeline visual. | "What this means for sellers right now. DM me 'guide'."
+4. [STAT] "Days-on-market hit 51. That's a real shift." | Timeline visual. | "Sellers, that's your cue to move. DM me 'guide'."
 5. [STAT] "We've done 18 sales over two million in the last quarter." | Show price ranges. | "Bend's luxury market just got real. DM me 'tour'."
 6. [STAT] "Mortgage rates just dropped to a level we haven't seen since February." | Rate comparison. | "This could change your buying power. DM me 'strategy'."
 7. [STAT] "Cash offers make up 31 percent of all transactions in Bend right now." | Show the breakdown. | "Here's why that matters if you're competing. DM me 'market'."

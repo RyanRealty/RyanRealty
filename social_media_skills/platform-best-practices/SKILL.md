@@ -18,7 +18,7 @@ when_to_use: |
 
 ## The single most important rule
 
-**The logo is a closer, not an opener.**
+**The logo belongs at the close of a piece, never at the open.**
 
 Every short-form platform.  TikTok, Instagram Reels, YouTube Shorts, Facebook Reels.  trains its algorithm to suppress content that looks like an ad. An in-frame logo in the first two seconds is the clearest possible ad signal. The algorithm interprets it as promotional content and reduces distribution to non-followers. The top real estate creators (Glennda Baker at 350K+ daily views, Daniel Heider at 3.7M TikTok followers, Madison Sutton with 100% of her business sourced from social) run zero in-frame logos on short-form organic content. Brand recognition is built through a consistent visual system.  color palette, voice, face, typography.  not through a stamped wordmark. The logo earns its placement by appearing only where viewers expect a credential: end card, thumbnail, print, carousel final slide, email header, yard sign. The Chanel parallel is exact: over-exposure of a logo devalues it. A SERHANT. bug on every frame makes it an ad. Restraint IS the luxury signal.
 
@@ -133,7 +133,7 @@ Behaves like TikTok in most respects. The algorithm measures the **swipe rate**.
 
 #### YouTube long-form
 
-**YouTube is a search engine, not a discovery engine.** The title must contain the exact phrase a buyer types into the search bar. Algorithm rewards consistent weekly publishing over 12+ months more than burst posting.
+**YouTube surfaces video through search intent, ahead of discovery browsing.** The title must contain the exact phrase a buyer types into the search bar. Algorithm rewards consistent weekly publishing over 12+ months more than burst posting.
 
 **Thumbnail formula (most important variable.  ~50% of CTR):**
 - One face + one property + maximum 5 words + two-color contrast
@@ -151,7 +151,7 @@ Rules: primary keyword within first 40 characters; year in parentheses at the en
 
 **Hook structure (first 30 seconds):**
 - Seconds 0-5: One sentence stating exactly what this video delivers. Specific. "By the end of this video you'll know exactly what $800,000 buys in Bend, Oregon right now."
-- Seconds 5-15: Credibility signal.  not a bio, a relevant credential. "I closed 22 deals in this neighborhood last year."
+- Seconds 5-15: Credibility signal. Skip the generic bio, state a relevant credential directly. "I closed 22 deals in this neighborhood last year."
 - Seconds 15-30: Preview the most counterintuitive thing they'll learn. Create a knowledge gap.
 
 **Length sweet spot by content type:**

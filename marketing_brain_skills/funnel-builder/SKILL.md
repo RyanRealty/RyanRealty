@@ -205,9 +205,9 @@ shipped that failed and what you changed. If nothing failed, you weren't honest 
 - **Message-match:** ad promise == LP H1 == first CRM touch. Verify literally.
 - **Voice gate (mechanical):** run `node scripts/check-brand-voice.mjs` on the LP copy;
   grep all ad/CRM copy for the ban list (stunning, dream home, nestled, charming, must-see,
-  hidden gem, boasts, luxurious, passionate, dedicated, premier, boutique, act fast,
-  won't last; em-dashes, semicolons, body exclamation marks; category-naming;
-  headcount/smallness positioning). Any hit = rewrite, not flag.
+  hidden gem, boasts, luxurious, passionate, dedicated, premier, boutique,
+  manufactured-urgency phrasing; em-dashes, semicolons, body exclamation marks;
+  category-naming; headcount/smallness positioning). Any hit = rewrite, not flag.
 - **Data trace:** every number on the ad + LP maps to a §3 verification line.
 
 ---

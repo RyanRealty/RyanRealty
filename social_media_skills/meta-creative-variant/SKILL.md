@@ -177,7 +177,7 @@ Apply the MoS verdict threshold (<=4 seller, 4-6 balanced, >=6 buyer). Use this 
 
 Angle menu (select `payload.variant_count` angles from this list, diversifying):
 
-1. **Price-stat anchor**: Lead with the specific median price or YoY change. Hard number is the hook. "Bend homes are selling for $699K on average. Here is what that means for your home's value."
+1. **Price-stat anchor**: Lead with the specific median price or YoY change. Hard number is the hook. "Bend homes are selling for $699K on average, up 4 percent from last year."
 2. **Days-to-close specificity**: Use DOM or pending speed as the credibility signal. "Homes in Bend are going pending in 38 days on average. Is yours priced to compete?"
 3. **Market-verdict framing**: Use the MoS verdict to frame urgency without false pressure. "Bend is a seller's market with just 4 months of supply. More buyers than available homes."
 4. **Question-led curiosity**: Open with a question the reader is already asking. "What is your Bend home worth right now? The market shifted in 2026."
@@ -214,7 +214,7 @@ Voice check: PASS / <flag any issues>
 Voice rules for paid-ad copy (from `marketing_brain_skills/brand-voice/VOICE.md`):
 - No em-dashes. No semicolons. No exclamation marks.
 - No banned words (the full §6.2 list applies equally to ad copy as to editorial content)
-- No fake urgency: "act fast", "don't miss out", "won't last long", "limited time"
+- No fake urgency: pressure to move immediately, manufactured scarcity, limited-time framing
 - No hype openings: "get ready to fall in love", "introducing", "you won't believe"
 - No "approximately", "roughly", "about" - use the actual number or omit the claim
 - "You/your" is the subject. Never "I" in ad copy (brokerage speaks, not Matt personally)

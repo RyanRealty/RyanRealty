@@ -421,7 +421,7 @@ hidden gem, truly, spacious, cozy, luxurious, updated throughout, turnkey,
 immaculate, captivating, exquisite, delve, leverage, tapestry, navigate,
 robust, seamless, comprehensive, elevate, unlock, holistic, dynamic, vibrant,
 bustling, eclectic, curated, bespoke, foster, premier, approximately,
-polygon (jargon --EMDASH-- homeowners do not care), don't miss, act now, won't last.
+polygon (jargon --EMDASH-- homeowners do not care), and manufactured urgency phrasing (scarcity claims, rushed calls to act).
 
 Banned punctuation in body copy: em-dash, en-dash (except numeric ranges
 where it's swapped to "to"), semicolon, exclamation mark, dramatic colon.

@@ -310,7 +310,7 @@ Posts that artificially manufacture suspense before a mundane reveal are widely 
 More than 3-5 hashtags on a LinkedIn post is a spam signal. Van der Blom's 1.8M-post 2025 analysis found hashtag impact has continued to weaken.  LinkedIn's Interest Graph contextualizes content semantically and does not rely on hashtag routing the way Instagram does.
 
 **Phantom thought leadership**
-Generic takes on national real estate news without local specificity or personal opinion. "The Fed raised rates. Here is what that means for homebuyers.".  a hundred brokerages publish this. Ryan Realty's version must include what Matt actually observed in his pipeline this week, what he thinks will happen specifically in Bend, and a specific recommendation. Anything short of that is filler.
+Generic takes on national real estate news without local specificity or personal opinion, such as reciting a rate move alongside a generic explainer for homebuyers. A hundred brokerages publish this. Ryan Realty's version must include what Matt actually observed in his pipeline this week, what he thinks will happen specifically in Bend, and a specific recommendation. Anything short of that is filler.
 
 **Engagement bait**
 "Comment YES if you agree." "Tag someone who needs to hear this." LinkedIn's quality filter (Stage 1 distribution) actively detects and penalizes these patterns. They worked in 2020; they flag as low-quality in 2026.

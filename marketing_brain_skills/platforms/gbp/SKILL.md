@@ -130,7 +130,7 @@ GBP Posts expire after 6 months (Offer posts after 14 days if no expiry is set).
 | Product | Featured listings (add each listing as a product) | 300 | Order Online, Buy, Learn More (use "Learn More") |
 
 **Best practices:**
-- Lead with the hook.  same rule as video: first sentence is the content, not a preamble.
+- Lead with the hook. Same rule as video: the first sentence carries the content, before any preamble.
 - Include a location signal in every post: "Bend," "Central Oregon," or neighborhood name.
 - First photo matters most: Google surfaces it in the Map Pack preview. Use the listing hero photo, a local landmark, or a data visualization.  not the Ryan Realty logo alone.
 - Link every post to ryan-realty.com with UTM params (`?utm_source=gbp&utm_medium=post&utm_campaign=<type>`). This makes GA4 attribution exact.
@@ -357,7 +357,7 @@ _Note: Competitor data is directional intelligence, not a primary source. Number
 
 ### Top 3 Map Pack Ranking Levers (in order)
 
-1. **Review count and velocity.** No other lever is more controllable and more directly tied to ranking. 2 reviews/month × 12 months = 24 more reviews (doubling the current count). This is a scheduling problem, not a marketing problem.  it requires consistent execution at every closing.
+1. **Review count and velocity.** No other lever is more controllable and more directly tied to ranking. 2 reviews/month × 12 months = 24 more reviews (doubling the current count). The scheduling matters more than the marketing: ask at every closing, every time.
 
 2. **Profile completeness and category accuracy.** Primary category "Real Estate Agency," full services list, 750-char description with location signals, all contact info current, service area defined. One-time effort that compounds permanently.
 

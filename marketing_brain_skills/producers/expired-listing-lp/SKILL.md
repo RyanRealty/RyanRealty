@@ -49,9 +49,9 @@ example_outputs:
 **Hard rules for THIS producer specifically:**
 
 - **No "most agents do X, we do Y"** comparison framing. Banned by voice §6.4 dramatic before-and-after.
-- **No urgency language.** "Act fast", "won't last", "limited consultations" are banned.
+- **No urgency language.** No deadline pressure, no scarcity framing, no rushed-availability claims.
 - **No editorializing the prior agent.** Don't name names. Don't say "your last agent failed you." Don't say "they should have done X." Just describe what an honest re-list looks like.
-- **No promising to sell the home.** "We can sell your home" is a claim, not a fact. Describe the process, not the outcome.
+- **No promising to sell the home.** "We can sell your home" is a claim we cannot back with certainty. Describe the process, not the outcome.
 - **Name the feeling once, then move on.** The reader is not here for therapy. They want to know what to do.
 - **Data over adjectives.** "The audit pulls 8 closed comps from your immediate neighborhood" beats "we do a thorough analysis."
 - **CTA is low-friction.** "Get a free written audit" or "20-minute call, no pitch." Never "schedule your free strategy session" or similar marketing-script language.
@@ -106,7 +106,7 @@ Every per-listing audit covers these five things, in this order. Each section is
 4. **Syndication and exposure.** From the Spark MLS data and the timestamps in `listings.status_change_count` / `status_change_timestamp`, check: was the listing actively updated? Multiple price drops with timing? Days between updates? Verdict: listing was actively marketed or sat quietly.
 5. **Agent responsiveness.** This is the hardest to audit programmatically. We can sometimes pull `ShowingsCount` and `LastShownDate` from Spark. If those are present + showings count is below median for area, the agent didn't drive the buyer pool. Verdict: agent engaged or absent.
 
-For each cause, write 2-3 sentences. Don't editorialize ("the agent failed you"). Just present what we found and what it means. Let the data tell the story.
+For each cause, write 2-3 sentences. Don't editorialize ("the agent failed you"). Present what we found and what it means for the re-list decision.
 
 ---
 

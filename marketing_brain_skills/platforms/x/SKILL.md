@@ -54,7 +54,7 @@ X uses a two-stage ranking system:
 - Blue checkmark (Premium subscriber / verified org) gets a roughly 2-4× amplification multiplier on For You distribution compared to an equivalent unverified tweet. This is confirmed in the open-source code as `isBlueVerified` boost applied in the scoring model.
 
 ### What this means for Ryan Realty
-- Tweet short takes that provoke replies ("Is Bend actually in a buyer's market? The data says something different than what you're hearing.").
+- Tweet short takes that provoke replies (e.g., naming the actual months-of-supply number and asking whether Bend really looks like a buyer's market).
 - Reply to bigger accounts in the real estate / housing / Bend discussion space.  each reply that earns profile clicks is a distribution event.
 - Threads only when the data story genuinely requires 3+ connected points. One good thread that earns 10 replies will outperform five bland threads with no replies.
 - Keep external links out of the primary tweet body on posts intended for reach. Add them in the first reply.
@@ -306,7 +306,7 @@ Announcing a thread before anyone has decided the topic is worth their time. The
 "Truly humbled and honored to have helped the Smith family find their forever home in Bend! This is why I love what I do 😊" This has zero X reach and makes peers cringe. Skip it. The deal data matters ("Negotiated $47K under ask for buyers in a multiple-offer situation because we had the absorption data ready").  that's credibility.
 
 **Shitposting that conflicts with brand professionalism**
-Memes, dunks on competitors, hot takes on non-housing political topics. These may earn short-term engagement but poison the professional credibility that X is supposed to build for Ryan Realty. X is the credibility channel, not the personality channel.
+Memes, dunks on competitors, hot takes on non-housing political topics. These may earn short-term engagement but poison the professional credibility that X is supposed to build for Ryan Realty. Treat X as the credibility channel for Ryan Realty ahead of the personality channel.
 
 **Overposting**
 More than 3 original tweets per day dilutes the quality signal. The algorithm rewards engagement per tweet, not volume. One high-quality tweet that earns 5 replies outperforms five mediocre tweets that earn zero.

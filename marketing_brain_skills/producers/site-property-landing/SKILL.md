@@ -267,8 +267,9 @@ rendering. Banned word list (`marketing_brain_skills/brand-voice/VOICE.md` + CLA
 - Vague qualifiers: approximately, roughly, about, around, fairly, somewhat, may,
   could, potentially
 - Punctuation: em-dashes (as punctuation), semicolons, exclamation marks in body
-- Banned phrases: "your real estate journey", "won't last long", "act fast",
-  "won't last", "don't worry"
+- Banned phrases: generic journey framing ("your real estate journey"), and
+  manufactured urgency or reassurance language (deadline pressure, scarcity
+  claims, "everything is taken care of" reassurances)
 
 **Sanitization rule.** Strip entire sentences containing banned vocab.  do not
 paraphrase MLS content (rewriting another agent's listing prose is non-compliant and
@@ -903,7 +904,7 @@ WHERE id='<id>';
 
 **Related listing-moment producers** (separate triggers, not in this scope):
 
-- `social_media_skills/list-kit/SKILL.md`.  at-Active marketing kit orchestrator (this landing page is a sibling deliverable, not a sub-deliverable)
+- `social_media_skills/list-kit/SKILL.md`.  at-Active marketing kit orchestrator (this landing page is a sibling deliverable to that kit, produced outside its output set)
 - `marketing_brain_skills/producers/ops-matterport-embed/`.  Matterport tour provisioning
 - `marketing_brain_skills/producers/ops-manychat/`.  ManyChat flow configuration
 - `marketing_brain_skills/producers/ops-fb-marketplace/`.  FB Marketplace cross-post

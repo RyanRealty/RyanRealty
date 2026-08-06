@@ -158,8 +158,8 @@ If no verifiable stat exists for the target neighborhood, omit the stat from cop
 Nextdoor neighbor-tone rules (hard rules for this surface):
 - The brokerage speaks, not an individual agent. Use "Ryan Realty" or "our team" not "I."
 - No first-person agent voice.
-- The reader is a neighbor, not a lead. Open with a neighborhood-specific anchor (the park, the trail, the school) not a sales hook.
-- No pressure language ("Don't wait," "Act now," "Won't last").
+- Nextdoor readers are neighbors first. Open with a neighborhood-specific anchor: the park, the trail, the school, ahead of any sales hook.
+- No pressure language: no calls to move immediately, no manufactured scarcity.
 - No vague qualifiers ("approximately," "roughly," "about"). Use the verified number or omit.
 - No exclamation marks in the post body.
 - No em-dashes, no semicolons.

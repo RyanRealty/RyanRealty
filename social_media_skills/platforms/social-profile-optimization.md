@@ -57,7 +57,7 @@ Lead with a point of view. Not what you do. What you believe, what you stand for
 Professional qualifications do not appear in the bio. Ever. If they show up at all, they're in a secondary "about" section or a pinned post. The bio is for personality.
 
 ### Pattern 3: Personality IS the content
-The agent's authentic voice is the differentiator. Glennda Baker doesn't sell houses in her bio. She's Glennda. The Broke Agent doesn't mention closings. He's funny about the industry. The brand is the person, not the service.
+The agent's authentic voice is the differentiator. Glennda Baker doesn't sell houses in her bio. She's Glennda. The Broke Agent doesn't mention closings. He's funny about the industry. The brand is the person.
 
 ### Pattern 4: One CTA maximum
 Not "DM me AND call me AND visit my website AND check my listings." One action. The best bios often have zero explicit CTAs because the content itself drives the action.

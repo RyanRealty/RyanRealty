@@ -118,7 +118,7 @@ Matt's knowledge + Google search:
 - Winter: Holiday market slowdown, cozy lifestyle, ski access content
 
 Examples:
-- "April: Outdoor season is here, here's what that means for your home's value"
+- "April: Outdoor season is here, and showing requests climb with it"
 - "July in Bend: Why families are choosing to move here right now"
 - "November: The perfect time to buy before year-end (and here's why)"
 

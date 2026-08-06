@@ -57,7 +57,7 @@ These are non-negotiable for ANY Ryan Realty video:
 - **Zero in-frame branding.** No logo, name, phone number, URL inside the video frame. IG handle in caption is the only attribution. Branding in-frame kills virality.
 - **DM CTA on every single post.** "DM me [keyword]" in caption. Instagram's Head of Product Adam Mosseri confirmed Jan 2025 that "Sends Per Reach" (DM shares) is a top-3 ranking factor — weighted 3-5x higher than likes. (Source: dataslayer.ai Instagram Algorithm 2025 Guide; gonetech.net share-to-view analysis.)
 - **No em dashes in any text.** No hyphens in prose copy. Matt's hard copy rule.
-- **Never salesy.** If it sounds like a cheesy real estate ad, it's wrong. No "dream home," no "luxury living," no "act now," no urgency language.
+- **Never salesy.** If it sounds like a cheesy real estate ad, it's wrong. No "dream home," no "luxury living," no manufactured urgency.
 
 ---
 

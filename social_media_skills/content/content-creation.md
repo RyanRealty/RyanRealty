@@ -150,8 +150,8 @@ For any content creation request, deliver:
 
 **Market Commentary**
 - "What sold in Bend last month (the actual numbers)"
-- "Is this a buyer's market or seller's market? The data says..."
-- "Inventory is up. Here's what that means for you."
+- "Buyer's market or seller's market? The exact number for Bend right now"
+- "Inventory just jumped 34 percent. Buyers finally have room to negotiate."
 - "3 Bend neighborhoods where values are climbing"
 
 **Personality / Social Proof**

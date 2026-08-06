@@ -74,23 +74,23 @@ One source asset flows through a five-tier system:
 **Tier 2 Native Spin-Offs**:
 1. **TikTok (9:16)**: Same video, same script. Add on-screen text that says "Bend Real Estate Update" (TikTok audience expects rapid-cut edits, so increase cut rate by 20% vs IG version). Keep audio.
 
-2. **Instagram Static Post (4:5 or 1:1)**: Carve one frame from the video (the data visualization moment). Add 3-5 sentence caption that restates the hook + implication. Include same DM CTA. Example caption: "Bend's inventory just shifted. We're seeing 34 percent more homes on market than last month. Here's what that means if you're buying or selling right now. DM me 'market'."
+2. **Instagram Static Post (4:5 or 1:1)**: Carve one frame from the video (the data visualization moment). Add 3-5 sentence caption that restates the hook + implication. Include same DM CTA. Example caption: "Bend's inventory just shifted. We're seeing 34 percent more homes on market than last month. DM me 'market' for the breakdown."
 
 3. **YouTube Short (same as Reel)**: Post the talking-head video. Title: "[STAT] Bend Real Estate Update [Month]". Pinned comment: Link to full market report.
 
 **Tier 3 Multi-Part Content**:
-1. **IG Story (4-frame)**: Frame 1: Big number with shock visual ("Inventory UP 34%"). Frame 2: Comparison chart (before/after). Frame 3: "What this means..." (implication). Frame 4: DM sticker for market guide.
+1. **IG Story (4-frame)**: Frame 1: Big number with shock visual ("Inventory UP 34%"). Frame 2: Comparison chart (before/after). Frame 3: The implication stated directly ("Sellers: price it right the first time."). Frame 4: DM sticker for market guide.
 
 2. **IG Carousel (5 frames)**: Frame 1: Hook stat. Frames 2-4: Breakdown data (neighborhoods, price points, days-on-market). Frame 5: CTA to DM for full analysis.
 
 **Tier 4 Text & Social**:
 1. **LinkedIn Text Post**: Open with question. "Is Bend cooling or just recalibrating?" Then state the stat and link to a longer analysis. Post natively as text, no embedded video (LinkedIn's algorithm favors native text over external links). Example:
 
-   "This month's Bend market snapshot tells an interesting story.
+   "This month's Bend market snapshot:
    
-   Inventory is up 34 percent. Days-on-market stretched to 51. But price stays firm.
+   Inventory is up 34 percent. Days-on-market stretched to 51. Price stays firm.
    
-   What does this mean? [Link to full analysis]"
+   Full analysis: [link]"
 
 2. **Weekly Email (Follow Up Boss cadence)**: Lead with the stat as subject line or preview text. Body: 2-3 sentence explanation. Embed the Reel link. CTA: "Read the full market report."
 
@@ -188,8 +188,8 @@ If the source is a TikTok video, you MUST remove the TikTok watermark before pos
 **Facebook**: Full address, full context, option to link to external listing.
 
 Example: Same market stat video.
-- **IG caption**: "Inventory just shifted in Bend. We're seeing 34 percent more homes on market. Here's what that means if you're buying or selling right now. DM me 'market'."
-- **TikTok caption**: (Spoken in video + on-screen text:) "Bend's inventory UP 34 percent. What this means for you..."
+- **IG caption**: "Inventory just shifted in Bend. We're seeing 34 percent more homes on market. DM me 'market' for the breakdown."
+- **TikTok caption**: (Spoken in video + on-screen text:) "Bend's inventory UP 34 percent."
 - **LinkedIn caption**: "Is Bend cooling or just recalibrating? New data this week tells an interesting story. [Video link]"
 - **Facebook caption**: "NEW MARKET SNAPSHOT: Bend inventory up 34 percent | 51 days on market | Prices holding firm. Full report: [link]"
 
