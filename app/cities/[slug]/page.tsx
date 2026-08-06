@@ -488,14 +488,17 @@ export default async function CityDetailPage({ params }: Props) {
         {aboutParagraphs.length > 0 ? (
           <KbAbout eyebrow={`${cityName} · Oregon`} heading={`Living in ${cityName}`} paragraphs={aboutParagraphs} facts={aboutFacts} />
         ) : null}
-        <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} geoName={cityName} asOf={pulse?.refreshedAt ?? null} byTownKind="neighborhood" />
-        {coreCharts ? (
-          <section className="section" aria-label={`${cityName} market trend charts`}>
-            <div className="wrap py-10 sm:py-14">
+        {/* ONE market section (Matt 2026-07-29): the core charts render INSIDE the HUD
+            section, not as a second stacked, separately-headed section. The communities
+            page adopted this the day it was asked for; the city page was the last
+            stacker (C-17). */}
+        <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} geoName={cityName} asOf={pulse?.refreshedAt ?? null} byTownKind="neighborhood">
+          {coreCharts ? (
+            <div className="pt-10" aria-label={`${cityName} market trend charts`}>
               <MarketCoreCharts data={coreCharts} heading={`${cityName} market trends`} />
             </div>
-          </section>
-        ) : null}
+          ) : null}
+        </KbMarketHud>
         <KbExploreTowns
           towns={bendNeighborhoodItems}
           eyebrow={`${cityName} · Neighborhoods`}

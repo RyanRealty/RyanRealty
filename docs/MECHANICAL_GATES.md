@@ -31,6 +31,7 @@ keeps being violated, the answer is a new gate, not more prose.
 | G14 | TypeScript strict | `tsc --noEmit` via `next build` | Plan §1 |
 | G15 | Lighthouse perf ≥ 0.90 / a11y ≥ 0.95 / BP ≥ 0.90 / SEO ≥ 0.95 / LCP ≤ 2500ms / CLS ≤ 0.10 | `npm run ci:lighthouse` (blocks PRs) | Plan §1 |
 | G16 | CMA · expired audit · BPO resolve comps and price through ONE engine (`lib/cma/comps` + `lib/cma/pricing`); no build path defines its own | `scripts/check-valuation-engine.mjs` (`ci:valuation-engine`) | Brain Dump 2 A4, 2026-07-28 |
+| G61 | ONE market section per page — `<MarketCoreCharts>` must be a CHILD of `<KbMarketHud>`, never a sibling | `scripts/check-market-section-nesting.mjs` (`ci:market-section-nesting`) | Matt 2026-07-29; missed on `cities/[slug]` for 8 days (C-17) |
 | **G16** | **Data access discipline** — `docs/DATABASE_SCHEMA_SNAPSHOT.md` matches live Supabase + `docs/DAL_INDEX.md` matches `lib/data/`. Drift fails CI. | `scripts/check-data-access.mjs` (regenerates both via `_agent_schema_dump()` RPC + AST walk; diffs vs HEAD) | CLAUDE.md "Data Access Discipline" + feedback `no-adhoc-sql.md` |
 | **G17** | **SQL column quoting** — `lib/data/*.ts` cannot call `.eq('"ColumnName"', …)` etc. with LITERAL double-quote characters inside the JS string (that's the 2026-05-28 "Listing Not Found" regression class). | `scripts/check-dal-column-quoting.mjs` | Inventory GAP-1 |
 | **G18** | **`force-dynamic` + `revalidate` coexistence** — ESLint refuses both exports in the same route file (silently disables ISR cache). | `eslint-rules/no-dynamic-revalidate.js` plugin (`rr-no-dynamic-revalidate/no-dynamic-revalidate`) | Plan §0.4 + Inventory GAP-5 |
@@ -172,6 +173,9 @@ Scope excludes the same auth-gated directories as G7.
 | Pixel-diff every section vs mockup (visual parity) | Subjective human-judgement step | Mockup parity (G6) handles the structural check; visual sign-off stays with Matt |
 | Data accuracy (every published number traces to a verified source) | Per-content-piece runtime concern, not a static lint | Producer-side `citations.json` files + per-deliverable verification trace |
 | Spark × Supabase market-data reconciliation gate | Video pipeline, not website | `scripts/_voice_lib.py` + producer pre-render gate |
+| A map subtitle's prose claim matches its query's filters | Requires cross-function dataflow analysis (call site -> DAL -> predicate); not decidable in a lint | `scripts/check-map-scope-claims.mjs` covers the decidable half (no bare `<ident>.length` in `totalActive`); the claim half is the C-01 census + reviewer |
+| A shared component must not discard a prop the caller passed | The decidable form ("no ternary whose false-branch is a prop and true-branch is a literal") false-positives across the codebase on legitimate defaulting | C-09 census; caught in review |
+| The trailing-defense clause (fact, then a clause justifying it) | Deciding whether a trailing clause adds an actionable noun is a semantic judgement | `scripts/check-voice-trailing-defense.mjs` denylists the exact killed strings; the shape stays VOICE.md + the review test |
 
 Everything mechanizable for the WEBSITE surface has been mechanized. Adding new gates as new failure modes surface is the pattern (see "How to add a new gate" below).
 
