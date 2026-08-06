@@ -89,7 +89,7 @@ export default function ContactForm({ defaultInquiryType, listingKey, intent, hi
           className="px-3 py-2 text-sm"
           style={{ border: '1px solid var(--navy-12)', color: 'var(--navy-70)' }}
         >
-          We'll link your message to the home you were viewing.
+          We will link your message to the home you were viewing.
         </p>
       ) : null}
       <div>
