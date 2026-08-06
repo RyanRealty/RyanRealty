@@ -4,10 +4,10 @@
   "grinder": ".claude/skills/voice-canon/SKILL.md  (run: /voice-canon)",
   "command": "npm run ci:voice-constructions:next",
   "done": false,
-  "violations_remaining": 126,
-  "files_remaining": 80,
+  "violations_remaining": 130,
+  "files_remaining": 81,
   "next_file": "scripts/build-youtube-long.mjs",
   "next_file_violations": 6,
   "files_scanned": 3053,
-  "updated_at": "2026-08-06T03:33:34.035Z"
+  "updated_at": "2026-08-06T03:57:09.811Z"
 }

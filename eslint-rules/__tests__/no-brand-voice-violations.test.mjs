@@ -106,31 +106,28 @@ ruleTester.run('rr-brand-voice/no-violations', rule, {
       errors: [{ messageId: 'punctuation' }],
     },
     {
-      name: '§6.2 real-estate cliché in JSX text is flagged (stunning)',
-      // "stunning" matches the cliché list; "stunning new listing" ALSO
-      // matches the hype-opening list (full phrase). Both fire as
-      // separate violations, which is correct — both rules are real.
-      code: `const x = () => <p>A stunning new listing in Bend.</p>`,
-      errors: [{ messageId: 'bannedWord' }, { messageId: 'bannedWord' }],
-    },
-    {
-      name: '§6.2 AI filler in JSX text is flagged (delve)',
-      code: `const x = () => <p>We delve into local data.</p>`,
+      name: 'self-praise in JSX text is flagged (top producing)',
+      code: `const x = () => <p>A top producing office in Bend.</p>`,
       errors: [{ messageId: 'bannedWord' }],
     },
     {
-      name: '§6.2 multi-word phrase is flagged (dream home)',
-      code: `const x = () => <p>Find your dream home in Sisters.</p>`,
+      name: 'manufactured urgency in JSX text is flagged (act fast)',
+      code: `const x = () => <p>Act fast on this one.</p>`,
+      errors: [{ messageId: 'bannedWord' }],
+    },
+    {
+      name: 'multi-word phrase is flagged (your local experts)',
+      code: `const x = () => <p>Find your local experts in Sisters.</p>`,
       errors: [{ messageId: 'bannedWord' }],
     },
     {
       name: 'banned word in a string-literal JSX attribute is flagged (placeholder)',
-      code: `const x = () => <input placeholder="Stunning views await." />`,
+      code: `const x = () => <input placeholder="Premier brokerage service." />`,
       errors: [{ messageId: 'bannedWord' }],
     },
     {
       name: 'banned text in {"…"} JSX expression container is flagged',
-      code: `const x = () => <p>{"This boasts a pristine design."}</p>`,
+      code: `const x = () => <p>{"Act fast, this premier brokerage delivers."}</p>`,
       errors: [
         { messageId: 'bannedWord' },
         { messageId: 'bannedWord' },

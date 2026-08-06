@@ -24,9 +24,9 @@ describe('scanTemplateField', () => {
   })
 
   it('flags a banned word case-insensitively on a word boundary', () => {
-    const v = scanTemplateField('body', 'This STUNNING home is ready')
+    const v = scanTemplateField('body', 'This TOP PRODUCING home is ready')
     expect(v).toHaveLength(1)
-    expect(v[0]).toMatchObject({ term: 'stunning', kind: 'word' })
+    expect(v[0]).toMatchObject({ term: 'top producing', kind: 'word' })
   })
 
   it('does not false-trigger on a banned word embedded in another word', () => {
@@ -35,8 +35,8 @@ describe('scanTemplateField', () => {
   })
 
   it('flags a multi-word banned phrase', () => {
-    const v = scanTemplateField('body', 'We pride ourselves on service')
-    expect(v.some((x) => x.term === 'we pride ourselves on')).toBe(true)
+    const v = scanTemplateField('body', 'Your local experts are here')
+    expect(v.some((x) => x.term === 'your local experts')).toBe(true)
   })
 
   it('treats empty/nullish text as clean', () => {
@@ -54,14 +54,14 @@ describe('checkTemplateVoice', () => {
   })
 
   it('fails and reports punctuation + words together', () => {
-    const r = checkTemplateVoice({ subject: 'Stunning home —', body: 'Act fast; reply now' })
+    const r = checkTemplateVoice({ subject: 'Top producing home —', body: 'Act fast; reply now' })
     expect(r.ok).toBe(false)
     if (r.ok) throw new Error('expected fail')
     expect(r.error).toContain('brand voice')
     const terms = r.violations.map((v) => v.term)
     expect(terms).toContain('—')
     expect(terms).toContain(';')
-    expect(terms).toContain('stunning')
+    expect(terms).toContain('top producing')
     expect(terms).toContain('act fast')
   })
 

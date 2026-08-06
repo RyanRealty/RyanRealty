@@ -80,7 +80,7 @@ describe('validateTemplateInput', () => {
   })
 
   it('rejects a body that fails the brand-voice gate', () => {
-    const r = validateTemplateInput({ channel: 'sms', name: 'x', body: 'This stunning home is great' })
+    const r = validateTemplateInput({ channel: 'sms', name: 'x', body: 'Act fast, this one will not last long' })
     expect(r.ok).toBe(false)
     if (r.ok) throw new Error('expected fail')
     expect(r.error).toContain('brand voice')
@@ -124,7 +124,7 @@ describe('validateTemplateInput — §13 fields', () => {
       channel: 'email',
       name: 'A',
       subject: 'S',
-      previewText: 'A stunning home awaits',
+      previewText: 'Act fast on this one',
       body: 'B',
     })
     expect(r.ok).toBe(false)

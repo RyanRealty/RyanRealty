@@ -172,7 +172,10 @@ decision."
 **Fake urgency.** "Act fast," "don't miss out," "won't last long."
 
 **Self-praise.** "Honest," "trusted," "dedicated," "your local experts," "premier,"
-"boutique," "top producing." A virtue we name is a virtue the reader doubts.
+"top producing." A virtue we name is a virtue the reader doubts.
+
+"Boutique brokerage" is allowed (Matt 2026-08-05: "We are a boutique brokerage").
+It describes what the firm is, which is a fact, not a claim about how good we are.
 
 **Category and headcount as position.** "Independent brokerage by design," "full-
 service," "licensed and active brokers," "three brokers," "small team."

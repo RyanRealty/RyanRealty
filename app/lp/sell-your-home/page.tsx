@@ -16,12 +16,12 @@ import { TESTIMONIALS, GOOGLE_REVIEWS_URL } from '@/lib/testimonials'
 export const metadata: Metadata = {
   title: 'List Your Bend Home With Ryan Realty',
   description:
-    'A full-service local brokerage with the reviews and the results to back it up. Pricing from real Bend sales, hands-on marketing, and a broker with you from start to close.',
+    'Pricing from closed Bend sales, marketing built per listing, and the broker who prices your home is the one who runs it.',
   robots: { index: false, follow: false },
   openGraph: {
     title: 'List Your Bend Home With Ryan Realty',
     description:
-      'A full-service local brokerage with the reviews and the results to back it up.',
+      'Pricing from closed Bend sales, and the broker who prices your home is the one who runs it.',
     type: 'website',
   },
 }

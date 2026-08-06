@@ -1,10 +1,11 @@
 {
-  "total": 126,
-  "exemptions": 13,
+  "total": 130,
+  "exemptions": 10,
   "skipTop": 18,
   "byFile": {
     "scripts/build-youtube-long.mjs": 6,
     "marketing_brain_skills/brand-voice/SKILL.md": 5,
+    "CLAUDE.md": 4,
     "scripts/site/run-site-edit.mjs": 4,
     "social_media_skills/content/cross-platform-repurpose.md": 4,
     "social_media_skills/linkedin-document-carousel/SKILL.md": 4,

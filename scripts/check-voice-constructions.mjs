@@ -72,25 +72,21 @@ const EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.md', '.json'])
  * constraint, not a convenience.
  */
 const EXEMPT = [
-  // Someone else's words (VOICE.md scope): verbatim client reviews.
+  // The canon's own scope rule: someone else's words are never rewritten.
   'lib/testimonials.ts',
-  // Carrier-verified A2P wording. ci:sms-consent fails if it changes.
+  // Legally locked strings. Changing these needs a carrier re-filing or legal
+  // sign-off, not a voice pass.
   'lib/crm/sms-consent-text.ts',
-  // Legally worded disclosures.
   'lib/crm/email-signature.ts',
   'components/legal/',
-  // The canon and its own migration paperwork quote the banned shapes on purpose.
+  // The rule files themselves. They quote the banned shapes AS THE RULES, so
+  // scanning them flags the canon for containing the canon.
   'marketing_brain_skills/brand-voice/VOICE.md',
-  'docs/plans/VOICE-CANON',
-  'docs/research/brand-voice-anchors',
   'scripts/voice-constructions.cjs',
-  // Lexicons list the banned phrases as DATA. Scanning them flags the rules
-  // themselves, which is noise, not copy.
-  'lib/brand-voice/generated-vocabulary.ts',
-  'lib/brand-voice/constructions.ts',
   'scripts/brand-voice-vocabulary.cjs',
+  'lib/brand-voice/constructions.ts',
+  'lib/brand-voice/generated-vocabulary.ts',
   'scripts/_brand_voice_vocab_generated.py',
-  'CLAUDE.md',
 ]
 
 const args = process.argv.slice(2)
