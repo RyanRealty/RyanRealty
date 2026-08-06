@@ -6,6 +6,7 @@ import { GoogleMap, Polygon } from '@react-google-maps/api'
 import { MarkerClusterer, SuperClusterAlgorithm, type Renderer } from '@googlemaps/markerclusterer'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { getBaseMapOptions, MAP_BOUNDARY_STYLES } from '@/lib/maps/markers'
+import { kbMoneyFull } from './types'
 
 export type KbMapFeature = {
   type: 'Feature'
@@ -39,9 +40,11 @@ const PEAKS: { n: string; c: [number, number] }[] = [
   { n: 'Paulina Peak', c: [-121.243, 43.69] },
 ]
 
+// C-13: was `$2.2M` / `$715K` while the tiles on the SAME page rendered
+// `$3,200,000`. VOICE.md Mechanics: currency to the nearest thousand.
+// kbMoneyFull is the canon formatter — one implementation, not a second here.
 function money(n: number | null): string {
-  const v = Number(n) || 0
-  return v >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : `$${Math.round(v / 1000)}K`
+  return kbMoneyFull(n) ?? '—'
 }
 
 const REGION = { west: -121.98, south: 43.5, east: -120.9, north: 44.52 }
