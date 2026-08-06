@@ -40,35 +40,30 @@ const BASELINE_PATH = join(ROOT, 'scripts/voice-constructions-baseline.json')
 const require = createRequire(import.meta.url)
 const { COMPILED } = require('./voice-constructions.cjs')
 
-const SCAN_ROOTS = [
-  'app',
-  'components',
-  'lib/cma',
-  'lib/bpo',
-  'lib/pdf',
-  'lib/email',
-  'lib/email-templates',
-  'lib/newsletter',
-  'lib/crm',
-  'lib/tc',
-  'lib/marketing-brain',
-  'lib/agent',
-  'marketing_brain_skills',
-  'social_media_skills',
-  'automation_skills',
-  'data',
-]
-/** Single files outside those roots that still carry public copy. */
-const EXTRA_FILES = [
-  'lib/lead-landing-content.ts',
-  'lib/city-content.ts',
-  'lib/community-content.ts',
-  'lib/community-seo-content.ts',
-  'lib/resort-community-content.ts',
-  'lib/share-metadata.ts',
-]
+// WHOLE REPO (Matt 2026-08-05: "take the entire code base into account").
+// Scope is everything except the exclusions below, so a directory that starts
+// holding public copy is covered the day it is created, not the day someone
+// remembers to add it to a list.
 
-const SKIP_DIR = new Set(['node_modules', '.next', 'out', 'build', 'dist', '__tests__', 'admin', 'ui', 'console'])
+/** Top-level directories that never hold public copy. Each entry narrows
+ *  enforcement, so each one needs a reason. */
+const SKIP_TOP = new Set([
+  'node_modules', '.next', '.git', 'out', 'build', 'dist', 'coverage',
+  'tmp', 'scratch', 'test-results', 'playwright-report',
+  'public',                 // static assets + the tracker scripts
+  'supabase',               // migrations (DB copy is handled by its own pass)
+  'video', 'listing_video_v4', 'video_production_skills', // render projects
+  'design_system',          // mockups + previews, not shipped copy
+  'docs',                   // internal documentation
+])
+
+const SKIP_DIR = new Set([
+  'node_modules', '.next', 'out', 'build', 'dist', 'coverage',
+  '__tests__', '__mocks__', 'fixtures',
+  'admin',    // staff-only surfaces
+  'ui',       // shadcn primitives, no prose
+  'console',  // admin console kit
+])
 const EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.md', '.json'])
 
 /**
@@ -88,6 +83,13 @@ const EXEMPT = [
   'docs/plans/VOICE-CANON',
   'docs/research/brand-voice-anchors',
   'scripts/voice-constructions.cjs',
+  // Lexicons list the banned phrases as DATA. Scanning them flags the rules
+  // themselves, which is noise, not copy.
+  'lib/brand-voice/generated-vocabulary.ts',
+  'lib/brand-voice/constructions.ts',
+  'scripts/brand-voice-vocabulary.cjs',
+  'scripts/_brand_voice_vocab_generated.py',
+  'CLAUDE.md',
 ]
 
 const args = process.argv.slice(2)
@@ -129,7 +131,7 @@ function walk(dir, out = []) {
  * for markdown we take body lines (skipping code fences, tables, and headings,
  * which are labels rather than prose).
  */
-function proseFrom(content, isMarkdown) {
+function proseFrom(content, isMarkdown, isJsx) {
   const out = []
   if (isMarkdown) {
     let fenced = false
@@ -169,11 +171,18 @@ function proseFrom(content, isMarkdown) {
     const line = lineAt(m.index)
     const lineText = lines[line - 1] ?? ''
     if (/^\s*(import|export)\s|require\(|from\s+['"]/.test(lineText)) continue
+    // Comments are not public copy.
+    if (/^\s*(\/\/|\*|\/\*)/.test(lineText)) continue
     out.push({ text: value, line })
   }
-  const jsxRe = />([^<>{}\n]{16,})</g
-  while ((m = jsxRe.exec(content))) {
-    out.push({ text: m[1].trim(), line: lineAt(m.index) })
+  // JSX text children only in .tsx/.jsx. Running this over plain .ts matched
+  // code between a '>' and a '<' (generics, arrows, block comments) and
+  // produced false positives.
+  if (isJsx) {
+    const jsxRe = />([^<>{}\n]{16,})</g
+    while ((m = jsxRe.exec(content))) {
+      out.push({ text: m[1].trim(), line: lineAt(m.index) })
+    }
   }
   return out
 }
@@ -192,7 +201,8 @@ function scanFile(abs) {
   const isMd = rel.endsWith('.md')
   const hits = []
   const seen = new Set()
-  for (const piece of proseFrom(content, isMd)) {
+  const isJsx = rel.endsWith('.tsx') || rel.endsWith('.jsx')
+  for (const piece of proseFrom(content, isMd, isJsx)) {
     for (const c of COMPILED) {
       if (!c.re.test(piece.text)) continue
       const key = `${c.id}:${piece.line}`
@@ -212,13 +222,11 @@ function scanFile(abs) {
 }
 
 const files = []
-for (const root of SCAN_ROOTS) {
-  const abs = join(ROOT, root)
-  if (existsSync(abs) && statSync(abs).isDirectory()) walk(abs, files)
-}
-for (const f of EXTRA_FILES) {
-  const abs = join(ROOT, f)
-  if (existsSync(abs)) files.push(abs)
+for (const entry of readdirSync(ROOT, { withFileTypes: true })) {
+  if (entry.name.startsWith('.') || SKIP_TOP.has(entry.name)) continue
+  const abs = join(ROOT, entry.name)
+  if (entry.isDirectory()) walk(abs, files)
+  else if (EXT.has(entry.name.slice(entry.name.lastIndexOf('.')))) files.push(abs)
 }
 
 const results = files.map(scanFile).filter(Boolean).sort((a, b) => b.hits.length - a.hits.length)
@@ -250,7 +258,7 @@ if (MODE === 'baseline') {
 
 console.log('voice constructions (ci:voice-constructions)')
 console.log('============================================')
-console.log(`Scanned ${files.length} file(s) across ${SCAN_ROOTS.length} roots · ${total} violation(s) in ${results.length} file(s)\n`)
+console.log(`Scanned ${files.length} file(s) across the repo · ${total} violation(s) in ${results.length} file(s)\n`)
 
 if (MODE === 'report') {
   for (const r of results) {
