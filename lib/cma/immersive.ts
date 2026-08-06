@@ -17,6 +17,7 @@
 
 import type { RenderCmaArgs } from '@/lib/cma/render'
 import type { CmaBroker } from '@/lib/cma/types'
+import { displayConfidence, pricingRangeDisplay } from '@/lib/cma/pricing'
 import { FAILED_ASK_BACKTEST } from '@/lib/cma/expired-audit'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ListingPlan } from '@/lib/cma/listing-plan'
@@ -442,6 +443,8 @@ export function renderImmersiveCmaHtml(a: ImmersiveArgs, siteUrl: string): strin
   const evHi = p.valueHigh
   const span = Math.max(1, evHi - evLo)
   const pos = (v: number) => Math.min(100, Math.max(0, ((v - evLo) / span) * 100))
+  const conf = displayConfidence(p)
+  const range = pricingRangeDisplay(p)
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -644,7 +647,7 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
   <div class="in">
     <div class="ans-l r">Recommended list price</div>
     <div class="ans-n r" data-count>${usd(p.recommended)}</div>
-    <div class="r"><span class="conf">Confidence: ${esc(p.confidence)}</span></div>
+    <div class="r"><span class="conf">Confidence: ${esc(conf)}</span></div>
     <div class="range r">
       <div class="range-track"><div class="range-fill" style="--w:100%"></div></div>
       <div class="range-marks">
@@ -653,7 +656,7 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
         <div class="rm" style="text-align:right"><div class="rm-v">${usd(p.highEnd)}</div><div class="rm-l">Ceiling, condition resolved</div></div>
       </div>
     </div>
-    <p class="body r">The adjusted comparable sales bracket ${usd(evLo)} to ${usd(evHi)}${p.convergenceSpreadPct != null ? `, and the pricing methods behind this number land within ${dec(p.convergenceSpreadPct, 1)}% of each other` : ''}.</p>
+    <p class="body r">${range.outOfRange ? 'The comp-supported range is' : 'The adjusted comparable sales bracket'} ${usd(evLo)} to ${usd(evHi)}${p.convergenceSpreadPct != null ? `, and the pricing methods behind this number land within ${dec(p.convergenceSpreadPct, 1)}% of each other` : ''}.${range.note ? ` ${esc(range.note)}` : ''}</p>
   </div>
 </section>
 

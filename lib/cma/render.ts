@@ -42,6 +42,7 @@ import type {
   CmaPricing,
   CmaSubject,
 } from '@/lib/cma/types'
+import { displayConfidence, pricingRangeDisplay } from '@/lib/cma/pricing'
 import type { CmaExtras } from '@/lib/cma/extras'
 import type { SubdivisionStory } from '@/lib/cma/subdivision-story'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
@@ -146,6 +147,8 @@ function subjectStatStrip(subject: CmaSubject): string {
 function coverPage(a: RenderCmaArgs): PageDef {
   const hero = heroForSubject(a.subject)
   const p = a.pricing
+  const conf = displayConfidence(p)
+  const range = pricingRangeDisplay(p)
   // ONE document (Matt 2026-08-05): the expired review is a section, not a
   // different doc — the label never changes with it.
   const docLabel = 'Comparative Market Analysis'
@@ -164,9 +167,10 @@ function coverPage(a: RenderCmaArgs): PageDef {
         <div class="vb-label">Recommended list price</div>
         <p class="vb-price">${usd(p.recommended)}</p>
       </div>
-      <div class="vb-pill">${esc(p.confidence)} confidence</div>
+      <div class="vb-pill">${esc(conf)} confidence</div>
     </div>
-    <div class="vb-range">Supported range ${usd(p.valueLow)} to ${usd(p.valueHigh)}</div>
+    <div class="vb-range">${esc(range.label)} ${usd(p.valueLow)} to ${usd(p.valueHigh)}</div>
+    ${range.note ? `<div class="vb-detail">${esc(range.note)}</div>` : ''}
     <div class="vb-detail">${a.comps.length} closed sales near your home, each adjusted for when it sold and how its size compares to yours. ${esc(p.confidenceReason)}</div>
   </div>
   ${subjectStatStrip(a.subject)}
@@ -479,7 +483,7 @@ function pricingPage(a: RenderCmaArgs): PageDef {
   <h3 class="subhead">Method ${p.method2 != null ? '3' : '2'} · Adjusted-comp reconciliation</h3>
   <p>The similarity-weighted average of every comp's fully adjusted price (time plus size, weights favoring the closest and most recent sales) lands at ${usd(p.method3)}. This method carries the market-conditions correction, so it anchors the recommendation.</p>
   ${p.notes.length > 0 ? `<h3 class="subhead">Method notes</h3><ul class="note-list">${p.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
-  <p class="small" style="margin-top:8px;">Confidence: <strong>${p.confidence}</strong>. ${esc(p.confidenceReason)}</p>
+  <p class="small" style="margin-top:8px;">Confidence: <strong>${esc(displayConfidence(p))}</strong>. ${esc(p.confidenceReason)}</p>
   <h3 class="subhead">Why this number holds up</h3>
   <ul class="note-list">${whyBullets(a).map((b) => `<li>${b}</li>`).join('')}</ul>`,
   }

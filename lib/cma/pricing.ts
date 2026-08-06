@@ -293,3 +293,62 @@ export function computePricing(
     notes,
   }
 }
+
+/**
+ * The confidence label as it may ever reach a client's screen. `needsReview`
+ * can be set true AFTER computePricing returns — the failed-ask cap
+ * (expired-audit.ts `applyFailedAskCap`) and the accuracy-contract review gate
+ * (build.ts) both flip it post-hoc without touching `confidence`, because
+ * they mutate different fields for different reasons. A document cannot tell
+ * a client "High confidence" while its own audit flag says review me: that is
+ * a contradiction worse than printing no label at all (CLAUDE.md §0).
+ *
+ * Every render call site MUST read confidence through this function rather
+ * than `pricing.confidence` directly, so a future call site cannot
+ * reintroduce the contradiction. This degrades the label — it never invents
+ * a number, and it never touches `pricing.confidence` itself (the raw value
+ * stays intact for the build trace, the accuracy contract, and the BPO
+ * cross-check, which compare the unmodified figure).
+ */
+export function displayConfidence(
+  p: Pick<CmaPricing, 'confidence' | 'needsReview'>,
+): CmaPricing['confidence'] {
+  if (p.needsReview && p.confidence === 'High') return 'Moderate'
+  return p.confidence
+}
+
+/** What the cover/hero prints for the value-block's price bracket. */
+export interface PricingRangeDisplay {
+  /** "Supported range" normally; relabeled when the recommendation sits outside it. */
+  label: string
+  /** True when `recommended` falls outside [valueLow, valueHigh]. */
+  outOfRange: boolean
+  /** Extra sentence to print only when outOfRange; null otherwise. */
+  note: string | null
+}
+
+/**
+ * `valueLow`/`valueHigh` are the comp-evidence range fixed at computePricing
+ * time. `applyFailedAskCap` (expired-audit.ts) can clamp `recommended` (and
+ * `conservative`/`highEnd`) to the subject's own failed-ask backtest AFTER
+ * that point, and by design leaves the evidence range untouched — the gap
+ * between the two is part of the story. But "Supported range $A to $B" next
+ * to a recommendation outside [A, B] reads as a self-contradiction to a
+ * seller (CLAUDE.md §0: a reader must never see a number outside its own
+ * stated range). Rather than widening the range to swallow the number, or
+ * moving the recommendation, this relabels the range as comp evidence and
+ * states plainly that the recommendation is capped away from it.
+ */
+export function pricingRangeDisplay(
+  p: Pick<CmaPricing, 'recommended' | 'valueLow' | 'valueHigh'>,
+): PricingRangeDisplay {
+  if (p.recommended >= p.valueLow && p.recommended <= p.valueHigh) {
+    return { label: 'Supported range', outOfRange: false, note: null }
+  }
+  const direction = p.recommended < p.valueLow ? 'below' : 'above'
+  return {
+    label: 'Comp-supported range',
+    outOfRange: true,
+    note: `The recommended list price is capped ${direction} this range. See Pricing Strategy for why.`,
+  }
+}

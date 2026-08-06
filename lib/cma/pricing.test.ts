@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { adjustComps, computePricing } from '@/lib/cma/pricing'
+import { adjustComps, computePricing, displayConfidence, pricingRangeDisplay } from '@/lib/cma/pricing'
 import { judgeComps } from '@/lib/cma/judge'
 import { parseCmaAddress } from '@/lib/cma/subject'
 import type { CmaComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
@@ -172,6 +172,68 @@ describe('computePricing', () => {
     expect(pricing!.confidence).toBe('Supportable')
     expect(pricing!.reviewReason).toBeTruthy()
     expect(pricing!.compPpsfCv).toBeGreaterThan(0.18)
+  })
+})
+
+describe('displayConfidence', () => {
+  it('degrades High to Moderate when needsReview is true', () => {
+    expect(displayConfidence({ confidence: 'High', needsReview: true })).toBe('Moderate')
+  })
+
+  it('passes High through unchanged when needsReview is false', () => {
+    expect(displayConfidence({ confidence: 'High', needsReview: false })).toBe('High')
+  })
+
+  it('never raises a lower tier — Moderate and Supportable pass through regardless of needsReview', () => {
+    expect(displayConfidence({ confidence: 'Moderate', needsReview: true })).toBe('Moderate')
+    expect(displayConfidence({ confidence: 'Supportable', needsReview: true })).toBe('Supportable')
+    expect(displayConfidence({ confidence: 'Moderate', needsReview: false })).toBe('Moderate')
+  })
+
+  it('a real failed-ask-capped CMA (needsReview true, raw confidence High) never displays High', () => {
+    // Reproduces the cma-20513-byron shape: computePricing lands on High from
+    // the comp stats alone, then applyFailedAskCap (expired-audit.ts) flips
+    // needsReview true post-hoc without touching confidence.
+    const pricing = { confidence: 'High' as const, needsReview: true }
+    expect(displayConfidence(pricing)).not.toBe('High')
+  })
+})
+
+describe('pricingRangeDisplay', () => {
+  it('labels the range "Supported range" with no note when the recommendation sits inside it', () => {
+    const r = pricingRangeDisplay({ recommended: 630000, valueLow: 620000, valueHigh: 635000 })
+    expect(r).toEqual({ label: 'Supported range', outOfRange: false, note: null })
+  })
+
+  it('treats the range boundaries as inclusive', () => {
+    expect(pricingRangeDisplay({ recommended: 620000, valueLow: 620000, valueHigh: 635000 }).outOfRange).toBe(false)
+    expect(pricingRangeDisplay({ recommended: 635000, valueLow: 620000, valueHigh: 635000 }).outOfRange).toBe(false)
+  })
+
+  it('relabels and explains when the recommendation is capped below the comp-evidence range (the Byron case)', () => {
+    // cma-20513-byron: comp evidence supported $620,000-$635,000, but the
+    // failed-ask backtest cap pulled the recommendation to $609,000.
+    const r = pricingRangeDisplay({ recommended: 609000, valueLow: 620000, valueHigh: 635000 })
+    expect(r.outOfRange).toBe(true)
+    expect(r.label).toBe('Comp-supported range')
+    expect(r.note).toContain('below')
+    expect(r.note).not.toBeNull()
+  })
+
+  it('relabels and explains when the recommendation sits above the comp-evidence range', () => {
+    const r = pricingRangeDisplay({ recommended: 650000, valueLow: 620000, valueHigh: 635000 })
+    expect(r.outOfRange).toBe(true)
+    expect(r.note).toContain('above')
+  })
+
+  it('never lets the printed range imply a number the recommendation does not honor: valueLow/valueHigh stay unmodified', () => {
+    // The fix must not silently widen the range to swallow the number — this
+    // asserts the function only changes label/note text, never the range
+    // bounds it was given.
+    const input = { recommended: 609000, valueLow: 620000, valueHigh: 635000 }
+    pricingRangeDisplay(input)
+    expect(input.valueLow).toBe(620000)
+    expect(input.valueHigh).toBe(635000)
   })
 })
 
