@@ -80,7 +80,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
     title: 'Sell your home · Ryan Realty, Central Oregon',
     description:
-      'List your Central Oregon home with Ryan Realty. Pricing from live market data, professional marketing, and one broker from valuation to close. Request a free home valuation.',
+      'List your Central Oregon home with Ryan Realty. The fee is 2.5% to 3.5% of the sale price, photos within 48 hours of signing, and a written report every week it is listed.',
     path: ROUTE_PATH,
     ogImage: '/images/homepage/tetherow-golf-aerial.jpg',
     keywords: [
@@ -204,6 +204,10 @@ export default async function SellPage() {
       />
 
       <SmoothScrollProvider>
+        {/* "This is how your home gets sold." was a drama header any Bend
+            brokerage could paste verbatim. The headline now names what the
+            seller actually receives, and the lead opens on the cost (VOICE.md
+            rule 6, bad news first) before the commitments. */}
         <KbHero
           data={{
             activeCount: pulse?.activeCount ?? null,
@@ -211,10 +215,10 @@ export default async function SellPage() {
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
           }}
           eyebrow="Sell with Ryan Realty"
-          titleTop="This is how"
-          titleBottom="your home gets sold."
+          titleTop="Your price, and"
+          titleBottom="every comp behind it."
           statless
-          lead="Professional photography, a 3D tour, the MLS and every national feed, and a written report every week it is listed. Start with the free valuation."
+          lead="The listing fee is 2.5% to 3.5% of the sale price, nothing billed on the side. Photos in 48 hours, on the MLS in 5 to 7 business days, and a written report every week."
           showSearch={false}
           formSlot={
             <>
@@ -254,8 +258,8 @@ export default async function SellPage() {
         <LifestyleStrip
           images={lifestyleImages}
           eyebrow="Why buyers come here"
-          title="The lifestyle your home is part of."
-          lede="Buyers move to Central Oregon for the life outside the front door. Trails, rivers, fairways, and ski lifts within reach. That demand is what your listing taps into."
+          title="What buyers move here for."
+          lede="Trails, rivers, fairways, and ski lifts, all within reach of Bend, Redmond, Sisters, and Sunriver."
         />
 
         <SellValuationCTA
@@ -265,9 +269,9 @@ export default async function SellPage() {
 
         <CTABar
           eyebrow="What is your home worth?"
-          title="Get a free home valuation."
-          body="A broker prepares a comparative market analysis with recent comparable sales and the price range those comps support. No cost, no obligation."
-          primary={{ href: FORM_ANCHOR, label: 'Get a home valuation' }}
+          title="Send your address, get the comps."
+          body="A broker writes a comparative market analysis: three closed sales near you, three homes yours would compete against, and the price range those six support. It costs nothing and requires no listing agreement."
+          primary={{ href: FORM_ANCHOR, label: 'Get the written valuation' }}
           secondary={{ href: '/contact?inquiry=Selling', label: 'Talk to a broker' }}
           tone="navy"
         />

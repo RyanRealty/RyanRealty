@@ -97,16 +97,16 @@ const HERO_CHIPS = [
 // Why work with us — value-prop grid (copy preserved verbatim).
 const VALUE_PROPS = [
   {
-    heading: 'Local market knowledge',
-    body: 'Brokers who live and work in Central Oregon. We know Bend, Redmond, Sisters, Sunriver, and every neighborhood in between. The people showing you homes are the same people who can tell you where water pressure is unreliable and which streets flood in spring.',
+    heading: 'Which streets flood in spring',
+    body: 'Our brokers live in Central Oregon. Ask about the well and septic on a rural parcel, the HOA history in a resort community, or what the last four homes on that street closed for, and you get the answer from the person standing in the driveway with you.',
   },
   {
-    heading: 'Live MLS listings',
-    body: 'We pull directly from the MLS. Save searches, receive alerts when a match hits, and schedule showings on your schedule. No algorithm ranking by listing fee.',
+    heading: 'Listings straight from the MLS',
+    body: 'Save a search, get an alert the day a match hits, and book a showing. Nothing on this site is ranked by what someone paid to promote it.',
   },
   {
-    heading: 'One broker, start to finish',
-    body: 'The broker who tours homes with you is the broker who writes the offer, negotiates, and walks you to close. No baton-passes, no hand-offs to a transaction coordinator you have never met.',
+    heading: 'No transaction desk, no hand-off',
+    body: 'The broker who tours homes with you writes the offer, negotiates it, and sits at the closing table. You never get passed to a coordinator you have not met.',
   },
 ] as const
 
@@ -119,13 +119,13 @@ const PROCESS_STEPS = [
   },
   {
     step: '02',
-    lead: 'Tour with context.',
-    body: 'A broker who knows the area points out what matters. Schools, commute, resale, HOA history, known issues in that subdivision. You decide with the full picture.',
+    lead: 'Tour the home.',
+    body: 'We walk it with you and name what the photos leave out. Schools, commute, HOA history, and the known issues in that subdivision.',
   },
   {
     step: '03',
-    lead: 'Make a well-priced offer.',
-    body: 'We pull recent closed comps for the specific address, walk you through the numbers, and help you construct an offer that reflects the market, not wishful thinking.',
+    lead: 'Write the offer.',
+    body: 'We pull the recent closed comps for that exact address, show you what each one sold for and how long it took, and write the offer off those numbers.',
   },
   {
     step: '04',
@@ -223,9 +223,8 @@ export default async function BuyPage() {
             </h1>
             <div className="hero-sub-row">
               <p className="hero-sub">
-                Live MLS data, updated continuously. One broker from your first search to the closing table, so you
-                always know who is accountable. We cover Bend, Redmond, Sisters, Sunriver, and the surrounding
-                communities.
+                Every active MLS listing in Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. The broker
+                who tours the home with you writes the offer and sits at the closing table.
               </p>
             </div>
             <nav className="flex flex-wrap gap-2.5 mt-5" aria-label="Buyer quick links">
@@ -247,7 +246,7 @@ export default async function BuyPage() {
             <div className="sec-head">
               <span className="sec-index">Why work with us</span>
               <h2 className="sec-title display" id="why-us-title">
-                Local brokers, live data, no hand-offs.
+                The broker who shows you the home writes your offer.
               </h2>
             </div>
             <div className="grid gap-6 sm:grid-cols-3" style={{ paddingTop: 'clamp(30px,4vw,46px)' }}>
@@ -283,7 +282,7 @@ export default async function BuyPage() {
             <div className="sec-head" style={{ borderColor: 'var(--cream-40)' }}>
               <span className="sec-index">How it works</span>
               <h2 className="sec-title display" id="how-it-works-title">
-                From first search to keys in hand.
+                Search, tour, offer, close.
               </h2>
             </div>
             <ol className="list-none flex flex-col" style={{ paddingTop: 'clamp(18px,3vw,30px)' }}>
@@ -328,7 +327,7 @@ export default async function BuyPage() {
             <div className="sec-head">
               <span className="sec-index">Buyer guides</span>
               <h2 className="sec-title display" id="buyer-guides-title">
-                Find the path that fits your situation.
+                First-time buyers, relocations, and investment property.
               </h2>
             </div>
             <div className="art-grid" style={{ paddingTop: 'clamp(18px,3vw,30px)' }}>
@@ -361,14 +360,14 @@ export default async function BuyPage() {
         >
           <div className="wrap">
             <span className="sec-index" style={{ display: 'block', opacity: 0.78 }}>
-              Ready to start searching?
+              Listing alerts
             </span>
             <h2
               className="display"
               id="get-alerts-title"
               style={{ fontSize: 'clamp(2rem,6vw,4rem)', lineHeight: 0.94, margin: '16px 0 18px' }}
             >
-              Get matched listings from a local broker.
+              New matches, sent by a broker.
             </h2>
             <p
               style={{
@@ -380,8 +379,8 @@ export default async function BuyPage() {
                 fontWeight: 500,
               }}
             >
-              Share your criteria and a Ryan Realty broker sends matching homes directly from the MLS. No spam, no
-              pressure.
+              Tell us the town, the beds, and the ceiling on price. A Ryan Realty broker reads it and sends the
+              homes that match, straight from the MLS.
             </p>
             <div className="flex gap-3 justify-center flex-wrap">
               <a href="/lp/buyer-listing-alerts" className="btn" style={{ borderColor: 'var(--cream)' }}>

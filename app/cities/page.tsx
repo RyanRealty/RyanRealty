@@ -60,7 +60,7 @@ export const metadata: Metadata = pageMetadata({
   // inside the ~60-char SERP display budget (46 chars resolved).
   title: 'Central Oregon Cities: Bend, Redmond, Sisters',
   description:
-    'Explore homes for sale in Central Oregon cities. Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and more. Live market data from a local brokerage.',
+    'Homes for sale in Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the rest of Central Oregon. Live inventory and pricing from the regional MLS.',
   path: '/cities',
 })
 
@@ -85,11 +85,11 @@ const FEATURED_CITY_SLUGS = [
 // content in lib/city-content.ts use its first sentence; the rest carry a
 // verifiable geographic fact (no market claims, no superlatives).
 const CITY_SENTENCE_FALLBACK: Record<string, string> = {
-  'la-pine': 'Larger lots, ponderosa forest, and a quieter pace at the southern end of Deschutes County.',
-  tumalo: 'A small unincorporated community on the Deschutes River between Bend and Sisters, known for acreage and river access.',
-  terrebonne: 'Home to Smith Rock State Park, with farm parcels and small-town streets above the Crooked River canyon.',
-  'powell-butte': 'Ranch and acreage country between Bend and Prineville, with wide Cascade views.',
-  culver: 'A small farm town near Lake Billy Chinook and The Cove Palisades State Park.',
+  'la-pine': 'Larger lots and ponderosa forest at the southern end of Deschutes County.',
+  tumalo: 'An unincorporated community on the Deschutes River between Bend and Sisters, with acreage lots and river access.',
+  terrebonne: 'Home to Smith Rock State Park, with farm parcels above the Crooked River canyon.',
+  'powell-butte': 'Ranch and acreage country between Bend and Prineville, with open Cascade views.',
+  culver: 'A farm town near Lake Billy Chinook and The Cove Palisades State Park.',
   'crooked-river-ranch': 'A canyon-rim community with its own golf course between Terrebonne and Madras.',
 }
 
@@ -268,7 +268,7 @@ export default async function CitiesPage() {
             '@context': 'https://schema.org',
             '@type': 'CollectionPage',
             name: 'Central Oregon Cities',
-            description: 'Explore homes for sale in Central Oregon cities.',
+            description: 'Homes for sale in Bend, Redmond, Sisters, and the rest of Central Oregon.',
             url: `${siteUrl}/cities`,
             publisher: { '@type': 'Organization', name: 'Ryan Realty' },
             mainEntity: {
@@ -340,7 +340,7 @@ export default async function CitiesPage() {
             </div>
             <div className="region-foot">
               <p className="note">
-                Single-family active inventory across the region. Figures from the MLS, updated through the day.
+                Single-family homes only. Figures come from the regional MLS.
               </p>
               <Link href="/search" className="btn">
                 Search all listings <span className="arr">→</span>
@@ -355,7 +355,7 @@ export default async function CitiesPage() {
           <div className="wrap">
             <div className="sec-head">
               <span className="sec-index">Central Oregon</span>
-              <h2 className="sec-title display">Where do you<br />want to live?</h2>
+              <h2 className="sec-title display">Homes for sale in<br />every Central Oregon town</h2>
             </div>
 
             <div>
@@ -523,7 +523,7 @@ export default async function CitiesPage() {
                   the page starting over (design-audit P3). */}
               <div className="sec-head">
                 <span className="sec-index">More areas</span>
-                <h2 className="sec-title display">Smaller towns<br />on the ledger</h2>
+                <h2 className="sec-title display">The rest of<br />Central Oregon</h2>
               </div>
 
               <div className="max-w-2xl pt-2" style={{ borderTop: '1px solid var(--navy-12)' }}>
@@ -570,7 +570,7 @@ export default async function CitiesPage() {
           <div className="wrap">
             <div className="sec-head">
               <span className="sec-index">Central Oregon</span>
-              <h2 className="sec-title display">Find your home<br />in Central Oregon</h2>
+              <h2 className="sec-title display">Search every listing<br />in Central Oregon</h2>
             </div>
             <div className="max-w-xl pt-6 pb-12">
               <p className="neigh-sub" style={{ margin: 0 }}>

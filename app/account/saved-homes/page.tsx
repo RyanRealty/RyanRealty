@@ -15,7 +15,7 @@ import { listingsBrowsePath } from '@/lib/slug'
 
 export const metadata: Metadata = {
   title: 'Saved homes',
-  description: 'Your saved favorite listings at Ryan Realty.',
+  description: 'Your saved listings at Ryan Realty.',
 }
 
 export const dynamic = 'force-dynamic'

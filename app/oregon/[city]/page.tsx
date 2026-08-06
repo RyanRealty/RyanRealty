@@ -79,7 +79,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   if (!city) {
     return pageMetadata({
       title: 'City not found',
-      description: 'No active MLS inventory for this city.',
+      description: "We don't have a page for this Oregon city.",
       path: `/oregon/${slug}`,
       noindex: true,
     })
@@ -87,7 +87,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const indexable = await isIndexableOutOfAreaCity(slug)
   return pageMetadata({
     title: `Homes for sale in ${city.name}, Oregon`,
-    description: `Browse ${city.activeAllCount} live ${city.name} listings from the statewide MLS feed. ${city.name} is outside our Central Oregon home market, so we connect you with a local broker we trust.`,
+    description: `Browse ${city.activeAllCount} live ${city.name} listings from the statewide MLS feed. ${city.name} is outside our Central Oregon home market, so we introduce you to a local broker we would use ourselves.`,
     path: `/oregon/${city.slug}`,
     noindex: !indexable,
   })
@@ -200,7 +200,7 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
           eyebrow={`${city.name.toUpperCase()} · OREGON`}
           titleTop="Homes for sale in"
           titleBottom={city.name}
-          lead={`in ${city.name}, Oregon. Outside our home market, and we say so up front.`}
+          lead={`in ${city.name}, Oregon, outside Ryan Realty's Central Oregon market.`}
           videoSrc={null}
           posterSrc="/images/homepage/smith-rock-terrebonne.jpg"
         />
@@ -208,11 +208,11 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
         {/* The honest block: this is not our market, here is what we do instead. */}
         <KbAbout
           eyebrow="Outside our home market"
-          heading={`${city.name} is not a market we work in person`}
+          heading={`We don't work in ${city.name}`}
           paragraphs={[
             `Ryan Realty works Central Oregon. Our brokers live in Bend and cover the towns around it, from Redmond and Sisters to Sunriver and La Pine. ${city.name} is outside that area.`,
-            `Our MLS feed is statewide, so the ${city.name} listings on this page are live and current. Browse them the same way you would anywhere on this site.`,
-            `If you are buying or selling in ${city.name}, you want a broker who works that market every day. Tell us what you need and we make one introduction to a local broker we would use ourselves. No cost, no obligation.`,
+            `Our MLS feed is statewide, so the ${city.name} listings on this page are live and current.`,
+            `If you are buying or selling in ${city.name}, a broker who works that market every day will know it better than we do. Tell us what you need and we will introduce you to one we would use ourselves. No cost, no obligation.`,
           ]}
           facts={aboutFacts}
         />
@@ -234,7 +234,7 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
           <KbExploreTowns
             towns={otherCities}
             eyebrow="Other Oregon markets"
-            title="Looking somewhere else"
+            title="More Oregon cities"
             sectionId="other-markets"
             cta={{ href: '/cities', label: 'Our Central Oregon cities' }}
           />

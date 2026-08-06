@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description: 'Ryan Realty commitment to web accessibility and how to report issues.',
   alternates: { canonical: `${siteUrl}/accessibility` },
   openGraph: {
-    title: 'Accessibility Statement | Ryan Realty',
+    title: 'Accessibility statement | Ryan Realty',
     description: 'Ryan Realty commitment to web accessibility and how to report issues.',
     url: `${siteUrl}/accessibility`,
     type: 'website',
@@ -26,7 +26,7 @@ export default function AccessibilityPage() {
   return (
     <>
     <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
-      <H1 className="text-2xl tracking-tight text-primary">Accessibility Statement</H1>
+      <H1 className="text-2xl tracking-tight text-primary">Accessibility statement</H1>
       <p className="mt-2 text-sm text-muted-foreground">Last updated: March 2026</p>
 
       <section className="mt-8 space-y-6 text-sm text-primary">
@@ -40,7 +40,7 @@ export default function AccessibilityPage() {
         <div>
           <H2 className="text-lg text-foreground">Measures we take</H2>
           <p className="mt-2">
-            We use semantic HTML, keyboard navigation support, sufficient color contrast, and descriptive links and labels. We avoid content that flashes in a way that could trigger seizures and provide text alternatives for meaningful images where appropriate.
+            We use semantic HTML, keyboard navigation support, sufficient color contrast, and descriptive links and labels. We avoid content that flashes in a way that could trigger seizures. We provide text alternatives for meaningful images where appropriate.
           </p>
         </div>
 

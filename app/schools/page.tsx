@@ -86,7 +86,7 @@ export default function SchoolsIndexPage() {
           eyebrow="Central Oregon · Schools"
           titleTop="Central Oregon"
           titleBottom="schools"
-          lead={`${total} schools across ${districts.length} districts, from Bend to Madras. Pick a school to see the active homes for sale that feed it, on a map and as listings, with district context.`}
+          lead={`${total} schools across ${districts.length} districts, from Bend to Madras. Pick a school to see the homes for sale that feed it, on a map and as listings.`}
           videoSrc={null}
           posterSrc={CONTENT_HERO_IMAGES.schools}
         />

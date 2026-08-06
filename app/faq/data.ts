@@ -36,14 +36,14 @@ export const FAQ: ReadonlyArray<FAQItem> = [
     category: 'Neighborhoods',
     question: 'Do you specialize in any particular Bend neighborhoods?',
     answer:
-      "We work the full Central Oregon region and spend the most time in Bend's named neighborhoods. Old Mill, Northwest Crossing, Tetherow, Broken Top, Awbrey Butte, Tumalo, and Vandevert Ranch are where we have the most active comp knowledge and the most relationships. Outside of Bend itself, Sisters, Redmond, Sunriver, and Crooked River Ranch are in our regular service area. Tell us the neighborhood and the budget and we will be honest about whether we are the right team for that pocket.",
+      "We work the full Central Oregon region and spend the most time in Bend's named neighborhoods. Old Mill, Northwest Crossing, Tetherow, Broken Top, Awbrey Butte, Tumalo, and Vandevert Ranch are where we have the most active comp knowledge and the most relationships. Outside of Bend itself, Sisters, Redmond, Sunriver, and Crooked River Ranch are in our regular service area. Tell us the neighborhood and the budget. We will tell you plainly if it is not our area.",
   },
   {
     id: 'first-time-buyers',
     category: 'Buying',
     question: 'Do you work with first-time home buyers in Central Oregon?',
     answer:
-      "Yes. A meaningful share of our business is first-time buyers, and we like that work. The Bend market can be intimidating for someone who has never bought before, so we walk you through the entire process at a pace that makes sense for you. We are direct about what you can and cannot get at your budget. We never push you toward a stretch you will regret.",
+      "Yes. A meaningful share of our business is first-time buyers. The Bend market can be intimidating for someone who has never bought before, so we walk you through the process at a pace that works for you. We tell you what you can and cannot get at your budget, including when that means waiting or adjusting the search.",
   },
   {
     // Design-audit (copy-clarity): the number-one seller question was missing
@@ -61,35 +61,35 @@ export const FAQ: ReadonlyArray<FAQItem> = [
     category: 'Selling',
     question: "What is the typical timeline for selling a home in Bend right now?",
     answer:
-      "It depends on the price band and the neighborhood. A well-priced single-family home in Bend's $500K to $700K range tends to go pending in two to four weeks. Homes priced over $1M can take longer if the property has a narrower buyer pool. We pull live comps for your specific neighborhood and price band before we list, and we tell you what to expect. The unpredictable side of the market is one reason we stay close to the data.",
+      "It depends on the price band and the neighborhood. A well-priced single-family home in Bend's $500K to $700K range tends to go pending in two to four weeks. Homes priced over $1M can take longer if the property has a narrower buyer pool. We pull live comps for your specific neighborhood and price band before we list, and we tell you what to expect.",
   },
   {
     id: 'investment',
     category: 'Buying',
     question: 'Do you have brokers who specialize in investment or second-home properties?',
     answer:
-      'Yes. We work with second-home buyers across Bend, Sunriver, Vandevert Ranch, Crooked River Ranch, and the Cascade resort communities. We also work with investor clients looking at long-term holds, value-add opportunities, and 1031 exchanges. We do not manage rental properties for clients, but we have working relationships with reputable property managers in town and we can introduce you.',
+      'Yes. We work with second-home buyers across Bend, Sunriver, Vandevert Ranch, Crooked River Ranch, and the Cascade resort communities. We also work with investor clients looking at long-term holds, value-add opportunities, and 1031 exchanges. We do not manage rental properties for clients, but we work with property managers in town and can introduce you.',
   },
   {
     id: 'relocations',
     category: 'Buying',
     question: 'Can you help with relocations from out of state?',
     answer:
-      'Yes. A large share of our business is relocations into Central Oregon from California, Washington, Colorado, and the Midwest. We do virtual tours, custom market reports for the neighborhoods you are considering, and we coordinate with lenders and title teams to make a long-distance close work smoothly. The conversation about what Bend is actually like, traffic, snow, wildfire risk, cost of living, happens before you make an offer, not after.',
+      'Yes. A large share of our business is relocations into Central Oregon from California, Washington, Colorado, and the Midwest. We do virtual tours, custom market reports for the neighborhoods you are considering, and we coordinate with lenders and title teams for a long-distance close. The conversation about what Bend is actually like, traffic, snow, wildfire risk, cost of living, happens before you make an offer, not after.',
   },
   {
     id: 'expired-listing',
     category: 'Selling',
     question: 'Do you work with sellers whose home did not sell with another agent?',
     answer:
-      'Yes, and we take that work seriously. If your listing expired or you withdrew, we start with an honest audit of what happened. We look at pricing, presentation, photography, marketing reach, and feedback from the original showings. Then we put together a re-launch plan only if we believe it actually has a strong chance to perform. If we do not think we can do better, we will tell you.',
+      'Yes. If your listing expired or you withdrew, we start with an audit of what happened. We look at pricing, presentation, photography, marketing reach, and feedback from the original showings. We put together a re-launch plan only if we believe it has a real chance to perform. If we do not think we can do better, we will tell you.',
   },
   {
     id: 'service-area',
     category: 'Neighborhoods',
     question: 'What areas outside of Bend do you cover?',
     answer:
-      'Our service area covers Bend, Tumalo, Redmond, Sisters, Sunriver, Tetherow, La Pine, Prineville, Terrebonne, Eagle Crest, Crooked River Ranch, Seventh Mountain, and Deschutes River Woods. We can take on work in the broader Central Oregon area when the fit makes sense. If your property is far outside our area of competency, we will refer you to a broker who knows that pocket of the market.',
+      'Our service area covers Bend, Tumalo, Redmond, Sisters, Sunriver, Tetherow, La Pine, Prineville, Terrebonne, Eagle Crest, Crooked River Ranch, Seventh Mountain, and Deschutes River Woods. We take on work in the broader Central Oregon area case by case. If your property is far outside where we work, we will refer you to a broker who knows that pocket of the market.',
   },
   {
     id: 'new-construction',
@@ -103,14 +103,14 @@ export const FAQ: ReadonlyArray<FAQItem> = [
     category: 'Working with us',
     question: 'Is there a market report you publish regularly?',
     answer:
-      'Yes. We publish a monthly Central Oregon market report covering Bend, Redmond, Sisters, Sunriver, and the resort communities. The report includes median price, days on market, months of supply by neighborhood, and a short narrative on what the data is telling us. You can find the current report on our market page or ask us to email it to you.',
+      'Yes. We publish a monthly Central Oregon market report covering Bend, Redmond, Sisters, Sunriver, and the resort communities. The report includes median price, days on market, months of supply by neighborhood, and a short narrative section. You can find the current report on our market page or ask us to email it to you.',
   },
   {
     id: 'availability',
     category: 'Working with us',
     question: 'Are you available evenings and weekends for showings?',
     answer:
-      'Yes. Bend buyers and sellers do most of their thinking outside of standard business hours, and we work the schedule you need. We routinely run showings on weekday evenings and Saturdays and Sundays. Just tell us what works for you and we will make it happen.',
+      'Yes. Bend buyers and sellers do most of their thinking outside of standard business hours, and we work the schedule you need. We routinely run showings on weekday evenings, Saturdays, and Sundays. Tell us what works for you.',
   },
 ]
 

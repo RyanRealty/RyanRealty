@@ -169,7 +169,7 @@ export default function AreaPicker({ shapes, onApply, className }: Props) {
       setSaveName('')
       await load()
     } catch {
-      setSaveError('Could not save that area. Please try again.')
+      setSaveError('That area did not save. Try again.')
     } finally {
       setSaving(false)
     }

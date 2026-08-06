@@ -10,8 +10,8 @@ import DashboardNotificationPrefs from '@/components/dashboard/DashboardNotifica
 import { NewsletterToggle } from './NewsletterToggle'
 
 export const metadata: Metadata = {
-  title: 'Notification Preferences',
-  description: 'Manage your email and notification preferences at Ryan Realty.',
+  title: 'Notifications',
+  description: 'Your email and notification preferences at Ryan Realty.',
 }
 
 // Rendered per-request automatically: getSession() reads the auth cookie, which

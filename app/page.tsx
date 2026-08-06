@@ -45,12 +45,12 @@ export const revalidate = 60
 export const metadata: Metadata = {
   title: 'Ryan Realty. Central Oregon Real Estate | Bend, Redmond, Sisters, Sunriver',
   description:
-    'Find your next home in Central Oregon. Search homes in Bend, Redmond, Sisters, Sunriver and surrounding communities. Real numbers, direct from the brokers who close deals here.',
+    'Every home for sale on the Central Oregon MLS: Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live prices, days on market, and closed comps by town.',
   alternates: { canonical: siteUrl },
   openGraph: {
     title: 'Ryan Realty. Central Oregon Real Estate',
     description:
-      'Search homes in Bend, Redmond, Sisters, Sunriver and surrounding communities. Real numbers, direct from the brokers who close deals here.',
+      'Every home for sale on the Central Oregon MLS. Live prices, days on market, and closed comps for Bend, Redmond, Sisters, and Sunriver.',
     url: siteUrl,
     siteName: 'Ryan Realty',
     type: 'website',
@@ -59,7 +59,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Ryan Realty. Central Oregon Real Estate | Bend, Redmond, Sisters, Sunriver',
-    description: 'Real numbers, direct from the brokers who close deals in Central Oregon.',
+    description: 'Every home for sale on the Central Oregon MLS, with live prices and days on market.',
   },
 }
 
@@ -193,14 +193,19 @@ export default async function Home() {
       <KbSectionTracker pageType="homepage" />
       <SmoothScrollProvider>
         {/* Hero lead: regional scope (the count is region-wide, not six cities)
-            + the one line that says why this site over a portal. */}
+            plus the honest source qualifier for the headline above it. It
+            renders as "<n> homes for sale on the MLS, from La Pine to
+            Terrebonne. Median list $X. Pending in N days." — four facts, no
+            adjectives. The old tail, "Real numbers, direct from the brokers who
+            close deals here," named a virtue with no receipt and any Bend
+            brokerage could have pasted it (VOICE.md review test #4 and #5). */}
         <KbHero
           data={{
             activeCount: pulse?.activeCount ?? null,
             medianListPrice: pulse?.medianListPrice ?? null,
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
           }}
-          lead="across Central Oregon, from the Deschutes to Smith Rock. Real numbers, direct from the brokers who close deals here."
+          lead="on the MLS, from La Pine to Terrebonne."
         />
         {/* Eyebrows carry distinct scent copy — the defaults echoed the display
             title verbatim ("Explore"/"EXPLORE"), reading as template filler

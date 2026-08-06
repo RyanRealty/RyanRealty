@@ -42,7 +42,7 @@ export default function PageCTA({
   subtitle,
   leadType = 'general',
   trackContext = 'page_cta',
-  buttonLabel = 'Get Started',
+  buttonLabel = 'Get in touch',
   className,
   area,
 }: Props) {
@@ -54,7 +54,7 @@ export default function PageCTA({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!email.trim() && !phone.trim()) {
-      toast.error('Please enter your email or phone number')
+      toast.error('Enter your email or phone number')
       return
     }
 
@@ -72,11 +72,11 @@ export default function PageCTA({
           toast.error(result.error)
         } else {
           setSubmitted(true)
-          toast.success('Thank you! We will be in touch.')
+          toast.success('We received your information. We will follow up.')
           trackCtaClick({ label: buttonLabel, destination: 'lead_capture', context: trackContext })
         }
       } catch {
-        toast.error('Something went wrong. Please try again.')
+        toast.error('We could not submit the form. Try again.')
       }
     })
   }
@@ -87,7 +87,7 @@ export default function PageCTA({
         <CardContent className="p-6 text-center sm:p-8">
           <p className="text-lg font-semibold text-foreground">Thank you.</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            We received your information and will be in touch soon.
+            We received your information and will follow up.
           </p>
         </CardContent>
       </Card>

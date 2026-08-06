@@ -74,7 +74,7 @@ export default async function AccountHistoryPage() {
         <Card className="flex flex-col items-center gap-3 px-4 py-10 text-center">
           <p className="text-sm font-medium text-foreground">No viewing history yet.</p>
           <p className="max-w-sm text-sm text-muted-foreground">
-            Homes you open will show up here so you can pick up right where you left off.
+            Homes you open will show up here.
           </p>
           <Button asChild size="sm">
             <Link href={listingsBrowsePath()}>Browse homes</Link>

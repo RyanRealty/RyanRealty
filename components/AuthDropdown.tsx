@@ -122,7 +122,7 @@ export default function AuthDropdown({ user }: Props) {
               {displayName.charAt(0).toUpperCase()}
             </span>
           )}
-          <span className="hidden sm:inline">Welcome, {displayName.split(/\s+/)[0]}</span>
+          <span className="hidden sm:inline">{displayName.split(/\s+/)[0]}</span>
           <HugeiconsIcon icon={ArrowDown01Icon} className="h-4 w-4 text-muted-foreground" />
         </Button>
         {open && (

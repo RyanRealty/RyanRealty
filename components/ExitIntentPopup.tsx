@@ -81,9 +81,9 @@ export default function ExitIntentPopup() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Before you go</DialogTitle>
+          <DialogTitle>New listings, in your inbox</DialogTitle>
           <DialogDescription>
-            Get new listings and market updates sent to your inbox.
+            Get new listings and market updates by email.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -94,8 +94,8 @@ export default function ExitIntentPopup() {
             placeholder="Email address"
             aria-label="Email address"
           />
-          {status === 'success' && <p className="text-sm text-success">You are all set.</p>}
-          {status === 'error' && <p className="text-sm text-destructive">Please enter a valid email.</p>}
+          {status === 'success' && <p className="text-sm text-success">You are subscribed.</p>}
+          {status === 'error' && <p className="text-sm text-destructive">Enter a valid email.</p>}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>

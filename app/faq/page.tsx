@@ -55,12 +55,12 @@ const faqOgImage = `${siteUrl}/api/og?type=default`
 export const metadata: Metadata = {
   title: 'FAQ — Real Estate in Bend, Oregon',
   description:
-    "Honest answers to the questions Bend buyers and sellers ask Ryan Realty every week. Neighborhoods, timelines, market conditions, working with a brokerage.",
+    "Answers to the questions Bend buyers and sellers ask Ryan Realty every week. Neighborhoods, timelines, market conditions, working with a brokerage.",
   alternates: { canonical: `${siteUrl}/faq` },
   openGraph: {
     title: 'FAQ — Ryan Realty Bend',
     description:
-      'Honest, direct answers to the most common questions about buying and selling real estate in Bend, Oregon.',
+      'Answers to the most common questions about buying and selling real estate in Bend, Oregon.',
     url: `${siteUrl}/faq`,
     images: [{ url: faqOgImage, width: 1200, height: 630, alt: 'Ryan Realty FAQ' }],
   },
@@ -104,7 +104,7 @@ export default async function FAQPage() {
           eyebrow="Central Oregon · Buyer & seller questions"
           titleTop="Frequently asked"
           titleBottom="questions"
-          lead="Honest answers to the questions Bend buyers and sellers ask us every week."
+          lead="Answers to the questions Bend buyers and sellers ask us every week."
           videoSrc={null}
           posterSrc="/images/homepage/smith-rock-terrebonne.jpg"
           showSearch={false}
@@ -193,7 +193,7 @@ export default async function FAQPage() {
             </div>
             <div className="max-w-2xl pt-6">
               <p style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.6vw,1.2rem)', lineHeight: 1.55 }}>
-                Reach out and we will give you a direct answer. No pitch, no pressure.
+                Send us your question and we will answer it.
               </p>
               <div className="sec-cta">
                 <Link href="/contact" className="btn alt">

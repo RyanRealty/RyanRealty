@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils'
  * render, because alert emails and older links point at them.
  */
 const ACCOUNT_NAV_LINKS = [
-  { href: '/account', label: 'Portal', exact: true },
+  { href: '/account', label: 'Overview', exact: true },
   { href: '/account/saved-cities', label: 'Saved cities' },
   { href: '/account/saved-communities', label: 'Saved communities' },
   { href: '/account/notifications', label: 'Notifications' },

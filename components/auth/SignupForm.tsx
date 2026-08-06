@@ -107,7 +107,7 @@ export default function SignupForm({ next }: Props) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <Label htmlFor="signup-name" className="block text-sm font-medium text-muted-foreground">
-            Full name
+            Full name (optional)
           </Label>
           <Input
             id="signup-name"

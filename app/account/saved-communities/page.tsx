@@ -10,7 +10,7 @@ import RemoveSavedCommunityButton from './RemoveSavedCommunityButton'
 
 export const metadata: Metadata = {
   title: 'Saved communities',
-  description: 'Your saved favorite communities at Ryan Realty.',
+  description: 'The communities you follow at Ryan Realty.',
 }
 
 export const dynamic = 'force-dynamic'

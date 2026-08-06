@@ -108,7 +108,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
     title: 'About Ryan Realty · Bend, Oregon',
     description:
-      'Ryan Realty markets Central Oregon homes with cinematic video, 3D tours, and data-backed pricing. Based in Bend, Oregon, founded June 2023. The broker you call is the one who closes your sale.',
+      'Ryan Realty is a Bend, Oregon brokerage, open since June 2023. Every listing gets video, a 3D walkthrough, and a price built from closed comps. The broker you call closes your sale.',
     path: ROUTE_PATH,
     ogImage: '/images/office/ryan-realty-bend-office-interior-01.jpg',
     keywords: [
@@ -200,10 +200,13 @@ export default async function AboutPage() {
   }
 
   // About section — the origin story and what every listing gets.
-  // Concrete facts only. No stated virtues (VOICE.md Law 1 + Law 4).
+  // Concrete facts only, and the limitation stated before the upside
+  // (VOICE.md rule 6). The prior version closed paragraph one on a coined
+  // maxim ("the job is about the people on the other side of the table, not
+  // the transaction") — us being pleased with ourselves, rule 8.
   const aboutParagraphs = [
-    'Matt Ryan founded Ryan Realty in June 2023, after years in the fire service. He works to the standard his mentor, Hjalmar “Red” Erickson, set: the job is about the people on the other side of the table, not the transaction.',
-    'Every listing gets cinematic video, a 3D walkthrough, and a price built from live Central Oregon market data. The active inventory, median price, days on market, and months of supply you see on this site are the same figures we put in front of you when it is time to price a listing or write an offer. When the data does not support a price, we say so.',
+    'Matt Ryan opened Ryan Realty in Bend in June 2023, after years in the fire service. He learned the business from Hjalmar “Red” Erickson.',
+    'When the comps do not support the price you want, we say so before you sign anything. The active inventory, median price, days on market, and months of supply published on this site are the same figures we bring to that conversation. Every listing also gets a video, a 3D walkthrough, and its own page here.',
     'The broker you first speak to is the broker who works your purchase or sale through to close. No hand-off.',
   ]
 
@@ -255,9 +258,9 @@ export default async function AboutPage() {
             medianDaysToPending: null,
           }}
           eyebrow="Ryan Realty · Bend, Oregon"
-          titleTop="Homes here deserve"
-          titleBottom="more than a sign."
-          lead="Every home we list across Central Oregon gets cinematic video, a 3D walkthrough, and a price built from live market data."
+          titleTop="A Bend brokerage,"
+          titleBottom="open since June 2023."
+          lead="Matt Ryan is the principal broker. Every listing gets a video, a 3D walkthrough, and a price built from the comps that closed nearby."
           showSearch={false}
           videoSrc={null}
           posterSrc={heroSrc ?? OLD_MILL_HERO}
@@ -265,7 +268,7 @@ export default async function AboutPage() {
 
         <KbAbout
           eyebrow="Ryan Realty · Founded 2023"
-          heading="How we got here."
+          heading="How Ryan Realty started."
           paragraphs={aboutParagraphs}
           facts={aboutFacts}
         />
@@ -288,11 +291,11 @@ export default async function AboutPage() {
           <div className="wrap">
             <div className="sec-head">
               <span className="sec-index">Who you work with</span>
-              <h2 className="sec-title display">Meet the team</h2>
+              <h2 className="sec-title display">Matt Ryan, Paul Stevenson, Rebecca Peterson.</h2>
             </div>
             <div className="sec-cta">
               <Link href="/team" className="btn alt">
-                Meet the full team <span className="arr">&rarr;</span>
+                Read the broker profiles <span className="arr">&rarr;</span>
               </Link>
             </div>
           </div>
@@ -302,7 +305,7 @@ export default async function AboutPage() {
           <KbArticles
             posts={articlePosts}
             eyebrow="Guides and insights"
-            heading="Central Oregon real estate, explained."
+            heading="Bend and Central Oregon housing news."
             subtitle="Local housing news, neighborhood deep dives, and buyer and seller guides for Bend and Central Oregon."
           />
         ) : null}

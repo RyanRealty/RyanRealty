@@ -7,7 +7,7 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 
 export const metadata: Metadata = {
   title: 'Sign-in issue',
-  description: 'There was a problem signing you in. Try again or return home.',
+  description: 'We couldn’t sign you in. Try again or return home.',
   alternates: { canonical: `${siteUrl}/auth-error` },
   robots: 'noindex, follow',
 }
@@ -27,7 +27,7 @@ export default async function AuthErrorPage({ searchParams }: Props) {
     <main className="mx-auto max-w-lg px-4 py-16 text-center">
       <H1 className="text-xl text-foreground">Sign-in issue</H1>
       <p className="mt-2 text-muted-foreground">
-        {message ? (() => { try { return decodeURIComponent(message) } catch { return message } })() : 'Something went wrong. Please try again.'}
+        {message ? (() => { try { return decodeURIComponent(message) } catch { return message } })() : 'We couldn’t sign you in.'}
       </p>
       <p className="mt-2 text-sm text-muted-foreground">
         If you use Google sign-in, add <code className="rounded bg-muted px-1 text-xs break-all">{(process.env.NEXT_PUBLIC_SITE_URL || 'https://yoursite.com').replace(/\/$/, '')}/auth/callback</code> under Supabase → Authentication → URL Configuration → Redirect URLs.

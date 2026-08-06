@@ -19,10 +19,7 @@ export default function NeighborhoodError({
   return (
     <main className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="max-w-md text-center">
-        <H1 className="text-2xl text-primary">Something went wrong</H1>
-        <p className="mt-2 text-muted-foreground">
-          We couldn&apos;t load this neighborhood. Please try again or browse cities.
-        </p>
+        <H1 className="text-2xl text-primary">This neighborhood didn’t load</H1>
         <div className="mt-8 flex flex-wrap justify-center gap-4">
           <Button
             type="button"

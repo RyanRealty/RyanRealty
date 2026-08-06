@@ -17,7 +17,7 @@ export default function DashboardError({
 
   return (
     <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 p-6 text-center">
-      <h1 className="text-xl font-semibold text-foreground">Something went wrong</h1>
+      <h1 className="text-xl font-semibold text-foreground">This page didn’t load</h1>
       <p className="max-w-md text-sm text-muted-foreground">{error.message}</p>
       <div className="flex gap-3">
         <Button
@@ -31,7 +31,7 @@ export default function DashboardError({
           href="/dashboard"
           className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted"
         >
-          Back to dashboard
+          Back to account
         </Link>
       </div>
     </div>

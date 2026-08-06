@@ -16,8 +16,7 @@ export default function AccountError({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12 text-center">
-      <h2 className="text-lg font-semibold text-foreground">Account error</h2>
-      <p className="mt-2 text-sm text-muted-foreground">Something went wrong loading your account.</p>
+      <h2 className="text-lg font-semibold text-foreground">Your account didn’t load</h2>
       <Button
         type="button"
         onClick={reset}

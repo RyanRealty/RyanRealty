@@ -199,7 +199,7 @@ export default function ListingMapGoogle({
         className={className}
         style={{ ...defaultMapStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--muted)', color: 'var(--muted-foreground)' }}
       >
-        Map failed to load. Check your Google Maps API key.
+        Map failed to load. Try refreshing the page.
       </div>
     )
   }

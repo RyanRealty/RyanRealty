@@ -52,7 +52,7 @@ type PageProps = { searchParams: Promise<{ inquiry?: string; listingKey?: string
 
 export const metadata: Metadata = {
   title: 'Contact Us',
-  description: 'Get in touch with Ryan Realty. Office address, phone, email, and contact form for buying or selling in Central Oregon.',
+  description: 'Call, text, email, or message Ryan Realty about buying or selling in Central Oregon. A broker replies within one business day.',
   alternates: { canonical: `${getCanonicalSiteUrl()}/contact` },
   openGraph: {
     title: 'Contact Us | Ryan Realty',
@@ -108,11 +108,11 @@ export default async function ContactPage({ searchParams }: PageProps) {
     },
     {
       question: 'How do I schedule a showing?',
-      answer: 'Fill out the contact form on this page or call us directly. A broker will reach out within one business day to arrange a showing at your convenience.',
+      answer: 'Send the form on this page or call the office. A broker replies within one business day to set a time for the showing.',
     },
     {
       question: 'How quickly will I hear back after contacting Ryan Realty?',
-      answer: 'We aim to respond to all inquiries within one business day. For urgent needs, call us directly for the fastest response.',
+      answer: 'A broker replies within one business day. Calling or texting gets you an answer sooner.',
     },
   ])
 
@@ -136,7 +136,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
           eyebrow="Central Oregon · Talk to a broker"
           titleTop={contactTitleTop}
           titleBottom={contactTitleBottom}
-          lead="Questions about buying, selling, or just exploring? Reach out and we will get back to you quickly."
+          lead="A broker replies within one business day. Calling or texting gets you an answer sooner."
           showSearch={false}
           cta={{ href: '#contact-form', label: 'Send a message' }}
           ctaSecondary={null}
@@ -239,8 +239,8 @@ export default async function ContactPage({ searchParams }: PageProps) {
                 {/* The response promise used to live only in the invisible FAQPage
                     JSON-LD — surfaced visibly per design-audit P2 (same approved copy). */}
                 <p className="mt-3 text-sm leading-relaxed" style={{ color: 'var(--navy-70)' }}>
-                  We aim to respond to all inquiries within one business day. For urgent needs,
-                  call us directly for the fastest response.
+                  A broker replies within one business day. Calling or texting gets you an answer
+                  sooner.
                 </p>
                 {/* The people who answer — transparent broker portraits float on the
                     cream surface (never boxed, per the design-system composite rule). */}

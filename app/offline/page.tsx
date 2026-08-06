@@ -11,7 +11,7 @@ export default function OfflinePage() {
     <main id="main-content" className="mx-auto max-w-md px-4 py-16 text-center">
       <H1 className="text-2xl text-primary">You&apos;re offline</H1>
       <p className="mt-4 text-muted-foreground">
-        This page isn&apos;t available right now. When you&apos;re back online, you can continue browsing.
+        This page needs a connection.
       </p>
       <p className="mt-6">
         <Button

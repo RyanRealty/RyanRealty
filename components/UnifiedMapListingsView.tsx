@@ -115,7 +115,7 @@ export type UnifiedMapListingsViewProps = GetListingsForMapOptions & {
 
 export default function UnifiedMapListingsView({
   placeQuery = null,
-  pageTitle = 'Central Oregon Real Estate & Homes For Sale',
+  pageTitle = 'Central Oregon real estate and homes for sale',
   basePath = listingsBrowsePath(),
   savedKeys = [],
   likedKeys = [],

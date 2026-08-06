@@ -405,7 +405,7 @@ export default function DashboardNotificationPrefs({ initialPrefs }: Props) {
         </Select>
       </div>
       <div className="flex items-center justify-between gap-4">
-        <Label className="text-muted-foreground">Blog / content updates</Label>
+        <Label className="text-muted-foreground">Blog and content updates</Label>
         <Switch
           checked={prefs.blogUpdates ?? false}
           onCheckedChange={(checked) => update({ blogUpdates: checked })}

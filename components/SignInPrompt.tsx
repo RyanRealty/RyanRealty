@@ -144,10 +144,10 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
             things a signed-in visitor actually gets. */}
         <div className="bg-primary px-6 pb-5 pt-6 sm:px-8">
           <p className="text-xs font-semibold uppercase tracking-widest text-primary-foreground/70">
-            Free member access
+            Free account access
           </p>
           <DialogTitle className="mt-1 text-2xl font-semibold leading-tight text-primary-foreground">
-            The listings come to you
+            Get alerts when homes match or change
           </DialogTitle>
           <DialogDescription className="mt-1.5 text-sm text-primary-foreground/80">
             One tap with Google or Facebook. No new password.

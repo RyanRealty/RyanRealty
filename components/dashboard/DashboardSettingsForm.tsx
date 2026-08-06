@@ -114,7 +114,7 @@ export default function DashboardSettingsForm({ profile, buyingPrefs, userEmail 
 
       <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-foreground">Buying preferences</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Used for personalized recommendations.</p>
+        <p className="mt-1 text-sm text-muted-foreground">We use these to recommend homes for you.</p>
         <form onSubmit={handleSaveBuying} className="mt-4 space-y-4">
           <div>
             <Label htmlFor="maxPrice" className="block text-sm font-medium text-muted-foreground">Max price</Label>
@@ -162,12 +162,12 @@ export default function DashboardSettingsForm({ profile, buyingPrefs, userEmail 
       </section>
 
       {message === 'success' && <p className="text-sm font-medium text-success" role="status">Saved.</p>}
-      {message === 'error' && <p className="text-sm font-medium text-destructive" role="alert">Something went wrong.</p>}
+      {message === 'error' && <p className="text-sm font-medium text-destructive" role="alert">Your changes didn’t save.</p>}
 
       <section className="rounded-lg border border-border bg-muted p-6">
         <h2 className="text-lg font-semibold text-foreground">Delete account</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          To delete your account and data, please contact us. Your saved items will be removed and data anonymized. Broker relationship data may be retained per our policy.
+          Broker relationship data may be retained under our policy. Contact us to delete the rest: we remove your saved items and anonymize your data.
         </p>
       </section>
     </div>

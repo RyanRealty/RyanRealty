@@ -9,7 +9,7 @@ import RemoveSavedCityButton from './RemoveSavedCityButton'
 
 export const metadata: Metadata = {
   title: 'Saved cities',
-  description: 'Your saved favorite cities at Ryan Realty.',
+  description: 'The cities you follow at Ryan Realty.',
 }
 
 function slugToName(slug: string): string {

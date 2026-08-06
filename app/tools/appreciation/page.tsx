@@ -36,11 +36,11 @@ const ogImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
   title: 'Home Appreciation Calculator',
-  description: 'Estimate your future home value with a simple appreciation calculator built for Central Oregon homeowners.',
+  description: 'Estimate your future home value with an appreciation calculator built for Central Oregon homeowners.',
   alternates: { canonical: `${siteUrl}/tools/appreciation` },
   openGraph: {
     title: 'Home Appreciation Calculator | Ryan Realty',
-    description: 'Project home value growth and compare potential appreciation scenarios.',
+    description: 'Project home value growth and compare appreciation scenarios.',
     url: `${siteUrl}/tools/appreciation`,
     type: 'website',
     images: [{ url: ogImage, width: 1200, height: 630 }],
@@ -84,7 +84,7 @@ export default function AppreciationToolPage() {
           eyebrow="Central Oregon · Homeowner tools"
           titleTop="Home Appreciation"
           titleBottom="Calculator"
-          lead="Model different annual appreciation rates to understand long-term equity growth and plan your investment."
+          lead="Model different annual appreciation rates to see long-term equity growth."
           videoSrc={null}
           posterSrc="/images/kb/three-sisters-sunrise.jpg"
         />
@@ -134,9 +134,8 @@ export default function AppreciationToolPage() {
             </div>
             <div className="ov-prose" style={{ paddingTop: 24, color: 'var(--navy)' }}>
               <p style={{ fontSize: 'clamp(1rem,1.5vw,1.15rem)', lineHeight: 1.6, marginBottom: 16 }}>
-                Enter the current value of the home in the purchase price field. Set an annual appreciation
-                rate to model different growth scenarios, then adjust the years held to see the projected
-                future value and total gain over time.
+                Set a purchase price, an annual appreciation rate, and years held. The calculator projects
+                future value and total gain from those three numbers.
               </p>
               <p style={{ fontSize: 'clamp(1rem,1.5vw,1.15rem)', lineHeight: 1.6, marginBottom: 16 }}>
                 The result is a mathematical projection based on a fixed annual rate. It is not an appraisal

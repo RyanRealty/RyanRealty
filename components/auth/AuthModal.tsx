@@ -164,7 +164,7 @@ export default function AuthModal({ open, onClose, onSuccess, next = '/account' 
             <form onSubmit={handleEmailSignUp} className="space-y-3">
               <Input
                 type="text"
-                placeholder="Full name"
+                placeholder="Full name (optional)"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
               />
@@ -176,7 +176,7 @@ export default function AuthModal({ open, onClose, onSuccess, next = '/account' 
               />
               <Input
                 type="password"
-                placeholder="Password (min 6)"
+                placeholder="Password (6+ characters)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />

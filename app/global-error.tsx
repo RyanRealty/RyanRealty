@@ -14,10 +14,10 @@ export default function GlobalError({ error }: { error: Error }) {
         <main className="mx-auto max-w-sm px-4 py-16 text-center text-foreground bg-secondary min-h-screen flex flex-col items-center justify-center">
           {/* heading-display-ok: global-error renders without the root layout; --font-display CSS var is unavailable here */}
           <h1 className="text-xl font-semibold text-primary">
-            Something went wrong
+            This page failed to load
           </h1>
           <p className="mt-2 text-muted-foreground">
-            We’ve been notified and are looking into it. Please try again.
+            We’ve logged the error. Try again or head back home.
           </p>
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a

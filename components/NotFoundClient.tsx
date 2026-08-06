@@ -119,7 +119,7 @@ export function NotFoundClient() {
       <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">404</p>
       <h1 className="mt-2 font-display text-4xl font-bold text-foreground">Page not found</h1>
       <p className="mt-3 text-muted-foreground">
-        The page you’re looking for doesn’t exist or was moved. Here is where to go next.
+        The page you’re looking for doesn’t exist or was moved.
       </p>
 
       <form onSubmit={onSearch} className="mt-6 flex items-center gap-2">

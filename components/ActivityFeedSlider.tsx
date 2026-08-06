@@ -61,7 +61,7 @@ function getPriceDropAmount(item: ActivityFeedItem): number | null {
 }
 
 export default function ActivityFeedSlider({
-  title = 'What is happening nearby',
+  title = 'Recent activity nearby',
   items,
   signedIn = false,
   savedKeys = [],

@@ -148,11 +148,11 @@ export default function CookieConsentBanner() {
         </DialogHeader>
         <Label className="flex items-center gap-3">
           <Checkbox checked={analytics} onCheckedChange={(checked) => setAnalytics(!!checked)} />
-          <span className="text-sm">Analytics (GA4) for understanding how the site is used</span>
+          <span className="text-sm">Analytics (GA4), to see how the site is used</span>
         </Label>
         <Label className="flex items-center gap-3">
           <Checkbox checked={marketing} onCheckedChange={(checked) => setMarketing(!!checked)} />
-          <span className="text-sm">Marketing (Meta Pixel) for relevant ads</span>
+          <span className="text-sm">Marketing (Meta Pixel), to target ads to you</span>
         </Label>
         <DialogFooter>
           <Button type="button" onClick={savePreferences}>Save</Button>
@@ -172,7 +172,7 @@ export default function CookieConsentBanner() {
     <div role="region" aria-label="Cookie notice" className="fixed bottom-0 left-0 right-0 z-[90] border-t border-border bg-card px-4 py-3 shadow-md sm:px-6">
       <div className="mx-auto max-w-3xl">
         <p className="text-xs text-muted-foreground sm:text-sm">
-          We use cookies to improve the site and measure traffic.{' '}
+          We use cookies to measure site traffic and target ads.{' '}
           <Link href="/privacy" className="font-medium text-foreground underline hover:no-underline">Privacy and cookies</Link>
           {' · '}
           <Link href="/privacy#donotsell" className="font-medium text-foreground underline hover:no-underline">Do Not Sell My Personal Information</Link>

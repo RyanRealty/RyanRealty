@@ -60,11 +60,11 @@ export const revalidate = 1800
 export const metadata: Metadata = {
   title: 'Communities in Central Oregon | Bend, Redmond, Sisters',
   description:
-    'Explore communities and neighborhoods in Central Oregon. Find homes in Bend, Redmond, Sisters, Sunriver, and surrounding areas.',
+    'Communities and neighborhoods across Central Oregon, with homes for sale in Bend, Redmond, Sisters, Sunriver, and the towns around them.',
   alternates: { canonical: `${siteUrl}/communities` },
   openGraph: {
     title: 'Communities in Central Oregon | Ryan Realty',
-    description: 'Explore communities and neighborhoods in Central Oregon.',
+    description: 'Communities and neighborhoods across Central Oregon.',
     url: `${siteUrl}/communities`,
     siteName: 'Ryan Realty',
     type: 'website',
@@ -239,7 +239,7 @@ export default async function CommunitiesPage() {
             '@context': 'https://schema.org',
             '@type': 'CollectionPage',
             name: 'Communities in Central Oregon',
-            description: 'Explore communities and neighborhoods in Central Oregon.',
+            description: 'Communities and neighborhoods across Central Oregon.',
             url: `${siteUrl}/communities`,
             publisher: { '@type': 'Organization', name: 'Ryan Realty' },
             mainEntity: {
@@ -311,7 +311,7 @@ export default async function CommunitiesPage() {
           <div className="wrap">
             <div className="sec-head">
               <span className="sec-index">Resort communities</span>
-              <h2 className="sec-title display">Resort &amp;<br />master-planned</h2>
+              <h2 className="sec-title display">Resort and<br />master-planned</h2>
             </div>
 
             <div>
@@ -473,7 +473,7 @@ export default async function CommunitiesPage() {
           <div className="wrap">
             <div className="sec-head">
               <span className="sec-index">Central Oregon</span>
-              <h2 className="sec-title display">Find your place<br />in Central Oregon</h2>
+              <h2 className="sec-title display">Search every community<br />in Central Oregon</h2>
             </div>
             <div className="max-w-xl pt-6 pb-12">
               <p className="neigh-sub" style={{ margin: 0 }}>

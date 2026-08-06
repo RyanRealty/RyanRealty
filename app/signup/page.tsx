@@ -30,7 +30,7 @@ export default async function SignupPage({ searchParams }: Props) {
       <div className="rounded-xl border border-border bg-card p-8 shadow-sm">
         <H1 className="text-center text-xl text-foreground">Create account</H1>
         <p className="mt-1 text-center text-sm text-muted-foreground">
-          Save homes, get alerts, and stay in the loop
+          Save homes, set alerts, and track your search history
         </p>
         <SignupForm next={nextPath} />
         <p className="mt-6 text-center text-sm text-muted-foreground">

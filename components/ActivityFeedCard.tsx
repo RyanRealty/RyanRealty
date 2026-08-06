@@ -19,7 +19,7 @@ function eventBadge(type: ActivityFeedItem['event_type']): { label: string; clas
     case 'status_pending':
       return { label: 'Under contract', className: 'bg-warning' }
     case 'status_closed':
-      return { label: 'Just sold', className: 'bg-muted-foreground' }
+      return { label: 'Sold', className: 'bg-muted-foreground' }
     default:
       return { label: '', className: '' }
   }
@@ -99,7 +99,7 @@ export default function ActivityFeedCard({ item, saved = false, signedIn = false
             type="button"
             onClick={handleToggleSave}
             className="absolute right-2 top-2 rounded-full bg-card/90 p-2 shadow hover:bg-card"
-            aria-label={saved ? 'Unsave' : 'Save'}
+            aria-label={saved ? 'Remove from saved' : 'Save listing'}
           >
             {saved ? (
               <BookmarkIcon filled className="h-5 w-5 text-primary" />

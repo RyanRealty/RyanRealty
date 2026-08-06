@@ -38,7 +38,7 @@ export default function CommunityTile({ city, community, bannerUrl = null, signe
   const href = communityPagePath(city, community.subdivisionName)
   const entityKey = subdivisionEntityKey(city, community.subdivisionName)
   const totalActive = community.forSale + community.pending
-  const countLabel = totalActive > 0 ? `${totalActive} home${totalActive === 1 ? '' : 's'} for sale` : 'Limited availability'
+  const countLabel = totalActive > 0 ? `${totalActive} home${totalActive === 1 ? '' : 's'} for sale` : 'No homes for sale'
   const isResort = isResortCommunity(city, community.subdivisionName)
   const isHot = community.newLast7Days >= 3 || totalActive >= 10
   const isPopular = !isHot && totalActive >= 5
@@ -59,15 +59,15 @@ export default function CommunityTile({ city, community, bannerUrl = null, signe
       if (totalActive > 0) {
         return `${displayName} is a resort & master plan community in ${city} with ${totalActive} home${totalActive === 1 ? '' : 's'} on the market.`
       }
-      return `${displayName} is a boutique resort & master plan community in ${city} with low inventory and strong demand.`
+      return `${displayName} is a resort & master plan community in ${city}.`
     }
     if (totalActive > 0 && medianK) {
-      return `${displayName} is a neighborhood in ${city} with ${totalActive} home${totalActive === 1 ? '' : 's'} for sale and a median list price around $${medianK}.`
+      return `${displayName} is a neighborhood in ${city} with ${totalActive} home${totalActive === 1 ? '' : 's'} for sale and a median list price of $${medianK}.`
     }
     if (medianK) {
-      return `${displayName} is a quiet neighborhood in ${city} with a typical list price around $${medianK}.`
+      return `${displayName} is a neighborhood in ${city} with a typical list price of $${medianK}.`
     }
-    return `${displayName} is a residential community in ${city} with a mix of homes and outdoor amenities.`
+    return `${displayName} is a neighborhood in ${city}.`
   })()
   const router = useRouter()
   const [savedState, setSavedState] = useState(saved)

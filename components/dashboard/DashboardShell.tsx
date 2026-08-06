@@ -19,12 +19,12 @@ type DashboardShellProps = {
 
 const navItems: { href: string; label: string; icon: string }[] = [
   { href: '/dashboard', label: 'Overview', icon: '◉' },
-  { href: '/dashboard/likes', label: 'Things I Like', icon: '♥' },
-  { href: '/dashboard/searches', label: 'Saved Searches', icon: '🔍' },
-  { href: '/account/collections', label: 'My Collections', icon: '📁' },
-  { href: '/dashboard/history', label: 'Viewing History', icon: '🕐' },
+  { href: '/dashboard/likes', label: 'Saved homes', icon: '♥' },
+  { href: '/dashboard/searches', label: 'Saved searches', icon: '🔍' },
+  { href: '/account/collections', label: 'Collections', icon: '📁' },
+  { href: '/dashboard/history', label: 'Viewing history', icon: '🕐' },
   { href: '/account/notifications', label: 'Notifications', icon: '🔔' },
-  { href: '/dashboard/settings', label: 'Settings & Preferences', icon: '⚙' },
+  { href: '/dashboard/settings', label: 'Settings and preferences', icon: '⚙' },
 ]
 
 export default function DashboardShell({ user, children }: DashboardShellProps) {

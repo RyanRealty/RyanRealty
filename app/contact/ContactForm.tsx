@@ -74,9 +74,9 @@ export default function ContactForm({ defaultInquiryType, listingKey, intent, hi
         className="p-6"
         style={{ border: '3px solid var(--navy)', color: 'var(--navy)' }}
       >
-        <p className="font-display text-lg">{isTour ? 'Tour request received.' : 'Thanks for reaching out.'}</p>
+        <p className="font-display text-lg">{isTour ? 'Tour request received.' : 'Message received.'}</p>
         <p className="mt-1 text-sm" style={{ color: 'var(--navy-70)' }}>
-          {isTour ? 'A broker will call or text to confirm a time within one business day.' : "We'll get back to you soon."}
+          {isTour ? 'A broker will call or text to confirm a time within one business day.' : 'We respond within one business day.'}
         </p>
       </div>
     )
@@ -89,12 +89,12 @@ export default function ContactForm({ defaultInquiryType, listingKey, intent, hi
           className="px-3 py-2 text-sm"
           style={{ border: '1px solid var(--navy-12)', color: 'var(--navy-70)' }}
         >
-          Your message will be linked to the home you were viewing.
+          We'll link your message to the home you were viewing.
         </p>
       ) : null}
       <div>
         <Label htmlFor="contact-name" className="block text-sm font-medium text-primary">
-          Name
+          Name (optional)
         </Label>
         <Input
           id="contact-name"
@@ -119,7 +119,7 @@ export default function ContactForm({ defaultInquiryType, listingKey, intent, hi
       </div>
       <div>
         <Label htmlFor="contact-phone" className="block text-sm font-medium text-primary">
-          Phone
+          Phone (optional)
         </Label>
         <Input
           id="contact-phone"
@@ -167,7 +167,7 @@ export default function ContactForm({ defaultInquiryType, listingKey, intent, hi
       ) : null}
       <div>
         <Label htmlFor="contact-message" className="block text-sm font-medium text-primary">
-          {isTour ? 'Anything else? (optional)' : 'Message'}
+          {isTour ? 'Anything else? (optional)' : 'Message (optional)'}
         </Label>
         <Textarea
           id="contact-message"

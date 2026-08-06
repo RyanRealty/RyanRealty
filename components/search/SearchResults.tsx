@@ -137,7 +137,7 @@ export default function SearchResults({
           <Eyebrow>No matches</Eyebrow>
           <H3 className="mt-2">No homes match these filters</H3>
           <Body className="mx-auto mt-2 max-w-md text-muted-foreground">
-            Try a wider price range or fewer beds, or view every Central Oregon listing.
+            Loosen a filter, or view every Central Oregon listing.
           </Body>
           <Button asChild variant="outline" className="mt-6">
             <Link href="/homes-for-sale">View all listings</Link>
