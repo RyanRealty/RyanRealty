@@ -101,30 +101,30 @@
       "id": "C-03",
       "phase": 1,
       "title": "Dead data source referenced / stale cache-version claims",
-      "status": "TODO",
+      "status": "DONE",
       "depends_on": [
         "E1"
       ],
-      "census_count": null,
-      "fixed_count": null,
-      "sha": null,
-      "gate": null,
-      "evidence": null,
+      "census_count": 3,
+      "fixed_count": 3,
+      "sha": "c2fb71fa",
+      "gate": "ci:gates exit 0; tsc clean",
+      "evidence": "/homes-for-sale/bend/1235-fort-clatsop-... renders live open houses Thu Aug 6 4pm-6pm + Fri Aug 7 9am-11am; was reading a table with no writer since 2026-04-03",
       "notes": "public.open_houses sync died 2026-04-03. methodology_version must state v3-2026-05-07."
     },
     {
       "id": "C-04",
       "phase": 2,
       "title": "Canon->vocabulary projection gap",
-      "status": "TODO",
+      "status": "DONE",
       "depends_on": [
         "E1"
       ],
-      "census_count": null,
-      "fixed_count": null,
-      "sha": null,
-      "gate": null,
-      "evidence": null,
+      "census_count": 0,
+      "fixed_count": 0,
+      "sha": "aaea25cc",
+      "gate": "PROVEN: removed 'honest answers' from SELF_PRAISE -> check-brand-voice exit 1; restored -> exit 0",
+      "evidence": "Closed by the parallel voice session (PROJECTION_REQUIRED in check-brand-voice.mjs:86). Verified, not redone. 0 live instances remain.",
       "notes": "Re-censused 2026-08-06 after Matt confirmed the voice session finished."
     },
     {
@@ -161,15 +161,15 @@
       "id": "C-07",
       "phase": 2,
       "title": "Naked-verb / placeholder headings",
-      "status": "TODO",
+      "status": "DONE",
       "depends_on": [
         "E1"
       ],
-      "census_count": null,
-      "fixed_count": null,
-      "sha": null,
-      "gate": null,
-      "evidence": null,
+      "census_count": 1,
+      "fixed_count": 1,
+      "sha": "aaea25cc",
+      "gate": "NEW GATE G62 ci:naked-verb-headings, PROVEN after its FIRST CUT FAILED its own proof (regex missed the default-param form that caused the bug)",
+      "evidence": "/ renders title 'Where people are buying', eyebrow 'Central Oregon'; title+eyebrow now REQUIRED props",
       "notes": "Re-censused: KbExploreTowns.client.tsx:18 title='Explore' default; homepage is the only caller omitting title."
     },
     {
@@ -491,6 +491,7 @@
   "followups": [
     "ci:css-layers baseline is keyed by `file:line selector`, so ANY kb.css edit shifts lines and re-reads already-baselined offenders as NEW. Tripped twice this session (C-11, C-14); both times the selector set was proven byte-identical. Fix: key the baseline on selector alone.",
     "ResultsStamp occupies ~64px between the nav and filter bar on /homes-for-sale and renders near-empty at 375px. Folded into the C-15/C-28 viewport-cost sweep.",
-    "listings_in_boundary RPC is commented 'active SFR-ish listings' but filters StandardStatus only. Not edited (applied migration, ci:migration-drift). Every call site now narrows property type itself."
+    "listings_in_boundary RPC is commented 'active SFR-ish listings' but filters StandardStatus only. Not edited (applied migration, ci:migration-drift). Every call site now narrows property type itself.",
+    "getOpenHouseByIdAndListing (RSVP confirm) still reads public.open_houses, which has no writer. Only pre-2026-04-03 rows can match, so the path is likely dead in practice. Needs a trace of who mints those links."
   ]
 }

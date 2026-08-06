@@ -14,6 +14,9 @@ sample of a class: census every instance repo-wide, fix all, gate the class. App
 | C-16 | Degenerate breadcrumb | 1 | 1 | `23985687` | `Home › self` on the highest-traffic page, ~11% of the mobile viewport. Sole single-item trail of 16 callers |
 | C-17 | Duplicate stacked sections | 1 | 1 | `8534f1f7` | City page was the last stacker after Matt's 2026-07-29 directive. **New gate G61** proven |
 | C-27 | Admin help FAB | 1 | 1 | `f0d0b4b7` | Removed. `/admin/help` survives; tours parked per D9 |
+| C-03 | Dead source / stale version claim | 3 | 3 | `c2fb71fa` | **Every listing detail page read `open_houses`, a table with no writer since 2026-04-03.** Repointed at the live jsonb. Also killed a user-facing "methodology v4" claim §7 forbids |
+| C-04 | Canon→vocabulary projection | 0 | — | `aaea25cc` | Closed by the voice session (`PROJECTION_REQUIRED`). **Verified, not redone** — proof run: exit 1 / exit 0 |
+| C-07 | Placeholder heading default | 1 | 1 | `aaea25cc` | "EXPLORE" → "Where people are buying"; `title`/`eyebrow` now REQUIRED. **New gate G62** — its first cut failed its own proof |
 
 ## Standing environment findings
 
@@ -50,11 +53,11 @@ Tetherow waitlist strings.
 
 ## Status at checkpoint — 2026-08-06
 
-**9 of 29 classes DONE and pushed** (E1 + 8 defect classes). 20 remain.
+**12 of 29 classes DONE and pushed** (E1 + 11 defect classes). 17 remain.
 
 **Shipped:** `0e01a3b7` · `56a61008` · `93dca181` · `f0d0b4b7` · `8534f1f7` · `d21834de` · `8db6c07c` · `23985687`
 
-Instances found vs fixed: **25 / 25**. One new gate (G61) written and proven. Every class
+Instances found vs fixed: **29 / 29**. Three gates written or verified: **G61**, **G62** (both proven), plus a proof run on the voice session's `PROJECTION_REQUIRED`. Every class
 browser-verified at 375×812 on at least two routes, with measured values rather than eyeballing.
 
 ### Remaining, in dependency order
@@ -75,3 +78,26 @@ browser-verified at 375×812 on at least two routes, with measured values rather
    as NEW. Hit twice; both times the selector set was proven byte-identical. Key it on selector alone.
 2. `ci:file-size-budget` blocks on a single added comment line in the large page files. Three classes
    needed comments folded into existing lines. Not wrong, but plan for it.
+
+
+## Second checkpoint — 2026-08-06
+
+Added since the first: `c2fb71fa` (C-03) · `aaea25cc` (C-04 + C-07).
+
+**The most valuable find so far was not in any screenshot.** `public.open_houses` has had no writer
+since 2026-04-03, and `getListingDetailOpenHouses` — live on every listing detail page — was reading it.
+Four months of stale open-house data on the highest-intent page on the site. Repointed at the live
+`listings."OpenHouses"` jsonb; the page now renders today's and tomorrow's open houses.
+
+**A gate caught me writing a bad gate.** G62's first cut required `title="..."` with no whitespace, so
+reintroducing the exact defect (`title = 'Explore'`, a default parameter) passed clean. It would have
+gated every form except the one that shipped the bug. Corrected and re-proven. This is why
+"an unproven gate is not DONE" is in the protocol.
+
+### Next up, in order
+1. **C-18 `resolveGeoScope`** — infrastructure. C-19 (open-house scoping), C-20 (19-community module)
+   and C-21 (subdivision polygons) all sit on it. Start here; do not start its dependents first.
+2. C-10 · C-12 · C-13 — silent drop · dead-end card · number-format divergence. All small.
+3. C-05 · C-06 · C-08 — voice remainder. Re-census first; the sibling closed most of C-05/C-06.
+4. C-22 · C-23 · C-24 · C-25 · C-15 · C-28 — UI work.
+5. C-26 — prospecting. **Tracking-trap step FIRST**, or broker previews poison lead-engagement counts.
