@@ -304,6 +304,7 @@ export type { NeighborhoodLedgerRow } from '@/lib/data/geo/getBendNeighborhoodLe
 // THE shared DAL for all three page types (city / neighborhood / community).
 // Gate G31 enforces this is the only import path for map data on geo pages.
 export { getGeoBoundaryMapData } from '@/lib/data/geo/getGeoBoundaryMapData'
+export { resolveGeoScope, allCommunities, findCommunity } from '@/lib/data/geo/resolveGeoScope'; export type { GeoScope, GeoScopeType, ListingPredicate } from '@/lib/data/geo/resolveGeoScope'
 export type {
   GeoBoundaryMapInput,
   GeoBoundaryMapData,

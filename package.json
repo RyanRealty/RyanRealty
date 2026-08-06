@@ -106,6 +106,7 @@
     "ci:market-formula": "node scripts/check-market-formula.mjs",
     "ci:market-section-nesting": "node scripts/check-market-section-nesting.mjs",
     "ci:naked-verb-headings": "node scripts/check-naked-verb-headings.mjs",
+    "report:geo-coverage": "node scripts/report-geo-coverage.mjs",
     "ci:crm-fail-closed": "node scripts/check-crm-fail-closed.mjs",
     "ci:currency-format": "node scripts/check-currency-format.mjs",
     "ci:currency-format:baseline": "node scripts/check-currency-format.mjs --write-baseline",

@@ -44,7 +44,7 @@
     "lib/data/crm/getEmailReporting.ts": 686,
     "lib/data/crm/getInboxQueue.ts": 635,
     "lib/data/crm/getLeadSourcesReport.ts": 626,
-    "lib/data/index.ts": 812,
+    "lib/data/index.ts": 813,
     "lib/data/listings/searchListingsAll.ts": 719,
     "lib/data/sync/syncWrites.ts": 1123,
     "lib/expired-owner-lookup.ts": 741,
@@ -64,6 +64,6 @@
     "lib/x.ts": 787
   },
   "barrels": {
-    "lib/data/index.ts": 184
+    "lib/data/index.ts": 185
   }
 }
