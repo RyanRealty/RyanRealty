@@ -273,6 +273,11 @@ const tscResult = spawnSync(
     // Give tsc up to 5 minutes — correctness wins over speed per spec
     timeout: 300_000,
     maxBuffer: 10 * 1024 * 1024,
+    // The repo outgrew Node's default heap: without the same 8GB every other
+    // tsc invocation here gets (pre-push build, ci scripts), tsc dies with
+    // SIGABRT ~50s in and the gate reports INCONCLUSIVE on every push
+    // (observed live 2026-08-05, three consecutive pushes).
+    env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=8192' },
   }
 );
 
