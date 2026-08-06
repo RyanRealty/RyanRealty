@@ -31,7 +31,7 @@ export default function HotCommunitiesSection({
   return (
     <section className="w-full" aria-labelledby="hot-communities-heading">
       <TilesSlider
-        title={`Hot communities in ${city}`}
+        title={`Most active communities in ${city}`}
         subtitle="Ranked by active listings, pending sales, and new listings."
         titleId="hot-communities-heading"
       >

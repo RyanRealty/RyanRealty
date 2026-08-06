@@ -37,6 +37,14 @@ const SCAN_DIRS = ['app', 'components']
 const EXCLUDED_DIRS = new Set(['node_modules', '.next', 'out', 'build', 'dist', '__tests__'])
 const FILE_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx'])
 
+// A colocated `foo.test.ts` is not copy. Only `__tests__/` was excluded, which
+// held while the scan was app + components (tests there live in __tests__), and
+// breaks the moment the scan widens: measured 2026-08-06, adding lib/ surfaced
+// 305 "violations" that were overwhelmingly em-dashes inside test NAMES. A gate
+// that reports a test description as a brand-voice failure is a gate nobody
+// reads.
+const TEST_FILE = /\.(test|spec)\.[cm]?[jt]sx?$/
+
 // Banned words sourced from scripts/brand-voice-vocabulary.cjs so this
 // list and the ESLint rule's list cannot drift. Modify lists THERE,
 // not here. The full canonical reference is CLAUDE.md §3.
@@ -301,7 +309,7 @@ function* walk(dir) {
       yield* walk(full)
     } else if (entry.isFile()) {
       const ext = entry.name.slice(entry.name.lastIndexOf('.'))
-      if (FILE_EXTS.has(ext)) yield full
+      if (FILE_EXTS.has(ext) && !TEST_FILE.test(entry.name)) yield full
     }
   }
 }

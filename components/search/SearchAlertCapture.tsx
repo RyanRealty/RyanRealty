@@ -189,7 +189,7 @@ export function SearchAlertCapture({
         <div className="flex items-start gap-2 sm:items-center">
           <BellAlertIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary sm:mt-0" aria-hidden />
           <div className="min-w-0">
-            <p className="text-sm font-medium text-foreground">Get new listings first</p>
+            <p className="text-sm font-medium text-foreground">Get new listings by email</p>
             {/* "for $90M, Bend" read as nonsense (matches FOR a price?) — "matching"
                 works grammatically no matter what the filter-shorthand contains
                 (design-audit P3). */}

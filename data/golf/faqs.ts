@@ -45,7 +45,7 @@ export const GOLF_FAQS: GolfFaq[] = [
   {
     question: 'Which Central Oregon course has the lowest green fees?',
     answer:
-      'Quail Run in La Pine at $25-$55 is the published low. Aspen Lakes ranges $20-$75 depending on tee window. The published bands change every season — always confirm with the course before booking.',
+      'Quail Run in La Pine at $25-$55 is the published low. Aspen Lakes ranges $20-$75 depending on tee window. The published bands change every season, so confirm with the course before booking.',
     references: ['research-notes.md §3'],
   },
   {
@@ -69,7 +69,7 @@ export const GOLF_FAQS: GolfFaq[] = [
   {
     question: 'How much further does the golf ball carry at Central Oregon\'s elevation?',
     answer:
-      'Roughly 8 percent further than at sea level. The destination courses sit between 3,500 and 3,800 feet. Bring a half-club less than your sea-level yardages would suggest. Plan for the morning rounds to play longer — colder air, less carry.',
+      'Roughly 8 percent further than at sea level. The destination courses sit between 3,500 and 3,800 feet. Bring a half-club less than your sea-level yardages would suggest. Plan for the morning rounds to play longer in colder air, with less carry.',
     references: ['NOAA elevation data, standard altitude-carry formula'],
   },
   {

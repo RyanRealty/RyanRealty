@@ -44,7 +44,7 @@ export const INSIDER_NOTES: InsiderNote[] = [
   {
     slug: 'aspen-lakes-cinders',
     hook: 'Aspen Lakes\'s bunkers are red. They are not painted.',
-    body: 'The Cyrus family crushed their own volcanic cinders from a quarry on the family property to fill every bunker on the course. The color is unique in American golf. Pack a brush — the cinders behave like sand but mark golf balls faster.',
+    body: 'The Cyrus family crushed their own volcanic cinders from a quarry on the family property to fill every bunker on the course. The color is unique in American golf. Pack a brush. The cinders behave like sand but mark golf balls faster.',
     course: 'Aspen Lakes',
     source: 'Aspen Lakes course page · Bend Bulletin 2011 profile',
   },
