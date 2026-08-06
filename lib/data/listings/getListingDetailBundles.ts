@@ -8,6 +8,7 @@
 
 import { supabaseAnon } from '@/lib/data/client'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
+import { toIsoDate, to24hTime } from '@/lib/data/open-houses/getUpcomingOpenHouses'
 import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
 
 export type ListingDetailPhotoRow = {
@@ -236,7 +237,16 @@ export async function getOpenHouseById(
   return (data ?? null) as ListingDetailOpenHouseRow | null
 }
 
-/** Upcoming open houses for a listing (event_date >= today, ASC). */
+/**
+ * Upcoming open houses for a listing (event_date >= today, ASC).
+ *
+ * SOURCE: `listings."OpenHouses"` (jsonb), kept fresh by the live delta sync —
+ * the same source getUpcomingOpenHouses reads. This used to read the standalone
+ * `public.open_houses` table, whose sync died 2026-04-03: nothing in the
+ * codebase writes to it (the two remaining syncWrites references are RSVP-path
+ * READS), so every listing detail page was rendering its open-house section from
+ * a table four months stale (C-03).
+ */
 export async function getListingDetailOpenHouses(
   listingKey: string
 ): Promise<ListingDetailOpenHouseRow[]> {
@@ -245,12 +255,30 @@ export async function getListingDetailOpenHouses(
   if (!sb) return []
   const today = new Date().toISOString().slice(0, 10)
   const { data } = await sb
-    .from('open_houses')
-    .select('id, listing_key, event_date, start_time, end_time, host_agent_name, remarks')
-    .eq('listing_key', canonicalKey)
-    .gte('event_date', today)
-    .order('event_date', { ascending: true })
-  return (data ?? []) as ListingDetailOpenHouseRow[]
+    .from('listings')
+    .select('ListingKey, OpenHouses')
+    .eq('ListingKey', canonicalKey)
+    .maybeSingle()
+  const raw = (data as { OpenHouses?: Array<{ Date?: string; StartTime?: string; EndTime?: string }> } | null)?.OpenHouses
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((oh, i) => {
+      const eventDate = toIsoDate(oh.Date)
+      if (!eventDate || eventDate < today) return null
+      return {
+        id: `${canonicalKey}:${eventDate}:${i}`,
+        listing_key: canonicalKey,
+        event_date: eventDate,
+        start_time: to24hTime(oh.StartTime),
+        end_time: to24hTime(oh.EndTime),
+        host_agent_name: null,
+        remarks: null,
+      } as ListingDetailOpenHouseRow
+    })
+    .filter((r): r is ListingDetailOpenHouseRow => r !== null)
+    .sort((a, b) => (a.event_date === b.event_date
+      ? (a.start_time ?? '').localeCompare(b.start_time ?? '')
+      : a.event_date.localeCompare(b.event_date)))
 }
 
 /** Listing videos for the detail player, sorted by sort_order ASC. */

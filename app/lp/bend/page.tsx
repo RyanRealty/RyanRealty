@@ -939,7 +939,7 @@ export default async function BendCityPage() {
           <p className="methodology" style={{ maxWidth: 880 }}>
             Market figures pulled from Oregon RMLS via <code>market_stats_cache</code>,{' '}
             <code>geo_slug=&apos;bend&apos;</code>, rolling 365-day window. Methodology{' '}
-            {kpis?.methodology_version ?? 'v4-2026-05-15'}, computed {fmtDate(kpis?.computed_at)}.
+            {kpis?.methodology_version ?? 'v3-2026-05-07'}, computed {fmtDate(kpis?.computed_at)}.
             Active listing inventory pulled live from the <code>listings</code> table, filtered to
             single-family residential in Bend. Neighborhood boundaries from City of Bend GIS via{' '}
             <code>boundaries</code> table. Ryan Realty LLC, Oregon Principal Broker #201206613.

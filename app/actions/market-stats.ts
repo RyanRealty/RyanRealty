@@ -286,7 +286,10 @@ async function getQuickCityCount(cityName: string): Promise<CityMarketStats> {
  * as resort/area community, query geo_type='neighborhood' with the bare subdivision
  * slug. Else fall through to existing geo_type='subdivision' path.
  *
- * Source: data/resort-communities.json v2-2026-05-15; methodology v4-2026-05-15.
+ * Source: data/resort-communities.json v2-2026-05-15. Methodology: the v4-2026-05-15
+ * definition is REGISTERED in cache_methodology_definitions but no live cache row
+ * carries it — every served row is stamped v3-2026-05-07 (CLAUDE.md §7). Cite the
+ * stamp on the row, never the newest definition.
  */
 export async function getMarketStatsForSubdivision(
   city: string,

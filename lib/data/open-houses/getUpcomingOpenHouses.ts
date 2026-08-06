@@ -59,14 +59,14 @@ type OpenHouseJson = { Date?: string; StartTime?: string; EndTime?: string }
 const SERVICE_AREA_CITIES = SERVICE_AREA_CITIES_PROPER as string[]
 
 // "MM/DD/YYYY" → "YYYY-MM-DD" (null on anything else).
-function toIsoDate(d: string | undefined): string | null {
+export function toIsoDate(d: string | undefined): string | null {
   const m = (d ?? '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
   if (!m) return null
   return `${m[3]}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`
 }
 
 // "2:00 pm" → "14:00:00" (null on anything else).
-function to24hTime(t: string | undefined): string | null {
+export function to24hTime(t: string | undefined): string | null {
   const m = (t ?? '').trim().match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/i)
   if (!m) return null
   let h = parseInt(m[1], 10)
