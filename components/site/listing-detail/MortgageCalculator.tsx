@@ -91,7 +91,7 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className }: Pr
 
       <div style={{ marginTop: 'clamp(22px,3vw,36px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <Body size="small" tone="muted">
-          A rough estimate, not a quote. A real number comes from a lender.
+          A rough estimate, not a quote. Your lender gives you the real number.
         </Body>
 
         {/* Input fields */}

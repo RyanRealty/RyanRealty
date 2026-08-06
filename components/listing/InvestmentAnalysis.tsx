@@ -51,7 +51,7 @@ export default function InvestmentAnalysis({ metrics, className }: Props) {
     <Card className={className}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground">Investment Potential</h3>
+          <h3 className="text-sm font-semibold text-foreground">Investment potential</h3>
           {metrics.strAllowed != null && (
             <Badge variant={metrics.strAllowed ? 'default' : 'outline'} className="text-xs">
               {metrics.strAllowed ? 'STR Eligible' : 'Long-Term Only'}

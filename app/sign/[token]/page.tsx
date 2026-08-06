@@ -2,6 +2,7 @@
 // @data-free — token-gated signing data comes from a server action (tc-sign), not a cached @/lib/data DAL read
 // @no-static-params — token-gated signing route, inherently per-request (revalidate=0); no static params to generate
 import { getSigningSession } from '@/app/actions/tc-sign'
+import { CONTACT } from '@/lib/brand/contact'
 import { SignFlow } from '@/components/tc/pdf-sign/SignFlow'
 
 // Reads request headers (IP/UA capture) so it always renders per request.
@@ -14,7 +15,7 @@ function Centered({ title, body }: { title: string; body: string }) {
       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ryan Realty</p>
       <h1 className="mt-2 font-display text-2xl font-bold text-foreground">{title}</h1>
       <p className="mt-3 text-sm text-muted-foreground">{body}</p>
-      <p className="mt-8 text-xs text-muted-foreground">Questions? Call 541.213.6706 or reply to the email that sent you here.</p>
+      <p className="mt-8 text-xs text-muted-foreground">Questions? Call {CONTACT.phoneDirect} or reply to the email that sent you here.</p>
     </div>
   )
 }

@@ -255,7 +255,7 @@ export function PublishedCmaDownload({ listingKey, subjectAddress, terms, termsV
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <Body size="small" tone="muted" as="div">
-          By checking the box you are telling us that:
+          By checking this box, you agree that:
         </Body>
         <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
           {terms.map((clause) => (

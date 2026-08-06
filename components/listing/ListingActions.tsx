@@ -117,10 +117,10 @@ export default function ListingActions({ listingKey, address, price, isSaved, is
       {/* Sticky bar - desktop */}
       <div className="sticky top-0 z-30 hidden md:flex flex-wrap items-center gap-2 py-3 bg-muted border-b border-border -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <Button variant="default" size="default" onClick={handleScheduleTour}>
-          Schedule Tour
+          Schedule tour
         </Button>
         <Button variant="secondary" size="default" onClick={handleContactAgent}>
-          Contact Agent
+          Contact agent
         </Button>
         <Button
           type="button"
@@ -170,7 +170,7 @@ export default function ListingActions({ listingKey, address, price, isSaved, is
       {/* Fixed bottom bar - mobile */}
       <div className="fixed bottom-0 left-0 right-0 z-30 flex md:hidden items-center justify-center gap-2 py-3 px-4 bg-card border-t border-border safe-area-pb">
         <Button variant="default" size="sm" onClick={handleScheduleTour}>
-          Schedule Tour
+          Schedule tour
         </Button>
         <Button variant="outline" size="sm" onClick={handleContactAgent}>
           Contact

@@ -187,8 +187,8 @@ export function PublishedCmaSection({ cma, extraHighlights, className }: Props) 
         >
           <Body size="small" tone="muted">
             This is our opinion of value, not an appraisal and not a guarantee of price. It is the same analysis we
-            prepare for a seller before we list a home. The market sets the price, and a buyer and a seller set the
-            terms. For a formal valuation, an Oregon licensed appraiser is the right call.
+            prepare for a seller before we list a home. For a formal valuation, an Oregon licensed appraiser is the
+            right call.
           </Body>
           {window ? (
             <Body size="small" tone="muted">

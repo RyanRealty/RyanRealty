@@ -74,13 +74,13 @@ export default function ListingValuation({ listingKey, propertyId, valuation, si
   return (
     <section className="mb-8 rounded-lg border border-border bg-card p-6 shadow-sm" aria-labelledby="valuation-heading">
       <H3 as="h2" id="valuation-heading" className="mb-4 text-lg text-foreground">
-        Estimated Value
+        Estimated value
       </H3>
       <p className="text-2xl font-bold text-primary">
         {formatPrice(valuation.estimatedValue)}
       </p>
       <p className="mt-1 text-sm text-muted-foreground">
-        Range: {formatPrice(valuation.valueLow)} — {formatPrice(valuation.valueHigh)}
+        Range: {formatPrice(valuation.valueLow)} to {formatPrice(valuation.valueHigh)}
       </p>
       <span
         className={`mt-2 inline-block rounded-full px-3 py-1 text-sm font-medium ${confidenceColor}`}

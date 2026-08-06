@@ -223,7 +223,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     yearOpened: 1980,
     access: 'resort',
     signature:
-      'John Fought rebuilt the course in 2012. Considered by many the most iconic course in Central Oregon.',
+      'John Fought rebuilt the course in 2012.',
     lat: 44.3671,
     lng: -121.6336,
     communitySlug: 'black-butte-ranch',
@@ -278,7 +278,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     yearOpened: 1993,
     access: 'resort',
     signature:
-      '"A driver\'s dream." Open year-round — the longest playing season in Central Oregon.',
+      '"A driver\'s dream." Open year-round. The longest playing season in Central Oregon.',
     lat: 44.3229,
     lng: -121.2526,
     communitySlug: 'eagle-crest',
@@ -312,7 +312,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     yearOpened: 1996,
     access: 'public',
     signature:
-      'Family-owned. Distinctive red-cinder sand bunkers — the Cyrus family crushed their own volcanic cinders for them.',
+      'Family-owned. Distinctive red-cinder sand bunkers. The Cyrus family crushed their own volcanic cinders for them.',
     lat: 44.2862,
     lng: -121.5182,
     destinationRank: 8,
@@ -431,7 +431,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     designerSlug: 'bunny-mason',
     yearOpened: 1979,
     access: 'public',
-    signature: 'Hole #5 plays over a corner of the Crooked River Canyon — one of the most photographed holes in Oregon.',
+    signature: 'Hole #5 plays over a corner of the Crooked River Canyon, one of the most photographed holes in Oregon.',
     lat: 44.4864,
     lng: -121.2998,
   },
@@ -447,7 +447,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     yearOpened: 1995,
     access: 'public',
     signature:
-      'Public executive course. Man-made lakes, canals, white-sand bunkers. A lower-stakes round; good for new players.',
+      'Public executive course. Man-made lakes, canals, white-sand bunkers. A lower-stakes round, good for new players.',
     lat: 44.2723,
     lng: -121.1803,
   },

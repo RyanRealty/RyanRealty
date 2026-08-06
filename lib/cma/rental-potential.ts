@@ -443,7 +443,7 @@ function buildIncome(
     income.push({
       label: 'Property tax of record, annual',
       value: usd(subject.taxAnnual),
-      basis: `Annual tax carried on the MLS record for this property${subject.mlsNumber ? ` (MLS ${subject.mlsNumber})` : ''}. It is the largest fixed operating cost in any rental model, and it is the one figure of the owner's cost base we can source directly.`,
+      basis: `Annual tax carried on the MLS record for this property${subject.mlsNumber ? ` (MLS ${subject.mlsNumber})` : ''}.`,
     })
   }
 
@@ -512,7 +512,7 @@ function buildHighlights(
 
   if (association) {
     out.push({
-      headline: `${association} carries its own association rules on rental, and they are worth reading early. They sit on top of the code, not instead of it.`,
+      headline: `${association} carries its own association rules on rental, on top of the code, and they are worth reading early.`,
       basis: 'Recorded CC&Rs and association rules for the community named on the MLS subdivision or city record for this property.',
     })
   }

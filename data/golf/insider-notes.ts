@@ -58,7 +58,7 @@ export const INSIDER_NOTES: InsiderNote[] = [
   {
     slug: 'pronghorn-fazio-8',
     hook: 'The most photographed hole in the Pacific NW sits inside a private club.',
-    body: 'Pronghorn Fazio\'s par-3 #8 plays across a 45-foot natural canyon with an exposed lava tube. It is the cover shot on every Oregon golf editorial. The course is private; if you want to play it, you need a member to walk you on.',
+    body: 'Pronghorn Fazio\'s par-3 #8 plays across a 45-foot natural canyon with an exposed lava tube. It is the cover shot on every Oregon golf editorial. The course is private. If you want to play it, you need a member to walk you on.',
     course: 'Pronghorn Fazio',
     source: 'Juniper Preserve / Pronghorn official course-tour page',
   },
@@ -72,14 +72,14 @@ export const INSIDER_NOTES: InsiderNote[] = [
   {
     slug: 'brasada-no-parallels',
     hook: 'No two holes at Brasada Canyons run parallel.',
-    body: 'Hardy and Jacobsen designed the routing for solitude — every fairway feels like the only fairway on the property. Combined with the panoramic terrain east of Bend, the rounds play slower than the scorecard suggests.',
+    body: 'Hardy and Jacobsen designed the routing for solitude. Every fairway feels like the only fairway on the property. Combined with the panoramic terrain east of Bend, the rounds play slower than the scorecard suggests.',
     course: 'Brasada Canyons',
     source: 'Pacific NW Golf Association architectural profile',
   },
   {
     slug: 'bend-golf-club-1925',
     hook: 'The oldest course in Central Oregon is older than the talkies.',
-    body: 'Bend Golf Club\'s back nine was routed by H. Chandler Egan in 1925, a decade before the front nine was added. Egan also renovated Pebble Beach for the 1929 US Amateur. Bend Golf Club is private; the course has hosted the Oregon Open, the Northwest Open, the Oregon Amateur, and the PNGA Women\'s Amateur.',
+    body: 'Bend Golf Club\'s back nine was routed by H. Chandler Egan in 1925, a decade before the front nine was added. Egan also renovated Pebble Beach for the 1929 US Amateur. Bend Golf Club is private. The course has hosted the Oregon Open, the Northwest Open, the Oregon Amateur, and the PNGA Women\'s Amateur.',
     course: 'Bend Golf Club',
     source: 'Bend Golf Club course-history page · Pebble Beach Egan profile',
   },

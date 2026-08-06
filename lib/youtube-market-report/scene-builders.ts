@@ -31,6 +31,7 @@ import type {
   ClosedSfrRow,
 } from './queries';
 import { pacificYmd, uf2Filter } from './queries';
+import { CONTACT } from '../brand/contact';
 import type {
   AnchorStatName,
   DomByPriceBandRow,
@@ -581,7 +582,7 @@ export function buildScene8(input: Scene8Input): Scene8Cta {
   return {
     nextReportDate: input.nextReportDate,
     url: 'ryan-realty.com',
-    phone: '541.213.6706',
+    phone: CONTACT.phoneDirect,
   };
 }
 

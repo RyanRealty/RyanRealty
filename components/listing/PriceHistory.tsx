@@ -25,7 +25,7 @@ export default function PriceHistory({ priceHistory }: Props) {
 
   return (
     <section className="space-y-4">
-      <H2 className="text-xl text-primary">Price History</H2>
+      <H2 className="text-xl text-primary">Price history</H2>
       <ul className="space-y-3">
         {priceHistory.map((entry) => {
           const oldP = entry.old_price ?? 0

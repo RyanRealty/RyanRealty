@@ -51,16 +51,16 @@ function likeItems(a: ImmersiveArgs): Array<{ headline: string; detail: string |
   if (view) items.push({ headline: `The view: ${view.replace(/\s*,\s*/g, ', ')}`, detail: 'From the MLS record for this parcel.' })
   if (s.lotAcres != null && s.lotAcres >= 0.5) items.push({ headline: `${dec(s.lotAcres, 2)} acres of ground`, detail: 'Lot size from the county record.' })
   if (s.garageSpaces != null && s.garageSpaces >= 3) items.push({ headline: `${s.garageSpaces}-car garage`, detail: null })
-  if (s.yearBuilt != null && s.yearBuilt >= 2018) items.push({ headline: `Built in ${s.yearBuilt}`, detail: 'Current-code construction: newer roof, systems, and envelope.' })
+  if (s.yearBuilt != null && s.yearBuilt >= 2018) items.push({ headline: `Built in ${s.yearBuilt}`, detail: null })
   if (s.sqft != null && s.sqft >= 3000) items.push({ headline: `${int(s.sqft)} square feet of living space`, detail: null })
   if (s.beds != null && s.beds >= 4) items.push({ headline: `${s.beds} bedrooms`, detail: null })
   return items.slice(0, 6)
 }
 
 const LENS_LABELS: Record<string, string> = {
-  pricing: 'Price vs the comparable sales',
+  pricing: 'Price against the comparable sales',
   'time-on-market': 'Time on market',
-  'price-cuts': 'Price reductions',
+  'price-cuts': 'The price path',
   attempts: 'Listing attempts',
   presentation: 'Presentation',
 }
@@ -89,18 +89,18 @@ function seasonalityScene(a: ImmersiveArgs): string {
     names
       .map((n) => byName.get(n))
       .filter(Boolean)
-      .map((m) => `${m!.monthName}, ${Math.round(m!.medianDaysToPending!)} days`)
+      .map((m) => `${m!.monthName} (${Math.round(m!.medianDaysToPending!)} days)`)
       .join(' and ')
   const fastLine = line(x.fastestMonths)
   const slowLine = line(x.slowestMonths)
   return `
   <section class="sc sc-cream" id="when-to-list">
     <div class="in">
-      <div class="kick r">When to list</div>
+      <div class="kick r">Timing</div>
       <h2 class="h r">When ${esc(a.subject.city)} homes go pending</h2>
-      <p class="lede r">${int(x.totalClosed)} single-family sales closed in ${esc(a.subject.city)} over the last ${dec(x.yearsCovered, 1)} years, grouped by close month. Each bar is the median days those homes took to go pending.</p>
+      <p class="lede r">Each bar is the median days to pending for the ${int(x.totalClosed)} single-family sales that closed in ${esc(a.subject.city)} over the last ${dec(x.yearsCovered, 1)} years, grouped by the month they closed.</p>
       <div class="szn r" role="img" aria-label="Median days to pending by close month">${bars}</div>
-      <p class="body r">Fastest: ${esc(fastLine)}. Slowest: ${esc(slowLine)}. Months with fewer than 12 sales make no claim.</p>
+      <p class="body r">Fastest: ${esc(fastLine)}. Slowest: ${esc(slowLine)}. A month with fewer than 12 measured sales shows no bar.</p>
       
     </div>
   </section>`
@@ -126,22 +126,22 @@ function storyScene(a: ImmersiveArgs): string {
   <section class="sc sc-navy" id="last-listing">
     <div class="in">
       <div class="kick r">Your last listing</div>
-      <h2 class="h r">Your last listing asked ${usd(orig)} and did not sell.</h2>
+      <h2 class="h r">It asked ${usd(orig)} and did not sell.</h2>
       ${
         orig
           ? `<div class="tl r" aria-label="Last listing timeline">
-        <div class="tl-item"><div class="tl-lbl">Last asking</div><div class="tl-val">${usd(orig)}</div></div>
+        <div class="tl-item"><div class="tl-lbl">Listed</div><div class="tl-val">${dateLong(s.lastListDate)}</div></div>
         <div class="tl-arrow" aria-hidden="true"></div>
-        <div class="tl-item"><div class="tl-lbl">Buyers said</div><div class="tl-val">no</div></div>
+        <div class="tl-item"><div class="tl-lbl">Asked</div><div class="tl-val">${usd(orig)}</div></div>
         <div class="tl-arrow" aria-hidden="true"></div>
         <div class="tl-item"><div class="tl-lbl">Off market</div><div class="tl-val">${esc(s.standardStatus ?? 'Ended')}</div></div>
       </div>`
           : ''
       }
       <div class="stat3 r">
-        <div class="st"><div class="st-n" data-count>${int(b.pairs)}</div><div class="st-l">Central Oregon homes failed to sell and later sold, 2023 to 2026</div></div>
-        <div class="st"><div class="st-n" data-count>${(b.closeMedianRatio * 100).toFixed(1)}%</div><div class="st-l">of the failed asking price is where the median one closed</div></div>
-        <div class="st"><div class="st-n" data-count>${b.shareClosedAboveAskPct}%</div><div class="st-l">closed above the asking price that failed</div></div>
+        <div class="st"><div class="st-n" data-count>${int(b.pairs)}</div><div class="st-l">Central Oregon homes failed to sell, then sold later, 2023 to 2026</div></div>
+        <div class="st"><div class="st-n" data-count>${(b.closeMedianRatio * 100).toFixed(1)}%</div><div class="st-l">of the failed ask is what the median one later sold for</div></div>
+        <div class="st"><div class="st-n" data-count>${b.shareClosedAboveAskPct}%</div><div class="st-l">later sold for more than the ask that failed</div></div>
       </div>
       <div class="story-grid">${cards}</div>
     </div>
@@ -166,11 +166,11 @@ function planScene(a: ImmersiveArgs): string {
   return `
   <section class="sc sc-navy" id="what-we-would-do">
     <div class="in wide">
-      <div class="kick r">What we would do</div>
-      <h2 class="h r">${int(p.items.length)} things this home needs, measured</h2>
-      <p class="lede r">Every line comes from a number in this report.</p>
+      <div class="kick r">The plan</div>
+      <h2 class="h r">${int(p.items.length)} things we would do about it</h2>
+      <p class="lede r">Each one is triggered by a figure measured on your home.</p>
       <div class="plan-grid">${cards}</div>
-      
+
     </div>
   </section>`
 }
@@ -182,7 +182,7 @@ function sourcesScene(a: ImmersiveArgs): string {
     ['Market conditions', a.market ? `market_stats_cache ${a.market.geoSlug}, ${a.market.periodStart} to ${a.market.periodEnd}, live inventory ${a.market.pulseUpdatedAt ?? a.market.computedAt ?? ''}` : null],
     [`${a.subdivisionStory?.facts.name ?? 'Subdivision'} sales`, a.subdivisionStory?.facts.source],
     ['When homes go pending', a.extras?.seasonality?.source],
-    ['Active competition', a.extras?.band?.source],
+    ['Homes for sale in your band', a.extras?.band?.source],
     ['Recent subdivision sales', a.extras?.subdivisionPulse?.source],
     ['How buyers paid', a.extras?.financing?.source],
     ['Photo counts', a.extras?.photoBench?.source],
@@ -196,10 +196,10 @@ function sourcesScene(a: ImmersiveArgs): string {
   return `
   <section class="sc sc-cream tight" id="sources">
     <div class="in">
-      <div class="kick r">Where these numbers come from</div>
-      <h2 class="h r">Every figure, and its source</h2>
+      <div class="kick r">Sources</div>
+      <h2 class="h r">Where these numbers come from</h2>
       <div class="srcgrid r">${items}</div>
-      ${a.subdivisionStory?.model ? `<p class="body r">The ${esc(a.subdivisionStory.facts.name)} section was written by ${esc(a.subdivisionStory.model)} from those sales, the listing remarks, and the photos of the ${int(a.subdivisionStory.photoSalesReviewed)} most recent sales. Every number in it appears in the table above it.</p>` : ''}
+      ${a.subdivisionStory?.model ? `<p class="body r">The ${esc(a.subdivisionStory.facts.name)} narrative was written by ${esc(a.subdivisionStory.model)} from those sales, their listing remarks, and the photos of the ${int(a.subdivisionStory.photoSalesReviewed)} most recent sales. Every number in it also appears in that section's chart.</p>` : ''}
     </div>
   </section>`
 }
@@ -241,21 +241,25 @@ function subdivisionStoryScene(a: ImmersiveArgs): string {
       : null,
     f.vintageSpan ? `The street was built out ${f.vintageSpan.min} to ${f.vintageSpan.max}.` : null,
     f.recordHigh ? `The record is ${usd(f.recordHigh.price)} at ${esc(f.recordHigh.address)}.` : null,
-    f.saleToListRecentPct != null ? `Over the last two years sellers here have collected ${dec(f.saleToListRecentPct, 1)}% of their final asking price.` : null,
+    f.saleToListRecentPct != null ? `Sellers here have collected a median of ${dec(f.saleToListRecentPct, 1)}% of their final asking price over the last two years.` : null,
   ]
     .filter(Boolean)
     .join(' ')
+  const lede =
+    f.medianDomRecent != null
+      ? `Sales here over the last two years carried a median of ${int(f.medianDomRecent)} days on market.`
+      : `Every closed sale on record in ${esc(f.name)}, by the year it closed.`
   return `
   <section class="sc sc-cream" id="your-street">
     <div class="in wide">
       <div class="kick r">The story of ${esc(f.name)}</div>
-      <h2 class="h r">${int(f.totalSales)} sales in ${esc(f.name)}</h2>
-      <p class="lede r">Every closed sale we hold for ${esc(f.name)}, by year.</p>
+      <h2 class="h r">${int(f.totalSales)} homes have sold in ${esc(f.name)}</h2>
+      <p class="lede r">${lede}</p>
       <div class="yr r" role="img" aria-label="Median close price by year in ${esc(f.name)}">${yearBars}</div>
       ${sections ? `<div class="sty-grid">${sections}</div>` : ''}
-      ${notable ? `<h3 class="sub r">Recent sales</h3><div class="nb-grid">${notable}</div>` : ''}
+      ${notable ? `<h3 class="sub r">The most recent sales</h3><div class="nb-grid">${notable}</div>` : ''}
       ${position ? `<p class="body r pos">${position}</p>` : ''}
-      
+
     </div>
   </section>`
 }
@@ -274,7 +278,7 @@ function compsScene(a: ImmersiveArgs): string {
           <div class="cmp-p">${usd(c.closePrice)}</div>
           <div class="cmp-m">Closed ${dateLong(c.closeDate)}${c.proximity ? ` · ${esc(c.proximity)}` : ''}</div>
           <div class="cmp-m">${int(c.sqft)} sqft${ppsf ? ` · $${ppsf}/sqft` : ''}${c.yearBuilt ? ` · built ${c.yearBuilt}` : ''}</div>
-          <div class="cmp-adj">Adjusted for time and size: <strong>${usd(c.adjustedPrice)}</strong></div>
+          <div class="cmp-adj">Adjusted to your home: <strong>${usd(c.adjustedPrice)}</strong></div>
         </div>
       </article>`
     })
@@ -284,9 +288,9 @@ function compsScene(a: ImmersiveArgs): string {
     <div class="in wide">
       <div class="kick r">The evidence</div>
       <h2 class="h r">${a.comps.length} closed sales set this price</h2>
-      <p class="lede r">Each sale is adjusted for its close date and its size against yours. The full report prints every adjustment line by line.</p>
+      <p class="lede r">Each one is adjusted for how long ago it closed and how its size compares to yours.</p>
       <div class="cmp-grid">${cards}</div>
-      
+
     </div>
   </section>`
 }
@@ -295,19 +299,19 @@ function marketScene(a: ImmersiveArgs): string {
   const m = a.market
   if (!m) return ''
   const verdict =
-    m.marketVerdict === 'seller' ? "a seller's market" : m.marketVerdict === 'buyer' ? "a buyer's market" : m.marketVerdict === 'balanced' ? 'a balanced market' : 'unmeasured'
+    m.marketVerdict === 'seller' ? "a seller's market" : m.marketVerdict === 'buyer' ? "a buyer's market" : m.marketVerdict === 'balanced' ? 'a balanced market' : null
   return `
   <section class="sc sc-cream tight" id="market">
     <div class="in">
-      <div class="kick r">Market context</div>
-      <h2 class="h r">${esc(m.geoLabel)} right now</h2>
+      <div class="kick r">The wider market</div>
+      <h2 class="h r">${verdict ? `${esc(m.geoLabel)} is ${esc(verdict)}` : `${esc(m.geoLabel)} right now`}</h2>
       <div class="stat4 r">
-        <div class="st"><div class="st-n">${m.monthsOfSupply != null ? dec(m.monthsOfSupply, 1) : '—'}</div><div class="st-l">months of supply, ${esc(verdict)}</div></div>
+        <div class="st"><div class="st-n">${m.monthsOfSupply != null ? dec(m.monthsOfSupply, 1) : '—'}</div><div class="st-l">months of supply</div></div>
         <div class="st"><div class="st-n">${usd(m.medianSalePrice)}</div><div class="st-l">median sale price, last 12 months</div></div>
-        <div class="st"><div class="st-n">${m.medianDom != null ? `${int(m.medianDom)}` : '—'}</div><div class="st-l">median days on market</div></div>
-        <div class="st"><div class="st-n">${m.saleToListRatio != null ? `${dec(m.saleToListRatio * 100, 1)}%` : '—'}</div><div class="st-l">of asking is what sellers actually get</div></div>
+        <div class="st"><div class="st-n">${m.medianDom != null ? `${int(m.medianDom)}` : '—'}</div><div class="st-l">median days on market for a closed sale</div></div>
+        <div class="st"><div class="st-n">${m.saleToListRatio != null ? `${dec(m.saleToListRatio * 100, 1)}%` : '—'}</div><div class="st-l">of the asking price is what sellers collected</div></div>
       </div>
-      
+
     </div>
   </section>`
 }
@@ -324,7 +328,7 @@ function competitionScene(a: ImmersiveArgs): string {
         <div class="fin-row"><div class="fin-l">Conventional</div><div class="fin-track"><div class="fin-bar" style="--w:${fin.conventionalPct}%"></div></div><div class="fin-v">${dec(fin.conventionalPct, 1)}%</div></div>
         <div class="fin-row"><div class="fin-l">FHA / VA</div><div class="fin-track"><div class="fin-bar" style="--w:${fin.fhaVaPct}%"></div></div><div class="fin-v">${dec(fin.fhaVaPct, 1)}%</div></div>
       </div>
-      <p class="body r">Based on ${int(fin.sampleCount)} ${esc(a.subject.city)} sales in the last 12 months that reported financing.</p>`
+      <p class="body r">${int(fin.sampleCount)} ${esc(a.subject.city)} sales in the last 12 months reported how the buyer paid.</p>`
     : ''
   const benchBlock = bench
     ? `<div class="bench r">
@@ -333,22 +337,29 @@ function competitionScene(a: ImmersiveArgs): string {
       </div>
       `
     : ''
+  const headline = b
+    ? `${int(b.activeCount)} home${b.activeCount === 1 ? ' is' : 's are'} for sale in ${esc(a.subject.city)} between ${usd(b.lo)} and ${usd(b.hi)}`
+    : sub
+      ? `${int(sub.closedCount)} home${sub.closedCount === 1 ? ' has' : 's have'} sold in ${esc(sub.name)} in the last ${int(sub.months)} months`
+      : fin
+        ? `${dec(fin.cashPct, 1)}% of the last ${int(fin.sampleCount)} ${esc(a.subject.city)} sales closed in cash`
+        : `The comps that sold carried a median of ${int(bench!.compMedianPhotos)} photos`
   return `
   <section class="sc sc-navy" id="competition">
     <div class="in">
-      <div class="kick r">Your competition right now</div>
-      <h2 class="h r">What a buyer sees next to your home</h2>
+      <div class="kick r">Your competition</div>
+      <h2 class="h r">${headline}</h2>
       ${
         b
           ? `<div class="stat3 r">
-        <div class="st"><div class="st-n" data-count>${int(b.activeCount)}</div><div class="st-l">active listings in ${esc(a.subject.city)} between ${usd(b.lo)} and ${usd(b.hi)}${b.activeMedianDom != null ? `, listed a median of ${int(b.activeMedianDom)} days` : ''}</div></div>
-        <div class="st"><div class="st-n" data-count>${int(b.pendingCount)}</div><div class="st-l">pending in the same price band</div></div>
+        <div class="st"><div class="st-n" data-count>${int(b.activeCount)}</div><div class="st-l">for sale in that band${b.activeMedianDom != null ? `, listed a median of ${int(b.activeMedianDom)} days` : ''}</div></div>
+        <div class="st"><div class="st-n" data-count>${int(b.pendingCount)}</div><div class="st-l">under contract in the same band</div></div>
         ${sub ? `<div class="st"><div class="st-n" data-count>${int(sub.closedCount)}</div><div class="st-l">${esc(sub.name)} sales in the last ${int(sub.months)} months, ${usd(sub.low)} to ${usd(sub.high)}, median ${usd(sub.medianClose != null ? Math.round(sub.medianClose) : null)}</div></div>` : ''}
       </div>`
           : ''
       }
-      ${fin ? `<h3 class="sub r">Who is buying here</h3>${finBars}` : ''}
-      ${bench ? `<h3 class="sub r">Presentation bench</h3>${benchBlock}` : ''}
+      ${fin ? `<h3 class="sub r">How ${esc(a.subject.city)} buyers paid</h3>${finBars}` : ''}
+      ${bench ? `<h3 class="sub r">Photos, yours against the comps</h3>${benchBlock}` : ''}
     </div>
   </section>`
 }
@@ -362,7 +373,7 @@ function likesScene(a: ImmersiveArgs): string {
   return `
   <section class="sc sc-cream tight" id="what-we-like">
     <div class="in">
-      <div class="kick r">What we like about this home</div>
+      <div class="kick r">On the record</div>
       <h2 class="h r">What this home has</h2>
       <div class="like-grid">${cards}</div>
     </div>
@@ -385,7 +396,7 @@ function canDoScene(a: ImmersiveArgs): string {
   <section class="sc sc-cream tight" id="can-do">
     <div class="in">
       <div class="kick r">What you can do with it</div>
-      <h2 class="h r">The parcel, in plain English</h2>
+      <h2 class="h r">${dev ? `Zoned ${esc(dev.zone)} in ${esc(dev.jurisdiction)}` : 'What the rules allow on this parcel'}</h2>
       <div class="cando-grid">${devRows}${rentRows}</div>
     </div>
   </section>`
@@ -401,15 +412,15 @@ function nextScene(a: ImmersiveArgs): string {
       ${photo}
       <div class="next-b">
         <div class="kick r">Your next step</div>
-        <h2 class="h r">Walk it with us</h2>
-        <p class="lede r">We have not seen inside your home. Thirty minutes on site and this estimate gets sharper in both directions.</p>
+        <h2 class="h r">We have not seen inside your home.</h2>
+        <p class="lede r">Thirty minutes on site and this estimate gets sharper in both directions.</p>
         <div class="cta r">
           ${tel ? `<a class="btn pri" href="tel:${esc(tel)}">Call ${esc(br.phone ?? '')}</a>` : ''}
           ${br.email ? `<a class="btn sec" href="mailto:${esc(br.email)}">Email ${esc(br.displayName.split(' ')[0])}</a>` : ''}
           <a class="btn ter" href="?print=1">Read the full report</a>
         </div>
         <div class="sig r">${esc(br.displayName)} · ${esc(br.title)}${br.licenseNumber ? ` · Licensed in Oregon, ${esc(br.licenseNumber)}` : ''}</div>
-        <div class="fine r">Prepared ${dateLong(a.generatedAtIso)} for ${esc(a.client.name ?? 'the owner')}. This is a broker price opinion, not an appraisal. Every figure traces to the source listed beside it; the complete methodology, comparable adjustments, and disclosures are in the full report above.</div>
+        <div class="fine r">Prepared ${dateLong(a.generatedAtIso)} for ${esc(a.client.name ?? 'the owner')}. This is a broker price opinion. It is not an appraisal. The comparable adjustments, the methods behind the range, and the required disclosures are in the full report.</div>
       </div>
     </div>
   </section>`
@@ -631,7 +642,6 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
 
 <section class="sc sc-cream" id="answer">
   <div class="in">
-    <div class="kick r">The answer first</div>
     <div class="ans-l r">Recommended list price</div>
     <div class="ans-n r" data-count>${usd(p.recommended)}</div>
     <div class="r"><span class="conf">Confidence: ${esc(p.confidence)}</span></div>
@@ -643,7 +653,7 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
         <div class="rm" style="text-align:right"><div class="rm-v">${usd(p.highEnd)}</div><div class="rm-l">Ceiling, condition resolved</div></div>
       </div>
     </div>
-    <p class="body r">The comparable sales bracket ${usd(evLo)} to ${usd(evHi)}. Three methods produced that range${p.convergenceSpreadPct != null ? `, within ${dec(p.convergenceSpreadPct, 1)}% of each other` : ''}. The full report shows each one.</p>
+    <p class="body r">The adjusted comparable sales bracket ${usd(evLo)} to ${usd(evHi)}${p.convergenceSpreadPct != null ? `, and the pricing methods behind this number land within ${dec(p.convergenceSpreadPct, 1)}% of each other` : ''}.</p>
   </div>
 </section>
 

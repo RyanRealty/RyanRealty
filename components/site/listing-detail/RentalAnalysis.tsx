@@ -64,7 +64,7 @@ export function RentalAnalysis({ listing }: { listing: ListingDetail }) {
 
       <div className="kb-tool-skin" style={{ marginTop: 'clamp(22px,3vw,36px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <Body size="small" tone="muted">
-          Monthly cash flow, cap rate, and cash-on-cash return at this price. Every number is an estimate you can adjust to your own financing and rent.
+          Monthly cash flow, cap rate, and cash-on-cash return at this price. Adjust the numbers to your own financing and rent.
         </Body>
         <RentalCalculator
           embedded

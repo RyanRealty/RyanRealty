@@ -50,7 +50,7 @@ export default function PaymentCalculator({ listPrice, taxAmount, associationFee
 
   return (
     <section className="space-y-4">
-      <H2 className="text-xl text-primary">Estimated Monthly Payment</H2>
+      <H2 className="text-xl text-primary">Estimated monthly payment</H2>
       <p className="text-3xl font-bold text-accent-foreground">
         ${total.toLocaleString('en-US', { maximumFractionDigits: 0 })}
         <span className="text-lg font-normal text-muted-foreground">/mo</span>

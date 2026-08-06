@@ -18,6 +18,8 @@
  * en-dash, no semicolon, no dramatic colon, no banned words. Sentence case.
  */
 
+import { CONTACT } from '@/lib/brand/contact'
+
 export interface GolfCommunity {
   /** Display name, matches the registry label. */
   name: string
@@ -88,7 +90,7 @@ export const GOLF_COMMUNITIES: GolfCommunity[] = [
     course: 'Brasada Canyons',
     holesNote: '18 holes, par 72',
     honestFact:
-      'No two holes at Brasada Canyons run parallel, so the rounds and the homesites feel set apart from one another.',
+      'No two holes at Brasada Canyons run parallel.',
   },
   {
     name: 'Broken Top',
@@ -227,12 +229,12 @@ export const GOLF_FAQ: GolfFaqItem[] = [
   {
     question: 'Which golf communities are open to the public versus private?',
     answer:
-      'Public-access destination courses include Tetherow, the Pronghorn Nicklaus course, Widgi Creek, and the resort courses at Sunriver, Eagle Crest, Black Butte Ranch, and Brasada. Broken Top, Awbrey Glen, and the Pronghorn Fazio course are private. Crosswater is reserved for Sunriver Resort guests and Crosswater Club members. You can live on a private course without playing it, and play a public one without living there.',
+      'Public-access destination courses include Tetherow, the Pronghorn Nicklaus course, Widgi Creek, and the resort courses at Sunriver, Eagle Crest, Black Butte Ranch, and Brasada. Broken Top, Awbrey Glen, and the Pronghorn Fazio course are private. Crosswater is reserved for Sunriver Resort guests and Crosswater Club members.',
   },
   {
     question: 'When is the Central Oregon golf season?',
     answer:
-      'Late March to early November for most public and resort courses, with frost delays at both ends. Eagle Crest Ridge and a few year-round courses stay open in winter when conditions allow, on a midday-only basis. A home here is a three-season golf address for most owners, and the off months are the value months.',
+      'Late March to early November for most public and resort courses, with frost delays at both ends. Eagle Crest Ridge and a few year-round courses stay open in winter when conditions allow, on a midday-only basis. A home here is a three-season golf address for most owners.',
   },
   {
     question: 'Can I rent my golf-community home short-term when I am not using it?',
@@ -247,9 +249,17 @@ export const GOLF_FAQ: GolfFaqItem[] = [
   {
     question: 'How does the elevation change how the course plays?',
     answer:
-      'The destination courses sit between 3,500 and 3,800 feet, so the ball carries close to 8 percent further than at sea level. Plan a club less than your sea-level yardage, and expect colder morning rounds to play longer. It is a small thing that changes how a course feels on the first visit.',
+      'The destination courses sit between 3,500 and 3,800 feet, so the ball carries close to 8 percent further than at sea level. Plan a club less than your sea-level yardage, and expect colder morning rounds to play longer.',
   },
 ]
 
-/** Phone in brand dotted format, for any CTA the page renders. */
-export const GOLF_LANDING_PHONE = '541.213.6706'
+/**
+ * Phone in brand dotted format, for any CTA the page renders.
+ *
+ * Re-exported from the canonical source rather than typed here. This constant
+ * held 541.213.6706 until 2026-08-06 — the pre-2026-07-02 line, which the
+ * Twilio cutover demoted to a private forward target. The golf landing page
+ * was publishing it as "Call 541.213.6706" with a live tel: link. A phone
+ * number hand-typed into a data file is a number that cannot follow a port.
+ */
+export const GOLF_LANDING_PHONE = CONTACT.phoneDirect

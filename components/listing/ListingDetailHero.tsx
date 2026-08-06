@@ -159,7 +159,7 @@ export default function ListingDetailHero({ photos, virtualTourUrl, listingKey, 
             className="rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-accent/90"
             onClick={() => openLightbox(0)}
           >
-            View All {list.length} Photos
+            View all {list.length} photos
           </Button>
         </div>
       </section>

@@ -19,7 +19,7 @@ export default function ListingDescription({ publicRemarks, directions }: Props)
 
   return (
     <section className="space-y-4">
-      <H2 className="text-xl text-primary">About This Home</H2>
+      <H2 className="text-xl text-primary">About this home</H2>
       {text ? (
         <div className="text-primary whitespace-pre-line">
           {expanded ? text : (truncated ?? text)}
@@ -29,7 +29,7 @@ export default function ListingDescription({ publicRemarks, directions }: Props)
               onClick={() => setExpanded(true)}
               className="ml-1 text-accent-foreground font-medium hover:underline"
             >
-              Read More
+              Read more
             </Button>
           )}
         </div>

@@ -39,7 +39,7 @@ export const GOLF_SEASON: SeasonMonth[] = [
     avgLowF: 25,
     courseStatus: 'mostly-closed',
     localsMove:
-      'Same year-round shortlist as January. Tee times widely available; play before 2pm to beat the freeze.',
+      'Same year-round shortlist as January. Tee times widely available. Play before 2pm to beat the freeze.',
   },
   {
     month: 'March',
@@ -79,7 +79,7 @@ export const GOLF_SEASON: SeasonMonth[] = [
     avgLowF: 47,
     courseStatus: 'high-season',
     localsMove:
-      'High-season rates in full effect. Tee off before 8am or after 4pm — the afternoons run hot and the smoke season starts late month.',
+      'High-season rates in full effect. Tee off before 8am or after 4pm. The afternoons run hot and the smoke season starts late month.',
   },
   {
     month: 'August',
@@ -103,7 +103,7 @@ export const GOLF_SEASON: SeasonMonth[] = [
     avgLowF: 32,
     courseStatus: 'late-season',
     localsMove:
-      'Shoulder rates return mid-October. Aerification windows hit some courses; check before booking. Last reliable month for Brasada and Crosswater.',
+      'Shoulder rates return mid-October. Aerification windows hit some courses, check before booking. Last reliable month for Brasada and Crosswater.',
   },
   {
     month: 'November',

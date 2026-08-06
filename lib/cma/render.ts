@@ -167,7 +167,7 @@ function coverPage(a: RenderCmaArgs): PageDef {
       <div class="vb-pill">${esc(p.confidence)} confidence</div>
     </div>
     <div class="vb-range">Supported range ${usd(p.valueLow)} to ${usd(p.valueHigh)}</div>
-    <div class="vb-detail">${a.comps.length} closed sales near the subject, each adjusted to today's market and to your home's size before reconciliation. ${esc(p.confidenceReason)}</div>
+    <div class="vb-detail">${a.comps.length} closed sales near your home, each adjusted for when it sold and how its size compares to yours. ${esc(p.confidenceReason)}</div>
   </div>
   ${subjectStatStrip(a.subject)}
   <div class="presented-by">
@@ -186,8 +186,7 @@ function contentsPage(rest: PageDef[], a: RenderCmaArgs): PageDef {
   return {
     meta: `${esc(a.subject.streetAddress)} · Contents`,
     body: `
-  <h2 class="section">What Is In This Report</h2>
-  <p>The recommendation is on the cover. Everything after it is the evidence behind that number, and what this property can do that a comparable-sales grid does not price.</p>
+  <h2 class="section">Contents</h2>
   <ol class="toc">${rows}</ol>`,
   }
 }
@@ -206,10 +205,10 @@ function subjectPage(a: RenderCmaArgs): PageDef {
     meta: `${esc(s.streetAddress)} · Subject Property`,
     toc: 'The property, on the record',
     body: `
-  <h2 class="section">Subject Property</h2>
+  <h2 class="section">Subject property</h2>
   <div class="two-col">
     <div>
-      <h3 class="subhead">At a glance</h3>
+      <h3 class="subhead">On the record</h3>
       <p>${s.yearBuilt ? `${s.yearBuilt}-built home` : 'Home'}${s.lotAcres != null ? ` on ${dec(s.lotAcres, 2)} acres` : ''}${cleanText(s.subdivision) ? ` in the ${esc(cleanText(s.subdivision)!)} subdivision` : ''}, ${esc(s.city)}. ${s.listingHistoryLine ? esc(s.listingHistoryLine) : 'No prior MLS listing history on file.'}</p>
       <h3 class="subhead">Site and structure</h3>
       <ul class="note-list">${facts.map((f) => `<li>${f}</li>`).join('')}</ul>
@@ -218,11 +217,10 @@ function subjectPage(a: RenderCmaArgs): PageDef {
     </div>
     <div>
       <h3 class="subhead">How this analysis works</h3>
-      <p>Every comparable sale in this report is a real closed transaction pulled from the Oregon Data Share MLS. Each comp is first normalized to today's market using the verified year-over-year price trend for ${esc(a.market?.geoLabel ?? s.city)}${yoy != null ? ` (${dec(yoy, 1)}% YoY)` : ''}, then adjusted for the size difference against your home. The reconciled result is checked against two independent pricing methods before a recommendation is made.</p>
-      <p>The full adjustment ledger, the market context, and the data trace are all included, so every number in this document can be audited back to its source.</p>
+      <p>Every comparable sale here is a closed transaction from the Oregon Data Share MLS. Each one is moved to today's market at the ${esc(a.market?.geoLabel ?? s.city)} year-over-year price trend${yoy != null ? ` of ${dec(yoy, 1)}%` : ''}, then adjusted for the size difference against your home.</p>
     </div>
   </div>
-  ${remarks ? `<h2 class="section" style="margin-top:20px;">Most Recent MLS Remarks</h2><p class="small" style="font-style:italic;">"${esc(remarks)}"</p><p class="small">Quoted from the property's most recent MLS listing. Descriptions are the listing agent's words, provided for record.</p>` : ''}`,
+  ${remarks ? `<h2 class="section" style="margin-top:20px;">Most recent MLS remarks</h2><p class="small" style="font-style:italic;">"${esc(remarks)}"</p><p class="small">The listing agent's words, from the most recent MLS listing on this property.</p>` : ''}`,
   }
 }
 
@@ -239,8 +237,8 @@ function mapPage(a: RenderCmaArgs): PageDef | null {
     meta: `Comparable Sales Map · ${esc(a.subject.city)}`,
     toc: 'Where the comps sit',
     body: `
-  <h2 class="section">Where the Comps Sit</h2>
-  <p style="margin-bottom:14px;">Every comparable sale in this report on one map, with the subject marked S. Marker numbers match the comp order used throughout the report. Pin positions use each listing's recorded MLS coordinates, and each key line carries the straight-line distance and direction from the subject.</p>
+  <h2 class="section">Where the comps sit</h2>
+  <p style="margin-bottom:14px;">Pin positions come from each listing's recorded MLS coordinates. The subject is marked S, and the comp numbers match the order used through the rest of the report.</p>
   <img class="map-img" src="${a.mapDataUri}" alt="Comparable sales map" />
   <h3 class="subhead" style="margin-top:0;">Marker key</h3>
   <div class="map-key">${keyItems.join('')}</div>`,
@@ -303,7 +301,7 @@ function compCardsAndTablePage(a: RenderCmaArgs): PageDef {
     toc: 'The comparable sales',
     body: `
   <h2 class="section">Comparable Closed Sales</h2>
-  <p>${a.comps.length} closed single-family sales, selected for similarity to the subject in size, lot character, location, and recency. Each card carries the straight-line distance and direction from your home, which is the answer to why these sales and not others. ${competing > 0 ? `${competing} of them come from a competing market area and are labeled as such, per Fannie Mae B4-1.3-08.` : 'All of them sit in the subject\'s own market area.'} DTO is days to offer, the active-marketing read. DOM includes time under contract.</p>
+  <p>${a.comps.length} closed single-family sales, selected for similarity to the subject in size, lot character, location, and recency. Each card carries the straight-line distance and direction from your home. ${competing > 0 ? `${competing} of them come from a competing market area and are labeled as such, per Fannie Mae B4-1.3-08.` : 'All of them sit in the subject\'s own market area.'} DTO is days to offer, the active-marketing read. DOM includes time under contract.</p>
   <div class="comp-grid">${cards}</div>
   <table class="comps">
     <thead>
@@ -838,7 +836,7 @@ function expiredAuditPage(a: RenderCmaArgs): PageDef | null {
     toc: 'Your last listing, and our take',
     body: `
   <h2 class="section">Your Last Listing</h2>
-  <p>Your home came off the market without selling. Before anything else, you deserve a straight answer about why. The numbers below come straight from the MLS record and the verified comparable sales in this report. Under each one is our take.</p>
+  <p>Your home came off the market without selling. The numbers below come straight from the MLS record and the verified comparable sales in this report. Under each one is our take.</p>
   ${blocks}`,
   }
 }

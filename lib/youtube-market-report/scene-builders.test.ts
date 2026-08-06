@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CONTACT } from '../brand/contact';
 
 import {
   buildScene0,
@@ -277,7 +278,10 @@ describe('buildScene8', () => {
   it('emits brand-locked CTA fields', () => {
     const scene = buildScene8({ nextReportDate: 'May 24, 2026' });
     expect(scene.url).toBe('ryan-realty.com');
-    expect(scene.phone).toBe('541.213.6706');
+    // Asserted against the canonical source, not a literal. This line held
+    // '541.213.6706' until 2026-08-06 — the private forward target — so the
+    // test was locking the CTA to a number we had already taken off the site.
+    expect(scene.phone).toBe(CONTACT.phoneDirect);
     expect(scene.nextReportDate).toBe('May 24, 2026');
   });
 });

@@ -97,10 +97,7 @@ export default function ShowcaseAgent({ listingKey, agent, shareUrl }: Props) {
         )}
 
         {/* Ryan Realty CTAs — primary and prominent */}
-        <p className="text-lg font-semibold text-foreground">Interested in this home?</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Our team can schedule a showing or answer any questions.
-        </p>
+        <p className="text-lg font-semibold text-foreground">Talk to a broker about this home</p>
 
         <div className="mt-4 flex flex-col gap-2">
           <Button

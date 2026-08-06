@@ -70,7 +70,7 @@ export function TextMattCTA({
         <Eyebrow>Talk to a broker</Eyebrow>
         <H3>{headline ?? 'Questions about this home?'}</H3>
         <Body size="small" tone="muted" className="leading-relaxed">
-          {body ?? 'Tour requests usually get a same-day reply. No pressure, no obligation.'}
+          {body ?? 'Tour requests usually get a same-day reply.'}
         </Body>
 
         {/* Broker — large photo on the left, all contact on the right */}

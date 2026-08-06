@@ -73,7 +73,7 @@ export default function ListingEstimatedMonthlyCost({ listPrice, initialPrefs, s
         aria-controls="listing-mortgage-calculator"
       >
         <span className="inline-block transition-transform duration-200" style={{ transform: expanded ? 'rotate(90deg)' : 'none' }}>▶</span>
-        Mortgage Calculator
+        Mortgage calculator
       </Button>
 
       <div

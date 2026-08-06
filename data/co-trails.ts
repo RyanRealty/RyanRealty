@@ -175,7 +175,7 @@ export const CO_TRAILS: CoTrail[] = [
     lng: -121.384984,
     landManager: 'USFS Deschutes National Forest',
     blurb:
-      "Phil's Trail is the namesake of the biggest mountain-bike network on the west side of Bend, one of the best-known trailheads in the Northwest. The riding starts minutes from town off Skyliners Road, which is why the neighborhoods out that way fill with people who ride before work.",
+      "Phil's Trail is the namesake of the biggest mountain-bike network on the west side of Bend, one of the best-known trailheads in the Northwest. The riding starts minutes from town off Skyliners Road, and the neighborhoods out that way fill with people who ride before work.",
     officialUrl: 'https://www.fs.usda.gov/r06/deschutes/recreation/phils-trailhead',
     lastVerified: '2026-07-03',
   },

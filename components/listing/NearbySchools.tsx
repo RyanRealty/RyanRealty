@@ -57,7 +57,7 @@ export default function NearbySchools({ schools, className }: Props) {
   return (
     <Card className={className}>
       <CardContent className="p-4">
-        <h3 className="text-sm font-semibold text-foreground">Nearby Schools</h3>
+        <h3 className="text-sm font-semibold text-foreground">Nearby schools</h3>
         <p className="mt-0.5 text-xs text-muted-foreground">
           School ratings from GreatSchools (1 to 10)
         </p>

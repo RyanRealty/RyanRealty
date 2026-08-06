@@ -21,13 +21,13 @@ export const GOLF_FAQS: GolfFaq[] = [
   {
     question: 'Which Central Oregon course is the best for a first-time visitor?',
     answer:
-      'Tetherow if you want links-style firm-and-fast on Cascade backdrops; Pronghorn Nicklaus if you want the high-desert juniper-and-lava experience; Brasada Canyons if you want isolation and 18 panoramic views. All three are public-access and represent the three distinct visual styles you get in this region.',
+      'Tetherow if you want links-style firm-and-fast on Cascade backdrops. Pronghorn Nicklaus if you want the high-desert juniper-and-lava experience. Brasada Canyons if you want isolation and 18 panoramic views. All three are public-access and represent the three distinct visual styles you get in this region.',
     references: ['research-notes.md §3, §10'],
   },
   {
     question: 'Which Central Oregon courses are open year-round?',
     answer:
-      'Eagle Crest Ridge in Redmond, Meadow Lakes in Prineville, and River\'s Edge in Bend stay open through the winter when conditions allow. Frost delays are common; expect midday-only play November through March.',
+      'Eagle Crest Ridge in Redmond, Meadow Lakes in Prineville, and River\'s Edge in Bend stay open through the winter when conditions allow. Frost delays are common. Expect midday-only play November through March.',
     references: ['research-notes.md §8'],
   },
   {
@@ -39,7 +39,7 @@ export const GOLF_FAQS: GolfFaq[] = [
   {
     question: 'What is the most photographed hole in Central Oregon?',
     answer:
-      'Two contenders. Pronghorn Fazio\'s par-3 #8 plays across a 45-foot natural canyon with an exposed lava tube — but the Fazio is private. Crooked River Ranch\'s #5 plays over a corner of the Crooked River Canyon and is public, $25-$55. If you want the shot for yourself, drive to Terrebonne.',
+      'Two contenders. Pronghorn Fazio\'s par-3 #8 plays across a 45-foot natural canyon with an exposed lava tube, but the Fazio is private. Crooked River Ranch\'s #5 plays over a corner of the Crooked River Canyon and is public, $25-$55. If you want the shot for yourself, drive to Terrebonne.',
     references: ['research-notes.md §3, §10'],
   },
   {
@@ -51,7 +51,7 @@ export const GOLF_FAQS: GolfFaq[] = [
   {
     question: 'Which Central Oregon golf community is best if I want to live in it for under $1 million?',
     answer:
-      'Eagle Crest in Redmond — condos start in the $300Ks and the three courses are public-access for residents. Parts of Sunriver also fit under $1M for cabin-sized inventory near the Meadows or Woodlands courses. The mainline destination communities — Tetherow, Pronghorn, Brasada Ranch — start above $1M for a finished home.',
+      'Eagle Crest in Redmond, where condos start in the $300Ks and the three courses are public-access for residents. Parts of Sunriver also fit under $1M for cabin-sized inventory near the Meadows or Woodlands courses. The mainline destination communities, Tetherow, Pronghorn, Brasada Ranch, start above $1M for a finished home.',
     references: ['research-notes.md §4'],
   },
   {
@@ -75,7 +75,7 @@ export const GOLF_FAQS: GolfFaq[] = [
   {
     question: 'Which Central Oregon course was designed by Jack Nicklaus?',
     answer:
-      'Pronghorn\'s Nicklaus Signature Course is the only Jack Nicklaus signature design in Oregon. Public access since the resort rebranded. Tom Fazio designed the Fazio course at the same property; that one is private.',
+      'Pronghorn\'s Nicklaus Signature Course is the only Jack Nicklaus signature design in Oregon. Public access since the resort rebranded. Tom Fazio designed the Fazio course at the same property. That one is private.',
     references: ['research-notes.md §3, §5'],
   },
 ]

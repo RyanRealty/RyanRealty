@@ -179,8 +179,8 @@ export async function NeighborhoodMarketContext({
               This home is listed at{' '}
               <b style={{ color: 'var(--cream, #faf8f4)' }}>
                 <Price value={thisListPrice} />
-              </b>{' '}
-              —{' '}
+              </b>
+              {', '}
               <span style={{ color: 'var(--cream, #faf8f4)', fontVariantNumeric: 'tabular-nums' }}>
                 <TabularNumber value={Math.abs(diffPct)} fractionDigits={1} />% {aboveOrBelow}
               </span>{' '}

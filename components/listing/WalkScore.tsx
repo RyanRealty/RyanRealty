@@ -83,7 +83,7 @@ export default function WalkScore({ scores, address, className }: Props) {
     <Card className={className}>
       <CardContent className="space-y-4 p-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground">Location Scores</h3>
+          <h3 className="text-sm font-semibold text-foreground">Location scores</h3>
           {address && (
             <Badge variant="outline" className="text-xs">
               <a

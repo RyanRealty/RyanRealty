@@ -45,7 +45,7 @@ export default function ShowcaseOpenHouse({ listingKey, openHouses }: Props) {
         {openHouses.map((oh) => (
           <li key={oh.id}>
             {formatDate(oh.event_date)}
-            {oh.start_time && ` · ${formatTime(oh.start_time)}${oh.end_time ? ` – ${formatTime(oh.end_time)}` : ''}`}
+            {oh.start_time && ` · ${formatTime(oh.start_time)}${oh.end_time ? `-${formatTime(oh.end_time)}` : ''}`}
             {oh.host_agent_name && ` · ${oh.host_agent_name}`}
           </li>
         ))}
@@ -57,7 +57,7 @@ export default function ShowcaseOpenHouse({ listingKey, openHouses }: Props) {
         className="mt-3"
         onClick={() => trackEvent('open_house_rsvp', { listing_key: listingKey, event_date: openHouses[0]?.event_date })}
       >
-        <Link href={`/contact?listing=${encodeURIComponent(listingKey)}&reason=open_house`}>RSVP or inquire</Link>
+        <Link href={`/contact?listing=${encodeURIComponent(listingKey)}&reason=open_house`}>RSVP or ask a question</Link>
       </Button>
     </div>
   )

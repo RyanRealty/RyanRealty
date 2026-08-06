@@ -102,7 +102,7 @@ export function renderRegisterShell(params: { slug: string; address: string | nu
   const addr = params.address ? escapeHtml(params.address) : 'your home'
   const startHref = `/api/cma/register?slug=${encodeURIComponent(params.slug)}&start=1`
   return shell(
-    'Your home value report — Ryan Realty',
+    'Your home value report · Ryan Realty',
     `
     <h1>Your report on ${addr} is ready</h1>
     <p>One quick sign-in confirms it reaches the right person. Here is what you get:</p>
@@ -128,7 +128,7 @@ export function renderConsentShell(params: {
 }): string {
   const addr = params.address ? escapeHtml(params.address) : 'your home'
   return shell(
-    'Almost there — Ryan Realty',
+    'Almost there · Ryan Realty',
     `
     <h1>You're in, ${escapeHtml(params.viewerEmail)}</h1>
     <p>Before your report on ${addr} opens, two optional choices. Your report opens either way.</p>
@@ -152,7 +152,7 @@ export function renderConsentShell(params: {
 /** Signed in as someone the doc was not prepared for. */
 export function renderWrongPersonShell(params: { viewerEmail: string }): string {
   return shell(
-    'This report is private — Ryan Realty',
+    'This report is private · Ryan Realty',
     `
     <h1>This report was prepared for someone else</h1>
     <p>You are signed in as ${escapeHtml(params.viewerEmail)}, and this report is private to the homeowner it was built for.</p>

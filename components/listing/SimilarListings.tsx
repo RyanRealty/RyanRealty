@@ -30,7 +30,7 @@ export default function SimilarListings({ listingKey, listings }: Props) {
 
   return (
     <TilesSlider
-      title="Similar Homes"
+      title="Similar homes"
       titleId="similar-listings-heading"
       className="space-y-4"
     >

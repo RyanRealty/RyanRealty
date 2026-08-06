@@ -35,7 +35,7 @@ export default function OpenHouseBanner({ openHouses, listingKey }: Props) {
   const dateStr = formatDate(oh.event_date)
   const startStr = formatTime(oh.start_time)
   const endStr = formatTime(oh.end_time)
-  const timeStr = [startStr, endStr].filter(Boolean).join(' — ')
+  const timeStr = [startStr, endStr].filter(Boolean).join('-')
 
   const handleAddToCalendar = () => {
     const base = typeof window !== 'undefined' ? window.location.origin : ''
@@ -66,7 +66,7 @@ export default function OpenHouseBanner({ openHouses, listingKey }: Props) {
         </p>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={handleAddToCalendar}>
-            Add to Calendar
+            Add to calendar
           </Button>
           <Button variant="default" size="sm" onClick={handleRsvp}>
             RSVP

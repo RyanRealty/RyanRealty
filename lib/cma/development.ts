@@ -149,7 +149,7 @@ export function buildResourceDirectory(site: CmaSiteData | null): DevResource[] 
 
 /** The disclaimer Matt directed: we research what we can, the reader verifies. */
 export const DEV_DISCLAIMER =
-  `We research each of these questions against the county and city code, and every rule cites the code section we relied on. The registry was verified against its primary sources on ${REGS_VERIFIED_DATE} and re-verified in part on ${REGS_REVERIFIED_DATE}. Where a use list appears below it covers the principal residential uses, and the cited table is the governing list. Codes change, parcels have particulars a code table cannot see, and none of this is a land-use decision or an entitlement. It is ultimately your responsibility to verify anything you plan to rely on with the offices below before you act on it. We are glad to help you make those calls.`
+  `We research each of these questions against the county and city code, and every rule cites the code section we relied on. The registry was verified against its primary sources on ${REGS_VERIFIED_DATE} and re-verified in part on ${REGS_REVERIFIED_DATE}. Where a use list appears below it covers the principal residential uses, and the cited table is the governing list. Codes change, parcels have particulars a code table cannot see, and none of this is a land-use decision or an entitlement. Verify anything you plan to rely on with the offices below before you act on it.`
 
 // ── Jurisdiction resolution ──────────────────────────────────────────────────
 function resolveJurisdiction(site: CmaSiteData, subject: CmaSubject): DevelopmentOpportunities['jurisdiction'] {
@@ -205,7 +205,7 @@ function formatFee(f: HoaFactsInput): string | null {
 }
 
 const CCR_WHERE =
-  'The recorded covenants, conditions and restrictions, the plat, and any road-maintenance agreement for this property are on file with the Deschutes County Clerk and are indexed through Deschutes County DIAL. Ask for the current CC&Rs and bylaws, the operating budget, the reserve study, recent meeting minutes, and any resale disclosure, and read them before your contingency dates run. Those documents, not the zoning code, set the rules on rentals, RV and boat parking, outbuildings, accessory dwellings, fencing, exterior finishes, and landscaping, and they can be stricter than the code allows. We are glad to pull them for you.'
+  'The recorded covenants, conditions and restrictions, the plat, and any road-maintenance agreement for this property are on file with the Deschutes County Clerk and are indexed through Deschutes County DIAL. Ask for the current CC&Rs and bylaws, the operating budget, the reserve study, recent meeting minutes, and any resale disclosure, and read them before your contingency dates run. Those documents, not the zoning code, set the rules on rentals, RV and boat parking, outbuildings, accessory dwellings, fencing, exterior finishes, and landscaping, and they can be stricter than the code allows.'
 
 /** Resort or master-association community this subdivision belongs to, or null. */
 function resolveResortAssociation(subdivision: string | null): string | null {
@@ -294,14 +294,14 @@ function buildBuyerOptions(
     const cited = divide ?? items[0]
     options.push({
       headline: 'Hold and enjoy it as it stands',
-      detail: `The honest answer for this parcel is that the value is the home and the land as they are today, not a development play. ${zoneLabel} does not open a division, an accessory unit, or a middle-housing conversion here, and the same standard applies to every parcel around it, which is what holds the character of the area steady. A buyer here is buying the setting, not an entitlement.`,
+      detail: `${zoneLabel} does not open a division, an accessory unit, or a middle-housing conversion on this parcel, and the same standard applies to every parcel around it. The value here is the home and the land as they stand today.`,
       basedOn: cited ? [cited.topic, cited.citation] : [zoneLabel],
     })
   } else {
     options.push({
       headline: 'Or simply keep it as a single home',
       detail:
-        'None of the options above is required. Every one of them is an option a buyer holds and can act on later, and the property works as a single residence in the meantime. Optionality is the asset.',
+        'None of the options above is required. Every one of them is an option a buyer holds and can act on later, and the property works as a single residence in the meantime.',
       basedOn: options.map((o) => o.basedOn[0]),
     })
   }

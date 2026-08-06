@@ -310,6 +310,17 @@ export type {
   BoundaryMapPin,
 } from '@/lib/data/geo/getGeoBoundaryMapData'
 
+// Geo — boundary polygon + trailing-12-month closed sales for <AnimatedSalesMap>.
+// ODS §5-4: the sold query only runs for audience:'vow'; a public audience gets
+// the boundary and an empty sales array, so VOW-only rows never leave the server.
+export { getAnimatedSalesMapData } from '@/lib/data/geo/getAnimatedSalesMapData'
+export type {
+  AnimatedSalesMapInput,
+  AnimatedSalesMapData,
+  AnimatedSalesMapTrace,
+  AnimatedSalesScope,
+} from '@/lib/data/geo/getAnimatedSalesMapData'
+
 // Geo — child GIS subdivision plats of a community (for the "broken out"
 // subdivision map polygons + the subdivisions-within section) via the
 // community_subdivisions RPC. Spatial membership; cached on the geo window.

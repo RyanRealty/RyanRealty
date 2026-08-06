@@ -46,7 +46,7 @@ export default function TaxHistory({ records, className }: Props) {
   return (
     <Card className={className}>
       <CardContent className="p-4">
-        <h3 className="text-sm font-semibold text-foreground">Tax History</h3>
+        <h3 className="text-sm font-semibold text-foreground">Tax history</h3>
         <p className="mt-0.5 text-xs text-muted-foreground">
           Property tax assessments by year
         </p>
