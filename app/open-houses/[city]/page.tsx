@@ -230,6 +230,9 @@ export default async function OpenHousesCityPage({
           <KbListingMap
             geojson={mapGeo}
             totalActive={mapFeatures.length}
+            // C-02: without countNoun the badge reads "N active listings" over
+            // open-house data — a mislabel, not just a count mismatch.
+            countNoun={mapFeatures.length === 1 ? 'open house' : 'open houses'}
             fitToFeatures
             showRegionMarkers={false}
             eyebrow={cityName}

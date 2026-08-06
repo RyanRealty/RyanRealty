@@ -180,7 +180,12 @@ export default async function CityDetailPage({ params }: Props) {
     withTimeoutFallback(getOpenHousesWithListings({ city: cityName }), [], 3500, 'city:openHouses'),
     withTimeoutFallback(getActivityFeedWithFallbackMulti({ cities: [cityName], limit: 8 }), [], 3500, 'city:activity'),
     withTimeoutFallback(getCityMetadataByName(cityName), null, 3000, 'city:meta'),
-    withTimeoutFallback(getCityListings(cityName, { status: 'active', sort: 'newest', limit: 1500 }), [], 4500, 'city:mapTiles'),
+    // propertyType:'A' (§0, C-02): every sibling geo map — community, neighborhood,
+    // subdivision, zip, homepage — is SFR, and the hero count beside this map is
+    // market_pulse_live's SFR activeCount. All-types tiles here made the badge read
+    // 1,000 against a hero of 491 on /cities/bend. The 1500 cap also stops binding
+    // once the pull is SFR-only.
+    withTimeoutFallback(getCityListings(cityName, { status: 'active', sort: 'newest', propertyType: 'A', limit: 1500 }), [], 4500, 'city:mapTiles'),
     // Wide SFR pool for curateFeaturedTiles below — the old price-desc top-14
     // pull had ONLY luxury outliers in it, so curation ran but had nothing
     // mid-market to pick from (design-audit P2).
@@ -472,13 +477,13 @@ export default async function CityDetailPage({ params }: Props) {
         <KbTicker items={tickerItems} />
         <KbListingMap
           geojson={mapGeo}
-          totalActive={mapFeatures.length}
+          totalActive={activeCount ?? mapFeatures.length}
           fitToFeatures
           showRegionMarkers={false}
           polygons={neighborhoodPolygons}
           eyebrow={cityName}
           title={`Homes in\n${cityName}`}
-          subtitle={`Active listings with a ${cityName} address, every property type.`}
+          subtitle={`Every active single-family listing with a ${cityName} address.`}
         />
         {aboutParagraphs.length > 0 ? (
           <KbAbout eyebrow={`${cityName} · Oregon`} heading={`Living in ${cityName}`} paragraphs={aboutParagraphs} facts={aboutFacts} />
