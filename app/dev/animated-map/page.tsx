@@ -1,7 +1,16 @@
 // @no-parity
 // TEMPORARY verification harness for AnimatedSalesMap. Deleted before handoff.
+import type { Metadata } from 'next'
 import { getAnimatedSalesMapData } from '@/lib/data'
 import AnimatedSalesMap from '@/components/geo-page/AnimatedSalesMap.client'
+
+// Internal harness, same posture as /dev/components: noindex, and a canonical
+// so ci:canonical-integrity does not count it as a public page missing one.
+export const metadata: Metadata = {
+  title: 'Animated sales map harness',
+  robots: 'noindex, nofollow',
+  alternates: { canonical: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/dev/animated-map` },
+}
 
 export const dynamic = 'force-dynamic'
 
