@@ -17,6 +17,13 @@ sample of a class: census every instance repo-wide, fix all, gate the class. App
 | C-03 | Dead source / stale version claim | 3 | 3 | `c2fb71fa` | **Every listing detail page read `open_houses`, a table with no writer since 2026-04-03.** Repointed at the live jsonb. Also killed a user-facing "methodology v4" claim §7 forbids |
 | C-04 | Canon→vocabulary projection | 0 | — | `aaea25cc` | Closed by the voice session (`PROJECTION_REQUIRED`). **Verified, not redone** — proof run: exit 1 / exit 0 |
 | C-07 | Placeholder heading default | 1 | 1 | `aaea25cc` | "EXPLORE" → "Where people are buying"; `title`/`eyebrow` now REQUIRED. **New gate G62** — its first cut failed its own proof |
+| C-18 | Geo resolution ladder | — | — | `37c4414f` | `resolveGeoScope` + `report:geo-coverage`. **The report settles C-21** |
+| C-20 | Arbitrary subset | 13 | 13 | `2c046152` | Rail showed 6 of 19. Now 18 cards, Bend-first. Eagle Crest / Black Butte / Brasada / Sunriver / CRR reachable from Tetherow at last |
+| C-10 | Silent drop | 4 | 4 | `2c046152` | Same line as C-20. Mt Bachelor Village, Inn of the 7th, Rivers Edge, Mountain High were vanishing because an image was missing |
+| C-08 | "Go ask them" fallback | 8 | 8 | `1620a97b` | Phone printed **7×** in one block → **1**. Unpublished figures now em-dash, never an instruction |
+| C-06 | Instruct-the-user copy | 2 | 2 | `1620a97b` | Tetherow waitlist strings. "DRAG / SWIPE" already gone; the rest are admin, ungoverned |
+| C-13 | Number-format divergence | 1 | 1 | `b9b06aff` | Map popup said `$2.2M` beside tiles saying `$3,200,000`. Now the canon formatter; gate ratcheted 59→56 |
+| **C-21** | Subdivision polygons | — | — | **BLOCKED_MATT** | **The data does not exist.** Tetherow: 1 of 8 plats have a boundary row |
 
 ## Standing environment findings
 
@@ -101,3 +108,41 @@ gated every form except the one that shipped the bug. Corrected and re-proven. T
 3. C-05 · C-06 · C-08 — voice remainder. Re-census first; the sibling closed most of C-05/C-06.
 4. C-22 · C-23 · C-24 · C-25 · C-15 · C-28 — UI work.
 5. C-26 — prospecting. **Tracking-trap step FIRST**, or broker previews poison lead-engagement counts.
+
+
+## Third checkpoint — 2026-08-06
+
+**18 of 29 DONE · 1 BLOCKED_MATT · 10 remaining.** Instances: **58 found, 58 fixed.**
+
+Added since checkpoint 2: `37c4414f` · `2c046152` · `1620a97b` · `b9b06aff`.
+
+### C-21 is blocked on DATA, not effort — this needs Matt
+
+`npm run report:geo-coverage` ran against live Supabase. The map component is **ready**: it already
+accepts N polygons and frames polygon bounds before point bounds, so "draw the subdivisions and zoom to
+fit them" is a data question, not a build one.
+
+**Tetherow has 1 of 8 child plats in `boundaries`.** Drawing that one outline and calling it "the
+subdivisions in Tetherow" shows 12% of them and implies the other seven do not exist.
+
+| community | plats | with polygon |
+|---|---|---|
+| Sunriver | 30 | 7 |
+| Three Rivers | 11 | 1 |
+| **Tetherow** | 8 | **1** |
+| NorthWest Crossing | 7 | 3 |
+| Awbrey Glen | 5 | 3 |
+| Black Butte Ranch | 4 | **0** |
+| Inn of the 7th · Rivers Edge | 2 each | **0** |
+| Brasada Ranch · Mountain High | 1 each | **0** |
+
+Three options: ingest Deschutes County DIAL plats into `boundaries`; ship only where coverage clears a
+bar (Awbrey Glen 3/5, NorthWest Crossing 3/7); or drop the polygon layer. **Hull-filling is not an
+option** — §7/C6, and publishing a shape drawn around listings as a boundary is a §0 violation.
+
+### Remaining 10
+
+`C-05` voice trailing-defense sweep (re-census; sibling closed most) · `C-12` dead-end map card ·
+`C-15` rail clipping · `C-19` open-house geo scoping (now unblocked by C-18) · `C-22` site-wide sticky
+bar · `C-23` in-page expansion · `C-24` hero search chips · `C-25` map bottom sheet · `C-26` prospecting
+CMA review (**tracking-trap step first**) · `C-28` interstitial stacking.

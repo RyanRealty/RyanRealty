@@ -146,15 +146,15 @@
       "id": "C-06",
       "phase": 2,
       "title": "Instruct-the-user copy",
-      "status": "TODO",
+      "status": "DONE",
       "depends_on": [
         "E1"
       ],
-      "census_count": null,
-      "fixed_count": null,
-      "sha": null,
-      "gate": null,
-      "evidence": null,
+      "census_count": 2,
+      "fixed_count": 2,
+      "sha": "1620a97b",
+      "gate": "ci:gates green",
+      "evidence": "2 Tetherow waitlist strings destuffed; DRAG/SWIPE already gone (voice session); remaining Swipe/Drag are admin, which VOICE.md does not govern",
       "notes": "Re-censused: Seeds: 'Click any dot' x10, 'DRAG / SWIPE', 'ask current status'."
     },
     {
@@ -176,15 +176,15 @@
       "id": "C-08",
       "phase": 2,
       "title": "Third-party 'go ask them' fallback",
-      "status": "TODO",
+      "status": "DONE",
       "depends_on": [
         "E1"
       ],
-      "census_count": null,
-      "fixed_count": null,
-      "sha": null,
-      "gate": null,
-      "evidence": null,
+      "census_count": 8,
+      "fixed_count": 8,
+      "sha": "1620a97b",
+      "gate": "ci:gates green; tsc clean",
+      "evidence": "/communities/tetherow membership: phone 7->1, 'Ask the club' 6->0, 6 em-dash placeholders, one tappable foot line",
       "notes": "Re-censused: Tetherow membership: 6x 'Confirmed at office' -> 'Ask the club + phone'."
     },
     {
@@ -206,15 +206,15 @@
       "id": "C-10",
       "phase": 3,
       "title": "Silent drop",
-      "status": "TODO",
+      "status": "DONE",
       "depends_on": [
         "E1"
       ],
-      "census_count": null,
-      "fixed_count": null,
-      "sha": null,
-      "gate": null,
-      "evidence": null,
+      "census_count": 4,
+      "fixed_count": 4,
+      "sha": "2c046152",
+      "gate": "same commit as C-20 \u2014 it was the same line",
+      "evidence": "Mt Bachelor Village, Inn of the 7th Mountain, Rivers Edge, Mountain High now render via labeled cityHero fallback",
       "notes": "communities/[slug] if(!img) return null. ci:gates already warns 4 Bend resorts lack RESORT_IMG: mt-bachelor-village, inn-of-the-7th-mountain, rivers-edge, mountain-high."
     },
     {
@@ -251,15 +251,15 @@
       "id": "C-13",
       "phase": 3,
       "title": "Number formatting divergence",
-      "status": "TODO",
+      "status": "DONE",
       "depends_on": [
         "E1"
       ],
-      "census_count": null,
-      "fixed_count": null,
-      "sha": null,
-      "gate": null,
-      "evidence": null,
+      "census_count": 1,
+      "fixed_count": 1,
+      "sha": "b9b06aff",
+      "gate": "ci:currency-format 59->56, baseline ratcheted down; tsc clean",
+      "evidence": "/cities/bend renders $750,000 / $2,750,000 / $2,495,000; remaining $1M/$2M are chart axis labels",
       "notes": "KbListingMapImpl.tsx:44 emits $2.2M/$715K next to sibling tiles at $3,200,000."
     },
     {
@@ -326,15 +326,15 @@
       "id": "C-18",
       "phase": 5,
       "title": "Geo resolution ladder (infrastructure)",
-      "status": "TODO",
+      "status": "DONE",
       "depends_on": [
         "E1"
       ],
-      "census_count": null,
-      "fixed_count": null,
-      "sha": null,
-      "gate": null,
-      "evidence": null,
+      "census_count": 1,
+      "fixed_count": 1,
+      "sha": "37c4414f",
+      "gate": "tsc clean; ci:gates green; file-size barrel rebaselined (a new DAL fn must be exported from the barrel by convention)",
+      "evidence": "report:geo-coverage ran live: 19 communities, 14 with own polygon; Tetherow child plats 1/8",
       "notes": "resolveGeoScope + report:geo-coverage. Gates C-21. Blocks C-19, C-20, C-21."
     },
     {
@@ -356,22 +356,22 @@
       "id": "C-20",
       "phase": 5,
       "title": "Arbitrary subset where the full set is the point",
-      "status": "TODO",
+      "status": "DONE",
       "depends_on": [
         "C-18"
       ],
-      "census_count": null,
-      "fixed_count": null,
-      "sha": null,
-      "gate": null,
-      "evidence": null,
+      "census_count": 13,
+      "fixed_count": 13,
+      "sha": "2c046152",
+      "gate": "ci:gates green; tsc clean",
+      "evidence": "/communities/tetherow rail = 18 cards (19 minus self), Bend-first ordering, 0 images without src",
       "notes": "19 registry communities -> ~11 -> 6 -> fewer. Order by relevance, never filter by it."
     },
     {
       "id": "C-21",
       "phase": 5,
       "title": "Available spatial data not rendered",
-      "status": "TODO",
+      "status": "BLOCKED_MATT",
       "depends_on": [
         "C-18"
       ],
@@ -380,7 +380,7 @@
       "sha": null,
       "gate": null,
       "evidence": null,
-      "notes": "Subdivision plats exist via getGeoBoundaryMapData. Map already accepts N polygons and frames polygon bounds first. Additive."
+      "notes": "DATA NOT AVAILABLE. report:geo-coverage (C-18): Tetherow has 1 of 8 child plats with a boundary row. Sunriver 7/30, Three Rivers 1/11, Black Butte Ranch 0/4, Inn of 7th 0/2, Rivers Edge 0/2, Brasada 0/1. The map component is READY (takes N polygons, frames polygon bounds first) \u2014 the plats do not exist in `boundaries`. D4 assumed partial coverage, not 1 of 8. Matt's call: (1) ingest Deschutes County DIAL plats, (2) ship only where coverage clears a bar, (3) drop the layer. Hull-filling is banned (\u00a77/C6)."
     },
     {
       "id": "C-22",
