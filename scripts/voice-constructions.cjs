@@ -59,6 +59,36 @@ const CONSTRUCTIONS = [
     fix: 'End the sentence at the fact. Cut everything from the clause onward.',
     example: 'which is one more reason the list price has to be right on day one.',
   },
+  // ── Rule 2: state the fact, then stop ──────────────────────────────────
+  //
+  // Added 2026-08-06 after the repo-wide pass. Both shapes below were live on
+  // the site while ci:brand-voice and ci:voice-constructions reported zero —
+  // they carry no banned word and no listed sermon connector, so nothing
+  // caught them. They are rules now because they were found by eye, and the
+  // next person will not have that eye.
+  {
+    id: 'affordance-instruction',
+    rule: 2,
+    label: 'explains that a control does what the control obviously does',
+    source:
+      "\\b(click|tap|open|drag)\\s+any\\s+(dot|card|city|pin|marker|tile|row|photo)\\b|\\buse\\s+the\\s+arrows\\s+to\\s+browse\\b|\\bscroll\\s+to\\s+see\\s+more\\b",
+    fix: 'Cut it. A dot on a map is already clickable, and the reader already knows.',
+    example: 'Click any dot for the price, the beds, and the street.',
+  },
+  {
+    id: 'reassurance-no-receipt',
+    rule: 2,
+    label: 'reassurance about our character, with nothing behind it',
+    // Matched as the TRAILING CLAUSE it actually was, not as any mention of
+    // the phrase. Internal skill docs instruct producers to avoid "no
+    // pressure"; a rule that fires on the instruction as well as the sin
+    // produces a baseline of noise, and a noisy gate is one people learn to
+    // ignore. So: a sentence boundary in front, a full stop behind.
+    source:
+      "[.!?]\\s+No\\s+pressure\\.|\\band\\s+we\\s+can\\s+help\\.|\\bworth\\s+your\\s+time\\.|\\bwe\\s+will\\s+keep\\s+an\\s+eye\\s+on\\s+the\\s+\\w+\\s+for\\s+you\\b|\\bwe\\s+know\\s+these\\s+\\w+\\s+and\\s+their\\s+\\w+\\s+well\\b",
+    fix: 'Name the action or the number instead. A virtue we assert is one the reader discounts.',
+    example: 'A local broker will follow up with specifics. No pressure.',
+  },
   {
     id: 'coined-maxim',
     rule: 8,

@@ -85,7 +85,7 @@ export default function ParksIndexPage() {
           eyebrow="Central Oregon · Parks"
           titleTop="Central Oregon"
           titleBottom="parks"
-          lead={`${total} notable parks from Bend to Prineville, including the state parks at Smith Rock, Tumalo, and Lake Billy Chinook. Pick a park to see its boundary on a map, the active homes nearby, and what is there.`}
+          lead={`${total} notable parks from Bend to Prineville, including the state parks at Smith Rock, Tumalo, and Lake Billy Chinook. Pick a park to see its boundary on a map, the active homes nearby, and its trails and amenities.`}
           videoSrc={null}
           posterSrc={CONTENT_HERO_IMAGES.parks}
         />

@@ -47,6 +47,20 @@ export const VOICE_CONSTRUCTIONS: readonly VoiceConstruction[] = [
     "fix": "End the sentence at the fact. Cut everything from the clause onward."
   },
   {
+    "id": "affordance-instruction",
+    "rule": 2,
+    "label": "explains that a control does what the control obviously does",
+    "source": "\\b(click|tap|open|drag)\\s+any\\s+(dot|card|city|pin|marker|tile|row|photo)\\b|\\buse\\s+the\\s+arrows\\s+to\\s+browse\\b|\\bscroll\\s+to\\s+see\\s+more\\b",
+    "fix": "Cut it. A dot on a map is already clickable, and the reader already knows."
+  },
+  {
+    "id": "reassurance-no-receipt",
+    "rule": 2,
+    "label": "reassurance about our character, with nothing behind it",
+    "source": "[.!?]\\s+No\\s+pressure\\.|\\band\\s+we\\s+can\\s+help\\.|\\bworth\\s+your\\s+time\\.|\\bwe\\s+will\\s+keep\\s+an\\s+eye\\s+on\\s+the\\s+\\w+\\s+for\\s+you\\b|\\bwe\\s+know\\s+these\\s+\\w+\\s+and\\s+their\\s+\\w+\\s+well\\b",
+    "fix": "Name the action or the number instead. A virtue we assert is one the reader discounts."
+  },
+  {
     "id": "coined-maxim",
     "rule": 8,
     "label": "coins a maxim (the \"X, not Y\" shape)",

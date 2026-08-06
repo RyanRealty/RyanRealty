@@ -351,7 +351,7 @@ export default async function ParkDetailPage({ params }: Props) {
         <section className="section park-cta" aria-label="Contact the team">
           <div className="wrap">
             <span className="park-cta-eyebrow mono-lab">Living near {park.name}</span>
-            <h2 className="park-cta-h display">Local brokers. Specific numbers. No pressure.</h2>
+            <h2 className="park-cta-h display">Talk to a Ryan Realty broker.</h2>
             <p className="park-cta-body">
               We work across {park.city} and the rest of Central Oregon. Tell us what matters to you,
               the trails, the river, room to roam, and we will show you the homes that fit.

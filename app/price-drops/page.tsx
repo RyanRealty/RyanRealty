@@ -672,7 +672,7 @@ export default async function PriceDropsRegionPage() {
 
       <CTABar
         eyebrow="Ryan Realty"
-        title="Local brokers. Real data. No pressure."
+        title="Talk to a Ryan Realty broker."
         body="We pull price-reduction data every 30 minutes from the regional MLS. If a seller cut their price, we know about it before most buyers do."
         primary={{ href: '/contact', label: 'Talk to a broker' }}
         secondary={{ href: `tel:${CONTACT.phoneDirectTel}`, label: `Call ${CONTACT.phoneDirect}` }}

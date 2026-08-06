@@ -505,7 +505,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
 
       <CTABar
         eyebrow={`Ryan Realty in ${cityName}`}
-        title="Local brokers. Specific numbers. No pressure."
+        title="Talk to a Ryan Realty broker."
         body={`We close deals in ${cityName} every year. If a seller has priced a home to move, we can tell you whether it is actually a deal.`}
         primary={{ href: '/contact', label: 'Talk to a broker' }}
         secondary={{ href: `tel:${CONTACT.phoneDirectTel}`, label: `Call ${CONTACT.phoneDirect}` }}

@@ -383,7 +383,7 @@ export default async function TrailDetailPage({ params }: Props) {
         <section className="section ev-cta" aria-label="Contact the team">
           <div className="wrap">
             <span className="ev-cta-eyebrow mono-lab">Living near {trail.name}</span>
-            <h2 className="ev-cta-h display">Local brokers. Specific numbers. No pressure.</h2>
+            <h2 className="ev-cta-h display">Talk to a Ryan Realty broker.</h2>
             <p className="ev-cta-body">
               We work across {trail.city} and the rest of Central Oregon. Tell us what matters to you,
               trail access included, and we will show you the homes that fit.
