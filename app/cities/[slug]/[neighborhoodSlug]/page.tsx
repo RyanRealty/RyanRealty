@@ -187,7 +187,10 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const listingTiles =
     boundaryListingKeys.length > 0
       ? await withTimeoutFallback(
-          getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', limit: 250 }),
+          // §0: the map subtitle claims "every active SINGLE-FAMILY listing". The
+          // listings_in_boundary RPC filters only StandardStatus='Active', so the
+          // property-type narrowing has to happen here or the claim is false.
+          getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', propertyType: 'A', limit: 250 }),
           [],
           4500,
           'nbh:tiles',

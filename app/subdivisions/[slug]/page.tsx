@@ -194,8 +194,11 @@ export default async function SubdivisionPage({ params }: Props) {
     // Map tiles: if boundary pins exist use them for spatial context;
     // otherwise fetch active listings by the canonical MLS name for pins.
     if (boundaryListingKeys.length > 0) {
+      // §0: the map subtitle claims "every active SINGLE-FAMILY listing". The plat
+      // boundary RPC filters only StandardStatus='Active', so propertyType:'A' has to
+      // be applied here or the sentence is false.
       mapTiles = await withTimeoutFallback(
-        getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', limit: 200 }),
+        getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', propertyType: 'A', limit: 200 }),
         [],
         4500,
         'sub:map-boundary',
@@ -203,7 +206,7 @@ export default async function SubdivisionPage({ params }: Props) {
     } else {
       // Re-fetch via getListingTiles so we get proper ListingTile[] with lat/lng.
       mapTiles = await withTimeoutFallback(
-        getListingTiles({ subdivision: registryMatch.canonicalName, city: registryMatch.city, status: 'active', limit: 200 }),
+        getListingTiles({ subdivision: registryMatch.canonicalName, city: registryMatch.city, status: 'active', propertyType: 'A', limit: 200 }),
         [],
         4500,
         'sub:map-registry',
@@ -212,7 +215,8 @@ export default async function SubdivisionPage({ params }: Props) {
   } else if (boundaryListingKeys.length > 0) {
     // Boundary-only path: hydrate pins into tiles.
     mapTiles = await withTimeoutFallback(
-      getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', limit: 200 }),
+      // §0: single-family claim in the map subtitle — see sub:map-boundary above.
+      getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', propertyType: 'A', limit: 200 }),
       [],
       4500,
       'sub:map-pins',

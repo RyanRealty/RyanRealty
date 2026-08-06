@@ -1,0 +1,74 @@
+{
+  "mission": "defect-class-remediation",
+  "source": "Matt iPhone audit 2026-08-06 — ~19 reported defects treated as samples of classes",
+  "prompt": "~/ryan-realty-grind.md (GRIND_PROMPT_V3)",
+  "created": "2026-08-06T12:20:00-07:00",
+  "current_step": null,
+  "partition": {
+    "reason": "Sibling session actively grinding voice classes (commits 09:06-12:11 on 2026-08-06, ~35min cadence). Parallel work on the same files is a known collision failure mode in this repo.",
+    "this_session_owns": ["E1", "C-01", "C-02", "C-03", "C-09", "C-10", "C-11", "C-12", "C-13", "C-14", "C-15", "C-16", "C-17", "C-18", "C-19", "C-20", "C-21", "C-22", "C-23", "C-24", "C-25", "C-26", "C-27"],
+    "deferred_to_sibling": ["C-04", "C-05", "C-06", "C-07", "C-08"],
+    "recheck_before_starting_deferred": "git log --oneline | grep -c voice; re-run census — sibling may have already closed them"
+  },
+  "decisions": {
+    "D1": "Hero copy numbers-only. No virtue claim, no invented quote.",
+    "D2": "Empty hero-search submit = browse all; wire the chips.",
+    "D3": "Rewrite every string the census finds, not a subset.",
+    "D4": "Partial plat coverage: draw what exists, print honest count. NEVER hull-fill.",
+    "D5": "Subdivision map pins = RPC spatially-contained set.",
+    "D6": "Third-party figures: web-sourceable only + as-of stamp. Unsourceable -> em-dash. Never block.",
+    "D7": "Rail CTA keeps count AND place name.",
+    "D8": "Sticky bar mobile only (lg:hidden).",
+    "D9": "Leave components/admin/help/tours parked.",
+    "D10": "In-page expansion threshold totalCount <= 60."
+  },
+  "environment": {
+    "dev_server": "attached to existing localhost:3000 (sibling session owns the process; do NOT kill)",
+    "launch_config_name": "next-dev",
+    "viewport": "375x812 mobile preset",
+    "harness_note": "Radix/overlay clicks time out via coordinate click; dismiss modals with javascript_tool .click()",
+    "first_paint_note": "SignInPrompt modal + CookieConsentBanner stack over the entire hero at 375px with no prior cookie state. Logged as C-28 candidate."
+  },
+  "steps": [
+    { "id": "E1", "phase": 0, "title": "Environment smoke", "status": "DONE", "depends_on": [],
+      "census_count": null, "fixed_count": null, "sha": null,
+      "gate": "ci:gates exit 0 (only FAIL was the MOBILE_GRIND registration race, resolved); check-process-canon exit 0; npx tsc --noEmit exit 0",
+      "evidence": "localhost:3000 attached, 375x812, / console clean, baseline screenshot captured",
+      "notes": "Tree not clean but ci:gates green as-is: 2 modified (design-audit capture tooling) + 4 untracked audit scripts, all owned by the sibling session, none on this mission's paths. Did NOT stash." },
+
+    { "id": "C-01", "phase": 1, "title": "Claim/query mismatch: prose asserts a filter the query does not apply", "status": "TODO", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "Sample: app/cities/[slug]/page.tsx:481 claims single-family + Bend address; :183 getCityListings has no PropertyType filter (comment :189 admits all-types)." },
+    { "id": "C-02", "phase": 1, "title": "Two numbers for the same geography on one page", "status": "TODO", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "Sample: /cities/bend map badge 1,000 vs hero 491. :475 totalActive={mapFeatures.length}. communities/[slug]:806 already correct." },
+    { "id": "C-03", "phase": 1, "title": "Dead data source referenced / stale cache-version claims", "status": "TODO", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "public.open_houses sync died 2026-04-03. methodology_version must state v3-2026-05-07." },
+
+    { "id": "C-04", "phase": 2, "title": "Canon->vocabulary projection gap", "status": "DEFERRED", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "DEFERRED: sibling session owns voice. Re-census before starting." },
+    { "id": "C-05", "phase": 2, "title": "The trailing-defense clause", "status": "DEFERRED", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "DEFERRED. Sibling already reduced 'with the live market behind every one' to 0 occurrences." },
+    { "id": "C-06", "phase": 2, "title": "Instruct-the-user copy", "status": "DEFERRED", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "DEFERRED. Seeds: 'Click any dot' x10, 'DRAG / SWIPE', 'ask current status'." },
+    { "id": "C-07", "phase": 2, "title": "Naked-verb / placeholder headings", "status": "DEFERRED", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "DEFERRED. KbExploreTowns.client.tsx:18 title='Explore' default; homepage is the only caller omitting title." },
+    { "id": "C-08", "phase": 2, "title": "Third-party 'go ask them' fallback", "status": "DEFERRED", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "DEFERRED. Tetherow membership: 6x 'Confirmed at office' -> 'Ask the club + phone'." },
+
+    { "id": "C-09", "phase": 3, "title": "Component discards the caller's intent", "status": "TODO", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "KbFeatured.client.tsx:177-180 throws away viewAllLabel. 18 pages." },
+    { "id": "C-10", "phase": 3, "title": "Silent drop", "status": "TODO", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "communities/[slug] if(!img) return null. ci:gates already warns 4 Bend resorts lack RESORT_IMG: mt-bachelor-village, inn-of-the-7th-mountain, rivers-edge, mountain-high." },
+    { "id": "C-11", "phase": 3, "title": "Styling applied to the wrapper, not the control", "status": "TODO", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "VoiceSearchButton.tsx:62. CONFIRMED still broken on local 2026-08-06." },
+    { "id": "C-12", "phase": 3, "title": "Dead-end card - a result with no path forward", "status": "TODO", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "KbListingMapImpl.tsx:184 info window has nothing clickable; place-sections.ts:273 carries no listing key." },
+    { "id": "C-13", "phase": 3, "title": "Number formatting divergence", "status": "TODO", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "KbListingMapImpl.tsx:44 emits $2.2M/$715K next to sibling tiles at $3,200,000." },
+
+    { "id": "C-14", "phase": 4, "title": "Fixed-chrome collision", "status": "TODO", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "kb.css:1091 .kb-bc.overlay top:60px vs 64px nav. 10 overlay callers. belowNav fix from 2026-07-15 never propagated." },
+    { "id": "C-15", "phase": 4, "title": "Horizontal rail clipping on mobile", "status": "TODO", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "Open houses, communities, featured. Rule: a rail is a teaser, never a directory." },
+    { "id": "C-16", "phase": 4, "title": "Degenerate breadcrumb", "status": "TODO", "depends_on": ["C-14"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "app/search/page.tsx:327 single-item trail - only one among 16 callers." },
+    { "id": "C-17", "phase": 4, "title": "Duplicate/stacked sections of the same subject", "status": "TODO", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "cities/[slug]:486-493 stacks MarketCoreCharts after KbMarketHud. KbMarketHud already has children prop (Matt 2026-07-29). Only remaining stacker." },
+
+    { "id": "C-18", "phase": 5, "title": "Geo resolution ladder (infrastructure)", "status": "TODO", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "resolveGeoScope + report:geo-coverage. Gates C-21. Blocks C-19, C-20, C-21." },
+    { "id": "C-19", "phase": 5, "title": "Sub-city surface served city-wide data", "status": "TODO", "depends_on": ["C-18"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "getUpcomingOpenHouses supports only City=. 5 surfaces. Activity rail has the same defect." },
+    { "id": "C-20", "phase": 5, "title": "Arbitrary subset where the full set is the point", "status": "TODO", "depends_on": ["C-18"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "19 registry communities -> ~11 -> 6 -> fewer. Order by relevance, never filter by it." },
+    { "id": "C-21", "phase": 5, "title": "Available spatial data not rendered", "status": "TODO", "depends_on": ["C-18"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "Subdivision plats exist via getGeoBoundaryMapData. Map already accepts N polygons and frames polygon bounds first. Additive." },
+    { "id": "C-22", "phase": 5, "title": "Feature confined to one page type that belongs everywhere", "status": "TODO", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "Sticky broker bar. AttributedBrokerCard already built, mounted on zero pages." },
+    { "id": "C-23", "phase": 5, "title": "Affordance hidden behind navigation", "status": "TODO", "depends_on": ["C-09"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "See all N navigates away from content already on the page." },
+    { "id": "C-24", "phase": 5, "title": "Placeholder text that reads as a value", "status": "TODO", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "KbHero q=''. Chip CSS exists at kb.css:237-243, emitted by NO component. CONFIRMED still broken on local." },
+    { "id": "C-25", "phase": 5, "title": "Card/popup UX below platform standard", "status": "TODO", "depends_on": ["C-12"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "Map info window -> mobile bottom sheet + photo strip." },
+
+    { "id": "C-26", "phase": 6, "title": "Approval UI without the artifact", "status": "TODO", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "Prospecting Review & send. TRACKING TRAP FIRST: engagement.ts:104 counts broker previews as lead opens." },
+    { "id": "C-27", "phase": 6, "title": "Remove the admin help FAB", "status": "TODO", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "app/admin/(protected)/layout.tsx:97. One line. /admin/help survives; tours become unreachable (D9: park them)." },
+
+    { "id": "C-28", "phase": 4, "title": "CANDIDATE: interstitial stacking on first paint", "status": "TODO", "depends_on": ["E1"], "census_count": null, "fixed_count": null, "sha": null, "gate": null, "evidence": null, "notes": "NEW, not in Matt's screenshots. At 375px with no prior cookie state, SignInPrompt modal + CookieConsentBanner together cover the entire hero. A first-time mobile visitor sees none of the page. Census every interstitial: SignInPrompt, CookieConsentBanner, ExitIntentPopup, guest alert bar." }
+  ]
+}

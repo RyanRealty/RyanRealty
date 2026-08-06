@@ -115,6 +115,7 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 | `SEARCH_FILTER_COMPLETENESS_PLAN_2026-07-30.md` | **live** — second pass over the shipped search surface: generate the filter set from Spark field metadata (1,562 searchable fields, of which 239 are visible to residential class A and are the honest target), expose sub types and zoning-with-definitions, and gate completeness mechanically |
 | `CMA_PIPELINE_TO_PRODUCTION_2026-07-30.md` | **live** — end-to-end goal for taking the CMA/BPO pipeline to production grade (registered here by a sibling session's request; owner is that session) |
 | `WESTSIDE_BACKLOG.md` | **live** — west-side dominance ranked backlog, generated 2026-07-28 from live competitor/market data |
+| `MOBILE_GRIND/` | **live** — mobile-audit defect-CLASS remediation package (state machine, per-class census tables, ledger). Matt's 2026-08-06 iPhone pass produced ~19 reported defects; each is treated as a sample of a class, so every step is census-first (enumerate every instance repo-wide) → fix all → gate the class. Every file within is covered by this row. |
 | `CROSS_AGENT_HANDOFF.md` | session-continuity (required agent handoff protocol) |
 | `CRM_BUILD_MISSION.md` | **live** — CRM delivery mission |
 | `DELTA_SYNC_UNIFICATION_HANDOFF.md` | **open input** — delta-sync unification cutover handoff |

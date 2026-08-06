@@ -358,20 +358,20 @@ export default async function CommunityDetailPage({ params }: Props) {
   const resortTiles = isResortInCity ? resortTilesForSlug(citySlug, resortSlug, citySfrTiles) : []
   const useResortTiles = resortTiles.length > 0
 
-  // The community's own listing tiles (lat/lng/photo for the map + featured +
-  // ticker). Resort -> alias-matched tiles; reliable boundary -> in-polygon homes;
-  // oversized boundary -> the MLS subdivision-name homes.
+  // The community's own listing tiles (lat/lng/photo for the map + featured + ticker).
+  // Resort -> alias-matched; reliable boundary -> in-polygon; oversized -> MLS sub name.
+  // propertyType:'A': the map subtitle claims SFR, listings_in_boundary filters status only (§0).
   let communityTiles: Awaited<ReturnType<typeof getListingTiles>> = useResortTiles
     ? resortTiles
     : boundaryReliable && boundaryListingKeys.length > 0
       ? await withTimeoutFallback(
-          getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', limit: 200 }),
+          getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', propertyType: 'A', limit: 200 }),
           [],
           4500,
           'comm:tiles',
         )
       : await withTimeoutFallback(
-          getListingTiles({ city: cityName, status: 'active', limit: 1500 }),
+          getListingTiles({ city: cityName, status: 'active', propertyType: 'A', limit: 1500 }),
           [],
           4500,
           'comm:tiles-fallback',
