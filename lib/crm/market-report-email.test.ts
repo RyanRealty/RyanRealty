@@ -404,7 +404,7 @@ describe('renderMarketReportEmail', () => {
     expect(out.html).toContain('June ended 12 more than May')
     expect(out.html).toContain('22 days in June, 2 days faster than May')
     // Threshold-driven meaning line.
-    expect(out.html).toContain('What this means for you')
+    expect(out.html).toContain('Market read')
     expect(out.html).toContain('sellers hold the leverage')
     // Chart images with alt text, absolute URLs.
     expect(out.html).toContain('/api/email/market-chart?geo=city&slug=bend&metric=median_price')

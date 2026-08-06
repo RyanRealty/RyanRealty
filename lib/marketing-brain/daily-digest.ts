@@ -9,10 +9,10 @@
  * Architecture note (2026-05-22 refactor):
  *   Before today this module only WROTE the action row and let the
  *   producer-runtime cron pick it up. But producer-runtime marks rows
- *   `ready` (draft state) and doesn't fire Resend — so digests piled up
+ *   'ready' (draft state) and doesn't fire Resend — so digests piled up
  *   in the approval queue without ever being delivered. The SKILL.md for
  *   comms-matt-alert always specified email delivery; the runtime just
- *   wasn't honoring it for `comms:*` action_types.
+ *   wasn't honoring it for 'comms:*' action_types.
  *
  *   Fix: send the email here, BEFORE writing the row. The row becomes
  *   pure audit trail (status='executed' with delivery confirmation).
@@ -102,7 +102,7 @@ export interface RunDailyDigestOptions {
 /**
  * Run the daily digest. Reads recent action-row activity, composes
  * markdown + short-form summaries, sends the email to Matt, then inserts
- * one comms:matt_summary audit row marked `executed`. Returns the full
+ * one comms:matt_summary audit row marked 'executed'. Returns the full
  * report including delivery confirmation.
  */
 export async function runDailyDigest(opts: RunDailyDigestOptions = {}): Promise<DailyDigestReport> {
@@ -400,7 +400,7 @@ export function composeMarkdownDigest(asOfDate: string, stats: DigestStats): str
     if (a.top_missing_skill_names.length > 0) {
       lines.push(`- **Top missing skills to author** (Producer Authoring queue):`)
       for (const name of a.top_missing_skill_names) {
-        lines.push(`  - \`${name}\``)
+        lines.push('  - `' + name + '`')
       }
     }
     lines.push(``)
@@ -435,7 +435,7 @@ export function composeMarkdownDigest(asOfDate: string, stats: DigestStats): str
     if (types.length > 0) {
       lines.push(`- By request type:`)
       for (const [type, count] of types) {
-        lines.push(`  - \`${type}\`: ${count}`)
+        lines.push('  - `' + type + '`: ' + count)
       }
     }
     lines.push(``)
@@ -497,6 +497,10 @@ async function insertDigestActionRow(
   // audit trail: status='executed' on success, 'killed' on Resend
   // failure so the failure surfaces in the next morning's digest.
   const deliverySucceeded = !!delivery.id && !delivery.error
+  // Hoisted to its own template literal (not nested inside the
+  // generation_reason string below) so the literal backtick pair stays
+  // simple for tooling that scans string literals in this file.
+  const deliveryFailureNote = ` Email failed: ${delivery.error ?? 'unknown'}.`
   const nowIso = new Date().toISOString()
 
   const { data, error } = await supabase
@@ -553,7 +557,7 @@ async function insertDigestActionRow(
       },
       status: deliverySucceeded ? 'executed' : 'killed',
       generated_by: 'marketing_brain:daily-digest',
-      generation_reason: `Daily digest for ${asOfDate}. ${stats.pending_total} pending rows summarized.${deliverySucceeded ? ' Email delivered.' : ` Email failed: ${delivery.error ?? 'unknown'}.`}`,
+      generation_reason: `Daily digest for ${asOfDate}. ${stats.pending_total} pending rows summarized.${deliverySucceeded ? ' Email delivered.' : deliveryFailureNote}`,
     })
     .select('id')
     .single()

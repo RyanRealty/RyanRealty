@@ -101,7 +101,7 @@ const HOW_IT_WORKS = [
     link: { href: '/housing-market', label: 'ryan-realty.com' },
   },
   {
-    lead: 'The split is a conversation, not a banner.',
+    lead: 'The split is set through a conversation with you.',
     body: 'It is set with you, based on the business you bring and the business you want to build. The first conversation covers the numbers directly.',
   },
 ] as const

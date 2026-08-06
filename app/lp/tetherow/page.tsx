@@ -1128,7 +1128,7 @@ export default async function TetherowLandingPage() {
           </table>
         </div>
         <p className="mt-5 max-w-[860px] text-[14px] leading-[1.65] text-[color:var(--rr-text)]">
-          <strong>What this means for a Tetherow seller.</strong> Tetherow homes are
+          <strong>Tetherow among its peers.</strong> Tetherow homes are
           pricing-disciplined. {formatRatioPct(saleToList)} sale-to-list ratio with a{' '}
           {medianDom ?? '—'}-day median market velocity. Broken Top moves on similar inventory at
           lower price points. Pronghorn trades at a higher median, but the wider list-to-close gap

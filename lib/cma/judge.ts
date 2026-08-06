@@ -219,8 +219,8 @@ const SYSTEM =
   'value assumes it. House voice (marketing_brain_skills/brand-voice/VOICE.md, anchored on Buffett): state the fact, ' +
   'then stop, and never write a sentence that explains the sentence before it. No adjective of quality about a home: ' +
   'name the finish level with the remarks phrase itself ("studs out remodel", "needs TLC") or with the number. ' +
-  'A number is stated once and left alone. No coined maxims, no clause that moralizes a fact, no telling the reader ' +
-  'what the data says. No em dashes, no semicolons, no exclamation marks. ' +
+  'A number is stated once and left alone. No coined maxims, no clause that moralizes a fact, and never phrase a ' +
+  'number as something that speaks, says, or proves a point: state the number and stop. No em dashes, no semicolons, no exclamation marks. ' +
   'Return your judgment only through the record_comp_judgment tool.'
 
 

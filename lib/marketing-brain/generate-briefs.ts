@@ -315,7 +315,8 @@ const BANNED_WORDS: Array<{ word: string; rule: string }> = [
   // Brief-specific tells the canonical core doesn't carry (a hype opening + a
   // pandering phrasing). Layered on the generated core, never a re-typed list.
   { word: 'introducing', rule: '§6.3 Hype opening: "introducing"' },
-  { word: "don't worry, we will handle", rule: '§6.3 Pandering: "don\'t worry, we will handle…"' },
+  { word: "don't worry", rule: '§6.3 Pandering: "don\'t worry, we will handle…"' },
+  { word: 'we will handle everything', rule: '§6.3 Pandering: "don\'t worry, we will handle…"' },
 ]
 
 /** §6.4 Banned trope patterns. */
@@ -1318,7 +1319,7 @@ export function mapOpportunityToBriefs(
       hook: isDrop
         ? `Selling in Bend this year? Here is what changed in the market last week.`
         : `Bend sellers: the data moved this week. Here's the read.`,
-      body: `Honest breakdown of what the data says for Bend homeowners considering a sale right now. No pressure, just numbers.`,
+      body: `A straight look at what changed in the Bend market, built for homeowners weighing a sale. No pressure, just the numbers.`,
       cta: `Tell us your address. We send back a real number based on Bend MLS sales in the last 90 days.`,
       target_audience: 'out_of_state_seller',
       data_sources: [

@@ -41,7 +41,7 @@
       "display_name": "National Economy (housing lens)",
       "description": "CPI, jobs report, GDP, Fed dot plot, regional economic indicators interpreted for housing-buyer decision-making. Distinguished from national_housing_news by primary subject (the economy, not housing) and from market_data by scope (national, not local).",
       "examples": [
-        "CPI dropped again. What it tells you about mortgage rates heading into summer",
+        "CPI dropped again. The read for Bend mortgage rates heading into summer",
         "Oregon jobs report: Deschutes County added 1,200 jobs. The housing-demand signal",
         "When the dollar strengthens, this is what happens to West Coast home prices"
       ],
@@ -120,7 +120,7 @@
       "examples": [
         "Featured this week in Cascade Business News — the long view on Bend brokerages",
         "Sold a record 47 homes in Q1. Here is what made the difference",
-        "Why Matt founded Ryan Realty — and what that means for how we work"
+        "Why Matt founded Ryan Realty — and how that shapes the way we work"
       ],
       "data_sources": ["press mentions", "internal team data", "founder story"]
     },

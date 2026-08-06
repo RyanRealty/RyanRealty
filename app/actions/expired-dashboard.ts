@@ -81,7 +81,7 @@ export async function sendExpiredAuditEmailAction(
     if (!latest) return { data: null, error: 'No audit built yet. Build the audit first.' }
     const { slug, row } = latest
     if ((row.doc_type as string | null) !== 'expired-audit') {
-      return { data: null, error: 'The document for this address is a plain CMA, not an expired audit. Rebuild it as an audit first.' }
+      return { data: null, error: 'The document built for this address is a CMA. Build an expired audit for this address before sending.' }
     }
 
     // needs_review requires the explicit acknowledgment from the confirm dialog.

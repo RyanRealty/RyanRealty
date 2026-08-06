@@ -830,7 +830,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
 
       {/* Market narrative + methodology trace (CLAUDE.md §0 AI-citability). */}
       <ContentSection
-        eyebrow="What the numbers say"
+        eyebrow="Market data"
         title={`${geoName} market summary`}
         tone="default"
         divider

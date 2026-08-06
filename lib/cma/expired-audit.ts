@@ -351,7 +351,7 @@ export function buildNetSheet(pricing: CmaPricing): ExpiredNetSheet {
       'Sale at the recommended list price. The conservative and high-end columns rerun the same costs at the ends of the supported range.',
       'Property-tax prorations, HOA transfer fees, and any repair credits vary by closing date and negotiation, and are not included.',
       'Your mortgage payoff (if any) comes off the estimated net. Your lender provides the exact payoff figure.',
-      'Every third-party line is an estimate, not a quote. This is not a closing statement.',
+      'Every third-party line is an estimate. It is not a quote. This is not a closing statement.',
     ],
   }
 }

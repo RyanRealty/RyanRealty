@@ -202,7 +202,7 @@
     {
       "normalizedCode": "R",
       "jurisdiction": null,
-      "note": "A bare R is a generic label, not a resolvable zone code. In Sisters rows it reads like the city Residential District but is not force-matched."
+      "note": "A bare R is a generic label. It is not a resolvable zone code. In Sisters rows it reads like the city Residential District but is not force-matched."
     },
     {
       "normalizedCode": "RESIDENTIAL",

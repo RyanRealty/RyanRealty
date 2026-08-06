@@ -239,7 +239,7 @@ export default async function TrailDetailPage({ params }: Props) {
               <p className="ev-map-intro">
                 {trailLine
                   ? `The ${trail.name} route, drawn from ${trail.landManager} trail data, with the active single-family homes for sale near the trailhead. The line is the trail, the ringed dot is the trailhead.`
-                  : `The active single-family homes for sale within about 1.5 miles of the ${trail.name} trailhead, from our listings. The marked point is the trailhead, not a listing.`}
+                  : `The active single-family homes for sale within about 1.5 miles of the ${trail.name} trailhead, from our listings. The marked point marks the trailhead. It is not a listing.`}
               </p>
             </div>
             <VenueMap

@@ -467,7 +467,7 @@ export default async function CentralOregonRegionPage() {
             trace that lets an AI assistant cite the page with provenance. */}
         {narrativeWhat ? (
           <ContentSection
-            eyebrow="What the numbers say"
+            eyebrow="Market data"
             title="Central Oregon market summary"
             tone="default"
             divider

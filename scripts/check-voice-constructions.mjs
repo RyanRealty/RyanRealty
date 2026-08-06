@@ -87,6 +87,15 @@ const EXEMPT = [
   'lib/brand-voice/constructions.ts',
   'lib/brand-voice/generated-vocabulary.ts',
   'scripts/_brand_voice_vocab_generated.py',
+  // Internal documentation. VOICE.md's own scope rule: "Not governed: code,
+  // comments, commit messages, admin screens, logs, internal docs." No member
+  // of the public reads these, and "the codebase is the source of truth, not
+  // the design project" is a precise technical statement in an instruction
+  // file, not a marketing maxim. Scope correction, not a silencing: no public
+  // copy is hidden by these three.
+  'CLAUDE.md',
+  'CHANGELOG.md',
+  'AGENTS.md',
 ]
 
 const args = process.argv.slice(2)

@@ -218,7 +218,7 @@ const VOICE_VIOLATION_PATTERNS: Array<{
     pattern: /doom scroll|fear.?mongering|market.?crash bait|hype.?reel|fomo.?hook/i,
     voice_rule: '§6.4 Banned tropes: market-doom or market-hype take',
     reason:
-      'Fear-based or FOMO-driven formats conflict with our honest, data-first voice. We describe what the data says, not what will get a reaction.',
+      'Fear-based or FOMO-driven formats conflict with the direct, data-first voice. Copy states the number and stops there.',
   },
   // §6.3 Banned phrases: fake urgency
   {

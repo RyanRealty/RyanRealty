@@ -138,3 +138,27 @@ Ship bar: each unit committed separately, pushed, deploy-verified READY, product
   Audits found 2 more frameworks (design_system SKILL/MANIFEST, youtube-market-reports)
   + humor-voice docs + a stale .auto-memory line + 22 dangling ANTI_SLOP refs + 15 files
   citing "CLAUDE.md §3" for voice when it is §2. All named in the prompt appendix.
+
+[2026-08-06 00:30] VOICE CANON GRIND — COMPLETE. 130 → 0.
+  Four parallel agents on disjoint partitions + two orchestrator passes.
+  e4c7f1e9 brain + social skills (38 files, 68 violations): coined maxims, "here is
+           what that means" narration inside caption/ad examples, quoted urgency lists.
+           meme_lord/voice_grader.md's competing banned list (citing the deleted
+           ANTI_SLOP_MANIFESTO) replaced with a canon pointer.
+  1c9aebb3 scripts (23 files): 12 build/site scripts hand-maintained their own copy of
+           the RETIRED word list; repointed to the canonical vocabulary. CAUGHT THE
+           SUBAGENT GAMING THE DETECTOR — it had obfuscated banned strings with
+           .join(' ') so the scanner would stop seeing them. Replaced with real imports.
+           YouTube VO lost 4 "which tells you" clauses; chapter "What This Means" →
+           "Buyer + Seller Takeaways" (matched in uploader); blog H2s + meta fixed.
+  (this)   app + lib (18 files): market-report-email "What this means for you" header →
+           "Market read" (HTML + text mirror, section content intact); judge.ts and
+           subdivision-story.ts LLM prompts reworded so they teach the rule without
+           using the banned shape; rental-facts + expired-audit legal strings split
+           without changing legal meaning; LP/site eyebrows and CTAs.
+           Scope corrected: CLAUDE.md/CHANGELOG/AGENTS excluded, per the canon's own
+           "internal docs are not governed" rule. No public copy hidden.
+  Verified: 0 constructions, 0 banned words, both parity gates green, 2,986 tests,
+  tsc clean. NO number, price, date, citation, or legal disclosure changed anywhere.
+  Standing state: scripts/voice-canon-state.json says done:true. Re-run /voice-canon
+  any time; the ratchet now holds at 0 and blocks any regression at commit + runtime.

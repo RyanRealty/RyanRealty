@@ -486,7 +486,7 @@ export default async function ListYourHomePage() {
             One conversation
           </p>
           <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] sm:text-4xl">
-            {"Let's talk about your sale."}
+            {'Tell us about your sale.'}
           </h2>
           <p className="mt-4 text-base leading-relaxed text-[#faf8f4]/80">
             Tell us about your property. A broker will reach out to talk through pricing and a plan. No pitch, no pressure, no obligation.

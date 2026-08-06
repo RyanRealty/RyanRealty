@@ -462,11 +462,11 @@ function renderAreaBlock(area: MarketReportAreaBlock): AreaRender {
     </tr>`
   }
 
-  // ── "What this means for you" ─────────────────────────────────────────────
+  // ── "Market read" (interpretation of the market verdict) ───────────────────
   const meaning = meaningLine(area.marketVerdict)
   const meaningHtml = meaning
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px;"><tr><td style="background:rgba(16,39,66,0.05);padding:14px 16px;border-left:3px solid ${EMAIL_NAVY};">
-        <div style="font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:${MUTED};margin-bottom:6px;">What this means for you</div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:${MUTED};margin-bottom:6px;">Market read</div>
         <div style="font-size:14px;line-height:1.6;color:${EMAIL_INK};">${escapeHtml(meaning)}</div>
       </td></tr></table>`
     : ''
@@ -498,7 +498,7 @@ function renderAreaBlock(area: MarketReportAreaBlock): AreaRender {
   textLines.push(`Homes for sale now ${formatCount(area.activeListings)}${invContextFull ? ` (${invContextFull})` : ''}`)
   textLines.push(`Median days on market ${formatDays(area.domMedian)}${domContextFull ? ` (${domContextFull})` : ''}`)
   textLines.push(`Homes sold last 12 months ${formatCount(area.soldLast12mo)}`)
-  if (meaning) textLines.push(`What this means for you. ${meaning}`)
+  if (meaning) textLines.push(`Market read. ${meaning}`)
   textLines.push(`Full report ${href}`)
 
   return { html, text: textLines.join('\n'), traces }

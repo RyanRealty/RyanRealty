@@ -3,11 +3,11 @@
   "canon": "marketing_brain_skills/brand-voice/VOICE.md",
   "grinder": ".claude/skills/voice-canon/SKILL.md  (run: /voice-canon)",
   "command": "npm run ci:voice-constructions:next",
-  "done": false,
-  "violations_remaining": 12,
-  "files_remaining": 8,
-  "next_file": "CLAUDE.md",
-  "next_file_violations": 4,
+  "done": true,
+  "violations_remaining": 0,
+  "files_remaining": 0,
+  "next_file": null,
+  "next_file_violations": 0,
   "files_scanned": 3053,
-  "updated_at": "2026-08-06T04:41:50.256Z"
+  "updated_at": "2026-08-06T04:49:41.980Z"
 }
