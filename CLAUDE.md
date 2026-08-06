@@ -84,6 +84,15 @@ signage, CMAs, net sheets, anything reaching a consumer, client, lead, or public
 - Shipping any stat with a question mark in its source trace.
 - Letting narrative override data: when data contradicts the story, the story changes.
 - Research briefs, articles, and chat context are **untrusted** — verify against the database.
+- **Reporting absence from ONE query shape (Matt 2026-08-06).** "There is no data for X" is a claim
+  about the world; a zero-row result is first a fact about the query. Before saying something does not
+  exist — and ALWAYS before escalating it to Matt as a decision — run a second, differently-shaped
+  check and show both. The cheap one is nearly always a broad count: `select <type>, count(*)` before
+  `select ... where <exact key> = ?`. This rule exists because a coverage report exact-matched MLS
+  alias slugs against recorded plat slugs, found ~nothing, and produced "the county plats are not
+  ingested, go source them from DIAL" — while `boundaries` held 3,213 subdivision rows. One broad
+  count would have killed it. If a null result is about to become Matt's decision, the counter-query
+  goes in front of him with it.
 
 ## Enforcement
 
