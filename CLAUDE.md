@@ -131,126 +131,31 @@ shown to Matt before they enter a distribution path.
 
 ---
 
-# §2. Brand Voice — applies to EVERY piece of text
+# §2. Brand Voice — applies to EVERY piece of public-facing text
 
-**Every piece of text generated for Ryan Realty — whether it ships to a channel, lands in a
-file, or is pasted into chat for Matt to copy into his own email client — must comply.** Matt
-should never have to remind an agent to strip em-dashes or banned words from a draft.
+**Canonical source, and the ONLY one: [`marketing_brain_skills/brand-voice/VOICE.md`](marketing_brain_skills/brand-voice/VOICE.md).**
+Read it before writing any text a member of the public will see. Locked 2026-08-05,
+anchored on Warren Buffett's shareholder letters. This section is a pointer, not a
+second copy: every rule, word list, and example lives in that file, and a rule that
+appears in two places is a rule that drifts.
 
-**Canonical source, read it first:** [`marketing_brain_skills/brand-voice/VOICE.md`](marketing_brain_skills/brand-voice/VOICE.md)
-— **The Five Laws** (1. Show it, don't say it. 2. A number beats an adjective. 3. Talk to a
-smart adult. 4. The category is not a claim. 5. Every number is live and true) plus the two
-tests (competitor test, receipt test). LOCKED 2026-06-13.
-[`voice_guidelines.md`](marketing_brain_skills/brand-voice/voice_guidelines.md) is the
-mechanical-floor reference; [`SKILL.md`](marketing_brain_skills/brand-voice/SKILL.md) is workflow.
+**Triggers.** Any text a lead, client, or visitor reads, whatever produces it: email
+bodies and subjects, SMS bodies, saved-search and listing alerts, CMA/BPO/report
+prose, every site page and component, landing pages, our own listing remarks, social
+captions, ad copy, video on-screen text and voiceover, and any document a client
+opens. Not governed: code, comments, commit messages, admin screens, internal docs.
+Never rewritten: customer reviews, another broker's remarks, quoted third parties,
+MLS data fields.
 
-**Gated, not advisory.** The vocabulary is machine-readable in
-[`scripts/brand-voice-vocabulary.cjs`](scripts/brand-voice-vocabulary.cjs) and enforced by
-[`scripts/check-brand-voice.mjs`](scripts/check-brand-voice.mjs) (`ci:brand-voice`, in
-`ci:gates` and the pre-commit hook), ratcheted toward 0. **That file is the authoritative
-banned list — this section is the summary, not a second list to maintain.** Gate scope is
-public-facing copy (`app/`, `components/`, excluding api/actions/admin); it never touches
-reviews, external quotes, or broker-written listing remarks.
+**Enforced, not advisory.** [`scripts/check-brand-voice.mjs`](scripts/check-brand-voice.mjs)
+(`ci:brand-voice`, in `ci:gates` and the pre-commit hook) fails the commit, reading a
+machine-readable projection of the canon in
+[`scripts/brand-voice-vocabulary.cjs`](scripts/brand-voice-vocabulary.cjs). Runtime
+send paths hard-fail through `lib/voice/check.ts` (`ci:voice-send-paths`).
 
-## Triggers
+**The rule broken most often:** state the fact, then stop. Never write a sentence
+whose job is to explain the sentence before it.
 
-Any text produced on behalf of Ryan Realty: email bodies drafted in chat, social captions,
-blog posts, listing descriptions, website copy, video VO and on-screen text, ad headlines,
-flyers and signage, market-report narrative, client-facing emails from an API endpoint, CMA
-prose, GBP review responses, MLS public remarks, open-house signs.
-
-Internal-only text (agent commentary, commit messages, code comments, debugging logs,
-technical docs) is NOT governed.
-
-## Hard fails
-
-**Punctuation.** Em/en dashes are banned **only in prose a reader sees that reads as
-AI-written** (Matt 2026-08-02). Labels, separators, alt/aria text, SEO metadata and the
-"unavailable" placeholder are fine. Gated; see `voice_guidelines.md` §6.1.
-Semicolons, replace with a period. Dramatic colons in body prose (colons in headers, list
-intros, and tables are fine). Exclamation marks in body copy: one per piece maximum, none in
-market-data content. Compound hyphens stay where English requires (single-family, 30-year
-fixed); `ryan-realty.com` needs its hyphen.
-
-**Words** (categories; the full list is the vocabulary file above):
-- *Real-estate clichés* — stunning, breathtaking, gorgeous, charming, pristine, nestled,
-  boasts, must-see, dream home, meticulously maintained, entertainer's dream, tucked away,
-  hidden gem, truly, luxurious, updated throughout, immaculate, captivating, exquisite, turnkey
-- *AI filler* — delve, tapestry, robust, seamless, elevate, unlock, holistic, dynamic,
-  vibrant, bustling, eclectic, curated, bespoke
-- *Marketing slop* — top producing, top 1 percent, white glove, luxury concierge, premier
-  brokerage, exclusive (as a brokerage descriptor), boutique brokerage, your real estate
-  journey, we are passionate about, we pride ourselves on
-- *Meta-tone* — passionate, dedicated, premier, luxury, boutique, concierge, white-glove
-- *Fake urgency* — act fast, don't miss out, won't last long, won't last
-- *Hedging* — may, could, potentially
-- *Hype openings* — "get ready to fall in love," "you won't believe," "introducing,"
-  "stunning new listing"
-- *Pandering* — "what a beautiful home," "you have great taste," "don't worry, we will handle
-  everything," "let me explain in simple terms," "I know this seems complicated"
-- **Emoji** — none in blog posts, email body, ad headlines, or video on-screen text. One max
-  in a social caption, never in a market-data piece.
-
-*Vague qualifiers* (about / around / approximately / roughly / fairly / somewhat) were
-un-banned 2026-06-02 — the blanket gate blocked legitimate plain English. §0 still stands:
-never substitute them for a STAT you can pull exactly.
-
-**Tropes.** Dramatic before-and-after ("most agents do X, we do Y"). Fake humility brag.
-Market-doom or market-hype. Agent-as-hero (the broker as protagonist instead of the client).
-**Headcount / smallness positioning** (Matt 2026-06-10) — "three brokers", "small brokerage",
-"small team", "boutique" are banned on every site and marketing surface; headcount is not a
-position and caps the growth story. Position on the standard, the data, and direct-broker
-accountability. **Overtly stating a category, virtue, or obvious credential** — "independent
-brokerage by design", "we're honest / dedicated / local", "all licensed and active". A
-licensed active broker is the baseline for a real-estate site, not a selling point. Show it
-with a specific concrete fact, or cut it.
-
-## Voice + formatting
-
-- **Honest. Transparent. Trustworthy. Direct and kind.** Show, don't tell — let the fact do
-  the work. Four rules: Direct. Specific. Kind. Honest, even when inconvenient.
-- **Sentence case** for body headlines and web headings. Title Case only for the hero H1.
-- **"You/your"** is the subject (the reader). **"We/our team"** for brokerage identity.
-  **"I"** only when the content is genuinely first-person from Matt (a video VO, a personal
-  letter, a review response).
-- **Phone:** `541.703.3095` is the SOLE public number (2026-06-24 Twilio cutover). Ported, so
-  calls carry attribution into the CRM. `541.213.6706` is a private forward target, never
-  public. Import `CONTACT.phoneDirect` from `lib/brand/contact.ts`, never type it (G38).
-- **Web:** `ryan-realty.com` (hyphenated, lowercase). **Place separator:** middle dot `·` —
-  `BEND · OREGON`.
-- **Social handles (LOCKED 2026-05-13):** `@ryanrealtybend` on every platform (IG, TikTok,
-  Threads, YouTube, X, Pinterest), `/ryanrealtybend` on Facebook + LinkedIn vanity.
-- **Currency rounded** to the nearest thousand: `$895,000` not `$894,750`.
-- **Days = integer + "days":** `38 days`. **Percents** carry one decimal and a signed arrow
-  when YoY: `↑ 2.1% YoY`. **Unavailable** → em-dash placeholder.
-- **Tabular numerals** (`font-variant-numeric: tabular-nums`) on every numeric surface.
-
-## Canonical phrases — Matt 1:1 correspondence ONLY
-
-Review replies and personal letters. **Never site or marketing copy.**
-
-"Thank you so much for taking the time to..." · "It was genuinely a pleasure working with
-you." · "That kind of trust makes all the difference." · "A small business like ours." ·
-"Honored to..." / "Privilege to..." · "I'm always here if you need anything down the road." ·
-"Wishing you all the best in your new chapter."
-
-Words to favor in Matt's voice: genuinely, honored, privilege, trust, chapter, the finish
-line, the unpredictable market, without the high pressure.
-
-## Self-check workflow (before ANY draft surfaces)
-
-1. **Generate** the draft in a scratch buffer.
-2. **Scan** for hard fails: em-dash, en-dash, semicolon, every banned word, every banned opener.
-3. **Rewrite** every hit. Period or comma replaces em-dash. Period replaces semicolon. The real
-   number replaces "approximately."
-4. **Read aloud** in Matt's voice. If a sentence sounds like marketing copy, kill it.
-5. **Then** show Matt.
-
-A failing draft does not get shown. If Matt has to ask "did you check the brand voice?", the
-self-check failed. Load the full `voice_guidelines.md` for long-form (blog post, listing
-description over 100 words, multi-paragraph email, VO script over 30 seconds), voice-drift
-audits, and rule updates. Every producer already mandate-loads it via
-[`TEMPLATE.md`](marketing_brain_skills/producers/TEMPLATE.md).
 
 ---
 
