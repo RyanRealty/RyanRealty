@@ -1,6 +1,13 @@
 'use client'
 
 /**
+ * reachability: entry-point PARKED — unmounted 2026-08-06 (Matt: "remove the ?
+ * button"). Nothing imports this now, on purpose. It is kept, not deleted,
+ * because it is the only wiring between the admin shell and the driver.js tour
+ * engine (components/admin/help/tours) — remounting it here is how tours come
+ * back if a future trigger wants them. /admin/help is unaffected; that route is
+ * linked from the Content page.
+ *
  * HelpProvider — mounts the persistent Help button in the admin shell and owns
  * the driver.js tour engine. Rendered once by the admin layouts (protected +
  * console), so the Help button rides every admin page, desktop and mobile.

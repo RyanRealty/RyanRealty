@@ -9,8 +9,6 @@ import { CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
 import { buildAdminNav, buildAdminMobileTabs } from '@/app/components/admin/admin-nav'
 import type { AdminCapabilityContext } from '@/lib/admin/capabilities'
 import ConsoleShell from '@/components/console/ConsoleShell'
-import HelpProvider from '@/components/admin/help/HelpProvider'
-import { getHelpArticleIndex } from '@/lib/admin-help'
 
 /**
  * Auth + chrome for every admin dashboard page.
@@ -93,8 +91,9 @@ export default async function AdminProtectedLayout({
       >
         {children}
       </ConsoleShell>
-      {/* Persistent Help button — tours + contextual KB links on every admin page. */}
-      <HelpProvider articles={getHelpArticleIndex()} />
+      {/* Help FAB removed (Matt 2026-08-06). /admin/help survives — it is linked from
+          the Content page. components/admin/help/tours is now unreachable: parked, not
+          deleted, so a future trigger can pick it back up. */}
     </div>
   )
 }
