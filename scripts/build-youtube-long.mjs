@@ -208,7 +208,7 @@ function planLongForm(data) {
     let topIdx = 0
     for (let i = 1; i < bns.length; i++) if (bns[i].count > bns[topIdx].count) topIdx = i
     const top = bns[topIdx]
-    if (topIdx === 0) return `Entry-level led the market this month. The bottom of the range has the most volume, which tells you buyers are price-sensitive. Affordability is driving decisions.`
+    if (topIdx === 0) return `Entry-level led the market this month. The bottom of the range has the most volume. Affordability is driving decisions.`
     if (topIdx === bns.length - 1) return `The high end was where the volume showed up this month. Luxury is moving faster than the entry tier, which is unusual. Equity-backed buyers are active.`
     return `The middle of the market did the heavy lifting this month. ${top.label} carried the bulk of closed volume. That's the sweet spot right now for both buyers and sellers.`
   })()
@@ -220,7 +220,7 @@ function planLongForm(data) {
     : `Supply is heavy. Buyers are in the driver's seat for the first time in years. Sellers who priced for the peak are watching days stack up. The data is telling them to adjust.`
 
   const ch5 = domDelta < -5
-    ? `Listings are moving faster than this time last year. The pace has accelerated, which tells you demand is real and buyers are ready. If a home is priced right, it's not sitting long.`
+    ? `Listings are moving faster than this time last year. The pace has accelerated. If a home is priced right, it's not sitting long.`
     : domDelta > 5
     ? `Listings are sitting longer than last year. Pace has cooled noticeably. That's not necessarily bad news — it means buyers have time to be deliberate and negotiate.`
     : `Pace is steady, consistent with last year. No significant shift on time-to-contract. Well-priced listings are moving; overpriced listings are sitting. Same as always.`
@@ -231,11 +231,11 @@ function planLongForm(data) {
     ? `Sellers are still getting close to asking price. Buyers can probe, but significant discounts are not materializing. The data supports pricing at or slightly above recent comps.`
     : slPct >= 95
     ? `Buyers have a little room to negotiate. Not a lot, but some. Coming in slightly under list with a clean offer is working more often than it was six months ago.`
-    : `Buyers have real leverage on price. The gap between list and close is widening, which tells you sellers are overpriced relative to what buyers will pay. Expect continued concessions.`
+    : `Buyers have real leverage on price. The gap between list and close is widening. Expect continued concessions.`
 
   const ch7 = data._cache?.cash_purchase_pct != null
     ? data._cache.cash_purchase_pct >= 35
-      ? `Cash is a major force in this market. When a third or more of buyers are paying cash, that tells you wealth is concentrating at the top. Financing-dependent buyers face less competition than the headline inventory number suggests.`
+      ? `Cash is a major force in this market. When a third or more of buyers are paying cash, wealth is concentrating at the top. Financing-dependent buyers face less competition than the headline inventory number suggests.`
       : data._cache.cash_purchase_pct >= 25
       ? `A meaningful share of buyers paid cash this period. That's above the national average and it reflects the equity wealth that Central Oregon homeowners have accumulated. The high end is transacting without financing friction.`
       : `Most buyers are using financing. Standard mortgage market dynamics apply. Rate sensitivity is real, and the pool of qualified buyers shifts every time rates move. Watch the Fed, not just the MLS.`
@@ -397,7 +397,7 @@ function planLongForm(data) {
     },
     // Ch 9 — Agent commentary → takeaway
     {
-      label: "What This Means",
+      label: "Buyer + Seller Takeaways",
       value: '',
       layout: 'takeaway',
       bgVariant: 'navy-radial',
@@ -435,7 +435,7 @@ function planLongForm(data) {
           'Credits to buyers beat price cuts in negotiations',
           'If DOM exceeds 60 days, re-evaluate pricing strategy',
         ],
-      chapterTitle: 'What This Means — Agent Commentary',
+      chapterTitle: 'Buyer + Seller Takeaways',
     },
   ]
 

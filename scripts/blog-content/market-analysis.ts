@@ -83,7 +83,7 @@ export const posts: BlogPostSeed[] = [
     status: 'published',
     seo_title: 'What Treasury Yields Mean for Central Oregon Buyers',
     seo_description:
-      'How the 10-year Treasury yield drives mortgage rates and what that means for Central Oregon home buyers. Data-driven analysis of the rate relationship.',
+      'How the 10-year Treasury yield drives mortgage rates for Central Oregon home buyers. Data-driven analysis of the rate relationship.',
     excerpt:
       'The 10-year Treasury yield is the single best predictor of where mortgage rates are headed. Here is how to read it and what it means for buying a home in Central Oregon.',
     content: `

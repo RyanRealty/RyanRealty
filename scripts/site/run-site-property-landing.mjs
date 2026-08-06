@@ -21,16 +21,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(__dirname, '../..')
 const PRODUCER = 'site-property-landing'
 
-const BANNED_WORDS = [
-  'stunning','breathtaking','gorgeous','charming','pristine','nestled','boasts',
-  'must-see','dream home','meticulously maintained',"entertainer's dream",
-  'tucked away','hidden gem','truly','spacious','cozy','luxurious',
-  'updated throughout','turnkey','immaculate','captivating','exquisite',
-  'delve','leverage','tapestry','navigate','robust','seamless','comprehensive',
-  'elevate','unlock','holistic','dynamic','vibrant','bustling','eclectic',
-  'curated','bespoke','foster','approximately','roughly','fairly',
-  'act fast',"don't miss out","won't last",'premier','passionate',
-]
+import { createRequire } from 'node:module'
+const _req = createRequire(import.meta.url)
+// One vocabulary, from the canon (marketing_brain_skills/brand-voice/VOICE.md).
+// This script used to hand-maintain its own copy of the retired word list.
+const BANNED_WORDS = _req('../brand-voice-vocabulary.cjs').BANNED_WORD_STRINGS
 
 // Strip non-visible content before brand-voice checking.
 // Removes CSS/JS blocks, HTML comments, and code scaffolding to prevent

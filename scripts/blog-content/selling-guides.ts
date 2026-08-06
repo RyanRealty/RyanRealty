@@ -222,7 +222,7 @@ export const posts: BlogPostSeed[] = [
     seo_description:
       'Practical home staging tips for Central Oregon sellers. Real data on staged vs unstaged homes, a room-by-room guide, mountain modern style, and budget tips.',
     excerpt:
-      'Staging works, and the data proves it. Here is a practical, room-by-room staging guide tailored to the Central Oregon market, including budget-friendly options.',
+      'Staging works. Here is a practical, room-by-room staging guide tailored to the Central Oregon market, including budget-friendly options.',
     content: `
 <p>There's a lot of noise about home staging, ranging from reality TV fantasies to cynical dismissals that it's all a waste of money. The truth is somewhere more useful: staging works, the data supports it, and in Central Oregon's market, the specific choices you make when staging matter because buyers here have particular expectations about how a home should feel. Here's what actually moves the needle.</p>
 
@@ -600,7 +600,7 @@ export const posts: BlogPostSeed[] = [
 
 <p><strong>Assessed value</strong> (AV) is the number your taxes are actually calculated on. Thanks to Oregon's Measure 50, passed in 1997, assessed values are limited in how fast they can grow. Assessed value can increase by a maximum of 3% per year, regardless of how much the market value increases.</p>
 
-<p>Here's what that means in practice: A home purchased in 2005 with a market value of $300,000 might have a current market value of $650,000 but an assessed value of only $450,000. The homeowner's taxes are based on that $450,000 assessed value, not the $650,000 market value. This creates a significant tax benefit for long-term homeowners.</p>
+<p>For example, a home purchased in 2005 with a market value of $300,000 might have a current market value of $650,000 but an assessed value of only $450,000. The homeowner's taxes are based on that $450,000 assessed value, not the $650,000 market value. This creates a significant tax benefit for long-term homeowners.</p>
 
 <h3>The Exception Exception</h3>
 

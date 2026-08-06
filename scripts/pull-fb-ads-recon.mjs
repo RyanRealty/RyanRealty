@@ -155,8 +155,8 @@ function ageDays(item) {
 // Filter signal: many of the longest-running "ads" are from ad-tech platforms
 // that white-label real-estate ads (Adwerx, Property Marketing, Local
 // Advertising, Local Real Estate, etc.) — they show up because the Page name
-// is the platform, not the brokerage. We tag them so we can surface
-// "real brokerages" separately in the rankings.
+// belongs to the ad platform, not the brokerage running the ad. We tag them
+// so we can surface "real brokerages" separately in the rankings.
 const AD_PLATFORM_PAGES = new Set([
   'Property Marketing', 'Adwerx Advertising', 'Local Advertising',
   'Local Real Estate', 'Cole Gordon',

@@ -835,7 +835,7 @@ export const posts: BlogPostSeed[] = [
 
   // ─── 11. Bend's 20-Year Growth Plan ───
   {
-    title: "Bend's 20-Year Growth Plan 34,000 New Homes and What That Means",
+    title: "Bend's 20-Year Growth Plan Calls for 34,000 New Homes",
     slug: 'bend-20-year-growth-plan-34000-homes',
     category: 'Local Housing News',
     tags: ['growth plan', 'bend', 'comprehensive plan', 'housing', 'long-term planning'],
@@ -1204,9 +1204,9 @@ export const posts: BlogPostSeed[] = [
     status: 'published',
     seo_title: 'Central Oregon 2025 Homelessness Point-in-Time Results',
     seo_description:
-      'The 2025 Point-in-Time count found 2,108 people experiencing homelessness in Central Oregon, up 17% from 2024. What the data tells us about housing needs.',
+      'The 2025 Point-in-Time count found 2,108 people experiencing homelessness in Central Oregon, up 17% from 2024. Sheltered and unsheltered totals by community.',
     excerpt:
-      'Central Oregon counted 2,108 people experiencing homelessness in January 2025, up 17% from the prior year. Here is what the numbers tell us about the intersection of housing and community.',
+      'Central Oregon counted 2,108 people experiencing homelessness in January 2025, up 17% from the prior year. The count breaks down sheltered and unsheltered totals across seven communities.',
     content: `
 <p>Every January, communities across the country conduct a Point-in-Time count of people experiencing homelessness. The count is an imperfect tool, a single-night snapshot that undercounts the actual population, but it provides the best comparable data available for tracking trends. In January 2025, Central Oregon's count found 2,108 people experiencing homelessness, both sheltered and unsheltered, across Bend, Redmond, Sisters, La Pine, Madras, Prineville, and Warm Springs. That represents a 17% increase from 1,799 in 2024 and a 28% increase from 1,647 in 2023.</p>
 

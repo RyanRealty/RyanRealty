@@ -77,7 +77,7 @@ Then check the latest `agent_insights` row in Supabase (`insight_type = 'marketi
 
 ## If `missing_admin_role` keeps coming back
 
-That is the real blocker, not a script issue. Options:
+The missing Administrator role on the GA4 property is the blocker. Options:
 
 1. Sign into Google Analytics with the account that originally provisioned GA4 property 527333348. Property creators always get Administrator. Run the script while signed in as that account.
 2. If the original creator account is lost, contact Google Analytics support; there is a well-defined "I lost access to my own property" recovery flow.

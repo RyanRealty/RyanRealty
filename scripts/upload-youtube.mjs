@@ -138,7 +138,7 @@ function durationsToTimestamps(durations) {
     'Sale-to-List + Seller Concessions',
     'Cash Buyers + Affordability',
     'Top Neighborhoods',
-    'What This Means — Agent Commentary',
+    'Buyer + Seller Takeaways',
     'Get the Full Report',
   ]
   let sec = 0

@@ -20,19 +20,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(__dirname, '../..')
 const PRODUCER = 'site-edit'
 
-const BANNED_WORDS = [
-  'stunning','breathtaking','gorgeous','charming','pristine','nestled','boasts',
-  'must-see','dream home','meticulously maintained',"entertainer's dream",
-  'tucked away','hidden gem','truly','spacious','cozy','luxurious',
-  'updated throughout','turnkey','immaculate','captivating','exquisite',
-  'delve','leverage','tapestry','navigate','robust','seamless','comprehensive',
-  'elevate','unlock','holistic','dynamic','vibrant','bustling','eclectic',
-  'curated','bespoke','foster','approximately','roughly','fairly',
-  'act fast',"don't miss out","won't last",'top producing','top 1 percent',
-  'white glove','luxury concierge','premier brokerage','boutique brokerage',
-  'your real estate journey','we are passionate about','we pride ourselves on',
-  'premier','passionate',
-]
+import { createRequire } from 'node:module'
+const _req = createRequire(import.meta.url)
+// One vocabulary, from the canon (marketing_brain_skills/brand-voice/VOICE.md).
+// This script used to hand-maintain its own copy of the retired word list.
+const BANNED_WORDS = _req('../brand-voice-vocabulary.cjs').BANNED_WORD_STRINGS
 
 const BANNED_PUNCT = [/—/g, /–/g, /;/g, /!/g]
 
@@ -118,7 +110,7 @@ export default function AboutPage() {
             Central Oregon&apos;s Premier Brokerage
           </h1>
           <p className="text-lg max-w-2xl mx-auto">
-            We are passionate about helping you navigate your real estate journey.
+            Ryan Realty is passionate about helping you navigate your real estate journey.
             Our boutique brokerage provides white glove service from first showing
             to closing — truly a seamless experience.
           </p>
@@ -203,7 +195,7 @@ export default function AboutPage() {
 | # | Location | Violation | Fix |
 |---|---|---|---|
 | 1 | H1 | "Central Oregon's Premier Brokerage" — banned phrase \`premier brokerage\` | "A small brokerage in Bend" |
-| 2 | Body | "We are passionate about" — banned phrase | Removed entirely; replaced with factual description |
+| 2 | Body | "Ryan Realty is passionate about" — banned phrase | Removed entirely; replaced with factual description |
 | 3 | Body | "navigate your real estate journey" — two banned phrases | Rewritten: direct, factual, first-person "you/your" subject |
 | 4 | Body | "boutique brokerage" — banned descriptor | Removed |
 | 5 | Body | "white glove service" — banned phrase | Removed |

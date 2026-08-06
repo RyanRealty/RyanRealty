@@ -36,16 +36,11 @@ function parseArgs(argv) {
   return out
 }
 
-const BANNED_WORDS = [
-  'stunning','breathtaking','gorgeous','charming','pristine','nestled','boasts',
-  'must-see','dream home','meticulously maintained',"entertainer's dream",
-  'tucked away','hidden gem','truly','spacious','cozy','luxurious',
-  'updated throughout','turnkey','immaculate','captivating','exquisite',
-  'delve','leverage','tapestry','navigate','robust','seamless','comprehensive',
-  'elevate','unlock','holistic','dynamic','vibrant','bustling','eclectic',
-  'curated','bespoke','foster','approximately','roughly','fairly',
-  'act fast',"don't miss out","won't last"
-]
+import { createRequire } from 'node:module'
+const _req = createRequire(import.meta.url)
+// One vocabulary, from the canon (marketing_brain_skills/brand-voice/VOICE.md).
+// This script used to hand-maintain its own copy of the retired word list.
+const BANNED_WORDS = _req('./brand-voice-vocabulary.cjs').BANNED_WORD_STRINGS
 
 function checkBannedWords(text) {
   const lower = text.toLowerCase()

@@ -102,15 +102,13 @@ const CITY_CONFIG = {
 }
 
 // ---------------------------------------------------------------------------
-// Banned words. Core list is the canonical BANNED_WORD_STRINGS from
-// scripts/brand-voice-vocabulary.cjs (never hand-typed here), layered with a
-// few blog-specific clichés the canonical (general) list doesn't carry.
-// ---------------------------------------------------------------------------
-const BLOG_LOCAL_EXTRAS = [
-  'coveted', 'one-of-a-kind', 'a rare opportunity',
-  "this won't last long", 'priced to sell',
-]
-const BANNED_WORDS = [...VOCAB.BANNED_WORD_STRINGS, ...BLOG_LOCAL_EXTRAS]
+// Banned words come from the canon, and only from the canon
+// (marketing_brain_skills/brand-voice/VOICE.md via
+// scripts/brand-voice-vocabulary.cjs). The blog-specific extras list that used
+// to sit here was a second rule set, which is what Matt ordered deleted on
+// 2026-08-05. If a phrase should be banned in blog copy, it is banned in the
+// canon or it is not banned.
+const BANNED_WORDS = [...VOCAB.BANNED_WORD_STRINGS]
 
 function grepBannedWords(text) {
   const hits = []
@@ -678,7 +676,7 @@ function buildPostMarkdown(cityConfig, period, stats, topNeighborhoodList, meta,
   }
 
   // ── Closing paragraph + CTA
-  lines.push('## What This Means for Buyers and Sellers')
+  lines.push('## Buyer and Seller Takeaways')
   lines.push('')
   const closingParts = []
   if (stats.mosClass === 'sellers') {

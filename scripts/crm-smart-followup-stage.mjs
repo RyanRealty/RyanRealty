@@ -18,7 +18,7 @@ for (const line of fs.readFileSync(path.join(ROOT, '.env.local'), 'utf8').split(
 }
 const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 
-const HARD_FAIL = /[—–;]|\b(stunning|breathtaking|gorgeous|charming|pristine|nestled|boasts|must-see|dream home|meticulously|truly|luxurious|immaculate|captivating|exquisite|delve|tapestry|robust|seamless|elevate|unlock|vibrant|bustling|curated|bespoke|don't miss out|act fast|won't last)\b/i;
+const HARD_FAIL = /[—–;]|\b(stunning|breathtaking|gorgeous|charming|pristine|nestled|boasts|must-see|dream home|meticulously|truly|luxurious|immaculate|captivating|exquisite|delve|tapestry|robust|seamless|elevate|unlock|vibrant|bustling|curated|bespoke|don\u0027t miss out|act fast|won\u0027t last)\b/i;
 const MAILBOX = { matt: 'matt@ryan-realty.com', rebecca: 'rebeccapeterson@ryan-realty.com', paul: 'paul@ryan-realty.com' };
 
 const draftsPath = process.argv[2] ?? path.join(ROOT, 'tmp/smart-followup-drafts.json');

@@ -200,7 +200,7 @@ for (const [i, row] of targets.entries()) {
       dirty++
     } else if (!report.ok) {
       // Never store a document that does not verify. A re-render that still
-      // bleeds is a renderer bug to fix, not a row to overwrite.
+      // bleeds means the renderer has a bug. Fix the renderer; do not overwrite the row.
       rec.action = 'refused:violations'
       rec.detail = formatViolations(report.violations, 3)
       dirty++

@@ -30,61 +30,11 @@ const NARRATIVE = html
   .replace(/<style[\s\S]*?<\/style>/g, '')
   .replace(/<head[\s\S]*?<\/head>/g, '')
 
-const BANNED = [
-  'stunning',
-  'breathtaking',
-  'gorgeous',
-  'charming',
-  'pristine',
-  'nestled',
-  'must-see',
-  'must see',
-  "won't last",
-  'truly',
-  'cozy',
-  'spacious',
-  'meticulously maintained',
-  'entertainer',
-  'tucked away',
-  'hidden gem',
-  'updated throughout',
-  'turnkey',
-  'immaculate',
-  'captivating',
-  'exquisite',
-  'don\'t miss',
-  'act now',
-  'act fast',
-  'dream home',
-  'unparalleled',
-  'world-class',
-  'delve',
-  'leverage',
-  'tapestry',
-  'navigate',
-  'robust',
-  'seamless',
-  'comprehensive',
-  'elevate',
-  'unlock',
-  'holistic',
-  'dynamic',
-  'vibrant',
-  'bustling',
-  'eclectic',
-  'curated',
-  'bespoke',
-  'foster',
-  'top producing',
-  'top 1 percent',
-  'white glove',
-  'luxury concierge',
-  'premier brokerage',
-  'boutique brokerage',
-  'real estate journey',
-  'we are passionate about',
-  'we pride ourselves',
-]
+import { createRequire } from 'node:module'
+const _req = createRequire(import.meta.url)
+// One vocabulary, from the canon (marketing_brain_skills/brand-voice/VOICE.md).
+// This script used to hand-maintain its own copy of the retired word list.
+const BANNED = _req('./brand-voice-vocabulary.cjs').BANNED_WORD_STRINGS
 
 console.log('=== 1. Brand-voice scan ===')
 let voiceFails = 0
