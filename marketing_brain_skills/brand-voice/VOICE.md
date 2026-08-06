@@ -1,177 +1,277 @@
-# Ryan Realty: The Voice (canonical, 2026-06-13)
+# Ryan Realty: The Voice
 
-This is the **single source of truth** for how Ryan Realty sounds, everywhere:
-site, app, email, ads, social, listing copy, video VO, review replies. It
-replaces the retired `voice_system_v2.md`. There is one voice doc now, on
-purpose, every duplicate is a place the rules can drift.
+**Locked 2026-08-05. This is the only voice document in this repository.** Every
+other voice, tone, or style file was deleted when this one was written. If you find
+another, it is stale: delete it and point its references here. One canon, or the
+rules drift.
 
-The voice is built from the brands that are universally cited as the best at
-this, Apple ("40mm stainless steel case," never "beautifully crafted"),
-Basecamp (no fluff, smart-to-smart), Patagonia (message over sales), Aesop
-(confidence held quietly), Stripe (respect the reader's intelligence). They all
-do the same thing: **they never describe themselves. They show the thing and
-let you decide.**
+## Scope
 
----
+This governs **every word a member of the public reads**, whatever produces it:
 
-## Scope: our language only
+| Surface | Examples |
+|---|---|
+| Email | Lead follow-up, sequence touches, saved-search alerts, document delivery, e-sign notices, review requests |
+| Text | Every SMS body: sequence touches, auto-replies, alerts, agent replies |
+| Reports | CMA, BPO, market reports, every figure's surrounding sentence |
+| Site | Every page, hero, heading, body paragraph, button, form label, empty state, public error message, meta description |
+| Landing pages | Seller valuation, expired, FSBO, every `/lp/*` |
+| Listings | Our own MLS remarks, flyers, signage, listing descriptions |
+| Social + ads | Captions, headlines, ad copy, video on-screen text and voiceover |
+| Documents | Anything a client opens: PDFs, letters, disclosures we author |
 
-The laws govern **Ryan Realty's own authored marketing copy, and only that.**
-They never apply to, and we never rewrite:
+**Not governed:** code, comments, commit messages, admin screens, logs, internal
+docs. And never rewritten, because they are someone else's words: customer reviews,
+another broker's listing remarks, quoted third-party sources, MLS data fields.
 
-- **Reviews and testimonials**, real people's words (`lib/testimonials.ts`,
-  pulled from the Google Business Profile). Quoted verbatim, always.
-- **Listing remarks**, the public remarks / description the listing broker
-  wrote about a property (ours or another brokerage's), and any MLS-sourced
-  field. That is the broker's language, not ours.
-- **External sources**, anything quoted or syndicated from a third party.
+## The anchor
 
-Mechanically this holds by construction: reviews and listing text render from
-data (the reviews file and the MLS feed via the DAL) as variables, never as
-hardcoded string literals, so the gate, which scans only literal strings in
-`app/` and `components/` public surfaces, cannot see them. The laws bind the
-sentences we type into the site, they leave quoted material alone.
+**Warren Buffett's Berkshire Hathaway shareholder letters.**
+Read them: https://www.berkshirehathaway.com/letters/letters.html
 
-## The Five Laws
+Buffett writes about money, once a year for fifty years, to people who do not work
+in finance. They are the most-read financial documents in the world. He does it by
+writing to one specific person, using plain words, naming the bad news before the
+good, and letting a number sit by itself.
 
-Every sentence obeys all five. Each law is enforced by a gate
-(`scripts/check-brand-voice.mjs` + `brand-voice-vocabulary.cjs`), not by
-memory. A sentence that breaks a law fails the commit, the same way a wrong
-number does.
+Further codified in Lawrence Cunningham's *The Essays of Warren Buffett*, and in
+Buffett's own foreword to the SEC's Plain English Handbook.
 
-### Law 1: Show it, don't say it.
-Never name a virtue you could demonstrate. Trust, honesty, expertise, care,
-local knowledge, those are conclusions the reader reaches from evidence, never
-labels you stick on yourself. A business praising itself is discounted to zero.
-**Banned move:** "we're honest / trusted / experts / dedicated / professional,"
-"honest guidance," "trusted local," "experts you can trust."
-**Instead:** show the receipt in the same breath, the 24 five-star reviews, the
-comps behind a price, the named process. The fact carries the claim.
+Two supporting standards, adopted for mechanics only:
 
-### Law 2: A number beats an adjective.
-When a sentence feels weak, the fix is never a bigger adjective. It is a more
-specific noun, a real figure, a named thing: the street, the date, the brand,
-the count. "Stunning kitchen" is your opinion, "kitchen renovated 2022, Wolf
-range" is the house. **Banned move:** empty superlatives and editorial
-adjectives (stunning, exceptional, gorgeous, premier, charming, luxurious).
-**Instead:** the noun, date, dimension, or live number that made you want the
-adjective. The reader supplies the adjective themselves, and that's the only
-kind they keep.
-
-### Law 3: Talk to a smart adult.
-The reader is deciding the largest purchase of their life. Give them
-information, not reassurance. No warmth for its own sake, no comfort copy, no
-explaining the obvious. **Banned move:** "we're here to help," "we'd love to,"
-"don't hesitate to reach out," "happy to help," "buying a home is a big
-decision," "let me explain in simple terms." **Instead:** the useful fact. If
-the page then feels cold, the fix is a better fact, never a warmer sentence.
-Warmth that survives is a byproduct of usefulness.
-
-### Law 4: The category is not a claim.
-Being a licensed brokerage is the baseline, not a selling point. Never name the
-category, the credential, or the headcount as if it positioned you. **Banned
-move:** "independent brokerage serving," "licensed and active brokers," "full-
-service brokerage," "three brokers," "small brokerage / team," "boutique."
-**Instead:** the work. What every listing actually gets, what the broker
-actually does, the number on the board. The position is the standard, never the
-org chart.
-
-### Law 5: Every number is live and true.
-Figures come from the source of truth, wired to live data (the DAL), traced per
-CLAUDE.md §0. A specific number that is wrong is worse than no number. **Banned
-move:** a hardcoded stat on an evergreen surface, a figure with no trace, "about
-/ roughly" standing in for a number you can pull. **Instead:** the live figure,
-or write the sentence without it.
+- **GOV.UK** (https://guidance.publishing.service.gov.uk/writing-to-gov-uk-standards/writing-guidelines/)
+  for sentence discipline. Their position on adjectives is ours: they are
+  subjective and make text read like spin.
+- **Redfin's market reports** (https://www.redfin.com/news/) for report structure,
+  and for rule 3 below.
 
 ---
 
-## The Orwell rules (how to write the sentence)
+## The eight rules
 
-Once a sentence passes the Five Laws, these six rules decide how it reads. They
-are the difference between prose a smart adult trusts and prose that sounds like
-every other listing.
+### 1. Write to one person
 
-1. **Never use a cliché.** If you have seen the phrase on a hundred listings
-   (nestled, stunning, hidden gem, dream home, a must-see), cut it. A cliché is a
-   phrase the reader skips.
-2. **Never use a long word where a short one works.** "utilize" is "use."
-   "purchase" is "buy." "in close proximity to" is "near." "residence" is "home."
-3. **If you can cut a word, cut it.** "very unique" is "unique." "actually
-   located" is "located." Read the sentence without the word. If it still means
-   the same thing, the word was noise.
-4. **Use the active voice.** "the home was renovated by the owner" is "the owner
-   renovated the home." Active is shorter, and it names who did the thing.
-5. **Never use jargon where plain English works.** "leverage synergies" is not a
-   sentence. Say what happened.
-6. **Break any rule before you write something graceless.** The rules serve the
-   reader, not the reverse. A slightly long word that is exactly right beats a
-   short one that is not.
+Not "sellers," not "homeowners," not "our clients." One person, reading alone. Use
+"you." Use their name when we have it.
 
-## Never pander
+> No: "Sellers in this market are finding that pricing matters."
+> Yes: "You get one first two weeks on market."
 
-The reader is a smart adult buying or selling a home, not a fan to be flattered.
+### 2. State the fact. Then stop.
 
-- Never praise the reader ("you have great taste," "what a beautiful home").
-- Never praise ourselves ("we are honest," "trusted," "dedicated," "your local
-  experts"). That is Law 1. Show it or cut it. A virtue you name is a virtue the
-  reader now doubts.
-- Never talk down ("don't worry, we will handle everything," "let me explain in
-  simple terms," "buying a home is one of the biggest decisions of your life").
-  The reader knows.
-- Never manufacture urgency ("act fast," "won't last," "don't miss out"). If the
-  market is moving, the number says so.
+**This is the rule that matters most, and the one we break most.** A fact with a
+number carries its own meaning. The sentence after it, the one explaining what it
+means, is noise. Delete it.
 
-Warmth is fine. Pandering is warmth with nothing behind it. The test: cut the
-sentence. If the reader loses a fact, keep it. If the reader loses only a
-compliment or a reassurance, it was pandering.
+> No: "April homes went pending in 9 days. Lower is faster."
+> No: "131 homes are for sale in your band. Those are the homes yours is judged
+> against on day one."
+> Yes: "131 homes are for sale in Bend between $504,000 and $616,000. The median
+> one has been listed 53 days."
+
+If the reader could work it out from the number, they already have.
+
+### 3. Interpretation goes in a quote, under a name
+
+When something needs a judgment call, a person makes it and signs it. The document
+reports; a named broker interprets. This is Redfin's convention, and it is a
+compliance asset as much as a voice one.
+
+> Yes: "Homes that fail to sell close at a median 94.2% of the ask that failed.
+> 'The second listing succeeds by correcting the first ask, not defending it,' said
+> Matt Ryan, principal broker."
+
+No unattributed opinions anywhere.
+
+### 4. A number beats an adjective, and stands alone
+
+State the number once. No adjective in front of it, no restatement after it, no
+telling the reader it is high, low, or surprising.
+
+> No: "a remarkably strong median of $599,900"
+> Yes: "a median of $599,900"
+
+"About" and "roughly" are allowed only on genuine estimates, never on a number we
+can pull exactly (CLAUDE.md §0).
+
+### 5. Plain word over formal word
+
+about (not approximately) · buy (not purchase, acquire) · use (not utilize) · help
+(not assist) · near (not in close proximity to) · home (not residence) · now (not
+at this time) · we can (not we are able to).
+
+Sentences run 15 to 20 words. Longer is fine when a short one sits beside it.
+Active voice: name who did the thing.
+
+### 6. Bad news first, in plain words
+
+Name the limitation, cost, risk, or mistake before the upside. Never bury it, never
+soften it with a qualifier stack. If we got something wrong, say so.
+
+> Yes: "Your last listing asked $619,999 and did not sell."
+> Yes: "We cannot verify your home's condition from the record, so this estimate
+> assumes average condition for its age."
+
+### 7. Say what you do not know
+
+No false certainty, no forecast dressed as fact. Where the answer is unknown, write
+the condition instead of a guess.
+
+> No: "Your home will sell in about 30 days."
+> Yes: "Homes in Stone Creek have gone pending in a median of 24 days over the last
+> two years."
+
+### 8. Never be pleased with yourself
+
+From The Economist's style guide, which names our failure exactly: *do not be too
+pleased with yourself.* No coined maxims. No clever balanced pairs. No sentence
+that exists to sound wise. No congratulating the reader on their decision, and no
+congratulating ourselves on the analysis.
 
 ---
 
-## The two tests (run on every sentence, by writer and AI alike)
+## Banned constructions
 
-1. **The competitor test.** Could any brokerage in Bend paste this sentence on
-   their site, verbatim, and have it be just as true? Then it says nothing. Cut
-   it, or make it specific enough that only Ryan Realty could have written it.
-2. **The receipt test.** Does the sentence claim a virtue, skill, or character
-   trait? Show the receipt in the same breath (a number, a comp, a timeline, a
-   named process, the reviews) or cut the claim. No receipt, no claim.
+Every example below was real Ryan Realty copy on 2026-08-05. These shapes must not
+ship again.
 
-If a sentence passes both, ship it. If it fails either, rewrite or cut, never
-excuse.
+**The aphorism pair.** Two balanced clauses coining a maxim.
+> Killed: "Pricing sets the number. Competition decides how it lands."
+> Killed: "This number is a starting point, not a verdict."
+
+**The meaning-narration.** Any sentence explaining the sentence before it.
+Triggers: "this tells you," "what this means," "in other words," "put simply,"
+"this is history, not a forecast."
+> Killed: "This is history, not a forecast: it tells you when Bend buyers have been
+> most active."
+
+**The sermon clause.** A trailing clause that moralizes the fact.
+Triggers: "which is one more reason," "and that matters because," "which is why it
+is so important."
+> Killed: "...which is one more reason the list price has to be right on day one."
+> Killed: "...it is fully in your control before the next listing goes live."
+
+**The drama header.** A heading that narrates instead of stating.
+> Killed: "The market gave its answer. Here is what it was worth hearing."
+> Replaced with: "Your last listing."
+
+**The obvious restatement.** Explaining a chart, a label, or a word.
+> Killed: "Lower is faster." "Real homes, really sold."
+
+**The data-speaks headline.** Numbers do not speak, say, tell, reveal, or prove.
+> Killed: "450 sales say the calendar matters."
+> Replaced with: "April homes went pending in 9 days. December homes took 39."
+
+**The throat-clear.** A windup before the fact.
+> Killed: "Before the numbers, the concrete things this property has going for it."
+
+**Pandering.** "Great question," "you have great taste," "don't worry, we will
+handle everything," "let me explain in simple terms," "buying a home is a big
+decision."
+
+**Fake urgency.** "Act fast," "don't miss out," "won't last long."
+
+**Self-praise.** "Honest," "trusted," "dedicated," "your local experts," "premier,"
+"boutique," "top producing." A virtue we name is a virtue the reader doubts.
+
+**Category and headcount as position.** "Independent brokerage by design," "full-
+service," "licensed and active brokers," "three brokers," "small team."
+
+**This file is authoritative for everything.**
+[`scripts/brand-voice-vocabulary.cjs`](../../scripts/brand-voice-vocabulary.cjs) is a
+machine-readable projection of the rules above, nothing more: it exists so
+[`scripts/check-brand-voice.mjs`](../../scripts/check-brand-voice.mjs) can fail a
+commit. Every list it holds is derived from this document. It inherits nothing from
+any earlier version, and a word or pattern is only bannable here first.
 
 ---
 
-## The register (NN/g dimensions: where we sit)
+## Per-surface rules
 
-| Dimension | Position | In practice |
-|---|---|---|
-| Formal ↔ Casual | Plain, leaning casual | A competent person talking, not a brochure. Full sentences, no slang, no stiffness. |
-| Funny ↔ Serious | Serious | Biggest transaction of their life. Dry warmth allowed rarely, never jokes about money or the market. |
-| Respectful ↔ Irreverent | Respectful, never deferential | We don't flatter, we don't grovel, we don't punch at competitors. |
-| Enthusiastic ↔ Matter-of-fact | Matter-of-fact (the signature dial) | Excitement is the reader's job. Ours is the fact that produces it. Reads like The Economist, not a flyer. |
+### Email
+
+Subject is the fact, under 50 characters, no colon drama, no emoji. The first
+sentence is the reason for the email, with no greeting paragraph in front of it.
+One ask, stated once. Sign with a real broker's name and title.
+
+> Subject: "3 homes matched your search in Awbrey Butte"
+> Not: "Your personalized property update is here!"
+
+### Text messages
+
+One idea. Under 300 characters where possible. No emoji. Identify who is texting on
+first contact. One ask, never two questions. Consent and opt-out language is fixed
+by law and lives in [`lib/crm/sms-consent-text.ts`](../../lib/crm/sms-consent-text.ts):
+do not rewrite it for tone.
+
+### Saved-search and listing alerts
+
+The listings are the content. Say what matched and why, then get out of the way. No
+adjectives about the homes, no urgency, no "we thought you'd love this."
+
+> Yes: "3 new listings match Awbrey Butte, 3+ bed, under $900,000."
+
+### Reports and client documents
+
+Structure follows Redfin: the claim with its number leads, the method is stated
+before any interpretation, the source sits under the figure. Every section answers
+one question. Rules 2 and 3 carry the weight: report the number, attribute the
+judgment.
+
+### Site pages
+
+Headings are sentence case and say something specific. Buttons say what happens
+("See the estimate," not "Get started"). Empty states say what is missing and what
+to do next. Public error messages say what failed and the next step, with no
+apology theater.
 
 ---
 
-## The mechanical floor (enforced by gates, details in `brand-voice-vocabulary.cjs`)
+## Mechanics
 
-- **Punctuation:** no em-dash or en-dash as punctuation, no semicolons, no
-  dramatic colons, one exclamation max per piece and zero in market-data copy.
-  Em-dash allowed only as a data placeholder for "unavailable."
-- **Banned vocabulary + banned moves:** the category lists and Law-1-4 patterns
-  in `scripts/brand-voice-vocabulary.cjs` are the enforced source.
-- **Formatting:** phone `541.213.6706` (FUB-tracked `541.703.3095` on lead-
-  capture surfaces), `ryan-realty.com`, `BEND · OREGON`, currency to the nearest
-  thousand, integer days, signed one-decimal YoY percents, tabular numerals,
-  sentence-case body headlines.
-- **Data accuracy (CLAUDE.md §0) and fair housing** outrank everything here and
-  are hard ship-blockers.
+**Punctuation.** No em or en dashes in prose a reader sees. No semicolons: use a
+period. No dramatic colons in body prose. One exclamation mark per piece maximum,
+none in anything carrying market data. Compound hyphens stay where English needs
+them (single-family, 30-year fixed).
+
+**Numbers.** Currency to the nearest thousand: `$895,000`. Days as an integer plus
+the word: `38 days`. Percentages carry one decimal: `2.1%`. Year over year carries
+a signed arrow: `↑ 2.1% YoY`. Unavailable renders as an em-dash placeholder.
+Tabular numerals on every numeric surface.
+
+**Fixed facts.** Phone `541.703.3095`, the only public number, imported from
+[`lib/brand/contact.ts`](../../lib/brand/contact.ts) and never typed. Web
+`ryan-realty.com`. Social `@ryanrealtybend`. Place separator is a middle dot:
+`BEND · OREGON`. Sentence case for body headings; Title Case only on a hero H1.
+
+**Data accuracy (CLAUDE.md §0) and fair housing outrank everything in this file**
+and are hard ship-blockers.
 
 ---
 
-## The one exception: Matt's 1:1 correspondence
+## Matt's first-person voice
 
-Personal review replies and letters from Matt may use first-person warmth and a
-small phrase bank ("genuinely," "honored," "a small business like ours," "the
-finish line"). This is the ONLY surface where that voice lives. It never appears
-in site, app, ad, or marketing copy. See `voice_guidelines.md` appendix for the
-phrase bank.
+One narrow exception: correspondence Matt personally sends. Review replies,
+personal letters, a note to a past client.
+
+"Thank you so much for taking the time to..." · "It was genuinely a pleasure
+working with you." · "That kind of trust makes all the difference." · "I'm always
+here if you need anything down the road."
+
+Never on a site page. Never in a report. Never in an automated send.
+
+---
+
+## The review test
+
+Read the piece once and ask five questions. Cut, do not excuse.
+
+1. **Does a sentence explain another sentence?** Delete it.
+2. **Is there an opinion with no name attached?** Attribute it or cut it.
+3. **Am I pleased with myself anywhere here?** Cut that part.
+4. **The competitor test:** could any brokerage in Bend paste this sentence on
+   their site verbatim and have it be just as true? Then it says nothing.
+5. **The receipt test:** does a sentence claim a virtue, skill, or character trait?
+   Show the receipt in the same breath, or cut the claim.
+
+If the piece still says everything it needs to after those cuts, it is done.
