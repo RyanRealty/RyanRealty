@@ -29,19 +29,17 @@ export function SellCommission() {
           <Stack gap="loose">
             <Stack gap="tight">
               <Eyebrow>How the fee works</Eyebrow>
-              <H2>3% is the plan. Pay less for less, or more for the full push.</H2>
+              <H2>The listing fee is 2.5%, 3%, or 3.5% of the sale price.</H2>
             </Stack>
             <Stack gap="default">
               <Body size="default" tone="muted" className="leading-relaxed">
-                The 3% listing fee covers professional photography, the MLS
-                listing, the full marketing plan, every showing, and transaction
-                management from contract to close. Nothing is billed on the side.
-                The same fee runs on a 400,000 dollar home and a 4 million dollar
-                one.
+                The 3% fee covers professional photography, the MLS listing, the
+                full marketing plan, every showing, and transaction management
+                from contract to close. Nothing is billed on the side, and it is
+                the same percentage on a $400,000 home and a $4 million one.
               </Body>
               <Body size="default" tone="muted" className="leading-relaxed">
-                Want to spend less? Essential is 2.5% and keeps the essentials
-                while trimming the reach. Want every channel working at once?
+                Essential is 2.5% and keeps the same spine with less reach.
                 Elite is 3.5% and adds a pre-listing inspection, a professional
                 stager, paid social, and a placement in Bend Magazine.
               </Body>
@@ -53,8 +51,8 @@ export function SellCommission() {
                 buyer credit looks like at your price point.
               </Body>
               <Body size="default" tone="muted" className="leading-relaxed">
-                We are not a high-pressure shop. If after reading the CMA you
-                decide not to list, we do not follow up beyond two emails.
+                If you read the CMA and decide not to list, we follow up twice
+                by email and then stop.
               </Body>
             </Stack>
             <Caption className="text-muted-foreground">
@@ -65,8 +63,8 @@ export function SellCommission() {
           <div className="flex flex-col gap-4">
             {[
               {
-                heading: 'Pick the reach, not a mystery fee',
-                body: 'Essential 2.5%, Enhanced 3%, Elite 3.5%. Every tier lists on the MLS, gets professional photos and a 3D tour, and closes with one broker. What changes is how hard the marketing pushes.',
+                heading: 'What changes between the tiers',
+                body: 'Essential 2.5%, Enhanced 3%, Elite 3.5%. Every tier lists on the MLS, gets professional photos and a 3D tour, and closes with one broker. Only the marketing reach changes.',
               },
               {
                 heading: 'Buyer-agent compensation, explained',

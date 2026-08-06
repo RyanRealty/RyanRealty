@@ -42,7 +42,7 @@ const TIERS: Tier[] = [
   {
     name: 'Essential',
     rate: '2.5%',
-    tagline: 'List for less, keep what sells a home.',
+    tagline: '2.5% commission. The same spine, less reach.',
     services: 13,
     reachPct: 42,
     addsLabel: 'What you get',

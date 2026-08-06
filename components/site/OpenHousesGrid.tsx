@@ -113,7 +113,7 @@ type Props = {
 
 export default async function OpenHousesGrid({
   city,
-  eyebrow = 'Featured listings',
+  eyebrow = 'Open houses',
   heading = 'Open houses this weekend',
   subtitle,
   viewAllHref = '/open-houses',
@@ -137,7 +137,7 @@ export default async function OpenHousesGrid({
 
   const defaultSubtitle = city
     ? `Upcoming open houses in ${city}.`
-    : 'Representing a mix of neighborhoods across Central Oregon.'
+    : 'From neighborhoods across Central Oregon.'
 
   return (
     <Section padding="default" divider>

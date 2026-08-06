@@ -57,8 +57,8 @@ const PHASES: Phase[] = [
     when: '5 to 7 business days from signing',
     items: [
       'Live on the MLS with full syndication across Central Oregon.',
-      'Its own page on ryan-realty.com where the film and walkthrough play.',
-      'An open-house cadence set with you, not just the first weekend.',
+      'Its own page on ryan-realty.com where the video and 3D walkthrough play.',
+      'An open-house schedule set with you, not just the first weekend.',
     ],
   },
   {
@@ -88,13 +88,13 @@ export function SellMarketingPlan() {
         {/* Intro */}
         <Stack gap="tight" className="mb-8 max-w-2xl">
           <Eyebrow>The plan</Eyebrow>
-          <H2>Three plans. One is the line everyone else is measured against.</H2>
+          <H2>Three plans: 2.5%, 3%, and 3.5% of the sale price.</H2>
           <Body size="large" tone="muted" className="mt-1 leading-relaxed">
-            List at 3% and your home gets the full plan. Want to spend less and
-            trim the reach? Essential, at 2.5%. Want every channel working at
-            once for a harder sale? Elite, at 3.5%. The same broker, the same
-            weekly report, and the same math behind your price run through all
-            three.
+            Enhanced is 3%, and it is the plan most homes list on. Essential is
+            2.5% with the same spine and less reach. Elite is 3.5% and adds a
+            pre-listing inspection, a professional stager, paid social, and a
+            placement in Bend Magazine. All three get the same broker, the same
+            weekly written report, and the same comps behind the price.
           </Body>
         </Stack>
 
@@ -102,8 +102,7 @@ export function SellMarketingPlan() {
         <SellPlanExplorer />
 
         <p className="mt-4 text-sm text-muted-foreground">
-          Not sure which fits? Start with a free valuation and a broker walks you
-          through it.{' '}
+          A free valuation comes with a broker walking you through all three.{' '}
           <TextLink href={BROKER_HREF} tone="primary" underline="on-hover">
             Or talk to a broker first
           </TextLink>
@@ -149,14 +148,14 @@ export function SellMarketingPlan() {
           {[
             {
               eyebrow: 'The price',
-              title: 'You see every number behind it.',
-              body: 'Most pricing is a number with a story attached. Ours is a number with the comps attached. Three recent closed sales near you, three homes yours is competing against, and the four variables that move the range. The math is on the page, and you price your home from it.',
+              title: 'Six comps, and the range they support.',
+              body: 'Three recent closed sales near you, three homes yours competes against, and the four variables that move the range. Every figure comes from the MLS, and each comp we used is printed on the page next to it.',
               tone: 'muted' as const,
             },
             {
               eyebrow: 'The reporting',
-              title: 'You know whether it is working, every week.',
-              body: 'A written update lands in your inbox each week your home is listed: how many showings, how much online traffic, where the views came from, and what buyers said. No wondering how the marketing is going. You have the numbers.',
+              title: 'A written update every week it is listed.',
+              body: 'How many showings, how much online traffic, which sources the views came from, and what the buyers who walked through it said.',
               tone: 'card' as const,
             },
           ].map((c, i) => (

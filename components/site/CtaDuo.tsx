@@ -86,7 +86,7 @@ export default function CtaDuo() {
           <CtaCard
             icon={<BellIcon />}
             title="Never miss a new listing"
-            body="Save a search and get instant alerts when matching homes hit the market. Set your criteria once and we handle the rest."
+            body="Save a search and get an alert the moment a matching home lists."
             primary={{ href: '/lp/buyer-listing-alerts', label: 'Set up alerts' }}
             secondary={{ href: '/homes-for-sale', label: 'Browse listings' }}
           />

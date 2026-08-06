@@ -38,7 +38,6 @@ export default function InventoryTypeSlider({
   return (
     <TilesSlider
       title={`Property types in ${placeLabel}`}
-      subtitle="Quick inventory mix by active listing type."
       titleId="inventory-type-slider-heading"
       className="px-4 py-10 sm:px-6"
     >

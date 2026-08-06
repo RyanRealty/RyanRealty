@@ -494,7 +494,7 @@ function SellPanel({
             What is your home worth?
           </DisplayHeading>
           <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
-            Get a free valuation from a local broker, without the high pressure.
+            Get a free valuation from a local broker.
           </p>
           <CTAButton
             href="/sell/valuation"
@@ -506,7 +506,7 @@ function SellPanel({
             What&apos;s my home worth
           </CTAButton>
           <p className="mt-2 text-center text-[12px] text-muted-foreground">
-            No obligation. No pressure.
+            No obligation.
           </p>
         </div>
       </aside>

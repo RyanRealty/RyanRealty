@@ -154,11 +154,11 @@ export default async function ActivityFeed({
   city,
   eyebrow = 'Live activity',
   heading,
-  viewAllLabel = 'Full market pulse →',
+  viewAllLabel = 'See all market activity →',
   viewAllHref = '/housing-market',
 }: Props = {}) {
   const cities = city ? [city] : [...ACTIVITY_FEED_DEFAULT_CITIES]
-  const h2 = heading ?? (city ? `What is happening in ${city}` : "What's happening right now")
+  const h2 = heading ?? (city ? `New listings, price drops, and closings in ${city}` : 'New listings, price drops, and closings in Central Oregon')
 
   const items = await getActivityFeedWithFallbackMulti({
     cities: cities as string[],

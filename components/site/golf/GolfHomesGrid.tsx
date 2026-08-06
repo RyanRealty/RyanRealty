@@ -67,7 +67,7 @@ export function GolfHomesGrid({ homes, totalHomes, allHomesHref }: Props) {
         ) : (
           <div className="rounded-xl bg-muted px-6 py-12 text-center">
             <Body size="default" tone="muted">
-              No active golf-course listings right now. Check back soon, or contact us at {CONTACT.phoneDirect} and we will keep an eye on the market for you.
+              No active golf-course listings right now. Check back soon, or contact us at {CONTACT.phoneDirect}.
             </Body>
             <div className="mt-4">
               <Button asChild>

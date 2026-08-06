@@ -34,8 +34,8 @@ export function GolfCtaBand({ allHomesHref, totalHomes }: Props) {
 
           <Body size="large" className="text-white/80 max-w-prose">
             {totalHomes > 0
-              ? `There are ${totalHomes} active golf-course homes across Central Oregon right now. We know these communities and their courses well.`
-              : 'Golf-course inventory moves fast in Central Oregon. We know these communities and their courses well.'}
+              ? `There are ${totalHomes} active golf-course homes across Central Oregon right now.`
+              : 'Golf-course inventory moves fast in Central Oregon.'}
           </Body>
 
           <div className="flex flex-wrap gap-3 justify-center">

@@ -44,7 +44,7 @@ export function SellValuationCTA({
           <Stack gap="loose">
             <Stack gap="tight">
               <Eyebrow>Start with the CMA</Eyebrow>
-              <H2>Tell us your address. We will do the rest.</H2>
+              <H2>Tell us your address. We send a written valuation within 24 hours.</H2>
             </Stack>
             <Body size="large" tone="muted" className="leading-[1.55] max-w-[44ch]">
               A written valuation within 24 hours. If after reading it you want a 20-minute call, you book one. If you do not reply, we do not follow up beyond two emails.

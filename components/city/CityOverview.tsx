@@ -104,7 +104,7 @@ export default function CityOverview({ cityName, description, quickFacts, cityCo
       renderParagraphs(fallbackParagraphs)
     ) : (
       <p>
-        {cityName} is one of Central Oregon&apos;s communities. Browse active listings below to find your next home and explore neighborhoods and market stats on this page.
+        {cityName} is one of Central Oregon&apos;s communities.
       </p>
     )
 

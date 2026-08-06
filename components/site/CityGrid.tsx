@@ -110,7 +110,7 @@ type CityGridProps = {
 export default async function CityGrid({
   eyebrow = 'Communities',
   title = 'Search by city',
-  subtitle = 'Eleven Central Oregon communities. Median prices refreshed daily.',
+  subtitle = 'Eight Central Oregon communities. Median prices refresh hourly.',
 }: CityGridProps = {}) {
   const [cities, geoImages] = await Promise.all([
     getCitiesForIndex().catch(() => []),

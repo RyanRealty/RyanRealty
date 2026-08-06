@@ -47,7 +47,7 @@ function Stars({ rating, className }: { rating: number; className?: string }) {
 export function ReviewsBlock({
   data,
   eyebrow = 'Reviews',
-  title = 'What our clients say',
+  title = 'Verified Google reviews',
   tone = 'muted',
   max = 6,
 }: Props) {

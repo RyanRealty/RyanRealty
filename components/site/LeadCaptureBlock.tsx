@@ -114,13 +114,13 @@ const variantDefaults: Record<
   },
   seller: {
     eyebrow: 'Home value',
-    title: 'Request a free home valuation',
+    title: 'What a broker thinks your home is worth',
     submitLabel: 'Request my valuation',
     consentLine: 'No automated estimate. A local broker writes back personally.',
   },
   expired: {
     eyebrow: 'Expired listing',
-    title: 'Restart your sale with a fresh plan',
+    title: "Get a new plan for the home that didn't sell",
     submitLabel: 'Request a plan review',
     consentLine: 'No pitch. A broker writes back with a specific plan for your home.',
   },

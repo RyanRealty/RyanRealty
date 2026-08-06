@@ -11,8 +11,8 @@ import type { LifestyleImage } from '@/lib/data/media/getLifestyleImages'
 export function LifestyleStrip({
   images,
   eyebrow = 'Life in Central Oregon',
-  title = 'The reason people move here, and stay.',
-  lede = 'Bend and the high desert run on the outdoors. Trails out the back door, rivers through town, snow forty minutes up the road. This is the life a home here comes with.',
+  title = 'Trails, rivers, and mountains within reach',
+  lede = 'Bend and the high desert run on the outdoors. Trails out the back door, rivers through town, snow forty minutes up the road.',
 }: {
   images: LifestyleImage[]
   eyebrow?: string

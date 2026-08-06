@@ -29,19 +29,19 @@ type ValueProp = {
 
 const VALUE_PROPS: ValueProp[] = [
   {
-    title: 'Priced on real data',
-    body: 'We prepare a written CMA with three closed comps, three active comps, the list-price range they support, and the four levers that move it. You see every number we used.',
-    detail: 'No guesses. No adjectives.',
+    title: 'Six comps, and the range they support',
+    body: 'We write a CMA with three closed comps, three active comps, the list-price range those six support, and the four variables that move it. You see every number we used.',
+    detail: 'Free. No listing agreement required.',
   },
   {
     title: 'One broker, first call to closing',
     body: 'The broker who prices your home is the broker who lists it, markets it, negotiates the offers, and closes the transaction. No hand-offs. No call center.',
-    detail: 'Accountable to you, start to finish.',
+    detail: 'Matt Ryan, Paul Stevenson, or Rebecca Peterson.',
   },
   {
-    title: 'Marketed by someone who knows this market',
-    body: 'Professional photography within 48 hours of agreement. MLS description written by a person. Weekly written updates on showings and traffic. Full MLS syndication across Central Oregon.',
-    detail: 'No templates. No filler.',
+    title: 'Photos in 48 hours, listed in a week',
+    body: 'Professional photography within 48 hours of a signed agreement. Live on the MLS in 5 to 7 business days with full Central Oregon syndication. The description is written by the broker who priced your home.',
+    detail: 'A written traffic report every week it is listed.',
   },
 ]
 
@@ -51,7 +51,7 @@ export function SellValueProps() {
       <Container>
         <Stack gap="tight" className="mb-10 max-w-[52ch]">
           <Eyebrow>Why list with us</Eyebrow>
-          <H2>Pricing built on numbers, not adjectives.</H2>
+          <H2>Every price we quote arrives with the comps behind it.</H2>
         </Stack>
         <Grid cols={3} gap="loose">
           {VALUE_PROPS.map((v) => (

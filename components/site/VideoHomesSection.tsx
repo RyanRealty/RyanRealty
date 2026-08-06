@@ -84,7 +84,7 @@ export default async function VideoHomesSection({
   const h2 = heading ?? 'Walk through homes on video'
   const copy =
     body ??
-    'Browse current listings with a full video tour. See the flow, the light, and the lot before you book a showing.'
+    'Browse current listings with a full video tour.'
 
   return (
     <Section padding="default" tone={tone} divider>

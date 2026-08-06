@@ -54,7 +54,6 @@ export function BrokerProfileRow({ broker }: { broker: Broker }) {
               Oregon license #{broker.licenseNumber}
             </Caption>
           ) : null}
-          <Caption tone="muted">Licensed in Oregon</Caption>
         </div>
 
         {specialties.length > 0 ? (

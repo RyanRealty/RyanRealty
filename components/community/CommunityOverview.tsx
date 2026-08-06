@@ -166,7 +166,7 @@ export default function CommunityOverview({
     renderParagraphs(fallbackParagraphs)
   ) : (
     <p>
-      {communityName} is a {isResort ? 'resort & master plan ' : ''}community in {city}, Oregon. Browse active listings below for the latest homes for sale, market stats, and property details.
+      {communityName} is a {isResort ? 'resort & master plan ' : ''}community in {city}, Oregon.
     </p>
   )
 

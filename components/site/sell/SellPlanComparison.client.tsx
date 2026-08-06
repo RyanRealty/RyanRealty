@@ -203,10 +203,8 @@ export function SellPlanComparison() {
 
       <Body size="default" tone="muted" className="mt-4 max-w-3xl leading-relaxed">
         Every plan runs on the same schedule and the same weekly report. The
-        difference is reach. Essential covers the essentials, Enhanced is the
-        full-court press most homes get, and Elite adds the channels that matter
-        for a harder sale or a higher price. Commission is negotiable, and every
-        listing agreement is its own conversation.
+        difference is reach. Each tier adds more of the channels above it.
+        Commission is negotiable, and terms vary by listing.
       </Body>
     </div>
   )

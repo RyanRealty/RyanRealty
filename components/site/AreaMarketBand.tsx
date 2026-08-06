@@ -19,7 +19,7 @@ export function AreaMarketBand({ market, citySlug }: { market: AreaMarket; cityS
       <div className="wrap">
         <div className="sec-head">
           <span className="sec-index">Living in {market.city}</span>
-          <h2 className="sec-title display">The market here</h2>
+          <h2 className="sec-title display">The {market.city} market</h2>
         </div>
         {sentence ? <p className="ev-market-lede">{sentence}</p> : null}
         <div className="ev-market-grid">
@@ -42,7 +42,6 @@ export function AreaMarketBand({ market, citySlug }: { market: AreaMarket; cityS
             <div className="ev-market-stat">
               <span className="ev-market-lbl mono-lab">Days to pending</span>
               <span className="ev-market-val display">{market.medianDaysToPending}</span>
-              <span className="ev-market-sub">Typical time to a signed contract</span>
             </div>
           ) : null}
         </div>

@@ -25,17 +25,17 @@ const STEPS: Step[] = [
   {
     n: '1',
     title: 'Free written CMA',
-    body: 'We prepare a one-page comparative market analysis and email it to you. Three closed comps, three active comps, the list-price range they support, and the four variables that move it. No cost. No contract required to get it.',
+    body: 'We write a one-page comparative market analysis and email it to you. Three closed comps, three active comps, the list-price range they support, and the four variables that move it. No cost, and no contract required to get it.',
   },
   {
     n: '2',
     title: 'List and go to market',
-    body: 'Professional photos within 48 hours of signing the listing agreement. MLS description written by a person. Strategic open-house cadence. Weekly written updates on showings and traffic. You know what is happening at every step.',
+    body: 'Professional photos within 48 hours of a signed listing agreement. Live on the MLS in 5 to 7 business days. The description is written by the broker who priced the home. An open-house schedule set with you, and a written report each week on showings and traffic.',
   },
   {
     n: '3',
     title: 'Close and move on',
-    body: 'We review every offer in writing with you: what it actually says, not just the headline number. We negotiate. We manage the transaction through inspection, appraisal, and close. When you get to the finish line, the same broker you met on day one is there with you.',
+    body: 'We put every offer in writing for you. You see what the terms actually say, not just the headline number. We negotiate it, then carry the transaction through inspection, appraisal, and close. The same broker you met on day one is at the closing table.',
   },
 ]
 
@@ -45,7 +45,7 @@ export function SellProcess() {
       <Container>
         <Stack gap="tight" className="mb-10 max-w-[52ch]">
           <Eyebrow>Our process</Eyebrow>
-          <H2>Three steps. No surprises.</H2>
+          <H2>What happens after you send us your address.</H2>
         </Stack>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {STEPS.map((step) => (

@@ -100,7 +100,7 @@ export function SellMarketContext({ pulse, detail }: Props) {
         </>
       ),
       label: 'Median $/sq ft',
-      why: 'On closed sales, not a model. Condition and finishes move this, and a Zestimate never saw yours.',
+      why: 'On closed sales, not a model. Condition and finishes move this, and an automated estimate never saw yours.',
     })
   }
 
@@ -169,8 +169,8 @@ export function SellMarketContext({ pulse, detail }: Props) {
     <Section id="pricing-insight" padding="default" tone="default" divider>
       <Container>
         <Stack gap="tight" className="mb-8 max-w-2xl">
-          <Eyebrow>Beyond the Zestimate</Eyebrow>
-          <H2>A Zestimate is one number. We price on the signals it cannot see.</H2>
+          <Eyebrow>Beyond the automated estimate</Eyebrow>
+          <H2>An automated estimate is one number. We price on the signals it cannot see.</H2>
           <Body size="large" tone="muted" className="mt-1 leading-relaxed">
             An automated estimate never walked your home, never weighed this
             week’s buyers, and hands you a single guess. Here is the live read

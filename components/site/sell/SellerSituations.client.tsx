@@ -55,7 +55,7 @@ const SITUATIONS: Situation[] = [
   {
     key: 'curious',
     chip: 'Just curious',
-    headline: 'You want a real number, not a sales pitch.',
+    headline: 'You want a real number.',
     body: 'Get a broker’s read on your home’s value, closer to reality than an online guess. We tell you exactly who follows up and when, and "no thanks for now" is a completely fine answer. Plenty of people start here years before they sell.',
   },
   {
@@ -68,7 +68,7 @@ const SITUATIONS: Situation[] = [
     key: 'more-space',
     chip: 'Need more space',
     headline: 'You are ready for more room, and the timing is the hard part.',
-    body: 'We walk through selling first or buying first with honest math on carrying two homes, so you can move up without getting stuck between two houses.',
+    body: 'We walk through selling first or buying first with real math on carrying two homes, so you can move up without getting stuck between two houses.',
   },
   {
     key: 'relocating',
@@ -92,13 +92,13 @@ const SITUATIONS: Situation[] = [
     key: 'sell-soon',
     chip: 'Need to sell soon',
     headline: 'You are on a timeline, and you do not want speed to cost you.',
-    body: 'We give you the honest tradeoff between speed and price for your situation, using real local days on market, and lay out every option including the faster ones. No pressure to decide today.',
+    body: 'We give you the tradeoff between speed and price for your situation, using real local days on market, and lay out every option including the faster ones. No pressure to decide today.',
   },
   {
     key: 'investment',
     chip: 'Investment or second home',
-    headline: 'This is a numbers decision, and you want someone who talks numbers.',
-    body: 'We work in net after costs, coordinate around tenants and showings, and know the 1031 clock is real, so we loop in your CPA early. Straight talk, no lifestyle pitch.',
+    headline: 'This is a numbers decision.',
+    body: 'We work in net after costs, coordinate around tenants and showings, and know the 1031 clock is real, so we loop in your CPA early.',
   },
 ]
 

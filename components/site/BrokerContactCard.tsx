@@ -107,7 +107,6 @@ export function BrokerContactCard({
               Oregon license #{licenseNumber}
             </Caption>
           ) : null}
-          <Caption tone="muted">Licensed in the State of Oregon</Caption>
         </Stack>
 
         <Separator />

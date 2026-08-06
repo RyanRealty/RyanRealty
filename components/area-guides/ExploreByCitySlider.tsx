@@ -22,7 +22,7 @@ export default function ExploreByCitySlider({ cities, savedSlugs, signedIn }: Pr
   return (
     <TilesSlider
       title="Explore by City"
-      subtitle="Click any city to see neighborhoods, current listings, and local market insights."
+      subtitle="Neighborhoods, listings, and market data for each city."
       titleId="explore-heading"
       className="border-b border-border bg-card px-4 py-16 sm:px-6 sm:py-20"
     >

@@ -75,7 +75,7 @@ export default function PriceRangeTiles() {
           <Eyebrow>Inventory</Eyebrow>
           <H2>Browse by price range</H2>
           <Body size="small" tone="muted">
-            Quickly find homes within your budget.
+            Find homes within your budget.
           </Body>
         </Stack>
 

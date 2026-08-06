@@ -135,10 +135,9 @@ export default async function ResortCommunities() {
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <Stack gap="tight">
             <Eyebrow>Resort + master-planned communities</Eyebrow>
-            <H2>The neighborhoods Central Oregon is known for.</H2>
+            <H2>Eight resort and master-planned communities across Central Oregon</H2>
             <Body size="small" tone="muted">
-              Resort and master-planned communities across Bend, Sunriver, Sisters, Redmond, and
-              Powell Butte. Golf, gated, course-front, river-front. Every one has its own market.
+              Bend, Sunriver, Sisters, and Redmond. Golf, gated, course-front, river-front.
             </Body>
           </Stack>
           <Link

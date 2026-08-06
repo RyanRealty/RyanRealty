@@ -9,7 +9,7 @@ import { Container, Eyebrow, H2, Body, Section, Grid, Stack } from '@/components
 const PILLARS = [
   {
     title: 'Cinematic video',
-    body: 'Every listing gets a professional video, the showcase treatment serious buyers expect.',
+    body: 'Every listing gets a professional video.',
   },
   {
     title: 'Interactive 3D tour',
@@ -39,8 +39,7 @@ export function MarketingStandardBlock({
           <Eyebrow>{eyebrow}</Eyebrow>
           <H2>{title}</H2>
           <Body size="default" tone="muted" className="leading-relaxed">
-            We present a home the way the best of the market does. The broker you meet builds the
-            plan and carries your sale through to closing.
+            The broker you meet builds the plan and carries your sale through to closing.
           </Body>
         </Stack>
         <Grid cols={3} gap="default">
