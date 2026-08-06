@@ -136,7 +136,7 @@ describe('what we like about this home', () => {
     const { html } = renderCmaHtml(
       args({ yearBuilt: 2024, beds: 5, sqft: 3200, lotAcres: 1.2, viewDescription: 'Mountain(s), Pond' }),
     )
-    expect(html).toContain('What We Like About This Home')
+    expect(html).toContain('What This Home Has')
     expect(html).toContain('Built in 2024')
     expect(html).toContain('5 bedrooms')
     expect(html).toContain('3,200 square feet of living space')
@@ -146,7 +146,7 @@ describe('what we like about this home', () => {
 
   it('skips the section when fewer than two facts earn a mention', () => {
     const { html } = renderCmaHtml(args({ yearBuilt: 2024 }))
-    expect(html).not.toContain('What We Like About This Home')
+    expect(html).not.toContain('What This Home Has')
   })
 
   it('never pulls development or rental highlight prose into the warm read', () => {
@@ -164,7 +164,7 @@ describe('what we like about this home', () => {
         },
       ),
     )
-    const likeSection = html.split('What We Like About This Home')[1]?.split('<h2')[0] ?? ''
+    const likeSection = html.split('What This Home Has')[1]?.split('<h2')[0] ?? ''
     expect(likeSection).not.toContain('RENTAL_HIGHLIGHT_SENTINEL')
   })
 })
@@ -310,8 +310,8 @@ describe('report extras pages (when-to-list + competition)', () => {
     expect(html).toContain('480')
     expect(html).toContain('Median days to pending by close month')
     expect(html).toContain('May (9 days) and April')
-    expect(html).toContain('Your Competition Right Now')
-    expect(html).toContain('14 active listings')
+    expect(html).toContain('Your Competition')
+    expect(html).toContain('14 homes are for sale')
     expect(html).toContain('$749,000')
     expect(html).toContain('Kenwood, the last 12 months')
     expect(html).toContain('31.5% closed in cash')
@@ -324,13 +324,13 @@ describe('report extras pages (when-to-list + competition)', () => {
   it('absent extras render neither page and no empty headings', () => {
     const { html } = renderCmaHtml(args({}))
     expect(html).not.toContain('When to List')
-    expect(html).not.toContain('Your Competition Right Now')
+    expect(html).not.toContain('Your Competition')
   })
 
   it('a lone financing block still gets the competition page, without the others', () => {
     const { html } = renderCmaHtml(args({}, { extras: { ...extras, seasonality: null, band: null, subdivisionPulse: null, photoBench: null } }))
     expect(html).not.toContain('When to List')
-    expect(html).toContain('Your Competition Right Now')
+    expect(html).toContain('Your Competition')
     expect(html).toContain('Who is buying here')
     expect(html).not.toContain('Your price band, live')
     expect(html).not.toContain('Presentation bench')

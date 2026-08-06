@@ -557,8 +557,8 @@ function whatWeLikePage(a: RenderCmaArgs): PageDef | null {
     meta: `${esc(a.subject.streetAddress)} · What We Like`,
     toc: 'What we like about this home',
     body: `
-  <h2 class="section">What We Like About This Home</h2>
-  <p>Before the numbers, the concrete things this property has going for it. Each one comes from the record.</p>
+  <h2 class="section">What This Home Has</h2>
+  <p>From the MLS and county record.</p>
   <ul class="note-list like-list">${lis}</ul>`,
   }
 }
@@ -684,7 +684,7 @@ function subdivisionStoryPage(a: RenderCmaArgs): PageDef | null {
     toc: `The story of ${f.name}`,
     body: `
   <h2 class="section">The Story of ${esc(f.name)}</h2>
-  <p>Every closed single-family sale in ${esc(f.name)} across the record we hold, ${int(f.totalSales)} of them, year by year. This is the market your home actually lives in, not the citywide average.</p>
+  <p>${int(f.totalSales)} closed single-family sales in ${esc(f.name)}, by year.</p>
   <table class="comp-table">
     <thead><tr><th>Year</th><th>Sales</th><th>Median close</th><th>Median $/sqft</th></tr></thead>
     <tbody>${yearRows}</tbody>
@@ -708,9 +708,9 @@ function whenToListPage(a: RenderCmaArgs): PageDef | null {
     toc: 'When to list',
     body: `
   <h2 class="section">When to List</h2>
-  <p>Every ${esc(a.subject.city)} single-family sale of the last ${dec(x.yearsCovered, 1)} years, ${int(x.totalClosed)} of them, grouped by the month it closed. The bar is the median number of days those homes took to go pending. Lower is faster.</p>
+  <p>${int(x.totalClosed)} single-family sales closed in ${esc(a.subject.city)} over the last ${dec(x.yearsCovered, 1)} years, grouped by close month. Each bar is the median days those homes took to go pending.</p>
   <div class="chart-block" data-anim="chart">${seasonalityChartSvg(x)}</div>
-  <p>Homes that closed in ${fmtList(fastRow)} went pending fastest. The slow end was ${fmtList(slowRow)}. This is history, not a forecast: it tells you when ${esc(a.subject.city)} buyers have been most active, and a home priced on the evidence in this report does not need to wait for a hot month to sell.</p>
+  <p>Fastest: ${fmtList(fastRow)}. Slowest: ${fmtList(slowRow)}. Months with fewer than 12 sales make no claim.</p>
   <div class="trace"><div class="t-hd">Source</div>${esc(x.source)}</div>`,
   }
 }
@@ -725,7 +725,7 @@ function competitionPage(a: RenderCmaArgs): PageDef | null {
   if (b) {
     blocks.push(`
   <h3 class="subhead">Your price band, live</h3>
-  <p>Between ${usd(b.lo)} and ${usd(b.hi)} in ${esc(a.subject.city)} right now, a buyer sees ${int(b.activeCount)} active listing${b.activeCount === 1 ? '' : 's'}${b.activeMedianAsk != null ? ` at a median ask of ${usd(Math.round(b.activeMedianAsk))}` : ''}${b.activeMedianDom != null ? `, sitting a median of ${int(b.activeMedianDom)} days on market` : ''}. ${int(b.pendingCount)} more ${b.pendingCount === 1 ? 'is' : 'are'} already pending in the same band. Those are the homes yours is judged against on day one.</p>
+  <p>${int(b.activeCount)} home${b.activeCount === 1 ? ' is' : 's are'} for sale in ${esc(a.subject.city)} between ${usd(b.lo)} and ${usd(b.hi)}${b.activeMedianAsk != null ? `, at a median ask of ${usd(Math.round(b.activeMedianAsk))}` : ''}${b.activeMedianDom != null ? `, listed a median of ${int(b.activeMedianDom)} days` : ''}. ${int(b.pendingCount)} more ${b.pendingCount === 1 ? 'is' : 'are'} pending in the same band.</p>
   <div class="stat-strip" style="grid-template-columns: repeat(3, 1fr);">
     <div class="stat"><div class="lbl">Active in Band</div><div class="val" data-count>${int(b.activeCount)}</div></div>
     <div class="stat"><div class="lbl">Pending in Band</div><div class="val" data-count>${int(b.pendingCount)}</div></div>
@@ -736,13 +736,13 @@ function competitionPage(a: RenderCmaArgs): PageDef | null {
   if (sub) {
     blocks.push(`
   <h3 class="subhead">${esc(sub.name)}, the last ${int(sub.months)} months</h3>
-  <p>${int(sub.closedCount)} home${sub.closedCount === 1 ? '' : 's'} in your subdivision closed in the last ${int(sub.months)} months, from ${usd(sub.low)} to ${usd(sub.high)}${sub.medianClose != null ? `, with a median of ${usd(Math.round(sub.medianClose))}` : ''}. Buyers shopping your street have seen these numbers.</p>
+  <p>${int(sub.closedCount)} home${sub.closedCount === 1 ? '' : 's'} in your subdivision closed in the last ${int(sub.months)} months, from ${usd(sub.low)} to ${usd(sub.high)}${sub.medianClose != null ? `, median ${usd(Math.round(sub.medianClose))}` : ''}.</p>
   <div class="trace"><div class="t-hd">Source</div>${esc(sub.source)}</div>`)
   }
   if (fin) {
     blocks.push(`
   <h3 class="subhead">Who is buying here</h3>
-  <p>Of the ${int(fin.sampleCount)} ${esc(a.subject.city)} sales in the last 12 months that reported financing, ${dec(fin.cashPct, 1)}% closed in cash, ${dec(fin.conventionalPct, 1)}% with conventional loans, and ${dec(fin.fhaVaPct, 1)}% FHA or VA. A cash-heavy market moves faster and negotiates harder on price than on terms, which is one more reason the list price has to be right on day one.</p>
+  <p>Of the ${int(fin.sampleCount)} ${esc(a.subject.city)} sales in the last 12 months that reported financing, ${dec(fin.cashPct, 1)}% closed in cash, ${dec(fin.conventionalPct, 1)}% with conventional loans, and ${dec(fin.fhaVaPct, 1)}% FHA or VA.</p>
   <div class="stat-strip" style="grid-template-columns: repeat(3, 1fr);">
     <div class="stat"><div class="lbl">Cash</div><div class="val">${dec(fin.cashPct, 1)}%</div></div>
     <div class="stat"><div class="lbl">Conventional</div><div class="val">${dec(fin.conventionalPct, 1)}%</div></div>
@@ -753,15 +753,15 @@ function competitionPage(a: RenderCmaArgs): PageDef | null {
   if (bench) {
     blocks.push(`
   <h3 class="subhead">Presentation bench</h3>
-  <p>The sold comps in this report marketed with a median of ${int(bench.compMedianPhotos)} photos. Your last listing carried ${int(bench.subjectPhotos)}. Photo count is not the whole story, but it is the first thing a buyer scrolls, and it is fully in your control before the next listing goes live.</p>
+  <p>The sold comps in this report marketed with a median of ${int(bench.compMedianPhotos)} photos. Your last listing carried ${int(bench.subjectPhotos)}.</p>
   <div class="trace"><div class="t-hd">Source</div>${esc(bench.source)}</div>`)
   }
   return {
     meta: `${esc(a.subject.streetAddress)} · Your Competition`,
     toc: 'Your competition right now',
     body: `
-  <h2 class="section">Your Competition Right Now</h2>
-  <p>Pricing sets the list price. Competition decides how it lands. These are the live numbers around yours.</p>
+  <h2 class="section">Your Competition</h2>
+  <p>What a buyer sees next to your home today.</p>
   ${blocks.join('\n')}`,
   }
 }
@@ -780,7 +780,7 @@ function verifyPage(a: RenderCmaArgs): PageDef | null {
 }
 
 // ── The last-listing review (history-driven, 2026-08-05 single-doc fold) ────
-// Voice per voice_guidelines §4.7 + the expired-listing-lp SKILL: the data
+// Voice per VOICE.md + the expired-listing-lp SKILL: the data
 // tells the story. No editorializing, no blame on the prior agent, no
 // "most agents do X" framing. Every number here was verified by the engine.
 

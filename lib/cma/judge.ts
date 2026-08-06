@@ -216,9 +216,11 @@ const SYSTEM =
   'remarks. Do NOT assert that the subject and a comp share condition, finish level, quality, or desirability ' +
   'unless the SUBJECT\'s own remarks or fields state it. Do NOT say a set "brackets" the subject on any dimension ' +
   'you were not given for the subject. When the subject\'s condition is unknown, say it is unknown and say the ' +
-  'value assumes it. Never write luxury, premium, stunning, pristine, charming, boasts, turnkey, immaculate, ' +
-  'gorgeous, or any other adjective of quality about a home: name the finish level with the remarks phrase itself ' +
-  '("studs out remodel", "needs TLC") or with the number. No em dashes, no semicolons, no exclamation marks. ' +
+  'value assumes it. House voice (marketing_brain_skills/brand-voice/VOICE.md, anchored on Buffett): state the fact, ' +
+  'then stop, and never write a sentence that explains the sentence before it. No adjective of quality about a home: ' +
+  'name the finish level with the remarks phrase itself ("studs out remodel", "needs TLC") or with the number. ' +
+  'A number is stated once and left alone. No coined maxims, no clause that moralizes a fact, no telling the reader ' +
+  'what the data says. No em dashes, no semicolons, no exclamation marks. ' +
   'Return your judgment only through the record_comp_judgment tool.'
 
 

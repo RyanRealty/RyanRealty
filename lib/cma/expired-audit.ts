@@ -10,7 +10,7 @@
  *  1. FAILURE ANALYSIS — why the listing didn't sell, derived from the numbers
  *     (final ask vs the comp-supported range, DOM vs the market median, the
  *     price-cut pattern, attempt count, photo count, remarks length). Voice per
- *     voice_guidelines §4.7 + the expired-listing-lp SKILL: the data tells the
+ *     VOICE.md + the expired-listing-lp SKILL: the data tells the
  *     story, never editorialize, NEVER blame the prior agent, no "most agents
  *     do X" framing.
  *  2. SERVICES — what every Ryan Realty listing gets. Mirrors the site's own
@@ -457,7 +457,7 @@ export function applyFailedAskCap(
     .filter(Boolean)
     .join(' ')
   pricing.notes.push(
-    `Your last asking price was ${usd(ask)} and the market did not take it. We measured every Central Oregon home in the last three years that failed to sell and then sold: ${FAILED_ASK_BACKTEST.pairs.toLocaleString('en-US')} of them. The median one closed at ${(FAILED_ASK_BACKTEST.closeMedianRatio * 100).toFixed(1)}% of the ask that failed, and only ${FAILED_ASK_BACKTEST.shareClosedAboveAskPct}% ever beat it. That history is built into the numbers in this report. The gap between the comparable math and the recommendation is the part we fix together: condition, presentation, and timing.`,
+    `Your last listing asked ${usd(ask)} and did not sell. ${FAILED_ASK_BACKTEST.pairs.toLocaleString('en-US')} Central Oregon homes failed to sell and later sold between ${FAILED_ASK_BACKTEST.runstamp.slice(0, 4) === '2026' ? '2023 and 2026' : 'the measured window'}. The median one closed at ${(FAILED_ASK_BACKTEST.closeMedianRatio * 100).toFixed(1)}% of the asking price that failed. ${FAILED_ASK_BACKTEST.shareClosedAboveAskPct}% closed above it. The list prices in this report are capped against those outcomes.`,
   )
   return { applied: true, cappedTo: recCeil, uncappedRecommended: uncapped }
 }

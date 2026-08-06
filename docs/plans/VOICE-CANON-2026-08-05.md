@@ -161,6 +161,42 @@ Rewrite rules, non-negotiable:
 - Shorter is the default outcome. If a rewrite is longer than the original, it is
   probably wrong.
 
+### Phase 4 target map (audited 2026-08-05)
+
+About 588 files carry public copy, plus three database tables. Work them in this
+order. Counts are real; verify before trusting.
+
+| Surface | Files | Notes |
+|---|---|---|
+| Client documents | 18 | `lib/cma/render.ts`, `immersive.ts`, `render-blocks.ts`, `register-gate.ts`, `expired-audit.ts`, `development.ts`, `rental-potential.ts`, the three `zoning-*.ts` explainers, `lib/bpo/render.ts`, `narrative.ts`, `send.ts`, and five `lib/pdf/*` documents |
+| Email | 13 | `lib/email/shell.ts` is THE shell every client email inherits, so it is the highest-leverage single file. Then `lib/crm/listing-alert-email.ts` and `market-report-email.ts` (the saved-search sends Matt named), `lib/newsletter/produce-draft.ts`, `lib/tc/signing-emails.ts`, `lib/cma-deliver.ts`, `lib/cma/request-emails.ts`, `lib/email-templates/*` |
+| SMS | 2 + DB | `app/api/twilio/inbound-sms/route.ts` HELP/STOP/START replies. Bodies live in `crm_templates`. |
+| Landing pages | 25 | `app/lp/**` plus `lib/lead-landing-content.ts`, the registry driving `/buy/[intent]` and `/sell/[intent]`. `app/lp/tetherow/page.tsx` alone is 1,715 lines. |
+| Site pages | 119 | `app/**/page.tsx`, public only. Admin-gated pages under `app/dashboard/marketing/**`, `app/marketing/request`, `app/dev/**`, `app/team/[slug]/edit` are staff tools: skip them. |
+| Error and empty states | 10 | `app/error.tsx`, `global-error.tsx`, `not-found.tsx` + `components/NotFoundClient.tsx`, and seven per-route `error.tsx` files |
+| Site components | 152 | `components/site/**`. The `kb/` section library (24 files) renders across the homepage and every geo page, so it pays first. |
+| Other public components | ~220 | `components/{landing,seller-lp,geo-page,broker,city,community,neighborhood,search,account,dashboard,auth,pulse,tools,reports,listing,listing-detail,compare,videos,legal,tc/pdf-sign}/**`. Skip `components/ui/**` (primitives, no prose) and `components/console/**` (admin only). |
+| Content data | 38 | `lib/city-content.ts`, `lib/community-content.ts`, `lib/community-seo-content.ts`, `app/faq/data.ts`, `data/co-{events,parks,trails,venues,schools}.ts`, `data/golf-landing.ts`, and 27 `data/resort-community-*.json` files |
+| Share and meta | 3 | `app/api/og/route.tsx`, `app/llms.txt/route.ts`, `lib/share-metadata.ts` |
+| Database | 3 tables | `crm_templates` (email + SMS bodies), `crm_sequences.steps` (inline subject/body), `blog_posts`, plus `newsletters` drafts |
+
+`scripts/voice-rewrite-batch.ts` with `lib/voice/reviewer.ts` already reads
+`blog_posts` and `crm_templates` and writes an advisory report. Use it for those two
+tables instead of writing something new. It does not reach `crm_sequences`, the CMA
+and BPO prose, or the email files, so those are hand work.
+
+### Do not touch, three exclusions
+
+1. **`lib/crm/sms-consent-text.ts`** is carrier-verified A2P wording. `ci:sms-consent`
+   fails the build if it changes. Rewriting it means re-filing the campaign.
+2. **The Oregon Initial Agency Disclosure line** in `lib/crm/email-signature.ts`, the
+   ORS 696.010/696.290 notice in `lib/bpo/render.ts`, the CMA's OAR 863-015-0190
+   disclosure, and everything in `components/legal/**` are legally worded. They need
+   legal sign-off, not a voice pass.
+3. **`lib/testimonials.ts`** holds 25 verbatim Google review quotes. They are the
+   client's words, exempt by the canon's own scope rule. Rewrite the page copy around
+   them, never the quotes.
+
 ## Phase 5 — Gate it so this cannot come back
 
 Two scripts. Both wired into `ci:gates` in `package.json`, both with tests, both
@@ -207,35 +243,94 @@ Push with `npm run push`, then verify the deploy. Update
 
 ---
 
-## Appendix — known inventory at the time of writing
+## Appendix — verified inventory (audited 2026-08-05)
 
-A starting point, not a substitute for Phase 1. Verify each against the repo.
+A full repo audit ran when this prompt was written. Verify each item, but nothing
+below is a guess. Phase 1 exists to catch what moved since.
 
-**Doctrine documents:** `marketing_brain_skills/brand-voice/VOICE.md` (the canon, now
-rewritten), `voice_guidelines.md` (640 lines, delete), `voice_system_v2.md` (14
-lines, already marked retired, delete), `brand-voice/SKILL.md` (219 lines, reduce to
-a router).
+**Doctrine documents to delete:**
+- `marketing_brain_skills/brand-voice/voice_guidelines.md` (640 lines, the old "single
+  source of truth," still asserts a retired 6-attribute model)
+- `marketing_brain_skills/brand-voice/voice_system_v2.md` (14 lines, already a
+  retirement stub)
+- `design_system/ryan-realty/preview/voice-rules.html`, `voice-banned.html`,
+  `voice-canonical.html` (rendered duplicates of the retired models)
+- `social_media_skills/meme_lord/voice_grader.md` (its own banned list; cites a
+  manifesto that no longer exists) and `humor_calibration.md` (fold anything worth
+  keeping into the canon first, then delete)
 
-**Enforcement:** `scripts/brand-voice-vocabulary.cjs` (245 lines, contents replaced,
-exports preserved), `scripts/check-brand-voice.mjs` (580 lines, extended),
-`eslint-rules/no-brand-voice-violations.js`, `.claude/hooks/pre-tool-use.mjs`,
-`scripts/preflight.ts`, and the build scripts that import the vocabulary.
+**Doctrine sections to strip out of otherwise-live files:**
+- `marketing_brain_skills/brand-voice/SKILL.md` (219 lines) becomes a thin router
+- `CLAUDE.md` §2 collapses to a pointer
+- `design_system/ryan-realty/SKILL.md` lines 39-67 hold a THIRD framework ("Four
+  rules") with its own banned list that still bans `turnkey`, un-banned in 2026-06-02
+- `design_system/ryan-realty/MANIFEST.md` lines 89-111, same framework again, and its
+  producer mandate-load claim is already factually wrong
+- `skills/youtube-market-reports/brand-system.md` §4, a fourth restatement, bans
+  `turnkey`, `spacious`, `cozy`
+- `.cursor/rules/blog-voice.mdc` keeps its 3 blog-specific phrases, drops the stale
+  description of the retired canon
+- `.auto-memory/memory_marketing_brain_decisions.md` line 20 still names the retired
+  5-attribute model as live. Agents read this file for cross-session context, so a
+  stale rule here reinfects future sessions. Fix it or delete the line.
 
-**Known doctrine in code:** the CMA story-engine prompt in
-`lib/cma/subdivision-story.ts` (`STORY_SYSTEM`), the comparability-judge narrative
-instructions in `lib/cma/judge.ts`, the prose reviewer in `lib/cma/voice-sanitize.ts`
-and its caller. Expect more; Phase 1C is what finds them.
+**Voice doctrine in code (each has its own hand-typed list that drifts):**
+- `lib/cma/judge.ts` lines 219-221, comp-judge narrative prompt. Bans `turnkey` and
+  `luxury`/`premium`; canon bans neither by that name.
+- `lib/cma/subdivision-story.ts` `STORY_SYSTEM`, the neighborhood-story prompt.
+- `lib/cma/rental-potential.test.ts` lines 479-485, a test asserting its own list.
+- `.tmp_env/fub-setup/27-wire-plan-content.mjs`, dormant one-off with a stale list.
+- `lib/voice/reviewer.ts` runs an Orwell-rules advisory pass. Keep the mechanism,
+  re-point its rules at the canon.
 
-**Known copy in code:** `lib/cma/render.ts` and `lib/cma/immersive.ts` (heavy),
-`lib/cma/expired-audit.ts`, `lib/cma/development.ts`, `lib/cma/rental-potential.ts`,
-CRM composers under `lib/crm/`, the listing-alert send path, `app/lp/*/page.tsx`,
-`app/**/page.tsx`, `components/site/**`.
+**References to repoint:** 128 files cite `voice_guidelines.md` and/or `VOICE.md`.
+The bulk are producer and social SKILL.md files (26 + 28) plus historical audit docs.
+**The producer gate no longer requires the deleted file:** `validate-producer.mjs`
+was repointed to require `VOICE.md` in an earlier wave, and a prior audit proved the
+gate passes with `voice_guidelines.md` off disk. So those citations are vestigial
+prose and can be stripped in bulk. Leave dated historical records alone; they are
+records, not instructions.
 
-**Known copy in the database:** CRM sequence step bodies, `blog_posts`, and any
-stored alert template. Query before assuming.
+**Two pre-existing defects to fix while in here:**
+1. 22 files cite `ANTI_SLOP_MANIFESTO.md`, which was deleted and does not exist.
+2. At least 15 files cite "CLAUDE.md §3" for brand voice. Brand voice is §2; §3 is
+   the design system. Includes live code: `lib/crm/templateVoiceCheck.ts`,
+   `lib/crm/market-report-email.ts`, `lib/crm/listing-alert-email.ts`,
+   `scripts/brand-voice-vocabulary.cjs`, `docs/MECHANICAL_GATES.md`.
+
+**Enforcement already unified (do not rebuild, only re-point):**
+`scripts/brand-voice-vocabulary.cjs` is the single vocabulary source, mirrored into
+`lib/brand-voice/generated-vocabulary.ts` and a Python mirror, with parity enforced by
+`ci:voice-vocab-parity`. Runtime hard-fail scanning is centralized in
+`lib/voice/check.ts` and gated by `ci:voice-send-paths`, which AST-verifies each send
+path both calls the check and blocks on failure. `.claude/hooks/pre-tool-use.mjs`
+refuses writes containing banned tokens.
+
+**The parity manifest has four holes** that are exactly the drift points above:
+`lib/cma/judge.ts`, `lib/cma/subdivision-story.ts`, `lib/cma/rental-potential.test.ts`,
+and the dormant `.tmp_env` script are not in `CONSUMER_MANIFEST`. Add them.
 
 **The stale-rule example that proves why this is needed:** the pre-migration
-`VOICE.md` named `541.213.6706` as the primary public phone. That number is the
-private forward target; the public number has been `541.703.3095` since the 2026-06-24
-Twilio cutover. A duplicate doc drifted from the truth and nobody caught it. One
-canon, enforced by a gate.
+`VOICE.md` named `541.213.6706` as the primary public phone. That is the private
+forward target. The public number has been `541.703.3095` since the 2026-06-24 Twilio
+cutover. A duplicate doc drifted from the truth and nobody caught it. One canon,
+enforced by a gate.
+
+**Do not sweep up:** `lib/voice/alignment.ts` and `scripts/_voice_lib.py` govern the
+ElevenLabs TTS voice (audio), not writing style.
+
+---
+
+## Progress log
+
+Work completed before this prompt was handed off, so a fresh agent does not redo it:
+
+- Canon written: `marketing_brain_skills/brand-voice/VOICE.md`, Buffett-anchored.
+- Phase 4, reports: prose rewritten in `lib/cma/immersive.ts`, `lib/cma/render.ts`,
+  and the failed-ask client note in `lib/cma/expired-audit.ts`. Aphorism pairs,
+  meaning-narration, sermon clauses, and drama headers removed. Tests updated, 648
+  passing.
+- Phase 2, in-code doctrine: `STORY_SYSTEM` in `lib/cma/subdivision-story.ts`
+  rewritten against the canon.
+
+Everything else in Phases 1 through 7 remains.
