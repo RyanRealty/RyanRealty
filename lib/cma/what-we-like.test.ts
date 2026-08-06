@@ -356,7 +356,7 @@ describe('the subdivision story (print page + immersive scene)', () => {
       source: "Supabase listings, SubdivisionName='Stone Creek' story fixture",
     },
     sections: [
-      { heading: 'A street that sells on consistency', body: 'Homes here trade in a tight band because the product is consistent.' },
+      { heading: 'A street that sells on consistency', body: 'Homes here sell in a tight band because the product is consistent.' },
     ],
     notableSales: [
       { listNumber: '220000001', address: '20572 Kira', closePrice: 705000, closeDate: '2025-06-10', sqft: 2526, photoUrl: null, line: 'The record sale carried the largest floor plan on the street.' },

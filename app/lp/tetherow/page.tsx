@@ -265,7 +265,7 @@ export default async function TetherowLandingPage() {
             {cfg.hero.h1_lead} <span>{dynMonthYear}</span>.
           </h1>
           <p className="mb-9 max-w-[720px] text-[19px] leading-[1.55] text-[rgba(250,248,244,0.92)]">
-            {soldCount} homes traded last year at a median {formatPriceFull(medianClose)}.{' '}
+            {soldCount} homes sold last year at a median {formatPriceFull(medianClose)}.{' '}
             {eopInventory ?? 0} active right now from $1.7M to $4M.{' '}
             {medianDom != null ? `${medianDom}-day` : '—'} median market velocity. McLay Kidd
             country, west Bend, inside the {cfg.acres}-acre master plan.
@@ -910,7 +910,7 @@ export default async function TetherowLandingPage() {
       <Section>
         <SectionHead
           eyebrow="Recent closings"
-          headline="What actually traded. Last 90 days at Tetherow."
+          headline="What actually sold. Last 90 days at Tetherow."
           body="Anonymized at the street level. Every number traces to a verified Oregon RMLS close-of-record. Price-per-square-foot and sale-to-list ratio computed against close price and original list. Sub-neighborhood = SubdivisionName on the public MLS record."
         />
         <div className="overflow-hidden rounded-2xl border border-[rgba(16,39,66,0.08)] bg-white shadow-[var(--rr-card-shadow)]">
@@ -1088,7 +1088,7 @@ export default async function TetherowLandingPage() {
       <Section variant="cream-dim">
         <SectionHead
           eyebrow="Tetherow vs the field"
-          headline="How Tetherow trades against the rest of the Central Oregon resort set."
+          headline="How Tetherow prices against the rest of the Central Oregon resort set."
           body={`Rolling-365-day median figures, methodology ${methodologyVersion}, pulled ${methodologyDate} from the Oregon RMLS feed. Single-family residential only. Resort communities are not interchangeable. The numbers below explain why.`}
         />
         <div className="overflow-x-auto rounded-2xl border border-[rgba(16,39,66,0.08)] bg-white shadow-[var(--rr-card-shadow)]">
@@ -1131,7 +1131,7 @@ export default async function TetherowLandingPage() {
           <strong>Tetherow among its peers.</strong> Tetherow homes are
           pricing-disciplined. {formatRatioPct(saleToList)} sale-to-list ratio with a{' '}
           {medianDom ?? '—'}-day median market velocity. Broken Top moves on similar inventory at
-          lower price points. Pronghorn trades at a higher median, but the wider list-to-close gap
+          lower price points. Pronghorn sells at a higher median, but the wider list-to-close gap
           tells you sellers there are leaving more money on the table. Caldera Springs is the
           closest peer at price-per-square-foot, but Tetherow&apos;s faster market velocity keeps
           Tetherow homes turning. The Sunriver number is whole-resort, not luxury-only, so it sits

@@ -199,7 +199,8 @@ const STORY_SYSTEM =
   'Never praise the reader, the home, the neighborhood, or us. Never use: stunning, breathtaking, gorgeous, charming, pristine, nestled, boasts, must-see, dream home, meticulously, luxurious, immaculate, captivating, exquisite, delve, tapestry, robust, seamless, elevate, unlock, vibrant, bustling, curated, bespoke, hidden gem. ' +
   'Plain word over formal word: about not approximately, buy not purchase, home not residence, near not in close proximity to. Sentences run 15 to 20 words. ' +
   'No em dashes, no semicolons, no exclamation marks, no emoji. Address the reader as "you." ' +
-  'What the section covers: how this street has traded by year, what kinds of homes sell here and at what prices, what the listing photos of recent sales show, and where the reader\'s home sits by size and vintage. ' +
+  'Never write that homes trade or traded. Homes sell. ' +
+  'What the section covers: how this street has sold by year, what kinds of homes sell here and at what prices, what the listing photos of recent sales show, and where the reader\'s home sits by size and vintage. ' +
   'When a photo grounds a claim, write "the listing photos show" so the source is clear. If a photo shows nothing worth reporting, write nothing about it.'
 
 export async function generateSubdivisionStory(args: {

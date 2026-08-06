@@ -79,7 +79,7 @@ describe('renderImmersiveCmaHtml', () => {
             vintageSpan: { min: 2019, max: 2025 },
             source: 'story fixture source',
           },
-          sections: [{ heading: 'A tight band', body: 'Homes here trade close together.' }],
+          sections: [{ heading: 'A tight band', body: 'Homes here sell close together.' }],
           notableSales: [{ listNumber: '2', address: '20572 Kira', closePrice: 705000, closeDate: '2025-06-10', sqft: 2526, photoUrl: 'https://cdn.example/kira.jpg', line: 'The record sale.' }],
           model: 'claude-sonnet-4-5', costUsd: 0.04, photoSalesReviewed: 1,
         },

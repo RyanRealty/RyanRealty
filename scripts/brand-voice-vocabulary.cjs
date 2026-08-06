@@ -35,6 +35,10 @@ const PUNCTUATION = [
 // AI-filler list, no marketing-slop list, no hype-openings list. If a phrase is
 // not named in the canon, it is not banned. Add it to the canon first.
 
+// VOICE.md > rule 4 > "Homes sell. They do not trade." Scoped to the phrasings
+// that describe a sale, so a trade-off sentence and a tradesman survive.
+const TRADING_LANGUAGE = ['homes traded', 'homes trade', 'home traded', 'actually traded', 'trades at a', 'has traded', 'have traded']
+
 // VOICE.md > Banned constructions > Pandering.
 const PANDERING = [
   'great question',
@@ -72,6 +76,7 @@ const SMALLNESS_POSITIONING = []
 const HYPE_OPENINGS = []
 
 const BANNED_WORDS = [
+  ...TRADING_LANGUAGE.map((word) => ({ word, category: 'trading-language' })),
   ...PANDERING.map((word) => ({ word, category: 'pandering' })),
   ...FAKE_URGENCY.map((word) => ({ word, category: 'fake-urgency' })),
   ...SELF_PRAISE.map((word) => ({ word, category: 'self-praise' })),

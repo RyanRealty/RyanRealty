@@ -865,7 +865,7 @@ export default async function HeathAtTetherowPage() {
               Recent closings
             </div>
             <h2 className="mt-2 font-display text-3xl text-primary sm:text-4xl">
-              What actually traded at Tetherow, last 12 months.
+              What actually sold at Tetherow, last 12 months.
             </h2>
             <p className="mt-4 text-base leading-relaxed text-foreground">
               Every number traces to a verified Oregon RMLS close-of-record. Price-per-square-foot and sale-to-list computed against close price and original list. The Hosmer Lake and Cartwright addresses below sit in Heath.

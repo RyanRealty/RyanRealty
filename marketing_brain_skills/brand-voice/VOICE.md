@@ -94,6 +94,10 @@ telling the reader it is high, low, or surprising.
 "About" and "roughly" are allowed only on genuine estimates, never on a number we
 can pull exactly (CLAUDE.md §0).
 
+**Homes sell. They do not "trade."** (Matt 2026-08-06.) Trading is what happens to
+stocks. A house is somebody's home, and the word makes us sound like a desk that has
+never walked a property. Write sold, closed, or changed hands.
+
 ### 5. Plain word over formal word
 
 about (not approximately) · buy (not purchase, acquire) · use (not utilize) · help
