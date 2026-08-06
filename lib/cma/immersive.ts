@@ -18,6 +18,7 @@
 import type { RenderCmaArgs } from '@/lib/cma/render'
 import type { CmaBroker } from '@/lib/cma/types'
 import { FAILED_ASK_BACKTEST } from '@/lib/cma/expired-audit'
+import { formatDate } from '@/lib/format/date'
 
 type ImmersiveArgs = RenderCmaArgs & { broker: CmaBroker }
 
@@ -37,10 +38,7 @@ function dec(n: number | null | undefined, places = 1): string {
   return n.toFixed(places)
 }
 function dateLong(iso: string | null | undefined): string {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+  return formatDate(iso, { month: 'long', day: 'numeric', year: 'numeric' })
 }
 
 /** The same warm-read facts the print page shows (subject attributes only). */
