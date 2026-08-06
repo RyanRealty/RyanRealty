@@ -25,17 +25,28 @@ export async function getCmaAdminRowBySlug(slug: string): Promise<CmaAdminRow | 
 }
 
 /** The public view read: only what the /cma/[slug] route needs to serve. */
-export async function getCmaHtmlBySlug(
-  slug: string,
-): Promise<{ html_content: string | null; html_path: string | null; status: string } | null> {
+export async function getCmaHtmlBySlug(slug: string): Promise<{
+  html_content: string | null
+  html_path: string | null
+  status: string
+  /** Persisted renderCmaHtml input — the immersive web view renders from it. */
+  render_args: Record<string, unknown> | null
+  broker_slug: string | null
+} | null> {
   const sb = client()
   if (!sb) return null
   const { data } = await sb
     .from('cmas')
-    .select('html_content, html_path, status')
+    .select('html_content, html_path, status, render_args, broker_slug')
     .eq('slug', slug.trim().toLowerCase())
     .maybeSingle()
-  return (data ?? null) as { html_content: string | null; html_path: string | null; status: string } | null
+  return (data ?? null) as {
+    html_content: string | null
+    html_path: string | null
+    status: string
+    render_args: Record<string, unknown> | null
+    broker_slug: string | null
+  } | null
 }
 
 /** Patch a cmas row by slug. With `onlyWhenStatus`, the update is guarded:

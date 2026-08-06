@@ -43,6 +43,7 @@ import type {
   CmaSubject,
 } from '@/lib/cma/types'
 import type { CmaExtras } from '@/lib/cma/extras'
+import type { SubdivisionStory } from '@/lib/cma/subdivision-story'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
@@ -83,6 +84,8 @@ export interface RenderCmaArgs {
   rental?: RentalPotential | null
   /** Data-backed report extras: seasonality, band, subdivision, financing, photos. */
   extras?: CmaExtras | null
+  /** The subdivision deep story: deterministic facts + grounded AI narrative. */
+  subdivisionStory?: SubdivisionStory | null
 }
 
 interface PageDef {
@@ -649,6 +652,50 @@ function seasonalityChartSvg(x: NonNullable<CmaExtras['seasonality']>): string {
   </svg>`
 }
 
+
+// ── The subdivision story (Matt 2026-08-05: the homeowner's deep read) ─────
+function subdivisionStoryPage(a: RenderCmaArgs): PageDef | null {
+  const st = a.subdivisionStory
+  if (!st) return null
+  const f = st.facts
+  const yearRows = f.years
+    .map(
+      (y) =>
+        `<tr><td>${y.year}</td><td>${int(y.count)}</td><td>${usd(y.medianClose)}</td><td>${y.medianPpsf != null ? usd(Math.round(y.medianPpsf)) : '—'}</td></tr>`,
+    )
+    .join('')
+  const sections = st.sections
+    .map((sec) => `<h3 class="subhead">${esc(sec.heading)}</h3><p>${esc(sec.body)}</p>`)
+    .join('')
+  const notable = st.notableSales
+    .filter((n) => n.line)
+    .map((n) => `<li><strong>${esc(n.address)}</strong> (${usd(n.closePrice)}, ${dateLong(n.closeDate)}): ${esc(n.line)}</li>`)
+    .join('')
+  const position = [
+    f.subjectSqftPercentile != null ? `Your home is as large or larger than ${f.subjectSqftPercentile}% of everything that has sold here.` : null,
+    f.vintageSpan ? `The street was built out ${f.vintageSpan.min} to ${f.vintageSpan.max}.` : null,
+    f.recordHigh ? `The record is ${usd(f.recordHigh.price)} at ${esc(f.recordHigh.address)} (${dateLong(f.recordHigh.date)}).` : null,
+    f.saleToListRecentPct != null ? `Over the last two years sellers here collected a median ${dec(f.saleToListRecentPct, 1)}% of their final asking price.` : null,
+  ]
+    .filter(Boolean)
+    .join(' ')
+  return {
+    meta: `${esc(a.subject.streetAddress)} · The Story of ${esc(f.name)}`,
+    toc: `The story of ${f.name}`,
+    body: `
+  <h2 class="section">The Story of ${esc(f.name)}</h2>
+  <p>Every closed single-family sale in ${esc(f.name)} across the record we hold, ${int(f.totalSales)} of them, year by year. This is the market your home actually lives in, not the citywide average.</p>
+  <table class="comp-table">
+    <thead><tr><th>Year</th><th>Sales</th><th>Median close</th><th>Median $/sqft</th></tr></thead>
+    <tbody>${yearRows}</tbody>
+  </table>
+  ${sections}
+  ${notable ? `<h3 class="subhead">Recent sales, one line each</h3><ul class="note-list">${notable}</ul>` : ''}
+  ${position ? `<p><strong>${position}</strong></p>` : ''}
+  <div class="trace"><div class="t-hd">Source</div>${esc(f.source)}${st.model ? ` · Narrative written by ${esc(st.model)} from these rows, the listing remarks, and the hero photos of the ${st.photoSalesReviewed} most recent sales. Every number in it appears in the table above.` : ''}</div>`,
+  }
+}
+
 function whenToListPage(a: RenderCmaArgs): PageDef | null {
   const x = a.extras?.seasonality
   if (!x) return null
@@ -850,6 +897,8 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   a.comps.forEach((c, i) => rest.push(compFlyerPage(a, c, i)))
   const market = marketPage(a)
   if (market) rest.push(market)
+  const story = subdivisionStoryPage(a)
+  if (story) rest.push(story)
   const whenToList = whenToListPage(a)
   if (whenToList) rest.push(whenToList)
   rest.push(pricingPage(a))

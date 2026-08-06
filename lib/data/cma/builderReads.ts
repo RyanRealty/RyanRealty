@@ -439,3 +439,61 @@ export async function getCmaSubdivisionClosed(subdivision: string, sinceIso: str
   }
   return (data ?? []) as unknown as CmaSubdivisionSaleRow[]
 }
+
+export type CmaSubdivisionHistoryRow = {
+  ListingKey: string
+  ListNumber: string | null
+  StreetNumber: string | null
+  StreetName: string | null
+  ClosePrice: number
+  CloseDate: string
+  ListPrice: number | null
+  OriginalListPrice: number | null
+  TotalLivingAreaSqFt: number | null
+  BedroomsTotal: number | null
+  BathroomsTotal: number | null
+  year_built: number | null
+  CumulativeDaysOnMarket: number | null
+  lot_size_acres: number | null
+  public_remarks: string | null
+  PhotoURL: string | null
+}
+
+/**
+ * The FULL sales history of one subdivision (Matt 2026-08-05: "review all
+ * past sales and photos with those sales, tell a story"). Every closed
+ * single-family sale, with remarks + hero photo, newest first. Feeds the
+ * subdivision-story engine: deterministic aggregates from these rows, AI
+ * narrative grounded on them.
+ */
+export async function getCmaSubdivisionHistory(subdivision: string, sinceIso: string): Promise<CmaSubdivisionHistoryRow[]> {
+  const sb = client()
+  if (!sb || !subdivision.trim()) return []
+  // Paged to completion: a hard limit silently truncates large subdivisions
+  // and drops the OLDEST sales (found live 2026-08-05: Stone Creek holds 450,
+  // a 400 cap skewed the 2019 median). Ceiling guards pathological inputs.
+  const out: CmaSubdivisionHistoryRow[] = []
+  const SIZE = 400
+  for (let from = 0; from < 2000; from += SIZE) {
+    const { data, error } = await sb
+      .from('listings')
+      .select(
+        'ListingKey, ListNumber, StreetNumber, StreetName, ClosePrice, CloseDate, ListPrice, OriginalListPrice, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, year_built, CumulativeDaysOnMarket, lot_size_acres, public_remarks, PhotoURL',
+      )
+      .eq('SubdivisionName', subdivision)
+      .eq('PropertyType', 'A')
+      .eq('StandardStatus', 'Closed')
+      .gte('CloseDate', sinceIso)
+      .not('ClosePrice', 'is', null)
+      .order('CloseDate', { ascending: false })
+      .order('ListingKey', { ascending: true })
+      .range(from, from + SIZE - 1)
+    if (error) {
+      console.error('[getCmaSubdivisionHistory]', error.message)
+      return out
+    }
+    out.push(...((data ?? []) as unknown as CmaSubdivisionHistoryRow[]))
+    if (!data || data.length < SIZE) break
+  }
+  return out
+}

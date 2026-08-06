@@ -336,3 +336,49 @@ describe('report extras pages (when-to-list + competition)', () => {
     expect(html).not.toContain('Presentation bench')
   })
 })
+
+describe('the subdivision story (print page + immersive scene)', () => {
+  const story = {
+    facts: {
+      name: 'Stone Creek',
+      totalSales: 41,
+      years: [
+        { year: 2023, count: 12, medianClose: 560000, medianPpsf: 270 },
+        { year: 2024, count: 15, medianClose: 590000, medianPpsf: 281 },
+        { year: 2025, count: 14, medianClose: 605000, medianPpsf: 288 },
+      ],
+      recordHigh: { price: 705000, address: '20572 Kira', date: '2025-06-10' },
+      recordLow: { price: 498000, address: '20510 Byron', date: '2023-02-01' },
+      medianDomRecent: 24,
+      saleToListRecentPct: 98.6,
+      subjectSqftPercentile: 72,
+      vintageSpan: { min: 2019, max: 2025 },
+      source: "Supabase listings, SubdivisionName='Stone Creek' story fixture",
+    },
+    sections: [
+      { heading: 'A street that sells on consistency', body: 'Homes here trade in a tight band because the product is consistent.' },
+    ],
+    notableSales: [
+      { listNumber: '220000001', address: '20572 Kira', closePrice: 705000, closeDate: '2025-06-10', sqft: 2526, photoUrl: null, line: 'The record sale carried the largest floor plan on the street.' },
+    ],
+    model: 'claude-sonnet-4-5',
+    costUsd: 0.05,
+    photoSalesReviewed: 1,
+  }
+
+  it('renders the story page with the year table, prose, and source', () => {
+    const { html } = renderCmaHtml(args({}, { subdivisionStory: story }))
+    expect(html).toContain('The Story of Stone Creek')
+    expect(html).toContain('<td>2024</td><td>15</td><td>$590,000</td>')
+    expect(html).toContain('A street that sells on consistency')
+    expect(html).toContain('as large or larger than 72%')
+    expect(html).toContain('$705,000')
+    expect(html).toContain('story fixture')
+    expect(html).toContain('Narrative written by claude-sonnet-4-5')
+  })
+
+  it('no story, no page', () => {
+    const { html } = renderCmaHtml(args({}))
+    expect(html).not.toContain('The Story of')
+  })
+})

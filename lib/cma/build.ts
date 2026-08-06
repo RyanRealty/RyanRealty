@@ -28,6 +28,8 @@ import { judgeComps } from '@/lib/cma/judge'
 import { hydratePhotoUrls } from '@/lib/cma/photos'
 import { resolveCmaSiteData } from '@/lib/cma/county'
 import { buildCmaExtras } from '@/lib/cma/extras'
+import { buildSubdivisionStory, SUBDIVISION_STORY_YEARS } from '@/lib/cma/subdivision-story'
+import { getCmaSubdivisionHistory } from '@/lib/data/cma/builderReads'
 import { auditCma } from '@/lib/cma/audit'
 import { evaluateAccuracyContract } from '@/lib/cma/contract'
 import { getBpoListingCyclesByAddress } from '@/lib/data/bpo/reads'
@@ -426,6 +428,18 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     const subjectPhotosCount = subject.listingKey ? await getListingPhotosCount(subject.listingKey) : null
     const extras = await buildCmaExtras({ subject, comps: adjusted, pricing, subjectPhotosCount })
 
+    // 4.77. The subdivision story (Matt 2026-08-05: the homeowner's deep read
+    // on their own street; "this is where we provide our value"). Facts are
+    // deterministic over the FULL history; the AI narrative is grounded on
+    // those facts + remarks + recent-sale photos, and fails open.
+    const storySince = new Date(Date.now() - SUBDIVISION_STORY_YEARS * 365.25 * 24 * 3600e3).toISOString().slice(0, 10)
+    const storyRows = subject.subdivision?.trim()
+      ? await getCmaSubdivisionHistory(subject.subdivision, storySince).catch(() => [])
+      : []
+    const subdivisionStory = storyRows.length
+      ? await buildSubdivisionStory({ subject, rows: storyRows, sinceIso: storySince })
+      : null
+
     // 4.8. Development potential — pure function over the verified zone +
     // acreage (no new fetches). Every item carries its code citation; the
     // section always renders with the disclaimer + agency directory.
@@ -462,6 +476,12 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       pricing.confidenceReason,
       ...(development ? [development.disclaimer, ...development.items.flatMap((i) => [i.headline, i.detail]), ...development.buyerOptions.flatMap((o) => [o.headline, o.detail]), ...development.marketingHighlights.map((h) => h.headline)] : []),
       ...(rental ? [rental.disclaimer, rental.economicsNote, ...rental.tenures.flatMap((t) => [t.headline, t.detail]), ...rental.marketingHighlights.map((h) => h.headline)] : []),
+      ...(subdivisionStory
+        ? [
+            ...subdivisionStory.sections.flatMap((sec) => [sec.heading, sec.body]),
+            ...subdivisionStory.notableSales.map((n) => n.line),
+          ]
+        : []),
       ...(expiredAudit
         ? [
             expiredAudit.feeLine,
@@ -527,6 +547,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       development,
       rental,
       extras,
+      subdivisionStory,
     }
 
     // Spread, never a second hand-written list: a field added to one list and
@@ -585,6 +606,16 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         weight: c.weight,
         selection_tier: c.selectionTier,
       })),
+      subdivision_story: subdivisionStory
+        ? {
+            source: subdivisionStory.facts.source,
+            facts: subdivisionStory.facts,
+            model: subdivisionStory.model,
+            cost_usd: subdivisionStory.costUsd,
+            photo_sales_reviewed: subdivisionStory.photoSalesReviewed,
+            photo_sales: subdivisionStory.notableSales.map((n) => ({ mls: n.listNumber, address: n.address })),
+          }
+        : { source: 'none' },
       report_extras: {
         seasonality: extras.seasonality ? { source: extras.seasonality.source, by_month: extras.seasonality.byMonth } : { source: 'none' },
         price_band: extras.band ?? { source: 'none' },

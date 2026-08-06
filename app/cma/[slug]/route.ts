@@ -18,6 +18,10 @@
 
 import { NextResponse } from 'next/server'
 import { getCmaHtmlBySlug, getCmaAccessIdentity } from '@/lib/data'
+import { getCmaBrokerBySlugOrEmail } from '@/lib/data/cma/builderReads'
+import { renderImmersiveCmaHtml } from '@/lib/cma/immersive'
+import type { RenderCmaArgs } from '@/lib/cma/render'
+import type { CmaBroker } from '@/lib/cma/types'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import {
@@ -117,6 +121,50 @@ export async function GET(
     // cross-origin and CSP font-src 'self' blocks it — rewrite font references
     // to the current origin so the brand display font always loads.
     const origin = new URL(request.url).origin
+    const url = new URL(request.url)
+
+    // TWO PRESENTATIONS, ONE DATA SOURCE (Matt 2026-08-05: "this must be
+    // immersive"). The default web view is the full-screen scrollytelling
+    // experience rendered per-request from the SAME persisted render_args the
+    // print artifact was built from, so every figure matches the PDF exactly.
+    // ?print=1 serves the stored print artifact; the PDF endpoint keeps using
+    // html_content directly. Older rows without render_args fall back to the
+    // print artifact automatically.
+    const wantsPrint = url.searchParams.has('print')
+    if (!wantsPrint && row.render_args && typeof row.render_args === 'object') {
+      try {
+        const brokerRow = await getCmaBrokerBySlugOrEmail({ slug: row.broker_slug ?? 'matthew-ryan' })
+        const broker: CmaBroker = {
+          id: (brokerRow?.id as string) ?? null,
+          slug: (brokerRow?.slug as string) ?? (row.broker_slug ?? 'matthew-ryan'),
+          displayName: (brokerRow?.display_name as string) || 'Matt Ryan',
+          title: (brokerRow?.title as string) || 'Owner & Principal Broker',
+          licenseNumber: (brokerRow?.license_number as string | null) ?? null,
+          email: (brokerRow?.email as string | null) ?? null,
+          phone: (brokerRow?.twilio_number as string | null) ?? null,
+          photoUrl: (brokerRow?.photo_url as string | null) ?? null,
+        }
+        const immersive = renderImmersiveCmaHtml(
+          { ...(row.render_args as unknown as RenderCmaArgs), broker },
+          origin,
+        )
+        const tracked = immersive.includes('</body>')
+          ? immersive.replace('</body>', '<script src="/rr-doc-tracker.js" defer></script></body>')
+          : immersive
+        return new NextResponse(tracked, {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/html',
+            'X-Robots-Tag': 'noindex, nofollow',
+            'Cache-Control': 'private, no-store',
+            'X-Frame-Options': 'SAMEORIGIN',
+          },
+        })
+      } catch (err) {
+        console.error('[cma/serve] immersive render failed, serving print artifact:', err)
+      }
+    }
+
     let html = row.html_content.replace(
       /https?:\/\/[^'")\s]+(\/fonts\/[^'")\s]+)/g,
       `${origin}$1`,
