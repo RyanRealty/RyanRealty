@@ -389,7 +389,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           eyebrow={`${zip} · ${area} · Oregon`}
           titleTop="Homes for sale in"
           titleBottom={zip}
-          lead={`in ${area}, Oregon, with the live market behind every one.`}
+          lead={`in ${area}, Oregon.`}
           videoSrc={null}
           posterSrc={posterSrc}
         />
@@ -418,7 +418,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           showRegionMarkers={false}
           eyebrow={zip}
           title={`Homes in\n${zip}`}
-          subtitle={`Every active single-family listing in ${zip}, on the real terrain. Click any dot for the price, the beds, and the street.`}
+          subtitle={`Every active single-family listing in ${zip}.`}
         />
 
         {/* Subdivisions — grouped from live tiles, verified counts (§0). */}
@@ -436,7 +436,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
         <KbExploreTowns
           towns={otherZipItems}
           eyebrow="Central Oregon ZIPs"
-          title="Looking elsewhere"
+          title="Other ZIP codes"
           sectionId="other-zips"
           cta={{ href: '/search', label: 'Open map search' }}
         />

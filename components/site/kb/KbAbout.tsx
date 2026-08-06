@@ -46,7 +46,10 @@ export function KbAbout({ eyebrow, heading, paragraphs, facts }: KbAboutProps) {
 
           {facts.length ? (
             <aside className="about-ledger" aria-label="Quick facts">
-              <span className="about-ledger-cap eyebrow">By the numbers</span>
+              {/* "By the numbers" captioned rows that are often not numbers
+                  (Founded, License, Based in). "Quick facts" is what the
+                  ledger actually holds, and it already is the aria-label. */}
+              <span className="about-ledger-cap eyebrow">Quick facts</span>
               <dl className="about-facts">
                 {facts.map((f, i) => (
                   <div key={i} className="about-fact">

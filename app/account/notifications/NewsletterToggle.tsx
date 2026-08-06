@@ -83,7 +83,7 @@ export function NewsletterToggle({ initialSubscribed, canSubscribe }: Props) {
       {blockedFromSubscribing ? (
         <p className="text-xs text-muted-foreground">
           Email to this address is currently paused, so the newsletter cannot be turned back on
-          here. Reply to any of our emails or call {CONTACT.phoneDirect} and we can help.
+          here. Reply to any of our emails or call {CONTACT.phoneDirect} to turn it back on.
         </p>
       ) : null}
     </div>

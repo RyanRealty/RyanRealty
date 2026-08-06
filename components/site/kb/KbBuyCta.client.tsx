@@ -58,7 +58,7 @@ export function KbBuyCta({
           {communityName}?
         </h2>
         <p className="buy-cta-p">
-          Browse every active listing in {communityName} or reach out to schedule a showing. A direct line to the broker handling these homes.
+          Browse every active listing in {communityName} or reach out to schedule a showing.
         </p>
         <div className="buy-cta-btns">
           <a href={listingsHref} className="btn" aria-label={`See all homes for sale in ${communityName}`}>

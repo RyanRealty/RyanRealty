@@ -69,8 +69,10 @@ export function KbListingMapImpl({
   eyebrow = 'Central Oregon',
   title = 'Every home\nfor sale',
   // Input-neutral verb: "click" mismatched phones, where the gesture is a tap
-  // (design-audit P3).
-  subtitle = 'Every active listing across the six cities, on the real terrain. Open any dot for the price, the beds, and the street.',
+  // (design-audit P3). The dot-tap instruction was cut 2026-08-06 (VOICE.md —
+  // explaining that a dot is clickable is the "obvious restatement" the canon
+  // names by example).
+  subtitle = 'Every active listing across the six cities.',
   centerLonLat,
   // What the pinned count actually counts, when it is not "active listings"
   // (open houses, price drops) — the legend chip used to say "N ACTIVE

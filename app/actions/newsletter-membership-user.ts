@@ -61,7 +61,7 @@ export async function setMyNewsletterMembership(subscribed: boolean): Promise<Se
   const signals = await collectEmailChannelSignals(email)
   const decision = canUserResubscribe(signals, sub?.status ?? null)
   if (!decision.allowed) {
-    return { ok: false, error: 'Email to this address is paused and cannot be turned back on here. Contact us and we can help.' }
+    return { ok: false, error: 'Email to this address is paused and cannot be turned back on here. Reply to any of our emails to turn it back on.' }
   }
 
   const name =

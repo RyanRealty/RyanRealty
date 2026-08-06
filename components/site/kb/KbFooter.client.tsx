@@ -58,7 +58,7 @@ export function KbFooter({
           <h2 className="display">Let&rsquo;s<br />talk.</h2>
           <p className="sub">
             Buying, selling, or still deciding which town fits. Tell us the street. We bring the
-            comps and the number it trades for.
+            comps and the number it sells for.
           </p>
           <div className="btn-row">
             {listingKey ? (

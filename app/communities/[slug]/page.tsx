@@ -168,7 +168,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // §0 NO COUNT HERE: `activeCount` fell through to the parent CITY's, so
   // three-rivers read "1000 homes for sale" (Bend's, row-capped) and sunriver 121
   // vs a body showing 102. Re-deriving it here is out (the SEO-58 incident).
-  const desc = `Homes for sale in ${community.name}, ${community.city}, OR. Live single-family market stats, open houses, and recent activity from a local brokerage.`
+  const desc = `Homes for sale in ${community.name}, ${community.city}, OR. Live single-family market stats, open houses, and recent activity.`
 
   // OG image: use the community's curated KB hero photo when one exists, else the
   // generic branded card. Both paths are absolute at render time via pageMetadata.
@@ -752,7 +752,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           eyebrow={communityLabel}
           titleTop={community.name}
           titleBottom="Homes for Sale"
-          lead={`in ${community.name}, ${cityName}, with the live market behind every one.`}
+          lead={`in ${community.name}, ${cityName}.`}
           videoSrc={null}
           posterSrc={heroPhoto}
           // Fix 6: descriptive alt text for the hero image. (§0)
@@ -808,7 +808,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           polygons={mapPolygons}
           eyebrow={community.name}
           title={`${community.name}\nHomes for Sale`}
-          subtitle={`Every active single-family listing in ${community.name}, on the real terrain. Click any dot for the price, the beds, and the street.`}
+          subtitle={`Every active single-family listing in ${community.name}.`}
           // Fix 4: registry center_lon_lat ensures the map renders even when
           // this community has no active listings (empty geojson features). (§0)
           centerLonLat={registryEntry?.center_lon_lat ?? undefined}
@@ -861,14 +861,14 @@ export default async function CommunityDetailPage({ params }: Props) {
         />
         <KbArticles
           posts={articlePosts}
-          eyebrow="Guides and insights"
-          heading={`${community.name} real estate, explained`}
-          subtitle={`Local housing news, market data, and buyer and seller guides for ${community.name} and ${cityName}.`}
+          eyebrow="Guides and news"
+          heading={`${community.name} real estate guides`}
+          subtitle={`Housing news, market data, and buyer and seller advice for ${community.name} and ${cityName}.`}
         />
         <KbExploreTowns
           towns={otherCityItems}
           eyebrow="Central Oregon"
-          title="Explore other cities"
+          title="Other cities"
           sectionId="nearby"
           cta={{ href: '/cities', label: 'Every city' }}
         />
@@ -902,11 +902,11 @@ export default async function CommunityDetailPage({ params }: Props) {
             <div className="comm-str-note-inner">
               <span className="comm-str-label">Second homes</span>
               <p className="comm-str-text">
-                {community.name} attracts both primary-residence and second-home buyers. Short-term rental potential in master-planned and resort communities like this one varies by HOA rules, community covenants, and Oregon regulations.{' '}
+                Short-term rental potential in {community.name} varies by HOA rules, community covenants, and Oregon regulations.{' '}
                 <a href={`/contact?inquiryType=Buying&message=${encodeURIComponent(`I have questions about short-term rental rules in ${community.name}.`)}`}>
                   Reach out for current rental guidelines
                 </a>
-                {' '}before making any assumptions about permitted use or income potential.
+                {' '}before you assume what is permitted or what it could earn.
               </p>
             </div>
           </div>

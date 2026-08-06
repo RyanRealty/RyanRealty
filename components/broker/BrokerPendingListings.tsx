@@ -36,7 +36,7 @@ export default function BrokerPendingListings({
           <H2 id="broker-pending-heading" className="text-2xl text-primary">
             {firstName}&apos;s Pending Listings
           </H2>
-          <p className="mt-4 text-muted-foreground">No pending or under-contract listings at this time.</p>
+          <p className="mt-4 text-muted-foreground">No pending or under-contract listings now.</p>
         </div>
       </section>
     )

@@ -234,7 +234,7 @@ export default async function OpenHousesCityPage({
             showRegionMarkers={false}
             eyebrow={cityName}
             title={'Open houses\non the map'}
-            subtitle={`Every open house in ${cityName} with a location, on the real terrain. Click any dot for the price, the beds, and the street.`}
+            subtitle={`Every open house in ${cityName} with a location.`}
           />
         ) : null}
         <KbSell

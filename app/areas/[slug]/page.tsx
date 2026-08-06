@@ -110,14 +110,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!area) {
     return pageMetadata({
       title: 'Area not found',
-      description: 'This saved area is not available.',
+      description: 'This search area is private or does not exist.',
       path: `/areas/${slug}`,
       noindex: true,
     })
   }
   return pageMetadata({
     title: `${area.name} Homes for Sale | Central Oregon`,
-    description: `Homes for sale in ${area.name}, a broker-drawn Central Oregon search area. Live listings inside the exact boundary, from a local brokerage.`,
+    description: `Homes for sale in ${area.name}, a broker-drawn Central Oregon search area, with live listings inside the exact boundary.`,
     path: `/areas/${slug}`,
   })
 }
@@ -170,12 +170,15 @@ export default async function AreaPage({ params }: Props) {
   const mediaCaption =
     derivedCity && heroData.verified ? `${derivedCity.city}, Oregon` : 'Central Oregon · Cascade Range'
 
+  // KbHero already renders "<N> homes for sale" ahead of this text when
+  // activeCount is non-null (see KbHero's `lead` prop contract), so this
+  // string is a continuation fragment in that case and a full sentence only
+  // when the count is unknown — never both, or the page reads "5 homes for
+  // sale 5 homes for sale inside X."
   const lede =
     activeCount == null
       ? `Homes for sale inside the ${area.name} boundary.`
-      : activeCount > 0
-      ? `${activeCount} ${activeCount === 1 ? 'home' : 'homes'} for sale inside the ${area.name} boundary.`
-      : `No active listings inside the ${area.name} boundary right now.`
+      : `inside the ${area.name} boundary.`
 
   const featuredItems = await resolveFeaturedItems(rows.filter((t) => Boolean(t.photoUrl)))
 
@@ -259,7 +262,7 @@ export default async function AreaPage({ params }: Props) {
             polygons={mapPolygons}
             eyebrow={area.name}
             title={`Homes in\n${area.name}`}
-            subtitle={`Every active listing inside the drawn ${area.name} boundary. Click any dot for the price, the beds, and the street.`}
+            subtitle={`Every active listing inside the drawn ${area.name} boundary.`}
           />
         ) : null}
         {featuredItems.length > 0 ? (
@@ -274,8 +277,7 @@ export default async function AreaPage({ params }: Props) {
           <section className="section">
             <div className="wrap" style={{ textAlign: 'center', padding: '2.5rem 0' }}>
               <p style={{ fontSize: '1.05rem', lineHeight: 1.6, color: 'var(--navy-70)', maxWidth: '36rem', margin: '0 auto' }}>
-                No active listings inside {area.name} right now. New homes come to market
-                regularly in Central Oregon.
+                No active listings inside {area.name} right now.
               </p>
             </div>
           </section>

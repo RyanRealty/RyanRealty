@@ -78,11 +78,14 @@ export function KbHero({
   eyebrow = 'Central Oregon Real Estate',
   // "Welcome to the High Desert" was pure atmosphere — a first-time visitor
   // learned nothing about the product until the small eyebrow line
-  // (design-audit P3). Only app/page.tsx uses this default; every other
-  // KbHero caller passes its own title.
-  titleTop = 'Find your home in the',
-  titleBottom = 'High Desert',
-  lead = 'across Central Oregon, from the Deschutes to Smith Rock.',
+  // (design-audit P3). "Find your home in the High Desert" replaced it and was
+  // no better: every brokerage in Bend could paste it verbatim (VOICE.md review
+  // test #4). The headline now states the page's actual scope, and the live
+  // count + MLS qualifier land in the sub-line directly beneath it.
+  // Only app/page.tsx uses this default; every other KbHero caller passes its own.
+  titleTop = 'Every home for sale',
+  titleBottom = 'in Central Oregon.',
+  lead = 'on the MLS, from La Pine to Terrebonne.',
   videoSrc = '/videos/hero-optimized.mp4',
   posterSrc = '/images/hero/hero-old-mill-master-4k.jpg',
   posterAlt,
@@ -91,10 +94,12 @@ export function KbHero({
   showSearch = true,
   statless = false,
   countNoun,
-  cta = { href: '/homes-for-sale', label: 'Browse' },
+  // Buttons say what happens next (VOICE.md > Site pages). "Browse" named no
+  // destination and "Home worth?" was a fragment, not an action.
+  cta = { href: '/homes-for-sale', label: 'See homes' },
   // Value framing, not a bare one-word "Sell" — the ghost button was the whole
   // mobile seller path above the fold (design-audit P2).
-  ctaSecondary = { href: '/sell/valuation', label: 'Home worth?' },
+  ctaSecondary = { href: '/sell/valuation', label: 'Value my home' },
   formSlot,
 }: KbHeroProps) {
   const root = useRef<HTMLElement>(null)

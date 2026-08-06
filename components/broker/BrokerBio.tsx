@@ -46,7 +46,7 @@ export default function BrokerBio({ broker }: Props) {
           </div>
         ) : (
           <p className="mt-4 text-muted-foreground">
-            {firstName} is a dedicated real estate professional serving Central Oregon. Get in touch to learn how they can help with your next move.
+            {firstName} is a real estate broker serving Central Oregon. Get in touch to learn how they can help with your next move.
           </p>
         )}
         {(broker.specialties ?? []).filter((s): s is string => Boolean(s?.trim())).length > 0 && (

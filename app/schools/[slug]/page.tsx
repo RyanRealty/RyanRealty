@@ -73,7 +73,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!school) notFound()
 
   const levelLabel = LEVEL_LABEL[school.level].toLowerCase()
-  const desc = `${school.name} is a ${levelLabel} in ${school.city}, part of ${school.district}. See the homes for sale that feed this school from Ryan Realty, a local Central Oregon brokerage.`
+  const desc = `${school.name} is a ${levelLabel} in ${school.city}, part of ${school.district}. See the homes for sale that feed this school.`
 
   return pageMetadata({
     title: `${school.name} | Central Oregon Schools`,
@@ -241,7 +241,7 @@ export default async function SchoolDetailPage({ params }: Props) {
           eyebrow={`${levelLabel} · ${school.city}`}
           titleTop={levelLabel}
           titleBottom={school.name}
-          lead={`feed ${school.name}, part of ${school.district}. The active single-family homes for sale, from our own listings.`}
+          lead={`feed ${school.name}, part of ${school.district}.`}
           videoSrc={null}
           posterSrc={CONTENT_HERO_IMAGES.schools}
           mediaCaption="Regional view · Central Oregon"
@@ -328,7 +328,7 @@ export default async function SchoolDetailPage({ params }: Props) {
             polygons={mapPolygons}
             eyebrow={school.city}
             title={`Where ${school.name}\nhomes are`}
-            subtitle={`Active single-family homes for sale that feed ${school.name}, on the real terrain. Click any dot for the price, the beds, and the street.`}
+            subtitle={`Active single-family homes for sale that feed ${school.name}.`}
           />
         ) : null}
 
@@ -391,9 +391,7 @@ export default async function SchoolDetailPage({ params }: Props) {
               </div>
               <div className="ov-prose" style={{ paddingTop: 'clamp(24px,3vw,36px)' }}>
                 <p>
-                  There are no active single-family listings tied to {school.name} at the moment.
-                  Inventory changes often. Browse current homes in {school.city} to see what is on the
-                  market today.
+                  There are no active single-family listings tied to {school.name} right now.
                 </p>
                 <p>
                   <a
@@ -417,8 +415,7 @@ export default async function SchoolDetailPage({ params }: Props) {
             </div>
             <div className="ov-prose" style={{ paddingTop: 'clamp(24px,3vw,36px)' }}>
               <p>
-                {school.name} is one of the {school.district} schools. Explore the others at this
-                level below.
+                {school.name} is one of the {school.district} schools.
               </p>
             </div>
 

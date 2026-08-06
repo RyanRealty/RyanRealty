@@ -142,7 +142,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const cityName = snapshot.geoLabel
   return pageMetadata({
     title: `Homes for Sale in ${cityName}, Oregon`,
-    description: `Search homes for sale in ${cityName}, Oregon with live single-family market data, neighborhoods, resort communities, open houses, and recent activity from a local brokerage.`,
+    description: `Homes for sale in ${cityName}, Oregon, with live single-family market data, neighborhoods, resort communities, open houses, and recent activity.`,
     path: `/cities/${slug}`,
   })
 }
@@ -461,7 +461,7 @@ export default async function CityDetailPage({ params }: Props) {
           eyebrow={`${cityName} · Oregon`}
           titleTop={cityName}
           titleBottom="Homes for Sale"
-          lead={`in ${cityName}, Oregon, with the live market behind every one.`}
+          lead={`in ${cityName}, Oregon.`}
           videoSrc={heroVideoSrc}
           posterSrc={heroPosterSrc}
           mediaCaption={mediaCaption}
@@ -478,7 +478,7 @@ export default async function CityDetailPage({ params }: Props) {
           polygons={neighborhoodPolygons}
           eyebrow={cityName}
           title={`Homes in\n${cityName}`}
-          subtitle={`Every active single-family listing with a ${cityName} address, on the real terrain. Click any dot for the price, the beds, and the street.`}
+          subtitle={`Active listings with a ${cityName} address, every property type.`}
         />
         {aboutParagraphs.length > 0 ? (
           <KbAbout eyebrow={`${cityName} · Oregon`} heading={`Living in ${cityName}`} paragraphs={aboutParagraphs} facts={aboutFacts} />
@@ -525,16 +525,16 @@ export default async function CityDetailPage({ params }: Props) {
         />
         <KbArticles
           posts={articlePosts}
-          eyebrow="Guides and insights"
-          heading={`${cityName} real estate, explained`}
-          subtitle={`Local housing news, neighborhood deep dives, and buyer and seller guides for ${cityName} and Central Oregon.`}
+          eyebrow="Guides and news"
+          heading={`${cityName} real estate guides`}
+          subtitle={`Housing news, neighborhood guides, and buyer and seller advice for ${cityName} and Central Oregon.`}
         />
         <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
         <KbTeam />
         <KbExploreTowns
           towns={otherCityItems}
           eyebrow="Central Oregon"
-          title="Explore other cities"
+          title="Other cities"
           sectionId="nearby"
           cta={{ href: '/cities', label: 'Every city' }}
         />

@@ -36,7 +36,7 @@ const ogImage = `${siteUrl}/api/og?type=default`
 export const metadata: Metadata = {
   title: 'Client Reviews',
   description:
-    'See what buyers and sellers say about working with Ryan Realty. Real testimonials from clients across Central Oregon.',
+    `${TESTIMONIALS.length} reviews from buyers and sellers across Central Oregon.`,
   alternates: { canonical: `${siteUrl}/reviews` },
   openGraph: {
     title: 'Client Reviews | Ryan Realty',
@@ -123,10 +123,10 @@ export default function ReviewsPage() {
             below the hero so it stays one tap away. */}
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
-          eyebrow="Read our reviews"
+          eyebrow="Central Oregon · Client reviews"
           titleTop="What our"
           titleBottom="clients say"
-          lead="Real reviews from buyers and sellers across Central Oregon. Read what clients say about the process, the communication, and how deals came together."
+          lead={`${TESTIMONIALS.length} reviews from buyers and sellers across Central Oregon, on the process, the communication, and how deals came together.`}
           videoSrc={null}
           posterSrc="/images/homepage/bend-drake-park-aerial.jpg"
           showSearch={false}

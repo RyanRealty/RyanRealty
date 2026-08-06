@@ -498,7 +498,7 @@ export default async function PriceDropsRegionPage() {
             showRegionMarkers
             eyebrow="Central Oregon"
             title={`${total} price\nreductions`}
-            subtitle={`Every home with a price cut in the last 7 days, on the real terrain. Open any dot for the price and the address.`}
+            subtitle={`Every home with a price cut in the last 7 days.`}
             countNoun="price drops"
           />
         )}

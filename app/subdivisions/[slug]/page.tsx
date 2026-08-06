@@ -137,7 +137,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const indexable = await isSubdivisionIndexable(slug)
   return pageMetadata({
     title: `${name} Homes for Sale | ${city}, Oregon`,
-    description: `Homes for sale in ${name}, a subdivision in ${city}. Boundary map and live listings from a local brokerage.`,
+    description: `Homes for sale in ${name}, a subdivision in ${city}, with a boundary map and live listings.`,
     path: `/subdivisions/${slug}`,
     noindex: !indexable,
   })
@@ -275,12 +275,13 @@ export default async function SubdivisionPage({ params }: Props) {
       : null
 
   // ── Hero copy ─────────────────────────────────────────────────────────────
+  // KbHero already renders "<N> homes for sale" ahead of this text when
+  // activeCount is non-null (see KbHero's `lead` prop contract), so this
+  // string is a continuation fragment in that case and a full sentence only
+  // when the count is unknown — never both, or the page reads "5 homes for
+  // sale 5 homes for sale in X."
   const lede =
-    activeCount == null
-      ? `Homes for sale in ${displayName}.`
-      : activeCount > 0
-      ? `${activeCount} ${activeCount === 1 ? 'home' : 'homes'} for sale in ${displayName}.`
-      : `No active listings in ${displayName} right now.`
+    activeCount == null ? `Homes for sale in ${displayName}.` : `in ${displayName}.`
 
   // ── Hero image ────────────────────────────────────────────────────────────
   // Use city hero as a sensible default for any subdivision plat. No
@@ -436,7 +437,7 @@ export default async function SubdivisionPage({ params }: Props) {
       type: 'place',
       placeType: 'Place',
       name: displayName,
-      description: `Homes for sale in ${displayName}, a subdivision${cityName !== 'Central Oregon' ? ` in ${cityName}` : ' in Central Oregon'}. Boundary map and live listings from a local brokerage.`,
+      description: `Homes for sale in ${displayName}, a subdivision${cityName !== 'Central Oregon' ? ` in ${cityName}` : ' in Central Oregon'}, with a boundary map and live listings.`,
       url: `/subdivisions/${slug}`,
       address: cityName !== 'Central Oregon' ? { city: cityName, state: 'OR', country: 'US' } : undefined,
       containedInPlace: cityName !== 'Central Oregon' ? cityName : undefined,
@@ -494,8 +495,7 @@ export default async function SubdivisionPage({ params }: Props) {
           <section className="section">
             <div className="wrap" style={{ textAlign: 'center', padding: '2.5rem 0' }}>
               <p style={{ fontSize: '1.05rem', lineHeight: 1.6, color: 'var(--navy-70)', maxWidth: '36rem', margin: '0 auto' }}>
-                No active listings in {displayName} right now. New homes come to
-                market regularly{resortLabel ? ` in ${resortLabel}` : ''}.
+                No active listings in {displayName} right now.
               </p>
             </div>
           </section>
@@ -525,7 +525,7 @@ export default async function SubdivisionPage({ params }: Props) {
             polygons={mapPolygons}
             eyebrow={displayName}
             title={`Homes in\n${displayName}`}
-            subtitle={`Every active single-family listing in ${displayName}${cityName !== 'Central Oregon' ? `, ${cityName}` : ''}. Click any dot for the price, the beds, and the street.`}
+            subtitle={`Every active single-family listing in ${displayName}${cityName !== 'Central Oregon' ? `, ${cityName}` : ''}.`}
           />
         ) : null}
         {/* Sales history (yearly closed-sale aggregates) + market-stats strip.

@@ -43,8 +43,8 @@ export function KbOutOfAreaReferral({ citySlug, cityName }: { citySlug: string; 
       <section className="section comm-alerts" id="referral" aria-label={`${cityName} broker referral`}>
         <div className="comm-alerts-inner">
           <p className="comm-alerts-confirm">
-            Got it. A broker from our team reads this today and connects you with a {cityName} agent
-            worth your time. Watch your inbox.
+            Got it. A broker from our team reads this today and connects you with a {cityName} agent.
+            Watch your inbox.
           </p>
         </div>
       </section>
@@ -59,7 +59,7 @@ export function KbOutOfAreaReferral({ citySlug, cityName }: { citySlug: string; 
           <h2 className="comm-alerts-h display">
             Get a {cityName}
             <br />
-            broker we trust
+            broker introduction
           </h2>
           <p className="comm-alerts-p">
             Tell us what you are looking for in {cityName}. We find a local broker who fits, make the

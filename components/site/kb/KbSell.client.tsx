@@ -67,9 +67,14 @@ export function KbSell({ data, eyebrow = 'Sell with us' }: { data: KbSellData; e
             <br />
             home worth?
           </h2>
+          {/* Rewritten 2026-08-06. The prior line ("A real number, not a
+              guess. Built from what your street actually trades for...") coined
+              a maxim (VOICE.md rule 8), used "trades" for a home sale (rule 4),
+              and claimed a comp window ("closed this quarter") the CMA does not
+              commit to. This states the deliverable and its price. */}
           <p className="sell-p">
-            A real number, not a guess. Built from what your street actually trades for, the days on market on
-            your block, and the comps that closed this quarter.
+            A broker pulls three closed comps and three active comps near you, then writes the price range
+            they support. It is free, and no listing agreement is required to get it.
           </p>
           <form className="sell-form" onSubmit={submit}>
             <input

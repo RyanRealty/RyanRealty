@@ -406,7 +406,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
             showRegionMarkers={false}
             eyebrow={cityName}
             title={`${total} price\nreductions`}
-            subtitle={`Every home with a price cut in ${cityName} in the last 7 days. Click any dot for the price and the address.`}
+            subtitle={`Every home with a price cut in ${cityName} in the last 7 days.`}
           />
         )}
 
