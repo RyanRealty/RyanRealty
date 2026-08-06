@@ -319,17 +319,18 @@ async function sendJudgeTurn(
 }
 
 /**
- * Judge which candidate comps are genuinely comparable to the subject.
- * Returns null (fail-open) when ANTHROPIC_API_KEY is missing or the call fails.
+ * The subject/comps/market brief the judge reasons over.
+ *
+ * Extracted from judgeComps so the audit-driven narrative repair below can hand
+ * the model the SAME brief it saw the first time. A repair turn built on a
+ * different brief is a different question, and the answer would not be
+ * comparable to the one it is replacing.
  */
-export async function judgeComps(
+function buildJudgeUserPrompt(
   subject: CmaSubject,
   comps: CmaComp[],
   market: CmaMarketContext | null,
-): Promise<CompJudgment | null> {
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey || comps.length === 0) return null
-
+): string {
   const subjectParts = [
     `${subject.streetAddress}, ${subject.city}`,
     subject.subdivision ? `subdivision=${subject.subdivision}` : null,
@@ -357,11 +358,27 @@ export async function judgeComps(
     ? `Market: ${market.geoLabel}, ${market.marketVerdict}, ${market.monthsOfSupply} months supply, median $${market.medianPpsf ?? '?'}/sqft, ${market.yoyMedianPriceDeltaPct ?? '?'}% YoY.`
     : 'Market: no cache row for this geography.'
 
-  const user =
+  return (
     `SUBJECT: ${subjectLine}\n${marketLine}\n${conditionEvidence}\n\n` +
     `CANDIDATE COMPS (${comps.length}) — judge each by its listing key:\n` +
     comps.map((c, i) => `${i + 1}. ${describeComp(c)}`).join('\n') +
     `\n\nClassify every comp (strong / weak / exclude), declare the $/sqft band and the rule you applied, give an overall confidence, and write the comparability narrative.`
+  )
+}
+
+/**
+ * Judge which candidate comps are genuinely comparable to the subject.
+ * Returns null (fail-open) when ANTHROPIC_API_KEY is missing or the call fails.
+ */
+export async function judgeComps(
+  subject: CmaSubject,
+  comps: CmaComp[],
+  market: CmaMarketContext | null,
+): Promise<CompJudgment | null> {
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey || comps.length === 0) return null
+
+  const user = buildJudgeUserPrompt(subject, comps, market)
 
   try {
     const client = new Anthropic({ apiKey })
@@ -545,4 +562,86 @@ export async function judgeComps(
 
 function computeCostUsd(inputTokens: number, outputTokens: number): number {
   return +(inputTokens * INPUT_COST_PER_TOKEN + outputTokens * OUTPUT_COST_PER_TOKEN).toFixed(4)
+}
+
+/**
+ * ONE targeted narrative repair, driven by the adversarial audit's findings.
+ *
+ * WHY THIS EXISTS. The build already self-repairs findings tied to a SPECIFIC
+ * comp: drop the comp, re-price, re-audit. Findings about the PROSE had no such
+ * path, so a narrative that misdescribed a sound comp set flagged the whole
+ * document and parked it in draft forever. On 2026-08-06 that was every stored
+ * CMA — 8 of 8 carrying `Audit verdict: fail`, several for nothing worse than a
+ * miscounted bedroom claim sitting beside correct pricing.
+ *
+ * The comp set and the pricing are FINAL here. They have already been judged,
+ * repaired, and audited. Only the sentences change.
+ *
+ * The model proposes; CODE decides. The caller re-runs the deterministic
+ * narrative-integrity check on whatever comes back and keeps the repair only
+ * when it is strictly cleaner — the same contract the consistency repair above
+ * operates under. A model is not permitted to certify its own correction.
+ */
+export async function repairNarrativeAgainstAudit(args: {
+  subject: CmaSubject
+  comps: CmaComp[]
+  market: CmaMarketContext | null
+  judgment: CompJudgment
+  /** Auditor findings about the prose, rendered one per line. */
+  findings: string[]
+}): Promise<{ narrative: string; costUsd: number; model: string } | null> {
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey || args.findings.length === 0 || args.comps.length === 0) return null
+  if (!args.judgment.narrative?.trim()) return null
+
+  const user = buildJudgeUserPrompt(args.subject, args.comps, args.market)
+  const repairUser =
+    `An independent adversarial audit read the comparability narrative you wrote and found claims the ` +
+    `comp set does not support. Return ONE corrected judgment whose narrative survives the same audit.\n\n` +
+    `YOUR NARRATIVE:\n${args.judgment.narrative}\n\n` +
+    `WHAT THE AUDIT FOUND:\n${args.findings.map((f, i) => `${i + 1}. ${f}`).join('\n')}\n\n` +
+    `The comp set and the pricing are FINAL and were audited as correct. Do not reclassify a comp, do not ` +
+    `move a sale in or out, and do not restate the recommended price. Return the same verdicts you returned ` +
+    `before. The ONLY thing to change is the prose.\n\n` +
+    `Every count, bracket, and address in the narrative must be checkable against the comps listed above. ` +
+    `Count the rows before you write a number. If four comps have four bedrooms, the narrative says four. ` +
+    `If no comp falls in a price-per-square-foot bracket, do not state that bracket. A claim you cannot ` +
+    `point at a row for comes out of the sentence entirely — a shorter narrative that is true beats a fuller ` +
+    `one that is not.`
+
+  try {
+    const client = new Anthropic({ apiKey })
+    let costUsd = 0
+
+    const first = await sendJudgeTurn(client, [{ role: 'user', content: user }])
+    costUsd += first.costUsd
+    if (!first.block) return null
+
+    const second = await sendJudgeTurn(client, [
+      { role: 'user', content: user },
+      { role: 'assistant', content: [first.block] },
+      // The tool_use above MUST be answered by a tool_result or the API rejects
+      // the turn.
+      {
+        role: 'user',
+        content: [
+          { type: 'tool_result', tool_use_id: first.block.id, content: 'Judgment recorded. Audit findings follow.' },
+          { type: 'text', text: repairUser },
+        ],
+      },
+    ])
+    costUsd += second.costUsd
+
+    const repaired = second.block ? parseJudgment(second.block, args.comps) : null
+    const narrative = repaired?.narrative?.trim()
+    if (!narrative) return null
+
+    return { narrative, costUsd: +costUsd.toFixed(4), model: MODEL }
+  } catch (err) {
+    console.warn(
+      '[cma/judge] narrative repair failed, keeping the audited narrative and the review flag:',
+      err instanceof Error ? err.message : String(err),
+    )
+    return null
+  }
 }

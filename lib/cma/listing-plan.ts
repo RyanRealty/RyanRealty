@@ -76,7 +76,7 @@ export function buildFailedAskItem(
   return {
     trigger: `The last listing asked ${usd(ask)} and did not sell.`,
     action: `We price the relist at ${usd(pricing.recommended)}, the number the comp set supports today.`,
-    basis: `subject.lastListPrice ${usd(ask)} vs pricing.recommended ${usd(pricing.recommended)}.`,
+    basis: `Last list price ${usd(ask)} vs recommended list price ${usd(pricing.recommended)}.`,
   }
 }
 
@@ -91,7 +91,7 @@ export function buildSubdivisionItem(extras: CmaExtras): ListingPlanItem | null 
   return {
     trigger: `${sp.name} carries a median closed price of ${usd(sp.medianClose)} over its last ${sp.closedCount} sales.`,
     action: `We market against ${sp.name}'s own closed sales, not the citywide median, so buyers compare this home to the ${sp.closedCount} homes they have actually seen sell here.`,
-    basis: `extras.subdivisionPulse median ${usd(sp.medianClose)} across ${sp.closedCount} sales. ${sp.source}.`,
+    basis: `Subdivision median close price ${usd(sp.medianClose)} across ${sp.closedCount} sales. ${sp.source}.`,
   }
 }
 
@@ -107,7 +107,7 @@ export function buildCrowdedBandItem(extras: CmaExtras): ListingPlanItem | null 
   return {
     trigger: `${b.activeCount} homes are active in this price band right now, against ${b.pendingCount} pending.`,
     action: `With ${b.activeCount} homes already listed in this band, we lead the launch on what makes this one different rather than on price alone.`,
-    basis: `extras.band ${b.activeCount} active vs ${b.pendingCount} pending, ${'$'}${b.lo.toLocaleString('en-US')} to ${'$'}${b.hi.toLocaleString('en-US')}. ${b.source}.`,
+    basis: `Price band ${b.activeCount} active vs ${b.pendingCount} pending, ${'$'}${b.lo.toLocaleString('en-US')} to ${'$'}${b.hi.toLocaleString('en-US')}. ${b.source}.`,
   }
 }
 
@@ -123,7 +123,7 @@ export function buildEarlyExposureItem(extras: CmaExtras): ListingPlanItem | nul
   return {
     trigger: `Active listings in this price band carry a median of ${dom} days on market.`,
     action: `The median home in this band sits ${b.activeMedianDom} days. We front-load showings and feedback into the first two weeks, while the listing is new.`,
-    basis: `extras.band active median DOM ${dom} days, ${'$'}${b.lo.toLocaleString('en-US')} to ${'$'}${b.hi.toLocaleString('en-US')}. ${b.source}.`,
+    basis: `Price band active median time on market ${dom} days, ${'$'}${b.lo.toLocaleString('en-US')} to ${'$'}${b.hi.toLocaleString('en-US')}. ${b.source}.`,
   }
 }
 
@@ -138,7 +138,7 @@ export function buildFinancingItem(extras: CmaExtras): ListingPlanItem | null {
   return {
     trigger: `${f.cashPct}% of recent sales in this market closed with cash financing.`,
     action: `We write close-date flexibility into the listing terms.`,
-    basis: `extras.financing cash share ${f.cashPct}% of ${f.sampleCount} sales. ${f.source}.`,
+    basis: `Cash financing share ${f.cashPct}% of ${f.sampleCount} sales. ${f.source}.`,
   }
 }
 
@@ -161,7 +161,7 @@ export function buildTimingItem(extras: CmaExtras): ListingPlanItem | null {
   return {
     trigger: `${fastName} listings in this market reach pending in a median of ${fastMed} days. ${slowName} listings take a median of ${slowMed}.`,
     action: `We aim the launch at ${fastName}, when homes here have gone pending in a median of ${fastMed} days against ${slowMed} in ${slowName}.`,
-    basis: `extras.seasonality ${fastName} median ${fastMed} days vs ${slowName} median ${slowMed} days. ${s.source}.`,
+    basis: `Seasonality ${fastName} median ${fastMed} days vs ${slowName} median ${slowMed} days. ${s.source}.`,
   }
 }
 
@@ -176,7 +176,7 @@ export function buildPhotoItem(extras: CmaExtras): ListingPlanItem | null {
   return {
     trigger: `This listing carries ${pb.subjectPhotos} photos. The sold comps in this report carry a median of ${pb.compMedianPhotos}.`,
     action: `We reshoot the photo set before this lists, targeted to match the comp median count.`,
-    basis: `extras.photoBench subject ${pb.subjectPhotos} photos vs comp median ${pb.compMedianPhotos} photos. ${pb.source}.`,
+    basis: `Photo count subject ${pb.subjectPhotos} photos vs comp median ${pb.compMedianPhotos} photos. ${pb.source}.`,
   }
 }
 

@@ -24,7 +24,8 @@ import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
 import { composeBuildSummary, composeFailureSummary } from '@/lib/cma/build-summary'
 import { getCmaMarketContext } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
-import { judgeComps } from '@/lib/cma/judge'
+import { judgeComps, repairNarrativeAgainstAudit } from '@/lib/cma/judge'
+import { checkNarrativeIntegrity } from '@/lib/cma/audit-narrative-integrity'
 import { hydratePhotoUrls } from '@/lib/cma/photos'
 import { resolveCmaSiteData } from '@/lib/cma/county'
 import { buildCmaExtras } from '@/lib/cma/extras'
@@ -328,6 +329,63 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       }
     }
 
+    // 4.46. Narrative repair — the findings the comp repair above cannot touch.
+    //
+    // A finding with a compListingKey is about a SALE, and 4.45 answers it by
+    // dropping the sale. A finding without one is about the PROSE: a miscounted
+    // bedroom claim, a $/sqft bracket no comp falls in. Those had no repair path
+    // at all, so a sound analysis described one sentence badly failed the audit
+    // and parked in draft permanently. On 2026-08-06 that was every stored CMA,
+    // 8 of 8 on `Audit verdict: fail`.
+    //
+    // The comps and the pricing do not move here. Only the sentences do, and
+    // the deterministic integrity check must not get worse, and the audit is
+    // then re-run so the recorded verdict describes the narrative that actually
+    // ships. Once. A document that still fails stays flagged, which is the
+    // correct outcome — the point is to stop failing for a fixable sentence,
+    // not to talk the auditor out of a real finding.
+    let narrativeRepair: { model: string; costUsd: number; accepted: boolean } | null = null
+    if (audit && audit.verdict !== 'pass' && judgment && !isCurated) {
+      const proseFindings = audit.findings
+        .filter((f) => (f.severity === 'critical' || f.severity === 'major') && !f.compListingKey)
+        .map((f) => `${f.claim} ${f.evidence}`.trim())
+        .filter(Boolean)
+      if (proseFindings.length > 0) {
+        const integrityArgs = {
+          comps: adjusted,
+          excluded: excludedForAudit(),
+          subject,
+          market,
+        }
+        const before = checkNarrativeIntegrity({ narrative: judgment.narrative, ...integrityArgs })
+        const repair = await repairNarrativeAgainstAudit({
+          subject,
+          comps: compsForPricing,
+          market,
+          judgment,
+          findings: proseFindings,
+        })
+        if (repair) {
+          const after = checkNarrativeIntegrity({ narrative: repair.narrative, ...integrityArgs })
+          if (after.length <= before.length) {
+            judgment.narrative = repair.narrative
+            const rebuilt = priceSet(compsForPricing)
+            if (rebuilt.p) {
+              adjusted = rebuilt.adj
+              pricing = rebuilt.p
+              selection.trace.push(
+                `Adversarial audit narrative repair: ${proseFindings.length} finding(s) about the prose were returned to the comparability model, the corrected narrative passed the deterministic integrity check, and the analysis was re-audited on it. No comp and no price changed.`,
+              )
+              audit = await auditCma({ subject, comps: adjusted, excluded: excludedForAudit(), pricing, judgment, market, site })
+              narrativeRepair = { model: repair.model, costUsd: repair.costUsd, accepted: true }
+            }
+          } else {
+            narrativeRepair = { model: repair.model, costUsd: repair.costUsd, accepted: false }
+          }
+        }
+      }
+    }
+
     pricing.notes.push(
       audit
         ? audit.verdict === 'pass'
@@ -340,6 +398,18 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           // the Anthropic account hit its usage cap on 2026-07-30 it never did.
           'Adversarial accuracy audit unavailable for this build. Broker review is required before release.',
     )
+
+    // The repair is part of the accuracy trace, so it is recorded whether it was
+    // taken or not. A rejected repair is the more interesting record of the two:
+    // it says the model was asked to correct the prose and could not do it
+    // without making the integrity check worse.
+    if (narrativeRepair) {
+      selection.trace.push(
+        narrativeRepair.accepted
+          ? `Narrative repair accepted (${narrativeRepair.model}, $${narrativeRepair.costUsd}).`
+          : `Narrative repair rejected (${narrativeRepair.model}, $${narrativeRepair.costUsd}): the rewrite did not survive the deterministic integrity check, so the audited narrative was kept and the review flag stands.`,
+      )
+    }
 
     // 4.5. Accuracy contract — the mechanical enforcement of the process.
     // Hard violations kill the build; review violations force needs_review so

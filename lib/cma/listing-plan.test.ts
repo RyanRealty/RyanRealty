@@ -367,5 +367,25 @@ describe('buildListingPlan', () => {
       const r = checkBrandVoice(plan!.source)
       expect(r.ok, `source failed voice check: "${plan!.source}" -> ${JSON.stringify(r.violations)}`).toBe(true)
     })
+
+    // Regression for the cma-20513-byron adversarial audit finding: `basis`
+    // strings were built with the raw code path ("subject.lastListPrice",
+    // "extras.photoBench", ...) spliced directly into client-facing text.
+    // A dotted code identifier reads word.word with a letter on both sides
+    // of the dot — this deliberately does NOT match numeric ranges like
+    // "850000..1050000" or query fragments like "CloseDate 2024-01-01",
+    // which are legitimate parts of a source trace (§0 requires the trace
+    // to survive; only the code-identifier prefix must go).
+    const DOTTED_CODE_IDENTIFIER = /\b[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*\b/
+
+    it('no basis string contains a raw dotted code identifier', () => {
+      expect(plan).not.toBeNull()
+      for (const item of plan!.items) {
+        expect(
+          DOTTED_CODE_IDENTIFIER.test(item.basis),
+          `basis leaked a code path: "${item.basis}"`,
+        ).toBe(false)
+      }
+    })
   })
 })
