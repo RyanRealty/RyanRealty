@@ -51,7 +51,7 @@ import {
   getBlogPostsBySlugs,
   getAreaGuideVideo,
 } from '@/lib/data'
-import { getResortCommunityContent } from '@/lib/resort-community-content'
+import { allCommunities } from '@/lib/data'; import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getCommunitySeoAbout } from '@/lib/community-seo-content'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
@@ -534,25 +534,25 @@ export default async function CommunityDetailPage({ params }: Props) {
   // matches the city ledger. Filtered by citySlug, excluding this community.
   const cityComms = communities.filter((c) => c.city?.toLowerCase().trim() === cityName.toLowerCase().trim())
   const commImgBySlug = new Map(cityComms.map((c) => [c.slug, c.heroImageUrl]))
-  const otherResorts = cityResorts(citySlug).filter((r) => r.slug !== resortSlug)
+  // C-20: ORDER by relevance, never FILTER by it. Three stacked filters
+  // (same-city, slice(0,6), silent no-image drop) showed 6 of 19. Home city first.
+  const otherResorts = allCommunities()
+    .filter((r) => r.slug !== resortSlug)
+    .sort((a, b) => (a.city_slug === citySlug ? 0 : 1) - (b.city_slug === citySlug ? 0 : 1)
+      || a.label.localeCompare(b.label))
   const otherResortCounts = otherResorts.length > 0 && citySfrTiles.length > 0
     ? resortActiveSfrCounts(citySlug, citySfrTiles)
     : resortSfrCounts
-  const communityItems: KbCommunityItem[] = otherResorts
-    .slice(0, 6)
-    .map((r): KbCommunityItem | null => {
-      const img = RESORT_IMG[r.slug] ?? commImgBySlug.get(r.slug) ?? communityImage(r.slug) ?? null
-      if (!img) return null
-      return {
-        name: r.label,
-        activeCount: otherResortCounts.get(r.slug) ?? 0,
-        town: cityName,
-        href: `/communities/${r.slug}`,
-        img,
-        video: null,
-      }
-    })
-    .filter((x): x is KbCommunityItem => x !== null)
+  const communityItems: KbCommunityItem[] = otherResorts.map((r): KbCommunityItem => ({
+    name: r.label,
+    activeCount: otherResortCounts.get(r.slug) ?? 0,
+    town: r.city,
+    href: `/communities/${r.slug}`,
+    // Labeled cityHero fallback (/communities pattern): never drop a community
+    // from a discovery rail because an asset is missing (C-10).
+    img: RESORT_IMG[r.slug] ?? commImgBySlug.get(r.slug) ?? communityImage(r.slug) ?? cityHero(r.city_slug),
+    video: null,
+  }))
 
   // ── EXPLORE OTHER CITIES ──────────────────────────────────────────────────
   // No excludeSlug: a community page links its own parent city on purpose.
