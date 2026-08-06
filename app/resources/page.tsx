@@ -119,7 +119,7 @@ export default function ResourcesPage() {
           eyebrow="Central Oregon · Tools & market data"
           titleTop="Buyer & seller"
           titleBottom="resources"
-          lead="Tools, market data, and guides to help you make confident decisions in Central Oregon real estate."
+          lead="Calculators, market data, and guides for buying and selling in Central Oregon."
           videoSrc={null}
           posterSrc="/images/kb/redmond-downtown-aerial.jpg"
         />

@@ -85,7 +85,7 @@ export default function SellValuationPage() {
           eyebrow="Free home valuation"
           titleTop="What's your"
           titleBottom="home worth?"
-          lead="A custom valuation built from recent comparable sales and current market trends in your neighborhood, with the comps behind the number."
+          lead="A valuation built from the comparable sales that closed near you, and the market they closed into."
           showSearch={false}
           cta={{ href: '#home_valuation', label: 'Get my home value' }}
           ctaSecondary={null}

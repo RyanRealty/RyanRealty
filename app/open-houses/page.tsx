@@ -223,7 +223,7 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
             showRegionMarkers={false}
             eyebrow="Central Oregon · On the map"
             title={'Open houses\non the map'}
-            subtitle="Every open house with a location, on the real terrain. Open any dot for the price, the beds, and the street."
+            subtitle="Every open house with a location. Each dot carries the price, the beds, and the street."
             countNoun="open houses"
           />
         ) : null}
