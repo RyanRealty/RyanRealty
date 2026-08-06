@@ -166,6 +166,7 @@
     "ci:voice-constructions:baseline": "node scripts/check-voice-constructions.mjs --write-baseline",
     "ci:voice-constructions-parity": "node scripts/gen-voice-constructions.mjs",
     "ci:voice-send-paths": "node scripts/check-voice-send-paths.mjs",
+    "ci:voice-db-copy": "node scripts/check-voice-db-copy.mjs",
     "ci:voice-reviewer": "node scripts/check-voice-reviewer.mjs",
     "ci:voice-rewrite-batch": "node scripts/check-voice-rewrite-batch.mjs",
     "ci:marketing-request-intake": "node scripts/check-marketing-request-intake.mjs",

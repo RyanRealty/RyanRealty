@@ -90,6 +90,28 @@ const CONSTRUCTIONS = [
     example: 'A local broker will follow up with specifics. No pressure.',
   },
   {
+    id: 'invented-attribution',
+    rule: 3,
+    label: 'puts words in a named person\'s mouth',
+    // Matt, 2026-08-06: "Don't ever put direct quotes for me in anything.
+    // Unless I ask you to quote something specifically." Four blog posts and a
+    // market-narrative generator had grown `"...," said Matt Ryan, principal
+    // broker` overnight, because rule 3 says a judgment belongs under a name
+    // and the obvious way to satisfy that is to invent the attribution. It is
+    // the one fix rule 3 does not permit. Real quotes render from variables
+    // (reviews, testimonials), never from a literal, so anything this catches
+    // in source or stored copy is manufactured.
+    // Anchored on the CLOSING QUOTE, not on the verb. A first cut matched any
+    // "said Firstname Lastname" and returned 35 hits, most of them skill docs
+    // saying things like "Trigger when Matt says any of:" — instructions, not
+    // attributions. A manufactured quote always has the quotation mark right
+    // before the attribution, so that is what this keys on.
+    source:
+      "[\"\\u201d\\u2019']\\s*,?\\s*(said|says)\\s+[A-Z][a-z]+\\s+[A-Z][a-z]+|[A-Z][a-z]+\\s+[A-Z][a-z]+,\\s*(principal\\s+)?broker\\s*:\\s*[a-z]",
+    fix: 'State it plainly in the brokerage voice, or cut it. Never attach a name to a sentence nobody said.',
+    example: '"This is the most room buyers have had in years," said Matt Ryan, principal broker.',
+  },
+  {
     id: 'coined-maxim',
     rule: 8,
     label: 'coins a maxim (the "X, not Y" shape)',

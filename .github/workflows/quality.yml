@@ -67,3 +67,11 @@ jobs:
       # this run must read live.
       - name: View presets still match live view data (ci:view-preset-equivalence)
         run: npm run ci:view-preset-equivalence
+
+      # Voice canon over STORED copy — published blog posts, CRM templates and
+      # sequence steps. Every other voice gate scans files and therefore cannot
+      # see a Supabase row, which is how 55 posts and ~90 templates ran
+      # ungoverned until 2026-08-06. Ratcheted: the count may only shrink. Uses
+      # this job's Supabase creds; SKIPS cleanly if they're absent.
+      - name: Voice canon holds in stored copy (ci:voice-db-copy)
+        run: npm run ci:voice-db-copy

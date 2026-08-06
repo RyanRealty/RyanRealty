@@ -24,6 +24,26 @@ This governs **every word a member of the public reads**, whatever produces it:
 docs. And never rewritten, because they are someone else's words: customer reviews,
 another broker's listing remarks, quoted third-party sources, MLS data fields.
 
+**Never invent a quotation. Ever.** Matt, 2026-08-06: *"Don't ever put direct
+quotes for me in anything. Unless I ask you to quote something specifically."*
+No `"...," said Matt Ryan`. No `Matt Ryan, principal broker:`. No attributed
+line for any broker, client, or third party that the person did not actually
+say. This binds harder than any style rule in this file, because a fabricated
+quotation is not bad writing, it is words put in a real person's mouth under a
+real license.
+
+Rule 3 below says a judgment goes in a quote under a name. That is a rule about
+OWNING an opinion, not a licence to manufacture one. When a sentence states a
+judgment and no one has actually said it, the fix is to state it plainly in the
+brokerage's voice or to cut it — never to attach a name to it. Four blog posts
+and one market-narrative generator did exactly that on 2026-08-06 and were
+reverted.
+
+**Two more scope decisions, Matt 2026-08-06.** Our own MLS listing remarks are
+OUT: they carry different constraints and are not rewritten to this canon.
+Flyers and signage are OUT, and stay format-specific. Social captions are IN.
+Ad copy is OUT.
+
 ## The anchor
 
 **Warren Buffett's Berkshire Hathaway shareholder letters.**

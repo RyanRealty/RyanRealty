@@ -61,6 +61,13 @@ export const VOICE_CONSTRUCTIONS: readonly VoiceConstruction[] = [
     "fix": "Name the action or the number instead. A virtue we assert is one the reader discounts."
   },
   {
+    "id": "invented-attribution",
+    "rule": 3,
+    "label": "puts words in a named person's mouth",
+    "source": "[\"\\u201d\\u2019']\\s*,?\\s*(said|says)\\s+[A-Z][a-z]+\\s+[A-Z][a-z]+|[A-Z][a-z]+\\s+[A-Z][a-z]+,\\s*(principal\\s+)?broker\\s*:\\s*[a-z]",
+    "fix": "State it plainly in the brokerage voice, or cut it. Never attach a name to a sentence nobody said."
+  },
+  {
     "id": "coined-maxim",
     "rule": 8,
     "label": "coins a maxim (the \"X, not Y\" shape)",
