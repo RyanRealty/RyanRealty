@@ -221,15 +221,15 @@
       "id": "C-11",
       "phase": 3,
       "title": "Styling applied to the wrapper, not the control",
-      "status": "TODO",
+      "status": "DONE",
       "depends_on": [
         "E1"
       ],
-      "census_count": null,
-      "fixed_count": null,
-      "sha": null,
-      "gate": null,
-      "evidence": null,
+      "census_count": 1,
+      "fixed_count": 1,
+      "sha": "d21834de",
+      "gate": "ci:gates green; tsc clean; ci:css-layers rebaselined (line-shift only, selector set proven identical 11=11)",
+      "evidence": "hero / bg rgba(0,0,0,0) border 0 cream icon contrast 14.23:1 (was ~1.1:1); /homes-for-sale white bg + 1px border restored",
       "notes": "VoiceSearchButton.tsx:62. CONFIRMED still broken on local 2026-08-06."
     },
     {
@@ -266,15 +266,15 @@
       "id": "C-14",
       "phase": 4,
       "title": "Fixed-chrome collision",
-      "status": "TODO",
+      "status": "DONE",
       "depends_on": [
         "E1"
       ],
-      "census_count": null,
-      "fixed_count": null,
-      "sha": null,
-      "gate": null,
-      "evidence": null,
+      "census_count": 10,
+      "fixed_count": 10,
+      "sha": "8db6c07c",
+      "gate": "ci:gates green; ci:css-layers rebaselined (line-shift, proven identical)",
+      "evidence": "MEASURED before: 375 -14px, 768 -6px, 1280 -7.9px overlap. After: +10px clearance at 375 and 768 on /cities/bend and /communities/tetherow",
       "notes": "kb.css:1091 .kb-bc.overlay top:60px vs 64px nav. 10 overlay callers. belowNav fix from 2026-07-15 never propagated."
     },
     {
@@ -296,15 +296,15 @@
       "id": "C-16",
       "phase": 4,
       "title": "Degenerate breadcrumb",
-      "status": "TODO",
+      "status": "DONE",
       "depends_on": [
         "C-14"
       ],
-      "census_count": null,
-      "fixed_count": null,
-      "sha": null,
-      "gate": null,
-      "evidence": null,
+      "census_count": 1,
+      "fixed_count": 1,
+      "sha": "23985687",
+      "gate": "ci:breadcrumb exit 0 with EXEMPT entry; tsc clean",
+      "evidence": "/homes-for-sale 375x812: crumb absent, BreadcrumbList blocks 0 (intended), no orphaned space, first card above the fold",
       "notes": "app/search/page.tsx:327 single-item trail - only one among 16 callers."
     },
     {
@@ -487,5 +487,10 @@
       "evidence": null,
       "notes": "NEW, not in Matt's screenshots. At 375px with no prior cookie state, SignInPrompt modal + CookieConsentBanner together cover the entire hero. A first-time mobile visitor sees none of the page. Census every interstitial: SignInPrompt, CookieConsentBanner, ExitIntentPopup, guest alert bar."
     }
+  ],
+  "followups": [
+    "ci:css-layers baseline is keyed by `file:line selector`, so ANY kb.css edit shifts lines and re-reads already-baselined offenders as NEW. Tripped twice this session (C-11, C-14); both times the selector set was proven byte-identical. Fix: key the baseline on selector alone.",
+    "ResultsStamp occupies ~64px between the nav and filter bar on /homes-for-sale and renders near-empty at 375px. Folded into the C-15/C-28 viewport-cost sweep.",
+    "listings_in_boundary RPC is commented 'active SFR-ish listings' but filters StandardStatus only. Not edited (applied migration, ci:migration-drift). Every call site now narrows property type itself."
   ]
 }
