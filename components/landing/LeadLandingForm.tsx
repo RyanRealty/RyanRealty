@@ -104,7 +104,7 @@ export default function LeadLandingForm({
           <div className="rounded-md border border-success/30 bg-success/10 p-4">
             <p className="text-sm font-semibold text-foreground">Request received</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              We will follow up with your custom plan and next steps.
+              We will follow up with next steps.
             </p>
           </div>
         ) : (

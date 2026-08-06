@@ -6,6 +6,18 @@
  * endpoint) on 2026-08-03 — 25 reviews, 5.0 average. Regenerate with
  * scripts/ingest-gbp-reviews.mjs. Never hand-edit quotes or invent attributions
  * (CLAUDE.md §0 + content-provenance gate).
+ *
+ * RE-VERIFIED 2026-08-06 against live GBP: fetched=25, totalReviewCount=25,
+ * averageRating=5. No drift from the 2026-08-03 pull, so the "5.0 · Google
+ * reviews (25)" claim in components/landing/TrustStrip.tsx and the "Verified
+ * Google review" label in components/seller-lp/SoldStoryCard.tsx are accurate
+ * as published.
+ *
+ * The reason this needed checking: /reviews carried "verified reviews" in its
+ * meta description over a count this array produces, and an array that is
+ * refreshed by hand can drift from the profile it claims to mirror without
+ * anything noticing. The numbers being right today is a fact, not a guarantee —
+ * re-run the ingest before trusting them again.
  */
 export type TestimonialSource = 'Google' | 'Zillow'
 

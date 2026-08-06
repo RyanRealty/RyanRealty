@@ -62,7 +62,7 @@ export function TrustStrip({ className }: { className?: string }) {
             </span>
           ))}
         </div>
-        <p className="text-sm text-muted-foreground">Bend brokers, licensed in Oregon</p>
+        <p className="text-sm text-muted-foreground">Brokers based in Bend, Oregon</p>
       </div>
     </div>
   )

@@ -123,8 +123,8 @@ export default function LeadLandingPage({ config }: Props) {
                 </ol>
               </article>
 
-              <article className="lp-card" aria-label="Why this works">
-                <h3 className="lp-card-title display">Why this works</h3>
+              <article className="lp-card" aria-label="What this includes">
+                <h3 className="lp-card-title display">What this includes</h3>
                 <ul className="lp-list">
                   {config.trustBullets.map((bullet) => (
                     <li key={bullet} className="lp-list-item">{bullet}</li>
