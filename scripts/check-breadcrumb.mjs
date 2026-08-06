@@ -72,6 +72,7 @@ const EXEMPT = [
   /^app\/housing-market\/reports\/\[slug\]\//, // re-export of app/reports/[slug] (+ the geoName redirect)
   /^app\/housing-market\/reports\/page\.tsx$/, // re-export of app/reports/page
   /^app\/reports\/\[slug\]\/\[geoName\]\//, // redirect-only (consolidated to /housing-market/<city>)
+  /^app\/search\/page\.tsx$/, // search index: only possible trail is Home > self (C-16, 2026-08-06)
 ]
 
 // Deprecated breadcrumb implementations that must never reappear in a page.

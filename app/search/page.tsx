@@ -1,3 +1,11 @@
+// @no-breadcrumb — the search index intentionally renders none. Its only possible
+// trail is `Home > Homes for sale`: one link, to Home, which the logo directly above
+// already provides, plus the name of the page you are standing on. Verified the sole
+// single-item trail among 16 PageBreadcrumb callers (C-16, 2026-08-06). It cost ~200
+// device px, about 11% of a 375x812 viewport, on the highest-traffic page. The
+// BreadcrumbList JSON-LD went with it: a two-item Home>self trail cannot earn a
+// breadcrumb rich result, and the deep trails that can (/homes-for-sale/<city>,
+// listing detail) still emit theirs.
 import type { Metadata } from 'next'
 import { getSearchListings, getSearchMapListings, getViewportSearch } from '@/app/actions/search'
 import { getCityBoundary } from '@/app/actions/cities'
@@ -43,7 +51,6 @@ function bboxFromGeometry(
   }
   return { west, south, east, north }
 }
-import { PageBreadcrumb } from '@/components/site/PageBreadcrumb'
 import SearchFilters from '@/components/search/SearchFilters'
 import SearchResults from '@/components/search/SearchResults'
 import MapSearchView from '@/components/search/MapSearchView'
@@ -321,11 +328,8 @@ export default async function SearchPage({
           is uniform across the index + city-form pages (design-audit NAV-1). */}
       <SplitViewBodyLock active={isAppFrame} />
       <h1 className="sr-only">{h1Text}</h1>
-      {/* P1-1: the search index was the only top-3 page with no breadcrumb at
-          all (its child /homes-for-sale/<city> has one). Canonical chrome. */}
-      <div className={isAppFrame ? 'shrink-0' : undefined}>
-        <PageBreadcrumb trail={[{ label: 'Homes for sale' }]} />
-      </div>
+      {/* @no-breadcrumb — see the file header. A Home > self trail conveys nothing
+          and cost ~11% of the mobile viewport on the site's highest-traffic page. */}
       <ResultsStamp />
       <TrackSearchView
         city={filters.city ?? undefined}
