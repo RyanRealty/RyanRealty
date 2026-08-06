@@ -670,7 +670,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
               onSubmit={submitMarketPageInquiry}
               eyebrow="Talk to a broker"
               title={`Questions about the ${cityName} market?`}
-              intro="Tell us what you are weighing. A local broker will follow up with specifics for your situation. No pressure."
+              intro="Tell us what you are weighing. A local broker will follow up with specifics for your situation."
               submitLabel="Ask a broker"
               tone="muted"
             />
@@ -865,7 +865,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
         onSubmit={submitMarketPageInquiry}
         eyebrow="Talk to a broker"
         title={`Questions about the ${geoName} market?`}
-        intro="Tell us what you are weighing. A local broker will follow up with specifics for your situation. No pressure."
+        intro="Tell us what you are weighing. A local broker will follow up with specifics for your situation."
         submitLabel="Ask a broker"
         tone="muted"
       />
@@ -884,8 +884,8 @@ export default async function HousingMarketGeoPage({ params }: Props) {
       {/* CTA bar — navy broker contact band. */}
       <CTABar
         eyebrow={`Questions about ${geoName}?`}
-        title="Local brokers. Specific numbers. No pressure."
-        body={`We close deals in ${geoName} and across Central Oregon. We can tell you what the data means for your situation.`}
+        title="Schedule a call with a Ryan Realty broker."
+        body={`We close deals in ${geoName} and across Central Oregon.`}
         primary={{ href: '/contact', label: 'Schedule a call' }}
         secondary={{ href: `tel:${CONTACT.phoneDirectTel}`, label: CONTACT.phoneDirect }}
         tone="navy"

@@ -565,7 +565,7 @@ export default async function AnnualReviewPage() {
           onSubmit={submitMarketPageInquiry}
           eyebrow="Talk to a broker"
           title="Questions about the Central Oregon market?"
-          intro="Tell us what you are weighing. A local broker will follow up with specifics for your situation. No pressure."
+          intro="Tell us what you are weighing. A local broker will follow up with specifics for your situation."
           submitLabel="Ask a broker"
           tone="muted"
         />

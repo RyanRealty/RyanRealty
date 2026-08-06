@@ -17,7 +17,7 @@ export default function ReportsIndexContent({ reports, salesCards }: Props) {
     <>
       <TilesSlider
         title="Sales reports by city"
-        subtitle="Pre-built reports for each city: this week, last week, last month, and last year. No waiting. View or download anytime."
+        subtitle="Pre-built reports for each city: this week, last week, last month, and last year. View or download anytime."
         titleId="sales-reports-heading"
       >
         {salesCards.map((card) => (
