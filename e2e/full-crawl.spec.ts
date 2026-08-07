@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
-import { readFileSync, existsSync } from 'node:fs'
+import AxeBuilder from '@axe-core/playwright'
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 /**
@@ -14,9 +15,13 @@ import { resolve } from 'node:path'
  *   (e) No "Application error" / "Page not found" text on a 200
  *   (f) No horizontal overflow on mobile viewport
  *
+ * Admin routes additionally get an axe accessibility scan (WCAG 2.0/2.1 A+AA,
+ * 2.2 AA) ratcheted against e2e/axe-baseline.json — see the section below.
+ *
  * Control:
  *   CRAWL_LIMIT env var caps how many routes run (default: all).
  *   Set CRAWL_LIMIT=40 for a quick sample in CI post-deploy.
+ *   E2E_AXE=0 disables the admin axe scan (default: on).
  *
  * Run:
  *   npm run e2e:crawl                        (full, localhost)
@@ -202,4 +207,104 @@ test.describe('Full crawl — every page in route inventory', () => {
       ).toBeLessThanOrEqual(1)
     })
   }
+})
+
+// ─── axe accessibility ratchet — /admin surface (Admin Product OS 11A) ─────
+//
+// Every crawled /admin route gets an AxeBuilder scan (WCAG 2.0 A/AA, 2.1 A/AA,
+// 2.2 AA). The legacy admin interior still carries violations, so this is a
+// RATCHET, not a hard fail:
+//
+//   - e2e/axe-baseline.json maps route → sorted, deduped violation rule ids.
+//   - A route whose scan produces a rule id NOT in its baseline entry FAILS,
+//     with a diff of the new rules.
+//   - A route with fewer rule ids than baselined passes and is reported as
+//     ratchetable — delete the fixed ids from the baseline and commit to lock
+//     the win. The baseline may only shrink.
+//   - If e2e/axe-baseline.json does not exist, the run SEEDS it from the scan
+//     and passes. Seed from a full crawl (no CRAWL_LIMIT / --grep) so every
+//     admin route gets an entry, then commit the file.
+//
+// Disable with E2E_AXE=0 (default: on). Auth: when e2e/.auth/user.json exists
+// (written by auth.setup.ts), the scan reuses that session so it reaches the
+// admin interior; without it, /admin routes redirect to the login surface and
+// that is what gets scanned — seed and compare under the same auth conditions.
+
+const AXE_ENABLED = process.env.E2E_AXE !== '0'
+const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']
+const AXE_BASELINE_PATH = resolve(process.cwd(), 'e2e/axe-baseline.json')
+const AUTH_STATE_FILE = resolve(process.cwd(), 'e2e/.auth/user.json')
+
+const ADMIN_ROUTES = ROUTES.filter(
+  (r) => r.path === '/admin' || r.path.startsWith('/admin/')
+)
+
+// null = baseline file absent = seeding mode
+const AXE_BASELINE: Record<string, string[]> | null = existsSync(AXE_BASELINE_PATH)
+  ? (JSON.parse(readFileSync(AXE_BASELINE_PATH, 'utf8')) as Record<string, string[]>)
+  : null
+
+// Scan results accumulate here across tests (the file runs in one worker) so
+// seeding mode can write the whole baseline in afterAll.
+const axeScanResults: Record<string, string[]> = {}
+
+test.describe('Axe accessibility ratchet — /admin surface', () => {
+  test.skip(!AXE_ENABLED, 'E2E_AXE=0 — axe scan disabled')
+  test.use({ storageState: existsSync(AUTH_STATE_FILE) ? AUTH_STATE_FILE : undefined })
+
+  for (const route of ADMIN_ROUTES) {
+    test(`${route.path} — axe WCAG A/AA ratchet`, async ({ page }, testInfo) => {
+      testInfo.setTimeout(getRouteTimeout(route.path))
+
+      await page.goto(route.path, {
+        waitUntil: 'domcontentloaded',
+        timeout: getRouteTimeout(route.path),
+      })
+      await page.waitForSelector('main, [role="main"]', {
+        timeout: getRouteTimeout(route.path),
+      }).catch(() => { /* some admin pages use div layout */ })
+
+      const results = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze()
+      const ruleIds = Array.from(new Set(results.violations.map((v) => v.id))).sort()
+      axeScanResults[route.path] = ruleIds
+
+      if (AXE_BASELINE === null) {
+        // Seeding mode — afterAll writes e2e/axe-baseline.json; nothing to compare.
+        return
+      }
+
+      const baselined = AXE_BASELINE[route.path] ?? []
+      const newRules = ruleIds.filter((id) => !baselined.includes(id))
+      const fixedRules = baselined.filter((id) => !ruleIds.includes(id))
+
+      if (fixedRules.length > 0) {
+        const note = `${route.path} is ratchetable — no longer violates: ${fixedRules.join(', ')}. Remove these ids from e2e/axe-baseline.json to lock the win.`
+        testInfo.annotations.push({ type: 'axe-ratchetable', description: note })
+        console.log(`  ⤵ ${note}`)
+      }
+
+      const newRuleDetail = results.violations
+        .filter((v) => newRules.includes(v.id))
+        .map((v) => `${v.id} [${v.impact ?? 'unknown'}] ${v.nodes.length} node(s) — ${v.help}`)
+        .join('\n    ')
+
+      expect(
+        newRules,
+        `Route ${route.path} introduces axe violations not in e2e/axe-baseline.json:\n    ${newRuleDetail}\n  Baselined: [${baselined.join(', ')}]\n  Scanned:   [${ruleIds.join(', ')}]\n  Fix the violations; only shrink the baseline, never grow it.`
+      ).toHaveLength(0)
+    })
+  }
+
+  test.afterAll(() => {
+    // Seeding mode only: write the baseline from this run's scans and pass.
+    if (!AXE_ENABLED || AXE_BASELINE !== null) return
+    const scannedRoutes = Object.keys(axeScanResults).sort()
+    if (scannedRoutes.length === 0) return
+    const seeded: Record<string, string[]> = {}
+    for (const r of scannedRoutes) seeded[r] = axeScanResults[r]
+    writeFileSync(AXE_BASELINE_PATH, JSON.stringify(seeded, null, 2) + '\n')
+    console.log(
+      `Seeded e2e/axe-baseline.json with ${scannedRoutes.length} admin route(s) — commit it to lock the ratchet.`
+    )
+  })
 })

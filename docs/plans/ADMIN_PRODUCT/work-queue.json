@@ -1,12 +1,12 @@
 [
-  {
-    "id": "matt-inputs",
-    "phase": "AWAITING_MATT",
-    "note": "Fixture 'done' -> clean: person 60610, cma-20695-town + action row, auth users cma-fixture-viewer@/cma-fixture-wrong@ryan-realty.com. (Cut-off sentence dismissed by Matt 2026-08-05. Net-sheet return stays parked as optional.)"
-  },
-  {
-    "id": "pricing-depth-followons",
-    "phase": "BACKLOG",
-    "note": "Round 4 shipped the reproducible metric (cma-backtest, 3,394 pairs), resort guard, quantile clamps, five report sections, interactive layer. Parked deeper ideas Matt spitballed: photo/vision condition scoring on the subject (asset-library vision grades exist for our photos, not arbitrary MLS subjects), deferred-maintenance factor, ratio-vs-overprice-degree segmentation of the backtest (does close/ask ratio depend on how far above comp-value the failed ask sat). Re-run scripts/cma-backtest.mjs quarterly and refresh FAILED_ASK_BACKTEST constants (test locks them to the artifact)."
-  }
+  { "id": "11a-gates", "phase": "P11", "note": "check-admin-ui.mjs (AST, shrink-only ratchet seeded at measured counts) + @axe-core/playwright in full-crawl + visual-regression per destination. Wire into ci:gates; gates-wired green. IN PROGRESS 2026-08-06." },
+  { "id": "11b-person-workspace", "phase": "P11", "note": "Fold crm/[id] machinery (Comms, Homes, Notes, field editors, templates, MMS, email compose, portal) into people/[id] on v2; move email-intent-note composer preload; crm/[id] becomes a bridge; RE-TIME THE LITMUS after." },
+  { "id": "11c-crm-tree", "phase": "P11", "note": "57 remaining /admin/crm pages, ordered by the weekly-use evidence in decisions.md. One family per commit." },
+  { "id": "11d-reports-interior", "phase": "P11", "note": "23 analytics/report pages behind the definition-first hub." },
+  { "id": "11e-remainder", "phase": "P11", "note": "Whatever the ratchet still shows." },
+  { "id": "12-send-integrity", "phase": "P12", "note": "Group MMS chokepoint, block-reason ledger, gate-drop record. Compliance-adjacent — may run parallel to P11." },
+  { "id": "12-correctness", "phase": "P12", "note": "Listing-edit sync overlay, assigned_broker resolution rule, fsbo off_market writer, dupe-candidate queue. (Signing-broker directive SHIPPED 2026-08-06, 82e14a42.)" },
+  { "id": "12-measurement", "phase": "P12", "note": "first-broker-action stamp, reply-latency interval, CMA SLA reader." },
+  { "id": "3b-fub-identifiers", "phase": "TRACK3", "note": "~171 files of fubPersonId/FUB_* identifiers + fub_* residue columns -> CRM-native vocabulary. Then 3D: ci:no-fub gate over the 3C functional-string allowlist." },
+  { "id": "pricing-depth-followons", "phase": "BACKLOG", "note": "Parked CMA pricing ideas (photo/vision condition scoring, deferred-maintenance factor, ratio-vs-overprice segmentation). Re-run scripts/cma-backtest.mjs quarterly." }
 ]

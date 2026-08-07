@@ -1,0 +1,560 @@
+{
+  "rawElements": {
+    "app/admin/(protected)/analytics/_components/CityReportSection.tsx": {
+      "h2": 1,
+      "select": 5
+    },
+    "app/admin/(protected)/analytics/action-required/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/analytics/ad-roi/page.tsx": {
+      "h2": 6,
+      "h1": 1
+    },
+    "app/admin/(protected)/analytics/cost-per-lead/page.tsx": {
+      "h2": 2,
+      "h1": 1
+    },
+    "app/admin/(protected)/analytics/demographics/page.tsx": {
+      "h2": 6,
+      "h1": 1
+    },
+    "app/admin/(protected)/analytics/funnel-breakdown/page.tsx": {
+      "h2": 2,
+      "h1": 1
+    },
+    "app/admin/(protected)/analytics/google-business-profile/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/analytics/google-search/page.tsx": {
+      "h2": 3,
+      "h1": 1
+    },
+    "app/admin/(protected)/analytics/listing-performance/page.tsx": {
+      "h2": 1,
+      "h1": 1
+    },
+    "app/admin/(protected)/analytics/lp-leaderboard/page.tsx": {
+      "h2": 1,
+      "h1": 1
+    },
+    "app/admin/(protected)/analytics/meta-health/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/analytics/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/analytics/social/page.tsx": {
+      "h2": 3,
+      "h1": 1
+    },
+    "app/admin/(protected)/approval-queue/_components/FilterSidebar.tsx": {
+      "h2": 1
+    },
+    "app/admin/(protected)/audiences/page.tsx": {
+      "h2": 1
+    },
+    "app/admin/(protected)/audit-log/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/blog/page.tsx": {
+      "h1": 1,
+      "h2": 1
+    },
+    "app/admin/(protected)/bpo/[slug]/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/bpo/new/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/bpo/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/broker-links/page.tsx": {
+      "h1": 1,
+      "h2": 2
+    },
+    "app/admin/(protected)/brokers/edit/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/brokers/new/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/brokers/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/closings/page.tsx": {
+      "h2": 3
+    },
+    "app/admin/(protected)/cmas/[slug]/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/cmas/new/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/cmas/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/commissions/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/content/page.tsx": {
+      "h2": 1
+    },
+    "app/admin/(protected)/content-library/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/crm/activity/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/crm/approvals/page.tsx": {
+      "h1": 1,
+      "input": 4
+    },
+    "app/admin/(protected)/crm/health/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/crm/import/[id]/page.tsx": {
+      "h1": 1,
+      "h2": 1
+    },
+    "app/admin/(protected)/crm/import/new/map/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/crm/import/new/page.tsx": {
+      "h1": 1,
+      "input": 1
+    },
+    "app/admin/(protected)/crm/import/new/preview/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/crm/import/page.tsx": {
+      "h1": 1,
+      "h2": 1
+    },
+    "app/admin/(protected)/crm/inbox/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/crm/referrals/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/crm/reporting/agent-goals/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/crm/reporting/batch-emails/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/crm/reporting/marketing/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/crm/reporting/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/crm/reporting/westside/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/crm/settings/appointments/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/crm/settings/assignment/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/crm/settings/page.tsx": {
+      "h1": 1,
+      "h2": 1
+    },
+    "app/admin/(protected)/crm/subscriptions/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/crm/tasks/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/crm/workflows/page.tsx": {
+      "input": 2,
+      "h1": 1,
+      "h2": 1
+    },
+    "app/admin/(protected)/deals/[key]/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/dscr/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/email/campaigns/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/email/compose/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/financials/ExpenseLedger.tsx": {
+      "h2": 1
+    },
+    "app/admin/(protected)/financials/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/forms/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/geo/AssignCommunity.tsx": {
+      "h2": 1,
+      "select": 2
+    },
+    "app/admin/(protected)/geo/NeighborhoodForm.tsx": {
+      "h2": 1,
+      "select": 1
+    },
+    "app/admin/(protected)/geo/area-guide-upload/AreaGuideUploadClient.tsx": {
+      "h2": 2,
+      "input": 1,
+      "button": 3,
+      "table": 1
+    },
+    "app/admin/(protected)/geo/area-guide-upload/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/geo/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/geo/resort-communities/page.tsx": {
+      "input": 1,
+      "h1": 1
+    },
+    "app/admin/(protected)/guides/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/help/HelpSearch.tsx": {
+      "h2": 1
+    },
+    "app/admin/(protected)/help/[slug]/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/help/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/listings/[listingKey]/page.tsx": {
+      "h1": 1,
+      "h2": 2
+    },
+    "app/admin/(protected)/listings/page.tsx": {
+      "h1": 1,
+      "input": 1
+    },
+    "app/admin/(protected)/media/banners/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/media/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/media/photos/PhotoCurationBoard.tsx": {
+      "h1": 1,
+      "button": 4
+    },
+    "app/admin/(protected)/media/stock-photos/StockPhotosPicker.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/messages/page.tsx": {
+      "input": 1
+    },
+    "app/admin/(protected)/newsletters/[id]/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/newsletters/analytics/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/newsletters/enroll/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/newsletters/new/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/newsletters/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/newsletters/subscribers/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/operations/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/oversight/page.tsx": {
+      "h2": 4
+    },
+    "app/admin/(protected)/people/[id]/page.tsx": {
+      "h1": 1,
+      "h2": 4,
+      "input": 2
+    },
+    "app/admin/(protected)/people/page.tsx": {
+      "input": 1,
+      "h2": 1
+    },
+    "app/admin/(protected)/prospecting/FilterSelect.tsx": {
+      "select": 1
+    },
+    "app/admin/(protected)/prospecting/page.tsx": {
+      "input": 5
+    },
+    "app/admin/(protected)/reports/brokers/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/reports/cma-performance/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/reports/custom/CustomReportBuilder.tsx": {
+      "h2": 5,
+      "select": 3
+    },
+    "app/admin/(protected)/reports/custom/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/reports/emails/page.tsx": {
+      "h1": 1,
+      "input": 4,
+      "select": 2
+    },
+    "app/admin/(protected)/reports/lead-flow/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/reports/leads/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/reports/market/page.tsx": {
+      "h1": 1,
+      "h2": 1
+    },
+    "app/admin/(protected)/reports/page.tsx": {
+      "h2": 1
+    },
+    "app/admin/(protected)/reports/traffic-sources/page.tsx": {
+      "h2": 5,
+      "h1": 1
+    },
+    "app/admin/(protected)/settings/MobileSettingsScreen.tsx": {
+      "button": 5
+    },
+    "app/admin/(protected)/settings/MySettingsForm.tsx": {
+      "h2": 3
+    },
+    "app/admin/(protected)/settings/account/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/settings/page.tsx": {
+      "h2": 1
+    },
+    "app/admin/(protected)/sign-off/page.tsx": {
+      "h1": 2
+    },
+    "app/admin/(protected)/signing/[envelopeId]/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/signing/page.tsx": {
+      "h1": 1,
+      "h2": 2
+    },
+    "app/admin/(protected)/site-pages/HeroMediaForm.tsx": {
+      "h2": 1
+    },
+    "app/admin/(protected)/site-pages/SiteLogoForm.tsx": {
+      "h2": 1
+    },
+    "app/admin/(protected)/site-pages/SitePagesList.tsx": {
+      "h2": 1
+    },
+    "app/admin/(protected)/site-pages/TeamImageForm.tsx": {
+      "h2": 1
+    },
+    "app/admin/(protected)/site-pages/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/sync/CronSyncStatus.tsx": {
+      "h2": 2
+    },
+    "app/admin/(protected)/sync/SyncHeavyStatusSections.tsx": {
+      "h2": 2
+    },
+    "app/admin/(protected)/sync/SyncHistoryButtons.tsx": {
+      "h2": 1
+    },
+    "app/admin/(protected)/sync/SyncHistoryTable.tsx": {
+      "h2": 2
+    },
+    "app/admin/(protected)/sync/SyncHistoryTest.tsx": {
+      "h2": 1
+    },
+    "app/admin/(protected)/sync/SyncLiveStatusAndTerminal.tsx": {
+      "h2": 3
+    },
+    "app/admin/(protected)/sync/SyncRunLog.tsx": {
+      "h2": 2
+    },
+    "app/admin/(protected)/sync/SyncSmart.tsx": {
+      "h2": 1
+    },
+    "app/admin/(protected)/today/page.tsx": {
+      "h2": 5,
+      "input": 6
+    },
+    "app/admin/(protected)/users/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/valuations/page.tsx": {
+      "h2": 5
+    },
+    "app/admin/(protected)/visitors/[sessionId]/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/(protected)/visitors/live/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/access-denied/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/error.tsx": {
+      "h2": 1
+    },
+    "app/admin/login/page.tsx": {
+      "h1": 1
+    },
+    "app/admin/setup/page.tsx": {
+      "h1": 1
+    }
+  },
+  "legacyPages": [
+    "app/admin/(protected)/analytics/action-required/page.tsx",
+    "app/admin/(protected)/analytics/ad-roi/page.tsx",
+    "app/admin/(protected)/analytics/cost-per-lead/page.tsx",
+    "app/admin/(protected)/analytics/demographics/page.tsx",
+    "app/admin/(protected)/analytics/funnel-breakdown/page.tsx",
+    "app/admin/(protected)/analytics/google-business-profile/page.tsx",
+    "app/admin/(protected)/analytics/google-search/page.tsx",
+    "app/admin/(protected)/analytics/listing-performance/page.tsx",
+    "app/admin/(protected)/analytics/lp-leaderboard/page.tsx",
+    "app/admin/(protected)/analytics/meta-health/page.tsx",
+    "app/admin/(protected)/analytics/page.tsx",
+    "app/admin/(protected)/analytics/social/page.tsx",
+    "app/admin/(protected)/approval-queue/page.tsx",
+    "app/admin/(protected)/audit-log/page.tsx",
+    "app/admin/(protected)/blog/page.tsx",
+    "app/admin/(protected)/bpo/[slug]/page.tsx",
+    "app/admin/(protected)/bpo/new/page.tsx",
+    "app/admin/(protected)/bpo/page.tsx",
+    "app/admin/(protected)/broker-links/page.tsx",
+    "app/admin/(protected)/brokers/edit/page.tsx",
+    "app/admin/(protected)/brokers/new/page.tsx",
+    "app/admin/(protected)/brokers/page.tsx",
+    "app/admin/(protected)/cmas/[slug]/page.tsx",
+    "app/admin/(protected)/cmas/new/page.tsx",
+    "app/admin/(protected)/cmas/page.tsx",
+    "app/admin/(protected)/commissions/page.tsx",
+    "app/admin/(protected)/content-library/page.tsx",
+    "app/admin/(protected)/crm/[id]/page.tsx",
+    "app/admin/(protected)/crm/[id]/portal/page.tsx",
+    "app/admin/(protected)/crm/activity/page.tsx",
+    "app/admin/(protected)/crm/approvals/page.tsx",
+    "app/admin/(protected)/crm/calendar/page.tsx",
+    "app/admin/(protected)/crm/deals/[id]/page.tsx",
+    "app/admin/(protected)/crm/deals/page.tsx",
+    "app/admin/(protected)/crm/deals/pipelines/page.tsx",
+    "app/admin/(protected)/crm/health/page.tsx",
+    "app/admin/(protected)/crm/import/[id]/page.tsx",
+    "app/admin/(protected)/crm/import/new/map/page.tsx",
+    "app/admin/(protected)/crm/import/new/page.tsx",
+    "app/admin/(protected)/crm/import/new/preview/page.tsx",
+    "app/admin/(protected)/crm/import/page.tsx",
+    "app/admin/(protected)/crm/inbox/page.tsx",
+    "app/admin/(protected)/crm/new/page.tsx",
+    "app/admin/(protected)/crm/page.tsx",
+    "app/admin/(protected)/crm/referrals/page.tsx",
+    "app/admin/(protected)/crm/reporting/agent-activity/page.tsx",
+    "app/admin/(protected)/crm/reporting/agent-goals/page.tsx",
+    "app/admin/(protected)/crm/reporting/appointments/page.tsx",
+    "app/admin/(protected)/crm/reporting/batch-emails/page.tsx",
+    "app/admin/(protected)/crm/reporting/call-logs/page.tsx",
+    "app/admin/(protected)/crm/reporting/calls/page.tsx",
+    "app/admin/(protected)/crm/reporting/contact-attempts/page.tsx",
+    "app/admin/(protected)/crm/reporting/lead-sources/page.tsx",
+    "app/admin/(protected)/crm/reporting/marketing/page.tsx",
+    "app/admin/(protected)/crm/reporting/overview/page.tsx",
+    "app/admin/(protected)/crm/reporting/page.tsx",
+    "app/admin/(protected)/crm/reporting/properties/page.tsx",
+    "app/admin/(protected)/crm/reporting/speed-to-lead/page.tsx",
+    "app/admin/(protected)/crm/reporting/texts/page.tsx",
+    "app/admin/(protected)/crm/reporting/westside/page.tsx",
+    "app/admin/(protected)/crm/sequences/[id]/edit/page.tsx",
+    "app/admin/(protected)/crm/sequences/page.tsx",
+    "app/admin/(protected)/crm/settings/appointments/page.tsx",
+    "app/admin/(protected)/crm/settings/areas/page.tsx",
+    "app/admin/(protected)/crm/settings/assignment/page.tsx",
+    "app/admin/(protected)/crm/settings/brokers/page.tsx",
+    "app/admin/(protected)/crm/settings/company/block-list/page.tsx",
+    "app/admin/(protected)/crm/settings/company/page.tsx",
+    "app/admin/(protected)/crm/settings/company/registration/page.tsx",
+    "app/admin/(protected)/crm/settings/custom-fields/page.tsx",
+    "app/admin/(protected)/crm/settings/groups/page.tsx",
+    "app/admin/(protected)/crm/settings/lead-flows/page.tsx",
+    "app/admin/(protected)/crm/settings/market-reports/page.tsx",
+    "app/admin/(protected)/crm/settings/page.tsx",
+    "app/admin/(protected)/crm/settings/ponds/page.tsx",
+    "app/admin/(protected)/crm/settings/segments/page.tsx",
+    "app/admin/(protected)/crm/settings/stages/page.tsx",
+    "app/admin/(protected)/crm/settings/suppression/page.tsx",
+    "app/admin/(protected)/crm/settings/tags/page.tsx",
+    "app/admin/(protected)/crm/settings/team/page.tsx",
+    "app/admin/(protected)/crm/settings/templates/page.tsx",
+    "app/admin/(protected)/crm/subscriptions/page.tsx",
+    "app/admin/(protected)/crm/tasks/page.tsx",
+    "app/admin/(protected)/crm/workflows/page.tsx",
+    "app/admin/(protected)/deals/[key]/page.tsx",
+    "app/admin/(protected)/dscr/page.tsx",
+    "app/admin/(protected)/email/campaigns/page.tsx",
+    "app/admin/(protected)/email/compose/page.tsx",
+    "app/admin/(protected)/financials/page.tsx",
+    "app/admin/(protected)/forms/page.tsx",
+    "app/admin/(protected)/geo/area-guide-upload/page.tsx",
+    "app/admin/(protected)/geo/page.tsx",
+    "app/admin/(protected)/geo/resort-communities/page.tsx",
+    "app/admin/(protected)/guides/page.tsx",
+    "app/admin/(protected)/help/[slug]/page.tsx",
+    "app/admin/(protected)/help/page.tsx",
+    "app/admin/(protected)/listings/[listingKey]/page.tsx",
+    "app/admin/(protected)/listings/page.tsx",
+    "app/admin/(protected)/media/banners/page.tsx",
+    "app/admin/(protected)/media/page.tsx",
+    "app/admin/(protected)/media/photos/page.tsx",
+    "app/admin/(protected)/media/stock-photos/page.tsx",
+    "app/admin/(protected)/newsletters/[id]/page.tsx",
+    "app/admin/(protected)/newsletters/analytics/page.tsx",
+    "app/admin/(protected)/newsletters/enroll/page.tsx",
+    "app/admin/(protected)/newsletters/new/page.tsx",
+    "app/admin/(protected)/newsletters/page.tsx",
+    "app/admin/(protected)/newsletters/subscribers/page.tsx",
+    "app/admin/(protected)/operations/page.tsx",
+    "app/admin/(protected)/prospecting/[kind]/[id]/page.tsx",
+    "app/admin/(protected)/reports/brokers/page.tsx",
+    "app/admin/(protected)/reports/cma-performance/page.tsx",
+    "app/admin/(protected)/reports/custom/page.tsx",
+    "app/admin/(protected)/reports/emails/page.tsx",
+    "app/admin/(protected)/reports/lead-flow/page.tsx",
+    "app/admin/(protected)/reports/leads/page.tsx",
+    "app/admin/(protected)/reports/market/page.tsx",
+    "app/admin/(protected)/reports/traffic-sources/page.tsx",
+    "app/admin/(protected)/settings/account/page.tsx",
+    "app/admin/(protected)/sign-off/page.tsx",
+    "app/admin/(protected)/signing/[envelopeId]/page.tsx",
+    "app/admin/(protected)/signing/page.tsx",
+    "app/admin/(protected)/site-pages/page.tsx",
+    "app/admin/(protected)/sync/page.tsx",
+    "app/admin/(protected)/sync/spark/page.tsx",
+    "app/admin/(protected)/users/page.tsx",
+    "app/admin/(protected)/visitors/[sessionId]/page.tsx",
+    "app/admin/(protected)/visitors/live/page.tsx",
+    "app/admin/access-denied/page.tsx",
+    "app/admin/login/page.tsx",
+    "app/admin/setup/page.tsx"
+  ],
+  "extraPrimaryButtons": {
+    "app/admin/(protected)/people/[id]/page.tsx": 1,
+    "app/admin/(protected)/today/page.tsx": 2
+  },
+  "distinctWidths": 21
+}

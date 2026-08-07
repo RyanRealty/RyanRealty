@@ -57,7 +57,26 @@ never moved.
 
 ## The order of work, and why
 
-### 11A — Close the gate gap FIRST (one session)
+### 11A — Close the gate gap FIRST (one session) — **SHIPPED 2026-08-06**
+
+What landed (verification inline; the prose below this header is the original spec):
+- **`ci:admin-ui` (G65)** — AST ratchet, seeded at the REAL counts: 251 raw
+  elements / **131 legacy pages** / 3 extra primary buttons / 21 distinct widths.
+  (131, not the estimated 129 — the AST's no-JSX bridge test is stricter than the
+  line-count heuristic; and the first draft's bridge test was fooled by auth-guard
+  redirects into reporting 58 — caught and fixed before seeding.) 9/9 break-tests;
+  wired after `ci:admin-contrast`; `ci:gates-wired` green; G65 row in
+  MECHANICAL_GATES.md.
+- **Axe WCAG 2.2 AA ratchet** in `e2e/full-crawl.spec.ts` — one test per
+  inventoried /admin route, seeding/compare/ratchetable modes against
+  `e2e/axe-baseline.json`, `E2E_AXE=0` kill switch. Smoke-verified on the
+  seeding + ratchetable paths; `docs/ROUTE_INVENTORY.md` regenerated so all 11
+  destinations are crawled (7 were missing from the stale inventory).
+- **Visual regression** for all 11 destinations in `e2e/visual-regression.spec.ts`
+  (Lenis lesson honored: `fullPage: false`; networkidle capped for sync polling).
+- **Open remainder, deliberate:** `e2e/axe-baseline.json` is NOT seeded — seeding
+  requires one authenticated full crawl (`auth.setup.ts` session; a partial run
+  seeds a partial baseline). Run it with the first 11B session and commit the seed.
 
 Nothing else should start until this lands. 129 pages are about to be touched; the
 gate is what makes that migration mechanical instead of producing a second

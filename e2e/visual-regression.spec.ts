@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test'
+import { existsSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 /**
  * Visual regression tests.
@@ -108,6 +110,53 @@ test.describe('Visual Regression — Desktop', () => {
       mask: getMasks(page),
     })
   })
+})
+
+// ─── Admin destinations (Admin Product OS 11A) ─────────────────────────────
+//
+// One screenshot per locked admin destination. Admin pages render inside
+// ConsoleShell behind auth: when e2e/.auth/user.json exists (auth.setup.ts,
+// admin account), the interior is captured; otherwise the auth redirect
+// surface is — baselines are only comparable under the same auth conditions.
+// fullPage stays false: Lenis/smooth-scroll surfaces blank out in stitched
+// fullPage captures, and the viewport crop is the stable frame.
+
+const ADMIN_DESTINATIONS = [
+  { name: 'today', path: '/admin/today' },
+  { name: 'messages', path: '/admin/messages' },
+  { name: 'people', path: '/admin/people' },
+  { name: 'prospecting', path: '/admin/prospecting' },
+  { name: 'oversight', path: '/admin/oversight' },
+  { name: 'valuations', path: '/admin/valuations' },
+  { name: 'closings', path: '/admin/closings' },
+  { name: 'reports', path: '/admin/reports' },
+  { name: 'audiences', path: '/admin/audiences' },
+  { name: 'content', path: '/admin/content' },
+  { name: 'settings', path: '/admin/settings' },
+]
+
+const ADMIN_AUTH_STATE = resolve(process.cwd(), 'e2e/.auth/user.json')
+
+test.describe('Visual Regression — Admin destinations', () => {
+  test.use({
+    viewport: { width: 1280, height: 720 },
+    storageState: existsSync(ADMIN_AUTH_STATE) ? ADMIN_AUTH_STATE : undefined,
+  })
+
+  for (const dest of ADMIN_DESTINATIONS) {
+    test(`admin ${dest.name}`, async ({ page }) => {
+      await page.goto(dest.path)
+      // Admin sync polling can keep the network busy — cap the idle wait
+      // instead of letting it time the test out.
+      await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {})
+      await page.waitForTimeout(500)
+
+      await expect(page).toHaveScreenshot(`admin-${dest.name}-desktop.png`, {
+        fullPage: false,
+        mask: getMasks(page),
+      })
+    })
+  }
 })
 
 test.describe('Visual Regression — Mobile', () => {
