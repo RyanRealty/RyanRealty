@@ -51,7 +51,7 @@ export function SendCmaButton({
       )}
       <p className="text-xs text-muted-foreground">
         Sends from Ryan Realty with the assigned broker as the reply-to. A note
-        is recorded in Follow Up Boss so the conversation stays attributed.
+        is recorded on the contact so the conversation stays attributed.
       </p>
     </div>
   )

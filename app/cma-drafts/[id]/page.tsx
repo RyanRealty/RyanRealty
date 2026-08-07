@@ -227,7 +227,7 @@ export default async function CmaDraftReviewPage({
               didn&rsquo;t run.
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              Open the lead in Follow Up Boss to send a manual CMA.
+              Open the lead in the CRM to send a manual CMA.
             </p>
           </div>
         ) : (

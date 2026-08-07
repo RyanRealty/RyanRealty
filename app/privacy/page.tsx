@@ -49,14 +49,13 @@ export default function PrivacyPage() {
       <section className={SECTION_CLASS}>
         <h2 className={H2_CLASS}>How we use it</h2>
         <p className={P_CLASS}>
-          We use your data to: personalize your experience, route leads to our team, send email notifications (e.g., saved search matches) if you have opted in, and analyze site usage to improve our service. When you are signed in, we send your contact info and activity to our CRM (Follow Up Boss) so we can follow up on properties you care about.
+          We use your data to: personalize your experience, route leads to our team, send email notifications (e.g., saved search matches) if you have opted in, and analyze site usage to improve our service. When you are signed in, we record your contact info and activity in our own client-relationship system so we can follow up on properties you care about. That system is operated by Ryan Realty, not a third party.
         </p>
       </section>
 
       <section className={SECTION_CLASS}>
         <h2 className={H2_CLASS}>Third-party sharing</h2>
         <ul className={UL_CLASS}>
-          <li><strong>Follow Up Boss (FUB)</strong>, CRM for lead and activity tracking</li>
           <li><strong>Resend</strong>, transactional and marketing email</li>
           <li><strong>Google Analytics (GA4)</strong>, site analytics, including <strong>Google Signals</strong> (see below)</li>
           <li><strong>Meta</strong>, advertising and analytics when you interact with our ads or use Meta products</li>
@@ -125,7 +124,7 @@ export default function PrivacyPage() {
       <section className={SECTION_CLASS}>
         <h2 className={H2_CLASS}>Recognizing you and targeted advertising</h2>
         <p className={P_CLASS}>
-          Once you sign in, contact us, or follow a link we send, we may recognize you on later visits using a first-party cookie and associate the pages and listings you view with your contact record in Follow Up Boss, so our team can follow up on the homes you care about. We may also send a one-way hashed version of your email or phone to Meta and Google so they can match you to your visit and measure or target advertising. We never send them your raw email or phone. We may use this information to build advertising audiences and to tailor the ads you see. You can opt out as described below.
+          Once you sign in, contact us, or follow a link we send, we may recognize you on later visits using a first-party cookie and associate the pages and listings you view with your contact record in our own client-relationship system, so our team can follow up on the homes you care about. We may also send a one-way hashed version of your email or phone to Meta and Google so they can match you to your visit and measure or target advertising. We never send them your raw email or phone. We may use this information to build advertising audiences and to tailor the ads you see. You can opt out as described below.
         </p>
       </section>
 

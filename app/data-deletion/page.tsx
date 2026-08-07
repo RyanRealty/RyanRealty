@@ -44,8 +44,8 @@ export default function DataDeletionPage() {
         <p className={P_CLASS}>
           When you sign in to ryan-realty.com (with Google, Facebook, or email), we store your name,
           your email, and your activity on the site such as saved homes, saved searches, and the
-          listings you have viewed. When you are signed in we also keep a contact record in our CRM,
-          Follow Up Boss, so our team can follow up on the homes you care for.
+          listings you have viewed. When you are signed in we also keep a contact record in our own
+          client-relationship system, so our team can follow up on the homes you care for.
         </p>
       </section>
 
@@ -83,7 +83,7 @@ export default function DataDeletionPage() {
         <h2 className={H2_CLASS}>What gets deleted</h2>
         <p className={P_CLASS}>
           Your account record, your profile (name and email), your saved searches, saved homes, and
-          viewing history, and your contact record in Follow Up Boss. We may keep a limited record
+          viewing history, and your contact record in our client-relationship system. We may keep a limited record
           where the law requires it, for example a completed real estate transaction, along with
           de-identified analytics that cannot be used to identify you.
         </p>

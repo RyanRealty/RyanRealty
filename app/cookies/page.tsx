@@ -143,7 +143,7 @@ export default function CookiePolicyPage() {
         <h2 className={H2_CLASS}>How we recognize returning visitors</h2>
         <p className={P_CLASS}>
           If you continue with Google or Facebook, contact us, or follow a link we send you, we may associate
-          your activity with your contact record in our CRM (Follow Up Boss). A first-party cookie then lets us
+          your activity with your contact record in our own client-relationship system. A first-party cookie then lets us
           recognize you on later visits so your agent can see the homes you care about. We may also send a
           one-way hashed version of your email or phone to Google and Meta so they can match you to your visit
           for advertising measurement. We do not send Google or Meta your raw email or phone.
