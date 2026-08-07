@@ -1,23 +1,64 @@
+// @no-parity — internal admin surface, no public mockup contract
 'use client'
+
+/**
+ * /admin/guides — P11D: migrated to the LOCKED admin v2 language
+ * (design_system/admin/ADMIN_UI.md). Presentation only.
+ *
+ * Client component so we can do edit-in-place without a round-trip route.
+ *
+ * Carried over verbatim: EMPTY_FORM, openCreate/openEdit and every prefill, the
+ * #guide-form-anchor scrollIntoView, the saveGuide payload field for field
+ * (id · slug · title · metaDescription · contentHtml · category · city ·
+ * status), the three status values the guides CHECK constraint allows, the
+ * window.confirm delete guard and deleteGuide(guide.id), every reload after a
+ * write, and every field label and placeholder string. No guide title, slug,
+ * meta description or body was read, rewritten or re-cased by this migration,
+ * and no status transition moved.
+ *
+ * Shape changed, data did not: three shadcn KPI cards became the family's
+ * numbers strip, the bordered row list became the family's grid, the shadcn
+ * form controls became the v2 Field primitives, the shadcn Badge became the v2
+ * StateWord (text + color, never color alone), the <h1> title chrome is gone
+ * (the nav names the page), and a thrown read now says so instead of rendering
+ * as an empty library.
+ *
+ * The state words here are the `status` column verbatim — unlike /admin/blog,
+ * this list reads the same column the site reads, so nothing is derived.
+ * Measured 2026-08-07: `guides` holds 0 rows, so the empty state is the state
+ * this page is in today.
+ */
 
 import { useEffect, useState, useTransition } from 'react'
 import { getAdminGuides, saveGuide, deleteGuide } from '@/app/actions/guides'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import type { GuideRow } from '@/app/actions/guides'
+import {
+  Button,
+  ReportError,
+  ReportGrid,
+  ReportNumbers,
+  SectionHead,
+  SelectField,
+  StateWord,
+  TextAreaField,
+  TextField,
+  VerdictLine,
+  type AdminState,
+  type ReportColumn,
+} from '@/components/admin/v2'
 
-// Client component so we can do edit-in-place without a round-trip route.
+const COLUMNS: ReportColumn[] = [
+  { key: 'guide', label: 'Guide' },
+  { key: 'city', label: 'City' },
+  { key: 'status', label: 'Status' },
+  { key: 'actions', label: 'Actions' },
+]
+
+const STATUS_STATE: Record<GuideRow['status'], AdminState> = {
+  draft: 'waiting',
+  published: 'ok',
+  archived: 'accent',
+}
 
 type FormState = {
   id?: string
@@ -44,6 +85,7 @@ const EMPTY_FORM: FormState = {
 export default function AdminGuidesPage() {
   const [guides, setGuides] = useState<GuideRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [readFailed, setReadFailed] = useState(false)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [formOpen, setFormOpen] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -52,8 +94,14 @@ export default function AdminGuidesPage() {
 
   async function loadGuides() {
     setLoading(true)
-    const result = await getAdminGuides()
-    setGuides(result)
+    try {
+      const result = await getAdminGuides()
+      setGuides(result)
+      setReadFailed(false)
+    } catch {
+      setGuides([])
+      setReadFailed(true)
+    }
     setLoading(false)
   }
 
@@ -126,230 +174,186 @@ export default function AdminGuidesPage() {
 
   const publishedCount = guides.filter((g) => g.status === 'published').length
   const draftCount = guides.filter((g) => g.status === 'draft').length
+  const archivedCount = guides.filter((g) => g.status === 'archived').length
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-foreground">Guides</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Create and publish SEO guides for city and neighborhood intent pages.
-        </p>
-      </header>
-
-      {/* Summary */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Total</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{guides.length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Published</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{publishedCount}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Drafts</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{draftCount}</p>
-          </CardContent>
-        </Card>
+    <div className="av2-scope" style={{ maxWidth: 1024, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={readFailed ? 'attention' : 'ok'}>
+          {readFailed ? (
+            <b>The guide list could not be read. Nothing below is the library.</b>
+          ) : loading ? (
+            <b>Reading the guides…</b>
+          ) : guides.length === 0 ? (
+            <>
+              <b>No guide has been written.</b> The form below writes the first one.
+            </>
+          ) : (
+            <>
+              <b>
+                {guides.length} {guides.length === 1 ? 'guide' : 'guides'} — {publishedCount}{' '}
+                published, {draftCount} draft, {archivedCount} archived.
+              </b>
+            </>
+          )}
+        </VerdictLine>
       </div>
 
-      {/* Create / Edit form */}
+      {readFailed ? <ReportError what="The guide library" href="/admin/guides" /> : null}
+
+      {!loading && !readFailed && guides.length > 0 && (
+        <ReportNumbers
+          items={[
+            { key: 'total', label: 'Guides', value: String(guides.length) },
+            { key: 'published', label: 'Published', value: String(publishedCount) },
+            { key: 'draft', label: 'Draft', value: String(draftCount) },
+            { key: 'archived', label: 'Archived', value: String(archivedCount) },
+          ]}
+        />
+      )}
+
       <div id="guide-form-anchor" />
       <details
+        className="av2-rcols"
         open={formOpen}
         onToggle={(e) => setFormOpen((e.target as HTMLDetailsElement).open)}
-        className="group rounded-xl bg-card ring-1 ring-foreground/10"
       >
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 p-4 text-base font-medium text-foreground [&::-webkit-details-marker]:hidden">
-          <span>{form.id ? `Editing: ${form.title || 'guide'}` : 'New guide'}</span>
-          <div className="flex items-center gap-3">
+        <summary>{form.id ? `Editing: ${form.title || 'guide'}` : 'New guide'}</summary>
+        <div className="av2-rcols__body" style={{ display: 'grid', gap: 16 }}>
+          <div className="av2-editgrid">
+            <TextField
+              label="Slug"
+              value={form.slug}
+              onChange={(e) => handleField('slug', e.target.value)}
+              required
+              placeholder="bend-first-time-homebuyers-guide"
+            />
+            <TextField
+              label="Title"
+              value={form.title}
+              onChange={(e) => handleField('title', e.target.value)}
+              required
+              placeholder="First Time Homebuyers Guide for Bend"
+            />
+          </div>
+
+          <TextField
+            label="Meta description"
+            value={form.metaDescription}
+            onChange={(e) => handleField('metaDescription', e.target.value)}
+            placeholder="What to know about buying in Bend right now"
+          />
+
+          <div className="av2-editgrid">
+            <TextField
+              label="Category"
+              value={form.category}
+              onChange={(e) => handleField('category', e.target.value)}
+              placeholder="Buying, Selling, Neighborhoods"
+            />
+            <TextField
+              label="City"
+              value={form.city}
+              onChange={(e) => handleField('city', e.target.value)}
+              placeholder="Bend"
+            />
+            {/* P2-9 fix: replace free-text Input with Select — guides table has a CHECK constraint */}
+            <SelectField
+              label="Status"
+              value={form.status}
+              onChange={(e) =>
+                handleField('status', e.target.value as 'draft' | 'published' | 'archived')
+              }
+            >
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+              <option value="archived">Archived</option>
+            </SelectField>
+          </div>
+
+          <TextAreaField
+            label="Content HTML"
+            value={form.contentHtml}
+            onChange={(e) => handleField('contentHtml', e.target.value)}
+            required
+            style={{ minHeight: 260, fontFamily: 'var(--a-font-mono)', maxWidth: '100%' }}
+            placeholder="<h2>Market Overview</h2><p>...</p>"
+          />
+
+          {formError && (
+            <p role="alert" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)', margin: 0 }}>
+              {formError}
+            </p>
+          )}
+          {formSuccess && (
+            <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-ok)', margin: 0 }}>{formSuccess}</p>
+          )}
+
+          <div className="av2-wordrow">
+            <Button type="button" onClick={handleSubmit} disabled={isPending}>
+              {isPending ? 'Saving…' : form.id ? 'Update guide' : 'Save guide'}
+            </Button>
             {form.id && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={(e) => { e.preventDefault(); openCreate() }}
-              >
+              <Button type="button" variant="quiet" disabled={isPending} onClick={openCreate}>
                 New guide
               </Button>
             )}
-            <span className="text-sm text-muted-foreground transition-transform group-open:rotate-180" aria-hidden>
-              ▾
-            </span>
-          </div>
-        </summary>
-        <div className="border-t border-border p-4">
-          <div className="grid gap-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-2">
-                <Label htmlFor="guide-slug">Slug</Label>
-                <Input
-                  id="guide-slug"
-                  value={form.slug}
-                  onChange={(e) => handleField('slug', e.target.value)}
-                  required
-                  placeholder="bend-first-time-homebuyers-guide"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="guide-title">Title</Label>
-                <Input
-                  id="guide-title"
-                  value={form.title}
-                  onChange={(e) => handleField('title', e.target.value)}
-                  required
-                  placeholder="First Time Homebuyers Guide for Bend"
-                />
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="guide-meta">Meta description</Label>
-              <Input
-                id="guide-meta"
-                value={form.metaDescription}
-                onChange={(e) => handleField('metaDescription', e.target.value)}
-                placeholder="What to know about buying in Bend right now"
-              />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="grid gap-2">
-                <Label htmlFor="guide-category">Category</Label>
-                <Input
-                  id="guide-category"
-                  value={form.category}
-                  onChange={(e) => handleField('category', e.target.value)}
-                  placeholder="Buying, Selling, Neighborhoods"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="guide-city">City</Label>
-                <Input
-                  id="guide-city"
-                  value={form.city}
-                  onChange={(e) => handleField('city', e.target.value)}
-                  placeholder="Bend"
-                />
-              </div>
-              {/* P2-9 fix: replace free-text Input with Select — guides table has a CHECK constraint */}
-              <div className="grid gap-2">
-                <Label htmlFor="guide-status">Status</Label>
-                <Select
-                  value={form.status}
-                  onValueChange={(v) => handleField('status', v as 'draft' | 'published' | 'archived')}
-                >
-                  <SelectTrigger id="guide-status" className="h-10">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="guide-content">Content HTML</Label>
-              <Textarea
-                id="guide-content"
-                value={form.contentHtml}
-                onChange={(e) => handleField('contentHtml', e.target.value)}
-                required
-                className="min-h-[260px] font-mono text-sm"
-                placeholder="<h2>Market Overview</h2><p>...</p>"
-              />
-            </div>
-            {formError && (
-              <p className="text-sm text-destructive" role="alert">{formError}</p>
-            )}
-            {formSuccess && (
-              <p className="text-sm text-success">{formSuccess}</p>
-            )}
-            <div className="flex flex-wrap gap-3">
-              <Button type="button" onClick={handleSubmit} disabled={isPending} className="sm:w-auto">
-                {isPending ? 'Saving…' : form.id ? 'Update guide' : 'Save guide'}
+            {form.id && (
+              <Button
+                type="button"
+                variant="quiet"
+                disabled={isPending}
+                onClick={() => { setForm(EMPTY_FORM); setFormOpen(false) }}
+              >
+                Cancel
               </Button>
-              {form.id && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isPending}
-                  onClick={() => { setForm(EMPTY_FORM); setFormOpen(false) }}
-                  className="sm:w-auto"
-                >
-                  Cancel
-                </Button>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </details>
 
-      {/* Existing guides */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Existing guides</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : guides.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No guides yet.</p>
-          ) : (
-            <div className="space-y-3">
-              {guides.map((guide) => (
-                <div
-                  key={guide.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-4 sm:flex-nowrap"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-foreground">{guide.title}</p>
-                    <p className="mt-0.5 truncate text-sm text-muted-foreground">
-                      /{guide.slug}
-                      {guide.city ? ` · ${guide.city}` : ''}
-                    </p>
-                  </div>
-                  {/* P1-2: edit + delete buttons (previously read-only list) */}
-                  <div className="flex shrink-0 flex-wrap items-center gap-2">
-                    <Badge variant={guide.status === 'published' ? 'default' : guide.status === 'archived' ? 'outline' : 'secondary'}>
-                      {guide.status}
-                    </Badge>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => openEdit(guide)}
-                      disabled={isPending}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDelete(guide)}
-                      disabled={isPending}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <SectionHead>Existing guides</SectionHead>
+      <ReportGrid
+        label="SEO guides"
+        columns={COLUMNS}
+        template="minmax(200px, 2.2fr) minmax(100px, 1fr) minmax(100px, 0.8fr) auto"
+        minWidth={660}
+        rows={guides.map((guide) => ({
+          key: guide.id,
+          cells: [
+            <span key="t">
+              <span style={{ fontWeight: 600 }}>{guide.title}</span>
+              <span style={{ display: 'block', color: 'var(--a-text-2)', overflowWrap: 'anywhere' }}>
+                /{guide.slug}
+              </span>
+            </span>,
+            guide.city || '—',
+            <StateWord key="s" state={STATUS_STATE[guide.status] ?? 'waiting'}>
+              {guide.status}
+            </StateWord>,
+            <span key="a" className="av2-wordrow">
+              <Button type="button" variant="quiet" onClick={() => openEdit(guide)} disabled={isPending}>
+                Edit
+              </Button>
+              <Button type="button" variant="danger" onClick={() => handleDelete(guide)} disabled={isPending}>
+                Delete
+              </Button>
+            </span>,
+          ],
+        }))}
+        empty={
+          loading
+            ? 'Reading the guides…'
+            : readFailed
+              ? 'The read failed, so this list is not the library.'
+              : 'No guide yet. Open “New guide” above to write the first one.'
+        }
+      />
 
-      <div className="flex justify-end">
-        <Button type="button" onClick={openCreate}>
-          New guide
-        </Button>
-      </div>
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 20 }}>
+        The status word is the guide&rsquo;s <code>status</code> column, the same column the public
+        city and neighborhood pages read.
+      </p>
     </div>
   )
 }

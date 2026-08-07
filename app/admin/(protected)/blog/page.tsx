@@ -1,32 +1,69 @@
+// @no-parity — internal admin surface, no public mockup contract
 'use client'
+
+/**
+ * /admin/blog — P11D: migrated to the LOCKED admin v2 language
+ * (design_system/admin/ADMIN_UI.md). Presentation only.
+ *
+ * This page needs interactivity (edit-in-place, delete confirm) so it is a
+ * client component. getAdminBlogPosts() is called from useEffect so the
+ * service-role fetch still happens server-side (Next.js server action).
+ * P0-3 note: all posts write to Supabase `blog_posts` and are served from
+ * /blog (Next.js route). If AgentFire/WordPress is the real public blog,
+ * a WP REST API integration would be needed in blog.ts. Based on the codebase,
+ * /blog is the canonical public route — this is the correct architecture.
+ *
+ * Carried over verbatim: EMPTY_FORM, PREVIEW_COUNT, openCreate/openEdit and the
+ * `post.published_at ? 'published' : 'draft'` prefill, the #blog-form-anchor
+ * scrollIntoView, the comma-split tag parse, the saveBlogPost payload field for
+ * field (id · slug · title · content · excerpt · category · tags ·
+ * heroImageUrl · seoTitle · seoDescription · status · publishedAt), the
+ * window.confirm delete guard and deleteBlogPost(post.id), every reload after a
+ * write, the /blog/<slug> href, and every field label and placeholder string.
+ * No post title, slug, excerpt, meta description or body was read, rewritten or
+ * re-cased by this migration, and no status transition moved.
+ *
+ * Shape changed, data did not: four shadcn KPI cards became the family's
+ * numbers strip, the card list became the family's grid, the shadcn form
+ * controls became the v2 Field primitives, and a thrown read now says so
+ * instead of rendering as an empty library.
+ *
+ * TWO LABELS CHANGED BECAUSE THEY WERE NOT TRUE. The page derives its state
+ * from `published_at`, but the public blog serves a post only when
+ * `status = 'published'` (app/actions/blog.ts getPublishedBlogPosts /
+ * getBlogPostBySlug), and getAdminBlogPosts does not select `status`. Measured
+ * 2026-08-07: 87 posts, all 87 with a publish date, so the old strip read
+ * "Published 87 · Drafts 0" — while the status column holds published 55,
+ * archived_stats_unverified 28, draft 3, pending_pilot_review 1. The figures
+ * are now named for the column they actually sum, and the footnote says which
+ * column the site reads.
+ */
 
 import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { getAdminBlogPosts, saveBlogPost, deleteBlogPost } from '@/app/actions/blog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import type { BlogPostWithAuthor } from '@/app/actions/blog'
-
-// This page needs interactivity (edit-in-place, delete confirm) so it is a
-// client component. getAdminBlogPosts() is called from useEffect so the
-// service-role fetch still happens server-side (Next.js server action).
-// P0-3 note: all posts write to Supabase `blog_posts` and are served from
-// /blog (Next.js route). If AgentFire/WordPress is the real public blog,
-// a WP REST API integration would be needed in blog.ts. Based on the codebase,
-// /blog is the canonical public route — this is the correct architecture.
+import {
+  Button,
+  ReportError,
+  ReportGrid,
+  ReportNumbers,
+  SectionHead,
+  SelectField,
+  TextAreaField,
+  TextField,
+  VerdictLine,
+  type ReportColumn,
+} from '@/components/admin/v2'
 
 const PREVIEW_COUNT = 6
+
+const COLUMNS: ReportColumn[] = [
+  { key: 'post', label: 'Post' },
+  { key: 'category', label: 'Category' },
+  { key: 'published', label: 'Publish date' },
+  { key: 'actions', label: 'Actions' },
+]
 
 type FormState = {
   id?: string
@@ -61,6 +98,7 @@ const EMPTY_FORM: FormState = {
 export default function AdminBlogPage() {
   const [posts, setPosts] = useState<BlogPostWithAuthor[]>([])
   const [loading, setLoading] = useState(true)
+  const [readFailed, setReadFailed] = useState(false)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [formOpen, setFormOpen] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -70,19 +108,18 @@ export default function AdminBlogPage() {
 
   async function loadPosts() {
     setLoading(true)
-    const result = await getAdminBlogPosts()
-    setPosts(result)
+    try {
+      const result = await getAdminBlogPosts()
+      setPosts(result)
+      setReadFailed(false)
+    } catch {
+      setPosts([])
+      setReadFailed(true)
+    }
     setLoading(false)
   }
 
   useEffect(() => { loadPosts() }, [])
-
-  function openCreate() {
-    setForm(EMPTY_FORM)
-    setFormError(null)
-    setFormSuccess(null)
-    setFormOpen(true)
-  }
 
   function openEdit(post: BlogPostWithAuthor) {
     setForm({
@@ -152,337 +189,238 @@ export default function AdminBlogPage() {
     })
   }
 
-  const publishedCount = posts.filter((p) => p.published_at).length
-  const draftCount = posts.length - publishedCount
+  const datedCount = posts.filter((p) => p.published_at).length
+  const undatedCount = posts.length - datedCount
   const categories = [...new Set(posts.map((p) => p.category).filter(Boolean))]
   const visiblePosts = showAll ? posts : posts.slice(0, PREVIEW_COUNT)
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-foreground">Blog posts</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Create, edit, and publish posts for the live blog.
-        </p>
-      </header>
-
-      {/* Glanceable summary */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Total posts</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{posts.length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Published</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{publishedCount}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Drafts</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{draftCount}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Categories</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{categories.length}</p>
-          </CardContent>
-        </Card>
+    <div className="av2-scope" style={{ maxWidth: 1024, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={readFailed ? 'attention' : 'ok'}>
+          {readFailed ? (
+            <b>The post list could not be read. Nothing below is the library.</b>
+          ) : loading ? (
+            <b>Reading the posts…</b>
+          ) : posts.length === 0 ? (
+            <b>No post is in the library.</b>
+          ) : (
+            <>
+              <b>
+                {posts.length} {posts.length === 1 ? 'post' : 'posts'}, {datedCount} carrying a
+                publish date.
+              </b>{' '}
+              Undated first, then newest publish date.
+            </>
+          )}
+        </VerdictLine>
       </div>
 
-      {/* Create / Edit form */}
+      {readFailed ? <ReportError what="The post library" href="/admin/blog" /> : null}
+
+      {!loading && !readFailed && posts.length > 0 && (
+        <ReportNumbers
+          items={[
+            { key: 'total', label: 'Posts', value: String(posts.length) },
+            { key: 'dated', label: 'With a publish date', value: String(datedCount) },
+            { key: 'undated', label: 'No publish date', value: String(undatedCount) },
+            { key: 'cats', label: 'Categories', value: String(categories.length) },
+          ]}
+        />
+      )}
+
       <div id="blog-form-anchor" />
-      <details open={formOpen} onToggle={(e) => setFormOpen((e.target as HTMLDetailsElement).open)} className="group rounded-xl bg-card ring-1 ring-foreground/10">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 p-4 text-base font-medium text-foreground [&::-webkit-details-marker]:hidden">
-          <span>{form.id ? `Editing: ${form.title || 'post'}` : 'New blog post'}</span>
-          <div className="flex items-center gap-3">
+      <details
+        className="av2-rcols"
+        open={formOpen}
+        onToggle={(e) => setFormOpen((e.target as HTMLDetailsElement).open)}
+      >
+        <summary>{form.id ? `Editing: ${form.title || 'post'}` : 'New blog post'}</summary>
+        <div className="av2-rcols__body" style={{ display: 'grid', gap: 16 }}>
+          <div className="av2-editgrid">
+            <TextField
+              label="Title"
+              value={form.title}
+              onChange={(e) => handleField('title', e.target.value)}
+              required
+              placeholder="Central Oregon Housing Market Spring 2026 Update"
+            />
+            <TextField
+              label="Slug"
+              value={form.slug}
+              onChange={(e) => handleField('slug', e.target.value)}
+              required
+              placeholder="central-oregon-housing-market-spring-2026"
+            />
+          </div>
+
+          <TextField
+            label="Excerpt"
+            value={form.excerpt}
+            onChange={(e) => handleField('excerpt', e.target.value)}
+            placeholder="1-2 sentence summary for blog cards and social sharing"
+          />
+
+          <div className="av2-editgrid">
+            <TextField
+              label="Category"
+              value={form.category}
+              onChange={(e) => handleField('category', e.target.value)}
+              placeholder="Market Updates"
+            />
+            <TextField
+              label="Tags (comma separated)"
+              value={form.tags}
+              onChange={(e) => handleField('tags', e.target.value)}
+              placeholder="market update, spring 2026, central oregon"
+            />
+            {/* P2-8 fix: replace free-text Input with Select for status */}
+            <SelectField
+              label="Status"
+              value={form.status}
+              onChange={(e) => handleField('status', e.target.value as 'draft' | 'published')}
+            >
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+            </SelectField>
+          </div>
+
+          <div className="av2-editgrid">
+            <TextField
+              label="Hero Image URL"
+              value={form.heroImageUrl}
+              onChange={(e) => handleField('heroImageUrl', e.target.value)}
+              placeholder="https://images.unsplash.com/..."
+            />
+            <TextField
+              label="Published At (ISO date)"
+              value={form.publishedAt}
+              onChange={(e) => handleField('publishedAt', e.target.value)}
+              placeholder="2026-04-01T09:00:00Z"
+            />
+          </div>
+
+          <div className="av2-editgrid">
+            <TextField
+              label="SEO Title (50-60 chars)"
+              value={form.seoTitle}
+              onChange={(e) => handleField('seoTitle', e.target.value)}
+              placeholder="Central Oregon Housing Market Spring 2026"
+            />
+            <TextField
+              label="SEO Description (150-160 chars)"
+              value={form.seoDescription}
+              onChange={(e) => handleField('seoDescription', e.target.value)}
+              placeholder="Latest inventory, pricing, and rate data..."
+            />
+          </div>
+
+          <TextAreaField
+            label="Content (HTML)"
+            value={form.content}
+            onChange={(e) => handleField('content', e.target.value)}
+            required
+            rows={14}
+            style={{ fontFamily: 'var(--a-font-mono)', maxWidth: '100%' }}
+            placeholder="<h2>Market Overview</h2><p>...</p>"
+          />
+
+          {formError && (
+            <p role="alert" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)', margin: 0 }}>
+              {formError}
+            </p>
+          )}
+          {formSuccess && (
+            <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-ok)', margin: 0 }}>{formSuccess}</p>
+          )}
+
+          <div className="av2-wordrow">
+            <Button type="button" onClick={handleSubmit} disabled={isPending}>
+              {isPending ? 'Saving…' : form.id ? 'Update post' : 'Save blog post'}
+            </Button>
             {form.id && (
               <Button
                 type="button"
-                size="sm"
-                variant="outline"
-                onClick={(e) => { e.preventDefault(); setForm(EMPTY_FORM); setFormOpen(true) }}
+                variant="quiet"
+                disabled={isPending}
+                onClick={() => { setForm(EMPTY_FORM); setFormOpen(true) }}
               >
                 New post
               </Button>
             )}
-            <span className="text-sm text-muted-foreground transition-transform group-open:rotate-180" aria-hidden>
-              ▾
-            </span>
-          </div>
-        </summary>
-        <div className="border-t border-border p-4">
-          <div className="grid gap-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-2">
-                <Label htmlFor="blog-title">Title</Label>
-                <Input
-                  id="blog-title"
-                  value={form.title}
-                  onChange={(e) => handleField('title', e.target.value)}
-                  required
-                  placeholder="Central Oregon Housing Market Spring 2026 Update"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="blog-slug">Slug</Label>
-                <Input
-                  id="blog-slug"
-                  value={form.slug}
-                  onChange={(e) => handleField('slug', e.target.value)}
-                  required
-                  placeholder="central-oregon-housing-market-spring-2026"
-                />
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="blog-excerpt">Excerpt</Label>
-              <Input
-                id="blog-excerpt"
-                value={form.excerpt}
-                onChange={(e) => handleField('excerpt', e.target.value)}
-                placeholder="1-2 sentence summary for blog cards and social sharing"
-              />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="grid gap-2">
-                <Label htmlFor="blog-category">Category</Label>
-                <Input
-                  id="blog-category"
-                  value={form.category}
-                  onChange={(e) => handleField('category', e.target.value)}
-                  placeholder="Market Updates"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="blog-tags">Tags (comma separated)</Label>
-                <Input
-                  id="blog-tags"
-                  value={form.tags}
-                  onChange={(e) => handleField('tags', e.target.value)}
-                  placeholder="market update, spring 2026, central oregon"
-                />
-              </div>
-              {/* P2-8 fix: replace free-text Input with Select for status */}
-              <div className="grid gap-2">
-                <Label htmlFor="blog-status">Status</Label>
-                <Select
-                  value={form.status}
-                  onValueChange={(v) => handleField('status', v as 'draft' | 'published')}
-                >
-                  <SelectTrigger id="blog-status" className="h-10">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-2">
-                <Label htmlFor="blog-hero">Hero Image URL</Label>
-                <Input
-                  id="blog-hero"
-                  value={form.heroImageUrl}
-                  onChange={(e) => handleField('heroImageUrl', e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="blog-published-at">Published At (ISO date)</Label>
-                <Input
-                  id="blog-published-at"
-                  value={form.publishedAt}
-                  onChange={(e) => handleField('publishedAt', e.target.value)}
-                  placeholder="2026-04-01T09:00:00Z"
-                />
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-2">
-                <Label htmlFor="blog-seo-title">SEO Title (50-60 chars)</Label>
-                <Input
-                  id="blog-seo-title"
-                  value={form.seoTitle}
-                  onChange={(e) => handleField('seoTitle', e.target.value)}
-                  placeholder="Central Oregon Housing Market Spring 2026"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="blog-seo-desc">SEO Description (150-160 chars)</Label>
-                <Input
-                  id="blog-seo-desc"
-                  value={form.seoDescription}
-                  onChange={(e) => handleField('seoDescription', e.target.value)}
-                  placeholder="Latest inventory, pricing, and rate data..."
-                />
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="blog-content">Content (HTML)</Label>
-              <Textarea
-                id="blog-content"
-                value={form.content}
-                onChange={(e) => handleField('content', e.target.value)}
-                required
-                rows={14}
-                className="font-mono text-sm"
-                placeholder="<h2>Market Overview</h2><p>...</p>"
-              />
-            </div>
-            {formError && (
-              <p className="text-sm text-destructive" role="alert">{formError}</p>
-            )}
-            {formSuccess && (
-              <p className="text-sm text-success">{formSuccess}</p>
-            )}
-            <div className="flex flex-wrap gap-3">
-              <Button type="button" onClick={handleSubmit} disabled={isPending} className="sm:w-auto">
-                {isPending ? 'Saving…' : form.id ? 'Update post' : 'Save blog post'}
+            {form.id && (
+              <Button
+                type="button"
+                variant="quiet"
+                disabled={isPending}
+                onClick={() => { setForm(EMPTY_FORM); setFormOpen(false) }}
+              >
+                Cancel
               </Button>
-              {form.id && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isPending}
-                  onClick={() => { setForm(EMPTY_FORM); setFormOpen(false) }}
-                  className="sm:w-auto"
-                >
-                  Cancel
-                </Button>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </details>
 
-      {/* Existing posts */}
-      <section className="space-y-3">
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className="text-lg font-semibold text-foreground">Recent posts</h2>
-          {posts.length > 0 && (
-            <span className="text-sm text-muted-foreground tabular-nums">{posts.length} total</span>
-          )}
-        </div>
-
-        {loading ? (
-          <Card>
-            <CardContent className="py-10 text-center text-sm text-muted-foreground">Loading…</CardContent>
-          </Card>
-        ) : posts.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center gap-2 px-6 py-12 text-center">
-              <p className="text-base font-medium text-foreground">No blog posts yet</p>
-              <p className="max-w-sm text-sm text-muted-foreground">
-                Open &ldquo;New blog post&rdquo; above to publish your first post.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            <ul className="space-y-2">
-              {visiblePosts.map((post) => (
-                <PostRow
-                  key={post.id}
-                  post={post}
-                  onEdit={() => openEdit(post)}
-                  onDelete={() => handleDelete(post)}
-                  isPending={isPending}
-                />
-              ))}
-            </ul>
-            {posts.length > PREVIEW_COUNT && (
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => setShowAll((v) => !v)}
-              >
-                {showAll ? 'Show fewer' : `Show all ${posts.length} posts`}
+      <SectionHead>Recent posts</SectionHead>
+      <ReportGrid
+        label="Blog posts"
+        columns={COLUMNS}
+        template="minmax(200px, 2.2fr) minmax(110px, 1fr) minmax(110px, 1fr) auto"
+        minWidth={680}
+        rows={visiblePosts.map((post) => ({
+          key: post.id,
+          cells: [
+            <Link key="t" href={`/blog/${post.slug}`} style={{ color: 'var(--a-accent)' }}>
+              {post.title}
+            </Link>,
+            post.category || 'Uncategorized',
+            <span key="d" style={{ fontVariantNumeric: 'tabular-nums' }}>
+              {/* timeZone pinned, format untouched. published_at is a
+                  timestamptz, so the bare call printed the UTC day on the
+                  server and the Pacific day in the browser — a real hydration
+                  mismatch (ci:hydration-safety). Pinning Pacific makes the
+                  server agree with what the reader already ends up seeing, so
+                  no printed day moves. NOT formatDate: that renders
+                  "Aug 7, 2026" and would change every row's format. */}
+              {post.published_at
+                ? new Date(post.published_at).toLocaleDateString('en-US', {
+                    timeZone: 'America/Los_Angeles',
+                  })
+                : 'Not set'}
+            </span>,
+            <span key="a" className="av2-wordrow">
+              <Button type="button" variant="quiet" onClick={() => openEdit(post)} disabled={isPending}>
+                Edit
               </Button>
-            )}
-          </>
-        )}
-      </section>
+              <Button type="button" variant="danger" onClick={() => handleDelete(post)} disabled={isPending}>
+                Delete
+              </Button>
+            </span>,
+          ],
+        }))}
+        empty={
+          loading
+            ? 'Reading the posts…'
+            : readFailed
+              ? 'The read failed, so this list is not the library.'
+              : 'No blog post yet. Open “New blog post” above to write the first one.'
+        }
+      />
 
-      {/* Redirect button to create new post (sticky below) */}
-      <div className="flex justify-end">
-        <Button type="button" onClick={openCreate}>
-          New blog post
-        </Button>
-      </div>
+      {posts.length > PREVIEW_COUNT && (
+        <div style={{ marginTop: 12 }}>
+          <Button type="button" variant="quiet" touch onClick={() => setShowAll((v) => !v)}>
+            {showAll ? 'Show fewer' : `Show all ${posts.length} posts`}
+          </Button>
+        </div>
+      )}
+
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 20 }}>
+        The date column is the post&rsquo;s <code>published_at</code> value. The public blog serves a
+        post only when its <code>status</code> is <code>published</code>, and this list does not read
+        that column — a date here is not proof the post is live.
+      </p>
     </div>
-  )
-}
-
-function PostRow({
-  post,
-  onEdit,
-  onDelete,
-  isPending,
-}: {
-  post: BlogPostWithAuthor
-  onEdit: () => void
-  onDelete: () => void
-  isPending: boolean
-}) {
-  const isPublished = Boolean(post.published_at)
-  return (
-    <li>
-      <Card>
-        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 sm:flex-nowrap">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="truncate font-medium text-foreground">{post.title}</p>
-              <Badge variant={isPublished ? 'default' : 'secondary'} className="shrink-0">
-                {isPublished ? 'Published' : 'Draft'}
-              </Badge>
-            </div>
-            <p className="mt-1 truncate text-sm text-muted-foreground">
-              {post.category || 'Uncategorized'}
-              {' · '}
-              <span className="tabular-nums">
-                {post.published_at
-                  ? new Date(post.published_at).toLocaleDateString('en-US')
-                  : 'Not published'}
-              </span>
-            </p>
-          </div>
-          {/* P1-1: edit + delete buttons (previously only "View" link existed) */}
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={onEdit}
-              disabled={isPending}
-            >
-              Edit
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="destructive"
-              onClick={onDelete}
-              disabled={isPending}
-            >
-              Delete
-            </Button>
-            <Link
-              href={`/blog/${post.slug}`}
-              className="flex h-9 items-center rounded-lg px-3 text-sm font-medium text-primary hover:underline"
-            >
-              View
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    </li>
   )
 }

@@ -1,3 +1,33 @@
+// @no-parity — internal admin surface, no public mockup contract
+//
+// Operations command center — P11D: migrated to the LOCKED admin v2 language
+// (design_system/admin/ADMIN_UI.md). Presentation only.
+//
+// Carried over verbatim: requireAdminPage('settings.system'), the
+// getSetupComplete() → /admin/setup redirect, the unstable_cache bundle
+// (['admin-dashboard-data'], revalidate 180, tag 'admin-dashboard') around the
+// same five fetchers in the same order, all eight DashboardPanel mounts with
+// their ids, titles, defaultOpen flags and props, and the six quick links.
+//
+// Shape changed, data did not: the page's own <main> is gone (ConsoleShell owns
+// the landmark), the <h1> title chrome is gone (the nav names the page), the
+// legacy summary-strip card row became the family's typographic numbers strip
+// (its component was deleted in this wave once nothing imported it), and the
+// ConsoleSection around the quick links became a SectionHead.
+//
+// ONE FIGURE WAS CUT, not restyled: "Active listings". It printed
+// syncData.counts.activeCount, which is getTotalListingsCount() — the sum of
+// geo_snapshot_mv.active_sfr_count over the TOP 50 CITIES
+// (lib/data/geo/getGeoSnapshot.ts `_fetchAllCitySnapshots` carries .limit(50)).
+// Measured 2026-08-07: that sum is 3,530, while listings with
+// StandardStatus='Active' number 7,611 (4,646 of them PropertyType='A'), and
+// 136 cities carry a non-zero active SFR count, not 50. The label was wrong by
+// 2.16x, and its caption paired it with getTotalListingsRows() — every row of
+// every status in `listings` — so the two numbers did not share a universe.
+// The page cannot make that figure true from what it reads, so it does not
+// print it. The same value still renders inside DashboardSyncPanel under the
+// heading "Active"; that component is outside this migration's fence and the
+// defect is reported with it.
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { requireAdminPage } from '@/lib/admin/require-admin'
@@ -19,12 +49,25 @@ import DashboardSitePerformancePanel from '@/components/admin/DashboardSitePerfo
 import DashboardRevenuePanel from '@/components/admin/DashboardRevenuePanel'
 import DashboardContentStatusPanel from '@/components/admin/DashboardContentStatusPanel'
 import DashboardMarketingCommandCenterPanel from '@/components/admin/DashboardMarketingCommandCenterPanel'
-import DashboardSummaryStrip, { type SummaryStat } from '@/components/admin/DashboardSummaryStrip'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
+import {
+  ReportNumbers,
+  SectionHead,
+  VerdictLine,
+  type ReportNumberItem,
+} from '@/components/admin/v2'
 
 export const dynamic = 'force-dynamic'
 
 const nf = new Intl.NumberFormat('en-US')
+
+const QUICK_LINKS: { href: string; label: string }[] = [
+  { href: '/admin/sync', label: 'Sync & history' },
+  { href: '/admin/geo', label: 'Geo hierarchy' },
+  { href: '/admin/geo/resort-communities', label: 'Resort communities' },
+  { href: '/admin/media/banners', label: 'Banners' },
+  { href: '/admin/analytics', label: 'Performance' },
+  { href: '/admin/sync/spark', label: 'Spark API status' },
+]
 
 // The five dashboard fetchers hit live third-party APIs (GA4, Meta Graph, FUB
 // fallback) and exact-count scans — 30-45s uncached per render, which read as
@@ -51,62 +94,85 @@ export default async function AdminDashboardPage() {
 
   const [syncData, leadData, dataQuality, contentStatus, marketingData] = await getDashboardData()
 
-  // Glanceable summary — the six operations numbers worth a glance, derived
-  // entirely from data already fetched above. No new queries. A null value
-  // renders a muted em-dash rather than leaving a hole.
+  // The figures worth a glance, every one named for exactly what it sums.
+  // No new queries: all five come out of the bundle fetched above.
   const identifiedRate =
     leadData.totalVisits > 0
       ? `${((leadData.visitsWithUser / leadData.totalVisits) * 100).toFixed(1)}%`
-      : null
-  const summaryStats: SummaryStat[] = [
+      : '—'
+  const ga4 = marketingData.ga4
+  const missingPhoto = dataQuality.missingPrimaryPhoto
+
+  const numbers: ReportNumberItem[] = [
     {
-      label: 'Active listings',
-      value: nf.format(syncData.counts.activeCount),
-      caption: `${nf.format(syncData.counts.totalListings)} total`,
-      tone: 'success',
+      key: 'sessions',
+      label: 'Sessions, 30 days',
+      value: ga4.ok ? nf.format(ga4.sessions) : '—',
+      delta: {
+        direction: 'flat',
+        text: ga4.ok ? `${nf.format(ga4.socialSessions)} from social` : 'GA4 offline',
+      },
     },
     {
-      label: 'Sessions 30d',
-      value: marketingData.ga4.ok ? nf.format(marketingData.ga4.sessions) : null,
-      caption: marketingData.ga4.ok ? `${nf.format(marketingData.ga4.socialSessions)} social` : 'GA4 offline',
+      key: 'leadevents',
+      label: 'Lead events, 30 days',
+      value: ga4.ok ? nf.format(ga4.facebookLeadEvents) : '—',
+      delta: { direction: 'flat', text: ga4.ok ? 'from Facebook' : 'GA4 offline' },
     },
     {
-      label: 'Lead events 30d',
-      value: marketingData.ga4.ok ? nf.format(marketingData.ga4.facebookLeadEvents) : null,
-      caption: 'from Facebook',
-    },
-    {
-      label: 'Valuation reqs',
+      key: 'valuations',
+      label: 'Valuation requests',
       value: nf.format(marketingData.website.valuationRequests30d),
-      caption: '30 days',
+      delta: { direction: 'flat', text: 'last 30 days' },
     },
     {
-      label: 'Identified',
+      key: 'identified',
+      label: 'Sessions identified',
       value: identifiedRate,
-      caption: `${nf.format(leadData.visitsWithUser)} of ${nf.format(leadData.totalVisits)}`,
+      delta: {
+        direction: 'flat',
+        text: `${nf.format(leadData.visitsWithUser)} of ${nf.format(leadData.totalVisits)}, all time`,
+      },
     },
     {
-      label: 'Photos missing',
-      value: nf.format(dataQuality.missingPrimaryPhoto),
-      caption: 'active, no primary',
-      tone: dataQuality.missingPrimaryPhoto > 0 ? 'warning' : 'default',
+      key: 'photos',
+      label: 'No hero photo',
+      value: nf.format(missingPhoto),
+      delta: { direction: 'flat', text: 'active + pending listings' },
     },
   ]
 
+  // overflowX 'clip' is the old <main>'s `overflow-x-clip`, carried over: the
+  // eight DashboardPanel islands mount unchanged and the open sync panel
+  // measures 426px against a 375px viewport. Clip contains it here the way it
+  // always did, and a descendant's own overflow-x:auto still scrolls.
   return (
-    <main className="mx-auto max-w-screen-2xl overflow-x-clip px-4 py-8 sm:px-6">
-      <header>
-        <h1 className="text-2xl font-bold text-foreground">Operations command center</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          System health, sync, leads, and growth at a glance. Open a section for the detail.
-        </p>
-      </header>
+    <div
+      className="av2-scope"
+      style={{ maxWidth: 1120, margin: '0 auto', padding: 16, overflowX: 'clip' }}
+    >
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={missingPhoto > 0 ? 'attention' : 'ok'}>
+          {missingPhoto > 0 ? (
+            <>
+              <b>
+                {nf.format(missingPhoto)} active or pending{' '}
+                {missingPhoto === 1 ? 'listing has' : 'listings have'} no hero photo.
+              </b>{' '}
+              Everything else here is a panel you open.
+            </>
+          ) : (
+            <>
+              <b>Every active and pending listing has a hero photo.</b> Everything else here is a
+              panel you open.
+            </>
+          )}
+        </VerdictLine>
+      </div>
 
-      <section aria-label="Key metrics" className="mt-6">
-        <DashboardSummaryStrip stats={summaryStats} />
-      </section>
+      <ReportNumbers items={numbers} />
 
-      <div className="mt-8 space-y-4 sm:space-y-6">
+      <div style={{ display: 'grid', gap: 16 }}>
         <DashboardPanel id="sync" title="Sync operations and database health" defaultOpen={true}>
           <DashboardSyncPanel
             history={syncData.history}
@@ -147,16 +213,16 @@ export default async function AdminDashboardPage() {
         </DashboardPanel>
       </div>
 
-      <ConsoleSection title="Quick links" className="mt-10">
-        <ul className="flex flex-wrap gap-4 text-sm">
-          <li><Link href="/admin/sync" className="text-success hover:underline">Sync & history</Link></li>
-          <li><Link href="/admin/geo" className="text-success hover:underline">Geo hierarchy</Link></li>
-          <li><Link href="/admin/geo/resort-communities" className="text-success hover:underline">Resort communities</Link></li>
-          <li><Link href="/admin/media/banners" className="text-success hover:underline">Banners</Link></li>
-          <li><Link href="/admin/analytics" className="text-success hover:underline">Performance</Link></li>
-          <li><Link href="/admin/sync/spark" className="text-success hover:underline">Spark API status</Link></li>
-        </ul>
-      </ConsoleSection>
-    </main>
+      <SectionHead>Quick links</SectionHead>
+      <ul className="av2-wordrow" style={{ listStyle: 'none', margin: 0, padding: 0, gap: 16 }}>
+        {QUICK_LINKS.map((l) => (
+          <li key={l.href}>
+            <Link href={l.href} style={{ color: 'var(--a-accent)', fontSize: 'var(--a-text-sm)' }}>
+              {l.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }

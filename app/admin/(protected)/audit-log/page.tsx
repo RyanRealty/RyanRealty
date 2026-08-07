@@ -1,25 +1,55 @@
+// @no-parity — internal admin surface, no public mockup contract
+//
+// Audit log — P11D: migrated to the LOCKED admin v2 language
+// (design_system/admin/ADMIN_UI.md). Presentation only. This page is a
+// COMPLIANCE RECORD, so the record itself was moved byte-for-byte.
+//
+// Carried over verbatim: PAGE_SIZE = 25, the getAdminActions read with
+// limit = PAGE_SIZE + 1 / offset = pageNum * PAGE_SIZE (the lookahead that
+// avoids a count query), created_at DESC ordering, the `page` / `admin` /
+// `action` search params and their trim()-or-null handling, filterQuery()'s
+// param merge, the six displayed columns in their original order (Time · Admin
+// · Role · Action · Resource · ID), the em-dash fallbacks, actionVariant()'s
+// substring classification, and BOTH date helpers unchanged — see the note on
+// relativeTime/exactTime below.
+//
+// Shape changed, the record did not: the console kit's ConsoleSection +
+// KpiStrip became the family's SectionHead + numbers strip, the desktop-only
+// <Table> and its md:hidden card twin collapsed into ONE grid that reads the
+// same at 375px and 1280px, the shadcn Badge became the v2 StateWord (text +
+// color, never color alone), and the <h1> title chrome is gone — the nav names
+// the page. One line was CUT rather than migrated: the footer "Back to
+// Dashboard" link. /admin has redirected to /admin/today since 2026-06-16, so
+// the word "Dashboard" named a screen that no longer exists.
 import { getAdminActions, type AdminActionRow } from '@/app/actions/admin-audit'
 import Link from 'next/link'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
-import { KpiStrip } from '@/components/console/KpiStrip'
+  Button,
+  ReportGrid,
+  ReportNumbers,
+  SectionHead,
+  StateWord,
+  TextField,
+  VerdictLine,
+  type AdminState,
+  type ReportColumn,
+} from '@/components/admin/v2'
 
 export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 25
 
-/** Pure presentational helpers — no data access, no business logic. */
+/**
+ * Pure presentational helpers — no data access, no business logic.
+ *
+ * NOT migrated to lib/format/date.ts, deliberately. formatDate() re-projects
+ * every instant into America/Los_Angeles; these two render in the runtime's own
+ * zone, which is UTC on Vercel. On an audit record that is a different printed
+ * timestamp for the same row, and the printed timestamp IS the record. The
+ * old-vs-new comparison is in the P11D migration report; the swap moves values,
+ * so the old helpers stay. This file is already carried in
+ * scripts/date-format-baseline.json, so nothing regresses.
+ */
 function relativeTime(iso: string): string {
   const then = new Date(iso).getTime()
   if (Number.isNaN(then)) return '—'
@@ -54,27 +84,22 @@ function actionVariant(
   return 'soft-neutral'
 }
 
-function EmptyState({ filtered }: { filtered: boolean }) {
-  return (
-    <Card>
-      <CardContent className="flex flex-col items-center justify-center gap-2 px-6 py-14 text-center">
-        <p className="text-base font-medium text-foreground">
-          {filtered ? 'No matching actions' : 'No actions recorded yet'}
-        </p>
-        <p className="max-w-sm text-sm text-muted-foreground">
-          {filtered
-            ? 'Try a different admin email or action type, or clear the filters.'
-            : 'Admin changes (create, update, delete) appear here as your team works. Nothing has been logged so far.'}
-        </p>
-        {filtered && (
-          <Button asChild variant="outline" size="sm" className="mt-2">
-            <Link href="/admin/audit-log">Clear filters</Link>
-          </Button>
-        )}
-      </CardContent>
-    </Card>
-  )
+/** The same four classes, spoken in the locked state vocabulary. */
+const STATE: Record<ReturnType<typeof actionVariant>, AdminState> = {
+  success: 'ok',
+  destructive: 'down',
+  default: 'accent',
+  'soft-neutral': 'waiting',
 }
+
+const COLUMNS: ReportColumn[] = [
+  { key: 'time', label: 'Time' },
+  { key: 'admin', label: 'Admin' },
+  { key: 'role', label: 'Role' },
+  { key: 'action', label: 'Action' },
+  { key: 'resource', label: 'Resource' },
+  { key: 'id', label: 'ID' },
+]
 
 export default async function AdminAuditLogPage({
   searchParams,
@@ -113,171 +138,166 @@ export default async function AdminAuditLogPage({
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Audit log</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Recent admin actions across the team — create, update, and delete events.
-        </p>
+    <div className="av2-scope" style={{ maxWidth: 1024, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={rows.length === 0 ? 'attention' : 'ok'}>
+          {rows.length === 0 ? (
+            <b>
+              {filtered
+                ? 'No admin action matches this filter.'
+                : 'No admin action has been recorded.'}
+            </b>
+          ) : (
+            <>
+              <b>
+                {rows.length} {rows.length === 1 ? 'action' : 'actions'} on page {pageNum + 1}
+                {filtered ? ', filtered' : ''}.
+              </b>{' '}
+              Newest first{hasNext ? '; more follow' : ''}.
+            </>
+          )}
+        </VerdictLine>
       </div>
 
-      {/* Glanceable summary */}
+      <form method="get" className="av2-rfilters">
+        <TextField
+          label="Admin email"
+          type="text"
+          name="admin"
+          defaultValue={adminEmail ?? ''}
+          placeholder="Filter by admin email"
+        />
+        <TextField
+          label="Action type"
+          type="text"
+          name="action"
+          defaultValue={actionType ?? ''}
+          placeholder="Filter by action type"
+        />
+        <div className="av2-wordrow" style={{ alignSelf: 'flex-end', paddingBottom: 2 }}>
+          <Button type="submit" touch>
+            Filter
+          </Button>
+          {filtered && (
+            <Link
+              href="/admin/audit-log"
+              className="av2-btn av2-btn--quiet av2-btn--touch"
+              style={{ textDecoration: 'none' }}
+            >
+              Clear
+            </Link>
+          )}
+        </div>
+      </form>
+
       {rows.length > 0 && (
-        <ConsoleSection title="Page summary">
-          <KpiStrip
+        <>
+          <SectionHead>This page</SectionHead>
+          <ReportNumbers
             items={[
-              { label: 'On this page', value: rows.length },
-              { label: 'Admins', value: distinctAdmins },
-              { label: 'Creates / approvals', value: createCount },
-              { label: 'Deletes / revokes', value: deleteCount },
+              { key: 'rows', label: 'On this page', value: String(rows.length) },
+              { key: 'admins', label: 'Admins', value: String(distinctAdmins) },
+              { key: 'creates', label: 'Creates / approvals', value: String(createCount) },
+              { key: 'deletes', label: 'Deletes / revokes', value: String(deleteCount) },
             ]}
           />
-        </ConsoleSection>
+        </>
       )}
 
-      <ConsoleSection title="Action log" count={filtered ? '(filtered)' : undefined}>
-        {/* Filter affordance */}
-        <form method="get" className="mb-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <Input
-            type="text"
-            name="admin"
-            defaultValue={adminEmail ?? ''}
-            placeholder="Filter by admin email"
-            aria-label="Filter by admin email"
-            className="h-11 sm:w-64"
-          />
-          <Input
-            type="text"
-            name="action"
-            defaultValue={actionType ?? ''}
-            placeholder="Filter by action type"
-            aria-label="Filter by action type"
-            className="h-11 sm:w-56"
-          />
-          <div className="flex gap-2">
-            <Button type="submit" variant="outline" className="h-11 flex-1 sm:flex-none">
-              Filter
-            </Button>
-            {filtered && (
-              <Button asChild variant="ghost" className="h-11 flex-1 sm:flex-none">
-                <Link href="/admin/audit-log">Clear</Link>
-              </Button>
-            )}
-          </div>
-        </form>
+      <SectionHead>Action log</SectionHead>
+      <ReportGrid
+        label="Admin action log"
+        columns={COLUMNS}
+        template="minmax(150px, 1.2fr) minmax(170px, 1.5fr) minmax(76px, 0.6fr) minmax(120px, 1fr) minmax(100px, 0.9fr) minmax(90px, 0.9fr)"
+        minWidth={780}
+        rows={rows.map((row) => ({
+          key: row.id,
+          cells: [
+            <time
+              key="t"
+              dateTime={row.created_at}
+              title={exactTime(row.created_at)}
+              style={{ fontVariantNumeric: 'tabular-nums' }}
+            >
+              {exactTime(row.created_at)}
+              <span style={{ display: 'block', color: 'var(--a-text-2)', fontSize: 'var(--a-text-xs)' }}>
+                {relativeTime(row.created_at)}
+              </span>
+            </time>,
+            <span key="a" style={{ overflowWrap: 'anywhere' }}>
+              {row.admin_email}
+            </span>,
+            row.role ?? '—',
+            <StateWord key="v" state={STATE[actionVariant(row.action_type)]}>
+              {row.action_type}
+            </StateWord>,
+            row.resource_type ?? '—',
+            <span key="i" style={{ overflowWrap: 'anywhere' }}>
+              {row.resource_id ?? '—'}
+            </span>,
+          ],
+        }))}
+        empty={
+          filtered ? (
+            <>
+              No matching actions. Try a different admin email or action type, or{' '}
+              <Link href="/admin/audit-log" style={{ color: 'var(--a-accent)' }}>
+                clear the filters
+              </Link>
+              .
+            </>
+          ) : (
+            'Admin changes (create, update, delete) appear here as your team works. Nothing has been logged so far.'
+          )
+        }
+      />
 
-        {rows.length === 0 ? (
-          <EmptyState filtered={filtered} />
+      <nav
+        aria-label="Pagination"
+        style={{
+          marginTop: 20,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+        }}
+      >
+        {pageNum > 0 ? (
+          <Link
+            href={`/admin/audit-log${filterQuery({ page: pageNum - 1 || undefined })}`}
+            className="av2-btn av2-btn--quiet av2-btn--touch"
+            style={{ textDecoration: 'none' }}
+          >
+            Previous
+          </Link>
         ) : (
-          <>
-            {/* Mobile: stacked entry cards (no horizontal table on phones) */}
-            <ul className="space-y-3 md:hidden">
-              {rows.map((row) => (
-                <li key={row.id}>
-                  <Card>
-                    <CardContent className="flex flex-col gap-2 p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <Badge variant={actionVariant(row.action_type)} className="max-w-full truncate">
-                          {row.action_type}
-                        </Badge>
-                        <time
-                          className="shrink-0 text-xs tabular-nums text-muted-foreground"
-                          dateTime={row.created_at}
-                          title={exactTime(row.created_at)}
-                        >
-                          {relativeTime(row.created_at)}
-                        </time>
-                      </div>
-                      <div className="text-sm font-medium text-foreground">
-                        {row.resource_type ?? 'Resource'}
-                        {row.resource_id ? (
-                          <span className="ml-1 font-normal text-muted-foreground">
-                            · {row.resource_id}
-                          </span>
-                        ) : null}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className="truncate">{row.admin_email}</span>
-                        {row.role ? (
-                          <Badge variant="soft-neutral" className="shrink-0">
-                            {row.role}
-                          </Badge>
-                        ) : null}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </li>
-              ))}
-            </ul>
-
-            {/* Desktop: full table (unchanged register) */}
-            <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted">
-                    <TableHead className="text-foreground">Time</TableHead>
-                    <TableHead className="text-foreground">Admin</TableHead>
-                    <TableHead className="text-foreground">Role</TableHead>
-                    <TableHead className="text-foreground">Action</TableHead>
-                    <TableHead className="text-foreground">Resource</TableHead>
-                    <TableHead className="text-foreground">ID</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
-                        {exactTime(row.created_at)}
-                      </TableCell>
-                      <TableCell className="font-medium text-foreground">{row.admin_email}</TableCell>
-                      <TableCell className="text-muted-foreground">{row.role ?? '—'}</TableCell>
-                      <TableCell>
-                        <Badge variant={actionVariant(row.action_type)}>{row.action_type}</Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{row.resource_type ?? '—'}</TableCell>
-                      <TableCell className="text-muted-foreground">{row.resource_id ?? '—'}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Pagination */}
-            <nav className="mt-5 flex items-center justify-between gap-3">
-              {pageNum > 0 ? (
-                <Button asChild variant="outline" className="h-11">
-                  <Link href={`/admin/audit-log${filterQuery({ page: pageNum - 1 || undefined })}`}>
-                    Previous
-                  </Link>
-                </Button>
-              ) : (
-                <Button variant="outline" className="h-11" disabled>
-                  Previous
-                </Button>
-              )}
-              <span className="text-sm tabular-nums text-muted-foreground">Page {pageNum + 1}</span>
-              {hasNext ? (
-                <Button asChild variant="outline" className="h-11">
-                  <Link href={`/admin/audit-log${filterQuery({ page: pageNum + 1 })}`}>Next</Link>
-                </Button>
-              ) : (
-                <Button variant="outline" className="h-11" disabled>
-                  Next
-                </Button>
-              )}
-            </nav>
-          </>
+          <Button variant="quiet" touch disabled>
+            Previous
+          </Button>
         )}
-      </ConsoleSection>
-
-      <p className="text-sm">
-        <Link
-          href="/admin"
-          className="text-muted-foreground underline-offset-4 hover:underline"
+        <span
+          style={{
+            fontSize: 'var(--a-text-sm)',
+            color: 'var(--a-text-2)',
+            fontVariantNumeric: 'tabular-nums',
+          }}
         >
-          Back to Dashboard
-        </Link>
-      </p>
+          Page {pageNum + 1}
+        </span>
+        {hasNext ? (
+          <Link
+            href={`/admin/audit-log${filterQuery({ page: pageNum + 1 })}`}
+            className="av2-btn av2-btn--quiet av2-btn--touch"
+            style={{ textDecoration: 'none' }}
+          >
+            Next
+          </Link>
+        ) : (
+          <Button variant="quiet" touch disabled>
+            Next
+          </Button>
+        )}
+      </nav>
     </div>
   )
 }

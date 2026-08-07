@@ -14,9 +14,24 @@
  *
  * Download URLs are minted at render and expire in 5 minutes, so a copied
  * link does not become a permanent public handle on broker work product.
+ *
+ * P11D: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Carried over verbatim: requireAdminPage('content.view'), the resolve-by-EMAIL
+ * broker lookup and its superuser reasoning, listBrokerDeliverables(brokerSlug),
+ * signDeliverableDownload(brokerSlug, actionId, filename) with the parts-not-path
+ * contract, the default-deny isShareableToSocial / captionFor /
+ * shareableTypeLabel derivation, formatSize, formatDate, the `download`
+ * attribute, and the DeliverableShareBar mount with the same three props.
+ *
+ * Shape changed, data did not: the shadcn Card + the desktop-only <Table> and
+ * its md:hidden card twin collapsed into ONE list of rows that reads the same
+ * at 375px and 1280px, the <h1> title chrome is gone (the nav names the page),
+ * and a FAILED listing now says so instead of rendering as an empty library.
+ * Not ReportGrid: a shareable row carries a full-width DeliverableShareBar,
+ * which the grid has no sub-row to hold — the legacy table needed a colSpan=4
+ * row for exactly that.
  */
 
-import { Fragment } from 'react'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getBrokerSelfRecordByEmail } from '@/lib/data'
 import { formatDate } from '@/lib/format/date'
@@ -27,9 +42,7 @@ import {
   shareableTypeLabel,
 } from '@/lib/marketing-brain/deliverable-share'
 import { DeliverableShareBar } from '@/components/admin/content-library/DeliverableShareBar'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { ReportError, SectionHead, VerdictLine } from '@/components/admin/v2'
 
 export const dynamic = 'force-dynamic'
 
@@ -53,7 +66,11 @@ export default async function ContentLibraryPage() {
     | null
   const brokerSlug = broker?.slug ?? null
   const displayName = broker?.display_name ?? null
-  const items = brokerSlug ? await listBrokerDeliverables(brokerSlug) : []
+  // A failed listing returns null, which reads differently from an empty
+  // library: an empty list means "no producer run has finished", and the
+  // broker acts on that. Rendering a read failure as emptiness is the §0 lie
+  // this migration removes.
+  const items = brokerSlug ? await listBrokerDeliverables(brokerSlug).catch(() => null) : []
 
   // Sign each row for THIS broker. The action takes the PARTS, never a path —
   // the object key is rebuilt server-side from the session's broker slug, so
@@ -64,11 +81,13 @@ export default async function ContentLibraryPage() {
   // so the share bar cannot expose a client's private pricing document to a
   // public feed (ci:deliverable-share-safety).
   const rows = await Promise.all(
-    items.map(async (item) => {
+    (items ?? []).map(async (item) => {
       const shareable = isShareableToSocial(item.filename)
       return {
         ...item,
-        url: brokerSlug ? await signDeliverableDownload(brokerSlug, item.actionId, item.filename) : null,
+        url: brokerSlug
+          ? await signDeliverableDownload(brokerSlug, item.actionId, item.filename).catch(() => null)
+          : null,
         shareable,
         caption: shareable ? captionFor(item.filename) : '',
         typeLabel: shareable ? shareableTypeLabel(item.filename) : '',
@@ -77,107 +96,84 @@ export default async function ContentLibraryPage() {
   )
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="font-display text-2xl text-foreground">Content library</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {brokerSlug
-            ? `Finished deliverables produced for ${displayName ?? brokerSlug}. Download links expire after five minutes.`
-            : 'Your login is not linked to a broker record, so there is no library to show.'}
-        </p>
+    <div className="av2-scope" style={{ maxWidth: 860, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={items === null || !brokerSlug ? 'attention' : 'ok'}>
+          {!brokerSlug ? (
+            <b>Your login is not linked to a broker record, so there is no library to show.</b>
+          ) : items === null ? (
+            <b>The library could not be read. Nothing below is a listing of your work.</b>
+          ) : (
+            <>
+              <b>
+                {rows.length} {rows.length === 1 ? 'deliverable' : 'deliverables'} for{' '}
+                {displayName ?? brokerSlug}.
+              </b>{' '}
+              Download links expire five minutes after this page loads.
+            </>
+          )}
+        </VerdictLine>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {rows.length} {rows.length === 1 ? 'deliverable' : 'deliverables'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      {items === null ? <ReportError what="The content library" href="/admin/content-library" /> : null}
+
+      {brokerSlug && items !== null ? (
+        <>
+          <SectionHead>Finished deliverables</SectionHead>
           {rows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
+            <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
               Nothing here yet. A deliverable lands in this library when a producer run finishes.
             </p>
           ) : (
-            <>
-            {/* Mobile: a card per deliverable. The table below is desktop-only. */}
-            <ul className="space-y-3 md:hidden">
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 12 }}>
               {rows.map((row) => (
-                <li key={row.path} className="rounded-lg border border-border p-3">
-                  <p className="font-medium break-all">{row.filename}</p>
-                  <p className="mt-1 text-sm tabular-nums text-muted-foreground">
-                    {formatDate(row.createdAt)} · {formatSize(row.sizeBytes)}
-                  </p>
-                  <div className="mt-3">
+                <li key={row.path} className="av2-pane">
+                  <div>
+                    <p style={{ fontWeight: 600, overflowWrap: 'anywhere', margin: 0 }}>
+                      {row.filename}
+                    </p>
+                    <p
+                      style={{
+                        margin: '2px 0 0',
+                        fontSize: 'var(--a-text-sm)',
+                        color: 'var(--a-text-2)',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}
+                    >
+                      {formatDate(row.createdAt)} · {formatSize(row.sizeBytes)}
+                    </p>
+                  </div>
+
+                  <div className="av2-wordrow">
                     {row.url ? (
-                      <Button asChild variant="outline" size="sm">
-                        <a href={row.url} download>
-                          Download
-                        </a>
-                      </Button>
+                      <a
+                        href={row.url}
+                        download
+                        className="av2-btn av2-btn--quiet"
+                        style={{ textDecoration: 'none' }}
+                      >
+                        Download
+                      </a>
                     ) : (
-                      <span className="text-sm text-muted-foreground">Unavailable</span>
+                      <span style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+                        Unavailable
+                      </span>
                     )}
                   </div>
+
                   {row.shareable && (
-                    <DeliverableShareBar caption={row.caption} typeLabel={row.typeLabel} downloadUrl={row.url} />
+                    <DeliverableShareBar
+                      caption={row.caption}
+                      typeLabel={row.typeLabel}
+                      downloadUrl={row.url}
+                    />
                   )}
                 </li>
               ))}
             </ul>
-            <div className="hidden md:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>File</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Size</TableHead>
-                  <TableHead className="text-right">Download</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((row) => (
-                  <Fragment key={row.path}>
-                    <TableRow>
-                      <TableCell className="font-medium">{row.filename}</TableCell>
-                      <TableCell className="tabular-nums text-muted-foreground">
-                        {formatDate(row.createdAt)}
-                      </TableCell>
-                      <TableCell className="tabular-nums text-muted-foreground">
-                        {formatSize(row.sizeBytes)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {row.url ? (
-                          <Button asChild variant="outline" size="sm">
-                            <a href={row.url} download>
-                              Download
-                            </a>
-                          </Button>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">Unavailable</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                    {row.shareable && (
-                      <TableRow>
-                        <TableCell colSpan={4} className="pt-0">
-                          <DeliverableShareBar
-                            caption={row.caption}
-                            typeLabel={row.typeLabel}
-                            downloadUrl={row.url}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </Fragment>
-                ))}
-              </TableBody>
-            </Table>
-            </div>
-            </>
           )}
-        </CardContent>
-      </Card>
+        </>
+      ) : null}
     </div>
   )
 }
