@@ -1,14 +1,36 @@
+// @no-parity — internal admin surface
+//
+// Approval queue — 11E: migrated to the LOCKED admin v2 language
+// (design_system/admin/ADMIN_UI.md). Presentation only. This is the human gate
+// in front of publishing (CLAUDE.md §1) — nothing here may change what the
+// queue reads or what approving does.
+//
+// Carried over verbatim: requireAdminPage('approvals.act'), the
+// marketing_brain_actions select + `.in('status', ['ready','needs_changes'])` +
+// order + limit(100), the priority_score urgency branch, getParam, the
+// cat/prefix/urgency filtering, the categories + actionTypePrefixes lists, and
+// the FilterSidebar / BulkSelectionProvider / ActionCard / BulkActionBar mounts
+// (the last two are required by ci:bulk-approval-wired).
+//
+// Shape changed, data did not: ConsoleSection gave way to VerdictLine +
+// SectionHead, and a failed read now returns null and says so instead of
+// rendering the same empty queue an all-clear renders. Cut: "New rows appear in
+// real time via Supabase Realtime (see ApprovalQueueRealtime below)" — no
+// component by that name exists anywhere in the repo and nothing on this page
+// subscribes to anything.
 import { Suspense } from 'react'
-import { Skeleton } from '@/components/ui/skeleton'
 import { createServiceClient } from '@/lib/supabase/service'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { ActionCard, type BrainAction } from './_components/ActionCard'
 import { FilterSidebar } from './_components/FilterSidebar'
 import { BulkSelectionProvider, BulkActionBar } from './_components/BulkSelection'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { ReportError, ReportSkeleton, SectionHead, VerdictLine } from '@/components/admin/v2'
 
 export const metadata = { title: 'Approval Queue | Admin' }
 export const dynamic = 'force-dynamic'
+
+/** The read cap the query below enforces — quoted in the verdict when it binds. */
+const QUEUE_LIMIT = 100
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[]>>
@@ -24,7 +46,7 @@ async function fetchActions(
   filterCats: string[],
   filterPrefixes: string[],
   filterUrgency: string[],
-): Promise<BrainAction[]> {
+): Promise<BrainAction[] | null> {
   const service = createServiceClient()
 
   let query = service
@@ -34,7 +56,7 @@ async function fetchActions(
     )
     .in('status', ['ready', 'needs_changes'])
     .order('executed_at', { ascending: false })
-    .limit(100)
+    .limit(QUEUE_LIMIT)
 
   // Urgency filter via priority_score ranges
   if (filterUrgency.length > 0 && filterUrgency.length < 3) {
@@ -51,7 +73,7 @@ async function fetchActions(
   const { data, error } = await query
   if (error) {
     console.error('[approval-queue] fetch error:', error)
-    return []
+    return null
   }
 
   let rows = (data ?? []) as BrainAction[]
@@ -95,6 +117,9 @@ export default async function ApprovalQueuePage({ searchParams }: PageProps) {
   const filterUrgency = getParam(params, 'urgency')
 
   const actions = await fetchActions(filterCats, filterPrefixes, filterUrgency)
+  const failed = actions === null
+  const rows = actions ?? []
+  const filtered = filterCats.length + filterPrefixes.length + filterUrgency.length > 0
 
   const categories = [
     'Content Producers',
@@ -106,42 +131,60 @@ export default async function ApprovalQueuePage({ searchParams }: PageProps) {
   const actionTypePrefixes = ['content', 'site', 'ops', 'comms', 'analyze']
 
   return (
-    <div className="space-y-6">
-      <ConsoleSection
-        title="Pending approvals"
-        count={`(${actions.length})`}
-      >
-        <p className="mb-4 text-sm text-muted-foreground">
-          {actions.length} item{actions.length !== 1 ? 's' : ''} awaiting review. New rows
-          appear in real time via Supabase Realtime (see{' '}
-          <span className="font-medium">ApprovalQueueRealtime</span> below).
-        </p>
-        <div className="flex gap-8">
-          {/* Filter sidebar */}
-          <Suspense fallback={<Skeleton className="h-64 w-52" />}>
-            <FilterSidebar
-              categories={categories}
-              actionTypePrefixes={actionTypePrefixes}
-            />
-          </Suspense>
+    <div className="av2-scope" style={{ maxWidth: 1040, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={failed || rows.length > 0 ? 'attention' : 'ok'}>
+          {failed ? (
+            <b>The approval queue could not be read. Nothing below is the queue.</b>
+          ) : rows.length === 0 ? (
+            <>
+              <b>Nothing is waiting for your approval.</b>
+              {filtered ? ' No row matches the filters set below.' : null}
+            </>
+          ) : (
+            <>
+              <b>
+                {rows.length} item{rows.length === 1 ? '' : 's'} waiting for your approval.
+              </b>
+              {rows.length === QUEUE_LIMIT ? ` The queue reads ${QUEUE_LIMIT} at a time.` : null}
+            </>
+          )}
+        </VerdictLine>
+      </div>
 
-          {/* Action cards */}
-          <div className="min-w-0 flex-1 space-y-4">
-            {actions.length === 0 ? (
-              <div className="rounded-lg border border-border bg-card py-20 text-center text-muted-foreground">
-                Nothing pending. The queue is clear.
-              </div>
-            ) : (
-              <BulkSelectionProvider allIds={actions.map((a) => a.id)}>
-                {actions.map((action) => (
-                  <ActionCard key={action.id} action={action} />
-                ))}
-                <BulkActionBar />
-              </BulkSelectionProvider>
-            )}
-          </div>
+      {failed ? <ReportError what="The approval queue" href="/admin/approval-queue" /> : null}
+
+      <SectionHead>Pending approvals</SectionHead>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
+        {/* Filter sidebar */}
+        <Suspense fallback={<ReportSkeleton rows={4} />}>
+          <FilterSidebar
+            categories={categories}
+            actionTypePrefixes={actionTypePrefixes}
+          />
+        </Suspense>
+
+        {/* Action cards */}
+        <div style={{ flex: '1 1 320px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {rows.length === 0 ? (
+            <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', padding: '32px 0' }}>
+              {failed
+                ? 'The read failed, so this queue is unknown — not empty.'
+                : filtered
+                  ? 'No ready or needs-changes row matches these filters. Clear them to see the whole queue.'
+                  : 'No row is in ready or needs-changes. Producers put drafts here when they finish.'}
+            </p>
+          ) : (
+            <BulkSelectionProvider allIds={rows.map((a) => a.id)}>
+              {rows.map((action) => (
+                <ActionCard key={action.id} action={action} />
+              ))}
+              <BulkActionBar />
+            </BulkSelectionProvider>
+          )}
         </div>
-      </ConsoleSection>
+      </div>
     </div>
   )
 }

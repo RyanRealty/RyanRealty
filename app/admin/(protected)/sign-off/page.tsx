@@ -1,34 +1,32 @@
 // @no-parity — internal admin tool (principal broker sign-off queue)
+//
+// Sign-off queue — 11E: migrated to the LOCKED admin v2 language
+// (design_system/admin/ADMIN_UI.md). Presentation only. The stamp itself lives
+// in SignOffControls → recordPrincipalReview and was not touched.
+//
+// Carried over verbatim: getPrincipalSignOffQueue, the authorized branch, the
+// overdue-then-soonest sort, MAX_DEALS = 6 with the "see all" spill link, the
+// per-item SignOffControls mount, every href, and the OAR 863-015-0140 note.
+//
+// Shape changed, data did not: both page-title h1s are gone (the nav names the
+// page, and the unauthorized branch answers in one line), KpiStrip became the
+// v2 numbers strip with the same three figures, each checklist item is a queue
+// row whose kind word IS its deadline state, and a document name now LINKS to
+// its signature page instead of revealing it on hover — same signed URL, but a
+// door instead of a hover-only affordance (ADMIN_UI §3 rule 4), and reachable
+// by keyboard and on a phone.
 import Link from 'next/link'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
-import { KpiStrip } from '@/components/console/KpiStrip'
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
+import {
+  QueueRow,
+  ReportError,
+  ReportNumbers,
+  SectionHead,
+  StateWord,
+  VerdictLine,
+} from '@/components/admin/v2'
 import { getPrincipalSignOffQueue, type SignOffDeal } from '@/app/actions/tc-signoff'
 import type { ReviewDeadline } from '@/lib/tc/banking-days'
-import { cn } from '@/lib/utils'
 import { SignOffControls } from './SignOffControls'
-
-function DeadlinePill({ deadline }: { deadline: ReviewDeadline | null }) {
-  if (!deadline) {
-    return <Badge variant="outline" className="text-[11px] text-muted-foreground">no acceptance date</Badge>
-  }
-  const n = deadline.bankingDaysRemaining
-  if (deadline.overdue) {
-    return (
-      <Badge className="bg-destructive/15 text-[11px] tabular-nums text-destructive">
-        {Math.abs(n)} day{Math.abs(n) === 1 ? '' : 's'} overdue
-      </Badge>
-    )
-  }
-  const tone = n <= 2 ? 'bg-warning/20 text-warning-foreground' : 'bg-muted text-muted-foreground'
-  return (
-    <Badge className={cn('text-[11px] tabular-nums', tone)}>
-      due in {n} day{n === 1 ? '' : 's'}
-    </Badge>
-  )
-}
 
 export const dynamic = 'force-dynamic'
 
@@ -52,90 +50,65 @@ function soonestRank(deal: SignOffDeal): number {
   return Math.min(...deal.items.map((i) => deadlineRank(i.deadline)))
 }
 
-
-function DealCard({ deal }: { deal: SignOffDeal }) {
-  const overdue = dealHasOverdue(deal)
-  // Most urgent item first within the deal.
-  const items = [...deal.items].sort((a, b) => deadlineRank(a.deadline) - deadlineRank(b.deadline))
-  return (
-    <Card className={cn(overdue && 'border-destructive/40')}>
-      <CardContent className="space-y-3 pt-5">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
-          <Link
-            href={`/admin/deals/${encodeURIComponent(deal.propertyKey)}`}
-            className="text-base font-semibold text-foreground hover:underline"
-          >
-            {deal.address}
-          </Link>
-          <span className="text-xs text-muted-foreground">
-            {deal.broker ?? '—'} · {STAGE_LABEL[deal.stage] ?? deal.stage}
-          </span>
-        </div>
-        <ul className="divide-y divide-border">
-          {items.map((item) => (
-            <li
-              key={item.itemId}
-              className="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-3"
-            >
-              <div className="min-w-0">
-                <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
-                  {item.name}
-                  <DeadlinePill deadline={item.deadline} />
-                </p>
-                {item.docs.length ? (
-                  <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1">
-                    {item.docs.map((doc) =>
-                      doc.thumbUrl ? (
-                        <HoverCard key={doc.id} openDelay={150} closeDelay={80}>
-                          <HoverCardTrigger asChild>
-                            <span className="cursor-zoom-in truncate text-xs text-muted-foreground underline decoration-dotted underline-offset-2">
-                              {doc.name}
-                            </span>
-                          </HoverCardTrigger>
-                          <HoverCardContent side="right" align="start" className="w-auto max-w-[480px] p-2">
-                            {/* eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL */}
-                            <img
-                              src={doc.thumbUrl}
-                              alt={`Signature page of ${doc.name}`}
-                              className="max-h-[440px] w-auto rounded-md border border-border bg-card"
-                            />
-                          </HoverCardContent>
-                        </HoverCard>
-                      ) : (
-                        <span key={doc.id} className="truncate text-xs text-muted-foreground">
-                          {doc.name}
-                        </span>
-                      ),
-                    )}
-                  </div>
-                ) : (
-                  <Badge variant="outline" className="mt-1 border-warning text-foreground">
-                    no document attached
-                  </Badge>
-                )}
-              </div>
-              <SignOffControls itemId={item.itemId} />
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
-  )
+/** The deadline as the row's kind word + age text (ADMIN_UI pattern 1). */
+function deadlineWords(deadline: ReviewDeadline | null): {
+  kind: string
+  tone: 'down' | 'slow' | 'waiting'
+  age: string
+  hot: boolean
+} {
+  if (!deadline) return { kind: 'No date', tone: 'waiting', age: 'no acceptance date', hot: false }
+  const n = deadline.bankingDaysRemaining
+  if (deadline.overdue) {
+    const d = Math.abs(n)
+    return { kind: 'Overdue', tone: 'down', age: `${d} day${d === 1 ? '' : 's'} overdue`, hot: true }
+  }
+  return {
+    kind: n <= 2 ? 'Due soon' : 'Waiting',
+    tone: n <= 2 ? 'slow' : 'waiting',
+    age: `due in ${n} day${n === 1 ? '' : 's'}`,
+    hot: false,
+  }
 }
 
 const MAX_DEALS = 6
+const SCOPE: React.CSSProperties = { maxWidth: 860, margin: '0 auto', padding: 16 }
+const DEALHEAD: React.CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'baseline',
+  gap: 8,
+  margin: '16px 0 6px',
+}
+const LANE: React.CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'baseline',
+  justifyContent: 'space-between',
+  gap: 12,
+}
 
 export default async function SignOffPage() {
-  const queue = await getPrincipalSignOffQueue()
+  const queue = await getPrincipalSignOffQueue().catch(() => null)
+
+  if (queue === null) {
+    return (
+      <div className="av2-scope" style={SCOPE}>
+        <VerdictLine tone="attention">
+          <b>The sign-off queue could not be read. Nothing below is the queue.</b>
+        </VerdictLine>
+        <ReportError what="The sign-off queue" href="/admin/sign-off" />
+      </div>
+    )
+  }
 
   if (!queue.authorized) {
     return (
-      <main className="space-y-4">
-        <h1 className="text-2xl font-bold text-foreground">Sign-off queue</h1>
-        <p className="text-sm text-muted-foreground">
-          This is the principal broker&apos;s review queue. You don&apos;t have access.
-        </p>
-      </main>
+      <div className="av2-scope" style={SCOPE}>
+        <VerdictLine tone="attention">
+          <b>This is the principal broker&apos;s review queue.</b> Your account cannot open it.
+        </VerdictLine>
+      </div>
     )
   }
 
@@ -150,52 +123,118 @@ export default async function SignOffPage() {
   const hiddenCount = sortedDeals.length - visibleDeals.length
 
   return (
-    <main className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-bold text-foreground">Sign-off queue</h1>
-        <p className="text-sm text-muted-foreground">
-          Documents awaiting your principal-broker review across every broker&apos;s live deals.
-        </p>
-      </header>
+    <div className="av2-scope" style={SCOPE}>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={queue.totalItems > 0 ? 'attention' : 'ok'}>
+          {queue.totalItems === 0 ? (
+            <b>Nothing is waiting on your sign-off.</b>
+          ) : (
+            <>
+              <b>
+                {queue.totalItems} item{queue.totalItems === 1 ? '' : 's'} waiting on your review
+                across {queue.deals.length} deal{queue.deals.length === 1 ? '' : 's'}.
+              </b>{' '}
+              {queue.overdueItems > 0
+                ? `${queue.overdueItems} past the 7-banking-day deadline.`
+                : 'None past the 7-banking-day deadline.'}
+            </>
+          )}
+        </VerdictLine>
+      </div>
 
-      <KpiStrip items={[
-        { label: 'Items pending', value: String(queue.totalItems) },
-        { label: 'Past 7-day deadline', value: String(queue.overdueItems) },
-        { label: 'Deals', value: String(queue.deals.length) },
-      ]} />
+      <ReportNumbers
+        items={[
+          { key: 'pending', label: 'Items pending', value: String(queue.totalItems) },
+          { key: 'overdue', label: 'Past the 7-banking-day deadline', value: String(queue.overdueItems) },
+          { key: 'deals', label: 'Deals', value: String(queue.deals.length) },
+        ]}
+      />
 
-      {queue.deals.length === 0 ? (
-        <Card>
-          <CardContent className="space-y-1 py-12 text-center">
-            <p className="text-sm font-medium text-foreground">All caught up</p>
-            <p className="text-sm text-muted-foreground">Nothing is awaiting your sign-off.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <ConsoleSection
-          title={queue.overdueItems > 0 ? 'Most urgent first' : 'Awaiting review'}
-          action={<Link href="/admin/deals" className="text-xs font-medium text-primary hover:underline">All deals →</Link>}
-        >
+      {queue.deals.length === 0 ? null : (
+        <>
+          <div style={LANE}>
+            <SectionHead>{queue.overdueItems > 0 ? 'Most urgent first' : 'Awaiting review'}</SectionHead>
+            <Link href="/admin/deals" style={{ color: 'var(--a-accent)', fontSize: 'var(--a-text-xs)' }}>
+              All deals
+            </Link>
+          </div>
 
-          {visibleDeals.map((deal) => (
-            <DealCard key={deal.propertyKey} deal={deal} />
-          ))}
+          {visibleDeals.map((deal) => {
+            // Most urgent item first within the deal.
+            const items = [...deal.items].sort(
+              (a, b) => deadlineRank(a.deadline) - deadlineRank(b.deadline),
+            )
+            return (
+              <section key={deal.propertyKey} aria-label={deal.address}>
+                <p style={DEALHEAD}>
+                  <Link
+                    href={`/admin/deals/${encodeURIComponent(deal.propertyKey)}`}
+                    style={{ color: 'var(--a-accent)', fontWeight: 600 }}
+                  >
+                    {deal.address}
+                  </Link>
+                  <span style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+                    {deal.broker ?? '—'} · {STAGE_LABEL[deal.stage] ?? deal.stage}
+                  </span>
+                </p>
+                <ul className="av2-queue">
+                  {items.map((item) => {
+                    const w = deadlineWords(item.deadline)
+                    return (
+                      <QueueRow
+                        key={item.itemId}
+                        kind={w.kind}
+                        kindTone={w.tone}
+                        age={w.age}
+                        hot={w.hot}
+                        title={item.name}
+                        context={
+                          item.docs.length ? (
+                            <span style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 12px' }}>
+                              {item.docs.map((doc) =>
+                                doc.thumbUrl ? (
+                                  <a
+                                    key={doc.id}
+                                    href={doc.thumbUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    style={{ color: 'var(--a-accent)' }}
+                                  >
+                                    {doc.name}
+                                  </a>
+                                ) : (
+                                  <span key={doc.id}>{doc.name}</span>
+                                ),
+                              )}
+                            </span>
+                          ) : (
+                            <StateWord state="slow">No document attached</StateWord>
+                          )
+                        }
+                        action={<SignOffControls itemId={item.itemId} />}
+                      />
+                    )
+                  })}
+                </ul>
+              </section>
+            )
+          })}
 
           {hiddenCount > 0 ? (
-            <Link
-              href="/admin/deals"
-              className="flex h-11 items-center justify-center rounded-xl border border-border bg-card text-sm font-medium text-primary transition-colors hover:bg-muted"
-            >
-              See all {sortedDeals.length} deals →
-            </Link>
+            <p>
+              <Link href="/admin/deals" style={{ color: 'var(--a-accent)' }}>
+                See all {sortedDeals.length} deals
+              </Link>
+            </p>
           ) : null}
-        </ConsoleSection>
+        </>
       )}
 
-      <p className="text-xs text-muted-foreground">
-        Oregon requires review of each document of agreement within 7 banking days (OAR 863-015-0140).
-        Signing off here records your name and the review date.
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 24 }}>
+        This queue holds every broker&apos;s live deals — pre-contract, active listing, and under
+        contract. Oregon requires review of each document of agreement within 7 banking days (OAR
+        863-015-0140). Signing off here records your name and the review date.
       </p>
-    </main>
+    </div>
   )
 }

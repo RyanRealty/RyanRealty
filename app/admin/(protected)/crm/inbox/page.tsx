@@ -1,17 +1,17 @@
 // @no-parity — internal admin surface, no public mockup contract
 /**
- * CRM Inbox — the unified communications hub, rebuilt to spec §08 (FUB parity).
+ * CRM Inbox — 11E: migrated to the LOCKED admin v2 language
+ * (design_system/admin/ADMIN_UI.md). Presentation only.
  *
- * Three-panel layout (spec §2): folder tree (My Inbox / Company × the five FUB
- * folders) | thread list (All/Unread + channel Filter + bulk select) | reading
- * pane (thread header w/ assignee + Close/Reopen, rich thread body, inline
- * reply compose, persistent note tray) + collapsible contact sidebar.
- *
- * Every send routes through the EXISTING suppression/quiet-hours-gated actions
- * (sendCrmSmsAction / sendCrmEmailAction) — this page never adds a send path.
- * Mobile (< md) is the §26 FUB-iOS inbox (MobileInbox list + MobileThread
- * pushed detail) with the §27 compose surfaces (MobileComposeSheet FAB, AI
- * pill strip, calling-method sheet) — same gated actions, phone-first layout.
+ * Do not break, in this order:
+ *  - Sends route ONLY through sendCrmSmsAction / sendCrmEmailAction. The ONE
+ *    direct sendEmail is the broker @mention notice, and ci:email-send-gated
+ *    keys its allowlist entry to that call's LINE NUMBER (411).
+ *  - ci:crm-screen-parity "inbox-desktop" requires these names to stay in this
+ *    file: InboxFolderRail, InboxThreadList, InboxThreadView, ThreadHeader,
+ *    InlineReply, NoteTray, ContactSidebar, AddPersonForm, getInboxFolderQueue,
+ *    getConversationThreadFull, getInboxContactCard.
+ *  - MobileBranch (§26/§27) owns < md; the three-pane grid owns >= md.
  */
 import { redirect } from 'next/navigation'
 import { requireAdminPage } from '@/lib/admin/require-admin'
@@ -59,8 +59,8 @@ import { CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
 import { getSignatureForMailbox } from '@/lib/crm/email-signature'
 import { sendEmail } from '@/lib/resend'
 import { formatDateTime } from '@/lib/format/date'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
+// v2 language (ADMIN_UI.md): the pane label + the failed-send line.
+import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import InboxFolderRail from '@/components/admin/crm/inbox/InboxFolderRail'
 import InboxThreadList, { type ThreadListRow } from '@/components/admin/crm/inbox/InboxThreadList'
 import InboxThreadView, { type InboxThreadViewItem } from '@/components/admin/crm/inbox/InboxThreadView'
@@ -441,11 +441,11 @@ export default async function CrmInboxPage({
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
         <InboxThreadView items={openPane.items} personName={openPane.name} />
       </div>
-      <div className="border-t border-border px-4 py-3">
+      <div className="px-4 py-3" style={{ borderTop: '1px solid var(--a-border)' }}>
         {sendError ? (
-          <Alert variant="destructive" className="mb-3">
-            <AlertDescription>{sendError}</AlertDescription>
-          </Alert>
+          <div style={{ marginBottom: 12 }}>
+            <VerdictLine tone="attention">{sendError}</VerdictLine>
+          </div>
         ) : null}
         <InlineReply
           smsAction={sendSmsForm.bind(null, openPane.personId)}
@@ -477,7 +477,10 @@ export default async function CrmInboxPage({
       />
     </div>
   ) : (
-    <div className="flex min-w-0 flex-1 items-center justify-center py-24 text-sm text-muted-foreground">
+    <div
+      className="flex min-w-0 flex-1 items-center justify-center py-24"
+      style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}
+    >
       Select a conversation to read the thread and reply.
     </div>
   )
@@ -511,11 +514,9 @@ export default async function CrmInboxPage({
   ) : null
 
   return (
-    <main className="mx-auto w-full px-3 py-6 sm:px-4">
-      {/*
-        ── Mobile (< md): §26 FUB-iOS inbox (MobileBranch → MobileInbox list /
-           MobileThread pushed detail / MobileComposeSheet FAB, §27). ──
-      */}
+    // ConsoleShell owns the <main> landmark for every (protected) page.
+    <div className="av2-scope mx-auto w-full px-3 py-6 sm:px-4">
+      {/* Mobile (< md): §26/§27 — MobileInbox list, MobileThread detail, compose FAB. */}
       <MobileBranch
         pane={openPane}
         rows={mobileRows}
@@ -555,11 +556,10 @@ export default async function CrmInboxPage({
         }}
       />
 
-      {/*
-        ── Desktop (≥ md): FUB three-panel layout (spec §2) ──
-        folder tree (~15%) | thread list (~28%) | reading pane + contact sidebar
-      */}
+      {/* Desktop (>= md): folder tree | thread list | reading pane + contact sidebar. */}
       <div className="hidden md:block">
+        {/* divide-border stays: Tailwind v4 divide-* falls back to currentColor
+            without it, which would paint the pane rules in the text colour. */}
         <div className="grid h-[calc(100vh-8.5rem)] grid-cols-[210px_minmax(280px,340px)_minmax(0,1fr)] divide-x divide-border overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           {/* Pane 1: folder tree */}
           <InboxFolderRail
@@ -573,11 +573,11 @@ export default async function CrmInboxPage({
 
           {/* Pane 2: thread list */}
           <div data-tour="inbox-threads" className="flex min-h-0 flex-col">
-            <div className="border-b border-border px-3 py-2">
-              <h1 className="text-sm font-semibold text-foreground">
+            <div className="px-3 py-2" style={{ borderBottom: '1px solid var(--a-border)' }}>
+              <SectionHead>
                 {scopeKey === 'me' ? 'My Inbox' : 'Company'} · {FOLDER_TITLES[folder]}
-              </h1>
-              <p className="text-xs text-muted-foreground tabular-nums">
+              </SectionHead>
+              <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', fontVariantNumeric: 'tabular-nums' }}>
                 {counts[scopeKey === 'me' ? 'me' : 'company'][folder]}{' '}
                 {folder === 'drafts' ? 'drafts' : 'conversations'}
               </p>
@@ -602,6 +602,6 @@ export default async function CrmInboxPage({
           </div>
         </div>
       </div>
-    </main>
+    </div>
   )
 }
