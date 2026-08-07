@@ -7,16 +7,19 @@
  * The number that matters: conversion rate. Tells Matt which LP to send
  * paid spend to and which to fix or kill. Pairs with the funnel-breakdown
  * page which shows WHY the conversion rate is what it is.
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Presentation only — the visitor_sessions read, the 10,000-row page cap, the
+ * lpVariantFromPath mapping, every rate computation and the best/worst gap
+ * threshold are carried over verbatim.
  */
 import { Suspense } from 'react'
+import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
-import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
-import { DateRangePicker } from '../_components/DateRangePicker'
+import { SectionHead, StateWord, VerdictLine } from '@/components/admin/v2'
+import { DataList, Figures, Loading, Trouble } from '../_components/v2/kit'
+import { RangeControl } from '../_components/v2/RangeControl'
 import { resolveDateRange } from '../_lib/queries'
 
 export const dynamic = 'force-dynamic'
@@ -86,7 +89,12 @@ async function LpLeaderboard({ range }: { range: { startDate: string; endDate: s
     10000,
   )
   if (error) {
-    return <Card><CardContent className="p-6 text-sm text-destructive">Could not load sessions: {error.message}</CardContent></Card>
+    return (
+      <Trouble>
+        Could not load sessions: {error.message}. Nothing on this page is trustworthy until that read succeeds — retry,
+        then check the service-role key.
+      </Trouble>
+    )
   }
 
   const byVariant = new Map<string, LpRow>()
@@ -135,11 +143,9 @@ async function LpLeaderboard({ range }: { range: { startDate: string; endDate: s
 
   if (rows.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-6 text-sm text-muted-foreground">
-          No LP sessions captured in the last 30 days yet. Once visitors arrive at any /lp/[variant] page and consent to tracking, the leaderboard fills in.
-        </CardContent>
-      </Card>
+      <div className="av2-empty">
+        No LP sessions captured in the last 30 days yet. Once visitors arrive at any /lp/[variant] page and consent to tracking, the leaderboard fills in.
+      </div>
     )
   }
 
@@ -147,6 +153,8 @@ async function LpLeaderboard({ range }: { range: { startDate: string; endDate: s
   const best = rows[0]
   const worst = rows[rows.length - 1]
   const gap = best.identifyRate - worst.identifyRate
+  // Same evidence bar as the callout below — one definition, one place.
+  const hasWinner = rows.length >= 2 && best.visits >= 10 && worst.visits >= 10 && gap >= 0.05
 
   // Summary band totals
   const totalVisits = rows.reduce((s, r) => s + r.visits, 0)
@@ -154,92 +162,90 @@ async function LpLeaderboard({ range }: { range: { startDate: string; endDate: s
   const totalHot = rows.reduce((s, r) => s + r.hot, 0)
 
   return (
-    <div className="space-y-6">
-      <DashboardSummaryStrip
-        stats={[
+    <>
+      {/* A "converts best" claim is only true when there is evidence for it.
+          Gate it on the SAME threshold the "What this tells you" callout below
+          uses (>=2 variants, >=10 visits each end, >=5pt gap) — otherwise the
+          page would name an arbitrary winner at 0.0% and paint it green, which
+          is the number a broker moves ad spend on (§0: narrative reconciles to
+          data). With no winner to name, state what happened instead. */}
+      <VerdictLine tone={hasWinner ? 'ok' : 'attention'}>
+        {hasWinner ? (
+          <>
+            <b>
+              {best.variant} converts best at {(best.identifyRate * 100).toFixed(1)}%.
+            </b>{' '}
+          </>
+        ) : null}
+        {formatInt(rows.length)} LP variant{rows.length === 1 ? '' : 's'} took traffic in this window
+        {hasWinner ? '.' : totalIdentified === 0 ? '; none identified a visitor yet.' : '; no variant leads by enough to call yet.'}
+      </VerdictLine>
+      <Figures
+        figures={[
           { label: 'LP variants', value: formatInt(rows.length) },
           { label: 'Visits (30d)', value: formatInt(totalVisits) },
           { label: 'Identified', value: formatInt(totalIdentified), caption: formatPct(totalIdentified, totalVisits) + ' identify rate' },
-          { label: 'Hot leads', value: formatInt(totalHot), tone: totalHot > 0 ? 'success' : 'default' },
-          { label: 'Best LP', value: `${(best.identifyRate * 100).toFixed(1)}%`, caption: best.variant, tone: 'success' },
+          { label: 'Hot leads', value: formatInt(totalHot), tone: totalHot > 0 ? 'ok' : undefined },
+          { label: 'Best LP', value: `${(best.identifyRate * 100).toFixed(1)}%`, caption: best.variant, tone: 'ok' },
         ]}
       />
 
-      <section className="space-y-2">
-        <div className="space-y-1">
-          <h2 className="text-base font-semibold text-foreground">Landing-page conversion leaderboard ({range.startDate} to {range.endDate})</h2>
-          <p className="text-xs text-muted-foreground">
-            Ranked by identify rate (visitors who signed in or submitted a form). Identify rate is what tells you whether the LP works. Hot rate is the broker-action signal — sessions that crossed score 100 and fired a FUB task.
-          </p>
-        </div>
-        <TableWithMobileCards
+      <section aria-label="Landing-page conversion leaderboard">
+        <SectionHead>Landing-page conversion leaderboard ({range.startDate} to {range.endDate})</SectionHead>
+        <p className="av2-note">
+          Ranked by identify rate (visitors who signed in or submitted a form). Identify rate is what tells you whether the LP works. Hot rate is the broker-action signal — sessions that crossed score 100 and fired a FUB task.
+        </p>
+        <DataList
+          label="Landing-page conversion leaderboard"
           rows={rows}
           cap={10}
-          getRowKey={(r) => r.variant}
+          rowKey={(r) => r.variant}
           columns={[
-            { key: 'variant', header: 'LP variant', className: 'whitespace-nowrap', cell: (r) => {
-              const i = rows.indexOf(r)
-              return (
+            {
+              key: 'variant',
+              header: 'LP variant',
+              lead: true,
+              cell: (r, i) => (
                 <>
-                  <div className="font-medium">{r.variant}</div>
-                  <Badge variant={i === 0 ? 'default' : i === rows.length - 1 && rows.length > 2 ? 'destructive' : 'outline'} className="text-[10px]">
+                  <Link href={`/lp/${r.variant}`} style={{ color: 'var(--a-accent)' }}>
+                    {r.variant}
+                  </Link>{' '}
+                  <StateWord state={i === 0 ? 'ok' : i === rows.length - 1 && rows.length > 2 ? 'down' : 'waiting'}>
                     {i === 0 ? 'best' : i === rows.length - 1 && rows.length > 2 ? 'worst' : `#${i + 1}`}
-                  </Badge>
+                  </StateWord>
                 </>
-              )
-            } },
-            { key: 'visits', header: 'Visits', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => formatInt(r.visits) },
-            { key: 'identified', header: 'Identified', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => formatInt(r.identified) },
-            { key: 'idrate', header: 'Identify rate', className: 'text-right tabular-nums font-semibold whitespace-nowrap', cell: (r) => `${(r.identifyRate * 100).toFixed(1)}%` },
-            { key: 'hot', header: 'Hot leads', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => formatInt(r.hot) },
-            { key: 'hotrate', header: 'Hot rate', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => `${(r.hotRate * 100).toFixed(1)}%` },
-            { key: 'score', header: 'Avg score', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => r.avgScore.toFixed(1) },
-            { key: 'source', header: 'Top source', className: 'text-xs whitespace-nowrap', cell: (r) => r.topSource },
-            { key: 'city', header: 'Top city', className: 'text-xs whitespace-nowrap', cell: (r) => r.topCity },
+              ),
+            },
+            { key: 'visits', header: 'Visits', num: true, cell: (r) => formatInt(r.visits) },
+            { key: 'identified', header: 'Identified', num: true, cell: (r) => formatInt(r.identified) },
+            { key: 'idrate', header: 'Identify rate', num: true, cell: (r) => `${(r.identifyRate * 100).toFixed(1)}%` },
+            { key: 'hot', header: 'Hot leads', num: true, cell: (r) => formatInt(r.hot) },
+            { key: 'hotrate', header: 'Hot rate', num: true, cell: (r) => `${(r.hotRate * 100).toFixed(1)}%` },
+            { key: 'score', header: 'Avg score', num: true, cell: (r) => r.avgScore.toFixed(1) },
+            { key: 'source', header: 'Top source', cell: (r) => r.topSource },
+            { key: 'city', header: 'Top city', cell: (r) => r.topCity },
           ]}
-          renderCard={(r) => {
-            const i = rows.indexOf(r)
-            return (
-              <Card>
-                <CardContent className="space-y-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium">
-                      {r.variant}
-                      <Badge variant={i === 0 ? 'default' : i === rows.length - 1 && rows.length > 2 ? 'destructive' : 'outline'} className="ml-2 text-xs">
-                        {i === 0 ? 'best' : i === rows.length - 1 && rows.length > 2 ? 'worst' : `#${i + 1}`}
-                      </Badge>
-                    </span>
-                    <span className="text-sm font-semibold tabular-nums">{(r.identifyRate * 100).toFixed(1)}%</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground tabular-nums">{formatInt(r.visits)} visits · {formatInt(r.identified)} identified · {formatInt(r.hot)} hot · score {r.avgScore.toFixed(1)}</p>
-                  <p className="text-xs text-muted-foreground">{r.topSource} · {r.topCity}</p>
-                </CardContent>
-              </Card>
-            )
-          }}
           empty={<>No LP sessions captured in the last 30 days yet. Once visitors arrive at any /lp/[variant] page and consent to tracking, the leaderboard fills in.</>}
         />
       </section>
 
       {rows.length >= 2 && best.visits >= 10 && worst.visits >= 10 && gap >= 0.05 && (
-        <Card>
-          <CardHeader><CardTitle>What this tells you</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <p>
-              <strong>{best.variant}</strong> converts at {(best.identifyRate * 100).toFixed(1)}% vs <strong>{worst.variant}</strong> at {(worst.identifyRate * 100).toFixed(1)}%. That is a {(gap * 100).toFixed(1)}-point gap.
+        <section aria-label="What this tells you">
+          <SectionHead>What this tells you</SectionHead>
+          <p className="av2-note">
+            <b>{best.variant}</b> converts at {(best.identifyRate * 100).toFixed(1)}% vs <b>{worst.variant}</b> at {(worst.identifyRate * 100).toFixed(1)}%. That is a {(gap * 100).toFixed(1)}-point gap.
+          </p>
+          <p className="av2-note">
+            Shift paid spend from {worst.variant} toward {best.variant} until the gap closes. If {worst.variant} still hits zero or near-zero after a budget shift, pause that LP entirely and rebuild the hero, form, or audience targeting.
+          </p>
+          {best.topSource && best.topSource !== '—' && (
+            <p className="av2-note">
+              {best.variant}&apos;s best source is <b>{best.topSource}</b>. Double down on that channel for this LP specifically.
             </p>
-            <p>
-              Shift paid spend from {worst.variant} toward {best.variant} until the gap closes. If {worst.variant} still hits zero or near-zero after a budget shift, pause that LP entirely and rebuild the hero, form, or audience targeting.
-            </p>
-            {best.topSource && best.topSource !== '—' && (
-              <p className="text-muted-foreground">
-                {best.variant}&apos;s best source is <strong>{best.topSource}</strong>. Double down on that channel for this LP specifically.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+          )}
+        </section>
       )}
-    </div>
+    </>
   )
 }
 
@@ -247,16 +253,13 @@ export default async function LpLeaderboardPage({ searchParams }: { searchParams
   const sp = normalizeParams(await searchParams)
   const range = resolveDateRange(sp)
   return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">LP conversion leaderboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Which landing page actually converts. Pulled directly from <code>visitor_sessions</code> with the landing page mapped back to its LP variant slug. Ranked by identify rate.
-        </p>
-        <DateRangePicker current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
-      </header>
+    <div className="av2-scope" style={{ maxWidth: 1120, margin: '0 auto', padding: 16 }}>
+      <p className="av2-note">
+        Which landing page actually converts. Pulled directly from <code>visitor_sessions</code> with the landing page mapped back to its LP variant slug. Ranked by identify rate.
+      </p>
+      <RangeControl current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
 
-      <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+      <Suspense fallback={<Loading what="LP sessions" />}>
         <LpLeaderboard range={range} />
       </Suspense>
     </div>

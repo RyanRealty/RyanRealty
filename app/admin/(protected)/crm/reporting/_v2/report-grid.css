@@ -1,0 +1,174 @@
+/* Reporting family — the data/grid shape of the LOCKED admin language.
+   Canon: design_system/admin/ADMIN_UI.md (visual lock 2026-08-05). The six
+   locked patterns cover queues, threads, verdicts, worklists, entity pages and
+   config forms; a per-source / per-agent report is none of those, so 11C adds
+   ONE grid shape here rather than hand-rolling a layout per page.
+
+   Rules it keeps: all color through var(--a-*) (no hex, no brand tokens, no
+   Tailwind palette), 4px grid, hairlines not shadows, tabular numerals on every
+   figure, and — the acceptance-bar item that killed the legacy tables — the
+   sideways overflow lives in .av2-rgrid__scroll, never on the page.
+
+   Phone-first: a row is one block (name, then "Label 12 · Label 4" inline), so
+   nothing scrolls sideways at 375px. At >=720px the same markup becomes a
+   column grid. Owned by the five reporting pages migrated in 11C; promote into
+   components/admin/v2/ when the whole reporting family lands. */
+
+/* ---- scroll container: the ONLY thing allowed to scroll sideways ---- */
+.av2-rgrid__scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  min-width: 0;
+}
+.av2-rgrid__scroll:focus-visible { outline: none; box-shadow: var(--a-focus); }
+
+/* ---- grid ---- */
+.av2-rgrid { border-top: 1px solid var(--a-border); }
+.av2-rgrid__head { display: none; }
+.av2-rgrid__row { padding: 12px 2px; border-bottom: 1px solid var(--a-border); }
+.av2-rgrid__c { font-size: var(--a-text-sm); color: var(--a-text-2); }
+.av2-rgrid__c:first-child {
+  display: block;
+  font-size: var(--a-text-md);
+  font-weight: 600;
+  color: var(--a-text);
+  margin-bottom: 2px;
+}
+.av2-rgrid__c + .av2-rgrid__c::before { content: attr(data-label) " "; color: var(--a-text-2); }
+.av2-rgrid__c + .av2-rgrid__c + .av2-rgrid__c::before { content: " · " attr(data-label) " "; }
+.av2-rgrid__c--n { font-variant-numeric: tabular-nums; }
+.av2-rgrid__row--sum { border-bottom: none; border-top: 1px solid var(--a-border); }
+.av2-rgrid__row--sum .av2-rgrid__c { font-weight: 600; color: var(--a-text); }
+.av2-rgrid__empty {
+  padding: 28px 2px;
+  border-bottom: 1px solid var(--a-border);
+  font-size: var(--a-text-sm);
+  color: var(--a-text-2);
+}
+
+@media (min-width: 720px) {
+  .av2-rgrid { min-width: var(--rgrid-min, 0); }
+  .av2-rgrid__head,
+  .av2-rgrid__row {
+    display: grid;
+    grid-template-columns: var(--rgrid-cols);
+    gap: var(--a-s3);
+    align-items: baseline;
+  }
+  .av2-rgrid__head { padding: 0 2px var(--a-s2); border-bottom: 1px solid var(--a-border); }
+  .av2-rgrid__h {
+    font-size: var(--a-text-xs);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--a-text-2);
+  }
+  .av2-rgrid__h--n { text-align: right; }
+  .av2-rgrid__c {
+    font-size: var(--a-text-sm);
+    color: var(--a-text);
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .av2-rgrid__c:first-child { margin-bottom: 0; font-size: var(--a-text-sm); }
+  .av2-rgrid__c + .av2-rgrid__c::before,
+  .av2-rgrid__c + .av2-rgrid__c + .av2-rgrid__c::before { content: none; }
+  .av2-rgrid__c--n { text-align: right; }
+}
+
+/* ---- numbers strip (the period's figures, typographic — KPIs never open a
+       screen, so these are text, not clickable tiles) ---- */
+.av2-rnum {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--a-s4) var(--a-s6);
+  border-top: 1px solid var(--a-border);
+  border-bottom: 1px solid var(--a-border);
+  padding: var(--a-s3) 0;
+  margin: 0 0 var(--a-s5);
+}
+.av2-rnum__i { display: flex; flex-direction: column; gap: 1px; min-width: 92px; }
+.av2-rnum__l {
+  font-size: var(--a-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--a-text-2);
+}
+.av2-rnum__v {
+  font-size: var(--a-text-xl);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--a-text);
+}
+.av2-rnum__d { font-size: var(--a-text-xs); font-variant-numeric: tabular-nums; color: var(--a-text-2); }
+.av2-rnum__d--up { color: var(--a-ok); }
+.av2-rnum__d--down { color: var(--a-danger); }
+.av2-rnum__spark { display: block; margin-top: var(--a-s1); color: var(--a-accent); }
+.av2-rnum__aux { font-size: var(--a-text-xs); color: var(--a-accent); }
+
+/* ---- goal meter (agent goals) ---- */
+.av2-rmeter { display: flex; align-items: center; gap: var(--a-s2); }
+.av2-rmeter__track {
+  flex: 1 1 auto;
+  min-width: 56px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--a-inset);
+  overflow: hidden;
+}
+.av2-rmeter__fill { display: block; height: 100%; background: var(--a-accent); }
+.av2-rmeter__pct { font-size: var(--a-text-xs); font-variant-numeric: tabular-nums; color: var(--a-text-2); }
+
+/* ---- filter bar: native selects carry the width of their widest option, which
+       pushed the whole page sideways at 375px. min-width:0 lets them shrink so
+       the page itself never scrolls horizontally. ---- */
+.av2-rfilters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--a-s3) var(--a-s4);
+  margin: 0 0 var(--a-s4);
+  max-width: 100%;
+}
+.av2-rfilters > * { min-width: 0; max-width: 100%; flex: 1 1 300px; }
+.av2-rfilters .av2-inline-form { min-width: 0; max-width: 100%; }
+.av2-rfilters .av2-field { min-width: 0; max-width: 100%; }
+.av2-rfilters .av2-input { width: 100%; max-width: 100%; }
+
+/* ---- column disclosure (agent activity) — the picker stays folded away so the
+       page never shows a wall of pills ---- */
+.av2-rcols { margin: 0 0 var(--a-s4); }
+.av2-rcols > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--a-border);
+  border-radius: var(--a-r-md);
+  background: var(--a-surface);
+  color: var(--a-accent);
+  font-size: var(--a-text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.av2-rcols > summary::-webkit-details-marker { display: none; }
+.av2-rcols > summary:focus-visible { outline: none; box-shadow: var(--a-focus); }
+.av2-rcols__body { display: flex; flex-wrap: wrap; gap: var(--a-s2); padding: var(--a-s3) 0 0; }
+
+/* ---- loading skeleton (state 1 of the four) ---- */
+.av2-rskel { border-top: 1px solid var(--a-border); }
+.av2-rskel__row {
+  height: 14px;
+  margin: 16px 2px;
+  border-radius: var(--a-r-sm);
+  background: var(--a-inset);
+  animation: av2-rskel-pulse 1.4s ease-in-out infinite;
+}
+@keyframes av2-rskel-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) {
+  .av2-rskel__row { animation: none; }
+}

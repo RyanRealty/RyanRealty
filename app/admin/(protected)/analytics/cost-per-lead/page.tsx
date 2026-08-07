@@ -1,3 +1,4 @@
+// @no-parity — internal admin surface, no public mockup contract
 /**
  * /admin/analytics/cost-per-lead - the number that decides paid-spend strategy.
  *
@@ -7,16 +8,20 @@
  * cutover (writer removed) — do not restore it. The denominator is ALL inbound
  * leads, so cost-per-lead here is BLENDED, not paid-only (see the page caveat).
  * Drill-down: by campaign and by week so the trend is visible.
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Presentation only — the superuser gate (analytics/layout.tsx), both spend reads,
+ * the paged visitor_sessions read, getLeadIntake, isoWeekStart, every weekly
+ * bucket, the closedDataAvailable flag, the CPL thresholds (green < $75, amber
+ * $75-$150, red >= $150) and the ?range/?startDate/?endDate handling are carried
+ * over verbatim.
  */
 import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { getLeadIntake } from '@/lib/data/crm/getLeadIntake'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
-import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
+import { SectionHead, StateWord, VerdictLine, type AdminState } from '@/components/admin/v2'
+import { DataGrid, GridSkeleton, LaneNote, NumberStrip, Stamp, StatePanel } from '../_components/v2/DataGrid'
 import { DateRangePicker } from '../_components/DateRangePicker'
 import { resolveDateRange } from '../_lib/queries'
 
@@ -49,6 +54,12 @@ function isoWeekStart(dateStr: string): string {
   const offsetToMonday = (dow + 6) % 7
   d.setUTCDate(d.getUTCDate() - offsetToMonday)
   return d.toISOString().slice(0, 10)
+}
+
+/** The locked CPL bands, unchanged: green < $75 · amber $75-$150 · red >= $150. */
+function cplState(cpl: number | null): AdminState {
+  if (cpl == null) return 'waiting'
+  return cpl < 75 ? 'ok' : cpl < 150 ? 'slow' : 'down'
 }
 
 type DailyRow = { date: string; value: number; campaign?: string; scope_id?: string; metadata?: Record<string, unknown> | null }
@@ -96,7 +107,14 @@ async function CostPerLead({ range }: { range: { startDate: string; endDate: str
   // Closed-deal figures have no live source yet — flagged so the tiles render "—".
   const closedDataAvailable = false
 
-  if (spendRes.error) return <Card><CardContent className="p-6 text-sm text-destructive">spend read failed: {spendRes.error.message}</CardContent></Card>
+  if (spendRes.error) {
+    return (
+      <StatePanel tone="error">
+        spend read failed: {spendRes.error.message}. Reload once the read recovers; the marketing_channel_daily spend
+        rows are written by the Meta/Google snapshot crons.
+      </StatePanel>
+    )
+  }
 
   const sessionsCapped = identifiedRes.rows.length === 20000
 
@@ -178,15 +196,31 @@ async function CostPerLead({ range }: { range: { startDate: string; endDate: str
   )
   const costPerClosed90 = totals90.closedWon > 0 ? totals90.spend / totals90.closedWon : null
 
+  const weekRows = weeks.map(([wk, b]) => ({ wk, b }))
+
   return (
     <>
+      <VerdictLine tone={last7Cpl == null ? 'attention' : cplState(last7Cpl) === 'down' ? 'attention' : 'ok'}>
+        {last7Cpl == null ? (
+          <>
+            <b>No cost per lead this week.</b> Either no paid spend synced or no inbound leads landed.
+          </>
+        ) : (
+          <>
+            <b>{formatUsd(last7Cpl)} per lead this week</b>
+            {last4Cpl != null ? <> against a 4-week average of {formatUsd(last4Cpl)}.</> : <>.</>}
+          </>
+        )}
+      </VerdictLine>
+
       {sessionsCapped && (
-        <p className="text-xs text-warning">
+        <StatePanel tone="error">
           Showing first 20,000 visitor sessions — result capped. Narrow the date range to see complete data.
-        </p>
+        </StatePanel>
       )}
-      <DashboardSummaryStrip
-        stats={[
+
+      <NumberStrip
+        items={[
           { label: 'Cost / lead (wk)', value: last7Cpl == null ? null : formatUsd(last7Cpl), caption: last4Cpl != null ? `4-wk avg ${formatUsd(last4Cpl)}` : undefined },
           { label: 'Paid spend this week', value: formatUsd(last7Spend), caption: `Meta ${formatUsd(weeks[0]?.[1].metaSpend ?? 0)} · Google ${formatUsd(weeks[0]?.[1].googleSpend ?? 0)}` },
           { label: 'New leads (wk)', value: formatInt(last7Qualified) },
@@ -196,72 +230,67 @@ async function CostPerLead({ range }: { range: { startDate: string; endDate: str
         ]}
       />
 
-      <section className="space-y-2">
-        <div className="space-y-1">
-          <h2 className="text-base font-semibold text-foreground">Weekly trend</h2>
-          <p className="text-xs text-muted-foreground">
-            Combined paid spend (Meta + Google Ads, broken out per column) joined with real inbound leads (getLeadIntake, from crm_people). Cost-per-lead is the headline column. If you spent $400 last week and got 4 leads, you paid $100 per. Compare week-over-week and against the 4-week average above.
-          </p>
-        </div>
-        <TableWithMobileCards
-          rows={weeks.map(([wk, b]) => ({ wk, b }))}
+      <section aria-label="Weekly trend">
+        <SectionHead>Weekly trend</SectionHead>
+        <LaneNote>
+          Combined paid spend (Meta + Google Ads, broken out per column) joined with real inbound leads (getLeadIntake,
+          from crm_people). Cost-per-lead is the headline column. If you spent $400 last week and got 4 leads, you paid
+          $100 per. Compare week-over-week and against the 4-week average above.
+        </LaneNote>
+        <DataGrid
+          label="Weekly cost per lead"
+          rows={weekRows}
           cap={12}
+          minWidth={900}
           getRowKey={(r) => r.wk}
           columns={[
-            { key: 'week', header: 'Week of', className: 'whitespace-nowrap font-medium', cell: (r) => r.wk },
-            { key: 'spend', header: 'Spend', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatUsd(r.b.spend) },
-            { key: 'qual', header: 'New leads', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.b.qualifiedLeads) },
-            { key: 'cpl', header: 'Cost / lead', className: 'whitespace-nowrap text-right', cell: (r) => { const cpl = r.b.qualifiedLeads > 0 ? r.b.spend / r.b.qualifiedLeads : null; const v: 'default' | 'destructive' | 'secondary' | 'outline' = cpl == null ? 'outline' : cpl < 75 ? 'default' : cpl < 150 ? 'secondary' : 'destructive'; return <Badge variant={v} className="tabular-nums">{cpl == null ? '—' : formatUsd(cpl)}</Badge> } },
-            { key: 'closed', header: 'Closed deals', className: 'whitespace-nowrap text-right tabular-nums', cell: () => closedDataAvailable ? formatInt(0) : '—' },
-            { key: 'fbSessions', header: 'FB sessions', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.b.fbSessions) },
-            { key: 'fbId', header: 'FB identified', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.b.fbIdentified) },
-            { key: 'fbHot', header: 'FB hot', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.b.fbHot) },
+            { key: 'week', header: 'Week of', width: '120px', cell: (r) => <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{r.wk}</span> },
+            { key: 'spend', header: 'Spend', numeric: true, cell: (r) => formatUsd(r.b.spend) },
+            { key: 'qual', header: 'New leads', numeric: true, cell: (r) => formatInt(r.b.qualifiedLeads) },
+            {
+              key: 'cpl',
+              header: 'Cost / lead',
+              width: '130px',
+              cell: (r) => {
+                const cpl = r.b.qualifiedLeads > 0 ? r.b.spend / r.b.qualifiedLeads : null
+                return <StateWord state={cplState(cpl)}>{cpl == null ? '—' : formatUsd(cpl)}</StateWord>
+              },
+            },
+            { key: 'closed', header: 'Closed deals', numeric: true, cell: () => (closedDataAvailable ? formatInt(0) : '—') },
+            { key: 'fbSessions', header: 'FB sessions', numeric: true, cell: (r) => formatInt(r.b.fbSessions) },
+            { key: 'fbId', header: 'FB identified', numeric: true, cell: (r) => formatInt(r.b.fbIdentified) },
+            { key: 'fbHot', header: 'FB hot', numeric: true, cell: (r) => formatInt(r.b.fbHot) },
           ]}
-          renderCard={(r) => {
-            const cpl = r.b.qualifiedLeads > 0 ? r.b.spend / r.b.qualifiedLeads : null
-            const v: 'default' | 'destructive' | 'secondary' | 'outline' = cpl == null ? 'outline' : cpl < 75 ? 'default' : cpl < 150 ? 'secondary' : 'destructive'
-            return (
-              <Card>
-                <CardContent className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium tabular-nums">{r.wk}</span>
-                    <Badge variant={v} className="tabular-nums">{cpl == null ? '—' : `${formatUsd(cpl)} / lead`}</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground tabular-nums">{formatUsd(r.b.spend)} spend · {formatInt(r.b.qualifiedLeads)} leads · {closedDataAvailable ? `${formatInt(r.b.closedWon)} closed` : '— closed'} · {formatInt(r.b.fbIdentified)} FB id</p>
-                </CardContent>
-              </Card>
-            )
-          }}
-          empty={<>No paid-ad spend or lead data in the last 90 days. Once the Meta/Google spend cron populates, weekly cost-per-lead appears here.</>}
+          empty={
+            <>
+              No paid-ad spend or lead data in the last 90 days. Once the Meta/Google spend cron populates, weekly
+              cost-per-lead appears here.
+            </>
+          }
         />
-        <p className="text-xs text-muted-foreground">
-          Cost-per-lead badge: green &lt; $75, amber $75-$150, red &gt;= $150. Industry HNW seller benchmarks land in the $80-$120 range; consistent reds mean creative + audience need a rebuild, not more spend.
-        </p>
+        <Stamp>
+          Cost-per-lead band: green &lt; $75, amber $75-$150, red &gt;= $150. Industry HNW seller benchmarks land in the
+          $80-$120 range; consistent reds mean creative + audience need a rebuild, not more spend.
+        </Stamp>
       </section>
 
       {weeks[0] && weeks[0][1].campaigns.size > 0 && (() => {
         const weekSpend = weeks[0][1].spend
         const campaignRows = Array.from(weeks[0][1].campaigns.entries()).sort((a, b) => b[1] - a[1]).map(([name, spend]) => ({ name, spend }))
         return (
-          <section className="space-y-2">
-            <h2 className="text-base font-semibold text-foreground">This week by campaign</h2>
-            <TableWithMobileCards
+          <section aria-label="This week by campaign">
+            <SectionHead>This week by campaign</SectionHead>
+            <DataGrid
+              label="This week by campaign"
               rows={campaignRows}
               cap={10}
+              minWidth={620}
               getRowKey={(r) => r.name}
               columns={[
-                { key: 'name', header: 'Campaign', className: 'font-mono text-xs', cell: (r) => r.name },
-                { key: 'spend', header: 'Spend this week', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatUsd(r.spend) },
-                { key: 'share', header: 'Share of week', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => weekSpend > 0 ? `${((r.spend / weekSpend) * 100).toFixed(1)}%` : '—' },
+                { key: 'name', header: 'Campaign', width: '1.6fr', cell: (r) => <span style={{ fontFamily: 'var(--a-font-mono)', fontSize: 'var(--a-text-xs)' }}>{r.name}</span> },
+                { key: 'spend', header: 'Spend this week', numeric: true, cell: (r) => formatUsd(r.spend) },
+                { key: 'share', header: 'Share of week', numeric: true, cell: (r) => (weekSpend > 0 ? `${((r.spend / weekSpend) * 100).toFixed(1)}%` : '—') },
               ]}
-              renderCard={(r) => (
-                <Card>
-                  <CardContent className="space-y-1">
-                    <p className="font-mono text-xs">{r.name}</p>
-                    <p className="text-xs text-muted-foreground tabular-nums">{formatUsd(r.spend)} · {weekSpend > 0 ? `${((r.spend / weekSpend) * 100).toFixed(1)}% of week` : '—'}</p>
-                  </CardContent>
-                </Card>
-              )}
               empty={<>No campaign-level spend recorded this week.</>}
             />
           </section>
@@ -275,21 +304,20 @@ export default async function CostPerLeadPage({ searchParams }: { searchParams: 
   const sp = normalizeParams(await searchParams)
   const range = resolveDateRange(sp)
   return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">Cost per lead (blended)</h1>
-        <p className="text-sm text-muted-foreground">
-          Paid spend (Meta + Google) divided by <span className="font-medium text-foreground">all</span> inbound
-          leads that week, week by week. It is <span className="font-medium text-foreground">blended</span>: the
-          denominator includes leads from every source (Zillow, organic, phone, referral), not only paid ads, so
-          true cost-per-paid-lead is higher than shown. Read it as a directional trend, not a precise paid-ad CPL.
-        </p>
+    <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 var(--a-s5)' }}>
         <DateRangePicker current={sp.range ?? '90d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
-      </header>
+      </div>
 
-      <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+      <Suspense fallback={<GridSkeleton rows={6} label="Loading cost per lead" />}>
         <CostPerLead range={range} />
       </Suspense>
+
+      <Stamp>
+        Blended: paid spend (Meta + Google) divided by ALL inbound leads that week. The denominator includes leads from
+        every source (Zillow, organic, phone, referral), not only paid ads, so true cost-per-paid-lead is higher than
+        shown. Read it as a directional trend, not a precise paid-ad CPL.
+      </Stamp>
     </div>
   )
 }

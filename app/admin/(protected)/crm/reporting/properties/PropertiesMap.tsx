@@ -128,15 +128,24 @@ export function PropertiesMap({ rows }: Props) {
     <>
       <GoogleMapsBootstrap />
       {error ? (
-        <div className="flex h-full items-center justify-center rounded-r-lg bg-muted/30">
-          <p className="text-sm text-muted-foreground">Map unavailable</p>
+        <div
+          className="flex items-center justify-center"
+          style={{ position: 'absolute', inset: 0, background: 'var(--a-inset)' }}
+        >
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+            The map could not load. The ranked list beside it carries the same rows.
+          </p>
         </div>
       ) : !ready ? (
-        <div className="flex h-full items-center justify-center rounded-r-lg bg-muted/30">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <div
+          className="flex items-center justify-center"
+          style={{ position: 'absolute', inset: 0, background: 'var(--a-inset)' }}
+          aria-busy
+        >
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>Loading the map…</p>
         </div>
       ) : (
-        <div ref={containerRef} className="h-full w-full rounded-r-lg" />
+        <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
       )}
     </>
   )

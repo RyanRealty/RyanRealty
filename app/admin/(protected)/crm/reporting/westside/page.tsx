@@ -6,6 +6,16 @@
  * this window" from the westside_parcels ledger via getWestsideCohortActivity
  * (same DAL the weekly westside-cohort-digest cron email renders). Capability
  * guard identical to every sibling reporting page: getCrmAccess or redirect.
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md)
+ * through the reporting family's shared presentation kit (../_v2/ReportGrid).
+ * Presentation only. Carried over verbatim: the guard, `?days=` parsing
+ * (parseDays, with its 7-day fallback for anything off-list), the
+ * getWestsideCohortActivity({ sinceDays }) read and its catch-to-null, every
+ * rollup and per-person figure, the DAL's score-desc ranking, and the person
+ * hrefs. Only the window picker changed shape — three preset links became one
+ * dropdown pushing the same `?days=` values, because the acceptance bar wants a
+ * filter set as one compact control, not a row of pills.
  */
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -14,18 +24,16 @@ import {
   getWestsideCohortActivity,
   type WestsideCohortActivity,
 } from '@/lib/data/crm/getWestsideCohortActivity'
-import { cn } from '@/lib/utils'
 import { formatDate } from '@/lib/format/date'
-import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
+import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ReportGrid,
+  ReportNumbers,
+  ReportError,
+  type ReportColumn,
+  type ReportGridRow,
+} from '../_v2/ReportGrid'
+import WestsideFilters from './WestsideFilters'
 import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
 
 export const metadata = { title: 'West Side Cohort | Reporting | CRM' }
@@ -49,12 +57,25 @@ function fmtDay(iso: string): string {
   return formatDate(d, { year: undefined })
 }
 
-function KpiCard({ label, value }: { label: string; value: number }) {
-  return (
-    <Card className="gap-1 p-4">
-      <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="text-2xl font-semibold tabular-nums text-foreground">{fmtInt(value)}</div>
-    </Card>
+
+const COLUMNS: ReportColumn[] = [
+  { key: 'name', label: 'Name' },
+  { key: 'parcel', label: 'Parcel' },
+  { key: 'stage', label: 'Stage' },
+  { key: 'visits', label: 'Visits', numeric: true },
+  { key: 'opens', label: 'Opens', numeric: true },
+  { key: 'clicks', label: 'Clicks', numeric: true },
+  { key: 'inbound', label: 'Inbound', numeric: true },
+  { key: 'score', label: 'Score', numeric: true },
+  { key: 'lastSeen', label: 'Last seen', numeric: true },
+]
+
+/** Zero reads muted, a real figure reads live — the legacy NumCell rule. */
+function num(value: number) {
+  return value === 0 ? (
+    <span style={{ color: 'var(--a-text-2)' }}>0</span>
+  ) : (
+    fmtInt(value)
   )
 }
 
@@ -84,146 +105,120 @@ export default async function WestsideCohortPage({
   }
   const people = report?.people ?? []
 
+  const gridRows: ReportGridRow[] = people.map((p) => {
+    const firstParcel = p.parcels[0]
+    const address = firstParcel?.siteStreet ?? firstParcel?.apn ?? ''
+    return {
+      key: String(p.personId),
+      cells: [
+        <Link key="n" href={`/admin/crm/${p.personId}`} style={{ color: 'var(--a-accent)' }}>
+          {p.name ?? `Person #${p.personId}`}
+        </Link>,
+        <span key="p" style={{ color: 'var(--a-text-2)' }}>
+          {address}
+          {p.parcels.length > 1 ? ` +${p.parcels.length - 1} more` : ''}
+        </span>,
+        <span key="s" style={{ color: 'var(--a-text-2)' }}>
+          {p.stage ?? '—'}
+        </span>,
+        num(p.visits),
+        num(p.opens),
+        num(p.clicks),
+        num(p.inbound),
+        <span key="sc" style={{ fontWeight: 600 }}>
+          {fmtInt(p.score)}
+        </span>,
+        <span key="ls" style={{ color: 'var(--a-text-2)' }}>
+          {fmtDay(p.lastSeenIso)}
+        </span>,
+      ],
+    }
+  })
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+    <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
       <ReportingTabStrip active={null} />
 
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">West Side cohort</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Parcel-linked owner activity
-            {report ? ` since ${fmtDay(report.windowStartIso)}` : ''} across{' '}
-            <span className="tabular-nums">{fmtInt(rollup.linkedParcels)}</span> linked parcels.
-            Emailed weekly as the West Side digest.
-          </p>
-        </div>
-
-        {/* Window presets */}
-        <div className="flex items-center gap-1.5">
-          {DAY_PRESETS.map((d) => (
-            <Link
-              key={d}
-              href={`/admin/crm/reporting/westside?days=${d}`}
-              className={cn(
-                'rounded-md border px-3 py-1.5 text-sm transition-colors',
-                d === days
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-border text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {d} days
-            </Link>
-          ))}
-        </div>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={report === null ? 'attention' : 'ok'}>
+          {report === null ? (
+            <>
+              <b>The cohort report could not be read.</b> Nothing below is a measurement.
+            </>
+          ) : (
+            <>
+              <b>
+                {fmtInt(rollup.activePeople)} of {fmtInt(rollup.identifiedPeople)} parcel-linked{' '}
+                {rollup.identifiedPeople === 1 ? 'owner' : 'owners'} moved since{' '}
+                {fmtDay(report.windowStartIso)}.
+              </b>{' '}
+              Across {fmtInt(rollup.linkedParcels)} linked parcels. This same read goes out weekly
+              as the West Side digest.
+            </>
+          )}
+        </VerdictLine>
       </div>
 
       {report === null ? (
-        <Card className="p-6 text-sm text-muted-foreground">
-          The cohort report could not be loaded. Reload the page, and check
-          westside_parcels person links if it persists.
-        </Card>
-      ) : (
-        <>
-          {/* Rollup KPI row */}
-          <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            <KpiCard label="Identified owners" value={rollup.identifiedPeople} />
-            <KpiCard label="Active this window" value={rollup.activePeople} />
-            <KpiCard label="Site visits" value={rollup.siteVisits} />
-            <KpiCard label="Email opens" value={rollup.opens} />
-            <KpiCard label="Email clicks" value={rollup.clicks} />
-            <KpiCard label="Inbound messages" value={rollup.inboundMessages} />
-          </div>
+        <ReportError what="The West Side cohort" href={`/admin/crm/reporting/westside?days=${days}`} />
+      ) : null}
 
-          {/* Active cohort members */}
-          <Card className="no-scrollbar overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead>Name</TableHead>
-                  <TableHead>Parcel</TableHead>
-                  <TableHead>Stage</TableHead>
-                  <TableHead className="text-right">Visits</TableHead>
-                  <TableHead className="text-right">Opens</TableHead>
-                  <TableHead className="text-right">Clicks</TableHead>
-                  <TableHead className="text-right">Inbound</TableHead>
-                  <TableHead className="text-right">Score</TableHead>
-                  <TableHead className="text-right">Last seen</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {people.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={9}
-                      className="py-12 text-center text-sm text-muted-foreground"
-                    >
-                      {rollup.identifiedPeople === 0
-                        ? 'No parcels are linked to a CRM person yet.'
-                        : `No cohort activity in the last ${days} days. ${fmtInt(rollup.identifiedPeople)} identified owners stayed quiet.`}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  people.map((p) => {
-                    const firstParcel = p.parcels[0]
-                    const address = firstParcel?.siteStreet ?? firstParcel?.apn ?? ''
-                    return (
-                      <TableRow key={p.personId} className="hover:bg-muted/40">
-                        <TableCell>
-                          <Link
-                            href={`/admin/crm/${p.personId}`}
-                            className="text-sm font-medium text-primary hover:underline"
-                          >
-                            {p.name ?? `Person #${p.personId}`}
-                          </Link>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {address}
-                          {p.parcels.length > 1 ? (
-                            <Badge variant="secondary" className="ml-1.5 tabular-nums">
-                              +{p.parcels.length - 1}
-                            </Badge>
-                          ) : null}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {p.stage ?? '—'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <NumCell value={p.visits} />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <NumCell value={p.opens} />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <NumCell value={p.clicks} />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <NumCell value={p.inbound} />
-                        </TableCell>
-                        <TableCell className="text-right font-medium tabular-nums">
-                          {fmtInt(p.score)}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums text-muted-foreground">
-                          {fmtDay(p.lastSeenIso)}
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </Card>
-        </>
-      )}
+      <div className="av2-rfilters">
+        <WestsideFilters currentDays={days} />
+      </div>
+
+      {report ? (
+        <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', margin: '0 0 20px' }}>
+          Read at {formatDate(report.fetchedAtIso, { hour: 'numeric', minute: '2-digit' })} Pacific, covering{' '}
+          {fmtDay(report.windowStartIso)} onward.{' '}
+          <Link href={`/admin/crm/reporting/westside?days=${days}`} style={{ color: 'var(--a-accent)' }}>
+            Read again
+          </Link>
+        </p>
+      ) : null}
+
+      <ReportNumbers
+        items={[
+          { key: 'identified', label: 'Identified owners', value: fmtInt(rollup.identifiedPeople) },
+          { key: 'active', label: 'Active this window', value: fmtInt(rollup.activePeople) },
+          { key: 'visits', label: 'Site visits', value: fmtInt(rollup.siteVisits) },
+          { key: 'opens', label: 'Email opens', value: fmtInt(rollup.opens) },
+          { key: 'clicks', label: 'Email clicks', value: fmtInt(rollup.clicks) },
+          { key: 'inbound', label: 'Inbound messages', value: fmtInt(rollup.inboundMessages) },
+        ]}
+      />
+
+      <SectionHead>Who moved — the strongest signal sits at the top</SectionHead>
+      <ReportGrid
+        label="Active West Side cohort members"
+        columns={COLUMNS}
+        template="minmax(130px, 1.6fr) minmax(130px, 1.5fr) minmax(80px, 0.9fr) repeat(6, minmax(56px, 0.6fr))"
+        minWidth={860}
+        rows={gridRows}
+        empty={
+          rollup.identifiedPeople === 0 ? (
+            <>
+              No parcel is linked to a CRM person yet, so there is no cohort to watch. Link owners
+              on the parcel ledger and this fills in.
+            </>
+          ) : (
+            <>
+              No cohort activity in the last {days} days — {fmtInt(rollup.identifiedPeople)}{' '}
+              identified owners stayed quiet. Widen the window above, or open{' '}
+              <Link href="/admin/crm" style={{ color: 'var(--a-accent)' }}>
+                the people list
+              </Link>
+              .
+            </>
+          )
+        }
+      />
+
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 16 }}>
+        Ranked by score, highest first. Score weights an inbound message heaviest, then a site
+        visit, then a click, then an open. A person owning several parcels shows the first and a
+        count of the rest.
+      </p>
     </div>
-  )
-}
-
-/** Numeric cell: zero renders muted, non-zero renders emphasized. Tabular nums. */
-function NumCell({ value }: { value: number }) {
-  return (
-    <span className={cn('tabular-nums', value === 0 ? 'text-muted-foreground' : 'text-foreground')}>
-      {fmtInt(value)}
-    </span>
   )
 }

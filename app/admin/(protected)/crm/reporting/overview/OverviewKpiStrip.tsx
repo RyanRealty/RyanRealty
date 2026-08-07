@@ -1,8 +1,17 @@
-'use client'
-
-import { AreaChart, Area, ResponsiveContainer } from 'recharts'
-import { Card } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
+// @no-parity — internal admin surface
+/**
+ * Overview's seven top-line figures.
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * The seven metrics, their order, the delta computation, and the sparkline series
+ * are carried over verbatim — only the shell changed: shadcn Cards in a
+ * sideways-scrolling strip became typographic figures that wrap (ADMIN_UI: "data
+ * is typographic", "KPIs never open a screen", and a strip that scrolls sideways
+ * by default is a failed design). The recharts sparkline became a plain polyline
+ * drawn from the same series, so the file no longer needs a client boundary or a
+ * hard-coded brand hex.
+ */
+import { ReportNumbers, type ReportNumberItem } from '../_v2/ReportGrid'
 import type {
   OverviewTotals,
   OverviewTimeSeriesPoint,
@@ -16,7 +25,7 @@ interface OverviewKpiStripProps {
   timeSeries: OverviewTimeSeriesPoint[]
 }
 
-// ── Delta helper ──────────────────────────────────────────────────────────────
+// ── Delta helper (verbatim from the legacy strip) ─────────────────────────────
 
 function computeDelta(
   current: number,
@@ -27,92 +36,24 @@ function computeDelta(
   return { pct: Math.abs(pct), up: pct >= 0 }
 }
 
-// ── Sparkline ─────────────────────────────────────────────────────────────────
-
-function Sparkline({ data, id }: { data: number[]; id: string }) {
-  const chartData = data.map((v) => ({ v }))
-  const gradId = `overviewSparkGrad-${id}`
-  return (
-    <div className="mt-2 h-8 w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        {/* .design-token-lint-ignore — recharts SVG attrs; hex required by recharts API */}
-        <AreaChart data={chartData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
-          <defs>
-            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#102742" stopOpacity={0.18} />
-              <stop offset="95%" stopColor="#102742" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <Area
-            type="monotone"
-            dataKey="v"
-            stroke="#102742"
-            strokeWidth={1.5}
-            fill={`url(#${gradId})`}
-            dot={false}
-            isAnimationActive={false}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
-  )
-}
-
-// ── KPI Tile ──────────────────────────────────────────────────────────────────
-
-interface KpiTileProps {
-  id: string
-  label: string
-  value: number
-  previousValue: number
-  sparkData: number[]
-}
-
-function KpiTile({ id, label, value, previousValue, sparkData }: KpiTileProps) {
+/** The same three delta cases the legacy tile rendered, as text + direction. */
+export function deltaLine(
+  value: number,
+  previousValue: number,
+): ReportNumberItem['delta'] {
   const delta = computeDelta(value, previousValue)
-
-  return (
-    <Card className="min-w-36 shrink-0 p-4">
-      {/* Label */}
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {label}
-      </p>
-
-      {/* Large value */}
-      <p className="mt-1.5 text-3xl font-bold leading-none tabular-nums text-foreground">
-        {value.toLocaleString('en-US')}
-      </p>
-
-      {/* Delta vs previous period */}
-      {delta !== null ? (
-        <p
-          className={cn(
-            'mt-1 text-xs tabular-nums',
-            delta.up ? 'text-success' : 'text-destructive',
-          )}
-        >
-          {delta.up ? '↑' : '↓'}{' '}
-          {delta.up
-            ? `${delta.pct.toFixed(1)}%`
-            : `(${delta.pct.toFixed(1)}%)`}{' '}
-          <span className="text-muted-foreground">
-            vs {previousValue.toLocaleString('en-US')}
-          </span>
-        </p>
-      ) : previousValue === 0 && value > 0 ? (
-        <p className="mt-1 text-xs text-success">
-          ↑ new <span className="text-muted-foreground">vs 0</span>
-        </p>
-      ) : (
-        <p className="mt-1 text-xs text-muted-foreground">
-          — <span>vs 0</span>
-        </p>
-      )}
-
-      {/* Sparkline */}
-      <Sparkline data={sparkData} id={id} />
-    </Card>
-  )
+  if (delta !== null) {
+    return {
+      direction: delta.up ? 'up' : 'down',
+      text: `${delta.up ? '↑' : '↓'} ${
+        delta.up ? `${delta.pct.toFixed(1)}%` : `(${delta.pct.toFixed(1)}%)`
+      } vs ${previousValue.toLocaleString('en-US')}`,
+    }
+  }
+  if (previousValue === 0 && value > 0) {
+    return { direction: 'up', text: '↑ new vs 0' }
+  }
+  return { direction: 'flat', text: '— vs 0' }
 }
 
 // ── Tile definitions (7 fixed metrics — no column picker on Overview) ─────────
@@ -133,28 +74,20 @@ const TILE_DEFS: TileDef[] = [
   { key: 'appointments',   label: 'Appointments',       tsKey: 'appointments' },
 ]
 
-// ── KPI Strip ─────────────────────────────────────────────────────────────────
+// ── Strip ─────────────────────────────────────────────────────────────────────
 
 export function OverviewKpiStrip({
   totals,
   previousTotals,
   timeSeries,
 }: OverviewKpiStripProps) {
-  return (
-    <div className="no-scrollbar mb-8 flex gap-3 overflow-x-auto pb-2">
-      {TILE_DEFS.map((def) => {
-        const sparkData = timeSeries.map((p) => p[def.tsKey] as number)
-        return (
-          <KpiTile
-            key={def.key}
-            id={def.key}
-            label={def.label}
-            value={totals[def.key]}
-            previousValue={previousTotals[def.key]}
-            sparkData={sparkData}
-          />
-        )
-      })}
-    </div>
-  )
+  const items: ReportNumberItem[] = TILE_DEFS.map((def) => ({
+    key: String(def.key),
+    label: def.label,
+    value: totals[def.key].toLocaleString('en-US'),
+    delta: deltaLine(totals[def.key], previousTotals[def.key]),
+    spark: timeSeries.map((p) => p[def.tsKey] as number),
+  }))
+
+  return <ReportNumbers items={items} />
 }

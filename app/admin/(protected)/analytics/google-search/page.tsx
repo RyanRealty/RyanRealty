@@ -1,14 +1,15 @@
 // /admin/analytics/google-search - surfaces GSC data from marketing_channel_daily.
 // Top queries, top pages, easy wins.
+//
+// 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+// Presentation only — every query, aggregation, filter, expected-CTR constant and
+// date-range contract below is carried over verbatim from the legacy version.
 import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
-import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
-import { DateRangePicker } from '../_components/DateRangePicker'
+import { SectionHead, VerdictLine } from '@/components/admin/v2'
+import { DataList, Figures, Loading } from '../_components/v2/kit'
+import { RangeControl } from '../_components/v2/RangeControl'
 import { resolveDateRange } from '../_lib/queries'
 
 export const dynamic = 'force-dynamic'
@@ -95,14 +96,27 @@ async function HeadlineKpis({ sinceDate, endDate }: { sinceDate: string; endDate
     pos: acc.posN > 0 ? acc.posSum / acc.posN : 0,
   }
   return (
-    <DashboardSummaryStrip
-      stats={[
-        { label: `Clicks (${sinceDate} to ${endDate})`, value: fmt(c.clicks) },
-        { label: 'Impressions', value: fmt(c.impressions) },
-        { label: 'Avg CTR', value: pct(c.ctr) },
-        { label: 'Avg position', value: pos(c.pos) },
-      ]}
-    />
+    <>
+      <VerdictLine tone={c.clicks > 0 ? 'ok' : 'attention'}>
+        {c.clicks > 0 ? (
+          <>
+            <b>{fmt(c.clicks)} clicks</b> from Google search, {sinceDate} to {endDate}.
+          </>
+        ) : (
+          <>
+            <b>No Google clicks recorded</b> for {sinceDate} to {endDate}. GSC lands 2–3 days behind — widen the range.
+          </>
+        )}
+      </VerdictLine>
+      <Figures
+        figures={[
+          { label: `Clicks (${sinceDate} to ${endDate})`, value: fmt(c.clicks) },
+          { label: 'Impressions', value: fmt(c.impressions) },
+          { label: 'Avg CTR', value: pct(c.ctr) },
+          { label: 'Avg position', value: pos(c.pos) },
+        ]}
+      />
+    </>
   )
 }
 
@@ -110,37 +124,24 @@ async function TopQueries({ sinceDate, endDate }: { sinceDate: string; endDate: 
   const rows = await aggBy('campaign', sinceDate, endDate)
   const top = rows.sort((a, b) => b.clicks - a.clicks)
   return (
-    <section className="space-y-2">
-      <div className="space-y-1">
-        <h2 className="text-base font-semibold text-foreground">Top queries by clicks</h2>
-        <p className="text-xs text-muted-foreground">What people typed in Google that brought them to ryan-realty.com. Average position 1-10 is page one; 11-20 is page two.</p>
-      </div>
-      <TableWithMobileCards
+    <section aria-label="Top queries by clicks">
+      <SectionHead>Top queries by clicks</SectionHead>
+      <p className="av2-note">
+        What people typed in Google that brought them to ryan-realty.com. Average position 1-10 is page one; 11-20 is page two.
+      </p>
+      <DataList
+        label="Top queries by clicks"
         rows={top}
         cap={10}
-        getRowKey={(r) => r.key}
+        rowKey={(r) => r.key}
         columns={[
-          { key: 'query', header: 'Query', className: 'font-medium', cell: (r) => stripQ(r.key) },
-          { key: 'clicks', header: 'Clicks', className: 'text-right tabular-nums font-semibold whitespace-nowrap', cell: (r) => fmt(r.clicks) },
-          { key: 'impr', header: 'Impressions', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => fmt(r.impressions) },
-          { key: 'ctr', header: 'CTR', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => pct(r.ctr) },
-          { key: 'pos', header: 'Position', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => <Badge variant={r.position <= 10 ? 'default' : r.position <= 20 ? 'secondary' : 'outline'}>{pos(r.position)}</Badge> },
+          { key: 'query', header: 'Query', lead: true, cell: (r) => stripQ(r.key) },
+          { key: 'clicks', header: 'Clicks', num: true, cell: (r) => fmt(r.clicks) },
+          { key: 'impr', header: 'Impressions', num: true, cell: (r) => fmt(r.impressions) },
+          { key: 'ctr', header: 'CTR', num: true, cell: (r) => pct(r.ctr) },
+          { key: 'pos', header: 'Position', num: true, cell: (r) => pos(r.position) },
         ]}
-        renderCard={(r) => (
-          <Card>
-            <CardContent className="space-y-1">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-medium">{stripQ(r.key)}</span>
-                <span className="text-sm font-semibold tabular-nums">{fmt(r.clicks)} <span className="text-xs font-normal text-muted-foreground">clicks</span></span>
-              </div>
-              <p className="flex items-center gap-2 text-xs text-muted-foreground tabular-nums">
-                {fmt(r.impressions)} impr · {pct(r.ctr)} CTR
-                <Badge variant={r.position <= 10 ? 'default' : r.position <= 20 ? 'secondary' : 'outline'} className="text-xs">pos {pos(r.position)}</Badge>
-              </p>
-            </CardContent>
-          </Card>
-        )}
-        empty={<>No GSC query data for this date range. The GSC snapshot cron has a 2-3 day processing lag, so very recent ranges can be empty.</>}
+        empty={<>No GSC query data for this date range. The GSC snapshot cron has a 2-3 day processing lag, so very recent ranges can be empty. Widen the date range above.</>}
       />
     </section>
   )
@@ -159,36 +160,23 @@ async function OpportunityQueries({ sinceDate, endDate }: { sinceDate: string; e
       return { ...r, potential: Math.max(0, potential - r.clicks) }
     })
   return (
-    <section className="space-y-2">
-      <div className="space-y-1">
-        <h2 className="text-base font-semibold text-foreground">Opportunity queries (easy SEO wins)</h2>
-        <p className="text-xs text-muted-foreground">Queries you already RANK for (position 1-20) and get IMPRESSIONS for (30+), but visitors are not clicking (CTR under 2%). Fix the page title and meta description and the clicks usually jump in days.</p>
-      </div>
-      <TableWithMobileCards
+    <section aria-label="Opportunity queries">
+      <SectionHead>Opportunity queries — easy SEO wins</SectionHead>
+      <p className="av2-note">
+        Queries you already RANK for (position 1-20) and get IMPRESSIONS for (30+), but visitors are not clicking (CTR under 2%). Fix the page title and meta description and the clicks usually jump in days.
+      </p>
+      <DataList
+        label="Opportunity queries"
         rows={opp}
         cap={10}
-        getRowKey={(r) => r.key}
+        rowKey={(r) => r.key}
         columns={[
-          { key: 'query', header: 'Query', className: 'font-medium', cell: (r) => stripQ(r.key) },
-          { key: 'impr', header: 'Impressions', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => fmt(r.impressions) },
-          { key: 'ctr', header: 'CTR', className: 'text-right tabular-nums text-destructive whitespace-nowrap', cell: (r) => pct(r.ctr) },
-          { key: 'pos', header: 'Position', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => <Badge variant={r.position <= 10 ? 'default' : 'secondary'}>{pos(r.position)}</Badge> },
-          { key: 'potential', header: 'Potential clicks', className: 'text-right tabular-nums font-semibold text-success whitespace-nowrap', cell: (r) => `+${fmt(r.potential)}` },
+          { key: 'query', header: 'Query', lead: true, cell: (r) => stripQ(r.key) },
+          { key: 'impr', header: 'Impressions', num: true, cell: (r) => fmt(r.impressions) },
+          { key: 'ctr', header: 'CTR', num: true, cell: (r) => <span style={{ color: 'var(--a-warn)' }}>{pct(r.ctr)}</span> },
+          { key: 'pos', header: 'Position', num: true, cell: (r) => pos(r.position) },
+          { key: 'potential', header: 'Potential clicks', num: true, cell: (r) => <span style={{ color: 'var(--a-ok)', fontWeight: 600 }}>{`+${fmt(r.potential)}`}</span> },
         ]}
-        renderCard={(r) => (
-          <Card>
-            <CardContent className="space-y-1">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-medium">{stripQ(r.key)}</span>
-                <span className="text-sm font-semibold tabular-nums text-success">+{fmt(r.potential)} <span className="text-xs font-normal text-muted-foreground">clicks</span></span>
-              </div>
-              <p className="flex items-center gap-2 text-xs text-muted-foreground tabular-nums">
-                {fmt(r.impressions)} impr · <span className="text-destructive">{pct(r.ctr)} CTR</span>
-                <Badge variant={r.position <= 10 ? 'default' : 'secondary'} className="text-xs">pos {pos(r.position)}</Badge>
-              </p>
-            </CardContent>
-          </Card>
-        )}
         empty={<>No opportunity queries surfaced. Either nothing has a high-impression low-CTR gap right now, or GSC data has not synced for this range.</>}
       />
     </section>
@@ -199,33 +187,30 @@ async function TopPages({ sinceDate, endDate }: { sinceDate: string; endDate: st
   const rows = await aggBy('page', sinceDate, endDate)
   const top = rows.sort((a, b) => b.clicks - a.clicks)
   return (
-    <section className="space-y-2">
-      <div className="space-y-1">
-        <h2 className="text-base font-semibold text-foreground">Top pages by clicks</h2>
-        <p className="text-xs text-muted-foreground">Which pages on ryan-realty.com pulled the most organic traffic from Google.</p>
-      </div>
-      <TableWithMobileCards
+    <section aria-label="Top pages by clicks">
+      <SectionHead>Top pages by clicks</SectionHead>
+      <p className="av2-note">Which pages on ryan-realty.com pulled the most organic traffic from Google.</p>
+      <DataList
+        label="Top pages by clicks"
         rows={top}
         cap={10}
-        getRowKey={(r) => r.key}
+        rowKey={(r) => r.key}
         columns={[
-          { key: 'page', header: 'Page', className: 'whitespace-nowrap', cell: (r) => <a href={r.key} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-mono text-xs">{stripP(r.key)}</a> },
-          { key: 'clicks', header: 'Clicks', className: 'text-right tabular-nums font-semibold whitespace-nowrap', cell: (r) => fmt(r.clicks) },
-          { key: 'impr', header: 'Impressions', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => fmt(r.impressions) },
-          { key: 'ctr', header: 'CTR', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => pct(r.ctr) },
-          { key: 'pos', header: 'Position', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => pos(r.position) },
+          {
+            key: 'page',
+            header: 'Page',
+            lead: true,
+            cell: (r) => (
+              <a href={r.key} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--a-accent)' }}>
+                {stripP(r.key)}
+              </a>
+            ),
+          },
+          { key: 'clicks', header: 'Clicks', num: true, cell: (r) => fmt(r.clicks) },
+          { key: 'impr', header: 'Impressions', num: true, cell: (r) => fmt(r.impressions) },
+          { key: 'ctr', header: 'CTR', num: true, cell: (r) => pct(r.ctr) },
+          { key: 'pos', header: 'Position', num: true, cell: (r) => pos(r.position) },
         ]}
-        renderCard={(r) => (
-          <Card>
-            <CardContent className="space-y-1">
-              <div className="flex items-center justify-between gap-2">
-                <a href={r.key} target="_blank" rel="noopener noreferrer" className="truncate font-mono text-xs text-primary hover:underline">{stripP(r.key)}</a>
-                <span className="text-sm font-semibold tabular-nums">{fmt(r.clicks)} <span className="text-xs font-normal text-muted-foreground">clicks</span></span>
-              </div>
-              <p className="text-xs text-muted-foreground tabular-nums">{fmt(r.impressions)} impr · {pct(r.ctr)} CTR · pos {pos(r.position)}</p>
-            </CardContent>
-          </Card>
-        )}
         empty={<>No GSC page data for this date range.</>}
       />
     </section>
@@ -236,18 +221,15 @@ export default async function GscPage({ searchParams }: { searchParams: Promise<
   const sp = normalizeParams(await searchParams)
   const range = resolveDateRange(sp)
   return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">Google Search</h1>
-        <p className="text-sm text-muted-foreground">
-          What people search to find Ryan Realty, which pages rank for what, and where the easy SEO wins are. Sourced from the GSC snapshot cron. GSC data has a 2-3 day processing lag.
-        </p>
-        <DateRangePicker current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
-      </header>
-      <Suspense fallback={<Skeleton className="h-24 w-full" />}><HeadlineKpis sinceDate={range.startDate} endDate={range.endDate} /></Suspense>
-      <Suspense fallback={<Skeleton className="h-96 w-full" />}><OpportunityQueries sinceDate={range.startDate} endDate={range.endDate} /></Suspense>
-      <Suspense fallback={<Skeleton className="h-96 w-full" />}><TopQueries sinceDate={range.startDate} endDate={range.endDate} /></Suspense>
-      <Suspense fallback={<Skeleton className="h-96 w-full" />}><TopPages sinceDate={range.startDate} endDate={range.endDate} /></Suspense>
+    <div className="av2-scope" style={{ maxWidth: 1120, margin: '0 auto', padding: 16 }}>
+      <p className="av2-note">
+        What people search to find Ryan Realty, which pages rank for what, and where the easy SEO wins are. Sourced from the GSC snapshot cron. GSC data has a 2-3 day processing lag.
+      </p>
+      <RangeControl current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
+      <Suspense fallback={<Loading what="Search Console totals" />}><HeadlineKpis sinceDate={range.startDate} endDate={range.endDate} /></Suspense>
+      <Suspense fallback={<Loading what="opportunity queries" />}><OpportunityQueries sinceDate={range.startDate} endDate={range.endDate} /></Suspense>
+      <Suspense fallback={<Loading what="top queries" />}><TopQueries sinceDate={range.startDate} endDate={range.endDate} /></Suspense>
+      <Suspense fallback={<Loading what="top pages" />}><TopPages sinceDate={range.startDate} endDate={range.endDate} /></Suspense>
     </div>
   )
 }

@@ -1,23 +1,16 @@
 'use client'
+/**
+ * Properties report filter — date preset only (this report has no agent or
+ * lead-type dimension). 11C: restyled to the LOCKED admin v2 language.
+ * navigate() is carried over verbatim — same param, same router.push target.
+ */
 import { useRouter, usePathname } from 'next/navigation'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { SelectField } from '@/components/admin/v2'
 
 interface Props {
   currentDate: string
 }
 
-/**
- * Properties report filter bar — date preset only.
- *
- * FUB Properties tab has no agent filter and no lead-type filter — only "This Month ▼".
- * This matches that spec exactly.
- */
 export default function PropertiesFilters({ currentDate }: Props) {
   const router = useRouter()
   const pathname = usePathname()
@@ -28,18 +21,17 @@ export default function PropertiesFilters({ currentDate }: Props) {
   }
 
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-2">
-      <Select value={currentDate} onValueChange={(v) => navigate({ date: v })}>
-        <SelectTrigger className="h-8 w-36 text-xs">
-          <SelectValue placeholder="This Month" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="today">Today</SelectItem>
-          <SelectItem value="this_week">This Week</SelectItem>
-          <SelectItem value="this_month">This Month</SelectItem>
-          <SelectItem value="this_year">This Year</SelectItem>
-        </SelectContent>
-      </Select>
+    <div className="av2-inline-form" style={{ maxWidth: 220 }}>
+      <SelectField
+        label="Date range"
+        value={currentDate}
+        onChange={(e) => navigate({ date: e.target.value })}
+      >
+        <option value="today">Today</option>
+        <option value="this_week">This Week</option>
+        <option value="this_month">This Month</option>
+        <option value="this_year">This Year</option>
+      </SelectField>
     </div>
   )
 }

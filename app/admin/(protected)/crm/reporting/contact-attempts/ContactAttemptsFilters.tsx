@@ -1,12 +1,8 @@
 'use client'
+// 11C: restyled to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+// navigate() is carried over verbatim — same params, same router.push target.
 import { useRouter, usePathname } from 'next/navigation'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { SelectField } from '@/components/admin/v2'
 
 type Broker = { slug: string; label: string }
 
@@ -18,7 +14,7 @@ interface Props {
 
 /**
  * Contact Attempts report filter bar — agent selector + date preset.
- * Mirrors the Calls and Texts filter pattern (no lead-type / cols filters needed).
+ * Mirrors the Speed to Lead filter pattern.
  */
 export default function ContactAttemptsFilters({
   currentBroker,
@@ -38,34 +34,30 @@ export default function ContactAttemptsFilters({
   }
 
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-2">
-      {/* Agent selector */}
-      <Select value={currentBroker} onValueChange={(v) => navigate({ broker: v })}>
-        <SelectTrigger className="h-8 w-36 text-xs">
-          <SelectValue placeholder="Everyone" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="everyone">Everyone</SelectItem>
-          {brokers.map((b) => (
-            <SelectItem key={b.slug} value={b.slug}>
-              {b.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+    <div className="av2-inline-form" style={{ maxWidth: 380 }}>
+      <SelectField
+        label="Agent"
+        value={currentBroker}
+        onChange={(e) => navigate({ broker: e.target.value })}
+      >
+        <option value="everyone">Everyone</option>
+        {brokers.map((b) => (
+          <option key={b.slug} value={b.slug}>
+            {b.label}
+          </option>
+        ))}
+      </SelectField>
 
-      {/* Date preset */}
-      <Select value={currentDate} onValueChange={(v) => navigate({ date: v })}>
-        <SelectTrigger className="h-8 w-36 text-xs">
-          <SelectValue placeholder="This Month" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="today">Today</SelectItem>
-          <SelectItem value="this_week">This Week</SelectItem>
-          <SelectItem value="this_month">This Month</SelectItem>
-          <SelectItem value="this_year">This Year</SelectItem>
-        </SelectContent>
-      </Select>
+      <SelectField
+        label="Date range"
+        value={currentDate}
+        onChange={(e) => navigate({ date: e.target.value })}
+      >
+        <option value="today">Today</option>
+        <option value="this_week">This Week</option>
+        <option value="this_month">This Month</option>
+        <option value="this_year">This Year</option>
+      </SelectField>
     </div>
   )
 }

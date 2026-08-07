@@ -5,16 +5,18 @@
  * days). Surfaces: total views, unique sessions, identified visitors,
  * hot leads, average price, top traffic source. Tells the broker which
  * listings to lean into for marketing and which are underperforming.
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Presentation only — the visitor_events / visitor_sessions reads, the 50,000-row
+ * cap, the per-listing aggregation, the identify-rate computation and the
+ * date-range contract are carried over verbatim.
  */
 import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
-import { Card, CardContent } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Badge } from '@/components/ui/badge'
-import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
-import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
-import { DateRangePicker } from '../_components/DateRangePicker'
+import { SectionHead, StateWord, VerdictLine } from '@/components/admin/v2'
+import { DataList, Figures, Loading, Trouble } from '../_components/v2/kit'
+import { RangeControl } from '../_components/v2/RangeControl'
 import { resolveDateRange } from '../_lib/queries'
 
 export const dynamic = 'force-dynamic'
@@ -62,17 +64,20 @@ async function ListingLeaderboard({ range }: { range: { startDate: string; endDa
     50000,
   )
   if (error) {
-    return <Card><CardContent className="p-6 text-sm text-destructive">Could not load listing events: {error.message}</CardContent></Card>
+    return (
+      <Trouble>
+        Could not load listing events: {error.message}. The read hit Supabase directly — retry, and if it keeps
+        failing check the service-role key before trusting anything on this page.
+      </Trouble>
+    )
   }
   const evRows = events
   const eventsCapped = evRows.length === 50000
   if (evRows.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-6 text-sm text-muted-foreground">
-          No listing-detail page views captured for {range.startDate} to {range.endDate} yet. Once visitors browse listings with consent granted, the leaderboard fills in. Listing views weight 10 points each in the engagement score.
-        </CardContent>
-      </Card>
+      <div className="av2-empty">
+        No listing-detail page views captured for {range.startDate} to {range.endDate} yet. Once visitors browse listings with consent granted, the leaderboard fills in. Listing views weight 10 points each in the engagement score.
+      </div>
     )
   }
 
@@ -163,77 +168,73 @@ async function ListingLeaderboard({ range }: { range: { startDate: string; endDa
   const totalHot = rows.reduce((s, r) => s + r.hot, 0)
 
   return (
-    <div className="space-y-6">
+    <>
+      <VerdictLine tone={totalHot > 0 ? 'attention' : 'ok'}>
+        {totalHot > 0 ? (
+          <>
+            <b>{fmtInt(totalHot)} hot lead{totalHot === 1 ? '' : 's'}</b> viewed a listing in this window, across {fmtInt(rows.length)} listing{rows.length === 1 ? '' : 's'}.
+          </>
+        ) : (
+          <>
+            <b>{fmtInt(rows.length)} listing{rows.length === 1 ? '' : 's'} drew views</b> in this window. No session crossed the hot threshold.
+          </>
+        )}
+      </VerdictLine>
       {eventsCapped && (
-        <p className="text-xs text-warning">
+        <p className="av2-note" style={{ color: 'var(--a-warn)' }}>
           Showing first 50,000 events — result capped. Narrow the date range to see complete data.
         </p>
       )}
-      <DashboardSummaryStrip
-        stats={[
+      <Figures
+        figures={[
           { label: 'Listings viewed', value: fmtInt(rows.length) },
           { label: `Total views (${range.startDate} to ${range.endDate})`, value: fmtInt(totalViews) },
           { label: 'Identified', value: fmtInt(totalIdentified) },
-          { label: 'Hot leads', value: fmtInt(totalHot), tone: totalHot > 0 ? 'success' : 'default' },
+          { label: 'Hot leads', value: fmtInt(totalHot), tone: totalHot > 0 ? 'ok' : undefined },
         ]}
       />
 
-      <section className="space-y-2">
-        <div className="space-y-1">
-          <h2 className="text-base font-semibold text-foreground">Listing performance ({range.startDate} to {range.endDate})</h2>
-          <p className="text-xs text-muted-foreground">
-            Ranked by total views. Identify rate is the share of unique visitors who signed in or converted while viewing this listing. Hot column is sessions that crossed score 100 anywhere in the funnel and viewed this listing along the way.
-          </p>
-        </div>
-        <TableWithMobileCards
+      <section aria-label="Listing performance">
+        <SectionHead>Listing performance ({range.startDate} to {range.endDate})</SectionHead>
+        <p className="av2-note">
+          Ranked by total views. Identify rate is the share of unique visitors who signed in or converted while viewing this listing. Hot column is sessions that crossed score 100 anywhere in the funnel and viewed this listing along the way.
+        </p>
+        <DataList
+          label="Listing performance"
           rows={rows}
           cap={12}
-          getRowKey={(r) => r.mls}
+          rowKey={(r) => r.mls}
           columns={[
-            { key: 'listing', header: 'Listing', className: 'whitespace-nowrap', cell: (r) => {
-              const i = rows.indexOf(r)
-              return (
+            {
+              key: 'listing',
+              header: 'Listing',
+              lead: true,
+              cell: (r, i) => (
                 <>
-                  <a href={r.pageUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">MLS {r.mls}</a>
-                  <div className="text-[10px] text-muted-foreground">{r.address}</div>
-                  {i < 3 && <Badge variant="default" className="mt-1 text-[10px]">top {i + 1}</Badge>}
+                  <a href={r.pageUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--a-accent)' }}>
+                    MLS {r.mls}
+                  </a>
+                  {i < 3 ? <> <StateWord state="accent">top {i + 1}</StateWord></> : null}
+                  <span style={{ display: 'block', fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>{r.address}</span>
                 </>
-              )
-            } },
-            { key: 'city', header: 'City', className: 'text-xs whitespace-nowrap', cell: (r) => r.city },
-            { key: 'price', header: 'Price', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => fmtUsd(r.price) },
-            { key: 'views', header: 'Views', className: 'text-right tabular-nums font-semibold whitespace-nowrap', cell: (r) => fmtInt(r.views) },
-            { key: 'unique', header: 'Unique', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => fmtInt(r.uniqueVisitors) },
-            { key: 'identified', header: 'Identified', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => fmtInt(r.identified) },
-            { key: 'idrate', header: 'ID rate', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => `${(r.identifyRate * 100).toFixed(1)}%` },
-            { key: 'hot', header: 'Hot', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => fmtInt(r.hot) },
-            { key: 'source', header: 'Top source', className: 'text-xs whitespace-nowrap', cell: (r) => r.topSource },
+              ),
+            },
+            { key: 'city', header: 'City', cell: (r) => r.city },
+            { key: 'price', header: 'Price', num: true, cell: (r) => fmtUsd(r.price) },
+            { key: 'views', header: 'Views', num: true, cell: (r) => fmtInt(r.views) },
+            { key: 'unique', header: 'Unique', num: true, cell: (r) => fmtInt(r.uniqueVisitors) },
+            { key: 'identified', header: 'Identified', num: true, cell: (r) => fmtInt(r.identified) },
+            { key: 'idrate', header: 'ID rate', num: true, cell: (r) => `${(r.identifyRate * 100).toFixed(1)}%` },
+            { key: 'hot', header: 'Hot', num: true, cell: (r) => fmtInt(r.hot) },
+            { key: 'source', header: 'Top source', cell: (r) => r.topSource },
           ]}
-          renderCard={(r) => {
-            const i = rows.indexOf(r)
-            return (
-              <Card>
-                <CardContent className="space-y-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium">
-                      <a href={r.pageUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">MLS {r.mls}</a>
-                      {i < 3 && <Badge variant="default" className="ml-2 text-xs">top {i + 1}</Badge>}
-                    </span>
-                    <span className="text-sm font-semibold tabular-nums">{fmtInt(r.views)} <span className="text-xs font-normal text-muted-foreground">views</span></span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{r.address}{r.city ? ` · ${r.city}` : ''} · {fmtUsd(r.price)}</p>
-                  <p className="text-xs text-muted-foreground tabular-nums">{fmtInt(r.uniqueVisitors)} unique · {fmtInt(r.identified)} identified ({(r.identifyRate * 100).toFixed(1)}%) · {fmtInt(r.hot)} hot · {r.topSource}</p>
-                </CardContent>
-              </Card>
-            )
-          }}
           empty={<>No listing-detail page views captured in the last 30 days yet. Once visitors browse listings with consent granted, the leaderboard fills in.</>}
         />
-        <p className="text-xs text-muted-foreground">
+        <p className="av2-note">
           If a listing is repeatedly getting many views but a low identify rate, the listing detail page is hooking attention without converting. Worth reviewing the photo gallery, description, or video tour for that listing.
         </p>
       </section>
-    </div>
+    </>
   )
 }
 
@@ -241,16 +242,13 @@ export default async function ListingPerformancePage({ searchParams }: { searchP
   const sp = normalizeParams(await searchParams)
   const range = resolveDateRange(sp)
   return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">Listing performance</h1>
-        <p className="text-sm text-muted-foreground">
-          Which listings drive the most engagement, and which converted visitors into identified leads. Sourced from <code>visitor_events</code> where event_type = listing_view.
-        </p>
-        <DateRangePicker current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
-      </header>
+    <div className="av2-scope" style={{ maxWidth: 1120, margin: '0 auto', padding: 16 }}>
+      <p className="av2-note">
+        Which listings drive the most engagement, and which converted visitors into identified leads. Sourced from <code>visitor_events</code> where event_type = listing_view.
+      </p>
+      <RangeControl current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
 
-      <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+      <Suspense fallback={<Loading what="listing views" />}>
         <ListingLeaderboard range={range} />
       </Suspense>
     </div>

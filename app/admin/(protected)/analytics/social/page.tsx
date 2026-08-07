@@ -11,17 +11,21 @@
  * (Facebook, Instagram, TikTok, YouTube, LinkedIn, X/Twitter, Pinterest,
  * Threads, Reddit). Matches the auto-inference the WP snippet uses, so
  * the two surfaces report consistent numbers.
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Presentation only — classifySocial, every window (7d / today / 5-minute live /
+ * 30-minute feed / GA4 range), every aggregation and the GA4 cross-reference are
+ * carried over verbatim. The per-platform brand colours are gone: in the admin,
+ * colour is a reserved status vocabulary and never decorates a label.
  */
 import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
+import { SectionHead, VerdictLine } from '@/components/admin/v2'
+import { DataList, Figures, Loading, Trouble } from '../_components/v2/kit'
 import { getGA4SummaryCached as getGA4Summary } from '@/lib/ga4-cache'
 import { resolveDateRange } from '../_lib/queries'
-import { DateRangePicker } from '../_components/DateRangePicker'
+import { RangeControl } from '../_components/v2/RangeControl'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -62,19 +66,6 @@ function classifySocial(source: string | null | undefined): string | null {
   return null
 }
 
-const CHANNEL_COLOR: Record<string, string> = {
-  Facebook:    'bg-[#1877F2]/10 text-[#1877F2] border-[#1877F2]/30',
-  Instagram:   'bg-[#E4405F]/10 text-[#E4405F] border-[#E4405F]/30',
-  TikTok:      'bg-[#000]/10 text-[#000] border-[#000]/30',
-  YouTube:     'bg-[#FF0000]/10 text-[#FF0000] border-[#FF0000]/30',
-  LinkedIn:    'bg-[#0A66C2]/10 text-[#0A66C2] border-[#0A66C2]/30',
-  'X / Twitter': 'bg-[#000]/10 text-[#000] border-[#000]/30',
-  Pinterest:   'bg-[#E60023]/10 text-[#E60023] border-[#E60023]/30',
-  Threads:     'bg-[#000]/10 text-[#000] border-[#000]/30',
-  Reddit:      'bg-[#FF4500]/10 text-[#FF4500] border-[#FF4500]/30',
-  Snapchat:    'bg-[#FFFC00]/30 text-[#000] border-[#FFFC00]/60',
-}
-
 function formatInt(n: number): string {
   return new Intl.NumberFormat('en-US').format(n)
 }
@@ -92,7 +83,7 @@ function formatRelative(iso: string): string {
   return `${Math.floor(s / 86400)}d ago`
 }
 
-// ─── Headline summary cards ─────────────────────────────────────────────────
+// ─── Headline summary ───────────────────────────────────────────────────────
 async function HeadlineSummary() {
   const supabase = getServiceSupabase()
   const now = new Date()
@@ -113,7 +104,7 @@ async function HeadlineSummary() {
     5000,
   )
   if (error) {
-    return <Card><CardContent className="p-6 text-sm text-destructive">Could not load summary: {error?.message}</CardContent></Card>
+    return <Trouble>Could not load summary: {error?.message}. Retry — until it reads, treat the figures below as unknown, not as zero.</Trouble>
   }
 
   const social = data.filter((r) => classifySocial((r as { utm_source: string | null }).utm_source) !== null)
@@ -123,12 +114,32 @@ async function HeadlineSummary() {
   const hot        = social.filter((r) => (r as { hot_lead_fired_at: string | null }).hot_lead_fired_at !== null)
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Social active now (5m)</p><p className="mt-1 text-2xl font-semibold tabular-nums">{liveNow.length}</p></CardContent></Card>
-      <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Social today</p><p className="mt-1 text-2xl font-semibold tabular-nums">{today.length}</p></CardContent></Card>
-      <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Social last 7 days</p><p className="mt-1 text-2xl font-semibold tabular-nums">{social.length}</p><p className="text-xs text-muted-foreground tabular-nums">{formatPct(identified.length, social.length)} identified</p></CardContent></Card>
-      <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Social hot leads (7d)</p><p className="mt-1 text-2xl font-semibold tabular-nums">{hot.length}</p></CardContent></Card>
-    </div>
+    <>
+      <VerdictLine tone={liveNow.length > 0 || hot.length > 0 ? 'attention' : 'ok'}>
+        {liveNow.length > 0 ? (
+          <>
+            <b>{formatInt(liveNow.length)} social visitor{liveNow.length === 1 ? '' : 's'} on the site now.</b>{' '}
+            {formatInt(hot.length)} hot lead{hot.length === 1 ? '' : 's'} from social in the last 7 days.
+          </>
+        ) : hot.length > 0 ? (
+          <>
+            <b>{formatInt(hot.length)} hot lead{hot.length === 1 ? '' : 's'} from social in the last 7 days.</b> Nobody from social is on the site right now.
+          </>
+        ) : (
+          <>
+            <b>Nothing needs you from social.</b> {formatInt(social.length)} session{social.length === 1 ? '' : 's'} in the last 7 days, no hot leads.
+          </>
+        )}
+      </VerdictLine>
+      <Figures
+        figures={[
+          { label: 'Social active now (5m)', value: formatInt(liveNow.length) },
+          { label: 'Social today', value: formatInt(today.length) },
+          { label: 'Social last 7 days', value: formatInt(social.length), caption: `${formatPct(identified.length, social.length)} identified` },
+          { label: 'Social hot leads (7d)', value: formatInt(hot.length), tone: hot.length > 0 ? 'ok' : undefined },
+        ]}
+      />
+    </>
   )
 }
 
@@ -147,7 +158,7 @@ async function ChannelBreakdown() {
     5000,
   )
   if (error) {
-    return <Card><CardContent className="p-6 text-sm text-destructive">Could not load channel breakdown: {error?.message}</CardContent></Card>
+    return <Trouble>Could not load channel breakdown: {error?.message}. Retry before reading anything into the channel mix.</Trouble>
   }
 
   type ChannelAgg = { sessions: number; identified: number; hot: number; campaigns: Set<string>; topCity: Map<string, number>; engagedSum: number }
@@ -186,35 +197,23 @@ async function ChannelBreakdown() {
     .sort((x, y) => y.sessions - x.sessions)
 
   return (
-    <section className="space-y-3">
-      <h2 className="text-base font-semibold text-foreground">Per-channel breakdown (last 7 days, from visitor_sessions)</h2>
-      <TableWithMobileCards
+    <section aria-label="Per-channel breakdown">
+      <SectionHead>Per-channel breakdown — last 7 days, from visitor_sessions</SectionHead>
+      <DataList
+        label="Per-channel breakdown"
         rows={rows}
         cap={10}
-        getRowKey={(r) => r.channel}
+        rowKey={(r) => r.channel}
         columns={[
-          { key: 'channel', header: 'Channel', cell: (r) => <Badge variant="outline" className={CHANNEL_COLOR[r.channel] ?? ''}>{r.channel}</Badge> },
-          { key: 'sessions', header: 'Sessions', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => <span className="font-semibold">{formatInt(r.sessions)}</span> },
-          { key: 'identified', header: 'Identified', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => formatInt(r.identified) },
-          { key: 'identifyRate', header: 'Identify rate', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => `${(r.identifyRate * 100).toFixed(1)}%` },
-          { key: 'hot', header: 'Hot leads', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => formatInt(r.hot) },
-          { key: 'avgScore', header: 'Avg score', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => r.avgScore.toFixed(1) },
-          { key: 'campaigns', header: 'Campaigns', className: 'text-right tabular-nums whitespace-nowrap text-muted-foreground', cell: (r) => r.campaignCount },
-          { key: 'topCity', header: 'Top city', className: 'whitespace-nowrap', cell: (r) => <span className="text-xs text-muted-foreground">{r.topCity || '—'}</span> },
+          { key: 'channel', header: 'Channel', lead: true, cell: (r) => r.channel },
+          { key: 'sessions', header: 'Sessions', num: true, cell: (r) => formatInt(r.sessions) },
+          { key: 'identified', header: 'Identified', num: true, cell: (r) => formatInt(r.identified) },
+          { key: 'identifyRate', header: 'Identify rate', num: true, cell: (r) => `${(r.identifyRate * 100).toFixed(1)}%` },
+          { key: 'hot', header: 'Hot leads', num: true, cell: (r) => formatInt(r.hot) },
+          { key: 'avgScore', header: 'Avg score', num: true, cell: (r) => r.avgScore.toFixed(1) },
+          { key: 'campaigns', header: 'Campaigns', num: true, cell: (r) => r.campaignCount },
+          { key: 'topCity', header: 'Top city', cell: (r) => r.topCity || '—' },
         ]}
-        renderCard={(r) => (
-          <Card>
-            <CardContent className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <Badge variant="outline" className={CHANNEL_COLOR[r.channel] ?? ''}>{r.channel}</Badge>
-                <span className="text-lg font-semibold tabular-nums">{formatInt(r.sessions)} <span className="text-xs font-normal text-muted-foreground">sessions</span></span>
-              </div>
-              <p className="text-xs text-muted-foreground tabular-nums">
-                {formatInt(r.identified)} identified ({(r.identifyRate * 100).toFixed(1)}%) · {formatInt(r.hot)} hot · avg score {r.avgScore.toFixed(1)} · {r.topCity || '—'}
-              </p>
-            </CardContent>
-          </Card>
-        )}
         empty={<>No social traffic captured in the last 7 days yet. Once the consent banner is accepted and visitors arrive from FB / IG / TikTok etc, channel rows appear here. The WP snippet auto-tags referrers even when UTMs are missing.</>}
       />
     </section>
@@ -236,45 +235,30 @@ async function LiveSocialFeed() {
 
   const identifiedCell = (r: FeedRow) =>
     r.fub_person_id ? (
-      <a href={`https://app.followupboss.com/2/people/view/${r.fub_person_id}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+      <a href={`https://app.followupboss.com/2/people/view/${r.fub_person_id}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--a-accent)' }}>
         {r.identified_email ?? `FUB #${r.fub_person_id}`}
       </a>
     ) : (
-      <span className="text-muted-foreground">anonymous</span>
+      <span style={{ color: 'var(--a-text-2)' }}>anonymous</span>
     )
 
   return (
-    <section className="space-y-3">
-      <h2 className="text-base font-semibold text-foreground">Right now from social (last 30 min)</h2>
-      <TableWithMobileCards
+    <section aria-label="Right now from social">
+      <SectionHead>Right now from social — last 30 min</SectionHead>
+      <DataList
+        label="Right now from social"
         rows={rows}
         cap={8}
-        getRowKey={(r) => r.session_id}
+        rowKey={(r) => r.session_id}
         columns={[
-          { key: 'channel', header: 'Channel', className: 'whitespace-nowrap', cell: (r) => <Badge variant="outline" className={CHANNEL_COLOR[classifySocial(r.utm_source) || '—'] ?? ''}>{classifySocial(r.utm_source) || '—'}</Badge> },
-          { key: 'campaign', header: 'Campaign', className: 'text-xs whitespace-nowrap', cell: (r) => r.utm_campaign ?? '—' },
-          { key: 'city', header: 'City', className: 'text-xs whitespace-nowrap', cell: (r) => r.ip_city ?? '—' },
-          { key: 'score', header: 'Score', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => r.engagement_score },
-          { key: 'intent', header: 'Intent', className: 'whitespace-nowrap', cell: (r) => <div className="flex flex-wrap gap-1">{(r.intent_tags ?? []).map((t) => <Badge key={t} variant="secondary" className="text-[10px]">{t.replace(/_/g, ' ')}</Badge>)}</div> },
-          { key: 'identified', header: 'Identified', className: 'text-xs whitespace-nowrap', cell: identifiedCell },
-          { key: 'lastSeen', header: 'Last seen', className: 'text-xs whitespace-nowrap', cell: (r) => formatRelative(r.last_seen_at) },
+          { key: 'channel', header: 'Channel', lead: true, cell: (r) => classifySocial(r.utm_source) || '—' },
+          { key: 'campaign', header: 'Campaign', cell: (r) => r.utm_campaign ?? '—' },
+          { key: 'city', header: 'City', cell: (r) => r.ip_city ?? '—' },
+          { key: 'score', header: 'Score', num: true, cell: (r) => r.engagement_score },
+          { key: 'intent', header: 'Intent', cell: (r) => (r.intent_tags ?? []).map((t) => t.replace(/_/g, ' ')).join(', ') || '—' },
+          { key: 'identified', header: 'Identified', cell: identifiedCell },
+          { key: 'lastSeen', header: 'Last seen', num: true, cell: (r) => formatRelative(r.last_seen_at) },
         ]}
-        renderCard={(r) => {
-          const ch = classifySocial(r.utm_source) || '—'
-          return (
-            <Card>
-              <CardContent className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <Badge variant="outline" className={CHANNEL_COLOR[ch] ?? ''}>{ch}</Badge>
-                  <span className="text-xs text-muted-foreground tabular-nums">score {r.engagement_score} · {formatRelative(r.last_seen_at)}</span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {(r.utm_campaign ?? '—')} · {(r.ip_city ?? '—')} · {identifiedCell(r)}
-                </p>
-              </CardContent>
-            </Card>
-          )
-        }}
         empty={<>No social visitors in the last 30 minutes.</>}
       />
     </section>
@@ -285,7 +269,7 @@ async function LiveSocialFeed() {
 async function Ga4SocialSources({ startDate, endDate }: { startDate: string; endDate: string }) {
   const res = await getGA4Summary(startDate, endDate)
   if (!res.ok) {
-    return <Card><CardContent className="p-6 text-sm text-muted-foreground">GA4 unavailable: {res.error}</CardContent></Card>
+    return <Trouble>GA4 unavailable: {res.error}. The visitor_sessions figures above still stand on their own.</Trouble>
   }
   const d = res.data
   type Row = { source: string; channel: string; sessions: number; users: number; engaged: number; leads: number }
@@ -299,36 +283,23 @@ async function Ga4SocialSources({ startDate, endDate }: { startDate: string; end
     .filter((x): x is Row => x !== null)
     .sort((a, b) => b.sessions - a.sessions)
   return (
-    <section className="space-y-2">
-      <div className="space-y-1">
-        <h2 className="text-base font-semibold text-foreground">GA4 cross-reference (last 30 days, by source/medium)</h2>
-        <p className="text-xs text-muted-foreground">From the GA4 Data API. Use this to validate the visitor_sessions count above and to see leads-per-source.</p>
-      </div>
-      <TableWithMobileCards
+    <section aria-label="GA4 cross-reference">
+      <SectionHead>GA4 cross-reference — last 30 days, by source/medium</SectionHead>
+      <p className="av2-note">From the GA4 Data API. Use this to validate the visitor_sessions count above and to see leads-per-source.</p>
+      <DataList
+        label="GA4 cross-reference"
         rows={social}
         cap={10}
-        getRowKey={(r) => r.source}
+        rowKey={(r) => r.source}
         columns={[
-          { key: 'channel', header: 'Channel', cell: (r) => <Badge variant="outline" className={CHANNEL_COLOR[r.channel] ?? ''}>{r.channel}</Badge> },
-          { key: 'source', header: 'Source / Medium', className: 'font-mono text-xs whitespace-nowrap', cell: (r) => r.source },
-          { key: 'sessions', header: 'Sessions', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => formatInt(r.sessions) },
-          { key: 'users', header: 'Users', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => formatInt(r.users) },
-          { key: 'engaged', header: 'Engaged', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => formatInt(r.engaged) },
-          { key: 'leads', header: 'Leads', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => <span className="font-semibold">{formatInt(r.leads)}</span> },
-          { key: 'conv', header: 'Conv rate', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => r.sessions ? `${((r.leads / r.sessions) * 100).toFixed(1)}%` : '—' },
+          { key: 'channel', header: 'Channel', lead: true, cell: (r) => r.channel },
+          { key: 'source', header: 'Source / Medium', mono: true, cell: (r) => r.source },
+          { key: 'sessions', header: 'Sessions', num: true, cell: (r) => formatInt(r.sessions) },
+          { key: 'users', header: 'Users', num: true, cell: (r) => formatInt(r.users) },
+          { key: 'engaged', header: 'Engaged', num: true, cell: (r) => formatInt(r.engaged) },
+          { key: 'leads', header: 'Leads', num: true, cell: (r) => formatInt(r.leads) },
+          { key: 'conv', header: 'Conv rate', num: true, cell: (r) => r.sessions ? `${((r.leads / r.sessions) * 100).toFixed(1)}%` : '—' },
         ]}
-        renderCard={(r) => (
-          <Card>
-            <CardContent className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <Badge variant="outline" className={CHANNEL_COLOR[r.channel] ?? ''}>{r.channel}</Badge>
-                <span className="text-sm font-semibold tabular-nums">{formatInt(r.leads)} <span className="text-xs font-normal text-muted-foreground">leads</span></span>
-              </div>
-              <p className="font-mono text-[11px] text-muted-foreground">{r.source}</p>
-              <p className="text-xs text-muted-foreground tabular-nums">{formatInt(r.sessions)} sessions · {formatInt(r.users)} users · {r.sessions ? `${((r.leads / r.sessions) * 100).toFixed(1)}% conv` : '—'}</p>
-            </CardContent>
-          </Card>
-        )}
         empty={<>No social sources surfaced by GA4 in this window. Once visitors arrive from a tagged social link, leads-per-source rows appear here.</>}
       />
     </section>
@@ -343,29 +314,26 @@ export default async function SocialChannelsPage({
   const sp = normalizeParams(await searchParams)
   const range = resolveDateRange(sp)
   return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">Social channels</h1>
-        <p className="text-sm text-muted-foreground">
-          Who is showing up from Facebook, Instagram, TikTok, YouTube, LinkedIn, X, Pinterest, Threads, Reddit, and Snapchat. Real-time from <code>visitor_sessions</code> plus a GA4 cross-reference for the last 30 days.
-        </p>
-        <DateRangePicker current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
-        <p className="text-xs text-muted-foreground">Date range applies to GA4 data only. The real-time visitor session tables above always show the full available history.</p>
-      </header>
+    <div className="av2-scope" style={{ maxWidth: 1120, margin: '0 auto', padding: 16 }}>
+      <p className="av2-note">
+        Who is showing up from Facebook, Instagram, TikTok, YouTube, LinkedIn, X, Pinterest, Threads, Reddit, and Snapchat. Real-time from <code>visitor_sessions</code> plus a GA4 cross-reference for the last 30 days.
+      </p>
+      <RangeControl current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
+      <p className="av2-note">Date range applies to GA4 data only. The real-time visitor session tables below always show the full available history.</p>
 
-      <Suspense fallback={<Skeleton className="h-24 w-full" />}>
+      <Suspense fallback={<Loading what="social sessions" />}>
         <HeadlineSummary />
       </Suspense>
 
-      <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+      <Suspense fallback={<Loading what="the live social feed" />}>
         <LiveSocialFeed />
       </Suspense>
 
-      <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+      <Suspense fallback={<Loading what="the channel breakdown" />}>
         <ChannelBreakdown />
       </Suspense>
 
-      <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+      <Suspense fallback={<Loading what="GA4 social sources" />}>
         <Ga4SocialSources startDate={range.startDate} endDate={range.endDate} />
       </Suspense>
     </div>

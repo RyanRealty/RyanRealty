@@ -1,14 +1,19 @@
 // @no-parity — internal admin surface
-//
-// INFERRED REPORT: No dedicated FUB screen was captured for the Appointments
-// report. Layout and KPI set are inferred from the FUB hub description
-// ("See a list of appointments & outcomes with details on lead source and agent.")
-// + standard FUB Appointments report conventions (total / set / by-outcome KPIs
-// + a detail table with date, person, agent, type, outcome, lead source).
-//
+/**
+ * Appointments — what was set and what came of it, by agent and lead source.
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Presentation only. Carried over verbatim: the getCrmAccess guard + redirect,
+ * scopeBroker, the superuser broker-filter branch, the `date` default
+ * ('this_month'), the getAppointmentsReport read, the delta arithmetic
+ * (current − previous, "no change" at zero, suppressed when previous is 0), the
+ * all-day date formatting, the 500-row ceiling notice, and every href. ONE truth
+ * correction: a failed read now says so instead of rendering zeros as data
+ * (CLAUDE.md §0).
+ */
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Calendar, ChevronDown } from 'lucide-react'
+import type { CSSProperties } from 'react'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import {
@@ -19,23 +24,12 @@ import {
 } from '@/lib/data/crm/getAppointmentsReport'
 import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
 import { formatDate, formatDateTime as fmtDateTimeFn } from '@/lib/format/date'
-import { Card } from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import AppointmentsFilters from './AppointmentsFilters'
 import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
 
 export const metadata = { title: 'Appointments | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
-
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -44,45 +38,107 @@ function formatAppointmentDate(iso: string, allDay: boolean): string {
   return allDay ? formatDate(iso) : fmtDateTimeFn(iso)
 }
 
-/** Delta arrow + value for KPI tiles. */
-function renderDelta(current: number, previous: number): React.ReactNode {
+/**
+ * Change vs the previous period — the same arithmetic the report has always
+ * used: no comparison when the previous period was empty, "no change" at zero.
+ */
+function delta(current: number, previous: number): { text: string; color: string } | null {
   if (previous === 0) return null
   const diff = current - previous
-  if (diff === 0) return <span className="text-xs text-muted-foreground">no change</span>
+  if (diff === 0) return { text: 'no change', color: 'var(--a-text-2)' }
   const isUp = diff > 0
-  return (
-    <span className={cn('text-xs tabular-nums', isUp ? 'text-primary' : 'text-destructive')}>
-      {isUp ? '↑' : '↓'} {Math.abs(diff)} vs prev
-    </span>
-  )
+  return {
+    text: `${isUp ? '↑' : '↓'} ${Math.abs(diff)} vs prev`,
+    color: isUp ? 'var(--a-ok)' : 'var(--a-danger)',
+  }
 }
 
-// ── KPI Tile ──────────────────────────────────────────────────────────────────
+const DATE_WORDS: Record<string, string> = {
+  today: 'today',
+  this_week: 'this week',
+  this_month: 'this month',
+  this_year: 'this year',
+}
+function windowWords(preset: string): string {
+  return DATE_WORDS[preset] ?? 'this period'
+}
 
-/**
- * Appointments KPI tile.
- * Follows the Calls report pattern: count large, optional delta sub-label,
- * no sparkline (the Appointments report has no time-series chart).
- */
-function ApptKpiTile({
-  label,
+// ── Presentation constants (v2 tokens only) ───────────────────────────────────
+
+const COLS =
+  'minmax(160px,1.2fr) minmax(150px,1.3fr) minmax(104px,0.9fr) minmax(112px,0.9fr) minmax(112px,0.9fr) minmax(120px,1fr)'
+
+const PAGE: CSSProperties = { maxWidth: 1120, margin: '0 auto', padding: 16 }
+const TOOLBAR: CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 'var(--a-s3)',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  marginTop: 12,
+}
+const SCROLLER: CSSProperties = {
+  overflowX: 'auto',
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-lg)',
+  background: 'var(--a-surface)',
+}
+const GRID: CSSProperties = { minWidth: 820 }
+const ROW: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: COLS,
+  gap: 'var(--a-s3)',
+  alignItems: 'baseline',
+  padding: '10px 16px',
+  borderTop: '1px solid var(--a-border)',
+}
+const HEAD_ROW: CSSProperties = { ...ROW, borderTop: 'none', background: 'var(--a-inset)' }
+const HEAD_CELL: CSSProperties = {
+  fontSize: 'var(--a-text-xs)',
+  fontWeight: 600,
+  letterSpacing: '.05em',
+  textTransform: 'uppercase',
+  color: 'var(--a-text-2)',
+}
+const STAMP: CSSProperties = {
+  fontVariantNumeric: 'tabular-nums',
+  fontSize: 'var(--a-text-sm)',
+  whiteSpace: 'nowrap',
+}
+const LINK: CSSProperties = { color: 'var(--a-accent)' }
+const MUTED: CSSProperties = { color: 'var(--a-text-2)', fontSize: 'var(--a-text-sm)' }
+const NOTE: CSSProperties = { fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', marginTop: 12 }
+const STATE_PANEL: CSSProperties = {
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-lg)',
+  background: 'var(--a-surface)',
+  padding: 'var(--a-s6)',
+  textAlign: 'center',
+  color: 'var(--a-text-2)',
+  fontSize: 'var(--a-text-sm)',
+}
+
+// ── Figure ────────────────────────────────────────────────────────────────────
+
+function Figure({
   value,
-  delta,
+  label,
+  change,
 }: {
+  value: string
   label: string
-  value: number
-  delta?: React.ReactNode
+  change?: { text: string; color: string } | null
 }) {
   return (
-    <Card className="min-w-36 shrink-0 p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+    <span className="av2-wk">
+      <span className="av2-wk__n">{value}</span>
+      <span className="av2-wk__l">
         {label}
-      </p>
-      <p className="mt-1.5 text-3xl font-bold leading-none tabular-nums text-foreground">
-        {value.toLocaleString('en-US')}
-      </p>
-      <div className="mt-1 h-4 leading-none">{delta ?? null}</div>
-    </Card>
+        {change ? (
+          <span style={{ color: change.color, fontVariantNumeric: 'tabular-nums' }}> · {change.text}</span>
+        ) : null}
+      </span>
+    </span>
   )
 }
 
@@ -126,28 +182,39 @@ export default async function AppointmentsReportPage({
     datePreset,
   }).catch(() => null)
 
+  // A failed read is NOT zero appointments — say so rather than print a wrong figure.
+  const unreadable = report === null
   const totals: AppointmentsTotals = report?.totals ?? {
     total: 0, set: 0, previousTotal: 0, previousSet: 0,
   }
   const rows: AppointmentRow[] = report?.rows ?? []
   const byOutcome: OutcomeBucket[] = report?.byOutcome ?? []
 
+  const period = windowWords(currentDate)
+  const refreshHref = `/admin/crm/reporting/appointments?broker=${currentBroker}&date=${currentDate}&t=${Date.now()}`
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+    <div className="av2-scope" style={PAGE}>
       <ReportingTabStrip active="appointments" />
 
-      {/* Header row: "Show me" selector + filter bar */}
-      <div className="mb-2 flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-center gap-1.5 text-sm">
-          <span className="text-muted-foreground">Show me</span>
-          <div className="flex items-center gap-0.5">
-            <span className="font-medium text-primary underline underline-offset-2">
-              appointment report
-            </span>
-            <ChevronDown className="h-4 w-4 text-primary" />
-          </div>
-        </div>
+      {unreadable ? (
+        <VerdictLine tone="attention">
+          <b>Appointment data could not be read.</b> Nothing is shown rather than a wrong number —
+          refresh below, and if it keeps failing the appointments read is down.
+        </VerdictLine>
+      ) : (
+        <VerdictLine tone="ok">
+          <b>
+            {totals.total.toLocaleString('en-US')} appointment{totals.total === 1 ? '' : 's'}
+          </b>{' '}
+          {period} · {totals.set.toLocaleString('en-US')} attached to a lead.
+        </VerdictLine>
+      )}
 
+      <div style={TOOLBAR}>
+        <Link href={refreshHref} className="av2-btn" style={{ textDecoration: 'none' }}>
+          Refresh results
+        </Link>
         {/* Filter controls — superuser only; non-superusers are broker-scoped */}
         {isSuperuser ? (
           <AppointmentsFilters
@@ -161,149 +228,114 @@ export default async function AppointmentsReportPage({
         ) : null}
       </div>
 
-      {/* Cache notice */}
-      <p className="mb-6 text-xs text-muted-foreground">
-        Reporting results may be cached for up to 10 minutes.{' '}
-        <Link
-          href={`/admin/crm/reporting/appointments?broker=${currentBroker}&date=${currentDate}&t=${Date.now()}`}
-          className="text-muted-foreground hover:underline"
-        >
-          Refresh results.
-        </Link>
-      </p>
-
-      {/* ── KPI Tile strip ─────────────────────────────────────────────────────
-        KPIs (inferred from FUB Appointments report conventions):
+      {/*
+        Figures:
           APPOINTMENTS (total)  — crm_appointments, broker-scoped, start_at in range
           SET (has person)      — same WHERE person_id IS NOT NULL
-          + per-outcome buckets — tally from the 500-row detail fetch
+          + per-outcome buckets — tallied from the 500-row detail fetch
 
-        Honest empty states:
-          byOutcome buckets are absent when no outcome data exists (no guesses).
+        Honest empty state: outcome buckets are absent when no outcome data
+        exists — never a guessed zero.
       */}
-      <div className="no-scrollbar mb-6 flex gap-3 overflow-x-auto pb-2">
-        <ApptKpiTile
-          label="Appointments"
-          value={totals.total}
-          delta={renderDelta(totals.total, totals.previousTotal)}
-        />
-        <ApptKpiTile
-          label="Set"
-          value={totals.set}
-          delta={renderDelta(totals.set, totals.previousSet)}
-        />
-        {byOutcome.map((bucket) => (
-          <ApptKpiTile
-            key={bucket.outcomeName}
-            label={bucket.outcomeName}
-            value={bucket.count}
-          />
-        ))}
-      </div>
-
-      {/* ── Appointments detail table ──────────────────────────────────────── */}
-      <Card className="overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="w-48 text-xs">Date / Time</TableHead>
-              <TableHead className="text-xs">Person</TableHead>
-              <TableHead className="text-xs">Agent</TableHead>
-              <TableHead className="text-xs">Type</TableHead>
-              <TableHead className="text-xs">Outcome</TableHead>
-              <TableHead className="text-xs">Lead Source</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="py-12 text-center text-sm text-muted-foreground"
-                >
-                  No appointments for this period.
-                </TableCell>
-              </TableRow>
-            ) : (
-              rows.map((row) => (
-                <TableRow key={row.id} className="hover:bg-muted/40">
-                  {/* Date / Time */}
-                  <TableCell className="text-sm text-foreground tabular-nums">
-                    {formatAppointmentDate(row.startAt, row.allDay)}
-                  </TableCell>
-
-                  {/* Person — link to CRM contact if available */}
-                  <TableCell>
-                    {row.personId ? (
-                      <Link
-                        href={`/admin/crm/${row.personId}`}
-                        className="text-sm text-primary hover:underline"
-                      >
-                        {row.personName ?? `Person #${row.personId}`}
-                      </Link>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-
-                  {/* Agent */}
-                  <TableCell className="text-sm text-foreground">
-                    {row.brokerName}
-                  </TableCell>
-
-                  {/* Type */}
-                  <TableCell>
-                    {row.typeLabel ? (
-                      <Badge variant="secondary" className="text-xs font-normal">
-                        {row.typeLabel}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-
-                  {/* Outcome */}
-                  <TableCell>
-                    {row.outcomeLabel ? (
-                      <Badge variant="outline" className="text-xs font-normal">
-                        {row.outcomeLabel}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-
-                  {/* Lead Source */}
-                  <TableCell className="text-sm text-muted-foreground">
-                    {row.leadSource ?? '—'}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-
-        {rows.length >= 500 ? (
-          <div className="border-t border-border px-4 py-3">
-            <p className="text-xs text-muted-foreground">
-              Showing the 500 most recent appointments. Narrow the date range to see
-              earlier records.
-            </p>
+      {unreadable ? null : (
+        <>
+          <SectionHead>
+            {period === 'this period' ? 'This period' : period[0].toUpperCase() + period.slice(1)}
+          </SectionHead>
+          <div className="av2-week">
+            <Figure
+              value={totals.total.toLocaleString('en-US')}
+              label="appointments"
+              change={delta(totals.total, totals.previousTotal)}
+            />
+            <Figure
+              value={totals.set.toLocaleString('en-US')}
+              label="set"
+              change={delta(totals.set, totals.previousSet)}
+            />
+            {byOutcome.map((bucket) => (
+              <Figure
+                key={bucket.outcomeName}
+                value={bucket.count.toLocaleString('en-US')}
+                label={bucket.outcomeName}
+              />
+            ))}
           </div>
-        ) : null}
-      </Card>
+        </>
+      )}
 
-      {/* ── Calendar link ── */}
-      <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-        <Calendar className="h-3.5 w-3.5" />
-        <span>
-          Schedule and manage appointments in the{' '}
-          <Link href="/admin/crm?filter=appointments" className="text-primary hover:underline">
-            CRM Calendar
+      <SectionHead>Every appointment</SectionHead>
+
+      {unreadable ? (
+        <div style={STATE_PANEL}>
+          Could not read the appointment calendar.{' '}
+          <Link href={refreshHref} style={LINK}>
+            Try again
           </Link>
           .
-        </span>
-      </div>
+        </div>
+      ) : rows.length === 0 ? (
+        <div style={STATE_PANEL}>
+          No appointments {period}. Widen the date range, or switch the agent filter above.
+        </div>
+      ) : (
+        <div style={SCROLLER} tabIndex={0}>
+          <div style={GRID} role="table" aria-label="Appointments">
+            <div style={HEAD_ROW} role="row">
+              <span style={HEAD_CELL} role="columnheader">Date / time</span>
+              <span style={HEAD_CELL} role="columnheader">Person</span>
+              <span style={HEAD_CELL} role="columnheader">Agent</span>
+              <span style={HEAD_CELL} role="columnheader">Type</span>
+              <span style={HEAD_CELL} role="columnheader">Outcome</span>
+              <span style={HEAD_CELL} role="columnheader">Lead source</span>
+            </div>
+
+            {rows.map((row) => (
+              <div style={ROW} role="row" key={row.id}>
+                <span role="cell" style={STAMP}>
+                  {formatAppointmentDate(row.startAt, row.allDay)}
+                </span>
+                {/* Person — a door to the contact when one is linked */}
+                <span role="cell">
+                  {row.personId ? (
+                    <Link href={`/admin/crm/${row.personId}`} style={LINK}>
+                      {row.personName ?? `Person #${row.personId}`}
+                    </Link>
+                  ) : (
+                    <span style={MUTED}>—</span>
+                  )}
+                </span>
+                <span role="cell">{row.brokerName}</span>
+                <span role="cell">
+                  {row.typeLabel ? row.typeLabel : <span style={MUTED}>—</span>}
+                </span>
+                <span role="cell">
+                  {row.outcomeLabel ? row.outcomeLabel : <span style={MUTED}>—</span>}
+                </span>
+                <span role="cell" style={MUTED}>{row.leadSource ?? '—'}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!unreadable && rows.length >= 500 ? (
+        <p style={NOTE}>
+          Showing the 500 most recent appointments. Narrow the date range to see earlier records.
+        </p>
+      ) : null}
+
+      <p style={NOTE}>
+        Results may be cached for up to 10 minutes.{' '}
+        <Link href={refreshHref} style={LINK}>
+          Refresh results
+        </Link>
+        . Schedule and manage appointments in the{' '}
+        <Link href="/admin/crm?filter=appointments" style={LINK}>
+          CRM Calendar
+        </Link>
+        .
+      </p>
     </div>
   )
 }

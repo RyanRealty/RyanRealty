@@ -1,7 +1,10 @@
 'use client'
-// 11C: restyled to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
-// The navigate() contract is carried over verbatim — same two params, same
-// order, same router.push target. Only the control shell changed.
+// 11C: Overview's own agent + date filter, on the LOCKED admin v2 language.
+// Behaviour is byte-for-byte the contract the page had before (it borrowed the
+// Calls report's filter bar): the same two params, the same defaults, the same
+// router.push(`${pathname}?${params}`) target. It is a separate file only
+// because CallsFilters is shared with four legacy report pages that have not
+// migrated yet — this page may not restyle a component it does not own.
 import { useRouter, usePathname } from 'next/navigation'
 import { SelectField } from '@/components/admin/v2'
 
@@ -13,11 +16,7 @@ interface Props {
   brokers: Broker[]
 }
 
-export default function SpeedToLeadFilters({
-  currentBroker,
-  currentDate,
-  brokers,
-}: Props) {
+export default function OverviewFilters({ currentBroker, currentDate, brokers }: Props) {
   const router = useRouter()
   const pathname = usePathname()
 

@@ -15,19 +15,19 @@
  *   6. Recent lead processing (processed_meta_leads table)
  *   7. Meta Ads spend last 30d (from marketing_channel_daily)
  *   8. Action items (auto-generated from the data above)
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md)
+ * onto the verdict + needs-you pattern. Presentation only — every Graph API call,
+ * every Supabase read, classifyOption(), analyzeForm() and the whole action-item
+ * generator are carried over verbatim.
  */
 
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { getMetaPageToken } from '@/lib/meta-env'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Separator } from '@/components/ui/separator'
-import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
-import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
+import { QueueRow, SectionHead, StateWord, VerdictLine } from '@/components/admin/v2'
+import { DataList, Figures, Loading, Trouble } from '../_components/v2/kit'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -243,351 +243,308 @@ async function MetaHealthContent() {
       : `Meta API error (code ${pageError?.code ?? '?'}): ${pageError?.message ?? 'unknown error'}.`
     const isExpired = pageError?.message?.toLowerCase().includes('expired') || pageError?.message?.toLowerCase().includes('invalid')
     return (
-      <div className="space-y-6">
-        <Alert variant="destructive">
-          <AlertDescription className="space-y-2 text-sm">
-            <p>
-              <strong>Meta connection error.</strong> {msg}
-              {isExpired && (
-                <> The page access token has expired or been revoked. Reconnect it via{' '}
-                  <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" className="font-medium underline hover:no-underline">
-                    Meta Graph API Explorer
-                  </a>{' '}
-                  and update the <code>META_PAGE_ACCESS_TOKEN</code> environment variable.
-                </>
-              )}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Once the token is refreshed, reload this page. No Meta infrastructure data is available until the token is valid.
-            </p>
-          </AlertDescription>
-        </Alert>
-      </div>
+      <Trouble>
+        <p>
+          <b>Meta connection error.</b> {msg}
+          {isExpired && (
+            <> The page access token has expired or been revoked. Reconnect it via{' '}
+              <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--a-accent)' }}>
+                Meta Graph API Explorer
+              </a>{' '}
+              and update the <code>META_PAGE_ACCESS_TOKEN</code> environment variable.
+            </>
+          )}
+        </p>
+        <p style={{ marginTop: 'var(--a-s2)', color: 'var(--a-text-2)', fontSize: 'var(--a-text-xs)' }}>
+          Once the token is refreshed, reload this page. No Meta infrastructure data is available until the token is valid.
+        </p>
+      </Trouble>
     )
   }
 
+  const needsYou = actions.filter((a) => a.severity !== 'info')
+
   return (
-    <div className="space-y-6">
-      {/* Hero metrics */}
-      <DashboardSummaryStrip
-        stats={[
+    <>
+      <VerdictLine tone={needsYou.length > 0 ? 'attention' : 'ok'}>
+        {needsYou.length > 0 ? (
+          <>
+            <b>
+              {needsYou.length} Meta thing{needsYou.length === 1 ? '' : 's'} need{needsYou.length === 1 ? 's' : ''} you.
+            </b>{' '}
+            Everything else on the account checks out.
+          </>
+        ) : (
+          <>
+            <b>Nothing needs you.</b> Pixel, lead forms, webhook and campaigns all check out.
+          </>
+        )}
+      </VerdictLine>
+
+      <Figures
+        figures={[
           { label: 'Active campaigns', value: formatInt(activeCampaigns.length), caption: `${formatInt(campaigns.length)} total (incl. paused)` },
-          { label: 'Active lead forms', value: formatInt(activeForms.length), caption: `${formatInt(archivedForms.length)} archived`, tone: activeForms.length === 0 ? 'warning' : 'default' },
+          { label: 'Active lead forms', value: formatInt(activeForms.length), caption: `${formatInt(archivedForms.length)} archived`, tone: activeForms.length === 0 ? 'warn' : undefined },
           { label: 'Spend (30d)', value: `$${spendTotal.toFixed(2)}`, caption: `${formatInt(impressions)} impr · ${formatInt(clicks)} clicks` },
           { label: 'Leads captured', value: formatInt(processedLeadsTotal), caption: 'processed_meta_leads (lifetime)' },
         ]}
       />
 
-      {/* Action items */}
-      <Card>
-        <CardHeader>
-          <CardTitle>What needs your attention</CardTitle>
-          <p className="text-xs text-muted-foreground">Auto-generated from the live audit below. Items here trace to specific Meta API findings.</p>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <section aria-label="What needs your attention">
+        <SectionHead>What needs your attention</SectionHead>
+        <p className="av2-note">Auto-generated from the live audit below. Items here trace to specific Meta API findings.</p>
+        <ul className="av2-queue">
           {actions.map((a, i) => (
-            <Alert key={i} variant={a.severity === 'critical' ? 'destructive' : 'default'}>
-              <AlertDescription className="text-sm">
-                <Badge variant={a.severity === 'critical' ? 'destructive' : a.severity === 'warning' ? 'default' : 'outline'} className="mr-2">{a.severity}</Badge>
-                {a.message}
-                {a.deepLink && (
-                  <>
-                    {' '}
-                    <a href={a.deepLink} target="_blank" rel="noopener noreferrer" className="font-medium text-primary underline hover:no-underline">
-                      Open in Meta ↗
-                    </a>
-                  </>
-                )}
-              </AlertDescription>
-            </Alert>
+            <QueueRow
+              key={i}
+              kind={a.severity === 'critical' ? 'Broken' : a.severity === 'warning' ? 'Check' : 'Note'}
+              kindTone={a.severity === 'critical' ? 'down' : a.severity === 'warning' ? 'slow' : 'waiting'}
+              title={a.message}
+              action={
+                a.deepLink ? (
+                  <a
+                    href={a.deepLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="av2-btn av2-btn--quiet"
+                    style={{ textDecoration: 'none' }}
+                  >
+                    Open in Meta
+                  </a>
+                ) : undefined
+              }
+            />
           ))}
-        </CardContent>
-      </Card>
+        </ul>
+      </section>
 
-      {/* Pixel inventory */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Pixels ({pixels.length})</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            All pixels owned by your Business Manager. The canonical pixel (<code className="rounded bg-muted px-1">{PIXEL_ID}</code>) is the only one your code should reference. Any non-canonical pixel that has fired recently means stale code is sending events to the wrong destination — search the codebase for that id.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <TableWithMobileCards
-            rows={pixels}
-            cap={10}
-            getRowKey={(p) => p.id}
-            columns={[
-              { key: 'name', header: 'Name', className: 'font-medium whitespace-nowrap', cell: (p) => p.name },
-              { key: 'id', header: 'Pixel ID', className: 'font-mono text-xs whitespace-nowrap', cell: (p) => p.id },
-              { key: 'fired', header: 'Last fired', className: 'text-xs whitespace-nowrap', cell: (p) => { const daysAgo = p.last_fired_time ? Math.floor((Date.now() - new Date(p.last_fired_time).getTime()) / 86400000) : null; return p.last_fired_time ? `${formatRelative(p.last_fired_time)} (${daysAgo}d)` : '(never)' } },
-              { key: 'status', header: 'Status', cell: (p) => { const daysAgo = p.last_fired_time ? Math.floor((Date.now() - new Date(p.last_fired_time).getTime()) / 86400000) : null; const leaking = !p.is_canonical && daysAgo !== null && daysAgo <= 30; return (<>{p.is_canonical && <Badge variant="default">canonical</Badge>}{leaking && <Badge variant="destructive">leaking</Badge>}{!p.is_canonical && !leaking && <Badge variant="outline">dead</Badge>}</>) } },
-            ]}
-            renderCard={(p) => {
-              const daysAgo = p.last_fired_time ? Math.floor((Date.now() - new Date(p.last_fired_time).getTime()) / 86400000) : null
-              const leaking = !p.is_canonical && daysAgo !== null && daysAgo <= 30
-              return (
-                <Card>
-                  <CardContent className="space-y-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="min-w-0 break-words text-sm font-medium text-foreground">{p.name}</span>
-                      {p.is_canonical ? <Badge variant="default" className="shrink-0">canonical</Badge> : leaking ? <Badge variant="destructive" className="shrink-0">leaking</Badge> : <Badge variant="outline" className="shrink-0">dead</Badge>}
-                    </div>
-                    <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                      <span className="truncate font-mono">{p.id}</span>
-                      <span className="shrink-0">{p.last_fired_time ? `${formatRelative(p.last_fired_time)}` : '(never)'}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            }}
-            empty={<>No owned pixels found, or Business Manager API access denied.</>}
-          />
-        </CardContent>
-      </Card>
+      <section aria-label="Pixels">
+        <SectionHead>Pixels ({pixels.length})</SectionHead>
+        <p className="av2-note">
+          All pixels owned by your Business Manager. The canonical pixel (<code>{PIXEL_ID}</code>) is the only one your code should reference. Any non-canonical pixel that has fired recently means stale code is sending events to the wrong destination — search the codebase for that id.
+        </p>
+        <DataList
+          label="Pixels"
+          rows={pixels}
+          cap={10}
+          rowKey={(p) => p.id}
+          columns={[
+            { key: 'name', header: 'Name', lead: true, cell: (p) => p.name },
+            { key: 'id', header: 'Pixel ID', mono: true, cell: (p) => p.id },
+            {
+              key: 'fired',
+              header: 'Last fired',
+              num: true,
+              cell: (p) => {
+                const daysAgo = p.last_fired_time ? Math.floor((Date.now() - new Date(p.last_fired_time).getTime()) / 86400000) : null
+                return p.last_fired_time ? `${formatRelative(p.last_fired_time)} (${daysAgo}d)` : '(never)'
+              },
+            },
+            {
+              key: 'status',
+              header: 'Status',
+              cell: (p) => {
+                const daysAgo = p.last_fired_time ? Math.floor((Date.now() - new Date(p.last_fired_time).getTime()) / 86400000) : null
+                const leaking = !p.is_canonical && daysAgo !== null && daysAgo <= 30
+                return p.is_canonical ? (
+                  <StateWord state="ok">canonical</StateWord>
+                ) : leaking ? (
+                  <StateWord state="down">leaking</StateWord>
+                ) : (
+                  <StateWord state="waiting">dead</StateWord>
+                )
+              },
+            },
+          ]}
+          empty={<>No owned pixels found, or Business Manager API access denied.</>}
+        />
+      </section>
 
-      {/* Lead forms */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Lead-ad forms ({forms.length})</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Every lead-form ever created on this page. Only ACTIVE forms can accept new lead submissions. <code className="rounded bg-muted px-1">leads_count</code> is the lifetime count Meta reports for that form.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <TableWithMobileCards
-            rows={forms}
-            cap={10}
-            getRowKey={(f) => f.id}
-            columns={[
-              { key: 'name', header: 'Name', className: 'font-medium', cell: (f) => f.name },
-              { key: 'id', header: 'Form ID', className: 'font-mono text-xs', cell: (f) => f.id },
-              { key: 'status', header: 'Status', cell: (f) => <Badge variant={f.status === 'ACTIVE' ? 'default' : 'outline'}>{f.status}</Badge> },
-              { key: 'leads', header: 'Lifetime leads', className: 'text-right tabular-nums', cell: (f) => formatInt(f.leads_count) },
-            ]}
-            renderCard={(f) => (
-              <Card>
-                <CardContent className="space-y-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="min-w-0 break-words text-sm font-medium text-foreground">{f.name}</span>
-                    <Badge variant={f.status === 'ACTIVE' ? 'default' : 'outline'} className="shrink-0">{f.status}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                    <span className="truncate font-mono">{f.id}</span>
-                    <span className="shrink-0 tabular-nums">{formatInt(f.leads_count)} lifetime leads</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            empty={<>No lead forms on this page.</>}
-          />
-        </CardContent>
-      </Card>
+      <section aria-label="Lead-ad forms">
+        <SectionHead>Lead-ad forms ({forms.length})</SectionHead>
+        <p className="av2-note">
+          Every lead-form ever created on this page. Only ACTIVE forms can accept new lead submissions. <code>leads_count</code> is the lifetime count Meta reports for that form.
+        </p>
+        <DataList
+          label="Lead-ad forms"
+          rows={forms}
+          cap={10}
+          rowKey={(f) => f.id}
+          columns={[
+            { key: 'name', header: 'Name', lead: true, cell: (f) => f.name },
+            { key: 'id', header: 'Form ID', mono: true, cell: (f) => f.id },
+            {
+              key: 'status',
+              header: 'Status',
+              cell: (f) => <StateWord state={f.status === 'ACTIVE' ? 'ok' : 'waiting'}>{f.status}</StateWord>,
+            },
+            { key: 'leads', header: 'Lifetime leads', num: true, cell: (f) => formatInt(f.leads_count) },
+          ]}
+          empty={<>No lead forms on this page.</>}
+        />
+      </section>
 
-      {/* Form quality per ACTIVE form */}
       {activeFormQuality.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Active lead-form quality</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              For each ACTIVE form: privacy_policy presence, follow_up URL, and a per-option classification through the webhook handler&apos;s <code className="rounded bg-muted px-1">classifyIntent()</code> logic. An option that classifies as <code className="rounded bg-muted px-1">null</code> means a lead picking that answer will be enrolled as <em>nurture</em> (or skipped) regardless of actual intent.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-6">
+        <section aria-label="Active lead-form quality">
+          <SectionHead>Active lead-form quality</SectionHead>
+          <p className="av2-note">
+            For each ACTIVE form: privacy_policy presence, follow_up URL, and a per-option classification through the webhook handler&apos;s <code>classifyIntent()</code> logic. An option that classifies as <code>null</code> means a lead picking that answer will be enrolled as nurture (or skipped) regardless of actual intent.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--a-s3)', marginBottom: 'var(--a-s5)' }}>
             {activeFormQuality.map((fq) => (
-              <div key={fq.form.id} className="rounded-lg border border-border p-4">
-                <div className="flex items-center justify-between gap-3">
+              <div key={fq.form.id} className="av2-pane">
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--a-s3)', flexWrap: 'wrap' }}>
                   <div>
-                    <div className="font-medium">{fq.form.name}</div>
-                    <div className="text-xs text-muted-foreground">id {fq.form.id} · {fq.form.leads_count} lifetime leads</div>
+                    <div style={{ fontWeight: 600 }}>{fq.form.name}</div>
+                    <div className="av2-stamp">id {fq.form.id} · {fq.form.leads_count} lifetime leads</div>
                   </div>
-                  <Badge variant={fq.status === 'broken' ? 'destructive' : fq.status === 'warning' ? 'default' : 'outline'}>
+                  <StateWord state={fq.status === 'broken' ? 'down' : fq.status === 'warning' ? 'slow' : 'ok'}>
                     {fq.status === 'broken' ? 'misconfigured — archive' : fq.status === 'warning' ? 'needs attention' : 'ok'}
-                  </Badge>
+                  </StateWord>
                 </div>
-                <ul className="mt-3 space-y-1 text-xs">
-                  <li>privacy_policy URL: {fq.hasPrivacyPolicy ? '✓ set' : <span className="text-destructive">✗ missing (Meta requires this for ad approval)</span>}</li>
-                  <li>follow_up URL: {fq.hasFollowUp ? '✓ set' : <span className="text-muted-foreground">not set (recommended for retention)</span>}</li>
-                  <li>
-                    timeline question:{' '}
-                    {fq.timelineQuestion ? (
-                      <>
-                        ✓ found ({fq.timelineQuestion.key ?? fq.timelineQuestion.label})
-                        <ul className="mt-1 space-y-0.5 pl-4 font-mono">
-                          {fq.timelineCoverage.map((c, i) => (
-                            <li key={i}>
-                              &quot;{c.value}&quot; →{' '}
-                              {c.classification ? (
-                                <Badge variant="outline" className="text-xs">{c.classification}</Badge>
-                              ) : (
-                                <Badge variant="destructive" className="text-xs">unclassified (lead becomes nurture)</Badge>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      </>
-                    ) : (
-                      <span className="text-destructive">✗ none — leads cannot be tiered automatically</span>
-                    )}
+                <ul className="av2-quietlist">
+                  <li className="av2-quiet">
+                    <span className="av2-quiet__name">privacy_policy URL</span>
+                    <span style={{ color: fq.hasPrivacyPolicy ? 'var(--a-ok)' : 'var(--a-danger)' }}>
+                      {fq.hasPrivacyPolicy ? 'set' : 'missing — Meta requires this for ad approval'}
+                    </span>
                   </li>
-                  {fq.bogusQuestions.length > 0 && (
-                    <li className="text-destructive">bogus questions: {fq.bogusQuestions.join(', ')}</li>
-                  )}
+                  <li className="av2-quiet">
+                    <span className="av2-quiet__name">follow_up URL</span>
+                    <span style={{ color: fq.hasFollowUp ? 'var(--a-ok)' : 'var(--a-text-2)' }}>
+                      {fq.hasFollowUp ? 'set' : 'not set — recommended for retention'}
+                    </span>
+                  </li>
+                  <li className="av2-quiet">
+                    <span className="av2-quiet__name">timeline question</span>
+                    <span style={{ color: fq.timelineQuestion ? 'var(--a-text)' : 'var(--a-danger)' }}>
+                      {fq.timelineQuestion
+                        ? `found (${fq.timelineQuestion.key ?? fq.timelineQuestion.label})`
+                        : 'none — leads cannot be tiered automatically'}
+                    </span>
+                  </li>
                 </ul>
+                {fq.timelineQuestion ? (
+                  <ul className="av2-quietlist">
+                    {fq.timelineCoverage.map((c, i) => (
+                      <li key={i} className="av2-quiet">
+                        <span className="av2-quiet__name" style={{ fontFamily: 'var(--a-font-mono)', minWidth: 200 }}>
+                          {c.value}
+                        </span>
+                        {c.classification ? (
+                          <StateWord state="waiting">{c.classification}</StateWord>
+                        ) : (
+                          <StateWord state="down">unclassified — lead becomes nurture</StateWord>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {fq.bogusQuestions.length > 0 && (
+                  <p style={{ color: 'var(--a-danger)', fontSize: 'var(--a-text-sm)' }}>
+                    bogus questions: {fq.bogusQuestions.join(', ')}
+                  </p>
+                )}
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       )}
 
-      {/* Webhook subscriptions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Webhook subscriptions ({subs.length})</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Apps subscribed to this page&apos;s webhook fields. The <code className="rounded bg-muted px-1">leadgen</code> field must be subscribed for inbound Lead-Ad submissions to hit our <code className="rounded bg-muted px-1">/api/meta/lead-webhook</code> endpoint.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <TableWithMobileCards
-            rows={subs}
-            cap={10}
-            getRowKey={(s) => s.id}
-            columns={[
-              { key: 'app', header: 'App', className: 'font-medium whitespace-nowrap', cell: (s) => s.name },
-              { key: 'id', header: 'App ID', className: 'font-mono text-xs whitespace-nowrap', cell: (s) => s.id },
-              { key: 'fields', header: 'Subscribed fields', className: 'text-xs', cell: (s) => (s.subscribed_fields ?? []).join(', ') },
-              { key: 'leadgen', header: 'leadgen?', cell: (s) => (s.subscribed_fields ?? []).includes('leadgen') ? <Badge variant="default">✓ subscribed</Badge> : <Badge variant="destructive">missing</Badge> },
-            ]}
-            renderCard={(s) => {
-              const ok = (s.subscribed_fields ?? []).includes('leadgen')
-              return (
-                <Card>
-                  <CardContent className="space-y-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="min-w-0 break-words text-sm font-medium text-foreground">{s.name}</span>
-                      {ok ? <Badge variant="default" className="shrink-0">✓ leadgen</Badge> : <Badge variant="destructive" className="shrink-0">no leadgen</Badge>}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      <span className="font-mono">{s.id}</span>
-                      {(s.subscribed_fields ?? []).length > 0 ? <span className="block break-words">{(s.subscribed_fields ?? []).join(', ')}</span> : null}
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            }}
-            empty={<>No subscribed apps.</>}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Campaign inventory */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Campaigns ({campaigns.length})</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Every campaign in the Meta ad account, regardless of status. Use the Meta-admin setup script to audit each campaign&apos;s ad URLs and auto-tag missing UTMs: <code className="rounded bg-muted px-1">node scripts/meta-admin-setup.mjs --fix-utms</code>.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <TableWithMobileCards
-            rows={campaigns}
-            cap={10}
-            getRowKey={(c) => c.id}
-            columns={[
-              { key: 'name', header: 'Name', className: 'font-medium', cell: (c) => c.name },
-              { key: 'objective', header: 'Objective', className: 'text-xs', cell: (c) => c.objective },
-              { key: 'status', header: 'Status', cell: (c) => <Badge variant={c.effective_status === 'ACTIVE' ? 'default' : 'outline'}>{c.effective_status}</Badge> },
-              { key: 'created', header: 'Created', className: 'text-xs', cell: (c) => formatRelative(c.created_time) },
-            ]}
-            renderCard={(c) => (
-              <Card>
-                <CardContent className="space-y-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="min-w-0 break-words text-sm font-medium text-foreground">{c.name}</span>
-                    <Badge variant={c.effective_status === 'ACTIVE' ? 'default' : 'outline'} className="shrink-0">{c.effective_status}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                    <span className="truncate">{c.objective}</span>
-                    <span className="shrink-0">{formatRelative(c.created_time)}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            empty={<>No campaigns in the account.</>}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Recent processed leads */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent inbound leads ({formatInt(processedLeadsTotal)} lifetime)</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Every lead the webhook has processed. Each row was created by an inbound POST from Meta after a user submitted a Lead-Ad form.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <TableWithMobileCards
-            rows={processedLeads as Array<{ id: string; created_at: string; status: string | null; campaign_name: string | null; audience: string | null; intent: string | null }>}
-            cap={10}
-            getRowKey={(row) => row.id}
-            columns={[
-              { key: 'when', header: 'When', className: 'text-xs', cell: (row) => formatRelative(row.created_at) },
-              { key: 'campaign', header: 'Campaign', className: 'text-xs', cell: (row) => row.campaign_name ?? '—' },
-              { key: 'audience', header: 'Audience', className: 'text-xs capitalize', cell: (row) => row.audience ?? '—' },
-              { key: 'intent', header: 'Intent', className: 'text-xs capitalize', cell: (row) => row.intent ?? '—' },
-              { key: 'status', header: 'Status', cell: (row) => <Badge variant="outline">{row.status ?? '—'}</Badge> },
-            ]}
-            renderCard={(row) => (
-              <Card>
-                <CardContent className="space-y-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="min-w-0 break-words text-sm font-medium text-foreground">{row.campaign_name ?? '—'}</span>
-                    <Badge variant="outline" className="shrink-0">{row.status ?? '—'}</Badge>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                    <span>{formatRelative(row.created_at)}</span>
-                    <span className="capitalize">· {row.audience ?? '—'}</span>
-                    <span className="capitalize">· {row.intent ?? '—'}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            empty={<>No leads processed yet. The webhook is wired correctly but no campaigns are live with an active lead form.</>}
-          />
-        </CardContent>
-      </Card>
-
-      <Separator />
-
-      <div className="space-y-1 text-xs text-muted-foreground">
-        <p>
-          <strong className="text-foreground">Data sources:</strong> Meta Graph API v21.0 (pixels, lead forms, subscriptions, campaigns, page),
-          Supabase <code className="rounded bg-muted px-1">processed_meta_leads</code> + <code className="rounded bg-muted px-1">marketing_channel_daily</code>.
+      <section aria-label="Webhook subscriptions">
+        <SectionHead>Webhook subscriptions ({subs.length})</SectionHead>
+        <p className="av2-note">
+          Apps subscribed to this page&apos;s webhook fields. The <code>leadgen</code> field must be subscribed for inbound Lead-Ad submissions to hit our <code>/api/meta/lead-webhook</code> endpoint.
         </p>
-        <p>
-          <strong className="text-foreground">Tools:</strong>{' '}
-          <code className="rounded bg-muted px-1">scripts/meta-admin-setup.mjs</code> (CLI audit with optional --fix-utms),{' '}
-          <Link href="/admin/reports/traffic-sources" className="underline hover:no-underline">Traffic sources</Link>,{' '}
-          <Link href="/admin/analytics/google-business-profile" className="underline hover:no-underline">GBP dashboard</Link>,{' '}
-          <code className="rounded bg-muted px-1">docs/META_FIX_PLAN.md</code>.
+        <DataList
+          label="Webhook subscriptions"
+          rows={subs}
+          cap={10}
+          rowKey={(s) => s.id}
+          columns={[
+            { key: 'app', header: 'App', lead: true, cell: (s) => s.name },
+            { key: 'id', header: 'App ID', mono: true, cell: (s) => s.id },
+            { key: 'fields', header: 'Subscribed fields', cell: (s) => (s.subscribed_fields ?? []).join(', ') },
+            {
+              key: 'leadgen',
+              header: 'leadgen?',
+              cell: (s) =>
+                (s.subscribed_fields ?? []).includes('leadgen') ? (
+                  <StateWord state="ok">subscribed</StateWord>
+                ) : (
+                  <StateWord state="down">missing</StateWord>
+                ),
+            },
+          ]}
+          empty={<>No subscribed apps.</>}
+        />
+      </section>
+
+      <section aria-label="Campaigns">
+        <SectionHead>Campaigns ({campaigns.length})</SectionHead>
+        <p className="av2-note">
+          Every campaign in the Meta ad account, regardless of status. Use the Meta-admin setup script to audit each campaign&apos;s ad URLs and auto-tag missing UTMs: <code>node scripts/meta-admin-setup.mjs --fix-utms</code>.
         </p>
-      </div>
-    </div>
+        <DataList
+          label="Campaigns"
+          rows={campaigns}
+          cap={10}
+          rowKey={(c) => c.id}
+          columns={[
+            { key: 'name', header: 'Name', lead: true, cell: (c) => c.name },
+            { key: 'objective', header: 'Objective', cell: (c) => c.objective },
+            {
+              key: 'status',
+              header: 'Status',
+              cell: (c) => <StateWord state={c.effective_status === 'ACTIVE' ? 'ok' : 'waiting'}>{c.effective_status}</StateWord>,
+            },
+            { key: 'created', header: 'Created', num: true, cell: (c) => formatRelative(c.created_time) },
+          ]}
+          empty={<>No campaigns in the account.</>}
+        />
+      </section>
+
+      <section aria-label="Recent inbound leads">
+        <SectionHead>Recent inbound leads ({formatInt(processedLeadsTotal)} lifetime)</SectionHead>
+        <p className="av2-note">
+          Every lead the webhook has processed. Each row was created by an inbound POST from Meta after a user submitted a Lead-Ad form.
+        </p>
+        <DataList
+          label="Recent inbound leads"
+          rows={processedLeads as Array<{ id: string; created_at: string; status: string | null; campaign_name: string | null; audience: string | null; intent: string | null }>}
+          cap={10}
+          rowKey={(row) => row.id}
+          columns={[
+            { key: 'campaign', header: 'Campaign', lead: true, cell: (row) => row.campaign_name ?? '—' },
+            { key: 'when', header: 'When', num: true, cell: (row) => formatRelative(row.created_at) },
+            { key: 'audience', header: 'Audience', cell: (row) => row.audience ?? '—' },
+            { key: 'intent', header: 'Intent', cell: (row) => row.intent ?? '—' },
+            { key: 'status', header: 'Status', cell: (row) => <StateWord state="waiting">{row.status ?? '—'}</StateWord> },
+          ]}
+          empty={<>No leads processed yet. The webhook is wired correctly but no campaigns are live with an active lead form.</>}
+        />
+      </section>
+
+      <p className="av2-note">
+        Data sources: Meta Graph API v21.0 (pixels, lead forms, subscriptions, campaigns, page), Supabase <code>processed_meta_leads</code> + <code>marketing_channel_daily</code>.
+      </p>
+      <p className="av2-note">
+        Tools: <code>scripts/meta-admin-setup.mjs</code> (CLI audit with optional --fix-utms),{' '}
+        <Link href="/admin/reports/traffic-sources" style={{ color: 'var(--a-accent)' }}>Traffic sources</Link>,{' '}
+        <Link href="/admin/analytics/google-business-profile" style={{ color: 'var(--a-accent)' }}>GBP dashboard</Link>,{' '}
+        <code>docs/META_FIX_PLAN.md</code>.
+      </p>
+    </>
   )
 }
 
 export default async function MetaHealthPage() {
   return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">Meta health</h1>
-        <p className="text-sm text-muted-foreground">
-          Live infrastructure status for the Meta ad account, pixel, lead forms, and webhook. Pairs with <code className="rounded bg-muted px-1">scripts/meta-admin-setup.mjs</code> (CLI fixer) and <code className="rounded bg-muted px-1">docs/META_FIX_PLAN.md</code> (runbook).
-        </p>
-      </header>
-      <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+    <div className="av2-scope" style={{ maxWidth: 1120, margin: '0 auto', padding: 16 }}>
+      <p className="av2-note">
+        Live infrastructure status for the Meta ad account, pixel, lead forms, and webhook. Pairs with <code>scripts/meta-admin-setup.mjs</code> (CLI fixer) and <code>docs/META_FIX_PLAN.md</code> (runbook).
+      </p>
+      <Suspense fallback={<Loading what="the Meta account" />}>
         <MetaHealthContent />
       </Suspense>
     </div>

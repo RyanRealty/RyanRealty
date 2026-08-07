@@ -1,3 +1,4 @@
+// @no-parity — internal admin surface, no public mockup contract
 /**
  * /admin/analytics/funnel-breakdown — intent split + stage drop-offs +
  * actionable recommendations.
@@ -14,16 +15,18 @@
  *
  * Data: visitor_sessions + visitor_events (our own tables). No GA4
  * latency. Updates the moment events land.
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Presentation only — the superuser gate (analytics/layout.tsx), the paged
+ * service-role read, classifyIntent / buildIntentBuckets / buildSourceFunnels /
+ * generateInsights, every threshold, and the ?range/?startDate/?endDate handling
+ * are carried over verbatim.
  */
 import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
-import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
+import { SectionHead, StateWord, VerdictLine, type AdminState } from '@/components/admin/v2'
+import { DataGrid, GridSkeleton, LaneNote, NumberStrip, Stamp, StatePanel } from '../_components/v2/DataGrid'
 import { DateRangePicker } from '../_components/DateRangePicker'
 import { resolveDateRange } from '../_lib/queries'
 
@@ -273,6 +276,21 @@ function generateInsights(buckets: IntentBucket[], funnels: SourceFunnel[]): Ins
   return out
 }
 
+/** Severity → the language's state vocabulary (text + colour, never colour alone). */
+const SEVERITY_STATE: Record<Insight['severity'], AdminState> = {
+  critical: 'down',
+  warning: 'slow',
+  info: 'waiting',
+}
+
+function dropState(pct: number): AdminState {
+  return pct >= 80 ? 'down' : pct >= 50 ? 'slow' : 'waiting'
+}
+
+function intentState(label: string): AdminState {
+  return label === 'seller' ? 'accent' : label === 'buyer' ? 'waiting' : 'waiting'
+}
+
 async function FunnelContent({ range }: { range: { startDate: string; endDate: string } }) {
   const supabase = getServiceSupabase()
   const cutoff = `${range.startDate}T00:00:00.000Z`
@@ -295,18 +313,20 @@ async function FunnelContent({ range }: { range: { startDate: string; endDate: s
 
   if (error) {
     return (
-      <Card><CardContent className="p-8 text-center text-sm text-destructive">Failed to load visitor sessions: {error.message}</CardContent></Card>
+      <StatePanel tone="error">
+        Failed to load visitor sessions: {error.message}. Reload once the read recovers, or narrow the date range if the
+        window is very wide.
+      </StatePanel>
     )
   }
 
   const rows = data
   if (rows.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-8 text-center text-sm text-muted-foreground">
-          No visitor sessions from {cutoff.slice(0, 10)} to {range.endDate} yet. Once the WordPress snippet starts firing tracked events to /api/visitors/track, sessions appear here and the funnel populates in real time.
-        </CardContent>
-      </Card>
+      <StatePanel>
+        No visitor sessions from {cutoff.slice(0, 10)} to {range.endDate} yet. Once the WordPress snippet starts firing
+        tracked events to /api/visitors/track, sessions appear here and the funnel populates in real time.
+      </StatePanel>
     )
   }
 
@@ -320,118 +340,132 @@ async function FunnelContent({ range }: { range: { startDate: string; endDate: s
   const criticalCount = insights.filter((i) => i.severity === 'critical').length
 
   return (
-    <div className="space-y-6">
+    <>
+      <VerdictLine tone={criticalCount > 0 ? 'attention' : 'ok'}>
+        {criticalCount > 0 ? (
+          <>
+            <b>
+              {criticalCount} critical flag{criticalCount === 1 ? '' : 's'} in the funnel.
+            </b>{' '}
+            {formatInt(totalSessions)} sessions over {lookbackDays} days.
+          </>
+        ) : (
+          <>
+            <b>No critical funnel flags.</b> {formatInt(totalSessions)} sessions over {lookbackDays} days.
+          </>
+        )}
+      </VerdictLine>
 
-      {/* 0. Glanceable summary band */}
-      <DashboardSummaryStrip
-        stats={[
+      <NumberStrip
+        items={[
           { label: `Sessions (${lookbackDays}d)`, value: formatInt(totalSessions) },
           { label: 'Identified', value: formatInt(totalIdentified), caption: formatPct(totalIdentified, totalSessions) },
           { label: 'Hot leads', value: formatInt(totalHot), caption: formatPct(totalHot, totalSessions) },
           { label: 'Seller intent', value: sellerBucket ? formatInt(sellerBucket.count) : '0' },
           { label: 'Traffic sources', value: formatInt(funnels.length) },
-          { label: 'Critical flags', value: formatInt(criticalCount), tone: criticalCount > 0 ? 'warning' : 'default' },
+          { label: 'Critical flags', value: formatInt(criticalCount) },
         ]}
       />
 
       {/* 1. Insights — top of page so it cannot be missed */}
-      <Card>
-        <CardHeader><CardTitle>What the data says ({range.startDate} to {range.endDate})</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
+      <section aria-label="What the data says">
+        <SectionHead>
+          What the data says ({range.startDate} to {range.endDate})
+        </SectionHead>
+        <ul className="av2-queue">
           {insights.map((ins, i) => (
-            <Alert key={i} variant={ins.severity === 'critical' ? 'destructive' : 'default'}>
-              <AlertDescription className="text-sm">
-                <Badge variant={ins.severity === 'critical' ? 'destructive' : ins.severity === 'warning' ? 'default' : 'outline'} className="mr-2">
-                  {ins.severity}
-                </Badge>
-                {ins.message}
-              </AlertDescription>
-            </Alert>
+            <li key={i} className="av2-qrow">
+              <span className="av2-qrow__kind">
+                <StateWord state={SEVERITY_STATE[ins.severity]}>{ins.severity}</StateWord>
+              </span>
+              <div className="av2-qrow__body">
+                <div className="av2-qrow__ctx" style={{ color: 'var(--a-text)' }}>
+                  {ins.message}
+                </div>
+              </div>
+            </li>
           ))}
-        </CardContent>
-      </Card>
+        </ul>
+      </section>
 
       {/* 2. Intent split */}
-      <section className="space-y-2">
-        <div className="space-y-1">
-          <h2 className="text-base font-semibold text-foreground">Intent split — who is looking to do what</h2>
-          <p className="text-xs text-muted-foreground">
-            Visitors classified by behavioral intent (which categories of pages they engaged with). Seller intent = visited /free-home-valuation or similar. Buyer intent = visited /buyers, /relocation, /explore. Browsing = viewed listings but did not signal seller/buyer. Total sessions: {formatInt(totalSessions)}.
-          </p>
-        </div>
-        <TableWithMobileCards
+      <section aria-label="Intent split">
+        <SectionHead>Intent split — who is looking to do what</SectionHead>
+        <LaneNote>
+          Visitors classified by behavioral intent (which categories of pages they engaged with). Seller intent = visited
+          /free-home-valuation or similar. Buyer intent = visited /buyers, /relocation, /explore. Browsing = viewed
+          listings but did not signal seller/buyer. Total sessions: {formatInt(totalSessions)}.
+        </LaneNote>
+        <DataGrid
+          label="Intent split"
           rows={buckets}
           cap={8}
+          minWidth={780}
           getRowKey={(b) => b.label}
           columns={[
-            { key: 'intent', header: 'Intent', className: 'whitespace-nowrap', cell: (b) => <Badge variant={b.label === 'seller' ? 'default' : b.label === 'buyer' ? 'secondary' : 'outline'}>{b.label}</Badge> },
-            { key: 'sessions', header: 'Sessions', className: 'text-right tabular-nums whitespace-nowrap', cell: (b) => formatInt(b.count) },
-            { key: 'identified', header: 'Identified', className: 'text-right tabular-nums whitespace-nowrap', cell: (b) => formatInt(b.identified) },
-            { key: 'idRate', header: 'Identify rate', className: 'text-right tabular-nums whitespace-nowrap', cell: (b) => formatPct(b.identified, b.count) },
-            { key: 'hot', header: 'Hot leads', className: 'text-right tabular-nums whitespace-nowrap', cell: (b) => formatInt(b.hot) },
-            { key: 'hotRate', header: 'Hot rate', className: 'text-right tabular-nums whitespace-nowrap', cell: (b) => formatPct(b.hot, b.count) },
-            { key: 'topSource', header: 'Top source', className: 'text-xs whitespace-nowrap', cell: (b) => b.topSource },
-            { key: 'topCity', header: 'Top city', className: 'text-xs whitespace-nowrap', cell: (b) => b.topCity },
+            { key: 'intent', header: 'Intent', width: '150px', cell: (b) => <StateWord state={intentState(b.label)}>{b.label}</StateWord> },
+            { key: 'sessions', header: 'Sessions', numeric: true, cell: (b) => formatInt(b.count) },
+            { key: 'identified', header: 'Identified', numeric: true, cell: (b) => formatInt(b.identified) },
+            { key: 'idRate', header: 'Identify rate', numeric: true, cell: (b) => formatPct(b.identified, b.count) },
+            { key: 'hot', header: 'Hot leads', numeric: true, cell: (b) => formatInt(b.hot) },
+            { key: 'hotRate', header: 'Hot rate', numeric: true, cell: (b) => formatPct(b.hot, b.count) },
+            { key: 'topSource', header: 'Top source', width: '1fr', cell: (b) => <span style={{ color: 'var(--a-text-2)' }}>{b.topSource}</span> },
+            { key: 'topCity', header: 'Top city', width: '1fr', cell: (b) => <span style={{ color: 'var(--a-text-2)' }}>{b.topCity}</span> },
           ]}
-          renderCard={(b) => (
-            <Card>
-              <CardContent className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <Badge variant={b.label === 'seller' ? 'default' : b.label === 'buyer' ? 'secondary' : 'outline'}>{b.label}</Badge>
-                  <span className="text-lg font-semibold tabular-nums">{formatInt(b.count)} <span className="text-xs font-normal text-muted-foreground">sessions</span></span>
-                </div>
-                <p className="text-xs text-muted-foreground tabular-nums">{formatInt(b.identified)} identified ({formatPct(b.identified, b.count)}) · {formatInt(b.hot)} hot · {b.topSource} · {b.topCity}</p>
-              </CardContent>
-            </Card>
-          )}
           empty={<>No intent-classified sessions in this window yet.</>}
         />
       </section>
 
       {/* 3. Funnel by source */}
-      <section className="space-y-2">
-        <div className="space-y-1">
-          <h2 className="text-base font-semibold text-foreground">Funnel breakpoints by traffic source</h2>
-          <p className="text-xs text-muted-foreground">
-            Stage-by-stage drop-off. Bigger %s = more visitors keep going. Look at where the cliff is — that is what to fix first. Sources with fewer than 3 sessions are hidden.
-          </p>
-        </div>
-        <TableWithMobileCards
+      <section aria-label="Funnel breakpoints by traffic source">
+        <SectionHead>Funnel breakpoints by traffic source</SectionHead>
+        <LaneNote>
+          Stage-by-stage drop-off. Bigger %s = more visitors keep going. Look at where the cliff is — that is what to fix
+          first. Sources with fewer than 3 sessions are hidden.
+        </LaneNote>
+        <DataGrid
+          label="Funnel breakpoints by traffic source"
           rows={funnels}
           cap={10}
+          minWidth={860}
           getRowKey={(f) => f.source}
           columns={[
-            { key: 'source', header: 'Source', className: 'font-medium whitespace-nowrap', cell: (f) => f.source },
-            { key: 'landed', header: 'Landed', className: 'text-right tabular-nums whitespace-nowrap', cell: (f) => <><div>{formatInt(f.stages[0].count)}</div><div className="text-[10px] text-muted-foreground">{f.stages[0].fromStart.toFixed(1)}%</div></> },
-            { key: 'engaged', header: 'Engaged', className: 'text-right tabular-nums whitespace-nowrap', cell: (f) => <><div>{formatInt(f.stages[1].count)}</div><div className="text-[10px] text-muted-foreground">{f.stages[1].fromStart.toFixed(1)}%</div></> },
-            { key: 'intent', header: 'Intent', className: 'text-right tabular-nums whitespace-nowrap', cell: (f) => <><div>{formatInt(f.stages[2].count)}</div><div className="text-[10px] text-muted-foreground">{f.stages[2].fromStart.toFixed(1)}%</div></> },
-            { key: 'identified', header: 'Identified', className: 'text-right tabular-nums whitespace-nowrap', cell: (f) => <><div>{formatInt(f.stages[3].count)}</div><div className="text-[10px] text-muted-foreground">{f.stages[3].fromStart.toFixed(1)}%</div></> },
-            { key: 'hot', header: 'Hot lead', className: 'text-right tabular-nums whitespace-nowrap', cell: (f) => <><div>{formatInt(f.stages[4].count)}</div><div className="text-[10px] text-muted-foreground">{f.stages[4].fromStart.toFixed(1)}%</div></> },
-            { key: 'drop', header: 'Biggest drop', className: 'text-xs whitespace-nowrap', cell: (f) => <Badge variant={f.biggestDropPct >= 80 ? 'destructive' : f.biggestDropPct >= 50 ? 'default' : 'outline'}>{f.biggestDropLabel || '—'} ({f.biggestDropPct.toFixed(0)}%)</Badge> },
-          ]}
-          renderCard={(f) => (
-            <Card>
-              <CardContent className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium">{f.source}</span>
-                  <span className="text-sm font-semibold tabular-nums">{formatInt(f.totalSessions)} <span className="text-xs font-normal text-muted-foreground">landed</span></span>
-                </div>
-                <p className="text-xs text-muted-foreground tabular-nums">
-                  Engaged {f.stages[1].fromStart.toFixed(0)}% · Intent {f.stages[2].fromStart.toFixed(0)}% · Identified {f.stages[3].fromStart.toFixed(0)}% · Hot {f.stages[4].fromStart.toFixed(0)}%
-                </p>
-                <Badge variant={f.biggestDropPct >= 80 ? 'destructive' : f.biggestDropPct >= 50 ? 'default' : 'outline'}>
+            { key: 'source', header: 'Source', width: '1.2fr', cell: (f) => <span style={{ fontWeight: 600 }}>{f.source}</span> },
+            { key: 'landed', header: 'Landed', numeric: true, cell: (f) => <StageCell count={f.stages[0].count} pct={f.stages[0].fromStart} /> },
+            { key: 'engaged', header: 'Engaged', numeric: true, cell: (f) => <StageCell count={f.stages[1].count} pct={f.stages[1].fromStart} /> },
+            { key: 'intent', header: 'Intent', numeric: true, cell: (f) => <StageCell count={f.stages[2].count} pct={f.stages[2].fromStart} /> },
+            { key: 'identified', header: 'Identified', numeric: true, cell: (f) => <StageCell count={f.stages[3].count} pct={f.stages[3].fromStart} /> },
+            { key: 'hot', header: 'Hot lead', numeric: true, cell: (f) => <StageCell count={f.stages[4].count} pct={f.stages[4].fromStart} /> },
+            {
+              key: 'drop',
+              header: 'Biggest drop',
+              width: '1.6fr',
+              cell: (f) => (
+                <StateWord state={dropState(f.biggestDropPct)}>
                   {f.biggestDropLabel || '—'} ({f.biggestDropPct.toFixed(0)}%)
-                </Badge>
-              </CardContent>
-            </Card>
-          )}
+                </StateWord>
+              ),
+            },
+          ]}
           empty={<>No traffic source has enough sessions (3+) to chart a funnel yet.</>}
         />
-        <p className="text-xs text-muted-foreground">
-          Stage rules: Engaged = score ≥ 20. Intent = visitor hit a seller_intent or buyer_intent page. Identified = signed in via One-Tap, FB, or form. Hot lead = score crossed 100 and the FUB hot-lead task fired.
-        </p>
+        <Stamp>
+          Stage rules: Engaged = score ≥ 20. Intent = visitor hit a seller_intent or buyer_intent page. Identified =
+          signed in via One-Tap, FB, or form. Hot lead = score crossed 100 and the FUB hot-lead task fired.
+        </Stamp>
       </section>
-    </div>
+    </>
+  )
+}
+
+function StageCell({ count, pct }: { count: number; pct: number }) {
+  return (
+    <>
+      <div style={{ fontVariantNumeric: 'tabular-nums' }}>{formatInt(count)}</div>
+      <div style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', fontVariantNumeric: 'tabular-nums' }}>
+        {pct.toFixed(1)}%
+      </div>
+    </>
   )
 }
 
@@ -439,18 +473,18 @@ export default async function FunnelBreakdownPage({ searchParams }: { searchPara
   const sp = normalizeParams(await searchParams)
   const range = resolveDateRange(sp)
   return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">Funnel breakdown</h1>
-        <p className="text-sm text-muted-foreground">
-          Where visitors enter the funnel, where they drop out, and what to do about it. Powered by visitor_sessions + visitor_events (the real-time tables, not GA4). Updates the moment events land.
-        </p>
+    <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 var(--a-s5)' }}>
         <DateRangePicker current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
-      </header>
+      </div>
 
-      <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+      <Suspense fallback={<GridSkeleton rows={6} label="Loading the funnel" />}>
         <FunnelContent range={range} />
       </Suspense>
+
+      <Stamp>
+        Source visitor_sessions + visitor_events (the real-time tables, not GA4). Updates the moment events land.
+      </Stamp>
     </div>
   )
 }

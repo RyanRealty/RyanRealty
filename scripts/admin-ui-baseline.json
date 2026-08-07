@@ -4,50 +4,6 @@
       "h2": 1,
       "select": 5
     },
-    "app/admin/(protected)/analytics/action-required/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/analytics/ad-roi/page.tsx": {
-      "h2": 6,
-      "h1": 1
-    },
-    "app/admin/(protected)/analytics/cost-per-lead/page.tsx": {
-      "h2": 2,
-      "h1": 1
-    },
-    "app/admin/(protected)/analytics/demographics/page.tsx": {
-      "h2": 6,
-      "h1": 1
-    },
-    "app/admin/(protected)/analytics/funnel-breakdown/page.tsx": {
-      "h2": 2,
-      "h1": 1
-    },
-    "app/admin/(protected)/analytics/google-business-profile/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/analytics/google-search/page.tsx": {
-      "h2": 3,
-      "h1": 1
-    },
-    "app/admin/(protected)/analytics/listing-performance/page.tsx": {
-      "h2": 1,
-      "h1": 1
-    },
-    "app/admin/(protected)/analytics/lp-leaderboard/page.tsx": {
-      "h2": 1,
-      "h1": 1
-    },
-    "app/admin/(protected)/analytics/meta-health/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/analytics/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/analytics/social/page.tsx": {
-      "h2": 3,
-      "h1": 1
-    },
     "app/admin/(protected)/approval-queue/_components/FilterSidebar.tsx": {
       "h2": 1
     },
@@ -138,19 +94,7 @@
     "app/admin/(protected)/crm/referrals/page.tsx": {
       "h1": 1
     },
-    "app/admin/(protected)/crm/reporting/agent-goals/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/crm/reporting/batch-emails/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/crm/reporting/marketing/page.tsx": {
-      "h1": 1
-    },
     "app/admin/(protected)/crm/reporting/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/crm/reporting/westside/page.tsx": {
       "h1": 1
     },
     "app/admin/(protected)/crm/subscriptions/page.tsx": {
@@ -410,18 +354,6 @@
     }
   },
   "legacyPages": [
-    "app/admin/(protected)/analytics/action-required/page.tsx",
-    "app/admin/(protected)/analytics/ad-roi/page.tsx",
-    "app/admin/(protected)/analytics/cost-per-lead/page.tsx",
-    "app/admin/(protected)/analytics/demographics/page.tsx",
-    "app/admin/(protected)/analytics/funnel-breakdown/page.tsx",
-    "app/admin/(protected)/analytics/google-business-profile/page.tsx",
-    "app/admin/(protected)/analytics/google-search/page.tsx",
-    "app/admin/(protected)/analytics/listing-performance/page.tsx",
-    "app/admin/(protected)/analytics/lp-leaderboard/page.tsx",
-    "app/admin/(protected)/analytics/meta-health/page.tsx",
-    "app/admin/(protected)/analytics/page.tsx",
-    "app/admin/(protected)/analytics/social/page.tsx",
     "app/admin/(protected)/approval-queue/page.tsx",
     "app/admin/(protected)/audit-log/page.tsx",
     "app/admin/(protected)/blog/page.tsx",
@@ -453,21 +385,7 @@
     "app/admin/(protected)/crm/new/page.tsx",
     "app/admin/(protected)/crm/page.tsx",
     "app/admin/(protected)/crm/referrals/page.tsx",
-    "app/admin/(protected)/crm/reporting/agent-activity/page.tsx",
-    "app/admin/(protected)/crm/reporting/agent-goals/page.tsx",
-    "app/admin/(protected)/crm/reporting/appointments/page.tsx",
-    "app/admin/(protected)/crm/reporting/batch-emails/page.tsx",
-    "app/admin/(protected)/crm/reporting/call-logs/page.tsx",
-    "app/admin/(protected)/crm/reporting/calls/page.tsx",
-    "app/admin/(protected)/crm/reporting/contact-attempts/page.tsx",
-    "app/admin/(protected)/crm/reporting/lead-sources/page.tsx",
-    "app/admin/(protected)/crm/reporting/marketing/page.tsx",
-    "app/admin/(protected)/crm/reporting/overview/page.tsx",
     "app/admin/(protected)/crm/reporting/page.tsx",
-    "app/admin/(protected)/crm/reporting/properties/page.tsx",
-    "app/admin/(protected)/crm/reporting/speed-to-lead/page.tsx",
-    "app/admin/(protected)/crm/reporting/texts/page.tsx",
-    "app/admin/(protected)/crm/reporting/westside/page.tsx",
     "app/admin/(protected)/crm/sequences/[id]/edit/page.tsx",
     "app/admin/(protected)/crm/sequences/page.tsx",
     "app/admin/(protected)/crm/subscriptions/page.tsx",

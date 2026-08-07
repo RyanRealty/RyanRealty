@@ -1,27 +1,26 @@
 // @no-parity — internal admin surface
+/**
+ * Batch emails — how each bulk send performed.
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Presentation only. Carried over verbatim: the getCrmAccess guard + redirect,
+ * scopeBroker, the superuser-sees-all / broker-sees-own filter, the
+ * getBatchEmailsReport read, the `unreadable` vs empty distinction, the rate
+ * formatting (one decimal), the `tracked` "0 vs —" rule, the subject truncation,
+ * and every href.
+ */
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { RefreshCw } from 'lucide-react'
+import type { CSSProperties } from 'react'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getBatchEmailsReport, type BatchEmailRow } from '@/lib/data/crm/getBatchEmailsReport'
 import { formatDate } from '@/lib/format/date'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
+import { SectionHead, StateWord, VerdictLine } from '@/components/admin/v2'
 import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
 
 export const metadata = { title: 'Batch Emails | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
-
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
@@ -42,27 +41,94 @@ function subjectDisplay(subject: string | null): string {
   return s.length > 65 ? `${s.slice(0, 62)}…` : s
 }
 
-// ── Status badge ──────────────────────────────────────────────────────────────
+// ── Presentation constants (v2 tokens only) ───────────────────────────────────
 
-function StatusBadge({ row }: { row: BatchEmailRow }) {
+// Nine columns that must fit a 1280px window without sideways scroll: the
+// minimums below sum to 844px + 64px of gaps + 32px of padding = 940px.
+const COLS =
+  'minmax(170px,2fr) minmax(92px,0.9fr) minmax(72px,0.7fr) minmax(80px,0.7fr) minmax(62px,0.6fr) minmax(78px,0.7fr) minmax(78px,0.7fr) minmax(92px,0.7fr) minmax(120px,1fr)'
+
+const PAGE: CSSProperties = { maxWidth: 1120, margin: '0 auto', padding: 16 }
+const TOOLBAR: CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 'var(--a-s3)',
+  alignItems: 'center',
+  marginTop: 12,
+}
+const SCROLLER: CSSProperties = {
+  overflowX: 'auto',
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-lg)',
+  background: 'var(--a-surface)',
+}
+const GRID: CSSProperties = { minWidth: 940 }
+const ROW: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: COLS,
+  gap: 'var(--a-s2)',
+  alignItems: 'baseline',
+  padding: '10px 16px',
+  borderTop: '1px solid var(--a-border)',
+}
+const HEAD_ROW: CSSProperties = { ...ROW, borderTop: 'none', background: 'var(--a-inset)' }
+const HEAD_CELL: CSSProperties = {
+  fontSize: 'var(--a-text-xs)',
+  fontWeight: 600,
+  letterSpacing: '.05em',
+  textTransform: 'uppercase',
+  color: 'var(--a-text-2)',
+}
+const HEAD_NUM: CSSProperties = { ...HEAD_CELL, textAlign: 'right' }
+const NUM: CSSProperties = {
+  display: 'block',
+  fontVariantNumeric: 'tabular-nums',
+  textAlign: 'right',
+  color: 'var(--a-text)',
+}
+const NUM_MUTED: CSSProperties = { ...NUM, color: 'var(--a-text-2)' }
+const RATE: CSSProperties = { fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginLeft: 4 }
+const LINK: CSSProperties = { color: 'var(--a-accent)' }
+const MUTED: CSSProperties = { color: 'var(--a-text-2)', fontSize: 'var(--a-text-sm)' }
+const NOTE: CSSProperties = { fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', marginTop: 12 }
+const STATE_PANEL: CSSProperties = {
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-lg)',
+  background: 'var(--a-surface)',
+  padding: 'var(--a-s6)',
+  textAlign: 'center',
+  color: 'var(--a-text-2)',
+  fontSize: 'var(--a-text-sm)',
+}
+
+// ── Cells ─────────────────────────────────────────────────────────────────────
+
+/** Count + its rate, or the tracked-aware "0 vs —" fallback. */
+function EventCell({ count, rate, tracked }: { count: number; rate: number | null; tracked: boolean }) {
+  if (count > 0) {
+    return (
+      <span style={NUM}>
+        {count.toLocaleString('en-US')}
+        {rate !== null ? <span style={RATE}>{fmtRate(rate)}</span> : null}
+      </span>
+    )
+  }
+  return <span style={NUM_MUTED}>{tracked ? '0' : '—'}</span>
+}
+
+/** The send's state — and, when it finished, the door to its detail. */
+function StatusCell({ row }: { row: BatchEmailRow }) {
   if (row.status === 'finished') {
     return (
-      <span className="text-sm text-muted-foreground">
-        Finished{' '}
-        <Link
-          href={`/admin/crm/emails?campaign=${row.id}`}
-          className="text-primary hover:underline"
-        >
-          (Details)
+      <span style={{ display: 'flex', gap: 'var(--a-s2)', alignItems: 'baseline', flexWrap: 'wrap' }}>
+        <StateWord state="ok">Finished</StateWord>
+        <Link href={`/admin/crm/emails?campaign=${row.id}`} style={{ ...LINK, fontSize: 'var(--a-text-sm)' }}>
+          Details
         </Link>
       </span>
     )
   }
-  return (
-    <Badge variant="outline" className="text-muted-foreground">
-      Draft
-    </Badge>
-  )
+  return <StateWord state="waiting">Draft</StateWord>
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -87,175 +153,123 @@ export default async function BatchEmailsPage({
   const rows: BatchEmailRow[] = result?.rows ?? []
   const unreadable = result?.unreadable ?? false
 
+  const refreshHref = `/admin/crm/reporting/batch-emails?t=${Date.now()}`
+  const finished = rows.filter((r) => r.status === 'finished').length
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+    <div className="av2-scope" style={PAGE}>
       <ReportingTabStrip active="batch-emails" />
 
-      {/* Header row: title + refresh button */}
-      <div className="mb-2 flex items-center justify-between gap-4">
-        <h1 className="text-xl font-semibold text-foreground">Recent Batch Emails</h1>
+      {unreadable ? (
+        <VerdictLine tone="attention">
+          <b>Campaign data could not be read.</b> Nothing is shown rather than a wrong number —
+          refresh below, and if it keeps failing the email tables are down.
+        </VerdictLine>
+      ) : (
+        <VerdictLine tone="ok">
+          <b>
+            {rows.length.toLocaleString('en-US')} recent campaign{rows.length === 1 ? '' : 's'}
+          </b>
+          {rows.length > 0 ? `, ${finished.toLocaleString('en-US')} of them sent.` : '.'} Opens and
+          clicks come from tracked email events — “—” means the send has none.
+        </VerdictLine>
+      )}
 
+      <div style={TOOLBAR}>
         {/* Refresh: appends ?t= to bust the 10-min cache */}
-        <Button
-          variant="outline"
-          size="sm"
-          asChild
-          className="shrink-0 gap-1.5 text-sm"
-        >
-          <Link href={`/admin/crm/reporting/batch-emails?t=${Date.now()}`}>
-            <RefreshCw className="h-3.5 w-3.5" />
-            Refresh
-          </Link>
-        </Button>
+        <Link href={refreshHref} className="av2-btn" style={{ textDecoration: 'none' }}>
+          Refresh
+        </Link>
       </div>
 
-      {/* Cache notice */}
-      <p className="mb-6 text-xs text-muted-foreground">
-        Reporting results may be cached for up to 10 minutes.{' '}
-        <Link
-          href={`/admin/crm/reporting/batch-emails?t=${Date.now()}`}
-          className="text-muted-foreground hover:underline"
-        >
-          Refresh results.
-        </Link>
+      <SectionHead>Recent batch emails</SectionHead>
+
+      {unreadable ? (
+        /* DB error — honest error state, never fake data */
+        <div style={STATE_PANEL}>
+          Could not load email campaign data.{' '}
+          <Link href={refreshHref} style={LINK}>
+            Try again
+          </Link>
+          .
+        </div>
+      ) : rows.length === 0 ? (
+        /* No campaigns yet — honest empty state */
+        <div style={STATE_PANEL}>
+          No batch emails found. Campaigns sent from the email admin appear here.
+        </div>
+      ) : (
+        <div style={SCROLLER} tabIndex={0}>
+          <div style={GRID} role="table" aria-label="Batch email campaigns">
+            <div style={HEAD_ROW} role="row">
+              <span style={HEAD_CELL} role="columnheader">Subject</span>
+              <span style={HEAD_CELL} role="columnheader">From</span>
+              <span style={HEAD_CELL} role="columnheader">Created</span>
+              <span style={HEAD_NUM} role="columnheader">Recipients</span>
+              <span style={HEAD_NUM} role="columnheader">Sent</span>
+              <span style={HEAD_NUM} role="columnheader">Opens</span>
+              <span style={HEAD_NUM} role="columnheader">Clicks</span>
+              <span style={HEAD_NUM} role="columnheader">Unsubscribes</span>
+              <span style={HEAD_CELL} role="columnheader">Status</span>
+            </div>
+
+            {rows.map((row) => (
+              <div style={ROW} role="row" key={row.id}>
+                {/* Subject — the campaign's own "Details" door lives in Status;
+                    it is the one link this row has ever carried, kept verbatim. */}
+                <span role="cell" style={{ fontWeight: 500, overflowWrap: 'anywhere' }}>
+                  <span title={row.subject ?? undefined}>{subjectDisplay(row.subject)}</span>
+                </span>
+                <span role="cell" style={MUTED}>{row.fromBrokerName ?? '—'}</span>
+                <span role="cell" style={{ ...MUTED, fontVariantNumeric: 'tabular-nums' }}>
+                  {shortDate(row.createdAtIso)}
+                </span>
+                <span role="cell">
+                  {row.recipientCount > 0 ? (
+                    <span style={NUM_MUTED}>{row.recipientCount.toLocaleString('en-US')}</span>
+                  ) : (
+                    <span style={NUM_MUTED}>—</span>
+                  )}
+                </span>
+                <span role="cell">
+                  {row.sent > 0 ? (
+                    <span style={NUM}>{row.sent.toLocaleString('en-US')}</span>
+                  ) : (
+                    <span style={NUM_MUTED}>—</span>
+                  )}
+                </span>
+                <span role="cell">
+                  <EventCell count={row.opens} rate={row.openRate} tracked={row.tracked} />
+                </span>
+                <span role="cell">
+                  <EventCell count={row.clicks} rate={row.clickRate} tracked={row.tracked} />
+                </span>
+                <span role="cell">
+                  {row.unsubscribes > 0 ? (
+                    <span style={NUM}>{row.unsubscribes.toLocaleString('en-US')}</span>
+                  ) : (
+                    <span style={NUM_MUTED}>{row.tracked ? '0' : '—'}</span>
+                  )}
+                </span>
+                <span role="cell"><StatusCell row={row} /></span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <p style={NOTE}>
+        Open rate is opens ÷ delivered and click rate is clicks ÷ delivered; both read “—” when a
+        campaign has no delivery events rather than a fabricated 0%.
       </p>
 
-      {/* Campaigns table */}
-      <Card className="no-scrollbar overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="min-w-56">Subject</TableHead>
-              <TableHead className="w-36">From</TableHead>
-              <TableHead className="w-28">Created</TableHead>
-              <TableHead className="w-24 text-right">Recipients</TableHead>
-              <TableHead className="w-20 text-right">Sent</TableHead>
-              <TableHead className="w-20 text-right">Opens</TableHead>
-              <TableHead className="w-20 text-right">Clicks</TableHead>
-              <TableHead className="w-24 text-right">Unsubscribes</TableHead>
-              <TableHead className="w-40">Status</TableHead>
-            </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {unreadable ? (
-              /* DB error — honest error state, never fake data */
-              <TableRow>
-                <TableCell
-                  colSpan={9}
-                  className="py-12 text-center text-sm text-muted-foreground"
-                >
-                  Could not load email campaign data. Try refreshing.
-                </TableCell>
-              </TableRow>
-            ) : rows.length === 0 ? (
-              /* No campaigns yet — honest empty state */
-              <TableRow>
-                <TableCell
-                  colSpan={9}
-                  className="py-12 text-center text-sm text-muted-foreground"
-                >
-                  No batch emails found. Campaigns sent from the email admin will
-                  appear here.
-                </TableCell>
-              </TableRow>
-            ) : (
-              rows.map((row) => (
-                <TableRow key={row.id} className="hover:bg-muted/40">
-                  {/* Subject */}
-                  <TableCell className="font-medium text-foreground">
-                    <span title={row.subject ?? undefined}>
-                      {subjectDisplay(row.subject)}
-                    </span>
-                  </TableCell>
-
-                  {/* From */}
-                  <TableCell className="text-sm text-muted-foreground">
-                    {row.fromBrokerName ?? '—'}
-                  </TableCell>
-
-                  {/* Created */}
-                  <TableCell className="text-sm text-muted-foreground">
-                    {shortDate(row.createdAtIso)}
-                  </TableCell>
-
-                  {/* Recipients */}
-                  <TableCell className="text-right tabular-nums text-sm text-muted-foreground">
-                    {row.recipientCount > 0
-                      ? row.recipientCount.toLocaleString('en-US')
-                      : '—'}
-                  </TableCell>
-
-                  {/* Sent */}
-                  <TableCell className="text-right tabular-nums text-sm">
-                    {row.sent > 0 ? (
-                      <span className="text-foreground">
-                        {row.sent.toLocaleString('en-US')}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-
-                  {/* Opens: show count + rate */}
-                  <TableCell className="text-right text-sm">
-                    {row.opens > 0 ? (
-                      <span className="tabular-nums text-foreground">
-                        {row.opens.toLocaleString('en-US')}
-                        {row.openRate !== null && (
-                          <span className="ml-1 text-xs text-muted-foreground">
-                            {fmtRate(row.openRate)}
-                          </span>
-                        )}
-                      </span>
-                    ) : (
-                      <span className="tabular-nums text-muted-foreground">
-                        {row.tracked ? '0' : '—'}
-                      </span>
-                    )}
-                  </TableCell>
-
-                  {/* Clicks: show count + rate */}
-                  <TableCell className="text-right text-sm">
-                    {row.clicks > 0 ? (
-                      <span className="tabular-nums text-foreground">
-                        {row.clicks.toLocaleString('en-US')}
-                        {row.clickRate !== null && (
-                          <span className="ml-1 text-xs text-muted-foreground">
-                            {fmtRate(row.clickRate)}
-                          </span>
-                        )}
-                      </span>
-                    ) : (
-                      <span className="tabular-nums text-muted-foreground">
-                        {row.tracked ? '0' : '—'}
-                      </span>
-                    )}
-                  </TableCell>
-
-                  {/* Unsubscribes */}
-                  <TableCell className="text-right tabular-nums text-sm">
-                    {row.unsubscribes > 0 ? (
-                      <span className="text-foreground">
-                        {row.unsubscribes.toLocaleString('en-US')}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">
-                        {row.tracked ? '0' : '—'}
-                      </span>
-                    )}
-                  </TableCell>
-
-                  {/* Status */}
-                  <TableCell>
-                    <StatusBadge row={row} />
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </Card>
+      <p style={NOTE}>
+        Results may be cached for up to 10 minutes.{' '}
+        <Link href={refreshHref} style={LINK}>
+          Refresh results
+        </Link>
+        .
+      </p>
     </div>
   )
 }

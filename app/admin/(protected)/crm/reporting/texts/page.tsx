@@ -1,107 +1,133 @@
 // @no-parity — internal admin surface
-//
-// INFERRED REPORT: no dedicated FUB GIF frame was captured for the Texts tab.
-// Layout, KPI strip, and table mirror the Calls report + standard FUB Texts
-// reporting conventions (sent / received / conversations / response rate).
-// If a reference frame is later captured, align any divergences then.
-
+// 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+// Presentation only. Carried over verbatim: the getCrmAccess guard + redirect,
+// scopeBroker, the superuser broker-filter branch, the `date` default
+// ('this_month'), the getTextsReport read, every figure and its formatting
+// (including the response-rate one-decimal format), and every href. ONE truth
+// correction: a failed read now says so instead of rendering the zero-filled
+// fallback as if it were data (CLAUDE.md §0).
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { ChevronDown, MessageSquare } from 'lucide-react'
+import type { CSSProperties } from 'react'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getTextsReport, type TextsRow, type TextsTotals } from '@/lib/data/crm/getTextsReport'
 import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
-import { Card } from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import TextsFilters from './TextsFilters'
 import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
 
 export const metadata = { title: 'Texts | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
 
-
-// ── KPI Tile ──────────────────────────────────────────────────────────────────
-
-/**
- * Texts-specific KPI tile.
- * No sparkline, no delta vs previous period — mirrors Calls KPI tile structure.
- * Sub-label shows "N person/people" (count metric) or is omitted (rate metric).
- */
-function TextsKpiTile({
-  label,
-  value,
-  subLabel,
-  valueText,
-}: {
-  label: string
-  value?: number | null
-  subLabel?: string
-  valueText?: string
-}) {
-  return (
-    <Card className="min-w-36 shrink-0 p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-1.5 text-3xl font-bold leading-none tabular-nums text-foreground">
-        {valueText ?? (value != null ? value.toLocaleString('en-US') : '—')}
-      </p>
-      {subLabel ? (
-        <p className="mt-1 text-xs text-muted-foreground">{subLabel}</p>
-      ) : (
-        <div className="mt-1 h-4" />
-      )}
-    </Card>
-  )
-}
-
-// ── Table cell helpers ────────────────────────────────────────────────────────
-
-/**
- * Dual-value cell: primary count + "N person/people" sub-label.
- * Mirrors the DualCell component from the Calls report.
- */
-function DualCell({ count, people }: { count: number; people: number }) {
-  if (count === 0) {
-    return <span className="tabular-nums text-muted-foreground">0</span>
-  }
-  return (
-    <div className="flex flex-col gap-0.5">
-      <span className="tabular-nums font-medium text-foreground">{count}</span>
-      {people > 0 ? (
-        <span className="text-xs text-muted-foreground">
-          {people} {people === 1 ? 'person' : 'people'}
-        </span>
-      ) : null}
-    </div>
-  )
-}
-
-/** Rate cell — shows "N%" or "—" when null. */
-function RateCell({ rate }: { rate: number | null }) {
-  if (rate == null) {
-    return <span className="text-muted-foreground">—</span>
-  }
-  return (
-    <span className="tabular-nums text-foreground">
-      {rate.toLocaleString('en-US', { maximumFractionDigits: 1 })}%
-    </span>
-  )
-}
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function peopleLabel(people: number): string {
   if (people === 0) return ''
   return `${people} ${people === 1 ? 'person' : 'people'}`
+}
+
+/** Rate as "N%" — one decimal, the format the report has always used. */
+function formatRate(rate: number): string {
+  return `${rate.toLocaleString('en-US', { maximumFractionDigits: 1 })}%`
+}
+
+const DATE_WORDS: Record<string, string> = {
+  today: 'today',
+  this_week: 'this week',
+  this_month: 'this month',
+  this_year: 'this year',
+}
+function windowWords(preset: string): string {
+  return DATE_WORDS[preset] ?? 'this period'
+}
+
+// ── Presentation constants (v2 tokens only) ───────────────────────────────────
+
+const COLS = 'minmax(150px,1.6fr) repeat(4, minmax(96px,1fr))'
+
+const PAGE: CSSProperties = { maxWidth: 1120, margin: '0 auto', padding: 16 }
+const TOOLBAR: CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 'var(--a-s3)',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  marginTop: 12,
+}
+const SCROLLER: CSSProperties = {
+  overflowX: 'auto',
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-lg)',
+  background: 'var(--a-surface)',
+}
+const GRID: CSSProperties = { minWidth: 620 }
+const ROW: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: COLS,
+  gap: 'var(--a-s3)',
+  alignItems: 'baseline',
+  padding: '10px 16px',
+  borderTop: '1px solid var(--a-border)',
+}
+const HEAD_ROW: CSSProperties = { ...ROW, borderTop: 'none', background: 'var(--a-inset)' }
+const HEAD_CELL: CSSProperties = {
+  fontSize: 'var(--a-text-xs)',
+  fontWeight: 600,
+  letterSpacing: '.05em',
+  textTransform: 'uppercase',
+  color: 'var(--a-text-2)',
+}
+const HEAD_NUM: CSSProperties = { ...HEAD_CELL, textAlign: 'right' }
+const NUM: CSSProperties = {
+  display: 'block',
+  fontVariantNumeric: 'tabular-nums',
+  textAlign: 'right',
+  color: 'var(--a-text)',
+}
+const SUB: CSSProperties = {
+  display: 'block',
+  fontSize: 'var(--a-text-xs)',
+  color: 'var(--a-text-2)',
+  fontWeight: 400,
+}
+const NOTE: CSSProperties = { fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', marginTop: 12 }
+const STATE_PANEL: CSSProperties = {
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-lg)',
+  background: 'var(--a-surface)',
+  padding: 'var(--a-s6)',
+  textAlign: 'center',
+  color: 'var(--a-text-2)',
+  fontSize: 'var(--a-text-sm)',
+}
+
+// ── Cells ─────────────────────────────────────────────────────────────────────
+
+/** Count + "N person/people" sub-label — the dual-value cell, stacked. */
+function DualCell({ count, people }: { count: number; people: number }) {
+  if (count === 0) return <span style={{ ...NUM, color: 'var(--a-text-2)' }}>0</span>
+  return (
+    <span style={{ ...NUM, fontWeight: 500 }}>
+      {count.toLocaleString('en-US')}
+      {people > 0 ? <span style={SUB}>{peopleLabel(people)}</span> : null}
+    </span>
+  )
+}
+
+/** Rate cell — "N%" or "—" when null. */
+function RateCell({ rate }: { rate: number | null }) {
+  if (rate == null) return <span style={{ ...NUM, color: 'var(--a-text-2)' }}>—</span>
+  return <span style={NUM}>{formatRate(rate)}</span>
+}
+
+function Figure({ value, label }: { value: string; label: string }) {
+  return (
+    <span className="av2-wk">
+      <span className="av2-wk__n">{value}</span>
+      <span className="av2-wk__l">{label}</span>
+    </span>
+  )
 }
 
 // ── Page params ───────────────────────────────────────────────────────────────
@@ -144,6 +170,8 @@ export default async function TextsReportPage({
     datePreset,
   }).catch(() => null)
 
+  // A failed read is NOT zero texts — say so rather than print a wrong figure.
+  const unreadable = report === null
   const rows: TextsRow[] = report?.rows ?? []
   const totals: TextsTotals = report?.totals ?? {
     sent: 0,
@@ -154,22 +182,34 @@ export default async function TextsReportPage({
     responseRate: null,
   }
 
+  const period = windowWords(currentDate)
+  const refreshHref = `/admin/crm/reporting/texts?broker=${currentBroker}&date=${currentDate}&t=${Date.now()}`
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+    <div className="av2-scope" style={PAGE}>
       <ReportingTabStrip active="texts" />
 
-      {/* Header row: "Show me" selector + filter bar */}
-      <div className="mb-2 flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-center gap-1.5 text-sm">
-          <span className="text-muted-foreground">Show me</span>
-          <div className="flex items-center gap-0.5">
-            <span className="font-medium text-primary underline underline-offset-2">
-              text report
-            </span>
-            <ChevronDown className="h-4 w-4 text-primary" />
-          </div>
-        </div>
+      {unreadable ? (
+        <VerdictLine tone="attention">
+          <b>Text data could not be read.</b> Nothing is shown rather than a wrong number — refresh
+          below, and if it keeps failing the timeline read is down.
+        </VerdictLine>
+      ) : (
+        <VerdictLine tone="ok">
+          <b>
+            {totals.sent.toLocaleString('en-US')} text{totals.sent === 1 ? '' : 's'} sent
+          </b>{' '}
+          {period} · {totals.received.toLocaleString('en-US')} received ·{' '}
+          {totals.conversations.toLocaleString('en-US')} two-way conversation
+          {totals.conversations === 1 ? '' : 's'}
+          {totals.responseRate != null ? ` · ${formatRate(totals.responseRate)} response rate` : ''}.
+        </VerdictLine>
+      )}
 
+      <div style={TOOLBAR}>
+        <Link href={refreshHref} className="av2-btn" style={{ textDecoration: 'none' }}>
+          Refresh results
+        </Link>
         {/* Filter controls — agent + date */}
         {isSuperuser ? (
           <TextsFilters
@@ -183,159 +223,115 @@ export default async function TextsReportPage({
         ) : null}
       </div>
 
-      {/* Cache notice */}
-      <p className="mb-6 text-xs text-muted-foreground">
-        Reporting results may be cached for up to 10 minutes.{' '}
-        <Link
-          href={`/admin/crm/reporting/texts?broker=${currentBroker}&date=${currentDate}&t=${Date.now()}`}
-          className="text-muted-foreground hover:underline"
-        >
-          Refresh results.
-        </Link>
-      </p>
-
-      {/* ── KPI Tile strip ── */}
       {/*
-        INFERRED metric order — mirrors standard FUB Texts report layout:
+        Figures, in the locked report order:
         TEXTS SENT | TEXTS RECEIVED | CONVERSATIONS | RESPONSE RATE
 
-        Honest empty states:
-        - RESPONSE RATE: "—" when no texts sent (cannot divide by zero)
-          Source: conversations / sentPeople × 100; displayed as "X%"
+        Honest empty state: RESPONSE RATE is "—" when no texts were sent
+        (conversations / sentPeople × 100 cannot divide by zero).
       */}
-      <div className="no-scrollbar mb-6 flex gap-3 overflow-x-auto pb-2">
-        <TextsKpiTile
-          label="Texts Sent"
-          value={totals.sent}
-          subLabel={totals.sentPeople > 0 ? peopleLabel(totals.sentPeople) : undefined}
-        />
-        <TextsKpiTile
-          label="Texts Received"
-          value={totals.received}
-          subLabel={totals.receivedPeople > 0 ? peopleLabel(totals.receivedPeople) : undefined}
-        />
-        <TextsKpiTile
-          label="Conversations"
-          value={totals.conversations}
-          subLabel={
-            totals.conversations > 0 ? `${totals.conversations} ${totals.conversations === 1 ? 'person' : 'people'}` : undefined
-          }
-        />
-        <TextsKpiTile
-          label="Response Rate"
-          valueText={
-            totals.responseRate != null
-              ? `${totals.responseRate.toLocaleString('en-US', { maximumFractionDigits: 1 })}%`
-              : '—'
-          }
-        />
-      </div>
+      {unreadable ? null : (
+        <>
+          <SectionHead>
+            {period === 'this period' ? 'This period' : period[0].toUpperCase() + period.slice(1)}
+          </SectionHead>
+          <div className="av2-week">
+            <Figure
+              value={totals.sent.toLocaleString('en-US')}
+              label={`texts sent${totals.sentPeople > 0 ? ` · ${peopleLabel(totals.sentPeople)}` : ''}`}
+            />
+            <Figure
+              value={totals.received.toLocaleString('en-US')}
+              label={`texts received${totals.receivedPeople > 0 ? ` · ${peopleLabel(totals.receivedPeople)}` : ''}`}
+            />
+            <Figure
+              value={totals.conversations.toLocaleString('en-US')}
+              label={`conversations${
+                totals.conversations > 0
+                  ? ` · ${totals.conversations} ${totals.conversations === 1 ? 'person' : 'people'}`
+                  : ''
+              }`}
+            />
+            <Figure
+              value={totals.responseRate != null ? formatRate(totals.responseRate) : '—'}
+              label="response rate"
+            />
+          </div>
+        </>
+      )}
 
-      {/* ── Per-broker breakdown table ── */}
-      <Card className="overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="w-44">Name</TableHead>
-              <TableHead className="text-right text-xs">Texts Sent</TableHead>
-              <TableHead className="text-right text-xs">Texts Received</TableHead>
-              <TableHead className="text-right text-xs">
-                <span>Conversations</span>
-                <span
-                  className="ml-1 text-muted-foreground opacity-60"
-                  title="People who both received and replied to a text"
-                >
-                  ⓘ
-                </span>
-              </TableHead>
-              <TableHead className="text-right text-xs">
-                <span>Response Rate</span>
-                <span
-                  className="ml-1 text-muted-foreground opacity-60"
-                  title="% of texted people who replied back"
-                >
-                  ⓘ
-                </span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="py-12 text-center text-sm text-muted-foreground"
-                >
-                  No text data for this period.
-                </TableCell>
-              </TableRow>
-            ) : (
-              rows.map((row) => (
-                <TableRow key={row.brokerSlug} className="hover:bg-muted/40">
-                  {/* Agent name + avatar */}
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {row.avatarUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={row.avatarUrl}
-                          alt=""
-                          className="h-7 w-7 shrink-0 rounded-full object-cover object-top"
-                        />
-                      ) : (
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
-                          {row.brokerName.charAt(0)}
-                        </span>
-                      )}
-                      <span className="text-sm font-medium text-foreground">
-                        {row.brokerName}
-                      </span>
-                    </div>
-                  </TableCell>
+      <SectionHead>By broker</SectionHead>
 
-                  {/* Texts Sent */}
-                  <TableCell className="text-right">
-                    <DualCell count={row.sent} people={row.sentPeople} />
-                  </TableCell>
-
-                  {/* Texts Received */}
-                  <TableCell className="text-right">
-                    <DualCell count={row.received} people={row.receivedPeople} />
-                  </TableCell>
-
-                  {/* Conversations — 2-way threads */}
-                  <TableCell className="text-right">
-                    {row.conversations === 0 ? (
-                      <span className="tabular-nums text-muted-foreground">0</span>
-                    ) : (
-                      <span className="tabular-nums font-medium text-foreground">
-                        {row.conversations}
-                      </span>
-                    )}
-                  </TableCell>
-
-                  {/* Response Rate */}
-                  <TableCell className="text-right">
-                    <RateCell rate={row.responseRate} />
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </Card>
-
-      {/* ── Texts link ── */}
-      <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-        <MessageSquare className="h-3.5 w-3.5" />
-        <span>
-          Read and reply to individual text conversations in the{' '}
-          <Link href="/admin/crm/inbox" className="text-primary hover:underline">
-            Inbox
+      {unreadable ? (
+        <div style={STATE_PANEL}>
+          Could not read the text timeline.{' '}
+          <Link href={refreshHref} style={{ color: 'var(--a-accent)' }}>
+            Try again
           </Link>
           .
-        </span>
-      </div>
+        </div>
+      ) : rows.length === 0 ? (
+        <div style={STATE_PANEL}>
+          No texts logged {period}. Widen the date range, or switch the agent filter above.
+        </div>
+      ) : (
+        <div style={SCROLLER} tabIndex={0}>
+          <div style={GRID} role="table" aria-label="Texts by broker">
+            <div style={HEAD_ROW} role="row">
+              <span style={HEAD_CELL} role="columnheader">Name</span>
+              <span style={HEAD_NUM} role="columnheader">Texts sent</span>
+              <span style={HEAD_NUM} role="columnheader">Texts received</span>
+              <span style={HEAD_NUM} role="columnheader">Conversations</span>
+              <span style={HEAD_NUM} role="columnheader">Response rate</span>
+            </div>
+
+            {rows.map((row) => (
+              <div style={ROW} role="row" key={row.brokerSlug}>
+                <span role="cell">
+                  {isSuperuser ? (
+                    <Link
+                      href={`/admin/crm/reporting/texts?broker=${row.brokerSlug}&date=${currentDate}`}
+                      style={{ color: 'var(--a-accent)', fontWeight: 500 }}
+                    >
+                      {row.brokerName}
+                    </Link>
+                  ) : (
+                    <span style={{ fontWeight: 500 }}>{row.brokerName}</span>
+                  )}
+                </span>
+                <span role="cell"><DualCell count={row.sent} people={row.sentPeople} /></span>
+                <span role="cell"><DualCell count={row.received} people={row.receivedPeople} /></span>
+                {/* Conversations — 2-way threads */}
+                <span role="cell">
+                  {row.conversations === 0 ? (
+                    <span style={{ ...NUM, color: 'var(--a-text-2)' }}>0</span>
+                  ) : (
+                    <span style={{ ...NUM, fontWeight: 500 }}>{row.conversations}</span>
+                  )}
+                </span>
+                <span role="cell"><RateCell rate={row.responseRate} /></span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <p style={NOTE}>
+        Conversations counts people who both received a text and replied. Response rate is the share
+        of texted people who replied back.
+      </p>
+
+      <p style={NOTE}>
+        Results may be cached for up to 10 minutes.{' '}
+        <Link href={refreshHref} style={{ color: 'var(--a-accent)' }}>
+          Refresh results
+        </Link>
+        . Read and reply to individual conversations in the{' '}
+        <Link href="/admin/crm/inbox" style={{ color: 'var(--a-accent)' }}>
+          Inbox
+        </Link>
+        .
+      </p>
     </div>
   )
 }

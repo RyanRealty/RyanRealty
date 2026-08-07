@@ -6,8 +6,8 @@
  * Five GA4 tabs (Overview, Acquisition, Behavior, Funnel, Conversions), the
  * merged report catalog (market data, broker activity, lead sources,
  * marketing), and the weekly-report + city-report tools that used to live on
- * the Reports page. Server-side data fetching via Promise.all. shadcn/ui
- * everywhere. Tabular numerals on every numeric surface.
+ * the Reports page. Server-side data fetching via Promise.all. Tabular
+ * numerals on every numeric surface.
  *
  * Data trace:
  *   - Overview / Acquisition / Behavior  → GA4 Data API (getGA4Summary)
@@ -15,15 +15,17 @@
  *   - Conversions                         → GA4 + public.crm_people (getLeadIntake) + public.marketing_channel_daily
  *
  * Per-figure citation lives in ./citations.json.
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Presentation only — the five tab keys, the tab-href param carry-over, the
+ * active-tab-only render, every fetch* call and every formatter are carried over
+ * verbatim. CityReportSection + GenerateReportButton stay sanctioned legacy
+ * machinery, exclusively owned by this route, and migrate with a later unit.
  */
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
+import { SectionHead, StateWord } from '@/components/admin/v2'
+import { DataList, Figures, Loading } from './_components/v2/kit'
 import { getReportCities } from '@/app/actions/reports'
 import {
   resolveDateRange,
@@ -34,9 +36,8 @@ import {
   fetchConversions,
 } from './_lib/queries'
 import { formatInt, formatPct, formatUsd, formatDuration } from './_lib/formatters'
-import { DateRangePicker } from './_components/DateRangePicker'
-import { FunnelVariantFilter } from './_components/FunnelVariantFilter'
-import { KpiCard } from './_components/KpiCard'
+import { RangeControl } from './_components/v2/RangeControl'
+import { VariantControl } from './_components/v2/VariantControl'
 import { HorizontalBarChart, TimeSeriesChart, BrokerPieChart, StackedBarMix } from './_components/charts'
 import ReportCatalog from './_components/ReportCatalog'
 
@@ -86,14 +87,11 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   }
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">Performance</h1>
-        <p className="text-sm text-muted-foreground">
-          Every analytics and reporting surface in one place: traffic, funnel, conversions, and the report catalog. Numbers trace to GA4 Data API and Supabase. Range: {range.startDate} to {range.endDate}.
-        </p>
-        <DateRangePicker current={rangeChoice} currentStart={sp.startDate} currentEnd={sp.endDate} />
-      </header>
+    <div className="av2-scope" style={{ maxWidth: 1120, margin: '0 auto', padding: 16 }}>
+      <p className="av2-note">
+        Every analytics and reporting surface in one place: traffic, funnel, conversions, and the report catalog. Numbers trace to GA4 Data API and Supabase. Range: {range.startDate} to {range.endDate}.
+      </p>
+      <RangeControl current={rangeChoice} currentStart={sp.startDate} currentEnd={sp.endDate} />
 
       {/* Only the ACTIVE tab's server component renders. The old version
           mounted all five async RSCs on every request, so the four hidden tabs
@@ -101,44 +99,40 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
           series, CMA counts, funnel variants) on each navigation — pure waste
           on a force-dynamic page (audit 2026-07-14). Triggers are links that
           set ?tab= and re-render on the server. */}
-      <Tabs value={tab}>
-        <TabsList>
-          {TAB_DEFS.map((t) => (
-            <TabsTrigger key={t.key} value={t.key} asChild>
-              <Link href={tabHref(t.key)}>{t.label}</Link>
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <nav className="av2-wordrow" aria-label="Performance views" style={{ marginBottom: 'var(--a-s4)' }}>
+        {TAB_DEFS.map((t) => (
+          <Link
+            key={t.key}
+            href={tabHref(t.key)}
+            className="av2-btn av2-btn--quiet"
+            aria-current={t.key === tab ? 'page' : undefined}
+            style={
+              t.key === tab
+                ? { textDecoration: 'none', background: 'var(--a-accent-wash)', borderColor: 'var(--a-accent)' }
+                : { textDecoration: 'none' }
+            }
+          >
+            {t.label}
+          </Link>
+        ))}
+      </nav>
 
-        <TabsContent value={tab} className="space-y-4">
-          <Suspense fallback={<DashboardSkeleton />}>
-            {tab === 'overview' ? (
-              <OverviewTab range={range} />
-            ) : tab === 'acquisition' ? (
-              <AcquisitionTab range={range} />
-            ) : tab === 'behavior' ? (
-              <BehaviorTab range={range} />
-            ) : tab === 'funnel' ? (
-              <FunnelTab range={range} lpVariant={lpVariant} />
-            ) : (
-              <ConversionsTab range={range} />
-            )}
-          </Suspense>
-        </TabsContent>
-      </Tabs>
+      <Suspense fallback={<Loading what="the GA4 window" />}>
+        {tab === 'overview' ? (
+          <OverviewTab range={range} />
+        ) : tab === 'acquisition' ? (
+          <AcquisitionTab range={range} />
+        ) : tab === 'behavior' ? (
+          <BehaviorTab range={range} />
+        ) : tab === 'funnel' ? (
+          <FunnelTab range={range} lpVariant={lpVariant} />
+        ) : (
+          <ConversionsTab range={range} />
+        )}
+      </Suspense>
 
       {/* Merged report launchpad: catalog + weekly tool + city builder. */}
       <ReportCatalog cities={cities} />
-    </div>
-  )
-}
-
-function DashboardSkeleton() {
-  return (
-    <div className="grid gap-4 lg:grid-cols-4">
-      {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}
-      <Skeleton className="h-72 w-full lg:col-span-2" />
-      <Skeleton className="h-72 w-full lg:col-span-2" />
     </div>
   )
 }
@@ -151,84 +145,63 @@ async function OverviewTab({ range }: { range: { startDate: string; endDate: str
   const d = await fetchOverview(range)
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Sessions" value={formatInt(d.sessions)} />
-        <KpiCard label="Total users" value={formatInt(d.totalUsers)} hint={`${formatInt(d.newUsers)} new`} />
-        <KpiCard label="Leads (CRM)" value={formatInt(d.crmLeadCount)} hint={`${formatPct(d.leadConversionRate, 2)} of sessions · ${formatInt(d.generateLeadCount)} form submits (GA4)`} />
-        <KpiCard
-          label="Paid spend"
-          value={d.paidSpendUsd === null ? 'no data' : formatUsd(d.paidSpendUsd)}
-          hint={d.paidSpendUsd === null ? 'Meta cron has not synced spend yet' : 'Meta ads spend in the range'}
-        />
-        <KpiCard label="Engagement rate" value={formatPct(d.engagementRate)} />
-        <KpiCard label="Bounce rate" value={formatPct(d.bounceRate)} />
-        <KpiCard label="Avg. session duration" value={formatDuration(d.averageSessionDurationSeconds)} />
-        <KpiCard label="Top source" value={d.topSources[0]?.sourceMedium ?? 'no data'} hint={d.topSources[0] ? `${formatInt(d.topSources[0].sessions)} sessions` : null} />
-      </div>
+    <>
+      <Figures
+        figures={[
+          { label: 'Sessions', value: formatInt(d.sessions) },
+          { label: 'Total users', value: formatInt(d.totalUsers), caption: `${formatInt(d.newUsers)} new` },
+          {
+            label: 'Leads (CRM)',
+            value: formatInt(d.crmLeadCount),
+            caption: `${formatPct(d.leadConversionRate, 2)} of sessions · ${formatInt(d.generateLeadCount)} form submits (GA4)`,
+          },
+          {
+            label: 'Paid spend',
+            value: d.paidSpendUsd === null ? 'no data' : formatUsd(d.paidSpendUsd),
+            caption: d.paidSpendUsd === null ? 'Meta cron has not synced spend yet' : 'Meta ads spend in the range',
+          },
+          { label: 'Engagement rate', value: formatPct(d.engagementRate) },
+          { label: 'Bounce rate', value: formatPct(d.bounceRate) },
+          { label: 'Avg. session duration', value: formatDuration(d.averageSessionDurationSeconds) },
+          {
+            label: 'Top source',
+            value: d.topSources[0]?.sourceMedium ?? 'no data',
+            caption: d.topSources[0] ? `${formatInt(d.topSources[0].sessions)} sessions` : null,
+          },
+        ]}
+      />
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Top 3 sources</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {d.topSources.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No source data in this range.</p>
-            ) : (
-              <div className="overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="whitespace-nowrap">Source / Medium</TableHead>
-                      <TableHead className="text-right whitespace-nowrap">Sessions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {d.topSources.map((s) => (
-                      <TableRow key={s.sourceMedium}>
-                        <TableCell className="font-medium whitespace-nowrap">{s.sourceMedium}</TableCell>
-                        <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(s.sessions)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Top 3 landing pages</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {d.topLandingPages.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No page data in this range.</p>
-            ) : (
-              <div className="overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="whitespace-nowrap">Page</TableHead>
-                      <TableHead className="text-right whitespace-nowrap">Views</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {/* GA4 can return the same pagePath twice (e.g. "/") — key by position too */}
-                    {d.topLandingPages.map((p, i) => (
-                      <TableRow key={`${i}|${p.pagePath}`}>
-                        <TableCell className="font-medium whitespace-nowrap">{p.pagePath}</TableCell>
-                        <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(p.sessions)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+      <section aria-label="Top 3 sources">
+        <SectionHead>Top 3 sources</SectionHead>
+        <DataList
+          label="Top 3 sources"
+          rows={d.topSources}
+          cap={d.topSources.length}
+          rowKey={(s) => s.sourceMedium}
+          columns={[
+            { key: 'source', header: 'Source / Medium', lead: true, cell: (s) => s.sourceMedium },
+            { key: 'sessions', header: 'Sessions', num: true, cell: (s) => formatInt(s.sessions) },
+          ]}
+          empty={<>No source data in this range. Widen the date range above.</>}
+        />
+      </section>
+
+      <section aria-label="Top 3 landing pages">
+        <SectionHead>Top 3 landing pages</SectionHead>
+        {/* GA4 can return the same pagePath twice (e.g. "/") — key by position too */}
+        <DataList
+          label="Top 3 landing pages"
+          rows={d.topLandingPages}
+          cap={d.topLandingPages.length}
+          rowKey={(p, i) => `${i}|${p.pagePath}`}
+          columns={[
+            { key: 'page', header: 'Page', lead: true, cell: (p) => p.pagePath },
+            { key: 'views', header: 'Views', num: true, cell: (p) => formatInt(p.sessions) },
+          ]}
+          empty={<>No page data in this range. Widen the date range above.</>}
+        />
+      </section>
+    </>
   )
 }
 
@@ -247,87 +220,74 @@ async function AcquisitionTab({ range }: { range: { startDate: string; endDate: 
   }))
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-3">
-        <KpiCard label="Paid sessions" value={formatInt(d.paidVsOrganic.paidSessions)} hint={totalAttributed > 0 ? formatPct(d.paidVsOrganic.paidSessions / totalAttributed) : null} />
-        <KpiCard label="Organic sessions" value={formatInt(d.paidVsOrganic.organicSessions)} hint={totalAttributed > 0 ? formatPct(d.paidVsOrganic.organicSessions / totalAttributed) : null} />
-        <KpiCard label="Direct / other" value={formatInt(d.paidVsOrganic.otherSessions)} hint={totalAttributed > 0 ? formatPct(d.paidVsOrganic.otherSessions / totalAttributed) : null} />
-      </div>
+    <>
+      <Figures
+        figures={[
+          {
+            label: 'Paid sessions',
+            value: formatInt(d.paidVsOrganic.paidSessions),
+            caption: totalAttributed > 0 ? formatPct(d.paidVsOrganic.paidSessions / totalAttributed) : null,
+          },
+          {
+            label: 'Organic sessions',
+            value: formatInt(d.paidVsOrganic.organicSessions),
+            caption: totalAttributed > 0 ? formatPct(d.paidVsOrganic.organicSessions / totalAttributed) : null,
+          },
+          {
+            label: 'Direct / other',
+            value: formatInt(d.paidVsOrganic.otherSessions),
+            caption: totalAttributed > 0 ? formatPct(d.paidVsOrganic.otherSessions / totalAttributed) : null,
+          },
+        ]}
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Top sources by lead volume</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {chartSources.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No source attribution in this range.</p>
-          ) : (
-            <HorizontalBarChart data={chartSources} xKey="sourceMedium" yKey="leads" height={Math.max(280, chartSources.length * 28)} />
-          )}
-        </CardContent>
-      </Card>
+      <section aria-label="Top sources by lead volume">
+        <SectionHead>Top sources by lead volume</SectionHead>
+        {chartSources.length === 0 ? (
+          <div className="av2-empty">No source attribution in this range. Widen the date range above.</div>
+        ) : (
+          <HorizontalBarChart data={chartSources} xKey="sourceMedium" yKey="leads" height={Math.max(280, chartSources.length * 28)} />
+        )}
+      </section>
 
-      <section className="space-y-2">
-        <h3 className="text-base font-semibold text-foreground">Top UTM combinations</h3>
-        <TableWithMobileCards
+      <section aria-label="Top UTM combinations">
+        <SectionHead>Top UTM combinations</SectionHead>
+        <DataList
+          label="Top UTM combinations"
           rows={d.sources}
           cap={10}
-          getRowKey={(s) => s.sourceMedium}
+          rowKey={(s) => s.sourceMedium}
           columns={[
-            { key: 'source', header: 'Source / Medium', className: 'font-medium whitespace-nowrap', cell: (s) => s.sourceMedium },
-            { key: 'sessions', header: 'Sessions', className: 'text-right tabular-nums whitespace-nowrap', cell: (s) => formatInt(s.sessions) },
-            { key: 'users', header: 'Users', className: 'text-right tabular-nums whitespace-nowrap', cell: (s) => formatInt(s.users) },
-            { key: 'engaged', header: 'Engaged sessions', className: 'text-right tabular-nums whitespace-nowrap', cell: (s) => formatInt(s.engagedSessions) },
-            { key: 'leads', header: 'Leads', className: 'text-right tabular-nums whitespace-nowrap', cell: (s) => formatInt(s.leadEvents) },
-            { key: 'conv', header: 'Conversion rate', className: 'text-right tabular-nums whitespace-nowrap', cell: (s) => formatPct(s.conversionRate, 2) },
+            { key: 'source', header: 'Source / Medium', lead: true, cell: (s) => s.sourceMedium },
+            { key: 'sessions', header: 'Sessions', num: true, cell: (s) => formatInt(s.sessions) },
+            { key: 'users', header: 'Users', num: true, cell: (s) => formatInt(s.users) },
+            { key: 'engaged', header: 'Engaged sessions', num: true, cell: (s) => formatInt(s.engagedSessions) },
+            { key: 'leads', header: 'Leads', num: true, cell: (s) => formatInt(s.leadEvents) },
+            { key: 'conv', header: 'Conversion rate', num: true, cell: (s) => formatPct(s.conversionRate, 2) },
           ]}
-          renderCard={(s) => (
-            <Card>
-              <CardContent className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium">{s.sourceMedium}</span>
-                  <span className="text-sm font-semibold tabular-nums">{formatInt(s.sessions)} <span className="text-xs font-normal text-muted-foreground">sess</span></span>
-                </div>
-                <p className="text-xs text-muted-foreground tabular-nums">{formatInt(s.leadEvents)} leads · {formatPct(s.conversionRate, 2)} conv · {formatInt(s.users)} users</p>
-              </CardContent>
-            </Card>
-          )}
           empty={<>No source data in this range. Widen the date range, or check that the GA4 cron is writing source rows.</>}
         />
       </section>
 
       {d.channels.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Social channel sessions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">Channel</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Sessions</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Users</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Engagement rate</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {d.channels.map((c) => (
-                    <TableRow key={c.channel}>
-                      <TableCell className="font-medium whitespace-nowrap">{c.channel}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(c.sessions)}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(c.users)}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatPct(c.engagementRate)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+        <section aria-label="Social channel sessions">
+          <SectionHead>Social channel sessions</SectionHead>
+          <DataList
+            label="Social channel sessions"
+            rows={d.channels}
+            cap={d.channels.length}
+            rowKey={(c) => c.channel}
+            columns={[
+              { key: 'channel', header: 'Channel', lead: true, cell: (c) => c.channel },
+              { key: 'sessions', header: 'Sessions', num: true, cell: (c) => formatInt(c.sessions) },
+              { key: 'users', header: 'Users', num: true, cell: (c) => formatInt(c.users) },
+              { key: 'engagement', header: 'Engagement rate', num: true, cell: (c) => formatPct(c.engagementRate) },
+            ]}
+            empty={<>No social channel sessions in this range.</>}
+          />
+        </section>
       )}
-    </div>
+    </>
   )
 }
 
@@ -339,59 +299,37 @@ async function BehaviorTab({ range }: { range: { startDate: string; endDate: str
   const d = await fetchBehavior(range)
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Top 20 pages by sessions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {d.pages.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No page data in this range.</p>
-          ) : (
-            <div className="overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">Page</TableHead>
-                    <TableHead className="whitespace-nowrap">Title</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Views</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Users</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Avg. engagement</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {d.pages.map((p) => (
-                    <TableRow key={`${p.pagePath}|${p.pageTitle}`}>
-                      <TableCell className="font-medium text-foreground max-w-md truncate" title={p.pagePath}>{p.pagePath}</TableCell>
-                      <TableCell className="text-muted-foreground max-w-md truncate" title={p.pageTitle}>{p.pageTitle}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(p.views)}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(p.users)}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatDuration(p.avgEngagementTimeSeconds)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+    <>
+      <section aria-label="Top 20 pages by sessions">
+        <SectionHead>Top 20 pages by sessions</SectionHead>
+        <DataList
+          label="Top 20 pages by sessions"
+          rows={d.pages}
+          cap={d.pages.length}
+          rowKey={(p) => `${p.pagePath}|${p.pageTitle}`}
+          columns={[
+            { key: 'page', header: 'Page', lead: true, cell: (p) => p.pagePath },
+            { key: 'title', header: 'Title', cell: (p) => p.pageTitle },
+            { key: 'views', header: 'Views', num: true, cell: (p) => formatInt(p.views) },
+            { key: 'users', header: 'Users', num: true, cell: (p) => formatInt(p.users) },
+            { key: 'engagement', header: 'Avg. engagement', num: true, cell: (p) => formatDuration(p.avgEngagementTimeSeconds) },
+          ]}
+          empty={<>No page data in this range. Widen the date range above.</>}
+        />
+      </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Scroll-depth events</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="mb-3 text-xs text-muted-foreground">
-            Total scroll_depth events fired in this range. GA4 does not expose per-milestone breakdowns via the Data API aggregation used here — only the aggregate count is real.
-          </p>
-          {d.scrollTotal === 0 ? (
-            <p className="text-sm text-muted-foreground">No scroll_depth events in this range.</p>
-          ) : (
-            <p className="text-2xl font-semibold tabular-nums">{formatInt(d.scrollTotal)}</p>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+      <section aria-label="Scroll-depth events">
+        <SectionHead>Scroll-depth events</SectionHead>
+        <p className="av2-note">
+          Total scroll_depth events fired in this range. GA4 does not expose per-milestone breakdowns via the Data API aggregation used here — only the aggregate count is real.
+        </p>
+        {d.scrollTotal === 0 ? (
+          <div className="av2-empty">No scroll_depth events in this range.</div>
+        ) : (
+          <Figures figures={[{ label: 'scroll_depth events', value: formatInt(d.scrollTotal) }]} />
+        )}
+      </section>
+    </>
   )
 }
 
@@ -404,53 +342,44 @@ async function FunnelTab({ range, lpVariant }: { range: { startDate: string; end
   const max = Math.max(1, ...d.steps.map((s) => s.count))
 
   return (
-    <div className="space-y-4">
-      <FunnelVariantFilter variants={d.availableVariants} current={lpVariant} />
+    <>
+      <VariantControl variants={d.availableVariants} current={lpVariant} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            Lead path
-            {lpVariant ? <Badge className="ml-2" variant="secondary">lp_variant = {lpVariant}</Badge> : null}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {d.steps.map((step, i) => {
-              const widthPct = (step.count / max) * 100
-              return (
-                <div key={step.label} className="grid grid-cols-1 gap-2 sm:grid-cols-12 sm:gap-3 sm:items-center">
-                  <div className="sm:col-span-4 text-sm font-medium text-foreground">{i + 1}. {step.label}</div>
-                  <div className="sm:col-span-6">
-                    <div className="h-6 w-full overflow-hidden rounded-md bg-muted">
-                      <div
-                        className="h-full bg-primary transition-all"
-                        style={{ width: `${Math.max(2, widthPct)}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="sm:col-span-2 text-left sm:text-right text-sm">
-                    <div className="font-semibold text-foreground tabular-nums">{formatInt(step.count)}</div>
-                    {step.dropOffPct !== null ? (
-                      <div className="text-xs text-muted-foreground tabular-nums">
-                        {step.dropOffPct >= 0
-                          ? `drop ${formatPct(step.dropOffPct, 1)}`
-                          : `gain ${formatPct(-step.dropOffPct, 1)}`}
-                      </div>
-                    ) : (
-                      <div className="text-xs text-muted-foreground">start</div>
-                    )}
-                  </div>
+      <section aria-label="Lead path">
+        <SectionHead>
+          Lead path{lpVariant ? <> <StateWord state="accent">lp_variant = {lpVariant}</StateWord></> : null}
+        </SectionHead>
+        <div style={{ marginBottom: 'var(--a-s4)' }}>
+          {d.steps.map((step, i) => {
+            const widthPct = (step.count / max) * 100
+            return (
+              <div key={step.label} className="av2-step">
+                <div className="av2-step__l">{i + 1}. {step.label}</div>
+                <div className="av2-step__track">
+                  <div className="av2-step__fill" style={{ width: `${Math.max(2, widthPct)}%` }} />
                 </div>
-              )
-            })}
-          </div>
-          <p className="mt-4 text-xs text-muted-foreground">
-            Steps 1 through 5 from GA4. Step 6 (leads captured) from public.crm_people, inbound sources only. Step 7 from public.cmas where status is delivered, final, or sent.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+                <div className="av2-step__n">
+                  <b style={{ color: 'var(--a-text)' }}>{formatInt(step.count)}</b>
+                  {step.dropOffPct !== null ? (
+                    <>
+                      {' · '}
+                      {step.dropOffPct >= 0
+                        ? `drop ${formatPct(step.dropOffPct, 1)}`
+                        : `gain ${formatPct(-step.dropOffPct, 1)}`}
+                    </>
+                  ) : (
+                    <>{' · '}start</>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        <p className="av2-note">
+          Steps 1 through 5 from GA4. Step 6 (leads captured) from public.crm_people, inbound sources only. Step 7 from public.cmas where status is delivered, final, or sent.
+        </p>
+      </section>
+    </>
   )
 }
 
@@ -462,99 +391,77 @@ async function ConversionsTab({ range }: { range: { startDate: string; endDate: 
   const d = await fetchConversions(range)
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-3">
-        <KpiCard label="Total leads (CRM)" value={formatInt(d.brokerSplit.reduce((sum, b) => sum + b.count, 0))} hint="Inbound leads captured in the CRM" />
-        <KpiCard
-          label="Cost per lead"
-          value={d.costPerLeadUsd === null ? 'no data' : formatUsd(d.costPerLeadUsd)}
-          hint={d.costPerLeadUsd === null ? 'Meta spend not synced for this range' : 'Meta spend ÷ CRM leads'}
+    <>
+      <Figures
+        figures={[
+          {
+            label: 'Total leads (CRM)',
+            value: formatInt(d.brokerSplit.reduce((sum, b) => sum + b.count, 0)),
+            caption: 'Inbound leads captured in the CRM',
+          },
+          {
+            label: 'Cost per lead',
+            value: d.costPerLeadUsd === null ? 'no data' : formatUsd(d.costPerLeadUsd),
+            caption: d.costPerLeadUsd === null ? 'Meta spend not synced for this range' : 'Meta spend ÷ CRM leads',
+          },
+          {
+            label: 'Top broker',
+            value: d.brokerSplit[0]?.broker ?? 'no data',
+            caption: d.brokerSplit[0] ? `${formatInt(d.brokerSplit[0].count)} leads` : null,
+          },
+        ]}
+      />
+
+      <section aria-label="Leads by source">
+        <SectionHead>Leads by source</SectionHead>
+        <DataList
+          label="Leads by source"
+          rows={d.leadsBySource}
+          cap={d.leadsBySource.length}
+          rowKey={(s) => s.sourceMedium}
+          columns={[
+            { key: 'source', header: 'Source / Medium', lead: true, cell: (s) => s.sourceMedium },
+            { key: 'leads', header: 'Lead events', num: true, cell: (s) => formatInt(s.leadEvents) },
+            { key: 'users', header: 'Users', num: true, cell: (s) => formatInt(s.users) },
+          ]}
+          empty={<>No attributed lead sources in this range.</>}
         />
-        <KpiCard
-          label="Top broker"
-          value={d.brokerSplit[0]?.broker ?? 'no data'}
-          hint={d.brokerSplit[0] ? `${formatInt(d.brokerSplit[0].count)} leads` : null}
-        />
-      </div>
+      </section>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Leads by source</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {d.leadsBySource.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No attributed lead sources in this range.</p>
-            ) : (
-              <div className="overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="whitespace-nowrap">Source / Medium</TableHead>
-                      <TableHead className="text-right whitespace-nowrap">Lead events</TableHead>
-                      <TableHead className="text-right whitespace-nowrap">Users</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {d.leadsBySource.map((s) => (
-                      <TableRow key={s.sourceMedium}>
-                        <TableCell className="font-medium whitespace-nowrap">{s.sourceMedium}</TableCell>
-                        <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(s.leadEvents)}</TableCell>
-                        <TableCell className="text-right tabular-nums whitespace-nowrap">{formatInt(s.users)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      <section aria-label="Broker attribution">
+        <SectionHead>Broker attribution</SectionHead>
+        {d.brokerSplit.length === 0 ? (
+          <div className="av2-empty">No broker assignments in this range.</div>
+        ) : (
+          <BrokerPieChart data={d.brokerSplit} />
+        )}
+      </section>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Broker attribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {d.brokerSplit.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No broker assignments in this range.</p>
-            ) : (
-              <BrokerPieChart data={d.brokerSplit} />
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      <section aria-label="Lead channel mix">
+        <SectionHead>Lead channel mix</SectionHead>
+        {d.classificationMix.length === 0 ? (
+          <div className="av2-empty">No leads captured in this range.</div>
+        ) : (
+          <StackedBarMix data={d.classificationMix} />
+        )}
+      </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Lead channel mix</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {d.classificationMix.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No leads captured in this range.</p>
-          ) : (
-            <StackedBarMix data={d.classificationMix} />
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Sessions and leads over time</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {d.timeSeries.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No daily snapshots in this range. The GA4 cron writes one row per day to public.marketing_channel_daily.</p>
-          ) : (
-            <TimeSeriesChart
-              data={d.timeSeries}
-              series={[
-                { key: 'sessions', label: 'Sessions' },
-                { key: 'leads',    label: 'Leads' },
-              ]}
-            />
-          )}
-        </CardContent>
-      </Card>
-    </div>
+      <section aria-label="Sessions and leads over time">
+        <SectionHead>Sessions and leads over time</SectionHead>
+        {d.timeSeries.length === 0 ? (
+          <div className="av2-empty">
+            No daily snapshots in this range. The GA4 cron writes one row per day to public.marketing_channel_daily.
+          </div>
+        ) : (
+          <TimeSeriesChart
+            data={d.timeSeries}
+            series={[
+              { key: 'sessions', label: 'Sessions' },
+              { key: 'leads',    label: 'Leads' },
+            ]}
+          />
+        )}
+      </section>
+    </>
   )
 }

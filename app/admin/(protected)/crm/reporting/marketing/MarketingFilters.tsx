@@ -1,12 +1,15 @@
 'use client'
+/**
+ * 11C: restyled to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * The navigation contract is carried over verbatim — changing the window pushes
+ * `?date=<preset>` on the same pathname, and nothing else.
+ *
+ * The attribution control is carried over too, including its honesty: UTM
+ * capture is session-level, which is all-touch by nature, so First touch stays
+ * disabled until per-lead first-source stamping exists.
+ */
 import { useRouter, usePathname } from 'next/navigation'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { SelectField } from '@/components/admin/v2'
 
 interface Props {
   currentDate: string
@@ -17,36 +20,24 @@ export default function MarketingFilters({ currentDate }: Props) {
   const pathname = usePathname()
 
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-2">
-      {/* Attribution model — session-level UTM capture is all-touch by nature;
-          FUB's First Touch model needs per-lead first-source stamping (deferred) */}
-      <Select value="all_touch" onValueChange={() => {}}>
-        <SelectTrigger className="h-8 w-32 text-xs">
-          <SelectValue placeholder="All touch" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all_touch">All touch</SelectItem>
-          <SelectItem value="first_touch" disabled>
-            First touch
-          </SelectItem>
-        </SelectContent>
-      </Select>
+    <div className="av2-inline-form" style={{ maxWidth: 380 }}>
+      <SelectField label="Attribution" value="all_touch" onChange={() => {}}>
+        <option value="all_touch">All touch</option>
+        <option value="first_touch" disabled>
+          First touch
+        </option>
+      </SelectField>
 
-      {/* Date range */}
-      <Select
+      <SelectField
+        label="Date range"
         value={currentDate}
-        onValueChange={(v) => router.push(`${pathname}?date=${v}`)}
+        onChange={(e) => router.push(`${pathname}?date=${e.target.value}`)}
       >
-        <SelectTrigger className="h-8 w-36 text-xs">
-          <SelectValue placeholder="This Month" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="today">Today</SelectItem>
-          <SelectItem value="this_week">This Week</SelectItem>
-          <SelectItem value="this_month">This Month</SelectItem>
-          <SelectItem value="this_year">This Year</SelectItem>
-        </SelectContent>
-      </Select>
+        <option value="today">Today</option>
+        <option value="this_week">This Week</option>
+        <option value="this_month">This Month</option>
+        <option value="this_year">This Year</option>
+      </SelectField>
     </div>
   )
 }

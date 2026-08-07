@@ -20,7 +20,16 @@ import {
   Cell,
 } from 'recharts'
 
-const BRAND_COLORS = ['#102742', '#5b6473', '#8b94a3', '#a7b0bf', '#c3ccdb'] as const
+// 11C: the admin owns its own palette (design_system/admin/ADMIN_UI.md — the
+// public brand is blacklisted as design input here). Series colours step down
+// the accent + neutral tokens; no status colour is spent on decoration.
+const SERIES_COLORS = [
+  'var(--a-accent)',
+  'var(--a-accent-strong)',
+  'var(--a-text-2)',
+  'var(--a-border-strong)',
+  'var(--a-border)',
+] as const
 
 export function HorizontalBarChart({
   data,
@@ -38,14 +47,14 @@ export function HorizontalBarChart({
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 16 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-        <XAxis type="number" stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => (formatter ? formatter(Number(v)) : String(v))} />
-        <YAxis type="category" dataKey={xKey} stroke="hsl(var(--muted-foreground))" width={180} interval={0} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--a-border)" horizontal={false} />
+        <XAxis type="number" stroke="var(--a-text-2)" tickFormatter={(v) => (formatter ? formatter(Number(v)) : String(v))} />
+        <YAxis type="category" dataKey={xKey} stroke="var(--a-text-2)" width={180} interval={0} />
         <Tooltip
           formatter={(v: number) => (formatter ? formatter(v) : v.toLocaleString())}
-          contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }}
+          contentStyle={{ background: 'var(--a-surface)', border: '1px solid var(--a-border)', borderRadius: 8, color: 'var(--a-text)' }}
         />
-        <Bar dataKey={yKey} fill="#102742" radius={[0, 4, 4, 0]} />
+        <Bar dataKey={yKey} fill="var(--a-accent)" radius={[0, 4, 4, 0]} />
       </BarChart>
     </ResponsiveContainer>
   )
@@ -63,11 +72,11 @@ export function TimeSeriesChart({
   return (
     <ResponsiveContainer width="100%" height={height}>
       <LineChart data={data} margin={{ top: 8, right: 16, bottom: 4, left: 4 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-        <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tickFormatter={(d) => String(d).slice(5)} />
-        <YAxis stroke="hsl(var(--muted-foreground))" />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--a-border)" />
+        <XAxis dataKey="date" stroke="var(--a-text-2)" tickFormatter={(d) => String(d).slice(5)} />
+        <YAxis stroke="var(--a-text-2)" />
         <Tooltip
-          contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }}
+          contentStyle={{ background: 'var(--a-surface)', border: '1px solid var(--a-border)', borderRadius: 8, color: 'var(--a-text)' }}
           formatter={(v: number) => v.toLocaleString()}
         />
         <Legend />
@@ -77,7 +86,7 @@ export function TimeSeriesChart({
             type="monotone"
             dataKey={s.key}
             name={s.label}
-            stroke={s.color ?? BRAND_COLORS[i % BRAND_COLORS.length]}
+            stroke={s.color ?? SERIES_COLORS[i % SERIES_COLORS.length]}
             strokeWidth={2}
             dot={false}
           />
@@ -107,11 +116,11 @@ export function BrokerPieChart({
           isAnimationActive={false}
         >
           {data.map((_, i) => (
-            <Cell key={i} fill={BRAND_COLORS[i % BRAND_COLORS.length]} />
+            <Cell key={i} fill={SERIES_COLORS[i % SERIES_COLORS.length]} />
           ))}
         </Pie>
         <Tooltip
-          contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }}
+          contentStyle={{ background: 'var(--a-surface)', border: '1px solid var(--a-border)', borderRadius: 8, color: 'var(--a-text)' }}
         />
         <Legend />
       </PieChart>
@@ -136,15 +145,15 @@ export function StackedBarMix({
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={[flattened]} layout="vertical" margin={{ top: 16, right: 16, bottom: 16, left: 16 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-        <XAxis type="number" stroke="hsl(var(--muted-foreground))" />
-        <YAxis type="category" dataKey="name" stroke="hsl(var(--muted-foreground))" />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--a-border)" />
+        <XAxis type="number" stroke="var(--a-text-2)" />
+        <YAxis type="category" dataKey="name" stroke="var(--a-text-2)" />
         <Tooltip
-          contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }}
+          contentStyle={{ background: 'var(--a-surface)', border: '1px solid var(--a-border)', borderRadius: 8, color: 'var(--a-text)' }}
         />
         <Legend />
         {keys.map((k, i) => (
-          <Bar key={k} dataKey={k} stackId="mix" fill={BRAND_COLORS[i % BRAND_COLORS.length]} />
+          <Bar key={k} dataKey={k} stackId="mix" fill={SERIES_COLORS[i % SERIES_COLORS.length]} />
         ))}
       </BarChart>
     </ResponsiveContainer>

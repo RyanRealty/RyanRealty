@@ -1,4 +1,20 @@
 // @no-parity — internal admin surface
+//
+// 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+// Presentation only. Carried over verbatim: the getCrmAccess guard, the
+// superuser/broker scoping (non-superusers are locked at the data layer AND in
+// the UI), ?broker/?date/?view/?cols/?t handling, parseColsParam, the
+// getAgentActivityReport call and its catch-to-null, every zero default, the
+// per-metric drill hrefs, the column-totals row that only renders with more than
+// one agent row, the closed-deals view and its commission rounding, and the
+// ReportingTabStrip sub-nav.
+//
+// AgentActivityChart stays as it is: it is shared with the Lead Sources report,
+// so it is not this unit's to restyle (it migrates with that page).
+//
+// One change the ADMIN_UI acceptance bar requires: in the closed-deals view the
+// agent's name is now a door to that broker's people list, matching the activity
+// view — dead text naming a linkable thing is a defect (bar item 3).
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
@@ -10,16 +26,14 @@ import {
 import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
 import { parseColsParam, ALL_COL_KEYS, COL_LABELS, type ColKey } from '@/lib/crm/reporting-constants'
 import { formatDate } from '@/lib/format/date'
-import { Card } from '@/components/ui/card'
+import { VerdictLine, SectionHead } from '@/components/admin/v2'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { cn } from '@/lib/utils'
+  ReportGrid,
+  ReportFreshness,
+  ReportError,
+  type ReportColumn,
+  type ReportGridRow,
+} from '../_v2/ReportGrid'
 import AgentActivityFilters from './AgentActivityFilters'
 import ShowMeSelector from './ShowMeSelector'
 import { AgentActivityChart } from './AgentActivityChart'
@@ -28,7 +42,6 @@ import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTab
 
 export const metadata = { title: 'Agent Activity | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
-
 
 // --- Map ColKey → AgentActivityRow field name ---
 const COL_TO_ROW_FIELD: Record<ColKey, keyof AgentActivityRow> = {
@@ -44,19 +57,65 @@ const COL_TO_ROW_FIELD: Record<ColKey, keyof AgentActivityRow> = {
   appointments: 'appointments',
 }
 
-// --- Numeric cell: non-zero = primary-colored link, zero = muted ---
+// --- Numeric cell: non-zero = accent link, zero = quiet ---
 function NumCell({ value, href }: { value: number; href?: string }) {
-  if (value === 0) {
-    return <span className="tabular-nums text-muted-foreground">0</span>
-  }
+  if (value === 0) return <span style={{ color: 'var(--a-text-2)' }}>0</span>
   if (href) {
     return (
-      <Link href={href} className="tabular-nums text-primary hover:underline">
+      <Link href={href} style={{ color: 'var(--a-accent)' }}>
         {value.toLocaleString('en-US')}
       </Link>
     )
   }
-  return <span className="tabular-nums text-primary">{value.toLocaleString('en-US')}</span>
+  return <span style={{ color: 'var(--a-accent)' }}>{value.toLocaleString('en-US')}</span>
+}
+
+// --- Agent identity cell: avatar + the name, always a door ---
+function AgentName({
+  name,
+  avatarUrl,
+  href,
+}: {
+  name: string
+  avatarUrl: string | null
+  href: string
+}) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+      {avatarUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={avatarUrl}
+          alt=""
+          width={24}
+          height={24}
+          style={{ width: 24, height: 24, flex: 'none', borderRadius: '50%', objectFit: 'cover', objectPosition: 'top' }}
+        />
+      ) : (
+        <span
+          aria-hidden="true"
+          style={{
+            display: 'inline-flex',
+            width: 24,
+            height: 24,
+            flex: 'none',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '50%',
+            background: 'var(--a-inset)',
+            color: 'var(--a-text-2)',
+            fontSize: 'var(--a-text-xs)',
+            fontWeight: 600,
+          }}
+        >
+          {name.charAt(0)}
+        </span>
+      )}
+      <Link href={href} style={{ color: 'var(--a-accent)' }}>
+        {name}
+      </Link>
+    </span>
+  )
 }
 
 // --- Date range label ---
@@ -70,6 +129,12 @@ function dateLabel(preset: string, start: string, end: string): string {
   }
   return presets[preset] ?? `${fmt(start)} – ${fmt(end)}`
 }
+
+const DEALS_COLUMNS: ReportColumn[] = [
+  { key: 'name', label: 'Name' },
+  { key: 'closed', label: 'Closed deals', numeric: true },
+  { key: 'commission', label: 'Commission', numeric: true },
+]
 
 type SearchParams = {
   broker?: string
@@ -138,13 +203,120 @@ export default async function AgentActivityPage({
   const currentDate = datePreset
   const currentCols = sp.cols ?? undefined
 
+  const nowMs = Date.now()
+  const refreshHref = `/admin/crm/reporting/agent-activity?broker=${currentBroker}&date=${currentDate}&view=${view}&t=${nowMs}`
+
+  const shownCols = ALL_COL_KEYS.filter((k) => visibleCols.includes(k))
+
+  const activityColumns: ReportColumn[] = [
+    { key: 'name', label: 'Name' },
+    ...shownCols.map((key) => ({ key, label: COL_LABELS[key], numeric: true })),
+  ]
+
+  const activityRows: ReportGridRow[] = rows.map((row) => {
+    const drillBase = `/admin/crm?broker=${row.brokerSlug}&date=${currentDate}`
+    const drillHrefs: Partial<Record<ColKey, string>> = {
+      new_leads: `${drillBase}&metric=new_leads`,
+      initially_assigned: `${drillBase}&metric=initially_assigned`,
+      currently_assigned: `${drillBase}&metric=currently_assigned`,
+      calls: `${drillBase}&metric=calls`,
+      emails: `${drillBase}&metric=emails`,
+      texts: `${drillBase}&metric=texts`,
+      notes: `${drillBase}&metric=notes`,
+      tasks_completed: `${drillBase}&metric=tasks`,
+    }
+    return {
+      key: row.brokerSlug,
+      cells: [
+        <AgentName key="n" name={row.brokerName} avatarUrl={row.avatarUrl} href={drillBase} />,
+        ...shownCols.map((key) => (
+          <NumCell
+            key={key}
+            value={row[COL_TO_ROW_FIELD[key]] as number}
+            href={drillHrefs[key]}
+          />
+        )),
+      ],
+    }
+  })
+
+  // Column totals row (aggregate sum per column) — only with more than one agent
+  if (rows.length > 1) {
+    activityRows.push({
+      key: '__total__',
+      total: true,
+      cells: [
+        'Total',
+        ...shownCols.map((key) =>
+          (totals[COL_TO_ROW_FIELD[key] as keyof typeof totals] as number).toLocaleString(
+            'en-US',
+          ),
+        ),
+      ],
+    })
+  }
+
+  const dealsRows: ReportGridRow[] = closedDealRows.map((row) => ({
+    key: row.brokerSlug,
+    cells: [
+      <AgentName
+        key="n"
+        name={row.brokerName}
+        avatarUrl={row.avatarUrl}
+        href={`/admin/crm?broker=${row.brokerSlug}&date=${currentDate}`}
+      />,
+      <span key="c" style={{ color: row.closedDeals > 0 ? 'var(--a-text)' : 'var(--a-text-2)' }}>
+        {row.closedDeals.toLocaleString('en-US')}
+      </span>,
+      <span key="m" style={{ color: row.commission > 0 ? 'var(--a-text)' : 'var(--a-text-2)' }}>
+        ${Math.round(row.commission).toLocaleString('en-US')}
+      </span>,
+    ],
+  }))
+
+  const dealsTotal = closedDealRows.reduce((n, r) => n + r.closedDeals, 0)
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+    <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
       <ReportingTabStrip active="agent-activity" />
 
-      {/* Header row: "Show me" selector + filter bar */}
-      <div className="mb-2 flex flex-wrap items-start justify-between gap-4">
-        {/* §11.3 interactive page title — the phrase IS the view selector */}
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={(isDealsView ? dealsTotal : totals.newLeads) > 0 ? 'ok' : 'attention'}>
+          {isDealsView ? (
+            dealsTotal === 0 ? (
+              <>
+                <b>No deal closed in this period.</b> Switch the date range to look further
+                back.
+              </>
+            ) : (
+              <>
+                <b>
+                  {dealsTotal.toLocaleString('en-US')} deal
+                  {dealsTotal === 1 ? '' : 's'} closed this period.
+                </b>{' '}
+                Ordered by closed count, most first.
+              </>
+            )
+          ) : totals.newLeads === 0 ? (
+            <>
+              <b>No new lead in this period.</b> {totals.calls.toLocaleString('en-US')} calls,{' '}
+              {totals.texts.toLocaleString('en-US')} texts and{' '}
+              {totals.emails.toLocaleString('en-US')} emails still went out.
+            </>
+          ) : (
+            <>
+              <b>{totals.newLeads.toLocaleString('en-US')} new leads this period.</b>{' '}
+              {totals.calls.toLocaleString('en-US')} calls,{' '}
+              {totals.texts.toLocaleString('en-US')} texts,{' '}
+              {totals.emails.toLocaleString('en-US')} emails across the team.
+            </>
+          )}
+        </VerdictLine>
+      </div>
+
+      {report === null ? <ReportError what="Agent activity" href={refreshHref} /> : null}
+
+      <div className="av2-rfilters">
         <ShowMeSelector
           currentView={view}
           currentBroker={currentBroker}
@@ -152,8 +324,7 @@ export default async function AgentActivityPage({
           currentCols={currentCols}
         />
 
-        {/* Filter controls — date range for everyone; agent scope superuser-only
-            (non-superusers are locked to Me at the data layer AND in the UI) */}
+        {/* Date range for everyone; agent scope superuser-only */}
         <AgentActivityFilters
           currentBroker={currentBroker}
           currentDate={currentDate}
@@ -168,21 +339,11 @@ export default async function AgentActivityPage({
         />
       </div>
 
-      {/* Cache notice */}
-      <p className="mb-6 text-xs text-muted-foreground">
-        Reporting results may be cached for up to 10 minutes.{' '}
-        <Link
-          href={`/admin/crm/reporting/agent-activity?broker=${currentBroker}&date=${currentDate}&view=${view}&t=${Date.now()}`}
-          className="text-muted-foreground hover:underline"
-        >
-          Refresh results.
-        </Link>
-      </p>
+      <ReportFreshness href={refreshHref} nowMs={nowMs} />
 
-      {/* ── Main view: Activity (default) ── */}
       {!isDealsView ? (
         <>
-          {/* Time-series chart */}
+          {/* Time-series chart — shared with the Lead Sources report, carried as-is */}
           <AgentActivityChart
             timeSeries={timeSeries}
             prevTimeSeries={prevTimeSeries}
@@ -190,7 +351,6 @@ export default async function AgentActivityPage({
             prevDateEnd={prevDateEnd}
           />
 
-          {/* KPI tile strip (with sparklines + column picker) */}
           <AgentActivityKpiStrip
             totals={totals}
             previousTotals={previousTotals}
@@ -201,171 +361,50 @@ export default async function AgentActivityPage({
             currentView={view}
           />
 
-          {/* Agent breakdown table — no totals row (matching FUB f04 spec) */}
-          <Card className="no-scrollbar overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="w-44">Name</TableHead>
-                  {ALL_COL_KEYS.filter((k) => visibleCols.includes(k)).map((key) => (
-                    <TableHead key={key} className="whitespace-pre-line text-right text-xs">
-                      {COL_LABELS[key]}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={1 + visibleCols.length}
-                      className="py-12 text-center text-sm text-muted-foreground"
-                    >
-                      No activity data for this period.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  rows.map((row) => {
-                    const drillBase = `/admin/crm?broker=${row.brokerSlug}&date=${currentDate}`
-                    const drillHrefs: Partial<Record<ColKey, string>> = {
-                      new_leads: `${drillBase}&metric=new_leads`,
-                      initially_assigned: `${drillBase}&metric=initially_assigned`,
-                      currently_assigned: `${drillBase}&metric=currently_assigned`,
-                      calls: `${drillBase}&metric=calls`,
-                      emails: `${drillBase}&metric=emails`,
-                      texts: `${drillBase}&metric=texts`,
-                      notes: `${drillBase}&metric=notes`,
-                      tasks_completed: `${drillBase}&metric=tasks`,
-                    }
-                    return (
-                      <TableRow key={row.brokerSlug} className="hover:bg-muted/40">
-                        {/* Agent name + avatar */}
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {row.avatarUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={row.avatarUrl}
-                                alt=""
-                                className="h-7 w-7 shrink-0 rounded-full object-cover object-top"
-                              />
-                            ) : (
-                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
-                                {row.brokerName.charAt(0)}
-                              </span>
-                            )}
-                            <Link
-                              href={drillBase}
-                              className="text-sm font-medium text-primary hover:underline"
-                            >
-                              {row.brokerName}
-                            </Link>
-                          </div>
-                        </TableCell>
-                        {ALL_COL_KEYS.filter((k) => visibleCols.includes(k)).map((key) => (
-                          <TableCell key={key} className="text-right">
-                            <NumCell
-                              value={row[COL_TO_ROW_FIELD[key]] as number}
-                              href={drillHrefs[key]}
-                            />
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    )
-                  })
-                )}
-                {/* Column totals row (§11.5 — aggregate sum per column) */}
-                {rows.length > 1 ? (
-                  <TableRow className="bg-muted/30 hover:bg-muted/30">
-                    <TableCell className="text-sm font-semibold text-foreground">
-                      Total
-                    </TableCell>
-                    {ALL_COL_KEYS.filter((k) => visibleCols.includes(k)).map((key) => (
-                      <TableCell
-                        key={key}
-                        className="text-right text-sm font-semibold tabular-nums text-foreground"
-                      >
-                        {(totals[COL_TO_ROW_FIELD[key] as keyof typeof totals] as number).toLocaleString(
-                          'en-US',
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ) : null}
-              </TableBody>
-            </Table>
-          </Card>
+          <SectionHead>Per agent — {dateLabel(datePreset, dateStart, dateEnd)}</SectionHead>
+          <ReportGrid
+            label="Agent activity by agent"
+            columns={activityColumns}
+            template={`minmax(140px, 1.4fr) repeat(${shownCols.length}, minmax(78px, 1fr))`}
+            minWidth={150 + shownCols.length * 88}
+            rows={activityRows}
+            empty={
+              <>
+                No agent logged activity in this period.{' '}
+                <Link href="/admin/crm" style={{ color: 'var(--a-accent)' }}>
+                  Open the people list
+                </Link>{' '}
+                or widen the date range above.
+              </>
+            }
+          />
         </>
       ) : (
-        /* ── Alternate view: Closed Deals by Agent ── */
-        <Card className="overflow-hidden">
-          <div className="border-b border-border bg-muted/30 px-4 py-3">
-            <p className="text-sm font-medium text-foreground">
-              Closed deals by agent — {dateLabel(datePreset, dateStart, dateEnd)}
-            </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Deals in a closed stage with a close date in this period. Commission = stored deal commission.
-            </p>
-          </div>
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="w-48">Name</TableHead>
-                <TableHead className="text-right">Closed Deals</TableHead>
-                <TableHead className="text-right">Commission</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {closedDealRows.map((row) => (
-                <TableRow key={row.brokerSlug} className="hover:bg-muted/40">
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {row.avatarUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={row.avatarUrl}
-                          alt=""
-                          className="h-7 w-7 shrink-0 rounded-full object-cover object-top"
-                        />
-                      ) : (
-                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground">
-                          {row.brokerName.charAt(0)}
-                        </span>
-                      )}
-                      <span className="text-sm font-medium text-foreground">{row.brokerName}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell
-                    className={cn(
-                      'text-right tabular-nums',
-                      row.closedDeals > 0 ? 'text-foreground' : 'text-muted-foreground',
-                    )}
-                  >
-                    {row.closedDeals.toLocaleString('en-US')}
-                  </TableCell>
-                  <TableCell
-                    className={cn(
-                      'text-right tabular-nums',
-                      row.commission > 0 ? 'text-foreground' : 'text-muted-foreground',
-                    )}
-                  >
-                    ${Math.round(row.commission).toLocaleString('en-US')}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {closedDealRows.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={3}
-                    className="py-12 text-center text-sm text-muted-foreground"
-                  >
-                    No closed deals in this period.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </Card>
+        <>
+          <SectionHead>
+            Closed deals by agent — {dateLabel(datePreset, dateStart, dateEnd)}
+          </SectionHead>
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 8px' }}>
+            Deals in a closed stage with a close date in this period. Commission = stored deal
+            commission.
+          </p>
+          <ReportGrid
+            label="Closed deals by agent"
+            columns={DEALS_COLUMNS}
+            template="minmax(160px, 1.6fr) repeat(2, minmax(110px, 1fr))"
+            minWidth={520}
+            rows={dealsRows}
+            empty={
+              <>
+                No closed deal in this period.{' '}
+                <Link href="/admin/crm/deals" style={{ color: 'var(--a-accent)' }}>
+                  Open the deal pipeline
+                </Link>{' '}
+                or widen the date range above.
+              </>
+            }
+          />
+        </>
       )}
     </div>
   )

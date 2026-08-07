@@ -1,14 +1,21 @@
 // @no-parity — internal admin surface; no mockup contract (CRM reporting suite)
 /**
- * INFERRED report — no dedicated FUB screen was observed for this view.
- * Built to the described "Call Logs" feature: a chronological, broker-scoped,
- * paginated list of individual inbound calls and voicemails. The Calls report
- * (/admin/crm/reporting/calls) links here as the drill-down for individual
- * recording playback and transcripts.
+ * Call Logs — the chronological, broker-scoped, paginated ledger of individual
+ * inbound calls and voicemails. The Calls report links here for recording
+ * playback and transcripts.
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Presentation only. Carried over verbatim: the getCrmAccess guard + redirect,
+ * scopeBroker, the superuser broker-filter branch, the `date` default
+ * ('this_month'), the `page` parse (Math.max(0, parseInt(...) || 0)), the
+ * getCallLogsReport read, the pagination arithmetic, every formatter, and every
+ * href (person, recording, transcript, page links, refresh, back). ONE truth
+ * correction: a failed read now says so instead of rendering zeros as data
+ * (CLAUDE.md §0).
  */
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { ChevronDown, PhoneCall, PhoneOff, PhoneMissed, PlayCircle, FileText } from 'lucide-react'
+import type { CSSProperties } from 'react'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import {
@@ -19,27 +26,12 @@ import {
 } from '@/lib/data/crm/getCallLogsReport'
 import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
 import { formatDate } from '@/lib/format/date'
-import { Card } from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { SectionHead, StateWord, VerdictLine, type AdminState } from '@/components/admin/v2'
 import CallsFilters from '../calls/CallsFilters'
 import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
 
 export const metadata = { title: 'Call Logs | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
-
-// ── Sub-nav tabs ──────────────────────────────────────────────────────────────
-// "Call Logs" added between Calls and Texts for this page's tab strip.
-// The parallel-build directive means we do not modify other pages' tab lists.
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -73,114 +65,140 @@ function formatPhone(raw: string | null): string {
   return raw
 }
 
-// ── Outcome badge ─────────────────────────────────────────────────────────────
-
 const OUTCOME_LABELS: Record<CallLogOutcome, string> = {
   connected: 'Connected',
   received: 'Received',
   voicemail: 'Voicemail',
 }
 
-/** Lucide icon for each outcome — size kept consistent with table typography. */
-function OutcomeIcon({ outcome }: { outcome: CallLogOutcome }) {
-  if (outcome === 'connected') return <PhoneCall className="h-3.5 w-3.5 text-success" />
-  if (outcome === 'voicemail') return <PhoneMissed className="h-3.5 w-3.5 text-warning-foreground" />
-  return <PhoneOff className="h-3.5 w-3.5 text-muted-foreground" />
+/** Status is text + color, never color alone (WCAG 1.4.1). */
+const OUTCOME_TONE: Record<CallLogOutcome, AdminState> = {
+  connected: 'ok',
+  received: 'waiting',
+  voicemail: 'slow',
 }
 
-/** Outcome badge using semantic color tokens only (no raw Tailwind color-scale classes). */
-function OutcomeBadge({ outcome }: { outcome: CallLogOutcome }) {
-  return (
-    <Badge
-      variant="outline"
-      className={cn(
-        'flex w-fit items-center gap-1 text-xs',
-        outcome === 'connected' && 'border-success/20 bg-success/10 text-success',
-        outcome === 'voicemail' && 'border-warning/30 bg-warning/10 text-warning-foreground',
-        outcome === 'received' && 'border-border bg-muted text-muted-foreground',
-      )}
-    >
-      <OutcomeIcon outcome={outcome} />
-      {OUTCOME_LABELS[outcome]}
-    </Badge>
-  )
+const DATE_WORDS: Record<string, string> = {
+  today: 'today',
+  this_week: 'this week',
+  this_month: 'this month',
+  this_year: 'this year',
+}
+function windowWords(preset: string): string {
+  return DATE_WORDS[preset] ?? 'this period'
 }
 
-// ── KPI tile ──────────────────────────────────────────────────────────────────
+// ── Presentation constants (v2 tokens only) ───────────────────────────────────
 
-/** Simple count tile — no sparkline (log view, not aggregate). */
-function KpiTile({ label, value, note }: { label: string; value: number; note?: string }) {
-  return (
-    <Card className="min-w-32 shrink-0 p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-1.5 text-3xl font-bold leading-none tabular-nums text-foreground">
-        {value.toLocaleString('en-US')}
-      </p>
-      {note ? (
-        <p className="mt-1 text-xs text-muted-foreground">{note}</p>
-      ) : (
-        <div className="mt-1 h-4" />
-      )}
-    </Card>
-  )
+const COLS =
+  'minmax(140px,1.1fr) minmax(150px,1.4fr) minmax(104px,0.9fr) minmax(84px,0.7fr) minmax(78px,0.7fr) minmax(112px,0.9fr) minmax(130px,1fr)'
+
+const PAGE: CSSProperties = { maxWidth: 1120, margin: '0 auto', padding: 16 }
+const TOOLBAR: CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 'var(--a-s3)',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  marginTop: 12,
 }
+const SCROLLER: CSSProperties = {
+  overflowX: 'auto',
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-lg)',
+  background: 'var(--a-surface)',
+}
+const GRID: CSSProperties = { minWidth: 880 }
+const ROW: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: COLS,
+  gap: 'var(--a-s3)',
+  alignItems: 'baseline',
+  padding: '10px 16px',
+  borderTop: '1px solid var(--a-border)',
+}
+const HEAD_ROW: CSSProperties = { ...ROW, borderTop: 'none', background: 'var(--a-inset)' }
+const HEAD_CELL: CSSProperties = {
+  fontSize: 'var(--a-text-xs)',
+  fontWeight: 600,
+  letterSpacing: '.05em',
+  textTransform: 'uppercase',
+  color: 'var(--a-text-2)',
+}
+const HEAD_NUM: CSSProperties = { ...HEAD_CELL, textAlign: 'right' }
+const NUM: CSSProperties = { fontVariantNumeric: 'tabular-nums', textAlign: 'right', display: 'block' }
+const STAMP: CSSProperties = {
+  fontVariantNumeric: 'tabular-nums',
+  fontSize: 'var(--a-text-sm)',
+  color: 'var(--a-text-2)',
+  whiteSpace: 'nowrap',
+}
+const LINK: CSSProperties = { color: 'var(--a-accent)' }
+const MUTED: CSSProperties = { color: 'var(--a-text-2)', fontSize: 'var(--a-text-sm)' }
+const NOTE: CSSProperties = { fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', marginTop: 12 }
+const STATE_PANEL: CSSProperties = {
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-lg)',
+  background: 'var(--a-surface)',
+  padding: 'var(--a-s6)',
+  textAlign: 'center',
+  color: 'var(--a-text-2)',
+  fontSize: 'var(--a-text-sm)',
+}
+const PAGER: CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 'var(--a-s3)',
+  marginTop: 'var(--a-s4)',
+  fontSize: 'var(--a-text-sm)',
+  color: 'var(--a-text-2)',
+}
+const PAGER_OFF: CSSProperties = { opacity: 0.5, cursor: 'not-allowed' }
 
-// ── Person cell ───────────────────────────────────────────────────────────────
+// ── Cells ─────────────────────────────────────────────────────────────────────
 
 /**
- * Link to the contact timeline. Displays the resolved name when available,
- * otherwise the formatted caller phone number (honest fallback — never hides data).
+ * The person is a door — resolved name when we have it, the caller's number
+ * when we do not (honest fallback, never hides the data).
  */
 function PersonCell({ entry }: { entry: CallLogEntry }) {
   const display = entry.personName ?? formatPhone(entry.fromNumber)
   return (
-    <Link
-      href={`/admin/crm/${entry.personId}`}
-      className="text-sm text-primary hover:underline"
-    >
+    <Link href={`/admin/crm/${entry.personId}`} style={LINK}>
       {display}
     </Link>
   )
 }
 
-// ── Recording / transcript cell ───────────────────────────────────────────────
-
-/**
- * "Play" link opens the recording MP3 in a new tab (admin proxy route).
- * "Transcript" link navigates to the contact's timeline for inline reading.
- * "—" when neither exists.
- */
+/** The recording is a door too — play the audio, or open the transcript. */
 function RecordingCell({ entry }: { entry: CallLogEntry }) {
   if (!entry.hasRecording && !entry.hasTranscript) {
-    return <span className="text-muted-foreground">—</span>
+    return <span style={MUTED}>—</span>
   }
   return (
-    <div className="flex items-center gap-3">
+    <span style={{ display: 'flex', gap: 'var(--a-s3)', flexWrap: 'wrap' }}>
       {entry.recordingPath ? (
-        <a
-          href={entry.recordingPath}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1 text-xs text-primary hover:underline"
-          title="Stream call recording"
-        >
-          <PlayCircle className="h-3.5 w-3.5" />
+        <a href={entry.recordingPath} target="_blank" rel="noopener noreferrer" style={LINK}>
           Play
         </a>
       ) : null}
       {entry.hasTranscript ? (
-        <Link
-          href={`/admin/crm/${entry.personId}?tab=timeline`}
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-          title="View transcript in contact timeline"
-        >
-          <FileText className="h-3 w-3" />
+        <Link href={`/admin/crm/${entry.personId}?tab=timeline`} style={LINK}>
           Transcript
         </Link>
       ) : null}
-    </div>
+    </span>
+  )
+}
+
+function Figure({ value, label }: { value: string; label: string }) {
+  return (
+    <span className="av2-wk">
+      <span className="av2-wk__n">{value}</span>
+      <span className="av2-wk__l">{label}</span>
+    </span>
   )
 }
 
@@ -227,6 +245,8 @@ export default async function CallLogsPage({
     page: currentPage,
   }).catch(() => null)
 
+  // A failed read is NOT an empty ledger — say so rather than print zeros.
+  const unreadable = report === null
   const entries: CallLogEntry[] = report?.entries ?? []
   const totalCount = report?.totalCount ?? 0
   const callCount = report?.callCount ?? 0
@@ -247,22 +267,33 @@ export default async function CallLogsPage({
     return `/admin/crm/reporting/call-logs?${params.toString()}`
   }
 
+  const period = windowWords(currentDate)
+  const refreshHref = `/admin/crm/reporting/call-logs?broker=${currentBroker}&date=${currentDate}&t=${Date.now()}`
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+    <div className="av2-scope" style={PAGE}>
       <ReportingTabStrip active="call-logs" />
 
-      {/* Header row: "Show me" selector + filter bar */}
-      <div className="mb-2 flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-center gap-1.5 text-sm">
-          <span className="text-muted-foreground">Show me</span>
-          <div className="flex items-center gap-0.5">
-            <span className="font-medium text-primary underline underline-offset-2">
-              call log
-            </span>
-            <ChevronDown className="h-4 w-4 text-primary" />
-          </div>
-        </div>
+      {unreadable ? (
+        <VerdictLine tone="attention">
+          <b>The call ledger could not be read.</b> Nothing is shown rather than a wrong number —
+          refresh below, and if it keeps failing the timeline read is down.
+        </VerdictLine>
+      ) : (
+        <VerdictLine tone="ok">
+          <b>
+            {totalCount.toLocaleString('en-US')} call record{totalCount === 1 ? '' : 's'}
+          </b>{' '}
+          {period} · {callCount.toLocaleString('en-US')} call
+          {callCount === 1 ? '' : 's'} · {voicemailCount.toLocaleString('en-US')} voicemail
+          {voicemailCount === 1 ? '' : 's'}.
+        </VerdictLine>
+      )}
 
+      <div style={TOOLBAR}>
+        <Link href={refreshHref} className="av2-btn" style={{ textDecoration: 'none' }}>
+          Refresh results
+        </Link>
         {/* Reuses CallsFilters — identical broker + date filter bar.
             usePathname() inside the component resolves the call-logs URL,
             so navigation updates this page's params correctly. */}
@@ -278,150 +309,134 @@ export default async function CallLogsPage({
         ) : null}
       </div>
 
-      {/* Cache notice */}
-      <p className="mb-6 text-xs text-muted-foreground">
-        Reporting results may be cached for up to 10 minutes.{' '}
-        <Link
-          href={`/admin/crm/reporting/call-logs?broker=${currentBroker}&date=${currentDate}&t=${Date.now()}`}
-          className="text-muted-foreground hover:underline"
-        >
-          Refresh results.
-        </Link>
-      </p>
-
       {/*
-        ── KPI tile strip ──
+        Three figures: Calls (kind='call') · Voicemails (kind='voicemail') · Total.
 
-        Three tiles: Calls (kind='call') · Voicemails (kind='voicemail') · Total.
-
-        V1 note: a dedicated "Connected" tile is intentionally omitted here.
-        Connected count requires filtering on a JSONB subkey (payload.recordingSid),
-        which needs a raw SQL expression not expressible in a count:'exact' PostgREST
-        query. The per-row outcome badge below is the correct place to read connected
-        status. The aggregate Connected count lives on the parent Calls report.
+        A dedicated "Connected" figure is intentionally absent here: the count
+        requires filtering on a JSONB subkey (payload.recordingSid), which is not
+        expressible in a count:'exact' PostgREST query. Per-row outcome below is
+        the correct place to read connected status; the aggregate lives on the
+        parent Calls report.
       */}
-      <div className="no-scrollbar mb-6 flex gap-3 overflow-x-auto pb-2">
-        <KpiTile label="Calls" value={callCount} note="all inbound" />
-        <KpiTile label="Voicemails" value={voicemailCount} note="missed calls" />
-        <KpiTile label="Total" value={totalCount} note="calls + voicemails" />
-      </div>
+      {unreadable ? null : (
+        <>
+          <SectionHead>
+            {period === 'this period' ? 'This period' : period[0].toUpperCase() + period.slice(1)}
+          </SectionHead>
+          <div className="av2-week">
+            <Figure value={callCount.toLocaleString('en-US')} label="calls — all inbound" />
+            <Figure value={voicemailCount.toLocaleString('en-US')} label="voicemails — missed calls" />
+            <Figure value={totalCount.toLocaleString('en-US')} label="total — calls + voicemails" />
+          </div>
+        </>
+      )}
 
-      {/* ── Log table ── */}
-      <Card className="overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="w-44 text-xs">Date / Time</TableHead>
-              <TableHead className="w-48 text-xs">Person</TableHead>
-              <TableHead className="w-32 text-xs">Agent</TableHead>
-              <TableHead className="w-24 text-xs">
-                Direction
-                <span
-                  className="ml-1 text-muted-foreground opacity-60"
-                  title="Inbound only in V1 — outbound click-to-call not yet tracked"
-                >
-                  ⓘ
+      <SectionHead>The ledger — newest first</SectionHead>
+
+      {unreadable ? (
+        <div style={STATE_PANEL}>
+          Could not read the call timeline.{' '}
+          <Link href={refreshHref} style={LINK}>
+            Try again
+          </Link>
+          .
+        </div>
+      ) : entries.length === 0 ? (
+        <div style={STATE_PANEL}>
+          No calls {period}. Widen the date range, or switch the agent filter above.
+        </div>
+      ) : (
+        <div style={SCROLLER} tabIndex={0}>
+          <div style={GRID} role="table" aria-label="Call log">
+            <div style={HEAD_ROW} role="row">
+              <span style={HEAD_CELL} role="columnheader">Date / time</span>
+              <span style={HEAD_CELL} role="columnheader">Person</span>
+              <span style={HEAD_CELL} role="columnheader">Agent</span>
+              <span style={HEAD_CELL} role="columnheader">Direction</span>
+              <span style={HEAD_NUM} role="columnheader">Duration</span>
+              <span style={HEAD_CELL} role="columnheader">Outcome</span>
+              <span style={HEAD_CELL} role="columnheader">Recording</span>
+            </div>
+
+            {entries.map((entry) => (
+              <div style={ROW} role="row" key={entry.id}>
+                {/* Date / time — Pacific, matches broker timezone */}
+                <span role="cell" style={STAMP}>{formatCallTime(entry.ts)}</span>
+                {/* Person — linked; phone fallback for unresolved callers */}
+                <span role="cell"><PersonCell entry={entry} /></span>
+                <span role="cell">{entry.brokerName ?? '—'}</span>
+                {/* Direction — always Inbound in V1 */}
+                <span role="cell" style={MUTED}>Inbound</span>
+                {/* Duration — "—" for voicemails and unrecorded calls */}
+                <span role="cell" style={NUM}>{formatDuration(entry.durationSec)}</span>
+                <span role="cell">
+                  <StateWord state={OUTCOME_TONE[entry.outcome]}>
+                    {OUTCOME_LABELS[entry.outcome]}
+                  </StateWord>
                 </span>
-              </TableHead>
-              <TableHead className="w-24 text-right text-xs">Duration</TableHead>
-              <TableHead className="w-36 text-xs">Outcome</TableHead>
-              <TableHead className="text-xs">Recording</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {entries.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="py-16 text-center text-sm text-muted-foreground"
-                >
-                  No calls in this period.
-                </TableCell>
-              </TableRow>
-            ) : (
-              entries.map((entry) => (
-                <TableRow key={entry.id} className="hover:bg-muted/40">
-                  {/* Date / time — Pacific, matches broker timezone */}
-                  <TableCell className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
-                    {formatCallTime(entry.ts)}
-                  </TableCell>
+                <span role="cell"><RecordingCell entry={entry} /></span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-                  {/* Person — linked; phone fallback for unresolved callers */}
-                  <TableCell>
-                    <PersonCell entry={entry} />
-                  </TableCell>
-
-                  {/* Agent */}
-                  <TableCell className="text-sm text-foreground">
-                    {entry.brokerName ?? '—'}
-                  </TableCell>
-
-                  {/* Direction — always Inbound in V1 */}
-                  <TableCell>
-                    <span className="text-xs text-muted-foreground">Inbound</span>
-                  </TableCell>
-
-                  {/* Duration — "—" for voicemails and unrecorded calls */}
-                  <TableCell className="text-right tabular-nums text-sm text-foreground">
-                    {formatDuration(entry.durationSec)}
-                  </TableCell>
-
-                  {/* Outcome badge */}
-                  <TableCell>
-                    <OutcomeBadge outcome={entry.outcome} />
-                  </TableCell>
-
-                  {/* Play / Transcript links */}
-                  <TableCell>
-                    <RecordingCell entry={entry} />
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </Card>
-
-      {/* ── Pagination ── */}
-      {totalCount > 0 ? (
-        <div className="mt-4 flex items-center justify-between gap-4 text-sm text-muted-foreground">
-          <p className="tabular-nums">
+      {!unreadable && totalCount > 0 ? (
+        <div style={PAGER}>
+          <p style={{ fontVariantNumeric: 'tabular-nums' }}>
             Showing {showingFrom.toLocaleString('en-US')}–{showingTo.toLocaleString('en-US')} of{' '}
             {totalCount.toLocaleString('en-US')}
           </p>
 
-          <div className="flex items-center gap-2">
+          <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--a-s2)' }}>
             {currentPage > 0 ? (
-              <Button asChild variant="outline" size="sm" className="h-8 text-xs">
-                <Link href={pageHref(currentPage - 1)}>Previous</Link>
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" className="h-8 text-xs" disabled>
+              <Link
+                href={pageHref(currentPage - 1)}
+                className="av2-btn av2-btn--quiet"
+                style={{ textDecoration: 'none' }}
+              >
                 Previous
-              </Button>
+              </Link>
+            ) : (
+              <span className="av2-btn av2-btn--quiet" style={PAGER_OFF} aria-disabled="true">
+                Previous
+              </span>
             )}
-            <span className="tabular-nums">
+            <span style={{ fontVariantNumeric: 'tabular-nums' }}>
               Page {currentPage + 1} of {totalPages}
             </span>
             {currentPage < totalPages - 1 ? (
-              <Button asChild variant="outline" size="sm" className="h-8 text-xs">
-                <Link href={pageHref(currentPage + 1)}>Next</Link>
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" className="h-8 text-xs" disabled>
+              <Link
+                href={pageHref(currentPage + 1)}
+                className="av2-btn av2-btn--quiet"
+                style={{ textDecoration: 'none' }}
+              >
                 Next
-              </Button>
+              </Link>
+            ) : (
+              <span className="av2-btn av2-btn--quiet" style={PAGER_OFF} aria-disabled="true">
+                Next
+              </span>
             )}
-          </div>
+          </span>
         </div>
       ) : null}
 
-      {/* Back link */}
-      <div className="mt-6 text-xs text-muted-foreground">
-        <Link href="/admin/crm/reporting/calls" className="hover:underline">
-          ← Back to Calls report
+      <p style={NOTE}>
+        Direction is inbound only — outbound click-to-call is not tracked yet.
+      </p>
+
+      <p style={NOTE}>
+        Results may be cached for up to 10 minutes.{' '}
+        <Link href={refreshHref} style={LINK}>
+          Refresh results
         </Link>
-      </div>
+        .{' '}
+        <Link href="/admin/crm/reporting/calls" style={LINK}>
+          Back to the Calls report
+        </Link>
+        .
+      </p>
     </div>
   )
 }

@@ -1,14 +1,12 @@
 'use client'
+// 11C: restyled to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+// Carried over verbatim: navigate()'s param set and order, the CSV export URL
+// (broker + date + cols, same route, same `download`), the superuser-only agent
+// scope with the locked "Me" state for everyone else, and the honest lead-type
+// control whose two FUB-parity options stay disabled because the CRM has no
+// web-vs-manual lead classification.
 import { useRouter, usePathname } from 'next/navigation'
-import { Download } from 'lucide-react'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
+import { SelectField } from '@/components/admin/v2'
 
 type Broker = { slug: string; label: string }
 
@@ -56,75 +54,61 @@ export default function AgentActivityFilters({
   const exportHref = `/admin/crm/reporting/agent-activity/export?${exportParams.toString()}`
 
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-2">
-      {/* Export / download button (server route re-scopes to the caller's role) */}
-      <Button
-        variant="outline"
-        size="icon"
-        className="h-8 w-8"
-        aria-label="Download CSV"
-        asChild
-      >
-        <a href={exportHref} download>
-          <Download className="h-3.5 w-3.5" />
-        </a>
-      </Button>
-
-      {/* Agent selector — locked to "Me" for non-superusers (data-layer scoped too) */}
-      {isSuperuser ? (
-        <Select value={currentBroker} onValueChange={(v) => navigate({ broker: v })}>
-          <SelectTrigger className="h-8 w-36 text-xs">
-            <SelectValue placeholder="Everyone" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="everyone">Everyone</SelectItem>
+    <div>
+      <div className="av2-inline-form" style={{ maxWidth: 620 }}>
+        {/* Agent scope — locked to "Me" for non-superusers (data-layer scoped too) */}
+        {isSuperuser ? (
+          <SelectField
+            label="Agent"
+            value={currentBroker}
+            onChange={(e) => navigate({ broker: e.target.value })}
+          >
+            <option value="everyone">Everyone</option>
             {brokers.map((b) => (
-              <SelectItem key={b.slug} value={b.slug}>
+              <option key={b.slug} value={b.slug}>
                 {b.label}
-              </SelectItem>
+              </option>
             ))}
-          </SelectContent>
-        </Select>
-      ) : (
-        <Select value="me" disabled>
-          <SelectTrigger className="h-8 w-36 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="me">{lockedBrokerLabel ?? 'Me'}</SelectItem>
-          </SelectContent>
-        </Select>
-      )}
+          </SelectField>
+        ) : (
+          <SelectField label="Agent" value="me" disabled onChange={() => {}}>
+            <option value="me">{lockedBrokerLabel ?? 'Me'}</option>
+          </SelectField>
+        )}
 
-      {/* Lead type — the CRM has no web-vs-manual lead classification, so only
-          "All leads" is real; the FUB-parity options render disabled (honest UI) */}
-      <Select value="all" onValueChange={() => {}}>
-        <SelectTrigger className="h-8 w-32 text-xs">
-          <SelectValue placeholder="All leads" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All leads</SelectItem>
-          <SelectItem value="web" disabled>
+        {/* Lead type — the CRM has no web-vs-manual lead classification, so only
+            "All leads" is real; the FUB-parity options render disabled (honest UI) */}
+        <SelectField label="Lead type" value="all" onChange={() => {}}>
+          <option value="all">All leads</option>
+          <option value="web" disabled>
             Web leads
-          </SelectItem>
-          <SelectItem value="manual" disabled>
+          </option>
+          <option value="manual" disabled>
             Manual leads
-          </SelectItem>
-        </SelectContent>
-      </Select>
+          </option>
+        </SelectField>
 
-      {/* Date range */}
-      <Select value={currentDate} onValueChange={(v) => navigate({ date: v })}>
-        <SelectTrigger className="h-8 w-36 text-xs">
-          <SelectValue placeholder="This Month" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="today">Today</SelectItem>
-          <SelectItem value="this_week">This Week</SelectItem>
-          <SelectItem value="this_month">This Month</SelectItem>
-          <SelectItem value="this_year">This Year</SelectItem>
-        </SelectContent>
-      </Select>
+        <SelectField
+          label="Date range"
+          value={currentDate}
+          onChange={(e) => navigate({ date: e.target.value })}
+        >
+          <option value="today">Today</option>
+          <option value="this_week">This Week</option>
+          <option value="this_month">This Month</option>
+          <option value="this_year">This Year</option>
+        </SelectField>
+      </div>
+
+      {/* Export — the server route re-scopes to the caller's role */}
+      <a
+        href={exportHref}
+        download
+        className="av2-btn av2-btn--quiet"
+        style={{ textDecoration: 'none', marginTop: 12 }}
+      >
+        Download CSV
+      </a>
     </div>
   )
 }

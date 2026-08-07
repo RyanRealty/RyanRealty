@@ -15,17 +15,20 @@
  * shows its own math so it traces to source. True return-on-ad-spend (revenue ÷
  * spend) is NOT computable yet because closed-deal commission is not wired to a
  * lead source. The page is explicit about that rather than faking a number.
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Presentation only — the superuser gate (analytics/layout.tsx), all five reads,
+ * channelOf / isPaidChannel, every spend, session, ratio and data-health
+ * computation, and the ?range/?startDate/?endDate handling are carried over
+ * verbatim.
  */
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { getLeadIntake } from '@/lib/data/crm/getLeadIntake'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
-import { KpiCard } from '../_components/KpiCard'
+import { SectionHead, StateWord, VerdictLine, type AdminState } from '@/components/admin/v2'
+import { DataGrid, GridSkeleton, LaneNote, NumberStrip, Stamp, StatePanel } from '../_components/v2/DataGrid'
 import { formatInt, formatUsd } from '../_lib/formatters'
 import { DateRangePicker } from '../_components/DateRangePicker'
 import { resolveDateRange } from '../_lib/queries'
@@ -141,7 +144,11 @@ async function AdRoi({ range }: { range: { startDate: string; endDate: string } 
   const firstErr = [metaAcctRes, metaCampRes, googleAcctRes]
     .find((r) => r.error) as { error: { message: string } | null } | undefined
   if (firstErr?.error) {
-    return <Card><CardContent className="p-6 text-sm text-destructive">Data read failed: {firstErr.error.message}</CardContent></Card>
+    return (
+      <StatePanel tone="error">
+        Data read failed: {firstErr.error.message}. Reload once the read recovers, or narrow the date range.
+      </StatePanel>
+    )
   }
 
   // ── Spend totals ───────────────────────────────────────────────────────────
@@ -226,84 +233,123 @@ async function AdRoi({ range }: { range: { startDate: string; endDate: string } 
   const identityWorking = totalIdentified > 0
   const leadFormWorking = leadFormCount > 0
 
+  const metaRows = metaSpend === 0 ? [] : [
+    { label: 'Spend', value: formatUsd(metaSpend), strong: true },
+    { label: 'Impressions', value: formatInt(metaImpressions), strong: false },
+    { label: 'Clicks', value: formatInt(metaClicks), strong: false },
+    { label: 'Cost per click', value: usdOrDash(metaCpc), strong: false },
+    { label: 'Click-through rate', value: metaCtr != null ? `${(metaCtr * 100).toFixed(2)}%` : '—', strong: false },
+    { label: 'Conversions (reported by Meta)', value: formatInt(metaConversions), strong: false },
+  ]
+
+  const healthRows: Array<{ feed: string; status: string; state: AdminState; meaning: string }> = [
+    {
+      feed: 'Meta ad spend sync',
+      status: spendHealthy ? 'flowing' : 'needs a look',
+      state: spendHealthy ? 'ok' : 'down',
+      meaning: `${latestSpendDate ? `Last spend recorded ${latestSpendDate}.` : 'No spend recorded.'} ${spendHealthy ? 'Syncing daily.' : 'Check the marketing-snapshot-meta-ads cron.'}`,
+    },
+    {
+      feed: 'Facebook lead forms',
+      status: leadFormWorking ? 'flowing' : 'no data',
+      state: leadFormWorking ? 'ok' : 'waiting',
+      meaning: leadFormWorking ? `${formatInt(leadFormCount)} captured.` : 'Zero captured. Expected if you do not run lead-form ads. If you do, the webhook is not delivering.',
+    },
+    {
+      feed: 'Identity matching (name to a number)',
+      status: identityWorking ? 'flowing' : 'not live yet',
+      state: identityWorking ? 'ok' : 'down',
+      meaning: identityWorking
+        ? `${formatInt(totalIdentified)} visitors matched to a person.`
+        : 'No visitor has been matched to a name yet. The session-to-person stitching is built but not deployed to the site. Once it ships, repeat and identified visitors start showing names here.',
+    },
+    {
+      feed: 'Closed-deal revenue',
+      status: 'not wired',
+      state: 'waiting',
+      meaning: 'Commission from closed deals is not connected to the lead that started it. Until it is, true return on ad spend (revenue ÷ spend) cannot be calculated. Cost per lead is the leading indicator we can show today.',
+    },
+  ]
+
   return (
-    <div className="space-y-6">
-      {/* ── Plain-English verdict banner ─────────────────────────────────────── */}
-      <Card className="border-l-4 border-l-primary">
-        <CardHeader>
-          <CardTitle className="text-base">The short version</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-foreground">
-          {!identityWorking && (
-            <p>
-              <strong>There is not enough connected data yet to calculate a real return on ad spend.</strong>{' '}
-              Here is what is flowing and what still needs to be turned on, in plain words.
-            </p>
-          )}
-          <ul className="ml-4 list-disc space-y-1 text-muted-foreground">
-            <li>
-              {totalSpend > 0
-                ? <>You have spent <strong className="text-foreground tabular-nums">{formatUsd(totalSpend)}</strong> on ads that we can see ({formatUsd(metaSpend)} Meta, {formatUsd(googleSpend)} Google) ({windowLabel}).</>
-                : <>No ad spend has synced ({windowLabel}).</>}
-              {' '}
-              {spendHealthy
-                ? <>Spend is syncing daily.</>
-                : latestSpendDate
-                  ? <><span className="text-destructive">Spend last synced {latestSpendDate}, {spendStaleDays} days ago.</span> Either ads are paused or the daily sync needs a look.</>
-                  : <><span className="text-destructive">No daily spend rows at all.</span> The Meta spend sync may not be running.</>}
-            </li>
-            <li>
-              {totalSessions > 0
-                ? <><strong className="text-foreground tabular-nums">{formatInt(totalSessions)}</strong> people visited the site, <strong className="text-foreground tabular-nums">{formatInt(paidSessions)}</strong> of them from a paid channel.</>
-                : <>No site visitors recorded ({windowLabel}).</>}
-              {' '}
-              {identityWorking
-                ? <><strong className="text-foreground tabular-nums">{formatInt(totalIdentified)}</strong> of them have been matched to a real person in Follow Up Boss.</>
-                : <><span className="text-destructive">None have been matched to a name yet.</span> The matching that ties an ad click to a person in Follow Up Boss is not live on the site yet. Once it ships, the Identified column below starts filling in.</>}
-            </li>
-            <li>
-              {leadFormWorking
-                ? <><strong className="text-foreground tabular-nums">{formatInt(leadFormCount)}</strong> Facebook lead-form submissions captured.</>
-                : <><span className="text-destructive">No Facebook lead-form submissions captured.</span> If you run lead-form ads, the webhook that records them is not delivering. If you do not, this is expected.</>}
-            </li>
-          </ul>
-        </CardContent>
-      </Card>
+    <>
+      {/* ── Plain-English verdict ───────────────────────────────────────────── */}
+      <VerdictLine tone={identityWorking ? 'ok' : 'attention'}>
+        {identityWorking ? (
+          <>
+            <b>{formatUsd(totalSpend)} of tracked ad spend</b> against {formatInt(newLeads)} new leads ({windowLabel}).
+          </>
+        ) : (
+          <>
+            <b>There is not enough connected data yet to calculate a real return on ad spend.</b> Here is what is
+            flowing and what still needs to be turned on, in plain words.
+          </>
+        )}
+      </VerdictLine>
+
+      <section aria-label="The short version">
+        <SectionHead>The short version</SectionHead>
+        <ul className="av2-quietlist">
+          <li className="av2-quiet" style={{ display: 'block' }}>
+            {totalSpend > 0
+              ? <>You have spent <b style={{ color: 'var(--a-text)', fontVariantNumeric: 'tabular-nums' }}>{formatUsd(totalSpend)}</b> on ads that we can see ({formatUsd(metaSpend)} Meta, {formatUsd(googleSpend)} Google) ({windowLabel}).</>
+              : <>No ad spend has synced ({windowLabel}).</>}
+            {' '}
+            {spendHealthy
+              ? <>Spend is syncing daily.</>
+              : latestSpendDate
+                ? <><span style={{ color: 'var(--a-danger)' }}>Spend last synced {latestSpendDate}, {spendStaleDays} days ago.</span> Either ads are paused or the daily sync needs a look.</>
+                : <><span style={{ color: 'var(--a-danger)' }}>No daily spend rows at all.</span> The Meta spend sync may not be running.</>}
+          </li>
+          <li className="av2-quiet" style={{ display: 'block' }}>
+            {totalSessions > 0
+              ? <><b style={{ color: 'var(--a-text)', fontVariantNumeric: 'tabular-nums' }}>{formatInt(totalSessions)}</b> people visited the site, <b style={{ color: 'var(--a-text)', fontVariantNumeric: 'tabular-nums' }}>{formatInt(paidSessions)}</b> of them from a paid channel.</>
+              : <>No site visitors recorded ({windowLabel}).</>}
+            {' '}
+            {identityWorking
+              ? <><b style={{ color: 'var(--a-text)', fontVariantNumeric: 'tabular-nums' }}>{formatInt(totalIdentified)}</b> of them have been matched to a real person in Follow Up Boss.</>
+              : <><span style={{ color: 'var(--a-danger)' }}>None have been matched to a name yet.</span> The matching that ties an ad click to a person in Follow Up Boss is not live on the site yet. Once it ships, the Identified column below starts filling in.</>}
+          </li>
+          <li className="av2-quiet" style={{ display: 'block' }}>
+            {leadFormWorking
+              ? <><b style={{ color: 'var(--a-text)', fontVariantNumeric: 'tabular-nums' }}>{formatInt(leadFormCount)}</b> Facebook lead-form submissions captured.</>
+              : <><span style={{ color: 'var(--a-danger)' }}>No Facebook lead-form submissions captured.</span> If you run lead-form ads, the webhook that records them is not delivering. If you do not, this is expected.</>}
+          </li>
+        </ul>
+      </section>
 
       {/* ── Money funnel KPIs ────────────────────────────────────────────────── */}
-      <div>
-        <h2 className="mb-2 text-sm font-medium text-muted-foreground">The money funnel ({windowLabel})</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <KpiCard label="Ad spend (tracked)" value={formatUsd(totalSpend)} hint={`${formatUsd(metaSpend)} Meta · ${formatUsd(googleSpend)} Google`} />
-          <KpiCard label="Visitors from paid ads" value={formatInt(paidSessions)} hint={`of ${formatInt(totalSessions)} total visitors`} />
-          <KpiCard label="New leads (all sources)" value={formatInt(newLeads)} hint="real inbound leads, getLeadIntake" />
-          <KpiCard
-            label="Visitors matched to a name"
-            value={formatInt(totalIdentified)}
-            hint={'the "put a name to the number" count'}
-          />
-          <KpiCard
-            label="Blended cost per new lead"
-            value={usdOrDash(blendedCostPerLead)}
-            hint={blendedCostPerLead != null ? `${formatUsd(totalSpend)} spend ÷ ${formatInt(newLeads)} leads. Rough only, see note.` : 'needs both spend and leads'}
-          />
-        </div>
-      </div>
+      <section aria-label="The money funnel">
+        <SectionHead>The money funnel ({windowLabel})</SectionHead>
+        <NumberStrip
+          items={[
+            { label: 'Ad spend (tracked)', value: formatUsd(totalSpend), caption: `${formatUsd(metaSpend)} Meta · ${formatUsd(googleSpend)} Google` },
+            { label: 'Visitors from paid ads', value: formatInt(paidSessions), caption: `of ${formatInt(totalSessions)} total visitors` },
+            { label: 'New leads (all sources)', value: formatInt(newLeads), caption: 'real inbound leads, getLeadIntake' },
+            { label: 'Visitors matched to a name', value: formatInt(totalIdentified), caption: 'the "put a name to the number" count' },
+            {
+              label: 'Blended cost per new lead',
+              value: usdOrDash(blendedCostPerLead),
+              caption: blendedCostPerLead != null ? `${formatUsd(totalSpend)} spend ÷ ${formatInt(newLeads)} leads. Rough only, see note.` : 'needs both spend and leads',
+            },
+          ]}
+        />
+      </section>
 
       {/* ── By channel: where visitors came from + how many got a name ────────── */}
-      <section className="space-y-2">
-        <div className="space-y-1">
-          <h2 className="text-base font-semibold text-foreground">Where your visitors come from</h2>
-          <p className="text-xs text-muted-foreground">
-            Every site session ({windowLabel}), grouped by the channel that sent it. &quot;Matched to a name&quot; is the count we tied to a real person in Follow Up Boss. That column is the heart of putting a name to a number.
-          </p>
-          {sessionsCapped && (
-            <p className="text-xs text-warning">
-              Showing first 20,000 sessions — result capped. Narrow the date range to see complete data.
-            </p>
-          )}
-        </div>
-        <TableWithMobileCards
+      <section aria-label="Where your visitors come from">
+        <SectionHead>Where your visitors come from</SectionHead>
+        <LaneNote>
+          Every site session ({windowLabel}), grouped by the channel that sent it. &quot;Matched to a name&quot; is the
+          count we tied to a real person in Follow Up Boss. That column is the heart of putting a name to a number.
+        </LaneNote>
+        {sessionsCapped && (
+          <StatePanel tone="error">
+            Showing first 20,000 sessions — result capped. Narrow the date range to see complete data.
+          </StatePanel>
+        )}
+        <DataGrid
+          label="Visitors by channel"
           rows={channelRows.map(([ch, agg]) => {
             const matchRate = agg.sessions > 0 ? agg.identified / agg.sessions : 0
             let note: string
@@ -313,198 +359,135 @@ async function AdRoi({ range }: { range: { startDate: string; endDate: string } 
             return { ch, agg, paid: isPaidChannel(ch), note }
           })}
           cap={10}
+          minWidth={820}
           getRowKey={(r) => r.ch}
           columns={[
-            { key: 'ch', header: 'Channel', className: 'whitespace-nowrap', cell: (r) => <span className="font-medium">{r.ch}{r.paid && <Badge variant="secondary" className="ml-2">paid</Badge>}</span> },
-            { key: 'visitors', header: 'Visitors', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => formatInt(r.agg.sessions) },
-            { key: 'matched', header: 'Matched to a name', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => formatInt(r.agg.identified) },
-            { key: 'hot', header: 'Hot leads', className: 'text-right tabular-nums whitespace-nowrap', cell: (r) => formatInt(r.agg.hot) },
-            { key: 'note', header: 'What this tells you', className: 'text-xs text-muted-foreground', cell: (r) => r.note },
+            {
+              key: 'ch',
+              header: 'Channel',
+              width: '1.3fr',
+              cell: (r) => (
+                <span style={{ fontWeight: 600 }}>
+                  {r.ch}
+                  {r.paid ? <span style={{ marginLeft: 8 }}><StateWord state="accent">paid</StateWord></span> : null}
+                </span>
+              ),
+            },
+            { key: 'visitors', header: 'Visitors', numeric: true, cell: (r) => formatInt(r.agg.sessions) },
+            { key: 'matched', header: 'Matched to a name', numeric: true, cell: (r) => formatInt(r.agg.identified) },
+            { key: 'hot', header: 'Hot leads', numeric: true, cell: (r) => formatInt(r.agg.hot) },
+            { key: 'note', header: 'What this tells you', width: '1.6fr', cell: (r) => <span style={{ color: 'var(--a-text-2)' }}>{r.note}</span> },
           ]}
-          renderCard={(r) => (
-            <Card>
-              <CardContent className="space-y-1">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium">{r.ch}{r.paid && <Badge variant="secondary" className="ml-2 text-xs">paid</Badge>}</span>
-                  <span className="text-sm font-semibold tabular-nums">{formatInt(r.agg.sessions)} <span className="text-xs font-normal text-muted-foreground">visitors</span></span>
-                </div>
-                <p className="text-xs text-muted-foreground tabular-nums">{formatInt(r.agg.identified)} matched · {formatInt(r.agg.hot)} hot · {r.note}</p>
-              </CardContent>
-            </Card>
-          )}
           empty={<>No site visitors recorded ({windowLabel}). Once the tracking snippet fires on the site, channels appear here.</>}
         />
         {earliestSession && (
-          <p className="text-xs text-muted-foreground">
+          <Stamp>
             Visitor data on file spans {earliestSession} to {latestSession}.
-          </p>
+          </Stamp>
         )}
       </section>
 
       {/* ── Meta ad performance + campaign spend ─────────────────────────────── */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="space-y-2">
-          <h2 className="text-base font-semibold text-foreground">What the Meta money bought</h2>
-          <TableWithMobileCards
-            rows={metaSpend === 0 ? [] : [
-              { label: 'Spend', value: formatUsd(metaSpend), strong: true },
-              { label: 'Impressions', value: formatInt(metaImpressions), strong: false },
-              { label: 'Clicks', value: formatInt(metaClicks), strong: false },
-              { label: 'Cost per click', value: usdOrDash(metaCpc), strong: false },
-              { label: 'Click-through rate', value: metaCtr != null ? `${(metaCtr * 100).toFixed(2)}%` : '—', strong: false },
-              { label: 'Conversions (reported by Meta)', value: formatInt(metaConversions), strong: false },
-            ]}
-            cap={8}
-            getRowKey={(r) => r.label}
-            columns={[
-              { key: 'label', header: 'Metric', className: 'text-muted-foreground', cell: (r) => r.label },
-              { key: 'value', header: 'Value', className: 'text-right tabular-nums', cell: (r) => <span className={r.strong ? 'font-medium' : undefined}>{r.value}</span> },
-            ]}
-            renderCard={(r) => (
-              <Card>
-                <CardContent className="flex items-center justify-between gap-2">
-                  <span className="text-sm text-muted-foreground">{r.label}</span>
-                  <span className={`text-sm tabular-nums ${r.strong ? 'font-semibold' : 'font-medium'}`}>{r.value}</span>
-                </CardContent>
-              </Card>
-            )}
-            empty={<>No Meta ad spend synced ({windowLabel}).</>}
-          />
-        </section>
+      <section aria-label="What the Meta money bought">
+        <SectionHead>What the Meta money bought</SectionHead>
+        <DataGrid
+          label="Meta ad performance"
+          rows={metaRows}
+          cap={8}
+          minWidth={480}
+          getRowKey={(r) => r.label}
+          columns={[
+            { key: 'label', header: 'Metric', width: '1.6fr', cell: (r) => <span style={{ color: 'var(--a-text-2)' }}>{r.label}</span> },
+            { key: 'value', header: 'Value', numeric: true, width: '160px', cell: (r) => <span style={{ fontWeight: r.strong ? 600 : 400 }}>{r.value}</span> },
+          ]}
+          empty={<>No Meta ad spend synced ({windowLabel}).</>}
+        />
+      </section>
 
-        <section className="space-y-2">
-          <h2 className="text-base font-semibold text-foreground">Spend by campaign</h2>
-          <TableWithMobileCards
-            rows={campaigns}
-            cap={8}
-            getRowKey={([name]) => name}
-            columns={[
-              { key: 'name', header: 'Campaign', className: 'font-medium', cell: ([name]) => name },
-              { key: 'spend', header: 'Spend', className: 'text-right tabular-nums whitespace-nowrap', cell: ([, spend]) => formatUsd(spend) },
-              { key: 'share', header: 'Share', className: 'text-right tabular-nums whitespace-nowrap', cell: ([, spend]) => metaSpend > 0 ? `${((spend / metaSpend) * 100).toFixed(0)}%` : '—' },
-            ]}
-            renderCard={([name, spend]) => (
-              <Card>
-                <CardContent className="space-y-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-medium">{name}</span>
-                    <span className="text-sm font-semibold tabular-nums">{formatUsd(spend)}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground tabular-nums">{metaSpend > 0 ? `${((spend / metaSpend) * 100).toFixed(0)}% of Meta spend` : '—'}</p>
-                </CardContent>
-              </Card>
-            )}
-            empty={<>No per-campaign spend ({windowLabel}). Campaign rows appear once the Meta spend sync writes campaign-scope data.</>}
-          />
-        </section>
-      </div>
+      <section aria-label="Spend by campaign">
+        <SectionHead>Spend by campaign</SectionHead>
+        <DataGrid
+          label="Meta spend by campaign"
+          rows={campaigns}
+          cap={8}
+          minWidth={560}
+          getRowKey={([name]) => name}
+          columns={[
+            { key: 'name', header: 'Campaign', width: '1.6fr', cell: ([name]) => <span style={{ fontWeight: 500 }}>{name}</span> },
+            { key: 'spend', header: 'Spend', numeric: true, cell: ([, spend]) => formatUsd(spend) },
+            { key: 'share', header: 'Share', numeric: true, cell: ([, spend]) => (metaSpend > 0 ? `${((spend / metaSpend) * 100).toFixed(0)}%` : '—') },
+          ]}
+          empty={<>No per-campaign spend ({windowLabel}). Campaign rows appear once the Meta spend sync writes campaign-scope data.</>}
+        />
+      </section>
 
       {/* ── Daily spend timeline (what we actually have) ─────────────────────── */}
       {spendDays.length > 0 && (
-        <section className="space-y-2">
-          <div className="space-y-1">
-            <h2 className="text-base font-semibold text-foreground">Days we recorded spend</h2>
-            <p className="text-xs text-muted-foreground">Each day the spend sync wrote a non-zero number. Gaps mean either no spend that day or the sync did not run.</p>
-          </div>
-          <TableWithMobileCards
+        <section aria-label="Days we recorded spend">
+          <SectionHead>Days we recorded spend</SectionHead>
+          <LaneNote>
+            Each day the spend sync wrote a non-zero number. Gaps mean either no spend that day or the sync did not run.
+          </LaneNote>
+          <DataGrid
+            label="Days with recorded spend"
             rows={spendDays}
             cap={10}
+            minWidth={420}
             getRowKey={([date]) => date}
             columns={[
-              { key: 'date', header: 'Date', className: 'font-medium tabular-nums whitespace-nowrap', cell: ([date]) => date },
-              { key: 'spend', header: 'Spend', className: 'text-right tabular-nums whitespace-nowrap', cell: ([, spend]) => formatUsd(spend) },
+              { key: 'date', header: 'Date', width: '1fr', cell: ([date]) => <span style={{ fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{date}</span> },
+              { key: 'spend', header: 'Spend', numeric: true, cell: ([, spend]) => formatUsd(spend) },
             ]}
-            renderCard={([date, spend]) => (
-              <Card>
-                <CardContent className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-medium tabular-nums">{date}</span>
-                  <span className="text-sm font-semibold tabular-nums">{formatUsd(spend)}</span>
-                </CardContent>
-              </Card>
-            )}
             empty={<>No days with recorded spend ({windowLabel}).</>}
           />
         </section>
       )}
 
       {/* ── Data health: which pipes are flowing ─────────────────────────────── */}
-      <section className="space-y-2">
-        <div className="space-y-1">
-          <h2 className="text-base font-semibold text-foreground">Data health: what is connected</h2>
-          <p className="text-xs text-muted-foreground">The numbers above are only as good as these feeds. This is the honest status of each one.</p>
-        </div>
-        <TableWithMobileCards
-          rows={[
-            {
-              feed: 'Meta ad spend sync',
-              status: spendHealthy ? 'flowing' : 'needs a look',
-              variant: (spendHealthy ? 'default' : 'destructive') as 'default' | 'destructive' | 'secondary',
-              meaning: `${latestSpendDate ? `Last spend recorded ${latestSpendDate}.` : 'No spend recorded.'} ${spendHealthy ? 'Syncing daily.' : 'Check the marketing-snapshot-meta-ads cron.'}`,
-            },
-            {
-              feed: 'Facebook lead forms',
-              status: leadFormWorking ? 'flowing' : 'no data',
-              variant: (leadFormWorking ? 'default' : 'secondary') as 'default' | 'destructive' | 'secondary',
-              meaning: leadFormWorking ? `${formatInt(leadFormCount)} captured.` : 'Zero captured. Expected if you do not run lead-form ads. If you do, the webhook is not delivering.',
-            },
-            {
-              feed: 'Identity matching (name to a number)',
-              status: identityWorking ? 'flowing' : 'not live yet',
-              variant: (identityWorking ? 'default' : 'destructive') as 'default' | 'destructive' | 'secondary',
-              meaning: identityWorking
-                ? `${formatInt(totalIdentified)} visitors matched to a person.`
-                : 'No visitor has been matched to a name yet. The session-to-person stitching is built but not deployed to the site. Once it ships, repeat and identified visitors start showing names here.',
-            },
-            {
-              feed: 'Closed-deal revenue',
-              status: 'not wired',
-              variant: 'secondary' as 'default' | 'destructive' | 'secondary',
-              meaning: 'Commission from closed deals is not connected to the lead that started it. Until it is, true return on ad spend (revenue ÷ spend) cannot be calculated. Cost per lead is the leading indicator we can show today.',
-            },
-          ]}
+      <section aria-label="Data health">
+        <SectionHead>Data health: what is connected</SectionHead>
+        <LaneNote>
+          The numbers above are only as good as these feeds. This is the honest status of each one.
+        </LaneNote>
+        <DataGrid
+          label="Data feed health"
+          rows={healthRows}
           cap={8}
+          minWidth={780}
           getRowKey={(r) => r.feed}
           columns={[
-            { key: 'feed', header: 'Feed', className: 'font-medium whitespace-nowrap', cell: (r) => r.feed },
-            { key: 'status', header: 'Status', className: 'whitespace-nowrap', cell: (r) => <Badge variant={r.variant}>{r.status}</Badge> },
-            { key: 'meaning', header: 'What it means', className: 'text-xs text-muted-foreground', cell: (r) => r.meaning },
+            { key: 'feed', header: 'Feed', width: '1.2fr', cell: (r) => <span style={{ fontWeight: 600 }}>{r.feed}</span> },
+            { key: 'status', header: 'Status', width: '150px', cell: (r) => <StateWord state={r.state}>{r.status}</StateWord> },
+            { key: 'meaning', header: 'What it means', width: '2.2fr', cell: (r) => <span style={{ color: 'var(--a-text-2)' }}>{r.meaning}</span> },
           ]}
-          renderCard={(r) => (
-            <Card>
-              <CardContent className="space-y-1">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium">{r.feed}</span>
-                  <Badge variant={r.variant}>{r.status}</Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">{r.meaning}</p>
-              </CardContent>
-            </Card>
-          )}
           empty={<>No data feeds to report on.</>}
         />
       </section>
 
       {/* ── Honest note on true ROAS + where to dig deeper ───────────────────── */}
-      <Card className="bg-muted/40">
-        <CardHeader><CardTitle className="text-base">How to read this page</CardTitle></CardHeader>
-        <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p>
-            <strong className="text-foreground">Cost per lead</strong> here is blended. It divides all paid spend by all new Follow Up Boss leads, including leads that came from word of mouth or organic search, not just ads. So it is a rough floor, not a precise per-channel number. A precise &quot;cost per Facebook lead&quot; needs every lead tagged with the channel that produced it, which happens automatically once identity matching is live.
-          </p>
-          <p>
-            <strong className="text-foreground">True return on ad spend</strong> (dollars earned ÷ dollars spent) is not on this page because closed-deal commission is not yet linked back to the lead source. When that link exists, this page can show real return per campaign. Until then, watch cost per lead and the match rate by channel.
-          </p>
-          <p>
-            For the week-by-week cost-per-lead trend, see{' '}
-            <Link className="text-primary hover:underline" href="/admin/analytics/cost-per-lead">Cost per lead</Link>.
-            For the Meta infrastructure and recent lead forms, see{' '}
-            <Link className="text-primary hover:underline" href="/admin/analytics/meta-health">Meta health</Link>.
-            To see individual people, see{' '}
-            <Link className="text-primary hover:underline" href="/admin/visitors/live">Live visitors</Link>.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+      <section aria-label="How to read this page">
+        <SectionHead>How to read this page</SectionHead>
+        <LaneNote>
+          <b style={{ color: 'var(--a-text)' }}>Cost per lead</b> here is blended. It divides all paid spend by all new
+          Follow Up Boss leads, including leads that came from word of mouth or organic search, not just ads. So it is a
+          rough floor, not a precise per-channel number. A precise &quot;cost per Facebook lead&quot; needs every lead
+          tagged with the channel that produced it, which happens automatically once identity matching is live.
+        </LaneNote>
+        <LaneNote>
+          <b style={{ color: 'var(--a-text)' }}>True return on ad spend</b> (dollars earned ÷ dollars spent) is not on
+          this page because closed-deal commission is not yet linked back to the lead source. When that link exists, this
+          page can show real return per campaign. Until then, watch cost per lead and the match rate by channel.
+        </LaneNote>
+        <LaneNote>
+          For the week-by-week cost-per-lead trend, see{' '}
+          <Link href="/admin/analytics/cost-per-lead" style={{ color: 'var(--a-accent)' }}>Cost per lead</Link>.
+          For the Meta infrastructure and recent lead forms, see{' '}
+          <Link href="/admin/analytics/meta-health" style={{ color: 'var(--a-accent)' }}>Meta health</Link>.
+          To see individual people, see{' '}
+          <Link href="/admin/visitors/live" style={{ color: 'var(--a-accent)' }}>Live visitors</Link>.
+        </LaneNote>
+      </section>
+    </>
   )
 }
 
@@ -512,16 +495,12 @@ export default async function AdRoiPage({ searchParams }: { searchParams: Promis
   const sp = normalizeParams(await searchParams)
   const range = resolveDateRange(sp)
   return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">Marketing ROI</h1>
-        <p className="text-sm text-muted-foreground">
-          Is your ad money turning into real leads, are you wasting it, and what is your return? This page joins what you spend with who actually comes in, and tells you in plain words. It is honest about what the data can and cannot prove yet.
-        </p>
+    <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 var(--a-s5)' }}>
         <DateRangePicker current={sp.range ?? '90d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
-      </header>
+      </div>
 
-      <Suspense fallback={<Skeleton className="h-[40rem] w-full" />}>
+      <Suspense fallback={<GridSkeleton rows={8} label="Loading marketing ROI" />}>
         <AdRoi range={range} />
       </Suspense>
     </div>

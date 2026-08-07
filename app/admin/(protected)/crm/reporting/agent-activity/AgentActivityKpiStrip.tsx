@@ -1,13 +1,24 @@
 'use client'
 
+/**
+ * Agent Activity's figures for the period, plus the column picker.
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Carried over verbatim: the ten metric definitions, COL_TO_TOTAL, COL_TO_TS
+ * (including the two documented V1 series approximations), the delta maths, the
+ * Calls → Call Logs auxiliary link, and toggleCol()'s ?cols contract — same
+ * ordering rule (a re-checked column moves to the end), same "drop ?cols when
+ * all ten are on", same four params, same router.push target.
+ *
+ * What changed is shell only: shadcn Cards in a sideways-scrolling strip became
+ * typographic figures that wrap, the recharts sparkline became a plain polyline
+ * off the same series (no client chart lib, no brand hex), and the popover of
+ * checkboxes became a folded disclosure of v2 filter chips — the locked bar bans
+ * a wall of pills on the page, not a picker behind a control.
+ */
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { AreaChart, Area, ResponsiveContainer } from 'recharts'
-import Link from 'next/link'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
-import { Card } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
+import { FilterChip } from '@/components/admin/v2'
+import { ReportNumbers, type ReportNumberItem } from '../_v2/ReportGrid'
 import {
   ALL_COL_KEYS,
   COL_LABELS,
@@ -69,185 +80,18 @@ function computeDelta(
   return { pct: Math.abs(pct), up: pct >= 0 }
 }
 
-// ── Sparkline ──────────────────────────────────────────────────────────────────
-
-function Sparkline({ data, id }: { data: number[]; id: string }) {
-  const chartData = data.map((v) => ({ v }))
-  const gradId = `sparkGrad-${id}`
-  return (
-    <div className="mt-2 h-8 w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        {/* .design-token-lint-ignore — recharts SVG attrs; hex required by recharts API */}
-        <AreaChart data={chartData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
-          <defs>
-            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#102742" stopOpacity={0.18} />
-              <stop offset="95%" stopColor="#102742" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <Area
-            type="monotone"
-            dataKey="v"
-            stroke="#102742"
-            strokeWidth={1.5}
-            fill={`url(#${gradId})`}
-            dot={false}
-            isAnimationActive={false}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
-  )
-}
-
-// ── KPI Tile ───────────────────────────────────────────────────────────────────
-
-interface KpiTileProps {
-  id: string
-  label: string
-  value: number
-  previousValue: number
-  sparkData: number[]
-  auxiliaryHref?: string
-  auxiliaryLabel?: string
-}
-
-function KpiTile({
-  id,
-  label,
-  value,
-  previousValue,
-  sparkData,
-  auxiliaryHref,
-  auxiliaryLabel,
-}: KpiTileProps) {
+function deltaLine(value: number, previousValue: number): ReportNumberItem['delta'] {
   const delta = computeDelta(value, previousValue)
-
-  return (
-    <Card className="min-w-36 shrink-0 p-4">
-      {/* Label row */}
-      <div className="flex items-start justify-between gap-1">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          {label}
-        </p>
-        {auxiliaryHref && auxiliaryLabel ? (
-          <Link
-            href={auxiliaryHref}
-            className="shrink-0 text-xs text-primary hover:underline"
-          >
-            {auxiliaryLabel}
-          </Link>
-        ) : null}
-      </div>
-
-      {/* Large value */}
-      <p className="mt-1.5 text-3xl font-bold leading-none tabular-nums text-foreground">
-        {value.toLocaleString('en-US')}
-      </p>
-
-      {/* Delta vs previous period */}
-      {delta !== null ? (
-        <p
-          className={cn(
-            'mt-1 text-xs tabular-nums',
-            delta.up ? 'text-success' : 'text-destructive',
-          )}
-        >
-          {delta.up ? '↑' : '↓'}{' '}
-          {delta.up
-            ? `${delta.pct.toFixed(1)}%`
-            : `(${delta.pct.toFixed(1)}%)`}{' '}
-          <span className="text-muted-foreground">
-            vs {previousValue.toLocaleString('en-US')}
-          </span>
-        </p>
-      ) : previousValue === 0 && value > 0 ? (
-        <p className="mt-1 text-xs text-success">
-          ↑ new{' '}
-          <span className="text-muted-foreground">vs 0</span>
-        </p>
-      ) : (
-        <p className="mt-1 text-xs text-muted-foreground">
-          — <span>vs 0</span>
-        </p>
-      )}
-
-      {/* Sparkline */}
-      <Sparkline data={sparkData} id={id} />
-    </Card>
-  )
-}
-
-// ── Column Picker Tile ────────────────────────────────────────────────────────
-
-interface ColumnPickerProps {
-  visibleCols: ColKey[]
-  currentBroker: string
-  currentDate: string
-  currentView: string
-}
-
-function ColumnPickerTile({
-  visibleCols,
-  currentBroker,
-  currentDate,
-  currentView,
-}: ColumnPickerProps) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-
-  function toggleCol(key: ColKey, checked: boolean) {
-    const next: ColKey[] = checked
-      ? ([...visibleCols.filter((c) => c !== key), key] as ColKey[])
-      : visibleCols.filter((c) => c !== key)
-
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('broker', currentBroker)
-    params.set('date', currentDate)
-    params.set('view', currentView)
-    if (next.length === ALL_COL_KEYS.length) {
-      params.delete('cols')
-    } else {
-      params.set('cols', next.join(','))
+  if (delta !== null) {
+    return {
+      direction: delta.up ? 'up' : 'down',
+      text: `${delta.up ? '↑' : '↓'} ${
+        delta.up ? `${delta.pct.toFixed(1)}%` : `(${delta.pct.toFixed(1)}%)`
+      } vs ${previousValue.toLocaleString('en-US')}`,
     }
-    router.push(`${pathname}?${params.toString()}`)
   }
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Card
-          role="button"
-          tabIndex={0}
-          className="flex min-w-36 shrink-0 cursor-pointer items-center justify-center border-dashed p-4 text-sm text-muted-foreground hover:border-primary hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          + Add Columns
-        </Card>
-      </PopoverTrigger>
-
-      <PopoverContent className="w-56 p-3" align="start">
-        <p className="mb-2 text-xs font-semibold text-foreground">Show / hide columns</p>
-        <div className="flex flex-col gap-2">
-          {ALL_COL_KEYS.map((key) => (
-            <div key={key} className="flex items-center gap-2">
-              <Checkbox
-                id={`col-${key}`}
-                checked={visibleCols.includes(key)}
-                onCheckedChange={(v) => toggleCol(key, !!v)}
-              />
-              <Label
-                htmlFor={`col-${key}`}
-                className="cursor-pointer text-xs text-foreground"
-              >
-                {COL_LABELS[key]}
-              </Label>
-            </div>
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
-  )
+  if (previousValue === 0 && value > 0) return { direction: 'up', text: '↑ new vs 0' }
+  return { direction: 'flat', text: '— vs 0' }
 }
 
 // ── Tile definitions ──────────────────────────────────────────────────────────
@@ -275,7 +119,7 @@ const TILE_DEFS: Array<{
   { key: 'appointments', label: 'Appointments' },
 ]
 
-// ── KPI Strip ─────────────────────────────────────────────────────────────────
+// ── Strip ─────────────────────────────────────────────────────────────────────
 
 export function AgentActivityKpiStrip({
   totals,
@@ -286,32 +130,68 @@ export function AgentActivityKpiStrip({
   currentDate,
   currentView,
 }: AgentActivityKpiStripProps) {
-  return (
-    <div className="no-scrollbar mb-4 flex gap-3 overflow-x-auto pb-2">
-      {TILE_DEFS.filter((def) => visibleCols.includes(def.key)).map((def) => {
-        const totalField = COL_TO_TOTAL[def.key]
-        const tsField = COL_TO_TS[def.key]
-        const sparkData = timeSeries.map((p) => p[tsField] as number)
-        return (
-          <KpiTile
-            key={def.key}
-            id={def.key}
-            label={def.label}
-            value={totals[totalField] as number}
-            previousValue={previousTotals[totalField] as number}
-            sparkData={sparkData}
-            auxiliaryHref={def.auxiliaryHref}
-            auxiliaryLabel={def.auxiliaryLabel}
-          />
-        )
-      })}
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
 
-      <ColumnPickerTile
-        visibleCols={visibleCols}
-        currentBroker={currentBroker}
-        currentDate={currentDate}
-        currentView={currentView}
-      />
-    </div>
+  function toggleCol(key: ColKey, checked: boolean) {
+    const next: ColKey[] = checked
+      ? ([...visibleCols.filter((c) => c !== key), key] as ColKey[])
+      : visibleCols.filter((c) => c !== key)
+
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('broker', currentBroker)
+    params.set('date', currentDate)
+    params.set('view', currentView)
+    if (next.length === ALL_COL_KEYS.length) {
+      params.delete('cols')
+    } else {
+      params.set('cols', next.join(','))
+    }
+    router.push(`${pathname}?${params.toString()}`)
+  }
+
+  const items: ReportNumberItem[] = TILE_DEFS.filter((def) =>
+    visibleCols.includes(def.key),
+  ).map((def) => {
+    const totalField = COL_TO_TOTAL[def.key]
+    const tsField = COL_TO_TS[def.key]
+    return {
+      key: def.key,
+      label: def.label,
+      value: (totals[totalField] as number).toLocaleString('en-US'),
+      delta: deltaLine(totals[totalField] as number, previousTotals[totalField] as number),
+      spark: timeSeries.map((p) => p[tsField] as number),
+      aux:
+        def.auxiliaryHref && def.auxiliaryLabel
+          ? { href: def.auxiliaryHref, label: def.auxiliaryLabel }
+          : undefined,
+    }
+  })
+
+  return (
+    <>
+      <ReportNumbers items={items} />
+
+      <details className="av2-rcols">
+        <summary>
+          Columns — {visibleCols.length} of {ALL_COL_KEYS.length} shown
+        </summary>
+        <div className="av2-rcols__body">
+          {ALL_COL_KEYS.map((key) => {
+            const on = visibleCols.includes(key)
+            return (
+              <FilterChip
+                key={key}
+                pressed={on}
+                onClick={() => toggleCol(key, !on)}
+              >
+                {COL_LABELS[key]}
+              </FilterChip>
+            )
+          })}
+        </div>
+      </details>
+    </>
   )
 }

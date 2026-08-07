@@ -1,17 +1,36 @@
 // @no-parity — internal admin surface
+//
+// Properties report — 11C: migrated to the LOCKED admin v2 language
+// (design_system/admin/ADMIN_UI.md) through the reporting family's shared
+// presentation kit (../_v2/ReportGrid). Presentation only.
+//
+// Carried over verbatim: the getCrmAccess guard, `?date=` handling and its
+// `this_month` default, datePresetLabel, the getPropertiesReport({ datePreset })
+// read and its catch-to-null, the DAL's viewCount-desc rank, the listing
+// drill-through hrefs, the map pins, and every figure.
+//
+// Shape changed, data did not: the 288px-wide inner scroll pane became the
+// family's grid (one row per listing, a card stack at 375px), and the map moved
+// below it at full width so nothing scrolls sideways. A FAILED read is now its
+// own state — it used to render as an innocent "no property inquiries" panel.
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { ChevronDown, MapPin } from 'lucide-react'
 import { getCrmAccess } from '@/app/actions/crm'
 import { getPropertiesReport } from '@/lib/data/crm/getPropertiesReport'
-import { Badge } from '@/components/ui/badge'
+import { SectionHead, VerdictLine } from '@/components/admin/v2'
+import {
+  ReportGrid,
+  ReportFreshness,
+  ReportError,
+  type ReportColumn,
+  type ReportGridRow,
+} from '../_v2/ReportGrid'
 import PropertiesFilters from './PropertiesFilters'
 import { PropertiesMap } from './PropertiesMap'
 import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
 
 export const metadata = { title: 'Properties | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
-
 
 // ── Search params ─────────────────────────────────────────────────────────────
 type SearchParams = {
@@ -33,6 +52,13 @@ function datePresetLabel(preset: string): string {
       return 'This Month'
   }
 }
+
+const COLUMNS: ReportColumn[] = [
+  { key: 'address', label: 'Listing' },
+  { key: 'place', label: 'City' },
+  { key: 'rank', label: 'Rank', numeric: true },
+  { key: 'inquiries', label: 'Inquiries', numeric: true },
+]
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -59,131 +85,107 @@ export default async function PropertiesPage({
   const uniqueProperties = report?.uniqueProperties ?? 0
   const currentDate = datePreset
 
+  const nowMs = Date.now()
+  const refreshHref = `/admin/crm/reporting/properties?date=${currentDate}&t=${nowMs}`
+
+  const gridRows: ReportGridRow[] = rows.map((row, index) => {
+    const label = row.streetNumber
+      ? `${row.streetNumber} ${row.streetName}`.trim()
+      : row.streetName || `Listing #${row.listingMls}`
+    return {
+      key: row.listingMls,
+      cells: [
+        row.listingUrl ? (
+          <Link key="a" href={row.listingUrl} style={{ color: 'var(--a-accent)' }}>
+            {label}
+          </Link>
+        ) : (
+          label
+        ),
+        <span key="p" style={{ color: 'var(--a-text-2)' }}>
+          {[row.city, row.postalCode ? `OR ${row.postalCode}` : 'OR'].filter(Boolean).join(', ')}
+        </span>,
+        <span key="r" style={{ color: 'var(--a-text-2)' }}>
+          {index + 1}
+        </span>,
+        row.viewCount.toLocaleString('en-US'),
+      ],
+    }
+  })
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+    <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
       <ReportingTabStrip active="properties" />
 
-      {/* Header row: "Show me" selector + date filter */}
-      <div className="mb-2 flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-center gap-1.5 text-sm">
-          <span className="text-muted-foreground">Show me</span>
-          <div className="flex items-center gap-0.5">
-            <span className="font-medium text-foreground">
-              which property has the most inquiries
-            </span>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          </div>
-        </div>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={report === null ? 'attention' : 'ok'}>
+          {report === null ? (
+            <>
+              <b>The property inquiry report could not be read.</b> Nothing below is a measurement.
+            </>
+          ) : (
+            <>
+              <b>
+                {totalViews.toLocaleString('en-US')} {totalViews === 1 ? 'inquiry' : 'inquiries'} on{' '}
+                {uniqueProperties.toLocaleString('en-US')}{' '}
+                {uniqueProperties === 1 ? 'property' : 'properties'}.
+              </b>{' '}
+              {datePresetLabel(currentDate)}, ranked by inquiries. An inquiry is one listing-detail
+              page view logged on the site.
+            </>
+          )}
+        </VerdictLine>
+      </div>
+
+      {report === null ? <ReportError what="Property inquiries" href={refreshHref} /> : null}
+
+      <div className="av2-rfilters">
         <PropertiesFilters currentDate={currentDate} />
       </div>
 
-      {/* Cache notice */}
-      <p className="mb-4 text-xs text-muted-foreground">
-        Reporting results may be cached for up to 10 minutes.{' '}
-        <Link
-          href={`/admin/crm/reporting/properties?date=${currentDate}&t=${Date.now()}`}
-          className="text-muted-foreground hover:underline"
-        >
-          Refresh results.
-        </Link>
-      </p>
+      <ReportFreshness href={refreshHref} nowMs={nowMs} />
 
-      {/* Summary strip — totalViews + uniqueProperties */}
-      {totalViews > 0 && (
-        <div className="mb-4 flex items-center gap-6">
-          <div className="text-sm text-muted-foreground">
-            <span className="tabular-nums font-semibold text-foreground">
-              {totalViews.toLocaleString('en-US')}
-            </span>{' '}
-            {totalViews === 1 ? 'inquiry' : 'inquiries'}
-          </div>
-          <div className="text-sm text-muted-foreground">
-            <span className="tabular-nums font-semibold text-foreground">
-              {uniqueProperties.toLocaleString('en-US')}
-            </span>{' '}
-            {uniqueProperties === 1 ? 'property' : 'properties'}
-          </div>
-          <div className="text-xs text-muted-foreground">{datePresetLabel(currentDate)}</div>
-        </div>
-      )}
+      <SectionHead>Most-asked-about listings</SectionHead>
+      <ReportGrid
+        label="Listings ranked by inquiries"
+        columns={COLUMNS}
+        template="minmax(180px, 2fr) minmax(140px, 1.3fr) minmax(60px, 0.5fr) minmax(90px, 0.8fr)"
+        minWidth={620}
+        rows={gridRows}
+        empty={
+          <>
+            No listing-detail view was logged for {datePresetLabel(currentDate).toLowerCase()}. An
+            inquiry lands here when a site visitor opens a listing page — widen the date range
+            above, or check{' '}
+            <Link href="/admin/analytics" style={{ color: 'var(--a-accent)' }}>
+              site traffic
+            </Link>{' '}
+            first.
+          </>
+        }
+      />
 
-      {/* Main content: left ranked list + right map */}
-      {rows.length === 0 ? (
-        /* ── Empty state ── */
-        <div className="flex h-[560px] items-center justify-center rounded-xl border border-border bg-muted/20">
-          <div className="flex flex-col items-center gap-3 text-center">
-            <MapPin className="h-10 w-10 text-muted-foreground/40" />
-            <p className="text-sm font-medium text-muted-foreground">
-              No property inquiries for{' '}
-              {datePresetLabel(currentDate).toLowerCase()}.
-            </p>
-            <p className="max-w-xs text-xs text-muted-foreground/70">
-              Inquiries are logged when site visitors view a listing detail page.
-              Try a wider date range or check back after more site traffic.
-            </p>
-          </div>
-        </div>
-      ) : (
-        /* ── Two-column: ranked list + map ── */
-        <div className="flex h-[560px] overflow-hidden rounded-xl border border-border">
-          {/* Left panel — scrollable ranked list */}
-          <div className="w-72 shrink-0 overflow-y-auto border-r border-border bg-card">
-            {rows.map((row, index) => (
-              <div
-                key={row.listingMls}
-                className="flex items-start gap-3 border-b border-border/60 px-4 py-3 last:border-b-0 hover:bg-muted/40"
-              >
-                {/* Rank number */}
-                <span className="mt-0.5 shrink-0 font-mono text-sm tabular-nums text-muted-foreground">
-                  {index + 1}
-                </span>
-
-                {/* Address block */}
-                <div className="min-w-0 flex-1">
-                  {row.listingUrl ? (
-                    <Link
-                      href={row.listingUrl}
-                      className="block truncate text-sm font-medium text-primary hover:underline"
-                      title={row.fullAddress}
-                    >
-                      {row.streetNumber
-                        ? `${row.streetNumber} ${row.streetName}`.trim()
-                        : row.streetName || `Listing #${row.listingMls}`}
-                    </Link>
-                  ) : (
-                    <span
-                      className="block truncate text-sm font-medium text-foreground"
-                      title={row.fullAddress}
-                    >
-                      {row.streetNumber
-                        ? `${row.streetNumber} ${row.streetName}`.trim()
-                        : row.streetName || `Listing #${row.listingMls}`}
-                    </span>
-                  )}
-                  <p className="truncate text-xs text-muted-foreground">
-                    {[row.city, row.postalCode ? `OR ${row.postalCode}` : 'OR']
-                      .filter(Boolean)
-                      .join(', ')}
-                  </p>
-                </div>
-
-                {/* Inquiry count badge */}
-                <Badge
-                  variant="secondary"
-                  className="ml-auto mt-0.5 shrink-0 tabular-nums text-xs font-medium"
-                >
-                  {row.viewCount}&nbsp;{row.viewCount === 1 ? 'Inq' : 'Inq'}
-                </Badge>
-              </div>
-            ))}
-          </div>
-
-          {/* Right panel — Google Map */}
-          <div className="relative flex-1 bg-muted/20">
+      {rows.length > 0 ? (
+        <>
+          <SectionHead>Where they are</SectionHead>
+          <div
+            style={{
+              position: 'relative',
+              height: 420,
+              border: '1px solid var(--a-border)',
+              borderRadius: 'var(--a-r-lg)',
+              overflow: 'hidden',
+              background: 'var(--a-inset)',
+            }}
+          >
             <PropertiesMap rows={rows} />
           </div>
-        </div>
-      )}
+          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 8 }}>
+            One pin per listing that carries coordinates, labelled with its inquiry count. Listings
+            without coordinates appear in the list above only.
+          </p>
+        </>
+      ) : null}
     </div>
   )
 }

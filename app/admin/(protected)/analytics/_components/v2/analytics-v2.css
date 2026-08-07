@@ -1,0 +1,105 @@
+/* Analytics-family additions to the LOCKED admin v2 language (11C).
+   Canon: design_system/admin/ADMIN_UI.md. Every value is a var(--a-*) token
+   from components/admin/v2/tokens.css — no hex, no public-brand input.
+   These pages are DATA pages, so the two shapes the six patterns do not
+   already carry live here:
+     1. a figure strip (typographic data, tabular numerals, units attached)
+     2. a data list that stacks on phone instead of scrolling sideways
+   Both stay inside the av2-* namespace so the language reads as one thing. */
+
+/* ---- figure strip (stat = number + what it is; never a clickable tile) ---- */
+.av2-figs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));
+  gap: var(--a-s4);
+  border-top: 1px solid var(--a-border);
+  padding-top: var(--a-s3);
+  margin: 0 0 var(--a-s5);
+}
+.av2-fig__n {
+  font-size: var(--a-text-num);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--a-text);
+  line-height: 1.15;
+}
+.av2-fig__n--ok { color: var(--a-ok); }
+.av2-fig__n--warn { color: var(--a-warn); }
+.av2-fig__l { font-size: var(--a-text-sm); color: var(--a-text-2); }
+.av2-fig__c { font-size: var(--a-text-xs); color: var(--a-text-2); font-variant-numeric: tabular-nums; }
+
+/* ---- data list ----
+   Phone: every row stacks, each cell carries its own label — no sideways
+   scroll. ≥760px: one grid line per row, numerics right-aligned and tabular.
+   The horizontal overflow (when a wide grid still cannot fit) is owned by
+   .av2-dlwrap, never by the page. */
+.av2-dlwrap { overflow-x: auto; margin: 0 0 var(--a-s3); }
+.av2-dl { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--a-border); }
+.av2-dl__head { display: none; }
+.av2-dl__row {
+  display: block;
+  padding: var(--a-s3) 2px;
+  border-bottom: 1px solid var(--a-border);
+  font-size: var(--a-text-sm);
+  color: var(--a-text-2);
+}
+.av2-dl__c { display: flex; justify-content: space-between; gap: var(--a-s3); padding: 1px 0; }
+.av2-dl__c::before { content: attr(data-label); color: var(--a-text-2); flex: none; }
+.av2-dl__c--num { font-variant-numeric: tabular-nums; }
+.av2-dl__c--mono { font-family: var(--a-font-mono); font-size: var(--a-text-xs); }
+.av2-dl__c--lead { display: block; color: var(--a-text); font-weight: 500; font-size: var(--a-text-md); margin-bottom: 2px; }
+.av2-dl__c--lead::before { display: none; }
+@media (min-width: 760px) {
+  .av2-dl__head {
+    display: grid;
+    gap: var(--a-s3);
+    padding: 0 2px var(--a-s2);
+    font-size: var(--a-text-xs);
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--a-text-2);
+  }
+  .av2-dl__row { display: grid; gap: var(--a-s3); align-items: baseline; }
+  .av2-dl__c { display: block; padding: 0; }
+  .av2-dl__c::before { display: none; }
+  .av2-dl__c--lead { font-size: var(--a-text-sm); margin: 0; }
+  .av2-dl__h--num, .av2-dl__c--num { text-align: right; }
+}
+
+/* ---- empty / error / stale: words, never a blank panel ---- */
+.av2-empty {
+  border: 1px solid var(--a-border);
+  border-radius: var(--a-r-lg);
+  background: var(--a-surface);
+  padding: var(--a-s4);
+  font-size: var(--a-text-sm);
+  color: var(--a-text-2);
+  margin: 0 0 var(--a-s5);
+}
+.av2-empty--bad { border-color: var(--a-danger); background: var(--a-danger-wash); color: var(--a-text); }
+.av2-empty__act { margin-top: var(--a-s3); display: flex; gap: var(--a-s2); flex-wrap: wrap; }
+.av2-note { font-size: var(--a-text-sm); color: var(--a-text-2); margin: 0 0 var(--a-s4); }
+.av2-stamp { font-size: var(--a-text-xs); color: var(--a-text-2); font-variant-numeric: tabular-nums; }
+
+/* ---- loading: a quiet reserved block. Nothing loops (ADMIN_UI §2). ---- */
+.av2-skel {
+  border: 1px solid var(--a-border);
+  border-radius: var(--a-r-lg);
+  background: var(--a-inset);
+  color: var(--a-text-2);
+  font-size: var(--a-text-sm);
+  padding: var(--a-s4);
+  margin: 0 0 var(--a-s5);
+}
+
+/* ---- funnel step bar (Performance hub) ---- */
+.av2-step { display: grid; grid-template-columns: 1fr; gap: var(--a-s1); padding: var(--a-s2) 0; }
+.av2-step__l { font-size: var(--a-text-sm); color: var(--a-text); font-weight: 500; }
+.av2-step__track { height: 8px; border-radius: var(--a-r-sm); background: var(--a-inset); overflow: hidden; }
+.av2-step__fill { height: 100%; background: var(--a-accent); }
+.av2-step__n { font-size: var(--a-text-sm); font-variant-numeric: tabular-nums; color: var(--a-text-2); }
+@media (min-width: 760px) {
+  .av2-step { grid-template-columns: 220px 1fr 170px; align-items: center; gap: var(--a-s3); }
+  .av2-step__n { text-align: right; }
+}

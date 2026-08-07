@@ -1,22 +1,36 @@
 // @no-parity — internal admin surface
+//
+// Lead Sources report — 11C: migrated to the LOCKED admin v2 language
+// (design_system/admin/ADMIN_UI.md) through the reporting family's shared
+// presentation kit (../_v2/ReportGrid). Presentation only.
+//
+// Carried over verbatim: the getCrmAccess guard, scopeBroker + the superuser
+// broker-filter rule, `?broker=` / `?date=` / `?cols=` handling and their
+// defaults (everyone · this_month · LS_COL_KEYS), parseLsColsParam, the
+// getLeadSourcesReport read and its catch-to-null, the AgentActivityChart
+// props, every per-metric drill-through href, the CSV export href, the
+// superuser-only gating of the control bar, and the DAL's new-leads-desc sort.
+//
+// Shape changed, data did not: the KPI tile board became the family's
+// typographic numbers strip (same totals, same deltas, same sparkline series),
+// the shadcn table became the family's grid, and the inert "Actions" column —
+// a permanently disabled trash button wired to nothing — is gone. A FAILED read
+// now says so instead of rendering an innocent all-zero report.
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { ChevronDown, Trash2 } from 'lucide-react'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getLeadSourcesReport } from '@/lib/data/crm/getLeadSourcesReport'
 import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
 import { ALL_COL_KEYS, type ColKey, LS_COL_KEYS } from '@/lib/crm/reporting-constants'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ReportGrid,
+  ReportFreshness,
+  ReportError,
+  type ReportColumn,
+  type ReportGridRow,
+} from '../_v2/ReportGrid'
 import LeadSourcesFilters from './LeadSourcesFilters'
 import { AgentActivityChart } from '../agent-activity/AgentActivityChart'
 import { LeadSourcesKpiStrip } from './LeadSourcesKpiStrip'
@@ -24,7 +38,6 @@ import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTab
 
 export const metadata = { title: 'Lead Sources | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
-
 
 // ── Column set for Lead Sources (7 metrics, no initially/currently assigned) ──
 
@@ -35,28 +48,26 @@ function parseLsColsParam(raw: string | undefined): ColKey[] {
   return valid.length > 0 ? valid : [...LS_COL_KEYS]
 }
 
-// ── Column header labels for the table (concise, multi-line OK) ──────────────
+// ── Column header labels for the grid ────────────────────────────────────────
 const TABLE_COL_LABELS: Partial<Record<ColKey, string>> = {
-  new_leads: 'New Leads',
+  new_leads: 'New leads',
   calls: 'Calls',
   emails: 'Emails',
   texts: 'Texts',
   notes: 'Notes',
-  tasks_completed: 'Tasks\nCompleted',
-  appointments: 'Appointments',
+  tasks_completed: 'Tasks done',
+  appointments: 'Appts',
 }
 
-// ── Numeric cell: non-zero = primary-colored link, zero = muted ───────────────
-function NumCell({ value, href }: { value: number; href?: string }) {
-  if (value === 0) return <span className="tabular-nums text-muted-foreground">0</span>
-  if (href) {
-    return (
-      <Link href={href} className="tabular-nums text-primary hover:underline">
-        {value.toLocaleString('en-US')}
-      </Link>
-    )
-  }
-  return <span className="tabular-nums text-primary">{value.toLocaleString('en-US')}</span>
+// ── Drill-through param per metric (carried verbatim) ────────────────────────
+const DRILL_METRIC: Partial<Record<ColKey, string>> = {
+  new_leads: 'new_leads',
+  calls: 'calls',
+  emails: 'emails',
+  texts: 'texts',
+  notes: 'notes',
+  tasks_completed: 'tasks',
+  appointments: 'appointments',
 }
 
 // ── Search params ─────────────────────────────────────────────────────────────
@@ -101,7 +112,7 @@ export default async function LeadSourcesPage({
   const currentDate = datePreset
   const currentCols = sp.cols ?? undefined
 
-  // Fetch report data
+  // Fetch report data — failure returns null and renders the honest failed-read state
   const report = await getLeadSourcesReport({
     brokerSlug: brokerFilter,
     datePreset,
@@ -117,27 +128,100 @@ export default async function LeadSourcesPage({
   const prevDateStart = report?.prevDateStart ?? new Date().toISOString()
   const prevDateEnd = report?.prevDateEnd ?? new Date().toISOString()
 
-  // Which metrics to show in the per-source table (visible + within LS_COL_KEYS)
+  // Which metrics to show in the per-source grid (visible + within LS_COL_KEYS)
   const visibleLsCols = visibleCols.filter((k): k is ColKey => LS_COL_KEYS.includes(k as ColKey))
 
+  const nowMs = Date.now()
+  const refreshHref = `/admin/crm/reporting/lead-sources?broker=${currentBroker}&date=${currentDate}&t=${nowMs}`
+
+  const columns: ReportColumn[] = [
+    { key: 'source', label: 'Source' },
+    ...visibleLsCols.map((key) => ({
+      key,
+      label: TABLE_COL_LABELS[key] ?? key,
+      numeric: true,
+    })),
+  ]
+
+  const gridRows: ReportGridRow[] = rows.map((row) => {
+    // Drill-through href for source name — filters People list by source
+    const sourceParam = row.sourceKey ? encodeURIComponent(row.sourceKey) : '__unspecified__'
+    const drillBase = `/admin/crm?source=${sourceParam}&date=${currentDate}`
+
+    const metric = (key: ColKey): number =>
+      key === 'new_leads'
+        ? row.newLeads
+        : key === 'calls'
+          ? row.calls
+          : key === 'emails'
+            ? row.emails
+            : key === 'texts'
+              ? row.texts
+              : key === 'notes'
+                ? row.notes
+                : key === 'tasks_completed'
+                  ? row.tasksCompleted
+                  : key === 'appointments'
+                    ? row.appointments
+                    : 0
+
+    return {
+      key: row.sourceName,
+      cells: [
+        <Link key="s" href={drillBase} style={{ color: 'var(--a-accent)' }}>
+          {row.sourceName}
+        </Link>,
+        ...visibleLsCols.map((key) => {
+          const value = metric(key)
+          if (value === 0) {
+            return (
+              <span key={key} style={{ color: 'var(--a-text-2)' }}>
+                0
+              </span>
+            )
+          }
+          return (
+            <Link
+              key={key}
+              href={`${drillBase}&metric=${DRILL_METRIC[key]}`}
+              style={{ color: 'var(--a-accent)' }}
+            >
+              {value.toLocaleString('en-US')}
+            </Link>
+          )
+        }),
+      ],
+    }
+  })
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+    <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
       <ReportingTabStrip active="lead-sources" />
 
-      {/* Header row: "Show me" selector + filter bar */}
-      <div className="mb-2 flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-center gap-1.5 text-sm">
-          <span className="text-muted-foreground">Show me</span>
-          <div className="flex items-center gap-0.5">
-            <span className="font-medium text-foreground">
-              total lead count and total activity by lead source
-            </span>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          </div>
-        </div>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={report === null ? 'attention' : 'ok'}>
+          {report === null ? (
+            <>
+              <b>The lead-source report could not be read.</b> Nothing below is a measurement.
+            </>
+          ) : (
+            <>
+              <b>
+                {totals.newLeads.toLocaleString('en-US')} new{' '}
+                {totals.newLeads === 1 ? 'lead' : 'leads'} from {rows.length}{' '}
+                {rows.length === 1 ? 'source' : 'sources'}.
+              </b>{' '}
+              Every figure below opens the people it counts.
+            </>
+          )}
+        </VerdictLine>
+      </div>
 
-        {/* Filter controls — client component (superuser only; others scoped) */}
-        {isSuperuser ? (
+      {report === null ? <ReportError what="Lead sources" href={refreshHref} /> : null}
+
+      {/* Control bar — superuser only, exactly as before the migration */}
+      {isSuperuser ? (
+        <div className="av2-rfilters">
           <LeadSourcesFilters
             currentBroker={currentBroker}
             currentDate={currentDate}
@@ -147,29 +231,11 @@ export default async function LeadSourcesPage({
               label: CRM_BROKER_DISPLAY[slug],
             }))}
           />
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
-      {/* Cache notice */}
-      <p className="mb-6 text-xs text-muted-foreground">
-        Reporting results may be cached for up to 10 minutes.{' '}
-        <Link
-          href={`/admin/crm/reporting/lead-sources?broker=${currentBroker}&date=${currentDate}&t=${Date.now()}`}
-          className="text-muted-foreground hover:underline"
-        >
-          Refresh results.
-        </Link>
-      </p>
+      <ReportFreshness href={refreshHref} nowMs={nowMs} />
 
-      {/* Time-series chart (reuses AgentActivityChart — same TimeSeriesPoint type) */}
-      <AgentActivityChart
-        timeSeries={timeSeries}
-        prevTimeSeries={prevTimeSeries}
-        prevDateStart={prevDateStart}
-        prevDateEnd={prevDateEnd}
-      />
-
-      {/* KPI tile strip */}
       <LeadSourcesKpiStrip
         totals={totals}
         previousTotals={previousTotals}
@@ -179,105 +245,38 @@ export default async function LeadSourcesPage({
         currentDate={currentDate}
       />
 
-      {/* Lead Sources breakdown table */}
-      <Card className="no-scrollbar overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="w-52">Name</TableHead>
-              {visibleLsCols.map((key) => (
-                <TableHead key={key} className="whitespace-pre-line text-right text-xs">
-                  {TABLE_COL_LABELS[key] ?? key}
-                </TableHead>
-              ))}
-              {/* Actions column — trash icon, right-aligned */}
-              <TableHead className="w-12 text-right text-xs text-muted-foreground">
-                Actions
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={2 + visibleLsCols.length}
-                  className="py-12 text-center text-sm text-muted-foreground"
-                >
-                  No lead source data for this period.
-                </TableCell>
-              </TableRow>
-            ) : (
-              rows.map((row) => {
-                // Drill-through href for source name — filters People list by source
-                const sourceParam = row.sourceKey
-                  ? encodeURIComponent(row.sourceKey)
-                  : '__unspecified__'
-                const drillBase = `/admin/crm?source=${sourceParam}&date=${currentDate}`
+      <SectionHead>Day by day</SectionHead>
+      {/* Reuses AgentActivityChart — same TimeSeriesPoint type, same props */}
+      <AgentActivityChart
+        timeSeries={timeSeries}
+        prevTimeSeries={prevTimeSeries}
+        prevDateStart={prevDateStart}
+        prevDateEnd={prevDateEnd}
+      />
 
-                // Per-metric drill hrefs
-                const drillHrefs: Partial<Record<ColKey, string>> = {
-                  new_leads: `${drillBase}&metric=new_leads`,
-                  calls: `${drillBase}&metric=calls`,
-                  emails: `${drillBase}&metric=emails`,
-                  texts: `${drillBase}&metric=texts`,
-                  notes: `${drillBase}&metric=notes`,
-                  tasks_completed: `${drillBase}&metric=tasks`,
-                  appointments: `${drillBase}&metric=appointments`,
-                }
+      <SectionHead>By source — the sources sending nothing sit at the bottom</SectionHead>
+      <ReportGrid
+        label="Lead sources by activity"
+        columns={columns}
+        template={`minmax(150px, 1.8fr) repeat(${visibleLsCols.length}, minmax(72px, 0.8fr))`}
+        minWidth={200 + visibleLsCols.length * 92}
+        rows={gridRows}
+        empty={
+          <>
+            No lead reached us from any source in this window. Widen the date range above, or check{' '}
+            <Link href="/admin/crm/settings/lead-flows" style={{ color: 'var(--a-accent)' }}>
+              lead flows
+            </Link>{' '}
+            if you expected traffic.
+          </>
+        }
+      />
 
-                return (
-                  <TableRow key={row.sourceName} className="hover:bg-muted/40">
-                    {/* Source name — hyperlink matching FUB's blue link treatment */}
-                    <TableCell>
-                      <Link
-                        href={drillBase}
-                        className="text-sm text-primary hover:underline"
-                      >
-                        {row.sourceName}
-                      </Link>
-                    </TableCell>
-
-                    {/* Metric columns */}
-                    {visibleLsCols.map((key) => {
-                      const val =
-                        key === 'new_leads' ? row.newLeads
-                        : key === 'calls' ? row.calls
-                        : key === 'emails' ? row.emails
-                        : key === 'texts' ? row.texts
-                        : key === 'notes' ? row.notes
-                        : key === 'tasks_completed' ? row.tasksCompleted
-                        : key === 'appointments' ? row.appointments
-                        : 0
-
-                      return (
-                        <TableCell key={key} className="text-right">
-                          <NumCell value={val} href={drillHrefs[key]} />
-                        </TableCell>
-                      )
-                    })}
-
-                    {/* Actions — trash icon (V1: visible but non-functional; source label
-                        deletion would require a FUB API call or crm_people bulk update) */}
-                    <TableCell className="text-right">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        disabled
-                        aria-label={`Delete source "${row.sourceName}"`}
-                        title="Source deletion not yet available"
-                        className="h-7 w-7 opacity-40"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                )
-              })
-            )}
-          </TableBody>
-        </Table>
-      </Card>
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 16 }}>
+        Sorted by new leads, most first, then alphabetically. A source counts a lead when the
+        contact was created in the window; the activity columns count what was logged against those
+        contacts. Columns are chosen in the picker above.
+      </p>
     </div>
   )
 }

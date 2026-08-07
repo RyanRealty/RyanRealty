@@ -1,14 +1,15 @@
 'use client'
+// 11C: restyled to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md),
+// mirroring the Agent Activity filter bar so the two reports read the same.
+// Carried over verbatim: navigate()'s param set and order, and the CSV export
+// URL (broker + date + cols, same route, same `download`).
+//
+// The lead-type control keeps its FUB-parity shape but stops lying: it used to
+// read "Web leads" while the report counted every lead. The CRM has no
+// web-vs-manual classification, so "All leads" is the only real option and the
+// other two render disabled.
 import { useRouter, usePathname } from 'next/navigation'
-import { Download } from 'lucide-react'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
+import { SelectField } from '@/components/admin/v2'
 
 type Broker = { slug: string; label: string }
 
@@ -45,59 +46,52 @@ export default function LeadSourcesFilters({
   })
 
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-2">
-      {/* Export / download button */}
-      <Button
-        variant="outline"
-        size="icon"
-        className="h-8 w-8"
-        aria-label="Download CSV"
-        asChild
-      >
-        <a href={`/admin/crm/reporting/lead-sources/export?${exportParams.toString()}`} download>
-          <Download className="h-3.5 w-3.5" />
-        </a>
-      </Button>
-
-      {/* Agent selector */}
-      <Select value={currentBroker} onValueChange={(v) => navigate({ broker: v })}>
-        <SelectTrigger className="h-8 w-36 text-xs">
-          <SelectValue placeholder="Everyone" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="everyone">Everyone</SelectItem>
+    <div>
+      <div className="av2-inline-form" style={{ maxWidth: 620 }}>
+        <SelectField
+          label="Agent"
+          value={currentBroker}
+          onChange={(e) => navigate({ broker: e.target.value })}
+        >
+          <option value="everyone">Everyone</option>
           {brokers.map((b) => (
-            <SelectItem key={b.slug} value={b.slug}>
+            <option key={b.slug} value={b.slug}>
               {b.label}
-            </SelectItem>
+            </option>
           ))}
-        </SelectContent>
-      </Select>
+        </SelectField>
 
-      {/* Lead type (static for V1) */}
-      <Select value="web" onValueChange={() => {}}>
-        <SelectTrigger className="h-8 w-32 text-xs">
-          <SelectValue placeholder="Web leads" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All leads</SelectItem>
-          <SelectItem value="web">Web leads</SelectItem>
-          <SelectItem value="manual">Manual leads</SelectItem>
-        </SelectContent>
-      </Select>
+        <SelectField label="Lead type" value="all" onChange={() => {}}>
+          <option value="all">All leads</option>
+          <option value="web" disabled>
+            Web leads
+          </option>
+          <option value="manual" disabled>
+            Manual leads
+          </option>
+        </SelectField>
 
-      {/* Date range */}
-      <Select value={currentDate} onValueChange={(v) => navigate({ date: v })}>
-        <SelectTrigger className="h-8 w-36 text-xs">
-          <SelectValue placeholder="This Month" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="today">Today</SelectItem>
-          <SelectItem value="this_week">This Week</SelectItem>
-          <SelectItem value="this_month">This Month</SelectItem>
-          <SelectItem value="this_year">This Year</SelectItem>
-        </SelectContent>
-      </Select>
+        <SelectField
+          label="Date range"
+          value={currentDate}
+          onChange={(e) => navigate({ date: e.target.value })}
+        >
+          <option value="today">Today</option>
+          <option value="this_week">This Week</option>
+          <option value="this_month">This Month</option>
+          <option value="this_year">This Year</option>
+        </SelectField>
+      </div>
+
+      {/* Export — the server route re-scopes to the caller's role */}
+      <a
+        href={`/admin/crm/reporting/lead-sources/export?${exportParams.toString()}`}
+        download
+        className="av2-btn av2-btn--quiet"
+        style={{ textDecoration: 'none', marginTop: 12 }}
+      >
+        Download CSV
+      </a>
     </div>
   )
 }

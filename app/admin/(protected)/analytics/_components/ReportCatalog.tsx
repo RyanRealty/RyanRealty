@@ -4,10 +4,14 @@
  * 2026-07-07): the grouped catalog of every report surface, the weekly
  * market report generator, and the interactive city/period builder.
  * Server component; the hub page passes the report cities in.
+ *
+ * 11C: presentation migrated to the LOCKED admin v2 language with the hub —
+ * the tile grid became quiet catalog rows (a launchpad is a list of doors, not
+ * a board of cards). The group data, every href, the weekly-report server
+ * action and the city builder are unchanged.
  */
 import Link from 'next/link'
-import { Card, CardContent } from '@/components/ui/card'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { SectionHead } from '@/components/admin/v2'
 import { generateWeeklyMarketReport } from '@/app/actions/generate-market-report'
 import GenerateReportButton from './GenerateReportButton'
 import CityReportSection from './CityReportSection'
@@ -169,46 +173,36 @@ export default function ReportCatalog({ cities }: { cities: string[] }) {
   return (
     <>
       {/* ── Report catalog (merged from /admin/reports, 2026-07-07) ── */}
-      <ConsoleSection title="All reports">
-        <div className="space-y-8">
-          {REPORT_GROUPS.map((group) => (
-            <div key={group.label}>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                {group.label}
-              </p>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {group.tiles.map((t) => (
-                  <Link key={t.href} href={t.href} className="group block">
-                    <Card className="h-full transition-colors group-hover:border-foreground/20 group-hover:bg-accent/40">
-                      <CardContent className="flex flex-col gap-2 p-4 sm:p-5">
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="text-xl leading-none" aria-hidden>{t.icon}</span>
-                          <span className="shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden>→</span>
-                        </div>
-                        <div>
-                          <div className="text-sm font-semibold text-foreground">{t.title}</div>
-                          <div className="mt-0.5 text-sm text-muted-foreground">{t.desc}</div>
-                        </div>
-                      </CardContent>
-                    </Card>
+      <section aria-label="All reports">
+        <SectionHead>All reports</SectionHead>
+        {REPORT_GROUPS.map((group) => (
+          <div key={group.label}>
+            <SectionHead>{group.label}</SectionHead>
+            <ul className="av2-quietlist">
+              {group.tiles.map((t) => (
+                <li key={t.href} className="av2-quiet">
+                  <Link href={t.href} className="av2-quiet__name" style={{ color: 'var(--a-accent)' }}>
+                    {t.title}
                   </Link>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </ConsoleSection>
+                  <span>{t.desc}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </section>
 
       {/* ── Weekly market report tool (merged from /admin/reports) ── */}
-      <ConsoleSection title="Weekly market report">
-        <p className="mb-4 text-sm text-muted-foreground">
+      <section aria-label="Weekly market report">
+        <SectionHead>Weekly market report</SectionHead>
+        <p className="av2-note">
           Generate the weekly report (last Sunday–Saturday). Lists homes that went pending and
           closed, by city, with an AI image and a shareable link. Cron can call{' '}
-          <code className="rounded bg-muted px-1 text-xs">GET /api/cron/market-report</code> with{' '}
-          <code className="rounded bg-muted px-1 text-xs">Authorization: Bearer CRON_SECRET</code>.
+          <code>GET /api/cron/market-report</code> with{' '}
+          <code>Authorization: Bearer CRON_SECRET</code>.
         </p>
         <GenerateReportButton generateAction={generateWeeklyMarketReport} />
-      </ConsoleSection>
+      </section>
 
       {/* ── Interactive city/period builder (merged from /admin/reports) ── */}
       <CityReportSection cities={cities} />

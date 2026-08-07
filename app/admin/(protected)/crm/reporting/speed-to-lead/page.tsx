@@ -1,8 +1,14 @@
 // @no-parity — internal admin surface
 // INFERRED REPORT — see lib/data/crm/getSpeedToLeadReport.ts for the definition note.
+//
+// 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+// Presentation only. Carried over verbatim: the getCrmAccess guard, the
+// superuser/broker scoping, the ?broker/?date/?t handling, the DAL call and its
+// catch-to-null, every default, formatElapsed, the contact-rate computation,
+// the sub-5-minute highlight rule, the per-source drill hrefs, and the
+// ReportingTabStrip sub-nav (shared machinery, migrates with its own unit).
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { ChevronDown } from 'lucide-react'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import {
@@ -11,22 +17,20 @@ import {
   type SpeedToLeadTotals,
 } from '@/lib/data/crm/getSpeedToLeadReport'
 import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
-import { Card } from '@/components/ui/card'
+import { VerdictLine, SectionHead } from '@/components/admin/v2'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { cn } from '@/lib/utils'
+  ReportGrid,
+  ReportNumbers,
+  ReportFreshness,
+  ReportError,
+  type ReportColumn,
+  type ReportGridRow,
+} from '../_v2/ReportGrid'
 import SpeedToLeadFilters from './SpeedToLeadFilters'
 import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
 
 export const metadata = { title: 'Speed to Lead | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
-
 
 // ── Duration formatter ─────────────────────────────────────────────────────────
 
@@ -52,74 +56,37 @@ function formatElapsed(seconds: number | null): string {
   return h > 0 ? `${d} days ${h}h` : `${d} days`
 }
 
-// ── KPI Tile ──────────────────────────────────────────────────────────────────
-//
-// Matches the CallsKpiTile pattern: no sparkline (time metrics, not counts),
-// text-formatted values for speed metrics, numeric for lead counts.
+/** Sub-5-minute responses (<= 300 seconds) read as the good state. */
+const FAST_SECONDS = 300
 
-function KpiTile({
-  label,
-  value,
-  valueText,
-  subLabel,
-}: {
-  label: string
-  value?: number | null
-  /** Formatted string for duration/rate metrics instead of a count. */
-  valueText?: string
-  subLabel?: string
-}) {
+function Elapsed({ seconds }: { seconds: number | null }) {
+  if (seconds === null) return <span style={{ color: 'var(--a-text-2)' }}>—</span>
+  const fast = seconds <= FAST_SECONDS
   return (
-    <Card className="min-w-40 shrink-0 p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-1.5 text-3xl font-bold leading-none tabular-nums text-foreground">
-        {valueText ?? (value != null ? value.toLocaleString('en-US') : '—')}
-      </p>
-      {subLabel ? (
-        <p className="mt-1 text-xs text-muted-foreground">{subLabel}</p>
-      ) : (
-        <div className="mt-1 h-4" />
-      )}
-    </Card>
-  )
-}
-
-// ── Elapsed cell: highlighted when fast, muted when missing ───────────────────
-
-function ElapsedCell({ seconds }: { seconds: number | null }) {
-  const text = formatElapsed(seconds)
-  if (seconds === null) {
-    return <span className="text-muted-foreground">—</span>
-  }
-  return (
-    <span
-      className={cn(
-        'tabular-nums',
-        // Highlight sub-5-minute responses (under 300 seconds)
-        seconds <= 300 ? 'font-semibold text-success' : 'text-foreground',
-      )}
-    >
-      {text}
+    <span style={{ color: fast ? 'var(--a-ok)' : 'var(--a-text)', fontWeight: fast ? 600 : 400 }}>
+      {formatElapsed(seconds)}
     </span>
   )
 }
 
-// ── Contacted rate cell ───────────────────────────────────────────────────────
-
-function RateCell({ contacted, total }: { contacted: number; total: number }) {
-  if (total === 0) return <span className="text-muted-foreground">—</span>
+function Rate({ contacted, total }: { contacted: number; total: number }) {
+  if (total === 0) return <span style={{ color: 'var(--a-text-2)' }}>—</span>
   const pct = Math.round((contacted / total) * 100)
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className="tabular-nums font-medium text-foreground">
-        {contacted.toLocaleString('en-US')}
-      </span>
-      <span className="text-xs text-muted-foreground">{pct}%</span>
-    </div>
+    <>
+      {contacted.toLocaleString('en-US')}{' '}
+      <span style={{ color: 'var(--a-text-2)' }}>{pct}%</span>
+    </>
   )
 }
+
+const COLUMNS: ReportColumn[] = [
+  { key: 'source', label: 'Source' },
+  { key: 'leads', label: 'Leads', numeric: true },
+  { key: 'contacted', label: 'Contacted', numeric: true },
+  { key: 'median', label: 'Median speed', numeric: true },
+  { key: 'avg', label: 'Avg speed', numeric: true },
+]
 
 // ── Search params ─────────────────────────────────────────────────────────────
 
@@ -176,29 +143,70 @@ export default async function SpeedToLeadPage({
     avgSeconds: null,
   }
 
-  // Contact rate (for KPI sub-label)
+  // Contact rate (for the numbers strip)
   const contactRatePct =
     totals.totalLeads > 0
       ? Math.round((totals.contactedLeads / totals.totalLeads) * 100)
       : null
 
+  const nowMs = Date.now()
+  const refreshHref = `/admin/crm/reporting/speed-to-lead?broker=${currentBroker}&date=${currentDate}&t=${nowMs}`
+
+  const fastEnough = totals.medianSeconds !== null && totals.medianSeconds <= FAST_SECONDS
+
+  const gridRows: ReportGridRow[] = rows.map((row) => {
+    const sourceParam = row.sourceKey
+      ? encodeURIComponent(row.sourceKey)
+      : '__unspecified__'
+    const drillHref = `/admin/crm?source=${sourceParam}&date=${currentDate}`
+    return {
+      key: row.sourceName,
+      cells: [
+        // Source name — links to the People list filtered by this source
+        <Link key="s" href={drillHref} style={{ color: 'var(--a-accent)' }}>
+          {row.sourceName}
+        </Link>,
+        row.totalLeads === 0 ? (
+          <span key="l" style={{ color: 'var(--a-text-2)' }}>
+            0
+          </span>
+        ) : (
+          row.totalLeads.toLocaleString('en-US')
+        ),
+        <Rate key="c" contacted={row.contactedLeads} total={row.totalLeads} />,
+        <Elapsed key="m" seconds={row.medianSeconds} />,
+        <Elapsed key="a" seconds={row.avgSeconds} />,
+      ],
+    }
+  })
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+    <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
       <ReportingTabStrip active="speed-to-lead" />
 
-      {/* Header row: "Show me" label + filter bar */}
-      <div className="mb-2 flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-center gap-1.5 text-sm">
-          <span className="text-muted-foreground">Show me</span>
-          <div className="flex items-center gap-0.5">
-            <span className="font-medium text-foreground">
-              speed to first contact by lead source
-            </span>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          </div>
-        </div>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={fastEnough ? 'ok' : 'attention'}>
+          {totals.totalLeads === 0 ? (
+            <>
+              <b>No lead came in this period.</b> There is no first-response time to report.
+            </>
+          ) : (
+            <>
+              <b>Median first response: {formatElapsed(totals.medianSeconds)}.</b>{' '}
+              {totals.contactedLeads.toLocaleString('en-US')} of{' '}
+              {totals.totalLeads.toLocaleString('en-US')} leads contacted
+              {contactRatePct !== null ? ` (${contactRatePct}%)` : ''}.
+            </>
+          )}
+        </VerdictLine>
+      </div>
 
-        {isSuperuser ? (
+      {report === null ? (
+        <ReportError what="Speed to lead" href={refreshHref} />
+      ) : null}
+
+      {isSuperuser ? (
+        <div className="av2-rfilters">
           <SpeedToLeadFilters
             currentBroker={currentBroker}
             currentDate={currentDate}
@@ -207,169 +215,75 @@ export default async function SpeedToLeadPage({
               label: CRM_BROKER_DISPLAY[slug],
             }))}
           />
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
-      {/* Cache notice */}
-      <p className="mb-6 text-xs text-muted-foreground">
-        Reporting results may be cached for up to 10 minutes.{' '}
-        <Link
-          href={`/admin/crm/reporting/speed-to-lead?broker=${currentBroker}&date=${currentDate}&t=${Date.now()}`}
-          className="text-muted-foreground hover:underline"
-        >
-          Refresh results.
-        </Link>
-      </p>
+      <ReportFreshness href={refreshHref} nowMs={nowMs} />
 
-      {/* ── KPI Tile strip ── */}
       {/*
-        Four tiles:
-          TOTAL LEADS   — leads created in the selected period (from lead_created events)
-          CONTACTED     — leads that received at least one outbound contact
-          MEDIAN SPEED  — median elapsed time from lead_created → first contact
-          AVG SPEED     — average elapsed time (right-skewed by outliers; median is more useful)
-
-        INFERRED: No FUB reference frame. These four tiles mirror the most common
-        Speed to Lead dashboard conventions in CRM reporting tools.
+        TOTAL LEADS   — leads created in the selected period (from lead_created events)
+        CONTACTED     — leads that received at least one outbound contact
+        MEDIAN SPEED  — median elapsed time from lead_created → first contact
+        AVG SPEED     — average elapsed time (right-skewed by outliers; median is more useful)
       */}
-      <div className="no-scrollbar mb-6 flex gap-3 overflow-x-auto pb-2">
-        <KpiTile
-          label="Total Leads"
-          value={totals.totalLeads}
-          subLabel="in period"
-        />
-        <KpiTile
-          label="Contacted"
-          value={totals.contactedLeads}
-          subLabel={
-            contactRatePct !== null
-              ? `${contactRatePct}% of leads`
-              : undefined
-          }
-        />
-        <KpiTile
-          label="Median Speed"
-          valueText={formatElapsed(totals.medianSeconds)}
-          subLabel="to first contact"
-        />
-        <KpiTile
-          label="Avg Speed"
-          valueText={formatElapsed(totals.avgSeconds)}
-          subLabel="to first contact"
-        />
-      </div>
+      <ReportNumbers
+        items={[
+          {
+            key: 'total',
+            label: 'Total leads',
+            value: totals.totalLeads.toLocaleString('en-US'),
+            delta: { text: 'in period', direction: 'flat' },
+          },
+          {
+            key: 'contacted',
+            label: 'Contacted',
+            value: totals.contactedLeads.toLocaleString('en-US'),
+            delta:
+              contactRatePct !== null
+                ? { text: `${contactRatePct}% of leads`, direction: 'flat' }
+                : undefined,
+          },
+          {
+            key: 'median',
+            label: 'Median speed',
+            value: formatElapsed(totals.medianSeconds),
+            delta: { text: 'to first contact', direction: 'flat' },
+          },
+          {
+            key: 'avg',
+            label: 'Avg speed',
+            value: formatElapsed(totals.avgSeconds),
+            delta: { text: 'to first contact', direction: 'flat' },
+          },
+        ]}
+      />
 
-      {/* ── Per-source breakdown table ── */}
-      {/*
-        Columns:
-          Source          — lead source name (linked to people list filtered by source)
-          Leads           — total leads from this source in the period
-          Contacted       — leads contacted + contact rate %
-          Median Speed    — median time to first outbound contact
-          Avg Speed       — average time to first outbound contact
+      <SectionHead>By lead source</SectionHead>
+      <ReportGrid
+        label="Speed to first contact by lead source"
+        columns={COLUMNS}
+        template="minmax(150px, 1.7fr) repeat(4, minmax(84px, 1fr))"
+        minWidth={620}
+        rows={gridRows}
+        empty={
+          <>
+            No lead was created in this period, so there is nothing to time.{' '}
+            <Link href="/admin/crm" style={{ color: 'var(--a-accent)' }}>
+              Open the people list
+            </Link>{' '}
+            or widen the date range above.
+          </>
+        }
+      />
 
-        Honest empty state: if no lead_created events exist in the period,
-        the table shows a single "No data" row. The report never fabricates data.
-      */}
-      <Card className="overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="w-52">Source</TableHead>
-              <TableHead className="text-right text-xs">Leads</TableHead>
-              <TableHead className="text-right text-xs">
-                Contacted
-                <span
-                  className="ml-1 text-muted-foreground opacity-60"
-                  title="Leads with at least one outbound call, email, or text after creation"
-                >
-                  ⓘ
-                </span>
-              </TableHead>
-              <TableHead className="text-right text-xs whitespace-pre-line">
-                Median{'\n'}Speed
-              </TableHead>
-              <TableHead className="text-right text-xs whitespace-pre-line">
-                Avg{'\n'}Speed
-                <span
-                  className="ml-1 text-muted-foreground opacity-60"
-                  title="Average is right-skewed by slow outliers; median is the more reliable signal"
-                >
-                  ⓘ
-                </span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="py-12 text-center text-sm text-muted-foreground"
-                >
-                  No lead data for this period.
-                </TableCell>
-              </TableRow>
-            ) : (
-              rows.map((row) => {
-                const sourceParam = row.sourceKey
-                  ? encodeURIComponent(row.sourceKey)
-                  : '__unspecified__'
-                const drillHref = `/admin/crm?source=${sourceParam}&date=${currentDate}`
-
-                return (
-                  <TableRow key={row.sourceName} className="hover:bg-muted/40">
-                    {/* Source name — links to People list filtered by this source */}
-                    <TableCell>
-                      <Link
-                        href={drillHref}
-                        className="text-sm text-primary hover:underline"
-                      >
-                        {row.sourceName}
-                      </Link>
-                    </TableCell>
-
-                    {/* Total leads */}
-                    <TableCell className="text-right">
-                      {row.totalLeads === 0 ? (
-                        <span className="tabular-nums text-muted-foreground">0</span>
-                      ) : (
-                        <span className="tabular-nums text-foreground">
-                          {row.totalLeads.toLocaleString('en-US')}
-                        </span>
-                      )}
-                    </TableCell>
-
-                    {/* Contacted — count + rate % */}
-                    <TableCell className="text-right">
-                      <RateCell
-                        contacted={row.contactedLeads}
-                        total={row.totalLeads}
-                      />
-                    </TableCell>
-
-                    {/* Median speed to first contact */}
-                    <TableCell className="text-right">
-                      <ElapsedCell seconds={row.medianSeconds} />
-                    </TableCell>
-
-                    {/* Average speed to first contact */}
-                    <TableCell className="text-right">
-                      <ElapsedCell seconds={row.avgSeconds} />
-                    </TableCell>
-                  </TableRow>
-                )
-              })
-            )}
-          </TableBody>
-        </Table>
-      </Card>
-
-      {/* Methodology note */}
-      <p className="mt-4 text-xs text-muted-foreground">
+      {/* Methodology note — absorbs the two column tooltips the legacy table hid
+          behind a `title` attribute (ADMIN_UI bans title-attribute tooltips). */}
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 16 }}>
         Speed to lead measures the time from when a lead is created to the first outbound
         call, email, or text sent to that person. Automated drip emails count as first contact.
-        Leads not yet contacted show no speed value.
+        Leads not yet contacted show no speed value. Contacted counts leads with at least one
+        outbound call, email, or text after creation. Average is right-skewed by slow outliers;
+        median is the more reliable signal. Sources are ordered by lead volume, highest first.
       </p>
     </div>
   )

@@ -1,8 +1,15 @@
-// /admin/analytics/google-business-profile - GBP dashboard
+// @no-parity — internal admin surface, no public mockup contract
+// /admin/analytics/google-business-profile — GBP dashboard.
+// 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+// Presentation only. The superuser gate (analytics/layout.tsx), the service-role
+// read of marketing_channel_daily (channel='gbp', scope='account'), the prior-
+// period window math, the METRICS list, and the ?range/?startDate/?endDate
+// handling are carried over verbatim. DateRangePicker stays as-is — it is shared
+// with the rest of the analytics family and owns the query-param contract.
 import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
+import { SectionHead, VerdictLine } from '@/components/admin/v2'
+import { DataGrid, GridSkeleton, LaneNote, Stamp } from '../_components/v2/DataGrid'
 import { DateRangePicker } from '../_components/DateRangePicker'
 import { resolveDateRange } from '../_lib/queries'
 
@@ -72,38 +79,81 @@ async function Headlines({ startDate, endDate }: { startDate: string; endDate: s
   function T(cur: number, prior: number, betterUp = true) {
     const t = delta(cur, prior); if (!t) return null
     const good = betterUp ? t.up : !t.up
-    return <p className={`text-xs tabular-nums ${good ? 'text-green-600' : 'text-destructive'}`}>{t.arrow} {t.pct} vs prior period</p>
+    return (
+      <p
+        style={{
+          fontSize: 'var(--a-text-xs)',
+          fontVariantNumeric: 'tabular-nums',
+          color: good ? 'var(--a-ok)' : 'var(--a-danger)',
+          margin: 0,
+        }}
+      >
+        {t.arrow} {t.pct} vs prior period
+      </p>
+    )
   }
+
+  const headline: Array<{ label: string; value: string; trend: React.ReactNode }> = [
+    { label: 'Total impressions', value: fmt(totalImpressions), trend: T(totalImpressions, priorImpressions) },
+    { label: 'Actions taken', value: fmt(actions), trend: T(actions, priorActions) },
+    { label: 'Action rate', value: `${(actionRate * 100).toFixed(2)}%`, trend: T(actionRate, priorActionRate) },
+    { label: 'Phone calls', value: fmt(cur.call_clicks || 0), trend: T(cur.call_clicks || 0, prior.call_clicks || 0) },
+  ]
+
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Total impressions</p><p className="mt-1 text-2xl font-semibold tabular-nums">{fmt(totalImpressions)}</p>{T(totalImpressions, priorImpressions)}</CardContent></Card>
-      <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Actions taken</p><p className="mt-1 text-2xl font-semibold tabular-nums">{fmt(actions)}</p>{T(actions, priorActions)}</CardContent></Card>
-      <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Action rate</p><p className="mt-1 text-2xl font-semibold tabular-nums">{(actionRate * 100).toFixed(2)}%</p>{T(actionRate, priorActionRate)}</CardContent></Card>
-      <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Phone calls</p><p className="mt-1 text-2xl font-semibold tabular-nums">{fmt(cur.call_clicks || 0)}</p>{T(cur.call_clicks || 0, prior.call_clicks || 0)}</CardContent></Card>
-    </div>
+    <>
+      <VerdictLine tone={actions > 0 ? 'ok' : 'attention'}>
+        <b>
+          {fmt(totalImpressions)} impressions, {fmt(actions)} actions
+        </b>{' '}
+        from Google Maps and local Search, {startDate} to {endDate}.
+      </VerdictLine>
+      <LaneNote>Every trend below compares against the prior period of equal length.</LaneNote>
+      <div className="av2-week" style={{ margin: 'var(--a-s4) 0 var(--a-s5)' }}>
+        {headline.map((h) => (
+          <span key={h.label} className="av2-wk" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 0 }}>
+            <span className="av2-wk__n">{h.value}</span>
+            <span className="av2-wk__l">{h.label}</span>
+            {h.trend}
+          </span>
+        ))}
+      </div>
+    </>
   )
 }
 
 async function MetricBreakdown({ startDate, endDate }: { startDate: string; endDate: string }) {
   const cur = await fetchPeriod(startDate, endDate)
+  const rows = METRICS.map((m) => ({ ...m, value: cur[m.key] || 0 }))
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Full metric breakdown ({startDate} to {endDate})</CardTitle>
-        <p className="text-xs text-muted-foreground">Every GBP signal we collect. Mobile Search impressions usually dominates for local real estate (most &ldquo;realtor near me&rdquo; searches happen on phone).</p>
-      </CardHeader>
-      <CardContent>
-        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {METRICS.map((m) => (
-            <div key={m.key} className="rounded-lg border border-border p-3">
-              <dt className="text-xs text-muted-foreground">{m.label}</dt>
-              <dd className="mt-1 text-xl font-semibold tabular-nums">{fmt(cur[m.key] || 0)}</dd>
-              <p className="mt-1 text-xs text-muted-foreground">{m.help}</p>
-            </div>
-          ))}
-        </dl>
-      </CardContent>
-    </Card>
+    <section aria-label="Full metric breakdown">
+      <SectionHead>Full metric breakdown</SectionHead>
+      <LaneNote>
+        Every GBP signal we collect. Mobile Search impressions usually dominates for local real estate (most &ldquo;realtor
+        near me&rdquo; searches happen on phone).
+      </LaneNote>
+      <DataGrid
+        label="GBP metric breakdown"
+        rows={rows}
+        cap={METRICS.length}
+        minWidth={560}
+        getRowKey={(r) => r.key}
+        columns={[
+          { key: 'label', header: 'Signal', width: '1.1fr', cell: (r) => r.label },
+          { key: 'help', header: 'What it means', width: '1.4fr', cell: (r) => <span style={{ color: 'var(--a-text-2)' }}>{r.help}</span> },
+          { key: 'value', header: 'Count', width: '110px', numeric: true, cell: (r) => fmt(r.value) },
+        ]}
+        empty={
+          <>
+            No GBP signals recorded {startDate} to {endDate}. The GBP snapshot cron writes into
+            marketing_channel_daily — widen the date range or check that the cron ran.
+          </>
+        }
+      />
+      <Stamp>
+        Window {startDate} to {endDate} · source marketing_channel_daily, channel=gbp, scope=account.
+      </Stamp>
+    </section>
   )
 }
 
@@ -111,16 +161,19 @@ export default async function GbpPage({ searchParams }: { searchParams: Promise<
   const sp = normalizeParams(await searchParams)
   const range = resolveDateRange(sp)
   return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">Google Business Profile</h1>
-        <p className="text-sm text-muted-foreground">
-          What Google Maps + local Search is doing for Ryan Realty. Profile impressions, calls, direction requests, website clicks. Comparison to the prior period of equal length.
-        </p>
+    <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
+      <Suspense fallback={<GridSkeleton rows={3} label="Loading GBP headlines" />}>
+        <Headlines startDate={range.startDate} endDate={range.endDate} />
+      </Suspense>
+
+      <div style={{ margin: '0 0 var(--a-s5)' }}>
         <DateRangePicker current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
-      </header>
-      <Suspense fallback={<Skeleton className="h-24 w-full" />}><Headlines startDate={range.startDate} endDate={range.endDate} /></Suspense>
-      <Suspense fallback={<Skeleton className="h-64 w-full" />}><MetricBreakdown startDate={range.startDate} endDate={range.endDate} /></Suspense>
+      </div>
+
+      <Suspense fallback={<GridSkeleton rows={6} label="Loading GBP metrics" />}>
+        <MetricBreakdown startDate={range.startDate} endDate={range.endDate} />
+      </Suspense>
+
     </div>
   )
 }

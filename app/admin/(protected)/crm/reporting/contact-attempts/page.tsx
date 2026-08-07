@@ -5,72 +5,40 @@
 // (hub href: /admin/crm/reporting/lead-sources?view=attempts).
 // Metric semantics — avg outbound contacts per lead by source — are inferred from
 // FUB's documentation and the hub card copy. See getContactAttemptsReport.ts.
+//
+// 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+// Presentation only. Carried over verbatim: the getCrmAccess guard, the
+// superuser/broker scoping, ?broker/?date/?t handling, the DAL call and its
+// catch-to-null, every zero default, the prior-period sub-labels, the per-source
+// drill hrefs, and the ReportingTabStrip sub-nav.
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { ChevronDown } from 'lucide-react'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getContactAttemptsReport } from '@/lib/data/crm/getContactAttemptsReport'
 import type { ContactAttemptsRow, ContactAttemptsTotals } from '@/lib/data/crm/getContactAttemptsReport'
 import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
-import { Card } from '@/components/ui/card'
+import { VerdictLine, SectionHead } from '@/components/admin/v2'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ReportGrid,
+  ReportNumbers,
+  ReportFreshness,
+  ReportError,
+  type ReportColumn,
+  type ReportGridRow,
+} from '../_v2/ReportGrid'
 import ContactAttemptsFilters from './ContactAttemptsFilters'
 import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
 
 export const metadata = { title: 'Contact Attempts | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
 
-// ── Sub-nav tabs ───────────────────────────────────────────────────────────────
-// Contact Attempts is inserted between Batch Emails and Appointments to
-// keep lead-source and activity reports grouped together.
-
-// ── KPI tile — inline server component (no sparkline for this report) ──────────
-
-function KpiTile({
-  label,
-  value,
-  valueText,
-  subLabel,
-}: {
-  label: string
-  /** Numeric count (rendered large, toLocaleString). Pass null to use valueText. */
-  value?: number | null
-  /** Alternate display for computed strings (e.g. "4.8" for avg). */
-  valueText?: string
-  /** Sub-label line below the value. */
-  subLabel?: string
-}) {
-  const display =
-    valueText !== undefined
-      ? valueText
-      : value != null
-        ? value.toLocaleString('en-US')
-        : '0'
-
-  return (
-    <Card className="min-w-36 shrink-0 p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-1.5 text-3xl font-bold leading-none tabular-nums text-foreground">
-        {display}
-      </p>
-      {subLabel ? (
-        <p className="mt-1 text-xs text-muted-foreground">{subLabel}</p>
-      ) : (
-        <div className="mt-1 h-4" />
-      )}
-    </Card>
-  )
-}
+const COLUMNS: ReportColumn[] = [
+  { key: 'source', label: 'Source' },
+  { key: 'leads', label: 'Leads', numeric: true },
+  { key: 'avg', label: 'Avg attempts', numeric: true },
+  { key: 'total', label: 'Total attempts', numeric: true },
+]
 
 // ── Search params ──────────────────────────────────────────────────────────────
 
@@ -111,7 +79,7 @@ export default async function ContactAttemptsPage({
   const currentBroker = sp.broker ?? 'everyone'
   const currentDate = datePreset
 
-  // Fetch report data — failure returns null and renders the honest empty state
+  // Fetch report data — failure returns null and renders the honest failed-read state
   const report = await getContactAttemptsReport({
     brokerSlug: brokerFilter,
     datePreset,
@@ -129,24 +97,80 @@ export default async function ContactAttemptsPage({
     avgAttempts: 0,
   }
 
+  const nowMs = Date.now()
+  const refreshHref = `/admin/crm/reporting/contact-attempts?broker=${currentBroker}&date=${currentDate}&t=${nowMs}`
+
+  const gridRows: ReportGridRow[] = rows.map((row) => {
+    const sourceParam = row.sourceKey
+      ? encodeURIComponent(row.sourceKey)
+      : '__unspecified__'
+    const drillHref = `/admin/crm?source=${sourceParam}&date=${currentDate}`
+    return {
+      key: row.sourceName,
+      cells: [
+        // Source name — links to the People list filtered by source
+        <Link key="s" href={drillHref} style={{ color: 'var(--a-accent)' }}>
+          {row.sourceName}
+        </Link>,
+        row.leads === 0 ? (
+          <span key="l" style={{ color: 'var(--a-text-2)' }}>
+            0
+          </span>
+        ) : (
+          row.leads.toLocaleString('en-US')
+        ),
+        // Avg attempts — em-dash when no leads (data unavailable placeholder)
+        row.leads === 0 ? (
+          <span key="a" style={{ color: 'var(--a-text-2)' }}>
+            —
+          </span>
+        ) : row.avgAttempts === 0 ? (
+          <span key="a" style={{ color: 'var(--a-text-2)' }}>
+            0.0
+          </span>
+        ) : (
+          <span key="a" style={{ fontWeight: 600 }}>
+            {row.avgAttempts.toFixed(1)}
+          </span>
+        ),
+        row.totalAttempts === 0 ? (
+          <span key="t" style={{ color: 'var(--a-text-2)' }}>
+            0
+          </span>
+        ) : (
+          row.totalAttempts.toLocaleString('en-US')
+        ),
+      ],
+    }
+  })
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+    <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
       <ReportingTabStrip active="contact-attempts" />
 
-      {/* ── Header: "Show me" selector + filter bar ── */}
-      <div className="mb-2 flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-center gap-1.5 text-sm">
-          <span className="text-muted-foreground">Show me</span>
-          <div className="flex items-center gap-0.5">
-            <span className="font-medium text-foreground">
-              average contact attempts by lead source
-            </span>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          </div>
-        </div>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={totals.leads > 0 && totals.avgAttempts > 0 ? 'ok' : 'attention'}>
+          {totals.leads === 0 ? (
+            <>
+              <b>No lead came in this period.</b> There is nothing to follow up on yet.
+            </>
+          ) : (
+            <>
+              <b>{totals.avgAttempts.toFixed(1)} contact attempts per lead.</b>{' '}
+              {totals.totalAttempts.toLocaleString('en-US')} attempts across{' '}
+              {totals.leads.toLocaleString('en-US')} leads.
+            </>
+          )}
+        </VerdictLine>
+      </div>
 
-        {/* Filter controls — superuser only; non-superuser is broker-scoped via RBAC */}
-        {isSuperuser ? (
+      {report === null ? (
+        <ReportError what="Contact attempts" href={refreshHref} />
+      ) : null}
+
+      {/* Filter controls — superuser only; non-superuser is broker-scoped via RBAC */}
+      {isSuperuser ? (
+        <div className="av2-rfilters">
           <ContactAttemptsFilters
             currentBroker={currentBroker}
             currentDate={currentDate}
@@ -155,155 +179,82 @@ export default async function ContactAttemptsPage({
               label: CRM_BROKER_DISPLAY[slug],
             }))}
           />
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
-      {/* ── Cache notice + refresh ── */}
-      <p className="mb-6 text-xs text-muted-foreground">
-        Reporting results may be cached for up to 10 minutes.{' '}
-        <Link
-          href={`/admin/crm/reporting/contact-attempts?broker=${currentBroker}&date=${currentDate}&t=${Date.now()}`}
-          className="text-muted-foreground hover:underline"
-        >
-          Refresh results.
-        </Link>
-      </p>
+      <ReportFreshness href={refreshHref} nowMs={nowMs} />
 
-      {/* ── KPI tile strip ── */}
       {/*
-        Three tiles match the three core metrics of this report:
-          TOTAL LEADS      — leads with a lead_created event in period for scoped brokers
-          TOTAL ATTEMPTS   — outbound contact events on those leads (call, voicemail, email, text)
-          AVG / LEAD       — totalAttempts / leads; the headline metric FUB surfaces
-
-        Sub-labels show the equivalent figure from the prior period for quick trend reading.
-        No sparklines — the per-source table is the primary insight surface here.
+        TOTAL LEADS      — leads with a lead_created event in period for scoped brokers
+        TOTAL ATTEMPTS   — outbound contact events on those leads (call, voicemail, email, text)
+        AVG / LEAD       — totalAttempts / leads; the headline metric
+        Sub-lines show the equivalent figure from the prior period.
       */}
-      <div className="no-scrollbar mb-6 flex gap-3 overflow-x-auto pb-2">
-        <KpiTile
-          label="Total Leads"
-          value={totals.leads}
-          subLabel={
-            previousTotals.leads > 0
-              ? `vs ${previousTotals.leads.toLocaleString('en-US')} prior period`
-              : undefined
-          }
-        />
-        <KpiTile
-          label="Total Attempts"
-          value={totals.totalAttempts}
-          subLabel={
-            previousTotals.totalAttempts > 0
-              ? `vs ${previousTotals.totalAttempts.toLocaleString('en-US')} prior period`
-              : undefined
-          }
-        />
-        <KpiTile
-          label="Avg / Lead"
-          valueText={totals.leads > 0 ? totals.avgAttempts.toFixed(1) : '—'}
-          subLabel={
-            previousTotals.leads > 0
-              ? `vs ${previousTotals.avgAttempts.toFixed(1)} prior period`
-              : undefined
-          }
-        />
-      </div>
+      <ReportNumbers
+        items={[
+          {
+            key: 'leads',
+            label: 'Total leads',
+            value: totals.leads.toLocaleString('en-US'),
+            delta:
+              previousTotals.leads > 0
+                ? {
+                    text: `vs ${previousTotals.leads.toLocaleString('en-US')} prior period`,
+                    direction: 'flat',
+                  }
+                : undefined,
+          },
+          {
+            key: 'attempts',
+            label: 'Total attempts',
+            value: totals.totalAttempts.toLocaleString('en-US'),
+            delta:
+              previousTotals.totalAttempts > 0
+                ? {
+                    text: `vs ${previousTotals.totalAttempts.toLocaleString('en-US')} prior period`,
+                    direction: 'flat',
+                  }
+                : undefined,
+          },
+          {
+            key: 'avg',
+            label: 'Avg / lead',
+            value: totals.leads > 0 ? totals.avgAttempts.toFixed(1) : '—',
+            delta:
+              previousTotals.leads > 0
+                ? {
+                    text: `vs ${previousTotals.avgAttempts.toFixed(1)} prior period`,
+                    direction: 'flat',
+                  }
+                : undefined,
+          },
+        ]}
+      />
 
-      {/* ── Per-source breakdown table ── */}
-      <Card className="overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="w-52">Source</TableHead>
-              <TableHead className="text-right text-xs">Leads</TableHead>
-              <TableHead className="text-right text-xs">
-                Avg Attempts
-                <span
-                  className="ml-1 text-muted-foreground opacity-60"
-                  title="Average outbound contact events per lead in this period. Includes calls, voicemails, emails, and texts logged by scoped brokers. Excludes automated drip sequences."
-                >
-                  ⓘ
-                </span>
-              </TableHead>
-              <TableHead className="text-right text-xs">Total Attempts</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={4}
-                  className="py-12 text-center text-sm text-muted-foreground"
-                >
-                  No contact attempt data for this period.
-                </TableCell>
-              </TableRow>
-            ) : (
-              rows.map((row) => {
-                const sourceParam = row.sourceKey
-                  ? encodeURIComponent(row.sourceKey)
-                  : '__unspecified__'
-                const drillHref = `/admin/crm?source=${sourceParam}&date=${currentDate}`
+      <SectionHead>By lead source</SectionHead>
+      <ReportGrid
+        label="Average contact attempts by lead source"
+        columns={COLUMNS}
+        template="minmax(150px, 1.7fr) repeat(3, minmax(96px, 1fr))"
+        minWidth={560}
+        rows={gridRows}
+        empty={
+          <>
+            No contact attempt was logged against a lead created in this period.{' '}
+            <Link href="/admin/crm" style={{ color: 'var(--a-accent)' }}>
+              Open the people list
+            </Link>{' '}
+            or widen the date range above.
+          </>
+        }
+      />
 
-                return (
-                  <TableRow key={row.sourceName} className="hover:bg-muted/40">
-                    {/* Source name — links to People list filtered by source */}
-                    <TableCell>
-                      <Link
-                        href={drillHref}
-                        className="text-sm text-primary hover:underline"
-                      >
-                        {row.sourceName}
-                      </Link>
-                    </TableCell>
-
-                    {/* Leads count */}
-                    <TableCell className="text-right">
-                      {row.leads === 0 ? (
-                        <span className="tabular-nums text-muted-foreground">0</span>
-                      ) : (
-                        <span className="tabular-nums text-foreground">
-                          {row.leads.toLocaleString('en-US')}
-                        </span>
-                      )}
-                    </TableCell>
-
-                    {/* Avg attempts — em-dash when no leads (data unavailable placeholder) */}
-                    <TableCell className="text-right">
-                      {row.leads === 0 ? (
-                        <span className="text-muted-foreground">—</span>
-                      ) : row.avgAttempts === 0 ? (
-                        <span className="tabular-nums text-muted-foreground">0.0</span>
-                      ) : (
-                        <span className="tabular-nums font-medium text-foreground">
-                          {row.avgAttempts.toFixed(1)}
-                        </span>
-                      )}
-                    </TableCell>
-
-                    {/* Total attempts */}
-                    <TableCell className="text-right">
-                      {row.totalAttempts === 0 ? (
-                        <span className="tabular-nums text-muted-foreground">0</span>
-                      ) : (
-                        <span className="tabular-nums text-foreground">
-                          {row.totalAttempts.toLocaleString('en-US')}
-                        </span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                )
-              })
-            )}
-          </TableBody>
-        </Table>
-      </Card>
-
-      {/* ── Footer note ── */}
-      <p className="mt-4 text-xs text-muted-foreground">
+      {/* Footer note — absorbs the column tooltip the legacy table hid behind a
+          `title` attribute (ADMIN_UI bans title-attribute tooltips). */}
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 16 }}>
         Contact attempts include outbound calls, voicemails, emails, and texts logged by
         scoped brokers on leads created in the selected period. Automated drip sequences
-        are excluded.
+        are excluded. Sources are ordered by lead volume, highest first.
       </p>
     </div>
   )
