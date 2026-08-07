@@ -1,7 +1,107 @@
-> **NEWEST, START HERE: Admin Product OS — all four locks granted; P11 interior underway, 11A + 11B shipped (2026-08-07, Claude Code local).**
-> Prior: BOOT → P2 complete, blocked on the process lock (2026-08-04).
+> **NEWEST, START HERE: Admin Product OS — 11C + 11D COMPLETE; the interior is 63% migrated (2026-08-07, Claude Code local).**
+> Prior: P11 11A + 11B shipped (2026-08-07). BOOT → P2 complete, blocked on the process lock (2026-08-04).
 
-# Current — 2026-08-07 (Claude Code, local) — Admin Product OS P11
+# Current — 2026-08-07 (Claude Code, local) — Admin Product OS 11C + 11D COMPLETE
+
+`main` @ `2843c492`, pushed. Last CODE commit `e8871f2a` deployed READY (the tip is
+docs-only and correctly skipped by `vercel.json`'s `ignoreCommand`). Disk is the
+source of truth: `docs/plans/ADMIN_PRODUCT/{state.json,work-queue.json,progress.txt,decisions.md}`
+plus the plan of record `PHASE-11-PLAN.md`. Read `progress.txt` from the bottom.
+
+**All four locks stand.** Nothing in this session reopened one. The one IA change —
+a third tab on `geo/layout.tsx` — is interior nav inside a single family, flagged in
+its commit for post-hoc review, and no cut-list route was resurrected.
+
+## What shipped: 18 commits, `104a459b..2843c492`, three deploys READY
+
+| ratchet | start | now |
+|---|---|---|
+| legacy pages | 86 | **32** |
+| raw elements | 207 | **138** |
+| distinct widths | 21 | **17** |
+
+**54 pages across 14 families.** Every MULTI-PAGE family is now on v2 — media,
+newsletters, brokers, crm/import, geo, crm/deals, bpo, cmas, reports (11D),
+crm/sequences, email, signing, people portal+tools, sync, help, listings, visitors.
+The 32 that remain are all singletons.
+
+Two pieces of architecture landed before the migration, both to stop drift:
+- **One tabular reader.** Three had accumulated (one per already-migrated family) and
+  every queued family was tables too, so migrating as-is would have produced readers
+  four through eight. `ReportGrid` moved into `components/admin/v2` and is now the
+  admin's only one; analytics' `DataGrid` + `kit` are the remaining third (queued).
+- **`EntityTitle`.** ADMIN_UI rule 1 bans page-title chrome but grants an exception
+  for an entity page's own name, and that exception had no home — every entity page
+  was hand-rolling a raw `<h1>`.
+
+## Defects this found (all pre-existing, all proven so before being touched)
+
+- **`/admin/crm/deals/[id]` had no broker-scope guard** — a restricted broker could
+  walk sequential ids and read any deal's GCI, commission percent and split rows.
+  FIXED. It is one instance of a CLASS; see the open item below.
+- **`/admin/crm/import/[id]` had never shown a job** — Next 15 `params` Promise read
+  as a plain object, so every visit sat on "Loading…" under "Job #" with no number.
+- **The BPO preview iframe had never rendered** — the route sets `SAMEORIGIN` but
+  `next.config.ts`'s global `DENY` overrode it; `/cma/` had the exception, `/bpo/`
+  did not. Confirmed fixed on production.
+- **Thirteen false claims in page copy**, including two named cron jobs that do not
+  exist, an unsourced "industry benchmark" on the page ad spend is judged from, a
+  "Help button" removed two days earlier, a "LiveTable" component that is not in the
+  repo, and a count labelled "Active" that was off by 2.1× (top-50-city snapshots
+  vs. all Active rows). Figures unchanged; the words now match the query.
+- **Phone bugs:** a 496px overflow on broker-edit, a 6px overflow on `/admin/audiences`
+  (a P9 destination, fixed in the shared primitive), and an email toolbar that
+  `ConsoleSection`'s `overflow-hidden` was silently clipping so its buttons were
+  unreachable at 375.
+
+## The lesson worth carrying into 11E
+
+**Builders refused my instructions four times and were right every time** — all four
+were formatter swaps I had asked for that would have moved a §0 figure. `formatPrice`
+rounds to the nearest $1,000; `formatDate` re-projects a date-only string from UTC
+into Pacific, moving a printed calendar day back one and, on one instant, the year.
+Two were on a legal document's record. The instruction that caught them was *prove
+the swap before you make it*. Write briefs a builder is able to refuse.
+
+**And a process error to not repeat:** `git commit` commits the INDEX, and a parallel
+builder had staged its own files, so one commit swept in seven pages under a message
+that did not describe them. Caught before pushing and split. Use
+`git commit --only <paths>` whenever builders share a tree.
+
+## Open, and why each was not fixed inline
+
+- **SECURITY — person-scope on entity READERS is a class, not an instance**
+  (`task_84b647c1`). `people/[id]/portal` gates only on `requireAdminPage('people.view')`
+  and that capability includes `broker`, so any broker reads any contact's saved and
+  hidden homes, named areas, alert recipients and site activity. The `people/[id]`
+  identity header is also unscoped. `ci:crm-scope` cannot see either — it inspects
+  WRITES only. Needs a DAL reader, a shared guard, a sweep, and an AST gate.
+- `getCmaAdminRowBySlug` swallows its Supabase error, so a transient failure renders
+  as "this CMA does not exist" — ~20 callers on send/publish paths (`task_cc5d6fc3`).
+- The navy `MobileCrmHeader` violates §5 amnesia on three CRM phone surfaces
+  (`task_b5a50db5`).
+- The intermittent admin hydration mismatch is TRACED to `SiteHeader` under
+  `HideChrome` (`task_af3d76b5`) — it fires on already-v2 surfaces this session never
+  touched.
+
+**Not verified and not claimed:** `/admin/signing/[envelopeId]`'s rendered identity
+header. `tc_envelopes` holds zero rows, and inserting a fixture into a legal-document
+table was the wrong trade. Its `notFound()` path and Next 15 `params` signature were
+verified.
+
+## Next unit: `11e-singletons` (queue top)
+
+32 pages, no family structure left. Batch by RISK, not directory: the
+send/compliance-adjacent ones (`crm/inbox`, `crm/approvals`, `approval-queue`,
+`sign-off`, `crm/tasks`, `crm/calendar`) apart from the read-only ones. Look at
+`access-denied`, `login` and `setup` before migrating them — they are auth-flow pages
+and may not want the console shell at all.
+
+Tooling the next session inherits: `scripts/_admin-v2-verify.mjs` mints its own
+magic-link session and asserts 200 / exactly one `<main>` / no page-level horizontal
+scroll at 375 and 1280. It was validated in both directions before use.
+
+# Prior — 2026-08-07 earlier (Claude Code, local) — P11 11A + 11B
 
 `main` @ `4efbebca`, pushed, production READY. Disk is the source of truth:
 `docs/plans/ADMIN_PRODUCT/{state.json,work-queue.json,progress.txt,decisions.md}`
