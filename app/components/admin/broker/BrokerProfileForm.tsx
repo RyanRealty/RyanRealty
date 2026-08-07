@@ -431,7 +431,10 @@ export default function BrokerProfileForm({
           />
         </Label>
       </div>
-      <div className="flex gap-3">
+      {/* flex-wrap: four shrink-0 actions in a non-wrapping row made this page
+          the widest thing in the admin at 375px (scrollWidth 496 > 375,
+          measured 2026-08-07). The row wraps now; nothing else changed. */}
+      <div className="flex flex-wrap gap-3">
         <Button
           type="button"
           onClick={() => handleSubmit()}
@@ -448,8 +451,11 @@ export default function BrokerProfileForm({
         >
           View agent page
         </a>
+        {/* Was a second link to /team/{slug} — the same place "View agent page"
+            already goes — while the label promised the roster. /team is the
+            roster, and the broker list page already links it. */}
         <a
-          href={`/team/${broker.slug}`}
+          href="/team"
           target="_blank"
           rel="noopener noreferrer"
           className="rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted"
