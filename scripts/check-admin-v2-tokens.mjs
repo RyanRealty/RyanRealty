@@ -56,6 +56,41 @@ const SCAN_DIRS = [
   'app/admin/(protected)/audiences',
   'app/admin/(protected)/content',
   'app/admin/(protected)/settings/page.tsx',
+  // 11C/11D (2026-08-07). 38 pages migrated across eight families; these 28 are
+  // scoped here. The other 10 are deferred for ONE reason, not skipped: they
+  // mount client islands from @/components/admin/<legacy> (BpoBoard, CmaBoard,
+  // DealsBoard, the newsletter panels), which rule 3 blacklists and which the
+  // migration mounts as-is by design — the same call already recorded above for
+  // people/[id]'s G50 composer chokepoints. Each lands here when its island
+  // migrates; the work-queue item is 11f-mounted-islands.
+  'app/admin/(protected)/brokers/edit/page.tsx',
+  'app/admin/(protected)/brokers/new/page.tsx',
+  'app/admin/(protected)/brokers/page.tsx',
+  'app/admin/(protected)/crm/deals/[id]/page.tsx',
+  'app/admin/(protected)/crm/import/[id]/page.tsx',
+  'app/admin/(protected)/crm/import/new/map/page.tsx',
+  'app/admin/(protected)/crm/import/new/page.tsx',
+  'app/admin/(protected)/crm/import/new/preview/page.tsx',
+  'app/admin/(protected)/crm/import/page.tsx',
+  'app/admin/(protected)/geo/area-guide-upload/page.tsx',
+  'app/admin/(protected)/geo/page.tsx',
+  'app/admin/(protected)/geo/resort-communities/page.tsx',
+  'app/admin/(protected)/media/banners/page.tsx',
+  'app/admin/(protected)/media/page.tsx',
+  'app/admin/(protected)/media/photos/page.tsx',
+  'app/admin/(protected)/media/stock-photos/page.tsx',
+  'app/admin/(protected)/newsletters/analytics/page.tsx',
+  'app/admin/(protected)/newsletters/enroll/page.tsx',
+  'app/admin/(protected)/newsletters/new/page.tsx',
+  'app/admin/(protected)/newsletters/page.tsx',
+  'app/admin/(protected)/reports/brokers/page.tsx',
+  'app/admin/(protected)/reports/cma-performance/page.tsx',
+  'app/admin/(protected)/reports/custom/page.tsx',
+  'app/admin/(protected)/reports/emails/page.tsx',
+  'app/admin/(protected)/reports/lead-flow/page.tsx',
+  'app/admin/(protected)/reports/leads/page.tsx',
+  'app/admin/(protected)/reports/market/page.tsx',
+  'app/admin/(protected)/reports/traffic-sources/page.tsx',
 ]
 const EXT = new Set(['.ts', '.tsx', '.css'])
 

@@ -1,74 +1,29 @@
 // @no-parity — admin-internal reporting surface, no public mockup contract.
 /**
- * /admin/reports/lead-flow — end-to-end funnel report.
+ * /admin/reports/lead-flow — end-to-end funnel report. Joins the GA4 Data API
+ * (sessions, generate_lead by lp_variant) with Supabase (visitor_events,
+ * crm_people, valuation_requests, listing_inquiries, cmas): hero metrics, the
+ * visit→engaged→lead→CMA funnel, per-surface wiring health, leads by broker and
+ * channel, and a daily lead timeline.
  *
- * Joins GA4 Data API (sessions, generate_lead events by lp_variant) with
- * Supabase (visitor_events, crm_people, valuation_requests, listing_inquiries,
- * cmas) to surface:
+ * 11C/11D: on the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md)
+ * through @/components/admin/v2. Presentation only — no metric, date window,
+ * filter default, sort order, unit or rounding moved. The full carryover
+ * inventory and the three §0 truth corrections are in the commit that made
+ * them; what follows is only what a future editor must not break.
  *
- *   1. Hero metrics — sessions, leads captured, CMAs out
- *   2. End-to-end funnel — visit → engaged → lead → CMA
- *   3. Wiring health by surface — for every lead surface in the codebase, show
- *      whether sessions, GA4 events, and CRM leads are aligned.
- *      A "wired" surface fires all three. A "silent" surface has sessions but
- *      no events or leads — almost always a wiring bug.
- *   4. Leads by broker + channel, from the CRM
- *   5. Daily lead-creation timeline — inbound CRM leads per day
- *
- * Data layer notes:
- *   - GA4 lp_variant custom dimension was registered 2026-05-18 and is the
- *     primary pivot for per-LP attribution.
- *   - crm_people is the system of record for leads since the FUB cutover
- *     (2026-06-24). Lead counts come from getLeadIntake (inbound sources only).
- *     The old marketing_assignments ledger is decommissioned.
- *   - listing_inquiries powers Path I (Schedule a showing / Ask a question
- *     from listing details).
- *   - When a surface shows 0 sessions in the window, "wiring gap" is suppressed
- *     because we cannot tell whether the wiring works until traffic arrives.
- *
- * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md)
- * through the reporting family's shared presentation kit
- * (@/components/admin/v2). Presentation only.
- *
- * Carried over verbatim: normalizeParams, resolveDateRange and the '30d'
- * default, formatInt and formatPct (dash on a zero denominator, one decimal),
- * getServiceSupabase, the whole LEAD_SURFACES registry, classifyWiring's four
- * branches and the meta-leadgen-form special case, statusLabel's wording,
- * cutoffIso / untilIso / lookbackDays / windowLabel, fetchAllVisitPaths' paging
- * and URL→path reduction, every read in the Promise.all (including the day
- * granular getLeadIntake bounds that share the analytics cache entry, the two
- * count-only head reads, and countCmasInRange), the ga4EventsByLp event-name
- * filter, assignmentsBySource, sessionsForPrefix, the wiringRows build, the
- * broker and channel splits and their descending sorts, the dailySeries
- * construction anchored to the selected end date, maxDaily, the bar arithmetic
- * Math.round((count / maxDaily) * 30), the reverse().slice(0, 14) window, every
- * funnel stage and its source string, the conversion-rate figure, and every
- * table's row cap (10 · 12 · 10 · 10 · 10). No metric, date window, filter
- * default, sort order, unit or rounding moved.
- *
- * Shape changed, data did not: the page-title <h1> is gone (the nav names the
- * page), the DashboardSummaryStrip became the family's typographic numbers
- * strip, six shadcn Card/table pairs plus their parallel mobile card lists
- * became the family's grid (one source of markup, scrolling inside its own
- * box), the wiring Badge became a StateWord — text plus color, never color
- * alone — and the ui Skeleton became ReportSkeleton.
- *
- * THREE truth corrections (§0), none of which touches a figure:
- *   1. The conversion-rate note asserted "Industry benchmark for real-estate
- *      sites with mixed paid + organic traffic is 0.5%–2%; below 0.3% usually
- *      means wiring gaps or page-friction issues". No source, no citation,
- *      nothing in the repo to trace it to — an unsourced benchmark a broker
- *      would judge spend against. §0 says an unverifiable stat is cut, not
- *      softened. The measured conversion rate stays, verbatim.
- *   2. The timeline was titled "Daily leads (last 14 days)" and described its
- *      bars as "proportional to the busiest day in the 30-day window". Both are
- *      false whenever the picker is not on 30d or the range ends in the past:
- *      the rows are the 14 most recent days OF THE SELECTED RANGE and maxDaily
- *      is computed over that same range. The words now match the arithmetic.
- *   3. A failed GA4 call rendered an alert and then four zeros styled exactly
- *      like measurements. The failure now leads through ReportError, and the
- *      zeroed GA4 figures say they are not a measurement. The Supabase-side
- *      figures are unaffected and still say so.
+ * DO NOT BREAK:
+ *   - `getLeadIntake` is the lead system of record since the FUB cutover
+ *     (2026-06-24), inbound sources only. marketing_assignments is decommissioned.
+ *   - A surface with 0 sessions in the window must NOT be called a wiring gap —
+ *     you cannot tell whether wiring works until traffic arrives.
+ *   - The timeline is the 14 most recent days OF THE SELECTED RANGE, and
+ *     maxDaily is computed over that same range. Do not re-label either as a
+ *     fixed 14- or 30-day window; that mismatch was a shipped defect.
+ *   - A failed GA4 call must keep leading through ReportError. Four zeros
+ *     styled as measurements is how this page used to report an outage.
+ *   - No unsourced benchmark. An "industry benchmark of 0.5%–2%" lived here
+ *     with nothing to trace it to, on the page spend is judged from (§0).
  */
 
 import { Suspense } from 'react'
@@ -97,6 +52,7 @@ import {
   type ReportGridRow,
   type ReportNumberItem,
 } from '@/components/admin/v2'
+import { CAP_SOURCES, CAP_WIRING, CAP_SPLIT, CAP_EVENTS, CAP_DAYS, funnelColumns, wiringColumns, splitColumns, topLeadSourcesColumns, topLeadEventColumns } from './_columns'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -128,13 +84,6 @@ function getServiceSupabase() {
   }
   return createClient(url, key)
 }
-
-/** Row caps the old tables applied. Carried over unchanged. */
-const CAP_SOURCES = 10
-const CAP_WIRING = 12
-const CAP_SPLIT = 10
-const CAP_EVENTS = 10
-const CAP_DAYS = 14
 
 const MUTED = { color: 'var(--a-text-2)' }
 // A table name or event name is one unbreakable token; without this a 375px
@@ -424,13 +373,6 @@ async function LeadFlowContent({
     { stage: 'CMAs created', source: 'cmas', count: cmaCount, pct: formatPct(cmaCount, ga4Sessions) },
   ]
 
-  const funnelColumns: ReportColumn[] = [
-    { key: 'stage', label: 'Stage' },
-    { key: 'source', label: 'Source' },
-    { key: 'count', label: 'Count', numeric: true },
-    { key: 'pct', label: 'vs sessions', numeric: true },
-  ]
-
   const funnelGrid: ReportGridRow[] = funnelStages.slice(0, 8).map((r) => ({
     key: r.stage,
     cells: [
@@ -440,15 +382,6 @@ async function LeadFlowContent({
       <span key="p" style={MUTED}>{r.pct}</span>,
     ],
   }))
-
-  const wiringColumns: ReportColumn[] = [
-    { key: 'surface', label: 'Surface' },
-    { key: 'sessions', label: 'Sessions', numeric: true },
-    { key: 'events', label: 'GA4 events', numeric: true },
-    { key: 'assignments', label: 'CRM leads', numeric: true },
-    { key: 'status', label: 'Status' },
-    { key: 'notes', label: 'Notes' },
-  ]
 
   const wiringGrid: ReportGridRow[] = wiringRows.slice(0, CAP_WIRING).map((row) => ({
     key: row.surface.lp_variant,
@@ -461,12 +394,6 @@ async function LeadFlowContent({
       <span key="n" style={MUTED}>{row.surface.notes ?? ''}</span>,
     ],
   }))
-
-  const splitColumns = (first: string): ReportColumn[] => [
-    { key: 'name', label: first },
-    { key: 'count', label: 'Count', numeric: true },
-    { key: 'share', label: 'Share', numeric: true },
-  ]
 
   const brokerRows = Array.from(brokerSplit.entries())
     .sort((a, b) => b[1] - a[1])
@@ -570,11 +497,7 @@ async function LeadFlowContent({
           <SectionHead>Top lead sources (GA4)</SectionHead>
           <ReportGrid
             label="Top lead sources from GA4"
-            columns={[
-              { key: 'src', label: 'Source / Medium' },
-              { key: 'events', label: 'Lead events', numeric: true },
-              { key: 'users', label: 'Users', numeric: true },
-            ]}
+            columns={topLeadSourcesColumns}
             template="minmax(200px, 2fr) minmax(100px, 0.8fr) minmax(80px, 0.7fr)"
             minWidth={460}
             rows={ga4.leadSources.slice(0, CAP_SOURCES).map((src) => ({
@@ -661,11 +584,7 @@ async function LeadFlowContent({
           <SectionHead>Top GA4 lead-event names · {windowLabel}</SectionHead>
           <ReportGrid
             label={`Top GA4 lead-event names, ${windowLabel}`}
-            columns={[
-              { key: 'name', label: 'Event name' },
-              { key: 'count', label: 'Count', numeric: true },
-              { key: 'users', label: 'Users', numeric: true },
-            ]}
+            columns={topLeadEventColumns}
             template="minmax(200px, 2fr) minmax(80px, 0.7fr) minmax(80px, 0.7fr)"
             minWidth={420}
             rows={ga4.topLeadEvents.slice(0, CAP_EVENTS).map((ev) => ({

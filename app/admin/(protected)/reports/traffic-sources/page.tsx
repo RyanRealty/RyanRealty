@@ -1,104 +1,34 @@
 // @no-parity — admin-internal reporting surface, no public mockup contract.
 /**
- * /admin/reports/traffic-sources — comprehensive "how is everyone getting
- * to my site" report.
+ * /admin/reports/traffic-sources — where sessions come from: UTM tally,
+ * referrer classification, landing pages, untagged inbound, and the GBP
+ * profile's website/call/direction clicks from marketing_channel_daily.
  *
- * The single most important attribution view: combines GA4 (source/medium +
- * channel groups) with our own visitor_sessions table (first-touch UTMs + raw
- * referrers + landing pages) so you can see where every visitor came from
- * across independent data sources side by side.
+ * 11C/11D: on the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md)
+ * through @/components/admin/v2. Presentation only — no metric, date window,
+ * filter default, sort order, unit or rounding moved. The full carryover
+ * inventory and the truth corrections are in the commit that made them; what
+ * follows is only what a future editor must not break.
  *
- * Why more than one source? They each have blind spots:
- *
- *   - **GA4 source/medium** — aggregated, polished, includes Google modeling
- *     for cookieless visitors. But you can't see individual URLs or
- *     referrers, only the bucketed source/medium pair.
- *   - **visitor_sessions** — our own first-touch attribution per session
- *     with full UTM + raw referrer + landing page. Survives ad blockers.
- *     But only fires when the tracking snippet runs.
- *
- * The page renders ONE table per view so you can spot gaps:
- *
- *   1. Hero metrics — GA4 sessions, captured sessions, GBP website clicks
- *   2. GBP attribution callout — GBP website clicks from
- *      marketing_channel_daily vs how many are visible as google/organic
- *      sessions in GA4. A big gap means the GBP "Website" link is not tagged.
- *   3. GA4 source / medium
- *   4. visitor_sessions UTM source / medium / campaign (first-touch, our DB)
- *   5. Raw referrers, classified into a coarse platform bucket
- *   6. Top landing pages (where visitors arrive first)
- *   7. Untagged traffic — sessions with referrers but no UTMs. These are the
- *      channels to fix by adding canonical UTMs. See
- *      docs/UTM_TRACKING_CONVENTION.md for the convention.
- *
- * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md)
- * through the reporting family's shared presentation kit
- * (@/components/admin/v2). Presentation only.
- *
- * Carried over verbatim: normalizeParams, resolveDateRange and the '30d'
- * default, formatInt and formatPct (dash on a zero denominator, one decimal),
- * getServiceSupabase, fetchAllRows' 1000-row paging, classifyReferrer's every
- * branch and its ordering, sinceIso / untilIso / sinceDate, the GA4 read, the
- * visitor_sessions read (same select, same first_seen_at bounds, same
- * ascending order), the marketing_channel_daily read filtered to
- * channel='gbp' AND scope='account', the three GBP metric sums
- * (website_clicks · call_clicks · business_direction_requests), the
- * ga4GoogleOrganic regex, the UTM tally keys and its '(no utm)' /
- * '(no campaign)' fallbacks, the referrer tally and its '(direct / typed)'
- * fallback, the landing-page tally and its '(unknown)' fallback, the untagged
- * filter (referrer AND NOT utm_source, minus the internal and direct buckets),
- * googleReferrerVisits, every slice (20 · 30 · 20 · 12), every row cap
- * (10 · 10 · 10 · 12), the engagement-rate rounding (x*100).toFixed(0), and
- * every outbound link. No metric, date window, filter default, sort order,
- * unit or rounding moved.
- *
- * Shape changed, data did not: the page-title <h1> is gone (the nav names the
- * page), the five section <h2>s became SectionHead, the DashboardSummaryStrip
- * and the GBP number block became the family's typographic numbers strip, five
- * shadcn table/card pairs became the family's grid (one source of markup,
- * scrolling inside its own box), and the platform Badges became plain text — a
- * platform is a category, and the admin's color vocabulary is reserved for
- * status (ADMIN_UI §1). The untagged table in particular rendered an accent
- * Badge on EVERY row, which is the chip wall the acceptance bar bans.
- *
- * FOUR truth corrections (§0). None moves a number:
- *
- *   1. The hero showed "Sessions captured" AND "First-touch sessions" as two
- *      figures. Both were `.length` of a read of visitor_sessions over the same
- *      first_seen_at window — the same rows, so ALWAYS the same number, printed
- *      twice under two names, the second captioned "w/ attribution" as though a
- *      filter had been applied. No such filter exists. One figure now, named
- *      for what it counts. Because the two reads were provably the same row
- *      set, the second read is gone: `visits` is derived from `sessions` by
- *      projecting {landing_page → path, referrer}, which is exactly what its
- *      own `select('path:landing_page, referrer')` alias produced. Same rows,
- *      same tallies, and one fewer 60-page scan of a table holding ~60k rows
- *      per 30-day window — plus the two reads can no longer disagree when
- *      first_seen_at ties order differently between them.
- *   2. The page said its raw referrers came from the `visits` table, and
- *      labelled that column "Visits". `visits` is retired; the read has been
- *      visitor_sessions since W1.5, and the count is sessions. The header, the
- *      section copy, the column label and the data-sources note now name the
- *      table the query actually reads. Every figure is byte-for-byte the one
- *      that was there before.
- *   3. `uniqueVisitorsApprox` counted DISTINCT LANDING PAGES, was commented
- *      "rough", was never rendered, and was not a visitor count by any
- *      definition. Deleted.
- *   4. The GBP note asserted the profile link went live UTM-tagged on a
- *      specific date. A date is a number and needs a source (§0). The tagging
- *      is real and provable — visitor_sessions carries utm_source='gbp' rows —
- *      so the instruction stays and the unsourced date is gone.
- *   5. The old "Showing 10 of N" line counted the ALREADY-SLICED array, so a
- *      table cut from 8,039 distinct landing pages announced "Showing 10 of
- *      20". The denominator is now the real distinct count. The rows on screen
- *      are the same rows; only the sentence describing how much is hidden
- *      stopped understating it.
- *
- * Wall-of-identical-states probe (ADMIN_UI §3 acceptance bar rule 6, run
- * 2026-08-07 against dwvlophlbvvygjfxcrhm, trailing 30 days): 60,029 sessions ·
- * 6 distinct utm_source · 10,696 sessions carrying a referrer · 8,039 distinct
- * landing pages · 43 sessions tagged utm_source='gbp'. Every table on this page
- * has a real distribution behind it.
+ * DO NOT BREAK:
+ *   - `visits` is RETIRED. This page reads visitor_sessions and the counts are
+ *     SESSIONS. The old copy named the wrong table and labelled the column
+ *     "Visits"; do not put either back.
+ *   - There is ONE session read. "Sessions captured" and "First-touch sessions
+ *     (w/ attribution)" used to be two figures off the same query over the same
+ *     window — always the identical number under two names, the second implying
+ *     a filter that did not exist. `visits` is now derived from `sessions` by
+ *     projecting {landing_page → path, referrer}, exactly what the second
+ *     read's own select alias produced. Re-adding a second read reintroduces
+ *     both the duplicate 60-page scan and the chance the two disagree on ties.
+ *   - "Showing N of M" must count the FULL set, not the sliced array. It once
+ *     announced "Showing 10 of 20" against 8,039 distinct landing pages.
+ *   - A platform is a category, not a status: keep it plain text. The admin's
+ *     color vocabulary is reserved for status (ADMIN_UI §1), and the untagged
+ *     table rendered an accent Badge on every row — the chip wall the
+ *     acceptance bar bans.
+ *   - No unsourced date on the GBP note. The tagging is provable
+ *     (visitor_sessions carries utm_source='gbp'); the go-live date was not.
  */
 
 import { Suspense } from 'react'
@@ -123,6 +53,7 @@ import {
   type ReportGridRow,
   type ReportNumberItem,
 } from '@/components/admin/v2'
+import { CAP_TABLE, CAP_UNTAGGED, utmColumns, referrerColumns, ga4SourceMediumColumns, landingColumns, untaggedColumns } from './_columns'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -152,10 +83,6 @@ function getServiceSupabase() {
   if (!url?.trim() || !key?.trim()) throw new Error('Supabase service role not configured')
   return createClient(url, key)
 }
-
-/** Row caps the old tables applied. Carried over unchanged. */
-const CAP_TABLE = 10
-const CAP_UNTAGGED = 12
 
 const MUTED = { color: 'var(--a-text-2)' }
 // overflowWrap is load-bearing, not decoration: a UTM string and a referrer URL
@@ -372,20 +299,6 @@ async function TrafficSourcesContent({
     { key: 'g3', label: 'Sessions with a google.* referrer', value: formatInt(googleReferrerVisits) },
   ]
 
-  const utmColumns: ReportColumn[] = [
-    { key: 'source', label: 'Source' },
-    { key: 'medium', label: 'Medium' },
-    { key: 'campaign', label: 'Campaign' },
-    { key: 'sessions', label: 'Sessions', numeric: true },
-  ]
-
-  const referrerColumns: ReportColumn[] = [
-    { key: 'platform', label: 'Platform' },
-    { key: 'referrer', label: 'Referrer' },
-    { key: 'sessions', label: 'Sessions', numeric: true },
-    { key: 'share', label: 'Share', numeric: true },
-  ]
-
   const overflowNote = (shown: number, all: number) =>
     all > shown ? (
       <p
@@ -486,13 +399,7 @@ async function TrafficSourcesContent({
           <SectionHead>GA4 source / medium — most sessions first</SectionHead>
           <ReportGrid
             label="GA4 source and medium"
-            columns={[
-              { key: 'source', label: 'Source / Medium' },
-              { key: 'sessions', label: 'Sessions', numeric: true },
-              { key: 'users', label: 'Users', numeric: true },
-              { key: 'engaged', label: 'Engaged', numeric: true },
-              { key: 'rate', label: 'Engagement', numeric: true },
-            ]}
+            columns={ga4SourceMediumColumns}
             template="minmax(200px, 2fr) minmax(84px, 0.7fr) minmax(72px, 0.6fr) minmax(84px, 0.7fr) minmax(100px, 0.8fr)"
             minWidth={620}
             rows={ga4.topSources.slice(0, CAP_TABLE).map((s) => ({
@@ -567,10 +474,7 @@ async function TrafficSourcesContent({
       <SectionHead>Top landing pages — most sessions first</SectionHead>
       <ReportGrid
         label="Top landing pages"
-        columns={[
-          { key: 'lp', label: 'Landing page' },
-          { key: 'sessions', label: 'Sessions', numeric: true },
-        ]}
+        columns={landingColumns}
         template="minmax(280px, 3fr) minmax(90px, 0.7fr)"
         minWidth={480}
         rows={landingGrid}
@@ -595,11 +499,7 @@ async function TrafficSourcesContent({
           </SectionHead>
           <ReportGrid
             label="Channels to tag with UTMs"
-            columns={[
-              { key: 'platform', label: 'Platform' },
-              { key: 'count', label: 'Untagged sessions', numeric: true },
-              { key: 'utm', label: 'Suggested UTM string' },
-            ]}
+            columns={untaggedColumns}
             template="minmax(120px, 1fr) minmax(140px, 1fr) minmax(300px, 2.6fr)"
             minWidth={660}
             rows={untaggedGrid}
