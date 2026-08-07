@@ -1,16 +1,20 @@
 'use client'
 
-/**
- * HelpSearch — client-side search + area-grouped listing for /admin/help.
- * Substring match over title, summary, and body (pre-lowercased server-side).
- */
+// 11D: restyled to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md)
+// so /admin/help does not read half-migrated. Presentation only.
+//
+// Carried over verbatim: the substring filter over the pre-lowercased haystack,
+// AREA_ORDER and the sort that puts unknown areas last, the per-area grouping,
+// the /admin/help/<slug> hrefs, the search input's aria-label, and the
+// no-match sentence.
+//
+// Shape changed, data did not: the shadcn Input became the kit's TextField
+// (which owns the <input>, so this file has no raw control), the per-area
+// <h2> became SectionHead, and the shadcn Card grid became hairline rows.
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Search } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { SectionHead, TextField } from '@/components/admin/v2'
 
 export type SearchableArticle = {
   slug: string
@@ -48,49 +52,50 @@ export default function HelpSearch({ articles }: { articles: SearchableArticle[]
   }, [filtered])
 
   return (
-    <div className="space-y-8">
-      <div className="relative max-w-md">
-        <Search
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-          aria-hidden
-        />
-        <Input
+    <div>
+      <div style={{ maxWidth: 420, marginBottom: 8 }}>
+        <TextField
+          label="Search help"
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search help, for example listing alert"
           aria-label="Search help articles"
-          className="pl-9"
         />
       </div>
 
       {filtered.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', marginTop: 16 }}>
           No articles match that search. Try a shorter word, like alert or newsletter.
         </p>
       ) : (
         grouped.map(({ area, items }) => (
           <section key={area} aria-label={area}>
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {area}
-            </h2>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <SectionHead>{area}</SectionHead>
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0, borderTop: '1px solid var(--a-border)' }}>
               {items.map((a) => (
-                <Link key={a.slug} href={`/admin/help/${a.slug}`} className="group block">
-                  <Card className="h-full p-4 transition-colors group-hover:bg-muted/40">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-semibold text-foreground group-hover:underline">
-                        {a.title}
-                      </p>
-                      <Badge variant="outline" className="shrink-0 py-0 text-xs">
-                        {a.area}
-                      </Badge>
-                    </div>
-                    <p className="mt-1.5 line-clamp-3 text-sm text-muted-foreground">{a.summary}</p>
-                  </Card>
-                </Link>
+                <li
+                  key={a.slug}
+                  style={{ padding: '12px 2px', borderBottom: '1px solid var(--a-border)' }}
+                >
+                  <Link
+                    href={`/admin/help/${a.slug}`}
+                    style={{ color: 'var(--a-accent)', fontWeight: 600 }}
+                  >
+                    {a.title}
+                  </Link>
+                  <p
+                    style={{
+                      fontSize: 'var(--a-text-sm)',
+                      color: 'var(--a-text-2)',
+                      margin: '2px 0 0',
+                    }}
+                  >
+                    {a.summary}
+                  </p>
+                </li>
               ))}
-            </div>
+            </ul>
           </section>
         ))
       )}

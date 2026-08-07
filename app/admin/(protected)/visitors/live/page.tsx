@@ -1,22 +1,64 @@
-/**
- * /admin/visitors/live — real-time list of the 50 most recently active
- * visitor sessions across all source domains.
- *
- * Server component. Refetches on every navigation (revalidate=0). For
- * real-time auto-refresh the LiveTable child component polls every 15s.
- *
- * Data: visitor_sessions + visitor_events tables, populated by
- * /api/visitors/track and the WordPress snippet at
- * docs/wordpress-fub-identify-snippet.html.
- */
+// @no-parity — internal admin surface, no public mockup contract
+//
+// Live visitors — 11D: migrated to the LOCKED admin v2 language
+// (design_system/admin/ADMIN_UI.md) through the shared presentation kit
+// (@/components/admin/v2). Presentation only.
+//
+// Server component. `dynamic = 'force-dynamic'` + `revalidate = 0`, so it
+// refetches on every navigation. Data: visitor_sessions + visitor_events,
+// populated by /api/visitors/track and the WordPress snippet at
+// docs/wordpress-fub-identify-snippet.html.
+//
+// Carried over verbatim: both exports above, normalizeParams, the `?filter=`
+// param and its three values with `all` as the fallback for anything else,
+// fetchLiveVisitors({ identifiedFilter, limit: 50 }) and fetchLiveSummary()
+// unchanged (no window, cap, paging bound or count moved), both Suspense
+// boundaries, formatRelative / scoreLabel / formatSource / formatGeo /
+// shortSession byte-for-byte, the /admin/visitors/<encodeURIComponent(id)>
+// and /admin/people/<crm_person_id ?? fub_person_id> hrefs, and the plain
+// <a> (not <Link>) on the contact href so its navigation behaviour is
+// untouched.
+//
+// Shape changed, data did not: the page's own <main> and <h1> are gone
+// (ConsoleShell owns the landmark; acceptance-bar rule 1 — the nav names the
+// page), the four shadcn stat cards became the family's typographic numbers
+// strip with the same four figures, the three tab links became ONE dropdown
+// with the same three hrefs (rule 2 — see VisitorFilterSelect), and the
+// md:hidden card list plus the hidden md:block shadcn Table — which wrote the
+// same eight fields twice — became one ReportGrid whose sideways overflow
+// lives in its own scroll box.
+//
+// TWO CLAIMS WERE FALSE AND ARE NOW FIXED:
+//   1. The file header used to say "the LiveTable child component polls every
+//      15s". No LiveTable component exists anywhere in the repo, and the page's
+//      own footnote says it revalidates on navigation. Cut.
+//   2. The footnote used to say "Hot scores fire a 5-minute FUB call task
+//      automatically (cron-driven)". Follow Up Boss was decommissioned
+//      2026-06-24. /api/cron/visitor-hot-lead-escalation (every 15 min in
+//      vercel.json) calls createNativeTask with dueInMinutes: 5 against
+//      crm_tasks for an identified session, and emails the alert for every hot
+//      session identified or not. The footnote now says that.
+//
+// RULE 6 (a wall of identical states is a STOP) — probed 2026-08-07 before
+// shipping: visitor_sessions holds 60,473 rows, 59,023 of them scoring under
+// 20. The near-wall of "cold" is real, not a broken read. 60,469 rows carry
+// source_domain ryan-realty.com and 4 carry ryanrealty.vercel.app, so the
+// two-domain sentence below is true. Only 18 sessions have ever identified,
+// which is why the Identified filter returns a short list.
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  ReportGrid,
+  ReportNumbers,
+  ReportSkeleton,
+  SectionHead,
+  StateWord,
+  VerdictLine,
+  type ReportColumn,
+  type ReportGridRow,
+} from '@/components/admin/v2'
 import { fetchLiveVisitors, fetchLiveSummary, type LiveSessionRow } from '../_lib/queries'
+import VisitorFilterSelect from '../VisitorFilterSelect'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -41,18 +83,20 @@ function formatRelative(iso: string): string {
   return `${Math.floor(diffSec / 86400)}d ago`
 }
 
-function scoreBadgeVariant(score: number): 'default' | 'secondary' | 'destructive' | 'outline' {
-  if (score >= 100) return 'destructive'  // hot
-  if (score >= 50) return 'default'       // warm
-  if (score >= 20) return 'secondary'     // engaged
-  return 'outline'                        // cold
-}
-
 function scoreLabel(score: number): string {
   if (score >= 100) return 'hot'
   if (score >= 50) return 'warm'
   if (score >= 20) return 'engaged'
   return 'cold'
+}
+
+/** Hot and warm keep the two lit states the shadcn badge variants gave them;
+ *  engaged and cold stay quiet text. The words are unchanged. */
+function ScoreCell({ score }: { score: number }) {
+  const text = `${score} · ${scoreLabel(score)}`
+  if (score >= 100) return <StateWord state="down">{text}</StateWord>
+  if (score >= 50) return <StateWord state="accent">{text}</StateWord>
+  return <span style={{ color: 'var(--a-text-2)' }}>{text}</span>
 }
 
 function formatSource(s: Pick<LiveSessionRow, 'utm_source' | 'utm_medium'>): string {
@@ -73,215 +117,102 @@ function shortSession(id: string): string {
   return id.slice(0, 8)
 }
 
+const COLUMNS: ReportColumn[] = [
+  { key: 'session', label: 'Session' },
+  { key: 'source', label: 'Source' },
+  { key: 'geo', label: 'Geo' },
+  { key: 'score', label: 'Score', numeric: true },
+  { key: 'intent', label: 'Intent' },
+  { key: 'events', label: 'Events', numeric: true },
+  { key: 'identified', label: 'Identified' },
+  { key: 'seen', label: 'Last seen' },
+]
+
 async function SummaryStrip() {
   const summary = await fetchLiveSummary()
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <Card>
-        <CardContent className="p-4">
-          <p className="text-xs text-muted-foreground">Active now (5m)</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">{summary.totalActive}</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="p-4">
-          <p className="text-xs text-muted-foreground">Sessions today</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">{summary.totalToday}</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="p-4">
-          <p className="text-xs text-muted-foreground">Identified today</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">{summary.identifiedToday}</p>
-          {summary.totalToday > 0 && (
-            <p className="text-xs text-muted-foreground tabular-nums">
-              {Math.round((summary.identifiedToday / summary.totalToday) * 100)}% of sessions
-            </p>
-          )}
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="p-4">
-          <p className="text-xs text-muted-foreground">Hot leads today</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">{summary.hotLeadsToday}</p>
-          {summary.topSource && (
-            <p className="text-xs text-muted-foreground">
-              Top source: {summary.topSource} ({summary.topSourceCount})
-            </p>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+    <>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={summary.hotLeadsToday > 0 ? 'attention' : 'ok'}>
+          <b>
+            {summary.totalToday} {summary.totalToday === 1 ? 'session' : 'sessions'} today.
+          </b>{' '}
+          {summary.totalActive} active in the last five minutes · {summary.identifiedToday}{' '}
+          identified · {summary.hotLeadsToday} hot.
+        </VerdictLine>
+      </div>
+
+      <ReportNumbers
+        items={[
+          { key: 'active', label: 'Active now (5m)', value: String(summary.totalActive) },
+          { key: 'today', label: 'Sessions today', value: String(summary.totalToday) },
+          { key: 'identified', label: 'Identified today', value: String(summary.identifiedToday) },
+          { key: 'hot', label: 'Hot leads today', value: String(summary.hotLeadsToday) },
+        ]}
+      />
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', margin: '0 0 20px' }}>
+        {summary.totalToday > 0
+          ? `${Math.round((summary.identifiedToday / summary.totalToday) * 100)}% of sessions identified`
+          : 'No sessions today yet'}
+        {summary.topSource ? ` · Top source: ${summary.topSource} (${summary.topSourceCount})` : ''}
+      </p>
+    </>
   )
 }
 
 async function VisitorTable({ filter }: { filter: 'all' | 'anonymous' | 'identified' }) {
   const rows = await fetchLiveVisitors({ identifiedFilter: filter, limit: 50 })
-  if (rows.length === 0) {
-    return (
-      <Card>
-        <CardContent className="p-8 text-center text-sm text-muted-foreground">
-          No matching sessions yet. Once the WordPress snippet starts firing tracked events, sessions appear here in real time.
-        </CardContent>
-      </Card>
-    )
-  }
-  return (
-    <>
-      {/* Session cards — phones (one thumb-tap per session) */}
-      <div className="space-y-2 md:hidden">
-        {rows.map((s) => (
-          <Card key={s.session_id} className="transition-colors hover:bg-muted/50">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-2">
-                <Link
-                  href={`/admin/visitors/${encodeURIComponent(s.session_id)}`}
-                  className="min-w-0 flex-1 hover:underline"
-                  title={s.session_id}
-                >
-                  <div className="font-mono text-xs text-foreground">{shortSession(s.session_id)}</div>
-                  <div className="text-[10px] text-muted-foreground">{s.source_domain}</div>
-                </Link>
-                <Badge variant={scoreBadgeVariant(s.engagement_score)} className="shrink-0 tabular-nums">
-                  {s.engagement_score} · {scoreLabel(s.engagement_score)}
-                </Badge>
-              </div>
-              <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                <div className="min-w-0">
-                  <span className="text-muted-foreground">Source </span>
-                  <span className="text-foreground">{formatSource(s)}</span>
-                  {s.utm_campaign && <div className="text-[10px] text-muted-foreground">{s.utm_campaign}</div>}
-                </div>
-                <div className="min-w-0">
-                  <span className="text-muted-foreground">Geo </span>
-                  <span className="text-foreground">{formatGeo(s)}</span>
-                </div>
-                <div className="tabular-nums">
-                  <span className="text-muted-foreground">Events </span>
-                  <span className="text-foreground">{s.event_count}</span>
-                </div>
-                <div className="whitespace-nowrap">
-                  <span className="text-muted-foreground">Last seen </span>
-                  <span className="text-foreground">{formatRelative(s.last_seen_at)}</span>
-                </div>
-              </div>
-              {s.intent_tags.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {s.intent_tags.map((t) => (
-                    <Badge key={t} variant="outline" className="text-[10px]">
-                      {t.replace(/_/g, ' ')}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-              <div className="mt-2 text-xs">
-                {s.crm_person_id ?? s.fub_person_id ? (
-                  <a
-                    href={`/admin/people/${s.crm_person_id ?? s.fub_person_id}`}
-                    className="text-primary hover:underline"
-                  >
-                    {s.identified_email ?? `Contact #${s.crm_person_id ?? s.fub_person_id}`}
-                  </a>
-                ) : (
-                  <span className="text-muted-foreground">anonymous</span>
-                )}
-                {s.identified_via && (
-                  <span className="text-[10px] text-muted-foreground"> · via {s.identified_via}</span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
 
-      {/* Session table — desktop */}
-      <Card className="hidden md:block">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Session</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Geo</TableHead>
-                <TableHead className="text-right tabular-nums">Score</TableHead>
-                <TableHead>Intent</TableHead>
-                <TableHead className="text-right tabular-nums">Events</TableHead>
-                <TableHead>Identified</TableHead>
-                <TableHead>Last seen</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((s) => (
-              <TableRow key={s.session_id}>
-                <TableCell className="font-mono text-xs">
-                  <Link
-                    href={`/admin/visitors/${encodeURIComponent(s.session_id)}`}
-                    className="hover:underline"
-                    title={s.session_id}
-                  >
-                    {shortSession(s.session_id)}
-                  </Link>
-                  <div className="text-[10px] text-muted-foreground">{s.source_domain}</div>
-                </TableCell>
-                <TableCell className="text-xs">
-                  <div>{formatSource(s)}</div>
-                  {s.utm_campaign && <div className="text-[10px] text-muted-foreground">{s.utm_campaign}</div>}
-                </TableCell>
-                <TableCell className="text-xs">{formatGeo(s)}</TableCell>
-                <TableCell className="text-right">
-                  <Badge variant={scoreBadgeVariant(s.engagement_score)} className="tabular-nums">
-                    {s.engagement_score} · {scoreLabel(s.engagement_score)}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {s.intent_tags.length === 0 ? (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    ) : (
-                      s.intent_tags.map((t) => (
-                        <Badge key={t} variant="outline" className="text-[10px]">
-                          {t.replace(/_/g, ' ')}
-                        </Badge>
-                      ))
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="text-right text-sm tabular-nums">{s.event_count}</TableCell>
-                <TableCell className="text-xs">
-                  {s.crm_person_id ?? s.fub_person_id ? (
-                    <a
-                      href={`/admin/people/${s.crm_person_id ?? s.fub_person_id}`}
-                      className="text-primary hover:underline"
-                    >
-                      {s.identified_email ?? `Contact #${s.crm_person_id ?? s.fub_person_id}`}
-                    </a>
-                  ) : (
-                    <span className="text-muted-foreground">anonymous</span>
-                  )}
-                  {s.identified_via && (
-                    <div className="text-[10px] text-muted-foreground">via {s.identified_via}</div>
-                  )}
-                </TableCell>
-                <TableCell className="text-xs whitespace-nowrap">{formatRelative(s.last_seen_at)}</TableCell>
-              </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </>
-  )
-}
+  const gridRows: ReportGridRow[] = rows.map((s) => {
+    const contactId = s.crm_person_id ?? s.fub_person_id
+    return {
+      key: s.session_id,
+      cells: [
+        <Link
+          key="session"
+          href={`/admin/visitors/${encodeURIComponent(s.session_id)}`}
+          title={s.session_id}
+          style={{ color: 'var(--a-accent)', fontFamily: 'var(--a-font-mono)' }}
+        >
+          {shortSession(s.session_id)}{' '}
+          <span style={{ fontFamily: 'var(--a-font)', color: 'var(--a-text-2)', fontWeight: 400 }}>
+            {s.source_domain}
+          </span>
+        </Link>,
+        s.utm_campaign ? `${formatSource(s)} (${s.utm_campaign})` : formatSource(s),
+        formatGeo(s),
+        <ScoreCell key="score" score={s.engagement_score} />,
+        s.intent_tags.length === 0 ? '—' : s.intent_tags.map((t) => t.replace(/_/g, ' ')).join(' · '),
+        s.event_count,
+        contactId ? (
+          <span key="identified">
+            <a href={`/admin/people/${contactId}`} style={{ color: 'var(--a-accent)' }}>
+              {s.identified_email ?? `Contact #${contactId}`}
+            </a>
+            {s.identified_via ? ` · via ${s.identified_via}` : ''}
+          </span>
+        ) : (
+          'anonymous'
+        ),
+        formatRelative(s.last_seen_at),
+      ],
+    }
+  })
 
-function TableSkeleton() {
   return (
-    <Card>
-      <CardContent className="space-y-2 p-4">
-        {Array.from({ length: 8 }, (_, i) => (
-          <Skeleton key={i} className="h-10 w-full" />
-        ))}
-      </CardContent>
-    </Card>
+    <ReportGrid
+      label="Live visitor sessions"
+      columns={COLUMNS}
+      template="minmax(150px, 1.3fr) minmax(120px, 1.1fr) minmax(110px, 1fr) minmax(96px, 0.8fr) minmax(120px, 1.1fr) minmax(64px, 0.5fr) minmax(140px, 1.2fr) minmax(84px, 0.7fr)"
+      minWidth={980}
+      rows={gridRows}
+      empty={
+        <>
+          No matching sessions yet. Once the WordPress snippet starts firing tracked events,
+          sessions appear here on the next reload.
+        </>
+      }
+    />
   )
 }
 
@@ -294,38 +225,33 @@ export default async function LiveVisitorsPage({
   const filter = (sp.filter === 'anonymous' || sp.filter === 'identified') ? sp.filter : 'all'
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">Live visitors</h1>
-        <p className="text-sm text-muted-foreground">
-          The 50 most recently active sessions across ryan-realty.com and ryanrealty.vercel.app. Engagement score updates in real time as visitors browse. Click a session id for the full event timeline.
-        </p>
-      </header>
-
-      <Suspense fallback={<Skeleton className="h-24 w-full" />}>
+    <div className="av2-scope" style={{ maxWidth: 1120, margin: '0 auto', padding: 16 }}>
+      <Suspense fallback={<ReportSkeleton rows={3} />}>
         <SummaryStrip />
       </Suspense>
 
-      <Tabs value={filter}>
-        <TabsList>
-          <TabsTrigger value="all" asChild>
-            <Link href="?filter=all" replace>All</Link>
-          </TabsTrigger>
-          <TabsTrigger value="anonymous" asChild>
-            <Link href="?filter=anonymous" replace>Anonymous</Link>
-          </TabsTrigger>
-          <TabsTrigger value="identified" asChild>
-            <Link href="?filter=identified" replace>Identified</Link>
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 12px' }}>
+        Up to 50 sessions, most recently active first, across ryan-realty.com and
+        ryanrealty.vercel.app. A database trigger rescores a session on every event it records.
+        Open a session id for its full event timeline.
+      </p>
 
-      <Suspense fallback={<TableSkeleton />}>
+      <div style={{ maxWidth: 240, margin: '0 0 4px' }}>
+        <VisitorFilterSelect filter={filter} />
+      </div>
+
+      <SectionHead>Sessions</SectionHead>
+      <Suspense fallback={<ReportSkeleton />}>
         <VisitorTable filter={filter} />
       </Suspense>
 
-      <p className="text-xs text-muted-foreground">
-        Page revalidates on every navigation. Reload to refresh. Score legend: cold &lt; 20, engaged 20–49, warm 50–99, hot ≥ 100. Hot scores fire a 5-minute FUB call task automatically (cron-driven).
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 16 }}>
+        The page revalidates on every navigation — reload to refresh. Score legend: cold under 20,
+        engaged 20–49, warm 50–99, hot 100 and up. A session at 100 or more is picked up by the
+        hot-lead escalation cron, which runs every 15 minutes: it opens a five-minute call task on
+        the contact in the CRM when the session is identified, and emails the alert either way.
+        Follow Up Boss was decommissioned 2026-06-24, so nothing is sent there. &ldquo;Today&rdquo;
+        counts from midnight UTC — that is the window the query uses, not midnight Pacific.
       </p>
     </div>
   )
