@@ -1,12 +1,18 @@
 'use client'
 
+// Migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+// Presentation only: the createGeoPlace({ type: 'neighborhood', parentId,
+// name }) call with the same trim, the same `cities.length === 0` early
+// return, the same initial cityId (selectedCityId, else the first city), the
+// same disabled rule, the same error surface and the same router.refresh()
+// are unchanged. The raw <select> became SelectField and the raw <h2> became
+// SectionHead; "Create" stays the page's one primary action.
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createGeoPlace } from '@/app/actions/geo-places'
 import type { GeoPlaceRow } from '@/app/actions/geo-places'
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
+import { Button, SectionHead, SelectField, TextField } from '@/components/admin/v2'
 
 export default function NeighborhoodForm({
   cities,
@@ -46,40 +52,36 @@ export default function NeighborhoodForm({
   if (cities.length === 0) return null
 
   return (
-    <section className="mt-8 rounded-lg border border-border bg-muted p-4">
-      <h2 className="font-semibold text-foreground">Create neighborhood</h2>
-      <form onSubmit={handleSubmit} className="mt-3 flex flex-wrap items-end gap-3">
-        <Label className="flex flex-col gap-1">
-          <span className="text-sm text-muted-foreground">City</span>
-          <select
-            value={cityId}
-            onChange={(e) => setCityId(e.target.value)}
-            className="rounded border border-border px-3 py-2 text-sm"
-          >
-            {cities.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </Label>
-        <Label className="flex flex-col gap-1">
-          <span className="text-sm text-muted-foreground">Neighborhood name</span>
-          <Input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. West Side"
-            className="rounded border border-border px-3 py-2 text-sm"
-          />
-        </Label>
-        <Button
-          type="submit"
-          disabled={loading || !name.trim()}
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-60"
+    <section>
+      <SectionHead>Create neighborhood</SectionHead>
+      <form onSubmit={handleSubmit} className="av2-inline-form">
+        <SelectField
+          label="City"
+          value={cityId}
+          onChange={(e) => setCityId(e.target.value)}
         >
+          {cities.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </SelectField>
+        <TextField
+          label="Neighborhood name"
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. West Side"
+        />
+        <Button type="submit" disabled={loading || !name.trim()}>
           {loading ? 'Creating…' : 'Create'}
         </Button>
       </form>
-      {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+      {error && (
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)', margin: '8px 0 0' }}>
+          {error}
+        </p>
+      )}
     </section>
   )
 }

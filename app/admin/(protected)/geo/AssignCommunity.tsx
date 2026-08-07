@@ -1,11 +1,18 @@
 'use client'
 
+// Migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+// Presentation only: the updateGeoPlace(communityId, { parent_id:
+// neighborhoodId || null }) call, the `communities.length === 0` early
+// return, the empty "Select…" / "City only (no neighborhood)" option values
+// (both empty strings — an empty neighborhood means "leave under city"), the
+// disabled rule and the router.refresh() are unchanged. Both raw <select>s
+// became SelectField and the raw <h2> became SectionHead.
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateGeoPlace } from '@/app/actions/geo-places'
 import type { GeoPlaceRow } from '@/app/actions/geo-places'
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
+import { Button, SectionHead, SelectField } from '@/components/admin/v2'
 
 export default function AssignCommunity({
   neighborhoods,
@@ -34,41 +41,41 @@ export default function AssignCommunity({
   if (communities.length === 0) return null
 
   return (
-    <section className="mt-8 rounded-lg border border-border bg-muted p-4">
-      <h2 className="font-semibold text-foreground">Assign community to neighborhood</h2>
-      <p className="mt-1 text-sm text-muted-foreground">Set a community&apos;s parent to a neighborhood or leave under city.</p>
-      <div className="mt-3 flex flex-wrap items-end gap-3">
-        <Label className="flex flex-col gap-1">
-          <span className="text-sm text-muted-foreground">Community</span>
-          <select
-            value={communityId}
-            onChange={(e) => setCommunityId(e.target.value)}
-            className="rounded border border-border px-3 py-2 text-sm"
-          >
-            <option value="">Select…</option>
-            {communities.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </Label>
-        <Label className="flex flex-col gap-1">
-          <span className="text-sm text-muted-foreground">Neighborhood</span>
-          <select
-            value={neighborhoodId}
-            onChange={(e) => setNeighborhoodId(e.target.value)}
-            className="rounded border border-border px-3 py-2 text-sm"
-          >
-            <option value="">City only (no neighborhood)</option>
-            {neighborhoods.map((n) => (
-              <option key={n.id} value={n.id}>{n.name}</option>
-            ))}
-          </select>
-        </Label>
+    <section>
+      <SectionHead>Assign community to neighborhood</SectionHead>
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 8px' }}>
+        Set a community&apos;s parent to a neighborhood or leave under city.
+      </p>
+      <div className="av2-inline-form">
+        <SelectField
+          label="Community"
+          value={communityId}
+          onChange={(e) => setCommunityId(e.target.value)}
+        >
+          <option value="">Select…</option>
+          {communities.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </SelectField>
+        <SelectField
+          label="Neighborhood"
+          value={neighborhoodId}
+          onChange={(e) => setNeighborhoodId(e.target.value)}
+        >
+          <option value="">City only (no neighborhood)</option>
+          {neighborhoods.map((n) => (
+            <option key={n.id} value={n.id}>
+              {n.name}
+            </option>
+          ))}
+        </SelectField>
         <Button
           type="button"
+          variant="quiet"
           onClick={handleAssign}
           disabled={loading || !communityId}
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-60"
         >
           {loading ? 'Saving…' : 'Assign'}
         </Button>
