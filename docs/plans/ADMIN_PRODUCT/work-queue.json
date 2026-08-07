@@ -1,33 +1,43 @@
 [
   {
-    "id": "11c-crm-tree",
-    "phase": "P11",
-    "note": "57 remaining /admin/crm pages, ordered by the weekly-use evidence in decisions.md. One family per commit. FIRST: restyle the two deliberate 11B holdouts \u2014 ContactSendCenter's black send bar and the quick-action FAB (send chokepoints, mounted as-is in 11B; restyle without touching the send path)."
-  },
-  {
     "id": "11d-reports-interior",
     "phase": "P11",
-    "note": "23 analytics/report pages behind the definition-first hub."
+    "note": "reports/** (8 pages) — the interior behind the definition-first hub. IN FLIGHT 2026-08-07. Carries a measured defect: reports/brokers/page.tsx:8 formats currency with toLocaleString(undefined, …), which resolves differently server vs client and produces a hydration mismatch; fix with lib/format/money formatPrice and check the other 7 for the same pattern."
+  },
+  {
+    "id": "11c-remaining-families",
+    "phase": "P11",
+    "note": "bpo 3 · cmas 3 · crm/deals 3 IN FLIGHT 2026-08-07. Then the 2-page families: crm/sequences · email · help · listings · people · signing · sync · visitors. /admin/crm/deals renders a second <main> (measured)."
   },
   {
     "id": "11e-remainder",
     "phase": "P11",
-    "note": "Whatever the ratchet still shows."
+    "note": "32 singleton pages, plus two pieces of named debt: (a) converge analytics' DataGrid.tsx + kit.tsx into components/admin/v2/ReportGrid — two of three readers merged in 11C-4, these are the third; (b) add a Switch primitive to the v2 barrel so geo's ResortCommunityToggle can migrate (hand-rolling one is a raw <button role=\"switch\"> and fails ci:admin-ui rule A)."
+  },
+  {
+    "id": "11f-mounted-islands",
+    "phase": "P11",
+    "note": "The client islands mounted as-is during 11C keep legacy markup and @/components/ui imports behind migrated shells: AdminMediaManager, PhotoCurationBoard, StockPhotosPicker, GenerateBannersButton, AreaGuideUploadClient, ResortCommunityToggle, the newsletter compose/enroll/bulk forms, DealsBoard/DealDetailModal. Two board pages currently show a v2 verdict line above a legacy h1 until their island migrates. Also fold the duplicated folder-structure explanation on geo/area-guide-upload (page + island both print it)."
   },
   {
     "id": "12-send-integrity",
     "phase": "P12",
-    "note": "Group MMS chokepoint, block-reason ledger, gate-drop record. Compliance-adjacent \u2014 may run parallel to P11."
+    "note": "Group MMS chokepoint, block-reason ledger, gate-drop record. Compliance-adjacent — may run parallel to P11."
   },
   {
     "id": "12-correctness",
     "phase": "P12",
-    "note": "Listing-edit sync overlay, assigned_broker resolution rule, fsbo off_market writer, dupe-candidate queue. (Signing-broker directive SHIPPED 2026-08-06, 82e14a42.)"
+    "note": "Listing-edit sync overlay, assigned_broker resolution rule, fsbo off_market writer, dupe-candidate queue. (Signing-broker directive SHIPPED 2026-08-06, 82e14a42.) Add: listImportJobsAction filters crm_imports by nothing, so /admin/crm/import lists mailbox syncs and lead-intake runs as 'Past imports' (task_8b0b02f0)."
   },
   {
     "id": "12-measurement",
     "phase": "P12",
     "note": "first-broker-action stamp, reply-latency interval, CMA SLA reader."
+  },
+  {
+    "id": "admin-hydration-mismatch",
+    "phase": "P12",
+    "note": "Intermittent React hydration mismatch across admin pages, PRE-EXISTING and app-wide — reproduced on /admin/today, which 11C never touched. ConsoleShell itself has no window/localStorage/Date hazard; suspect a relative timestamp computed at both render and hydration. Repro with scripts/_admin-v2-verify.mjs, looping one route to catch the intermittent case. Filed as task_1ffc76f2."
   },
   {
     "id": "3b-fub-identifiers",
