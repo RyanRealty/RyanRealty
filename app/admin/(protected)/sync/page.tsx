@@ -1,8 +1,34 @@
+// @no-parity — internal admin surface, no public mockup contract
+/**
+ * /admin/sync — MLS pipeline status + operator controls. Superuser-gated by the
+ * shared sync/layout.tsx.
+ *
+ * 11C: the page CHROME speaks the v2 admin language (ADMIN_UI.md). The three
+ * panels below are mounted verbatim and migrate with their own family.
+ *
+ * MUST NOT BREAK:
+ *  - the `runInProgress` expression is the cursor-freshness read the panels
+ *    below key off (SyncPageAdvanced enable/disable, RefreshActivePendingButton).
+ *    It is READ by the lead sentence and otherwise untouched.
+ *  - `zeroTerminal` stays all-zero: SyncLiveStatusAndTerminal overwrites it from
+ *    /api/admin/sync/live within 5s, and a non-zero seed would paint a figure
+ *    nothing measured.
+ *  - ci:sync-cursor / ci:delta-sync-core / ci:count-degraded-read guard the
+ *    lanes these panels report on; nothing here computes a cursor or a count.
+ *
+ * CUT 2026-08-07 (§0): the old lead read "Delta sync, terminal history, full
+ * sync, and the strict verify cron handle ongoing work." vercel.json registers
+ * sync-delta, sync-history-terminal and sync-full — there is no scheduled
+ * strict-verify cron. /api/cron/sync-verify-full-history exists as a route but
+ * sits in scripts/cron-registered-baseline.json (the unregistered backlog), so
+ * it runs only when someone curls it. The sentence claimed a fourth cron that
+ * does not run.
+ */
 export const dynamic = 'force-dynamic'
 import BackfillHealthPanel from './BackfillHealthPanel'
 import SyncHeavyStatusSections from './SyncHeavyStatusSections'
 import SyncLiveStatusAndTerminal from './SyncLiveStatusAndTerminal'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { VerdictLine } from '@/components/admin/v2'
 import { getSyncStatus } from '@/app/actions/sync-full-cron'
 import { getTotalListingsRows } from '@/app/actions/listings'
 
@@ -40,14 +66,28 @@ export default async function SyncPage() {
     terminalFinalizedPct: 0,
   }
 
+  // Lead sentence — every clause reads a value already on this page. `paused`
+  // and `cronEnabled` are cursor flags the operator controls below toggle;
+  // `runInProgress` is the expression above, verbatim; the count is the same
+  // getTotalListingsRows() figure the panel prints as "In database".
+  const paused = syncStatus.cursor?.paused === true
+  const cronOff = syncStatus.cursor?.cronEnabled === false
+  const phase = syncStatus.cursor?.phase ?? null
+
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <ConsoleSection title="Sync status" bodyClassName="mb-2">
-        <p className="text-sm text-muted-foreground">
-          Delta sync, terminal history, full sync, and the strict verify cron handle ongoing work.
-          Use the controls below to manually trigger, pause, or monitor a sync.
-        </p>
-      </ConsoleSection>
+    <div className="av2-scope" style={{ maxWidth: 1120, margin: '0 auto', padding: 16 }}>
+      <VerdictLine tone={paused || cronOff ? 'attention' : 'ok'}>
+        <b>
+          {paused ? 'Full sync is paused. ' : null}
+          {cronOff ? 'The weekly full-sync cron is switched off. ' : null}
+          {!paused && !cronOff
+            ? runInProgress
+              ? `A sync run is moving through its ${phase} phase. `
+              : 'No sync run has moved the cursor in the last two minutes. '
+            : null}
+        </b>
+        {totalListings.toLocaleString('en-US')} listings in the database.
+      </VerdictLine>
 
       {/* Live sync status + start/stop terminal history buttons */}
       <SyncLiveStatusAndTerminal
@@ -63,9 +103,9 @@ export default async function SyncPage() {
       />
 
       {/* Backfill health monitor */}
-      <div className="mt-6">
+      <div style={{ marginTop: 24 }}>
         <BackfillHealthPanel />
       </div>
-    </main>
+    </div>
   )
 }

@@ -10,6 +10,8 @@ import {
   getTwilioSmsStatus,
 } from '@/app/actions/crm'
 import { getPersonIdByLegacyId } from '@/lib/data/crm/getPersonIdByLegacyId'
+import { resolveDisplayName } from '@/app/admin/(protected)/crm/[id]/person-view-model'
+import { EntityTitle } from '@/components/admin/v2'
 import { PersonWorkspaceBody } from '@/components/admin/crm/person-detail/PersonWorkspaceBody'
 import { PersonWorkspaceSkeleton } from '@/components/admin/crm/person-detail/PersonWorkspaceSkeleton'
 
@@ -37,6 +39,13 @@ export const dynamic = 'force-dynamic'
  * Identity core resolves first (auth + person + template vocabulary). Secondary
  * regions stream under Suspense via PersonWorkspaceBody → PersonWorkspace (one
  * responsive tree; mobile tabs live under person-detail/, not a route fork).
+ *
+ * 11C: the page CHROME speaks the v2 admin language (ADMIN_UI.md); the
+ * workspace tree below is mounted verbatim and migrates with its own family.
+ * MUST NOT BREAK: ci:person-workspace-single-tree pins Suspense +
+ * PersonWorkspaceBody + PersonWorkspaceSkeleton in this file and forbids an
+ * md: fork here. Broker scope is carried by getCrmPersonFull's own RBAC
+ * self-guard (an out-of-scope contact returns the empty bundle → notFound).
  */
 export default async function PersonWorkspaceToolsPage({
   params,
@@ -68,13 +77,20 @@ export default async function PersonWorkspaceToolsPage({
 
   return (
     <>
-      <div style={{ padding: '12px 16px 0' }}>
-        <Link
-          href={`/admin/people/${id}`}
-          style={{ fontSize: 13, color: 'var(--a-text-2, #6b7280)', textDecoration: 'none' }}
-        >
-          ← Person
-        </Link>
+      <div className="av2-scope" style={{ padding: '12px 16px 0' }}>
+        <div className="av2-wordrow" style={{ marginBottom: 6 }}>
+          <Link
+            href={`/admin/people/${id}`}
+            className="av2-btn av2-btn--quiet"
+            style={{ textDecoration: 'none' }}
+          >
+            Person
+          </Link>
+        </div>
+        {/* The workspace tree below carries no h1 (PersonSidebar's name is an
+            h2), so the entity's own name is the heading here — the one h1
+            ADMIN_UI rule 1 allows on an entity page. */}
+        <EntityTitle>{resolveDisplayName(full.person.name, id)} · all tools</EntityTitle>
       </div>
       <Suspense fallback={<PersonWorkspaceSkeleton />}>
         <PersonWorkspaceBody

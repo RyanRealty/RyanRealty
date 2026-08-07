@@ -2,6 +2,7 @@
 import { notFound } from 'next/navigation'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getClientPortalView } from '@/lib/data/crm/getClientPortalView'
+import { VerdictLine } from '@/components/admin/v2'
 import { ClientPortalReadOnlyView } from '@/components/admin/crm/portal-view/ClientPortalReadOnlyView'
 
 export const metadata = { title: 'Portal view · Console' }
@@ -33,6 +34,14 @@ export const metadata = { title: 'Portal view · Console' }
  *
  * force-dynamic for the same reason the person workspace uses it: the read is
  * auth-scoped and per-contact, so it must never land in a shared cache.
+ *
+ * 11C: the page LEAD speaks the v2 admin language (ADMIN_UI.md pattern 3 —
+ * answer the screen's question in one sentence first). Every figure in that
+ * sentence is the length of the list rendered under the matching section
+ * heading below, so the lead and the body can never disagree. The mirror
+ * component itself is mounted verbatim: its read-only invariant is pinned by
+ * lib/data/crm/clientPortalView.test.ts, which greps this route AND that
+ * directory for 'use server', action props, <form>, and write verbs.
  */
 export const dynamic = 'force-dynamic'
 
@@ -50,5 +59,28 @@ export default async function ClientPortalViewPage({
   const view = await getClientPortalView({ crmPersonId: id })
   if (!view) notFound()
 
-  return <ClientPortalReadOnlyView view={view} personHref={`/admin/people/${id}`} />
+  const alerts = view.alerts.length
+  const areas = view.namedAreas.length
+  const saved = view.savedHomes.length
+  const hidden = view.hiddenHomes.length
+  const nothingSetUp = alerts + areas + saved + hidden === 0
+
+  return (
+    <>
+      <div className="av2-scope" style={{ maxWidth: 896, margin: '0 auto', padding: '0 0 4px' }}>
+        <VerdictLine tone={nothingSetUp ? 'attention' : 'ok'}>
+          {nothingSetUp ? (
+            <b>No alerts, named areas, saved homes, or hidden homes.</b>
+          ) : (
+            <b>
+              {alerts} alert{alerts === 1 ? '' : 's'} · {areas} named area{areas === 1 ? '' : 's'} ·{' '}
+              {saved} saved home{saved === 1 ? '' : 's'} · {hidden} hidden home
+              {hidden === 1 ? '' : 's'}.
+            </b>
+          )}
+        </VerdictLine>
+      </div>
+      <ClientPortalReadOnlyView view={view} personHref={`/admin/people/${id}`} />
+    </>
+  )
 }
