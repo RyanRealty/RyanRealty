@@ -26,14 +26,15 @@ import {
 import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
 import { parseColsParam, ALL_COL_KEYS, COL_LABELS, type ColKey } from '@/lib/crm/reporting-constants'
 import { formatDate } from '@/lib/format/date'
-import { VerdictLine, SectionHead } from '@/components/admin/v2'
 import {
+  VerdictLine,
+  SectionHead,
   ReportGrid,
   ReportFreshness,
   ReportError,
   type ReportColumn,
   type ReportGridRow,
-} from '../_v2/ReportGrid'
+} from '@/components/admin/v2'
 import AgentActivityFilters from './AgentActivityFilters'
 import ShowMeSelector from './ShowMeSelector'
 import { AgentActivityChart } from './AgentActivityChart'

@@ -2,7 +2,7 @@
 //
 // Lead Sources report — 11C: migrated to the LOCKED admin v2 language
 // (design_system/admin/ADMIN_UI.md) through the reporting family's shared
-// presentation kit (../_v2/ReportGrid). Presentation only.
+// presentation kit (@/components/admin/v2). Presentation only.
 //
 // Carried over verbatim: the getCrmAccess guard, scopeBroker + the superuser
 // broker-filter rule, `?broker=` / `?date=` / `?cols=` handling and their
@@ -23,14 +23,15 @@ import { scopeBroker } from '@/lib/crm/scope'
 import { getLeadSourcesReport } from '@/lib/data/crm/getLeadSourcesReport'
 import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
 import { ALL_COL_KEYS, type ColKey, LS_COL_KEYS } from '@/lib/crm/reporting-constants'
-import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import {
+  SectionHead,
+  VerdictLine,
   ReportGrid,
   ReportFreshness,
   ReportError,
   type ReportColumn,
   type ReportGridRow,
-} from '../_v2/ReportGrid'
+} from '@/components/admin/v2'
 import LeadSourcesFilters from './LeadSourcesFilters'
 import { AgentActivityChart } from '../agent-activity/AgentActivityChart'
 import { LeadSourcesKpiStrip } from './LeadSourcesKpiStrip'

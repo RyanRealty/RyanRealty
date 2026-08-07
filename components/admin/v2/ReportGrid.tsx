@@ -1,11 +1,12 @@
 // @no-parity — internal admin surface, no public mockup contract
 /**
- * The reporting family's v2 presentation kit (11C).
+ * The admin's ONE tabular reader (11C). Built for /admin/crm/reporting, moved
+ * here in 11C-4 because the families that follow are tables too, and a reader
+ * per family is how the thirteen shadcn tables happened in the first place.
  *
  * Server components only — no state, no data access, no query-param handling.
- * Every page below /admin/crm/reporting that has migrated to the LOCKED admin
- * language (design_system/admin/ADMIN_UI.md) renders through these so the five
- * screens cannot drift apart the way the thirteen shadcn tables did.
+ * Callers pass already-formatted strings, so moving a page onto this kit cannot
+ * move a number.
  *
  * What the acceptance bar asks of a DATA page, and where it is answered here:
  *   - tabular numerals on every figure ....... .av2-rgrid__c--n / .av2-rnum__v
@@ -13,6 +14,10 @@
  *   - four states designed ................... <ReportSkeleton> (loading.tsx),
  *     <ReportGrid empty>, <ReportError>, <ReportFreshness> (stale + timestamp)
  *   - entity names are doors ................. the page passes a <Link> as the cell
+ *
+ * STILL DUPLICATED, fold in at 11E: analytics/_components/v2/DataGrid.tsx and
+ * that folder's kit.tsx (DataList/Figures/Trouble/Loading) cover this same
+ * ground for the six analytics pages. Two of the three readers are now one.
  */
 import './report-grid.css'
 import { formatDate } from '@/lib/format/date'

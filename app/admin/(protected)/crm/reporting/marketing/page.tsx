@@ -2,7 +2,7 @@
 //
 // §11.15 Marketing (UTM) Report — 11C: migrated to the LOCKED admin v2 language
 // (design_system/admin/ADMIN_UI.md), through the reporting family's shared
-// presentation kit (../_v2/ReportGrid). Presentation only.
+// presentation kit (@/components/admin/v2). Presentation only.
 //
 // Carried over verbatim: the getCrmAccess guard, `?date=` handling and its
 // `this_month` default, the getMarketingUtmReport(datePreset) read and its
@@ -17,14 +17,15 @@ import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import { getMarketingUtmReport } from '@/lib/data/crm/getMarketingUtmReport'
 import type { DatePreset } from '@/lib/data/crm/getAgentActivityReport'
-import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import {
+  SectionHead,
+  VerdictLine,
   ReportGrid,
   ReportFreshness,
   ReportError,
   type ReportColumn,
   type ReportGridRow,
-} from '../_v2/ReportGrid'
+} from '@/components/admin/v2'
 import MarketingFilters from './MarketingFilters'
 import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
 

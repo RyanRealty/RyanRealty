@@ -8,7 +8,7 @@
  * guard identical to every sibling reporting page: getCrmAccess or redirect.
  *
  * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md)
- * through the reporting family's shared presentation kit (../_v2/ReportGrid).
+ * through the reporting family's shared presentation kit (@/components/admin/v2).
  * Presentation only. Carried over verbatim: the guard, `?days=` parsing
  * (parseDays, with its 7-day fallback for anything off-list), the
  * getWestsideCohortActivity({ sinceDays }) read and its catch-to-null, every
@@ -25,14 +25,15 @@ import {
   type WestsideCohortActivity,
 } from '@/lib/data/crm/getWestsideCohortActivity'
 import { formatDate } from '@/lib/format/date'
-import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import {
+  SectionHead,
+  VerdictLine,
   ReportGrid,
   ReportNumbers,
   ReportError,
   type ReportColumn,
   type ReportGridRow,
-} from '../_v2/ReportGrid'
+} from '@/components/admin/v2'
 import WestsideFilters from './WestsideFilters'
 import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
 

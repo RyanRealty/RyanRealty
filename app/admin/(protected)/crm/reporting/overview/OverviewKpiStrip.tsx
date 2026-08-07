@@ -11,7 +11,7 @@
  * drawn from the same series, so the file no longer needs a client boundary or a
  * hard-coded brand hex.
  */
-import { ReportNumbers, type ReportNumberItem } from '../_v2/ReportGrid'
+import { ReportNumbers, type ReportNumberItem } from '@/components/admin/v2'
 import type {
   OverviewTotals,
   OverviewTimeSeriesPoint,

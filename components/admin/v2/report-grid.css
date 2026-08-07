@@ -1,4 +1,4 @@
-/* Reporting family — the data/grid shape of the LOCKED admin language.
+/* The data/grid shape of the LOCKED admin language — admin-wide.
    Canon: design_system/admin/ADMIN_UI.md (visual lock 2026-08-05). The six
    locked patterns cover queues, threads, verdicts, worklists, entity pages and
    config forms; a per-source / per-agent report is none of those, so 11C adds
@@ -11,8 +11,8 @@
 
    Phone-first: a row is one block (name, then "Label 12 · Label 4" inline), so
    nothing scrolls sideways at 375px. At >=720px the same markup becomes a
-   column grid. Owned by the five reporting pages migrated in 11C; promote into
-   components/admin/v2/ when the whole reporting family lands. */
+   column grid. Promoted here in 11C-4 (it started under crm/reporting) because
+   the families that follow are tables too. */
 
 /* ---- scroll container: the ONLY thing allowed to scroll sideways ---- */
 .av2-rgrid__scroll {

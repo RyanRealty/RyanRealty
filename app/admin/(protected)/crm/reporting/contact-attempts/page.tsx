@@ -18,15 +18,16 @@ import { scopeBroker } from '@/lib/crm/scope'
 import { getContactAttemptsReport } from '@/lib/data/crm/getContactAttemptsReport'
 import type { ContactAttemptsRow, ContactAttemptsTotals } from '@/lib/data/crm/getContactAttemptsReport'
 import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
-import { VerdictLine, SectionHead } from '@/components/admin/v2'
 import {
+  VerdictLine,
+  SectionHead,
   ReportGrid,
   ReportNumbers,
   ReportFreshness,
   ReportError,
   type ReportColumn,
   type ReportGridRow,
-} from '../_v2/ReportGrid'
+} from '@/components/admin/v2'
 import ContactAttemptsFilters from './ContactAttemptsFilters'
 import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
 

@@ -17,15 +17,16 @@ import {
   type SpeedToLeadTotals,
 } from '@/lib/data/crm/getSpeedToLeadReport'
 import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
-import { VerdictLine, SectionHead } from '@/components/admin/v2'
 import {
+  VerdictLine,
+  SectionHead,
   ReportGrid,
   ReportNumbers,
   ReportFreshness,
   ReportError,
   type ReportColumn,
   type ReportGridRow,
-} from '../_v2/ReportGrid'
+} from '@/components/admin/v2'
 import SpeedToLeadFilters from './SpeedToLeadFilters'
 import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
 

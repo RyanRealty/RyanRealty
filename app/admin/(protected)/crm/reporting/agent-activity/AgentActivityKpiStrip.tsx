@@ -17,8 +17,7 @@
  * a wall of pills on the page, not a picker behind a control.
  */
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { FilterChip } from '@/components/admin/v2'
-import { ReportNumbers, type ReportNumberItem } from '../_v2/ReportGrid'
+import { FilterChip, ReportNumbers, type ReportNumberItem } from '@/components/admin/v2'
 import {
   ALL_COL_KEYS,
   COL_LABELS,

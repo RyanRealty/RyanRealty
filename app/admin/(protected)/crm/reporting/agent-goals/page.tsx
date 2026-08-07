@@ -18,15 +18,16 @@ import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getAgentGoalsReport, type AgentGoalsRow } from '@/lib/data/crm/getAgentGoalsReport'
 import { formatPrice } from '@/lib/format/money'
-import { VerdictLine, SectionHead } from '@/components/admin/v2'
 import {
+  VerdictLine,
+  SectionHead,
   ReportGrid,
   GoalMeter,
   ReportFreshness,
   ReportError,
   type ReportColumn,
   type ReportGridRow,
-} from '../_v2/ReportGrid'
+} from '@/components/admin/v2'
 import { AgentGoalsYearSelect } from './AgentGoalsYearSelect'
 import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
 

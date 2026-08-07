@@ -2,7 +2,7 @@
 //
 // Properties report — 11C: migrated to the LOCKED admin v2 language
 // (design_system/admin/ADMIN_UI.md) through the reporting family's shared
-// presentation kit (../_v2/ReportGrid). Presentation only.
+// presentation kit (@/components/admin/v2). Presentation only.
 //
 // Carried over verbatim: the getCrmAccess guard, `?date=` handling and its
 // `this_month` default, datePresetLabel, the getPropertiesReport({ datePreset })
@@ -17,14 +17,15 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import { getPropertiesReport } from '@/lib/data/crm/getPropertiesReport'
-import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import {
+  SectionHead,
+  VerdictLine,
   ReportGrid,
   ReportFreshness,
   ReportError,
   type ReportColumn,
   type ReportGridRow,
-} from '../_v2/ReportGrid'
+} from '@/components/admin/v2'
 import PropertiesFilters from './PropertiesFilters'
 import { PropertiesMap } from './PropertiesMap'
 import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'

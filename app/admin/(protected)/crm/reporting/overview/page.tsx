@@ -22,8 +22,7 @@ import {
   HUB_MARKETING_REPORTS,
   type ReportHubCard,
 } from '@/lib/crm/reporting-constants'
-import { VerdictLine, SectionHead } from '@/components/admin/v2'
-import { ReportFreshness, ReportError } from '../_v2/ReportGrid'
+import { VerdictLine, SectionHead, ReportFreshness, ReportError } from '@/components/admin/v2'
 import { OverviewKpiStrip } from './OverviewKpiStrip'
 import OverviewFilters from './OverviewFilters'
 import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'

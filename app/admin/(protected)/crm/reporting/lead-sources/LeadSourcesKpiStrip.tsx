@@ -16,8 +16,7 @@
  * checkboxes became a folded disclosure of v2 filter chips.
  */
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { FilterChip } from '@/components/admin/v2'
-import { ReportNumbers, type ReportNumberItem } from '../_v2/ReportGrid'
+import { FilterChip, ReportNumbers, type ReportNumberItem } from '@/components/admin/v2'
 import { COL_LABELS, LS_COL_KEYS, type ColKey } from '@/lib/crm/reporting-constants'
 import type { LeadSourcesTotals, TimeSeriesPoint } from '@/lib/data/crm/getLeadSourcesReport'
 
