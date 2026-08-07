@@ -1,0 +1,267 @@
+{
+  "/admin": [],
+  "/admin/analytics": [
+    "button-name"
+  ],
+  "/admin/analytics/action-required": [
+    "color-contrast"
+  ],
+  "/admin/analytics/ad-roi": [
+    "button-name",
+    "color-contrast",
+    "link-in-text-block",
+    "scrollable-region-focusable"
+  ],
+  "/admin/analytics/cost-per-lead": [
+    "button-name",
+    "color-contrast"
+  ],
+  "/admin/analytics/demographics": [
+    "button-name"
+  ],
+  "/admin/analytics/funnel-breakdown": [
+    "button-name",
+    "color-contrast"
+  ],
+  "/admin/analytics/google-business-profile": [
+    "button-name",
+    "definition-list"
+  ],
+  "/admin/analytics/google-search": [
+    "button-name"
+  ],
+  "/admin/analytics/listing-performance": [
+    "button-name"
+  ],
+  "/admin/analytics/lp-leaderboard": [
+    "button-name",
+    "color-contrast"
+  ],
+  "/admin/analytics/meta-health": [],
+  "/admin/analytics/social": [
+    "button-name",
+    "color-contrast"
+  ],
+  "/admin/approval-queue": [
+    "button-name",
+    "color-contrast"
+  ],
+  "/admin/audiences": [
+    "link-in-text-block"
+  ],
+  "/admin/audit-log": [],
+  "/admin/banners": [],
+  "/admin/blog": [],
+  "/admin/bpo": [],
+  "/admin/bpo/new": [],
+  "/admin/broker-dashboard": [],
+  "/admin/broker-links": [],
+  "/admin/brokers": [
+    "color-contrast",
+    "link-in-text-block"
+  ],
+  "/admin/brokers/new": [
+    "color-contrast"
+  ],
+  "/admin/closings": [],
+  "/admin/cmas": [
+    "aria-allowed-attr",
+    "color-contrast"
+  ],
+  "/admin/cmas/new": [],
+  "/admin/commissions": [
+    "color-contrast"
+  ],
+  "/admin/console": [],
+  "/admin/console/leads": [],
+  "/admin/content": [
+    "link-in-text-block"
+  ],
+  "/admin/content-library": [],
+  "/admin/crm": [],
+  "/admin/crm/activity": [
+    "color-contrast"
+  ],
+  "/admin/crm/approvals": [],
+  "/admin/crm/automations": [],
+  "/admin/crm/calendar": [],
+  "/admin/crm/deals": [],
+  "/admin/crm/deals/pipelines": [],
+  "/admin/crm/health": [],
+  "/admin/crm/import": [],
+  "/admin/crm/import/new": [],
+  "/admin/crm/import/new/map": [
+    "color-contrast"
+  ],
+  "/admin/crm/import/new/preview": [
+    "color-contrast"
+  ],
+  "/admin/crm/inbox": [
+    "aria-prohibited-attr",
+    "aria-required-children"
+  ],
+  "/admin/crm/new": [
+    "button-name"
+  ],
+  "/admin/crm/referrals": [],
+  "/admin/crm/reporting": [],
+  "/admin/crm/reporting/agent-activity": [
+    "button-name"
+  ],
+  "/admin/crm/reporting/agent-goals": [],
+  "/admin/crm/reporting/appointments": [
+    "button-name",
+    "link-in-text-block"
+  ],
+  "/admin/crm/reporting/batch-emails": [],
+  "/admin/crm/reporting/call-logs": [
+    "button-name",
+    "color-contrast"
+  ],
+  "/admin/crm/reporting/calls": [],
+  "/admin/crm/reporting/contact-attempts": [
+    "button-name"
+  ],
+  "/admin/crm/reporting/deals": [],
+  "/admin/crm/reporting/lead-sources": [
+    "button-name"
+  ],
+  "/admin/crm/reporting/marketing": [],
+  "/admin/crm/reporting/overview": [],
+  "/admin/crm/reporting/properties": [
+    "button-name"
+  ],
+  "/admin/crm/reporting/speed-to-lead": [
+    "button-name"
+  ],
+  "/admin/crm/reporting/texts": [],
+  "/admin/crm/reporting/westside": [],
+  "/admin/crm/sequences": [],
+  "/admin/crm/settings": [],
+  "/admin/crm/settings/appointments": [],
+  "/admin/crm/settings/areas": [],
+  "/admin/crm/settings/assignment": [],
+  "/admin/crm/settings/brokers": [],
+  "/admin/crm/settings/company": [
+    "color-contrast"
+  ],
+  "/admin/crm/settings/company/block-list": [],
+  "/admin/crm/settings/company/registration": [],
+  "/admin/crm/settings/custom-fields": [],
+  "/admin/crm/settings/groups": [],
+  "/admin/crm/settings/lead-flows": [],
+  "/admin/crm/settings/market-reports": [],
+  "/admin/crm/settings/ponds": [],
+  "/admin/crm/settings/segments": [],
+  "/admin/crm/settings/stages": [],
+  "/admin/crm/settings/suppression": [],
+  "/admin/crm/settings/tags": [],
+  "/admin/crm/settings/team": [],
+  "/admin/crm/settings/templates": [],
+  "/admin/crm/subscriptions": [],
+  "/admin/crm/tasks": [
+    "color-contrast"
+  ],
+  "/admin/crm/workflows": [],
+  "/admin/deals": [],
+  "/admin/dscr": [
+    "color-contrast"
+  ],
+  "/admin/email": [],
+  "/admin/email/campaigns": [],
+  "/admin/email/compose": [
+    "color-contrast"
+  ],
+  "/admin/expired-listings": [],
+  "/admin/expired-outreach": [],
+  "/admin/expireds": [],
+  "/admin/financials": [],
+  "/admin/forms": [],
+  "/admin/fsbos": [],
+  "/admin/geo": [],
+  "/admin/geo/area-guide-upload": [
+    "aria-hidden-focus"
+  ],
+  "/admin/geo/resort-communities": [],
+  "/admin/guides": [],
+  "/admin/help": [],
+  "/admin/inbox": [],
+  "/admin/listings": [
+    "aria-allowed-attr"
+  ],
+  "/admin/login": [],
+  "/admin/media": [
+    "aria-valid-attr-value"
+  ],
+  "/admin/media/banners": [],
+  "/admin/media/photos": [],
+  "/admin/media/stock-photos": [],
+  "/admin/messages": [],
+  "/admin/newsletters": [],
+  "/admin/newsletters/analytics": [],
+  "/admin/newsletters/enroll": [],
+  "/admin/newsletters/new": [],
+  "/admin/newsletters/subscribers": [
+    "color-contrast"
+  ],
+  "/admin/operations": [
+    "color-contrast"
+  ],
+  "/admin/oversight": [
+    "link-in-text-block"
+  ],
+  "/admin/people": [
+    "link-in-text-block"
+  ],
+  "/admin/performance": [
+    "button-name"
+  ],
+  "/admin/photos": [],
+  "/admin/prospecting": [
+    "link-in-text-block"
+  ],
+  "/admin/reports": [],
+  "/admin/reports/brokers": [],
+  "/admin/reports/cma-performance": [],
+  "/admin/reports/custom": [
+    "label"
+  ],
+  "/admin/reports/emails": [],
+  "/admin/reports/lead-flow": [
+    "button-name",
+    "color-contrast"
+  ],
+  "/admin/reports/leads": [],
+  "/admin/reports/market": [],
+  "/admin/reports/traffic-sources": [
+    "button-name"
+  ],
+  "/admin/resort-communities": [],
+  "/admin/search": [
+    "aria-allowed-attr"
+  ],
+  "/admin/settings": [],
+  "/admin/settings/account": [],
+  "/admin/setup": [],
+  "/admin/sign-off": [
+    "color-contrast"
+  ],
+  "/admin/signing": [],
+  "/admin/site-pages": [
+    "label"
+  ],
+  "/admin/spark-status": [],
+  "/admin/stock-photos": [],
+  "/admin/sync": [
+    "aria-prohibited-attr"
+  ],
+  "/admin/sync/spark": [
+    "color-contrast"
+  ],
+  "/admin/today": [],
+  "/admin/transactions": [],
+  "/admin/users": [],
+  "/admin/valuations": [],
+  "/admin/visitors": [],
+  "/admin/visitors/live": []
+}

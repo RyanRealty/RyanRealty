@@ -1,4 +1,5 @@
 'use server'
+import { revalidatePerson } from '@/lib/crm/revalidate-person'
 
 /**
  * Send a CRM contact the current listings that match a saved search, and set up
@@ -119,8 +120,7 @@ export async function sendListingMatchesForContactAction(
     })
 
     if (listings.length === 0) {
-      revalidatePath(`/admin/crm/${personId}`)
-      revalidatePath(`/admin/crm/${personId}`)
+      revalidatePerson(personId)
       return {
         ok: true,
         sentCount: 0,
@@ -194,8 +194,7 @@ export async function sendListingMatchesForContactAction(
       payload: { filtersHash, count: listings.length },
     })
 
-    revalidatePath(`/admin/crm/${personId}`)
-    revalidatePath(`/admin/crm/${personId}`)
+    revalidatePerson(personId)
     return {
       ok: true,
       sentCount: listings.length,

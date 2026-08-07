@@ -1,4 +1,5 @@
 'use server'
+import { revalidatePerson } from '@/lib/crm/revalidate-person'
 
 /**
  * Market-report subscription actions (Stream 1, write side).
@@ -37,10 +38,10 @@ import {
 export type CrmReportSubscriptionResult = { ok: true; message?: string } | { ok: false; error: string }
 
 function revalidateContact(personId: number) {
-  // The contact record card lives at /admin/crm/[id]; the old
-  // /admin/crm/[id] route was a redirect stub. Revalidate the real page so the
+  // The contact record card lives at /admin/people/[id]/tools; /admin/crm/[id]
+  // is a redirect bridge. Revalidate both the bridge and the real page so the
   // toggle action (which has no redirect mask) refreshes the card.
-  revalidatePath(`/admin/crm/${personId}`)
+  revalidatePerson(personId)
 }
 
 /**

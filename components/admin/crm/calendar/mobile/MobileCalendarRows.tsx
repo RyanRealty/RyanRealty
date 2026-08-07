@@ -148,7 +148,7 @@ export function CalendarTaskRow({
         <button
           type="button"
           className="ml-2.5 min-w-0 flex-1 text-left"
-          onClick={() => { if (personId) router.push(`/admin/crm/${personId}`) }}
+          onClick={() => { if (personId) router.push(`/admin/people/${personId}`) }}
         >
           <span className={cn('block truncate text-[15px] text-foreground', checked && 'text-muted-foreground line-through')}>
             {title}

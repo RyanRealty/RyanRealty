@@ -118,7 +118,7 @@ export async function getGlobalActivityFeed(opts: {
       ...base,
       personId,
       personName: nameById.get(personId) ?? 'Unknown contact',
-      href: `/admin/crm/${personId}`,
+      href: `/admin/people/${personId}`,
     }
   })
 

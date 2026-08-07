@@ -90,7 +90,7 @@ export default function ThreadHeader({
     <div className="flex flex-col gap-1 border-b border-border px-4 py-3">
       <div className="flex items-center justify-between gap-2">
         <h2 className="min-w-0 truncate text-lg font-medium text-foreground">
-          <Link href={`/admin/crm/${personId}`} className="hover:underline">
+          <Link href={`/admin/people/${personId}`} className="hover:underline">
             {name}
           </Link>
         </h2>

@@ -275,7 +275,7 @@ export default async function AdminEmailReportingPage({
                 className: 'font-medium text-foreground',
                 cell: (r) =>
                   r.personId != null ? (
-                    <Link href={`/admin/crm/${r.personId}`} className="hover:underline">
+                    <Link href={`/admin/people/${r.personId}`} className="hover:underline">
                       {r.recipientEmail}
                     </Link>
                   ) : (
@@ -303,7 +303,7 @@ export default async function AdminEmailReportingPage({
                   <div className="flex items-start justify-between gap-2">
                     <span className="min-w-0 break-words text-sm font-medium text-foreground">
                       {r.personId != null ? (
-                        <Link href={`/admin/crm/${r.personId}`} className="hover:underline">
+                        <Link href={`/admin/people/${r.personId}`} className="hover:underline">
                           {r.recipientEmail}
                         </Link>
                       ) : (

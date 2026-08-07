@@ -295,7 +295,7 @@ export default function ReportSubscriptionsTab({
                     </TableCell>
                     <TableCell className="max-w-56">
                       <Link
-                        href={`/admin/crm/${row.personId}`}
+                        href={`/admin/people/${row.personId}`}
                         className="block truncate text-sm font-medium text-foreground underline-offset-2 hover:underline"
                       >
                         {row.personName?.trim() || `Contact #${row.personId}`}

@@ -60,7 +60,7 @@ export type TriageItem = {
   signal: string
   /** ISO timestamp of the newest underlying event. */
   occurredAt: string
-  /** Where the row opens — /admin/crm/<id> (with #comms for replies). */
+  /** Where the row opens — /admin/people/<id> (with #comms for replies). */
   deepLink: string
   /** recency x signal weight, stamped by rankTriageItems. */
   rank: number
@@ -416,7 +416,7 @@ export async function getInboundTriage(brokerScope: string | null): Promise<Tria
       personName: person.name,
       signal: replySignal(r.kind, r.title),
       occurredAt: r.ts,
-      deepLink: `/admin/crm/${r.person_id}#comms`,
+      deepLink: `/admin/people/${r.person_id}#comms`,
       taskId: null,
     })
   }
@@ -443,7 +443,7 @@ export async function getInboundTriage(brokerScope: string | null): Promise<Tria
       personName: people.get(g.personId)?.name ?? null,
       signal: docSignal(g.docType, g.count),
       occurredAt: g.newest,
-      deepLink: `/admin/crm/${g.personId}`,
+      deepLink: `/admin/people/${g.personId}`,
       taskId: null,
     })
   }
@@ -462,7 +462,7 @@ export async function getInboundTriage(brokerScope: string | null): Promise<Tria
       personName: people.get(pid)?.name ?? null,
       signal: visitSignal(r.last_seen_at, r.engagement_score, nowMs),
       occurredAt: r.last_seen_at,
-      deepLink: `/admin/crm/${pid}`,
+      deepLink: `/admin/people/${pid}`,
       taskId: null,
     })
   }
@@ -477,7 +477,7 @@ export async function getInboundTriage(brokerScope: string | null): Promise<Tria
       personName: people.get(t.person_id)?.name ?? null,
       signal: taskSignal(t),
       occurredAt: t.due_at,
-      deepLink: `/admin/crm/${t.person_id}`,
+      deepLink: `/admin/people/${t.person_id}`,
       taskId: t.id,
     })
   }

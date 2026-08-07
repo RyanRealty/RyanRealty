@@ -197,7 +197,7 @@ export default async function VisitorSessionPage({
               <div><dt className="text-xs text-muted-foreground">Identified at</dt><dd>{fmtDateTime(session.identified_at)}</dd></div>
               <div><dt className="text-xs text-muted-foreground">Identified via</dt><dd>{session.identified_via || '-'}</dd></div>
               <div><dt className="text-xs text-muted-foreground">CRM contact</dt><dd>{(session.crm_person_id ?? session.fub_person_id) ? (
-                <a href={`/admin/crm/${session.crm_person_id ?? session.fub_person_id}`} className="text-primary hover:underline">{session.identified_email ?? `Contact #${session.crm_person_id ?? session.fub_person_id}`}</a>
+                <a href={`/admin/people/${session.crm_person_id ?? session.fub_person_id}`} className="text-primary hover:underline">{session.identified_email ?? `Contact #${session.crm_person_id ?? session.fub_person_id}`}</a>
               ) : '-'}</dd></div>
             </>)}
           </dl>

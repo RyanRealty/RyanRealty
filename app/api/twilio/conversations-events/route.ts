@@ -243,7 +243,7 @@ export async function POST(request: Request) {
       fromMailbox: mailbox.email,
       to: mailbox.email,
       subject: `New group text from ${match.name ?? author}`,
-      bodyText: `${displayBody}\n\nGroup: ${groupMembers.join(', ')}\nFrom ${toE164(author) ?? author}\nOpen the contact: https://ryan-realty.com/admin/crm/${match.personId}`,
+      bodyText: `${displayBody}\n\nGroup: ${groupMembers.join(', ')}\nFrom ${toE164(author) ?? author}\nOpen the contact: https://ryan-realty.com/admin/people/${match.personId}`,
     })
   } catch (err) {
     console.error('[conversations-events] alert email failed', err)

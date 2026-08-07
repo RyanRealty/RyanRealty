@@ -459,7 +459,7 @@ export function PersonSidebar({ data, customFieldsNode }: { data: SidebarData; c
             {p.relationships.map((r, i) => (
               <div key={i} className="flex items-baseline justify-between gap-2">
                 {r.relatedPersonId ? (
-                  <Link href={`/admin/crm/${r.relatedPersonId}`} className="truncate text-sm text-[color:var(--console-info-strong,inherit)] hover:underline">
+                  <Link href={`/admin/people/${r.relatedPersonId}`} className="truncate text-sm text-[color:var(--console-info-strong,inherit)] hover:underline">
                     {r.name}
                   </Link>
                 ) : (

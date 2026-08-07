@@ -12,7 +12,7 @@
  *          createRealtimeTask, FUB decommissioned 2026-06-24).
  *       2. Send an alert email to MATT_ALERT_EMAIL with the journey
  *          summary (top pages, listings viewed, score, source) linking to
- *          the native CRM person page (/admin/crm/<personId>).
+ *          the native CRM person page (/admin/people/<personId>).
  *       3. Set hot_lead_fired_at so we never fire twice for the same session.
  *
  *   - ANONYMOUS session (no CRM person):
@@ -211,7 +211,7 @@ function summarizeJourney(events: TopEvent[]): { listings: string[]; pages: stri
 function buildAlertEmailHtml(session: HotSession, events: TopEvent[], summary: ReturnType<typeof summarizeJourney>, person: NativePerson | null): string {
   const isIdentified = !!person
   const who = session.identified_email ?? `Anonymous visitor ${session.session_id.slice(0, 8)}`
-  const crmLink = person ? `https://ryan-realty.com/admin/crm/${person.personId}` : null
+  const crmLink = person ? `https://ryan-realty.com/admin/people/${person.personId}` : null
   const minutesActive = Math.max(1, Math.round((new Date(session.last_seen_at).getTime() - new Date(session.first_seen_at).getTime()) / 60000))
   return `<!DOCTYPE html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.45;color:#102742;max-width:600px;margin:0 auto;padding:24px;">
 <h2 style="margin:0 0 8px;color:#102742;font-size:20px;">Hot ${isIdentified ? 'lead' : 'anonymous visitor'}: score ${session.engagement_score}</h2>

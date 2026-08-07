@@ -27,7 +27,9 @@ const SHIPPED = [
     // W5.1 / spec-03 RC3 (2026-07-26): route is an identity shell; the single
     // responsive tree lives in PersonWorkspace (mobile + desktop). Mobile
     // markers moved off the forked crm/[id]/mobile-detail.tsx path.
-    file: 'app/admin/(protected)/crm/[id]/page.tsx',
+    // Relocated Phase 11B sub-unit B1 (2026-08-06): the workspace route moved
+    // under /admin/people/[id]/tools; /admin/crm/[id] is now a redirect bridge.
+    file: 'app/admin/(protected)/people/[id]/tools/page.tsx',
     must: [/PersonWorkspaceBody/, /Suspense/, /view/],
   },
   {

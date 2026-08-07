@@ -95,8 +95,8 @@ describe('renderWestsideDigestHtml', () => {
     const html = renderWestsideDigestHtml(activity({}))
     expect(html).toContain('Identified owners')
     expect(html).toContain('>40<')
-    expect(html).toContain('https://ryan-realty.com/admin/crm/1')
-    expect(html).toContain('https://ryan-realty.com/admin/crm/2')
+    expect(html).toContain('https://ryan-realty.com/admin/people/1')
+    expect(html).toContain('https://ryan-realty.com/admin/people/2')
     expect(html).toContain('Test Owner')
     expect(html).toContain('/admin/crm/reporting/westside')
     expect(html).toContain('tabular-nums')
@@ -139,8 +139,8 @@ describe('renderWestsideDigestHtml', () => {
     )
     const html = renderWestsideDigestHtml(activity({ people: many }))
     expect(html).toContain(`Showing ${DIGEST_MAX_PEOPLE} of ${DIGEST_MAX_PEOPLE + 5} active people`)
-    expect(html).toContain('/admin/crm/15')
-    expect(html).not.toContain('/admin/crm/16"')
+    expect(html).toContain('/admin/people/15')
+    expect(html).not.toContain('/admin/people/16"')
   })
 
   it('falls back to Person #id when the crm_people name is missing', () => {

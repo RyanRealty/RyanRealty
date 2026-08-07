@@ -110,7 +110,7 @@ export default function ContactSidebar({
     <div className="relative flex h-full w-64 shrink-0 flex-col overflow-y-auto border-l border-border">
       <div className="flex items-start justify-between gap-1 px-4 pt-3">
         <div className="min-w-0">
-          <Link href={`/admin/crm/${personId}`} className="block truncate text-sm font-semibold text-foreground hover:underline">
+          <Link href={`/admin/people/${personId}`} className="block truncate text-sm font-semibold text-foreground hover:underline">
             {name}
           </Link>
           {lastCommunicationLabel ? (
@@ -212,7 +212,7 @@ export default function ContactSidebar({
 
         <Separator />
 
-        <Link href={`/admin/crm/${personId}`} className="block text-xs text-primary hover:underline">
+        <Link href={`/admin/people/${personId}`} className="block text-xs text-primary hover:underline">
           Open full contact record →
         </Link>
       </div>

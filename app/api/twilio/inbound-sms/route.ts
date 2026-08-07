@@ -326,7 +326,7 @@ export async function POST(request: Request) {
       // email link and the SMS composer opens already filled (never sends — G50
       // suppression still gates the send). No reply -> plain #comms link.
       const convoLink = buildSuggestedReplyLink(
-        `https://ryan-realty.com/admin/crm/${match.personId}`,
+        `https://ryan-realty.com/admin/people/${match.personId}`,
         replyIntel?.recommendedReply ? { channel: 'sms', body: replyIntel.recommendedReply } : null,
       )
       const alertBodyText = replyIntel && intentLabel
@@ -336,12 +336,11 @@ export async function POST(request: Request) {
         fromMailbox: mailbox.email,
         to: mailbox.email,
         subject: `New text from ${match.name ?? from}`,
-        // Link the CANONICAL command-center URL — /admin/crm/{id} since the
-        // 2026-07-15 route consolidation (the old /admin/console/leads/{id} is
-        // now the redirect stub). Never link through a redirecting route: a 307
-        // DROPS the #comms fragment (verified 2026-07-13), so the tab never
-        // opens. Linking direct keeps the hash → the mobile Comms tab opens on
-        // the thread.
+        // Link the CANONICAL person page — /admin/people/{id} (Phase 11B/B3
+        // repoint off the /admin/crm/{id} bridge route). Never link through a
+        // redirecting route: a 307 DROPS the #comms fragment (verified
+        // 2026-07-13), so the tab never opens. Linking direct keeps the hash →
+        // the mobile Comms tab opens on the thread.
         bodyText: alertBodyText,
       })
     } catch (err) {
@@ -369,7 +368,7 @@ export async function POST(request: Request) {
         brokerTwilioNumber(alertBroker),
       ])
       if (brokerCell && brokerLine && normalizeTo10(brokerCell) !== normalizeTo10(from)) {
-        const fwd = `Text from ${match.name ?? from} (${from}):\n${displayBody.slice(0, 400)}\n\nReply (sends from your business line): ryan-realty.com/admin/crm/${match.personId}#comms`
+        const fwd = `Text from ${match.name ?? from} (${from}):\n${displayBody.slice(0, 400)}\n\nReply (sends from your business line): ryan-realty.com/admin/people/${match.personId}#comms`
         try {
           await sendSms({ from: brokerLine, to: brokerCell, body: fwd })
         } catch (err) {

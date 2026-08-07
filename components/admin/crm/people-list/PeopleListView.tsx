@@ -774,7 +774,7 @@ function PeopleTableRow({
       </TableCell>
       {/* Name + avatar + source sub-label (§13) */}
       <TableCell className="min-w-44">
-        <Link href={`/admin/crm/${p.id}`} className="flex items-center gap-2.5 hover:underline">
+        <Link href={`/admin/people/${p.id}`} className="flex items-center gap-2.5 hover:underline">
           <Avatar className="h-8 w-8">
             {p.picture_url ? <AvatarImage src={p.picture_url} alt="" /> : null}
             <AvatarFallback className="text-[11px]">{initials(name)}</AvatarFallback>

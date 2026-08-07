@@ -6,7 +6,7 @@
 import { describe, it, expect } from 'vitest'
 import { buildSuggestedReplyLink, parseSuggestedReply } from './composer-preload'
 
-const BASE = 'https://ryan-realty.com/admin/crm/123'
+const BASE = 'https://ryan-realty.com/admin/people/123'
 
 function search(url: string): string {
   return new URL(url).search

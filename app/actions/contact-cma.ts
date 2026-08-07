@@ -1,4 +1,5 @@
 'use server'
+import { revalidatePerson } from '@/lib/crm/revalidate-person'
 
 /**
  * One-click CMA from a CRM contact record.
@@ -178,8 +179,7 @@ export async function startCmaForContactAction(personId: number): Promise<StartC
       return { ok: false, error: built.error ?? 'CMA build did not finish.' }
     }
 
-    revalidatePath(`/admin/crm/${personId}`)
-    revalidatePath(`/admin/crm/${personId}`)
+    revalidatePerson(personId)
     revalidatePath('/admin/cmas')
     return { ok: true, deliveryId: slug }
   } catch (e) {
@@ -231,10 +231,7 @@ export async function sendCmaForContactAction(deliveryId: string): Promise<SendC
             `Could not send CMA ${slug}. Approve it at /admin/cmas/${slug} first if it is still a draft.`,
         }
       }
-      if (result.personId) {
-        revalidatePath(`/admin/crm/${result.personId}`)
-        revalidatePath(`/admin/crm/${result.personId}`)
-      }
+      revalidatePerson(result.personId)
       return { ok: true }
     }
 
@@ -353,8 +350,7 @@ async function sendLegacyCmaDelivery(
       payload: { deliveryId: id, resendId: result.id ?? null, to: row.lead_email },
       dedupeKey: `cma:sent:${id}`,
     })
-    revalidatePath(`/admin/crm/${crmPersonId}`)
-    revalidatePath(`/admin/crm/${crmPersonId}`)
+    revalidatePerson(crmPersonId)
   }
 
   return { ok: true }

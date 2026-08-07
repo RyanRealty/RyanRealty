@@ -268,7 +268,7 @@ export default function MobileThread({
           <ChevronLeft className="h-6 w-6 text-primary-foreground" />
         </Link>
         <Link
-          href={`/admin/crm/${personId}`}
+          href={`/admin/people/${personId}`}
           className="flex min-w-0 flex-1 items-center justify-center gap-2"
         >
           <CrmAvatar name={name} size={32} />
@@ -489,7 +489,7 @@ export default function MobileThread({
                 ))}
               </div>
             ) : null}
-            <Link href={`/admin/crm/${personId}`} className="block pt-2 text-primary underline">
+            <Link href={`/admin/people/${personId}`} className="block pt-2 text-primary underline">
               Open full contact profile
             </Link>
             {addPersonSlot ? <div className="pt-3">{addPersonSlot}</div> : null}

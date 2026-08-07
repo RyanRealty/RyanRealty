@@ -368,7 +368,7 @@ export async function getBrokerCommandCenterData(
         label: task.name,
         sublabel: task.personName ? `For ${task.personName}` : 'Task',
         type: 'task',
-        href: task.personId ? `/admin/crm/${task.personId}` : '/admin/crm/tasks',
+        href: task.personId ? `/admin/people/${task.personId}` : '/admin/crm/tasks',
         gcalLink: null,
       })
     }

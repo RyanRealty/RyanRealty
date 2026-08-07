@@ -74,7 +74,7 @@ export function alertToNotification(alert: Pick<PushCandidateAlert, 'body' | 'pe
   const url = linkLine
     ? `https://${linkLine.replace(/^.*?(ryan-realty\.com\/admin\/)/, '$1')}`
     : alert.person_id
-      ? `https://ryan-realty.com/admin/crm/${alert.person_id}`
+      ? `https://ryan-realty.com/admin/people/${alert.person_id}`
       : 'https://ryan-realty.com/admin'
   return {
     title: title.slice(0, 120),

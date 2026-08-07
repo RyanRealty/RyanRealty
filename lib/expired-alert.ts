@@ -66,7 +66,7 @@ function fmtPrice(n: number | null): string {
 export function crmLink(personId: number | null): string {
   if (!personId) return '(no CRM lead yet — owner contact pending skip trace)'
   const site = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-  return `${site}/admin/crm/${personId}`
+  return `${site}/admin/people/${personId}`
 }
 
 export async function sendExpiredAlertEmail(params: ExpiredAlertParams): Promise<{ ok: boolean; id?: string; error?: string }> {

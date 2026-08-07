@@ -25,7 +25,7 @@ export function buildEmailIntentNote(args: {
 }): Record<string, unknown> {
   const { personId, messageKey, subject, intel } = args
   const replyLink = buildSuggestedReplyLink(
-    `https://ryan-realty.com/admin/crm/${personId}`,
+    `https://ryan-realty.com/admin/people/${personId}`,
     intel.recommendedReply
       ? { channel: 'email', body: intel.recommendedReply, subject: subject ? `Re: ${subject.replace(/^re:\s*/i, '')}` : null }
       : null,

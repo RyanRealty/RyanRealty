@@ -160,7 +160,8 @@ describe('shell projection (one nav source for every surface)', () => {
     expect(activeSections('/admin/messages')).toEqual(['Messages'])
     expect(activeSections('/admin/crm/settings/templates')).toEqual(['Settings'])
     expect(activeSections('/admin/crm/sequences')).toEqual(['Settings'])
-    expect(activeSections('/admin/crm/57297')).toEqual(['People']) // lead detail → People
+    expect(activeSections('/admin/crm/57297')).toEqual(['People']) // lead detail → People (bridge-era redirect route)
+    expect(activeSections('/admin/people/57297')).toEqual(['People']) // v2 person page (Phase 11B/B3 repoint target)
     expect(activeSections('/admin/crm/deals')).toEqual(['People']) // pipeline, NOT Transactions
     expect(activeSections('/admin/today')).toEqual(['Today'])
     expect(activeSections('/admin/help')).toEqual([]) // non-nav route lights nothing

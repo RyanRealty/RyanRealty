@@ -1,4 +1,5 @@
 'use server'
+import { revalidatePerson } from '@/lib/crm/revalidate-person'
 
 /**
  * CRM task lifecycle actions (Wave 7) — the mutation surface over crm_tasks for
@@ -60,7 +61,7 @@ async function requireTaskAccess(
 function revalidateTasks(personId?: number | null) {
   revalidatePath('/admin/crm/tasks')
   revalidatePath('/admin/crm')
-  if (personId) revalidatePath(`/admin/crm/${personId}`)
+  revalidatePerson(personId)
 }
 
 // ── Lifecycle mutations ─────────────────────────────────────────────────────
@@ -217,7 +218,7 @@ export async function bulkCompleteTasksAction(
     const pid = t.person_id as number | null
     if (pid && !touched.has(pid)) {
       touched.add(pid)
-      revalidatePath(`/admin/crm/${pid}`)
+      revalidatePerson(pid)
     }
   }
   revalidatePath('/admin/crm/tasks')

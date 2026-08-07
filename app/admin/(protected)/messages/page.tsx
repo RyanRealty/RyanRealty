@@ -171,7 +171,7 @@ export default async function MessagesPage({
             ) : null}
             <div className="av2-context__h">Record</div>
             <div className="av2-context__row">
-              <Link href={`/admin/crm/${card.personId}`} style={{ color: 'var(--a-accent)' }}>
+              <Link href={`/admin/people/${card.personId}`} style={{ color: 'var(--a-accent)' }}>
                 Open full person record
               </Link>
             </div>

@@ -95,7 +95,7 @@ export default async function NewsletterAnalyticsPage({
       header: 'Email',
       cell: (r) =>
         r.personId ? (
-          <Link href={`/admin/crm/${r.personId}`} className="font-medium text-foreground hover:underline">
+          <Link href={`/admin/people/${r.personId}`} className="font-medium text-foreground hover:underline">
             {r.email}
           </Link>
         ) : (
@@ -151,7 +151,7 @@ export default async function NewsletterAnalyticsPage({
                 <CardContent className="space-y-1">
                   <div className="flex items-start justify-between gap-2">
                     {r.personId ? (
-                      <Link href={`/admin/crm/${r.personId}`} className="min-w-0 flex-1 truncate text-sm font-medium text-foreground hover:underline">
+                      <Link href={`/admin/people/${r.personId}`} className="min-w-0 flex-1 truncate text-sm font-medium text-foreground hover:underline">
                         {r.email}
                       </Link>
                     ) : (

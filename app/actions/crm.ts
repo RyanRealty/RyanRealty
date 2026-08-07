@@ -1,4 +1,5 @@
 'use server'
+import { revalidatePerson } from '@/lib/crm/revalidate-person'
 
 /**
  * CRM server actions — reads + mutations for /admin/crm (blueprint §5).
@@ -449,7 +450,7 @@ async function getPersonCore(personId: number): Promise<{ id: number; fub_legacy
 
 function revalidateCrm(personId?: number) {
   revalidatePath('/admin/crm')
-  if (personId) revalidatePath(`/admin/crm/${personId}`)
+  revalidatePerson(personId)
 }
 
 export async function addCrmNoteAction(formData: FormData): Promise<CrmActionResult> {

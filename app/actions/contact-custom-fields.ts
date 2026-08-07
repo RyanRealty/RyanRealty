@@ -1,4 +1,5 @@
 'use server'
+import { revalidatePerson } from '@/lib/crm/revalidate-person'
 
 /**
  * contact-custom-fields — write a custom field value into crm_people.custom.
@@ -101,7 +102,7 @@ export async function saveContactCustomFieldsAction(
     broker: access.brokerSlug,
   })
 
-  revalidatePath(`/admin/crm/${pid}`)
+  revalidatePerson(pid)
   revalidatePath('/admin/crm')
 
   return { ok: true, message: `Saved: ${changed.join(', ')}` }

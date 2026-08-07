@@ -115,7 +115,7 @@ export async function POST(request: Request) {
       fromMailbox: mailbox.email,
       to: mailbox.email,
       subject: `${label} transcript (${duration}s)`,
-      bodyText: `${transcript ?? '(no transcript available)'}\n\nListen: ${site}/api/admin/crm/recording/${recordingSid}\nContact: ${site}/admin/crm/${row.person_id}`,
+      bodyText: `${transcript ?? '(no transcript available)'}\n\nListen: ${site}/api/admin/crm/recording/${recordingSid}\nContact: ${site}/admin/people/${row.person_id}`,
     })
   } catch (err) {
     console.error('[recording] transcript email failed', err)

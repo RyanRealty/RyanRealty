@@ -29,7 +29,7 @@ function fixture(kind: TriageKind, hoursAgo: number, personId = 1): Omit<TriageI
     personName: 'Test Person',
     signal: 'x',
     occurredAt: iso(hoursAgo),
-    deepLink: `/admin/crm/${personId}`,
+    deepLink: `/admin/people/${personId}`,
     taskId: null,
   }
 }

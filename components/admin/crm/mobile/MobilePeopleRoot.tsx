@@ -163,7 +163,7 @@ export function MobilePeopleRoot({
         {rows.map((p) => (
           <CrmListRow
             key={p.id}
-            href={`/admin/crm/${p.id}`}
+            href={`/admin/people/${p.id}`}
             name={p.name}
             src={p.picture_url}
             title={p.name}

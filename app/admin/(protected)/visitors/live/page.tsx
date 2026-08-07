@@ -177,7 +177,7 @@ async function VisitorTable({ filter }: { filter: 'all' | 'anonymous' | 'identif
               <div className="mt-2 text-xs">
                 {s.crm_person_id ?? s.fub_person_id ? (
                   <a
-                    href={`/admin/crm/${s.crm_person_id ?? s.fub_person_id}`}
+                    href={`/admin/people/${s.crm_person_id ?? s.fub_person_id}`}
                     className="text-primary hover:underline"
                   >
                     {s.identified_email ?? `Contact #${s.crm_person_id ?? s.fub_person_id}`}
@@ -250,7 +250,7 @@ async function VisitorTable({ filter }: { filter: 'all' | 'anonymous' | 'identif
                 <TableCell className="text-xs">
                   {s.crm_person_id ?? s.fub_person_id ? (
                     <a
-                      href={`/admin/crm/${s.crm_person_id ?? s.fub_person_id}`}
+                      href={`/admin/people/${s.crm_person_id ?? s.fub_person_id}`}
                       className="text-primary hover:underline"
                     >
                       {s.identified_email ?? `Contact #${s.crm_person_id ?? s.fub_person_id}`}

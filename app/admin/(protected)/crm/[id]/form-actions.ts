@@ -25,13 +25,13 @@ import { sendDeliverable } from '@/app/actions/send-deliverable'
 import { startBpoForContactAction } from '@/app/actions/contact-bpo'
 import { setReportSubscriptionAction } from '@/app/actions/crm-report-subscriptions'
 
-const BASE = '/admin/crm'
+const BASE = '/admin/people'
 
 export async function addNoteForm(personId: number, formData: FormData): Promise<void> {
   formData.set('personId', String(personId))
   const r = await addCrmNoteAction(formData)
-  if (!r.ok) redirect(`${BASE}/${personId}?error=${encodeURIComponent(`Note not saved — ${r.error ?? 'unknown error'}`)}`)
-  else redirect(`${BASE}/${personId}?flash=${encodeURIComponent('Note saved.')}`)
+  if (!r.ok) redirect(`${BASE}/${personId}/tools?error=${encodeURIComponent(`Note not saved — ${r.error ?? 'unknown error'}`)}`)
+  else redirect(`${BASE}/${personId}/tools?flash=${encodeURIComponent('Note saved.')}`)
 }
 export async function updateStageForm(formData: FormData): Promise<void> {
   const r = await updateCrmStageAction(formData)
@@ -56,25 +56,25 @@ export async function assignBrokerForm(formData: FormData): Promise<void> {
 export async function addContactPointForm(formData: FormData): Promise<void> {
   const personId = Number(formData.get('personId'))
   const r = await addCrmContactPointAction(formData)
-  if (!r.ok) redirect(`${BASE}/${personId}?error=${encodeURIComponent(`Not saved — ${r.error ?? 'unknown error'}`)}`)
+  if (!r.ok) redirect(`${BASE}/${personId}/tools?error=${encodeURIComponent(`Not saved — ${r.error ?? 'unknown error'}`)}`)
 }
 export async function sendEmailForm(personId: number, formData: FormData): Promise<void> {
   formData.set('personId', String(personId))
   const r = await sendCrmEmailAction(formData)
-  if (!r.ok) redirect(`${BASE}/${personId}?error=${encodeURIComponent(`Email not sent — ${r.error ?? 'unknown error'}`)}`)
+  if (!r.ok) redirect(`${BASE}/${personId}/tools?error=${encodeURIComponent(`Email not sent — ${r.error ?? 'unknown error'}`)}`)
 }
 export async function sendSmsForm(personId: number, formData: FormData): Promise<void> {
   formData.set('personId', String(personId))
   const r = await sendCrmSmsAction(formData)
-  if (!r.ok) redirect(`${BASE}/${personId}?error=${encodeURIComponent(`Text not sent — ${r.error ?? 'unknown error'}`)}`)
+  if (!r.ok) redirect(`${BASE}/${personId}/tools?error=${encodeURIComponent(`Text not sent — ${r.error ?? 'unknown error'}`)}`)
 }
 // ── Home-driven next step (CRM record-card cutover) ──────────────────────────
 export async function startCmaForm(personId: number): Promise<void> {
   const r = await startCmaForContactAction(personId)
   redirect(
     r.ok
-      ? `${BASE}/${personId}?flash=${encodeURIComponent('CMA queued and building. Review it below, then send.')}`
-      : `${BASE}/${personId}?error=${encodeURIComponent(`CMA not started — ${r.error}`)}`,
+      ? `${BASE}/${personId}/tools?flash=${encodeURIComponent('CMA queued and building. Review it below, then send.')}`
+      : `${BASE}/${personId}/tools?error=${encodeURIComponent(`CMA not started — ${r.error}`)}`,
   )
 }
 /**
@@ -102,16 +102,16 @@ export async function sendCmaForm(personId: number, formData: FormData): Promise
   })
   redirect(
     r.ok
-      ? `${BASE}/${personId}?flash=${encodeURIComponent('CMA sent.')}`
-      : `${BASE}/${personId}?error=${encodeURIComponent(`CMA not sent — ${r.error}`)}`,
+      ? `${BASE}/${personId}/tools?flash=${encodeURIComponent('CMA sent.')}`
+      : `${BASE}/${personId}/tools?error=${encodeURIComponent(`CMA not sent — ${r.error}`)}`,
   )
 }
 export async function startBpoForm(personId: number): Promise<void> {
   const r = await startBpoForContactAction(personId)
   redirect(
     r.ok
-      ? `${BASE}/${personId}?flash=${encodeURIComponent('Broker price opinion built. Review it below.')}`
-      : `${BASE}/${personId}?error=${encodeURIComponent(`Price opinion not started — ${r.error}`)}`,
+      ? `${BASE}/${personId}/tools?flash=${encodeURIComponent('Broker price opinion built. Review it below.')}`
+      : `${BASE}/${personId}/tools?error=${encodeURIComponent(`Price opinion not started — ${r.error}`)}`,
   )
 }
 export async function setReportSubsForm(personId: number, formData: FormData): Promise<void> {
@@ -121,8 +121,8 @@ export async function setReportSubsForm(personId: number, formData: FormData): P
   const r = await setReportSubscriptionAction(personId, { areas, frequency, isActive })
   redirect(
     r.ok
-      ? `${BASE}/${personId}?flash=${encodeURIComponent(r.message ?? 'Market reports updated.')}`
-      : `${BASE}/${personId}?error=${encodeURIComponent(`Market reports not updated — ${r.error}`)}`,
+      ? `${BASE}/${personId}/tools?flash=${encodeURIComponent(r.message ?? 'Market reports updated.')}`
+      : `${BASE}/${personId}/tools?error=${encodeURIComponent(`Market reports not updated — ${r.error}`)}`,
   )
 }
 export async function assignSavedSearchForm(formData: FormData): Promise<void> {
@@ -153,7 +153,7 @@ export async function assignSavedSearchForm(formData: FormData): Promise<void> {
     })
   }
   const msg = r.ok ? 'Saved search assigned' : `Not assigned — ${r.error ?? 'unknown error'}`
-  redirect(`${BASE}/${personId}?flash=${encodeURIComponent(msg)}`)
+  redirect(`${BASE}/${personId}/tools?flash=${encodeURIComponent(msg)}`)
 }
 export async function deleteSavedSearchForm(formData: FormData): Promise<void> {
   const personId = Number(formData.get('personId'))
@@ -171,6 +171,6 @@ export async function deleteSavedSearchForm(formData: FormData): Promise<void> {
       broker: access?.brokerSlug ?? null,
     })
   }
-  redirect(`${BASE}/${personId}?flash=${encodeURIComponent('Saved search removed')}`)
+  redirect(`${BASE}/${personId}/tools?flash=${encodeURIComponent('Saved search removed')}`)
 }
 

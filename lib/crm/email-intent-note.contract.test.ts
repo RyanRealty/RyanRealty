@@ -44,7 +44,7 @@ describe('buildEmailIntentNote emits an EMAIL-channel suggested-reply note', () 
   it('the deep link opens the EMAIL composer (replyChannel=email) pre-filled', () => {
     // The whole point of W5.3: email replies route to the email composer, not SMS.
     expect(link).toContain('replyChannel=email')
-    expect(link).toContain('/admin/crm/4321')
+    expect(link).toContain('/admin/people/4321')
     expect(link.endsWith('#comms')).toBe(true)
     // Round-trip through the CONSUMER (composer-preload parser): what the broker's
     // composer actually receives must be the email-channel reply with subject.
@@ -68,7 +68,7 @@ describe('buildEmailIntentNote edge cases', () => {
     const bare: ReplyClassification = { intent: 'later', confidence: 0.5, recommendedReply: '', source: 'deterministic' }
     const note = buildEmailIntentNote({ personId: 9, messageKey: 'k2', subject: null, intel: bare })
     const link = String((note.payload as Record<string, unknown>).replyLink)
-    expect(link).toBe('https://ryan-realty.com/admin/crm/9#comms')
+    expect(link).toBe('https://ryan-realty.com/admin/people/9#comms')
     expect(note.body).toBeNull()
   })
 

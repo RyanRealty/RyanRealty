@@ -341,7 +341,7 @@ export default function AlertSubscriptionsTab({
                       <p className="truncate text-sm text-foreground">{row.email ?? '—'}</p>
                       {row.crmPersonId ? (
                         <Link
-                          href={`/admin/crm/${row.crmPersonId}`}
+                          href={`/admin/people/${row.crmPersonId}`}
                           className="text-xs text-primary underline-offset-2 hover:underline"
                         >
                           Open contact

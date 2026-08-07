@@ -41,10 +41,11 @@ const GLOBAL: Item[] = [
 ]
 
 function leadIdFrom(pathname: string): number | null {
-  // The lead command center lives at /admin/crm/:id (route consolidation
-  // 2026-07-15 — the old /admin/console/leads/:id is a redirect stub, so the
-  // client pathname never shows it).
-  const m = pathname.match(/^\/admin\/crm\/(\d+)$/)
+  // The person surface lives at /admin/people/:id (11B, 2026-08-06 — with the
+  // relocated full workspace at /admin/people/:id/tools). /admin/crm/:id is a
+  // redirect bridge, but the client pathname can still show it briefly, so
+  // both routes are recognized.
+  const m = pathname.match(/^\/admin\/(?:people|crm)\/(\d+)(?:\/tools)?$/)
   return m ? Number(m[1]) : null
 }
 

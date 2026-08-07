@@ -108,7 +108,7 @@ export async function submitOutOfAreaReferral(
       body: [
         `Out-of-area referral lead: ${input.name?.trim() || email} wants ${city.name}, Oregon.`,
         'No drip enrolled. Refer to a local broker from the referral queue.',
-        `Open the lead: ryan-realty.com/admin/crm/${personId}`,
+        `Open the lead: ryan-realty.com/admin/people/${personId}`,
       ].join('\n'),
     }).catch(() => {})
 

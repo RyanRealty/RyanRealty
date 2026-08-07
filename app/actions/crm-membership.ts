@@ -1,4 +1,5 @@
 'use server'
+import { revalidatePerson } from '@/lib/crm/revalidate-person'
 
 /**
  * One-click membership toggle actions (CONTACT360 Phase 3.3, write side).
@@ -52,9 +53,8 @@ const LIVE_ENROLLMENT_STATUSES = ['running', 'paused', 'paused_reply', 'awaiting
 
 function revalidateContact(personId: number) {
   revalidatePath('/admin/crm')
-  revalidatePath(`/admin/crm/${personId}`)
   // Also revalidate the console leads route so a page refresh reflects new enrollments.
-  revalidatePath(`/admin/crm/${personId}`)
+  revalidatePerson(personId)
 }
 
 // ── Workflow (sequence) membership ───────────────────────────────────────────

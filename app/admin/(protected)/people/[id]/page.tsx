@@ -1,12 +1,18 @@
 // @no-parity — internal admin surface, no public mockup contract
-// Person entity page (P9 roll:people, IA lock 2026-08-05; locked pattern 5:
-// identity header + ONE primary action + stacked context). Carries the v2 CMA
-// kickoff surface (Matt's litmus scoping call 2026-08-05): ?intent=cma renders
-// the kickoff card open — the same idempotent core the litmus proved. The full
-// legacy workspace stays one tap away at /admin/crm/[id]. This route also
-// resolves LEGACY ids (pre-2026-07-09 bookmarks): unknown person id falls back
-// to the legacy-id map before 404ing.
+// Person entity page (P9 roll:people + P11B B2 fold; locked pattern 5:
+// identity header + ONE primary action + stacked context sections). B2 folds
+// the daily-use workspace machinery onto this page: the comms thread with the
+// G50 canonical composers (?tpl/?smsTpl server-merged via renderCrmMerge,
+// ?reply&replyChannel preload client-side inside the composers, #comms is the
+// deep-link anchor), the Send center chokepoint, field editors (stage /
+// broker / source / tags), tasks + appointments, homes (viewed ∪ saved), and
+// notes — every mutation through the SAME gated server actions the legacy
+// workspace used. The full legacy workspace stays one tap away at
+// /admin/people/[id]/tools. This route also resolves LEGACY ids
+// (pre-2026-07-09 bookmarks): unknown person id falls back to the legacy-id
+// map before 404ing.
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { notFound, redirect } from 'next/navigation'
 import { randomUUID } from 'node:crypto'
 import { requireAdminPage } from '@/lib/admin/require-admin'
@@ -16,9 +22,47 @@ import { getPersonIdByLegacyId } from '@/lib/data/crm/getPersonIdByLegacyId'
 import { getContactCmas } from '@/lib/data/crm/getContactCmas'
 import { getContactBpos } from '@/lib/data/crm/getContactBpos'
 import { getContactProspectStory } from '@/lib/data/crm/getContactProspectStory'
+import { getContactConversation } from '@/lib/data/crm/getContactConversation'
+import { getContactRelationships } from '@/lib/data/crm/getContactRelationships'
+import { getRecipientOptionsForContact } from '@/lib/data/crm/getRecipientOptionsForContact'
+import { getCrmFieldDefinitions } from '@/lib/data/crm/getCrmFieldDefinitions'
+import { getCrmSources } from '@/lib/data/crm/getCrmSources'
+import { getLeadSmsRecipients } from '@/lib/data/crm/getLeadSmsRecipients'
+import { getGroupReplyParticipants } from '@/lib/data/crm/getGroupReplyParticipants'
+import { getAppointmentsForPerson } from '@/lib/data/crm/getAppointments'
 import { extractAddressCandidate } from '@/lib/crm/seller-intent'
-import { Button, StateWord, TextField } from '@/components/admin/v2'
-import { kickoffCmaFromPerson } from '../actions'
+import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
+import { CRM_MAILBOXES } from '@/lib/crm/gmail'
+import { renderCrmMerge, type MergePersonLike } from '@/lib/crm/merge'
+import { buildMergeContext } from '@/lib/crm/merge-context'
+import { getSignatureForMailbox } from '@/lib/crm/email-signature'
+import {
+  getCrmAccess,
+  getCrmEmailTemplates,
+  getCrmPersonFull,
+  getCrmSmsTemplates,
+  getTwilioSmsStatus,
+} from '@/app/actions/crm'
+import { Button, SectionHead, StateWord, TextField, ThreadBubble } from '@/components/admin/v2'
+import {
+  addNoteFromPerson,
+  addTagFromPerson,
+  addTaskFromPerson,
+  assignBrokerFromPerson,
+  completeTaskFromPerson,
+  kickoffCmaFromPerson,
+  removeTagFromPerson,
+  sendEmailFromPerson,
+  sendSmsFromPerson,
+  updateSourceFromPerson,
+  updateStageFromPerson,
+} from '../actions'
+import { CommsSection } from './CommsSection'
+import { FieldEditors } from './FieldEditors'
+import { HomesSection } from './HomesSection'
+import { NotesSection } from './NotesSection'
+import { SendSection } from './SendSection'
+import { TasksSection } from './TasksSection'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,12 +72,32 @@ function tsLabel(iso: string): string {
   return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })
 }
 
+/** Plain-text an email body for the thread pane (full HTML stays in tools). */
+function stripHtml(s: string): string {
+  return s
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 export default async function PersonPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ intent?: string; kicked?: string; err?: string }>
+  searchParams: Promise<{
+    intent?: string
+    kicked?: string
+    err?: string
+    tpl?: string
+    smsTpl?: string
+    flash?: string
+    error?: string
+    replyChannel?: string
+  }>
 }) {
   await requireAdminPage('people.view')
   const idNum = Number((await params).id)
@@ -48,11 +112,38 @@ export default async function PersonPage({
     notFound()
   }
 
-  const [feed, cmas, bpos, prospectStory] = await Promise.all([
+  const [
+    feed,
+    cmas,
+    bpos,
+    prospectStory,
+    full,
+    conversation,
+    emailTemplates,
+    smsTemplates,
+    twilioStatus,
+    crmSources,
+    appointments,
+    access,
+    relationships,
+    recipientOptions,
+    fieldDefs,
+  ] = await Promise.all([
     getContactActivityFeed(idNum, 30),
     getContactCmas({ crmPersonId: idNum, emails: card.email ? [card.email] : [] }),
     getContactBpos({ crmPersonId: idNum }),
     getContactProspectStory({ personId: idNum }),
+    getCrmPersonFull(idNum),
+    getContactConversation(idNum, { limit: 50 }),
+    getCrmEmailTemplates(),
+    getCrmSmsTemplates(),
+    getTwilioSmsStatus(),
+    getCrmSources(),
+    getAppointmentsForPerson(idNum),
+    getCrmAccess(),
+    getContactRelationships(idNum),
+    getRecipientOptionsForContact(idNum),
+    getCrmFieldDefinitions(),
   ])
   const showKickoff = sp.intent === 'cma' || sp.kicked === '1'
   const kicked = sp.kicked === '1'
@@ -61,6 +152,226 @@ export default async function PersonPage({
   // broker confirms it before building.
   const latestInbound = feed.find((t) => t.kind === 'sms_in')?.snippet ?? null
   const suggestedAddress = extractAddressCandidate(latestInbound)
+
+  // ── B2 fold: daily-use machinery (renders only when the person is in the
+  // acting broker's scope — getCrmPersonFull returns the empty bundle
+  // otherwise, and the identity header above still renders from the card). ──
+  const person = full.person
+  let fold: React.ReactNode = null
+  if (person) {
+    const personLike = person as unknown as MergePersonLike & { assigned_broker?: string | null }
+    const actingSlug = access?.brokerSlug ?? personLike.assigned_broker ?? 'matt'
+    const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
+    const tpl = sp.tpl ?? null
+    const smsTpl = sp.smsTpl ?? null
+    const activeTpl = tpl ? emailTemplates.find((t) => t.key === tpl) ?? null : null
+    const activeSmsTpl = smsTpl ? smsTemplates.find((t) => t.key === smsTpl) ?? null : null
+
+    const [signature, mergeCtx, relRecipients, groupParticipants] = await Promise.all([
+      getSignatureForMailbox(mailbox.email),
+      activeTpl || activeSmsTpl
+        ? buildMergeContext({ person: personLike, senderSlug: actingSlug })
+        : Promise.resolve(undefined),
+      getLeadSmsRecipients(
+        idNum,
+        relationships
+          .filter((r) => r.relatedPersonId !== null)
+          .map((r) => ({ relatedPersonId: r.relatedPersonId as number, label: r.label })),
+      ),
+      getGroupReplyParticipants(idNum),
+    ])
+
+    const emailInitialSubject = activeTpl?.subject ? renderCrmMerge(activeTpl.subject, personLike, mergeCtx) : ''
+    const emailInitialBody = activeTpl?.body ? renderCrmMerge(activeTpl.body, personLike, mergeCtx) : ''
+    const smsInitialBody = activeSmsTpl?.body ? renderCrmMerge(activeSmsTpl.body, personLike, mergeCtx) : ''
+
+    const primaryEmail = full.contactPoints.find((c) => c.kind === 'email')?.value ?? null
+    const primaryPhone = full.contactPoints.find((c) => c.kind === 'phone')?.value ?? null
+    const personEmails = (person.emails ?? []).map((e) => e.value).filter((v): v is string => Boolean(v))
+
+    // Group-text recipients: relationship contacts start unchecked; live
+    // group-thread participants come pre-checked (legacy semantics, verbatim).
+    const smsRecipients: Array<{ personId: number; name: string; phone: string; relation: string; defaultOn?: boolean }> =
+      relRecipients.map((r) => ({ ...r, defaultOn: false }))
+    for (const g of groupParticipants) {
+      const pid = g.personId ?? 0
+      const existing =
+        pid > 0
+          ? smsRecipients.find((m) => m.personId === pid)
+          : smsRecipients.find((m) => m.personId === 0 && m.phone === g.phone)
+      if (existing) {
+        existing.defaultOn = true
+        continue
+      }
+      smsRecipients.push({ personId: pid, name: g.name, phone: g.phone, relation: 'Group', defaultOn: true })
+    }
+
+    const composerCustomFields = fieldDefs
+      .filter((d) => d.key.startsWith('custom'))
+      .map((d) => ({ key: d.key, label: d.label }))
+
+    const smsSuppressed = full.suppressions.some((s) => s.channel === 'sms' || s.channel === 'all')
+    const emailSuppressed = full.suppressions.some((s) => s.channel === 'email' || s.channel === 'all')
+    const suppressionWords = full.suppressions.map((s) => `${s.channel}: ${s.reason}`).join(' · ')
+
+    const canSms = Boolean(primaryPhone) && twilioStatus.canSend
+    const smsNote = !primaryPhone
+      ? 'No phone number on file.'
+      : !twilioStatus.canSend
+        ? `Texting is paused — A2P status is ${twilioStatus.a2p ?? 'unknown'}.`
+        : null
+    const canEmail = Boolean(primaryEmail)
+
+    const replyChannel = sp.replyChannel === 'email' ? ('email' as const) : sp.replyChannel === 'sms' ? ('sms' as const) : null
+    const initialChannel = replyChannel ?? (smsTpl ? 'sms' : tpl ? 'email' : primaryPhone ? 'sms' : 'email')
+
+    const geo = full.geo as { city?: string } | null
+
+    const notes = full.timeline
+      .filter((t) => t.kind === 'note')
+      .slice(0, 20)
+      .map((n) => ({ id: n.id, ts: n.ts, body: n.body ?? n.title ?? '', broker: n.broker }))
+
+    const foldTasks = full.tasks.map((t) => ({
+      id: t.id,
+      name: t.name,
+      type: t.type,
+      due_at: t.due_at,
+      completed_at: t.completed_at,
+      assigned_broker: t.assigned_broker,
+    }))
+    const foldAppointments = appointments.map((a) => ({
+      id: a.id,
+      title: a.title,
+      startAt: a.startAt,
+      typeName: a.typeName,
+      outcomeName: a.outcomeName,
+      location: a.location,
+    }))
+
+    fold = (
+      <>
+        <section id="comms" aria-label="Messages">
+          <SectionHead>Messages</SectionHead>
+          {smsSuppressed || emailSuppressed ? (
+            <div className="av2-wordrow" style={{ marginBottom: 8 }}>
+              <StateWord state={smsSuppressed && emailSuppressed ? 'down' : 'slow'}>
+                {smsSuppressed && emailSuppressed ? 'Blocked' : smsSuppressed ? 'Email only' : 'Text only'}
+              </StateWord>
+              <span style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>{suppressionWords}</span>
+            </div>
+          ) : null}
+          <div className="av2-pane av2-pane--thread" style={{ marginBottom: 12 }}>
+            {conversation.items.map((m) => {
+              const chan = m.kind.startsWith('sms') ? ('SMS' as const) : m.kind.startsWith('email') ? ('Email' as const) : null
+              const dir = m.kind.endsWith('_in') ? ('in' as const) : m.kind.endsWith('_out') ? ('out' as const) : null
+              if (!chan || !dir) {
+                return (
+                  <div key={m.id} className="av2-sysnote">
+                    {(m.title ?? m.kind).slice(0, 140)} · {tsLabel(m.ts)}
+                  </div>
+                )
+              }
+              const raw =
+                chan === 'Email'
+                  ? `${m.title ? `${m.title} — ` : ''}${stripHtml(m.body ?? '')}`
+                  : (m.body ?? m.title ?? '')
+              const text = raw.length > 400 ? `${raw.slice(0, 400)}…` : raw
+              return (
+                <ThreadBubble
+                  key={m.id}
+                  direction={dir}
+                  channel={chan}
+                  stamp={`${tsLabel(m.ts)}${dir === 'out' && m.broker ? ` · ${m.broker}` : ''}`}
+                >
+                  {text}
+                </ThreadBubble>
+              )
+            })}
+            {conversation.items.length === 0 ? <div className="av2-sysnote">No messages yet.</div> : null}
+          </div>
+          <CommsSection
+            personId={idNum}
+            initialChannel={initialChannel}
+            canSms={canSms}
+            smsNote={smsNote}
+            canEmail={canEmail}
+            emailNote="No email address on file."
+            quietHours={inSmsQuietHours()}
+            smsTemplates={smsTemplates.map((t) => ({ key: t.key, name: t.name }))}
+            emailTemplates={emailTemplates.map((t) => ({ key: t.key, name: t.name }))}
+            tplKey={tpl}
+            smsTplKey={smsTpl}
+            emailInitialSubject={emailInitialSubject}
+            emailInitialBody={emailInitialBody}
+            smsInitialBody={smsInitialBody}
+            signatureHtml={signature?.html ?? null}
+            toLabel={primaryEmail ? (person.name ? `${person.name} · ${primaryEmail}` : primaryEmail) : null}
+            initialTo={primaryEmail ? [primaryEmail.toLowerCase()] : []}
+            recipientOptions={recipientOptions}
+            customFields={composerCustomFields}
+            smsRecipients={smsRecipients}
+            sendSms={sendSmsFromPerson.bind(null, idNum)}
+            sendEmail={sendEmailFromPerson.bind(null, idNum)}
+          />
+        </section>
+
+        <Suspense
+          fallback={
+            <section aria-label="Send">
+              <SectionHead>Send</SectionHead>
+              <div className="av2-sysnote" style={{ padding: 12 }}>Loading send options…</div>
+            </section>
+          }
+        >
+          <SendSection
+            personId={idNum}
+            emailSuppressed={emailSuppressed}
+            defaultCity={geo?.city ?? null}
+            cmas={cmas}
+            bpos={bpos}
+          />
+        </Suspense>
+
+        <section aria-label="Details">
+          <SectionHead>Details</SectionHead>
+          <FieldEditors
+            stage={person.stage}
+            assignedBroker={(person.assigned_broker as string | null) ?? null}
+            canReassign={access?.role === 'superuser'}
+            source={(person.source as string | null) ?? null}
+            sources={crmSources}
+            tags={(person.tags as string[] | null) ?? []}
+            updateStage={updateStageFromPerson.bind(null, idNum)}
+            assignBroker={assignBrokerFromPerson.bind(null, idNum)}
+            updateSource={updateSourceFromPerson.bind(null, idNum)}
+            addTag={addTagFromPerson.bind(null, idNum)}
+            removeTag={removeTagFromPerson.bind(null, idNum)}
+          />
+        </section>
+
+        <TasksSection
+          tasks={foldTasks}
+          appointments={foldAppointments}
+          completeTask={completeTaskFromPerson.bind(null, idNum)}
+          addTask={addTaskFromPerson.bind(null, idNum)}
+        />
+
+        <Suspense
+          fallback={
+            <section aria-label="Homes">
+              <SectionHead>Homes</SectionHead>
+              <div className="av2-sysnote" style={{ padding: 12 }}>Loading homes…</div>
+            </section>
+          }
+        >
+          <HomesSection personId={idNum} fubLegacyId={person.fub_legacy_id} personEmails={personEmails} />
+        </Suspense>
+
+        <NotesSection notes={notes} addNote={addNoteFromPerson.bind(null, idNum)} />
+      </>
+    )
+  }
 
   return (
     <main className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
@@ -99,7 +410,7 @@ export default async function PersonPage({
           .join(' · ') || '—'}
       </div>
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
         <Link href={`/admin/messages?c=${card.personId}`}>
           <Button>Message</Button>
         </Link>
@@ -118,10 +429,21 @@ export default async function PersonPage({
             <Button variant="quiet">Build a CMA</Button>
           </Link>
         ) : null}
-        <Link href={`/admin/crm/${card.personId}`}>
+        <Link href={`/admin/people/${card.personId}/tools`}>
           <Button variant="quiet">All tools</Button>
         </Link>
       </div>
+
+      {sp.flash ? (
+        <div style={{ marginBottom: 12, fontSize: 'var(--a-text-sm)', color: 'var(--a-ok)', fontWeight: 500 }}>
+          {sp.flash}
+        </div>
+      ) : null}
+      {sp.error ? (
+        <div style={{ marginBottom: 12, fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)', fontWeight: 500 }}>
+          {sp.error}
+        </div>
+      ) : null}
 
       {showKickoff ? (
         <section
@@ -168,6 +490,8 @@ export default async function PersonPage({
           )}
         </section>
       ) : null}
+
+      {fold}
 
       {prospectStory.length > 0 && (
         <section aria-label="Prospect story">

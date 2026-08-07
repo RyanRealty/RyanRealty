@@ -1,4 +1,5 @@
 'use server'
+import { revalidatePerson } from '@/lib/crm/revalidate-person'
 
 /**
  * One-tap CMA kick-off from the person page (admin-rebuild v2, D8 litmus).
@@ -38,7 +39,7 @@ export async function kickoffCmaForContactAction(input: {
       buildNewVersion: Boolean(input?.buildNewVersion),
     })
     if (result.ok) {
-      revalidatePath(`/admin/crm/${personId}`)
+      revalidatePerson(personId)
       revalidatePath('/admin/cmas')
     }
     return result

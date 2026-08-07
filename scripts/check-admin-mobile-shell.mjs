@@ -18,9 +18,24 @@
  * layout was deleted — the Lead Command Center moved to /admin/crm/[id] inside
  * (protected), and the console segment holds only thin redirect stubs. ONE
  * admin layout remains; the gate asserts the duplicate never comes back.
+ * Updated 2026-08-06 (Phase 11B B4, Matt decision): the phone wordmark header
+ * was public-brand chrome leak. ADMIN_UI.md §5 amnesia rule — the admin carries
+ * NO public brand: no wordmark image in the phone shell. Phone chrome = the
+ * locked 5-tab bar (CrmMobileTabBar) + a slim utility row (sheet trigger, ⌘K
+ * trigger, avatar, contacts-list scope switch). The gate now also asserts the
+ * wordmark can never come back into ConsoleShell (mustNot).
+ * Updated Phase 11B B5: the desktop chrome migrated to the LOCKED §5 Option A
+ * left rail (ADMIN_UI.md, Matt 2026-08-05). The FUB-style navy top bar
+ * (components/console/ConsoleTopNav.tsx — a navy #102742 bar carrying the white
+ * public wordmark) is DELETED; the gate asserts it stays gone and that the
+ * DESKTOP path carries no wordmark / brand-navy bar either (mustNot on the
+ * shell AND the v2 RailNav primitive).
+ *
  * The gate locks the CURRENT shell so it can't regress:
- *   1. ConsoleShell hides the desktop rail below lg and ships a mobile Sheet +
- *      the shared AdminNavList (one nav source for rail and sheet).
+ *   1. ConsoleShell mounts the §5 left rail (RailNav, lg+ only), hides it below
+ *      lg, ships a mobile Sheet + the shared AdminNavList (one nav source for
+ *      rail and sheet), mounts the locked 5-tab bar, and carries no public
+ *      wordmark and no brand-navy chrome anywhere — phone OR desktop (§5 amnesia).
  *   2+3. The single admin layout (protected) renders ConsoleShell from the
  *      single buildAdminNav source; no second admin layout may exist under
  *      app/admin/console (that duplicate drifted once — brokerSlug was missing).
@@ -35,13 +50,15 @@ import { readFileSync, existsSync } from 'node:fs'
 const checks = [
   {
     file: 'components/console/ConsoleShell.tsx',
-    must: [/ConsoleTopNav/, /AdminNavList/, /SheetContent/, /lg:hidden/],
-    why: 'console shell must render the FUB desktop top nav (lg+), the shared nav in a mobile Sheet, and a mobile header hidden at lg',
+    must: [/RailNav/, /hidden[^"']*lg:flex|lg:flex[^"']*hidden/, /AdminNavList/, /SheetContent/, /lg:hidden/, /CrmMobileTabBar/],
+    mustNot: [/Wordmark/, /logo-horizontal/, /\/images\/brand\//, /ConsoleTopNav/, /102742/],
+    why: 'console shell must mount the §5 left rail (RailNav, lg+ only), the shared nav in a mobile Sheet, the locked 5-tab bar, phone chrome hidden at lg — and NO public wordmark or brand-navy chrome on ANY breakpoint (ADMIN_UI §5 amnesia rule, B4/B5)',
   },
   {
-    file: 'components/console/ConsoleTopNav.tsx',
-    must: [/hidden[^"']*lg:flex|lg:flex[^"']*hidden/, /buildAdminNav|AdminNavSection/],
-    why: 'desktop top nav must be lg-only and driven by the single buildAdminNav source',
+    file: 'components/admin/v2/RailNav.tsx',
+    must: [/av2-rail/],
+    mustNot: [/Wordmark/, /logo-horizontal/, /\/images\/brand\//, /102742/],
+    why: 'the desktop chrome is the v2 RailNav primitive (§5 Option A, locked 2026-08-05) — v2 language only, no public brand in the DESKTOP path either',
   },
   {
     file: 'app/admin/(protected)/layout.tsx',
@@ -73,7 +90,16 @@ if (existsSync('app/admin/console/layout.tsx')) {
   )
 }
 
-for (const { file, must, why } of checks) {
+// B5: the FUB-style navy top bar is RETIRED (deleted, Phase 11B). Desktop chrome
+// is the §5 Option A left rail. A resurrected file here is the navy wordmark bar
+// coming back.
+if (existsSync('components/console/ConsoleTopNav.tsx')) {
+  fails.push(
+    'components/console/ConsoleTopNav.tsx: exists — retired in Phase 11B B5 (it carried the navy brand bar + white public wordmark, ADMIN_UI §5 amnesia violation); the desktop chrome is the §5 left rail (RailNav in ConsoleShell)',
+  )
+}
+
+for (const { file, must, mustNot = [], why } of checks) {
   let src
   try {
     src = readFileSync(file, 'utf8')
@@ -84,6 +110,9 @@ for (const { file, must, why } of checks) {
   for (const re of must) {
     if (!re.test(src)) fails.push(`${file}: pattern ${re} not found — ${why}`)
   }
+  for (const re of mustNot) {
+    if (re.test(src)) fails.push(`${file}: forbidden pattern ${re} found — ${why}`)
+  }
 }
 
 console.log('Admin mobile shell gate')
@@ -92,4 +121,4 @@ if (fails.length) {
   for (const f of fails) console.error(`FAIL: ${f}`)
   process.exit(1)
 }
-console.log(`All ${checks.length} shell contracts hold (ConsoleShell responsive rail + mobile sheet, one admin layout + one nav source, no duplicate console layout, no public chrome on /admin, thin-redirect home).`)
+console.log(`All ${checks.length} shell contracts hold (ConsoleShell §5 left rail on lg+ + mobile sheet + locked 5-tab bar, no public wordmark or navy brand bar on any breakpoint, retired top bar stays deleted, one admin layout + one nav source, no duplicate console layout, no public chrome on /admin, thin-redirect home).`)

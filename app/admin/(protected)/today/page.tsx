@@ -129,7 +129,7 @@ export default async function TodayPage() {
                 context={p.holdReason ?? p.preview}
                 action={
                   p.unresolved.length > 0 ? (
-                    <Link href={`/admin/crm/${p.personId}`}>
+                    <Link href={`/admin/people/${p.personId}`}>
                       <Button variant="quiet">Fix message</Button>
                     </Link>
                   ) : (

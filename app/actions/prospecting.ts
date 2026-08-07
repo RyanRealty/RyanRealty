@@ -1,4 +1,5 @@
 'use server'
+import { revalidatePerson } from '@/lib/crm/revalidate-person'
 
 /**
  * Prospecting hub actions (spec 07 §5) — the ONE reconciled cold-intro path over
@@ -822,7 +823,7 @@ export async function enrollProspectInDripAction(
     if (!result.enrolled) return { ok: false, error: result.reason }
 
     revalidateProspectCaches([kind])
-    revalidatePath(`/admin/crm/${pid}`)
+    revalidatePerson(pid)
     return { ok: true, sequence: result.sequence }
   } catch (e) {
     console.error('[enrollProspectInDripAction]', e)

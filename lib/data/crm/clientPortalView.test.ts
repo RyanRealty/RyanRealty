@@ -235,7 +235,11 @@ describe('toClientPortalAlert', () => {
 // 2. Read-only source invariant
 // ---------------------------------------------------------------------------
 
-const PORTAL_ROUTE = 'app/admin/(protected)/crm/[id]/portal/page.tsx'
+// Relocated with the person workspace (P11B, 2026-08-06). The legacy
+// crm/[id]/portal route is now a redirect-only bridge — asserted below so
+// the guard cannot be bypassed by keeping the old URL alive with a body.
+const PORTAL_ROUTE = 'app/admin/(protected)/people/[id]/portal/page.tsx'
+const PORTAL_LEGACY_BRIDGE = 'app/admin/(protected)/crm/[id]/portal/page.tsx'
 const PORTAL_COMPONENT_DIR = 'components/admin/crm/portal-view'
 const PORTAL_DAL = 'lib/data/crm/getClientPortalView.ts'
 
@@ -299,6 +303,14 @@ describe('client portal view is read-only by construction', () => {
 })
 
 describe('client portal view is admin-gated', () => {
+  it('the legacy crm/[id]/portal route is a redirect-only bridge (no guardable body)', () => {
+    const src = readFileSync(path.join(ROOT, PORTAL_LEGACY_BRIDGE), 'utf8')
+    expect(src).toMatch(/redirect\(/)
+    // No JSX and no data read — nothing to protect, so nothing to leak.
+    expect(src).not.toMatch(/<[A-Z]/)
+    expect(src).not.toMatch(/getClientPortalView/)
+  })
+
   it('guards in the page body, not only in the (protected) layout', () => {
     const code = readFileSync(path.join(ROOT, PORTAL_ROUTE), 'utf8')
     expect(code).toMatch(/from\s+['"]@\/lib\/admin\/require-admin['"]/)

@@ -3,7 +3,7 @@
  *
  * Turns the getWestsideCohortActivity DAL result into a compact internal ops
  * email for the broker (matt@ryan-realty.com): rollup KPI row + the ranked
- * active people with deep links into /admin/crm/<id>. This is an INTERNAL
+ * active people with deep links into /admin/people/<id>. This is an INTERNAL
  * broker alert (analytics-daily-digest pattern), never a lead send — the cron
  * route owns the recipient and the Resend call; this module is render-only and
  * has no I/O, so the subject/HTML shaping is unit-testable.
@@ -75,7 +75,7 @@ export function renderWestsideDigestHtml(d: WestsideCohortActivity): string {
       if (p.clicks > 0) signals.push(`${fmtInt(p.clicks)} click${p.clicks === 1 ? '' : 's'}`)
       if (p.inbound > 0) signals.push(`${fmtInt(p.inbound)} inbound`)
       return `<tr>
-<td style="padding:6px 10px;"><a href="${SITE}/admin/crm/${p.personId}" style="color:#102742;font-weight:600;">${escapeHtml(name)}</a></td>
+<td style="padding:6px 10px;"><a href="${SITE}/admin/people/${p.personId}" style="color:#102742;font-weight:600;">${escapeHtml(name)}</a></td>
 <td style="padding:6px 10px;color:#52606D;">${escapeHtml(address)}${escapeHtml(more)}</td>
 <td style="padding:6px 10px;color:#52606D;">${escapeHtml(signals.join(', ') || '—')}</td>
 <td style="padding:6px 10px;text-align:right;font-variant-numeric:tabular-nums;">${fmtInt(p.score)}</td>

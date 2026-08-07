@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
-import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 /**
@@ -254,6 +254,9 @@ test.describe('Axe accessibility ratchet — /admin surface', () => {
 
   for (const route of ADMIN_ROUTES) {
     test(`${route.path} — axe WCAG A/AA ratchet`, async ({ page }, testInfo) => {
+      // One engine is enough for an a11y-tree scan; the mobile project doubles
+      // runtime for near-identical rule output.
+      test.skip(testInfo.project.name !== 'chromium', 'axe runs on the chromium project only')
       testInfo.setTimeout(getRouteTimeout(route.path))
 
       await page.goto(route.path, {
@@ -296,15 +299,21 @@ test.describe('Axe accessibility ratchet — /admin surface', () => {
   }
 
   test.afterAll(() => {
-    // Seeding mode only: write the baseline from this run's scans and pass.
+    // Seeding mode only. afterAll runs PER WORKER, so a naive overwrite loses
+    // every other worker's routes (observed: a 42-minute crawl seeded 1 route —
+    // the last worker's map clobbered the rest). Each worker writes a fragment;
+    // `node scripts/merge-axe-seed.mjs` composes e2e/axe-baseline.json after
+    // the run. Comparison mode never touches fragments.
     if (!AXE_ENABLED || AXE_BASELINE !== null) return
     const scannedRoutes = Object.keys(axeScanResults).sort()
     if (scannedRoutes.length === 0) return
     const seeded: Record<string, string[]> = {}
     for (const r of scannedRoutes) seeded[r] = axeScanResults[r]
-    writeFileSync(AXE_BASELINE_PATH, JSON.stringify(seeded, null, 2) + '\n')
+    const fragDir = resolve(process.cwd(), 'e2e/.axe-seed')
+    mkdirSync(fragDir, { recursive: true })
+    writeFileSync(resolve(fragDir, `worker-${process.pid}.json`), JSON.stringify(seeded, null, 2) + '\n')
     console.log(
-      `Seeded e2e/axe-baseline.json with ${scannedRoutes.length} admin route(s) — commit it to lock the ratchet.`
+      `axe seed fragment: ${scannedRoutes.length} route(s) from worker ${process.pid} — run scripts/merge-axe-seed.mjs to compose e2e/axe-baseline.json.`
     )
   })
 })

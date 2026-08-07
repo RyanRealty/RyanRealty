@@ -11,13 +11,15 @@
  * This gate keeps it that way:
  *
  *   1. NO consumer carries its own /admin route list. The shell adapter
- *      (admin-nav.ts), the tab bar, and the palette must contain zero
- *      `href: '/admin...'` literals — routes live ONLY in lib/admin/nav.ts.
+ *      (admin-nav.ts), the tab bar, the palette, and the §5 desktop rail
+ *      primitive (RailNav, B5) must contain zero `href: '/admin...'` literals —
+ *      routes live ONLY in lib/admin/nav.ts.
  *   2. Every href in DESTINATIONS resolves to a real page under
  *      app/admin/(protected)/ — the nav can never point at a dead route.
- *   3. The palette mounts ONCE (ConsoleShell); ConsoleTopNav renders only the
- *      trigger. The double-mount registered two ⌘K listeners and stacked two
- *      dialogs (audit §9.2).
+ *   3. The palette mounts ONCE (ConsoleShell); every other chrome surface
+ *      (phone utility row, rail top slot) renders only the trigger. The old
+ *      double-mount registered two ⌘K listeners and stacked two dialogs
+ *      (audit §9.2). The rail primitive may not mount or import it.
  *
  * Usage: node scripts/check-admin-nav-source.mjs
  */
@@ -39,6 +41,9 @@ const NO_ROUTE_LITERALS = [
   'app/components/admin/admin-nav.ts',
   'components/console/CrmMobileTabBar.tsx',
   'components/console/ConsoleCommandPalette.tsx',
+  // B5: the §5 desktop rail is a pure primitive — nav data reaches it only
+  // through props from the one source.
+  'components/admin/v2/RailNav.tsx',
 ]
 const HREF_LITERAL = /href:\s*['"`]\/admin/
 for (const file of NO_ROUTE_LITERALS) {
@@ -130,9 +135,9 @@ if (capsSrc && navSrc) {
 }
 
 // ── 3. Single palette mount ─────────────────────────────────────────────────
-const topNav = read('components/console/ConsoleTopNav.tsx')
-if (topNav && /<ConsoleCommandPalette[\s/>]/.test(topNav)) {
-  fails.push('components/console/ConsoleTopNav.tsx: mounts ConsoleCommandPalette — only ConsoleShell may (render ConsoleCommandPaletteTrigger instead)')
+const rail = read('components/admin/v2/RailNav.tsx')
+if (rail && /ConsoleCommandPalette/.test(rail)) {
+  fails.push('components/admin/v2/RailNav.tsx: references ConsoleCommandPalette — only ConsoleShell mounts the palette; the rail receives the trigger through its `top` slot')
 }
 const shell = read('components/console/ConsoleShell.tsx')
 if (shell) {

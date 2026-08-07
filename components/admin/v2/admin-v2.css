@@ -92,10 +92,14 @@
 .av2-bubble__chan { font-size:10px; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
   border:1px solid var(--a-border); border-radius:4px; padding:0 4px; color:var(--a-text-2); background:var(--a-bg); }
 
-/* ---- RailNav (header Option A, locked) ---- */
+/* ---- RailNav (header Option A, locked) ----
+   §5: 216px rail (--a-rail-w) at ≥1200px, icon-collapsed below (1024–1199px);
+   top slot = global search (⌘K) + broker scope switch; footer = quiet account
+   block. min-height:100% — the mounting <aside> owns the viewport height and
+   the independent scroll. */
 .av2-rail { display:flex; flex-direction:column; gap:var(--a-s1); background:var(--a-surface);
   border-right:1px solid var(--a-border); padding:var(--a-s4) var(--a-s3);
-  width:var(--a-rail-w); min-height:100vh; font-family:var(--a-font); }
+  width:var(--a-rail-w); min-height:100%; font-family:var(--a-font); }
 .av2-rail__group { font-size:var(--a-text-xs); font-weight:600; letter-spacing:.06em;
   text-transform:uppercase; color:var(--a-text-2); padding:var(--a-s3) var(--a-s2) var(--a-s1); }
 .av2-rail__item { display:flex; align-items:center; justify-content:space-between; gap:var(--a-s2);
@@ -103,8 +107,41 @@
   font-size:var(--a-text-md); }
 .av2-rail__item:hover { background:var(--a-inset); }
 .av2-rail__item[aria-current="page"] { background:var(--a-accent-wash); color:var(--a-accent); font-weight:600; }
+.av2-rail__item--active { font-weight:600; }
 .av2-rail__item:focus-visible { outline:none; box-shadow:var(--a-focus); }
 .av2-rail__count { font-size:var(--a-text-xs); color:var(--a-text-2); font-variant-numeric:tabular-nums; }
+.av2-rail__itembody { display:flex; align-items:center; gap:10px; min-width:0; }
+.av2-rail__icon { display:inline-flex; flex:none; opacity:.75; }
+.av2-rail__icon svg { width:16px; height:16px; }
+.av2-rail__label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* children — the collapsed secondary affordance: render only while their
+   destination is active (§5 lists destinations; ⌘K reaches children anywhere) */
+.av2-rail__sub { display:flex; flex-direction:column; gap:2px; margin:2px 0 var(--a-s2); }
+.av2-rail__subitem { display:flex; align-items:center; padding:5px 10px 5px 36px;
+  border-radius:var(--a-r-md); color:var(--a-text-2); text-decoration:none;
+  font-size:var(--a-text-sm); }
+.av2-rail__subitem:hover { background:var(--a-inset); color:var(--a-text); }
+.av2-rail__subitem[aria-current="page"] { background:var(--a-accent-wash); color:var(--a-accent); font-weight:600; }
+.av2-rail__subitem:focus-visible { outline:none; box-shadow:var(--a-focus); }
+.av2-rail__top { display:flex; flex-direction:column; gap:var(--a-s2); margin-bottom:var(--a-s2); }
+.av2-rail__search button { width:100%; }
+.av2-rail__footer { margin-top:auto; border-top:1px solid var(--a-border); padding-top:var(--a-s3); }
+/* §5: collapsible to icons at <1200px — auto-collapse between the lg mount
+   (1024px) and 1200px: labels/counts/children hide, group labels become
+   hairlines, the active section carries the accent so location stays visible. */
+@media (min-width:1024px) and (max-width:1199.98px) {
+  .av2-rail { width:64px; padding:var(--a-s4) var(--a-s2); }
+  .av2-rail__group { height:0; overflow:hidden; padding:0; margin:var(--a-s2) var(--a-s1) 0;
+    border-top:1px solid var(--a-border); }
+  .av2-rail__label, .av2-rail__count, .av2-rail__sub { display:none; }
+  .av2-rail__item { justify-content:center; padding:10px 0; }
+  .av2-rail__itembody { justify-content:center; }
+  .av2-rail__item--active { background:var(--a-accent-wash); }
+  .av2-rail__item--active .av2-rail__icon, .av2-rail__item[aria-current="page"] .av2-rail__icon { opacity:1; }
+  .av2-rail__search span, .av2-rail__search kbd { display:none; }
+  .av2-rail__search button { width:40px; justify-content:center; padding:0; }
+  .av2-rail__scope, .av2-rail__id { display:none; }
+}
 
 /* ---- TabBar (locked 5-tab phone bar) ---- */
 .av2-tabbar { position:fixed; bottom:0; left:0; right:0; height:var(--a-tabbar-h);
@@ -129,6 +166,16 @@
 .av2-input:focus-visible { outline:none; box-shadow:var(--a-focus); }
 .av2-input[aria-invalid="true"] { border-color:var(--a-danger); }
 textarea.av2-input { min-height:88px; resize:vertical; }
+
+/* ---- Entity fold (pattern 5: stacked context sections on a person page) ---- */
+.av2-pane { display:flex; flex-direction:column; gap:var(--a-s3); border:1px solid var(--a-border);
+  border-radius:var(--a-r-lg); padding:var(--a-s4); background:var(--a-bg); }
+.av2-pane--thread { flex-direction:column-reverse; max-height:440px; overflow-y:auto; }
+.av2-inline-form { display:flex; gap:var(--a-s3); align-items:flex-end; flex-wrap:wrap; }
+.av2-inline-form .av2-field { flex:1 1 180px; }
+.av2-editgrid { display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr));
+  gap:var(--a-s3); align-items:start; }
+.av2-wordrow { display:flex; gap:var(--a-s2); flex-wrap:wrap; align-items:center; }
 
 /* ---- Messages (pattern 2: list | thread | context) ---- */
 .av2-msgs { display:grid; grid-template-columns:1fr; min-height:calc(100vh - 120px); }

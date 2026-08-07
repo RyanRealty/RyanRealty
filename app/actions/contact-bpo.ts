@@ -1,4 +1,5 @@
 'use server'
+import { revalidatePerson } from '@/lib/crm/revalidate-person'
 
 /**
  * One-click Broker Price Opinion from a CRM contact record.
@@ -182,7 +183,7 @@ export async function startBpoForContactAction(
 
     if (!built.ok) return { ok: false, error: built.error ?? 'BPO build did not finish.' }
 
-    revalidatePath(`/admin/crm/${personId}`)
+    revalidatePerson(personId)
     revalidatePath('/admin/bpo')
     return { ok: true, slug }
   } catch (e) {
@@ -211,8 +212,7 @@ export async function sendBpoForContactAction(
     const result = await sendBpoToLead({ personId, slug: slug.trim(), includeOfferStrategy, override })
     if (!result.ok) return { ok: false, error: result.error ?? 'Send failed' }
 
-    revalidatePath(`/admin/crm/${personId}`)
-    revalidatePath(`/admin/crm/${personId}`)
+    revalidatePerson(personId)
     return { ok: true, transport: result.transport ?? 'resend' }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Unexpected error sending the BPO' }

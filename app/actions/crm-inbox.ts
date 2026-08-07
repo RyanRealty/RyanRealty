@@ -1,4 +1,5 @@
 'use server'
+import { revalidatePerson } from '@/lib/crm/revalidate-person'
 
 /**
  * CRM inbox triage actions (Wave 7, Inbox triage — mutation side).
@@ -52,7 +53,7 @@ export type InboxActionResult = { ok: true } | { ok: false; error: string }
 function revalidateInbox(personId?: number) {
   revalidatePath('/admin/crm/inbox')
   revalidatePath('/admin/crm')
-  if (personId) revalidatePath(`/admin/crm/${personId}`)
+  revalidatePerson(personId)
 }
 
 /**

@@ -1,4 +1,5 @@
 'use server'
+import { revalidatePerson } from '@/lib/crm/revalidate-person'
 
 /**
  * One-off "send it to this contact NOW" actions on the person page (Matt
@@ -111,6 +112,6 @@ export async function sendMarketReportNowAction(
     broker: brokerSlug, source: 'app',
   })
   revalidatePath('/admin/crm')
-  revalidatePath(`/admin/crm/${pid}`)
+  revalidatePerson(pid)
   return { ok: true }
 }

@@ -58,7 +58,7 @@ export default function AddPersonDialog({ open, onOpenChange, sources }: AddPers
       if (!res.ok) { setError(res.error ?? 'Could not add the person'); return }
       reset()
       onOpenChange(false)
-      if (res.personId) router.push(`/admin/crm/${res.personId}`)
+      if (res.personId) router.push(`/admin/people/${res.personId}`)
       else router.refresh()
     })
   }

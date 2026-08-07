@@ -154,7 +154,7 @@ export default function CalendarView({
       setCreateMin(null)
       setModalOpen(true)
     } else if (e.kind === 'task') {
-      router.push(e.personId ? `/admin/crm/${e.personId}` : '/admin/crm/tasks?view=overdue')
+      router.push(e.personId ? `/admin/people/${e.personId}` : '/admin/crm/tasks?view=overdue')
     } else if (e.kind === 'closing') {
       router.push(`/admin/crm/deals?deal=${e.id.replace('deal:', '')}`)
     }

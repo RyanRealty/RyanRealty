@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 export function PortalViewLink({ personId, className }: { personId: number; className?: string }) {
   return (
     <Button asChild variant="outline" size="sm" className={cn('w-full justify-center', className)}>
-      <Link href={`/admin/crm/${personId}/portal`}>Open their portal view (read only)</Link>
+      <Link href={`/admin/people/${personId}/portal`}>Open their portal view (read only)</Link>
     </Button>
   )
 }

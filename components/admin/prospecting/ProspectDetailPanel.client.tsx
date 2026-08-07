@@ -114,7 +114,7 @@ export function ProspectDetailPanel({
 
   const dateLabel = detail.kind === 'expired' ? 'Expired' : 'Detected'
   const dateValue = detail.kind === 'expired' ? detail.expiredAt : detail.detectedAt
-  const crmHref = detail.personId ? `/admin/crm/${detail.personId}` : null
+  const crmHref = detail.personId ? `/admin/people/${detail.personId}` : null
 
   return (
     <div className="space-y-5">

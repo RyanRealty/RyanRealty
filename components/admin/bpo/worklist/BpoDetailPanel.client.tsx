@@ -47,7 +47,7 @@ export function BpoDetailPanel({
 }) {
   const isFinal = detail.status === 'final'
   const canSend = isFinal && detail.personId != null
-  const crmHref = detail.personId ? `/admin/crm/${detail.personId}` : null
+  const crmHref = detail.personId ? `/admin/people/${detail.personId}` : null
 
   return (
     <div className="space-y-5">

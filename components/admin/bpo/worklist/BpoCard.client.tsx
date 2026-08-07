@@ -42,7 +42,7 @@ export function BpoCard({
 }) {
   const isFinal = row.status === 'final'
   const canSend = isFinal && row.personId != null
-  const crmHref = row.personId ? `/admin/crm/${row.personId}` : null
+  const crmHref = row.personId ? `/admin/people/${row.personId}` : null
 
   return (
     <Card className="p-4">

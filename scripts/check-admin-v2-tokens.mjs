@@ -34,7 +34,18 @@ const SCAN_DIRS = [
   'components/admin/v2',
   'app/admin/(protected)/today',
   'app/admin/(protected)/messages',
-  'app/admin/(protected)/people',
+  // people/[id] hosts the relocated legacy workspace (tools/, portal/) and the
+  // G50 composer chokepoints mounted on the v2 person fold (11B B2:
+  // CommsSection mounts SmsComposer/EmailComposer, SendSection mounts
+  // ContactSendCenter — sanctioned legacy imports). File-form scope the
+  // pure-v2 files; flip back to the bare dir when the chokepoints migrate.
+  'app/admin/(protected)/people/page.tsx',
+  'app/admin/(protected)/people/actions.ts',
+  'app/admin/(protected)/people/[id]/page.tsx',
+  'app/admin/(protected)/people/[id]/FieldEditors.tsx',
+  'app/admin/(protected)/people/[id]/TasksSection.tsx',
+  'app/admin/(protected)/people/[id]/NotesSection.tsx',
+  'app/admin/(protected)/people/[id]/HomesSection.tsx',
   'app/admin/(protected)/prospecting/page.tsx',
   'app/admin/(protected)/prospecting/actions.ts',
   'app/admin/(protected)/prospecting/FilterSelect.tsx',

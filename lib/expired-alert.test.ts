@@ -22,19 +22,19 @@ describe('expired-alert crmLink', () => {
   it('links to the in-house CRM lead, never to Follow Up Boss', () => {
     process.env.NEXT_PUBLIC_SITE_URL = 'https://ryan-realty.com'
     const link = crmLink(12345)
-    expect(link).toBe('https://ryan-realty.com/admin/crm/12345')
+    expect(link).toBe('https://ryan-realty.com/admin/people/12345')
     expect(link).not.toContain('followupboss')
   })
 
   it('trims a trailing slash on the site url', () => {
     process.env.NEXT_PUBLIC_SITE_URL = 'https://ryan-realty.com/'
-    expect(crmLink(7)).toBe('https://ryan-realty.com/admin/crm/7')
+    expect(crmLink(7)).toBe('https://ryan-realty.com/admin/people/7')
   })
 
   it('returns a clear pending message when no person was created (contact pending)', () => {
     const link = crmLink(null)
     expect(link).toContain('no CRM lead yet')
-    expect(link).not.toContain('/admin/crm/')
+    expect(link).not.toContain('/admin/people/')
   })
 })
 

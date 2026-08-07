@@ -82,7 +82,7 @@ describe('web-push aes128gcm encryption (RFC 8291)', () => {
     const ua = makeUserAgentSubscription()
     const message = JSON.stringify({
       title: 'New lead: Dana Whitfield (Facebook lead form)',
-      body: 'ryan-realty.com/admin/crm/48213',
+      body: 'ryan-realty.com/admin/people/48213',
     })
     const decrypted = userAgentDecrypt(encryptPayload(message, ua.keys), ua)
     expect(decrypted).toBe(message)

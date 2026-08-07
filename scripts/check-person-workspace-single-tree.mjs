@@ -16,7 +16,9 @@ if (existsSync(FORBIDDEN)) {
   fails.push(`${FORBIDDEN} still exists — RC3 requires one PersonWorkspace tree (delete the route fork)`)
 }
 
-const page = 'app/admin/(protected)/crm/[id]/page.tsx'
+// Relocated Phase 11B sub-unit B1 (2026-08-06): the workspace route moved
+// under /admin/people/[id]/tools; /admin/crm/[id] is now a redirect bridge.
+const page = 'app/admin/(protected)/people/[id]/tools/page.tsx'
 const pageSrc = readFileSync(page, 'utf8')
 for (const re of [/PersonWorkspaceBody/, /Suspense/, /PersonWorkspaceSkeleton/]) {
   if (!re.test(pageSrc)) fails.push(`${page}: missing ${re}`)
