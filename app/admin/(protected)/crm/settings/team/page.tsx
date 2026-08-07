@@ -1,39 +1,25 @@
 // @no-parity — internal admin surface, no public mockup contract
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { getCrmAccess } from '@/app/actions/crm'
 import { createServiceClient } from '@/lib/supabase/service'
 import { setCanExportAction, setPauseLeadsAction } from '@/app/actions/admin-broker-permissions'
-import { SettingsSubpageShell } from '@/components/admin/crm/settings/SettingsSubpageShell'
-import { TeamRoleForm, RemoveAdminRoleButton } from '@/components/admin/crm/settings/TeamRoleManager'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import Link from 'next/link'
+import { TeamAccessForm, RemoveAccessButton } from './TeamAccess'
+import { Button, QueueRow, SectionHead, StateWord, VerdictLine } from '@/components/admin/v2'
 
 export const metadata = { title: 'Team | CRM settings' }
 export const dynamic = 'force-dynamic'
 
 /**
- * /admin/crm/settings/team — FUB-style team management table (§8.7).
+ * /admin/crm/settings/team — THE single admin_roles surface (consolidation
+ * 2026-07-15), migrated to the v2 admin language (11C).
  *
- * THE single admin_roles surface (consolidation 2026-07-15): add or update
- * access, change roles, remove access (ported from the retired role manager
- * on /admin/users, reusing the same upsertAdminRole / removeAdminRole server
- * actions), plus every admin_roles row joined to the matching brokers row so
- * the superuser can see Name / Role / CRM Active / Routing / Can Export /
- * Pause Leads / Last Seen in one surface. The two toggles (can_export,
- * pause_leads) are flipped via superuser-only server actions.
- *
- * Identity fields (display_name, phone, Twilio number) are edited on the
- * AdminBrokerForm at /admin/brokers/edit — we link there from this page.
+ * Same reads (admin_roles joined to brokers on broker_id, then email), same
+ * superuser-only server actions for the can_export / pause_leads toggles, same
+ * upsertAdminRole / removeAdminRole access management — now on the co-located
+ * v2 client (./TeamAccess) instead of the legacy role manager. Identity fields
+ * (display_name, phone, Twilio number) are still edited on the broker profile
+ * at /admin/brokers/edit — the per-row Edit door is unchanged.
  */
 export default async function TeamSettingsPage() {
   const access = await getCrmAccess()
@@ -96,19 +82,33 @@ export default async function TeamSettingsPage() {
     }
   })
 
-  async function toggleCanExport(formData: FormData) {
+  // Both toggles post the OPPOSITE of the flag's current value, exactly as the
+  // hidden `value` field did before — the same `email` + `value` payload the
+  // superuser-guarded actions already parse out of FormData.
+  async function toggleCanExport(email: string, value: 'on' | 'off'): Promise<void> {
     'use server'
+    const formData = new FormData()
+    formData.set('email', email)
+    formData.set('value', value)
     await setCanExportAction(formData)
   }
-  async function togglePauseLeads(formData: FormData) {
+  async function togglePauseLeads(email: string, value: 'on' | 'off'): Promise<void> {
     'use server'
+    const formData = new FormData()
+    formData.set('email', email)
+    formData.set('value', value)
     await setPauseLeadsAction(formData)
   }
 
-  function roleVariant(role: string): 'default' | 'outline' | 'secondary' {
-    if (role === 'superuser') return 'default'
-    if (role === 'broker') return 'secondary'
-    return 'outline'
+  function roleTone(role: string): 'accent' | 'ok' | 'waiting' {
+    if (role === 'superuser') return 'accent'
+    if (role === 'broker') return 'ok'
+    return 'waiting'
+  }
+
+  function roleLabel(role: string): string {
+    if (role === 'report_viewer') return 'Report viewer'
+    return role ? role.charAt(0).toUpperCase() + role.slice(1) : 'No role'
   }
 
   function fmtLastSeen(at: string | null, platform: string | null): string {
@@ -128,136 +128,108 @@ export default async function TeamSettingsPage() {
     .filter((b) => b.display_name)
     .map((b) => ({ id: String(b.id), display_name: String(b.display_name) }))
 
+  const paused = rows.filter((r) => r.pauseLeads).length
+
   return (
-    <SettingsSubpageShell
-      title="Team"
-      description="All admin users, their roles, and their CRM permissions. Add or remove access, change roles, and toggle export and lead-routing pause. Edit identity fields (name, phone, Twilio number) via the broker profile."
-    >
-      <TeamRoleForm brokers={brokerOptions} />
-      <div className="no-scrollbar mt-4 rounded-xl border border-border bg-card overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="min-w-[112px]">Name / Email</TableHead>
-              <TableHead className="hidden w-28 md:table-cell">Role</TableHead>
-              <TableHead className="hidden w-24 text-center md:table-cell">CRM active</TableHead>
-              <TableHead className="hidden w-24 text-center md:table-cell">Routing</TableHead>
-              <TableHead className="w-20 text-center text-xs md:text-sm">Export</TableHead>
-              <TableHead className="w-20 text-center text-xs md:text-sm">Pause</TableHead>
-              <TableHead className="hidden min-w-[130px] md:table-cell">Last seen</TableHead>
-              <TableHead className="w-28"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
-                  No admin users yet. Add an email and role above.
-                </TableCell>
-              </TableRow>
-            ) : (
-              rows.map((row) => (
-                <TableRow key={row.email}>
-                  {/* Name / Email */}
-                  <TableCell>
-                    <div className="max-w-[108px] truncate font-medium text-foreground text-sm md:max-w-none">
-                      {row.brokerName ?? '—'}
-                    </div>
-                    <div className="max-w-[108px] truncate text-xs text-muted-foreground md:max-w-none" title={row.email}>
-                      {row.email}
-                    </div>
-                  </TableCell>
+    <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
+      <p style={{ margin: '0 0 8px', fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+        <Link href="/admin/crm/settings" style={{ color: 'var(--a-text-2)' }}>
+          CRM settings
+        </Link>
+      </p>
 
-                  {/* Role badge */}
-                  <TableCell className="hidden md:table-cell">
-                    <Badge variant={roleVariant(row.role)} className="text-xs capitalize">
-                      {row.role}
-                    </Badge>
-                  </TableCell>
-
-                  {/* CRM active — read-only here; edit at /admin/crm/settings/brokers */}
-                  <TableCell className="hidden text-center md:table-cell">
-                    <span className={`text-xs font-medium ${row.crmActive ? 'text-foreground' : 'text-muted-foreground'}`}>
-                      {row.crmActive ? 'Yes' : 'No'}
-                    </span>
-                  </TableCell>
-
-                  {/* Routing eligible — read-only here */}
-                  <TableCell className="hidden text-center md:table-cell">
-                    <span className={`text-xs font-medium ${row.routingEligible ? 'text-foreground' : 'text-muted-foreground'}`}>
-                      {row.routingEligible ? 'Yes' : 'No'}
-                    </span>
-                  </TableCell>
-
-                  {/* Can export toggle */}
-                  <TableCell className="text-center">
-                    <form action={toggleCanExport}>
-                      <Input type="hidden" name="email" value={row.email} readOnly />
-                      <Input type="hidden" name="value" value={row.canExport ? 'off' : 'on'} readOnly />
-                      <Button
-                        type="submit"
-                        size="sm"
-                        variant={row.canExport ? 'default' : 'outline'}
-                        className="min-h-9 w-16"
-                      >
-                        {row.canExport ? 'Yes' : 'No'}
-                      </Button>
-                    </form>
-                  </TableCell>
-
-                  {/* Pause leads toggle */}
-                  <TableCell className="text-center">
-                    <form action={togglePauseLeads}>
-                      <Input type="hidden" name="email" value={row.email} readOnly />
-                      <Input type="hidden" name="value" value={row.pauseLeads ? 'off' : 'on'} readOnly />
-                      <Button
-                        type="submit"
-                        size="sm"
-                        variant={row.pauseLeads ? 'destructive' : 'outline'}
-                        className="min-h-9 w-16"
-                      >
-                        {row.pauseLeads ? 'Paused' : 'Active'}
-                      </Button>
-                    </form>
-                  </TableCell>
-
-                  {/* Last seen */}
-                  <TableCell className="hidden text-xs text-muted-foreground whitespace-nowrap md:table-cell">
-                    {fmtLastSeen(row.lastSeenAt, row.lastSeenPlatform)}
-                  </TableCell>
-
-                  {/* Edit link + remove access */}
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1">
-                      {row.brokerHref ? (
-                        <Link href={row.brokerHref}>
-                          <Button variant="ghost" size="sm" className="text-xs h-7">
-                            Edit
-                          </Button>
-                        </Link>
-                      ) : null}
-                      {row.role !== 'superuser' ? (
-                        <RemoveAdminRoleButton email={row.email} />
-                      ) : null}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={rows.length === 0 || paused > 0 ? 'attention' : 'ok'}>
+          {rows.length === 0 ? (
+            <>
+              <b>No admin users yet.</b> Add an email and role below.
+            </>
+          ) : (
+            <>
+              <b>
+                {rows.length} {rows.length === 1 ? 'person has' : 'people have'} admin access.
+              </b>{' '}
+              {paused > 0 ? `${paused} paused from lead routing.` : 'Nobody is paused from lead routing.'}
+            </>
+          )}
+        </VerdictLine>
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">
+
+      {rows.length > 0 ? (
+        <section aria-label="Team">
+          <SectionHead>Access</SectionHead>
+          <ul className="av2-queue">
+            {rows.map((row) => (
+              <QueueRow
+                key={row.email}
+                kind={roleLabel(row.role)}
+                kindTone={roleTone(row.role)}
+                title={
+                  row.brokerHref ? (
+                    <Link href={row.brokerHref} style={{ color: 'var(--a-text)' }}>
+                      {row.brokerName ?? row.email}
+                    </Link>
+                  ) : (
+                    (row.brokerName ?? row.email)
+                  )
+                }
+                context={
+                  <>
+                    <span style={{ overflowWrap: 'anywhere' }}>{row.email}</span>
+                    {' · '}
+                    {row.crmActive ? 'in CRM' : 'not in CRM'}
+                    {' · '}
+                    {row.routingEligible ? 'routing eligible' : 'no routing'}
+                    {' · '}
+                    {row.canExport ? 'can export' : 'no export'}
+                    {row.pauseLeads ? (
+                      <>
+                        {' · '}
+                        <StateWord state="slow">Leads paused</StateWord>
+                      </>
+                    ) : null}
+                  </>
+                }
+                age={fmtLastSeen(row.lastSeenAt, row.lastSeenPlatform)}
+                action={
+                  <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <form action={toggleCanExport.bind(null, row.email, row.canExport ? 'off' : 'on')}>
+                      <Button type="submit" variant="quiet">
+                        {row.canExport ? 'Block export' : 'Allow export'}
+                      </Button>
+                    </form>
+                    <form action={togglePauseLeads.bind(null, row.email, row.pauseLeads ? 'off' : 'on')}>
+                      <Button type="submit" variant="quiet">
+                        {row.pauseLeads ? 'Resume leads' : 'Pause leads'}
+                      </Button>
+                    </form>
+                    {row.brokerHref ? (
+                      <Link href={row.brokerHref} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+                        Edit
+                      </Link>
+                    ) : null}
+                    {row.role !== 'superuser' ? <RemoveAccessButton email={row.email} /> : null}
+                  </span>
+                }
+              />
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <TeamAccessForm brokers={brokerOptions} />
+
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
         CRM active and routing flags are managed at{' '}
-        <Link href="/admin/crm/settings/brokers" className="underline">
+        <Link href="/admin/crm/settings/brokers" style={{ color: 'var(--a-accent)' }}>
           Brokers
         </Link>
         . Identity fields are managed on each{' '}
-        <Link href="/admin/brokers" className="underline">
+        <Link href="/admin/brokers" style={{ color: 'var(--a-accent)' }}>
           broker profile
         </Link>
         .
       </p>
-    </SettingsSubpageShell>
+    </div>
   )
 }

@@ -1,5 +1,5 @@
 {
-  "count": 206,
+  "count": 205,
   "files": [
     "app/alerts/unsubscribe/page.tsx",
     "app/buy/loading.tsx",
@@ -99,7 +99,6 @@
     "components/console/ConsoleQuickAction.tsx",
     "components/console/ConsoleSection.tsx",
     "components/console/ConsoleShell.tsx",
-    "components/console/ConsoleTopNav.tsx",
     "components/dashboard/CollectionDeleteButton.tsx",
     "components/dashboard/CollectionListingButton.tsx",
     "components/dashboard/CreateCollectionForm.tsx",

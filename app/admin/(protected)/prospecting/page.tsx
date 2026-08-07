@@ -139,7 +139,7 @@ export default async function ProspectingPage({
   }
 
   return (
-    <main className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
+    <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
       {/* Compact header (Matt 2026-08-05): no page title, no chip walls — one
           verdict line and one dropdown share a row. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', margin: '0 0 10px' }}>
@@ -252,6 +252,6 @@ export default async function ProspectingPage({
         </Link>
         .
       </p>
-    </main>
+    </div>
   )
 }

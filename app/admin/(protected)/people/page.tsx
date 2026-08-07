@@ -24,7 +24,7 @@ export default async function PeoplePage({
   const hits = await searchCrmPeople({ q, brokerScope, limit: 25 })
 
   return (
-    <main className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
+    <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
       <form method="GET" style={{ margin: '12px 0 20px' }}>
         <input
           className="av2-input"
@@ -77,6 +77,6 @@ export default async function PeoplePage({
         </Link>
         .
       </p>
-    </main>
+    </div>
   )
 }

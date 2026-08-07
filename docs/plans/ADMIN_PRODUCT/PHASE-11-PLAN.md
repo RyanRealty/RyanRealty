@@ -114,6 +114,37 @@ This is the surface in the screenshots and the one Matt hits from every alert.
 **DoD:** one person page. `crm/[id]` is a bridge. Litmus re-timed and still ≤3
 taps / ≤30s on Matt's real phone.
 
+### 11C — The rest of the `/admin/crm` tree — **IN PROGRESS 2026-08-07**
+
+Measured worklist from the G65 baseline (131 legacy pages total, all families):
+
+| family | legacy pages |
+|---|---|
+| crm/settings | 19 |
+| crm/reporting | 15 |
+| analytics | 12 |
+| reports | 8 |
+| newsletters | 6 |
+| crm/import | 5 |
+| media · bpo · brokers · cmas · crm/deals · geo | 3 each |
+| crm/sequences · email · help · listings · people | 2 each |
+
+- **Holdouts — DONE (`cf1696e2`).** ContactSendCenter's trigger takes an optional
+  `triggerClassName` (v2 host passes av2 quiet classes; every other host keeps
+  the shadcn primary), and the global FAB draws `--a-btn-bg`. Presentation only —
+  the dialog, actions, guards, and idempotency keys were not touched. Verified
+  in-browser: trigger #F9F9FB/#0D74CE/#D9D9E0, FAB #0D74CE.
+- **crm/settings (19) — in flight.** Five groups (compliance · routing · data
+  model · team · content), each migrated then adversarially verified by a
+  fresh-context agent whose FIRST check is `git diff` behavior preservation —
+  a dropped auth guard or renamed form field is a critical finding, not a nit.
+
+Ordering rule for the remainder: by the weekly-use evidence in `decisions.md`,
+not by size. Settings goes first because it is the largest block with no send
+path and no daily traffic — highest ratchet movement at the lowest risk.
+
+#### Original 11C spec
+
 ### 11C — The rest of the `/admin/crm` tree (57 pages)
 
 Order by the weekly-use evidence already locked in `decisions.md`, not

@@ -1,4 +1,10 @@
 // @no-parity — internal admin surface, no public mockup contract
+// 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+// Presentation only — the owner-only guard, the six server-action wrappers, and
+// the LeadFlowEditor contract are carried over verbatim. LeadFlowEditor itself is
+// sanctioned legacy machinery (exclusively owned by this route; it migrates with
+// a later unit).
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import { getLeadFlows } from '@/lib/data/crm/getLeadFlow'
@@ -13,8 +19,7 @@ import {
   upsertLeadFlowRuleAction,
   deleteLeadFlowRuleAction,
 } from '@/app/actions/crm-lead-flows'
-import { SettingsSubpageShell } from '@/components/admin/crm/settings/SettingsSubpageShell'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import LeadFlowEditor from '@/components/admin/crm/settings/LeadFlowEditor'
 
 export const metadata = { title: 'Lead Flows | CRM settings | Admin' }
@@ -61,34 +66,55 @@ export default async function CrmLeadFlowsSettingsPage() {
   }
 
   return (
-    <SettingsSubpageShell
-      title="Lead Flows"
-      description="Map a lead source to a broker, group, or pond. Optionally add conditional rules that override the default assignment."
-    >
-      <div className="mt-2 rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-        Lead Flows are evaluated first when a new lead arrives. If the lead&apos;s source matches a flow, the flow&apos;s rules run in order and the first match determines where the lead routes. Unmatched leads fall back to the global Lead routing setting.
+    <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 10px' }}>
+        <VerdictLine tone={flows.length === 0 ? 'attention' : 'ok'}>
+          {flows.length === 0 ? (
+            <>
+              <b>No lead flows yet.</b> Every lead falls through to the global routing setting.
+            </>
+          ) : (
+            <>
+              <b>
+                {flows.length} lead flow{flows.length === 1 ? '' : 's'}.
+              </b>{' '}
+              Each maps a source to a broker, group, or pond before global routing runs.
+            </>
+          )}
+        </VerdictLine>
       </div>
 
-      <div className="mt-6">
-        {flows.length === 0 && (
-          <ConsoleSection title="No lead flows yet">
-            <p className="text-sm text-muted-foreground">Create your first lead flow below to override the global routing for a specific source.</p>
-          </ConsoleSection>
-        )}
-
-        <LeadFlowEditor
-          flows={flows}
-          groups={groups}
-          ponds={ponds}
-          brokers={brokerOptions}
-          createLeadFlowAction={create}
-          updateLeadFlowAction={update}
-          archiveLeadFlowAction={archive}
-          deleteLeadFlowAction={del}
-          upsertLeadFlowRuleAction={upsertRule}
-          deleteLeadFlowRuleAction={deleteRule}
-        />
+      <div className="av2-wordrow" style={{ marginBottom: 4 }}>
+        <Link href="/admin/crm/settings" className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+          CRM settings
+        </Link>
       </div>
-    </SettingsSubpageShell>
+
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '10px 0 0' }}>
+        Lead Flows are evaluated first when a new lead arrives. If the lead&apos;s source matches a flow, the
+        flow&apos;s rules run in order and the first match determines where the lead routes. Unmatched leads fall
+        back to the global Lead routing setting.
+      </p>
+
+      <SectionHead>Flows</SectionHead>
+      {flows.length === 0 ? (
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 12px' }}>
+          Create your first lead flow below to override the global routing for a specific source.
+        </p>
+      ) : null}
+
+      <LeadFlowEditor
+        flows={flows}
+        groups={groups}
+        ponds={ponds}
+        brokers={brokerOptions}
+        createLeadFlowAction={create}
+        updateLeadFlowAction={update}
+        archiveLeadFlowAction={archive}
+        deleteLeadFlowAction={del}
+        upsertLeadFlowRuleAction={upsertRule}
+        deleteLeadFlowRuleAction={deleteRule}
+      />
+    </div>
   )
 }

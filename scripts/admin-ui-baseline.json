@@ -153,16 +153,6 @@
     "app/admin/(protected)/crm/reporting/westside/page.tsx": {
       "h1": 1
     },
-    "app/admin/(protected)/crm/settings/appointments/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/crm/settings/assignment/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/crm/settings/page.tsx": {
-      "h1": 1,
-      "h2": 1
-    },
     "app/admin/(protected)/crm/subscriptions/page.tsx": {
       "h1": 1
     },
@@ -480,25 +470,6 @@
     "app/admin/(protected)/crm/reporting/westside/page.tsx",
     "app/admin/(protected)/crm/sequences/[id]/edit/page.tsx",
     "app/admin/(protected)/crm/sequences/page.tsx",
-    "app/admin/(protected)/crm/settings/appointments/page.tsx",
-    "app/admin/(protected)/crm/settings/areas/page.tsx",
-    "app/admin/(protected)/crm/settings/assignment/page.tsx",
-    "app/admin/(protected)/crm/settings/brokers/page.tsx",
-    "app/admin/(protected)/crm/settings/company/block-list/page.tsx",
-    "app/admin/(protected)/crm/settings/company/page.tsx",
-    "app/admin/(protected)/crm/settings/company/registration/page.tsx",
-    "app/admin/(protected)/crm/settings/custom-fields/page.tsx",
-    "app/admin/(protected)/crm/settings/groups/page.tsx",
-    "app/admin/(protected)/crm/settings/lead-flows/page.tsx",
-    "app/admin/(protected)/crm/settings/market-reports/page.tsx",
-    "app/admin/(protected)/crm/settings/page.tsx",
-    "app/admin/(protected)/crm/settings/ponds/page.tsx",
-    "app/admin/(protected)/crm/settings/segments/page.tsx",
-    "app/admin/(protected)/crm/settings/stages/page.tsx",
-    "app/admin/(protected)/crm/settings/suppression/page.tsx",
-    "app/admin/(protected)/crm/settings/tags/page.tsx",
-    "app/admin/(protected)/crm/settings/team/page.tsx",
-    "app/admin/(protected)/crm/settings/templates/page.tsx",
     "app/admin/(protected)/crm/subscriptions/page.tsx",
     "app/admin/(protected)/crm/tasks/page.tsx",
     "app/admin/(protected)/crm/workflows/page.tsx",
@@ -556,5 +527,5 @@
     "app/admin/(protected)/people/[id]/page.tsx": 1,
     "app/admin/(protected)/today/page.tsx": 2
   },
-  "distinctWidths": 21
+  "distinctWidths": 19
 }

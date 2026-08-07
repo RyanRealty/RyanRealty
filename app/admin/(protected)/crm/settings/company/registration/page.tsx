@@ -5,10 +5,7 @@ import { getCrmAccess } from '@/app/actions/crm'
 import { getBrokerTelephony } from '@/lib/data/crm/getBrokerTelephony'
 import { getA2pCampaignStatus } from '@/lib/crm/twilio'
 import { CRM_BROKERS } from '@/lib/crm/constants'
-import { SettingsSubpageShell } from '@/components/admin/crm/settings/SettingsSubpageShell'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { SectionHead, StateWord, VerdictLine, type AdminState } from '@/components/admin/v2'
 
 export const metadata = { title: 'Business registration | CRM admin' }
 export const dynamic = 'force-dynamic'
@@ -19,38 +16,42 @@ export const dynamic = 'force-dynamic'
  *
  * In-house, business registration IS the Twilio A2P 10DLC brand + campaign that
  * gates outbound SMS (carriers reject texts with error 30034 until VERIFIED).
- * The badge below is the LIVE campaign status pulled from Twilio
+ * The state word below is the LIVE campaign status pulled from Twilio
  * (getA2pCampaignStatus, 5-minute TTL) -- the same status the composer's
  * fail-closed SMS gate checks before any text sends. One registration covers
  * every broker line; numbers added later inherit it automatically.
  *
  * Access: superuser only.
+ *
+ * P11C: migrated to the LOCKED admin v2 language. Status is a StateWord (text +
+ * color, never color alone) instead of a shadcn Badge; the data reads, the
+ * guard, and every href are unchanged.
  */
 
-const BADGES: Record<string, { label: string; className: string; blurb: string }> = {
+const BADGES: Record<string, { label: string; state: AdminState; blurb: string }> = {
   VERIFIED: {
     label: 'Fully Registered',
-    className: 'bg-success text-success-foreground',
+    state: 'ok',
     blurb: 'The A2P 10DLC campaign is carrier-approved. Outbound texting is enabled on every registered line.',
   },
   IN_PROGRESS: {
     label: 'Under Carrier Review',
-    className: 'bg-warning text-warning-foreground',
+    state: 'slow',
     blurb: 'Submitted to US carriers for approval. Outbound SMS stays blocked (fail closed) until VERIFIED.',
   },
   PENDING: {
     label: 'Under Carrier Review',
-    className: 'bg-warning text-warning-foreground',
+    state: 'slow',
     blurb: 'Submitted to US carriers for approval. Outbound SMS stays blocked (fail closed) until VERIFIED.',
   },
   FAILED: {
     label: 'Rejected by Carriers',
-    className: 'bg-destructive text-destructive-foreground',
+    state: 'down',
     blurb: 'The carriers declined the campaign. Correct the business info in the Twilio console and resubmit.',
   },
   NONE: {
     label: 'Not Started',
-    className: 'bg-secondary text-secondary-foreground',
+    state: 'waiting',
     blurb: 'No A2P campaign found on the messaging service. Outbound SMS is blocked until one is registered and VERIFIED.',
   },
 }
@@ -74,7 +75,7 @@ export default async function BusinessRegistrationPage() {
 
   const badge = BADGES[status ?? ''] ?? {
     label: 'Status unavailable',
-    className: 'bg-secondary text-secondary-foreground',
+    state: 'waiting' as AdminState,
     blurb: 'Twilio did not return a campaign status. Retry shortly, or check the Twilio console.',
   }
 
@@ -84,53 +85,58 @@ export default async function BusinessRegistrationPage() {
   }))
 
   return (
-    <SettingsSubpageShell
-      title="Business registration"
-      description="A2P 10DLC brand + campaign status for SMS compliance. Carriers block outbound texting until the campaign is fully registered."
-    >
-      <div className="space-y-6">
-        <Card className="p-6 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm text-muted-foreground">Campaign status (live from Twilio)</p>
-              <div className="mt-2 flex items-center gap-3">
-                <Badge className={badge.className}>{badge.label}</Badge>
-                <span className="text-xs tabular-nums text-muted-foreground">
-                  Twilio status: {status ?? 'unavailable'}
-                </span>
-              </div>
-            </div>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/admin/crm/settings/company">Back to Company Settings</Link>
-            </Button>
-          </div>
-          <p className="mt-4 text-sm text-muted-foreground">{badge.blurb}</p>
-        </Card>
+    <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
+      <nav style={{ margin: '0 0 10px', fontSize: 'var(--a-text-xs)' }}>
+        <Link href="/admin/crm/settings" style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
+          CRM settings
+        </Link>
+        <span style={{ padding: '0 6px', color: 'var(--a-text-2)' }}>/</span>
+        <Link
+          href="/admin/crm/settings/company"
+          style={{ color: 'var(--a-accent)', textDecoration: 'none' }}
+        >
+          Company
+        </Link>
+      </nav>
 
-        <Card className="p-6 shadow-sm">
-          <p className="text-sm font-semibold text-foreground">Registered lines</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            One registration covers every line on the account. Numbers added later inherit it automatically.
-          </p>
-          <ul className="mt-3 space-y-1.5">
-            {lines.map((l) => (
-              <li key={l.name} className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-foreground">{l.name}</span>
-                <span className="tabular-nums text-muted-foreground">{l.number ?? '—'}</span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-
-        <Card className="p-6 shadow-sm">
-          <p className="text-sm font-semibold text-foreground">Registration requirements</p>
-          <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
-            {REQUIREMENTS.map((r) => (
-              <li key={r}>{r}</li>
-            ))}
-          </ul>
-        </Card>
+      <div style={{ margin: '0 0 10px' }}>
+        <VerdictLine tone={status === 'VERIFIED' ? 'ok' : 'attention'}>
+          <b>Outbound SMS is {status === 'VERIFIED' ? 'registered' : 'not cleared to send'}.</b>{' '}
+          {badge.blurb}
+        </VerdictLine>
       </div>
-    </SettingsSubpageShell>
+
+      <p className="av2-wordrow" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+        <StateWord state={badge.state}>{badge.label}</StateWord>
+        <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+          Twilio campaign status (live): {status ?? 'unavailable'}
+        </span>
+      </p>
+
+      <SectionHead>Registered lines</SectionHead>
+      <ul className="av2-quietlist">
+        {lines.map((l) => (
+          <li key={l.name} className="av2-quiet">
+            <span className="av2-quiet__name">{l.name}</span>
+            <span className="av2-quiet__fig" style={{ fontFamily: 'var(--a-font-mono)' }}>
+              {l.number ?? '—'}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: -8 }}>
+        One registration covers every line on the account. Numbers added later inherit it
+        automatically.
+      </p>
+
+      <SectionHead>Registration requirements</SectionHead>
+      <ul className="av2-quietlist">
+        {REQUIREMENTS.map((r) => (
+          <li key={r} className="av2-quiet">
+            <span style={{ color: 'var(--a-text)' }}>{r}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }

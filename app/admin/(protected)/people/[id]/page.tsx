@@ -374,7 +374,7 @@ export default async function PersonPage({
   }
 
   return (
-    <main className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
+    <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
         <h1 style={{ fontSize: 'var(--a-text-xl)', fontWeight: 600, letterSpacing: '-0.01em' }}>
           {card.name ?? 'Unknown contact'}
@@ -554,6 +554,6 @@ export default async function PersonPage({
         ))}
         {feed.length === 0 ? <li className="av2-sysnote" style={{ padding: 12 }}>No activity yet.</li> : null}
       </ul>
-    </main>
+    </div>
   )
 }

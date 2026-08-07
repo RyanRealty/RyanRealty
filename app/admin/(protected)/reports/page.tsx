@@ -86,7 +86,7 @@ export default async function ReportsHubPage() {
   const total = GROUPS.reduce((n, g) => n + g.reports.length, 0)
 
   return (
-    <main className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
+    <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
       <div style={{ margin: '0 0 14px' }}>
         <VerdictLine tone="ok">
           <b>{total} reports, one home.</b> Every number has one page that owns it.
@@ -108,6 +108,6 @@ export default async function ReportsHubPage() {
           </ul>
         </section>
       ))}
-    </main>
+    </div>
   )
 }

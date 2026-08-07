@@ -1,6 +1,7 @@
 // @no-parity — internal admin surface, no public mockup contract
 /**
- * /admin/crm/settings/templates — Email & Text Templates (§13 rebuild).
+ * /admin/crm/settings/templates — Email & Text Templates (§13 rebuild,
+ * P11C migration onto the locked v2 admin language).
  *
  * The §13 two-level folder architecture inside ONE route (the spec's
  * /email-templates + /text-templates sub-nav pair maps to ?t=email|text —
@@ -19,6 +20,11 @@
  * list is scoped at the data edge: a restricted broker sees shared templates,
  * legacy company templates (owner null), and their own. Destructive ops stay
  * superuser-gated in the actions.
+ *
+ * The folder/table bodies are the shared editors under
+ * components/admin/crm/settings/templates/ — mounted unchanged; this file owns
+ * the page shell only (ADMIN_UI.md: verdict first, one compact section switch,
+ * no page-title chrome).
  */
 import { redirect } from 'next/navigation'
 import { requireAdminPage } from '@/lib/admin/require-admin'
@@ -36,14 +42,12 @@ import {
   moveTemplatesToFolderAction,
 } from '@/app/actions/crm-templates'
 import { sendTemplateSelfTestAction } from '@/app/actions/crm-template-test'
-import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { SettingsSubpageShell } from '@/components/admin/crm/settings/SettingsSubpageShell'
+import { VerdictLine } from '@/components/admin/v2'
 import { TemplateFolderList, type TemplateFolderSummary } from '@/components/admin/crm/settings/templates/TemplateFolderList'
 import { EmailTemplateList } from '@/components/admin/crm/settings/templates/EmailTemplateList'
 import { TextTemplateList } from '@/components/admin/crm/settings/templates/TextTemplateList'
 import type { TemplatesShared } from '@/components/admin/crm/settings/templates/template-actions'
-import { cn } from '@/lib/utils'
 
 export const metadata = { title: 'Templates | CRM settings' }
 export const dynamic = 'force-dynamic'
@@ -169,36 +173,68 @@ export default async function CrmTemplatesSettingsPage({
     isSuperuser,
   }
 
+  const emailCount = visible.filter((r) => r.channel === 'email').length
+  const textCount = visible.filter((r) => r.channel === 'sms').length
+
+  const TABS = [
+    { t: 'email' as const, label: 'Email Templates' },
+    { t: 'text' as const, label: 'Text Templates' },
+  ]
+
   return (
-    <SettingsSubpageShell
-      wide
-      title="Email & text templates"
-      description="The reusable copy the composer, bulk sends, and automation steps draw from. Merge fields resolve to real contact + agent data at send time. Edited copy runs the brand-voice gate."
-    >
-      {/* §13 sub-nav: Email Templates | Text Templates */}
-      <div className="mb-5 flex items-center gap-1 border-b border-border">
-        {(
-          [
-            { t: 'email', label: 'Email Templates' },
-            { t: 'text', label: 'Text Templates' },
-          ] as const
-        ).map((tab) => (
-          <Button
-            key={tab.t}
-            asChild
-            variant="ghost"
-            size="sm"
-            className={cn(
-              'rounded-b-none border-b-2 border-transparent',
-              type === tab.t
-                ? 'border-primary font-semibold text-foreground'
-                : 'text-muted-foreground',
-            )}
-          >
-            <Link href={`/admin/crm/settings/templates?t=${tab.t}`}>{tab.label}</Link>
-          </Button>
-        ))}
+    <div className="av2-scope" style={{ maxWidth: 1200, margin: '0 auto', padding: 16 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          flexWrap: 'wrap',
+          margin: '0 0 14px',
+        }}
+      >
+        <VerdictLine tone="ok">
+          <b>Templates.</b> {emailCount} email · {textCount} text. The composer, bulk sends, and sequence steps
+          draw from here; merge fields resolve at send time and edited copy runs the brand-voice gate.
+        </VerdictLine>
+        <Link
+          href="/admin/crm/settings"
+          style={{ color: 'var(--a-accent)', textDecoration: 'none', fontSize: 'var(--a-text-sm)' }}
+        >
+          Back to settings
+        </Link>
       </div>
+
+      {/* §13 section switch: Email Templates | Text Templates */}
+      <nav
+        aria-label="Template section"
+        style={{
+          display: 'flex',
+          gap: 4,
+          borderBottom: '1px solid var(--a-border)',
+          margin: '0 0 18px',
+        }}
+      >
+        {TABS.map((tab) => (
+          <Link
+            key={tab.t}
+            href={`/admin/crm/settings/templates?t=${tab.t}`}
+            aria-current={type === tab.t ? 'page' : undefined}
+            style={{
+              padding: '8px 12px',
+              textDecoration: 'none',
+              fontSize: 'var(--a-text-sm)',
+              fontWeight: type === tab.t ? 600 : 400,
+              color: type === tab.t ? 'var(--a-accent)' : 'var(--a-text-2)',
+              borderBottom:
+                type === tab.t ? '2px solid var(--a-accent)' : '2px solid transparent',
+              marginBottom: -1,
+            }}
+          >
+            {tab.label}
+          </Link>
+        ))}
+      </nav>
 
       {folder === null ? (
         <TemplateFolderList
@@ -227,6 +263,6 @@ export default async function CrmTemplatesSettingsPage({
           shared={shared}
         />
       )}
-    </SettingsSubpageShell>
+    </div>
   )
 }

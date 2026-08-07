@@ -66,7 +66,7 @@ export default async function ValuationsPage() {
   const failed = cmaFailed.length + bpoFailed.length
 
   return (
-    <main className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
+    <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
       <div style={{ margin: '0 0 14px' }}>
         <VerdictLine tone={needsReview + failed > 0 ? 'attention' : 'ok'}>
           {needsReview > 0 ? (
@@ -235,6 +235,6 @@ export default async function ValuationsPage() {
           Expired audits (Prospecting)
         </Link>
       </p>
-    </main>
+    </div>
   )
 }

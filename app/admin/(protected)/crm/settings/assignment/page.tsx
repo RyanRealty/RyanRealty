@@ -1,4 +1,9 @@
 // @no-parity — internal admin surface, no public mockup contract
+// 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+// Presentation only — the owner-only guard, the four server-action wrappers, and
+// the RoutingEditor contract are carried over verbatim. RoutingEditor itself is
+// sanctioned legacy machinery (exclusively owned by this route; it migrates with
+// a later unit, same pattern as the people/[id] composer chokepoints).
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
@@ -10,8 +15,7 @@ import {
 } from '@/app/actions/crm-assignment'
 import { getCrmAssignmentConfig } from '@/lib/data/crm/getCrmAssignmentConfig'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
-import { Button } from '@/components/ui/button'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import RoutingEditor from '@/components/admin/crm/settings/RoutingEditor'
 
 export const metadata = { title: 'Lead routing | CRM settings | Admin' }
@@ -50,39 +54,37 @@ export default async function CrmRoutingSettingsPage() {
     return r.ok ? { ok: true } : { ok: false, error: r.error }
   }
 
+  const ruleCount = config.rules.length
+
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="mb-1 text-sm text-muted-foreground">
-            <Link href="/admin/crm/settings" className="inline-flex min-h-10 items-center hover:text-foreground">
-              Back to settings
-            </Link>
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">Lead routing</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Choose how a new lead is assigned to a broker.
-          </p>
-        </div>
-        <Link href="/admin/crm/settings/brokers" className="shrink-0">
-          <Button variant="outline" size="sm" className="h-10 sm:h-9">
-            Brokers
-          </Button>
+    <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 10px' }}>
+        <VerdictLine tone="ok">
+          <b>Lead routing.</b> Every new lead goes to a broker by this rule
+          {ruleCount > 0 ? `, plus ${ruleCount} source override${ruleCount === 1 ? '' : 's'}.` : '.'}
+        </VerdictLine>
+      </div>
+
+      <div className="av2-wordrow" style={{ marginBottom: 4 }}>
+        <Link href="/admin/crm/settings" className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+          CRM settings
+        </Link>
+        <Link href="/admin/crm/settings/brokers" className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+          Brokers
         </Link>
       </div>
 
-      <ConsoleSection title="Assignment" className="mt-6">
-        <RoutingEditor
-          strategy={config.strategy}
-          defaultBroker={config.defaultBroker}
-          rules={config.rules}
-          brokers={brokerOptions}
-          setStrategyAction={setStrategy}
-          setDefaultBrokerAction={setDefaultBroker}
-          upsertRuleAction={upsertRule}
-          deleteRuleAction={deleteRule}
-        />
-      </ConsoleSection>
-    </main>
+      <SectionHead>Assignment</SectionHead>
+      <RoutingEditor
+        strategy={config.strategy}
+        defaultBroker={config.defaultBroker}
+        rules={config.rules}
+        brokers={brokerOptions}
+        setStrategyAction={setStrategy}
+        setDefaultBrokerAction={setDefaultBroker}
+        upsertRuleAction={upsertRule}
+        deleteRuleAction={deleteRule}
+      />
+    </div>
   )
 }

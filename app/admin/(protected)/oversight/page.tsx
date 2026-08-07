@@ -222,7 +222,7 @@ export default async function OversightPage() {
   const verdictCount = attention.length
 
   return (
-    <main className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
+    <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
       <div style={{ margin: '0 0 14px' }}>
         <VerdictLine tone={verdictCount > 0 ? 'attention' : 'ok'}>
           {verdictCount > 0 ? (
@@ -373,6 +373,6 @@ export default async function OversightPage() {
           Geography
         </Link>
       </p>
-    </main>
+    </div>
   )
 }

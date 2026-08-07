@@ -11,33 +11,16 @@
  * The kind list, the labels, and the recipient cap all come from
  * lib/newsletter/market-report-audience, the same module the server resolver
  * imports, so the picker and the router cannot drift.
+ *
+ * P11C: presentation migrated to the locked admin v2 language (ADMIN_UI.md).
+ * Every state value, descriptor, and server-action call is unchanged; the area
+ * picker is now one compact control (add-then-list) instead of a checkbox wall,
+ * and the queue confirmation is an inline two-step instead of a modal.
  */
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Separator } from '@/components/ui/separator'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Button, SectionHead, SelectField, StateWord, TextAreaField, TextField } from '@/components/admin/v2'
 import {
   AUDIENCE_KIND_LABELS,
   MARKET_REPORT_AUDIENCE_KINDS,
@@ -76,6 +59,10 @@ export default function BulkSendForm({ areaOptions }: { areaOptions: AreaOption[
   const [message, setMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
 
   const parsedEmails = useMemo(() => parseEmailList(emails), [emails])
+  const areaLabelBySlug = useMemo(
+    () => new Map(areaOptions.map((a) => [a.slug, a.label])),
+    [areaOptions],
+  )
 
   function audienceDescriptor(): unknown {
     switch (kind) {
@@ -131,245 +118,297 @@ export default function BulkSendForm({ areaOptions }: { areaOptions: AreaOption[
   }
 
   const windowShut = Boolean(preview?.windowOpensAt)
+  const unpicked = areaOptions.filter((a) => !areas.includes(a.slug))
 
   return (
-    <Card className="mb-6">
-      <CardHeader>
-        <CardTitle>Send a report to a chosen audience</CardTitle>
-        <CardDescription>
-          The daily cron already mails each subscriber on their own cadence. This is the bulk path: one issue, one
-          audience. Delivery runs through the newsletter queue, so suppression, opt-outs, the one-click unsubscribe
-          rail, and warm-up pacing all apply per recipient.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="bulk-audience-kind">Audience</Label>
-            <Select
-              value={kind}
-              onValueChange={(v) => {
-                setKind(v as MarketReportAudienceKind)
-                setPreview(null)
-              }}
-            >
-              <SelectTrigger id="bulk-audience-kind">
-                <SelectValue placeholder="Pick an audience" />
-              </SelectTrigger>
-              <SelectContent>
-                {MARKET_REPORT_AUDIENCE_KINDS.map((k) => (
-                  <SelectItem key={k} value={k}>
-                    {AUDIENCE_KIND_LABELS[k]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+    <section aria-label="Send a report to a chosen audience" style={{ margin: '0 0 8px' }}>
+      <SectionHead>Send a report to a chosen audience</SectionHead>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'var(--a-s4)',
+          border: '1px solid var(--a-border)',
+          borderRadius: 'var(--a-r-lg)',
+          padding: 'var(--a-s4)',
+          background: 'var(--a-bg)',
+        }}
+      >
+        <p style={{ color: 'var(--a-text-2)', fontSize: 'var(--a-text-sm)', margin: 0 }}>
+          The daily cron already mails each subscriber on their own cadence. This is the bulk path: one issue,
+          one audience. Delivery runs through the newsletter queue, so suppression, opt-outs, the one-click
+          unsubscribe rail, and warm-up pacing all apply per recipient.
+        </p>
+
+        <div className="av2-editgrid">
+          <SelectField
+            label="Audience"
+            value={kind}
+            onChange={(e) => {
+              setKind(e.target.value as MarketReportAudienceKind)
+              setPreview(null)
+            }}
+          >
+            {MARKET_REPORT_AUDIENCE_KINDS.map((k) => (
+              <option key={k} value={k}>
+                {AUDIENCE_KIND_LABELS[k]}
+              </option>
+            ))}
+          </SelectField>
 
           {kind === 'report-subscribers' ? (
             <>
-              <div className="space-y-1.5">
-                <Label htmlFor="bulk-cadence">Cadence</Label>
-                <Select
-                  value={cadence}
-                  onValueChange={(v) => {
-                    setCadence(v)
-                    setPreview(null)
-                  }}
-                >
-                  <SelectTrigger id="bulk-cadence">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {REPORT_CADENCE_FILTERS.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c === 'any' ? 'Every cadence' : c}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="bulk-area-filter">Subscribed to</Label>
-                <Select
-                  value={areaFilter}
-                  onValueChange={(v) => {
-                    setAreaFilter(v)
-                    setPreview(null)
-                  }}
-                >
-                  <SelectTrigger id="bulk-area-filter">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ANY_AREA}>Any area</SelectItem>
-                    {areaOptions.map((a) => (
-                      <SelectItem key={a.slug} value={a.slug}>
-                        {a.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <SelectField
+                label="Cadence"
+                value={cadence}
+                onChange={(e) => {
+                  setCadence(e.target.value)
+                  setPreview(null)
+                }}
+              >
+                {REPORT_CADENCE_FILTERS.map((c) => (
+                  <option key={c} value={c}>
+                    {c === 'any' ? 'Every cadence' : c}
+                  </option>
+                ))}
+              </SelectField>
+              <SelectField
+                label="Subscribed to"
+                value={areaFilter}
+                onChange={(e) => {
+                  setAreaFilter(e.target.value)
+                  setPreview(null)
+                }}
+              >
+                <option value={ANY_AREA}>Any area</option>
+                {areaOptions.map((a) => (
+                  <option key={a.slug} value={a.slug}>
+                    {a.label}
+                  </option>
+                ))}
+              </SelectField>
             </>
           ) : null}
 
           {kind === 'newsletter-segment' ? (
-            <div className="space-y-1.5">
-              <Label htmlFor="bulk-segment">Segment</Label>
-              <Select
-                value={segment}
-                onValueChange={(v) => {
-                  setSegment(v)
-                  setPreview(null)
-                }}
-              >
-                <SelectTrigger id="bulk-segment">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {NEWSLETTER_SEGMENT_KEYS.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <SelectField
+              label="Segment"
+              value={segment}
+              onChange={(e) => {
+                setSegment(e.target.value)
+                setPreview(null)
+              }}
+            >
+              {NEWSLETTER_SEGMENT_KEYS.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </SelectField>
           ) : null}
 
           {kind === 'crm-tag' ? (
-            <div className="space-y-1.5">
-              <Label htmlFor="bulk-tag">CRM tag</Label>
-              <Input
-                id="bulk-tag"
-                value={tag}
-                onChange={(e) => {
-                  setTag(e.target.value)
-                  setPreview(null)
-                }}
-                placeholder="e.g. past-client"
-              />
-            </div>
+            <TextField
+              label="CRM tag"
+              value={tag}
+              onChange={(e) => {
+                setTag(e.target.value)
+                setPreview(null)
+              }}
+              placeholder="e.g. past-client"
+            />
           ) : null}
         </div>
 
         {kind === 'explicit' ? (
-          <div className="space-y-1.5">
-            <Label htmlFor="bulk-emails">Emails</Label>
-            <Textarea
-              id="bulk-emails"
-              value={emails}
-              onChange={(e) => {
-                setEmails(e.target.value)
-                setPreview(null)
-              }}
-              placeholder="One per line, or comma separated."
-              rows={5}
-            />
-            <p className="text-xs text-muted-foreground tabular-nums">
-              {parsedEmails.length.toLocaleString('en-US')} valid address
-              {parsedEmails.length === 1 ? '' : 'es'} parsed. Cap is{' '}
-              {MAX_LIST_RECIPIENTS.toLocaleString('en-US')} per send.
-            </p>
-          </div>
+          <TextAreaField
+            label="Emails"
+            value={emails}
+            onChange={(e) => {
+              setEmails(e.target.value)
+              setPreview(null)
+            }}
+            placeholder="One per line, or comma separated."
+            rows={5}
+            hint={`${parsedEmails.length.toLocaleString('en-US')} valid address${
+              parsedEmails.length === 1 ? '' : 'es'
+            } parsed. Cap is ${MAX_LIST_RECIPIENTS.toLocaleString('en-US')} per send.`}
+          />
         ) : null}
 
-        <Separator />
-
-        <div className="space-y-2">
-          <Label>Areas in this report</Label>
-          <div className="flex flex-wrap gap-x-5 gap-y-2">
-            {areaOptions.map((a) => (
-              <label key={a.slug} className="flex items-center gap-2 text-sm text-foreground">
-                <Checkbox checked={areas.includes(a.slug)} onCheckedChange={() => toggleArea(a.slug)} />
+        <div style={{ borderTop: '1px solid var(--a-border)', paddingTop: 'var(--a-s4)' }}>
+          <SelectField
+            label="Areas in this report"
+            value=""
+            hint="Pick an area to add it. The report renders one section per area."
+            onChange={(e) => {
+              const slug = e.target.value
+              if (slug) toggleArea(slug)
+            }}
+          >
+            <option value="">Add an area…</option>
+            {unpicked.map((a) => (
+              <option key={a.slug} value={a.slug}>
                 {a.label}
-              </label>
+              </option>
             ))}
-          </div>
+          </SelectField>
+          <ul
+            className="av2-wordrow"
+            style={{ listStyle: 'none', margin: 'var(--a-s2) 0 0', padding: 0 }}
+          >
+            {areas.length === 0 ? (
+              <li style={{ color: 'var(--a-text-2)', fontSize: 'var(--a-text-sm)' }}>
+                No areas picked yet.
+              </li>
+            ) : null}
+            {areas.map((slug) => (
+              <li key={slug} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <StateWord state="accent">{areaLabelBySlug.get(slug) ?? slug}</StateWord>
+                <Button
+                  variant="quiet"
+                  onClick={() => toggleArea(slug)}
+                  aria-label={`Remove ${areaLabelBySlug.get(slug) ?? slug}`}
+                  style={{ minHeight: 28, padding: '0 8px' }}
+                >
+                  Remove
+                </Button>
+              </li>
+            ))}
+          </ul>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="button" variant="outline" onClick={onPreview} disabled={pending}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--a-s3)' }}>
+          <Button variant="quiet" onClick={onPreview} disabled={pending}>
             {pending ? 'Working…' : 'Preview this send'}
           </Button>
-          <Button
-            type="button"
-            onClick={() => setConfirmOpen(true)}
-            disabled={pending || !preview || windowShut}
-          >
+          <Button onClick={() => setConfirmOpen(true)} disabled={pending || !preview || windowShut}>
             Queue through the newsletter ledger
           </Button>
           {!preview ? (
-            <span className="text-xs text-muted-foreground">Preview first. Queueing is disabled until you do.</span>
+            <span style={{ color: 'var(--a-text-2)', fontSize: 'var(--a-text-xs)' }}>
+              Preview first. Queueing is disabled until you do.
+            </span>
           ) : null}
         </div>
 
         {message ? (
-          <p className={message.type === 'ok' ? 'text-sm text-success' : 'text-sm text-destructive'} role="alert">
+          <p
+            role="alert"
+            style={{
+              margin: 0,
+              fontSize: 'var(--a-text-sm)',
+              color: message.type === 'ok' ? 'var(--a-ok)' : 'var(--a-danger)',
+            }}
+          >
             {message.text}
           </p>
         ) : null}
 
-        {preview ? (
-          <div className="space-y-3 rounded-xl border border-border bg-muted/40 p-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge>{preview.recipientCount.toLocaleString('en-US')} recipients</Badge>
-              <Badge variant="secondary">{preview.audienceLabel}</Badge>
-              <Badge variant="secondary">
-                {preview.route === 'audience-segment' ? 'segment enqueue' : 'list enqueue'}
-              </Badge>
+        {confirmOpen ? (
+          <div
+            role="group"
+            aria-label="Queue this send?"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 'var(--a-s2)',
+              border: '1px solid var(--a-border)',
+              borderRadius: 'var(--a-r-lg)',
+              background: 'var(--a-inset)',
+              padding: 'var(--a-s4)',
+            }}
+          >
+            <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+              The issue goes into the newsletter queue. The send cron delivers it, skipping anyone suppressed
+              or opted out, and pacing a large audience across days.
+            </p>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 'var(--a-text-lg)',
+                fontWeight: 600,
+                fontVariantNumeric: 'tabular-nums',
+                color: 'var(--a-text)',
+              }}
+            >
+              {(preview?.recipientCount ?? 0).toLocaleString('en-US')} recipients
+            </p>
+            <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+              {preview?.audienceLabel}
+            </p>
+            <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+              {preview?.subject}
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--a-s3)' }}>
+              <Button variant="quiet" onClick={() => setConfirmOpen(false)} disabled={pending}>
+                Cancel
+              </Button>
+              <Button variant="danger" onClick={onQueue} disabled={pending || !preview}>
+                {pending ? 'Queueing…' : 'Confirm and queue'}
+              </Button>
             </div>
-            <p className="text-sm text-foreground">{preview.subject}</p>
-            <p className="text-xs text-muted-foreground">{preview.audienceTrace}</p>
+          </div>
+        ) : null}
+
+        {preview ? (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 'var(--a-s2)',
+              border: '1px solid var(--a-border)',
+              borderRadius: 'var(--a-r-lg)',
+              background: 'var(--a-surface)',
+              padding: 'var(--a-s4)',
+            }}
+          >
+            <div className="av2-wordrow">
+              <StateWord state="accent">
+                {preview.recipientCount.toLocaleString('en-US')} recipients
+              </StateWord>
+              <StateWord state="waiting">{preview.audienceLabel}</StateWord>
+              <StateWord state="waiting">
+                {preview.route === 'audience-segment' ? 'segment enqueue' : 'list enqueue'}
+              </StateWord>
+            </div>
+            <p style={{ margin: 0, fontSize: 'var(--a-text-md)', color: 'var(--a-text)' }}>
+              {preview.subject}
+            </p>
+            <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+              {preview.audienceTrace}
+            </p>
             {preview.sample.length > 0 ? (
-              <p className="text-xs text-muted-foreground">First few: {preview.sample.join(', ')}</p>
+              <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+                First few: {preview.sample.join(', ')}
+              </p>
             ) : null}
-            <p className="text-xs text-muted-foreground">
+            <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
               Areas rendered: {preview.renderedAreas.join(', ') || '—'}
               {preview.omittedAreas.length > 0
                 ? ` · omitted for lack of verified data: ${preview.omittedAreas.join(', ')}`
                 : ''}
             </p>
-            <p className="text-xs text-muted-foreground tabular-nums">
-              {preview.citations.length} figure{preview.citations.length === 1 ? '' : 's'} traced to the market cache.
+            <p
+              style={{
+                margin: 0,
+                fontSize: 'var(--a-text-xs)',
+                color: 'var(--a-text-2)',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              {preview.citations.length} figure{preview.citations.length === 1 ? '' : 's'} traced to the market
+              cache.
             </p>
             {windowShut ? (
-              <p className="text-sm text-destructive">
+              <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)' }}>
                 Outside the 8am to 8pm send window. Queueing opens again at{' '}
                 {new Date(preview.windowOpensAt as string).toLocaleString('en-US')}.
               </p>
             ) : null}
           </div>
         ) : null}
-      </CardContent>
-
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Queue this send?</DialogTitle>
-            <DialogDescription>
-              The issue goes into the newsletter queue. The send cron delivers it, skipping anyone suppressed or
-              opted out, and pacing a large audience across days.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-2">
-            <p className="text-lg font-semibold text-foreground tabular-nums">
-              {(preview?.recipientCount ?? 0).toLocaleString('en-US')} recipients
-            </p>
-            <p className="text-sm text-muted-foreground">{preview?.audienceLabel}</p>
-            <p className="text-sm text-muted-foreground">{preview?.subject}</p>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)} disabled={pending}>
-              Cancel
-            </Button>
-            <Button type="button" onClick={onQueue} disabled={pending || !preview}>
-              {pending ? 'Queueing…' : 'Confirm and queue'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </Card>
+      </div>
+    </section>
   )
 }

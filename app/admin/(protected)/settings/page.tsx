@@ -79,7 +79,7 @@ export default async function SettingsHubPage() {
   const total = groups.reduce((n, g) => n + g.doors.length, 0)
 
   return (
-    <main className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
+    <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
       <div style={{ margin: '0 0 14px' }}>
         <VerdictLine tone="ok">
           <b>Configure the machine.</b> {total} doors you hold, grouped by job.
@@ -101,6 +101,6 @@ export default async function SettingsHubPage() {
           </ul>
         </section>
       ))}
-    </main>
+    </div>
   )
 }

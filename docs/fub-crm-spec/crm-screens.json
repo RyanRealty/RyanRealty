@@ -155,7 +155,7 @@
     "status": "done",
     "requiredComponents": [
       "CompanySettingsForm",
-      "SettingsSubpageShell",
+      "SectionHead",
       "getCrmCompanySettings",
       "getCrmBlockedNumbers",
       "getA2pCampaignStatus"

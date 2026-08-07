@@ -65,7 +65,7 @@ export default async function TodayPage() {
   const total = triage.length + parked.length + cmaDrafts.length + approvals.length + dueTasks.length
 
   return (
-    <main className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
+    <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
       <div style={{ margin: '0 0 14px' }}>
         <VerdictLine tone={total > 0 ? 'attention' : 'ok'}>
           {total > 0 ? (
@@ -221,6 +221,6 @@ export default async function TodayPage() {
           </ul>
         </section>
       )}
-    </main>
+    </div>
   )
 }

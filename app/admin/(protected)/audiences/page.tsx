@@ -55,7 +55,7 @@ export default async function AudiencesPage() {
   ]
 
   return (
-    <main className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
+    <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
       <div style={{ margin: '0 0 14px' }}>
         <VerdictLine tone={anyUnreadable ? 'attention' : 'ok'}>
           {anyUnreadable ? (
@@ -96,6 +96,6 @@ export default async function AudiencesPage() {
         </Link>
         .
       </p>
-    </main>
+    </div>
   )
 }

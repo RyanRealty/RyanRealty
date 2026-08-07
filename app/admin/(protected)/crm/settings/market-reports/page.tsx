@@ -1,13 +1,22 @@
 // @no-parity — internal admin surface, no public mockup contract
+/**
+ * /admin/crm/settings/market-reports — who receives the recurring market
+ * report (P11C migration onto the locked v2 admin language).
+ *
+ * The daily send cron mails each contact on their chosen cadence, with every
+ * figure pulled live from the market cache. This surface reads that roster,
+ * offers a sample preview, and (superuser only) the bulk audience send.
+ *
+ * Layout (ADMIN_UI.md): verdict first, then the queue rows — every subscriber
+ * name is a door to their person page, every state is a plain word.
+ */
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import { getMarketReportSubscribers } from '@/lib/data/crm/getMarketReportSubscribers'
 import { buildMarketReportAreas } from '@/lib/data/crm/getContactReportSubscriptions'
-import { SettingsSubpageShell } from '@/components/admin/crm/settings/SettingsSubpageShell'
 import { MarketReportPreviewDialog } from '@/components/admin/crm/settings/MarketReportPreviewDialog'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { QueueRow, SectionHead, VerdictLine } from '@/components/admin/v2'
 import { formatDate } from '@/lib/format/date'
 import BulkSendForm from './BulkSendForm'
 
@@ -45,78 +54,90 @@ export default async function CrmMarketReportSubscribersPage() {
   const canBulkSend = access.role === 'superuser'
 
   return (
-    <SettingsSubpageShell
-      title="Market-report subscribers"
-      description="Contacts subscribed to recurring market reports. The daily send cron mails each contact on their chosen cadence, with every figure pulled live from the market cache."
-    >
-      <Card className="mb-4 flex flex-wrap items-center justify-between gap-3 p-4">
-        <div className="text-sm text-muted-foreground">
+    <div className="av2-scope" style={{ maxWidth: 880, margin: '0 auto', padding: 16 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          flexWrap: 'wrap',
+          margin: '0 0 14px',
+        }}
+      >
+        <VerdictLine tone="ok">
+          <b>
+            {subscribers.length.toLocaleString('en-US')}{' '}
+            {subscribers.length === 1 ? 'subscriber' : 'subscribers'}, {activeCount} active.
+          </b>{' '}
+          The daily cron mails each one on their cadence, every figure pulled live from the market cache.
+        </VerdictLine>
+        <Link
+          href="/admin/crm/settings"
+          style={{ color: 'var(--a-accent)', textDecoration: 'none', fontSize: 'var(--a-text-sm)' }}
+        >
+          Back to settings
+        </Link>
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          flexWrap: 'wrap',
+          border: '1px solid var(--a-border)',
+          borderRadius: 'var(--a-r-lg)',
+          background: 'var(--a-surface)',
+          padding: 'var(--a-s3) var(--a-s4)',
+        }}
+      >
+        <span style={{ color: 'var(--a-text-2)', fontSize: 'var(--a-text-sm)' }}>
           See exactly what a subscriber receives, with the verification trace for every figure.
-        </div>
+        </span>
         <MarketReportPreviewDialog
           areas={['bend']}
           label="Preview a sample report (Bend)"
-          variant="default"
+          variant="outline"
           size="default"
         />
-      </Card>
+      </div>
 
       {canBulkSend ? <BulkSendForm areaOptions={areaOptions} /> : null}
 
-      <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        <span>
-          {subscribers.length} {subscribers.length === 1 ? 'subscriber' : 'subscribers'}
-        </span>
-        <span aria-hidden>&middot;</span>
-        <span>{activeCount} active</span>
-      </div>
-
+      <SectionHead>Subscribers</SectionHead>
       {subscribers.length === 0 ? (
-        <Card className="p-8 text-center text-sm text-muted-foreground">
+        <p style={{ color: 'var(--a-text-2)', fontSize: 'var(--a-text-sm)', padding: '12px 2px' }}>
           No market-report subscribers yet. A contact subscribes from their CRM record card.
-        </Card>
+        </p>
       ) : (
-        <div className="overflow-x-auto no-scrollbar rounded-xl border border-border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Contact</TableHead>
-                <TableHead>Areas</TableHead>
-                <TableHead>Cadence</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Last sent</TableHead>
-                <TableHead className="text-right">Preview</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {subscribers.map((s) => (
-                <TableRow key={s.subscriptionId}>
-                  <TableCell className="font-medium text-foreground">
-                    {s.personName ?? `Contact ${s.personId}`}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {s.areas.length > 0 ? areaLabels(s.areas) : '—'}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {FREQUENCY_LABEL[s.frequency] ?? s.frequency}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={s.isActive ? 'default' : 'secondary'}>
-                      {s.isActive ? 'Active' : 'Paused'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground tabular-nums">
-                    {s.lastSentAt ? formatDate(s.lastSentAt) : 'Never'}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <MarketReportPreviewDialog areas={s.areas} contactName={s.personName} />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <ul className="av2-queue">
+          {subscribers.map((s) => (
+            <QueueRow
+              key={s.subscriptionId}
+              kind={s.isActive ? 'Active' : 'Paused'}
+              kindTone={s.isActive ? 'ok' : 'waiting'}
+              title={
+                <Link
+                  href={`/admin/people/${s.personId}`}
+                  style={{ color: 'var(--a-text)', textDecoration: 'none' }}
+                >
+                  {s.personName ?? `Contact ${s.personId}`}
+                </Link>
+              }
+              context={
+                <>
+                  {s.areas.length > 0 ? areaLabels(s.areas) : 'No areas'} ·{' '}
+                  {FREQUENCY_LABEL[s.frequency] ?? s.frequency}
+                </>
+              }
+              age={s.lastSentAt ? formatDate(s.lastSentAt) : 'Never sent'}
+              action={<MarketReportPreviewDialog areas={s.areas} contactName={s.personName} />}
+            />
+          ))}
+        </ul>
       )}
-    </SettingsSubpageShell>
+    </div>
   )
 }

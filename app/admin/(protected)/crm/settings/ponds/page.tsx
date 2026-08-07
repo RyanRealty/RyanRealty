@@ -1,4 +1,10 @@
 // @no-parity — internal admin surface, no public mockup contract
+// 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+// Presentation only — the owner-only guard, the five server-action wrappers, and
+// the PondEditor contract are carried over verbatim. PondEditor itself is
+// sanctioned legacy machinery (exclusively owned by this route; it migrates with
+// a later unit).
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import { getCrmPonds } from '@/lib/data/crm/getCrmPonds'
@@ -10,8 +16,7 @@ import {
   addPondMemberAction,
   removePondMemberAction,
 } from '@/app/actions/crm-ponds'
-import { SettingsSubpageShell } from '@/components/admin/crm/settings/SettingsSubpageShell'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import PondEditor from '@/components/admin/crm/settings/PondEditor'
 
 export const metadata = { title: 'Ponds | CRM settings | Admin' }
@@ -49,31 +54,51 @@ export default async function CrmPondsSettingsPage() {
   }
 
   return (
-    <SettingsSubpageShell
-      title="Ponds"
-      description="Holding queues where unassigned leads wait until a broker claims them."
-    >
-      <div className="mt-2 rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-        When a Lead Flow routes a lead to a pond, the lead stays unassigned until one of the pond&apos;s members claims it. Any member can claim any lead in a pond they belong to.
+    <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 10px' }}>
+        <VerdictLine tone={ponds.length === 0 ? 'attention' : 'ok'}>
+          {ponds.length === 0 ? (
+            <>
+              <b>No ponds yet.</b> Nothing can hold an unassigned lead for a broker to claim.
+            </>
+          ) : (
+            <>
+              <b>
+                {ponds.length} pond{ponds.length === 1 ? '' : 's'}.
+              </b>{' '}
+              Holding queues where unassigned leads wait until a broker claims them.
+            </>
+          )}
+        </VerdictLine>
       </div>
 
-      <div className="mt-6">
-        {ponds.length === 0 && (
-          <ConsoleSection title="No ponds yet">
-            <p className="text-sm text-muted-foreground">Create your first pond below.</p>
-          </ConsoleSection>
-        )}
-
-        <PondEditor
-          ponds={ponds}
-          brokers={brokerOptions}
-          createPondAction={create}
-          updatePondAction={update}
-          deletePondAction={del}
-          addPondMemberAction={addMember}
-          removePondMemberAction={removeMember}
-        />
+      <div className="av2-wordrow" style={{ marginBottom: 4 }}>
+        <Link href="/admin/crm/settings" className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+          CRM settings
+        </Link>
       </div>
-    </SettingsSubpageShell>
+
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '10px 0 0' }}>
+        When a Lead Flow routes a lead to a pond, the lead stays unassigned until one of the pond&apos;s members
+        claims it. Any member can claim any lead in a pond they belong to.
+      </p>
+
+      <SectionHead>Ponds</SectionHead>
+      {ponds.length === 0 ? (
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 12px' }}>
+          Create your first pond below.
+        </p>
+      ) : null}
+
+      <PondEditor
+        ponds={ponds}
+        brokers={brokerOptions}
+        createPondAction={create}
+        updatePondAction={update}
+        deletePondAction={del}
+        addPondMemberAction={addMember}
+        removePondMemberAction={removeMember}
+      />
+    </div>
   )
 }

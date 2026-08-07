@@ -1,4 +1,9 @@
 // @no-parity — internal admin surface, no public mockup contract
+// P11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+// Presentation only — the guard, the list-action read, and the five server
+// actions are carried over verbatim. ConfigTableEditor is shared with
+// /admin/crm/settings/areas, so it is left untouched here.
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import {
@@ -9,7 +14,7 @@ import {
   deleteCrmStageAction,
   listCrmStagesAction,
 } from '@/app/actions/crm-stages'
-import { SettingsSubpageShell } from '@/components/admin/crm/settings/SettingsSubpageShell'
+import { VerdictLine } from '@/components/admin/v2'
 import { ConfigTableEditor, type ConfigEditorRow } from '@/components/admin/crm/settings/ConfigTableEditor'
 
 export const metadata = { title: 'Pipeline stages | CRM settings' }
@@ -30,12 +35,38 @@ export default async function CrmStagesSettingsPage() {
     isActive: r.isActive,
     isProtected: r.isProtected,
   }))
+  const live = rows.filter((r) => r.isActive).length
 
   return (
-    <SettingsSubpageShell
-      title="Pipeline stages"
-      description="The funnel stages a contact moves through. Deleting a stage moves every affected contact to a stage you choose."
-    >
+    <div className="av2-scope" style={{ maxWidth: 1024, margin: '0 auto', padding: 16 }}>
+      <nav
+        aria-label="Breadcrumb"
+        style={{ margin: '0 0 10px', fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+      >
+        <Link href="/admin/crm/settings" style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
+          CRM settings
+        </Link>
+      </nav>
+
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={rows.length ? 'ok' : 'attention'}>
+          {rows.length ? (
+            <>
+              <b>
+                {live.toLocaleString('en-US')} of {rows.length.toLocaleString('en-US')}{' '}
+                {rows.length === 1 ? 'stage' : 'stages'} active.
+              </b>{' '}
+              The funnel stages a contact moves through. Deleting a stage moves every affected contact
+              to a stage you choose.
+            </>
+          ) : (
+            <>
+              <b>No stages yet.</b> Add the first funnel stage a contact moves through.
+            </>
+          )}
+        </VerdictLine>
+      </div>
+
       <ConfigTableEditor
         rows={rows}
         actions={{
@@ -49,6 +80,6 @@ export default async function CrmStagesSettingsPage() {
         dependentNoun="contacts"
         deleteMode="reassign"
       />
-    </SettingsSubpageShell>
+    </div>
   )
 }

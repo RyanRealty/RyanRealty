@@ -1,19 +1,16 @@
 'use client'
 
+/**
+ * AppointmentSettingsClient (11C, v2 language migration) — appointment types +
+ * outcome labels. Same server actions (create/update/delete for both lookups),
+ * same optimistic-free router.refresh() after each mutation, same
+ * confirm-before-delete step; the confirm now renders inline instead of in a
+ * modal because the v2 language has no dialog primitive.
+ */
+
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { Button, SectionHead, StateWord, TextField } from '@/components/admin/v2'
 import {
   createAppointmentTypeAction,
   updateAppointmentTypeAction,
@@ -34,9 +31,10 @@ export default function AppointmentSettingsClient({
   const router = useRouter()
 
   return (
-    <div className="space-y-8">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <LookupSection
         title="Appointment types"
+        noun="type"
         description="The types available in the appointment form (Buyer consultation, Listing consultation, etc.)."
         items={types}
         onCreate={async (name) => { await createAppointmentTypeAction(name); router.refresh() }}
@@ -45,6 +43,7 @@ export default function AppointmentSettingsClient({
       />
       <LookupSection
         title="Appointment outcomes"
+        noun="outcome"
         description="The outcome labels set after an appointment completes (No show, Listing obtained, etc.)."
         items={outcomes}
         onCreate={async (name) => { await createAppointmentOutcomeAction(name); router.refresh() }}
@@ -57,6 +56,7 @@ export default function AppointmentSettingsClient({
 
 function LookupSection({
   title,
+  noun,
   description,
   items,
   onCreate,
@@ -64,6 +64,7 @@ function LookupSection({
   onDelete,
 }: {
   title: string
+  noun: string
   description: string
   items: Array<{ id: number; name: string; active: boolean }>
   onCreate: (name: string) => Promise<void>
@@ -97,90 +98,93 @@ function LookupSection({
   }
 
   return (
-    <ConsoleSection title={title}>
-      <p className="mb-3 text-xs text-muted-foreground">{description}</p>
+    <section aria-label={title}>
+      <SectionHead>{title}</SectionHead>
+      <p style={{ margin: '0 0 8px', fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>{description}</p>
 
-      <div className="divide-y divide-border rounded-lg border border-border">
+      <ul className="av2-quietlist">
         {items.length === 0 ? (
-          <p className="px-4 py-3 text-sm text-muted-foreground">No items yet.</p>
+          <li className="av2-quiet">
+            <span style={{ color: 'var(--a-text-2)' }}>No items yet.</span>
+          </li>
         ) : (
           items.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center justify-between gap-3 px-4 py-2.5"
-            >
+            <li key={item.id} className="av2-quiet">
               <span
-                className={
-                  item.active
-                    ? 'text-sm font-medium text-foreground'
-                    : 'text-sm text-muted-foreground line-through'
-                }
+                style={{
+                  color: item.active ? 'var(--a-text)' : 'var(--a-text-2)',
+                  fontWeight: item.active ? 500 : 400,
+                  textDecoration: item.active ? 'none' : 'line-through',
+                  minWidth: 130,
+                }}
               >
                 {item.name}
               </span>
-              <div className="flex items-center gap-3">
-                <Switch
-                  checked={item.active}
-                  onCheckedChange={(v) => startTransition(() => onToggle(item.id, v))}
-                  aria-label={`Toggle ${item.name}`}
-                />
+              <StateWord state={item.active ? 'ok' : 'waiting'}>{item.active ? 'On' : 'Off'}</StateWord>
+              <span style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <Button
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDeleteTarget({ id: item.id, name: item.name })}
-                  className="h-auto px-2 py-0.5 text-xs text-muted-foreground hover:text-destructive"
+                  variant="quiet"
+                  aria-pressed={item.active}
+                  aria-label={`Toggle ${item.name}`}
+                  disabled={pending}
+                  onClick={() => startTransition(() => onToggle(item.id, !item.active))}
+                >
+                  {item.active ? 'Turn off' : 'Turn on'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="quiet"
                   aria-label={`Delete ${item.name}`}
+                  disabled={pending}
+                  onClick={() => setDeleteTarget({ id: item.id, name: item.name })}
                 >
                   Delete
                 </Button>
-              </div>
-            </div>
+              </span>
+            </li>
           ))
         )}
-      </div>
+      </ul>
 
-      <div className="mt-3 flex gap-2">
-        <Input
+      {deleteTarget ? (
+        <div
+          role="alertdialog"
+          aria-label={`Delete ${deleteTarget.name}`}
+          className="av2-pane"
+          style={{ marginBottom: 12 }}
+        >
+          <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text)' }}>
+            <b>Delete &ldquo;{deleteTarget.name}&rdquo;?</b> This removes the item permanently. Any appointments
+            already logged with this {noun} keep their existing value, but the option will no longer appear in the
+            picker.
+          </p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button type="button" variant="quiet" onClick={() => setDeleteTarget(null)} disabled={pending}>
+              Cancel
+            </Button>
+            <Button type="button" variant="danger" onClick={handleConfirmDelete} disabled={pending}>
+              Delete
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="av2-inline-form">
+        <TextField
+          label={`Add a ${noun}`}
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           placeholder="New item name"
-          className="h-9"
           onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
+          error={error ?? undefined}
         />
-        <Button
-          type="button"
-          size="sm"
-          className="h-9 shrink-0"
-          disabled={pending || !newName.trim()}
-          onClick={handleAdd}
-        >
-          Add
-        </Button>
+        <div>
+          <Button type="button" disabled={pending || !newName.trim()} onClick={handleAdd}>
+            Add
+          </Button>
+        </div>
       </div>
-      {error && <p className="mt-1.5 text-xs text-destructive">{error}</p>}
-
-      {/* Delete confirm dialog */}
-      <Dialog open={deleteTarget !== null} onOpenChange={(o) => { if (!o && !pending) setDeleteTarget(null) }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete &ldquo;{deleteTarget?.name}&rdquo;?</DialogTitle>
-            <DialogDescription>
-              This removes the item permanently. Any appointments already logged with this{' '}
-              {title.toLowerCase().includes('outcome') ? 'outcome' : 'type'} keep their existing
-              value, but the option will no longer appear in the picker.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={pending}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleConfirmDelete} disabled={pending}>
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </ConsoleSection>
+    </section>
   )
 }

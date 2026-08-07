@@ -64,7 +64,7 @@ export default async function ClosingsPage() {
   const inFlight = inEscrow.length + activeListings.length
 
   return (
-    <main className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
+    <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
       <div style={{ margin: '0 0 14px' }}>
         {board.unreadable ? (
           <VerdictLine tone="attention">
@@ -184,6 +184,6 @@ export default async function ClosingsPage() {
           Pre-contract pipeline
         </Link>
       </p>
-    </main>
+    </div>
   )
 }
