@@ -4,10 +4,10 @@
     "process": "2026-08-04",
     "ia": "2026-08-05",
     "visual": "2026-08-05",
-    "litmus": "2026-08-05"
+    "litmus": "2026-08-07 (re-timed after 11B: 4.4s broker-action, 1 tap, idempotent)"
   },
   "awaiting_lock": null,
   "current_process": null,
   "plan_of_record": "docs/plans/ADMIN_PRODUCT/PHASE-11-PLAN.md",
-  "updated_at": "2026-08-06T18:30:00Z"
+  "updated_at": "2026-08-07T05:10:00Z"
 }
